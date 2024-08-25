@@ -19,23 +19,14 @@ if __name__ == '__main__':
     }
 
     # Define the constraints for certain fields
-    # Example constraints for age and budget with additional constraints
     CONSTRAINTS = {
-        "<age>": {
-            "min": 18,
-            "max": 99,
-            "distr": "normal",
-        },
-        "<budget>": {
-            "min": 1000,
-            "max": 20000,
-            "distr": "uniform",
-        }
+        "<age>": {"min": 18, "max": 99, "distr": "normal"},
+        "<budget>": {"min": 1000, "max": 20000, "distr": "uniform"}
     }
 
     # Generate scaffolding
     scaffolding = generate_scaffolding(JSON_GRAMMAR, CONSTRAINTS, 100)
 
     # Optimize the scaffolding
-    optimized_scaffolding = fill_test_suite(scaffolding, CONSTRAINTS, plot=True)
+    optimized_scaffolding = fill_test_suite(scaffolding, CONSTRAINTS, ngen=5000, verbose=True, plot=True)
     print(optimized_scaffolding)

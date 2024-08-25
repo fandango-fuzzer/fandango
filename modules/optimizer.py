@@ -1,7 +1,8 @@
 import random
 import numpy as np
-from scipy.stats import norm, uniform
+from scipy.stats import norm
 import matplotlib.pyplot as plt
+from deap import base, creator, tools, algorithms
 
 
 def plot_histogram(data, title, xlabel, ylabel):
@@ -23,7 +24,78 @@ def plot_histogram(data, title, xlabel, ylabel):
     plt.show()
 
 
-def generate_values(constraints, num_values):
+def generate_perfect_distribution(constraints, num_values):
+    min_val = constraints['min']
+    max_val = constraints['max']
+    distribution = constraints['distr']
+
+    if distribution == 'perf-uniform':
+        values = np.linspace(min_val, max_val, num_values).astype(int)
+    elif distribution == 'perf-normal':
+        mean = (min_val + max_val) / 2
+        std_dev = (max_val - min_val) / 6
+        values = np.clip(norm.rvs(mean, std_dev, size=num_values),
+                         min_val, max_val).astype(int)
+        values.sort()  # Sort to simulate a perfect normal distribution
+    elif distribution == 'perf-inverse':
+        values = np.linspace(max_val, min_val, num_values).astype(int)
+    else:
+        raise ValueError("Unknown perfect distribution type")
+
+    return values.tolist()
+
+
+def genetic_algorithm_distribution(constraints, num_values, ngen, verbose=False):
+    min_val = constraints['min']
+    max_val = constraints['max']
+    distribution = constraints['distr']
+
+    def fitness_uniform(individual):
+        return -np.sum(np.abs(np.histogram(individual, bins=30, range=(min_val, max_val))[0] - num_values/30)),
+
+    def fitness_normal(individual):
+        target_distribution = np.clip(norm.rvs((min_val + max_val) / 2, (max_val - min_val) / 6, size=num_values),
+                                      min_val, max_val).astype(int)
+        return -np.sum(np.abs(np.histogram(individual, bins=30, range=(min_val, max_val))[0] - np.histogram(target_distribution, bins=30, range=(min_val, max_val))[0])),
+
+    def fitness_inverse(individual):
+        return -np.sum(np.abs(np.histogram(sorted(individual, reverse=True), bins=30, range=(min_val, max_val))[0] - num_values/30)),
+
+    # Define the fitness function
+    if distribution == 'uniform':
+        fitness_function = fitness_uniform
+    elif distribution == 'normal':
+        fitness_function = fitness_normal
+    elif distribution == 'inverse':
+        fitness_function = fitness_inverse
+    else:
+        raise ValueError("Unknown genetic distribution type")
+
+    # Create the individual and population structures
+    creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+    creator.create("Individual", list, fitness=creator.FitnessMax)
+
+    toolbox = base.Toolbox()
+    toolbox.register("attr_int", random.randint, min_val, max_val)
+    toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_int, n=num_values)
+    toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+
+    toolbox.register("mate", tools.cxTwoPoint)
+    toolbox.register("mutate", tools.mutUniformInt, low=min_val, up=max_val, indpb=0.2)
+    toolbox.register("select", tools.selTournament, tournsize=3)
+    toolbox.register("evaluate", fitness_function)
+
+    population = toolbox.population(n=100)
+
+    # Run the genetic algorithm
+    algorithms.eaSimple(population, toolbox, cxpb=0.5, mutpb=0.2, ngen=ngen, verbose=verbose)
+
+    # Return the best individual found
+    top_individual = tools.selBest(population, k=1)[0]
+    return list(top_individual)
+
+
+def generate_values(constraints, num_values, ngen, verbose=False):
     """
     Generate a list of values based on constraints including min, max, and distribution.
 
@@ -34,29 +106,19 @@ def generate_values(constraints, num_values):
     Returns:
         list: A list of generated values that satisfy the constraints.
     """
-    min_val = constraints['min']
-    max_val = constraints['max']
     distribution = constraints['distr']
 
-    if distribution == 'uniform':
-        values = np.random.uniform(min_val, max_val, num_values).astype(int)
-    elif distribution == 'normal':
-        mean = (min_val + max_val) / 2
-        # Approximation to keep most values within bounds
-        std_dev = (max_val - min_val) / 6
-        values = np.clip(norm.rvs(mean, std_dev, size=num_values),
-                         min_val, max_val).astype(int)
-    elif distribution == 'inverse':
-        values = max_val - \
-            np.random.uniform(0, 1, num_values) * (max_val - min_val)
-        values = np.sort(values).astype(int)  # Inverse relationship
+    if distribution in ['perf-uniform', 'perf-normal', 'perf-inverse']:
+        values = generate_perfect_distribution(constraints, num_values)
+    elif distribution in ['uniform', 'normal', 'inverse']:
+        values = genetic_algorithm_distribution(constraints, num_values, ngen, verbose)
     else:
         raise ValueError("Unknown distribution type")
 
-    return values.tolist()
+    return values
 
 
-def fill_test_suite(test_suite, constraints, plot=False):
+def fill_test_suite(test_suite, constraints, ngen, verbose, plot=False):
     """
     Fill the test suite with values generated based on the constraints.
 
@@ -74,7 +136,7 @@ def fill_test_suite(test_suite, constraints, plot=False):
     generated_values = {}
     for attribute, attr_constraints in constraints.items():
         generated_values[attribute] = generate_values(
-            attr_constraints, num_values)
+            attr_constraints, num_values, ngen, verbose)
 
     if plot:
         for attribute, values in generated_values.items():
@@ -104,11 +166,11 @@ if __name__ == "__main__":
 
     # Example constraints for age and budget
     CONSTRAINTS = {
-        "<age>": {"min": 18, "max": 99, "distr": "normal"},
+        "<age>": {"min": 18, "max": 99, "distr": "perf-normal"},
         "<budget>": {"min": 1000, "max": 20000, "distr": "uniform"}
     }
 
-    filled_test_suite = fill_test_suite(test_suite, CONSTRAINTS, plot=True)
+    filled_test_suite = fill_test_suite(test_suite, CONSTRAINTS, ngen=500, verbose=True, plot=True)
 
     # Print the filled test suite
     for case in filled_test_suite:
