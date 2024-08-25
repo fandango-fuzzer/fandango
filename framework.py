@@ -20,12 +20,28 @@ if __name__ == '__main__':
 
     # Define the constraints for certain fields
     CONSTRAINTS = {
-        "<age>": {"min": 18, "max": 99, "distr": "uniform", "parity": "odd"},
-        "<budget>": {"min": 1000, "max": 20000, "distr": "perf-uniform"}
+        "<age>": {
+            "min": 18,
+            "max": 99,
+            "distr": "normal",
+            "sum_constraint": 350,  # Total sum constraint
+            "min_diff": 5,  # Minimum difference between consecutive values
+            "max_diff": 50,  # Maximum difference between min and max
+        },
+        "<budget>": {
+            "min": 1000,
+            "max": 20000,
+            "distr": "uniform",
+            "sum_constraint": 80000,  # Total sum constraint
+            "min_diff": 500,  # Minimum difference between consecutive values
+            "max_diff": 15000,  # Maximum difference between min and max
+        }
     }
 
     # Generate scaffolding
     scaffolding = generate_scaffolding(JSON_GRAMMAR, CONSTRAINTS, 200)
 
     # Optimize the scaffolding
-    optimized_scaffolding = fill_test_suite(scaffolding, CONSTRAINTS, ngen=100, verbose=False, plot=False)
+    optimized_scaffolding = fill_test_suite(
+        scaffolding, CONSTRAINTS, ngen=100, verbose=False, plot=True)
+    print(optimized_scaffolding)

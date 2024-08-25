@@ -1,20 +1,11 @@
-import random
-import numpy as np
-from scipy.stats import norm
-import matplotlib.pyplot as plt
 from deap import base, creator, tools, algorithms
+import matplotlib.pyplot as plt
+from scipy.stats import norm
+import numpy as np
+import random
 
 
 def plot_histogram(data, title, xlabel, ylabel):
-    """
-    Plots a histogram of the data.
-
-    Args:
-        data (list): The data to plot.
-        title (str): The title of the histogram.
-        xlabel (str): The label for the x-axis.
-        ylabel (str): The label for the y-axis.
-    """
     plt.figure(figsize=(10, 6))
     plt.hist(data, bins=30, alpha=0.7, color='blue', edgecolor='black')
     plt.title(title)
@@ -24,31 +15,15 @@ def plot_histogram(data, title, xlabel, ylabel):
     plt.show()
 
 
-def generate_perfect_distribution(constraints, num_values):
-    min_val = constraints['min']
-    max_val = constraints['max']
-    distribution = constraints['distr']
-
-    if distribution == 'perf-uniform':
-        values = np.linspace(min_val, max_val, num_values).astype(int)
-    elif distribution == 'perf-normal':
-        mean = (min_val + max_val) / 2
-        std_dev = (max_val - min_val) / 6
-        values = np.clip(norm.rvs(mean, std_dev, size=num_values),
-                         min_val, max_val).astype(int)
-        values.sort()  # Sort to simulate a perfect normal distribution
-    elif distribution == 'perf-inverse':
-        values = np.linspace(max_val, min_val, num_values).astype(int)
-    else:
-        raise ValueError("Unknown perfect distribution type")
-
-    return values.tolist()
-
 def genetic_algorithm_distribution(constraints, num_values, ngen, verbose=False):
     min_val = constraints['min']
     max_val = constraints['max']
     distribution = constraints['distr']
-    parity = constraints.get('parity', None)  # Get the parity constraint
+    parity = constraints.get('parity', None)
+    sum_constraint = constraints.get('sum_constraint', None)
+    min_diff = constraints.get('min_diff', None)
+    max_diff = constraints.get('max_diff', None)
+    sub_ranges = constraints.get('sub_ranges', None)
 
     def fitness_uniform(individual):
         return -np.sum(np.abs(np.histogram(individual, bins=30, range=(min_val, max_val))[0] - num_values/30)),
@@ -89,19 +64,70 @@ def genetic_algorithm_distribution(constraints, num_values, ngen, verbose=False)
 
     # Feasibility function
     def feasible(individual):
+        # Parity constraint
         if parity == 'even':
-            return all(x % 2 == 0 for x in individual)
+            if not all(x % 2 == 0 for x in individual):
+                return False
         elif parity == 'odd':
-            return all(x % 2 == 1 for x in individual)
-        return True  # If no parity constraint, it's always feasible
+            if not all(x % 2 == 1 for x in individual):
+                return False
+
+        # Sum constraint
+        if sum_constraint is not None:
+            if sum(individual) != sum_constraint:
+                return False
+
+        # Sub-range constraint
+        if sub_ranges is not None:
+            for (range_min, range_max, percentage) in sub_ranges:
+                count_in_range = sum(
+                    1 for x in individual if range_min <= x <= range_max)
+                if count_in_range < percentage * num_values:
+                    return False
+
+        # Minimum difference between consecutive values
+        if min_diff is not None:
+            if any(abs(individual[i] - individual[i+1]) < min_diff for i in range(len(individual) - 1)):
+                return False
+
+        # Maximum difference between min and max values
+        if max_diff is not None:
+            if max(individual) - min(individual) > max_diff:
+                return False
+
+        return True
 
     # Distance function
     def distance(individual):
+        penalty = 0
+
+        # Parity penalty
         if parity == 'even':
-            return sum(x % 2 != 0 for x in individual)
+            penalty += sum(x % 2 != 0 for x in individual)
         elif parity == 'odd':
-            return sum(x % 2 != 1 for x in individual)
-        return 0  # If no parity constraint, no distance
+            penalty += sum(x % 2 != 1 for x in individual)
+
+        # Sum constraint penalty
+        if sum_constraint is not None:
+            penalty += abs(sum(individual) - sum_constraint)
+
+        # Sub-range penalty
+        if sub_ranges is not None:
+            for (range_min, range_max, percentage) in sub_ranges:
+                count_in_range = sum(
+                    1 for x in individual if range_min <= x <= range_max)
+                penalty += max(0, percentage * num_values - count_in_range)
+
+        # Minimum difference penalty
+        if min_diff is not None:
+            penalty += sum(max(0, min_diff - abs(
+                individual[i] - individual[i+1])) for i in range(len(individual) - 1))
+
+        # Maximum difference penalty
+        if max_diff is not None:
+            penalty += max(0, max(individual) - min(individual) - max_diff)
+
+        return penalty
 
     # Decorate the evaluation function with the DeltaPenalty
     toolbox.decorate("evaluate", tools.DeltaPenalty(feasible, 10.0, distance))
@@ -118,21 +144,9 @@ def genetic_algorithm_distribution(constraints, num_values, ngen, verbose=False)
 
 
 def generate_values(constraints, num_values, ngen, verbose=False):
-    """
-    Generate a list of values based on constraints including min, max, and distribution.
-
-    Args:
-        constraints (dict): The constraints for the attribute.
-        num_values (int): The number of values to generate.
-
-    Returns:
-        list: A list of generated values that satisfy the constraints.
-    """
     distribution = constraints['distr']
 
-    if distribution in ['perf-uniform', 'perf-normal', 'perf-inverse']:
-        values = generate_perfect_distribution(constraints, num_values)
-    elif distribution in ['uniform', 'normal', 'inverse']:
+    if distribution in ['uniform', 'normal', 'inverse']:
         values = genetic_algorithm_distribution(
             constraints, num_values, ngen, verbose)
     else:
@@ -142,20 +156,8 @@ def generate_values(constraints, num_values, ngen, verbose=False):
 
 
 def fill_test_suite(test_suite, constraints, ngen, verbose, plot=False):
-    """
-    Fill the test suite with values generated based on the constraints.
-
-    Args:
-        test_suite (list): List of test cases with placeholders.
-        constraints (dict): The constraints for each attribute.
-
-    Returns:
-        list: The test suite with placeholders replaced by generated values.
-    """
-    # Determine how many values we need to generate for each attribute
     num_values = len(test_suite)
 
-    # Generate values for each attribute based on constraints
     generated_values = {}
     for attribute, attr_constraints in constraints.items():
         generated_values[attribute] = generate_values(
@@ -166,7 +168,6 @@ def fill_test_suite(test_suite, constraints, ngen, verbose, plot=False):
             plot_histogram(values, f"Distribution of {attribute}",
                            attribute, "Frequency")
 
-    # Fill the test suite with the generated values
     filled_suite = []
     for i, test_case in enumerate(test_suite):
         filled_case = test_case
@@ -184,13 +185,30 @@ if __name__ == "__main__":
         '{"Name": "Jill", "Gender": "F", "Age": >age<, "Budget": >budget<}',
         '{"Name": "Jack", "Gender": "M", "Age": >age<, "Budget": >budget<}',
         '{"Name": "John", "Gender": "F", "Age": >age<, "Budget": >budget<}',
-        # Add more test cases as needed
     ]
 
     # Example constraints for age and budget
     CONSTRAINTS = {
-        "<age>": {"min": 18, "max": 99, "distr": "perf-normal"},
-        "<budget>": {"min": 1000, "max": 20000, "distr": "uniform"}
+        "<age>": {
+            "min": 18,
+            "max": 99,
+            "distr": "perf-normal",
+            "sub_ranges": [(18, 40, 0.3), (50, 99, 0.7)],
+            "sum_constraint": 350,  # Total sum constraint
+            "min_diff": 5,  # Minimum difference between consecutive values
+            "max_diff": 50,  # Maximum difference between min and max
+        },
+        "<budget>": {
+            "min": 1000,
+            "max": 20000,
+            "distr": "uniform",
+            "sub_ranges": [(1000, 5000, 0.2), (10000, 20000, 0.8)],
+            "sum_constraint": 80000,
+
+            # Total sum constraint
+            "min_diff": 500,  # Minimum difference between consecutive values
+            "max_diff": 15000,  # Maximum difference between min and max
+        }
     }
 
     filled_test_suite = fill_test_suite(
