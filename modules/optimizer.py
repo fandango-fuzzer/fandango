@@ -44,11 +44,11 @@ def generate_perfect_distribution(constraints, num_values):
 
     return values.tolist()
 
-
 def genetic_algorithm_distribution(constraints, num_values, ngen, verbose=False):
     min_val = constraints['min']
     max_val = constraints['max']
     distribution = constraints['distr']
+    parity = constraints.get('parity', None)  # Get the parity constraint
 
     def fitness_uniform(individual):
         return -np.sum(np.abs(np.histogram(individual, bins=30, range=(min_val, max_val))[0] - num_values/30)),
@@ -77,18 +77,40 @@ def genetic_algorithm_distribution(constraints, num_values, ngen, verbose=False)
 
     toolbox = base.Toolbox()
     toolbox.register("attr_int", random.randint, min_val, max_val)
-    toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_int, n=num_values)
+    toolbox.register("individual", tools.initRepeat,
+                     creator.Individual, toolbox.attr_int, n=num_values)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
     toolbox.register("mate", tools.cxTwoPoint)
-    toolbox.register("mutate", tools.mutUniformInt, low=min_val, up=max_val, indpb=0.2)
+    toolbox.register("mutate", tools.mutUniformInt,
+                     low=min_val, up=max_val, indpb=0.2)
     toolbox.register("select", tools.selTournament, tournsize=3)
     toolbox.register("evaluate", fitness_function)
+
+    # Feasibility function
+    def feasible(individual):
+        if parity == 'even':
+            return all(x % 2 == 0 for x in individual)
+        elif parity == 'odd':
+            return all(x % 2 == 1 for x in individual)
+        return True  # If no parity constraint, it's always feasible
+
+    # Distance function
+    def distance(individual):
+        if parity == 'even':
+            return sum(x % 2 != 0 for x in individual)
+        elif parity == 'odd':
+            return sum(x % 2 != 1 for x in individual)
+        return 0  # If no parity constraint, no distance
+
+    # Decorate the evaluation function with the DeltaPenalty
+    toolbox.decorate("evaluate", tools.DeltaPenalty(feasible, 10.0, distance))
 
     population = toolbox.population(n=100)
 
     # Run the genetic algorithm
-    algorithms.eaSimple(population, toolbox, cxpb=0.5, mutpb=0.2, ngen=ngen, verbose=verbose)
+    algorithms.eaSimple(population, toolbox, cxpb=0.5,
+                        mutpb=0.2, ngen=ngen, verbose=verbose)
 
     # Return the best individual found
     top_individual = tools.selBest(population, k=1)[0]
@@ -111,7 +133,8 @@ def generate_values(constraints, num_values, ngen, verbose=False):
     if distribution in ['perf-uniform', 'perf-normal', 'perf-inverse']:
         values = generate_perfect_distribution(constraints, num_values)
     elif distribution in ['uniform', 'normal', 'inverse']:
-        values = genetic_algorithm_distribution(constraints, num_values, ngen, verbose)
+        values = genetic_algorithm_distribution(
+            constraints, num_values, ngen, verbose)
     else:
         raise ValueError("Unknown distribution type")
 
@@ -170,7 +193,8 @@ if __name__ == "__main__":
         "<budget>": {"min": 1000, "max": 20000, "distr": "uniform"}
     }
 
-    filled_test_suite = fill_test_suite(test_suite, CONSTRAINTS, ngen=500, verbose=True, plot=True)
+    filled_test_suite = fill_test_suite(
+        test_suite, CONSTRAINTS, ngen=500, verbose=True, plot=True)
 
     # Print the filled test suite
     for case in filled_test_suite:
