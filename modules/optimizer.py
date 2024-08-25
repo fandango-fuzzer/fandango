@@ -205,7 +205,7 @@ if __name__ == "__main__":
         "<age>": {
             "min": 18,
             "max": 99,
-            "distr": "perf-normal",
+            "distr": "normal",
             # "sub_ranges": [(18, 40, 0.3), (50, 99, 0.7)],
             # "sum_constraint": 350,  # Total sum constraint
             # "min_diff": 5,  # Minimum difference between consecutive values
