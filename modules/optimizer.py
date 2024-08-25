@@ -24,6 +24,7 @@ def genetic_algorithm_distribution(constraints, num_values, ngen, verbose=False)
     min_diff = constraints.get('min_diff', None)
     max_diff = constraints.get('max_diff', None)
     sub_ranges = constraints.get('sub_ranges', None)
+    fixed_values = constraints.get('fixed_values', None)  # New: Fixed values constraint
 
     def fitness_uniform(individual):
         return -np.sum(np.abs(np.histogram(individual, bins=30, range=(min_val, max_val))[0] - num_values/30)),
@@ -95,6 +96,12 @@ def genetic_algorithm_distribution(constraints, num_values, ngen, verbose=False)
             if max(individual) - min(individual) > max_diff:
                 return False
 
+        # Fixed values constraint
+        if fixed_values is not None:
+            for position, value in fixed_values.items():
+                if individual[position] != value:
+                    return False
+
         return True
 
     # Distance function
@@ -126,6 +133,12 @@ def genetic_algorithm_distribution(constraints, num_values, ngen, verbose=False)
         # Maximum difference penalty
         if max_diff is not None:
             penalty += max(0, max(individual) - min(individual) - max_diff)
+
+        # Fixed values penalty
+        if fixed_values is not None:
+            for position, value in fixed_values.items():
+                if individual[position] != value:
+                    penalty += abs(individual[position] - value)
 
         return penalty
 
@@ -197,6 +210,7 @@ if __name__ == "__main__":
             "sum_constraint": 350,  # Total sum constraint
             "min_diff": 5,  # Minimum difference between consecutive values
             "max_diff": 50,  # Maximum difference between min and max
+            "fixed_values": {0: 25, 4: 75},  # Fixed values at positions
         },
         "<budget>": {
             "min": 1000,
@@ -204,10 +218,9 @@ if __name__ == "__main__":
             "distr": "uniform",
             "sub_ranges": [(1000, 5000, 0.2), (10000, 20000, 0.8)],
             "sum_constraint": 80000,
-
-            # Total sum constraint
             "min_diff": 500,  # Minimum difference between consecutive values
             "max_diff": 15000,  # Maximum difference between min and max
+            "fixed_values": {2: 15000, 5: 5000},  # Fixed values at positions
         }
     }
 
@@ -217,3 +230,4 @@ if __name__ == "__main__":
     # Print the filled test suite
     for case in filled_test_suite:
         print(case)
+

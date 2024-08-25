@@ -24,17 +24,21 @@ if __name__ == '__main__':
             "min": 18,
             "max": 99,
             "distr": "normal",
+            "sub_ranges": [(18, 40, 0.3), (50, 99, 0.7)],
             "sum_constraint": 350,  # Total sum constraint
             "min_diff": 5,  # Minimum difference between consecutive values
             "max_diff": 50,  # Maximum difference between min and max
+            "fixed_values": {0: 25, 4: 75},  # Fixed values at positions
         },
         "<budget>": {
             "min": 1000,
             "max": 20000,
             "distr": "uniform",
-            "sum_constraint": 80000,  # Total sum constraint
+            "sub_ranges": [(1000, 5000, 0.2), (10000, 20000, 0.8)],
+            "sum_constraint": 80000,
             "min_diff": 500,  # Minimum difference between consecutive values
             "max_diff": 15000,  # Maximum difference between min and max
+            "fixed_values": {2: 15000, 5: 5000},  # Fixed values at positions
         }
     }
 
@@ -43,5 +47,5 @@ if __name__ == '__main__':
 
     # Optimize the scaffolding
     optimized_scaffolding = fill_test_suite(
-        scaffolding, CONSTRAINTS, ngen=100, verbose=False, plot=True)
+        scaffolding, CONSTRAINTS, ngen=1000, verbose=False, plot=True)
     print(optimized_scaffolding)
