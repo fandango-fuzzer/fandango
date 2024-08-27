@@ -43,7 +43,7 @@ def generate_scaffolding(grammar: dict, constraints: dict, num_inputs: int) -> l
     return [fuzzer.fuzz() for _ in range(num_inputs)]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Define the JSON grammar
     JSON_GRAMMAR = {
         "<start>": ["{<json>}"],
@@ -67,8 +67,7 @@ if __name__ == '__main__':
 
     # Generate inputs based on the JSON grammar and constraints
     num_inputs = 200
-    generated_inputs = generate_scaffolding(
-        JSON_GRAMMAR, CONSTRAINTS, num_inputs)
+    generated_inputs = generate_scaffolding(JSON_GRAMMAR, CONSTRAINTS, num_inputs)
 
     # Output the generated inputs
     for input_data in generated_inputs:

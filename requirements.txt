@@ -1,0 +1,5 @@
+matplotlib>=3.9.2
+numpy>=2.1.0
+deap>=1.4.1
+scipy>=1.14.1
+fuzzingbook>=1.2.1

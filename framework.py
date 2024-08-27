@@ -2,7 +2,8 @@ from modules.extractor import extract_grammar_and_constraints
 from modules.optimizer import fill_test_suite
 from modules.scaffolding import generate_scaffolding
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # Define the JSON grammar
     JSON_GRAMMAR = {
         "<start>": ["{<json>}"],
@@ -39,7 +40,7 @@ if __name__ == '__main__':
             # "min_diff": 500,  # Minimum difference between consecutive values
             # "max_diff": 15000,  # Maximum difference between min and max
             # "fixed_values": {2: 15000, 5: 5000},  # Fixed values at positions
-        }
+        },
     }
 
     # Generate scaffolding
@@ -47,5 +48,6 @@ if __name__ == '__main__':
 
     # Optimize the scaffolding
     optimized_scaffolding = fill_test_suite(
-        scaffolding, CONSTRAINTS, ngen=1000, verbose=False, plot=True)
+        scaffolding, CONSTRAINTS, ngen=1000, verbose=False, plot=True
+    )
     print(optimized_scaffolding)
