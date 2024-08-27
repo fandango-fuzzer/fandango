@@ -1,6 +1,5 @@
-from modules.extractor import extract_grammar_and_constraints
-from modules.optimizer import fill_test_suite
-from modules.scaffolding import generate_scaffolding
+from fandango.evolution.optimizer import fill_test_suite
+from fandango.scaffolding.scaffolding import generate_scaffolding
 
 
 if __name__ == "__main__":
