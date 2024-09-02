@@ -10,14 +10,14 @@ fandango: program EOF?;
 program: NEWLINE* (statement NEWLINE*)*;
 
 statement
-    : rule
+    : production
     | constraint
     | python
     ;
 
 // grammar part
 
-rule: rule_name COLON alternatives (COLON NAME)? SEMI_COLON;
+production: rule_name COLON alternatives (COLON NAME)? SEMI_COLON;
 
 alternatives: alternative (OR_OP alternative)*;
 

@@ -25,6 +25,7 @@ classifiers = [
     "Topic :: Software Development :: Testing"
 ]
 dependencies = [
+    "antlr4-python3-runtime>=4.13",
     "matplotlib>=3.9.2",
     "numpy>=2.1.0",
     "deap>=1.4.1",
