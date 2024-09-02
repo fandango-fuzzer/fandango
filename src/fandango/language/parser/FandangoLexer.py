@@ -2,11 +2,11 @@
 from antlr4 import *
 from io import StringIO
 import sys
+
 if sys.version_info[1] > 5:
     from typing import TextIO
 else:
     from typing.io import TextIO
-
 
 
 def serializedATN():
@@ -17,8 +17,8 @@ def serializedATN():
         buf.write("\4\16\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22\4\23")
         buf.write("\t\23\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30")
         buf.write("\4\31\t\31\4\32\t\32\4\33\t\33\4\34\t\34\4\35\t\35\4\36")
-        buf.write("\t\36\4\37\t\37\4 \t \4!\t!\4\"\t\"\4#\t#\4$\t$\4%\t%")
-        buf.write("\4&\t&\4\'\t\'\4(\t(\4)\t)\4*\t*\4+\t+\4,\t,\4-\t-\4.")
+        buf.write('\t\36\4\37\t\37\4 \t \4!\t!\4"\t"\4#\t#\4$\t$\4%\t%')
+        buf.write("\4&\t&\4'\t'\4(\t(\4)\t)\4*\t*\4+\t+\4,\t,\4-\t-\4.")
         buf.write("\t.\4/\t/\4\60\t\60\4\61\t\61\4\62\t\62\4\63\t\63\4\64")
         buf.write("\t\64\4\65\t\65\4\66\t\66\4\67\t\67\48\t8\49\t9\4:\t:")
         buf.write("\4;\t;\4<\t<\4=\t=\4>\t>\4?\t?\4@\t@\4A\tA\4B\tB\4C\t")
@@ -45,9 +45,9 @@ def serializedATN():
         buf.write("\3\31\3\31\3\31\3\31\3\31\3\32\3\32\3\32\3\33\3\33\3\33")
         buf.write("\3\34\3\34\3\34\3\34\3\34\3\34\3\34\3\35\3\35\3\35\3\35")
         buf.write("\3\35\3\35\3\36\3\36\3\36\3\36\3\36\3\37\3\37\3\37\3\37")
-        buf.write("\3\37\3\37\3\37\3\37\3\37\3 \3 \3 \3 \3!\3!\3!\3\"\3\"")
-        buf.write("\3\"\3\"\3\"\3#\3#\3#\3#\3#\3#\3$\3$\3$\3$\3$\3$\3$\3")
-        buf.write("%\3%\3%\3%\3%\3&\3&\3&\3&\3\'\3\'\3(\3(\3(\3(\3(\3(\3")
+        buf.write('\3\37\3\37\3\37\3\37\3\37\3 \3 \3 \3 \3!\3!\3!\3"\3"')
+        buf.write('\3"\3"\3"\3#\3#\3#\3#\3#\3#\3$\3$\3$\3$\3$\3$\3$\3')
+        buf.write("%\3%\3%\3%\3%\3&\3&\3&\3&\3'\3'\3(\3(\3(\3(\3(\3(\3")
         buf.write(")\3)\3)\3)\3)\3*\3*\3*\3*\3*\3*\3+\3+\3+\3+\3+\3+\3+\3")
         buf.write(",\3,\3,\3,\3,\3,\3,\3-\3-\7-\u01fa\n-\f-\16-\u01fd\13")
         buf.write("-\3.\3.\3.\3.\3.\5.\u0204\n.\3.\3.\5.\u0208\n.\3/\3/\3")
@@ -89,8 +89,8 @@ def serializedATN():
         buf.write("\u0087\3\u0087\3\u0087\5\u0087\u03a5\n\u0087\6\u02f4\u0301")
         buf.write("\u035d\u036a\2\u0088\3\3\5\4\7\5\t\6\13\7\r\b\17\t\21")
         buf.write("\n\23\13\25\f\27\r\31\16\33\17\35\20\37\21!\22#\23%\24")
-        buf.write("\'\25)\26+\27-\30/\31\61\32\63\33\65\34\67\359\36;\37")
-        buf.write("= ?!A\"C#E$G%I&K\'M(O)Q*S+U,W-Y.[/]\60_\61a\62c\63e\64")
+        buf.write("'\25)\26+\27-\30/\31\61\32\63\33\65\34\67\359\36;\37")
+        buf.write("= ?!A\"C#E$G%I&K'M(O)Q*S+U,W-Y.[/]\60_\61a\62c\63e\64")
         buf.write("g\65i\66k\67m8o9q:s;u<w=y>{?}@\177A\u0081B\u0083C\u0085")
         buf.write("D\u0087E\u0089F\u008bG\u008dH\u008fI\u0091J\u0093K\u0095")
         buf.write("L\u0097M\u0099N\u009bO\u009dP\u009fQ\u00a1R\u00a3S\u00a5")
@@ -105,8 +105,8 @@ def serializedATN():
         buf.write("QQqq\4\2ZZzz\4\2LLll\6\2\f\f\16\17))^^\6\2\f\f\16\17$")
         buf.write("$^^\3\2^^\3\2\63;\3\2\62;\3\2\629\5\2\62;CHch\3\2\62\63")
         buf.write("\4\2GGgg\4\2--//\7\2\2\13\r\16\20(*]_\u0081\7\2\2\13\r")
-        buf.write("\16\20#%]_\u0081\4\2\2]_\u0081\3\2\2\u0081\4\2\13\13\"")
-        buf.write("\"\4\2\f\f\16\17\6\2\u1887\u1888\u211a\u211a\u2130\u2130")
+        buf.write('\16\20#%]_\u0081\4\2\2]_\u0081\3\2\2\u0081\4\2\13\13"')
+        buf.write('"\4\2\f\f\16\17\6\2\u1887\u1888\u211a\u211a\u2130\u2130')
         buf.write("\u309d\u309e\6\2\u00b9\u00b9\u0389\u0389\u136b\u1373\u19dc")
         buf.write("\u19dc\4\u024f\2C\2\\\2a\2a\2c\2|\2\u00ac\2\u00ac\2\u00b7")
         buf.write("\2\u00b7\2\u00bc\2\u00bc\2\u00c2\2\u00d8\2\u00da\2\u00f8")
@@ -371,7 +371,7 @@ def serializedATN():
         buf.write("\2\2\2\r\3\2\2\2\2\17\3\2\2\2\2\21\3\2\2\2\2\23\3\2\2")
         buf.write("\2\2\25\3\2\2\2\2\27\3\2\2\2\2\31\3\2\2\2\2\33\3\2\2\2")
         buf.write("\2\35\3\2\2\2\2\37\3\2\2\2\2!\3\2\2\2\2#\3\2\2\2\2%\3")
-        buf.write("\2\2\2\2\'\3\2\2\2\2)\3\2\2\2\2+\3\2\2\2\2-\3\2\2\2\2")
+        buf.write("\2\2\2\2'\3\2\2\2\2)\3\2\2\2\2+\3\2\2\2\2-\3\2\2\2\2")
         buf.write("/\3\2\2\2\2\61\3\2\2\2\2\63\3\2\2\2\2\65\3\2\2\2\2\67")
         buf.write("\3\2\2\2\29\3\2\2\2\2;\3\2\2\2\2=\3\2\2\2\2?\3\2\2\2\2")
         buf.write("A\3\2\2\2\2C\3\2\2\2\2E\3\2\2\2\2G\3\2\2\2\2I\3\2\2\2")
@@ -398,7 +398,7 @@ def serializedATN():
         buf.write("\23\u0138\3\2\2\2\25\u013e\3\2\2\2\27\u0143\3\2\2\2\31")
         buf.write("\u0149\3\2\2\2\33\u0152\3\2\2\2\35\u0156\3\2\2\2\37\u015a")
         buf.write("\3\2\2\2!\u015f\3\2\2\2#\u0164\3\2\2\2%\u016b\3\2\2\2")
-        buf.write("\'\u0171\3\2\2\2)\u0179\3\2\2\2+\u017d\3\2\2\2-\u0182")
+        buf.write("'\u0171\3\2\2\2)\u0179\3\2\2\2+\u017d\3\2\2\2-\u0182")
         buf.write("\3\2\2\2/\u0189\3\2\2\2\61\u018c\3\2\2\2\63\u0193\3\2")
         buf.write("\2\2\65\u0196\3\2\2\2\67\u0199\3\2\2\29\u01a0\3\2\2\2")
         buf.write(";\u01a6\3\2\2\2=\u01ab\3\2\2\2?\u01b4\3\2\2\2A\u01b8\3")
@@ -467,7 +467,7 @@ def serializedATN():
         buf.write("\u015b\7g\2\2\u015b\u015c\7n\2\2\u015c\u015d\7k\2\2\u015d")
         buf.write("\u015e\7h\2\2\u015e \3\2\2\2\u015f\u0160\7g\2\2\u0160")
         buf.write("\u0161\7n\2\2\u0161\u0162\7u\2\2\u0162\u0163\7g\2\2\u0163")
-        buf.write("\"\3\2\2\2\u0164\u0165\7g\2\2\u0165\u0166\7z\2\2\u0166")
+        buf.write('"\3\2\2\2\u0164\u0165\7g\2\2\u0165\u0166\7z\2\2\u0166')
         buf.write("\u0167\7e\2\2\u0167\u0168\7g\2\2\u0168\u0169\7r\2\2\u0169")
         buf.write("\u016a\7v\2\2\u016a$\3\2\2\2\u016b\u016c\7H\2\2\u016c")
         buf.write("\u016d\7c\2\2\u016d\u016e\7n\2\2\u016e\u016f\7u\2\2\u016f")
@@ -566,7 +566,7 @@ def serializedATN():
         buf.write("\u026a\7@\2\2\u026a\u026b\7@\2\2\u026b\u0090\3\2\2\2\u026c")
         buf.write("\u026d\7-\2\2\u026d\u0092\3\2\2\2\u026e\u026f\7/\2\2\u026f")
         buf.write("\u0094\3\2\2\2\u0270\u0271\7\61\2\2\u0271\u0096\3\2\2")
-        buf.write("\2\u0272\u0273\7\'\2\2\u0273\u0098\3\2\2\2\u0274\u0275")
+        buf.write("\2\u0272\u0273\7'\2\2\u0273\u0098\3\2\2\2\u0274\u0275")
         buf.write("\7\61\2\2\u0275\u0276\7\61\2\2\u0276\u009a\3\2\2\2\u0277")
         buf.write("\u0278\7\u0080\2\2\u0278\u009c\3\2\2\2\u0279\u027a\7}")
         buf.write("\2\2\u027a\u009e\3\2\2\2\u027b\u027c\7\177\2\2\u027c\u00a0")
@@ -583,7 +583,7 @@ def serializedATN():
         buf.write("\u00b6\3\2\2\2\u029b\u029c\7,\2\2\u029c\u029d\7?\2\2\u029d")
         buf.write("\u00b8\3\2\2\2\u029e\u029f\7B\2\2\u029f\u02a0\7?\2\2\u02a0")
         buf.write("\u00ba\3\2\2\2\u02a1\u02a2\7\61\2\2\u02a2\u02a3\7?\2\2")
-        buf.write("\u02a3\u00bc\3\2\2\2\u02a4\u02a5\7\'\2\2\u02a5\u02a6\7")
+        buf.write("\u02a3\u00bc\3\2\2\2\u02a4\u02a5\7'\2\2\u02a5\u02a6\7")
         buf.write("?\2\2\u02a6\u00be\3\2\2\2\u02a7\u02a8\7(\2\2\u02a8\u02a9")
         buf.write("\7?\2\2\u02a9\u00c0\3\2\2\2\u02aa\u02ab\7~\2\2\u02ab\u02ac")
         buf.write("\7?\2\2\u02ac\u00c2\3\2\2\2\u02ad\u02ae\7`\2\2\u02ae\u02af")
@@ -704,10 +704,9 @@ def serializedATN():
 
 
 class FandangoLexer(Lexer):
-
     atn = ATNDeserializer().deserialize(serializedATN())
 
-    decisionsToDFA = [ DFA(ds, i) for i, ds in enumerate(atn.decisionToState) ]
+    decisionsToDFA = [DFA(ds, i) for i, ds in enumerate(atn.decisionToState)]
 
     STRING = 1
     NUMBER = 2
@@ -815,81 +814,358 @@ class FandangoLexer(Lexer):
     SKIP_ = 104
     NEWLINE = 105
 
-    channelNames = [ u"DEFAULT_TOKEN_CHANNEL", u"HIDDEN" ]
+    channelNames = ["DEFAULT_TOKEN_CHANNEL", "HIDDEN"]
 
-    modeNames = [ "DEFAULT_MODE" ]
+    modeNames = ["DEFAULT_MODE"]
 
-    literalNames = [ "<INVALID>",
-            "'and'", "'as'", "'assert'", "'async'", "'await'", "'break'", 
-            "'case'", "'class'", "'continue'", "'def'", "'del'", "'elif'", 
-            "'else'", "'except'", "'False'", "'finally'", "'for'", "'from'", 
-            "'global'", "'if'", "'import'", "'in'", "'is'", "'lambda'", 
-            "'match'", "'None'", "'nonlocal'", "'not'", "'or'", "'pass'", 
-            "'raise'", "'return'", "'True'", "'try'", "'_'", "'while'", 
-            "'with'", "'yield'", "'forall'", "'exists'", "'?'", "'\\'", 
-            "'.'", "'...'", "'*'", "'('", "')'", "','", "':'", "';'", "'**'", 
-            "'='", "'['", "']'", "'|'", "'^'", "'&'", "'<<'", "'>>'", "'+'", 
-            "'-'", "'/'", "'%'", "'//'", "'~'", "'{'", "'}'", "'<'", "'>'", 
-            "'=='", "'>='", "'<='", "'<>'", "'!='", "'@'", "'->'", "'+='", 
-            "'-='", "'*='", "'@='", "'/='", "'%='", "'&='", "'|='", "'^='", 
-            "'<<='", "'>>='", "'**='", "'//='", "'<py>'", "'</py>'" ]
+    literalNames = [
+        "<INVALID>",
+        "'and'",
+        "'as'",
+        "'assert'",
+        "'async'",
+        "'await'",
+        "'break'",
+        "'case'",
+        "'class'",
+        "'continue'",
+        "'def'",
+        "'del'",
+        "'elif'",
+        "'else'",
+        "'except'",
+        "'False'",
+        "'finally'",
+        "'for'",
+        "'from'",
+        "'global'",
+        "'if'",
+        "'import'",
+        "'in'",
+        "'is'",
+        "'lambda'",
+        "'match'",
+        "'None'",
+        "'nonlocal'",
+        "'not'",
+        "'or'",
+        "'pass'",
+        "'raise'",
+        "'return'",
+        "'True'",
+        "'try'",
+        "'_'",
+        "'while'",
+        "'with'",
+        "'yield'",
+        "'forall'",
+        "'exists'",
+        "'?'",
+        "'\\'",
+        "'.'",
+        "'...'",
+        "'*'",
+        "'('",
+        "')'",
+        "','",
+        "':'",
+        "';'",
+        "'**'",
+        "'='",
+        "'['",
+        "']'",
+        "'|'",
+        "'^'",
+        "'&'",
+        "'<<'",
+        "'>>'",
+        "'+'",
+        "'-'",
+        "'/'",
+        "'%'",
+        "'//'",
+        "'~'",
+        "'{'",
+        "'}'",
+        "'<'",
+        "'>'",
+        "'=='",
+        "'>='",
+        "'<='",
+        "'<>'",
+        "'!='",
+        "'@'",
+        "'->'",
+        "'+='",
+        "'-='",
+        "'*='",
+        "'@='",
+        "'/='",
+        "'%='",
+        "'&='",
+        "'|='",
+        "'^='",
+        "'<<='",
+        "'>>='",
+        "'**='",
+        "'//='",
+        "'<py>'",
+        "'</py>'",
+    ]
 
-    symbolicNames = [ "<INVALID>",
-            "STRING", "NUMBER", "INTEGER", "AND", "AS", "ASSERT", "ASYNC", 
-            "AWAIT", "BREAK", "CASE", "CLASS", "CONTINUE", "DEF", "DEL", 
-            "ELIF", "ELSE", "EXCEPT", "FALSE", "FINALLY", "FOR", "FROM", 
-            "GLOBAL", "IF", "IMPORT", "IN", "IS", "LAMBDA", "MATCH", "NONE", 
-            "NONLOCAL", "NOT", "OR", "PASS", "RAISE", "RETURN", "TRUE", 
-            "TRY", "UNDERSCORE", "WHILE", "WITH", "YIELD", "FORALL", "EXISTS", 
-            "NAME", "STRING_LITERAL", "BYTES_LITERAL", "DECIMAL_INTEGER", 
-            "OCT_INTEGER", "HEX_INTEGER", "BIN_INTEGER", "FLOAT_NUMBER", 
-            "IMAG_NUMBER", "QUESTION", "BACKSLASH", "DOT", "ELLIPSIS", "STAR", 
-            "OPEN_PAREN", "CLOSE_PAREN", "COMMA", "COLON", "SEMI_COLON", 
-            "POWER", "ASSIGN", "OPEN_BRACK", "CLOSE_BRACK", "OR_OP", "XOR", 
-            "AND_OP", "LEFT_SHIFT", "RIGHT_SHIFT", "ADD", "MINUS", "DIV", 
-            "MOD", "IDIV", "NOT_OP", "OPEN_BRACE", "CLOSE_BRACE", "LESS_THAN", 
-            "GREATER_THAN", "EQUALS", "GT_EQ", "LT_EQ", "NOT_EQ_1", "NOT_EQ_2", 
-            "AT", "ARROW", "ADD_ASSIGN", "SUB_ASSIGN", "MULT_ASSIGN", "AT_ASSIGN", 
-            "DIV_ASSIGN", "MOD_ASSIGN", "AND_ASSIGN", "OR_ASSIGN", "XOR_ASSIGN", 
-            "LEFT_SHIFT_ASSIGN", "RIGHT_SHIFT_ASSIGN", "POWER_ASSIGN", "IDIV_ASSIGN", 
-            "PYTHON_START", "PYTHON_END", "SKIP_", "NEWLINE" ]
+    symbolicNames = [
+        "<INVALID>",
+        "STRING",
+        "NUMBER",
+        "INTEGER",
+        "AND",
+        "AS",
+        "ASSERT",
+        "ASYNC",
+        "AWAIT",
+        "BREAK",
+        "CASE",
+        "CLASS",
+        "CONTINUE",
+        "DEF",
+        "DEL",
+        "ELIF",
+        "ELSE",
+        "EXCEPT",
+        "FALSE",
+        "FINALLY",
+        "FOR",
+        "FROM",
+        "GLOBAL",
+        "IF",
+        "IMPORT",
+        "IN",
+        "IS",
+        "LAMBDA",
+        "MATCH",
+        "NONE",
+        "NONLOCAL",
+        "NOT",
+        "OR",
+        "PASS",
+        "RAISE",
+        "RETURN",
+        "TRUE",
+        "TRY",
+        "UNDERSCORE",
+        "WHILE",
+        "WITH",
+        "YIELD",
+        "FORALL",
+        "EXISTS",
+        "NAME",
+        "STRING_LITERAL",
+        "BYTES_LITERAL",
+        "DECIMAL_INTEGER",
+        "OCT_INTEGER",
+        "HEX_INTEGER",
+        "BIN_INTEGER",
+        "FLOAT_NUMBER",
+        "IMAG_NUMBER",
+        "QUESTION",
+        "BACKSLASH",
+        "DOT",
+        "ELLIPSIS",
+        "STAR",
+        "OPEN_PAREN",
+        "CLOSE_PAREN",
+        "COMMA",
+        "COLON",
+        "SEMI_COLON",
+        "POWER",
+        "ASSIGN",
+        "OPEN_BRACK",
+        "CLOSE_BRACK",
+        "OR_OP",
+        "XOR",
+        "AND_OP",
+        "LEFT_SHIFT",
+        "RIGHT_SHIFT",
+        "ADD",
+        "MINUS",
+        "DIV",
+        "MOD",
+        "IDIV",
+        "NOT_OP",
+        "OPEN_BRACE",
+        "CLOSE_BRACE",
+        "LESS_THAN",
+        "GREATER_THAN",
+        "EQUALS",
+        "GT_EQ",
+        "LT_EQ",
+        "NOT_EQ_1",
+        "NOT_EQ_2",
+        "AT",
+        "ARROW",
+        "ADD_ASSIGN",
+        "SUB_ASSIGN",
+        "MULT_ASSIGN",
+        "AT_ASSIGN",
+        "DIV_ASSIGN",
+        "MOD_ASSIGN",
+        "AND_ASSIGN",
+        "OR_ASSIGN",
+        "XOR_ASSIGN",
+        "LEFT_SHIFT_ASSIGN",
+        "RIGHT_SHIFT_ASSIGN",
+        "POWER_ASSIGN",
+        "IDIV_ASSIGN",
+        "PYTHON_START",
+        "PYTHON_END",
+        "SKIP_",
+        "NEWLINE",
+    ]
 
-    ruleNames = [ "STRING", "NUMBER", "INTEGER", "AND", "AS", "ASSERT", 
-                  "ASYNC", "AWAIT", "BREAK", "CASE", "CLASS", "CONTINUE", 
-                  "DEF", "DEL", "ELIF", "ELSE", "EXCEPT", "FALSE", "FINALLY", 
-                  "FOR", "FROM", "GLOBAL", "IF", "IMPORT", "IN", "IS", "LAMBDA", 
-                  "MATCH", "NONE", "NONLOCAL", "NOT", "OR", "PASS", "RAISE", 
-                  "RETURN", "TRUE", "TRY", "UNDERSCORE", "WHILE", "WITH", 
-                  "YIELD", "FORALL", "EXISTS", "NAME", "STRING_LITERAL", 
-                  "BYTES_LITERAL", "DECIMAL_INTEGER", "OCT_INTEGER", "HEX_INTEGER", 
-                  "BIN_INTEGER", "FLOAT_NUMBER", "IMAG_NUMBER", "QUESTION", 
-                  "BACKSLASH", "DOT", "ELLIPSIS", "STAR", "OPEN_PAREN", 
-                  "CLOSE_PAREN", "COMMA", "COLON", "SEMI_COLON", "POWER", 
-                  "ASSIGN", "OPEN_BRACK", "CLOSE_BRACK", "OR_OP", "XOR", 
-                  "AND_OP", "LEFT_SHIFT", "RIGHT_SHIFT", "ADD", "MINUS", 
-                  "DIV", "MOD", "IDIV", "NOT_OP", "OPEN_BRACE", "CLOSE_BRACE", 
-                  "LESS_THAN", "GREATER_THAN", "EQUALS", "GT_EQ", "LT_EQ", 
-                  "NOT_EQ_1", "NOT_EQ_2", "AT", "ARROW", "ADD_ASSIGN", "SUB_ASSIGN", 
-                  "MULT_ASSIGN", "AT_ASSIGN", "DIV_ASSIGN", "MOD_ASSIGN", 
-                  "AND_ASSIGN", "OR_ASSIGN", "XOR_ASSIGN", "LEFT_SHIFT_ASSIGN", 
-                  "RIGHT_SHIFT_ASSIGN", "POWER_ASSIGN", "IDIV_ASSIGN", "PYTHON_START", 
-                  "PYTHON_END", "SKIP_", "NEWLINE", "SHORT_STRING", "LONG_STRING", 
-                  "LONG_STRING_ITEM", "LONG_STRING_CHAR", "STRING_ESCAPE_SEQ", 
-                  "NON_ZERO_DIGIT", "DIGIT", "OCT_DIGIT", "HEX_DIGIT", "BIN_DIGIT", 
-                  "POINT_FLOAT", "EXPONENT_FLOAT", "INT_PART", "FRACTION", 
-                  "EXPONENT", "SHORT_BYTES", "LONG_BYTES", "LONG_BYTES_ITEM", 
-                  "SHORT_BYTES_CHAR_NO_SINGLE_QUOTE", "SHORT_BYTES_CHAR_NO_DOUBLE_QUOTE", 
-                  "LONG_BYTES_CHAR", "BYTES_ESCAPE_SEQ", "SPACES", "COMMENT", 
-                  "LINE_JOINING", "UNICODE_OIDS", "UNICODE_OIDC", "ID_START", 
-                  "ID_CONTINUE" ]
+    ruleNames = [
+        "STRING",
+        "NUMBER",
+        "INTEGER",
+        "AND",
+        "AS",
+        "ASSERT",
+        "ASYNC",
+        "AWAIT",
+        "BREAK",
+        "CASE",
+        "CLASS",
+        "CONTINUE",
+        "DEF",
+        "DEL",
+        "ELIF",
+        "ELSE",
+        "EXCEPT",
+        "FALSE",
+        "FINALLY",
+        "FOR",
+        "FROM",
+        "GLOBAL",
+        "IF",
+        "IMPORT",
+        "IN",
+        "IS",
+        "LAMBDA",
+        "MATCH",
+        "NONE",
+        "NONLOCAL",
+        "NOT",
+        "OR",
+        "PASS",
+        "RAISE",
+        "RETURN",
+        "TRUE",
+        "TRY",
+        "UNDERSCORE",
+        "WHILE",
+        "WITH",
+        "YIELD",
+        "FORALL",
+        "EXISTS",
+        "NAME",
+        "STRING_LITERAL",
+        "BYTES_LITERAL",
+        "DECIMAL_INTEGER",
+        "OCT_INTEGER",
+        "HEX_INTEGER",
+        "BIN_INTEGER",
+        "FLOAT_NUMBER",
+        "IMAG_NUMBER",
+        "QUESTION",
+        "BACKSLASH",
+        "DOT",
+        "ELLIPSIS",
+        "STAR",
+        "OPEN_PAREN",
+        "CLOSE_PAREN",
+        "COMMA",
+        "COLON",
+        "SEMI_COLON",
+        "POWER",
+        "ASSIGN",
+        "OPEN_BRACK",
+        "CLOSE_BRACK",
+        "OR_OP",
+        "XOR",
+        "AND_OP",
+        "LEFT_SHIFT",
+        "RIGHT_SHIFT",
+        "ADD",
+        "MINUS",
+        "DIV",
+        "MOD",
+        "IDIV",
+        "NOT_OP",
+        "OPEN_BRACE",
+        "CLOSE_BRACE",
+        "LESS_THAN",
+        "GREATER_THAN",
+        "EQUALS",
+        "GT_EQ",
+        "LT_EQ",
+        "NOT_EQ_1",
+        "NOT_EQ_2",
+        "AT",
+        "ARROW",
+        "ADD_ASSIGN",
+        "SUB_ASSIGN",
+        "MULT_ASSIGN",
+        "AT_ASSIGN",
+        "DIV_ASSIGN",
+        "MOD_ASSIGN",
+        "AND_ASSIGN",
+        "OR_ASSIGN",
+        "XOR_ASSIGN",
+        "LEFT_SHIFT_ASSIGN",
+        "RIGHT_SHIFT_ASSIGN",
+        "POWER_ASSIGN",
+        "IDIV_ASSIGN",
+        "PYTHON_START",
+        "PYTHON_END",
+        "SKIP_",
+        "NEWLINE",
+        "SHORT_STRING",
+        "LONG_STRING",
+        "LONG_STRING_ITEM",
+        "LONG_STRING_CHAR",
+        "STRING_ESCAPE_SEQ",
+        "NON_ZERO_DIGIT",
+        "DIGIT",
+        "OCT_DIGIT",
+        "HEX_DIGIT",
+        "BIN_DIGIT",
+        "POINT_FLOAT",
+        "EXPONENT_FLOAT",
+        "INT_PART",
+        "FRACTION",
+        "EXPONENT",
+        "SHORT_BYTES",
+        "LONG_BYTES",
+        "LONG_BYTES_ITEM",
+        "SHORT_BYTES_CHAR_NO_SINGLE_QUOTE",
+        "SHORT_BYTES_CHAR_NO_DOUBLE_QUOTE",
+        "LONG_BYTES_CHAR",
+        "BYTES_ESCAPE_SEQ",
+        "SPACES",
+        "COMMENT",
+        "LINE_JOINING",
+        "UNICODE_OIDS",
+        "UNICODE_OIDC",
+        "ID_START",
+        "ID_CONTINUE",
+    ]
 
     grammarFileName = "FandangoLexer.g4"
 
-    def __init__(self, input=None, output:TextIO = sys.stdout):
+    def __init__(self, input=None, output: TextIO = sys.stdout):
         super().__init__(input, output)
         self.checkVersion("4.9.2")
-        self._interp = LexerATNSimulator(self, self.atn, self.decisionsToDFA, PredictionContextCache())
+        self._interp = LexerATNSimulator(
+            self, self.atn, self.decisionsToDFA, PredictionContextCache()
+        )
         self._actions = None
         self._predicates = None
-
-
