@@ -3,10 +3,11 @@
 from antlr4 import *
 from io import StringIO
 import sys
+
 if sys.version_info[1] > 5:
-	from typing import TextIO
+    from typing import TextIO
 else:
-	from typing.io import TextIO
+    from typing.io import TextIO
 
 
 def serializedATN():
@@ -17,8 +18,8 @@ def serializedATN():
         buf.write("\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22\4\23\t\23")
         buf.write("\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\4\31")
         buf.write("\t\31\4\32\t\32\4\33\t\33\4\34\t\34\4\35\t\35\4\36\t\36")
-        buf.write("\4\37\t\37\4 \t \4!\t!\4\"\t\"\4#\t#\4$\t$\4%\t%\4&\t")
-        buf.write("&\4\'\t\'\4(\t(\4)\t)\4*\t*\4+\t+\4,\t,\4-\t-\4.\t.\4")
+        buf.write('\4\37\t\37\4 \t \4!\t!\4"\t"\4#\t#\4$\t$\4%\t%\4&\t')
+        buf.write("&\4'\t'\4(\t(\4)\t)\4*\t*\4+\t+\4,\t,\4-\t-\4.\t.\4")
         buf.write("/\t/\4\60\t\60\4\61\t\61\4\62\t\62\4\63\t\63\4\64\t\64")
         buf.write("\4\65\t\65\4\66\t\66\4\67\t\67\48\t8\49\t9\4:\t:\4;\t")
         buf.write(";\4<\t<\4=\t=\4>\t>\4?\t?\4@\t@\4A\tA\4B\tB\4C\tC\4D\t")
@@ -60,16 +61,16 @@ def serializedATN():
         buf.write("\n\34\3\34\5\34\u01fd\n\34\3\34\3\34\3\35\6\35\u0202\n")
         buf.write("\35\r\35\16\35\u0203\3\36\3\36\3\36\3\36\5\36\u020a\n")
         buf.write("\36\3\37\3\37\3\37\3 \3 \3 \3 \3 \5 \u0214\n \3 \3 \3")
-        buf.write(" \3!\3!\5!\u021b\n!\3!\3!\3\"\3\"\3\"\5\"\u0222\n\"\3")
-        buf.write("\"\3\"\3\"\3\"\5\"\u0228\n\"\7\"\u022a\n\"\f\"\16\"\u022d")
-        buf.write("\13\"\3\"\3\"\3\"\5\"\u0232\n\"\3\"\3\"\3\"\3\"\5\"\u0238")
-        buf.write("\n\"\7\"\u023a\n\"\f\"\16\"\u023d\13\"\3\"\3\"\3\"\3\"")
-        buf.write("\5\"\u0243\n\"\5\"\u0245\n\"\5\"\u0247\n\"\3\"\3\"\3\"")
-        buf.write("\5\"\u024c\n\"\5\"\u024e\n\"\5\"\u0250\n\"\3\"\3\"\5\"")
-        buf.write("\u0254\n\"\3\"\3\"\3\"\3\"\5\"\u025a\n\"\7\"\u025c\n\"")
-        buf.write("\f\"\16\"\u025f\13\"\3\"\3\"\3\"\3\"\5\"\u0265\n\"\5\"")
-        buf.write("\u0267\n\"\5\"\u0269\n\"\3\"\3\"\3\"\5\"\u026e\n\"\5\"")
-        buf.write("\u0270\n\"\3#\3#\3#\5#\u0275\n#\3$\3$\3$\5$\u027a\n$\3")
+        buf.write(' \3!\3!\5!\u021b\n!\3!\3!\3"\3"\3"\5"\u0222\n"\3')
+        buf.write('"\3"\3"\3"\5"\u0228\n"\7"\u022a\n"\f"\16"\u022d')
+        buf.write('\13"\3"\3"\3"\5"\u0232\n"\3"\3"\3"\3"\5"\u0238')
+        buf.write('\n"\7"\u023a\n"\f"\16"\u023d\13"\3"\3"\3"\3"')
+        buf.write('\5"\u0243\n"\5"\u0245\n"\5"\u0247\n"\3"\3"\3"')
+        buf.write('\5"\u024c\n"\5"\u024e\n"\5"\u0250\n"\3"\3"\5"')
+        buf.write('\u0254\n"\3"\3"\3"\3"\5"\u025a\n"\7"\u025c\n"')
+        buf.write('\f"\16"\u025f\13"\3"\3"\3"\3"\5"\u0265\n"\5"')
+        buf.write('\u0267\n"\5"\u0269\n"\3"\3"\3"\5"\u026e\n"\5"')
+        buf.write('\u0270\n"\3#\3#\3#\5#\u0275\n#\3$\3$\3$\5$\u027a\n$\3')
         buf.write("$\3$\3$\3$\5$\u0280\n$\7$\u0282\n$\f$\16$\u0285\13$\3")
         buf.write("$\3$\3$\5$\u028a\n$\3$\3$\3$\3$\5$\u0290\n$\7$\u0292\n")
         buf.write("$\f$\16$\u0295\13$\3$\3$\3$\3$\5$\u029b\n$\5$\u029d\n")
@@ -77,8 +78,8 @@ def serializedATN():
         buf.write("\n$\3$\3$\5$\u02ac\n$\3$\3$\3$\3$\5$\u02b2\n$\7$\u02b4")
         buf.write("\n$\f$\16$\u02b7\13$\3$\3$\3$\3$\5$\u02bd\n$\5$\u02bf")
         buf.write("\n$\5$\u02c1\n$\3$\3$\3$\5$\u02c6\n$\5$\u02c8\n$\3%\3")
-        buf.write("%\3&\3&\5&\u02ce\n&\3\'\3\'\3\'\7\'\u02d3\n\'\f\'\16\'")
-        buf.write("\u02d6\13\'\3\'\5\'\u02d9\n\'\3\'\3\'\3(\3(\3(\3(\3(\3")
+        buf.write("%\3&\3&\5&\u02ce\n&\3'\3'\3'\7'\u02d3\n'\f'\16'")
+        buf.write("\u02d6\13'\3'\5'\u02d9\n'\3'\3'\3(\3(\3(\3(\3(\3")
         buf.write("(\3(\3(\5(\u02e5\n(\3)\3)\3)\3)\3)\5)\u02ec\n)\3)\3)\3")
         buf.write(")\5)\u02f1\n)\7)\u02f3\n)\f)\16)\u02f6\13)\5)\u02f8\n")
         buf.write(")\3*\3*\3*\3*\5*\u02fe\n*\3+\3+\5+\u0302\n+\3+\3+\3+\5")
@@ -171,7 +172,7 @@ def serializedATN():
         buf.write("\u008b\3\u008c\3\u008c\5\u008c\u0676\n\u008c\3\u008d\3")
         buf.write("\u008d\3\u008d\5\u008d\u067b\n\u008d\3\u008e\6\u008e\u067e")
         buf.write("\n\u008e\r\u008e\16\u008e\u067f\3\u008e\2\3\u00f2\u008f")
-        buf.write("\2\4\6\b\n\f\16\20\22\24\26\30\32\34\36 \"$&(*,.\60\62")
+        buf.write('\2\4\6\b\n\f\16\20\22\24\26\30\32\34\36 "$&(*,.\60\62')
         buf.write("\64\668:<>@BDFHJLNPRTVXZ\\^`bdfhjlnprtvxz|~\u0080\u0082")
         buf.write("\u0084\u0086\u0088\u008a\u008c\u008e\u0090\u0092\u0094")
         buf.write("\u0096\u0098\u009a\u009c\u009e\u00a0\u00a2\u00a4\u00a6")
@@ -181,14 +182,14 @@ def serializedATN():
         buf.write("\u00de\u00e0\u00e2\u00e4\u00e6\u00e8\u00ea\u00ec\u00ee")
         buf.write("\u00f0\u00f2\u00f4\u00f6\u00f8\u00fa\u00fc\u00fe\u0100")
         buf.write("\u0102\u0104\u0106\u0108\u010a\u010c\u010e\u0110\u0112")
-        buf.write("\u0114\u0116\u0118\u011a\2\f\4\2\6\').\3\3kk\3\2RX\3\2")
+        buf.write("\u0114\u0116\u0118\u011a\2\f\4\2\6').\3\3kk\3\2RX\3\2")
         buf.write("[g\3\29:\4\2JKOO\5\2;;LNYY\3\2JK\3\2HI\5\2\36\36((..\2")
         buf.write("\u0723\2\u011c\3\2\2\2\4\u0123\3\2\2\2\6\u0135\3\2\2\2")
         buf.write("\b\u0137\3\2\2\2\n\u0140\3\2\2\2\f\u0148\3\2\2\2\16\u0154")
         buf.write("\3\2\2\2\20\u0156\3\2\2\2\22\u0159\3\2\2\2\24\u015c\3")
         buf.write("\2\2\2\26\u015f\3\2\2\2\30\u016b\3\2\2\2\32\u017d\3\2")
         buf.write("\2\2\34\u0184\3\2\2\2\36\u0186\3\2\2\2 \u018e\3\2\2\2")
-        buf.write("\"\u019f\3\2\2\2$\u01a1\3\2\2\2&\u01a9\3\2\2\2(\u01b6")
+        buf.write('"\u019f\3\2\2\2$\u01a1\3\2\2\2&\u01a9\3\2\2\2(\u01b6')
         buf.write("\3\2\2\2*\u01b8\3\2\2\2,\u01c2\3\2\2\2.\u01c4\3\2\2\2")
         buf.write("\60\u01cc\3\2\2\2\62\u01db\3\2\2\2\64\u01dd\3\2\2\2\66")
         buf.write("\u01f5\3\2\2\28\u0201\3\2\2\2:\u0205\3\2\2\2<\u020b\3")
@@ -276,22 +277,22 @@ def serializedATN():
         buf.write("\u0181\3\2\2\2\u0181\u0182\7\3\2\2\u0182\u0183\7D\2\2")
         buf.write("\u0183\33\3\2\2\2\u0184\u0185\t\2\2\2\u0185\35\3\2\2\2")
         buf.write("\u0186\u0187\5 \21\2\u0187\u0188\t\3\2\2\u0188\37\3\2")
-        buf.write("\2\2\u0189\u018a\5\"\22\2\u018a\u018b\7Z\2\2\u018b\u018c")
-        buf.write("\5 \21\2\u018c\u018f\3\2\2\2\u018d\u018f\5\"\22\2\u018e")
+        buf.write('\2\2\u0189\u018a\5"\22\2\u018a\u018b\7Z\2\2\u018b\u018c')
+        buf.write('\5 \21\2\u018c\u018f\3\2\2\2\u018d\u018f\5"\22\2\u018e')
         buf.write("\u0189\3\2\2\2\u018e\u018d\3\2\2\2\u018f!\3\2\2\2\u0190")
         buf.write("\u0191\7,\2\2\u0191\u0192\7.\2\2\u0192\u0193\7\33\2\2")
         buf.write("\u0193\u0194\5.\30\2\u0194\u0195\7?\2\2\u0195\u0196\5")
-        buf.write("\"\22\2\u0196\u01a0\3\2\2\2\u0197\u0198\7-\2\2\u0198\u0199")
+        buf.write('"\22\2\u0196\u01a0\3\2\2\2\u0197\u0198\7-\2\2\u0198\u0199')
         buf.write("\7.\2\2\u0199\u019a\7\33\2\2\u019a\u019b\5.\30\2\u019b")
-        buf.write("\u019c\7?\2\2\u019c\u019d\5\"\22\2\u019d\u01a0\3\2\2\2")
+        buf.write('\u019c\7?\2\2\u019c\u019d\5"\22\2\u019d\u01a0\3\2\2\2')
         buf.write("\u019e\u01a0\5$\23\2\u019f\u0190\3\2\2\2\u019f\u0197\3")
         buf.write("\2\2\2\u019f\u019e\3\2\2\2\u01a0#\3\2\2\2\u01a1\u01a6")
-        buf.write("\5&\24\2\u01a2\u01a3\7\"\2\2\u01a3\u01a5\5&\24\2\u01a4")
+        buf.write('\5&\24\2\u01a2\u01a3\7"\2\2\u01a3\u01a5\5&\24\2\u01a4')
         buf.write("\u01a2\3\2\2\2\u01a5\u01a8\3\2\2\2\u01a6\u01a4\3\2\2\2")
         buf.write("\u01a6\u01a7\3\2\2\2\u01a7%\3\2\2\2\u01a8\u01a6\3\2\2")
         buf.write("\2\u01a9\u01ae\5(\25\2\u01aa\u01ab\7\6\2\2\u01ab\u01ad")
         buf.write("\5(\25\2\u01ac\u01aa\3\2\2\2\u01ad\u01b0\3\2\2\2\u01ae")
-        buf.write("\u01ac\3\2\2\2\u01ae\u01af\3\2\2\2\u01af\'\3\2\2\2\u01b0")
+        buf.write("\u01ac\3\2\2\2\u01ae\u01af\3\2\2\2\u01af'\3\2\2\2\u01b0")
         buf.write("\u01ae\3\2\2\2\u01b1\u01b7\5*\26\2\u01b2\u01b3\7<\2\2")
         buf.write("\u01b3\u01b4\5 \21\2\u01b4\u01b5\7=\2\2\u01b5\u01b7\3")
         buf.write("\2\2\2\u01b6\u01b1\3\2\2\2\u01b6\u01b2\3\2\2\2\u01b7)")
@@ -313,7 +314,7 @@ def serializedATN():
         buf.write("\3\2\2\2\u01db\u01d8\3\2\2\2\u01dc\63\3\2\2\2\u01dd\u01f0")
         buf.write("\7h\2\2\u01de\u01e0\7k\2\2\u01df\u01de\3\2\2\2\u01e0\u01e3")
         buf.write("\3\2\2\2\u01e1\u01df\3\2\2\2\u01e1\u01e2\3\2\2\2\u01e2")
-        buf.write("\u01e6\3\2\2\2\u01e3\u01e1\3\2\2\2\u01e4\u01e7\5L\'\2")
+        buf.write("\u01e6\3\2\2\2\u01e3\u01e1\3\2\2\2\u01e4\u01e7\5L'\2")
         buf.write("\u01e5\u01e7\5~@\2\u01e6\u01e4\3\2\2\2\u01e6\u01e5\3\2")
         buf.write("\2\2\u01e7\u01eb\3\2\2\2\u01e8\u01ea\7k\2\2\u01e9\u01e8")
         buf.write("\3\2\2\2\u01ea\u01ed\3\2\2\2\u01eb\u01e9\3\2\2\2\u01eb")
@@ -336,7 +337,7 @@ def serializedATN():
         buf.write("\7Z\2\2\u0212\u0214\5\u00dep\2\u0213\u0211\3\2\2\2\u0213")
         buf.write("\u0214\3\2\2\2\u0214\u0215\3\2\2\2\u0215\u0216\7?\2\2")
         buf.write("\u0216\u0217\5\u0090I\2\u0217?\3\2\2\2\u0218\u021a\7<")
-        buf.write("\2\2\u0219\u021b\5B\"\2\u021a\u0219\3\2\2\2\u021a\u021b")
+        buf.write('\2\2\u0219\u021b\5B"\2\u021a\u0219\3\2\2\2\u021a\u021b')
         buf.write("\3\2\2\2\u021b\u021c\3\2\2\2\u021c\u021d\7=\2\2\u021d")
         buf.write("A\3\2\2\2\u021e\u0221\5D#\2\u021f\u0220\7B\2\2\u0220\u0222")
         buf.write("\5\u00dep\2\u0221\u021f\3\2\2\2\u0221\u0222\3\2\2\2\u0222")
@@ -416,7 +417,7 @@ def serializedATN():
         buf.write("H%\2\u02c4\u02c6\7>\2\2\u02c5\u02c4\3\2\2\2\u02c5\u02c6")
         buf.write("\3\2\2\2\u02c6\u02c8\3\2\2\2\u02c7\u0276\3\2\2\2\u02c7")
         buf.write("\u02a9\3\2\2\2\u02c7\u02c2\3\2\2\2\u02c8G\3\2\2\2\u02c9")
-        buf.write("\u02ca\5\u00f8}\2\u02caI\3\2\2\2\u02cb\u02ce\5L\'\2\u02cc")
+        buf.write("\u02ca\5\u00f8}\2\u02caI\3\2\2\2\u02cb\u02ce\5L'\2\u02cc")
         buf.write("\u02ce\5~@\2\u02cd\u02cb\3\2\2\2\u02cd\u02cc\3\2\2\2\u02ce")
         buf.write("K\3\2\2\2\u02cf\u02d4\5N(\2\u02d0\u02d1\7@\2\2\u02d1\u02d3")
         buf.write("\5N(\2\u02d2\u02d0\3\2\2\2\u02d3\u02d6\3\2\2\2\u02d4\u02d2")
@@ -528,7 +529,7 @@ def serializedATN():
         buf.write("\u0084\2\u03be\u03bf\7?\2\2\u03bf\u03c3\5\u0090I\2\u03c0")
         buf.write("\u03c1\7\22\2\2\u03c1\u03c2\7?\2\2\u03c2\u03c4\5\u0090")
         buf.write("I\2\u03c3\u03c0\3\2\2\2\u03c3\u03c4\3\2\2\2\u03c4\u0087")
-        buf.write("\3\2\2\2\u03c5\u03c6\7\'\2\2\u03c6\u03c7\7?\2\2\u03c7")
+        buf.write("\3\2\2\2\u03c5\u03c6\7'\2\2\u03c6\u03c7\7?\2\2\u03c7")
         buf.write("\u03dd\5\u0090I\2\u03c8\u03c9\5\u008eH\2\u03c9\u03ca\7")
         buf.write("?\2\2\u03ca\u03cb\5\u0090I\2\u03cb\u03cd\3\2\2\2\u03cc")
         buf.write("\u03c8\3\2\2\2\u03cd\u03ce\3\2\2\2\u03ce\u03cc\3\2\2\2")
@@ -550,7 +551,7 @@ def serializedATN():
         buf.write("\2\u03f1\u03f4\5\u00dep\2\u03f2\u03f3\7\7\2\2\u03f3\u03f5")
         buf.write("\5\u00f8}\2\u03f4\u03f2\3\2\2\2\u03f4\u03f5\3\2\2\2\u03f5")
         buf.write("\u03f7\3\2\2\2\u03f6\u03f1\3\2\2\2\u03f6\u03f7\3\2\2\2")
-        buf.write("\u03f7\u008f\3\2\2\2\u03f8\u0400\5L\'\2\u03f9\u03fb\7")
+        buf.write("\u03f7\u008f\3\2\2\2\u03f8\u0400\5L'\2\u03f9\u03fb\7")
         buf.write("k\2\2\u03fa\u03fc\5J&\2\u03fb\u03fa\3\2\2\2\u03fc\u03fd")
         buf.write("\3\2\2\2\u03fd\u03fb\3\2\2\2\u03fd\u03fe\3\2\2\2\u03fe")
         buf.write("\u0400\3\2\2\2\u03ff\u03f8\3\2\2\2\u03ff\u03f9\3\2\2\2")
@@ -692,7 +693,7 @@ def serializedATN():
         buf.write("\u00e3\3\2\2\2\u052b\u052d\7\35\2\2\u052c\u052e\5F$\2")
         buf.write("\u052d\u052c\3\2\2\2\u052d\u052e\3\2\2\2\u052e\u052f\3")
         buf.write("\2\2\2\u052f\u0530\7?\2\2\u0530\u0531\5\u00e0q\2\u0531")
-        buf.write("\u00e5\3\2\2\2\u0532\u0537\5\u00e8u\2\u0533\u0534\7\"")
+        buf.write('\u00e5\3\2\2\2\u0532\u0537\5\u00e8u\2\u0533\u0534\7"')
         buf.write("\2\2\u0534\u0536\5\u00e8u\2\u0535\u0533\3\2\2\2\u0536")
         buf.write("\u0539\3\2\2\2\u0537\u0535\3\2\2\2\u0537\u0538\3\2\2\2")
         buf.write("\u0538\u00e7\3\2\2\2\u0539\u0537\3\2\2\2\u053a\u053f\5")
@@ -881,58 +882,230 @@ def serializedATN():
         return buf.getvalue()
 
 
-class FandangoParser ( Parser ):
-
+class FandangoParser(Parser):
     grammarFileName = "FandangoParser.g4"
 
     atn = ATNDeserializer().deserialize(serializedATN())
 
-    decisionsToDFA = [ DFA(ds, i) for i, ds in enumerate(atn.decisionToState) ]
+    decisionsToDFA = [DFA(ds, i) for i, ds in enumerate(atn.decisionToState)]
 
     sharedContextCache = PredictionContextCache()
 
-    literalNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                     "'and'", "'as'", "'assert'", "'async'", "'await'", 
-                     "'break'", "'case'", "'class'", "'continue'", "'def'", 
-                     "'del'", "'elif'", "'else'", "'except'", "'False'", 
-                     "'finally'", "'for'", "'from'", "'global'", "'if'", 
-                     "'import'", "'in'", "'is'", "'lambda'", "'match'", 
-                     "'None'", "'nonlocal'", "'not'", "'or'", "'pass'", 
-                     "'raise'", "'return'", "'True'", "'try'", "'_'", "'while'", 
-                     "'with'", "'yield'", "'forall'", "'exists'", "<INVALID>", 
-                     "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                     "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                     "'?'", "'\\'", "'.'", "'...'", "'*'", "'('", "')'", 
-                     "','", "':'", "';'", "'**'", "'='", "'['", "']'", "'|'", 
-                     "'^'", "'&'", "'<<'", "'>>'", "'+'", "'-'", "'/'", 
-                     "'%'", "'//'", "'~'", "'{'", "'}'", "'<'", "'>'", "'=='", 
-                     "'>='", "'<='", "'<>'", "'!='", "'@'", "'->'", "'+='", 
-                     "'-='", "'*='", "'@='", "'/='", "'%='", "'&='", "'|='", 
-                     "'^='", "'<<='", "'>>='", "'**='", "'//='", "'<py>'", 
-                     "'</py>'" ]
+    literalNames = [
+        "<INVALID>",
+        "<INVALID>",
+        "<INVALID>",
+        "<INVALID>",
+        "'and'",
+        "'as'",
+        "'assert'",
+        "'async'",
+        "'await'",
+        "'break'",
+        "'case'",
+        "'class'",
+        "'continue'",
+        "'def'",
+        "'del'",
+        "'elif'",
+        "'else'",
+        "'except'",
+        "'False'",
+        "'finally'",
+        "'for'",
+        "'from'",
+        "'global'",
+        "'if'",
+        "'import'",
+        "'in'",
+        "'is'",
+        "'lambda'",
+        "'match'",
+        "'None'",
+        "'nonlocal'",
+        "'not'",
+        "'or'",
+        "'pass'",
+        "'raise'",
+        "'return'",
+        "'True'",
+        "'try'",
+        "'_'",
+        "'while'",
+        "'with'",
+        "'yield'",
+        "'forall'",
+        "'exists'",
+        "<INVALID>",
+        "<INVALID>",
+        "<INVALID>",
+        "<INVALID>",
+        "<INVALID>",
+        "<INVALID>",
+        "<INVALID>",
+        "<INVALID>",
+        "<INVALID>",
+        "'?'",
+        "'\\'",
+        "'.'",
+        "'...'",
+        "'*'",
+        "'('",
+        "')'",
+        "','",
+        "':'",
+        "';'",
+        "'**'",
+        "'='",
+        "'['",
+        "']'",
+        "'|'",
+        "'^'",
+        "'&'",
+        "'<<'",
+        "'>>'",
+        "'+'",
+        "'-'",
+        "'/'",
+        "'%'",
+        "'//'",
+        "'~'",
+        "'{'",
+        "'}'",
+        "'<'",
+        "'>'",
+        "'=='",
+        "'>='",
+        "'<='",
+        "'<>'",
+        "'!='",
+        "'@'",
+        "'->'",
+        "'+='",
+        "'-='",
+        "'*='",
+        "'@='",
+        "'/='",
+        "'%='",
+        "'&='",
+        "'|='",
+        "'^='",
+        "'<<='",
+        "'>>='",
+        "'**='",
+        "'//='",
+        "'<py>'",
+        "'</py>'",
+    ]
 
-    symbolicNames = [ "<INVALID>", "STRING", "NUMBER", "INTEGER", "AND", 
-                      "AS", "ASSERT", "ASYNC", "AWAIT", "BREAK", "CASE", 
-                      "CLASS", "CONTINUE", "DEF", "DEL", "ELIF", "ELSE", 
-                      "EXCEPT", "FALSE", "FINALLY", "FOR", "FROM", "GLOBAL", 
-                      "IF", "IMPORT", "IN", "IS", "LAMBDA", "MATCH", "NONE", 
-                      "NONLOCAL", "NOT", "OR", "PASS", "RAISE", "RETURN", 
-                      "TRUE", "TRY", "UNDERSCORE", "WHILE", "WITH", "YIELD", 
-                      "FORALL", "EXISTS", "NAME", "STRING_LITERAL", "BYTES_LITERAL", 
-                      "DECIMAL_INTEGER", "OCT_INTEGER", "HEX_INTEGER", "BIN_INTEGER", 
-                      "FLOAT_NUMBER", "IMAG_NUMBER", "QUESTION", "BACKSLASH", 
-                      "DOT", "ELLIPSIS", "STAR", "OPEN_PAREN", "CLOSE_PAREN", 
-                      "COMMA", "COLON", "SEMI_COLON", "POWER", "ASSIGN", 
-                      "OPEN_BRACK", "CLOSE_BRACK", "OR_OP", "XOR", "AND_OP", 
-                      "LEFT_SHIFT", "RIGHT_SHIFT", "ADD", "MINUS", "DIV", 
-                      "MOD", "IDIV", "NOT_OP", "OPEN_BRACE", "CLOSE_BRACE", 
-                      "LESS_THAN", "GREATER_THAN", "EQUALS", "GT_EQ", "LT_EQ", 
-                      "NOT_EQ_1", "NOT_EQ_2", "AT", "ARROW", "ADD_ASSIGN", 
-                      "SUB_ASSIGN", "MULT_ASSIGN", "AT_ASSIGN", "DIV_ASSIGN", 
-                      "MOD_ASSIGN", "AND_ASSIGN", "OR_ASSIGN", "XOR_ASSIGN", 
-                      "LEFT_SHIFT_ASSIGN", "RIGHT_SHIFT_ASSIGN", "POWER_ASSIGN", 
-                      "IDIV_ASSIGN", "PYTHON_START", "PYTHON_END", "SKIP_", 
-                      "NEWLINE" ]
+    symbolicNames = [
+        "<INVALID>",
+        "STRING",
+        "NUMBER",
+        "INTEGER",
+        "AND",
+        "AS",
+        "ASSERT",
+        "ASYNC",
+        "AWAIT",
+        "BREAK",
+        "CASE",
+        "CLASS",
+        "CONTINUE",
+        "DEF",
+        "DEL",
+        "ELIF",
+        "ELSE",
+        "EXCEPT",
+        "FALSE",
+        "FINALLY",
+        "FOR",
+        "FROM",
+        "GLOBAL",
+        "IF",
+        "IMPORT",
+        "IN",
+        "IS",
+        "LAMBDA",
+        "MATCH",
+        "NONE",
+        "NONLOCAL",
+        "NOT",
+        "OR",
+        "PASS",
+        "RAISE",
+        "RETURN",
+        "TRUE",
+        "TRY",
+        "UNDERSCORE",
+        "WHILE",
+        "WITH",
+        "YIELD",
+        "FORALL",
+        "EXISTS",
+        "NAME",
+        "STRING_LITERAL",
+        "BYTES_LITERAL",
+        "DECIMAL_INTEGER",
+        "OCT_INTEGER",
+        "HEX_INTEGER",
+        "BIN_INTEGER",
+        "FLOAT_NUMBER",
+        "IMAG_NUMBER",
+        "QUESTION",
+        "BACKSLASH",
+        "DOT",
+        "ELLIPSIS",
+        "STAR",
+        "OPEN_PAREN",
+        "CLOSE_PAREN",
+        "COMMA",
+        "COLON",
+        "SEMI_COLON",
+        "POWER",
+        "ASSIGN",
+        "OPEN_BRACK",
+        "CLOSE_BRACK",
+        "OR_OP",
+        "XOR",
+        "AND_OP",
+        "LEFT_SHIFT",
+        "RIGHT_SHIFT",
+        "ADD",
+        "MINUS",
+        "DIV",
+        "MOD",
+        "IDIV",
+        "NOT_OP",
+        "OPEN_BRACE",
+        "CLOSE_BRACE",
+        "LESS_THAN",
+        "GREATER_THAN",
+        "EQUALS",
+        "GT_EQ",
+        "LT_EQ",
+        "NOT_EQ_1",
+        "NOT_EQ_2",
+        "AT",
+        "ARROW",
+        "ADD_ASSIGN",
+        "SUB_ASSIGN",
+        "MULT_ASSIGN",
+        "AT_ASSIGN",
+        "DIV_ASSIGN",
+        "MOD_ASSIGN",
+        "AND_ASSIGN",
+        "OR_ASSIGN",
+        "XOR_ASSIGN",
+        "LEFT_SHIFT_ASSIGN",
+        "RIGHT_SHIFT_ASSIGN",
+        "POWER_ASSIGN",
+        "IDIV_ASSIGN",
+        "PYTHON_START",
+        "PYTHON_END",
+        "SKIP_",
+        "NEWLINE",
+    ]
 
     RULE_fandango = 0
     RULE_program = 1
@@ -1076,167 +1249,276 @@ class FandangoParser ( Parser ):
     RULE_yield_arg = 139
     RULE_strings = 140
 
-    ruleNames =  [ "fandango", "program", "statement", "production", "alternatives", 
-                   "alternative", "operator", "kleene", "plus", "option", 
-                   "repeat", "symbol", "char_set", "rule_name", "constraint", 
-                   "implies", "quantifier", "disjunction", "conjunction", 
-                   "formula_atom", "formula_comparison", "expression", "selector", 
-                   "selection", "python", "python_tag", "decorator", "decorators", 
-                   "decorated", "async_funcdef", "funcdef", "parameters", 
-                   "typedargslist", "tfpdef", "varargslist", "vfpdef", "stmt", 
-                   "simple_stmts", "simple_stmt", "expr_stmt", "annassign", 
-                   "testlist_star_expr", "augassign", "del_stmt", "pass_stmt", 
-                   "flow_stmt", "break_stmt", "continue_stmt", "return_stmt", 
-                   "yield_stmt", "raise_stmt", "import_stmt", "import_name", 
-                   "import_from", "import_as_name", "dotted_as_name", "import_as_names", 
-                   "dotted_as_names", "dotted_name", "global_stmt", "nonlocal_stmt", 
-                   "assert_stmt", "compound_stmt", "async_stmt", "if_stmt", 
-                   "while_stmt", "for_stmt", "try_stmt", "with_stmt", "with_item", 
-                   "except_clause", "block", "match_stmt", "subject_expr", 
-                   "star_named_expressions", "star_named_expression", "case_block", 
-                   "guard", "patterns", "pattern", "as_pattern", "or_pattern", 
-                   "closed_pattern", "literal_pattern", "literal_expr", 
-                   "complex_number", "signed_number", "signed_real_number", 
-                   "real_number", "imaginary_number", "capture_pattern", 
-                   "pattern_capture_target", "wildcard_pattern", "value_pattern", 
-                   "attr", "name_or_attr", "group_pattern", "sequence_pattern", 
-                   "open_sequence_pattern", "maybe_sequence_pattern", "maybe_star_pattern", 
-                   "star_pattern", "mapping_pattern", "items_pattern", "key_value_pattern", 
-                   "double_star_pattern", "class_pattern", "positional_patterns", 
-                   "keyword_patterns", "keyword_pattern", "test", "test_nocond", 
-                   "lambdef", "lambdef_nocond", "or_test", "and_test", "not_test", 
-                   "comparison", "comp_op", "star_expr", "expr", "atom_expr", 
-                   "atom", "name", "testlist_comp", "trailer", "subscriptlist", 
-                   "subscript_", "sliceop", "exprlist", "testlist", "dictorsetmaker", 
-                   "classdef", "arglist", "argument", "comp_iter", "comp_for", 
-                   "comp_if", "yield_expr", "yield_arg", "strings" ]
+    ruleNames = [
+        "fandango",
+        "program",
+        "statement",
+        "production",
+        "alternatives",
+        "alternative",
+        "operator",
+        "kleene",
+        "plus",
+        "option",
+        "repeat",
+        "symbol",
+        "char_set",
+        "rule_name",
+        "constraint",
+        "implies",
+        "quantifier",
+        "disjunction",
+        "conjunction",
+        "formula_atom",
+        "formula_comparison",
+        "expression",
+        "selector",
+        "selection",
+        "python",
+        "python_tag",
+        "decorator",
+        "decorators",
+        "decorated",
+        "async_funcdef",
+        "funcdef",
+        "parameters",
+        "typedargslist",
+        "tfpdef",
+        "varargslist",
+        "vfpdef",
+        "stmt",
+        "simple_stmts",
+        "simple_stmt",
+        "expr_stmt",
+        "annassign",
+        "testlist_star_expr",
+        "augassign",
+        "del_stmt",
+        "pass_stmt",
+        "flow_stmt",
+        "break_stmt",
+        "continue_stmt",
+        "return_stmt",
+        "yield_stmt",
+        "raise_stmt",
+        "import_stmt",
+        "import_name",
+        "import_from",
+        "import_as_name",
+        "dotted_as_name",
+        "import_as_names",
+        "dotted_as_names",
+        "dotted_name",
+        "global_stmt",
+        "nonlocal_stmt",
+        "assert_stmt",
+        "compound_stmt",
+        "async_stmt",
+        "if_stmt",
+        "while_stmt",
+        "for_stmt",
+        "try_stmt",
+        "with_stmt",
+        "with_item",
+        "except_clause",
+        "block",
+        "match_stmt",
+        "subject_expr",
+        "star_named_expressions",
+        "star_named_expression",
+        "case_block",
+        "guard",
+        "patterns",
+        "pattern",
+        "as_pattern",
+        "or_pattern",
+        "closed_pattern",
+        "literal_pattern",
+        "literal_expr",
+        "complex_number",
+        "signed_number",
+        "signed_real_number",
+        "real_number",
+        "imaginary_number",
+        "capture_pattern",
+        "pattern_capture_target",
+        "wildcard_pattern",
+        "value_pattern",
+        "attr",
+        "name_or_attr",
+        "group_pattern",
+        "sequence_pattern",
+        "open_sequence_pattern",
+        "maybe_sequence_pattern",
+        "maybe_star_pattern",
+        "star_pattern",
+        "mapping_pattern",
+        "items_pattern",
+        "key_value_pattern",
+        "double_star_pattern",
+        "class_pattern",
+        "positional_patterns",
+        "keyword_patterns",
+        "keyword_pattern",
+        "test",
+        "test_nocond",
+        "lambdef",
+        "lambdef_nocond",
+        "or_test",
+        "and_test",
+        "not_test",
+        "comparison",
+        "comp_op",
+        "star_expr",
+        "expr",
+        "atom_expr",
+        "atom",
+        "name",
+        "testlist_comp",
+        "trailer",
+        "subscriptlist",
+        "subscript_",
+        "sliceop",
+        "exprlist",
+        "testlist",
+        "dictorsetmaker",
+        "classdef",
+        "arglist",
+        "argument",
+        "comp_iter",
+        "comp_for",
+        "comp_if",
+        "yield_expr",
+        "yield_arg",
+        "strings",
+    ]
 
     EOF = Token.EOF
-    STRING=1
-    NUMBER=2
-    INTEGER=3
-    AND=4
-    AS=5
-    ASSERT=6
-    ASYNC=7
-    AWAIT=8
-    BREAK=9
-    CASE=10
-    CLASS=11
-    CONTINUE=12
-    DEF=13
-    DEL=14
-    ELIF=15
-    ELSE=16
-    EXCEPT=17
-    FALSE=18
-    FINALLY=19
-    FOR=20
-    FROM=21
-    GLOBAL=22
-    IF=23
-    IMPORT=24
-    IN=25
-    IS=26
-    LAMBDA=27
-    MATCH=28
-    NONE=29
-    NONLOCAL=30
-    NOT=31
-    OR=32
-    PASS=33
-    RAISE=34
-    RETURN=35
-    TRUE=36
-    TRY=37
-    UNDERSCORE=38
-    WHILE=39
-    WITH=40
-    YIELD=41
-    FORALL=42
-    EXISTS=43
-    NAME=44
-    STRING_LITERAL=45
-    BYTES_LITERAL=46
-    DECIMAL_INTEGER=47
-    OCT_INTEGER=48
-    HEX_INTEGER=49
-    BIN_INTEGER=50
-    FLOAT_NUMBER=51
-    IMAG_NUMBER=52
-    QUESTION=53
-    BACKSLASH=54
-    DOT=55
-    ELLIPSIS=56
-    STAR=57
-    OPEN_PAREN=58
-    CLOSE_PAREN=59
-    COMMA=60
-    COLON=61
-    SEMI_COLON=62
-    POWER=63
-    ASSIGN=64
-    OPEN_BRACK=65
-    CLOSE_BRACK=66
-    OR_OP=67
-    XOR=68
-    AND_OP=69
-    LEFT_SHIFT=70
-    RIGHT_SHIFT=71
-    ADD=72
-    MINUS=73
-    DIV=74
-    MOD=75
-    IDIV=76
-    NOT_OP=77
-    OPEN_BRACE=78
-    CLOSE_BRACE=79
-    LESS_THAN=80
-    GREATER_THAN=81
-    EQUALS=82
-    GT_EQ=83
-    LT_EQ=84
-    NOT_EQ_1=85
-    NOT_EQ_2=86
-    AT=87
-    ARROW=88
-    ADD_ASSIGN=89
-    SUB_ASSIGN=90
-    MULT_ASSIGN=91
-    AT_ASSIGN=92
-    DIV_ASSIGN=93
-    MOD_ASSIGN=94
-    AND_ASSIGN=95
-    OR_ASSIGN=96
-    XOR_ASSIGN=97
-    LEFT_SHIFT_ASSIGN=98
-    RIGHT_SHIFT_ASSIGN=99
-    POWER_ASSIGN=100
-    IDIV_ASSIGN=101
-    PYTHON_START=102
-    PYTHON_END=103
-    SKIP_=104
-    NEWLINE=105
+    STRING = 1
+    NUMBER = 2
+    INTEGER = 3
+    AND = 4
+    AS = 5
+    ASSERT = 6
+    ASYNC = 7
+    AWAIT = 8
+    BREAK = 9
+    CASE = 10
+    CLASS = 11
+    CONTINUE = 12
+    DEF = 13
+    DEL = 14
+    ELIF = 15
+    ELSE = 16
+    EXCEPT = 17
+    FALSE = 18
+    FINALLY = 19
+    FOR = 20
+    FROM = 21
+    GLOBAL = 22
+    IF = 23
+    IMPORT = 24
+    IN = 25
+    IS = 26
+    LAMBDA = 27
+    MATCH = 28
+    NONE = 29
+    NONLOCAL = 30
+    NOT = 31
+    OR = 32
+    PASS = 33
+    RAISE = 34
+    RETURN = 35
+    TRUE = 36
+    TRY = 37
+    UNDERSCORE = 38
+    WHILE = 39
+    WITH = 40
+    YIELD = 41
+    FORALL = 42
+    EXISTS = 43
+    NAME = 44
+    STRING_LITERAL = 45
+    BYTES_LITERAL = 46
+    DECIMAL_INTEGER = 47
+    OCT_INTEGER = 48
+    HEX_INTEGER = 49
+    BIN_INTEGER = 50
+    FLOAT_NUMBER = 51
+    IMAG_NUMBER = 52
+    QUESTION = 53
+    BACKSLASH = 54
+    DOT = 55
+    ELLIPSIS = 56
+    STAR = 57
+    OPEN_PAREN = 58
+    CLOSE_PAREN = 59
+    COMMA = 60
+    COLON = 61
+    SEMI_COLON = 62
+    POWER = 63
+    ASSIGN = 64
+    OPEN_BRACK = 65
+    CLOSE_BRACK = 66
+    OR_OP = 67
+    XOR = 68
+    AND_OP = 69
+    LEFT_SHIFT = 70
+    RIGHT_SHIFT = 71
+    ADD = 72
+    MINUS = 73
+    DIV = 74
+    MOD = 75
+    IDIV = 76
+    NOT_OP = 77
+    OPEN_BRACE = 78
+    CLOSE_BRACE = 79
+    LESS_THAN = 80
+    GREATER_THAN = 81
+    EQUALS = 82
+    GT_EQ = 83
+    LT_EQ = 84
+    NOT_EQ_1 = 85
+    NOT_EQ_2 = 86
+    AT = 87
+    ARROW = 88
+    ADD_ASSIGN = 89
+    SUB_ASSIGN = 90
+    MULT_ASSIGN = 91
+    AT_ASSIGN = 92
+    DIV_ASSIGN = 93
+    MOD_ASSIGN = 94
+    AND_ASSIGN = 95
+    OR_ASSIGN = 96
+    XOR_ASSIGN = 97
+    LEFT_SHIFT_ASSIGN = 98
+    RIGHT_SHIFT_ASSIGN = 99
+    POWER_ASSIGN = 100
+    IDIV_ASSIGN = 101
+    PYTHON_START = 102
+    PYTHON_END = 103
+    SKIP_ = 104
+    NEWLINE = 105
 
-    def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
+    def __init__(self, input: TokenStream, output: TextIO = sys.stdout):
         super().__init__(input, output)
         self.checkVersion("4.9.2")
-        self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
+        self._interp = ParserATNSimulator(
+            self, self.atn, self.decisionsToDFA, self.sharedContextCache
+        )
         self._predicates = None
 
-
-
-
     class FandangoContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def program(self):
-            return self.getTypedRuleContext(FandangoParser.ProgramContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ProgramContext, 0)
 
         def EOF(self):
             return self.getToken(FandangoParser.EOF, 0)
@@ -1244,25 +1526,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_fandango
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFandango" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterFandango"):
                 listener.enterFandango(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFandango" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitFandango"):
                 listener.exitFandango(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFandango" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitFandango"):
                 return visitor.visitFandango(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def fandango(self):
-
         localctx = FandangoParser.FandangoContext(self, self._ctx, self.state)
         self.enterRule(localctx, 0, self.RULE_fandango)
         try:
@@ -1271,11 +1549,10 @@ class FandangoParser ( Parser ):
             self.program()
             self.state = 284
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,0,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 0, self._ctx)
             if la_ == 1:
                 self.state = 283
                 self.match(FandangoParser.EOF)
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -1285,58 +1562,54 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ProgramContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def NEWLINE(self, i:int=None):
+        def NEWLINE(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.NEWLINE)
             else:
                 return self.getToken(FandangoParser.NEWLINE, i)
 
-        def statement(self, i:int=None):
+        def statement(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.StatementContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.StatementContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.StatementContext, i)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_program
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterProgram" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterProgram"):
                 listener.enterProgram(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitProgram" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitProgram"):
                 listener.exitProgram(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitProgram" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitProgram"):
                 return visitor.visitProgram(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def program(self):
-
         localctx = FandangoParser.ProgramContext(self, self._ctx, self.state)
         self.enterRule(localctx, 2, self.RULE_program)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 289
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==FandangoParser.NEWLINE:
+            while _la == FandangoParser.NEWLINE:
                 self.state = 286
                 self.match(FandangoParser.NEWLINE)
                 self.state = 291
@@ -1346,13 +1619,81 @@ class FandangoParser ( Parser ):
             self.state = 301
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NUMBER) | (1 << FandangoParser.AND) | (1 << FandangoParser.AS) | (1 << FandangoParser.ASSERT) | (1 << FandangoParser.ASYNC) | (1 << FandangoParser.AWAIT) | (1 << FandangoParser.BREAK) | (1 << FandangoParser.CASE) | (1 << FandangoParser.CLASS) | (1 << FandangoParser.CONTINUE) | (1 << FandangoParser.DEF) | (1 << FandangoParser.DEL) | (1 << FandangoParser.ELIF) | (1 << FandangoParser.ELSE) | (1 << FandangoParser.EXCEPT) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.FINALLY) | (1 << FandangoParser.FOR) | (1 << FandangoParser.FROM) | (1 << FandangoParser.GLOBAL) | (1 << FandangoParser.IF) | (1 << FandangoParser.IMPORT) | (1 << FandangoParser.IN) | (1 << FandangoParser.IS) | (1 << FandangoParser.LAMBDA) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.NONLOCAL) | (1 << FandangoParser.NOT) | (1 << FandangoParser.OR) | (1 << FandangoParser.PASS) | (1 << FandangoParser.RAISE) | (1 << FandangoParser.RETURN) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.TRY) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.WHILE) | (1 << FandangoParser.WITH) | (1 << FandangoParser.YIELD) | (1 << FandangoParser.FORALL) | (1 << FandangoParser.EXISTS) | (1 << FandangoParser.NAME) | (1 << FandangoParser.ELLIPSIS) | (1 << FandangoParser.OPEN_PAREN))) != 0) or ((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (FandangoParser.OPEN_BRACK - 65)) | (1 << (FandangoParser.ADD - 65)) | (1 << (FandangoParser.MINUS - 65)) | (1 << (FandangoParser.NOT_OP - 65)) | (1 << (FandangoParser.OPEN_BRACE - 65)) | (1 << (FandangoParser.AT - 65)) | (1 << (FandangoParser.PYTHON_START - 65)))) != 0):
+            while (
+                ((_la) & ~0x3F) == 0
+                and (
+                    (1 << _la)
+                    & (
+                        (1 << FandangoParser.STRING)
+                        | (1 << FandangoParser.NUMBER)
+                        | (1 << FandangoParser.AND)
+                        | (1 << FandangoParser.AS)
+                        | (1 << FandangoParser.ASSERT)
+                        | (1 << FandangoParser.ASYNC)
+                        | (1 << FandangoParser.AWAIT)
+                        | (1 << FandangoParser.BREAK)
+                        | (1 << FandangoParser.CASE)
+                        | (1 << FandangoParser.CLASS)
+                        | (1 << FandangoParser.CONTINUE)
+                        | (1 << FandangoParser.DEF)
+                        | (1 << FandangoParser.DEL)
+                        | (1 << FandangoParser.ELIF)
+                        | (1 << FandangoParser.ELSE)
+                        | (1 << FandangoParser.EXCEPT)
+                        | (1 << FandangoParser.FALSE)
+                        | (1 << FandangoParser.FINALLY)
+                        | (1 << FandangoParser.FOR)
+                        | (1 << FandangoParser.FROM)
+                        | (1 << FandangoParser.GLOBAL)
+                        | (1 << FandangoParser.IF)
+                        | (1 << FandangoParser.IMPORT)
+                        | (1 << FandangoParser.IN)
+                        | (1 << FandangoParser.IS)
+                        | (1 << FandangoParser.LAMBDA)
+                        | (1 << FandangoParser.MATCH)
+                        | (1 << FandangoParser.NONE)
+                        | (1 << FandangoParser.NONLOCAL)
+                        | (1 << FandangoParser.NOT)
+                        | (1 << FandangoParser.OR)
+                        | (1 << FandangoParser.PASS)
+                        | (1 << FandangoParser.RAISE)
+                        | (1 << FandangoParser.RETURN)
+                        | (1 << FandangoParser.TRUE)
+                        | (1 << FandangoParser.TRY)
+                        | (1 << FandangoParser.UNDERSCORE)
+                        | (1 << FandangoParser.WHILE)
+                        | (1 << FandangoParser.WITH)
+                        | (1 << FandangoParser.YIELD)
+                        | (1 << FandangoParser.FORALL)
+                        | (1 << FandangoParser.EXISTS)
+                        | (1 << FandangoParser.NAME)
+                        | (1 << FandangoParser.ELLIPSIS)
+                        | (1 << FandangoParser.OPEN_PAREN)
+                    )
+                )
+                != 0
+            ) or (
+                (((_la - 65)) & ~0x3F) == 0
+                and (
+                    (1 << (_la - 65))
+                    & (
+                        (1 << (FandangoParser.OPEN_BRACK - 65))
+                        | (1 << (FandangoParser.ADD - 65))
+                        | (1 << (FandangoParser.MINUS - 65))
+                        | (1 << (FandangoParser.NOT_OP - 65))
+                        | (1 << (FandangoParser.OPEN_BRACE - 65))
+                        | (1 << (FandangoParser.AT - 65))
+                        | (1 << (FandangoParser.PYTHON_START - 65))
+                    )
+                )
+                != 0
+            ):
                 self.state = 292
                 self.statement()
                 self.state = 296
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la==FandangoParser.NEWLINE:
+                while _la == FandangoParser.NEWLINE:
                     self.state = 293
                     self.match(FandangoParser.NEWLINE)
                     self.state = 298
@@ -1371,54 +1712,48 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class StatementContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def production(self):
-            return self.getTypedRuleContext(FandangoParser.ProductionContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ProductionContext, 0)
 
         def constraint(self):
-            return self.getTypedRuleContext(FandangoParser.ConstraintContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ConstraintContext, 0)
 
         def python(self):
-            return self.getTypedRuleContext(FandangoParser.PythonContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.PythonContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_statement
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterStatement" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterStatement"):
                 listener.enterStatement(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitStatement" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitStatement"):
                 listener.exitStatement(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitStatement" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitStatement"):
                 return visitor.visitStatement(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def statement(self):
-
         localctx = FandangoParser.StatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 4, self.RULE_statement)
         try:
             self.state = 307
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,4,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 4, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 304
@@ -1437,7 +1772,6 @@ class FandangoParser ( Parser ):
                 self.python()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -1446,27 +1780,26 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ProductionContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def rule_name(self):
-            return self.getTypedRuleContext(FandangoParser.Rule_nameContext,0)
+            return self.getTypedRuleContext(FandangoParser.Rule_nameContext, 0)
 
-
-        def COLON(self, i:int=None):
+        def COLON(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COLON)
             else:
                 return self.getToken(FandangoParser.COLON, i)
 
         def alternatives(self):
-            return self.getTypedRuleContext(FandangoParser.AlternativesContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.AlternativesContext, 0)
 
         def SEMI_COLON(self):
             return self.getToken(FandangoParser.SEMI_COLON, 0)
@@ -1477,28 +1810,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_production
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterProduction" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterProduction"):
                 listener.enterProduction(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitProduction" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitProduction"):
                 listener.exitProduction(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitProduction" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitProduction"):
                 return visitor.visitProduction(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def production(self):
-
         localctx = FandangoParser.ProductionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 6, self.RULE_production)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 309
@@ -1510,12 +1839,11 @@ class FandangoParser ( Parser ):
             self.state = 314
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.COLON:
+            if _la == FandangoParser.COLON:
                 self.state = 312
                 self.match(FandangoParser.COLON)
                 self.state = 313
                 self.match(FandangoParser.NAME)
-
 
             self.state = 316
             self.match(FandangoParser.SEMI_COLON)
@@ -1527,22 +1855,22 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class AlternativesContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def alternative(self, i:int=None):
+        def alternative(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.AlternativeContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.AlternativeContext,i)
+                return self.getTypedRuleContext(FandangoParser.AlternativeContext, i)
 
-
-        def OR_OP(self, i:int=None):
+        def OR_OP(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.OR_OP)
             else:
@@ -1551,28 +1879,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_alternatives
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAlternatives" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAlternatives"):
                 listener.enterAlternatives(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAlternatives" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAlternatives"):
                 listener.exitAlternatives(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAlternatives" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAlternatives"):
                 return visitor.visitAlternatives(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def alternatives(self):
-
         localctx = FandangoParser.AlternativesContext(self, self._ctx, self.state)
         self.enterRule(localctx, 8, self.RULE_alternatives)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 318
@@ -1580,7 +1904,7 @@ class FandangoParser ( Parser ):
             self.state = 323
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==FandangoParser.OR_OP:
+            while _la == FandangoParser.OR_OP:
                 self.state = 319
                 self.match(FandangoParser.OR_OP)
                 self.state = 320
@@ -1597,46 +1921,42 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class AlternativeContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def operator(self, i:int=None):
+        def operator(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.OperatorContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.OperatorContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.OperatorContext, i)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_alternative
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAlternative" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAlternative"):
                 listener.enterAlternative(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAlternative" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAlternative"):
                 listener.exitAlternative(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAlternative" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAlternative"):
                 return visitor.visitAlternative(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def alternative(self):
-
         localctx = FandangoParser.AlternativeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 10, self.RULE_alternative)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 326
@@ -1644,7 +1964,22 @@ class FandangoParser ( Parser ):
             self.state = 330
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NAME) | (1 << FandangoParser.OPEN_PAREN))) != 0) or _la==FandangoParser.OPEN_BRACK or _la==FandangoParser.NEWLINE:
+            while (
+                (
+                    ((_la) & ~0x3F) == 0
+                    and (
+                        (1 << _la)
+                        & (
+                            (1 << FandangoParser.STRING)
+                            | (1 << FandangoParser.NAME)
+                            | (1 << FandangoParser.OPEN_PAREN)
+                        )
+                    )
+                    != 0
+                )
+                or _la == FandangoParser.OPEN_BRACK
+                or _la == FandangoParser.NEWLINE
+            ):
                 self.state = 327
                 self.operator()
                 self.state = 332
@@ -1659,62 +1994,54 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class OperatorContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def symbol(self):
-            return self.getTypedRuleContext(FandangoParser.SymbolContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.SymbolContext, 0)
 
         def kleene(self):
-            return self.getTypedRuleContext(FandangoParser.KleeneContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.KleeneContext, 0)
 
         def plus(self):
-            return self.getTypedRuleContext(FandangoParser.PlusContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.PlusContext, 0)
 
         def option(self):
-            return self.getTypedRuleContext(FandangoParser.OptionContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.OptionContext, 0)
 
         def repeat(self):
-            return self.getTypedRuleContext(FandangoParser.RepeatContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.RepeatContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_operator
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterOperator" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterOperator"):
                 listener.enterOperator(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitOperator" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitOperator"):
                 listener.exitOperator(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitOperator" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitOperator"):
                 return visitor.visitOperator(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def operator(self):
-
         localctx = FandangoParser.OperatorContext(self, self._ctx, self.state)
         self.enterRule(localctx, 12, self.RULE_operator)
         try:
             self.state = 338
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,8,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 8, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 333
@@ -1745,7 +2072,6 @@ class FandangoParser ( Parser ):
                 self.repeat()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -1754,17 +2080,17 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class KleeneContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def symbol(self):
-            return self.getTypedRuleContext(FandangoParser.SymbolContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.SymbolContext, 0)
 
         def STAR(self):
             return self.getToken(FandangoParser.STAR, 0)
@@ -1772,25 +2098,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_kleene
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterKleene" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterKleene"):
                 listener.enterKleene(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitKleene" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitKleene"):
                 listener.exitKleene(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitKleene" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitKleene"):
                 return visitor.visitKleene(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def kleene(self):
-
         localctx = FandangoParser.KleeneContext(self, self._ctx, self.state)
         self.enterRule(localctx, 14, self.RULE_kleene)
         try:
@@ -1807,17 +2129,17 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class PlusContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def symbol(self):
-            return self.getTypedRuleContext(FandangoParser.SymbolContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.SymbolContext, 0)
 
         def ADD(self):
             return self.getToken(FandangoParser.ADD, 0)
@@ -1825,25 +2147,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_plus
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPlus" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterPlus"):
                 listener.enterPlus(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPlus" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitPlus"):
                 listener.exitPlus(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPlus" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitPlus"):
                 return visitor.visitPlus(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def plus(self):
-
         localctx = FandangoParser.PlusContext(self, self._ctx, self.state)
         self.enterRule(localctx, 16, self.RULE_plus)
         try:
@@ -1860,17 +2178,17 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class OptionContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def symbol(self):
-            return self.getTypedRuleContext(FandangoParser.SymbolContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.SymbolContext, 0)
 
         def QUESTION(self):
             return self.getToken(FandangoParser.QUESTION, 0)
@@ -1878,25 +2196,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_option
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterOption" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterOption"):
                 listener.enterOption(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitOption" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitOption"):
                 listener.exitOption(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitOption" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitOption"):
                 return visitor.visitOption(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def option(self):
-
         localctx = FandangoParser.OptionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 18, self.RULE_option)
         try:
@@ -1913,22 +2227,22 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class RepeatContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def symbol(self):
-            return self.getTypedRuleContext(FandangoParser.SymbolContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.SymbolContext, 0)
 
         def OPEN_BRACE(self):
             return self.getToken(FandangoParser.OPEN_BRACE, 0)
 
-        def NUMBER(self, i:int=None):
+        def NUMBER(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.NUMBER)
             else:
@@ -1943,28 +2257,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_repeat
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRepeat" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterRepeat"):
                 listener.enterRepeat(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRepeat" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitRepeat"):
                 listener.exitRepeat(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRepeat" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitRepeat"):
                 return visitor.visitRepeat(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def repeat(self):
-
         localctx = FandangoParser.RepeatContext(self, self._ctx, self.state)
         self.enterRule(localctx, 20, self.RULE_repeat)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 349
@@ -1976,12 +2286,11 @@ class FandangoParser ( Parser ):
             self.state = 354
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.COMMA:
+            if _la == FandangoParser.COMMA:
                 self.state = 352
                 self.match(FandangoParser.COMMA)
                 self.state = 353
                 self.match(FandangoParser.NUMBER)
-
 
             self.state = 356
             self.match(FandangoParser.CLOSE_BRACE)
@@ -1993,11 +2302,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class SymbolContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2011,17 +2321,15 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.OPEN_PAREN, 0)
 
         def alternatives(self):
-            return self.getTypedRuleContext(FandangoParser.AlternativesContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.AlternativesContext, 0)
 
         def CLOSE_PAREN(self):
             return self.getToken(FandangoParser.CLOSE_PAREN, 0)
 
         def char_set(self):
-            return self.getTypedRuleContext(FandangoParser.Char_setContext,0)
+            return self.getTypedRuleContext(FandangoParser.Char_setContext, 0)
 
-
-        def NEWLINE(self, i:int=None):
+        def NEWLINE(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.NEWLINE)
             else:
@@ -2030,34 +2338,30 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_symbol
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSymbol" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSymbol"):
                 listener.enterSymbol(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSymbol" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSymbol"):
                 listener.exitSymbol(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSymbol" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSymbol"):
                 return visitor.visitSymbol(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def symbol(self):
-
         localctx = FandangoParser.SymbolContext(self, self._ctx, self.state)
         self.enterRule(localctx, 22, self.RULE_symbol)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 361
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==FandangoParser.NEWLINE:
+            while _la == FandangoParser.NEWLINE:
                 self.state = 358
                 self.match(FandangoParser.NEWLINE)
                 self.state = 363
@@ -2092,14 +2396,14 @@ class FandangoParser ( Parser ):
 
             self.state = 376
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,12,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 12, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     self.state = 373
-                    self.match(FandangoParser.NEWLINE) 
+                    self.match(FandangoParser.NEWLINE)
                 self.state = 378
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,12,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 12, self._ctx)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -2109,11 +2413,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Char_setContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2132,28 +2437,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_char_set
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterChar_set" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterChar_set"):
                 listener.enterChar_set(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitChar_set" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitChar_set"):
                 listener.exitChar_set(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitChar_set" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitChar_set"):
                 return visitor.visitChar_set(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def char_set(self):
-
         localctx = FandangoParser.Char_setContext(self, self._ctx, self.state)
         self.enterRule(localctx, 24, self.RULE_char_set)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 379
@@ -2161,10 +2462,9 @@ class FandangoParser ( Parser ):
             self.state = 381
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.XOR:
+            if _la == FandangoParser.XOR:
                 self.state = 380
                 self.match(FandangoParser.XOR)
-
 
             self.state = 383
             self.match(FandangoParser.STRING)
@@ -2178,11 +2478,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Rule_nameContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2309,33 +2610,79 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_rule_name
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRule_name" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterRule_name"):
                 listener.enterRule_name(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRule_name" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitRule_name"):
                 listener.exitRule_name(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRule_name" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitRule_name"):
                 return visitor.visitRule_name(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def rule_name(self):
-
         localctx = FandangoParser.Rule_nameContext(self, self._ctx, self.state)
         self.enterRule(localctx, 26, self.RULE_rule_name)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 386
             _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.AND) | (1 << FandangoParser.AS) | (1 << FandangoParser.ASSERT) | (1 << FandangoParser.ASYNC) | (1 << FandangoParser.AWAIT) | (1 << FandangoParser.BREAK) | (1 << FandangoParser.CASE) | (1 << FandangoParser.CLASS) | (1 << FandangoParser.CONTINUE) | (1 << FandangoParser.DEF) | (1 << FandangoParser.DEL) | (1 << FandangoParser.ELIF) | (1 << FandangoParser.ELSE) | (1 << FandangoParser.EXCEPT) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.FINALLY) | (1 << FandangoParser.FOR) | (1 << FandangoParser.FROM) | (1 << FandangoParser.GLOBAL) | (1 << FandangoParser.IF) | (1 << FandangoParser.IMPORT) | (1 << FandangoParser.IN) | (1 << FandangoParser.IS) | (1 << FandangoParser.LAMBDA) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.NONLOCAL) | (1 << FandangoParser.NOT) | (1 << FandangoParser.OR) | (1 << FandangoParser.PASS) | (1 << FandangoParser.RAISE) | (1 << FandangoParser.RETURN) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.TRY) | (1 << FandangoParser.WHILE) | (1 << FandangoParser.WITH) | (1 << FandangoParser.YIELD) | (1 << FandangoParser.FORALL) | (1 << FandangoParser.EXISTS) | (1 << FandangoParser.NAME))) != 0)):
+            if not (
+                (
+                    ((_la) & ~0x3F) == 0
+                    and (
+                        (1 << _la)
+                        & (
+                            (1 << FandangoParser.AND)
+                            | (1 << FandangoParser.AS)
+                            | (1 << FandangoParser.ASSERT)
+                            | (1 << FandangoParser.ASYNC)
+                            | (1 << FandangoParser.AWAIT)
+                            | (1 << FandangoParser.BREAK)
+                            | (1 << FandangoParser.CASE)
+                            | (1 << FandangoParser.CLASS)
+                            | (1 << FandangoParser.CONTINUE)
+                            | (1 << FandangoParser.DEF)
+                            | (1 << FandangoParser.DEL)
+                            | (1 << FandangoParser.ELIF)
+                            | (1 << FandangoParser.ELSE)
+                            | (1 << FandangoParser.EXCEPT)
+                            | (1 << FandangoParser.FALSE)
+                            | (1 << FandangoParser.FINALLY)
+                            | (1 << FandangoParser.FOR)
+                            | (1 << FandangoParser.FROM)
+                            | (1 << FandangoParser.GLOBAL)
+                            | (1 << FandangoParser.IF)
+                            | (1 << FandangoParser.IMPORT)
+                            | (1 << FandangoParser.IN)
+                            | (1 << FandangoParser.IS)
+                            | (1 << FandangoParser.LAMBDA)
+                            | (1 << FandangoParser.MATCH)
+                            | (1 << FandangoParser.NONE)
+                            | (1 << FandangoParser.NONLOCAL)
+                            | (1 << FandangoParser.NOT)
+                            | (1 << FandangoParser.OR)
+                            | (1 << FandangoParser.PASS)
+                            | (1 << FandangoParser.RAISE)
+                            | (1 << FandangoParser.RETURN)
+                            | (1 << FandangoParser.TRUE)
+                            | (1 << FandangoParser.TRY)
+                            | (1 << FandangoParser.WHILE)
+                            | (1 << FandangoParser.WITH)
+                            | (1 << FandangoParser.YIELD)
+                            | (1 << FandangoParser.FORALL)
+                            | (1 << FandangoParser.EXISTS)
+                            | (1 << FandangoParser.NAME)
+                        )
+                    )
+                    != 0
+                )
+            ):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -2348,17 +2695,17 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ConstraintContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def implies(self):
-            return self.getTypedRuleContext(FandangoParser.ImpliesContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ImpliesContext, 0)
 
         def NEWLINE(self):
             return self.getToken(FandangoParser.NEWLINE, 0)
@@ -2369,35 +2716,31 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_constraint
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConstraint" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterConstraint"):
                 listener.enterConstraint(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConstraint" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitConstraint"):
                 listener.exitConstraint(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitConstraint" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitConstraint"):
                 return visitor.visitConstraint(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def constraint(self):
-
         localctx = FandangoParser.ConstraintContext(self, self._ctx, self.state)
         self.enterRule(localctx, 28, self.RULE_constraint)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 388
             self.implies()
             self.state = 389
             _la = self._input.LA(1)
-            if not(_la==FandangoParser.EOF or _la==FandangoParser.NEWLINE):
+            if not (_la == FandangoParser.EOF or _la == FandangoParser.NEWLINE):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -2410,53 +2753,48 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ImpliesContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def quantifier(self):
-            return self.getTypedRuleContext(FandangoParser.QuantifierContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.QuantifierContext, 0)
 
         def ARROW(self):
             return self.getToken(FandangoParser.ARROW, 0)
 
         def implies(self):
-            return self.getTypedRuleContext(FandangoParser.ImpliesContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ImpliesContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_implies
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterImplies" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterImplies"):
                 listener.enterImplies(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitImplies" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitImplies"):
                 listener.exitImplies(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitImplies" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitImplies"):
                 return visitor.visitImplies(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def implies(self):
-
         localctx = FandangoParser.ImpliesContext(self, self._ctx, self.state)
         self.enterRule(localctx, 30, self.RULE_implies)
         try:
             self.state = 396
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,14,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 14, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 391
@@ -2473,7 +2811,6 @@ class FandangoParser ( Parser ):
                 self.quantifier()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -2482,11 +2819,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class QuantifierContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2500,51 +2838,44 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.IN, 0)
 
         def selector(self):
-            return self.getTypedRuleContext(FandangoParser.SelectorContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.SelectorContext, 0)
 
         def COLON(self):
             return self.getToken(FandangoParser.COLON, 0)
 
         def quantifier(self):
-            return self.getTypedRuleContext(FandangoParser.QuantifierContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.QuantifierContext, 0)
 
         def EXISTS(self):
             return self.getToken(FandangoParser.EXISTS, 0)
 
         def disjunction(self):
-            return self.getTypedRuleContext(FandangoParser.DisjunctionContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.DisjunctionContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_quantifier
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterQuantifier" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterQuantifier"):
                 listener.enterQuantifier(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitQuantifier" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitQuantifier"):
                 listener.exitQuantifier(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitQuantifier" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitQuantifier"):
                 return visitor.visitQuantifier(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def quantifier(self):
-
         localctx = FandangoParser.QuantifierContext(self, self._ctx, self.state)
         self.enterRule(localctx, 32, self.RULE_quantifier)
         try:
             self.state = 413
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,15,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 15, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 398
@@ -2583,7 +2914,6 @@ class FandangoParser ( Parser ):
                 self.disjunction()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -2592,22 +2922,22 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class DisjunctionContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def conjunction(self, i:int=None):
+        def conjunction(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.ConjunctionContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.ConjunctionContext,i)
+                return self.getTypedRuleContext(FandangoParser.ConjunctionContext, i)
 
-
-        def OR(self, i:int=None):
+        def OR(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.OR)
             else:
@@ -2616,28 +2946,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_disjunction
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDisjunction" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDisjunction"):
                 listener.enterDisjunction(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDisjunction" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDisjunction"):
                 listener.exitDisjunction(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDisjunction" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDisjunction"):
                 return visitor.visitDisjunction(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def disjunction(self):
-
         localctx = FandangoParser.DisjunctionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 34, self.RULE_disjunction)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 415
@@ -2645,7 +2971,7 @@ class FandangoParser ( Parser ):
             self.state = 420
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==FandangoParser.OR:
+            while _la == FandangoParser.OR:
                 self.state = 416
                 self.match(FandangoParser.OR)
                 self.state = 417
@@ -2662,22 +2988,22 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ConjunctionContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def formula_atom(self, i:int=None):
+        def formula_atom(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Formula_atomContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.Formula_atomContext,i)
+                return self.getTypedRuleContext(FandangoParser.Formula_atomContext, i)
 
-
-        def AND(self, i:int=None):
+        def AND(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.AND)
             else:
@@ -2686,28 +3012,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_conjunction
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterConjunction" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterConjunction"):
                 listener.enterConjunction(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitConjunction" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitConjunction"):
                 listener.exitConjunction(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitConjunction" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitConjunction"):
                 return visitor.visitConjunction(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def conjunction(self):
-
         localctx = FandangoParser.ConjunctionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 36, self.RULE_conjunction)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 423
@@ -2715,7 +3037,7 @@ class FandangoParser ( Parser ):
             self.state = 428
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==FandangoParser.AND:
+            while _la == FandangoParser.AND:
                 self.state = 424
                 self.match(FandangoParser.AND)
                 self.state = 425
@@ -2732,24 +3054,23 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Formula_atomContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def formula_comparison(self):
-            return self.getTypedRuleContext(FandangoParser.Formula_comparisonContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Formula_comparisonContext, 0)
 
         def OPEN_PAREN(self):
             return self.getToken(FandangoParser.OPEN_PAREN, 0)
 
         def implies(self):
-            return self.getTypedRuleContext(FandangoParser.ImpliesContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ImpliesContext, 0)
 
         def CLOSE_PAREN(self):
             return self.getToken(FandangoParser.CLOSE_PAREN, 0)
@@ -2757,31 +3078,27 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_formula_atom
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFormula_atom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterFormula_atom"):
                 listener.enterFormula_atom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFormula_atom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitFormula_atom"):
                 listener.exitFormula_atom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFormula_atom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitFormula_atom"):
                 return visitor.visitFormula_atom(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def formula_atom(self):
-
         localctx = FandangoParser.Formula_atomContext(self, self._ctx, self.state)
         self.enterRule(localctx, 38, self.RULE_formula_atom)
         try:
             self.state = 436
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,18,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 18, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 431
@@ -2798,7 +3115,6 @@ class FandangoParser ( Parser ):
                 self.match(FandangoParser.CLOSE_PAREN)
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -2807,58 +3123,58 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Formula_comparisonContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def expression(self, i:int=None):
+        def expression(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.ExpressionContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.ExpressionContext,i)
+                return self.getTypedRuleContext(FandangoParser.ExpressionContext, i)
 
-
-        def LESS_THAN(self, i:int=None):
+        def LESS_THAN(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.LESS_THAN)
             else:
                 return self.getToken(FandangoParser.LESS_THAN, i)
 
-        def GREATER_THAN(self, i:int=None):
+        def GREATER_THAN(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.GREATER_THAN)
             else:
                 return self.getToken(FandangoParser.GREATER_THAN, i)
 
-        def EQUALS(self, i:int=None):
+        def EQUALS(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.EQUALS)
             else:
                 return self.getToken(FandangoParser.EQUALS, i)
 
-        def GT_EQ(self, i:int=None):
+        def GT_EQ(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.GT_EQ)
             else:
                 return self.getToken(FandangoParser.GT_EQ, i)
 
-        def LT_EQ(self, i:int=None):
+        def LT_EQ(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.LT_EQ)
             else:
                 return self.getToken(FandangoParser.LT_EQ, i)
 
-        def NOT_EQ_1(self, i:int=None):
+        def NOT_EQ_1(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.NOT_EQ_1)
             else:
                 return self.getToken(FandangoParser.NOT_EQ_1, i)
 
-        def NOT_EQ_2(self, i:int=None):
+        def NOT_EQ_2(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.NOT_EQ_2)
             else:
@@ -2867,28 +3183,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_formula_comparison
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFormula_comparison" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterFormula_comparison"):
                 listener.enterFormula_comparison(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFormula_comparison" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitFormula_comparison"):
                 listener.exitFormula_comparison(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFormula_comparison" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitFormula_comparison"):
                 return visitor.visitFormula_comparison(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def formula_comparison(self):
-
         localctx = FandangoParser.Formula_comparisonContext(self, self._ctx, self.state)
         self.enterRule(localctx, 40, self.RULE_formula_comparison)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 438
@@ -2896,10 +3208,38 @@ class FandangoParser ( Parser ):
             self.state = 443
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while ((((_la - 80)) & ~0x3f) == 0 and ((1 << (_la - 80)) & ((1 << (FandangoParser.LESS_THAN - 80)) | (1 << (FandangoParser.GREATER_THAN - 80)) | (1 << (FandangoParser.EQUALS - 80)) | (1 << (FandangoParser.GT_EQ - 80)) | (1 << (FandangoParser.LT_EQ - 80)) | (1 << (FandangoParser.NOT_EQ_1 - 80)) | (1 << (FandangoParser.NOT_EQ_2 - 80)))) != 0):
+            while (((_la - 80)) & ~0x3F) == 0 and (
+                (1 << (_la - 80))
+                & (
+                    (1 << (FandangoParser.LESS_THAN - 80))
+                    | (1 << (FandangoParser.GREATER_THAN - 80))
+                    | (1 << (FandangoParser.EQUALS - 80))
+                    | (1 << (FandangoParser.GT_EQ - 80))
+                    | (1 << (FandangoParser.LT_EQ - 80))
+                    | (1 << (FandangoParser.NOT_EQ_1 - 80))
+                    | (1 << (FandangoParser.NOT_EQ_2 - 80))
+                )
+            ) != 0:
                 self.state = 439
                 _la = self._input.LA(1)
-                if not(((((_la - 80)) & ~0x3f) == 0 and ((1 << (_la - 80)) & ((1 << (FandangoParser.LESS_THAN - 80)) | (1 << (FandangoParser.GREATER_THAN - 80)) | (1 << (FandangoParser.EQUALS - 80)) | (1 << (FandangoParser.GT_EQ - 80)) | (1 << (FandangoParser.LT_EQ - 80)) | (1 << (FandangoParser.NOT_EQ_1 - 80)) | (1 << (FandangoParser.NOT_EQ_2 - 80)))) != 0)):
+                if not (
+                    (
+                        (((_la - 80)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 80))
+                            & (
+                                (1 << (FandangoParser.LESS_THAN - 80))
+                                | (1 << (FandangoParser.GREATER_THAN - 80))
+                                | (1 << (FandangoParser.EQUALS - 80))
+                                | (1 << (FandangoParser.GT_EQ - 80))
+                                | (1 << (FandangoParser.LT_EQ - 80))
+                                | (1 << (FandangoParser.NOT_EQ_1 - 80))
+                                | (1 << (FandangoParser.NOT_EQ_2 - 80))
+                            )
+                        )
+                        != 0
+                    )
+                ):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -2918,50 +3258,45 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ExpressionContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def selector(self):
-            return self.getTypedRuleContext(FandangoParser.SelectorContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.SelectorContext, 0)
 
         def expr(self):
-            return self.getTypedRuleContext(FandangoParser.ExprContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ExprContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_expression
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpression" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterExpression"):
                 listener.enterExpression(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpression" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitExpression"):
                 listener.exitExpression(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpression" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitExpression"):
                 return visitor.visitExpression(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def expression(self):
-
         localctx = FandangoParser.ExpressionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 42, self.RULE_expression)
         try:
             self.state = 448
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,20,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 20, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 446
@@ -2974,7 +3309,6 @@ class FandangoParser ( Parser ):
                 self.expr(0)
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -2983,22 +3317,22 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class SelectorContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def selection(self, i:int=None):
+        def selection(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.SelectionContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.SelectionContext,i)
+                return self.getTypedRuleContext(FandangoParser.SelectionContext, i)
 
-
-        def DOT(self, i:int=None):
+        def DOT(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.DOT)
             else:
@@ -3007,25 +3341,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_selector
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSelector" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSelector"):
                 listener.enterSelector(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSelector" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSelector"):
                 listener.exitSelector(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSelector" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSelector"):
                 return visitor.visitSelector(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def selector(self):
-
         localctx = FandangoParser.SelectorContext(self, self._ctx, self.state)
         self.enterRule(localctx, 44, self.RULE_selector)
         try:
@@ -3034,16 +3364,16 @@ class FandangoParser ( Parser ):
             self.selection()
             self.state = 455
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,21,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 21, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     self.state = 451
                     self.match(FandangoParser.DOT)
                     self.state = 452
-                    self.selection() 
+                    self.selection()
                 self.state = 457
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,21,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 21, self._ctx)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -3053,24 +3383,23 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class SelectionContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def rule_name(self):
-            return self.getTypedRuleContext(FandangoParser.Rule_nameContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Rule_nameContext, 0)
 
         def OPEN_BRACK(self):
             return self.getToken(FandangoParser.OPEN_BRACK, 0)
 
         def subscriptlist(self):
-            return self.getTypedRuleContext(FandangoParser.SubscriptlistContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.SubscriptlistContext, 0)
 
         def CLOSE_BRACK(self):
             return self.getToken(FandangoParser.CLOSE_BRACK, 0)
@@ -3084,25 +3413,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_selection
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSelection" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSelection"):
                 listener.enterSelection(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSelection" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSelection"):
                 listener.exitSelection(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSelection" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSelection"):
                 return visitor.visitSelection(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def selection(self):
-
         localctx = FandangoParser.SelectionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 46, self.RULE_selection)
         try:
@@ -3111,7 +3436,7 @@ class FandangoParser ( Parser ):
             self.rule_name()
             self.state = 467
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,22,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 22, self._ctx)
             if la_ == 1:
                 self.state = 459
                 self.match(FandangoParser.OPEN_BRACK)
@@ -3128,7 +3453,6 @@ class FandangoParser ( Parser ):
                 self.state = 465
                 self.match(FandangoParser.CLOSE_BRACE)
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -3137,21 +3461,20 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class PythonContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def python_tag(self):
-            return self.getTypedRuleContext(FandangoParser.Python_tagContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Python_tagContext, 0)
 
         def compound_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.Compound_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Compound_stmtContext, 0)
 
         def NEWLINE(self):
             return self.getToken(FandangoParser.NEWLINE, 0)
@@ -3162,28 +3485,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_python
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPython" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterPython"):
                 listener.enterPython(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPython" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitPython"):
                 listener.exitPython(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPython" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitPython"):
                 return visitor.visitPython(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def python(self):
-
         localctx = FandangoParser.PythonContext(self, self._ctx, self.state)
         self.enterRule(localctx, 48, self.RULE_python)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 473
             self._errHandler.sync(self)
@@ -3193,13 +3512,24 @@ class FandangoParser ( Parser ):
                 self.state = 469
                 self.python_tag()
                 pass
-            elif token in [FandangoParser.ASYNC, FandangoParser.CLASS, FandangoParser.DEF, FandangoParser.FOR, FandangoParser.IF, FandangoParser.MATCH, FandangoParser.TRY, FandangoParser.WHILE, FandangoParser.WITH, FandangoParser.AT]:
+            elif token in [
+                FandangoParser.ASYNC,
+                FandangoParser.CLASS,
+                FandangoParser.DEF,
+                FandangoParser.FOR,
+                FandangoParser.IF,
+                FandangoParser.MATCH,
+                FandangoParser.TRY,
+                FandangoParser.WHILE,
+                FandangoParser.WITH,
+                FandangoParser.AT,
+            ]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 470
                 self.compound_stmt()
                 self.state = 471
                 _la = self._input.LA(1)
-                if not(_la==FandangoParser.EOF or _la==FandangoParser.NEWLINE):
+                if not (_la == FandangoParser.EOF or _la == FandangoParser.NEWLINE):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -3216,11 +3546,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Python_tagContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3230,21 +3561,19 @@ class FandangoParser ( Parser ):
         def PYTHON_END(self):
             return self.getToken(FandangoParser.PYTHON_END, 0)
 
-        def simple_stmts(self, i:int=None):
+        def simple_stmts(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Simple_stmtsContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.Simple_stmtsContext,i)
+                return self.getTypedRuleContext(FandangoParser.Simple_stmtsContext, i)
 
-
-        def compound_stmt(self, i:int=None):
+        def compound_stmt(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Compound_stmtContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.Compound_stmtContext,i)
+                return self.getTypedRuleContext(FandangoParser.Compound_stmtContext, i)
 
-
-        def NEWLINE(self, i:int=None):
+        def NEWLINE(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.NEWLINE)
             else:
@@ -3253,28 +3582,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_python_tag
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPython_tag" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterPython_tag"):
                 listener.enterPython_tag(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPython_tag" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitPython_tag"):
                 listener.exitPython_tag(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPython_tag" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitPython_tag"):
                 return visitor.visitPython_tag(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def python_tag(self):
-
         localctx = FandangoParser.Python_tagContext(self, self._ctx, self.state)
         self.enterRule(localctx, 50, self.RULE_python_tag)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 475
@@ -3282,11 +3607,80 @@ class FandangoParser ( Parser ):
             self.state = 494
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NUMBER) | (1 << FandangoParser.AND) | (1 << FandangoParser.AS) | (1 << FandangoParser.ASSERT) | (1 << FandangoParser.ASYNC) | (1 << FandangoParser.AWAIT) | (1 << FandangoParser.BREAK) | (1 << FandangoParser.CASE) | (1 << FandangoParser.CLASS) | (1 << FandangoParser.CONTINUE) | (1 << FandangoParser.DEF) | (1 << FandangoParser.DEL) | (1 << FandangoParser.ELIF) | (1 << FandangoParser.ELSE) | (1 << FandangoParser.EXCEPT) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.FINALLY) | (1 << FandangoParser.FOR) | (1 << FandangoParser.FROM) | (1 << FandangoParser.GLOBAL) | (1 << FandangoParser.IF) | (1 << FandangoParser.IMPORT) | (1 << FandangoParser.IN) | (1 << FandangoParser.IS) | (1 << FandangoParser.LAMBDA) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.NONLOCAL) | (1 << FandangoParser.NOT) | (1 << FandangoParser.OR) | (1 << FandangoParser.PASS) | (1 << FandangoParser.RAISE) | (1 << FandangoParser.RETURN) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.TRY) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.WHILE) | (1 << FandangoParser.WITH) | (1 << FandangoParser.YIELD) | (1 << FandangoParser.FORALL) | (1 << FandangoParser.EXISTS) | (1 << FandangoParser.NAME) | (1 << FandangoParser.ELLIPSIS) | (1 << FandangoParser.STAR) | (1 << FandangoParser.OPEN_PAREN))) != 0) or ((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (FandangoParser.OPEN_BRACK - 65)) | (1 << (FandangoParser.ADD - 65)) | (1 << (FandangoParser.MINUS - 65)) | (1 << (FandangoParser.NOT_OP - 65)) | (1 << (FandangoParser.OPEN_BRACE - 65)) | (1 << (FandangoParser.AT - 65)) | (1 << (FandangoParser.NEWLINE - 65)))) != 0):
+            while (
+                ((_la) & ~0x3F) == 0
+                and (
+                    (1 << _la)
+                    & (
+                        (1 << FandangoParser.STRING)
+                        | (1 << FandangoParser.NUMBER)
+                        | (1 << FandangoParser.AND)
+                        | (1 << FandangoParser.AS)
+                        | (1 << FandangoParser.ASSERT)
+                        | (1 << FandangoParser.ASYNC)
+                        | (1 << FandangoParser.AWAIT)
+                        | (1 << FandangoParser.BREAK)
+                        | (1 << FandangoParser.CASE)
+                        | (1 << FandangoParser.CLASS)
+                        | (1 << FandangoParser.CONTINUE)
+                        | (1 << FandangoParser.DEF)
+                        | (1 << FandangoParser.DEL)
+                        | (1 << FandangoParser.ELIF)
+                        | (1 << FandangoParser.ELSE)
+                        | (1 << FandangoParser.EXCEPT)
+                        | (1 << FandangoParser.FALSE)
+                        | (1 << FandangoParser.FINALLY)
+                        | (1 << FandangoParser.FOR)
+                        | (1 << FandangoParser.FROM)
+                        | (1 << FandangoParser.GLOBAL)
+                        | (1 << FandangoParser.IF)
+                        | (1 << FandangoParser.IMPORT)
+                        | (1 << FandangoParser.IN)
+                        | (1 << FandangoParser.IS)
+                        | (1 << FandangoParser.LAMBDA)
+                        | (1 << FandangoParser.MATCH)
+                        | (1 << FandangoParser.NONE)
+                        | (1 << FandangoParser.NONLOCAL)
+                        | (1 << FandangoParser.NOT)
+                        | (1 << FandangoParser.OR)
+                        | (1 << FandangoParser.PASS)
+                        | (1 << FandangoParser.RAISE)
+                        | (1 << FandangoParser.RETURN)
+                        | (1 << FandangoParser.TRUE)
+                        | (1 << FandangoParser.TRY)
+                        | (1 << FandangoParser.UNDERSCORE)
+                        | (1 << FandangoParser.WHILE)
+                        | (1 << FandangoParser.WITH)
+                        | (1 << FandangoParser.YIELD)
+                        | (1 << FandangoParser.FORALL)
+                        | (1 << FandangoParser.EXISTS)
+                        | (1 << FandangoParser.NAME)
+                        | (1 << FandangoParser.ELLIPSIS)
+                        | (1 << FandangoParser.STAR)
+                        | (1 << FandangoParser.OPEN_PAREN)
+                    )
+                )
+                != 0
+            ) or (
+                (((_la - 65)) & ~0x3F) == 0
+                and (
+                    (1 << (_la - 65))
+                    & (
+                        (1 << (FandangoParser.OPEN_BRACK - 65))
+                        | (1 << (FandangoParser.ADD - 65))
+                        | (1 << (FandangoParser.MINUS - 65))
+                        | (1 << (FandangoParser.NOT_OP - 65))
+                        | (1 << (FandangoParser.OPEN_BRACE - 65))
+                        | (1 << (FandangoParser.AT - 65))
+                        | (1 << (FandangoParser.NEWLINE - 65))
+                    )
+                )
+                != 0
+            ):
                 self.state = 479
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la==FandangoParser.NEWLINE:
+                while _la == FandangoParser.NEWLINE:
                     self.state = 476
                     self.match(FandangoParser.NEWLINE)
                     self.state = 481
@@ -3295,7 +3689,7 @@ class FandangoParser ( Parser ):
 
                 self.state = 484
                 self._errHandler.sync(self)
-                la_ = self._interp.adaptivePredict(self._input,25,self._ctx)
+                la_ = self._interp.adaptivePredict(self._input, 25, self._ctx)
                 if la_ == 1:
                     self.state = 482
                     self.simple_stmts()
@@ -3306,17 +3700,16 @@ class FandangoParser ( Parser ):
                     self.compound_stmt()
                     pass
 
-
                 self.state = 489
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,26,self._ctx)
-                while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                    if _alt==1:
+                _alt = self._interp.adaptivePredict(self._input, 26, self._ctx)
+                while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                    if _alt == 1:
                         self.state = 486
-                        self.match(FandangoParser.NEWLINE) 
+                        self.match(FandangoParser.NEWLINE)
                     self.state = 491
                     self._errHandler.sync(self)
-                    _alt = self._interp.adaptivePredict(self._input,26,self._ctx)
+                    _alt = self._interp.adaptivePredict(self._input, 26, self._ctx)
 
                 self.state = 496
                 self._errHandler.sync(self)
@@ -3332,11 +3725,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class DecoratorContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3344,8 +3738,7 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.AT, 0)
 
         def dotted_name(self):
-            return self.getTypedRuleContext(FandangoParser.Dotted_nameContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Dotted_nameContext, 0)
 
         def NEWLINE(self):
             return self.getToken(FandangoParser.NEWLINE, 0)
@@ -3357,34 +3750,29 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.CLOSE_PAREN, 0)
 
         def arglist(self):
-            return self.getTypedRuleContext(FandangoParser.ArglistContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ArglistContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_decorator
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDecorator" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDecorator"):
                 listener.enterDecorator(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDecorator" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDecorator"):
                 listener.exitDecorator(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDecorator" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDecorator"):
                 return visitor.visitDecorator(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def decorator(self):
-
         localctx = FandangoParser.DecoratorContext(self, self._ctx, self.state)
         self.enterRule(localctx, 52, self.RULE_decorator)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 499
@@ -3394,20 +3782,86 @@ class FandangoParser ( Parser ):
             self.state = 506
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.OPEN_PAREN:
+            if _la == FandangoParser.OPEN_PAREN:
                 self.state = 501
                 self.match(FandangoParser.OPEN_PAREN)
                 self.state = 503
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NUMBER) | (1 << FandangoParser.AND) | (1 << FandangoParser.AS) | (1 << FandangoParser.ASSERT) | (1 << FandangoParser.ASYNC) | (1 << FandangoParser.AWAIT) | (1 << FandangoParser.BREAK) | (1 << FandangoParser.CASE) | (1 << FandangoParser.CLASS) | (1 << FandangoParser.CONTINUE) | (1 << FandangoParser.DEF) | (1 << FandangoParser.DEL) | (1 << FandangoParser.ELIF) | (1 << FandangoParser.ELSE) | (1 << FandangoParser.EXCEPT) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.FINALLY) | (1 << FandangoParser.FOR) | (1 << FandangoParser.FROM) | (1 << FandangoParser.GLOBAL) | (1 << FandangoParser.IF) | (1 << FandangoParser.IMPORT) | (1 << FandangoParser.IN) | (1 << FandangoParser.IS) | (1 << FandangoParser.LAMBDA) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.NONLOCAL) | (1 << FandangoParser.NOT) | (1 << FandangoParser.OR) | (1 << FandangoParser.PASS) | (1 << FandangoParser.RAISE) | (1 << FandangoParser.RETURN) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.TRY) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.WHILE) | (1 << FandangoParser.WITH) | (1 << FandangoParser.YIELD) | (1 << FandangoParser.FORALL) | (1 << FandangoParser.EXISTS) | (1 << FandangoParser.NAME) | (1 << FandangoParser.ELLIPSIS) | (1 << FandangoParser.STAR) | (1 << FandangoParser.OPEN_PAREN) | (1 << FandangoParser.POWER))) != 0) or ((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (FandangoParser.OPEN_BRACK - 65)) | (1 << (FandangoParser.ADD - 65)) | (1 << (FandangoParser.MINUS - 65)) | (1 << (FandangoParser.NOT_OP - 65)) | (1 << (FandangoParser.OPEN_BRACE - 65)))) != 0):
+                if (
+                    ((_la) & ~0x3F) == 0
+                    and (
+                        (1 << _la)
+                        & (
+                            (1 << FandangoParser.STRING)
+                            | (1 << FandangoParser.NUMBER)
+                            | (1 << FandangoParser.AND)
+                            | (1 << FandangoParser.AS)
+                            | (1 << FandangoParser.ASSERT)
+                            | (1 << FandangoParser.ASYNC)
+                            | (1 << FandangoParser.AWAIT)
+                            | (1 << FandangoParser.BREAK)
+                            | (1 << FandangoParser.CASE)
+                            | (1 << FandangoParser.CLASS)
+                            | (1 << FandangoParser.CONTINUE)
+                            | (1 << FandangoParser.DEF)
+                            | (1 << FandangoParser.DEL)
+                            | (1 << FandangoParser.ELIF)
+                            | (1 << FandangoParser.ELSE)
+                            | (1 << FandangoParser.EXCEPT)
+                            | (1 << FandangoParser.FALSE)
+                            | (1 << FandangoParser.FINALLY)
+                            | (1 << FandangoParser.FOR)
+                            | (1 << FandangoParser.FROM)
+                            | (1 << FandangoParser.GLOBAL)
+                            | (1 << FandangoParser.IF)
+                            | (1 << FandangoParser.IMPORT)
+                            | (1 << FandangoParser.IN)
+                            | (1 << FandangoParser.IS)
+                            | (1 << FandangoParser.LAMBDA)
+                            | (1 << FandangoParser.MATCH)
+                            | (1 << FandangoParser.NONE)
+                            | (1 << FandangoParser.NONLOCAL)
+                            | (1 << FandangoParser.NOT)
+                            | (1 << FandangoParser.OR)
+                            | (1 << FandangoParser.PASS)
+                            | (1 << FandangoParser.RAISE)
+                            | (1 << FandangoParser.RETURN)
+                            | (1 << FandangoParser.TRUE)
+                            | (1 << FandangoParser.TRY)
+                            | (1 << FandangoParser.UNDERSCORE)
+                            | (1 << FandangoParser.WHILE)
+                            | (1 << FandangoParser.WITH)
+                            | (1 << FandangoParser.YIELD)
+                            | (1 << FandangoParser.FORALL)
+                            | (1 << FandangoParser.EXISTS)
+                            | (1 << FandangoParser.NAME)
+                            | (1 << FandangoParser.ELLIPSIS)
+                            | (1 << FandangoParser.STAR)
+                            | (1 << FandangoParser.OPEN_PAREN)
+                            | (1 << FandangoParser.POWER)
+                        )
+                    )
+                    != 0
+                ) or (
+                    (((_la - 65)) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 65))
+                        & (
+                            (1 << (FandangoParser.OPEN_BRACK - 65))
+                            | (1 << (FandangoParser.ADD - 65))
+                            | (1 << (FandangoParser.MINUS - 65))
+                            | (1 << (FandangoParser.NOT_OP - 65))
+                            | (1 << (FandangoParser.OPEN_BRACE - 65))
+                        )
+                    )
+                    != 0
+                ):
                     self.state = 502
                     self.arglist()
 
-
                 self.state = 505
                 self.match(FandangoParser.CLOSE_PAREN)
-
 
             self.state = 508
             self.match(FandangoParser.NEWLINE)
@@ -3419,58 +3873,54 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class DecoratorsContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def decorator(self, i:int=None):
+        def decorator(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.DecoratorContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.DecoratorContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.DecoratorContext, i)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_decorators
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDecorators" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDecorators"):
                 listener.enterDecorators(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDecorators" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDecorators"):
                 listener.exitDecorators(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDecorators" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDecorators"):
                 return visitor.visitDecorators(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def decorators(self):
-
         localctx = FandangoParser.DecoratorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 54, self.RULE_decorators)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 511 
+            self.state = 511
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while True:
                 self.state = 510
                 self.decorator()
-                self.state = 513 
+                self.state = 513
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if not (_la==FandangoParser.AT):
+                if not (_la == FandangoParser.AT):
                     break
 
         except RecognitionException as re:
@@ -3481,52 +3931,45 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class DecoratedContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def decorators(self):
-            return self.getTypedRuleContext(FandangoParser.DecoratorsContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.DecoratorsContext, 0)
 
         def classdef(self):
-            return self.getTypedRuleContext(FandangoParser.ClassdefContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ClassdefContext, 0)
 
         def funcdef(self):
-            return self.getTypedRuleContext(FandangoParser.FuncdefContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.FuncdefContext, 0)
 
         def async_funcdef(self):
-            return self.getTypedRuleContext(FandangoParser.Async_funcdefContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Async_funcdefContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_decorated
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDecorated" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDecorated"):
                 listener.enterDecorated(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDecorated" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDecorated"):
                 listener.exitDecorated(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDecorated" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDecorated"):
                 return visitor.visitDecorated(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def decorated(self):
-
         localctx = FandangoParser.DecoratedContext(self, self._ctx, self.state)
         self.enterRule(localctx, 56, self.RULE_decorated)
         try:
@@ -3559,11 +4002,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Async_funcdefContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3571,31 +4015,26 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.ASYNC, 0)
 
         def funcdef(self):
-            return self.getTypedRuleContext(FandangoParser.FuncdefContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.FuncdefContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_async_funcdef
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAsync_funcdef" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAsync_funcdef"):
                 listener.enterAsync_funcdef(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAsync_funcdef" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAsync_funcdef"):
                 listener.exitAsync_funcdef(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAsync_funcdef" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAsync_funcdef"):
                 return visitor.visitAsync_funcdef(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def async_funcdef(self):
-
         localctx = FandangoParser.Async_funcdefContext(self, self._ctx, self.state)
         self.enterRule(localctx, 58, self.RULE_async_funcdef)
         try:
@@ -3612,11 +4051,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class FuncdefContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3624,52 +4064,44 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.DEF, 0)
 
         def name(self):
-            return self.getTypedRuleContext(FandangoParser.NameContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.NameContext, 0)
 
         def parameters(self):
-            return self.getTypedRuleContext(FandangoParser.ParametersContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ParametersContext, 0)
 
         def COLON(self):
             return self.getToken(FandangoParser.COLON, 0)
 
         def block(self):
-            return self.getTypedRuleContext(FandangoParser.BlockContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.BlockContext, 0)
 
         def ARROW(self):
             return self.getToken(FandangoParser.ARROW, 0)
 
         def test(self):
-            return self.getTypedRuleContext(FandangoParser.TestContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.TestContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_funcdef
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFuncdef" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterFuncdef"):
                 listener.enterFuncdef(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFuncdef" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitFuncdef"):
                 listener.exitFuncdef(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFuncdef" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitFuncdef"):
                 return visitor.visitFuncdef(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def funcdef(self):
-
         localctx = FandangoParser.FuncdefContext(self, self._ctx, self.state)
         self.enterRule(localctx, 60, self.RULE_funcdef)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 524
@@ -3681,12 +4113,11 @@ class FandangoParser ( Parser ):
             self.state = 529
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.ARROW:
+            if _la == FandangoParser.ARROW:
                 self.state = 527
                 self.match(FandangoParser.ARROW)
                 self.state = 528
                 self.test()
-
 
             self.state = 531
             self.match(FandangoParser.COLON)
@@ -3700,11 +4131,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ParametersContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3715,34 +4147,29 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.CLOSE_PAREN, 0)
 
         def typedargslist(self):
-            return self.getTypedRuleContext(FandangoParser.TypedargslistContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.TypedargslistContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_parameters
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterParameters" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterParameters"):
                 listener.enterParameters(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitParameters" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitParameters"):
                 listener.exitParameters(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitParameters" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitParameters"):
                 return visitor.visitParameters(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def parameters(self):
-
         localctx = FandangoParser.ParametersContext(self, self._ctx, self.state)
         self.enterRule(localctx, 62, self.RULE_parameters)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 534
@@ -3750,10 +4177,18 @@ class FandangoParser ( Parser ):
             self.state = 536
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.MATCH) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.NAME) | (1 << FandangoParser.STAR) | (1 << FandangoParser.POWER))) != 0):
+            if ((_la) & ~0x3F) == 0 and (
+                (1 << _la)
+                & (
+                    (1 << FandangoParser.MATCH)
+                    | (1 << FandangoParser.UNDERSCORE)
+                    | (1 << FandangoParser.NAME)
+                    | (1 << FandangoParser.STAR)
+                    | (1 << FandangoParser.POWER)
+                )
+            ) != 0:
                 self.state = 535
                 self.typedargslist()
-
 
             self.state = 538
             self.match(FandangoParser.CLOSE_PAREN)
@@ -3765,20 +4200,20 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class TypedargslistContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def tfpdef(self, i:int=None):
+        def tfpdef(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.TfpdefContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.TfpdefContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.TfpdefContext, i)
 
         def STAR(self):
             return self.getToken(FandangoParser.STAR, 0)
@@ -3786,20 +4221,19 @@ class FandangoParser ( Parser ):
         def POWER(self):
             return self.getToken(FandangoParser.POWER, 0)
 
-        def ASSIGN(self, i:int=None):
+        def ASSIGN(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.ASSIGN)
             else:
                 return self.getToken(FandangoParser.ASSIGN, i)
 
-        def test(self, i:int=None):
+        def test(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.TestContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.TestContext,i)
+                return self.getTypedRuleContext(FandangoParser.TestContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
@@ -3808,51 +4242,50 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_typedargslist
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTypedargslist" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterTypedargslist"):
                 listener.enterTypedargslist(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTypedargslist" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitTypedargslist"):
                 listener.exitTypedargslist(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTypedargslist" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitTypedargslist"):
                 return visitor.visitTypedargslist(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def typedargslist(self):
-
         localctx = FandangoParser.TypedargslistContext(self, self._ctx, self.state)
         self.enterRule(localctx, 64, self.RULE_typedargslist)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 621
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [FandangoParser.MATCH, FandangoParser.UNDERSCORE, FandangoParser.NAME]:
+            if token in [
+                FandangoParser.MATCH,
+                FandangoParser.UNDERSCORE,
+                FandangoParser.NAME,
+            ]:
                 self.state = 540
                 self.tfpdef()
                 self.state = 543
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.ASSIGN:
+                if _la == FandangoParser.ASSIGN:
                     self.state = 541
                     self.match(FandangoParser.ASSIGN)
                     self.state = 542
                     self.test()
 
-
                 self.state = 553
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,36,self._ctx)
-                while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                    if _alt==1:
+                _alt = self._interp.adaptivePredict(self._input, 36, self._ctx)
+                while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                    if _alt == 1:
                         self.state = 545
                         self.match(FandangoParser.COMMA)
                         self.state = 546
@@ -3860,21 +4293,20 @@ class FandangoParser ( Parser ):
                         self.state = 549
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        if _la==FandangoParser.ASSIGN:
+                        if _la == FandangoParser.ASSIGN:
                             self.state = 547
                             self.match(FandangoParser.ASSIGN)
                             self.state = 548
                             self.test()
 
-                 
                     self.state = 555
                     self._errHandler.sync(self)
-                    _alt = self._interp.adaptivePredict(self._input,36,self._ctx)
+                    _alt = self._interp.adaptivePredict(self._input, 36, self._ctx)
 
                 self.state = 589
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.COMMA:
+                if _la == FandangoParser.COMMA:
                     self.state = 556
                     self.match(FandangoParser.COMMA)
                     self.state = 587
@@ -3886,16 +4318,22 @@ class FandangoParser ( Parser ):
                         self.state = 559
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.MATCH) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.NAME))) != 0):
+                        if ((_la) & ~0x3F) == 0 and (
+                            (1 << _la)
+                            & (
+                                (1 << FandangoParser.MATCH)
+                                | (1 << FandangoParser.UNDERSCORE)
+                                | (1 << FandangoParser.NAME)
+                            )
+                        ) != 0:
                             self.state = 558
                             self.tfpdef()
 
-
                         self.state = 569
                         self._errHandler.sync(self)
-                        _alt = self._interp.adaptivePredict(self._input,39,self._ctx)
-                        while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                            if _alt==1:
+                        _alt = self._interp.adaptivePredict(self._input, 39, self._ctx)
+                        while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                            if _alt == 1:
                                 self.state = 561
                                 self.match(FandangoParser.COMMA)
                                 self.state = 562
@@ -3903,27 +4341,28 @@ class FandangoParser ( Parser ):
                                 self.state = 565
                                 self._errHandler.sync(self)
                                 _la = self._input.LA(1)
-                                if _la==FandangoParser.ASSIGN:
+                                if _la == FandangoParser.ASSIGN:
                                     self.state = 563
                                     self.match(FandangoParser.ASSIGN)
                                     self.state = 564
                                     self.test()
 
-                         
                             self.state = 571
                             self._errHandler.sync(self)
-                            _alt = self._interp.adaptivePredict(self._input,39,self._ctx)
+                            _alt = self._interp.adaptivePredict(
+                                self._input, 39, self._ctx
+                            )
 
                         self.state = 580
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        if _la==FandangoParser.COMMA:
+                        if _la == FandangoParser.COMMA:
                             self.state = 572
                             self.match(FandangoParser.COMMA)
                             self.state = 578
                             self._errHandler.sync(self)
                             _la = self._input.LA(1)
-                            if _la==FandangoParser.POWER:
+                            if _la == FandangoParser.POWER:
                                 self.state = 573
                                 self.match(FandangoParser.POWER)
                                 self.state = 574
@@ -3931,14 +4370,9 @@ class FandangoParser ( Parser ):
                                 self.state = 576
                                 self._errHandler.sync(self)
                                 _la = self._input.LA(1)
-                                if _la==FandangoParser.COMMA:
+                                if _la == FandangoParser.COMMA:
                                     self.state = 575
                                     self.match(FandangoParser.COMMA)
-
-
-
-
-
 
                         pass
                     elif token in [FandangoParser.POWER]:
@@ -3949,17 +4383,15 @@ class FandangoParser ( Parser ):
                         self.state = 585
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        if _la==FandangoParser.COMMA:
+                        if _la == FandangoParser.COMMA:
                             self.state = 584
                             self.match(FandangoParser.COMMA)
-
 
                         pass
                     elif token in [FandangoParser.CLOSE_PAREN]:
                         pass
                     else:
                         pass
-
 
                 pass
             elif token in [FandangoParser.STAR]:
@@ -3968,16 +4400,22 @@ class FandangoParser ( Parser ):
                 self.state = 593
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.MATCH) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.NAME))) != 0):
+                if ((_la) & ~0x3F) == 0 and (
+                    (1 << _la)
+                    & (
+                        (1 << FandangoParser.MATCH)
+                        | (1 << FandangoParser.UNDERSCORE)
+                        | (1 << FandangoParser.NAME)
+                    )
+                ) != 0:
                     self.state = 592
                     self.tfpdef()
 
-
                 self.state = 603
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,48,self._ctx)
-                while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                    if _alt==1:
+                _alt = self._interp.adaptivePredict(self._input, 48, self._ctx)
+                while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                    if _alt == 1:
                         self.state = 595
                         self.match(FandangoParser.COMMA)
                         self.state = 596
@@ -3985,27 +4423,26 @@ class FandangoParser ( Parser ):
                         self.state = 599
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        if _la==FandangoParser.ASSIGN:
+                        if _la == FandangoParser.ASSIGN:
                             self.state = 597
                             self.match(FandangoParser.ASSIGN)
                             self.state = 598
                             self.test()
 
-                 
                     self.state = 605
                     self._errHandler.sync(self)
-                    _alt = self._interp.adaptivePredict(self._input,48,self._ctx)
+                    _alt = self._interp.adaptivePredict(self._input, 48, self._ctx)
 
                 self.state = 614
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.COMMA:
+                if _la == FandangoParser.COMMA:
                     self.state = 606
                     self.match(FandangoParser.COMMA)
                     self.state = 612
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if _la==FandangoParser.POWER:
+                    if _la == FandangoParser.POWER:
                         self.state = 607
                         self.match(FandangoParser.POWER)
                         self.state = 608
@@ -4013,14 +4450,9 @@ class FandangoParser ( Parser ):
                         self.state = 610
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        if _la==FandangoParser.COMMA:
+                        if _la == FandangoParser.COMMA:
                             self.state = 609
                             self.match(FandangoParser.COMMA)
-
-
-
-
-
 
                 pass
             elif token in [FandangoParser.POWER]:
@@ -4031,10 +4463,9 @@ class FandangoParser ( Parser ):
                 self.state = 619
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.COMMA:
+                if _la == FandangoParser.COMMA:
                     self.state = 618
                     self.match(FandangoParser.COMMA)
-
 
                 pass
             else:
@@ -4048,50 +4479,45 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class TfpdefContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def name(self):
-            return self.getTypedRuleContext(FandangoParser.NameContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.NameContext, 0)
 
         def COLON(self):
             return self.getToken(FandangoParser.COLON, 0)
 
         def test(self):
-            return self.getTypedRuleContext(FandangoParser.TestContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.TestContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_tfpdef
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTfpdef" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterTfpdef"):
                 listener.enterTfpdef(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTfpdef" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitTfpdef"):
                 listener.exitTfpdef(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTfpdef" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitTfpdef"):
                 return visitor.visitTfpdef(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def tfpdef(self):
-
         localctx = FandangoParser.TfpdefContext(self, self._ctx, self.state)
         self.enterRule(localctx, 66, self.RULE_tfpdef)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 623
@@ -4099,12 +4525,11 @@ class FandangoParser ( Parser ):
             self.state = 626
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.COLON:
+            if _la == FandangoParser.COLON:
                 self.state = 624
                 self.match(FandangoParser.COLON)
                 self.state = 625
                 self.test()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -4114,20 +4539,20 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class VarargslistContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def vfpdef(self, i:int=None):
+        def vfpdef(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.VfpdefContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.VfpdefContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.VfpdefContext, i)
 
         def STAR(self):
             return self.getToken(FandangoParser.STAR, 0)
@@ -4135,20 +4560,19 @@ class FandangoParser ( Parser ):
         def POWER(self):
             return self.getToken(FandangoParser.POWER, 0)
 
-        def ASSIGN(self, i:int=None):
+        def ASSIGN(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.ASSIGN)
             else:
                 return self.getToken(FandangoParser.ASSIGN, i)
 
-        def test(self, i:int=None):
+        def test(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.TestContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.TestContext,i)
+                return self.getTypedRuleContext(FandangoParser.TestContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
@@ -4157,51 +4581,50 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_varargslist
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterVarargslist" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterVarargslist"):
                 listener.enterVarargslist(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitVarargslist" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitVarargslist"):
                 listener.exitVarargslist(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitVarargslist" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitVarargslist"):
                 return visitor.visitVarargslist(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def varargslist(self):
-
         localctx = FandangoParser.VarargslistContext(self, self._ctx, self.state)
         self.enterRule(localctx, 68, self.RULE_varargslist)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 709
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [FandangoParser.MATCH, FandangoParser.UNDERSCORE, FandangoParser.NAME]:
+            if token in [
+                FandangoParser.MATCH,
+                FandangoParser.UNDERSCORE,
+                FandangoParser.NAME,
+            ]:
                 self.state = 628
                 self.vfpdef()
                 self.state = 631
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.ASSIGN:
+                if _la == FandangoParser.ASSIGN:
                     self.state = 629
                     self.match(FandangoParser.ASSIGN)
                     self.state = 630
                     self.test()
 
-
                 self.state = 641
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,57,self._ctx)
-                while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                    if _alt==1:
+                _alt = self._interp.adaptivePredict(self._input, 57, self._ctx)
+                while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                    if _alt == 1:
                         self.state = 633
                         self.match(FandangoParser.COMMA)
                         self.state = 634
@@ -4209,21 +4632,20 @@ class FandangoParser ( Parser ):
                         self.state = 637
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        if _la==FandangoParser.ASSIGN:
+                        if _la == FandangoParser.ASSIGN:
                             self.state = 635
                             self.match(FandangoParser.ASSIGN)
                             self.state = 636
                             self.test()
 
-                 
                     self.state = 643
                     self._errHandler.sync(self)
-                    _alt = self._interp.adaptivePredict(self._input,57,self._ctx)
+                    _alt = self._interp.adaptivePredict(self._input, 57, self._ctx)
 
                 self.state = 677
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.COMMA:
+                if _la == FandangoParser.COMMA:
                     self.state = 644
                     self.match(FandangoParser.COMMA)
                     self.state = 675
@@ -4235,16 +4657,22 @@ class FandangoParser ( Parser ):
                         self.state = 647
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.MATCH) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.NAME))) != 0):
+                        if ((_la) & ~0x3F) == 0 and (
+                            (1 << _la)
+                            & (
+                                (1 << FandangoParser.MATCH)
+                                | (1 << FandangoParser.UNDERSCORE)
+                                | (1 << FandangoParser.NAME)
+                            )
+                        ) != 0:
                             self.state = 646
                             self.vfpdef()
 
-
                         self.state = 657
                         self._errHandler.sync(self)
-                        _alt = self._interp.adaptivePredict(self._input,60,self._ctx)
-                        while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                            if _alt==1:
+                        _alt = self._interp.adaptivePredict(self._input, 60, self._ctx)
+                        while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                            if _alt == 1:
                                 self.state = 649
                                 self.match(FandangoParser.COMMA)
                                 self.state = 650
@@ -4252,27 +4680,28 @@ class FandangoParser ( Parser ):
                                 self.state = 653
                                 self._errHandler.sync(self)
                                 _la = self._input.LA(1)
-                                if _la==FandangoParser.ASSIGN:
+                                if _la == FandangoParser.ASSIGN:
                                     self.state = 651
                                     self.match(FandangoParser.ASSIGN)
                                     self.state = 652
                                     self.test()
 
-                         
                             self.state = 659
                             self._errHandler.sync(self)
-                            _alt = self._interp.adaptivePredict(self._input,60,self._ctx)
+                            _alt = self._interp.adaptivePredict(
+                                self._input, 60, self._ctx
+                            )
 
                         self.state = 668
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        if _la==FandangoParser.COMMA:
+                        if _la == FandangoParser.COMMA:
                             self.state = 660
                             self.match(FandangoParser.COMMA)
                             self.state = 666
                             self._errHandler.sync(self)
                             _la = self._input.LA(1)
-                            if _la==FandangoParser.POWER:
+                            if _la == FandangoParser.POWER:
                                 self.state = 661
                                 self.match(FandangoParser.POWER)
                                 self.state = 662
@@ -4280,14 +4709,9 @@ class FandangoParser ( Parser ):
                                 self.state = 664
                                 self._errHandler.sync(self)
                                 _la = self._input.LA(1)
-                                if _la==FandangoParser.COMMA:
+                                if _la == FandangoParser.COMMA:
                                     self.state = 663
                                     self.match(FandangoParser.COMMA)
-
-
-
-
-
 
                         pass
                     elif token in [FandangoParser.POWER]:
@@ -4298,17 +4722,15 @@ class FandangoParser ( Parser ):
                         self.state = 673
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        if _la==FandangoParser.COMMA:
+                        if _la == FandangoParser.COMMA:
                             self.state = 672
                             self.match(FandangoParser.COMMA)
-
 
                         pass
                     elif token in [FandangoParser.COLON]:
                         pass
                     else:
                         pass
-
 
                 pass
             elif token in [FandangoParser.STAR]:
@@ -4317,16 +4739,22 @@ class FandangoParser ( Parser ):
                 self.state = 681
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.MATCH) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.NAME))) != 0):
+                if ((_la) & ~0x3F) == 0 and (
+                    (1 << _la)
+                    & (
+                        (1 << FandangoParser.MATCH)
+                        | (1 << FandangoParser.UNDERSCORE)
+                        | (1 << FandangoParser.NAME)
+                    )
+                ) != 0:
                     self.state = 680
                     self.vfpdef()
 
-
                 self.state = 691
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,69,self._ctx)
-                while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                    if _alt==1:
+                _alt = self._interp.adaptivePredict(self._input, 69, self._ctx)
+                while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                    if _alt == 1:
                         self.state = 683
                         self.match(FandangoParser.COMMA)
                         self.state = 684
@@ -4334,27 +4762,26 @@ class FandangoParser ( Parser ):
                         self.state = 687
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        if _la==FandangoParser.ASSIGN:
+                        if _la == FandangoParser.ASSIGN:
                             self.state = 685
                             self.match(FandangoParser.ASSIGN)
                             self.state = 686
                             self.test()
 
-                 
                     self.state = 693
                     self._errHandler.sync(self)
-                    _alt = self._interp.adaptivePredict(self._input,69,self._ctx)
+                    _alt = self._interp.adaptivePredict(self._input, 69, self._ctx)
 
                 self.state = 702
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.COMMA:
+                if _la == FandangoParser.COMMA:
                     self.state = 694
                     self.match(FandangoParser.COMMA)
                     self.state = 700
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if _la==FandangoParser.POWER:
+                    if _la == FandangoParser.POWER:
                         self.state = 695
                         self.match(FandangoParser.POWER)
                         self.state = 696
@@ -4362,14 +4789,9 @@ class FandangoParser ( Parser ):
                         self.state = 698
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        if _la==FandangoParser.COMMA:
+                        if _la == FandangoParser.COMMA:
                             self.state = 697
                             self.match(FandangoParser.COMMA)
-
-
-
-
-
 
                 pass
             elif token in [FandangoParser.POWER]:
@@ -4380,10 +4802,9 @@ class FandangoParser ( Parser ):
                 self.state = 707
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.COMMA:
+                if _la == FandangoParser.COMMA:
                     self.state = 706
                     self.match(FandangoParser.COMMA)
-
 
                 pass
             else:
@@ -4397,40 +4818,36 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class VfpdefContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def name(self):
-            return self.getTypedRuleContext(FandangoParser.NameContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.NameContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_vfpdef
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterVfpdef" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterVfpdef"):
                 listener.enterVfpdef(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitVfpdef" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitVfpdef"):
                 listener.exitVfpdef(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitVfpdef" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitVfpdef"):
                 return visitor.visitVfpdef(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def vfpdef(self):
-
         localctx = FandangoParser.VfpdefContext(self, self._ctx, self.state)
         self.enterRule(localctx, 70, self.RULE_vfpdef)
         try:
@@ -4445,50 +4862,45 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class StmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def simple_stmts(self):
-            return self.getTypedRuleContext(FandangoParser.Simple_stmtsContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Simple_stmtsContext, 0)
 
         def compound_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.Compound_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Compound_stmtContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterStmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterStmt"):
                 listener.enterStmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitStmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitStmt"):
                 listener.exitStmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitStmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitStmt"):
                 return visitor.visitStmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def stmt(self):
-
         localctx = FandangoParser.StmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 72, self.RULE_stmt)
         try:
             self.state = 715
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,75,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 75, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 713
@@ -4501,7 +4913,6 @@ class FandangoParser ( Parser ):
                 self.compound_stmt()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -4510,25 +4921,25 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Simple_stmtsContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def simple_stmt(self, i:int=None):
+        def simple_stmt(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Simple_stmtContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.Simple_stmtContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.Simple_stmtContext, i)
 
         def NEWLINE(self):
             return self.getToken(FandangoParser.NEWLINE, 0)
 
-        def SEMI_COLON(self, i:int=None):
+        def SEMI_COLON(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.SEMI_COLON)
             else:
@@ -4537,52 +4948,47 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_simple_stmts
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSimple_stmts" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSimple_stmts"):
                 listener.enterSimple_stmts(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSimple_stmts" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSimple_stmts"):
                 listener.exitSimple_stmts(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSimple_stmts" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSimple_stmts"):
                 return visitor.visitSimple_stmts(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def simple_stmts(self):
-
         localctx = FandangoParser.Simple_stmtsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 74, self.RULE_simple_stmts)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 717
             self.simple_stmt()
             self.state = 722
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,76,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 76, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     self.state = 718
                     self.match(FandangoParser.SEMI_COLON)
                     self.state = 719
-                    self.simple_stmt() 
+                    self.simple_stmt()
                 self.state = 724
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,76,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 76, self._ctx)
 
             self.state = 726
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.SEMI_COLON:
+            if _la == FandangoParser.SEMI_COLON:
                 self.state = 725
                 self.match(FandangoParser.SEMI_COLON)
-
 
             self.state = 728
             self.match(FandangoParser.NEWLINE)
@@ -4594,75 +5000,64 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Simple_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def expr_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.Expr_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Expr_stmtContext, 0)
 
         def del_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.Del_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Del_stmtContext, 0)
 
         def pass_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.Pass_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Pass_stmtContext, 0)
 
         def flow_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.Flow_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Flow_stmtContext, 0)
 
         def import_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.Import_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Import_stmtContext, 0)
 
         def global_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.Global_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Global_stmtContext, 0)
 
         def nonlocal_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.Nonlocal_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Nonlocal_stmtContext, 0)
 
         def assert_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.Assert_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Assert_stmtContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_simple_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSimple_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSimple_stmt"):
                 listener.enterSimple_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSimple_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSimple_stmt"):
                 listener.exitSimple_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSimple_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSimple_stmt"):
                 return visitor.visitSimple_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def simple_stmt(self):
-
         localctx = FandangoParser.Simple_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 76, self.RULE_simple_stmt)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 738
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,78,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 78, self._ctx)
             if la_ == 1:
                 self.state = 730
                 self.expr_stmt()
@@ -4703,7 +5098,6 @@ class FandangoParser ( Parser ):
                 self.assert_stmt()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -4712,41 +5106,41 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Expr_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def testlist_star_expr(self, i:int=None):
+        def testlist_star_expr(self, i: int = None):
             if i is None:
-                return self.getTypedRuleContexts(FandangoParser.Testlist_star_exprContext)
+                return self.getTypedRuleContexts(
+                    FandangoParser.Testlist_star_exprContext
+                )
             else:
-                return self.getTypedRuleContext(FandangoParser.Testlist_star_exprContext,i)
-
+                return self.getTypedRuleContext(
+                    FandangoParser.Testlist_star_exprContext, i
+                )
 
         def annassign(self):
-            return self.getTypedRuleContext(FandangoParser.AnnassignContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.AnnassignContext, 0)
 
         def augassign(self):
-            return self.getTypedRuleContext(FandangoParser.AugassignContext,0)
+            return self.getTypedRuleContext(FandangoParser.AugassignContext, 0)
 
-
-        def yield_expr(self, i:int=None):
+        def yield_expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Yield_exprContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.Yield_exprContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.Yield_exprContext, i)
 
         def testlist(self):
-            return self.getTypedRuleContext(FandangoParser.TestlistContext,0)
+            return self.getTypedRuleContext(FandangoParser.TestlistContext, 0)
 
-
-        def ASSIGN(self, i:int=None):
+        def ASSIGN(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.ASSIGN)
             else:
@@ -4755,28 +5149,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_expr_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpr_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterExpr_stmt"):
                 listener.enterExpr_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpr_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitExpr_stmt"):
                 listener.exitExpr_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpr_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitExpr_stmt"):
                 return visitor.visitExpr_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def expr_stmt(self):
-
         localctx = FandangoParser.Expr_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 78, self.RULE_expr_stmt)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 740
@@ -4788,12 +5178,26 @@ class FandangoParser ( Parser ):
                 self.state = 741
                 self.annassign()
                 pass
-            elif token in [FandangoParser.ADD_ASSIGN, FandangoParser.SUB_ASSIGN, FandangoParser.MULT_ASSIGN, FandangoParser.AT_ASSIGN, FandangoParser.DIV_ASSIGN, FandangoParser.MOD_ASSIGN, FandangoParser.AND_ASSIGN, FandangoParser.OR_ASSIGN, FandangoParser.XOR_ASSIGN, FandangoParser.LEFT_SHIFT_ASSIGN, FandangoParser.RIGHT_SHIFT_ASSIGN, FandangoParser.POWER_ASSIGN, FandangoParser.IDIV_ASSIGN]:
+            elif token in [
+                FandangoParser.ADD_ASSIGN,
+                FandangoParser.SUB_ASSIGN,
+                FandangoParser.MULT_ASSIGN,
+                FandangoParser.AT_ASSIGN,
+                FandangoParser.DIV_ASSIGN,
+                FandangoParser.MOD_ASSIGN,
+                FandangoParser.AND_ASSIGN,
+                FandangoParser.OR_ASSIGN,
+                FandangoParser.XOR_ASSIGN,
+                FandangoParser.LEFT_SHIFT_ASSIGN,
+                FandangoParser.RIGHT_SHIFT_ASSIGN,
+                FandangoParser.POWER_ASSIGN,
+                FandangoParser.IDIV_ASSIGN,
+            ]:
                 self.state = 742
                 self.augassign()
                 self.state = 745
                 self._errHandler.sync(self)
-                la_ = self._interp.adaptivePredict(self._input,79,self._ctx)
+                la_ = self._interp.adaptivePredict(self._input, 79, self._ctx)
                 if la_ == 1:
                     self.state = 743
                     self.yield_expr()
@@ -4804,18 +5208,21 @@ class FandangoParser ( Parser ):
                     self.testlist()
                     pass
 
-
                 pass
-            elif token in [FandangoParser.SEMI_COLON, FandangoParser.ASSIGN, FandangoParser.NEWLINE]:
+            elif token in [
+                FandangoParser.SEMI_COLON,
+                FandangoParser.ASSIGN,
+                FandangoParser.NEWLINE,
+            ]:
                 self.state = 754
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la==FandangoParser.ASSIGN:
+                while _la == FandangoParser.ASSIGN:
                     self.state = 747
                     self.match(FandangoParser.ASSIGN)
                     self.state = 750
                     self._errHandler.sync(self)
-                    la_ = self._interp.adaptivePredict(self._input,80,self._ctx)
+                    la_ = self._interp.adaptivePredict(self._input, 80, self._ctx)
                     if la_ == 1:
                         self.state = 748
                         self.yield_expr()
@@ -4825,7 +5232,6 @@ class FandangoParser ( Parser ):
                         self.state = 749
                         self.testlist_star_expr()
                         pass
-
 
                     self.state = 756
                     self._errHandler.sync(self)
@@ -4843,23 +5249,23 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class AnnassignContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def COLON(self):
             return self.getToken(FandangoParser.COLON, 0)
 
-        def test(self, i:int=None):
+        def test(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.TestContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.TestContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.TestContext, i)
 
         def ASSIGN(self):
             return self.getToken(FandangoParser.ASSIGN, 0)
@@ -4867,28 +5273,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_annassign
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAnnassign" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAnnassign"):
                 listener.enterAnnassign(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAnnassign" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAnnassign"):
                 listener.exitAnnassign(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAnnassign" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAnnassign"):
                 return visitor.visitAnnassign(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def annassign(self):
-
         localctx = FandangoParser.AnnassignContext(self, self._ctx, self.state)
         self.enterRule(localctx, 80, self.RULE_annassign)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 759
@@ -4898,12 +5300,11 @@ class FandangoParser ( Parser ):
             self.state = 763
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.ASSIGN:
+            if _la == FandangoParser.ASSIGN:
                 self.state = 761
                 self.match(FandangoParser.ASSIGN)
                 self.state = 762
                 self.test()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -4913,29 +5314,28 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Testlist_star_exprContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def test(self, i:int=None):
+        def test(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.TestContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.TestContext,i)
+                return self.getTypedRuleContext(FandangoParser.TestContext, i)
 
-
-        def star_expr(self, i:int=None):
+        def star_expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Star_exprContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.Star_exprContext,i)
+                return self.getTypedRuleContext(FandangoParser.Star_exprContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
@@ -4944,34 +5344,81 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_testlist_star_expr
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTestlist_star_expr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterTestlist_star_expr"):
                 listener.enterTestlist_star_expr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTestlist_star_expr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitTestlist_star_expr"):
                 listener.exitTestlist_star_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTestlist_star_expr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitTestlist_star_expr"):
                 return visitor.visitTestlist_star_expr(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def testlist_star_expr(self):
-
         localctx = FandangoParser.Testlist_star_exprContext(self, self._ctx, self.state)
         self.enterRule(localctx, 82, self.RULE_testlist_star_expr)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 767
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [FandangoParser.STRING, FandangoParser.NUMBER, FandangoParser.AND, FandangoParser.AS, FandangoParser.ASSERT, FandangoParser.ASYNC, FandangoParser.AWAIT, FandangoParser.BREAK, FandangoParser.CASE, FandangoParser.CLASS, FandangoParser.CONTINUE, FandangoParser.DEF, FandangoParser.DEL, FandangoParser.ELIF, FandangoParser.ELSE, FandangoParser.EXCEPT, FandangoParser.FALSE, FandangoParser.FINALLY, FandangoParser.FOR, FandangoParser.FROM, FandangoParser.GLOBAL, FandangoParser.IF, FandangoParser.IMPORT, FandangoParser.IN, FandangoParser.IS, FandangoParser.LAMBDA, FandangoParser.MATCH, FandangoParser.NONE, FandangoParser.NONLOCAL, FandangoParser.NOT, FandangoParser.OR, FandangoParser.PASS, FandangoParser.RAISE, FandangoParser.RETURN, FandangoParser.TRUE, FandangoParser.TRY, FandangoParser.UNDERSCORE, FandangoParser.WHILE, FandangoParser.WITH, FandangoParser.YIELD, FandangoParser.FORALL, FandangoParser.EXISTS, FandangoParser.NAME, FandangoParser.ELLIPSIS, FandangoParser.OPEN_PAREN, FandangoParser.OPEN_BRACK, FandangoParser.ADD, FandangoParser.MINUS, FandangoParser.NOT_OP, FandangoParser.OPEN_BRACE]:
+            if token in [
+                FandangoParser.STRING,
+                FandangoParser.NUMBER,
+                FandangoParser.AND,
+                FandangoParser.AS,
+                FandangoParser.ASSERT,
+                FandangoParser.ASYNC,
+                FandangoParser.AWAIT,
+                FandangoParser.BREAK,
+                FandangoParser.CASE,
+                FandangoParser.CLASS,
+                FandangoParser.CONTINUE,
+                FandangoParser.DEF,
+                FandangoParser.DEL,
+                FandangoParser.ELIF,
+                FandangoParser.ELSE,
+                FandangoParser.EXCEPT,
+                FandangoParser.FALSE,
+                FandangoParser.FINALLY,
+                FandangoParser.FOR,
+                FandangoParser.FROM,
+                FandangoParser.GLOBAL,
+                FandangoParser.IF,
+                FandangoParser.IMPORT,
+                FandangoParser.IN,
+                FandangoParser.IS,
+                FandangoParser.LAMBDA,
+                FandangoParser.MATCH,
+                FandangoParser.NONE,
+                FandangoParser.NONLOCAL,
+                FandangoParser.NOT,
+                FandangoParser.OR,
+                FandangoParser.PASS,
+                FandangoParser.RAISE,
+                FandangoParser.RETURN,
+                FandangoParser.TRUE,
+                FandangoParser.TRY,
+                FandangoParser.UNDERSCORE,
+                FandangoParser.WHILE,
+                FandangoParser.WITH,
+                FandangoParser.YIELD,
+                FandangoParser.FORALL,
+                FandangoParser.EXISTS,
+                FandangoParser.NAME,
+                FandangoParser.ELLIPSIS,
+                FandangoParser.OPEN_PAREN,
+                FandangoParser.OPEN_BRACK,
+                FandangoParser.ADD,
+                FandangoParser.MINUS,
+                FandangoParser.NOT_OP,
+                FandangoParser.OPEN_BRACE,
+            ]:
                 self.state = 765
                 self.test()
                 pass
@@ -4984,15 +5431,66 @@ class FandangoParser ( Parser ):
 
             self.state = 776
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,86,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 86, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     self.state = 769
                     self.match(FandangoParser.COMMA)
                     self.state = 772
                     self._errHandler.sync(self)
                     token = self._input.LA(1)
-                    if token in [FandangoParser.STRING, FandangoParser.NUMBER, FandangoParser.AND, FandangoParser.AS, FandangoParser.ASSERT, FandangoParser.ASYNC, FandangoParser.AWAIT, FandangoParser.BREAK, FandangoParser.CASE, FandangoParser.CLASS, FandangoParser.CONTINUE, FandangoParser.DEF, FandangoParser.DEL, FandangoParser.ELIF, FandangoParser.ELSE, FandangoParser.EXCEPT, FandangoParser.FALSE, FandangoParser.FINALLY, FandangoParser.FOR, FandangoParser.FROM, FandangoParser.GLOBAL, FandangoParser.IF, FandangoParser.IMPORT, FandangoParser.IN, FandangoParser.IS, FandangoParser.LAMBDA, FandangoParser.MATCH, FandangoParser.NONE, FandangoParser.NONLOCAL, FandangoParser.NOT, FandangoParser.OR, FandangoParser.PASS, FandangoParser.RAISE, FandangoParser.RETURN, FandangoParser.TRUE, FandangoParser.TRY, FandangoParser.UNDERSCORE, FandangoParser.WHILE, FandangoParser.WITH, FandangoParser.YIELD, FandangoParser.FORALL, FandangoParser.EXISTS, FandangoParser.NAME, FandangoParser.ELLIPSIS, FandangoParser.OPEN_PAREN, FandangoParser.OPEN_BRACK, FandangoParser.ADD, FandangoParser.MINUS, FandangoParser.NOT_OP, FandangoParser.OPEN_BRACE]:
+                    if token in [
+                        FandangoParser.STRING,
+                        FandangoParser.NUMBER,
+                        FandangoParser.AND,
+                        FandangoParser.AS,
+                        FandangoParser.ASSERT,
+                        FandangoParser.ASYNC,
+                        FandangoParser.AWAIT,
+                        FandangoParser.BREAK,
+                        FandangoParser.CASE,
+                        FandangoParser.CLASS,
+                        FandangoParser.CONTINUE,
+                        FandangoParser.DEF,
+                        FandangoParser.DEL,
+                        FandangoParser.ELIF,
+                        FandangoParser.ELSE,
+                        FandangoParser.EXCEPT,
+                        FandangoParser.FALSE,
+                        FandangoParser.FINALLY,
+                        FandangoParser.FOR,
+                        FandangoParser.FROM,
+                        FandangoParser.GLOBAL,
+                        FandangoParser.IF,
+                        FandangoParser.IMPORT,
+                        FandangoParser.IN,
+                        FandangoParser.IS,
+                        FandangoParser.LAMBDA,
+                        FandangoParser.MATCH,
+                        FandangoParser.NONE,
+                        FandangoParser.NONLOCAL,
+                        FandangoParser.NOT,
+                        FandangoParser.OR,
+                        FandangoParser.PASS,
+                        FandangoParser.RAISE,
+                        FandangoParser.RETURN,
+                        FandangoParser.TRUE,
+                        FandangoParser.TRY,
+                        FandangoParser.UNDERSCORE,
+                        FandangoParser.WHILE,
+                        FandangoParser.WITH,
+                        FandangoParser.YIELD,
+                        FandangoParser.FORALL,
+                        FandangoParser.EXISTS,
+                        FandangoParser.NAME,
+                        FandangoParser.ELLIPSIS,
+                        FandangoParser.OPEN_PAREN,
+                        FandangoParser.OPEN_BRACK,
+                        FandangoParser.ADD,
+                        FandangoParser.MINUS,
+                        FandangoParser.NOT_OP,
+                        FandangoParser.OPEN_BRACE,
+                    ]:
                         self.state = 770
                         self.test()
                         pass
@@ -5002,18 +5500,17 @@ class FandangoParser ( Parser ):
                         pass
                     else:
                         raise NoViableAltException(self)
-             
+
                 self.state = 778
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,86,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 86, self._ctx)
 
             self.state = 780
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.COMMA:
+            if _la == FandangoParser.COMMA:
                 self.state = 779
                 self.match(FandangoParser.COMMA)
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -5023,11 +5520,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class AugassignContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -5073,33 +5571,52 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_augassign
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAugassign" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAugassign"):
                 listener.enterAugassign(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAugassign" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAugassign"):
                 listener.exitAugassign(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAugassign" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAugassign"):
                 return visitor.visitAugassign(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def augassign(self):
-
         localctx = FandangoParser.AugassignContext(self, self._ctx, self.state)
         self.enterRule(localctx, 84, self.RULE_augassign)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 782
             _la = self._input.LA(1)
-            if not(((((_la - 89)) & ~0x3f) == 0 and ((1 << (_la - 89)) & ((1 << (FandangoParser.ADD_ASSIGN - 89)) | (1 << (FandangoParser.SUB_ASSIGN - 89)) | (1 << (FandangoParser.MULT_ASSIGN - 89)) | (1 << (FandangoParser.AT_ASSIGN - 89)) | (1 << (FandangoParser.DIV_ASSIGN - 89)) | (1 << (FandangoParser.MOD_ASSIGN - 89)) | (1 << (FandangoParser.AND_ASSIGN - 89)) | (1 << (FandangoParser.OR_ASSIGN - 89)) | (1 << (FandangoParser.XOR_ASSIGN - 89)) | (1 << (FandangoParser.LEFT_SHIFT_ASSIGN - 89)) | (1 << (FandangoParser.RIGHT_SHIFT_ASSIGN - 89)) | (1 << (FandangoParser.POWER_ASSIGN - 89)) | (1 << (FandangoParser.IDIV_ASSIGN - 89)))) != 0)):
+            if not (
+                (
+                    (((_la - 89)) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 89))
+                        & (
+                            (1 << (FandangoParser.ADD_ASSIGN - 89))
+                            | (1 << (FandangoParser.SUB_ASSIGN - 89))
+                            | (1 << (FandangoParser.MULT_ASSIGN - 89))
+                            | (1 << (FandangoParser.AT_ASSIGN - 89))
+                            | (1 << (FandangoParser.DIV_ASSIGN - 89))
+                            | (1 << (FandangoParser.MOD_ASSIGN - 89))
+                            | (1 << (FandangoParser.AND_ASSIGN - 89))
+                            | (1 << (FandangoParser.OR_ASSIGN - 89))
+                            | (1 << (FandangoParser.XOR_ASSIGN - 89))
+                            | (1 << (FandangoParser.LEFT_SHIFT_ASSIGN - 89))
+                            | (1 << (FandangoParser.RIGHT_SHIFT_ASSIGN - 89))
+                            | (1 << (FandangoParser.POWER_ASSIGN - 89))
+                            | (1 << (FandangoParser.IDIV_ASSIGN - 89))
+                        )
+                    )
+                    != 0
+                )
+            ):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -5112,11 +5629,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Del_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -5124,31 +5642,26 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.DEL, 0)
 
         def exprlist(self):
-            return self.getTypedRuleContext(FandangoParser.ExprlistContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ExprlistContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_del_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDel_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDel_stmt"):
                 listener.enterDel_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDel_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDel_stmt"):
                 listener.exitDel_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDel_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDel_stmt"):
                 return visitor.visitDel_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def del_stmt(self):
-
         localctx = FandangoParser.Del_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 86, self.RULE_del_stmt)
         try:
@@ -5165,11 +5678,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Pass_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -5179,25 +5693,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_pass_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPass_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterPass_stmt"):
                 listener.enterPass_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPass_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitPass_stmt"):
                 listener.exitPass_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPass_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitPass_stmt"):
                 return visitor.visitPass_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def pass_stmt(self):
-
         localctx = FandangoParser.Pass_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 88, self.RULE_pass_stmt)
         try:
@@ -5212,56 +5722,48 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Flow_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def break_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.Break_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Break_stmtContext, 0)
 
         def continue_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.Continue_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Continue_stmtContext, 0)
 
         def return_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.Return_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Return_stmtContext, 0)
 
         def raise_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.Raise_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Raise_stmtContext, 0)
 
         def yield_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.Yield_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Yield_stmtContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_flow_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFlow_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterFlow_stmt"):
                 listener.enterFlow_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFlow_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitFlow_stmt"):
                 listener.exitFlow_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFlow_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitFlow_stmt"):
                 return visitor.visitFlow_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def flow_stmt(self):
-
         localctx = FandangoParser.Flow_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 90, self.RULE_flow_stmt)
         try:
@@ -5304,11 +5806,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Break_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -5318,25 +5821,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_break_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBreak_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterBreak_stmt"):
                 listener.enterBreak_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBreak_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitBreak_stmt"):
                 listener.exitBreak_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitBreak_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitBreak_stmt"):
                 return visitor.visitBreak_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def break_stmt(self):
-
         localctx = FandangoParser.Break_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 92, self.RULE_break_stmt)
         try:
@@ -5351,11 +5850,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Continue_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -5365,25 +5865,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_continue_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterContinue_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterContinue_stmt"):
                 listener.enterContinue_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitContinue_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitContinue_stmt"):
                 listener.exitContinue_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitContinue_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitContinue_stmt"):
                 return visitor.visitContinue_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def continue_stmt(self):
-
         localctx = FandangoParser.Continue_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 94, self.RULE_continue_stmt)
         try:
@@ -5398,11 +5894,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Return_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -5410,34 +5907,29 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.RETURN, 0)
 
         def testlist(self):
-            return self.getTypedRuleContext(FandangoParser.TestlistContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.TestlistContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_return_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterReturn_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterReturn_stmt"):
                 listener.enterReturn_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitReturn_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitReturn_stmt"):
                 listener.exitReturn_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitReturn_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitReturn_stmt"):
                 return visitor.visitReturn_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def return_stmt(self):
-
         localctx = FandangoParser.Return_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 96, self.RULE_return_stmt)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 800
@@ -5445,10 +5937,75 @@ class FandangoParser ( Parser ):
             self.state = 802
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NUMBER) | (1 << FandangoParser.AND) | (1 << FandangoParser.AS) | (1 << FandangoParser.ASSERT) | (1 << FandangoParser.ASYNC) | (1 << FandangoParser.AWAIT) | (1 << FandangoParser.BREAK) | (1 << FandangoParser.CASE) | (1 << FandangoParser.CLASS) | (1 << FandangoParser.CONTINUE) | (1 << FandangoParser.DEF) | (1 << FandangoParser.DEL) | (1 << FandangoParser.ELIF) | (1 << FandangoParser.ELSE) | (1 << FandangoParser.EXCEPT) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.FINALLY) | (1 << FandangoParser.FOR) | (1 << FandangoParser.FROM) | (1 << FandangoParser.GLOBAL) | (1 << FandangoParser.IF) | (1 << FandangoParser.IMPORT) | (1 << FandangoParser.IN) | (1 << FandangoParser.IS) | (1 << FandangoParser.LAMBDA) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.NONLOCAL) | (1 << FandangoParser.NOT) | (1 << FandangoParser.OR) | (1 << FandangoParser.PASS) | (1 << FandangoParser.RAISE) | (1 << FandangoParser.RETURN) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.TRY) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.WHILE) | (1 << FandangoParser.WITH) | (1 << FandangoParser.YIELD) | (1 << FandangoParser.FORALL) | (1 << FandangoParser.EXISTS) | (1 << FandangoParser.NAME) | (1 << FandangoParser.ELLIPSIS) | (1 << FandangoParser.OPEN_PAREN))) != 0) or ((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (FandangoParser.OPEN_BRACK - 65)) | (1 << (FandangoParser.ADD - 65)) | (1 << (FandangoParser.MINUS - 65)) | (1 << (FandangoParser.NOT_OP - 65)) | (1 << (FandangoParser.OPEN_BRACE - 65)))) != 0):
+            if (
+                ((_la) & ~0x3F) == 0
+                and (
+                    (1 << _la)
+                    & (
+                        (1 << FandangoParser.STRING)
+                        | (1 << FandangoParser.NUMBER)
+                        | (1 << FandangoParser.AND)
+                        | (1 << FandangoParser.AS)
+                        | (1 << FandangoParser.ASSERT)
+                        | (1 << FandangoParser.ASYNC)
+                        | (1 << FandangoParser.AWAIT)
+                        | (1 << FandangoParser.BREAK)
+                        | (1 << FandangoParser.CASE)
+                        | (1 << FandangoParser.CLASS)
+                        | (1 << FandangoParser.CONTINUE)
+                        | (1 << FandangoParser.DEF)
+                        | (1 << FandangoParser.DEL)
+                        | (1 << FandangoParser.ELIF)
+                        | (1 << FandangoParser.ELSE)
+                        | (1 << FandangoParser.EXCEPT)
+                        | (1 << FandangoParser.FALSE)
+                        | (1 << FandangoParser.FINALLY)
+                        | (1 << FandangoParser.FOR)
+                        | (1 << FandangoParser.FROM)
+                        | (1 << FandangoParser.GLOBAL)
+                        | (1 << FandangoParser.IF)
+                        | (1 << FandangoParser.IMPORT)
+                        | (1 << FandangoParser.IN)
+                        | (1 << FandangoParser.IS)
+                        | (1 << FandangoParser.LAMBDA)
+                        | (1 << FandangoParser.MATCH)
+                        | (1 << FandangoParser.NONE)
+                        | (1 << FandangoParser.NONLOCAL)
+                        | (1 << FandangoParser.NOT)
+                        | (1 << FandangoParser.OR)
+                        | (1 << FandangoParser.PASS)
+                        | (1 << FandangoParser.RAISE)
+                        | (1 << FandangoParser.RETURN)
+                        | (1 << FandangoParser.TRUE)
+                        | (1 << FandangoParser.TRY)
+                        | (1 << FandangoParser.UNDERSCORE)
+                        | (1 << FandangoParser.WHILE)
+                        | (1 << FandangoParser.WITH)
+                        | (1 << FandangoParser.YIELD)
+                        | (1 << FandangoParser.FORALL)
+                        | (1 << FandangoParser.EXISTS)
+                        | (1 << FandangoParser.NAME)
+                        | (1 << FandangoParser.ELLIPSIS)
+                        | (1 << FandangoParser.OPEN_PAREN)
+                    )
+                )
+                != 0
+            ) or (
+                (((_la - 65)) & ~0x3F) == 0
+                and (
+                    (1 << (_la - 65))
+                    & (
+                        (1 << (FandangoParser.OPEN_BRACK - 65))
+                        | (1 << (FandangoParser.ADD - 65))
+                        | (1 << (FandangoParser.MINUS - 65))
+                        | (1 << (FandangoParser.NOT_OP - 65))
+                        | (1 << (FandangoParser.OPEN_BRACE - 65))
+                    )
+                )
+                != 0
+            ):
                 self.state = 801
                 self.testlist()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -5458,40 +6015,36 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Yield_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def yield_expr(self):
-            return self.getTypedRuleContext(FandangoParser.Yield_exprContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Yield_exprContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_yield_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterYield_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterYield_stmt"):
                 listener.enterYield_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitYield_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitYield_stmt"):
                 listener.exitYield_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitYield_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitYield_stmt"):
                 return visitor.visitYield_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def yield_stmt(self):
-
         localctx = FandangoParser.Yield_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 98, self.RULE_yield_stmt)
         try:
@@ -5506,23 +6059,23 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Raise_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def RAISE(self):
             return self.getToken(FandangoParser.RAISE, 0)
 
-        def test(self, i:int=None):
+        def test(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.TestContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.TestContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.TestContext, i)
 
         def FROM(self):
             return self.getToken(FandangoParser.FROM, 0)
@@ -5530,28 +6083,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_raise_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRaise_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterRaise_stmt"):
                 listener.enterRaise_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRaise_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitRaise_stmt"):
                 listener.exitRaise_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitRaise_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitRaise_stmt"):
                 return visitor.visitRaise_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def raise_stmt(self):
-
         localctx = FandangoParser.Raise_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 100, self.RULE_raise_stmt)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 806
@@ -5559,20 +6108,83 @@ class FandangoParser ( Parser ):
             self.state = 812
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NUMBER) | (1 << FandangoParser.AND) | (1 << FandangoParser.AS) | (1 << FandangoParser.ASSERT) | (1 << FandangoParser.ASYNC) | (1 << FandangoParser.AWAIT) | (1 << FandangoParser.BREAK) | (1 << FandangoParser.CASE) | (1 << FandangoParser.CLASS) | (1 << FandangoParser.CONTINUE) | (1 << FandangoParser.DEF) | (1 << FandangoParser.DEL) | (1 << FandangoParser.ELIF) | (1 << FandangoParser.ELSE) | (1 << FandangoParser.EXCEPT) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.FINALLY) | (1 << FandangoParser.FOR) | (1 << FandangoParser.FROM) | (1 << FandangoParser.GLOBAL) | (1 << FandangoParser.IF) | (1 << FandangoParser.IMPORT) | (1 << FandangoParser.IN) | (1 << FandangoParser.IS) | (1 << FandangoParser.LAMBDA) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.NONLOCAL) | (1 << FandangoParser.NOT) | (1 << FandangoParser.OR) | (1 << FandangoParser.PASS) | (1 << FandangoParser.RAISE) | (1 << FandangoParser.RETURN) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.TRY) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.WHILE) | (1 << FandangoParser.WITH) | (1 << FandangoParser.YIELD) | (1 << FandangoParser.FORALL) | (1 << FandangoParser.EXISTS) | (1 << FandangoParser.NAME) | (1 << FandangoParser.ELLIPSIS) | (1 << FandangoParser.OPEN_PAREN))) != 0) or ((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (FandangoParser.OPEN_BRACK - 65)) | (1 << (FandangoParser.ADD - 65)) | (1 << (FandangoParser.MINUS - 65)) | (1 << (FandangoParser.NOT_OP - 65)) | (1 << (FandangoParser.OPEN_BRACE - 65)))) != 0):
+            if (
+                ((_la) & ~0x3F) == 0
+                and (
+                    (1 << _la)
+                    & (
+                        (1 << FandangoParser.STRING)
+                        | (1 << FandangoParser.NUMBER)
+                        | (1 << FandangoParser.AND)
+                        | (1 << FandangoParser.AS)
+                        | (1 << FandangoParser.ASSERT)
+                        | (1 << FandangoParser.ASYNC)
+                        | (1 << FandangoParser.AWAIT)
+                        | (1 << FandangoParser.BREAK)
+                        | (1 << FandangoParser.CASE)
+                        | (1 << FandangoParser.CLASS)
+                        | (1 << FandangoParser.CONTINUE)
+                        | (1 << FandangoParser.DEF)
+                        | (1 << FandangoParser.DEL)
+                        | (1 << FandangoParser.ELIF)
+                        | (1 << FandangoParser.ELSE)
+                        | (1 << FandangoParser.EXCEPT)
+                        | (1 << FandangoParser.FALSE)
+                        | (1 << FandangoParser.FINALLY)
+                        | (1 << FandangoParser.FOR)
+                        | (1 << FandangoParser.FROM)
+                        | (1 << FandangoParser.GLOBAL)
+                        | (1 << FandangoParser.IF)
+                        | (1 << FandangoParser.IMPORT)
+                        | (1 << FandangoParser.IN)
+                        | (1 << FandangoParser.IS)
+                        | (1 << FandangoParser.LAMBDA)
+                        | (1 << FandangoParser.MATCH)
+                        | (1 << FandangoParser.NONE)
+                        | (1 << FandangoParser.NONLOCAL)
+                        | (1 << FandangoParser.NOT)
+                        | (1 << FandangoParser.OR)
+                        | (1 << FandangoParser.PASS)
+                        | (1 << FandangoParser.RAISE)
+                        | (1 << FandangoParser.RETURN)
+                        | (1 << FandangoParser.TRUE)
+                        | (1 << FandangoParser.TRY)
+                        | (1 << FandangoParser.UNDERSCORE)
+                        | (1 << FandangoParser.WHILE)
+                        | (1 << FandangoParser.WITH)
+                        | (1 << FandangoParser.YIELD)
+                        | (1 << FandangoParser.FORALL)
+                        | (1 << FandangoParser.EXISTS)
+                        | (1 << FandangoParser.NAME)
+                        | (1 << FandangoParser.ELLIPSIS)
+                        | (1 << FandangoParser.OPEN_PAREN)
+                    )
+                )
+                != 0
+            ) or (
+                (((_la - 65)) & ~0x3F) == 0
+                and (
+                    (1 << (_la - 65))
+                    & (
+                        (1 << (FandangoParser.OPEN_BRACK - 65))
+                        | (1 << (FandangoParser.ADD - 65))
+                        | (1 << (FandangoParser.MINUS - 65))
+                        | (1 << (FandangoParser.NOT_OP - 65))
+                        | (1 << (FandangoParser.OPEN_BRACE - 65))
+                    )
+                )
+                != 0
+            ):
                 self.state = 807
                 self.test()
                 self.state = 810
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.FROM:
+                if _la == FandangoParser.FROM:
                     self.state = 808
                     self.match(FandangoParser.FROM)
                     self.state = 809
                     self.test()
-
-
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -5582,44 +6194,39 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Import_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def import_name(self):
-            return self.getTypedRuleContext(FandangoParser.Import_nameContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Import_nameContext, 0)
 
         def import_from(self):
-            return self.getTypedRuleContext(FandangoParser.Import_fromContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Import_fromContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_import_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterImport_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterImport_stmt"):
                 listener.enterImport_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitImport_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitImport_stmt"):
                 listener.exitImport_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitImport_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitImport_stmt"):
                 return visitor.visitImport_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def import_stmt(self):
-
         localctx = FandangoParser.Import_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 102, self.RULE_import_stmt)
         try:
@@ -5647,11 +6254,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Import_nameContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -5659,31 +6267,26 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.IMPORT, 0)
 
         def dotted_as_names(self):
-            return self.getTypedRuleContext(FandangoParser.Dotted_as_namesContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Dotted_as_namesContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_import_name
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterImport_name" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterImport_name"):
                 listener.enterImport_name(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitImport_name" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitImport_name"):
                 listener.exitImport_name(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitImport_name" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitImport_name"):
                 return visitor.visitImport_name(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def import_name(self):
-
         localctx = FandangoParser.Import_nameContext(self, self._ctx, self.state)
         self.enterRule(localctx, 104, self.RULE_import_name)
         try:
@@ -5700,11 +6303,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Import_fromContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -5715,8 +6319,7 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.IMPORT, 0)
 
         def dotted_name(self):
-            return self.getTypedRuleContext(FandangoParser.Dotted_nameContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Dotted_nameContext, 0)
 
         def STAR(self):
             return self.getToken(FandangoParser.STAR, 0)
@@ -5725,19 +6328,18 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.OPEN_PAREN, 0)
 
         def import_as_names(self):
-            return self.getTypedRuleContext(FandangoParser.Import_as_namesContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Import_as_namesContext, 0)
 
         def CLOSE_PAREN(self):
             return self.getToken(FandangoParser.CLOSE_PAREN, 0)
 
-        def DOT(self, i:int=None):
+        def DOT(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.DOT)
             else:
                 return self.getToken(FandangoParser.DOT, i)
 
-        def ELLIPSIS(self, i:int=None):
+        def ELLIPSIS(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.ELLIPSIS)
             else:
@@ -5746,43 +6348,41 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_import_from
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterImport_from" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterImport_from"):
                 listener.enterImport_from(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitImport_from" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitImport_from"):
                 listener.exitImport_from(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitImport_from" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitImport_from"):
                 return visitor.visitImport_from(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def import_from(self):
-
         localctx = FandangoParser.Import_fromContext(self, self._ctx, self.state)
         self.enterRule(localctx, 106, self.RULE_import_from)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 821
             self.match(FandangoParser.FROM)
             self.state = 834
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,95,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 95, self._ctx)
             if la_ == 1:
                 self.state = 825
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la==FandangoParser.DOT or _la==FandangoParser.ELLIPSIS:
+                while _la == FandangoParser.DOT or _la == FandangoParser.ELLIPSIS:
                     self.state = 822
                     _la = self._input.LA(1)
-                    if not(_la==FandangoParser.DOT or _la==FandangoParser.ELLIPSIS):
+                    if not (
+                        _la == FandangoParser.DOT or _la == FandangoParser.ELLIPSIS
+                    ):
                         self._errHandler.recoverInline(self)
                     else:
                         self._errHandler.reportMatch(self)
@@ -5796,25 +6396,28 @@ class FandangoParser ( Parser ):
                 pass
 
             elif la_ == 2:
-                self.state = 830 
+                self.state = 830
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while True:
                     self.state = 829
                     _la = self._input.LA(1)
-                    if not(_la==FandangoParser.DOT or _la==FandangoParser.ELLIPSIS):
+                    if not (
+                        _la == FandangoParser.DOT or _la == FandangoParser.ELLIPSIS
+                    ):
                         self._errHandler.recoverInline(self)
                     else:
                         self._errHandler.reportMatch(self)
                         self.consume()
-                    self.state = 832 
+                    self.state = 832
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if not (_la==FandangoParser.DOT or _la==FandangoParser.ELLIPSIS):
+                    if not (
+                        _la == FandangoParser.DOT or _la == FandangoParser.ELLIPSIS
+                    ):
                         break
 
                 pass
-
 
             self.state = 836
             self.match(FandangoParser.IMPORT)
@@ -5833,7 +6436,11 @@ class FandangoParser ( Parser ):
                 self.state = 840
                 self.match(FandangoParser.CLOSE_PAREN)
                 pass
-            elif token in [FandangoParser.MATCH, FandangoParser.UNDERSCORE, FandangoParser.NAME]:
+            elif token in [
+                FandangoParser.MATCH,
+                FandangoParser.UNDERSCORE,
+                FandangoParser.NAME,
+            ]:
                 self.state = 842
                 self.import_as_names()
                 pass
@@ -5848,20 +6455,20 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Import_as_nameContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def name(self, i:int=None):
+        def name(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.NameContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.NameContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.NameContext, i)
 
         def AS(self):
             return self.getToken(FandangoParser.AS, 0)
@@ -5869,28 +6476,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_import_as_name
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterImport_as_name" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterImport_as_name"):
                 listener.enterImport_as_name(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitImport_as_name" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitImport_as_name"):
                 listener.exitImport_as_name(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitImport_as_name" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitImport_as_name"):
                 return visitor.visitImport_as_name(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def import_as_name(self):
-
         localctx = FandangoParser.Import_as_nameContext(self, self._ctx, self.state)
         self.enterRule(localctx, 108, self.RULE_import_as_name)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 845
@@ -5898,12 +6501,11 @@ class FandangoParser ( Parser ):
             self.state = 848
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.AS:
+            if _la == FandangoParser.AS:
                 self.state = 846
                 self.match(FandangoParser.AS)
                 self.state = 847
                 self.name()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -5913,50 +6515,45 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Dotted_as_nameContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def dotted_name(self):
-            return self.getTypedRuleContext(FandangoParser.Dotted_nameContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Dotted_nameContext, 0)
 
         def AS(self):
             return self.getToken(FandangoParser.AS, 0)
 
         def name(self):
-            return self.getTypedRuleContext(FandangoParser.NameContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.NameContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_dotted_as_name
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDotted_as_name" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDotted_as_name"):
                 listener.enterDotted_as_name(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDotted_as_name" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDotted_as_name"):
                 listener.exitDotted_as_name(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDotted_as_name" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDotted_as_name"):
                 return visitor.visitDotted_as_name(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def dotted_as_name(self):
-
         localctx = FandangoParser.Dotted_as_nameContext(self, self._ctx, self.state)
         self.enterRule(localctx, 110, self.RULE_dotted_as_name)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 850
@@ -5964,12 +6561,11 @@ class FandangoParser ( Parser ):
             self.state = 853
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.AS:
+            if _la == FandangoParser.AS:
                 self.state = 851
                 self.match(FandangoParser.AS)
                 self.state = 852
                 self.name()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -5979,22 +6575,22 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Import_as_namesContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def import_as_name(self, i:int=None):
+        def import_as_name(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Import_as_nameContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.Import_as_nameContext,i)
+                return self.getTypedRuleContext(FandangoParser.Import_as_nameContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
@@ -6003,52 +6599,47 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_import_as_names
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterImport_as_names" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterImport_as_names"):
                 listener.enterImport_as_names(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitImport_as_names" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitImport_as_names"):
                 listener.exitImport_as_names(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitImport_as_names" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitImport_as_names"):
                 return visitor.visitImport_as_names(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def import_as_names(self):
-
         localctx = FandangoParser.Import_as_namesContext(self, self._ctx, self.state)
         self.enterRule(localctx, 112, self.RULE_import_as_names)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 855
             self.import_as_name()
             self.state = 860
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,99,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 99, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     self.state = 856
                     self.match(FandangoParser.COMMA)
                     self.state = 857
-                    self.import_as_name() 
+                    self.import_as_name()
                 self.state = 862
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,99,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 99, self._ctx)
 
             self.state = 864
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.COMMA:
+            if _la == FandangoParser.COMMA:
                 self.state = 863
                 self.match(FandangoParser.COMMA)
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -6058,22 +6649,22 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Dotted_as_namesContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def dotted_as_name(self, i:int=None):
+        def dotted_as_name(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Dotted_as_nameContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.Dotted_as_nameContext,i)
+                return self.getTypedRuleContext(FandangoParser.Dotted_as_nameContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
@@ -6082,28 +6673,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_dotted_as_names
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDotted_as_names" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDotted_as_names"):
                 listener.enterDotted_as_names(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDotted_as_names" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDotted_as_names"):
                 listener.exitDotted_as_names(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDotted_as_names" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDotted_as_names"):
                 return visitor.visitDotted_as_names(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def dotted_as_names(self):
-
         localctx = FandangoParser.Dotted_as_namesContext(self, self._ctx, self.state)
         self.enterRule(localctx, 114, self.RULE_dotted_as_names)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 866
@@ -6111,7 +6698,7 @@ class FandangoParser ( Parser ):
             self.state = 871
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==FandangoParser.COMMA:
+            while _la == FandangoParser.COMMA:
                 self.state = 867
                 self.match(FandangoParser.COMMA)
                 self.state = 868
@@ -6128,22 +6715,22 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Dotted_nameContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def name(self, i:int=None):
+        def name(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.NameContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.NameContext,i)
+                return self.getTypedRuleContext(FandangoParser.NameContext, i)
 
-
-        def DOT(self, i:int=None):
+        def DOT(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.DOT)
             else:
@@ -6152,28 +6739,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_dotted_name
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDotted_name" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDotted_name"):
                 listener.enterDotted_name(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDotted_name" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDotted_name"):
                 listener.exitDotted_name(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDotted_name" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDotted_name"):
                 return visitor.visitDotted_name(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def dotted_name(self):
-
         localctx = FandangoParser.Dotted_nameContext(self, self._ctx, self.state)
         self.enterRule(localctx, 116, self.RULE_dotted_name)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 874
@@ -6181,7 +6764,7 @@ class FandangoParser ( Parser ):
             self.state = 879
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==FandangoParser.DOT:
+            while _la == FandangoParser.DOT:
                 self.state = 875
                 self.match(FandangoParser.DOT)
                 self.state = 876
@@ -6198,25 +6781,25 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Global_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def GLOBAL(self):
             return self.getToken(FandangoParser.GLOBAL, 0)
 
-        def name(self, i:int=None):
+        def name(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.NameContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.NameContext,i)
+                return self.getTypedRuleContext(FandangoParser.NameContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
@@ -6225,28 +6808,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_global_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterGlobal_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterGlobal_stmt"):
                 listener.enterGlobal_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitGlobal_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitGlobal_stmt"):
                 listener.exitGlobal_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitGlobal_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitGlobal_stmt"):
                 return visitor.visitGlobal_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def global_stmt(self):
-
         localctx = FandangoParser.Global_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 118, self.RULE_global_stmt)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 882
@@ -6256,7 +6835,7 @@ class FandangoParser ( Parser ):
             self.state = 888
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==FandangoParser.COMMA:
+            while _la == FandangoParser.COMMA:
                 self.state = 884
                 self.match(FandangoParser.COMMA)
                 self.state = 885
@@ -6273,25 +6852,25 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Nonlocal_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def NONLOCAL(self):
             return self.getToken(FandangoParser.NONLOCAL, 0)
 
-        def name(self, i:int=None):
+        def name(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.NameContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.NameContext,i)
+                return self.getTypedRuleContext(FandangoParser.NameContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
@@ -6300,28 +6879,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_nonlocal_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterNonlocal_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterNonlocal_stmt"):
                 listener.enterNonlocal_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitNonlocal_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitNonlocal_stmt"):
                 listener.exitNonlocal_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitNonlocal_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitNonlocal_stmt"):
                 return visitor.visitNonlocal_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def nonlocal_stmt(self):
-
         localctx = FandangoParser.Nonlocal_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 120, self.RULE_nonlocal_stmt)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 891
@@ -6331,7 +6906,7 @@ class FandangoParser ( Parser ):
             self.state = 897
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==FandangoParser.COMMA:
+            while _la == FandangoParser.COMMA:
                 self.state = 893
                 self.match(FandangoParser.COMMA)
                 self.state = 894
@@ -6348,23 +6923,23 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Assert_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def ASSERT(self):
             return self.getToken(FandangoParser.ASSERT, 0)
 
-        def test(self, i:int=None):
+        def test(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.TestContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.TestContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.TestContext, i)
 
         def COMMA(self):
             return self.getToken(FandangoParser.COMMA, 0)
@@ -6372,28 +6947,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_assert_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAssert_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAssert_stmt"):
                 listener.enterAssert_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAssert_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAssert_stmt"):
                 listener.exitAssert_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAssert_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAssert_stmt"):
                 return visitor.visitAssert_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def assert_stmt(self):
-
         localctx = FandangoParser.Assert_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 122, self.RULE_assert_stmt)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 900
@@ -6403,12 +6974,11 @@ class FandangoParser ( Parser ):
             self.state = 904
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.COMMA:
+            if _la == FandangoParser.COMMA:
                 self.state = 902
                 self.match(FandangoParser.COMMA)
                 self.state = 903
                 self.test()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -6418,76 +6988,63 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Compound_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def if_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.If_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.If_stmtContext, 0)
 
         def while_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.While_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.While_stmtContext, 0)
 
         def for_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.For_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.For_stmtContext, 0)
 
         def try_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.Try_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Try_stmtContext, 0)
 
         def with_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.With_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.With_stmtContext, 0)
 
         def funcdef(self):
-            return self.getTypedRuleContext(FandangoParser.FuncdefContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.FuncdefContext, 0)
 
         def classdef(self):
-            return self.getTypedRuleContext(FandangoParser.ClassdefContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ClassdefContext, 0)
 
         def decorated(self):
-            return self.getTypedRuleContext(FandangoParser.DecoratedContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.DecoratedContext, 0)
 
         def async_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.Async_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Async_stmtContext, 0)
 
         def match_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.Match_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Match_stmtContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_compound_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCompound_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCompound_stmt"):
                 listener.enterCompound_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCompound_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCompound_stmt"):
                 listener.exitCompound_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCompound_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCompound_stmt"):
                 return visitor.visitCompound_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def compound_stmt(self):
-
         localctx = FandangoParser.Compound_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 124, self.RULE_compound_stmt)
         try:
@@ -6555,11 +7112,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Async_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -6567,39 +7125,32 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.ASYNC, 0)
 
         def funcdef(self):
-            return self.getTypedRuleContext(FandangoParser.FuncdefContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.FuncdefContext, 0)
 
         def with_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.With_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.With_stmtContext, 0)
 
         def for_stmt(self):
-            return self.getTypedRuleContext(FandangoParser.For_stmtContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.For_stmtContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_async_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAsync_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAsync_stmt"):
                 listener.enterAsync_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAsync_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAsync_stmt"):
                 listener.exitAsync_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAsync_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAsync_stmt"):
                 return visitor.visitAsync_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def async_stmt(self):
-
         localctx = FandangoParser.Async_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 126, self.RULE_async_stmt)
         try:
@@ -6632,38 +7183,37 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class If_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def IF(self):
             return self.getToken(FandangoParser.IF, 0)
 
-        def test(self, i:int=None):
+        def test(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.TestContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.TestContext,i)
+                return self.getTypedRuleContext(FandangoParser.TestContext, i)
 
-
-        def COLON(self, i:int=None):
+        def COLON(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COLON)
             else:
                 return self.getToken(FandangoParser.COLON, i)
 
-        def block(self, i:int=None):
+        def block(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.BlockContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.BlockContext,i)
+                return self.getTypedRuleContext(FandangoParser.BlockContext, i)
 
-
-        def ELIF(self, i:int=None):
+        def ELIF(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.ELIF)
             else:
@@ -6675,25 +7225,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_if_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterIf_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterIf_stmt"):
                 listener.enterIf_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitIf_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitIf_stmt"):
                 listener.exitIf_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitIf_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitIf_stmt"):
                 return visitor.visitIf_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def if_stmt(self):
-
         localctx = FandangoParser.If_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 128, self.RULE_if_stmt)
         try:
@@ -6708,9 +7254,9 @@ class FandangoParser ( Parser ):
             self.block()
             self.state = 935
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,108,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 108, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     self.state = 928
                     self.match(FandangoParser.ELIF)
                     self.state = 929
@@ -6718,14 +7264,14 @@ class FandangoParser ( Parser ):
                     self.state = 930
                     self.match(FandangoParser.COLON)
                     self.state = 931
-                    self.block() 
+                    self.block()
                 self.state = 937
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,108,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 108, self._ctx)
 
             self.state = 941
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,109,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 109, self._ctx)
             if la_ == 1:
                 self.state = 938
                 self.match(FandangoParser.ELSE)
@@ -6733,7 +7279,6 @@ class FandangoParser ( Parser ):
                 self.match(FandangoParser.COLON)
                 self.state = 940
                 self.block()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -6743,11 +7288,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class While_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -6755,21 +7301,19 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.WHILE, 0)
 
         def test(self):
-            return self.getTypedRuleContext(FandangoParser.TestContext,0)
+            return self.getTypedRuleContext(FandangoParser.TestContext, 0)
 
-
-        def COLON(self, i:int=None):
+        def COLON(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COLON)
             else:
                 return self.getToken(FandangoParser.COLON, i)
 
-        def block(self, i:int=None):
+        def block(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.BlockContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.BlockContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.BlockContext, i)
 
         def ELSE(self):
             return self.getToken(FandangoParser.ELSE, 0)
@@ -6777,25 +7321,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_while_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterWhile_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterWhile_stmt"):
                 listener.enterWhile_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitWhile_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitWhile_stmt"):
                 listener.exitWhile_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitWhile_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitWhile_stmt"):
                 return visitor.visitWhile_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def while_stmt(self):
-
         localctx = FandangoParser.While_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 130, self.RULE_while_stmt)
         try:
@@ -6810,7 +7350,7 @@ class FandangoParser ( Parser ):
             self.block()
             self.state = 950
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,110,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 110, self._ctx)
             if la_ == 1:
                 self.state = 947
                 self.match(FandangoParser.ELSE)
@@ -6818,7 +7358,6 @@ class FandangoParser ( Parser ):
                 self.match(FandangoParser.COLON)
                 self.state = 949
                 self.block()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -6828,11 +7367,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class For_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -6840,28 +7380,25 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.FOR, 0)
 
         def exprlist(self):
-            return self.getTypedRuleContext(FandangoParser.ExprlistContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ExprlistContext, 0)
 
         def IN(self):
             return self.getToken(FandangoParser.IN, 0)
 
         def testlist(self):
-            return self.getTypedRuleContext(FandangoParser.TestlistContext,0)
+            return self.getTypedRuleContext(FandangoParser.TestlistContext, 0)
 
-
-        def COLON(self, i:int=None):
+        def COLON(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COLON)
             else:
                 return self.getToken(FandangoParser.COLON, i)
 
-        def block(self, i:int=None):
+        def block(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.BlockContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.BlockContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.BlockContext, i)
 
         def ELSE(self):
             return self.getToken(FandangoParser.ELSE, 0)
@@ -6869,25 +7406,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_for_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFor_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterFor_stmt"):
                 listener.enterFor_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFor_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitFor_stmt"):
                 listener.exitFor_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFor_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitFor_stmt"):
                 return visitor.visitFor_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def for_stmt(self):
-
         localctx = FandangoParser.For_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 132, self.RULE_for_stmt)
         try:
@@ -6906,7 +7439,7 @@ class FandangoParser ( Parser ):
             self.block()
             self.state = 961
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,111,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 111, self._ctx)
             if la_ == 1:
                 self.state = 958
                 self.match(FandangoParser.ELSE)
@@ -6914,7 +7447,6 @@ class FandangoParser ( Parser ):
                 self.match(FandangoParser.COLON)
                 self.state = 960
                 self.block()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -6924,39 +7456,38 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Try_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def TRY(self):
             return self.getToken(FandangoParser.TRY, 0)
 
-        def COLON(self, i:int=None):
+        def COLON(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COLON)
             else:
                 return self.getToken(FandangoParser.COLON, i)
 
-        def block(self, i:int=None):
+        def block(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.BlockContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.BlockContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.BlockContext, i)
 
         def FINALLY(self):
             return self.getToken(FandangoParser.FINALLY, 0)
 
-        def except_clause(self, i:int=None):
+        def except_clause(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Except_clauseContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.Except_clauseContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.Except_clauseContext, i)
 
         def ELSE(self):
             return self.getToken(FandangoParser.ELSE, 0)
@@ -6964,25 +7495,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_try_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTry_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterTry_stmt"):
                 listener.enterTry_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTry_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitTry_stmt"):
                 listener.exitTry_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTry_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitTry_stmt"):
                 return visitor.visitTry_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def try_stmt(self):
-
         localctx = FandangoParser.Try_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 134, self.RULE_try_stmt)
         try:
@@ -6997,10 +7524,10 @@ class FandangoParser ( Parser ):
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [FandangoParser.EXCEPT]:
-                self.state = 970 
+                self.state = 970
                 self._errHandler.sync(self)
                 _alt = 1
-                while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
                     if _alt == 1:
                         self.state = 966
                         self.except_clause()
@@ -7011,13 +7538,13 @@ class FandangoParser ( Parser ):
 
                     else:
                         raise NoViableAltException(self)
-                    self.state = 972 
+                    self.state = 972
                     self._errHandler.sync(self)
-                    _alt = self._interp.adaptivePredict(self._input,112,self._ctx)
+                    _alt = self._interp.adaptivePredict(self._input, 112, self._ctx)
 
                 self.state = 977
                 self._errHandler.sync(self)
-                la_ = self._interp.adaptivePredict(self._input,113,self._ctx)
+                la_ = self._interp.adaptivePredict(self._input, 113, self._ctx)
                 if la_ == 1:
                     self.state = 974
                     self.match(FandangoParser.ELSE)
@@ -7026,10 +7553,9 @@ class FandangoParser ( Parser ):
                     self.state = 976
                     self.block()
 
-
                 self.state = 982
                 self._errHandler.sync(self)
-                la_ = self._interp.adaptivePredict(self._input,114,self._ctx)
+                la_ = self._interp.adaptivePredict(self._input, 114, self._ctx)
                 if la_ == 1:
                     self.state = 979
                     self.match(FandangoParser.FINALLY)
@@ -7037,7 +7563,6 @@ class FandangoParser ( Parser ):
                     self.match(FandangoParser.COLON)
                     self.state = 981
                     self.block()
-
 
                 pass
             elif token in [FandangoParser.FINALLY]:
@@ -7059,32 +7584,31 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class With_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def WITH(self):
             return self.getToken(FandangoParser.WITH, 0)
 
-        def with_item(self, i:int=None):
+        def with_item(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.With_itemContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.With_itemContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.With_itemContext, i)
 
         def COLON(self):
             return self.getToken(FandangoParser.COLON, 0)
 
         def block(self):
-            return self.getTypedRuleContext(FandangoParser.BlockContext,0)
+            return self.getTypedRuleContext(FandangoParser.BlockContext, 0)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
@@ -7093,28 +7617,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_with_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterWith_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterWith_stmt"):
                 listener.enterWith_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitWith_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitWith_stmt"):
                 listener.exitWith_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitWith_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitWith_stmt"):
                 return visitor.visitWith_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def with_stmt(self):
-
         localctx = FandangoParser.With_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 136, self.RULE_with_stmt)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 989
@@ -7124,7 +7644,7 @@ class FandangoParser ( Parser ):
             self.state = 995
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==FandangoParser.COMMA:
+            while _la == FandangoParser.COMMA:
                 self.state = 991
                 self.match(FandangoParser.COMMA)
                 self.state = 992
@@ -7145,50 +7665,45 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class With_itemContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def test(self):
-            return self.getTypedRuleContext(FandangoParser.TestContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.TestContext, 0)
 
         def AS(self):
             return self.getToken(FandangoParser.AS, 0)
 
         def expr(self):
-            return self.getTypedRuleContext(FandangoParser.ExprContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ExprContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_with_item
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterWith_item" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterWith_item"):
                 listener.enterWith_item(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitWith_item" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitWith_item"):
                 listener.exitWith_item(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitWith_item" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitWith_item"):
                 return visitor.visitWith_item(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def with_item(self):
-
         localctx = FandangoParser.With_itemContext(self, self._ctx, self.state)
         self.enterRule(localctx, 138, self.RULE_with_item)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1001
@@ -7196,12 +7711,11 @@ class FandangoParser ( Parser ):
             self.state = 1004
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.AS:
+            if _la == FandangoParser.AS:
                 self.state = 1002
                 self.match(FandangoParser.AS)
                 self.state = 1003
                 self.expr(0)
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -7211,11 +7725,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Except_clauseContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -7223,41 +7738,35 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.EXCEPT, 0)
 
         def test(self):
-            return self.getTypedRuleContext(FandangoParser.TestContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.TestContext, 0)
 
         def AS(self):
             return self.getToken(FandangoParser.AS, 0)
 
         def name(self):
-            return self.getTypedRuleContext(FandangoParser.NameContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.NameContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_except_clause
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExcept_clause" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterExcept_clause"):
                 listener.enterExcept_clause(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExcept_clause" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitExcept_clause"):
                 listener.exitExcept_clause(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExcept_clause" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitExcept_clause"):
                 return visitor.visitExcept_clause(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def except_clause(self):
-
         localctx = FandangoParser.Except_clauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 140, self.RULE_except_clause)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1006
@@ -7265,20 +7774,83 @@ class FandangoParser ( Parser ):
             self.state = 1012
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NUMBER) | (1 << FandangoParser.AND) | (1 << FandangoParser.AS) | (1 << FandangoParser.ASSERT) | (1 << FandangoParser.ASYNC) | (1 << FandangoParser.AWAIT) | (1 << FandangoParser.BREAK) | (1 << FandangoParser.CASE) | (1 << FandangoParser.CLASS) | (1 << FandangoParser.CONTINUE) | (1 << FandangoParser.DEF) | (1 << FandangoParser.DEL) | (1 << FandangoParser.ELIF) | (1 << FandangoParser.ELSE) | (1 << FandangoParser.EXCEPT) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.FINALLY) | (1 << FandangoParser.FOR) | (1 << FandangoParser.FROM) | (1 << FandangoParser.GLOBAL) | (1 << FandangoParser.IF) | (1 << FandangoParser.IMPORT) | (1 << FandangoParser.IN) | (1 << FandangoParser.IS) | (1 << FandangoParser.LAMBDA) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.NONLOCAL) | (1 << FandangoParser.NOT) | (1 << FandangoParser.OR) | (1 << FandangoParser.PASS) | (1 << FandangoParser.RAISE) | (1 << FandangoParser.RETURN) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.TRY) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.WHILE) | (1 << FandangoParser.WITH) | (1 << FandangoParser.YIELD) | (1 << FandangoParser.FORALL) | (1 << FandangoParser.EXISTS) | (1 << FandangoParser.NAME) | (1 << FandangoParser.ELLIPSIS) | (1 << FandangoParser.OPEN_PAREN))) != 0) or ((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (FandangoParser.OPEN_BRACK - 65)) | (1 << (FandangoParser.ADD - 65)) | (1 << (FandangoParser.MINUS - 65)) | (1 << (FandangoParser.NOT_OP - 65)) | (1 << (FandangoParser.OPEN_BRACE - 65)))) != 0):
+            if (
+                ((_la) & ~0x3F) == 0
+                and (
+                    (1 << _la)
+                    & (
+                        (1 << FandangoParser.STRING)
+                        | (1 << FandangoParser.NUMBER)
+                        | (1 << FandangoParser.AND)
+                        | (1 << FandangoParser.AS)
+                        | (1 << FandangoParser.ASSERT)
+                        | (1 << FandangoParser.ASYNC)
+                        | (1 << FandangoParser.AWAIT)
+                        | (1 << FandangoParser.BREAK)
+                        | (1 << FandangoParser.CASE)
+                        | (1 << FandangoParser.CLASS)
+                        | (1 << FandangoParser.CONTINUE)
+                        | (1 << FandangoParser.DEF)
+                        | (1 << FandangoParser.DEL)
+                        | (1 << FandangoParser.ELIF)
+                        | (1 << FandangoParser.ELSE)
+                        | (1 << FandangoParser.EXCEPT)
+                        | (1 << FandangoParser.FALSE)
+                        | (1 << FandangoParser.FINALLY)
+                        | (1 << FandangoParser.FOR)
+                        | (1 << FandangoParser.FROM)
+                        | (1 << FandangoParser.GLOBAL)
+                        | (1 << FandangoParser.IF)
+                        | (1 << FandangoParser.IMPORT)
+                        | (1 << FandangoParser.IN)
+                        | (1 << FandangoParser.IS)
+                        | (1 << FandangoParser.LAMBDA)
+                        | (1 << FandangoParser.MATCH)
+                        | (1 << FandangoParser.NONE)
+                        | (1 << FandangoParser.NONLOCAL)
+                        | (1 << FandangoParser.NOT)
+                        | (1 << FandangoParser.OR)
+                        | (1 << FandangoParser.PASS)
+                        | (1 << FandangoParser.RAISE)
+                        | (1 << FandangoParser.RETURN)
+                        | (1 << FandangoParser.TRUE)
+                        | (1 << FandangoParser.TRY)
+                        | (1 << FandangoParser.UNDERSCORE)
+                        | (1 << FandangoParser.WHILE)
+                        | (1 << FandangoParser.WITH)
+                        | (1 << FandangoParser.YIELD)
+                        | (1 << FandangoParser.FORALL)
+                        | (1 << FandangoParser.EXISTS)
+                        | (1 << FandangoParser.NAME)
+                        | (1 << FandangoParser.ELLIPSIS)
+                        | (1 << FandangoParser.OPEN_PAREN)
+                    )
+                )
+                != 0
+            ) or (
+                (((_la - 65)) & ~0x3F) == 0
+                and (
+                    (1 << (_la - 65))
+                    & (
+                        (1 << (FandangoParser.OPEN_BRACK - 65))
+                        | (1 << (FandangoParser.ADD - 65))
+                        | (1 << (FandangoParser.MINUS - 65))
+                        | (1 << (FandangoParser.NOT_OP - 65))
+                        | (1 << (FandangoParser.OPEN_BRACE - 65))
+                    )
+                )
+                != 0
+            ):
                 self.state = 1007
                 self.test()
                 self.state = 1010
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.AS:
+                if _la == FandangoParser.AS:
                     self.state = 1008
                     self.match(FandangoParser.AS)
                     self.state = 1009
                     self.name()
-
-
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -7288,57 +7860,104 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class BlockContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def simple_stmts(self):
-            return self.getTypedRuleContext(FandangoParser.Simple_stmtsContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Simple_stmtsContext, 0)
 
         def NEWLINE(self):
             return self.getToken(FandangoParser.NEWLINE, 0)
 
-        def stmt(self, i:int=None):
+        def stmt(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.StmtContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.StmtContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.StmtContext, i)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_block
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBlock" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterBlock"):
                 listener.enterBlock(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBlock" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitBlock"):
                 listener.exitBlock(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitBlock" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitBlock"):
                 return visitor.visitBlock(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def block(self):
-
         localctx = FandangoParser.BlockContext(self, self._ctx, self.state)
         self.enterRule(localctx, 142, self.RULE_block)
         try:
             self.state = 1021
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [FandangoParser.STRING, FandangoParser.NUMBER, FandangoParser.AND, FandangoParser.AS, FandangoParser.ASSERT, FandangoParser.ASYNC, FandangoParser.AWAIT, FandangoParser.BREAK, FandangoParser.CASE, FandangoParser.CLASS, FandangoParser.CONTINUE, FandangoParser.DEF, FandangoParser.DEL, FandangoParser.ELIF, FandangoParser.ELSE, FandangoParser.EXCEPT, FandangoParser.FALSE, FandangoParser.FINALLY, FandangoParser.FOR, FandangoParser.FROM, FandangoParser.GLOBAL, FandangoParser.IF, FandangoParser.IMPORT, FandangoParser.IN, FandangoParser.IS, FandangoParser.LAMBDA, FandangoParser.MATCH, FandangoParser.NONE, FandangoParser.NONLOCAL, FandangoParser.NOT, FandangoParser.OR, FandangoParser.PASS, FandangoParser.RAISE, FandangoParser.RETURN, FandangoParser.TRUE, FandangoParser.TRY, FandangoParser.UNDERSCORE, FandangoParser.WHILE, FandangoParser.WITH, FandangoParser.YIELD, FandangoParser.FORALL, FandangoParser.EXISTS, FandangoParser.NAME, FandangoParser.ELLIPSIS, FandangoParser.STAR, FandangoParser.OPEN_PAREN, FandangoParser.OPEN_BRACK, FandangoParser.ADD, FandangoParser.MINUS, FandangoParser.NOT_OP, FandangoParser.OPEN_BRACE]:
+            if token in [
+                FandangoParser.STRING,
+                FandangoParser.NUMBER,
+                FandangoParser.AND,
+                FandangoParser.AS,
+                FandangoParser.ASSERT,
+                FandangoParser.ASYNC,
+                FandangoParser.AWAIT,
+                FandangoParser.BREAK,
+                FandangoParser.CASE,
+                FandangoParser.CLASS,
+                FandangoParser.CONTINUE,
+                FandangoParser.DEF,
+                FandangoParser.DEL,
+                FandangoParser.ELIF,
+                FandangoParser.ELSE,
+                FandangoParser.EXCEPT,
+                FandangoParser.FALSE,
+                FandangoParser.FINALLY,
+                FandangoParser.FOR,
+                FandangoParser.FROM,
+                FandangoParser.GLOBAL,
+                FandangoParser.IF,
+                FandangoParser.IMPORT,
+                FandangoParser.IN,
+                FandangoParser.IS,
+                FandangoParser.LAMBDA,
+                FandangoParser.MATCH,
+                FandangoParser.NONE,
+                FandangoParser.NONLOCAL,
+                FandangoParser.NOT,
+                FandangoParser.OR,
+                FandangoParser.PASS,
+                FandangoParser.RAISE,
+                FandangoParser.RETURN,
+                FandangoParser.TRUE,
+                FandangoParser.TRY,
+                FandangoParser.UNDERSCORE,
+                FandangoParser.WHILE,
+                FandangoParser.WITH,
+                FandangoParser.YIELD,
+                FandangoParser.FORALL,
+                FandangoParser.EXISTS,
+                FandangoParser.NAME,
+                FandangoParser.ELLIPSIS,
+                FandangoParser.STAR,
+                FandangoParser.OPEN_PAREN,
+                FandangoParser.OPEN_BRACK,
+                FandangoParser.ADD,
+                FandangoParser.MINUS,
+                FandangoParser.NOT_OP,
+                FandangoParser.OPEN_BRACE,
+            ]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1014
                 self.simple_stmts()
@@ -7347,19 +7966,19 @@ class FandangoParser ( Parser ):
                 self.enterOuterAlt(localctx, 2)
                 self.state = 1015
                 self.match(FandangoParser.NEWLINE)
-                self.state = 1017 
+                self.state = 1017
                 self._errHandler.sync(self)
                 _alt = 1
-                while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
                     if _alt == 1:
                         self.state = 1016
                         self.stmt()
 
                     else:
                         raise NoViableAltException(self)
-                    self.state = 1019 
+                    self.state = 1019
                     self._errHandler.sync(self)
-                    _alt = self._interp.adaptivePredict(self._input,120,self._ctx)
+                    _alt = self._interp.adaptivePredict(self._input, 120, self._ctx)
 
                 pass
             else:
@@ -7373,11 +7992,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Match_stmtContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -7385,8 +8005,7 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.MATCH, 0)
 
         def subject_expr(self):
-            return self.getTypedRuleContext(FandangoParser.Subject_exprContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Subject_exprContext, 0)
 
         def COLON(self):
             return self.getToken(FandangoParser.COLON, 0)
@@ -7394,35 +8013,30 @@ class FandangoParser ( Parser ):
         def NEWLINE(self):
             return self.getToken(FandangoParser.NEWLINE, 0)
 
-        def case_block(self, i:int=None):
+        def case_block(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Case_blockContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.Case_blockContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.Case_blockContext, i)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_match_stmt
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMatch_stmt" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterMatch_stmt"):
                 listener.enterMatch_stmt(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMatch_stmt" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitMatch_stmt"):
                 listener.exitMatch_stmt(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMatch_stmt" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitMatch_stmt"):
                 return visitor.visitMatch_stmt(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def match_stmt(self):
-
         localctx = FandangoParser.Match_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 144, self.RULE_match_stmt)
         try:
@@ -7435,19 +8049,19 @@ class FandangoParser ( Parser ):
             self.match(FandangoParser.COLON)
             self.state = 1026
             self.match(FandangoParser.NEWLINE)
-            self.state = 1028 
+            self.state = 1028
             self._errHandler.sync(self)
             _alt = 1
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
                 if _alt == 1:
                     self.state = 1027
                     self.case_block()
 
                 else:
                     raise NoViableAltException(self)
-                self.state = 1030 
+                self.state = 1030
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,122,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 122, self._ctx)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -7457,58 +8071,56 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Subject_exprContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def star_named_expression(self):
-            return self.getTypedRuleContext(FandangoParser.Star_named_expressionContext,0)
-
+            return self.getTypedRuleContext(
+                FandangoParser.Star_named_expressionContext, 0
+            )
 
         def COMMA(self):
             return self.getToken(FandangoParser.COMMA, 0)
 
         def star_named_expressions(self):
-            return self.getTypedRuleContext(FandangoParser.Star_named_expressionsContext,0)
-
+            return self.getTypedRuleContext(
+                FandangoParser.Star_named_expressionsContext, 0
+            )
 
         def test(self):
-            return self.getTypedRuleContext(FandangoParser.TestContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.TestContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_subject_expr
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSubject_expr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSubject_expr"):
                 listener.enterSubject_expr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSubject_expr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSubject_expr"):
                 listener.exitSubject_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSubject_expr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSubject_expr"):
                 return visitor.visitSubject_expr(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def subject_expr(self):
-
         localctx = FandangoParser.Subject_exprContext(self, self._ctx, self.state)
         self.enterRule(localctx, 146, self.RULE_subject_expr)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 1038
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,124,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 124, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1032
@@ -7518,10 +8130,9 @@ class FandangoParser ( Parser ):
                 self.state = 1035
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.COMMA:
+                if _la == FandangoParser.COMMA:
                     self.state = 1034
                     self.star_named_expressions()
-
 
                 pass
 
@@ -7531,7 +8142,6 @@ class FandangoParser ( Parser ):
                 self.test()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -7540,75 +8150,146 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Star_named_expressionsContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
                 return self.getToken(FandangoParser.COMMA, i)
 
-        def star_named_expression(self, i:int=None):
+        def star_named_expression(self, i: int = None):
             if i is None:
-                return self.getTypedRuleContexts(FandangoParser.Star_named_expressionContext)
+                return self.getTypedRuleContexts(
+                    FandangoParser.Star_named_expressionContext
+                )
             else:
-                return self.getTypedRuleContext(FandangoParser.Star_named_expressionContext,i)
-
+                return self.getTypedRuleContext(
+                    FandangoParser.Star_named_expressionContext, i
+                )
 
         def getRuleIndex(self):
             return FandangoParser.RULE_star_named_expressions
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterStar_named_expressions" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterStar_named_expressions"):
                 listener.enterStar_named_expressions(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitStar_named_expressions" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitStar_named_expressions"):
                 listener.exitStar_named_expressions(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitStar_named_expressions" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitStar_named_expressions"):
                 return visitor.visitStar_named_expressions(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def star_named_expressions(self):
-
-        localctx = FandangoParser.Star_named_expressionsContext(self, self._ctx, self.state)
+        localctx = FandangoParser.Star_named_expressionsContext(
+            self, self._ctx, self.state
+        )
         self.enterRule(localctx, 148, self.RULE_star_named_expressions)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1040
             self.match(FandangoParser.COMMA)
-            self.state = 1042 
+            self.state = 1042
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while True:
                 self.state = 1041
                 self.star_named_expression()
-                self.state = 1044 
+                self.state = 1044
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NUMBER) | (1 << FandangoParser.AND) | (1 << FandangoParser.AS) | (1 << FandangoParser.ASSERT) | (1 << FandangoParser.ASYNC) | (1 << FandangoParser.AWAIT) | (1 << FandangoParser.BREAK) | (1 << FandangoParser.CASE) | (1 << FandangoParser.CLASS) | (1 << FandangoParser.CONTINUE) | (1 << FandangoParser.DEF) | (1 << FandangoParser.DEL) | (1 << FandangoParser.ELIF) | (1 << FandangoParser.ELSE) | (1 << FandangoParser.EXCEPT) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.FINALLY) | (1 << FandangoParser.FOR) | (1 << FandangoParser.FROM) | (1 << FandangoParser.GLOBAL) | (1 << FandangoParser.IF) | (1 << FandangoParser.IMPORT) | (1 << FandangoParser.IN) | (1 << FandangoParser.IS) | (1 << FandangoParser.LAMBDA) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.NONLOCAL) | (1 << FandangoParser.NOT) | (1 << FandangoParser.OR) | (1 << FandangoParser.PASS) | (1 << FandangoParser.RAISE) | (1 << FandangoParser.RETURN) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.TRY) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.WHILE) | (1 << FandangoParser.WITH) | (1 << FandangoParser.YIELD) | (1 << FandangoParser.FORALL) | (1 << FandangoParser.EXISTS) | (1 << FandangoParser.NAME) | (1 << FandangoParser.ELLIPSIS) | (1 << FandangoParser.STAR) | (1 << FandangoParser.OPEN_PAREN))) != 0) or ((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (FandangoParser.OPEN_BRACK - 65)) | (1 << (FandangoParser.ADD - 65)) | (1 << (FandangoParser.MINUS - 65)) | (1 << (FandangoParser.NOT_OP - 65)) | (1 << (FandangoParser.OPEN_BRACE - 65)))) != 0)):
+                if not (
+                    (
+                        ((_la) & ~0x3F) == 0
+                        and (
+                            (1 << _la)
+                            & (
+                                (1 << FandangoParser.STRING)
+                                | (1 << FandangoParser.NUMBER)
+                                | (1 << FandangoParser.AND)
+                                | (1 << FandangoParser.AS)
+                                | (1 << FandangoParser.ASSERT)
+                                | (1 << FandangoParser.ASYNC)
+                                | (1 << FandangoParser.AWAIT)
+                                | (1 << FandangoParser.BREAK)
+                                | (1 << FandangoParser.CASE)
+                                | (1 << FandangoParser.CLASS)
+                                | (1 << FandangoParser.CONTINUE)
+                                | (1 << FandangoParser.DEF)
+                                | (1 << FandangoParser.DEL)
+                                | (1 << FandangoParser.ELIF)
+                                | (1 << FandangoParser.ELSE)
+                                | (1 << FandangoParser.EXCEPT)
+                                | (1 << FandangoParser.FALSE)
+                                | (1 << FandangoParser.FINALLY)
+                                | (1 << FandangoParser.FOR)
+                                | (1 << FandangoParser.FROM)
+                                | (1 << FandangoParser.GLOBAL)
+                                | (1 << FandangoParser.IF)
+                                | (1 << FandangoParser.IMPORT)
+                                | (1 << FandangoParser.IN)
+                                | (1 << FandangoParser.IS)
+                                | (1 << FandangoParser.LAMBDA)
+                                | (1 << FandangoParser.MATCH)
+                                | (1 << FandangoParser.NONE)
+                                | (1 << FandangoParser.NONLOCAL)
+                                | (1 << FandangoParser.NOT)
+                                | (1 << FandangoParser.OR)
+                                | (1 << FandangoParser.PASS)
+                                | (1 << FandangoParser.RAISE)
+                                | (1 << FandangoParser.RETURN)
+                                | (1 << FandangoParser.TRUE)
+                                | (1 << FandangoParser.TRY)
+                                | (1 << FandangoParser.UNDERSCORE)
+                                | (1 << FandangoParser.WHILE)
+                                | (1 << FandangoParser.WITH)
+                                | (1 << FandangoParser.YIELD)
+                                | (1 << FandangoParser.FORALL)
+                                | (1 << FandangoParser.EXISTS)
+                                | (1 << FandangoParser.NAME)
+                                | (1 << FandangoParser.ELLIPSIS)
+                                | (1 << FandangoParser.STAR)
+                                | (1 << FandangoParser.OPEN_PAREN)
+                            )
+                        )
+                        != 0
+                    )
+                    or (
+                        (((_la - 65)) & ~0x3F) == 0
+                        and (
+                            (1 << (_la - 65))
+                            & (
+                                (1 << (FandangoParser.OPEN_BRACK - 65))
+                                | (1 << (FandangoParser.ADD - 65))
+                                | (1 << (FandangoParser.MINUS - 65))
+                                | (1 << (FandangoParser.NOT_OP - 65))
+                                | (1 << (FandangoParser.OPEN_BRACE - 65))
+                            )
+                        )
+                        != 0
+                    )
+                ):
                     break
 
             self.state = 1047
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.COMMA:
+            if _la == FandangoParser.COMMA:
                 self.state = 1046
                 self.match(FandangoParser.COMMA)
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -7618,11 +8299,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Star_named_expressionContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -7630,36 +8312,32 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.STAR, 0)
 
         def expr(self):
-            return self.getTypedRuleContext(FandangoParser.ExprContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ExprContext, 0)
 
         def test(self):
-            return self.getTypedRuleContext(FandangoParser.TestContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.TestContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_star_named_expression
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterStar_named_expression" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterStar_named_expression"):
                 listener.enterStar_named_expression(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitStar_named_expression" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitStar_named_expression"):
                 listener.exitStar_named_expression(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitStar_named_expression" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitStar_named_expression"):
                 return visitor.visitStar_named_expression(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def star_named_expression(self):
-
-        localctx = FandangoParser.Star_named_expressionContext(self, self._ctx, self.state)
+        localctx = FandangoParser.Star_named_expressionContext(
+            self, self._ctx, self.state
+        )
         self.enterRule(localctx, 150, self.RULE_star_named_expression)
         try:
             self.state = 1052
@@ -7672,7 +8350,58 @@ class FandangoParser ( Parser ):
                 self.state = 1050
                 self.expr(0)
                 pass
-            elif token in [FandangoParser.STRING, FandangoParser.NUMBER, FandangoParser.AND, FandangoParser.AS, FandangoParser.ASSERT, FandangoParser.ASYNC, FandangoParser.AWAIT, FandangoParser.BREAK, FandangoParser.CASE, FandangoParser.CLASS, FandangoParser.CONTINUE, FandangoParser.DEF, FandangoParser.DEL, FandangoParser.ELIF, FandangoParser.ELSE, FandangoParser.EXCEPT, FandangoParser.FALSE, FandangoParser.FINALLY, FandangoParser.FOR, FandangoParser.FROM, FandangoParser.GLOBAL, FandangoParser.IF, FandangoParser.IMPORT, FandangoParser.IN, FandangoParser.IS, FandangoParser.LAMBDA, FandangoParser.MATCH, FandangoParser.NONE, FandangoParser.NONLOCAL, FandangoParser.NOT, FandangoParser.OR, FandangoParser.PASS, FandangoParser.RAISE, FandangoParser.RETURN, FandangoParser.TRUE, FandangoParser.TRY, FandangoParser.UNDERSCORE, FandangoParser.WHILE, FandangoParser.WITH, FandangoParser.YIELD, FandangoParser.FORALL, FandangoParser.EXISTS, FandangoParser.NAME, FandangoParser.ELLIPSIS, FandangoParser.OPEN_PAREN, FandangoParser.OPEN_BRACK, FandangoParser.ADD, FandangoParser.MINUS, FandangoParser.NOT_OP, FandangoParser.OPEN_BRACE]:
+            elif token in [
+                FandangoParser.STRING,
+                FandangoParser.NUMBER,
+                FandangoParser.AND,
+                FandangoParser.AS,
+                FandangoParser.ASSERT,
+                FandangoParser.ASYNC,
+                FandangoParser.AWAIT,
+                FandangoParser.BREAK,
+                FandangoParser.CASE,
+                FandangoParser.CLASS,
+                FandangoParser.CONTINUE,
+                FandangoParser.DEF,
+                FandangoParser.DEL,
+                FandangoParser.ELIF,
+                FandangoParser.ELSE,
+                FandangoParser.EXCEPT,
+                FandangoParser.FALSE,
+                FandangoParser.FINALLY,
+                FandangoParser.FOR,
+                FandangoParser.FROM,
+                FandangoParser.GLOBAL,
+                FandangoParser.IF,
+                FandangoParser.IMPORT,
+                FandangoParser.IN,
+                FandangoParser.IS,
+                FandangoParser.LAMBDA,
+                FandangoParser.MATCH,
+                FandangoParser.NONE,
+                FandangoParser.NONLOCAL,
+                FandangoParser.NOT,
+                FandangoParser.OR,
+                FandangoParser.PASS,
+                FandangoParser.RAISE,
+                FandangoParser.RETURN,
+                FandangoParser.TRUE,
+                FandangoParser.TRY,
+                FandangoParser.UNDERSCORE,
+                FandangoParser.WHILE,
+                FandangoParser.WITH,
+                FandangoParser.YIELD,
+                FandangoParser.FORALL,
+                FandangoParser.EXISTS,
+                FandangoParser.NAME,
+                FandangoParser.ELLIPSIS,
+                FandangoParser.OPEN_PAREN,
+                FandangoParser.OPEN_BRACK,
+                FandangoParser.ADD,
+                FandangoParser.MINUS,
+                FandangoParser.NOT_OP,
+                FandangoParser.OPEN_BRACE,
+            ]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 1051
                 self.test()
@@ -7688,11 +8417,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Case_blockContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -7700,45 +8430,38 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.CASE, 0)
 
         def patterns(self):
-            return self.getTypedRuleContext(FandangoParser.PatternsContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.PatternsContext, 0)
 
         def COLON(self):
             return self.getToken(FandangoParser.COLON, 0)
 
         def block(self):
-            return self.getTypedRuleContext(FandangoParser.BlockContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.BlockContext, 0)
 
         def guard(self):
-            return self.getTypedRuleContext(FandangoParser.GuardContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.GuardContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_case_block
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCase_block" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCase_block"):
                 listener.enterCase_block(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCase_block" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCase_block"):
                 listener.exitCase_block(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCase_block" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCase_block"):
                 return visitor.visitCase_block(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def case_block(self):
-
         localctx = FandangoParser.Case_blockContext(self, self._ctx, self.state)
         self.enterRule(localctx, 152, self.RULE_case_block)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1054
@@ -7748,10 +8471,9 @@ class FandangoParser ( Parser ):
             self.state = 1057
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.IF:
+            if _la == FandangoParser.IF:
                 self.state = 1056
                 self.guard()
-
 
             self.state = 1059
             self.match(FandangoParser.COLON)
@@ -7765,11 +8487,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class GuardContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -7777,31 +8500,26 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.IF, 0)
 
         def test(self):
-            return self.getTypedRuleContext(FandangoParser.TestContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.TestContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_guard
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterGuard" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterGuard"):
                 listener.enterGuard(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitGuard" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitGuard"):
                 listener.exitGuard(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitGuard" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitGuard"):
                 return visitor.visitGuard(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def guard(self):
-
         localctx = FandangoParser.GuardContext(self, self._ctx, self.state)
         self.enterRule(localctx, 154, self.RULE_guard)
         try:
@@ -7818,50 +8536,47 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class PatternsContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def open_sequence_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Open_sequence_patternContext,0)
-
+            return self.getTypedRuleContext(
+                FandangoParser.Open_sequence_patternContext, 0
+            )
 
         def pattern(self):
-            return self.getTypedRuleContext(FandangoParser.PatternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.PatternContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_patterns
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPatterns" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterPatterns"):
                 listener.enterPatterns(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPatterns" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitPatterns"):
                 listener.exitPatterns(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPatterns" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitPatterns"):
                 return visitor.visitPatterns(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def patterns(self):
-
         localctx = FandangoParser.PatternsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 156, self.RULE_patterns)
         try:
             self.state = 1067
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,129,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 129, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1065
@@ -7874,7 +8589,6 @@ class FandangoParser ( Parser ):
                 self.pattern()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -7883,50 +8597,45 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class PatternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def as_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.As_patternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.As_patternContext, 0)
 
         def or_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Or_patternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Or_patternContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterPattern"):
                 listener.enterPattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitPattern"):
                 listener.exitPattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitPattern"):
                 return visitor.visitPattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def pattern(self):
-
         localctx = FandangoParser.PatternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 158, self.RULE_pattern)
         try:
             self.state = 1071
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,130,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 130, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1069
@@ -7939,7 +8648,6 @@ class FandangoParser ( Parser ):
                 self.or_pattern()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -7948,47 +8656,44 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class As_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def or_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Or_patternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Or_patternContext, 0)
 
         def AS(self):
             return self.getToken(FandangoParser.AS, 0)
 
         def pattern_capture_target(self):
-            return self.getTypedRuleContext(FandangoParser.Pattern_capture_targetContext,0)
-
+            return self.getTypedRuleContext(
+                FandangoParser.Pattern_capture_targetContext, 0
+            )
 
         def getRuleIndex(self):
             return FandangoParser.RULE_as_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAs_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAs_pattern"):
                 listener.enterAs_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAs_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAs_pattern"):
                 listener.exitAs_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAs_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAs_pattern"):
                 return visitor.visitAs_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def as_pattern(self):
-
         localctx = FandangoParser.As_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 160, self.RULE_as_pattern)
         try:
@@ -8007,22 +8712,22 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Or_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def closed_pattern(self, i:int=None):
+        def closed_pattern(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Closed_patternContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.Closed_patternContext,i)
+                return self.getTypedRuleContext(FandangoParser.Closed_patternContext, i)
 
-
-        def OR_OP(self, i:int=None):
+        def OR_OP(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.OR_OP)
             else:
@@ -8031,28 +8736,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_or_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterOr_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterOr_pattern"):
                 listener.enterOr_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitOr_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitOr_pattern"):
                 listener.exitOr_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitOr_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitOr_pattern"):
                 return visitor.visitOr_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def or_pattern(self):
-
         localctx = FandangoParser.Or_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 162, self.RULE_or_pattern)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1077
@@ -8060,7 +8761,7 @@ class FandangoParser ( Parser ):
             self.state = 1082
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==FandangoParser.OR_OP:
+            while _la == FandangoParser.OR_OP:
                 self.state = 1078
                 self.match(FandangoParser.OR_OP)
                 self.state = 1079
@@ -8077,74 +8778,63 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Closed_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def literal_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Literal_patternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Literal_patternContext, 0)
 
         def capture_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Capture_patternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Capture_patternContext, 0)
 
         def wildcard_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Wildcard_patternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Wildcard_patternContext, 0)
 
         def value_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Value_patternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Value_patternContext, 0)
 
         def group_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Group_patternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Group_patternContext, 0)
 
         def sequence_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Sequence_patternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Sequence_patternContext, 0)
 
         def mapping_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Mapping_patternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Mapping_patternContext, 0)
 
         def class_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Class_patternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Class_patternContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_closed_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterClosed_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterClosed_pattern"):
                 listener.enterClosed_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitClosed_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitClosed_pattern"):
                 listener.exitClosed_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitClosed_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitClosed_pattern"):
                 return visitor.visitClosed_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def closed_pattern(self):
-
         localctx = FandangoParser.Closed_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 164, self.RULE_closed_pattern)
         try:
             self.state = 1093
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,132,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 132, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1085
@@ -8193,7 +8883,6 @@ class FandangoParser ( Parser ):
                 self.class_pattern()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -8202,25 +8891,23 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Literal_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def signed_number(self):
-            return self.getTypedRuleContext(FandangoParser.Signed_numberContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Signed_numberContext, 0)
 
         def complex_number(self):
-            return self.getTypedRuleContext(FandangoParser.Complex_numberContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Complex_numberContext, 0)
 
         def strings(self):
-            return self.getTypedRuleContext(FandangoParser.StringsContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.StringsContext, 0)
 
         def NONE(self):
             return self.getToken(FandangoParser.NONE, 0)
@@ -8234,38 +8921,35 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_literal_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLiteral_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterLiteral_pattern"):
                 listener.enterLiteral_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLiteral_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitLiteral_pattern"):
                 listener.exitLiteral_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitLiteral_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitLiteral_pattern"):
                 return visitor.visitLiteral_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def literal_pattern(self):
-
         localctx = FandangoParser.Literal_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 166, self.RULE_literal_pattern)
         try:
             self.state = 1103
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,133,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 133, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1095
                 self.signed_number()
                 self.state = 1096
-                if not  this.CannotBePlusMinus() :
+                if not this.CannotBePlusMinus():
                     from antlr4.error.Errors import FailedPredicateException
+
                     raise FailedPredicateException(self, " this.CannotBePlusMinus() ")
                 pass
 
@@ -8299,7 +8983,6 @@ class FandangoParser ( Parser ):
                 self.match(FandangoParser.FALSE)
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -8308,25 +8991,23 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Literal_exprContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def signed_number(self):
-            return self.getTypedRuleContext(FandangoParser.Signed_numberContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Signed_numberContext, 0)
 
         def complex_number(self):
-            return self.getTypedRuleContext(FandangoParser.Complex_numberContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Complex_numberContext, 0)
 
         def strings(self):
-            return self.getTypedRuleContext(FandangoParser.StringsContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.StringsContext, 0)
 
         def NONE(self):
             return self.getToken(FandangoParser.NONE, 0)
@@ -8340,38 +9021,35 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_literal_expr
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLiteral_expr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterLiteral_expr"):
                 listener.enterLiteral_expr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLiteral_expr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitLiteral_expr"):
                 listener.exitLiteral_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitLiteral_expr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitLiteral_expr"):
                 return visitor.visitLiteral_expr(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def literal_expr(self):
-
         localctx = FandangoParser.Literal_exprContext(self, self._ctx, self.state)
         self.enterRule(localctx, 168, self.RULE_literal_expr)
         try:
             self.state = 1113
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,134,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 134, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1105
                 self.signed_number()
                 self.state = 1106
-                if not  this.CannotBePlusMinus() :
+                if not this.CannotBePlusMinus():
                     from antlr4.error.Errors import FailedPredicateException
+
                     raise FailedPredicateException(self, " this.CannotBePlusMinus() ")
                 pass
 
@@ -8405,7 +9083,6 @@ class FandangoParser ( Parser ):
                 self.match(FandangoParser.FALSE)
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -8414,24 +9091,23 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Complex_numberContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def signed_real_number(self):
-            return self.getTypedRuleContext(FandangoParser.Signed_real_numberContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Signed_real_numberContext, 0)
 
         def ADD(self):
             return self.getToken(FandangoParser.ADD, 0)
 
         def imaginary_number(self):
-            return self.getTypedRuleContext(FandangoParser.Imaginary_numberContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Imaginary_numberContext, 0)
 
         def MINUS(self):
             return self.getToken(FandangoParser.MINUS, 0)
@@ -8439,31 +9115,27 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_complex_number
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComplex_number" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterComplex_number"):
                 listener.enterComplex_number(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComplex_number" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitComplex_number"):
                 listener.exitComplex_number(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComplex_number" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitComplex_number"):
                 return visitor.visitComplex_number(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def complex_number(self):
-
         localctx = FandangoParser.Complex_numberContext(self, self._ctx, self.state)
         self.enterRule(localctx, 170, self.RULE_complex_number)
         try:
             self.state = 1123
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,135,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 135, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1115
@@ -8484,7 +9156,6 @@ class FandangoParser ( Parser ):
                 self.imaginary_number()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -8493,11 +9164,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Signed_numberContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -8510,25 +9182,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_signed_number
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSigned_number" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSigned_number"):
                 listener.enterSigned_number(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSigned_number" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSigned_number"):
                 listener.exitSigned_number(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSigned_number" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSigned_number"):
                 return visitor.visitSigned_number(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def signed_number(self):
-
         localctx = FandangoParser.Signed_numberContext(self, self._ctx, self.state)
         self.enterRule(localctx, 172, self.RULE_signed_number)
         try:
@@ -8558,17 +9226,17 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Signed_real_numberContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def real_number(self):
-            return self.getTypedRuleContext(FandangoParser.Real_numberContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Real_numberContext, 0)
 
         def MINUS(self):
             return self.getToken(FandangoParser.MINUS, 0)
@@ -8576,25 +9244,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_signed_real_number
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSigned_real_number" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSigned_real_number"):
                 listener.enterSigned_real_number(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSigned_real_number" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSigned_real_number"):
                 listener.exitSigned_real_number(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSigned_real_number" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSigned_real_number"):
                 return visitor.visitSigned_real_number(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def signed_real_number(self):
-
         localctx = FandangoParser.Signed_real_numberContext(self, self._ctx, self.state)
         self.enterRule(localctx, 174, self.RULE_signed_real_number)
         try:
@@ -8624,11 +9288,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Real_numberContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -8638,25 +9303,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_real_number
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterReal_number" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterReal_number"):
                 listener.enterReal_number(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitReal_number" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitReal_number"):
                 listener.exitReal_number(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitReal_number" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitReal_number"):
                 return visitor.visitReal_number(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def real_number(self):
-
         localctx = FandangoParser.Real_numberContext(self, self._ctx, self.state)
         self.enterRule(localctx, 176, self.RULE_real_number)
         try:
@@ -8671,11 +9332,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Imaginary_numberContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -8685,25 +9347,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_imaginary_number
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterImaginary_number" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterImaginary_number"):
                 listener.enterImaginary_number(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitImaginary_number" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitImaginary_number"):
                 listener.exitImaginary_number(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitImaginary_number" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitImaginary_number"):
                 return visitor.visitImaginary_number(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def imaginary_number(self):
-
         localctx = FandangoParser.Imaginary_numberContext(self, self._ctx, self.state)
         self.enterRule(localctx, 178, self.RULE_imaginary_number)
         try:
@@ -8718,40 +9376,38 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Capture_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def pattern_capture_target(self):
-            return self.getTypedRuleContext(FandangoParser.Pattern_capture_targetContext,0)
-
+            return self.getTypedRuleContext(
+                FandangoParser.Pattern_capture_targetContext, 0
+            )
 
         def getRuleIndex(self):
             return FandangoParser.RULE_capture_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCapture_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterCapture_pattern"):
                 listener.enterCapture_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCapture_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitCapture_pattern"):
                 listener.exitCapture_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCapture_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitCapture_pattern"):
                 return visitor.visitCapture_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def capture_pattern(self):
-
         localctx = FandangoParser.Capture_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 180, self.RULE_capture_pattern)
         try:
@@ -8766,49 +9422,48 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Pattern_capture_targetContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def name(self):
-            return self.getTypedRuleContext(FandangoParser.NameContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.NameContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_pattern_capture_target
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPattern_capture_target" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterPattern_capture_target"):
                 listener.enterPattern_capture_target(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPattern_capture_target" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitPattern_capture_target"):
                 listener.exitPattern_capture_target(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPattern_capture_target" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitPattern_capture_target"):
                 return visitor.visitPattern_capture_target(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def pattern_capture_target(self):
-
-        localctx = FandangoParser.Pattern_capture_targetContext(self, self._ctx, self.state)
+        localctx = FandangoParser.Pattern_capture_targetContext(
+            self, self._ctx, self.state
+        )
         self.enterRule(localctx, 182, self.RULE_pattern_capture_target)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1141
             self.name()
             self.state = 1142
-            if not  this.CannotBeDotLpEq() :
+            if not this.CannotBeDotLpEq():
                 from antlr4.error.Errors import FailedPredicateException
+
                 raise FailedPredicateException(self, " this.CannotBeDotLpEq() ")
         except RecognitionException as re:
             localctx.exception = re
@@ -8818,11 +9473,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Wildcard_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -8832,25 +9488,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_wildcard_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterWildcard_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterWildcard_pattern"):
                 listener.enterWildcard_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitWildcard_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitWildcard_pattern"):
                 listener.exitWildcard_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitWildcard_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitWildcard_pattern"):
                 return visitor.visitWildcard_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def wildcard_pattern(self):
-
         localctx = FandangoParser.Wildcard_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 184, self.RULE_wildcard_pattern)
         try:
@@ -8865,40 +9517,36 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Value_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def attr(self):
-            return self.getTypedRuleContext(FandangoParser.AttrContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.AttrContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_value_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterValue_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterValue_pattern"):
                 listener.enterValue_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitValue_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitValue_pattern"):
                 listener.exitValue_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitValue_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitValue_pattern"):
                 return visitor.visitValue_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def value_pattern(self):
-
         localctx = FandangoParser.Value_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 186, self.RULE_value_pattern)
         try:
@@ -8906,8 +9554,9 @@ class FandangoParser ( Parser ):
             self.state = 1146
             self.attr()
             self.state = 1147
-            if not  this.CannotBeDotLpEq() :
+            if not this.CannotBeDotLpEq():
                 from antlr4.error.Errors import FailedPredicateException
+
                 raise FailedPredicateException(self, " this.CannotBeDotLpEq() ")
         except RecognitionException as re:
             localctx.exception = re
@@ -8917,22 +9566,22 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class AttrContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def name(self, i:int=None):
+        def name(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.NameContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.NameContext,i)
+                return self.getTypedRuleContext(FandangoParser.NameContext, i)
 
-
-        def DOT(self, i:int=None):
+        def DOT(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.DOT)
             else:
@@ -8941,35 +9590,31 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_attr
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAttr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAttr"):
                 listener.enterAttr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAttr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAttr"):
                 listener.exitAttr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAttr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAttr"):
                 return visitor.visitAttr(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def attr(self):
-
         localctx = FandangoParser.AttrContext(self, self._ctx, self.state)
         self.enterRule(localctx, 188, self.RULE_attr)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1149
             self.name()
-            self.state = 1152 
+            self.state = 1152
             self._errHandler.sync(self)
             _alt = 1
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
                 if _alt == 1:
                     self.state = 1150
                     self.match(FandangoParser.DOT)
@@ -8978,9 +9623,9 @@ class FandangoParser ( Parser ):
 
                 else:
                     raise NoViableAltException(self)
-                self.state = 1154 
+                self.state = 1154
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,138,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 138, self._ctx)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -8990,50 +9635,45 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Name_or_attrContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def attr(self):
-            return self.getTypedRuleContext(FandangoParser.AttrContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.AttrContext, 0)
 
         def name(self):
-            return self.getTypedRuleContext(FandangoParser.NameContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.NameContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_name_or_attr
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterName_or_attr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterName_or_attr"):
                 listener.enterName_or_attr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitName_or_attr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitName_or_attr"):
                 listener.exitName_or_attr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitName_or_attr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitName_or_attr"):
                 return visitor.visitName_or_attr(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def name_or_attr(self):
-
         localctx = FandangoParser.Name_or_attrContext(self, self._ctx, self.state)
         self.enterRule(localctx, 190, self.RULE_name_or_attr)
         try:
             self.state = 1158
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,139,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 139, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1156
@@ -9046,7 +9686,6 @@ class FandangoParser ( Parser ):
                 self.name()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -9055,11 +9694,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Group_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -9067,8 +9707,7 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.OPEN_PAREN, 0)
 
         def pattern(self):
-            return self.getTypedRuleContext(FandangoParser.PatternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.PatternContext, 0)
 
         def CLOSE_PAREN(self):
             return self.getToken(FandangoParser.CLOSE_PAREN, 0)
@@ -9076,25 +9715,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_group_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterGroup_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterGroup_pattern"):
                 listener.enterGroup_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitGroup_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitGroup_pattern"):
                 listener.exitGroup_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitGroup_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitGroup_pattern"):
                 return visitor.visitGroup_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def group_pattern(self):
-
         localctx = FandangoParser.Group_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 192, self.RULE_group_pattern)
         try:
@@ -9113,11 +9748,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Sequence_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -9128,8 +9764,9 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.CLOSE_BRACK, 0)
 
         def maybe_sequence_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Maybe_sequence_patternContext,0)
-
+            return self.getTypedRuleContext(
+                FandangoParser.Maybe_sequence_patternContext, 0
+            )
 
         def OPEN_PAREN(self):
             return self.getToken(FandangoParser.OPEN_PAREN, 0)
@@ -9138,34 +9775,31 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.CLOSE_PAREN, 0)
 
         def open_sequence_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Open_sequence_patternContext,0)
-
+            return self.getTypedRuleContext(
+                FandangoParser.Open_sequence_patternContext, 0
+            )
 
         def getRuleIndex(self):
             return FandangoParser.RULE_sequence_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSequence_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSequence_pattern"):
                 listener.enterSequence_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSequence_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSequence_pattern"):
                 listener.exitSequence_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSequence_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSequence_pattern"):
                 return visitor.visitSequence_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def sequence_pattern(self):
-
         localctx = FandangoParser.Sequence_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 194, self.RULE_sequence_pattern)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 1174
             self._errHandler.sync(self)
@@ -9177,10 +9811,38 @@ class FandangoParser ( Parser ):
                 self.state = 1166
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NUMBER) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.NAME) | (1 << FandangoParser.STAR) | (1 << FandangoParser.OPEN_PAREN))) != 0) or ((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (FandangoParser.OPEN_BRACK - 65)) | (1 << (FandangoParser.MINUS - 65)) | (1 << (FandangoParser.OPEN_BRACE - 65)))) != 0):
+                if (
+                    ((_la) & ~0x3F) == 0
+                    and (
+                        (1 << _la)
+                        & (
+                            (1 << FandangoParser.STRING)
+                            | (1 << FandangoParser.NUMBER)
+                            | (1 << FandangoParser.FALSE)
+                            | (1 << FandangoParser.MATCH)
+                            | (1 << FandangoParser.NONE)
+                            | (1 << FandangoParser.TRUE)
+                            | (1 << FandangoParser.UNDERSCORE)
+                            | (1 << FandangoParser.NAME)
+                            | (1 << FandangoParser.STAR)
+                            | (1 << FandangoParser.OPEN_PAREN)
+                        )
+                    )
+                    != 0
+                ) or (
+                    (((_la - 65)) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 65))
+                        & (
+                            (1 << (FandangoParser.OPEN_BRACK - 65))
+                            | (1 << (FandangoParser.MINUS - 65))
+                            | (1 << (FandangoParser.OPEN_BRACE - 65))
+                        )
+                    )
+                    != 0
+                ):
                     self.state = 1165
                     self.maybe_sequence_pattern()
-
 
                 self.state = 1168
                 self.match(FandangoParser.CLOSE_BRACK)
@@ -9192,10 +9854,38 @@ class FandangoParser ( Parser ):
                 self.state = 1171
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NUMBER) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.NAME) | (1 << FandangoParser.STAR) | (1 << FandangoParser.OPEN_PAREN))) != 0) or ((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (FandangoParser.OPEN_BRACK - 65)) | (1 << (FandangoParser.MINUS - 65)) | (1 << (FandangoParser.OPEN_BRACE - 65)))) != 0):
+                if (
+                    ((_la) & ~0x3F) == 0
+                    and (
+                        (1 << _la)
+                        & (
+                            (1 << FandangoParser.STRING)
+                            | (1 << FandangoParser.NUMBER)
+                            | (1 << FandangoParser.FALSE)
+                            | (1 << FandangoParser.MATCH)
+                            | (1 << FandangoParser.NONE)
+                            | (1 << FandangoParser.TRUE)
+                            | (1 << FandangoParser.UNDERSCORE)
+                            | (1 << FandangoParser.NAME)
+                            | (1 << FandangoParser.STAR)
+                            | (1 << FandangoParser.OPEN_PAREN)
+                        )
+                    )
+                    != 0
+                ) or (
+                    (((_la - 65)) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 65))
+                        & (
+                            (1 << (FandangoParser.OPEN_BRACK - 65))
+                            | (1 << (FandangoParser.MINUS - 65))
+                            | (1 << (FandangoParser.OPEN_BRACE - 65))
+                        )
+                    )
+                    != 0
+                ):
                     self.state = 1170
                     self.open_sequence_pattern()
-
 
                 self.state = 1173
                 self.match(FandangoParser.CLOSE_PAREN)
@@ -9211,50 +9901,49 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Open_sequence_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def maybe_star_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Maybe_star_patternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Maybe_star_patternContext, 0)
 
         def COMMA(self):
             return self.getToken(FandangoParser.COMMA, 0)
 
         def maybe_sequence_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Maybe_sequence_patternContext,0)
-
+            return self.getTypedRuleContext(
+                FandangoParser.Maybe_sequence_patternContext, 0
+            )
 
         def getRuleIndex(self):
             return FandangoParser.RULE_open_sequence_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterOpen_sequence_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterOpen_sequence_pattern"):
                 listener.enterOpen_sequence_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitOpen_sequence_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitOpen_sequence_pattern"):
                 listener.exitOpen_sequence_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitOpen_sequence_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitOpen_sequence_pattern"):
                 return visitor.visitOpen_sequence_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def open_sequence_pattern(self):
-
-        localctx = FandangoParser.Open_sequence_patternContext(self, self._ctx, self.state)
+        localctx = FandangoParser.Open_sequence_patternContext(
+            self, self._ctx, self.state
+        )
         self.enterRule(localctx, 196, self.RULE_open_sequence_pattern)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1176
@@ -9264,10 +9953,38 @@ class FandangoParser ( Parser ):
             self.state = 1179
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NUMBER) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.NAME) | (1 << FandangoParser.STAR) | (1 << FandangoParser.OPEN_PAREN))) != 0) or ((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (FandangoParser.OPEN_BRACK - 65)) | (1 << (FandangoParser.MINUS - 65)) | (1 << (FandangoParser.OPEN_BRACE - 65)))) != 0):
+            if (
+                ((_la) & ~0x3F) == 0
+                and (
+                    (1 << _la)
+                    & (
+                        (1 << FandangoParser.STRING)
+                        | (1 << FandangoParser.NUMBER)
+                        | (1 << FandangoParser.FALSE)
+                        | (1 << FandangoParser.MATCH)
+                        | (1 << FandangoParser.NONE)
+                        | (1 << FandangoParser.TRUE)
+                        | (1 << FandangoParser.UNDERSCORE)
+                        | (1 << FandangoParser.NAME)
+                        | (1 << FandangoParser.STAR)
+                        | (1 << FandangoParser.OPEN_PAREN)
+                    )
+                )
+                != 0
+            ) or (
+                (((_la - 65)) & ~0x3F) == 0
+                and (
+                    (1 << (_la - 65))
+                    & (
+                        (1 << (FandangoParser.OPEN_BRACK - 65))
+                        | (1 << (FandangoParser.MINUS - 65))
+                        | (1 << (FandangoParser.OPEN_BRACE - 65))
+                    )
+                )
+                != 0
+            ):
                 self.state = 1178
                 self.maybe_sequence_pattern()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -9277,22 +9994,26 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Maybe_sequence_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def maybe_star_pattern(self, i:int=None):
+        def maybe_star_pattern(self, i: int = None):
             if i is None:
-                return self.getTypedRuleContexts(FandangoParser.Maybe_star_patternContext)
+                return self.getTypedRuleContexts(
+                    FandangoParser.Maybe_star_patternContext
+                )
             else:
-                return self.getTypedRuleContext(FandangoParser.Maybe_star_patternContext,i)
+                return self.getTypedRuleContext(
+                    FandangoParser.Maybe_star_patternContext, i
+                )
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
@@ -9301,52 +10022,49 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_maybe_sequence_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMaybe_sequence_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterMaybe_sequence_pattern"):
                 listener.enterMaybe_sequence_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMaybe_sequence_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitMaybe_sequence_pattern"):
                 listener.exitMaybe_sequence_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMaybe_sequence_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitMaybe_sequence_pattern"):
                 return visitor.visitMaybe_sequence_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def maybe_sequence_pattern(self):
-
-        localctx = FandangoParser.Maybe_sequence_patternContext(self, self._ctx, self.state)
+        localctx = FandangoParser.Maybe_sequence_patternContext(
+            self, self._ctx, self.state
+        )
         self.enterRule(localctx, 198, self.RULE_maybe_sequence_pattern)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1181
             self.maybe_star_pattern()
             self.state = 1186
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,144,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 144, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     self.state = 1182
                     self.match(FandangoParser.COMMA)
                     self.state = 1183
-                    self.maybe_star_pattern() 
+                    self.maybe_star_pattern()
                 self.state = 1188
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,144,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 144, self._ctx)
 
             self.state = 1190
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.COMMA:
+            if _la == FandangoParser.COMMA:
                 self.state = 1189
                 self.match(FandangoParser.COMMA)
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -9356,44 +10074,39 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Maybe_star_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def star_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Star_patternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Star_patternContext, 0)
 
         def pattern(self):
-            return self.getTypedRuleContext(FandangoParser.PatternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.PatternContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_maybe_star_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMaybe_star_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterMaybe_star_pattern"):
                 listener.enterMaybe_star_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMaybe_star_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitMaybe_star_pattern"):
                 listener.exitMaybe_star_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMaybe_star_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitMaybe_star_pattern"):
                 return visitor.visitMaybe_star_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def maybe_star_pattern(self):
-
         localctx = FandangoParser.Maybe_star_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 200, self.RULE_maybe_star_pattern)
         try:
@@ -9405,7 +10118,20 @@ class FandangoParser ( Parser ):
                 self.state = 1192
                 self.star_pattern()
                 pass
-            elif token in [FandangoParser.STRING, FandangoParser.NUMBER, FandangoParser.FALSE, FandangoParser.MATCH, FandangoParser.NONE, FandangoParser.TRUE, FandangoParser.UNDERSCORE, FandangoParser.NAME, FandangoParser.OPEN_PAREN, FandangoParser.OPEN_BRACK, FandangoParser.MINUS, FandangoParser.OPEN_BRACE]:
+            elif token in [
+                FandangoParser.STRING,
+                FandangoParser.NUMBER,
+                FandangoParser.FALSE,
+                FandangoParser.MATCH,
+                FandangoParser.NONE,
+                FandangoParser.TRUE,
+                FandangoParser.UNDERSCORE,
+                FandangoParser.NAME,
+                FandangoParser.OPEN_PAREN,
+                FandangoParser.OPEN_BRACK,
+                FandangoParser.MINUS,
+                FandangoParser.OPEN_BRACE,
+            ]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 1193
                 self.pattern()
@@ -9421,11 +10147,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Star_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -9433,41 +10160,37 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.STAR, 0)
 
         def pattern_capture_target(self):
-            return self.getTypedRuleContext(FandangoParser.Pattern_capture_targetContext,0)
-
+            return self.getTypedRuleContext(
+                FandangoParser.Pattern_capture_targetContext, 0
+            )
 
         def wildcard_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Wildcard_patternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Wildcard_patternContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_star_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterStar_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterStar_pattern"):
                 listener.enterStar_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitStar_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitStar_pattern"):
                 listener.exitStar_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitStar_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitStar_pattern"):
                 return visitor.visitStar_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def star_pattern(self):
-
         localctx = FandangoParser.Star_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 202, self.RULE_star_pattern)
         try:
             self.state = 1200
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,147,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 147, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1196
@@ -9484,7 +10207,6 @@ class FandangoParser ( Parser ):
                 self.wildcard_pattern()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -9493,11 +10215,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Mapping_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -9508,48 +10231,44 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.CLOSE_BRACE, 0)
 
         def double_star_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Double_star_patternContext,0)
+            return self.getTypedRuleContext(
+                FandangoParser.Double_star_patternContext, 0
+            )
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
                 return self.getToken(FandangoParser.COMMA, i)
 
         def items_pattern(self):
-            return self.getTypedRuleContext(FandangoParser.Items_patternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Items_patternContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_mapping_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMapping_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterMapping_pattern"):
                 listener.enterMapping_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMapping_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitMapping_pattern"):
                 listener.exitMapping_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMapping_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitMapping_pattern"):
                 return visitor.visitMapping_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def mapping_pattern(self):
-
         localctx = FandangoParser.Mapping_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 204, self.RULE_mapping_pattern)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 1227
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,151,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 151, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1202
@@ -9567,10 +10286,9 @@ class FandangoParser ( Parser ):
                 self.state = 1207
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.COMMA:
+                if _la == FandangoParser.COMMA:
                     self.state = 1206
                     self.match(FandangoParser.COMMA)
-
 
                 self.state = 1209
                 self.match(FandangoParser.CLOSE_BRACE)
@@ -9589,10 +10307,9 @@ class FandangoParser ( Parser ):
                 self.state = 1216
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.COMMA:
+                if _la == FandangoParser.COMMA:
                     self.state = 1215
                     self.match(FandangoParser.COMMA)
-
 
                 self.state = 1218
                 self.match(FandangoParser.CLOSE_BRACE)
@@ -9607,15 +10324,13 @@ class FandangoParser ( Parser ):
                 self.state = 1223
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.COMMA:
+                if _la == FandangoParser.COMMA:
                     self.state = 1222
                     self.match(FandangoParser.COMMA)
-
 
                 self.state = 1225
                 self.match(FandangoParser.CLOSE_BRACE)
                 pass
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -9625,22 +10340,26 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Items_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def key_value_pattern(self, i:int=None):
+        def key_value_pattern(self, i: int = None):
             if i is None:
-                return self.getTypedRuleContexts(FandangoParser.Key_value_patternContext)
+                return self.getTypedRuleContexts(
+                    FandangoParser.Key_value_patternContext
+                )
             else:
-                return self.getTypedRuleContext(FandangoParser.Key_value_patternContext,i)
+                return self.getTypedRuleContext(
+                    FandangoParser.Key_value_patternContext, i
+                )
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
@@ -9649,25 +10368,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_items_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterItems_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterItems_pattern"):
                 listener.enterItems_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitItems_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitItems_pattern"):
                 listener.exitItems_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitItems_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitItems_pattern"):
                 return visitor.visitItems_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def items_pattern(self):
-
         localctx = FandangoParser.Items_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 206, self.RULE_items_pattern)
         try:
@@ -9676,16 +10391,16 @@ class FandangoParser ( Parser ):
             self.key_value_pattern()
             self.state = 1234
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,152,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 152, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     self.state = 1230
                     self.match(FandangoParser.COMMA)
                     self.state = 1231
-                    self.key_value_pattern() 
+                    self.key_value_pattern()
                 self.state = 1236
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,152,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 152, self._ctx)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -9695,11 +10410,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Key_value_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -9707,39 +10423,32 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.COLON, 0)
 
         def pattern(self):
-            return self.getTypedRuleContext(FandangoParser.PatternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.PatternContext, 0)
 
         def literal_expr(self):
-            return self.getTypedRuleContext(FandangoParser.Literal_exprContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Literal_exprContext, 0)
 
         def attr(self):
-            return self.getTypedRuleContext(FandangoParser.AttrContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.AttrContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_key_value_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterKey_value_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterKey_value_pattern"):
                 listener.enterKey_value_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitKey_value_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitKey_value_pattern"):
                 listener.exitKey_value_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitKey_value_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitKey_value_pattern"):
                 return visitor.visitKey_value_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def key_value_pattern(self):
-
         localctx = FandangoParser.Key_value_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 208, self.RULE_key_value_pattern)
         try:
@@ -9747,11 +10456,22 @@ class FandangoParser ( Parser ):
             self.state = 1239
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [FandangoParser.STRING, FandangoParser.NUMBER, FandangoParser.FALSE, FandangoParser.NONE, FandangoParser.TRUE, FandangoParser.MINUS]:
+            if token in [
+                FandangoParser.STRING,
+                FandangoParser.NUMBER,
+                FandangoParser.FALSE,
+                FandangoParser.NONE,
+                FandangoParser.TRUE,
+                FandangoParser.MINUS,
+            ]:
                 self.state = 1237
                 self.literal_expr()
                 pass
-            elif token in [FandangoParser.MATCH, FandangoParser.UNDERSCORE, FandangoParser.NAME]:
+            elif token in [
+                FandangoParser.MATCH,
+                FandangoParser.UNDERSCORE,
+                FandangoParser.NAME,
+            ]:
                 self.state = 1238
                 self.attr()
                 pass
@@ -9770,11 +10490,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Double_star_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -9782,32 +10503,31 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.POWER, 0)
 
         def pattern_capture_target(self):
-            return self.getTypedRuleContext(FandangoParser.Pattern_capture_targetContext,0)
-
+            return self.getTypedRuleContext(
+                FandangoParser.Pattern_capture_targetContext, 0
+            )
 
         def getRuleIndex(self):
             return FandangoParser.RULE_double_star_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDouble_star_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDouble_star_pattern"):
                 listener.enterDouble_star_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDouble_star_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDouble_star_pattern"):
                 listener.exitDouble_star_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDouble_star_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDouble_star_pattern"):
                 return visitor.visitDouble_star_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def double_star_pattern(self):
-
-        localctx = FandangoParser.Double_star_patternContext(self, self._ctx, self.state)
+        localctx = FandangoParser.Double_star_patternContext(
+            self, self._ctx, self.state
+        )
         self.enterRule(localctx, 210, self.RULE_double_star_pattern)
         try:
             self.enterOuterAlt(localctx, 1)
@@ -9823,17 +10543,17 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Class_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def name_or_attr(self):
-            return self.getTypedRuleContext(FandangoParser.Name_or_attrContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Name_or_attrContext, 0)
 
         def OPEN_PAREN(self):
             return self.getToken(FandangoParser.OPEN_PAREN, 0)
@@ -9842,48 +10562,44 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.CLOSE_PAREN, 0)
 
         def positional_patterns(self):
-            return self.getTypedRuleContext(FandangoParser.Positional_patternsContext,0)
+            return self.getTypedRuleContext(
+                FandangoParser.Positional_patternsContext, 0
+            )
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
                 return self.getToken(FandangoParser.COMMA, i)
 
         def keyword_patterns(self):
-            return self.getTypedRuleContext(FandangoParser.Keyword_patternsContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Keyword_patternsContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_class_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterClass_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterClass_pattern"):
                 listener.enterClass_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitClass_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitClass_pattern"):
                 listener.exitClass_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitClass_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitClass_pattern"):
                 return visitor.visitClass_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def class_pattern(self):
-
         localctx = FandangoParser.Class_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 212, self.RULE_class_pattern)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 1277
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,157,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 157, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1247
@@ -9905,10 +10621,9 @@ class FandangoParser ( Parser ):
                 self.state = 1255
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.COMMA:
+                if _la == FandangoParser.COMMA:
                     self.state = 1254
                     self.match(FandangoParser.COMMA)
-
 
                 self.state = 1257
                 self.match(FandangoParser.CLOSE_PAREN)
@@ -9925,10 +10640,9 @@ class FandangoParser ( Parser ):
                 self.state = 1263
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.COMMA:
+                if _la == FandangoParser.COMMA:
                     self.state = 1262
                     self.match(FandangoParser.COMMA)
-
 
                 self.state = 1265
                 self.match(FandangoParser.CLOSE_PAREN)
@@ -9949,15 +10663,13 @@ class FandangoParser ( Parser ):
                 self.state = 1273
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.COMMA:
+                if _la == FandangoParser.COMMA:
                     self.state = 1272
                     self.match(FandangoParser.COMMA)
-
 
                 self.state = 1275
                 self.match(FandangoParser.CLOSE_PAREN)
                 pass
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -9967,22 +10679,22 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Positional_patternsContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def pattern(self, i:int=None):
+        def pattern(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.PatternContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.PatternContext,i)
+                return self.getTypedRuleContext(FandangoParser.PatternContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
@@ -9991,26 +10703,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_positional_patterns
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPositional_patterns" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterPositional_patterns"):
                 listener.enterPositional_patterns(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPositional_patterns" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitPositional_patterns"):
                 listener.exitPositional_patterns(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPositional_patterns" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitPositional_patterns"):
                 return visitor.visitPositional_patterns(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def positional_patterns(self):
-
-        localctx = FandangoParser.Positional_patternsContext(self, self._ctx, self.state)
+        localctx = FandangoParser.Positional_patternsContext(
+            self, self._ctx, self.state
+        )
         self.enterRule(localctx, 214, self.RULE_positional_patterns)
         try:
             self.enterOuterAlt(localctx, 1)
@@ -10018,16 +10728,16 @@ class FandangoParser ( Parser ):
             self.pattern()
             self.state = 1284
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,158,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 158, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     self.state = 1280
                     self.match(FandangoParser.COMMA)
                     self.state = 1281
-                    self.pattern() 
+                    self.pattern()
                 self.state = 1286
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,158,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 158, self._ctx)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -10037,22 +10747,24 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Keyword_patternsContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def keyword_pattern(self, i:int=None):
+        def keyword_pattern(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Keyword_patternContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.Keyword_patternContext,i)
+                return self.getTypedRuleContext(
+                    FandangoParser.Keyword_patternContext, i
+                )
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
@@ -10061,25 +10773,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_keyword_patterns
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterKeyword_patterns" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterKeyword_patterns"):
                 listener.enterKeyword_patterns(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitKeyword_patterns" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitKeyword_patterns"):
                 listener.exitKeyword_patterns(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitKeyword_patterns" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitKeyword_patterns"):
                 return visitor.visitKeyword_patterns(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def keyword_patterns(self):
-
         localctx = FandangoParser.Keyword_patternsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 216, self.RULE_keyword_patterns)
         try:
@@ -10088,16 +10796,16 @@ class FandangoParser ( Parser ):
             self.keyword_pattern()
             self.state = 1292
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,159,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 159, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     self.state = 1288
                     self.match(FandangoParser.COMMA)
                     self.state = 1289
-                    self.keyword_pattern() 
+                    self.keyword_pattern()
                 self.state = 1294
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,159,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 159, self._ctx)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -10107,47 +10815,42 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Keyword_patternContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def name(self):
-            return self.getTypedRuleContext(FandangoParser.NameContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.NameContext, 0)
 
         def ASSIGN(self):
             return self.getToken(FandangoParser.ASSIGN, 0)
 
         def pattern(self):
-            return self.getTypedRuleContext(FandangoParser.PatternContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.PatternContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_keyword_pattern
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterKeyword_pattern" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterKeyword_pattern"):
                 listener.enterKeyword_pattern(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitKeyword_pattern" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitKeyword_pattern"):
                 listener.exitKeyword_pattern(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitKeyword_pattern" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitKeyword_pattern"):
                 return visitor.visitKeyword_pattern(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def keyword_pattern(self):
-
         localctx = FandangoParser.Keyword_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 218, self.RULE_keyword_pattern)
         try:
@@ -10166,20 +10869,20 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class TestContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def or_test(self, i:int=None):
+        def or_test(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Or_testContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.Or_testContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.Or_testContext, i)
 
         def IF(self):
             return self.getToken(FandangoParser.IF, 0)
@@ -10188,48 +10891,42 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.ELSE, 0)
 
         def test(self):
-            return self.getTypedRuleContext(FandangoParser.TestContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.TestContext, 0)
 
         def lambdef(self):
-            return self.getTypedRuleContext(FandangoParser.LambdefContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.LambdefContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_test
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTest" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterTest"):
                 listener.enterTest(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTest" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitTest"):
                 listener.exitTest(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTest" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitTest"):
                 return visitor.visitTest(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def test(self):
-
         localctx = FandangoParser.TestContext(self, self._ctx, self.state)
         self.enterRule(localctx, 220, self.RULE_test)
         try:
             self.state = 1308
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,161,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 161, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1299
                 self.or_test()
                 self.state = 1305
                 self._errHandler.sync(self)
-                la_ = self._interp.adaptivePredict(self._input,160,self._ctx)
+                la_ = self._interp.adaptivePredict(self._input, 160, self._ctx)
                 if la_ == 1:
                     self.state = 1300
                     self.match(FandangoParser.IF)
@@ -10240,7 +10937,6 @@ class FandangoParser ( Parser ):
                     self.state = 1303
                     self.test()
 
-
                 pass
 
             elif la_ == 2:
@@ -10248,7 +10944,6 @@ class FandangoParser ( Parser ):
                 self.state = 1307
                 self.lambdef()
                 pass
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -10258,50 +10953,45 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Test_nocondContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def or_test(self):
-            return self.getTypedRuleContext(FandangoParser.Or_testContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Or_testContext, 0)
 
         def lambdef_nocond(self):
-            return self.getTypedRuleContext(FandangoParser.Lambdef_nocondContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Lambdef_nocondContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_test_nocond
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTest_nocond" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterTest_nocond"):
                 listener.enterTest_nocond(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTest_nocond" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitTest_nocond"):
                 listener.exitTest_nocond(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTest_nocond" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitTest_nocond"):
                 return visitor.visitTest_nocond(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def test_nocond(self):
-
         localctx = FandangoParser.Test_nocondContext(self, self._ctx, self.state)
         self.enterRule(localctx, 222, self.RULE_test_nocond)
         try:
             self.state = 1312
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,162,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 162, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1310
@@ -10314,7 +11004,6 @@ class FandangoParser ( Parser ):
                 self.lambdef_nocond()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -10323,11 +11012,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class LambdefContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -10338,38 +11028,32 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.COLON, 0)
 
         def test(self):
-            return self.getTypedRuleContext(FandangoParser.TestContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.TestContext, 0)
 
         def varargslist(self):
-            return self.getTypedRuleContext(FandangoParser.VarargslistContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.VarargslistContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_lambdef
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLambdef" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterLambdef"):
                 listener.enterLambdef(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLambdef" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitLambdef"):
                 listener.exitLambdef(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitLambdef" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitLambdef"):
                 return visitor.visitLambdef(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def lambdef(self):
-
         localctx = FandangoParser.LambdefContext(self, self._ctx, self.state)
         self.enterRule(localctx, 224, self.RULE_lambdef)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1314
@@ -10377,10 +11061,18 @@ class FandangoParser ( Parser ):
             self.state = 1316
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.MATCH) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.NAME) | (1 << FandangoParser.STAR) | (1 << FandangoParser.POWER))) != 0):
+            if ((_la) & ~0x3F) == 0 and (
+                (1 << _la)
+                & (
+                    (1 << FandangoParser.MATCH)
+                    | (1 << FandangoParser.UNDERSCORE)
+                    | (1 << FandangoParser.NAME)
+                    | (1 << FandangoParser.STAR)
+                    | (1 << FandangoParser.POWER)
+                )
+            ) != 0:
                 self.state = 1315
                 self.varargslist()
-
 
             self.state = 1318
             self.match(FandangoParser.COLON)
@@ -10394,11 +11086,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Lambdef_nocondContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -10409,38 +11102,32 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.COLON, 0)
 
         def test_nocond(self):
-            return self.getTypedRuleContext(FandangoParser.Test_nocondContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Test_nocondContext, 0)
 
         def varargslist(self):
-            return self.getTypedRuleContext(FandangoParser.VarargslistContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.VarargslistContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_lambdef_nocond
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLambdef_nocond" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterLambdef_nocond"):
                 listener.enterLambdef_nocond(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLambdef_nocond" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitLambdef_nocond"):
                 listener.exitLambdef_nocond(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitLambdef_nocond" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitLambdef_nocond"):
                 return visitor.visitLambdef_nocond(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def lambdef_nocond(self):
-
         localctx = FandangoParser.Lambdef_nocondContext(self, self._ctx, self.state)
         self.enterRule(localctx, 226, self.RULE_lambdef_nocond)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1321
@@ -10448,10 +11135,18 @@ class FandangoParser ( Parser ):
             self.state = 1323
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.MATCH) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.NAME) | (1 << FandangoParser.STAR) | (1 << FandangoParser.POWER))) != 0):
+            if ((_la) & ~0x3F) == 0 and (
+                (1 << _la)
+                & (
+                    (1 << FandangoParser.MATCH)
+                    | (1 << FandangoParser.UNDERSCORE)
+                    | (1 << FandangoParser.NAME)
+                    | (1 << FandangoParser.STAR)
+                    | (1 << FandangoParser.POWER)
+                )
+            ) != 0:
                 self.state = 1322
                 self.varargslist()
-
 
             self.state = 1325
             self.match(FandangoParser.COLON)
@@ -10465,22 +11160,22 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Or_testContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def and_test(self, i:int=None):
+        def and_test(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.And_testContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.And_testContext,i)
+                return self.getTypedRuleContext(FandangoParser.And_testContext, i)
 
-
-        def OR(self, i:int=None):
+        def OR(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.OR)
             else:
@@ -10489,25 +11184,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_or_test
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterOr_test" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterOr_test"):
                 listener.enterOr_test(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitOr_test" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitOr_test"):
                 listener.exitOr_test(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitOr_test" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitOr_test"):
                 return visitor.visitOr_test(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def or_test(self):
-
         localctx = FandangoParser.Or_testContext(self, self._ctx, self.state)
         self.enterRule(localctx, 228, self.RULE_or_test)
         try:
@@ -10516,16 +11207,16 @@ class FandangoParser ( Parser ):
             self.and_test()
             self.state = 1333
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,165,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 165, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     self.state = 1329
                     self.match(FandangoParser.OR)
                     self.state = 1330
-                    self.and_test() 
+                    self.and_test()
                 self.state = 1335
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,165,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 165, self._ctx)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -10535,22 +11226,22 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class And_testContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def not_test(self, i:int=None):
+        def not_test(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Not_testContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.Not_testContext,i)
+                return self.getTypedRuleContext(FandangoParser.Not_testContext, i)
 
-
-        def AND(self, i:int=None):
+        def AND(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.AND)
             else:
@@ -10559,25 +11250,21 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_and_test
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAnd_test" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAnd_test"):
                 listener.enterAnd_test(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAnd_test" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAnd_test"):
                 listener.exitAnd_test(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAnd_test" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAnd_test"):
                 return visitor.visitAnd_test(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def and_test(self):
-
         localctx = FandangoParser.And_testContext(self, self._ctx, self.state)
         self.enterRule(localctx, 230, self.RULE_and_test)
         try:
@@ -10586,16 +11273,16 @@ class FandangoParser ( Parser ):
             self.not_test()
             self.state = 1341
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,166,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 166, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     self.state = 1337
                     self.match(FandangoParser.AND)
                     self.state = 1338
-                    self.not_test() 
+                    self.not_test()
                 self.state = 1343
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,166,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 166, self._ctx)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -10605,11 +11292,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Not_testContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -10617,41 +11305,35 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.NOT, 0)
 
         def not_test(self):
-            return self.getTypedRuleContext(FandangoParser.Not_testContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Not_testContext, 0)
 
         def comparison(self):
-            return self.getTypedRuleContext(FandangoParser.ComparisonContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ComparisonContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_not_test
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterNot_test" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterNot_test"):
                 listener.enterNot_test(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitNot_test" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitNot_test"):
                 listener.exitNot_test(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitNot_test" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitNot_test"):
                 return visitor.visitNot_test(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def not_test(self):
-
         localctx = FandangoParser.Not_testContext(self, self._ctx, self.state)
         self.enterRule(localctx, 232, self.RULE_not_test)
         try:
             self.state = 1347
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,167,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 167, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1344
@@ -10666,7 +11348,6 @@ class FandangoParser ( Parser ):
                 self.comparison()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -10675,50 +11356,45 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ComparisonContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def expr(self, i:int=None):
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.ExprContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.ExprContext,i)
+                return self.getTypedRuleContext(FandangoParser.ExprContext, i)
 
-
-        def comp_op(self, i:int=None):
+        def comp_op(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Comp_opContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.Comp_opContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.Comp_opContext, i)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_comparison
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComparison" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterComparison"):
                 listener.enterComparison(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComparison" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitComparison"):
                 listener.exitComparison(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComparison" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitComparison"):
                 return visitor.visitComparison(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def comparison(self):
-
         localctx = FandangoParser.ComparisonContext(self, self._ctx, self.state)
         self.enterRule(localctx, 234, self.RULE_comparison)
         try:
@@ -10727,16 +11403,16 @@ class FandangoParser ( Parser ):
             self.expr(0)
             self.state = 1355
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,168,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 168, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     self.state = 1350
                     self.comp_op()
                     self.state = 1351
-                    self.expr(0) 
+                    self.expr(0)
                 self.state = 1357
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,168,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 168, self._ctx)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -10746,11 +11422,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Comp_opContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -10787,31 +11464,27 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_comp_op
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComp_op" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterComp_op"):
                 listener.enterComp_op(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComp_op" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitComp_op"):
                 listener.exitComp_op(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComp_op" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitComp_op"):
                 return visitor.visitComp_op(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def comp_op(self):
-
         localctx = FandangoParser.Comp_opContext(self, self._ctx, self.state)
         self.enterRule(localctx, 236, self.RULE_comp_op)
         try:
             self.state = 1371
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,169,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 169, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1358
@@ -10882,7 +11555,6 @@ class FandangoParser ( Parser ):
                 self.match(FandangoParser.NOT)
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -10891,11 +11563,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Star_exprContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -10903,31 +11576,26 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.STAR, 0)
 
         def expr(self):
-            return self.getTypedRuleContext(FandangoParser.ExprContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ExprContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_star_expr
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterStar_expr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterStar_expr"):
                 listener.enterStar_expr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitStar_expr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitStar_expr"):
                 listener.exitStar_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitStar_expr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitStar_expr"):
                 return visitor.visitStar_expr(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def star_expr(self):
-
         localctx = FandangoParser.Star_exprContext(self, self._ctx, self.state)
         self.enterRule(localctx, 238, self.RULE_star_expr)
         try:
@@ -10944,42 +11612,40 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ExprContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def selector(self):
-            return self.getTypedRuleContext(FandangoParser.SelectorContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.SelectorContext, 0)
 
         def atom_expr(self):
-            return self.getTypedRuleContext(FandangoParser.Atom_exprContext,0)
+            return self.getTypedRuleContext(FandangoParser.Atom_exprContext, 0)
 
-
-        def expr(self, i:int=None):
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.ExprContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.ExprContext,i)
+                return self.getTypedRuleContext(FandangoParser.ExprContext, i)
 
-
-        def ADD(self, i:int=None):
+        def ADD(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.ADD)
             else:
                 return self.getToken(FandangoParser.ADD, i)
 
-        def MINUS(self, i:int=None):
+        def MINUS(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.MINUS)
             else:
                 return self.getToken(FandangoParser.MINUS, i)
 
-        def NOT_OP(self, i:int=None):
+        def NOT_OP(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.NOT_OP)
             else:
@@ -11021,35 +11687,33 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_expr
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterExpr"):
                 listener.enterExpr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitExpr"):
                 listener.exitExpr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitExpr"):
                 return visitor.visitExpr(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-    def expr(self, _p:int=0):
+    def expr(self, _p: int = 0):
         _parentctx = self._ctx
         _parentState = self.state
         localctx = FandangoParser.ExprContext(self, self._ctx, _parentState)
         _prevctx = localctx
         _startState = 240
         self.enterRecursionRule(localctx, 240, self.RULE_expr, _p)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1385
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,171,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 171, self._ctx)
             if la_ == 1:
                 self.state = 1377
                 self.selector()
@@ -11061,14 +11725,27 @@ class FandangoParser ( Parser ):
                 pass
 
             elif la_ == 3:
-                self.state = 1380 
+                self.state = 1380
                 self._errHandler.sync(self)
                 _alt = 1
-                while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
                     if _alt == 1:
                         self.state = 1379
                         _la = self._input.LA(1)
-                        if not(((((_la - 72)) & ~0x3f) == 0 and ((1 << (_la - 72)) & ((1 << (FandangoParser.ADD - 72)) | (1 << (FandangoParser.MINUS - 72)) | (1 << (FandangoParser.NOT_OP - 72)))) != 0)):
+                        if not (
+                            (
+                                (((_la - 72)) & ~0x3F) == 0
+                                and (
+                                    (1 << (_la - 72))
+                                    & (
+                                        (1 << (FandangoParser.ADD - 72))
+                                        | (1 << (FandangoParser.MINUS - 72))
+                                        | (1 << (FandangoParser.NOT_OP - 72))
+                                    )
+                                )
+                                != 0
+                            )
+                        ):
                             self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -11076,34 +11753,40 @@ class FandangoParser ( Parser ):
 
                     else:
                         raise NoViableAltException(self)
-                    self.state = 1382 
+                    self.state = 1382
                     self._errHandler.sync(self)
-                    _alt = self._interp.adaptivePredict(self._input,170,self._ctx)
+                    _alt = self._interp.adaptivePredict(self._input, 170, self._ctx)
 
                 self.state = 1384
                 self.expr(7)
                 pass
 
-
             self._ctx.stop = self._input.LT(-1)
             self.state = 1410
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,173,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 173, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     if self._parseListeners is not None:
                         self.triggerExitRuleEvent()
                     _prevctx = localctx
                     self.state = 1408
                     self._errHandler.sync(self)
-                    la_ = self._interp.adaptivePredict(self._input,172,self._ctx)
+                    la_ = self._interp.adaptivePredict(self._input, 172, self._ctx)
                     if la_ == 1:
-                        localctx = FandangoParser.ExprContext(self, _parentctx, _parentState)
-                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
+                        localctx = FandangoParser.ExprContext(
+                            self, _parentctx, _parentState
+                        )
+                        self.pushNewRecursionContext(
+                            localctx, _startState, self.RULE_expr
+                        )
                         self.state = 1387
                         if not self.precpred(self._ctx, 8):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 8)")
+
+                            raise FailedPredicateException(
+                                self, "self.precpred(self._ctx, 8)"
+                            )
                         self.state = 1388
                         self.match(FandangoParser.POWER)
                         self.state = 1389
@@ -11111,15 +11794,37 @@ class FandangoParser ( Parser ):
                         pass
 
                     elif la_ == 2:
-                        localctx = FandangoParser.ExprContext(self, _parentctx, _parentState)
-                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
+                        localctx = FandangoParser.ExprContext(
+                            self, _parentctx, _parentState
+                        )
+                        self.pushNewRecursionContext(
+                            localctx, _startState, self.RULE_expr
+                        )
                         self.state = 1390
                         if not self.precpred(self._ctx, 6):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 6)")
+
+                            raise FailedPredicateException(
+                                self, "self.precpred(self._ctx, 6)"
+                            )
                         self.state = 1391
                         _la = self._input.LA(1)
-                        if not(((((_la - 57)) & ~0x3f) == 0 and ((1 << (_la - 57)) & ((1 << (FandangoParser.STAR - 57)) | (1 << (FandangoParser.DIV - 57)) | (1 << (FandangoParser.MOD - 57)) | (1 << (FandangoParser.IDIV - 57)) | (1 << (FandangoParser.AT - 57)))) != 0)):
+                        if not (
+                            (
+                                (((_la - 57)) & ~0x3F) == 0
+                                and (
+                                    (1 << (_la - 57))
+                                    & (
+                                        (1 << (FandangoParser.STAR - 57))
+                                        | (1 << (FandangoParser.DIV - 57))
+                                        | (1 << (FandangoParser.MOD - 57))
+                                        | (1 << (FandangoParser.IDIV - 57))
+                                        | (1 << (FandangoParser.AT - 57))
+                                    )
+                                )
+                                != 0
+                            )
+                        ):
                             self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -11129,15 +11834,24 @@ class FandangoParser ( Parser ):
                         pass
 
                     elif la_ == 3:
-                        localctx = FandangoParser.ExprContext(self, _parentctx, _parentState)
-                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
+                        localctx = FandangoParser.ExprContext(
+                            self, _parentctx, _parentState
+                        )
+                        self.pushNewRecursionContext(
+                            localctx, _startState, self.RULE_expr
+                        )
                         self.state = 1393
                         if not self.precpred(self._ctx, 5):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 5)")
+
+                            raise FailedPredicateException(
+                                self, "self.precpred(self._ctx, 5)"
+                            )
                         self.state = 1394
                         _la = self._input.LA(1)
-                        if not(_la==FandangoParser.ADD or _la==FandangoParser.MINUS):
+                        if not (
+                            _la == FandangoParser.ADD or _la == FandangoParser.MINUS
+                        ):
                             self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -11147,15 +11861,25 @@ class FandangoParser ( Parser ):
                         pass
 
                     elif la_ == 4:
-                        localctx = FandangoParser.ExprContext(self, _parentctx, _parentState)
-                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
+                        localctx = FandangoParser.ExprContext(
+                            self, _parentctx, _parentState
+                        )
+                        self.pushNewRecursionContext(
+                            localctx, _startState, self.RULE_expr
+                        )
                         self.state = 1396
                         if not self.precpred(self._ctx, 4):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 4)")
+
+                            raise FailedPredicateException(
+                                self, "self.precpred(self._ctx, 4)"
+                            )
                         self.state = 1397
                         _la = self._input.LA(1)
-                        if not(_la==FandangoParser.LEFT_SHIFT or _la==FandangoParser.RIGHT_SHIFT):
+                        if not (
+                            _la == FandangoParser.LEFT_SHIFT
+                            or _la == FandangoParser.RIGHT_SHIFT
+                        ):
                             self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -11165,12 +11889,19 @@ class FandangoParser ( Parser ):
                         pass
 
                     elif la_ == 5:
-                        localctx = FandangoParser.ExprContext(self, _parentctx, _parentState)
-                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
+                        localctx = FandangoParser.ExprContext(
+                            self, _parentctx, _parentState
+                        )
+                        self.pushNewRecursionContext(
+                            localctx, _startState, self.RULE_expr
+                        )
                         self.state = 1399
                         if not self.precpred(self._ctx, 3):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 3)")
+
+                            raise FailedPredicateException(
+                                self, "self.precpred(self._ctx, 3)"
+                            )
                         self.state = 1400
                         self.match(FandangoParser.AND_OP)
                         self.state = 1401
@@ -11178,12 +11909,19 @@ class FandangoParser ( Parser ):
                         pass
 
                     elif la_ == 6:
-                        localctx = FandangoParser.ExprContext(self, _parentctx, _parentState)
-                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
+                        localctx = FandangoParser.ExprContext(
+                            self, _parentctx, _parentState
+                        )
+                        self.pushNewRecursionContext(
+                            localctx, _startState, self.RULE_expr
+                        )
                         self.state = 1402
                         if not self.precpred(self._ctx, 2):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 2)")
+
+                            raise FailedPredicateException(
+                                self, "self.precpred(self._ctx, 2)"
+                            )
                         self.state = 1403
                         self.match(FandangoParser.XOR)
                         self.state = 1404
@@ -11191,22 +11929,28 @@ class FandangoParser ( Parser ):
                         pass
 
                     elif la_ == 7:
-                        localctx = FandangoParser.ExprContext(self, _parentctx, _parentState)
-                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
+                        localctx = FandangoParser.ExprContext(
+                            self, _parentctx, _parentState
+                        )
+                        self.pushNewRecursionContext(
+                            localctx, _startState, self.RULE_expr
+                        )
                         self.state = 1405
                         if not self.precpred(self._ctx, 1):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 1)")
+
+                            raise FailedPredicateException(
+                                self, "self.precpred(self._ctx, 1)"
+                            )
                         self.state = 1406
                         self.match(FandangoParser.OR_OP)
                         self.state = 1407
                         self.expr(2)
                         pass
 
-             
                 self.state = 1412
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,173,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 173, self._ctx)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -11216,75 +11960,69 @@ class FandangoParser ( Parser ):
             self.unrollRecursionContexts(_parentctx)
         return localctx
 
-
     class Atom_exprContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def atom(self):
-            return self.getTypedRuleContext(FandangoParser.AtomContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.AtomContext, 0)
 
         def AWAIT(self):
             return self.getToken(FandangoParser.AWAIT, 0)
 
-        def trailer(self, i:int=None):
+        def trailer(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.TrailerContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.TrailerContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.TrailerContext, i)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_atom_expr
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAtom_expr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAtom_expr"):
                 listener.enterAtom_expr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAtom_expr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAtom_expr"):
                 listener.exitAtom_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAtom_expr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAtom_expr"):
                 return visitor.visitAtom_expr(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def atom_expr(self):
-
         localctx = FandangoParser.Atom_exprContext(self, self._ctx, self.state)
         self.enterRule(localctx, 242, self.RULE_atom_expr)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1414
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.AWAIT:
+            if _la == FandangoParser.AWAIT:
                 self.state = 1413
                 self.match(FandangoParser.AWAIT)
-
 
             self.state = 1416
             self.atom()
             self.state = 1420
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,175,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 175, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     self.state = 1417
-                    self.trailer() 
+                    self.trailer()
                 self.state = 1422
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,175,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 175, self._ctx)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -11294,11 +12032,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class AtomContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -11309,12 +12048,10 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.CLOSE_PAREN, 0)
 
         def yield_expr(self):
-            return self.getTypedRuleContext(FandangoParser.Yield_exprContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Yield_exprContext, 0)
 
         def testlist_comp(self):
-            return self.getTypedRuleContext(FandangoParser.Testlist_compContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Testlist_compContext, 0)
 
         def OPEN_BRACK(self):
             return self.getToken(FandangoParser.OPEN_BRACK, 0)
@@ -11329,17 +12066,15 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.CLOSE_BRACE, 0)
 
         def dictorsetmaker(self):
-            return self.getTypedRuleContext(FandangoParser.DictorsetmakerContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.DictorsetmakerContext, 0)
 
         def name(self):
-            return self.getTypedRuleContext(FandangoParser.NameContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.NameContext, 0)
 
         def NUMBER(self):
             return self.getToken(FandangoParser.NUMBER, 0)
 
-        def STRING(self, i:int=None):
+        def STRING(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.STRING)
             else:
@@ -11360,28 +12095,24 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_atom
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAtom" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterAtom"):
                 listener.enterAtom(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAtom" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitAtom"):
                 listener.exitAtom(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAtom" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitAtom"):
                 return visitor.visitAtom(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def atom(self):
-
         localctx = FandangoParser.AtomContext(self, self._ctx, self.state)
         self.enterRule(localctx, 244, self.RULE_atom)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 1450
             self._errHandler.sync(self)
@@ -11392,7 +12123,7 @@ class FandangoParser ( Parser ):
                 self.match(FandangoParser.OPEN_PAREN)
                 self.state = 1426
                 self._errHandler.sync(self)
-                la_ = self._interp.adaptivePredict(self._input,176,self._ctx)
+                la_ = self._interp.adaptivePredict(self._input, 176, self._ctx)
                 if la_ == 1:
                     self.state = 1424
                     self.yield_expr()
@@ -11400,7 +12131,6 @@ class FandangoParser ( Parser ):
                 elif la_ == 2:
                     self.state = 1425
                     self.testlist_comp()
-
 
                 self.state = 1428
                 self.match(FandangoParser.CLOSE_PAREN)
@@ -11412,10 +12142,76 @@ class FandangoParser ( Parser ):
                 self.state = 1431
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NUMBER) | (1 << FandangoParser.AND) | (1 << FandangoParser.AS) | (1 << FandangoParser.ASSERT) | (1 << FandangoParser.ASYNC) | (1 << FandangoParser.AWAIT) | (1 << FandangoParser.BREAK) | (1 << FandangoParser.CASE) | (1 << FandangoParser.CLASS) | (1 << FandangoParser.CONTINUE) | (1 << FandangoParser.DEF) | (1 << FandangoParser.DEL) | (1 << FandangoParser.ELIF) | (1 << FandangoParser.ELSE) | (1 << FandangoParser.EXCEPT) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.FINALLY) | (1 << FandangoParser.FOR) | (1 << FandangoParser.FROM) | (1 << FandangoParser.GLOBAL) | (1 << FandangoParser.IF) | (1 << FandangoParser.IMPORT) | (1 << FandangoParser.IN) | (1 << FandangoParser.IS) | (1 << FandangoParser.LAMBDA) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.NONLOCAL) | (1 << FandangoParser.NOT) | (1 << FandangoParser.OR) | (1 << FandangoParser.PASS) | (1 << FandangoParser.RAISE) | (1 << FandangoParser.RETURN) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.TRY) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.WHILE) | (1 << FandangoParser.WITH) | (1 << FandangoParser.YIELD) | (1 << FandangoParser.FORALL) | (1 << FandangoParser.EXISTS) | (1 << FandangoParser.NAME) | (1 << FandangoParser.ELLIPSIS) | (1 << FandangoParser.STAR) | (1 << FandangoParser.OPEN_PAREN))) != 0) or ((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (FandangoParser.OPEN_BRACK - 65)) | (1 << (FandangoParser.ADD - 65)) | (1 << (FandangoParser.MINUS - 65)) | (1 << (FandangoParser.NOT_OP - 65)) | (1 << (FandangoParser.OPEN_BRACE - 65)))) != 0):
+                if (
+                    ((_la) & ~0x3F) == 0
+                    and (
+                        (1 << _la)
+                        & (
+                            (1 << FandangoParser.STRING)
+                            | (1 << FandangoParser.NUMBER)
+                            | (1 << FandangoParser.AND)
+                            | (1 << FandangoParser.AS)
+                            | (1 << FandangoParser.ASSERT)
+                            | (1 << FandangoParser.ASYNC)
+                            | (1 << FandangoParser.AWAIT)
+                            | (1 << FandangoParser.BREAK)
+                            | (1 << FandangoParser.CASE)
+                            | (1 << FandangoParser.CLASS)
+                            | (1 << FandangoParser.CONTINUE)
+                            | (1 << FandangoParser.DEF)
+                            | (1 << FandangoParser.DEL)
+                            | (1 << FandangoParser.ELIF)
+                            | (1 << FandangoParser.ELSE)
+                            | (1 << FandangoParser.EXCEPT)
+                            | (1 << FandangoParser.FALSE)
+                            | (1 << FandangoParser.FINALLY)
+                            | (1 << FandangoParser.FOR)
+                            | (1 << FandangoParser.FROM)
+                            | (1 << FandangoParser.GLOBAL)
+                            | (1 << FandangoParser.IF)
+                            | (1 << FandangoParser.IMPORT)
+                            | (1 << FandangoParser.IN)
+                            | (1 << FandangoParser.IS)
+                            | (1 << FandangoParser.LAMBDA)
+                            | (1 << FandangoParser.MATCH)
+                            | (1 << FandangoParser.NONE)
+                            | (1 << FandangoParser.NONLOCAL)
+                            | (1 << FandangoParser.NOT)
+                            | (1 << FandangoParser.OR)
+                            | (1 << FandangoParser.PASS)
+                            | (1 << FandangoParser.RAISE)
+                            | (1 << FandangoParser.RETURN)
+                            | (1 << FandangoParser.TRUE)
+                            | (1 << FandangoParser.TRY)
+                            | (1 << FandangoParser.UNDERSCORE)
+                            | (1 << FandangoParser.WHILE)
+                            | (1 << FandangoParser.WITH)
+                            | (1 << FandangoParser.YIELD)
+                            | (1 << FandangoParser.FORALL)
+                            | (1 << FandangoParser.EXISTS)
+                            | (1 << FandangoParser.NAME)
+                            | (1 << FandangoParser.ELLIPSIS)
+                            | (1 << FandangoParser.STAR)
+                            | (1 << FandangoParser.OPEN_PAREN)
+                        )
+                    )
+                    != 0
+                ) or (
+                    (((_la - 65)) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 65))
+                        & (
+                            (1 << (FandangoParser.OPEN_BRACK - 65))
+                            | (1 << (FandangoParser.ADD - 65))
+                            | (1 << (FandangoParser.MINUS - 65))
+                            | (1 << (FandangoParser.NOT_OP - 65))
+                            | (1 << (FandangoParser.OPEN_BRACE - 65))
+                        )
+                    )
+                    != 0
+                ):
                     self.state = 1430
                     self.testlist_comp()
-
 
                 self.state = 1433
                 self.match(FandangoParser.CLOSE_BRACK)
@@ -11427,15 +12223,86 @@ class FandangoParser ( Parser ):
                 self.state = 1436
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NUMBER) | (1 << FandangoParser.AND) | (1 << FandangoParser.AS) | (1 << FandangoParser.ASSERT) | (1 << FandangoParser.ASYNC) | (1 << FandangoParser.AWAIT) | (1 << FandangoParser.BREAK) | (1 << FandangoParser.CASE) | (1 << FandangoParser.CLASS) | (1 << FandangoParser.CONTINUE) | (1 << FandangoParser.DEF) | (1 << FandangoParser.DEL) | (1 << FandangoParser.ELIF) | (1 << FandangoParser.ELSE) | (1 << FandangoParser.EXCEPT) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.FINALLY) | (1 << FandangoParser.FOR) | (1 << FandangoParser.FROM) | (1 << FandangoParser.GLOBAL) | (1 << FandangoParser.IF) | (1 << FandangoParser.IMPORT) | (1 << FandangoParser.IN) | (1 << FandangoParser.IS) | (1 << FandangoParser.LAMBDA) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.NONLOCAL) | (1 << FandangoParser.NOT) | (1 << FandangoParser.OR) | (1 << FandangoParser.PASS) | (1 << FandangoParser.RAISE) | (1 << FandangoParser.RETURN) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.TRY) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.WHILE) | (1 << FandangoParser.WITH) | (1 << FandangoParser.YIELD) | (1 << FandangoParser.FORALL) | (1 << FandangoParser.EXISTS) | (1 << FandangoParser.NAME) | (1 << FandangoParser.ELLIPSIS) | (1 << FandangoParser.STAR) | (1 << FandangoParser.OPEN_PAREN) | (1 << FandangoParser.POWER))) != 0) or ((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (FandangoParser.OPEN_BRACK - 65)) | (1 << (FandangoParser.ADD - 65)) | (1 << (FandangoParser.MINUS - 65)) | (1 << (FandangoParser.NOT_OP - 65)) | (1 << (FandangoParser.OPEN_BRACE - 65)))) != 0):
+                if (
+                    ((_la) & ~0x3F) == 0
+                    and (
+                        (1 << _la)
+                        & (
+                            (1 << FandangoParser.STRING)
+                            | (1 << FandangoParser.NUMBER)
+                            | (1 << FandangoParser.AND)
+                            | (1 << FandangoParser.AS)
+                            | (1 << FandangoParser.ASSERT)
+                            | (1 << FandangoParser.ASYNC)
+                            | (1 << FandangoParser.AWAIT)
+                            | (1 << FandangoParser.BREAK)
+                            | (1 << FandangoParser.CASE)
+                            | (1 << FandangoParser.CLASS)
+                            | (1 << FandangoParser.CONTINUE)
+                            | (1 << FandangoParser.DEF)
+                            | (1 << FandangoParser.DEL)
+                            | (1 << FandangoParser.ELIF)
+                            | (1 << FandangoParser.ELSE)
+                            | (1 << FandangoParser.EXCEPT)
+                            | (1 << FandangoParser.FALSE)
+                            | (1 << FandangoParser.FINALLY)
+                            | (1 << FandangoParser.FOR)
+                            | (1 << FandangoParser.FROM)
+                            | (1 << FandangoParser.GLOBAL)
+                            | (1 << FandangoParser.IF)
+                            | (1 << FandangoParser.IMPORT)
+                            | (1 << FandangoParser.IN)
+                            | (1 << FandangoParser.IS)
+                            | (1 << FandangoParser.LAMBDA)
+                            | (1 << FandangoParser.MATCH)
+                            | (1 << FandangoParser.NONE)
+                            | (1 << FandangoParser.NONLOCAL)
+                            | (1 << FandangoParser.NOT)
+                            | (1 << FandangoParser.OR)
+                            | (1 << FandangoParser.PASS)
+                            | (1 << FandangoParser.RAISE)
+                            | (1 << FandangoParser.RETURN)
+                            | (1 << FandangoParser.TRUE)
+                            | (1 << FandangoParser.TRY)
+                            | (1 << FandangoParser.UNDERSCORE)
+                            | (1 << FandangoParser.WHILE)
+                            | (1 << FandangoParser.WITH)
+                            | (1 << FandangoParser.YIELD)
+                            | (1 << FandangoParser.FORALL)
+                            | (1 << FandangoParser.EXISTS)
+                            | (1 << FandangoParser.NAME)
+                            | (1 << FandangoParser.ELLIPSIS)
+                            | (1 << FandangoParser.STAR)
+                            | (1 << FandangoParser.OPEN_PAREN)
+                            | (1 << FandangoParser.POWER)
+                        )
+                    )
+                    != 0
+                ) or (
+                    (((_la - 65)) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 65))
+                        & (
+                            (1 << (FandangoParser.OPEN_BRACK - 65))
+                            | (1 << (FandangoParser.ADD - 65))
+                            | (1 << (FandangoParser.MINUS - 65))
+                            | (1 << (FandangoParser.NOT_OP - 65))
+                            | (1 << (FandangoParser.OPEN_BRACE - 65))
+                        )
+                    )
+                    != 0
+                ):
                     self.state = 1435
                     self.dictorsetmaker()
-
 
                 self.state = 1438
                 self.match(FandangoParser.CLOSE_BRACE)
                 pass
-            elif token in [FandangoParser.MATCH, FandangoParser.UNDERSCORE, FandangoParser.NAME]:
+            elif token in [
+                FandangoParser.MATCH,
+                FandangoParser.UNDERSCORE,
+                FandangoParser.NAME,
+            ]:
                 self.enterOuterAlt(localctx, 4)
                 self.state = 1439
                 self.name()
@@ -11447,19 +12314,19 @@ class FandangoParser ( Parser ):
                 pass
             elif token in [FandangoParser.STRING]:
                 self.enterOuterAlt(localctx, 6)
-                self.state = 1442 
+                self.state = 1442
                 self._errHandler.sync(self)
                 _alt = 1
-                while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
                     if _alt == 1:
                         self.state = 1441
                         self.match(FandangoParser.STRING)
 
                     else:
                         raise NoViableAltException(self)
-                    self.state = 1444 
+                    self.state = 1444
                     self._errHandler.sync(self)
-                    _alt = self._interp.adaptivePredict(self._input,179,self._ctx)
+                    _alt = self._interp.adaptivePredict(self._input, 179, self._ctx)
 
                 pass
             elif token in [FandangoParser.ELLIPSIS]:
@@ -11493,11 +12360,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class NameContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -11513,33 +12381,42 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_name
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterName" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterName"):
                 listener.enterName(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitName" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitName"):
                 listener.exitName(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitName" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitName"):
                 return visitor.visitName(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def name(self):
-
         localctx = FandangoParser.NameContext(self, self._ctx, self.state)
         self.enterRule(localctx, 246, self.RULE_name)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1452
             _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.MATCH) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.NAME))) != 0)):
+            if not (
+                (
+                    ((_la) & ~0x3F) == 0
+                    and (
+                        (1 << _la)
+                        & (
+                            (1 << FandangoParser.MATCH)
+                            | (1 << FandangoParser.UNDERSCORE)
+                            | (1 << FandangoParser.NAME)
+                        )
+                    )
+                    != 0
+                )
+            ):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -11552,33 +12429,31 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Testlist_compContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def test(self, i:int=None):
+        def test(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.TestContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.TestContext,i)
+                return self.getTypedRuleContext(FandangoParser.TestContext, i)
 
-
-        def star_expr(self, i:int=None):
+        def star_expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Star_exprContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.Star_exprContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.Star_exprContext, i)
 
         def comp_for(self):
-            return self.getTypedRuleContext(FandangoParser.Comp_forContext,0)
+            return self.getTypedRuleContext(FandangoParser.Comp_forContext, 0)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
@@ -11587,34 +12462,81 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_testlist_comp
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTestlist_comp" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterTestlist_comp"):
                 listener.enterTestlist_comp(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTestlist_comp" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitTestlist_comp"):
                 listener.exitTestlist_comp(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTestlist_comp" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitTestlist_comp"):
                 return visitor.visitTestlist_comp(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def testlist_comp(self):
-
         localctx = FandangoParser.Testlist_compContext(self, self._ctx, self.state)
         self.enterRule(localctx, 248, self.RULE_testlist_comp)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1456
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [FandangoParser.STRING, FandangoParser.NUMBER, FandangoParser.AND, FandangoParser.AS, FandangoParser.ASSERT, FandangoParser.ASYNC, FandangoParser.AWAIT, FandangoParser.BREAK, FandangoParser.CASE, FandangoParser.CLASS, FandangoParser.CONTINUE, FandangoParser.DEF, FandangoParser.DEL, FandangoParser.ELIF, FandangoParser.ELSE, FandangoParser.EXCEPT, FandangoParser.FALSE, FandangoParser.FINALLY, FandangoParser.FOR, FandangoParser.FROM, FandangoParser.GLOBAL, FandangoParser.IF, FandangoParser.IMPORT, FandangoParser.IN, FandangoParser.IS, FandangoParser.LAMBDA, FandangoParser.MATCH, FandangoParser.NONE, FandangoParser.NONLOCAL, FandangoParser.NOT, FandangoParser.OR, FandangoParser.PASS, FandangoParser.RAISE, FandangoParser.RETURN, FandangoParser.TRUE, FandangoParser.TRY, FandangoParser.UNDERSCORE, FandangoParser.WHILE, FandangoParser.WITH, FandangoParser.YIELD, FandangoParser.FORALL, FandangoParser.EXISTS, FandangoParser.NAME, FandangoParser.ELLIPSIS, FandangoParser.OPEN_PAREN, FandangoParser.OPEN_BRACK, FandangoParser.ADD, FandangoParser.MINUS, FandangoParser.NOT_OP, FandangoParser.OPEN_BRACE]:
+            if token in [
+                FandangoParser.STRING,
+                FandangoParser.NUMBER,
+                FandangoParser.AND,
+                FandangoParser.AS,
+                FandangoParser.ASSERT,
+                FandangoParser.ASYNC,
+                FandangoParser.AWAIT,
+                FandangoParser.BREAK,
+                FandangoParser.CASE,
+                FandangoParser.CLASS,
+                FandangoParser.CONTINUE,
+                FandangoParser.DEF,
+                FandangoParser.DEL,
+                FandangoParser.ELIF,
+                FandangoParser.ELSE,
+                FandangoParser.EXCEPT,
+                FandangoParser.FALSE,
+                FandangoParser.FINALLY,
+                FandangoParser.FOR,
+                FandangoParser.FROM,
+                FandangoParser.GLOBAL,
+                FandangoParser.IF,
+                FandangoParser.IMPORT,
+                FandangoParser.IN,
+                FandangoParser.IS,
+                FandangoParser.LAMBDA,
+                FandangoParser.MATCH,
+                FandangoParser.NONE,
+                FandangoParser.NONLOCAL,
+                FandangoParser.NOT,
+                FandangoParser.OR,
+                FandangoParser.PASS,
+                FandangoParser.RAISE,
+                FandangoParser.RETURN,
+                FandangoParser.TRUE,
+                FandangoParser.TRY,
+                FandangoParser.UNDERSCORE,
+                FandangoParser.WHILE,
+                FandangoParser.WITH,
+                FandangoParser.YIELD,
+                FandangoParser.FORALL,
+                FandangoParser.EXISTS,
+                FandangoParser.NAME,
+                FandangoParser.ELLIPSIS,
+                FandangoParser.OPEN_PAREN,
+                FandangoParser.OPEN_BRACK,
+                FandangoParser.ADD,
+                FandangoParser.MINUS,
+                FandangoParser.NOT_OP,
+                FandangoParser.OPEN_BRACE,
+            ]:
                 self.state = 1454
                 self.test()
                 pass
@@ -11632,18 +12554,73 @@ class FandangoParser ( Parser ):
                 self.state = 1458
                 self.comp_for()
                 pass
-            elif token in [FandangoParser.CLOSE_PAREN, FandangoParser.COMMA, FandangoParser.CLOSE_BRACK]:
+            elif token in [
+                FandangoParser.CLOSE_PAREN,
+                FandangoParser.COMMA,
+                FandangoParser.CLOSE_BRACK,
+            ]:
                 self.state = 1466
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,183,self._ctx)
-                while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                    if _alt==1:
+                _alt = self._interp.adaptivePredict(self._input, 183, self._ctx)
+                while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                    if _alt == 1:
                         self.state = 1459
                         self.match(FandangoParser.COMMA)
                         self.state = 1462
                         self._errHandler.sync(self)
                         token = self._input.LA(1)
-                        if token in [FandangoParser.STRING, FandangoParser.NUMBER, FandangoParser.AND, FandangoParser.AS, FandangoParser.ASSERT, FandangoParser.ASYNC, FandangoParser.AWAIT, FandangoParser.BREAK, FandangoParser.CASE, FandangoParser.CLASS, FandangoParser.CONTINUE, FandangoParser.DEF, FandangoParser.DEL, FandangoParser.ELIF, FandangoParser.ELSE, FandangoParser.EXCEPT, FandangoParser.FALSE, FandangoParser.FINALLY, FandangoParser.FOR, FandangoParser.FROM, FandangoParser.GLOBAL, FandangoParser.IF, FandangoParser.IMPORT, FandangoParser.IN, FandangoParser.IS, FandangoParser.LAMBDA, FandangoParser.MATCH, FandangoParser.NONE, FandangoParser.NONLOCAL, FandangoParser.NOT, FandangoParser.OR, FandangoParser.PASS, FandangoParser.RAISE, FandangoParser.RETURN, FandangoParser.TRUE, FandangoParser.TRY, FandangoParser.UNDERSCORE, FandangoParser.WHILE, FandangoParser.WITH, FandangoParser.YIELD, FandangoParser.FORALL, FandangoParser.EXISTS, FandangoParser.NAME, FandangoParser.ELLIPSIS, FandangoParser.OPEN_PAREN, FandangoParser.OPEN_BRACK, FandangoParser.ADD, FandangoParser.MINUS, FandangoParser.NOT_OP, FandangoParser.OPEN_BRACE]:
+                        if token in [
+                            FandangoParser.STRING,
+                            FandangoParser.NUMBER,
+                            FandangoParser.AND,
+                            FandangoParser.AS,
+                            FandangoParser.ASSERT,
+                            FandangoParser.ASYNC,
+                            FandangoParser.AWAIT,
+                            FandangoParser.BREAK,
+                            FandangoParser.CASE,
+                            FandangoParser.CLASS,
+                            FandangoParser.CONTINUE,
+                            FandangoParser.DEF,
+                            FandangoParser.DEL,
+                            FandangoParser.ELIF,
+                            FandangoParser.ELSE,
+                            FandangoParser.EXCEPT,
+                            FandangoParser.FALSE,
+                            FandangoParser.FINALLY,
+                            FandangoParser.FOR,
+                            FandangoParser.FROM,
+                            FandangoParser.GLOBAL,
+                            FandangoParser.IF,
+                            FandangoParser.IMPORT,
+                            FandangoParser.IN,
+                            FandangoParser.IS,
+                            FandangoParser.LAMBDA,
+                            FandangoParser.MATCH,
+                            FandangoParser.NONE,
+                            FandangoParser.NONLOCAL,
+                            FandangoParser.NOT,
+                            FandangoParser.OR,
+                            FandangoParser.PASS,
+                            FandangoParser.RAISE,
+                            FandangoParser.RETURN,
+                            FandangoParser.TRUE,
+                            FandangoParser.TRY,
+                            FandangoParser.UNDERSCORE,
+                            FandangoParser.WHILE,
+                            FandangoParser.WITH,
+                            FandangoParser.YIELD,
+                            FandangoParser.FORALL,
+                            FandangoParser.EXISTS,
+                            FandangoParser.NAME,
+                            FandangoParser.ELLIPSIS,
+                            FandangoParser.OPEN_PAREN,
+                            FandangoParser.OPEN_BRACK,
+                            FandangoParser.ADD,
+                            FandangoParser.MINUS,
+                            FandangoParser.NOT_OP,
+                            FandangoParser.OPEN_BRACE,
+                        ]:
                             self.state = 1460
                             self.test()
                             pass
@@ -11653,18 +12630,17 @@ class FandangoParser ( Parser ):
                             pass
                         else:
                             raise NoViableAltException(self)
-                 
+
                     self.state = 1468
                     self._errHandler.sync(self)
-                    _alt = self._interp.adaptivePredict(self._input,183,self._ctx)
+                    _alt = self._interp.adaptivePredict(self._input, 183, self._ctx)
 
                 self.state = 1470
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.COMMA:
+                if _la == FandangoParser.COMMA:
                     self.state = 1469
                     self.match(FandangoParser.COMMA)
-
 
                 pass
             else:
@@ -11678,11 +12654,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class TrailerContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -11693,15 +12670,13 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.CLOSE_PAREN, 0)
 
         def arglist(self):
-            return self.getTypedRuleContext(FandangoParser.ArglistContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ArglistContext, 0)
 
         def OPEN_BRACK(self):
             return self.getToken(FandangoParser.OPEN_BRACK, 0)
 
         def subscriptlist(self):
-            return self.getTypedRuleContext(FandangoParser.SubscriptlistContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.SubscriptlistContext, 0)
 
         def CLOSE_BRACK(self):
             return self.getToken(FandangoParser.CLOSE_BRACK, 0)
@@ -11710,34 +12685,29 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.DOT, 0)
 
         def name(self):
-            return self.getTypedRuleContext(FandangoParser.NameContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.NameContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_trailer
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTrailer" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterTrailer"):
                 listener.enterTrailer(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTrailer" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitTrailer"):
                 listener.exitTrailer(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTrailer" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitTrailer"):
                 return visitor.visitTrailer(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def trailer(self):
-
         localctx = FandangoParser.TrailerContext(self, self._ctx, self.state)
         self.enterRule(localctx, 250, self.RULE_trailer)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 1485
             self._errHandler.sync(self)
@@ -11749,10 +12719,77 @@ class FandangoParser ( Parser ):
                 self.state = 1476
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NUMBER) | (1 << FandangoParser.AND) | (1 << FandangoParser.AS) | (1 << FandangoParser.ASSERT) | (1 << FandangoParser.ASYNC) | (1 << FandangoParser.AWAIT) | (1 << FandangoParser.BREAK) | (1 << FandangoParser.CASE) | (1 << FandangoParser.CLASS) | (1 << FandangoParser.CONTINUE) | (1 << FandangoParser.DEF) | (1 << FandangoParser.DEL) | (1 << FandangoParser.ELIF) | (1 << FandangoParser.ELSE) | (1 << FandangoParser.EXCEPT) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.FINALLY) | (1 << FandangoParser.FOR) | (1 << FandangoParser.FROM) | (1 << FandangoParser.GLOBAL) | (1 << FandangoParser.IF) | (1 << FandangoParser.IMPORT) | (1 << FandangoParser.IN) | (1 << FandangoParser.IS) | (1 << FandangoParser.LAMBDA) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.NONLOCAL) | (1 << FandangoParser.NOT) | (1 << FandangoParser.OR) | (1 << FandangoParser.PASS) | (1 << FandangoParser.RAISE) | (1 << FandangoParser.RETURN) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.TRY) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.WHILE) | (1 << FandangoParser.WITH) | (1 << FandangoParser.YIELD) | (1 << FandangoParser.FORALL) | (1 << FandangoParser.EXISTS) | (1 << FandangoParser.NAME) | (1 << FandangoParser.ELLIPSIS) | (1 << FandangoParser.STAR) | (1 << FandangoParser.OPEN_PAREN) | (1 << FandangoParser.POWER))) != 0) or ((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (FandangoParser.OPEN_BRACK - 65)) | (1 << (FandangoParser.ADD - 65)) | (1 << (FandangoParser.MINUS - 65)) | (1 << (FandangoParser.NOT_OP - 65)) | (1 << (FandangoParser.OPEN_BRACE - 65)))) != 0):
+                if (
+                    ((_la) & ~0x3F) == 0
+                    and (
+                        (1 << _la)
+                        & (
+                            (1 << FandangoParser.STRING)
+                            | (1 << FandangoParser.NUMBER)
+                            | (1 << FandangoParser.AND)
+                            | (1 << FandangoParser.AS)
+                            | (1 << FandangoParser.ASSERT)
+                            | (1 << FandangoParser.ASYNC)
+                            | (1 << FandangoParser.AWAIT)
+                            | (1 << FandangoParser.BREAK)
+                            | (1 << FandangoParser.CASE)
+                            | (1 << FandangoParser.CLASS)
+                            | (1 << FandangoParser.CONTINUE)
+                            | (1 << FandangoParser.DEF)
+                            | (1 << FandangoParser.DEL)
+                            | (1 << FandangoParser.ELIF)
+                            | (1 << FandangoParser.ELSE)
+                            | (1 << FandangoParser.EXCEPT)
+                            | (1 << FandangoParser.FALSE)
+                            | (1 << FandangoParser.FINALLY)
+                            | (1 << FandangoParser.FOR)
+                            | (1 << FandangoParser.FROM)
+                            | (1 << FandangoParser.GLOBAL)
+                            | (1 << FandangoParser.IF)
+                            | (1 << FandangoParser.IMPORT)
+                            | (1 << FandangoParser.IN)
+                            | (1 << FandangoParser.IS)
+                            | (1 << FandangoParser.LAMBDA)
+                            | (1 << FandangoParser.MATCH)
+                            | (1 << FandangoParser.NONE)
+                            | (1 << FandangoParser.NONLOCAL)
+                            | (1 << FandangoParser.NOT)
+                            | (1 << FandangoParser.OR)
+                            | (1 << FandangoParser.PASS)
+                            | (1 << FandangoParser.RAISE)
+                            | (1 << FandangoParser.RETURN)
+                            | (1 << FandangoParser.TRUE)
+                            | (1 << FandangoParser.TRY)
+                            | (1 << FandangoParser.UNDERSCORE)
+                            | (1 << FandangoParser.WHILE)
+                            | (1 << FandangoParser.WITH)
+                            | (1 << FandangoParser.YIELD)
+                            | (1 << FandangoParser.FORALL)
+                            | (1 << FandangoParser.EXISTS)
+                            | (1 << FandangoParser.NAME)
+                            | (1 << FandangoParser.ELLIPSIS)
+                            | (1 << FandangoParser.STAR)
+                            | (1 << FandangoParser.OPEN_PAREN)
+                            | (1 << FandangoParser.POWER)
+                        )
+                    )
+                    != 0
+                ) or (
+                    (((_la - 65)) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 65))
+                        & (
+                            (1 << (FandangoParser.OPEN_BRACK - 65))
+                            | (1 << (FandangoParser.ADD - 65))
+                            | (1 << (FandangoParser.MINUS - 65))
+                            | (1 << (FandangoParser.NOT_OP - 65))
+                            | (1 << (FandangoParser.OPEN_BRACE - 65))
+                        )
+                    )
+                    != 0
+                ):
                     self.state = 1475
                     self.arglist()
-
 
                 self.state = 1478
                 self.match(FandangoParser.CLOSE_PAREN)
@@ -11784,22 +12821,22 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class SubscriptlistContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def subscript_(self, i:int=None):
+        def subscript_(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Subscript_Context)
             else:
-                return self.getTypedRuleContext(FandangoParser.Subscript_Context,i)
+                return self.getTypedRuleContext(FandangoParser.Subscript_Context, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
@@ -11808,52 +12845,47 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_subscriptlist
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSubscriptlist" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSubscriptlist"):
                 listener.enterSubscriptlist(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSubscriptlist" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSubscriptlist"):
                 listener.exitSubscriptlist(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSubscriptlist" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSubscriptlist"):
                 return visitor.visitSubscriptlist(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def subscriptlist(self):
-
         localctx = FandangoParser.SubscriptlistContext(self, self._ctx, self.state)
         self.enterRule(localctx, 252, self.RULE_subscriptlist)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1487
             self.subscript_()
             self.state = 1492
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,188,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 188, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     self.state = 1488
                     self.match(FandangoParser.COMMA)
                     self.state = 1489
-                    self.subscript_() 
+                    self.subscript_()
                 self.state = 1494
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,188,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 188, self._ctx)
 
             self.state = 1496
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.COMMA:
+            if _la == FandangoParser.COMMA:
                 self.state = 1495
                 self.match(FandangoParser.COMMA)
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -11863,57 +12895,52 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Subscript_Context(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def test(self, i:int=None):
+        def test(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.TestContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.TestContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.TestContext, i)
 
         def COLON(self):
             return self.getToken(FandangoParser.COLON, 0)
 
         def sliceop(self):
-            return self.getTypedRuleContext(FandangoParser.SliceopContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.SliceopContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_subscript_
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSubscript_" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSubscript_"):
                 listener.enterSubscript_(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSubscript_" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSubscript_"):
                 listener.exitSubscript_(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSubscript_" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSubscript_"):
                 return visitor.visitSubscript_(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def subscript_(self):
-
         localctx = FandangoParser.Subscript_Context(self, self._ctx, self.state)
         self.enterRule(localctx, 254, self.RULE_subscript_)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.state = 1509
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,193,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 193, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1498
@@ -11925,31 +12952,159 @@ class FandangoParser ( Parser ):
                 self.state = 1500
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NUMBER) | (1 << FandangoParser.AND) | (1 << FandangoParser.AS) | (1 << FandangoParser.ASSERT) | (1 << FandangoParser.ASYNC) | (1 << FandangoParser.AWAIT) | (1 << FandangoParser.BREAK) | (1 << FandangoParser.CASE) | (1 << FandangoParser.CLASS) | (1 << FandangoParser.CONTINUE) | (1 << FandangoParser.DEF) | (1 << FandangoParser.DEL) | (1 << FandangoParser.ELIF) | (1 << FandangoParser.ELSE) | (1 << FandangoParser.EXCEPT) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.FINALLY) | (1 << FandangoParser.FOR) | (1 << FandangoParser.FROM) | (1 << FandangoParser.GLOBAL) | (1 << FandangoParser.IF) | (1 << FandangoParser.IMPORT) | (1 << FandangoParser.IN) | (1 << FandangoParser.IS) | (1 << FandangoParser.LAMBDA) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.NONLOCAL) | (1 << FandangoParser.NOT) | (1 << FandangoParser.OR) | (1 << FandangoParser.PASS) | (1 << FandangoParser.RAISE) | (1 << FandangoParser.RETURN) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.TRY) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.WHILE) | (1 << FandangoParser.WITH) | (1 << FandangoParser.YIELD) | (1 << FandangoParser.FORALL) | (1 << FandangoParser.EXISTS) | (1 << FandangoParser.NAME) | (1 << FandangoParser.ELLIPSIS) | (1 << FandangoParser.OPEN_PAREN))) != 0) or ((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (FandangoParser.OPEN_BRACK - 65)) | (1 << (FandangoParser.ADD - 65)) | (1 << (FandangoParser.MINUS - 65)) | (1 << (FandangoParser.NOT_OP - 65)) | (1 << (FandangoParser.OPEN_BRACE - 65)))) != 0):
+                if (
+                    ((_la) & ~0x3F) == 0
+                    and (
+                        (1 << _la)
+                        & (
+                            (1 << FandangoParser.STRING)
+                            | (1 << FandangoParser.NUMBER)
+                            | (1 << FandangoParser.AND)
+                            | (1 << FandangoParser.AS)
+                            | (1 << FandangoParser.ASSERT)
+                            | (1 << FandangoParser.ASYNC)
+                            | (1 << FandangoParser.AWAIT)
+                            | (1 << FandangoParser.BREAK)
+                            | (1 << FandangoParser.CASE)
+                            | (1 << FandangoParser.CLASS)
+                            | (1 << FandangoParser.CONTINUE)
+                            | (1 << FandangoParser.DEF)
+                            | (1 << FandangoParser.DEL)
+                            | (1 << FandangoParser.ELIF)
+                            | (1 << FandangoParser.ELSE)
+                            | (1 << FandangoParser.EXCEPT)
+                            | (1 << FandangoParser.FALSE)
+                            | (1 << FandangoParser.FINALLY)
+                            | (1 << FandangoParser.FOR)
+                            | (1 << FandangoParser.FROM)
+                            | (1 << FandangoParser.GLOBAL)
+                            | (1 << FandangoParser.IF)
+                            | (1 << FandangoParser.IMPORT)
+                            | (1 << FandangoParser.IN)
+                            | (1 << FandangoParser.IS)
+                            | (1 << FandangoParser.LAMBDA)
+                            | (1 << FandangoParser.MATCH)
+                            | (1 << FandangoParser.NONE)
+                            | (1 << FandangoParser.NONLOCAL)
+                            | (1 << FandangoParser.NOT)
+                            | (1 << FandangoParser.OR)
+                            | (1 << FandangoParser.PASS)
+                            | (1 << FandangoParser.RAISE)
+                            | (1 << FandangoParser.RETURN)
+                            | (1 << FandangoParser.TRUE)
+                            | (1 << FandangoParser.TRY)
+                            | (1 << FandangoParser.UNDERSCORE)
+                            | (1 << FandangoParser.WHILE)
+                            | (1 << FandangoParser.WITH)
+                            | (1 << FandangoParser.YIELD)
+                            | (1 << FandangoParser.FORALL)
+                            | (1 << FandangoParser.EXISTS)
+                            | (1 << FandangoParser.NAME)
+                            | (1 << FandangoParser.ELLIPSIS)
+                            | (1 << FandangoParser.OPEN_PAREN)
+                        )
+                    )
+                    != 0
+                ) or (
+                    (((_la - 65)) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 65))
+                        & (
+                            (1 << (FandangoParser.OPEN_BRACK - 65))
+                            | (1 << (FandangoParser.ADD - 65))
+                            | (1 << (FandangoParser.MINUS - 65))
+                            | (1 << (FandangoParser.NOT_OP - 65))
+                            | (1 << (FandangoParser.OPEN_BRACE - 65))
+                        )
+                    )
+                    != 0
+                ):
                     self.state = 1499
                     self.test()
-
 
                 self.state = 1502
                 self.match(FandangoParser.COLON)
                 self.state = 1504
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NUMBER) | (1 << FandangoParser.AND) | (1 << FandangoParser.AS) | (1 << FandangoParser.ASSERT) | (1 << FandangoParser.ASYNC) | (1 << FandangoParser.AWAIT) | (1 << FandangoParser.BREAK) | (1 << FandangoParser.CASE) | (1 << FandangoParser.CLASS) | (1 << FandangoParser.CONTINUE) | (1 << FandangoParser.DEF) | (1 << FandangoParser.DEL) | (1 << FandangoParser.ELIF) | (1 << FandangoParser.ELSE) | (1 << FandangoParser.EXCEPT) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.FINALLY) | (1 << FandangoParser.FOR) | (1 << FandangoParser.FROM) | (1 << FandangoParser.GLOBAL) | (1 << FandangoParser.IF) | (1 << FandangoParser.IMPORT) | (1 << FandangoParser.IN) | (1 << FandangoParser.IS) | (1 << FandangoParser.LAMBDA) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.NONLOCAL) | (1 << FandangoParser.NOT) | (1 << FandangoParser.OR) | (1 << FandangoParser.PASS) | (1 << FandangoParser.RAISE) | (1 << FandangoParser.RETURN) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.TRY) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.WHILE) | (1 << FandangoParser.WITH) | (1 << FandangoParser.YIELD) | (1 << FandangoParser.FORALL) | (1 << FandangoParser.EXISTS) | (1 << FandangoParser.NAME) | (1 << FandangoParser.ELLIPSIS) | (1 << FandangoParser.OPEN_PAREN))) != 0) or ((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (FandangoParser.OPEN_BRACK - 65)) | (1 << (FandangoParser.ADD - 65)) | (1 << (FandangoParser.MINUS - 65)) | (1 << (FandangoParser.NOT_OP - 65)) | (1 << (FandangoParser.OPEN_BRACE - 65)))) != 0):
+                if (
+                    ((_la) & ~0x3F) == 0
+                    and (
+                        (1 << _la)
+                        & (
+                            (1 << FandangoParser.STRING)
+                            | (1 << FandangoParser.NUMBER)
+                            | (1 << FandangoParser.AND)
+                            | (1 << FandangoParser.AS)
+                            | (1 << FandangoParser.ASSERT)
+                            | (1 << FandangoParser.ASYNC)
+                            | (1 << FandangoParser.AWAIT)
+                            | (1 << FandangoParser.BREAK)
+                            | (1 << FandangoParser.CASE)
+                            | (1 << FandangoParser.CLASS)
+                            | (1 << FandangoParser.CONTINUE)
+                            | (1 << FandangoParser.DEF)
+                            | (1 << FandangoParser.DEL)
+                            | (1 << FandangoParser.ELIF)
+                            | (1 << FandangoParser.ELSE)
+                            | (1 << FandangoParser.EXCEPT)
+                            | (1 << FandangoParser.FALSE)
+                            | (1 << FandangoParser.FINALLY)
+                            | (1 << FandangoParser.FOR)
+                            | (1 << FandangoParser.FROM)
+                            | (1 << FandangoParser.GLOBAL)
+                            | (1 << FandangoParser.IF)
+                            | (1 << FandangoParser.IMPORT)
+                            | (1 << FandangoParser.IN)
+                            | (1 << FandangoParser.IS)
+                            | (1 << FandangoParser.LAMBDA)
+                            | (1 << FandangoParser.MATCH)
+                            | (1 << FandangoParser.NONE)
+                            | (1 << FandangoParser.NONLOCAL)
+                            | (1 << FandangoParser.NOT)
+                            | (1 << FandangoParser.OR)
+                            | (1 << FandangoParser.PASS)
+                            | (1 << FandangoParser.RAISE)
+                            | (1 << FandangoParser.RETURN)
+                            | (1 << FandangoParser.TRUE)
+                            | (1 << FandangoParser.TRY)
+                            | (1 << FandangoParser.UNDERSCORE)
+                            | (1 << FandangoParser.WHILE)
+                            | (1 << FandangoParser.WITH)
+                            | (1 << FandangoParser.YIELD)
+                            | (1 << FandangoParser.FORALL)
+                            | (1 << FandangoParser.EXISTS)
+                            | (1 << FandangoParser.NAME)
+                            | (1 << FandangoParser.ELLIPSIS)
+                            | (1 << FandangoParser.OPEN_PAREN)
+                        )
+                    )
+                    != 0
+                ) or (
+                    (((_la - 65)) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 65))
+                        & (
+                            (1 << (FandangoParser.OPEN_BRACK - 65))
+                            | (1 << (FandangoParser.ADD - 65))
+                            | (1 << (FandangoParser.MINUS - 65))
+                            | (1 << (FandangoParser.NOT_OP - 65))
+                            | (1 << (FandangoParser.OPEN_BRACE - 65))
+                        )
+                    )
+                    != 0
+                ):
                     self.state = 1503
                     self.test()
-
 
                 self.state = 1507
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.COLON:
+                if _la == FandangoParser.COLON:
                     self.state = 1506
                     self.sliceop()
 
-
                 pass
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -11959,11 +13114,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class SliceopContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -11971,34 +13127,29 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.COLON, 0)
 
         def test(self):
-            return self.getTypedRuleContext(FandangoParser.TestContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.TestContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_sliceop
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSliceop" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterSliceop"):
                 listener.enterSliceop(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSliceop" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitSliceop"):
                 listener.exitSliceop(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSliceop" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitSliceop"):
                 return visitor.visitSliceop(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def sliceop(self):
-
         localctx = FandangoParser.SliceopContext(self, self._ctx, self.state)
         self.enterRule(localctx, 256, self.RULE_sliceop)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1511
@@ -12006,10 +13157,75 @@ class FandangoParser ( Parser ):
             self.state = 1513
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NUMBER) | (1 << FandangoParser.AND) | (1 << FandangoParser.AS) | (1 << FandangoParser.ASSERT) | (1 << FandangoParser.ASYNC) | (1 << FandangoParser.AWAIT) | (1 << FandangoParser.BREAK) | (1 << FandangoParser.CASE) | (1 << FandangoParser.CLASS) | (1 << FandangoParser.CONTINUE) | (1 << FandangoParser.DEF) | (1 << FandangoParser.DEL) | (1 << FandangoParser.ELIF) | (1 << FandangoParser.ELSE) | (1 << FandangoParser.EXCEPT) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.FINALLY) | (1 << FandangoParser.FOR) | (1 << FandangoParser.FROM) | (1 << FandangoParser.GLOBAL) | (1 << FandangoParser.IF) | (1 << FandangoParser.IMPORT) | (1 << FandangoParser.IN) | (1 << FandangoParser.IS) | (1 << FandangoParser.LAMBDA) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.NONLOCAL) | (1 << FandangoParser.NOT) | (1 << FandangoParser.OR) | (1 << FandangoParser.PASS) | (1 << FandangoParser.RAISE) | (1 << FandangoParser.RETURN) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.TRY) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.WHILE) | (1 << FandangoParser.WITH) | (1 << FandangoParser.YIELD) | (1 << FandangoParser.FORALL) | (1 << FandangoParser.EXISTS) | (1 << FandangoParser.NAME) | (1 << FandangoParser.ELLIPSIS) | (1 << FandangoParser.OPEN_PAREN))) != 0) or ((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (FandangoParser.OPEN_BRACK - 65)) | (1 << (FandangoParser.ADD - 65)) | (1 << (FandangoParser.MINUS - 65)) | (1 << (FandangoParser.NOT_OP - 65)) | (1 << (FandangoParser.OPEN_BRACE - 65)))) != 0):
+            if (
+                ((_la) & ~0x3F) == 0
+                and (
+                    (1 << _la)
+                    & (
+                        (1 << FandangoParser.STRING)
+                        | (1 << FandangoParser.NUMBER)
+                        | (1 << FandangoParser.AND)
+                        | (1 << FandangoParser.AS)
+                        | (1 << FandangoParser.ASSERT)
+                        | (1 << FandangoParser.ASYNC)
+                        | (1 << FandangoParser.AWAIT)
+                        | (1 << FandangoParser.BREAK)
+                        | (1 << FandangoParser.CASE)
+                        | (1 << FandangoParser.CLASS)
+                        | (1 << FandangoParser.CONTINUE)
+                        | (1 << FandangoParser.DEF)
+                        | (1 << FandangoParser.DEL)
+                        | (1 << FandangoParser.ELIF)
+                        | (1 << FandangoParser.ELSE)
+                        | (1 << FandangoParser.EXCEPT)
+                        | (1 << FandangoParser.FALSE)
+                        | (1 << FandangoParser.FINALLY)
+                        | (1 << FandangoParser.FOR)
+                        | (1 << FandangoParser.FROM)
+                        | (1 << FandangoParser.GLOBAL)
+                        | (1 << FandangoParser.IF)
+                        | (1 << FandangoParser.IMPORT)
+                        | (1 << FandangoParser.IN)
+                        | (1 << FandangoParser.IS)
+                        | (1 << FandangoParser.LAMBDA)
+                        | (1 << FandangoParser.MATCH)
+                        | (1 << FandangoParser.NONE)
+                        | (1 << FandangoParser.NONLOCAL)
+                        | (1 << FandangoParser.NOT)
+                        | (1 << FandangoParser.OR)
+                        | (1 << FandangoParser.PASS)
+                        | (1 << FandangoParser.RAISE)
+                        | (1 << FandangoParser.RETURN)
+                        | (1 << FandangoParser.TRUE)
+                        | (1 << FandangoParser.TRY)
+                        | (1 << FandangoParser.UNDERSCORE)
+                        | (1 << FandangoParser.WHILE)
+                        | (1 << FandangoParser.WITH)
+                        | (1 << FandangoParser.YIELD)
+                        | (1 << FandangoParser.FORALL)
+                        | (1 << FandangoParser.EXISTS)
+                        | (1 << FandangoParser.NAME)
+                        | (1 << FandangoParser.ELLIPSIS)
+                        | (1 << FandangoParser.OPEN_PAREN)
+                    )
+                )
+                != 0
+            ) or (
+                (((_la - 65)) & ~0x3F) == 0
+                and (
+                    (1 << (_la - 65))
+                    & (
+                        (1 << (FandangoParser.OPEN_BRACK - 65))
+                        | (1 << (FandangoParser.ADD - 65))
+                        | (1 << (FandangoParser.MINUS - 65))
+                        | (1 << (FandangoParser.NOT_OP - 65))
+                        | (1 << (FandangoParser.OPEN_BRACE - 65))
+                    )
+                )
+                != 0
+            ):
                 self.state = 1512
                 self.test()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -12019,29 +13235,28 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ExprlistContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def expr(self, i:int=None):
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.ExprContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.ExprContext,i)
+                return self.getTypedRuleContext(FandangoParser.ExprContext, i)
 
-
-        def star_expr(self, i:int=None):
+        def star_expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Star_exprContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.Star_exprContext,i)
+                return self.getTypedRuleContext(FandangoParser.Star_exprContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
@@ -12050,34 +13265,81 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_exprlist
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExprlist" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterExprlist"):
                 listener.enterExprlist(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExprlist" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitExprlist"):
                 listener.exitExprlist(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExprlist" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitExprlist"):
                 return visitor.visitExprlist(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def exprlist(self):
-
         localctx = FandangoParser.ExprlistContext(self, self._ctx, self.state)
         self.enterRule(localctx, 258, self.RULE_exprlist)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1517
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [FandangoParser.STRING, FandangoParser.NUMBER, FandangoParser.AND, FandangoParser.AS, FandangoParser.ASSERT, FandangoParser.ASYNC, FandangoParser.AWAIT, FandangoParser.BREAK, FandangoParser.CASE, FandangoParser.CLASS, FandangoParser.CONTINUE, FandangoParser.DEF, FandangoParser.DEL, FandangoParser.ELIF, FandangoParser.ELSE, FandangoParser.EXCEPT, FandangoParser.FALSE, FandangoParser.FINALLY, FandangoParser.FOR, FandangoParser.FROM, FandangoParser.GLOBAL, FandangoParser.IF, FandangoParser.IMPORT, FandangoParser.IN, FandangoParser.IS, FandangoParser.LAMBDA, FandangoParser.MATCH, FandangoParser.NONE, FandangoParser.NONLOCAL, FandangoParser.NOT, FandangoParser.OR, FandangoParser.PASS, FandangoParser.RAISE, FandangoParser.RETURN, FandangoParser.TRUE, FandangoParser.TRY, FandangoParser.UNDERSCORE, FandangoParser.WHILE, FandangoParser.WITH, FandangoParser.YIELD, FandangoParser.FORALL, FandangoParser.EXISTS, FandangoParser.NAME, FandangoParser.ELLIPSIS, FandangoParser.OPEN_PAREN, FandangoParser.OPEN_BRACK, FandangoParser.ADD, FandangoParser.MINUS, FandangoParser.NOT_OP, FandangoParser.OPEN_BRACE]:
+            if token in [
+                FandangoParser.STRING,
+                FandangoParser.NUMBER,
+                FandangoParser.AND,
+                FandangoParser.AS,
+                FandangoParser.ASSERT,
+                FandangoParser.ASYNC,
+                FandangoParser.AWAIT,
+                FandangoParser.BREAK,
+                FandangoParser.CASE,
+                FandangoParser.CLASS,
+                FandangoParser.CONTINUE,
+                FandangoParser.DEF,
+                FandangoParser.DEL,
+                FandangoParser.ELIF,
+                FandangoParser.ELSE,
+                FandangoParser.EXCEPT,
+                FandangoParser.FALSE,
+                FandangoParser.FINALLY,
+                FandangoParser.FOR,
+                FandangoParser.FROM,
+                FandangoParser.GLOBAL,
+                FandangoParser.IF,
+                FandangoParser.IMPORT,
+                FandangoParser.IN,
+                FandangoParser.IS,
+                FandangoParser.LAMBDA,
+                FandangoParser.MATCH,
+                FandangoParser.NONE,
+                FandangoParser.NONLOCAL,
+                FandangoParser.NOT,
+                FandangoParser.OR,
+                FandangoParser.PASS,
+                FandangoParser.RAISE,
+                FandangoParser.RETURN,
+                FandangoParser.TRUE,
+                FandangoParser.TRY,
+                FandangoParser.UNDERSCORE,
+                FandangoParser.WHILE,
+                FandangoParser.WITH,
+                FandangoParser.YIELD,
+                FandangoParser.FORALL,
+                FandangoParser.EXISTS,
+                FandangoParser.NAME,
+                FandangoParser.ELLIPSIS,
+                FandangoParser.OPEN_PAREN,
+                FandangoParser.OPEN_BRACK,
+                FandangoParser.ADD,
+                FandangoParser.MINUS,
+                FandangoParser.NOT_OP,
+                FandangoParser.OPEN_BRACE,
+            ]:
                 self.state = 1515
                 self.expr(0)
                 pass
@@ -12090,15 +13352,66 @@ class FandangoParser ( Parser ):
 
             self.state = 1526
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,197,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 197, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     self.state = 1519
                     self.match(FandangoParser.COMMA)
                     self.state = 1522
                     self._errHandler.sync(self)
                     token = self._input.LA(1)
-                    if token in [FandangoParser.STRING, FandangoParser.NUMBER, FandangoParser.AND, FandangoParser.AS, FandangoParser.ASSERT, FandangoParser.ASYNC, FandangoParser.AWAIT, FandangoParser.BREAK, FandangoParser.CASE, FandangoParser.CLASS, FandangoParser.CONTINUE, FandangoParser.DEF, FandangoParser.DEL, FandangoParser.ELIF, FandangoParser.ELSE, FandangoParser.EXCEPT, FandangoParser.FALSE, FandangoParser.FINALLY, FandangoParser.FOR, FandangoParser.FROM, FandangoParser.GLOBAL, FandangoParser.IF, FandangoParser.IMPORT, FandangoParser.IN, FandangoParser.IS, FandangoParser.LAMBDA, FandangoParser.MATCH, FandangoParser.NONE, FandangoParser.NONLOCAL, FandangoParser.NOT, FandangoParser.OR, FandangoParser.PASS, FandangoParser.RAISE, FandangoParser.RETURN, FandangoParser.TRUE, FandangoParser.TRY, FandangoParser.UNDERSCORE, FandangoParser.WHILE, FandangoParser.WITH, FandangoParser.YIELD, FandangoParser.FORALL, FandangoParser.EXISTS, FandangoParser.NAME, FandangoParser.ELLIPSIS, FandangoParser.OPEN_PAREN, FandangoParser.OPEN_BRACK, FandangoParser.ADD, FandangoParser.MINUS, FandangoParser.NOT_OP, FandangoParser.OPEN_BRACE]:
+                    if token in [
+                        FandangoParser.STRING,
+                        FandangoParser.NUMBER,
+                        FandangoParser.AND,
+                        FandangoParser.AS,
+                        FandangoParser.ASSERT,
+                        FandangoParser.ASYNC,
+                        FandangoParser.AWAIT,
+                        FandangoParser.BREAK,
+                        FandangoParser.CASE,
+                        FandangoParser.CLASS,
+                        FandangoParser.CONTINUE,
+                        FandangoParser.DEF,
+                        FandangoParser.DEL,
+                        FandangoParser.ELIF,
+                        FandangoParser.ELSE,
+                        FandangoParser.EXCEPT,
+                        FandangoParser.FALSE,
+                        FandangoParser.FINALLY,
+                        FandangoParser.FOR,
+                        FandangoParser.FROM,
+                        FandangoParser.GLOBAL,
+                        FandangoParser.IF,
+                        FandangoParser.IMPORT,
+                        FandangoParser.IN,
+                        FandangoParser.IS,
+                        FandangoParser.LAMBDA,
+                        FandangoParser.MATCH,
+                        FandangoParser.NONE,
+                        FandangoParser.NONLOCAL,
+                        FandangoParser.NOT,
+                        FandangoParser.OR,
+                        FandangoParser.PASS,
+                        FandangoParser.RAISE,
+                        FandangoParser.RETURN,
+                        FandangoParser.TRUE,
+                        FandangoParser.TRY,
+                        FandangoParser.UNDERSCORE,
+                        FandangoParser.WHILE,
+                        FandangoParser.WITH,
+                        FandangoParser.YIELD,
+                        FandangoParser.FORALL,
+                        FandangoParser.EXISTS,
+                        FandangoParser.NAME,
+                        FandangoParser.ELLIPSIS,
+                        FandangoParser.OPEN_PAREN,
+                        FandangoParser.OPEN_BRACK,
+                        FandangoParser.ADD,
+                        FandangoParser.MINUS,
+                        FandangoParser.NOT_OP,
+                        FandangoParser.OPEN_BRACE,
+                    ]:
                         self.state = 1520
                         self.expr(0)
                         pass
@@ -12108,18 +13421,17 @@ class FandangoParser ( Parser ):
                         pass
                     else:
                         raise NoViableAltException(self)
-             
+
                 self.state = 1528
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,197,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 197, self._ctx)
 
             self.state = 1530
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.COMMA:
+            if _la == FandangoParser.COMMA:
                 self.state = 1529
                 self.match(FandangoParser.COMMA)
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -12129,22 +13441,22 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class TestlistContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def test(self, i:int=None):
+        def test(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.TestContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.TestContext,i)
+                return self.getTypedRuleContext(FandangoParser.TestContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
@@ -12153,52 +13465,47 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_testlist
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTestlist" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterTestlist"):
                 listener.enterTestlist(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTestlist" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitTestlist"):
                 listener.exitTestlist(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTestlist" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitTestlist"):
                 return visitor.visitTestlist(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def testlist(self):
-
         localctx = FandangoParser.TestlistContext(self, self._ctx, self.state)
         self.enterRule(localctx, 260, self.RULE_testlist)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1532
             self.test()
             self.state = 1537
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,199,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 199, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     self.state = 1533
                     self.match(FandangoParser.COMMA)
                     self.state = 1534
-                    self.test() 
+                    self.test()
                 self.state = 1539
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,199,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 199, self._ctx)
 
             self.state = 1541
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.COMMA:
+            if _la == FandangoParser.COMMA:
                 self.state = 1540
                 self.match(FandangoParser.COMMA)
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -12208,52 +13515,49 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class DictorsetmakerContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def test(self, i:int=None):
+        def test(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.TestContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.TestContext,i)
+                return self.getTypedRuleContext(FandangoParser.TestContext, i)
 
-
-        def COLON(self, i:int=None):
+        def COLON(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COLON)
             else:
                 return self.getToken(FandangoParser.COLON, i)
 
-        def POWER(self, i:int=None):
+        def POWER(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.POWER)
             else:
                 return self.getToken(FandangoParser.POWER, i)
 
-        def expr(self, i:int=None):
+        def expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.ExprContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.ExprContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.ExprContext, i)
 
         def comp_for(self):
-            return self.getTypedRuleContext(FandangoParser.Comp_forContext,0)
+            return self.getTypedRuleContext(FandangoParser.Comp_forContext, 0)
 
-
-        def star_expr(self, i:int=None):
+        def star_expr(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.Star_exprContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.Star_exprContext,i)
+                return self.getTypedRuleContext(FandangoParser.Star_exprContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
@@ -12262,38 +13566,85 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_dictorsetmaker
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDictorsetmaker" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterDictorsetmaker"):
                 listener.enterDictorsetmaker(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDictorsetmaker" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitDictorsetmaker"):
                 listener.exitDictorsetmaker(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDictorsetmaker" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitDictorsetmaker"):
                 return visitor.visitDictorsetmaker(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def dictorsetmaker(self):
-
         localctx = FandangoParser.DictorsetmakerContext(self, self._ctx, self.state)
         self.enterRule(localctx, 262, self.RULE_dictorsetmaker)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1591
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,211,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 211, self._ctx)
             if la_ == 1:
                 self.state = 1549
                 self._errHandler.sync(self)
                 token = self._input.LA(1)
-                if token in [FandangoParser.STRING, FandangoParser.NUMBER, FandangoParser.AND, FandangoParser.AS, FandangoParser.ASSERT, FandangoParser.ASYNC, FandangoParser.AWAIT, FandangoParser.BREAK, FandangoParser.CASE, FandangoParser.CLASS, FandangoParser.CONTINUE, FandangoParser.DEF, FandangoParser.DEL, FandangoParser.ELIF, FandangoParser.ELSE, FandangoParser.EXCEPT, FandangoParser.FALSE, FandangoParser.FINALLY, FandangoParser.FOR, FandangoParser.FROM, FandangoParser.GLOBAL, FandangoParser.IF, FandangoParser.IMPORT, FandangoParser.IN, FandangoParser.IS, FandangoParser.LAMBDA, FandangoParser.MATCH, FandangoParser.NONE, FandangoParser.NONLOCAL, FandangoParser.NOT, FandangoParser.OR, FandangoParser.PASS, FandangoParser.RAISE, FandangoParser.RETURN, FandangoParser.TRUE, FandangoParser.TRY, FandangoParser.UNDERSCORE, FandangoParser.WHILE, FandangoParser.WITH, FandangoParser.YIELD, FandangoParser.FORALL, FandangoParser.EXISTS, FandangoParser.NAME, FandangoParser.ELLIPSIS, FandangoParser.OPEN_PAREN, FandangoParser.OPEN_BRACK, FandangoParser.ADD, FandangoParser.MINUS, FandangoParser.NOT_OP, FandangoParser.OPEN_BRACE]:
+                if token in [
+                    FandangoParser.STRING,
+                    FandangoParser.NUMBER,
+                    FandangoParser.AND,
+                    FandangoParser.AS,
+                    FandangoParser.ASSERT,
+                    FandangoParser.ASYNC,
+                    FandangoParser.AWAIT,
+                    FandangoParser.BREAK,
+                    FandangoParser.CASE,
+                    FandangoParser.CLASS,
+                    FandangoParser.CONTINUE,
+                    FandangoParser.DEF,
+                    FandangoParser.DEL,
+                    FandangoParser.ELIF,
+                    FandangoParser.ELSE,
+                    FandangoParser.EXCEPT,
+                    FandangoParser.FALSE,
+                    FandangoParser.FINALLY,
+                    FandangoParser.FOR,
+                    FandangoParser.FROM,
+                    FandangoParser.GLOBAL,
+                    FandangoParser.IF,
+                    FandangoParser.IMPORT,
+                    FandangoParser.IN,
+                    FandangoParser.IS,
+                    FandangoParser.LAMBDA,
+                    FandangoParser.MATCH,
+                    FandangoParser.NONE,
+                    FandangoParser.NONLOCAL,
+                    FandangoParser.NOT,
+                    FandangoParser.OR,
+                    FandangoParser.PASS,
+                    FandangoParser.RAISE,
+                    FandangoParser.RETURN,
+                    FandangoParser.TRUE,
+                    FandangoParser.TRY,
+                    FandangoParser.UNDERSCORE,
+                    FandangoParser.WHILE,
+                    FandangoParser.WITH,
+                    FandangoParser.YIELD,
+                    FandangoParser.FORALL,
+                    FandangoParser.EXISTS,
+                    FandangoParser.NAME,
+                    FandangoParser.ELLIPSIS,
+                    FandangoParser.OPEN_PAREN,
+                    FandangoParser.OPEN_BRACK,
+                    FandangoParser.ADD,
+                    FandangoParser.MINUS,
+                    FandangoParser.NOT_OP,
+                    FandangoParser.OPEN_BRACE,
+                ]:
                     self.state = 1543
                     self.test()
                     self.state = 1544
@@ -12320,15 +13671,66 @@ class FandangoParser ( Parser ):
                 elif token in [FandangoParser.COMMA, FandangoParser.CLOSE_BRACE]:
                     self.state = 1563
                     self._errHandler.sync(self)
-                    _alt = self._interp.adaptivePredict(self._input,203,self._ctx)
-                    while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                        if _alt==1:
+                    _alt = self._interp.adaptivePredict(self._input, 203, self._ctx)
+                    while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                        if _alt == 1:
                             self.state = 1552
                             self.match(FandangoParser.COMMA)
                             self.state = 1559
                             self._errHandler.sync(self)
                             token = self._input.LA(1)
-                            if token in [FandangoParser.STRING, FandangoParser.NUMBER, FandangoParser.AND, FandangoParser.AS, FandangoParser.ASSERT, FandangoParser.ASYNC, FandangoParser.AWAIT, FandangoParser.BREAK, FandangoParser.CASE, FandangoParser.CLASS, FandangoParser.CONTINUE, FandangoParser.DEF, FandangoParser.DEL, FandangoParser.ELIF, FandangoParser.ELSE, FandangoParser.EXCEPT, FandangoParser.FALSE, FandangoParser.FINALLY, FandangoParser.FOR, FandangoParser.FROM, FandangoParser.GLOBAL, FandangoParser.IF, FandangoParser.IMPORT, FandangoParser.IN, FandangoParser.IS, FandangoParser.LAMBDA, FandangoParser.MATCH, FandangoParser.NONE, FandangoParser.NONLOCAL, FandangoParser.NOT, FandangoParser.OR, FandangoParser.PASS, FandangoParser.RAISE, FandangoParser.RETURN, FandangoParser.TRUE, FandangoParser.TRY, FandangoParser.UNDERSCORE, FandangoParser.WHILE, FandangoParser.WITH, FandangoParser.YIELD, FandangoParser.FORALL, FandangoParser.EXISTS, FandangoParser.NAME, FandangoParser.ELLIPSIS, FandangoParser.OPEN_PAREN, FandangoParser.OPEN_BRACK, FandangoParser.ADD, FandangoParser.MINUS, FandangoParser.NOT_OP, FandangoParser.OPEN_BRACE]:
+                            if token in [
+                                FandangoParser.STRING,
+                                FandangoParser.NUMBER,
+                                FandangoParser.AND,
+                                FandangoParser.AS,
+                                FandangoParser.ASSERT,
+                                FandangoParser.ASYNC,
+                                FandangoParser.AWAIT,
+                                FandangoParser.BREAK,
+                                FandangoParser.CASE,
+                                FandangoParser.CLASS,
+                                FandangoParser.CONTINUE,
+                                FandangoParser.DEF,
+                                FandangoParser.DEL,
+                                FandangoParser.ELIF,
+                                FandangoParser.ELSE,
+                                FandangoParser.EXCEPT,
+                                FandangoParser.FALSE,
+                                FandangoParser.FINALLY,
+                                FandangoParser.FOR,
+                                FandangoParser.FROM,
+                                FandangoParser.GLOBAL,
+                                FandangoParser.IF,
+                                FandangoParser.IMPORT,
+                                FandangoParser.IN,
+                                FandangoParser.IS,
+                                FandangoParser.LAMBDA,
+                                FandangoParser.MATCH,
+                                FandangoParser.NONE,
+                                FandangoParser.NONLOCAL,
+                                FandangoParser.NOT,
+                                FandangoParser.OR,
+                                FandangoParser.PASS,
+                                FandangoParser.RAISE,
+                                FandangoParser.RETURN,
+                                FandangoParser.TRUE,
+                                FandangoParser.TRY,
+                                FandangoParser.UNDERSCORE,
+                                FandangoParser.WHILE,
+                                FandangoParser.WITH,
+                                FandangoParser.YIELD,
+                                FandangoParser.FORALL,
+                                FandangoParser.EXISTS,
+                                FandangoParser.NAME,
+                                FandangoParser.ELLIPSIS,
+                                FandangoParser.OPEN_PAREN,
+                                FandangoParser.OPEN_BRACK,
+                                FandangoParser.ADD,
+                                FandangoParser.MINUS,
+                                FandangoParser.NOT_OP,
+                                FandangoParser.OPEN_BRACE,
+                            ]:
                                 self.state = 1553
                                 self.test()
                                 self.state = 1554
@@ -12344,18 +13746,17 @@ class FandangoParser ( Parser ):
                                 pass
                             else:
                                 raise NoViableAltException(self)
-                     
+
                         self.state = 1565
                         self._errHandler.sync(self)
-                        _alt = self._interp.adaptivePredict(self._input,203,self._ctx)
+                        _alt = self._interp.adaptivePredict(self._input, 203, self._ctx)
 
                     self.state = 1567
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if _la==FandangoParser.COMMA:
+                    if _la == FandangoParser.COMMA:
                         self.state = 1566
                         self.match(FandangoParser.COMMA)
-
 
                     pass
                 else:
@@ -12367,7 +13768,58 @@ class FandangoParser ( Parser ):
                 self.state = 1573
                 self._errHandler.sync(self)
                 token = self._input.LA(1)
-                if token in [FandangoParser.STRING, FandangoParser.NUMBER, FandangoParser.AND, FandangoParser.AS, FandangoParser.ASSERT, FandangoParser.ASYNC, FandangoParser.AWAIT, FandangoParser.BREAK, FandangoParser.CASE, FandangoParser.CLASS, FandangoParser.CONTINUE, FandangoParser.DEF, FandangoParser.DEL, FandangoParser.ELIF, FandangoParser.ELSE, FandangoParser.EXCEPT, FandangoParser.FALSE, FandangoParser.FINALLY, FandangoParser.FOR, FandangoParser.FROM, FandangoParser.GLOBAL, FandangoParser.IF, FandangoParser.IMPORT, FandangoParser.IN, FandangoParser.IS, FandangoParser.LAMBDA, FandangoParser.MATCH, FandangoParser.NONE, FandangoParser.NONLOCAL, FandangoParser.NOT, FandangoParser.OR, FandangoParser.PASS, FandangoParser.RAISE, FandangoParser.RETURN, FandangoParser.TRUE, FandangoParser.TRY, FandangoParser.UNDERSCORE, FandangoParser.WHILE, FandangoParser.WITH, FandangoParser.YIELD, FandangoParser.FORALL, FandangoParser.EXISTS, FandangoParser.NAME, FandangoParser.ELLIPSIS, FandangoParser.OPEN_PAREN, FandangoParser.OPEN_BRACK, FandangoParser.ADD, FandangoParser.MINUS, FandangoParser.NOT_OP, FandangoParser.OPEN_BRACE]:
+                if token in [
+                    FandangoParser.STRING,
+                    FandangoParser.NUMBER,
+                    FandangoParser.AND,
+                    FandangoParser.AS,
+                    FandangoParser.ASSERT,
+                    FandangoParser.ASYNC,
+                    FandangoParser.AWAIT,
+                    FandangoParser.BREAK,
+                    FandangoParser.CASE,
+                    FandangoParser.CLASS,
+                    FandangoParser.CONTINUE,
+                    FandangoParser.DEF,
+                    FandangoParser.DEL,
+                    FandangoParser.ELIF,
+                    FandangoParser.ELSE,
+                    FandangoParser.EXCEPT,
+                    FandangoParser.FALSE,
+                    FandangoParser.FINALLY,
+                    FandangoParser.FOR,
+                    FandangoParser.FROM,
+                    FandangoParser.GLOBAL,
+                    FandangoParser.IF,
+                    FandangoParser.IMPORT,
+                    FandangoParser.IN,
+                    FandangoParser.IS,
+                    FandangoParser.LAMBDA,
+                    FandangoParser.MATCH,
+                    FandangoParser.NONE,
+                    FandangoParser.NONLOCAL,
+                    FandangoParser.NOT,
+                    FandangoParser.OR,
+                    FandangoParser.PASS,
+                    FandangoParser.RAISE,
+                    FandangoParser.RETURN,
+                    FandangoParser.TRUE,
+                    FandangoParser.TRY,
+                    FandangoParser.UNDERSCORE,
+                    FandangoParser.WHILE,
+                    FandangoParser.WITH,
+                    FandangoParser.YIELD,
+                    FandangoParser.FORALL,
+                    FandangoParser.EXISTS,
+                    FandangoParser.NAME,
+                    FandangoParser.ELLIPSIS,
+                    FandangoParser.OPEN_PAREN,
+                    FandangoParser.OPEN_BRACK,
+                    FandangoParser.ADD,
+                    FandangoParser.MINUS,
+                    FandangoParser.NOT_OP,
+                    FandangoParser.OPEN_BRACE,
+                ]:
                     self.state = 1571
                     self.test()
                     pass
@@ -12388,15 +13840,66 @@ class FandangoParser ( Parser ):
                 elif token in [FandangoParser.COMMA, FandangoParser.CLOSE_BRACE]:
                     self.state = 1583
                     self._errHandler.sync(self)
-                    _alt = self._interp.adaptivePredict(self._input,208,self._ctx)
-                    while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                        if _alt==1:
+                    _alt = self._interp.adaptivePredict(self._input, 208, self._ctx)
+                    while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                        if _alt == 1:
                             self.state = 1576
                             self.match(FandangoParser.COMMA)
                             self.state = 1579
                             self._errHandler.sync(self)
                             token = self._input.LA(1)
-                            if token in [FandangoParser.STRING, FandangoParser.NUMBER, FandangoParser.AND, FandangoParser.AS, FandangoParser.ASSERT, FandangoParser.ASYNC, FandangoParser.AWAIT, FandangoParser.BREAK, FandangoParser.CASE, FandangoParser.CLASS, FandangoParser.CONTINUE, FandangoParser.DEF, FandangoParser.DEL, FandangoParser.ELIF, FandangoParser.ELSE, FandangoParser.EXCEPT, FandangoParser.FALSE, FandangoParser.FINALLY, FandangoParser.FOR, FandangoParser.FROM, FandangoParser.GLOBAL, FandangoParser.IF, FandangoParser.IMPORT, FandangoParser.IN, FandangoParser.IS, FandangoParser.LAMBDA, FandangoParser.MATCH, FandangoParser.NONE, FandangoParser.NONLOCAL, FandangoParser.NOT, FandangoParser.OR, FandangoParser.PASS, FandangoParser.RAISE, FandangoParser.RETURN, FandangoParser.TRUE, FandangoParser.TRY, FandangoParser.UNDERSCORE, FandangoParser.WHILE, FandangoParser.WITH, FandangoParser.YIELD, FandangoParser.FORALL, FandangoParser.EXISTS, FandangoParser.NAME, FandangoParser.ELLIPSIS, FandangoParser.OPEN_PAREN, FandangoParser.OPEN_BRACK, FandangoParser.ADD, FandangoParser.MINUS, FandangoParser.NOT_OP, FandangoParser.OPEN_BRACE]:
+                            if token in [
+                                FandangoParser.STRING,
+                                FandangoParser.NUMBER,
+                                FandangoParser.AND,
+                                FandangoParser.AS,
+                                FandangoParser.ASSERT,
+                                FandangoParser.ASYNC,
+                                FandangoParser.AWAIT,
+                                FandangoParser.BREAK,
+                                FandangoParser.CASE,
+                                FandangoParser.CLASS,
+                                FandangoParser.CONTINUE,
+                                FandangoParser.DEF,
+                                FandangoParser.DEL,
+                                FandangoParser.ELIF,
+                                FandangoParser.ELSE,
+                                FandangoParser.EXCEPT,
+                                FandangoParser.FALSE,
+                                FandangoParser.FINALLY,
+                                FandangoParser.FOR,
+                                FandangoParser.FROM,
+                                FandangoParser.GLOBAL,
+                                FandangoParser.IF,
+                                FandangoParser.IMPORT,
+                                FandangoParser.IN,
+                                FandangoParser.IS,
+                                FandangoParser.LAMBDA,
+                                FandangoParser.MATCH,
+                                FandangoParser.NONE,
+                                FandangoParser.NONLOCAL,
+                                FandangoParser.NOT,
+                                FandangoParser.OR,
+                                FandangoParser.PASS,
+                                FandangoParser.RAISE,
+                                FandangoParser.RETURN,
+                                FandangoParser.TRUE,
+                                FandangoParser.TRY,
+                                FandangoParser.UNDERSCORE,
+                                FandangoParser.WHILE,
+                                FandangoParser.WITH,
+                                FandangoParser.YIELD,
+                                FandangoParser.FORALL,
+                                FandangoParser.EXISTS,
+                                FandangoParser.NAME,
+                                FandangoParser.ELLIPSIS,
+                                FandangoParser.OPEN_PAREN,
+                                FandangoParser.OPEN_BRACK,
+                                FandangoParser.ADD,
+                                FandangoParser.MINUS,
+                                FandangoParser.NOT_OP,
+                                FandangoParser.OPEN_BRACE,
+                            ]:
                                 self.state = 1577
                                 self.test()
                                 pass
@@ -12406,25 +13909,23 @@ class FandangoParser ( Parser ):
                                 pass
                             else:
                                 raise NoViableAltException(self)
-                     
+
                         self.state = 1585
                         self._errHandler.sync(self)
-                        _alt = self._interp.adaptivePredict(self._input,208,self._ctx)
+                        _alt = self._interp.adaptivePredict(self._input, 208, self._ctx)
 
                     self.state = 1587
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if _la==FandangoParser.COMMA:
+                    if _la == FandangoParser.COMMA:
                         self.state = 1586
                         self.match(FandangoParser.COMMA)
-
 
                     pass
                 else:
                     raise NoViableAltException(self)
 
                 pass
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -12434,11 +13935,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ClassdefContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -12446,15 +13948,13 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.CLASS, 0)
 
         def name(self):
-            return self.getTypedRuleContext(FandangoParser.NameContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.NameContext, 0)
 
         def COLON(self):
             return self.getToken(FandangoParser.COLON, 0)
 
         def block(self):
-            return self.getTypedRuleContext(FandangoParser.BlockContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.BlockContext, 0)
 
         def OPEN_PAREN(self):
             return self.getToken(FandangoParser.OPEN_PAREN, 0)
@@ -12463,34 +13963,29 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.CLOSE_PAREN, 0)
 
         def arglist(self):
-            return self.getTypedRuleContext(FandangoParser.ArglistContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ArglistContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_classdef
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterClassdef" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterClassdef"):
                 listener.enterClassdef(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitClassdef" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitClassdef"):
                 listener.exitClassdef(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitClassdef" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitClassdef"):
                 return visitor.visitClassdef(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def classdef(self):
-
         localctx = FandangoParser.ClassdefContext(self, self._ctx, self.state)
         self.enterRule(localctx, 264, self.RULE_classdef)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1593
@@ -12500,20 +13995,86 @@ class FandangoParser ( Parser ):
             self.state = 1600
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.OPEN_PAREN:
+            if _la == FandangoParser.OPEN_PAREN:
                 self.state = 1595
                 self.match(FandangoParser.OPEN_PAREN)
                 self.state = 1597
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NUMBER) | (1 << FandangoParser.AND) | (1 << FandangoParser.AS) | (1 << FandangoParser.ASSERT) | (1 << FandangoParser.ASYNC) | (1 << FandangoParser.AWAIT) | (1 << FandangoParser.BREAK) | (1 << FandangoParser.CASE) | (1 << FandangoParser.CLASS) | (1 << FandangoParser.CONTINUE) | (1 << FandangoParser.DEF) | (1 << FandangoParser.DEL) | (1 << FandangoParser.ELIF) | (1 << FandangoParser.ELSE) | (1 << FandangoParser.EXCEPT) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.FINALLY) | (1 << FandangoParser.FOR) | (1 << FandangoParser.FROM) | (1 << FandangoParser.GLOBAL) | (1 << FandangoParser.IF) | (1 << FandangoParser.IMPORT) | (1 << FandangoParser.IN) | (1 << FandangoParser.IS) | (1 << FandangoParser.LAMBDA) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.NONLOCAL) | (1 << FandangoParser.NOT) | (1 << FandangoParser.OR) | (1 << FandangoParser.PASS) | (1 << FandangoParser.RAISE) | (1 << FandangoParser.RETURN) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.TRY) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.WHILE) | (1 << FandangoParser.WITH) | (1 << FandangoParser.YIELD) | (1 << FandangoParser.FORALL) | (1 << FandangoParser.EXISTS) | (1 << FandangoParser.NAME) | (1 << FandangoParser.ELLIPSIS) | (1 << FandangoParser.STAR) | (1 << FandangoParser.OPEN_PAREN) | (1 << FandangoParser.POWER))) != 0) or ((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (FandangoParser.OPEN_BRACK - 65)) | (1 << (FandangoParser.ADD - 65)) | (1 << (FandangoParser.MINUS - 65)) | (1 << (FandangoParser.NOT_OP - 65)) | (1 << (FandangoParser.OPEN_BRACE - 65)))) != 0):
+                if (
+                    ((_la) & ~0x3F) == 0
+                    and (
+                        (1 << _la)
+                        & (
+                            (1 << FandangoParser.STRING)
+                            | (1 << FandangoParser.NUMBER)
+                            | (1 << FandangoParser.AND)
+                            | (1 << FandangoParser.AS)
+                            | (1 << FandangoParser.ASSERT)
+                            | (1 << FandangoParser.ASYNC)
+                            | (1 << FandangoParser.AWAIT)
+                            | (1 << FandangoParser.BREAK)
+                            | (1 << FandangoParser.CASE)
+                            | (1 << FandangoParser.CLASS)
+                            | (1 << FandangoParser.CONTINUE)
+                            | (1 << FandangoParser.DEF)
+                            | (1 << FandangoParser.DEL)
+                            | (1 << FandangoParser.ELIF)
+                            | (1 << FandangoParser.ELSE)
+                            | (1 << FandangoParser.EXCEPT)
+                            | (1 << FandangoParser.FALSE)
+                            | (1 << FandangoParser.FINALLY)
+                            | (1 << FandangoParser.FOR)
+                            | (1 << FandangoParser.FROM)
+                            | (1 << FandangoParser.GLOBAL)
+                            | (1 << FandangoParser.IF)
+                            | (1 << FandangoParser.IMPORT)
+                            | (1 << FandangoParser.IN)
+                            | (1 << FandangoParser.IS)
+                            | (1 << FandangoParser.LAMBDA)
+                            | (1 << FandangoParser.MATCH)
+                            | (1 << FandangoParser.NONE)
+                            | (1 << FandangoParser.NONLOCAL)
+                            | (1 << FandangoParser.NOT)
+                            | (1 << FandangoParser.OR)
+                            | (1 << FandangoParser.PASS)
+                            | (1 << FandangoParser.RAISE)
+                            | (1 << FandangoParser.RETURN)
+                            | (1 << FandangoParser.TRUE)
+                            | (1 << FandangoParser.TRY)
+                            | (1 << FandangoParser.UNDERSCORE)
+                            | (1 << FandangoParser.WHILE)
+                            | (1 << FandangoParser.WITH)
+                            | (1 << FandangoParser.YIELD)
+                            | (1 << FandangoParser.FORALL)
+                            | (1 << FandangoParser.EXISTS)
+                            | (1 << FandangoParser.NAME)
+                            | (1 << FandangoParser.ELLIPSIS)
+                            | (1 << FandangoParser.STAR)
+                            | (1 << FandangoParser.OPEN_PAREN)
+                            | (1 << FandangoParser.POWER)
+                        )
+                    )
+                    != 0
+                ) or (
+                    (((_la - 65)) & ~0x3F) == 0
+                    and (
+                        (1 << (_la - 65))
+                        & (
+                            (1 << (FandangoParser.OPEN_BRACK - 65))
+                            | (1 << (FandangoParser.ADD - 65))
+                            | (1 << (FandangoParser.MINUS - 65))
+                            | (1 << (FandangoParser.NOT_OP - 65))
+                            | (1 << (FandangoParser.OPEN_BRACE - 65))
+                        )
+                    )
+                    != 0
+                ):
                     self.state = 1596
                     self.arglist()
 
-
                 self.state = 1599
                 self.match(FandangoParser.CLOSE_PAREN)
-
 
             self.state = 1602
             self.match(FandangoParser.COLON)
@@ -12527,22 +14088,22 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ArglistContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def argument(self, i:int=None):
+        def argument(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.ArgumentContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.ArgumentContext,i)
+                return self.getTypedRuleContext(FandangoParser.ArgumentContext, i)
 
-
-        def COMMA(self, i:int=None):
+        def COMMA(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.COMMA)
             else:
@@ -12551,52 +14112,47 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_arglist
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterArglist" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterArglist"):
                 listener.enterArglist(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitArglist" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitArglist"):
                 listener.exitArglist(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitArglist" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitArglist"):
                 return visitor.visitArglist(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def arglist(self):
-
         localctx = FandangoParser.ArglistContext(self, self._ctx, self.state)
         self.enterRule(localctx, 266, self.RULE_arglist)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1605
             self.argument()
             self.state = 1610
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,214,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
+            _alt = self._interp.adaptivePredict(self._input, 214, self._ctx)
+            while _alt != 2 and _alt != ATN.INVALID_ALT_NUMBER:
+                if _alt == 1:
                     self.state = 1606
                     self.match(FandangoParser.COMMA)
                     self.state = 1607
-                    self.argument() 
+                    self.argument()
                 self.state = 1612
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,214,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input, 214, self._ctx)
 
             self.state = 1614
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.COMMA:
+            if _la == FandangoParser.COMMA:
                 self.state = 1613
                 self.match(FandangoParser.COMMA)
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -12606,20 +14162,20 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ArgumentContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def test(self, i:int=None):
+        def test(self, i: int = None):
             if i is None:
                 return self.getTypedRuleContexts(FandangoParser.TestContext)
             else:
-                return self.getTypedRuleContext(FandangoParser.TestContext,i)
-
+                return self.getTypedRuleContext(FandangoParser.TestContext, i)
 
         def ASSIGN(self):
             return self.getToken(FandangoParser.ASSIGN, 0)
@@ -12631,49 +14187,43 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.STAR, 0)
 
         def comp_for(self):
-            return self.getTypedRuleContext(FandangoParser.Comp_forContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Comp_forContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_argument
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterArgument" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterArgument"):
                 listener.enterArgument(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitArgument" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitArgument"):
                 listener.exitArgument(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitArgument" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitArgument"):
                 return visitor.visitArgument(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def argument(self):
-
         localctx = FandangoParser.ArgumentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 268, self.RULE_argument)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1628
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,217,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 217, self._ctx)
             if la_ == 1:
                 self.state = 1616
                 self.test()
                 self.state = 1618
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==FandangoParser.ASYNC or _la==FandangoParser.FOR:
+                if _la == FandangoParser.ASYNC or _la == FandangoParser.FOR:
                     self.state = 1617
                     self.comp_for()
-
 
                 pass
 
@@ -12700,7 +14250,6 @@ class FandangoParser ( Parser ):
                 self.test()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -12709,44 +14258,39 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Comp_iterContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
         def comp_for(self):
-            return self.getTypedRuleContext(FandangoParser.Comp_forContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Comp_forContext, 0)
 
         def comp_if(self):
-            return self.getTypedRuleContext(FandangoParser.Comp_ifContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Comp_ifContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_comp_iter
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComp_iter" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterComp_iter"):
                 listener.enterComp_iter(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComp_iter" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitComp_iter"):
                 listener.exitComp_iter(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComp_iter" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitComp_iter"):
                 return visitor.visitComp_iter(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def comp_iter(self):
-
         localctx = FandangoParser.Comp_iterContext(self, self._ctx, self.state)
         self.enterRule(localctx, 270, self.RULE_comp_iter)
         try:
@@ -12774,11 +14318,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Comp_forContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -12786,57 +14331,49 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.FOR, 0)
 
         def exprlist(self):
-            return self.getTypedRuleContext(FandangoParser.ExprlistContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.ExprlistContext, 0)
 
         def IN(self):
             return self.getToken(FandangoParser.IN, 0)
 
         def or_test(self):
-            return self.getTypedRuleContext(FandangoParser.Or_testContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Or_testContext, 0)
 
         def ASYNC(self):
             return self.getToken(FandangoParser.ASYNC, 0)
 
         def comp_iter(self):
-            return self.getTypedRuleContext(FandangoParser.Comp_iterContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Comp_iterContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_comp_for
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComp_for" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterComp_for"):
                 listener.enterComp_for(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComp_for" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitComp_for"):
                 listener.exitComp_for(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComp_for" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitComp_for"):
                 return visitor.visitComp_for(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def comp_for(self):
-
         localctx = FandangoParser.Comp_forContext(self, self._ctx, self.state)
         self.enterRule(localctx, 272, self.RULE_comp_for)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1635
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==FandangoParser.ASYNC:
+            if _la == FandangoParser.ASYNC:
                 self.state = 1634
                 self.match(FandangoParser.ASYNC)
-
 
             self.state = 1637
             self.match(FandangoParser.FOR)
@@ -12849,10 +14386,16 @@ class FandangoParser ( Parser ):
             self.state = 1642
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.ASYNC) | (1 << FandangoParser.FOR) | (1 << FandangoParser.IF))) != 0):
+            if ((_la) & ~0x3F) == 0 and (
+                (1 << _la)
+                & (
+                    (1 << FandangoParser.ASYNC)
+                    | (1 << FandangoParser.FOR)
+                    | (1 << FandangoParser.IF)
+                )
+            ) != 0:
                 self.state = 1641
                 self.comp_iter()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -12862,11 +14405,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Comp_ifContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -12874,38 +14418,32 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.IF, 0)
 
         def test_nocond(self):
-            return self.getTypedRuleContext(FandangoParser.Test_nocondContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Test_nocondContext, 0)
 
         def comp_iter(self):
-            return self.getTypedRuleContext(FandangoParser.Comp_iterContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Comp_iterContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_comp_if
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComp_if" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterComp_if"):
                 listener.enterComp_if(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComp_if" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitComp_if"):
                 listener.exitComp_if(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComp_if" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitComp_if"):
                 return visitor.visitComp_if(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def comp_if(self):
-
         localctx = FandangoParser.Comp_ifContext(self, self._ctx, self.state)
         self.enterRule(localctx, 274, self.RULE_comp_if)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1644
@@ -12915,10 +14453,16 @@ class FandangoParser ( Parser ):
             self.state = 1647
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.ASYNC) | (1 << FandangoParser.FOR) | (1 << FandangoParser.IF))) != 0):
+            if ((_la) & ~0x3F) == 0 and (
+                (1 << _la)
+                & (
+                    (1 << FandangoParser.ASYNC)
+                    | (1 << FandangoParser.FOR)
+                    | (1 << FandangoParser.IF)
+                )
+            ) != 0:
                 self.state = 1646
                 self.comp_iter()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -12928,11 +14472,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Yield_exprContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -12940,34 +14485,29 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.YIELD, 0)
 
         def yield_arg(self):
-            return self.getTypedRuleContext(FandangoParser.Yield_argContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.Yield_argContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_yield_expr
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterYield_expr" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterYield_expr"):
                 listener.enterYield_expr(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitYield_expr" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitYield_expr"):
                 listener.exitYield_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitYield_expr" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitYield_expr"):
                 return visitor.visitYield_expr(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def yield_expr(self):
-
         localctx = FandangoParser.Yield_exprContext(self, self._ctx, self.state)
         self.enterRule(localctx, 276, self.RULE_yield_expr)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 1649
@@ -12975,10 +14515,75 @@ class FandangoParser ( Parser ):
             self.state = 1651
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << FandangoParser.STRING) | (1 << FandangoParser.NUMBER) | (1 << FandangoParser.AND) | (1 << FandangoParser.AS) | (1 << FandangoParser.ASSERT) | (1 << FandangoParser.ASYNC) | (1 << FandangoParser.AWAIT) | (1 << FandangoParser.BREAK) | (1 << FandangoParser.CASE) | (1 << FandangoParser.CLASS) | (1 << FandangoParser.CONTINUE) | (1 << FandangoParser.DEF) | (1 << FandangoParser.DEL) | (1 << FandangoParser.ELIF) | (1 << FandangoParser.ELSE) | (1 << FandangoParser.EXCEPT) | (1 << FandangoParser.FALSE) | (1 << FandangoParser.FINALLY) | (1 << FandangoParser.FOR) | (1 << FandangoParser.FROM) | (1 << FandangoParser.GLOBAL) | (1 << FandangoParser.IF) | (1 << FandangoParser.IMPORT) | (1 << FandangoParser.IN) | (1 << FandangoParser.IS) | (1 << FandangoParser.LAMBDA) | (1 << FandangoParser.MATCH) | (1 << FandangoParser.NONE) | (1 << FandangoParser.NONLOCAL) | (1 << FandangoParser.NOT) | (1 << FandangoParser.OR) | (1 << FandangoParser.PASS) | (1 << FandangoParser.RAISE) | (1 << FandangoParser.RETURN) | (1 << FandangoParser.TRUE) | (1 << FandangoParser.TRY) | (1 << FandangoParser.UNDERSCORE) | (1 << FandangoParser.WHILE) | (1 << FandangoParser.WITH) | (1 << FandangoParser.YIELD) | (1 << FandangoParser.FORALL) | (1 << FandangoParser.EXISTS) | (1 << FandangoParser.NAME) | (1 << FandangoParser.ELLIPSIS) | (1 << FandangoParser.OPEN_PAREN))) != 0) or ((((_la - 65)) & ~0x3f) == 0 and ((1 << (_la - 65)) & ((1 << (FandangoParser.OPEN_BRACK - 65)) | (1 << (FandangoParser.ADD - 65)) | (1 << (FandangoParser.MINUS - 65)) | (1 << (FandangoParser.NOT_OP - 65)) | (1 << (FandangoParser.OPEN_BRACE - 65)))) != 0):
+            if (
+                ((_la) & ~0x3F) == 0
+                and (
+                    (1 << _la)
+                    & (
+                        (1 << FandangoParser.STRING)
+                        | (1 << FandangoParser.NUMBER)
+                        | (1 << FandangoParser.AND)
+                        | (1 << FandangoParser.AS)
+                        | (1 << FandangoParser.ASSERT)
+                        | (1 << FandangoParser.ASYNC)
+                        | (1 << FandangoParser.AWAIT)
+                        | (1 << FandangoParser.BREAK)
+                        | (1 << FandangoParser.CASE)
+                        | (1 << FandangoParser.CLASS)
+                        | (1 << FandangoParser.CONTINUE)
+                        | (1 << FandangoParser.DEF)
+                        | (1 << FandangoParser.DEL)
+                        | (1 << FandangoParser.ELIF)
+                        | (1 << FandangoParser.ELSE)
+                        | (1 << FandangoParser.EXCEPT)
+                        | (1 << FandangoParser.FALSE)
+                        | (1 << FandangoParser.FINALLY)
+                        | (1 << FandangoParser.FOR)
+                        | (1 << FandangoParser.FROM)
+                        | (1 << FandangoParser.GLOBAL)
+                        | (1 << FandangoParser.IF)
+                        | (1 << FandangoParser.IMPORT)
+                        | (1 << FandangoParser.IN)
+                        | (1 << FandangoParser.IS)
+                        | (1 << FandangoParser.LAMBDA)
+                        | (1 << FandangoParser.MATCH)
+                        | (1 << FandangoParser.NONE)
+                        | (1 << FandangoParser.NONLOCAL)
+                        | (1 << FandangoParser.NOT)
+                        | (1 << FandangoParser.OR)
+                        | (1 << FandangoParser.PASS)
+                        | (1 << FandangoParser.RAISE)
+                        | (1 << FandangoParser.RETURN)
+                        | (1 << FandangoParser.TRUE)
+                        | (1 << FandangoParser.TRY)
+                        | (1 << FandangoParser.UNDERSCORE)
+                        | (1 << FandangoParser.WHILE)
+                        | (1 << FandangoParser.WITH)
+                        | (1 << FandangoParser.YIELD)
+                        | (1 << FandangoParser.FORALL)
+                        | (1 << FandangoParser.EXISTS)
+                        | (1 << FandangoParser.NAME)
+                        | (1 << FandangoParser.ELLIPSIS)
+                        | (1 << FandangoParser.OPEN_PAREN)
+                    )
+                )
+                != 0
+            ) or (
+                (((_la - 65)) & ~0x3F) == 0
+                and (
+                    (1 << (_la - 65))
+                    & (
+                        (1 << (FandangoParser.OPEN_BRACK - 65))
+                        | (1 << (FandangoParser.ADD - 65))
+                        | (1 << (FandangoParser.MINUS - 65))
+                        | (1 << (FandangoParser.NOT_OP - 65))
+                        | (1 << (FandangoParser.OPEN_BRACE - 65))
+                    )
+                )
+                != 0
+            ):
                 self.state = 1650
                 self.yield_arg()
-
 
         except RecognitionException as re:
             localctx.exception = re
@@ -12988,11 +14593,12 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Yield_argContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -13000,41 +14606,35 @@ class FandangoParser ( Parser ):
             return self.getToken(FandangoParser.FROM, 0)
 
         def test(self):
-            return self.getTypedRuleContext(FandangoParser.TestContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.TestContext, 0)
 
         def testlist(self):
-            return self.getTypedRuleContext(FandangoParser.TestlistContext,0)
-
+            return self.getTypedRuleContext(FandangoParser.TestlistContext, 0)
 
         def getRuleIndex(self):
             return FandangoParser.RULE_yield_arg
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterYield_arg" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterYield_arg"):
                 listener.enterYield_arg(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitYield_arg" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitYield_arg"):
                 listener.exitYield_arg(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitYield_arg" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitYield_arg"):
                 return visitor.visitYield_arg(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def yield_arg(self):
-
         localctx = FandangoParser.Yield_argContext(self, self._ctx, self.state)
         self.enterRule(localctx, 278, self.RULE_yield_arg)
         try:
             self.state = 1656
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,223,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input, 223, self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1653
@@ -13049,7 +14649,6 @@ class FandangoParser ( Parser ):
                 self.testlist()
                 pass
 
-
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -13058,15 +14657,16 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class StringsContext(ParserRuleContext):
-        __slots__ = 'parser'
+        __slots__ = "parser"
 
-        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def STRING(self, i:int=None):
+        def STRING(self, i: int = None):
             if i is None:
                 return self.getTokens(FandangoParser.STRING)
             else:
@@ -13075,40 +14675,36 @@ class FandangoParser ( Parser ):
         def getRuleIndex(self):
             return FandangoParser.RULE_strings
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterStrings" ):
+        def enterRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "enterStrings"):
                 listener.enterStrings(self)
 
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitStrings" ):
+        def exitRule(self, listener: ParseTreeListener):
+            if hasattr(listener, "exitStrings"):
                 listener.exitStrings(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitStrings" ):
+        def accept(self, visitor: ParseTreeVisitor):
+            if hasattr(visitor, "visitStrings"):
                 return visitor.visitStrings(self)
             else:
                 return visitor.visitChildren(self)
 
-
-
-
     def strings(self):
-
         localctx = FandangoParser.StringsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 280, self.RULE_strings)
-        self._la = 0 # Token type
+        self._la = 0  # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 1659 
+            self.state = 1659
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while True:
                 self.state = 1658
                 self.match(FandangoParser.STRING)
-                self.state = 1661 
+                self.state = 1661
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if not (_la==FandangoParser.STRING):
+                if not (_la == FandangoParser.STRING):
                     break
 
         except RecognitionException as re:
@@ -13119,9 +14715,7 @@ class FandangoParser ( Parser ):
             self.exitRule()
         return localctx
 
-
-
-    def sempred(self, localctx:RuleContext, ruleIndex:int, predIndex:int):
+    def sempred(self, localctx: RuleContext, ruleIndex: int, predIndex: int):
         if self._predicates == None:
             self._predicates = dict()
         self._predicates[83] = self.literal_pattern_sempred
@@ -13135,55 +14729,42 @@ class FandangoParser ( Parser ):
         else:
             return pred(localctx, predIndex)
 
-    def literal_pattern_sempred(self, localctx:Literal_patternContext, predIndex:int):
-            if predIndex == 0:
-                return  this.CannotBePlusMinus() 
-         
+    def literal_pattern_sempred(self, localctx: Literal_patternContext, predIndex: int):
+        if predIndex == 0:
+            return this.CannotBePlusMinus()
 
-    def literal_expr_sempred(self, localctx:Literal_exprContext, predIndex:int):
-            if predIndex == 1:
-                return  this.CannotBePlusMinus() 
-         
+    def literal_expr_sempred(self, localctx: Literal_exprContext, predIndex: int):
+        if predIndex == 1:
+            return this.CannotBePlusMinus()
 
-    def pattern_capture_target_sempred(self, localctx:Pattern_capture_targetContext, predIndex:int):
-            if predIndex == 2:
-                return  this.CannotBeDotLpEq() 
-         
+    def pattern_capture_target_sempred(
+        self, localctx: Pattern_capture_targetContext, predIndex: int
+    ):
+        if predIndex == 2:
+            return this.CannotBeDotLpEq()
 
-    def value_pattern_sempred(self, localctx:Value_patternContext, predIndex:int):
-            if predIndex == 3:
-                return  this.CannotBeDotLpEq() 
-         
+    def value_pattern_sempred(self, localctx: Value_patternContext, predIndex: int):
+        if predIndex == 3:
+            return this.CannotBeDotLpEq()
 
-    def expr_sempred(self, localctx:ExprContext, predIndex:int):
-            if predIndex == 4:
-                return self.precpred(self._ctx, 8)
-         
+    def expr_sempred(self, localctx: ExprContext, predIndex: int):
+        if predIndex == 4:
+            return self.precpred(self._ctx, 8)
 
-            if predIndex == 5:
-                return self.precpred(self._ctx, 6)
-         
+        if predIndex == 5:
+            return self.precpred(self._ctx, 6)
 
-            if predIndex == 6:
-                return self.precpred(self._ctx, 5)
-         
+        if predIndex == 6:
+            return self.precpred(self._ctx, 5)
 
-            if predIndex == 7:
-                return self.precpred(self._ctx, 4)
-         
+        if predIndex == 7:
+            return self.precpred(self._ctx, 4)
 
-            if predIndex == 8:
-                return self.precpred(self._ctx, 3)
-         
+        if predIndex == 8:
+            return self.precpred(self._ctx, 3)
 
-            if predIndex == 9:
-                return self.precpred(self._ctx, 2)
-         
+        if predIndex == 9:
+            return self.precpred(self._ctx, 2)
 
-            if predIndex == 10:
-                return self.precpred(self._ctx, 1)
-         
-
-
-
-
+        if predIndex == 10:
+            return self.precpred(self._ctx, 1)
