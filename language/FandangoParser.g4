@@ -504,7 +504,7 @@ closed_pattern
     ;
 
 literal_pattern
-    : signed_number { this.CannotBePlusMinus() }?
+    : signed_number
     | complex_number
     | strings
     | 'None'
@@ -513,7 +513,7 @@ literal_pattern
     ;
 
 literal_expr
-    : signed_number { this.CannotBePlusMinus() }?
+    : signed_number
     | complex_number
     | strings
     | 'None'
@@ -549,7 +549,7 @@ capture_pattern
     ;
 
 pattern_capture_target
-    : /* cannot be '_' */ name { this.CannotBeDotLpEq() }?
+    : /* cannot be '_' */ name
     ;
 
 wildcard_pattern
@@ -557,7 +557,7 @@ wildcard_pattern
     ;
 
 value_pattern
-    : attr { this.CannotBeDotLpEq() }?
+    : attr
     ;
 
 attr
