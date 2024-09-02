@@ -166,3 +166,4 @@ cython_debug/
 # ANTLR
 language/*.tokens
 language/gen
+language/gen/*
