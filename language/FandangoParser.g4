@@ -5,7 +5,7 @@ options {
 }
 
 // start
-fandango: program EOF?;
+fandango: program EOF;
 
 program: NEWLINE* (statement NEWLINE*)*;
 
@@ -17,9 +17,9 @@ statement
 
 // grammar part
 
-production: rule_name COLON alternatives (COLON NAME)? SEMI_COLON;
+production: RULE_NAME '::=' alternatives (':' NAME)? ';';
 
-alternatives: alternative (OR_OP alternative)*;
+alternatives: alternative ('|' alternative)*;
 
 alternative: operator (operator)*;
 
@@ -38,7 +38,7 @@ repeat: symbol OPEN_BRACE NUMBER (COMMA NUMBER)? CLOSE_BRACE;
 
 symbol
     : NEWLINE*
-        ( NAME
+        ( RULE_NAME
         | STRING
         | OPEN_PAREN alternatives CLOSE_PAREN
         | char_set
@@ -50,52 +50,9 @@ char_set
     : OPEN_BRACK XOR? STRING CLOSE_BRACK
     ;
 
-rule_name
-    : NAME
-    | AND
-    | AS
-    | ASSERT
-    | ASYNC
-    | AWAIT
-    | BREAK
-    | CASE
-    | CLASS
-    | CONTINUE
-    | DEF
-    | DEL
-    | ELIF
-    | ELSE
-    | EXCEPT
-    | FALSE
-    | FINALLY
-    | FOR
-    | FROM
-    | GLOBAL
-    | IF
-    | IMPORT
-    | IN
-    | IS
-    | LAMBDA
-    | MATCH
-    | NONE
-    | NONLOCAL
-    | NOT
-    | OR
-    | PASS
-    | RAISE
-    | RETURN
-    | TRUE
-    | TRY
-    | WHILE
-    | WITH
-    | YIELD
-    | FORALL
-    | EXISTS
-    ;
-
 // constraint part
 constraint:
-    implies (NEWLINE | EOF)
+    implies ';'
     ;
 
 implies:
@@ -104,8 +61,8 @@ implies:
     ;
 
 quantifier:
-    FORALL NAME IN selector COLON quantifier
-    | EXISTS NAME IN selector COLON quantifier
+    FORALL RULE_NAME IN selector COLON quantifier
+    | EXISTS RULE_NAME IN selector COLON quantifier
     | disjunction
     ;
 
@@ -132,14 +89,13 @@ expression:
     ;
 
 selector:
-    selection (DOT selection)*
+    selection
+    | selector DOT selection
     ;
 
 selection:
-    rule_name ('[' subscriptlist ']' | '{' subscriptlist '}')?
+    RULE_NAME ('[' subscriptlist ']' | '{' subscriptlist '}')*
     ;
-
-
 
 
 
@@ -181,12 +137,12 @@ selection:
   */
 
 python
-    : python_tag
-    | compound_stmt (NEWLINE | EOF)
+    : PYTHON_START (python_tag | NEWLINE)* PYTHON_END
+//    | compound_stmt (NEWLINE | EOF)
     ;
 
 python_tag:
-    PYTHON_START (NEWLINE* (simple_stmts | compound_stmt) NEWLINE*)* PYTHON_END
+    (NEWLINE* (simple_stmts | compound_stmt) NEWLINE*)
     ;
 
 decorator

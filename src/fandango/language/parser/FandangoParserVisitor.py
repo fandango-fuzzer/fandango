@@ -62,10 +62,6 @@ class FandangoParserVisitor(ParseTreeVisitor):
     def visitChar_set(self, ctx: FandangoParser.Char_setContext):
         return self.visitChildren(ctx)
 
-    # Visit a parse tree produced by FandangoParser#rule_name.
-    def visitRule_name(self, ctx: FandangoParser.Rule_nameContext):
-        return self.visitChildren(ctx)
-
     # Visit a parse tree produced by FandangoParser#constraint.
     def visitConstraint(self, ctx: FandangoParser.ConstraintContext):
         return self.visitChildren(ctx)

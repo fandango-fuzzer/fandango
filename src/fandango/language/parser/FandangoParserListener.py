@@ -113,14 +113,6 @@ class FandangoParserListener(ParseTreeListener):
     def exitChar_set(self, ctx: FandangoParser.Char_setContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#rule_name.
-    def enterRule_name(self, ctx: FandangoParser.Rule_nameContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#rule_name.
-    def exitRule_name(self, ctx: FandangoParser.Rule_nameContext):
-        pass
-
     # Enter a parse tree produced by FandangoParser#constraint.
     def enterConstraint(self, ctx: FandangoParser.ConstraintContext):
         pass
