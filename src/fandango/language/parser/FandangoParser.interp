@@ -223,8 +223,8 @@ fandango
 program
 statement
 production
-alternatives
 alternative
+concatenation
 operator
 kleene
 plus
