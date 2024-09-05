@@ -7,6 +7,10 @@ NUMBER: INTEGER | FLOAT_NUMBER | IMAG_NUMBER;
 
 INTEGER: DECIMAL_INTEGER | OCT_INTEGER | HEX_INTEGER | BIN_INTEGER;
 
+PYTHON_START: '<py>';
+PYTHON_END  : '</py>';
+RULE_NAME: '<' ID_CONTINUE+ '>';
+
 // python keywords
 AND        : 'and';
 AS         : 'as';
@@ -63,6 +67,7 @@ FLOAT_NUMBER: POINT_FLOAT | EXPONENT_FLOAT;
 IMAG_NUMBER: ( FLOAT_NUMBER | INT_PART) [jJ];
 
 // operators
+GRAMMAR_ASSIGN     : '::=';
 QUESTION           : '?';
 BACKSLASH          : '\\';
 DOT                : '.';
@@ -113,10 +118,7 @@ RIGHT_SHIFT_ASSIGN : '>>=';
 POWER_ASSIGN       : '**=';
 IDIV_ASSIGN        : '//=';
 
-PYTHON_START: '<py>';
-PYTHON_END  : '</py>';
-
-SKIP_: ( SPACES | COMMENT | LINE_JOINING) -> skip;
+SKIP_: ( SPACES | COMMENT | LINE_JOINING) -> channel(HIDDEN);
 NEWLINE: ('\r'? '\n' | '\r' | '\f');
 
 /*
