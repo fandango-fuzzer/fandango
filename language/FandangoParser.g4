@@ -17,11 +17,11 @@ statement
 
 // grammar part
 
-production: RULE_NAME '::=' alternatives (':' NAME)? ';';
+production: RULE_NAME '::=' alternative (':' NAME)? ';';
 
-alternatives: alternative ('|' alternative)*;
+alternative: concatenation ('|' concatenation)*;
 
-alternative: operator (operator)*;
+concatenation: operator (operator)*;
 
 operator
     : symbol
@@ -40,7 +40,7 @@ symbol
     : NEWLINE*
         ( RULE_NAME
         | STRING
-        | OPEN_PAREN alternatives CLOSE_PAREN
+        | OPEN_PAREN alternative CLOSE_PAREN
         | char_set
         )
       NEWLINE*

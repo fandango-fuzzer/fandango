@@ -41,20 +41,20 @@ class FandangoParserListener(ParseTreeListener):
     def exitProduction(self, ctx: FandangoParser.ProductionContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#alternatives.
-    def enterAlternatives(self, ctx: FandangoParser.AlternativesContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#alternatives.
-    def exitAlternatives(self, ctx: FandangoParser.AlternativesContext):
-        pass
-
     # Enter a parse tree produced by FandangoParser#alternative.
     def enterAlternative(self, ctx: FandangoParser.AlternativeContext):
         pass
 
     # Exit a parse tree produced by FandangoParser#alternative.
     def exitAlternative(self, ctx: FandangoParser.AlternativeContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#concatenation.
+    def enterConcatenation(self, ctx: FandangoParser.ConcatenationContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#concatenation.
+    def exitConcatenation(self, ctx: FandangoParser.ConcatenationContext):
         pass
 
     # Enter a parse tree produced by FandangoParser#operator.

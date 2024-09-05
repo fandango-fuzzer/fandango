@@ -26,12 +26,12 @@ class FandangoParserVisitor(ParseTreeVisitor):
     def visitProduction(self, ctx: FandangoParser.ProductionContext):
         return self.visitChildren(ctx)
 
-    # Visit a parse tree produced by FandangoParser#alternatives.
-    def visitAlternatives(self, ctx: FandangoParser.AlternativesContext):
-        return self.visitChildren(ctx)
-
     # Visit a parse tree produced by FandangoParser#alternative.
     def visitAlternative(self, ctx: FandangoParser.AlternativeContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#concatenation.
+    def visitConcatenation(self, ctx: FandangoParser.ConcatenationContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by FandangoParser#operator.

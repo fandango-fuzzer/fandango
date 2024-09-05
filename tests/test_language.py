@@ -1,53 +1,60 @@
+import time
 import unittest
+
+import antlr4
+from antlr4 import InputStream, CommonTokenStream
+from fuzzingbook.GrammarFuzzer import GrammarFuzzer
+
+from fandango.language.convert import FandangoSplitter, GrammarProcessor
+from fandango.language.parser.FandangoLexer import FandangoLexer
+from fandango.language.parser.FandangoParser import FandangoParser
 
 
 class TestLanguage(unittest.TestCase):
     EXAMPLE = """
-
-def f(x):
-    return x + 1    
-
-start : ab;
-ab : "ab" | "a" ab "b";
-count(ab) == 4
-
-import os
-fandango.import('zip.fan')
-
-def twice(x, ef):
-    return x == 2 * ef
-    
-fitness(<start>) > 0.9
-
-mutate()
-
-selection()
-    
-<start> ::= <fmt1> | <fmt2>
-
-if <fmt1>:
-    <x> > 0
-
-def will_halt(x):
-    if x == 0:
-        return True
-    else:
-        return will_halt(x - 1)
-
-<start> ::= <ab>
-<ab> ::= "ab" | "a" <ab> "b" | \
-    "cd"
-count(<ab>) == 4
-
-<ef> ::= "ef" | "e" <ef> "f" 
-os.system('ls ' + <ef>) == 0
-twice(2, <ab>)
-
-
-<py>
-x = f(1)
-</py>
+<start> ::= <number>;
+<number> ::= <non_zero><digit>* | "0";
+<non_zero> ::= 
+              "1" 
+            | "2" 
+            | "3"
+            | "4" 
+            | "5" 
+            | "6" 
+            | "7" 
+            | "8" 
+            | "9"
+            ;
+<digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
 """
+    FUZZINGBOOK_GRAMMAR = {
+        "<start>": ["<number>"],
+        "<number>": ["<non_zero><digits>", "0"],
+        "<digits>": ["", "<digit><digits>"],
+        "<non_zero>": ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+        "<digit>": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+    }
 
-    def test_splitting(self):
-        pass
+    def test_fuzzing(self):
+        lexer = FandangoLexer(InputStream(self.EXAMPLE))
+        token = CommonTokenStream(lexer)
+        parser = FandangoParser(token)
+        tree = parser.fandango()
+
+        splitter = FandangoSplitter()
+        splitter.visit(tree)
+
+        processor = GrammarProcessor()
+        grammar = processor.get_grammar(splitter.productions)
+
+        start = time.time()
+        for _ in range(10000):
+            grammar.fuzz()
+        print(f"{time.time() - start} seconds")
+
+        fuzzer = GrammarFuzzer(self.FUZZINGBOOK_GRAMMAR)
+
+        fuzzingbook_time = time.time()
+        for _ in range(10000):
+            fuzzer.fuzz()
+        print(f"{time.time() - fuzzingbook_time} seconds")
