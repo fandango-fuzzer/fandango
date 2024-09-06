@@ -1,33 +1,31 @@
 import time
 import unittest
 
-import antlr4
 from antlr4 import InputStream, CommonTokenStream
 from fuzzingbook.GrammarFuzzer import GrammarFuzzer, EvenFasterGrammarFuzzer, FasterGrammarFuzzer
 
 from fandango.language.convert import FandangoSplitter, GrammarProcessor
-from fandango.language.grammar import DerivationTree
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 
 
 class TestLanguage(unittest.TestCase):
     EXAMPLE = """
-<start> ::= <number>;
-<number> ::= <non_zero><digit>* | "0";
-<non_zero> ::= 
-              "1" 
-            | "2" 
-            | "3"
-            | "4" 
-            | "5" 
-            | "6" 
-            | "7" 
-            | "8" 
-            | "9"
-            ;
-<digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
-"""
+        <start> ::= <number>;
+        <number> ::= <non_zero><digit>* | "0";
+        <non_zero> ::= 
+                      "1" 
+                    | "2" 
+                    | "3"
+                    | "4" 
+                    | "5" 
+                    | "6" 
+                    | "7" 
+                    | "8" 
+                    | "9"
+                    ;
+        <digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+    """
     FUZZINGBOOK_GRAMMAR = {
         "<start>": ["<number>"],
         "<number>": ["<non_zero><digits>", "0"],
@@ -73,8 +71,6 @@ class TestLanguage(unittest.TestCase):
         for _ in range(100000):
             fuzzer.fuzz_tree()
         print(f"{time.time() - fuzzingbook_time} seconds (even faster)")
-
-
 
 
 if __name__ == "__main__":

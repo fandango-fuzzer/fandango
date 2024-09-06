@@ -2,6 +2,7 @@ import abc
 import random
 from typing import Dict, List
 
+
 class Node(abc.ABC):
     def fuzz(self, rules: Dict[str, "Node"]) -> List["DerivationTree"]:
         return ""
@@ -124,7 +125,7 @@ class DerivationTree:
     This class is used to represent a node in the derivation tree.
     """
 
-    def __init__(self, symbol: NonTerminal|Terminal, children: List["DerivationTree"] = None):
+    def __init__(self, symbol: NonTerminal | Terminal, children: List["DerivationTree"] = None):
         self.symbol = symbol
         self.children = children or []
 
@@ -138,7 +139,7 @@ class DerivationTree:
 
     def __str__(self):
         return self.__repr__()
-    
+
 
 class Grammar:
     def __init__(self, rules: Dict[str, Node]):
