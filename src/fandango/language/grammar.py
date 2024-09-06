@@ -2,10 +2,6 @@ import abc
 import random
 from typing import Dict, List
 
-
-MAX_REPETITIONS = 20
-
-
 class Node(abc.ABC):
     def fuzz(self, rules: Dict[str, "Node"]) -> List["DerivationTree"]:
         return ""
@@ -40,7 +36,7 @@ class Concatenation(Node):
 
 
 class Repetition(Node):
-    def __init__(self, node: Node, min_: int = 0, max_: int = MAX_REPETITIONS):
+    def __init__(self, node: Node, min_: int = 0, max_: int = 20):
         if min_ < 0:
             raise ValueError("Minimum repetitions must be greater than or equal to 0")
         if max_ <= 0:
