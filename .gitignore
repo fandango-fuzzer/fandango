@@ -167,3 +167,5 @@ cython_debug/
 language/*.tokens
 language/gen
 language/gen/*
+gen
+gen/*
