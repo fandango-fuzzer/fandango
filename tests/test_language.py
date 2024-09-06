@@ -3,9 +3,10 @@ import unittest
 
 import antlr4
 from antlr4 import InputStream, CommonTokenStream
-from fuzzingbook.GrammarFuzzer import GrammarFuzzer
+from fuzzingbook.GrammarFuzzer import GrammarFuzzer, EvenFasterGrammarFuzzer, FasterGrammarFuzzer
 
 from fandango.language.convert import FandangoSplitter, GrammarProcessor
+from fandango.language.grammar import DerivationTree
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 
@@ -48,13 +49,33 @@ class TestLanguage(unittest.TestCase):
         grammar = processor.get_grammar(splitter.productions)
 
         start = time.time()
-        for _ in range(10000):
+        for _ in range(100000):
             grammar.fuzz()
-        print(f"{time.time() - start} seconds")
+        print(f"\n{time.time() - start} seconds (ours)")
 
         fuzzer = GrammarFuzzer(self.FUZZINGBOOK_GRAMMAR)
 
         fuzzingbook_time = time.time()
-        for _ in range(10000):
-            fuzzer.fuzz()
-        print(f"{time.time() - fuzzingbook_time} seconds")
+        for _ in range(100000):
+            fuzzer.fuzz_tree()
+        print(f"{time.time() - fuzzingbook_time} seconds (oks)")
+
+        fuzzer = FasterGrammarFuzzer(self.FUZZINGBOOK_GRAMMAR)
+
+        fuzzingbook_time = time.time()
+        for _ in range(100000):
+            fuzzer.fuzz_tree()
+        print(f"{time.time() - fuzzingbook_time} seconds (faster)")
+
+        fuzzer = EvenFasterGrammarFuzzer(self.FUZZINGBOOK_GRAMMAR)
+
+        fuzzingbook_time = time.time()
+        for _ in range(100000):
+            fuzzer.fuzz_tree()
+        print(f"{time.time() - fuzzingbook_time} seconds (even faster)")
+
+
+
+
+if __name__ == "__main__":
+    TestLanguage().test_fuzzing()
