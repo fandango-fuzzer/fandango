@@ -1,6 +1,8 @@
 import abc
 import random
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+MAX_REPETITIONS = 20
 
 
 class Node(abc.ABC):
@@ -37,7 +39,7 @@ class Concatenation(Node):
 
 
 class Repetition(Node):
-    def __init__(self, node: Node, min_: int = 0, max_: int = 20):
+    def __init__(self, node: Node, min_: int = 0, max_: int = MAX_REPETITIONS):
         if min_ < 0:
             raise ValueError("Minimum repetitions must be greater than or equal to 0")
         if max_ <= 0:
@@ -47,7 +49,10 @@ class Repetition(Node):
         self.max = max_
 
     def fuzz(self, rules: Dict[str, "Node"]) -> List["DerivationTree"]:
-        return sum([self.node.fuzz(rules) for _ in range(random.randint(self.min, self.max))], [])
+        return sum(
+            [self.node.fuzz(rules) for _ in range(random.randint(self.min, self.max))],
+            [],
+        )
 
     def __repr__(self):
         return f"{self.node}{{{self.min},{self.max}}}"
@@ -90,6 +95,12 @@ class NonTerminal(Node):
     def __repr__(self):
         return self.symbol
 
+    def __eq__(self, other):
+        return isinstance(other, NonTerminal) and self.symbol == other.symbol
+
+    def __hash__(self):
+        return hash(self.symbol)
+
 
 class Terminal(Node):
     def __init__(self, symbol: str):
@@ -111,6 +122,12 @@ class Terminal(Node):
     def __repr__(self):
         return f'"{self.symbol}"'
 
+    def __eq__(self, other):
+        return isinstance(other, Terminal) and self.symbol == other.symbol
+
+    def __hash__(self):
+        return hash(self.symbol)
+
 
 class CharSet(Node):
     def __init__(self, chars: str):
@@ -125,9 +142,17 @@ class DerivationTree:
     This class is used to represent a node in the derivation tree.
     """
 
-    def __init__(self, symbol: NonTerminal | Terminal, children: List["DerivationTree"] = None):
+    def __init__(
+        self,
+        symbol: NonTerminal | Terminal,
+        children: Optional[List["DerivationTree"]] = None,
+        parent: Optional["DerivationTree"] = None,
+    ):
         self.symbol = symbol
         self.children = children or []
+        for child in self.children:
+            child.parent = self
+        self.parent = parent
 
     def __repr__(self):
         if isinstance(self.symbol, NonTerminal):
@@ -147,3 +172,27 @@ class Grammar:
 
     def fuzz(self, start: str = "<start>") -> DerivationTree:
         return NonTerminal(start).fuzz(self.rules)[0]
+
+    def __contains__(self, item: str):
+        return item in self.rules
+
+    def __getitem__(self, item: str):
+        return self.rules[item]
+
+    def __setitem__(self, key: str, value: Node):
+        self.rules[key] = value
+
+    def __delitem__(self, key: str):
+        del self.rules[key]
+
+    def __iter__(self):
+        return iter(self.rules)
+
+    def __len__(self):
+        return len(self.rules)
+
+    def __repr__(self):
+        return "\n".join([f"{key} ::= {value};" for key, value in self.rules.items()])
+
+    def __str__(self):
+        return self.__repr__()
