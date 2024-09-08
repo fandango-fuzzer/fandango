@@ -10,7 +10,7 @@ from fandango.language.parser.FandangoParser import FandangoParser
 
 
 class TestLanguage(unittest.TestCase):
-    EXAMPLE = """
+    FANDANGO_GRAMMAR = """
         <start> ::= <number>;
         <number> ::= <non_zero><digit>* | "0";
         <non_zero> ::= 
@@ -35,7 +35,7 @@ class TestLanguage(unittest.TestCase):
     }
 
     def test_fuzzing(self):
-        lexer = FandangoLexer(InputStream(self.EXAMPLE))
+        lexer = FandangoLexer(InputStream(self.FANDANGO_GRAMMAR))
         token = CommonTokenStream(lexer)
         parser = FandangoParser(token)
         tree = parser.fandango()
