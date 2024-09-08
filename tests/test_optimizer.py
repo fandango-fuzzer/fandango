@@ -58,7 +58,7 @@ class TestOptimizer(unittest.TestCase):
             self.assertIsInstance(tree, DerivationTree)
             self.assertEqual(tree.symbol, NonTerminal("<start>"))
 
-    def test_evaluation(self):
+    def test_fitness_evaluation(self):
         # Initialize the optimizer
         optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint], population_size=10)
 
@@ -75,6 +75,40 @@ class TestOptimizer(unittest.TestCase):
         parents = optimizer.select_parents()
         self.assertEqual(len(parents), 2)
 
+    def test_random_crossover(self):
+        # Initialize the optimizer
+        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint], population_size=10)
+
+        # Select two parents
+        parent1, parent2 = optimizer.select_parents()
+
+        # Perform random crossover
+        children = optimizer.crossover(parent1, parent2, method="random")
+        self.assertEqual(len(children), 2)
+
+        for child in children:
+            self.assertIsInstance(child, DerivationTree)
+            self.assertEqual(child.symbol, NonTerminal("<start>"))
+
+    def test_intelligent_crossover(self):
+        pass
+
+    def test_random_mutation(self):
+        # Initialize the optimizer
+        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint], population_size=10, mutation_rate=1.0)
+
+        # Select a parent
+        parent = optimizer.select_parents()[0]
+
+        # Perform random mutation
+        child = optimizer.mutate(parent, method="random")
+
+        self.assertIsInstance(child, DerivationTree)
+        self.assertEqual(child.symbol, NonTerminal("<start>"))
+
+
+    def test_intelligent_mutation(self):
+        pass
 
 if __name__ == "__main__":
     unittest.main()

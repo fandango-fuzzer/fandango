@@ -1,5 +1,5 @@
 import random
-from typing import List
+from typing import List, Tuple
 
 from fandango.constraints.base import Constraint, Fitness
 from fandango.language.grammar import Grammar, DerivationTree
@@ -34,7 +34,7 @@ class GeneticAlgorithmOptimizer:
         # Return normalized fitness as solved/total
         return total_fitness.fitness() if total_fitness.total > 0 else 0
 
-    # RUNNING SOME TESTS HERE, THE SELECTION CAN CHOOSE THE SAME FATHER TWICE IF THERE IS NO OTHER GOOD FIT! (DISCUSS WITH TEAM)
+    # NOTE: THE SELECTION CAN CHOOSE THE SAME FATHER TWICE IF THERE IS NO OTHER GOOD FIT! (DISCUSS WITH TEAM)
     def select_parents(self) -> List[DerivationTree]:
         """
         Selects two parents from the population using fitness-proportional selection (roulette wheel).
@@ -52,3 +52,99 @@ class GeneticAlgorithmOptimizer:
         parent2 = random.choices(self.population, weights=fitness_scores, k=1)[0]
 
         return [parent1, parent2]
+
+    def crossover(self, parent1: DerivationTree, parent2: DerivationTree, method: str = "random") -> List[
+        DerivationTree]:
+        """
+        Perform crossover between two parent derivation trees using the specified method.
+        :param parent1: First parent tree
+        :param parent2: Second parent tree
+        :param method: The crossover method, either 'random' or 'constraint_driven'
+        :return: A list of two new offspring derivation trees
+        """
+        if method == "random":
+            return self._random_crossover(parent1, parent2)
+        elif method == "constraint_driven":
+            # NOTE: SHOULD WE ALLOW TO CROSSOVER TWO PERFECT PARENTS? IN THIS CASE, SHOULD WE CROSSOVER UNTIL WE HAVE PERFECT POPULATION? (DISCUSS WITH TEAM)
+            raise ValueError("Method not implemented yet")
+        else:
+            raise ValueError("Invalid crossover method. Choose 'random' or 'constraint_driven'.")
+
+    def _random_crossover(self, parent1: DerivationTree, parent2: DerivationTree) -> List[DerivationTree]:
+        """
+        Perform random crossover between two parent derivation trees.
+        :param parent1: First parent tree
+        :param parent2: Second parent tree
+        :return: Two offspring derivation trees
+        """
+        # Randomly select crossover points in both parents
+        crossover_point1, parent_node1 = self._random_crossover_point(parent1)
+        crossover_point2, parent_node2 = self._random_crossover_point(parent2)
+
+        # Swap the subtrees
+        if parent_node1 and parent_node2:
+            parent_node1.children.remove(crossover_point1)
+            parent_node1.children.append(crossover_point2)
+
+            parent_node2.children.remove(crossover_point2)
+            parent_node2.children.append(crossover_point1)
+
+        return [parent1, parent2]
+
+    def _random_crossover_point(self, tree: DerivationTree) -> (DerivationTree, DerivationTree):
+        """
+        Selects a random crossover point in a derivation tree.
+        :param tree: The derivation tree to search
+        :return: A tuple of the selected node and its parent
+        """
+        # Flatten the tree into a list of nodes and their parents
+        all_nodes = []
+        self._collect_nodes(tree, all_nodes, None)
+
+        # Select a random node for crossover
+        node, parent = random.choice(all_nodes)
+        return node, parent
+
+    def _collect_nodes(self, tree: DerivationTree, all_nodes: List[Tuple[DerivationTree, DerivationTree]],
+                       parent: DerivationTree):
+        """
+        Helper function to collect all nodes in a tree along with their parent nodes.
+        :param tree: The derivation tree to traverse
+        :param all_nodes: The list that accumulates nodes and parents
+        :param parent: The parent node of the current tree node
+        """
+        all_nodes.append((tree, parent))  # Store the current node and its parent
+        for child in tree.children:
+            self._collect_nodes(child, all_nodes, tree)  # Recursively collect children
+
+    def mutate(self, tree: DerivationTree, method: str = "random") -> DerivationTree:
+        """
+        Apply mutation to a derivation tree using the specified method.
+        :param tree: The derivation tree to mutate
+        :param method: The mutation method, either 'random' or 'constraint_driven'
+        :return: The mutated derivation tree
+        """
+        if method == "random":
+            return self._random_mutation(tree)
+        elif method == "constraint_driven":
+            raise ValueError("Method not implemented yet")
+        else:
+            raise ValueError("Invalid mutation method. Choose 'random' or 'constraint_driven'.")
+
+    def _random_mutation(self, tree: DerivationTree) -> DerivationTree:
+        """
+        Apply random mutation to a derivation tree.
+        :param tree: The derivation tree to mutate
+        :return: The mutated derivation tree
+        """
+        
+        if random.random() < self.mutation_rate:
+            # Select a random node in the tree to mutate
+            node_to_mutate, parent_node = self._random_crossover_point(tree)
+
+            # Replace the node with a random subtree
+            if parent_node:
+                parent_node.children.remove(node_to_mutate)
+                parent_node.children.append(self.grammar.fuzz())
+
+            return tree
