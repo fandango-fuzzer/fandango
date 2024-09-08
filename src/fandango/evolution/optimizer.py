@@ -6,7 +6,8 @@ from fandango.language.grammar import Grammar, DerivationTree
 
 
 class GeneticAlgorithmOptimizer:
-    def __init__(self, grammar: Grammar, constraints: List[Constraint], population_size: int = 100, mutation_rate: float = 0.01, crossover_rate: float = 0.7):
+    def __init__(self, grammar: Grammar, constraints: List[Constraint], population_size: int = 100,
+                 mutation_rate: float = 0.01, crossover_rate: float = 0.7):
         self.grammar = grammar
         self.constraints = constraints
         self.population_size = population_size
