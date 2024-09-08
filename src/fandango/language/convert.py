@@ -1,7 +1,5 @@
 from typing import List
 
-from cssselect2.parser import AttributeSelector
-
 from fandango.constraints.base import ConjunctionConstraint, DisjunctionConstraint
 from fandango.language.grammar import (
     Grammar,
