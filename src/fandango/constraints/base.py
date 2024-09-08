@@ -3,8 +3,6 @@ import enum
 import itertools
 from typing import Tuple, List, Dict, Any, Optional
 
-from scipy.special import failing
-
 from fandango.language.grammar import DerivationTree
 from fandango.language.search import NonTerminalSearch
 
