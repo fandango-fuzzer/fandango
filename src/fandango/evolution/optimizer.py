@@ -6,16 +6,41 @@ from fandango.language.grammar import Grammar, DerivationTree
 
 
 class GeneticAlgorithmOptimizer:
+    """
+    A genetic algorithm optimizer for evolving derivation trees that satisfy a set of constraints.
+
+    :param grammar: The grammar used to generate derivation trees
+    :param constraints: A list of constraints to evaluate derivation trees
+    :param population_size: The number of derivation trees in the population
+    :param generations: The number of generations to evolve the population
+    :param elite_fraction: The fraction of top-performing trees to carry over to the next generation
+    :param mutation_rate: The probability of mutation for each derivation tree
+    :param mutation_method: The mutation method, either 'random' or 'constraint_driven'
+    :param crossover_rate: The probability of crossover for each pair of derivation trees
+    :param crossover_method: The crossover method, either 'random' or 'constraint_driven'
+    :param verbose: Whether to print progress during evolution
+    """
+
     def __init__(self, grammar: Grammar, constraints: List[Constraint], population_size: int = 100,
-                 mutation_rate: float = 0.01, crossover_rate: float = 0.7):
+                 generations: int = 100, elite_fraction: float = 0.1, mutation_rate: float = 0.01,
+                 mutation_method: str = "random", crossover_rate: float = 0.7, crossover_method: str = "random",
+                 verbose: bool = False):
         self.grammar = grammar
         self.constraints = constraints
+        self.generations = generations
         self.population_size = population_size
+        self.elite_fraction = elite_fraction
         self.mutation_rate = mutation_rate
+        self.mutation_method = mutation_method
         self.crossover_rate = crossover_rate
+        self.crossover_method = crossover_method
+        self.verbose = verbose
 
         # Initialize population
         self.population = [self.grammar.fuzz() for _ in range(population_size)]
+
+        self.current_fitness = sum([self.evaluate_fitness(tree) for tree in self.population]) / population_size
+        self.current_generation = 0
 
     def evaluate_fitness(self, tree: DerivationTree) -> float:
         """
@@ -53,7 +78,53 @@ class GeneticAlgorithmOptimizer:
 
         return [parent1, parent2]
 
-    def crossover(self, parent1: DerivationTree, parent2: DerivationTree, method: str = "random") -> List[
+    def select_next_generation(self):
+        """
+        Selects the next generation of derivation trees based on the current population.
+        """
+        next_generation = []
+
+        # Select the best-performing trees to carry over to the next generation
+        next_generation.extend(self._select_elites())
+
+        # Fill up the rest of the population with offspring
+        # NOTE: DO WE FILL THE POP WITH OFFSPRING UNTIL WE REACH POP SIZE? OR DO WE FEED THE PARENTS OVER AND OVER BASED ON THE CROSS% (DISCUSS WITH TEAM)
+        while len(next_generation) < self.population_size:
+            # Select two parents
+            parent1, parent2 = self.select_parents()
+
+            # Perform crossover to produce offspring
+            if random.random() < self.crossover_rate:
+                children = self.crossover(parent1, parent2)
+            else:
+                children = [parent1, parent2]
+
+            if random.random() < self.mutation_rate:
+                children = [self.mutate(child) for child in children]
+
+            next_generation.extend(children)
+
+        # Update the population
+        self.population = next_generation[:self.population_size]
+        self.current_generation += 1
+
+    def _select_elites(self) -> List[DerivationTree]:
+        """
+        Selects the best-performing derivation trees (elites) to carry over to the next generation.
+        :return: A list of elite derivation trees
+        """
+        # Calculate the number of elites to carry over
+        num_elites = max(1, int(self.population_size * self.elite_fraction))
+
+        # Sort the population by fitness in descending order
+        fitness_scores = [self.evaluate_fitness(tree) for tree in self.population]
+        sorted_population = [tree for _, tree in
+                             sorted(zip(fitness_scores, self.population), key=lambda pair: pair[0], reverse=True)]
+
+        # Return the top-performing trees
+        return sorted_population[:num_elites]
+
+    def crossover(self, parent1: DerivationTree, parent2: DerivationTree) -> List[
         DerivationTree]:
         """
         Perform crossover between two parent derivation trees using the specified method.
@@ -62,9 +133,9 @@ class GeneticAlgorithmOptimizer:
         :param method: The crossover method, either 'random' or 'constraint_driven'
         :return: A list of two new offspring derivation trees
         """
-        if method == "random":
+        if self.crossover_method == "random":
             return self._random_crossover(parent1, parent2)
-        elif method == "constraint_driven":
+        elif self.crossover_method == "constraint_driven":
             # NOTE: SHOULD WE ALLOW TO CROSSOVER TWO PERFECT PARENTS? IN THIS CASE, SHOULD WE CROSSOVER UNTIL WE HAVE PERFECT POPULATION? (DISCUSS WITH TEAM)
             raise ValueError("Method not implemented yet")
         else:
@@ -117,16 +188,15 @@ class GeneticAlgorithmOptimizer:
         for child in tree.children:
             self._collect_nodes(child, all_nodes, tree)  # Recursively collect children
 
-    def mutate(self, tree: DerivationTree, method: str = "random") -> DerivationTree:
+    def mutate(self, tree: DerivationTree) -> DerivationTree:
         """
         Apply mutation to a derivation tree using the specified method.
         :param tree: The derivation tree to mutate
-        :param method: The mutation method, either 'random' or 'constraint_driven'
         :return: The mutated derivation tree
         """
-        if method == "random":
+        if self.mutation_method == "random":
             return self._random_mutation(tree)
-        elif method == "constraint_driven":
+        elif self.mutation_method == "constraint_driven":
             raise ValueError("Method not implemented yet")
         else:
             raise ValueError("Invalid mutation method. Choose 'random' or 'constraint_driven'.")
@@ -137,7 +207,7 @@ class GeneticAlgorithmOptimizer:
         :param tree: The derivation tree to mutate
         :return: The mutated derivation tree
         """
-        
+
         if random.random() < self.mutation_rate:
             # Select a random node in the tree to mutate
             node_to_mutate, parent_node = self._random_crossover_point(tree)
@@ -148,3 +218,27 @@ class GeneticAlgorithmOptimizer:
                 parent_node.children.append(self.grammar.fuzz())
 
             return tree
+
+    # CHECK TEST TO GET AN EXPLANATION OF THE ERROR
+    def evolve(self) -> [DerivationTree]:
+        """
+        Evolves the population for a specified number of generations.
+        :return: The final population of derivation trees
+        """
+        for generation in range(self.generations):
+            # Evolve the population to the next generation
+            self.select_next_generation()
+
+            # Evaluate the fitness of the new population
+            fitness_scores = [self.evaluate_fitness(tree) for tree in self.population]
+            self.current_fitness = sum(fitness_scores) / self.population_size
+
+            if self.verbose:
+                print(f"Generation {generation + 1}: average fitness = {self.current_fitness:.4f}")
+
+            # Stop early if the entire population reaches perfect fitness
+            if all(fitness == 1.0 for fitness in fitness_scores):
+                print(f"All individuals have perfect fitness in generation {generation + 1}")
+                break
+
+        return self.population

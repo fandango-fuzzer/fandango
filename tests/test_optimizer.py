@@ -49,7 +49,8 @@ class TestOptimizer(unittest.TestCase):
 
     def test_population(self):
         # Initialize the optimizer
-        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint], population_size=10)
+        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint],
+                                              population_size=10)
 
         # Check if the population is initialized correctly
         self.assertEqual(len(optimizer.population), 10)
@@ -60,16 +61,41 @@ class TestOptimizer(unittest.TestCase):
 
     def test_fitness_evaluation(self):
         # Initialize the optimizer
-        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint], population_size=10)
+        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint],
+                                              population_size=10)
 
         # Evaluate fitness for each tree in the population
         for i, tree in enumerate(optimizer.population):
             fitness = optimizer.evaluate_fitness(tree)
             self.assertIsInstance(fitness, float)
 
-    def test_selection(self):
+    def test_next_generation_selection(self):
         # Initialize the optimizer
-        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint], population_size=10)
+        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint],
+                                              population_size=10)
+
+        first_generation = optimizer.population
+
+        # Select the next generation
+        optimizer.select_next_generation()
+
+        second_generation = optimizer.population
+
+        # Check if the population size remains the same
+        self.assertEqual(len(second_generation), 10)
+        self.assertEqual(len(first_generation), len(second_generation))
+        self.assertNotEqual(first_generation, second_generation)
+
+        # assert second gen fitness is better or equal than first gen fitness
+        first_gen_fitness = [optimizer.evaluate_fitness(tree) for tree in first_generation]
+        second_gen_fitness = [optimizer.evaluate_fitness(tree) for tree in second_generation]
+
+        self.assertGreaterEqual(sum(second_gen_fitness), sum(first_gen_fitness))
+
+    def test_parent_selection(self):
+        # Initialize the optimizer
+        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint],
+                                              population_size=10)
 
         # Test the parent selection mechanism
         parents = optimizer.select_parents()
@@ -77,38 +103,58 @@ class TestOptimizer(unittest.TestCase):
 
     def test_random_crossover(self):
         # Initialize the optimizer
-        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint], population_size=10)
+        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint],
+                                              population_size=10, crossover_rate=1.0, crossover_method="random")
 
         # Select two parents
         parent1, parent2 = optimizer.select_parents()
 
         # Perform random crossover
-        children = optimizer.crossover(parent1, parent2, method="random")
+        children = optimizer.crossover(parent1, parent2)
         self.assertEqual(len(children), 2)
 
         for child in children:
             self.assertIsInstance(child, DerivationTree)
             self.assertEqual(child.symbol, NonTerminal("<start>"))
 
-    def test_intelligent_crossover(self):
+    def test_constraint_driven_crossover(self):
         pass
 
     def test_random_mutation(self):
         # Initialize the optimizer
-        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint], population_size=10, mutation_rate=1.0)
+        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint],
+                                              population_size=10, mutation_rate=1.0, mutation_method="random")
 
         # Select a parent
         parent = optimizer.select_parents()[0]
 
         # Perform random mutation
-        child = optimizer.mutate(parent, method="random")
+        child = optimizer.mutate(parent)
 
         self.assertIsInstance(child, DerivationTree)
         self.assertEqual(child.symbol, NonTerminal("<start>"))
 
-
-    def test_intelligent_mutation(self):
+    def test_constraint_driven_mutation(self):
         pass
+
+    # THIS TEST IS FAULTY. INCREASING THE POPULATION SIZE MAKES IT TO NEVER PASS. SINCE WITH A SMALL POPULATION, WE COULD, BY CHANCE HIT PERFECT FITNESS
+    # AT THE FIRST GENERATION, IT PASSES. WITH A BIGGER POPULATION, IT NEVER PASSES. IT RETURNS AN ERROR THAT I DO NOT UNDERSTAND.
+    # AttributeError: 'NoneType' object has no attribute 'children'
+    # I AM NOT SURE IF THIS IS A PROBLEM IN YOUR CODE OR IN MY CODE. (PROBABLY IN MY CODE, CANNOT FIND THE CAUSE THO)
+    def test_evolve(self):
+        # Initialize the optimizer
+        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint], generations=100,
+                                              elite_fraction=0.1, population_size=100, mutation_rate=0.2,
+                                              mutation_method="random", crossover_rate=0.2, crossover_method="random",
+                                              verbose=True)
+        initial_fitness = optimizer.current_fitness
+
+        # Evolve the population
+        optimizer.evolve()
+
+        # Check if the fitness has improved
+        self.assertGreater(optimizer.current_fitness, initial_fitness)
+
 
 if __name__ == "__main__":
     unittest.main()
