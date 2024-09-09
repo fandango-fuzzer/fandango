@@ -123,7 +123,7 @@ class TestOptimizer(unittest.TestCase):
     def test_random_mutation(self):
         # Initialize the optimizer
         optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint],
-                                              population_size=10, mutation_rate=1.0, mutation_method="random")
+                                              population_size=100, mutation_rate=1.0, mutation_method="random")
 
         # Select a parent
         parent = optimizer.select_parents()[0]

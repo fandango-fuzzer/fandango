@@ -66,6 +66,8 @@ class ExpressionConstraint(Constraint):
         solved = 0
         total = 0
         failing_trees = []
+        if tree is None:
+            return Fitness(0, 0, False)
         for combination in self.combinations(tree.children, scope):
             local_variables = self.local_variables.copy()
             local_variables.update({name: str(node) for name, node in combination})
