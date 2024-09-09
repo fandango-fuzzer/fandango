@@ -105,9 +105,21 @@ class GeneticAlgorithmOptimizer:
 
                 next_generation.append(child)
 
-        # Update the population
-        self.population = next_generation
-        self.current_generation += 1
+        # compute the fitness of the previous gen
+        prev_gen_fitness = sum([self.evaluate_fitness(tree) for tree in self.population]) / self.population_size
+        current_gen_fitness = sum([self.evaluate_fitness(tree) for tree in next_generation]) / self.population_size
+
+        print(f"Previous generation fitness: {prev_gen_fitness:.4f}")
+        print(f"Current generation fitness: {current_gen_fitness:.4f}")
+        if current_gen_fitness > prev_gen_fitness:
+            print("Fitness increased!")
+            self.population = next_generation
+            self.current_generation += 1
+        else:
+            print("Fitness decreased!")
+            print("Reverting to previous generation...")
+            self.population = self.population
+            self.current_generation += 1
 
     def _select_elites(self) -> List[DerivationTree]:
         """

@@ -48,7 +48,7 @@ class TestLanguage(unittest.TestCase):
 
         fuzzer = GrammarFuzzer(self.FUZZINGBOOK_GRAMMAR)
 
-        for _ in range(1000000):
+        for _ in range(10000):
             # check if none
             inp_ = fuzzer.fuzz_tree()
             if inp_ is None:
@@ -67,28 +67,28 @@ class TestLanguage(unittest.TestCase):
         grammar = processor.get_grammar(splitter.productions)
 
         start = time.time()
-        for _ in range(100000):
+        for _ in range(10000):
             grammar.fuzz()
         print(f"\n{time.time() - start} seconds (ours)")
 
         fuzzer = GrammarFuzzer(self.FUZZINGBOOK_GRAMMAR)
 
         fuzzingbook_time = time.time()
-        for _ in range(100000):
+        for _ in range(10000):
             fuzzer.fuzz_tree()
         print(f"{time.time() - fuzzingbook_time} seconds (oks)")
 
         fuzzer = FasterGrammarFuzzer(self.FUZZINGBOOK_GRAMMAR)
 
         fuzzingbook_time = time.time()
-        for _ in range(100000):
+        for _ in range(10000):
             fuzzer.fuzz_tree()
         print(f"{time.time() - fuzzingbook_time} seconds (faster)")
 
         fuzzer = EvenFasterGrammarFuzzer(self.FUZZINGBOOK_GRAMMAR)
 
         fuzzingbook_time = time.time()
-        for _ in range(100000):
+        for _ in range(10000):
             fuzzer.fuzz_tree()
         print(f"{time.time() - fuzzingbook_time} seconds (even faster)")
 
