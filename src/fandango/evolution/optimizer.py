@@ -23,7 +23,7 @@ class GeneticAlgorithmOptimizer:
 
     def __init__(self, grammar: Grammar, constraints: List[Constraint], population_size: int = 100,
                  generations: int = 100, elite_fraction: float = 0.1, mutation_rate: float = 0.01,
-                 mutation_method: str = "random", crossover_rate: float = 0.7, crossover_method: str = "random",
+                 mutation_method: str = "random", crossover_rate: float = 0.2, crossover_method: str = "random",
                  verbose: bool = False):
         self.grammar = grammar
         self.constraints = constraints
@@ -99,13 +99,14 @@ class GeneticAlgorithmOptimizer:
             else:
                 children = [parent1, parent2]
 
-            if random.random() < self.mutation_rate:
-                children = [self.mutate(child) for child in children]
+            for child in children:
+                if random.random() < self.mutation_rate:
+                    child = self.mutate(child)
 
-            next_generation.extend(children)
+                next_generation.append(child)
 
         # Update the population
-        self.population = next_generation[:self.population_size]
+        self.population = next_generation
         self.current_generation += 1
 
     def _select_elites(self) -> List[DerivationTree]:
@@ -118,8 +119,7 @@ class GeneticAlgorithmOptimizer:
 
         # Sort the population by fitness in descending order
         fitness_scores = [self.evaluate_fitness(tree) for tree in self.population]
-        sorted_population = [tree for _, tree in
-                             sorted(zip(fitness_scores, self.population), key=lambda pair: pair[0], reverse=True)]
+        sorted_population = [tree for _, tree in sorted(zip(fitness_scores, self.population), key=lambda pair: pair[0], reverse=True)]
 
         # Return the top-performing trees
         return sorted_population[:num_elites]
@@ -166,11 +166,15 @@ class GeneticAlgorithmOptimizer:
         """
         Selects a random crossover point in a derivation tree.
         :param tree: The derivation tree to search
-        :return: A tuple of the selected node and its parent
+        :return: A tuple of the selected node and its parent, or (None, None) if invalid.
         """
+
         # Flatten the tree into a list of nodes and their parents
         all_nodes = []
         self._collect_nodes(tree, all_nodes, None)
+
+        if not all_nodes:
+            return None, None  # If no valid nodes, return safely
 
         # Select a random node for crossover
         node, parent = random.choice(all_nodes)
@@ -183,7 +187,10 @@ class GeneticAlgorithmOptimizer:
         :param tree: The derivation tree to traverse
         :param all_nodes: The list that accumulates nodes and parents
         :param parent: The parent node of the current tree node
+        :return: The updated list of nodes and parents
         """
+        if tree is None:
+            return
         all_nodes.append((tree, parent))  # Store the current node and its parent
         for child in tree.children:
             self._collect_nodes(child, all_nodes, tree)  # Recursively collect children
@@ -231,7 +238,7 @@ class GeneticAlgorithmOptimizer:
 
             # Evaluate the fitness of the new population
             fitness_scores = [self.evaluate_fitness(tree) for tree in self.population]
-            self.current_fitness = sum(fitness_scores) / self.population_size
+            self.current_fitness = sum(fitness_scores) / len(fitness_scores)
 
             if self.verbose:
                 print(f"Generation {generation + 1}: average fitness = {self.current_fitness:.4f}")

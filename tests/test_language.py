@@ -46,6 +46,26 @@ class TestLanguage(unittest.TestCase):
         processor = GrammarProcessor()
         grammar = processor.get_grammar(splitter.productions)
 
+        fuzzer = GrammarFuzzer(self.FUZZINGBOOK_GRAMMAR)
+
+        for _ in range(1000000):
+            # check if none
+            inp_ = fuzzer.fuzz_tree()
+            if inp_ is None:
+                self.fail("None found")
+
+    def test_speed(self):
+        lexer = FandangoLexer(InputStream(self.FANDANGO_GRAMMAR))
+        token = CommonTokenStream(lexer)
+        parser = FandangoParser(token)
+        tree = parser.fandango()
+
+        splitter = FandangoSplitter()
+        splitter.visit(tree)
+
+        processor = GrammarProcessor()
+        grammar = processor.get_grammar(splitter.productions)
+
         start = time.time()
         for _ in range(100000):
             grammar.fuzz()
