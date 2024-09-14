@@ -46,27 +46,27 @@ odd_constraint = ExpressionConstraint(
     searches={"number": RuleSearch(NonTerminal("<number>"), grammar)}
 )
 
-# smaller_than_50000_constraint = ExpressionConstraint(
-#     expression="int(number) < 50000",
-#     searches={"number": RuleSearch(NonTerminal("<number>"), grammar)}
-# )
-#
-# always_ends_with_1_constraint = ExpressionConstraint(
-#     expression="int(number) % 10 == 1",
-#     searches={"number": RuleSearch(NonTerminal("<number>"), grammar)}
-# )
-#
-# bigger_than_10000_constraint = ExpressionConstraint(
-#     expression="int(number) > 10000",
-#     searches={"number": RuleSearch(NonTerminal("<number>"), grammar)}
-# )
+smaller_than_50000_constraint = ExpressionConstraint(
+    expression="int(number) < 50000",
+    searches={"number": RuleSearch(NonTerminal("<number>"), grammar)}
+)
 
-constraints = [odd_constraint]
+always_ends_with_1_constraint = ExpressionConstraint(
+    expression="int(number) % 10 == 1",
+    searches={"number": RuleSearch(NonTerminal("<number>"), grammar)}
+)
+
+bigger_than_10000_constraint = ExpressionConstraint(
+    expression="int(number) > 10000",
+    searches={"number": RuleSearch(NonTerminal("<number>"), grammar)}
+)
+
+constraints = [odd_constraint, smaller_than_50000_constraint, always_ends_with_1_constraint, bigger_than_10000_constraint]
 
 def main():
     # Initialize the optimizer
     optimizer = GeneticAlgorithmOptimizer(grammar=grammar, constraints=constraints,
-                                          population_size=100, verbose=True)
+                                          population_size=100, generations=1000, verbose=True)
 
     # Run the optimizer
     start_time = time.time()
