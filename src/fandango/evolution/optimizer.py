@@ -1,4 +1,6 @@
 import random
+import copy
+
 from typing import List, Tuple
 
 from fandango.constraints.base import Constraint, Fitness
@@ -79,47 +81,36 @@ class GeneticAlgorithmOptimizer:
         return [parent1, parent2]
 
     def select_next_generation(self):
-        """
-        Selects the next generation of derivation trees based on the current population.
-        """
+        # Keep a deep copy of the current population
+        prev_population = [copy.deepcopy(tree) for tree in self.population]
+
         next_generation = []
 
         # Select the best-performing trees to carry over to the next generation
         next_generation.extend(self._select_elites())
 
-        # Fill up the rest of the population with offspring
-        # NOTE: DO WE FILL THE POP WITH OFFSPRING UNTIL WE REACH POP SIZE? OR DO WE FEED THE PARENTS OVER AND OVER BASED ON THE CROSS% (DISCUSS WITH TEAM)
         while len(next_generation) < self.population_size:
-            # Select two parents
             parent1, parent2 = self.select_parents()
 
             # Perform crossover to produce offspring
             if random.random() < self.crossover_rate:
                 children = self.crossover(parent1, parent2)
             else:
-                children = [parent1, parent2]
+                children = [copy.deepcopy(parent1), copy.deepcopy(parent2)]
 
             for child in children:
                 if random.random() < self.mutation_rate:
                     child = self.mutate(child)
-
                 next_generation.append(child)
 
-        # compute the fitness of the previous gen
+        # Evaluate fitness
         prev_gen_fitness = sum([self.evaluate_fitness(tree) for tree in self.population]) / self.population_size
         current_gen_fitness = sum([self.evaluate_fitness(tree) for tree in next_generation]) / self.population_size
 
-        print(f"Previous generation fitness: {prev_gen_fitness:.4f}")
-        print(f"Current generation fitness: {current_gen_fitness:.4f}")
         if current_gen_fitness > prev_gen_fitness:
-            print("Fitness increased!")
             self.population = next_generation
-            self.current_generation += 1
         else:
-            print("Fitness decreased!")
-            print("Reverting to previous generation...")
-            self.population = self.population
-            self.current_generation += 1
+            self.population = prev_population
 
     def _select_elites(self) -> List[DerivationTree]:
         """
@@ -154,42 +145,39 @@ class GeneticAlgorithmOptimizer:
             raise ValueError("Invalid crossover method. Choose 'random' or 'constraint_driven'.")
 
     def _random_crossover(self, parent1: DerivationTree, parent2: DerivationTree) -> List[DerivationTree]:
-        """
-        Perform random crossover between two parent derivation trees.
-        :param parent1: First parent tree
-        :param parent2: Second parent tree
-        :return: Two offspring derivation trees
-        """
-        # Randomly select crossover points in both parents
-        crossover_point1, parent_node1 = self._random_crossover_point(parent1)
-        crossover_point2, parent_node2 = self._random_crossover_point(parent2)
+        offspring1 = copy.deepcopy(parent1)
+        offspring2 = copy.deepcopy(parent2)
 
-        # Swap the subtrees
+        crossover_point1, parent_node1 = self._random_crossover_point(offspring1)
+        crossover_point2, parent_node2 = self._random_crossover_point(offspring2)
+
+        if crossover_point1 is None or crossover_point2 is None:
+            return [offspring1, offspring2]
+
         if parent_node1 and parent_node2:
             parent_node1.children.remove(crossover_point1)
             parent_node1.children.append(crossover_point2)
-
             parent_node2.children.remove(crossover_point2)
             parent_node2.children.append(crossover_point1)
+        else:
+            if parent_node1 is None:
+                offspring1 = crossover_point2
+            if parent_node2 is None:
+                offspring2 = crossover_point1
 
-        return [parent1, parent2]
+        return [offspring1, offspring2]
 
     def _random_crossover_point(self, tree: DerivationTree) -> (DerivationTree, DerivationTree):
-        """
-        Selects a random crossover point in a derivation tree.
-        :param tree: The derivation tree to search
-        :return: A tuple of the selected node and its parent, or (None, None) if invalid.
-        """
-
-        # Flatten the tree into a list of nodes and their parents
         all_nodes = []
         self._collect_nodes(tree, all_nodes, None)
 
-        if not all_nodes:
-            return None, None  # If no valid nodes, return safely
+        # Exclude root nodes
+        valid_nodes = [(node, parent) for node, parent in all_nodes if parent is not None]
 
-        # Select a random node for crossover
-        node, parent = random.choice(all_nodes)
+        if not valid_nodes:
+            return None, None
+
+        node, parent = random.choice(valid_nodes)
         return node, parent
 
     def _collect_nodes(self, tree: DerivationTree, all_nodes: List[Tuple[DerivationTree, DerivationTree]],
@@ -208,35 +196,19 @@ class GeneticAlgorithmOptimizer:
             self._collect_nodes(child, all_nodes, tree)  # Recursively collect children
 
     def mutate(self, tree: DerivationTree) -> DerivationTree:
-        """
-        Apply mutation to a derivation tree using the specified method.
-        :param tree: The derivation tree to mutate
-        :return: The mutated derivation tree
-        """
-        if self.mutation_method == "random":
-            return self._random_mutation(tree)
-        elif self.mutation_method == "constraint_driven":
-            raise ValueError("Method not implemented yet")
-        else:
-            raise ValueError("Invalid mutation method. Choose 'random' or 'constraint_driven'.")
+        tree_copy = copy.deepcopy(tree)
+        return self._random_mutation(tree_copy)
 
     def _random_mutation(self, tree: DerivationTree) -> DerivationTree:
-        """
-        Apply random mutation to a derivation tree.
-        :param tree: The derivation tree to mutate
-        :return: The mutated derivation tree
-        """
+        node_to_mutate, parent_node = self._random_crossover_point(tree)
 
-        if random.random() < self.mutation_rate:
-            # Select a random node in the tree to mutate
-            node_to_mutate, parent_node = self._random_crossover_point(tree)
+        if parent_node:
+            parent_node.children.remove(node_to_mutate)
+            parent_node.children.append(self.grammar.fuzz())
+        else:
+            tree = self.grammar.fuzz()
 
-            # Replace the node with a random subtree
-            if parent_node:
-                parent_node.children.remove(node_to_mutate)
-                parent_node.children.append(self.grammar.fuzz())
-
-            return tree
+        return tree
 
     # CHECK TEST TO GET AN EXPLANATION OF THE ERROR
     def evolve(self) -> [DerivationTree]:
@@ -256,7 +228,7 @@ class GeneticAlgorithmOptimizer:
                 print(f"Generation {generation + 1}: average fitness = {self.current_fitness:.4f}")
 
             # Stop early if the entire population reaches perfect fitness
-            if all(fitness == 1.0 for fitness in fitness_scores):
+            if all(fitness > 0.98 for fitness in fitness_scores):
                 print(f"All individuals have perfect fitness in generation {generation + 1}")
                 break
 
