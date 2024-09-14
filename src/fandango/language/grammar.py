@@ -1,5 +1,6 @@
 import abc
 import random
+import copy
 from typing import Dict, List, Optional
 
 MAX_REPETITIONS = 20
@@ -150,9 +151,30 @@ class DerivationTree:
     ):
         self.symbol = symbol
         self.children = children or []
+        self.parent = parent
         for child in self.children:
             child.parent = self
-        self.parent = parent
+
+    def __deepcopy__(self, memo):
+        if id(self) in memo:
+            return memo[id(self)]
+
+        # Create a new instance without copying the parent
+        copied = DerivationTree(self.symbol, [])
+        memo[id(self)] = copied
+
+        # Deepcopy the children
+        copied.children = [copy.deepcopy(child, memo) for child in self.children]
+
+        # Set parent pointers
+        for child in copied.children:
+            child.parent = copied
+
+        # Set the parent to None or update if necessary
+        copied.parent = None  # or copy.deepcopy(self.parent, memo) if parent is needed
+
+        return copied
+
 
     def __repr__(self):
         if isinstance(self.symbol, NonTerminal):
@@ -164,6 +186,7 @@ class DerivationTree:
 
     def __str__(self):
         return self.__repr__()
+
 
 
 class Grammar:

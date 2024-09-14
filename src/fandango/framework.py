@@ -66,7 +66,7 @@ constraints = [odd_constraint, smaller_than_50000_constraint, always_ends_with_1
 def main():
     # Initialize the optimizer
     optimizer = GeneticAlgorithmOptimizer(grammar=grammar, constraints=constraints,
-                                          population_size=100, generations=1000, verbose=True)
+                                          population_size=100, generations=1000, verbose=False)
 
     # Run the optimizer
     start_time = time.time()

@@ -54,6 +54,9 @@ class Constraint(abc.ABC):
     def check(self, tree: DerivationTree):
         return self.fitness(tree).success
 
+    def get_failing_nodes(self, tree: DerivationTree):
+        return self.fitness(tree).failing_trees
+
 
 class ExpressionConstraint(Constraint):
     def __init__(self, expression: str, *args, **kwargs):
@@ -204,6 +207,7 @@ class DisjunctionConstraint(Constraint):
             overall,
             failing_trees=failing_trees,
         )
+
 
 
 """
