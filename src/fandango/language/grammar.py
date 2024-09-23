@@ -183,6 +183,48 @@ class DerivationTree:
         else:
             raise ValueError("Invalid symbol type")
 
+    def to_int(self):
+        try:
+            int(self.__repr__())
+        except ValueError:
+            return None
+
+    def to_float(self):
+        try:
+            int(self.__repr__())
+        except ValueError:
+            return None
+
+    def to_complex(self):
+        try:
+            complex(self.__repr__())
+        except ValueError:
+            return None
+
+    def is_int(self):
+        try:
+            int(self.__repr__())
+        except ValueError:
+            return False
+        return True
+
+    def is_float(self):
+        try:
+            float(self.__repr__())
+        except ValueError:
+            return False
+        return True
+
+    def is_complex(self):
+        try:
+            complex(self.__repr__())
+        except ValueError:
+            return False
+        return True
+
+    def is_num(self):
+        return self.is_float()
+
     def __str__(self):
         return self.__repr__()
 
