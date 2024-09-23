@@ -2,7 +2,11 @@ import time
 import unittest
 
 from antlr4 import InputStream, CommonTokenStream
-from fuzzingbook.GrammarFuzzer import GrammarFuzzer, EvenFasterGrammarFuzzer, FasterGrammarFuzzer
+from fuzzingbook.GrammarFuzzer import (
+    GrammarFuzzer,
+    EvenFasterGrammarFuzzer,
+    FasterGrammarFuzzer,
+)
 
 from fandango.language.convert import FandangoSplitter, GrammarProcessor
 from fandango.language.parser.FandangoLexer import FandangoLexer
@@ -33,6 +37,27 @@ class TestLanguage(unittest.TestCase):
         "<non_zero>": ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
         "<digit>": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
     }
+    PYTHON_EXAMPLES = [
+        """
+if x:
+   a
+b
+""",
+        """
+if x:
+    a
+    b
+""",
+    ]
+
+    def test_python(self):
+        for example in self.PYTHON_EXAMPLES:
+            lexer = FandangoLexer(InputStream(example))
+            token = CommonTokenStream(lexer)
+            parser = FandangoParser(token)
+            tree = parser.python_file()
+            tree
+        pass
 
     def test_fuzzing(self):
         lexer = FandangoLexer(InputStream(self.FANDANGO_GRAMMAR))

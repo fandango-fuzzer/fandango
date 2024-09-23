@@ -175,7 +175,6 @@ class DerivationTree:
 
         return copied
 
-
     def __repr__(self):
         if isinstance(self.symbol, NonTerminal):
             return "".join([repr(child) for child in self.children])
@@ -186,7 +185,6 @@ class DerivationTree:
 
     def __str__(self):
         return self.__repr__()
-
 
 
 class Grammar:

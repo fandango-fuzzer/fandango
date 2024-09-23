@@ -1,4 +1,5 @@
 import abc
+import ast
 import enum
 import itertools
 from typing import Tuple, List, Dict, Any, Optional
@@ -75,6 +76,7 @@ class ExpressionConstraint(Constraint):
             local_variables = self.local_variables.copy()
             local_variables.update({name: str(node) for name, node in combination})
             try:
+                ast.literal_eval()
                 if eval(self.expression, self.global_variables, local_variables):
                     solved += 1
                 else:
@@ -208,6 +210,25 @@ class DisjunctionConstraint(Constraint):
             failing_trees=failing_trees,
         )
 
+
+class ImplicationConstraint(Constraint):
+    def __init__(self, antecedent: Constraint, consequent: Constraint, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.antecedent = antecedent
+        self.consequent = consequent
+
+    def fitness(
+        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
+    ) -> Fitness:
+        antecedent_fitness = self.antecedent.fitness(tree, scope)
+        if antecedent_fitness.success:
+            return self.consequent.fitness(tree, scope)
+        else:
+            return Fitness(
+                1,
+                1,
+                True,
+            )
 
 
 """

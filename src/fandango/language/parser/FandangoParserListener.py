@@ -137,20 +137,20 @@ class FandangoParserListener(ParseTreeListener):
     def exitQuantifier(self, ctx: FandangoParser.QuantifierContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#disjunction.
-    def enterDisjunction(self, ctx: FandangoParser.DisjunctionContext):
+    # Enter a parse tree produced by FandangoParser#formula_disjunction.
+    def enterFormula_disjunction(self, ctx: FandangoParser.Formula_disjunctionContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#disjunction.
-    def exitDisjunction(self, ctx: FandangoParser.DisjunctionContext):
+    # Exit a parse tree produced by FandangoParser#formula_disjunction.
+    def exitFormula_disjunction(self, ctx: FandangoParser.Formula_disjunctionContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#conjunction.
-    def enterConjunction(self, ctx: FandangoParser.ConjunctionContext):
+    # Enter a parse tree produced by FandangoParser#formula_conjunction.
+    def enterFormula_conjunction(self, ctx: FandangoParser.Formula_conjunctionContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#conjunction.
-    def exitConjunction(self, ctx: FandangoParser.ConjunctionContext):
+    # Exit a parse tree produced by FandangoParser#formula_conjunction.
+    def exitFormula_conjunction(self, ctx: FandangoParser.Formula_conjunctionContext):
         pass
 
     # Enter a parse tree produced by FandangoParser#formula_atom.
@@ -169,12 +169,20 @@ class FandangoParserListener(ParseTreeListener):
     def exitFormula_comparison(self, ctx: FandangoParser.Formula_comparisonContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#expression.
-    def enterExpression(self, ctx: FandangoParser.ExpressionContext):
+    # Enter a parse tree produced by FandangoParser#expr.
+    def enterExpr(self, ctx: FandangoParser.ExprContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#expression.
-    def exitExpression(self, ctx: FandangoParser.ExpressionContext):
+    # Exit a parse tree produced by FandangoParser#expr.
+    def exitExpr(self, ctx: FandangoParser.ExprContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#selector_length.
+    def enterSelector_length(self, ctx: FandangoParser.Selector_lengthContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#selector_length.
+    def exitSelector_length(self, ctx: FandangoParser.Selector_lengthContext):
         pass
 
     # Enter a parse tree produced by FandangoParser#selector.
@@ -209,84 +217,44 @@ class FandangoParserListener(ParseTreeListener):
     def exitPython_tag(self, ctx: FandangoParser.Python_tagContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#decorator.
-    def enterDecorator(self, ctx: FandangoParser.DecoratorContext):
+    # Enter a parse tree produced by FandangoParser#python_file.
+    def enterPython_file(self, ctx: FandangoParser.Python_fileContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#decorator.
-    def exitDecorator(self, ctx: FandangoParser.DecoratorContext):
+    # Exit a parse tree produced by FandangoParser#python_file.
+    def exitPython_file(self, ctx: FandangoParser.Python_fileContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#decorators.
-    def enterDecorators(self, ctx: FandangoParser.DecoratorsContext):
+    # Enter a parse tree produced by FandangoParser#interactive.
+    def enterInteractive(self, ctx: FandangoParser.InteractiveContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#decorators.
-    def exitDecorators(self, ctx: FandangoParser.DecoratorsContext):
+    # Exit a parse tree produced by FandangoParser#interactive.
+    def exitInteractive(self, ctx: FandangoParser.InteractiveContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#decorated.
-    def enterDecorated(self, ctx: FandangoParser.DecoratedContext):
+    # Enter a parse tree produced by FandangoParser#eval.
+    def enterEval(self, ctx: FandangoParser.EvalContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#decorated.
-    def exitDecorated(self, ctx: FandangoParser.DecoratedContext):
+    # Exit a parse tree produced by FandangoParser#eval.
+    def exitEval(self, ctx: FandangoParser.EvalContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#async_funcdef.
-    def enterAsync_funcdef(self, ctx: FandangoParser.Async_funcdefContext):
+    # Enter a parse tree produced by FandangoParser#func_type.
+    def enterFunc_type(self, ctx: FandangoParser.Func_typeContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#async_funcdef.
-    def exitAsync_funcdef(self, ctx: FandangoParser.Async_funcdefContext):
+    # Exit a parse tree produced by FandangoParser#func_type.
+    def exitFunc_type(self, ctx: FandangoParser.Func_typeContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#funcdef.
-    def enterFuncdef(self, ctx: FandangoParser.FuncdefContext):
+    # Enter a parse tree produced by FandangoParser#statements.
+    def enterStatements(self, ctx: FandangoParser.StatementsContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#funcdef.
-    def exitFuncdef(self, ctx: FandangoParser.FuncdefContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#parameters.
-    def enterParameters(self, ctx: FandangoParser.ParametersContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#parameters.
-    def exitParameters(self, ctx: FandangoParser.ParametersContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#typedargslist.
-    def enterTypedargslist(self, ctx: FandangoParser.TypedargslistContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#typedargslist.
-    def exitTypedargslist(self, ctx: FandangoParser.TypedargslistContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#tfpdef.
-    def enterTfpdef(self, ctx: FandangoParser.TfpdefContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#tfpdef.
-    def exitTfpdef(self, ctx: FandangoParser.TfpdefContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#varargslist.
-    def enterVarargslist(self, ctx: FandangoParser.VarargslistContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#varargslist.
-    def exitVarargslist(self, ctx: FandangoParser.VarargslistContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#vfpdef.
-    def enterVfpdef(self, ctx: FandangoParser.VfpdefContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#vfpdef.
-    def exitVfpdef(self, ctx: FandangoParser.VfpdefContext):
+    # Exit a parse tree produced by FandangoParser#statements.
+    def exitStatements(self, ctx: FandangoParser.StatementsContext):
         pass
 
     # Enter a parse tree produced by FandangoParser#stmt.
@@ -295,6 +263,14 @@ class FandangoParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by FandangoParser#stmt.
     def exitStmt(self, ctx: FandangoParser.StmtContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#statement_newline.
+    def enterStatement_newline(self, ctx: FandangoParser.Statement_newlineContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#statement_newline.
+    def exitStatement_newline(self, ctx: FandangoParser.Statement_newlineContext):
         pass
 
     # Enter a parse tree produced by FandangoParser#simple_stmts.
@@ -313,28 +289,28 @@ class FandangoParserListener(ParseTreeListener):
     def exitSimple_stmt(self, ctx: FandangoParser.Simple_stmtContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#expr_stmt.
-    def enterExpr_stmt(self, ctx: FandangoParser.Expr_stmtContext):
+    # Enter a parse tree produced by FandangoParser#compound_stmt.
+    def enterCompound_stmt(self, ctx: FandangoParser.Compound_stmtContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#expr_stmt.
-    def exitExpr_stmt(self, ctx: FandangoParser.Expr_stmtContext):
+    # Exit a parse tree produced by FandangoParser#compound_stmt.
+    def exitCompound_stmt(self, ctx: FandangoParser.Compound_stmtContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#annassign.
-    def enterAnnassign(self, ctx: FandangoParser.AnnassignContext):
+    # Enter a parse tree produced by FandangoParser#assignment.
+    def enterAssignment(self, ctx: FandangoParser.AssignmentContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#annassign.
-    def exitAnnassign(self, ctx: FandangoParser.AnnassignContext):
+    # Exit a parse tree produced by FandangoParser#assignment.
+    def exitAssignment(self, ctx: FandangoParser.AssignmentContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#testlist_star_expr.
-    def enterTestlist_star_expr(self, ctx: FandangoParser.Testlist_star_exprContext):
+    # Enter a parse tree produced by FandangoParser#annotated_rhs.
+    def enterAnnotated_rhs(self, ctx: FandangoParser.Annotated_rhsContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#testlist_star_expr.
-    def exitTestlist_star_expr(self, ctx: FandangoParser.Testlist_star_exprContext):
+    # Exit a parse tree produced by FandangoParser#annotated_rhs.
+    def exitAnnotated_rhs(self, ctx: FandangoParser.Annotated_rhsContext):
         pass
 
     # Enter a parse tree produced by FandangoParser#augassign.
@@ -345,52 +321,44 @@ class FandangoParserListener(ParseTreeListener):
     def exitAugassign(self, ctx: FandangoParser.AugassignContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#del_stmt.
-    def enterDel_stmt(self, ctx: FandangoParser.Del_stmtContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#del_stmt.
-    def exitDel_stmt(self, ctx: FandangoParser.Del_stmtContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#pass_stmt.
-    def enterPass_stmt(self, ctx: FandangoParser.Pass_stmtContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#pass_stmt.
-    def exitPass_stmt(self, ctx: FandangoParser.Pass_stmtContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#flow_stmt.
-    def enterFlow_stmt(self, ctx: FandangoParser.Flow_stmtContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#flow_stmt.
-    def exitFlow_stmt(self, ctx: FandangoParser.Flow_stmtContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#break_stmt.
-    def enterBreak_stmt(self, ctx: FandangoParser.Break_stmtContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#break_stmt.
-    def exitBreak_stmt(self, ctx: FandangoParser.Break_stmtContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#continue_stmt.
-    def enterContinue_stmt(self, ctx: FandangoParser.Continue_stmtContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#continue_stmt.
-    def exitContinue_stmt(self, ctx: FandangoParser.Continue_stmtContext):
-        pass
-
     # Enter a parse tree produced by FandangoParser#return_stmt.
     def enterReturn_stmt(self, ctx: FandangoParser.Return_stmtContext):
         pass
 
     # Exit a parse tree produced by FandangoParser#return_stmt.
     def exitReturn_stmt(self, ctx: FandangoParser.Return_stmtContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#raise_stmt.
+    def enterRaise_stmt(self, ctx: FandangoParser.Raise_stmtContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#raise_stmt.
+    def exitRaise_stmt(self, ctx: FandangoParser.Raise_stmtContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#global_stmt.
+    def enterGlobal_stmt(self, ctx: FandangoParser.Global_stmtContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#global_stmt.
+    def exitGlobal_stmt(self, ctx: FandangoParser.Global_stmtContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#nonlocal_stmt.
+    def enterNonlocal_stmt(self, ctx: FandangoParser.Nonlocal_stmtContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#nonlocal_stmt.
+    def exitNonlocal_stmt(self, ctx: FandangoParser.Nonlocal_stmtContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#del_stmt.
+    def enterDel_stmt(self, ctx: FandangoParser.Del_stmtContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#del_stmt.
+    def exitDel_stmt(self, ctx: FandangoParser.Del_stmtContext):
         pass
 
     # Enter a parse tree produced by FandangoParser#yield_stmt.
@@ -401,12 +369,12 @@ class FandangoParserListener(ParseTreeListener):
     def exitYield_stmt(self, ctx: FandangoParser.Yield_stmtContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#raise_stmt.
-    def enterRaise_stmt(self, ctx: FandangoParser.Raise_stmtContext):
+    # Enter a parse tree produced by FandangoParser#assert_stmt.
+    def enterAssert_stmt(self, ctx: FandangoParser.Assert_stmtContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#raise_stmt.
-    def exitRaise_stmt(self, ctx: FandangoParser.Raise_stmtContext):
+    # Exit a parse tree produced by FandangoParser#assert_stmt.
+    def exitAssert_stmt(self, ctx: FandangoParser.Assert_stmtContext):
         pass
 
     # Enter a parse tree produced by FandangoParser#import_stmt.
@@ -433,28 +401,30 @@ class FandangoParserListener(ParseTreeListener):
     def exitImport_from(self, ctx: FandangoParser.Import_fromContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#import_as_name.
-    def enterImport_as_name(self, ctx: FandangoParser.Import_as_nameContext):
+    # Enter a parse tree produced by FandangoParser#import_from_targets.
+    def enterImport_from_targets(self, ctx: FandangoParser.Import_from_targetsContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#import_as_name.
-    def exitImport_as_name(self, ctx: FandangoParser.Import_as_nameContext):
+    # Exit a parse tree produced by FandangoParser#import_from_targets.
+    def exitImport_from_targets(self, ctx: FandangoParser.Import_from_targetsContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#dotted_as_name.
-    def enterDotted_as_name(self, ctx: FandangoParser.Dotted_as_nameContext):
+    # Enter a parse tree produced by FandangoParser#import_from_as_names.
+    def enterImport_from_as_names(
+        self, ctx: FandangoParser.Import_from_as_namesContext
+    ):
         pass
 
-    # Exit a parse tree produced by FandangoParser#dotted_as_name.
-    def exitDotted_as_name(self, ctx: FandangoParser.Dotted_as_nameContext):
+    # Exit a parse tree produced by FandangoParser#import_from_as_names.
+    def exitImport_from_as_names(self, ctx: FandangoParser.Import_from_as_namesContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#import_as_names.
-    def enterImport_as_names(self, ctx: FandangoParser.Import_as_namesContext):
+    # Enter a parse tree produced by FandangoParser#import_from_as_name.
+    def enterImport_from_as_name(self, ctx: FandangoParser.Import_from_as_nameContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#import_as_names.
-    def exitImport_as_names(self, ctx: FandangoParser.Import_as_namesContext):
+    # Exit a parse tree produced by FandangoParser#import_from_as_name.
+    def exitImport_from_as_name(self, ctx: FandangoParser.Import_from_as_nameContext):
         pass
 
     # Enter a parse tree produced by FandangoParser#dotted_as_names.
@@ -465,6 +435,14 @@ class FandangoParserListener(ParseTreeListener):
     def exitDotted_as_names(self, ctx: FandangoParser.Dotted_as_namesContext):
         pass
 
+    # Enter a parse tree produced by FandangoParser#dotted_as_name.
+    def enterDotted_as_name(self, ctx: FandangoParser.Dotted_as_nameContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#dotted_as_name.
+    def exitDotted_as_name(self, ctx: FandangoParser.Dotted_as_nameContext):
+        pass
+
     # Enter a parse tree produced by FandangoParser#dotted_name.
     def enterDotted_name(self, ctx: FandangoParser.Dotted_nameContext):
         pass
@@ -473,44 +451,180 @@ class FandangoParserListener(ParseTreeListener):
     def exitDotted_name(self, ctx: FandangoParser.Dotted_nameContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#global_stmt.
-    def enterGlobal_stmt(self, ctx: FandangoParser.Global_stmtContext):
+    # Enter a parse tree produced by FandangoParser#block.
+    def enterBlock(self, ctx: FandangoParser.BlockContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#global_stmt.
-    def exitGlobal_stmt(self, ctx: FandangoParser.Global_stmtContext):
+    # Exit a parse tree produced by FandangoParser#block.
+    def exitBlock(self, ctx: FandangoParser.BlockContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#nonlocal_stmt.
-    def enterNonlocal_stmt(self, ctx: FandangoParser.Nonlocal_stmtContext):
+    # Enter a parse tree produced by FandangoParser#decorators.
+    def enterDecorators(self, ctx: FandangoParser.DecoratorsContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#nonlocal_stmt.
-    def exitNonlocal_stmt(self, ctx: FandangoParser.Nonlocal_stmtContext):
+    # Exit a parse tree produced by FandangoParser#decorators.
+    def exitDecorators(self, ctx: FandangoParser.DecoratorsContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#assert_stmt.
-    def enterAssert_stmt(self, ctx: FandangoParser.Assert_stmtContext):
+    # Enter a parse tree produced by FandangoParser#class_def.
+    def enterClass_def(self, ctx: FandangoParser.Class_defContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#assert_stmt.
-    def exitAssert_stmt(self, ctx: FandangoParser.Assert_stmtContext):
+    # Exit a parse tree produced by FandangoParser#class_def.
+    def exitClass_def(self, ctx: FandangoParser.Class_defContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#compound_stmt.
-    def enterCompound_stmt(self, ctx: FandangoParser.Compound_stmtContext):
+    # Enter a parse tree produced by FandangoParser#class_def_raw.
+    def enterClass_def_raw(self, ctx: FandangoParser.Class_def_rawContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#compound_stmt.
-    def exitCompound_stmt(self, ctx: FandangoParser.Compound_stmtContext):
+    # Exit a parse tree produced by FandangoParser#class_def_raw.
+    def exitClass_def_raw(self, ctx: FandangoParser.Class_def_rawContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#async_stmt.
-    def enterAsync_stmt(self, ctx: FandangoParser.Async_stmtContext):
+    # Enter a parse tree produced by FandangoParser#function_def.
+    def enterFunction_def(self, ctx: FandangoParser.Function_defContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#async_stmt.
-    def exitAsync_stmt(self, ctx: FandangoParser.Async_stmtContext):
+    # Exit a parse tree produced by FandangoParser#function_def.
+    def exitFunction_def(self, ctx: FandangoParser.Function_defContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#function_def_raw.
+    def enterFunction_def_raw(self, ctx: FandangoParser.Function_def_rawContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#function_def_raw.
+    def exitFunction_def_raw(self, ctx: FandangoParser.Function_def_rawContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#params.
+    def enterParams(self, ctx: FandangoParser.ParamsContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#params.
+    def exitParams(self, ctx: FandangoParser.ParamsContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#parameters.
+    def enterParameters(self, ctx: FandangoParser.ParametersContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#parameters.
+    def exitParameters(self, ctx: FandangoParser.ParametersContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#slash_no_default.
+    def enterSlash_no_default(self, ctx: FandangoParser.Slash_no_defaultContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#slash_no_default.
+    def exitSlash_no_default(self, ctx: FandangoParser.Slash_no_defaultContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#slash_with_default.
+    def enterSlash_with_default(self, ctx: FandangoParser.Slash_with_defaultContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#slash_with_default.
+    def exitSlash_with_default(self, ctx: FandangoParser.Slash_with_defaultContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#star_etc.
+    def enterStar_etc(self, ctx: FandangoParser.Star_etcContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#star_etc.
+    def exitStar_etc(self, ctx: FandangoParser.Star_etcContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#kwds.
+    def enterKwds(self, ctx: FandangoParser.KwdsContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#kwds.
+    def exitKwds(self, ctx: FandangoParser.KwdsContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#param_no_default.
+    def enterParam_no_default(self, ctx: FandangoParser.Param_no_defaultContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#param_no_default.
+    def exitParam_no_default(self, ctx: FandangoParser.Param_no_defaultContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#param_no_default_star_annotation.
+    def enterParam_no_default_star_annotation(
+        self, ctx: FandangoParser.Param_no_default_star_annotationContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#param_no_default_star_annotation.
+    def exitParam_no_default_star_annotation(
+        self, ctx: FandangoParser.Param_no_default_star_annotationContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#param_with_default.
+    def enterParam_with_default(self, ctx: FandangoParser.Param_with_defaultContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#param_with_default.
+    def exitParam_with_default(self, ctx: FandangoParser.Param_with_defaultContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#param_maybe_default.
+    def enterParam_maybe_default(self, ctx: FandangoParser.Param_maybe_defaultContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#param_maybe_default.
+    def exitParam_maybe_default(self, ctx: FandangoParser.Param_maybe_defaultContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#param.
+    def enterParam(self, ctx: FandangoParser.ParamContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#param.
+    def exitParam(self, ctx: FandangoParser.ParamContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#param_star_annotation.
+    def enterParam_star_annotation(
+        self, ctx: FandangoParser.Param_star_annotationContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#param_star_annotation.
+    def exitParam_star_annotation(
+        self, ctx: FandangoParser.Param_star_annotationContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#annotation.
+    def enterAnnotation(self, ctx: FandangoParser.AnnotationContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#annotation.
+    def exitAnnotation(self, ctx: FandangoParser.AnnotationContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#star_annotation.
+    def enterStar_annotation(self, ctx: FandangoParser.Star_annotationContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#star_annotation.
+    def exitStar_annotation(self, ctx: FandangoParser.Star_annotationContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#default.
+    def enterDefault(self, ctx: FandangoParser.DefaultContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#default.
+    def exitDefault(self, ctx: FandangoParser.DefaultContext):
         pass
 
     # Enter a parse tree produced by FandangoParser#if_stmt.
@@ -519,6 +633,22 @@ class FandangoParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by FandangoParser#if_stmt.
     def exitIf_stmt(self, ctx: FandangoParser.If_stmtContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#elif_stmt.
+    def enterElif_stmt(self, ctx: FandangoParser.Elif_stmtContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#elif_stmt.
+    def exitElif_stmt(self, ctx: FandangoParser.Elif_stmtContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#else_block.
+    def enterElse_block(self, ctx: FandangoParser.Else_blockContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#else_block.
+    def exitElse_block(self, ctx: FandangoParser.Else_blockContext):
         pass
 
     # Enter a parse tree produced by FandangoParser#while_stmt.
@@ -537,14 +667,6 @@ class FandangoParserListener(ParseTreeListener):
     def exitFor_stmt(self, ctx: FandangoParser.For_stmtContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#try_stmt.
-    def enterTry_stmt(self, ctx: FandangoParser.Try_stmtContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#try_stmt.
-    def exitTry_stmt(self, ctx: FandangoParser.Try_stmtContext):
-        pass
-
     # Enter a parse tree produced by FandangoParser#with_stmt.
     def enterWith_stmt(self, ctx: FandangoParser.With_stmtContext):
         pass
@@ -561,20 +683,36 @@ class FandangoParserListener(ParseTreeListener):
     def exitWith_item(self, ctx: FandangoParser.With_itemContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#except_clause.
-    def enterExcept_clause(self, ctx: FandangoParser.Except_clauseContext):
+    # Enter a parse tree produced by FandangoParser#try_stmt.
+    def enterTry_stmt(self, ctx: FandangoParser.Try_stmtContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#except_clause.
-    def exitExcept_clause(self, ctx: FandangoParser.Except_clauseContext):
+    # Exit a parse tree produced by FandangoParser#try_stmt.
+    def exitTry_stmt(self, ctx: FandangoParser.Try_stmtContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#block.
-    def enterBlock(self, ctx: FandangoParser.BlockContext):
+    # Enter a parse tree produced by FandangoParser#except_block.
+    def enterExcept_block(self, ctx: FandangoParser.Except_blockContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#block.
-    def exitBlock(self, ctx: FandangoParser.BlockContext):
+    # Exit a parse tree produced by FandangoParser#except_block.
+    def exitExcept_block(self, ctx: FandangoParser.Except_blockContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#except_star_block.
+    def enterExcept_star_block(self, ctx: FandangoParser.Except_star_blockContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#except_star_block.
+    def exitExcept_star_block(self, ctx: FandangoParser.Except_star_blockContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#finally_block.
+    def enterFinally_block(self, ctx: FandangoParser.Finally_blockContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#finally_block.
+    def exitFinally_block(self, ctx: FandangoParser.Finally_blockContext):
         pass
 
     # Enter a parse tree produced by FandangoParser#match_stmt.
@@ -591,30 +729,6 @@ class FandangoParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by FandangoParser#subject_expr.
     def exitSubject_expr(self, ctx: FandangoParser.Subject_exprContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#star_named_expressions.
-    def enterStar_named_expressions(
-        self, ctx: FandangoParser.Star_named_expressionsContext
-    ):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#star_named_expressions.
-    def exitStar_named_expressions(
-        self, ctx: FandangoParser.Star_named_expressionsContext
-    ):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#star_named_expression.
-    def enterStar_named_expression(
-        self, ctx: FandangoParser.Star_named_expressionContext
-    ):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#star_named_expression.
-    def exitStar_named_expression(
-        self, ctx: FandangoParser.Star_named_expressionContext
-    ):
         pass
 
     # Enter a parse tree produced by FandangoParser#case_block.
@@ -901,228 +1015,60 @@ class FandangoParserListener(ParseTreeListener):
     def exitKeyword_pattern(self, ctx: FandangoParser.Keyword_patternContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#test.
-    def enterTest(self, ctx: FandangoParser.TestContext):
+    # Enter a parse tree produced by FandangoParser#type_alias.
+    def enterType_alias(self, ctx: FandangoParser.Type_aliasContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#test.
-    def exitTest(self, ctx: FandangoParser.TestContext):
+    # Exit a parse tree produced by FandangoParser#type_alias.
+    def exitType_alias(self, ctx: FandangoParser.Type_aliasContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#test_nocond.
-    def enterTest_nocond(self, ctx: FandangoParser.Test_nocondContext):
+    # Enter a parse tree produced by FandangoParser#type_params.
+    def enterType_params(self, ctx: FandangoParser.Type_paramsContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#test_nocond.
-    def exitTest_nocond(self, ctx: FandangoParser.Test_nocondContext):
+    # Exit a parse tree produced by FandangoParser#type_params.
+    def exitType_params(self, ctx: FandangoParser.Type_paramsContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#lambdef.
-    def enterLambdef(self, ctx: FandangoParser.LambdefContext):
+    # Enter a parse tree produced by FandangoParser#type_param_seq.
+    def enterType_param_seq(self, ctx: FandangoParser.Type_param_seqContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#lambdef.
-    def exitLambdef(self, ctx: FandangoParser.LambdefContext):
+    # Exit a parse tree produced by FandangoParser#type_param_seq.
+    def exitType_param_seq(self, ctx: FandangoParser.Type_param_seqContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#lambdef_nocond.
-    def enterLambdef_nocond(self, ctx: FandangoParser.Lambdef_nocondContext):
+    # Enter a parse tree produced by FandangoParser#type_param.
+    def enterType_param(self, ctx: FandangoParser.Type_paramContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#lambdef_nocond.
-    def exitLambdef_nocond(self, ctx: FandangoParser.Lambdef_nocondContext):
+    # Exit a parse tree produced by FandangoParser#type_param.
+    def exitType_param(self, ctx: FandangoParser.Type_paramContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#or_test.
-    def enterOr_test(self, ctx: FandangoParser.Or_testContext):
+    # Enter a parse tree produced by FandangoParser#type_param_bound.
+    def enterType_param_bound(self, ctx: FandangoParser.Type_param_boundContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#or_test.
-    def exitOr_test(self, ctx: FandangoParser.Or_testContext):
+    # Exit a parse tree produced by FandangoParser#type_param_bound.
+    def exitType_param_bound(self, ctx: FandangoParser.Type_param_boundContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#and_test.
-    def enterAnd_test(self, ctx: FandangoParser.And_testContext):
+    # Enter a parse tree produced by FandangoParser#expressions.
+    def enterExpressions(self, ctx: FandangoParser.ExpressionsContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#and_test.
-    def exitAnd_test(self, ctx: FandangoParser.And_testContext):
+    # Exit a parse tree produced by FandangoParser#expressions.
+    def exitExpressions(self, ctx: FandangoParser.ExpressionsContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#not_test.
-    def enterNot_test(self, ctx: FandangoParser.Not_testContext):
+    # Enter a parse tree produced by FandangoParser#expression.
+    def enterExpression(self, ctx: FandangoParser.ExpressionContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#not_test.
-    def exitNot_test(self, ctx: FandangoParser.Not_testContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#comparison.
-    def enterComparison(self, ctx: FandangoParser.ComparisonContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#comparison.
-    def exitComparison(self, ctx: FandangoParser.ComparisonContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#comp_op.
-    def enterComp_op(self, ctx: FandangoParser.Comp_opContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#comp_op.
-    def exitComp_op(self, ctx: FandangoParser.Comp_opContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#star_expr.
-    def enterStar_expr(self, ctx: FandangoParser.Star_exprContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#star_expr.
-    def exitStar_expr(self, ctx: FandangoParser.Star_exprContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#expr.
-    def enterExpr(self, ctx: FandangoParser.ExprContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#expr.
-    def exitExpr(self, ctx: FandangoParser.ExprContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#atom_expr.
-    def enterAtom_expr(self, ctx: FandangoParser.Atom_exprContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#atom_expr.
-    def exitAtom_expr(self, ctx: FandangoParser.Atom_exprContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#atom.
-    def enterAtom(self, ctx: FandangoParser.AtomContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#atom.
-    def exitAtom(self, ctx: FandangoParser.AtomContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#name.
-    def enterName(self, ctx: FandangoParser.NameContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#name.
-    def exitName(self, ctx: FandangoParser.NameContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#testlist_comp.
-    def enterTestlist_comp(self, ctx: FandangoParser.Testlist_compContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#testlist_comp.
-    def exitTestlist_comp(self, ctx: FandangoParser.Testlist_compContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#trailer.
-    def enterTrailer(self, ctx: FandangoParser.TrailerContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#trailer.
-    def exitTrailer(self, ctx: FandangoParser.TrailerContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#subscriptlist.
-    def enterSubscriptlist(self, ctx: FandangoParser.SubscriptlistContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#subscriptlist.
-    def exitSubscriptlist(self, ctx: FandangoParser.SubscriptlistContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#subscript_.
-    def enterSubscript_(self, ctx: FandangoParser.Subscript_Context):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#subscript_.
-    def exitSubscript_(self, ctx: FandangoParser.Subscript_Context):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#sliceop.
-    def enterSliceop(self, ctx: FandangoParser.SliceopContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#sliceop.
-    def exitSliceop(self, ctx: FandangoParser.SliceopContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#exprlist.
-    def enterExprlist(self, ctx: FandangoParser.ExprlistContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#exprlist.
-    def exitExprlist(self, ctx: FandangoParser.ExprlistContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#testlist.
-    def enterTestlist(self, ctx: FandangoParser.TestlistContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#testlist.
-    def exitTestlist(self, ctx: FandangoParser.TestlistContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#dictorsetmaker.
-    def enterDictorsetmaker(self, ctx: FandangoParser.DictorsetmakerContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#dictorsetmaker.
-    def exitDictorsetmaker(self, ctx: FandangoParser.DictorsetmakerContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#classdef.
-    def enterClassdef(self, ctx: FandangoParser.ClassdefContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#classdef.
-    def exitClassdef(self, ctx: FandangoParser.ClassdefContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#arglist.
-    def enterArglist(self, ctx: FandangoParser.ArglistContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#arglist.
-    def exitArglist(self, ctx: FandangoParser.ArglistContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#argument.
-    def enterArgument(self, ctx: FandangoParser.ArgumentContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#argument.
-    def exitArgument(self, ctx: FandangoParser.ArgumentContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#comp_iter.
-    def enterComp_iter(self, ctx: FandangoParser.Comp_iterContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#comp_iter.
-    def exitComp_iter(self, ctx: FandangoParser.Comp_iterContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#comp_for.
-    def enterComp_for(self, ctx: FandangoParser.Comp_forContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#comp_for.
-    def exitComp_for(self, ctx: FandangoParser.Comp_forContext):
-        pass
-
-    # Enter a parse tree produced by FandangoParser#comp_if.
-    def enterComp_if(self, ctx: FandangoParser.Comp_ifContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#comp_if.
-    def exitComp_if(self, ctx: FandangoParser.Comp_ifContext):
+    # Exit a parse tree produced by FandangoParser#expression.
+    def exitExpression(self, ctx: FandangoParser.ExpressionContext):
         pass
 
     # Enter a parse tree produced by FandangoParser#yield_expr.
@@ -1133,12 +1079,472 @@ class FandangoParserListener(ParseTreeListener):
     def exitYield_expr(self, ctx: FandangoParser.Yield_exprContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#yield_arg.
-    def enterYield_arg(self, ctx: FandangoParser.Yield_argContext):
+    # Enter a parse tree produced by FandangoParser#star_expressions.
+    def enterStar_expressions(self, ctx: FandangoParser.Star_expressionsContext):
         pass
 
-    # Exit a parse tree produced by FandangoParser#yield_arg.
-    def exitYield_arg(self, ctx: FandangoParser.Yield_argContext):
+    # Exit a parse tree produced by FandangoParser#star_expressions.
+    def exitStar_expressions(self, ctx: FandangoParser.Star_expressionsContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#star_expression.
+    def enterStar_expression(self, ctx: FandangoParser.Star_expressionContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#star_expression.
+    def exitStar_expression(self, ctx: FandangoParser.Star_expressionContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#star_named_expressions.
+    def enterStar_named_expressions(
+        self, ctx: FandangoParser.Star_named_expressionsContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#star_named_expressions.
+    def exitStar_named_expressions(
+        self, ctx: FandangoParser.Star_named_expressionsContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#star_named_expression.
+    def enterStar_named_expression(
+        self, ctx: FandangoParser.Star_named_expressionContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#star_named_expression.
+    def exitStar_named_expression(
+        self, ctx: FandangoParser.Star_named_expressionContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#assignment_expression.
+    def enterAssignment_expression(
+        self, ctx: FandangoParser.Assignment_expressionContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#assignment_expression.
+    def exitAssignment_expression(
+        self, ctx: FandangoParser.Assignment_expressionContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#named_expression.
+    def enterNamed_expression(self, ctx: FandangoParser.Named_expressionContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#named_expression.
+    def exitNamed_expression(self, ctx: FandangoParser.Named_expressionContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#disjunction.
+    def enterDisjunction(self, ctx: FandangoParser.DisjunctionContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#disjunction.
+    def exitDisjunction(self, ctx: FandangoParser.DisjunctionContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#conjunction.
+    def enterConjunction(self, ctx: FandangoParser.ConjunctionContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#conjunction.
+    def exitConjunction(self, ctx: FandangoParser.ConjunctionContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#inversion.
+    def enterInversion(self, ctx: FandangoParser.InversionContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#inversion.
+    def exitInversion(self, ctx: FandangoParser.InversionContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#comparison.
+    def enterComparison(self, ctx: FandangoParser.ComparisonContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#comparison.
+    def exitComparison(self, ctx: FandangoParser.ComparisonContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#compare_op_bitwise_or_pair.
+    def enterCompare_op_bitwise_or_pair(
+        self, ctx: FandangoParser.Compare_op_bitwise_or_pairContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#compare_op_bitwise_or_pair.
+    def exitCompare_op_bitwise_or_pair(
+        self, ctx: FandangoParser.Compare_op_bitwise_or_pairContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#eq_bitwise_or.
+    def enterEq_bitwise_or(self, ctx: FandangoParser.Eq_bitwise_orContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#eq_bitwise_or.
+    def exitEq_bitwise_or(self, ctx: FandangoParser.Eq_bitwise_orContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#noteq_bitwise_or.
+    def enterNoteq_bitwise_or(self, ctx: FandangoParser.Noteq_bitwise_orContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#noteq_bitwise_or.
+    def exitNoteq_bitwise_or(self, ctx: FandangoParser.Noteq_bitwise_orContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#lte_bitwise_or.
+    def enterLte_bitwise_or(self, ctx: FandangoParser.Lte_bitwise_orContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#lte_bitwise_or.
+    def exitLte_bitwise_or(self, ctx: FandangoParser.Lte_bitwise_orContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#lt_bitwise_or.
+    def enterLt_bitwise_or(self, ctx: FandangoParser.Lt_bitwise_orContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#lt_bitwise_or.
+    def exitLt_bitwise_or(self, ctx: FandangoParser.Lt_bitwise_orContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#gte_bitwise_or.
+    def enterGte_bitwise_or(self, ctx: FandangoParser.Gte_bitwise_orContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#gte_bitwise_or.
+    def exitGte_bitwise_or(self, ctx: FandangoParser.Gte_bitwise_orContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#gt_bitwise_or.
+    def enterGt_bitwise_or(self, ctx: FandangoParser.Gt_bitwise_orContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#gt_bitwise_or.
+    def exitGt_bitwise_or(self, ctx: FandangoParser.Gt_bitwise_orContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#notin_bitwise_or.
+    def enterNotin_bitwise_or(self, ctx: FandangoParser.Notin_bitwise_orContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#notin_bitwise_or.
+    def exitNotin_bitwise_or(self, ctx: FandangoParser.Notin_bitwise_orContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#in_bitwise_or.
+    def enterIn_bitwise_or(self, ctx: FandangoParser.In_bitwise_orContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#in_bitwise_or.
+    def exitIn_bitwise_or(self, ctx: FandangoParser.In_bitwise_orContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#isnot_bitwise_or.
+    def enterIsnot_bitwise_or(self, ctx: FandangoParser.Isnot_bitwise_orContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#isnot_bitwise_or.
+    def exitIsnot_bitwise_or(self, ctx: FandangoParser.Isnot_bitwise_orContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#is_bitwise_or.
+    def enterIs_bitwise_or(self, ctx: FandangoParser.Is_bitwise_orContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#is_bitwise_or.
+    def exitIs_bitwise_or(self, ctx: FandangoParser.Is_bitwise_orContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#bitwise_or.
+    def enterBitwise_or(self, ctx: FandangoParser.Bitwise_orContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#bitwise_or.
+    def exitBitwise_or(self, ctx: FandangoParser.Bitwise_orContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#bitwise_xor.
+    def enterBitwise_xor(self, ctx: FandangoParser.Bitwise_xorContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#bitwise_xor.
+    def exitBitwise_xor(self, ctx: FandangoParser.Bitwise_xorContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#bitwise_and.
+    def enterBitwise_and(self, ctx: FandangoParser.Bitwise_andContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#bitwise_and.
+    def exitBitwise_and(self, ctx: FandangoParser.Bitwise_andContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#shift_expr.
+    def enterShift_expr(self, ctx: FandangoParser.Shift_exprContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#shift_expr.
+    def exitShift_expr(self, ctx: FandangoParser.Shift_exprContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#sum.
+    def enterSum(self, ctx: FandangoParser.SumContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#sum.
+    def exitSum(self, ctx: FandangoParser.SumContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#term.
+    def enterTerm(self, ctx: FandangoParser.TermContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#term.
+    def exitTerm(self, ctx: FandangoParser.TermContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#factor.
+    def enterFactor(self, ctx: FandangoParser.FactorContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#factor.
+    def exitFactor(self, ctx: FandangoParser.FactorContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#power.
+    def enterPower(self, ctx: FandangoParser.PowerContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#power.
+    def exitPower(self, ctx: FandangoParser.PowerContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#await_primary.
+    def enterAwait_primary(self, ctx: FandangoParser.Await_primaryContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#await_primary.
+    def exitAwait_primary(self, ctx: FandangoParser.Await_primaryContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#primary.
+    def enterPrimary(self, ctx: FandangoParser.PrimaryContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#primary.
+    def exitPrimary(self, ctx: FandangoParser.PrimaryContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#slices.
+    def enterSlices(self, ctx: FandangoParser.SlicesContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#slices.
+    def exitSlices(self, ctx: FandangoParser.SlicesContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#slice.
+    def enterSlice(self, ctx: FandangoParser.SliceContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#slice.
+    def exitSlice(self, ctx: FandangoParser.SliceContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#atom.
+    def enterAtom(self, ctx: FandangoParser.AtomContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#atom.
+    def exitAtom(self, ctx: FandangoParser.AtomContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#group.
+    def enterGroup(self, ctx: FandangoParser.GroupContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#group.
+    def exitGroup(self, ctx: FandangoParser.GroupContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#lambdef.
+    def enterLambdef(self, ctx: FandangoParser.LambdefContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#lambdef.
+    def exitLambdef(self, ctx: FandangoParser.LambdefContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#lambda_params.
+    def enterLambda_params(self, ctx: FandangoParser.Lambda_paramsContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#lambda_params.
+    def exitLambda_params(self, ctx: FandangoParser.Lambda_paramsContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#lambda_parameters.
+    def enterLambda_parameters(self, ctx: FandangoParser.Lambda_parametersContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#lambda_parameters.
+    def exitLambda_parameters(self, ctx: FandangoParser.Lambda_parametersContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#lambda_slash_no_default.
+    def enterLambda_slash_no_default(
+        self, ctx: FandangoParser.Lambda_slash_no_defaultContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#lambda_slash_no_default.
+    def exitLambda_slash_no_default(
+        self, ctx: FandangoParser.Lambda_slash_no_defaultContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#lambda_slash_with_default.
+    def enterLambda_slash_with_default(
+        self, ctx: FandangoParser.Lambda_slash_with_defaultContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#lambda_slash_with_default.
+    def exitLambda_slash_with_default(
+        self, ctx: FandangoParser.Lambda_slash_with_defaultContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#lambda_star_etc.
+    def enterLambda_star_etc(self, ctx: FandangoParser.Lambda_star_etcContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#lambda_star_etc.
+    def exitLambda_star_etc(self, ctx: FandangoParser.Lambda_star_etcContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#lambda_kwds.
+    def enterLambda_kwds(self, ctx: FandangoParser.Lambda_kwdsContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#lambda_kwds.
+    def exitLambda_kwds(self, ctx: FandangoParser.Lambda_kwdsContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#lambda_param_no_default.
+    def enterLambda_param_no_default(
+        self, ctx: FandangoParser.Lambda_param_no_defaultContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#lambda_param_no_default.
+    def exitLambda_param_no_default(
+        self, ctx: FandangoParser.Lambda_param_no_defaultContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#lambda_param_with_default.
+    def enterLambda_param_with_default(
+        self, ctx: FandangoParser.Lambda_param_with_defaultContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#lambda_param_with_default.
+    def exitLambda_param_with_default(
+        self, ctx: FandangoParser.Lambda_param_with_defaultContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#lambda_param_maybe_default.
+    def enterLambda_param_maybe_default(
+        self, ctx: FandangoParser.Lambda_param_maybe_defaultContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#lambda_param_maybe_default.
+    def exitLambda_param_maybe_default(
+        self, ctx: FandangoParser.Lambda_param_maybe_defaultContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#lambda_param.
+    def enterLambda_param(self, ctx: FandangoParser.Lambda_paramContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#lambda_param.
+    def exitLambda_param(self, ctx: FandangoParser.Lambda_paramContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#fstring_middle.
+    def enterFstring_middle(self, ctx: FandangoParser.Fstring_middleContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#fstring_middle.
+    def exitFstring_middle(self, ctx: FandangoParser.Fstring_middleContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#fstring_replacement_field.
+    def enterFstring_replacement_field(
+        self, ctx: FandangoParser.Fstring_replacement_fieldContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#fstring_replacement_field.
+    def exitFstring_replacement_field(
+        self, ctx: FandangoParser.Fstring_replacement_fieldContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#fstring_conversion.
+    def enterFstring_conversion(self, ctx: FandangoParser.Fstring_conversionContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#fstring_conversion.
+    def exitFstring_conversion(self, ctx: FandangoParser.Fstring_conversionContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#fstring_full_format_spec.
+    def enterFstring_full_format_spec(
+        self, ctx: FandangoParser.Fstring_full_format_specContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#fstring_full_format_spec.
+    def exitFstring_full_format_spec(
+        self, ctx: FandangoParser.Fstring_full_format_specContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#fstring_format_spec.
+    def enterFstring_format_spec(self, ctx: FandangoParser.Fstring_format_specContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#fstring_format_spec.
+    def exitFstring_format_spec(self, ctx: FandangoParser.Fstring_format_specContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#fstring.
+    def enterFstring(self, ctx: FandangoParser.FstringContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#fstring.
+    def exitFstring(self, ctx: FandangoParser.FstringContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#string.
+    def enterString(self, ctx: FandangoParser.StringContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#string.
+    def exitString(self, ctx: FandangoParser.StringContext):
         pass
 
     # Enter a parse tree produced by FandangoParser#strings.
@@ -1147,6 +1553,306 @@ class FandangoParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by FandangoParser#strings.
     def exitStrings(self, ctx: FandangoParser.StringsContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#list.
+    def enterList(self, ctx: FandangoParser.ListContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#list.
+    def exitList(self, ctx: FandangoParser.ListContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#tuple.
+    def enterTuple(self, ctx: FandangoParser.TupleContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#tuple.
+    def exitTuple(self, ctx: FandangoParser.TupleContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#set.
+    def enterSet(self, ctx: FandangoParser.SetContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#set.
+    def exitSet(self, ctx: FandangoParser.SetContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#dict.
+    def enterDict(self, ctx: FandangoParser.DictContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#dict.
+    def exitDict(self, ctx: FandangoParser.DictContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#double_starred_kvpairs.
+    def enterDouble_starred_kvpairs(
+        self, ctx: FandangoParser.Double_starred_kvpairsContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#double_starred_kvpairs.
+    def exitDouble_starred_kvpairs(
+        self, ctx: FandangoParser.Double_starred_kvpairsContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#double_starred_kvpair.
+    def enterDouble_starred_kvpair(
+        self, ctx: FandangoParser.Double_starred_kvpairContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#double_starred_kvpair.
+    def exitDouble_starred_kvpair(
+        self, ctx: FandangoParser.Double_starred_kvpairContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#kvpair.
+    def enterKvpair(self, ctx: FandangoParser.KvpairContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#kvpair.
+    def exitKvpair(self, ctx: FandangoParser.KvpairContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#for_if_clauses.
+    def enterFor_if_clauses(self, ctx: FandangoParser.For_if_clausesContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#for_if_clauses.
+    def exitFor_if_clauses(self, ctx: FandangoParser.For_if_clausesContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#for_if_clause.
+    def enterFor_if_clause(self, ctx: FandangoParser.For_if_clauseContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#for_if_clause.
+    def exitFor_if_clause(self, ctx: FandangoParser.For_if_clauseContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#listcomp.
+    def enterListcomp(self, ctx: FandangoParser.ListcompContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#listcomp.
+    def exitListcomp(self, ctx: FandangoParser.ListcompContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#setcomp.
+    def enterSetcomp(self, ctx: FandangoParser.SetcompContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#setcomp.
+    def exitSetcomp(self, ctx: FandangoParser.SetcompContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#genexp.
+    def enterGenexp(self, ctx: FandangoParser.GenexpContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#genexp.
+    def exitGenexp(self, ctx: FandangoParser.GenexpContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#dictcomp.
+    def enterDictcomp(self, ctx: FandangoParser.DictcompContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#dictcomp.
+    def exitDictcomp(self, ctx: FandangoParser.DictcompContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#arguments.
+    def enterArguments(self, ctx: FandangoParser.ArgumentsContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#arguments.
+    def exitArguments(self, ctx: FandangoParser.ArgumentsContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#args.
+    def enterArgs(self, ctx: FandangoParser.ArgsContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#args.
+    def exitArgs(self, ctx: FandangoParser.ArgsContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#arg.
+    def enterArg(self, ctx: FandangoParser.ArgContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#arg.
+    def exitArg(self, ctx: FandangoParser.ArgContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#kwargs.
+    def enterKwargs(self, ctx: FandangoParser.KwargsContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#kwargs.
+    def exitKwargs(self, ctx: FandangoParser.KwargsContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#starred_expression.
+    def enterStarred_expression(self, ctx: FandangoParser.Starred_expressionContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#starred_expression.
+    def exitStarred_expression(self, ctx: FandangoParser.Starred_expressionContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#kwarg_or_starred.
+    def enterKwarg_or_starred(self, ctx: FandangoParser.Kwarg_or_starredContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#kwarg_or_starred.
+    def exitKwarg_or_starred(self, ctx: FandangoParser.Kwarg_or_starredContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#kwarg_or_double_starred.
+    def enterKwarg_or_double_starred(
+        self, ctx: FandangoParser.Kwarg_or_double_starredContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#kwarg_or_double_starred.
+    def exitKwarg_or_double_starred(
+        self, ctx: FandangoParser.Kwarg_or_double_starredContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#star_targets.
+    def enterStar_targets(self, ctx: FandangoParser.Star_targetsContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#star_targets.
+    def exitStar_targets(self, ctx: FandangoParser.Star_targetsContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#star_targets_list_seq.
+    def enterStar_targets_list_seq(
+        self, ctx: FandangoParser.Star_targets_list_seqContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#star_targets_list_seq.
+    def exitStar_targets_list_seq(
+        self, ctx: FandangoParser.Star_targets_list_seqContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#star_targets_tuple_seq.
+    def enterStar_targets_tuple_seq(
+        self, ctx: FandangoParser.Star_targets_tuple_seqContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#star_targets_tuple_seq.
+    def exitStar_targets_tuple_seq(
+        self, ctx: FandangoParser.Star_targets_tuple_seqContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#star_target.
+    def enterStar_target(self, ctx: FandangoParser.Star_targetContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#star_target.
+    def exitStar_target(self, ctx: FandangoParser.Star_targetContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#target_with_star_atom.
+    def enterTarget_with_star_atom(
+        self, ctx: FandangoParser.Target_with_star_atomContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#target_with_star_atom.
+    def exitTarget_with_star_atom(
+        self, ctx: FandangoParser.Target_with_star_atomContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#star_atom.
+    def enterStar_atom(self, ctx: FandangoParser.Star_atomContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#star_atom.
+    def exitStar_atom(self, ctx: FandangoParser.Star_atomContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#single_target.
+    def enterSingle_target(self, ctx: FandangoParser.Single_targetContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#single_target.
+    def exitSingle_target(self, ctx: FandangoParser.Single_targetContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#single_subscript_attribute_target.
+    def enterSingle_subscript_attribute_target(
+        self, ctx: FandangoParser.Single_subscript_attribute_targetContext
+    ):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#single_subscript_attribute_target.
+    def exitSingle_subscript_attribute_target(
+        self, ctx: FandangoParser.Single_subscript_attribute_targetContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#t_primary.
+    def enterT_primary(self, ctx: FandangoParser.T_primaryContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#t_primary.
+    def exitT_primary(self, ctx: FandangoParser.T_primaryContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#del_targets.
+    def enterDel_targets(self, ctx: FandangoParser.Del_targetsContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#del_targets.
+    def exitDel_targets(self, ctx: FandangoParser.Del_targetsContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#del_target.
+    def enterDel_target(self, ctx: FandangoParser.Del_targetContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#del_target.
+    def exitDel_target(self, ctx: FandangoParser.Del_targetContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#del_t_atom.
+    def enterDel_t_atom(self, ctx: FandangoParser.Del_t_atomContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#del_t_atom.
+    def exitDel_t_atom(self, ctx: FandangoParser.Del_t_atomContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#type_expressions.
+    def enterType_expressions(self, ctx: FandangoParser.Type_expressionsContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#type_expressions.
+    def exitType_expressions(self, ctx: FandangoParser.Type_expressionsContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#func_type_comment.
+    def enterFunc_type_comment(self, ctx: FandangoParser.Func_type_commentContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#func_type_comment.
+    def exitFunc_type_comment(self, ctx: FandangoParser.Func_type_commentContext):
         pass
 
 
