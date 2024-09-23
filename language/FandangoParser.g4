@@ -63,30 +63,35 @@ implies:
 quantifier:
     FORALL RULE_NAME IN selector COLON quantifier
     | EXISTS RULE_NAME IN selector COLON quantifier
-    | disjunction
+    | formula_disjunction
     ;
 
-disjunction:
-    conjunction (OR conjunction)*
+formula_disjunction:
+    formula_conjunction (OR formula_conjunction)*
     ;
 
-conjunction:
+formula_conjunction:
     formula_atom (AND formula_atom)*
     ;
 
-formula_atom:
-    expression
-    | formula_comparison
+formula_atom
+    : formula_comparison
     | OPEN_PAREN implies CLOSE_PAREN
+    | expr
     ;
 
 formula_comparison:
-    expression (LESS_THAN | GREATER_THAN | EQUALS | GT_EQ | LT_EQ | NOT_EQ_1 | NOT_EQ_2) expression
+    expr (LESS_THAN | GREATER_THAN | EQUALS | GT_EQ | LT_EQ | NOT_EQ_1 | NOT_EQ_2) expr
     ;
 
-expression:
-    selector
-    | expr
+expr:
+    selector_length
+    | expression
+    ;
+
+selector_length
+    : '|' selector '|'
+    | selector
     ;
 
 selector:
@@ -95,206 +100,149 @@ selector:
     ;
 
 selection:
-    RULE_NAME ('[' subscriptlist ']' | '{' subscriptlist '}')*
+    RULE_NAME ('[' slices ']' | '{' slices '}')*
     ;
 
 
 
 // python part
 
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2014 by Bart Kiers
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
- *
- * Project      : python3-parser; an ANTLR4 grammar for Python 3
- *                https://github.com/bkiers/python3-parser
- * Developed by : Bart Kiers, bart@big-o.nl
- */
-
- /*
-  * This part was adjusted to meet to constraints of fandango.
-  */
-
 python
     : PYTHON_START (python_tag | NEWLINE)* PYTHON_END
-//    | compound_stmt (NEWLINE | EOF)
     ;
 
 python_tag:
-    (NEWLINE* (simple_stmts | compound_stmt) NEWLINE*)
+    (NEWLINE* (stmt) NEWLINE*)
     ;
 
-decorator
-    : '@' dotted_name ('(' arglist? ')')? NEWLINE
+// STARTING RULES
+// ==============
+
+python_file
+    : statements? EOF?
     ;
 
-decorators
-    : decorator+
+interactive
+    : statement_newline
     ;
 
-decorated
-    : decorators (classdef | funcdef | async_funcdef)
+eval
+    : expressions NEWLINE* EOF?
     ;
 
-async_funcdef
-    : ASYNC funcdef
+func_type
+    : '(' type_expressions? ')' '->' expression NEWLINE* EOF?
     ;
 
-funcdef
-    : 'def' name parameters ('->' test)? ':' block
-    ;
+// GENERAL STATEMENTS
+// ==================
 
-parameters
-    : '(' typedargslist? ')'
-    ;
-
-typedargslist
-    : (
-        tfpdef ('=' test)? (',' tfpdef ('=' test)?)* (
-            ',' (
-                '*' tfpdef? (',' tfpdef ('=' test)?)* (',' ('**' tfpdef ','?)?)?
-                | '**' tfpdef ','?
-            )?
-        )?
-        | '*' tfpdef? (',' tfpdef ('=' test)?)* (',' ('**' tfpdef ','?)?)?
-        | '**' tfpdef ','?
-    )
-    ;
-
-tfpdef
-    : name (':' test)?
-    ;
-
-varargslist
-    : (
-        vfpdef ('=' test)? (',' vfpdef ('=' test)?)* (
-            ',' (
-                '*' vfpdef? (',' vfpdef ('=' test)?)* (',' ('**' vfpdef ','?)?)?
-                | '**' vfpdef (',')?
-            )?
-        )?
-        | '*' vfpdef? (',' vfpdef ('=' test)?)* (',' ('**' vfpdef ','?)?)?
-        | '**' vfpdef ','?
-    )
-    ;
-
-vfpdef
-    : name
+statements
+    : (stmt | NEWLINE)+
     ;
 
 stmt
-    : simple_stmts
-    | compound_stmt
+    : compound_stmt
+    | simple_stmts
+    ;
+
+statement_newline
+    : compound_stmt NEWLINE
+    | simple_stmts
+    | NEWLINE
     ;
 
 simple_stmts
-    : simple_stmt (';' simple_stmt)* ';'? NEWLINE
+    :  simple_stmt (';' simple_stmt)* ';'? (NEWLINE+ | NEWLINE* EOF)
     ;
 
 simple_stmt
-    : (
-        expr_stmt
-        | del_stmt
-        | pass_stmt
-        | flow_stmt
-        | import_stmt
-        | global_stmt
-        | nonlocal_stmt
-        | assert_stmt
-    )
+    : assignment
+    | type_alias
+    | star_expressions
+    | return_stmt
+    | import_stmt
+    | raise_stmt
+    | 'pass'
+    | del_stmt
+    | yield_stmt
+    | assert_stmt
+    | 'break'
+    | 'continue'
+    | global_stmt
+    | nonlocal_stmt
     ;
 
-expr_stmt
-    : testlist_star_expr (
-        annassign
-        | augassign (yield_expr | testlist)
-        | ('=' (yield_expr | testlist_star_expr))*
-    )
+compound_stmt
+    : function_def
+    | if_stmt
+    | class_def
+    | with_stmt
+    | for_stmt
+    | try_stmt
+    | while_stmt
+    | match_stmt
     ;
 
-annassign
-    : ':' test ('=' test)?
+// SIMPLE STATEMENTS
+// =================
+
+assignment
+    : NAME ':' expression ('=' annotated_rhs)?
+    | ('(' single_target ')'
+         | single_subscript_attribute_target) ':' expression ('=' annotated_rhs)?
+    | (star_targets '=' )+ (yield_expr | star_expressions) ~'='
+    | single_target augassign (yield_expr | star_expressions)
     ;
 
-testlist_star_expr
-    : (test | star_expr) (',' (test | star_expr))* ','?
+annotated_rhs
+    : yield_expr
+    | star_expressions
     ;
 
 augassign
-    : (
-        '+='
-        | '-='
-        | '*='
-        | '@='
-        | '/='
-        | '%='
-        | '&='
-        | '|='
-        | '^='
-        | '<<='
-        | '>>='
-        | '**='
-        | '//='
-    )
-    ;
-
-// For normal and annotated assignments, additional restrictions enforced by the interpreter
-del_stmt
-    : 'del' exprlist
-    ;
-
-pass_stmt
-    : 'pass'
-    ;
-
-flow_stmt
-    : break_stmt
-    | continue_stmt
-    | return_stmt
-    | raise_stmt
-    | yield_stmt
-    ;
-
-break_stmt
-    : 'break'
-    ;
-
-continue_stmt
-    : 'continue'
+    : '+='
+    | '-='
+    | '*='
+    | '@='
+    | '/='
+    | '%='
+    | '&='
+    | '|='
+    | '^='
+    | '<<='
+    | '>>='
+    | '**='
+    | '//='
     ;
 
 return_stmt
-    : 'return' testlist?
+    : 'return' star_expressions?
+    ;
+
+raise_stmt
+    : 'raise' expression ('from' expression)?
+    | 'raise'
+    ;
+
+global_stmt
+    : 'global' NAME (',' NAME)*
+    ;
+
+nonlocal_stmt
+    : 'nonlocal' NAME (',' NAME)*
+    ;
+
+del_stmt
+    : 'del' del_targets
     ;
 
 yield_stmt
     : yield_expr
     ;
 
-raise_stmt
-    : 'raise' (test ('from' test)?)?
+assert_stmt
+    : 'assert' expression (',' expression)?
     ;
 
 import_stmt
@@ -302,125 +250,255 @@ import_stmt
     | import_from
     ;
 
+// Import statements
+// -----------------
+
 import_name
     : 'import' dotted_as_names
     ;
 
-// note below: the ('.' | '...') is necessary because '...' is tokenized as ELLIPSIS
 import_from
-    : (
-        'from' (('.' | '...')* dotted_name | ('.' | '...')+) 'import' (
-            '*'
-            | '(' import_as_names ')'
-            | import_as_names
-        )
-    )
+    : 'from' ('.' | '...')* dotted_name 'import' import_from_targets
+    | 'from' ('.' | '...')+ 'import' import_from_targets
     ;
 
-import_as_name
-    : name ('as' name)?
+import_from_targets
+    : '(' import_from_as_names ','? ')'
+    | import_from_as_names
+    | '*'
     ;
 
-dotted_as_name
-    : dotted_name ('as' name)?
+import_from_as_names
+    : import_from_as_name (',' import_from_as_name)*
     ;
 
-import_as_names
-    : import_as_name (',' import_as_name)* ','?
+import_from_as_name
+    : NAME ('as' NAME)?
     ;
 
 dotted_as_names
     : dotted_as_name (',' dotted_as_name)*
     ;
 
+dotted_as_name
+    : dotted_name ('as' NAME)?
+    ;
+
 dotted_name
-    : name ('.' name)*
+    : dotted_name '.' NAME
+    | NAME
     ;
 
-global_stmt
-    : 'global' name (',' name)*
+// COMPOUND STATEMENTS
+// ===================
+
+// Common elements
+// ---------------
+
+block
+    : NEWLINE INDENT statements DEDENT
+    | simple_stmts
     ;
 
-nonlocal_stmt
-    : 'nonlocal' name (',' name)*
+decorators
+    : ('@' named_expression NEWLINE)+
     ;
 
-assert_stmt
-    : 'assert' test (',' test)?
+// Class definitions
+// -----------------
+
+class_def
+    : decorators? class_def_raw
     ;
 
-compound_stmt
-    : if_stmt
-    | while_stmt
-    | for_stmt
-    | try_stmt
-    | with_stmt
-    | funcdef
-    | classdef
-    | decorated
-    | async_stmt
-    | match_stmt
+class_def_raw
+    : 'class' NAME type_params? ('(' arguments? ')')? ':' block
     ;
 
-async_stmt
-    : ASYNC (funcdef | with_stmt | for_stmt)
+// Function definitions
+// --------------------
+
+function_def
+    : decorators? function_def_raw
     ;
+
+function_def_raw
+    : 'async'? 'def' NAME type_params? '(' params? ')' ('->' expression)? ':' func_type_comment? block
+    ;
+
+// Function parameters
+// -------------------
+
+params
+    : parameters
+    ;
+
+parameters
+    : slash_no_default param_no_default* param_with_default* star_etc?
+    | slash_with_default param_with_default* star_etc?
+    | param_no_default+ param_with_default* star_etc?
+    | param_with_default+ star_etc?
+    | star_etc
+    ;
+
+// Some duplication here because we can't write (',' | &')'),
+// which is because we don't support empty alternatives (yet).
+
+slash_no_default
+    : param_no_default+ '/' ','?
+    ;
+
+slash_with_default
+    : param_no_default* param_with_default+ '/' ','?
+    ;
+
+star_etc
+    : '*' param_no_default param_maybe_default* kwds?
+    | '*' param_no_default_star_annotation param_maybe_default* kwds?
+    | '*' ',' param_maybe_default+ kwds?
+    | kwds
+    ;
+
+kwds
+    : '**' param_no_default
+    ;
+
+// One parameter.  This *includes* a following comma and type comment.
+//
+// There are three styles:
+// - No default
+// - With default
+// - Maybe with default
+//
+// There are two alternative forms of each, to deal with type comments:
+// - Ends in a comma followed by an optional type comment
+// - No comma, optional type comment, must be followed by close paren
+// The latter form is for a final parameter without trailing comma.
+//
+
+param_no_default
+    : param ','
+    | param
+    ;
+
+param_no_default_star_annotation
+    : param_star_annotation ','
+    | param_star_annotation
+    ;
+
+param_with_default
+    : param default ','
+    | param default
+    ;
+
+param_maybe_default
+    : param default? ','
+    | param default?
+    ;
+
+param
+    : NAME annotation?
+    ;
+
+param_star_annotation
+    : NAME star_annotation
+    ;
+
+annotation
+    : ':' expression
+    ;
+
+star_annotation
+    : ':' star_expression
+    ;
+
+default
+    : '=' expression
+    ;
+
+// If statement
+// ------------
 
 if_stmt
-    : 'if' test ':' block ('elif' test ':' block)* ('else' ':' block)?
+    : 'if' named_expression ':' block elif_stmt
+    | 'if' named_expression ':' block else_block?
     ;
+
+elif_stmt
+    : 'elif' named_expression ':' block elif_stmt
+    | 'elif' named_expression ':' block else_block?
+    ;
+
+else_block
+    : 'else' ':' block
+    ;
+
+// While statement
+// ---------------
 
 while_stmt
-    : 'while' test ':' block ('else' ':' block)?
+    : 'while' named_expression ':' block else_block?
     ;
+
+// For statement
+// -------------
 
 for_stmt
-    : 'for' exprlist 'in' testlist ':' block ('else' ':' block)?
+    : 'for' star_targets 'in' star_expressions ':'  block else_block?
+    | 'async' 'for' star_targets 'in' star_expressions ':'  block else_block?
     ;
 
-try_stmt
-    : (
-        'try' ':' block (
-            (except_clause ':' block)+ ('else' ':' block)? ('finally' ':' block)?
-            | 'finally' ':' block
-        )
-    )
-    ;
+// With statement
+// --------------
 
 with_stmt
-    : 'with' with_item (',' with_item)* ':' block
+    : 'with' '(' with_item (',' with_item)* ','? ')' ':' block
+    | 'with' with_item (',' with_item)* ':'  block
+    | 'async' 'with' '(' with_item (',' with_item)* ','? ')' ':' block
+    | 'async' 'with' with_item (',' with_item)* ':'  block
     ;
 
 with_item
-    : test ('as' expr)?
+    : expression 'as' star_target
+    | expression
     ;
 
-// NB compile.c makes sure that the default except clause is last
-except_clause
-    : 'except' (test ('as' name)?)?
+// Try statement
+// -------------
+
+try_stmt
+    : 'try' ':' block finally_block
+    | 'try' ':' block except_block+ else_block? finally_block?
+    | 'try' ':' block except_star_block+ else_block? finally_block?
     ;
 
-block
-    : simple_stmts
-    | NEWLINE stmt+
+
+// Except statement
+// ----------------
+
+except_block
+    : 'except' expression ('as' NAME)? ':' block
+    | 'except' ':' block
     ;
+
+except_star_block
+    : 'except' '*' expression ('as' NAME)? ':' block
+    ;
+
+finally_block
+    : 'finally' ':' block
+    ;
+
+// Match statement
+// ---------------
 
 match_stmt
-    : 'match' subject_expr ':' NEWLINE case_block+
+    : 'match' subject_expr ':' NEWLINE INDENT case_block+ DEDENT
     ;
 
 subject_expr
     : star_named_expression ',' star_named_expressions?
-    | test
-    ;
-
-star_named_expressions
-    : ',' star_named_expression+ ','?
-    ;
-
-star_named_expression
-    : '*' expr
-    | test
+    | named_expression
     ;
 
 case_block
@@ -428,7 +506,7 @@ case_block
     ;
 
 guard
-    : 'if' test
+    : 'if' named_expression
     ;
 
 patterns
@@ -460,6 +538,7 @@ closed_pattern
     | class_pattern
     ;
 
+// Literal patterns are used for equality and identity constraints
 literal_pattern
     : signed_number
     | complex_number
@@ -469,6 +548,7 @@ literal_pattern
     | 'False'
     ;
 
+// Literal expressions are used to restrict permitted mapping pattern keys
 literal_expr
     : signed_number
     | complex_number
@@ -506,7 +586,7 @@ capture_pattern
     ;
 
 pattern_capture_target
-    : /* cannot be '_' */ name
+    : NAME
     ;
 
 wildcard_pattern
@@ -518,12 +598,12 @@ value_pattern
     ;
 
 attr
-    : name ('.' name)+
+    : name_or_attr '.' NAME
     ;
 
 name_or_attr
-    : attr
-    | name
+    : name_or_attr '.' NAME
+    | NAME
     ;
 
 group_pattern
@@ -588,189 +668,537 @@ keyword_patterns
     ;
 
 keyword_pattern
-    : name '=' pattern
+    : NAME '=' pattern
     ;
 
-test
-    : or_test ('if' or_test 'else' test)?
+// Type statement
+// ---------------
+
+type_alias
+    : 'type' NAME type_params? '=' expression
+    ;
+
+// Type parameter declaration
+// --------------------------
+
+type_params
+    : '[' type_param_seq  ']'
+    ;
+
+type_param_seq
+    : type_param (',' type_param)* ','?
+    ;
+
+type_param
+    : NAME type_param_bound?
+    | '*' NAME
+    | '**' NAME
+    ;
+
+type_param_bound
+    : ':' expression
+    ;
+
+// EXPRESSIONS
+// -----------
+
+expressions
+    : expression (',' expression )* ','?
+    ;
+
+expression
+    : disjunction 'if' disjunction 'else' expression
+    | disjunction
     | lambdef
     ;
 
-test_nocond
-    : or_test
-    | lambdef_nocond
+yield_expr
+    : 'yield' 'from' expression
+    | 'yield' star_expressions?
     ;
 
-lambdef
-    : 'lambda' varargslist? ':' test
+star_expressions
+    : star_expression (',' star_expression )* ','?
     ;
 
-lambdef_nocond
-    : 'lambda' varargslist? ':' test_nocond
+star_expression
+    : '*' bitwise_or
+    | expression
     ;
 
-or_test
-    : and_test ('or' and_test)*
+star_named_expressions
+    : star_named_expression (',' star_named_expression )* ','?
     ;
 
-and_test
-    : not_test ('and' not_test)*
+star_named_expression
+    : '*' bitwise_or
+    | named_expression
     ;
 
-not_test
-    : 'not' not_test
+assignment_expression
+    : NAME ':=' expression
+    ;
+
+named_expression
+    : assignment_expression
+    | expression
+    ;
+
+disjunction
+    : conjunction ('or' conjunction )*
+    ;
+
+conjunction
+    : inversion ('and' inversion )*
+    ;
+
+inversion
+    : 'not' inversion
     | comparison
     ;
 
+// Comparison operators
+// --------------------
+
 comparison
-    : expr (comp_op expr)*
+    : bitwise_or compare_op_bitwise_or_pair*
     ;
 
-// <> isn't actually a valid comparison operator in Python. It's here for the
-// sake of a __future__ import described in PEP 401 (which really works :-)
-comp_op
-    : '<'
-    | '>'
-    | '=='
-    | '>='
-    | '<='
-    | '<>'
-    | '!='
-    | 'in'
-    | 'not' 'in'
-    | 'is'
-    | 'is' 'not'
+compare_op_bitwise_or_pair
+    : eq_bitwise_or
+    | noteq_bitwise_or
+    | lte_bitwise_or
+    | lt_bitwise_or
+    | gte_bitwise_or
+    | gt_bitwise_or
+    | notin_bitwise_or
+    | in_bitwise_or
+    | isnot_bitwise_or
+    | is_bitwise_or
     ;
 
-star_expr
-    : '*' expr
+eq_bitwise_or
+    : '==' bitwise_or
     ;
 
-expr
-    : selector
-    | atom_expr
-    | expr '**' expr
-    | ('+' | '-' | '~')+ expr
-    | expr ('*' | '@' | '/' | '%' | '//') expr
-    | expr ('+' | '-') expr
-    | expr ('<<' | '>>') expr
-    | expr '&' expr
-    | expr '^' expr
-    | expr '|' expr
+noteq_bitwise_or
+    : '!=' bitwise_or
     ;
 
-//expr: xor_expr ('|' xor_expr)*;
-//xor_expr: and_expr ('^' and_expr)*;
-//and_expr: shift_expr ('&' shift_expr)*;
-//shift_expr: arith_expr (('<<'|'>>') arith_expr)*;
-//arith_expr: term (('+'|'-') term)*;
-//term: factor (('*'|'@'|'/'|'%'|'//') factor)*;
-//factor: ('+'|'-'|'~') factor | power;
-//power: atom_expr ('**' factor)?;
-atom_expr
-    : AWAIT? atom trailer*
+lte_bitwise_or
+    : '<=' bitwise_or
+    ;
+
+lt_bitwise_or
+    : '<' bitwise_or
+    ;
+
+gte_bitwise_or
+    : '>=' bitwise_or
+    ;
+
+gt_bitwise_or
+    : '>' bitwise_or
+    ;
+
+notin_bitwise_or
+    : 'not' 'in' bitwise_or
+    ;
+
+in_bitwise_or
+    : 'in' bitwise_or
+    ;
+
+isnot_bitwise_or
+    : 'is' 'not' bitwise_or
+    ;
+
+is_bitwise_or
+    : 'is' bitwise_or
+    ;
+
+// Bitwise operators
+// -----------------
+
+bitwise_or
+    : bitwise_or '|' bitwise_xor
+    | bitwise_xor
+    ;
+
+bitwise_xor
+    : bitwise_xor '^' bitwise_and
+    | bitwise_and
+    ;
+
+bitwise_and
+    : bitwise_and '&' shift_expr
+    | shift_expr
+    ;
+
+shift_expr
+    : shift_expr '<<' sum
+    | shift_expr '>>' sum
+    | sum
+    ;
+
+// Arithmetic operators
+// --------------------
+
+sum
+    : sum '+' term
+    | sum '-' term
+    | term
+    ;
+
+term
+    : term '*' factor
+    | term '/' factor
+    | term '//' factor
+    | term '%' factor
+    | term '@' factor
+    | factor
+    ;
+
+factor
+    : '+' factor
+    | '-' factor
+    | '~' factor
+    | power
+    ;
+
+power
+    : await_primary '**' factor
+    | await_primary
+    ;
+
+// Primary elements
+// ----------------
+
+// Primary elements are things like "obj.something.something", "obj[something]", "obj(something)", "obj" ...
+
+await_primary
+    : 'await' primary
+    | primary
+    ;
+
+primary
+    : primary '.' NAME
+    | primary genexp
+    | primary '(' arguments? ')'
+    | primary '[' slices ']'
+    | atom
+    ;
+
+slices
+    : (slice | starred_expression) (',' (slice | starred_expression))* ','?
+    ;
+
+slice
+    : expression? ':' expression? (':' expression?)?
+    | named_expression
     ;
 
 atom
-    : '(' (yield_expr | testlist_comp)? ')'
-    | '[' testlist_comp? ']'
-    | '{' dictorsetmaker? '}'
-    | name
-    | NUMBER
-    | STRING+
-    | '...'
-    | 'None'
+    : selector_length
+    | NAME
     | 'True'
     | 'False'
+    | 'None'
+    | strings
+    | NUMBER
+    | (tuple | group | genexp)
+    | (list | listcomp)
+    | (dict | set | dictcomp | setcomp)
+    | '...'
     ;
 
-name
+group
+    : '(' (yield_expr | named_expression) ')'
+    ;
+
+// Lambda functions
+// ----------------
+
+lambdef
+    : 'lambda' lambda_params? ':' expression
+    ;
+
+lambda_params
+    : lambda_parameters
+    ;
+
+// lambda_parameters etc. duplicates parameters but without annotations
+// or type comments, and if there's no comma after a parameter, we expect
+// a colon, not a close parenthesis.  (For more, see parameters above.)
+//
+lambda_parameters
+    : lambda_slash_no_default lambda_param_no_default* lambda_param_with_default* lambda_star_etc?
+    | lambda_slash_with_default lambda_param_with_default* lambda_star_etc?
+    | lambda_param_no_default+ lambda_param_with_default* lambda_star_etc?
+    | lambda_param_with_default+ lambda_star_etc?
+    | lambda_star_etc
+    ;
+
+lambda_slash_no_default
+    : lambda_param_no_default+ '/' ','?
+    ;
+
+lambda_slash_with_default
+    : lambda_param_no_default* lambda_param_with_default+ '/' ','?
+    ;
+
+lambda_star_etc
+    : '*' lambda_param_no_default lambda_param_maybe_default* lambda_kwds?
+    | '*' ',' lambda_param_maybe_default+ lambda_kwds?
+    | lambda_kwds
+    ;
+
+lambda_kwds
+    : '**' lambda_param_no_default
+    ;
+
+lambda_param_no_default
+    : lambda_param ','?
+    ;
+
+lambda_param_with_default
+    : lambda_param default ','?
+    ;
+
+lambda_param_maybe_default
+    : lambda_param default? ','?
+    ;
+
+lambda_param
     : NAME
-    | '_'
-    | 'match'
     ;
 
-testlist_comp
-    : (test | star_expr) (comp_for | (',' (test | star_expr))* ','?)
+// LITERALS
+// ========
+
+fstring_middle
+    : fstring_replacement_field
+    | FSTRING_MIDDLE
     ;
 
-trailer
-    : '(' arglist? ')'
-    | '[' subscriptlist ']'
-    | '.' name
+fstring_replacement_field
+    : '{' (yield_expr | star_expressions) '='? fstring_conversion? fstring_full_format_spec? '}'
     ;
 
-subscriptlist
-    : subscript_ (',' subscript_)* ','?
+fstring_conversion:
+    | '!' NAME
     ;
 
-subscript_
-    : test
-    | test? ':' test? sliceop?
+fstring_full_format_spec
+    : ':' fstring_format_spec*
     ;
 
-sliceop
-    : ':' test?
+fstring_format_spec
+    : FSTRING_MIDDLE
+    | fstring_replacement_field
     ;
 
-exprlist
-    : (expr | star_expr) (',' (expr | star_expr))* ','?
+fstring
+    : FSTRING_START fstring_middle* FSTRING_END
     ;
 
-testlist
-    : test (',' test)* ','?
-    ;
-
-dictorsetmaker
-    : (
-        ((test ':' test | '**' expr) (comp_for | (',' (test ':' test | '**' expr))* ','?))
-        | ((test | star_expr) (comp_for | (',' (test | star_expr))* ','?))
-    )
-    ;
-
-classdef
-    : 'class' name ('(' arglist? ')')? ':' block
-    ;
-
-arglist
-    : argument (',' argument)* ','?
-    ;
-
-// The reason that keywords are test nodes instead of NAME is that using NAME
-// results in an ambiguity. ast.c makes sure it's a NAME.
-// "test '=' test" is really "keyword '=' test", but we have no such token.
-// These need to be in a single rule to avoid grammar that is ambiguous
-// to our LL(1) parser. Even though 'test' includes '*expr' in star_expr,
-// we explicitly match '*' here, too, to give it proper precedence.
-// Illegal combinations and orderings are blocked in ast.c:
-// multiple (test comp_for) arguments are blocked; keyword unpackings
-// that precede iterable unpackings are blocked; etc.
-argument
-    : (test comp_for? | test '=' test | '**' test | '*' test)
-    ;
-
-comp_iter
-    : comp_for
-    | comp_if
-    ;
-
-comp_for
-    : ASYNC? 'for' exprlist 'in' or_test comp_iter?
-    ;
-
-comp_if
-    : 'if' test_nocond comp_iter?
-    ;
-
-yield_expr
-    : 'yield' yield_arg?
-    ;
-
-yield_arg
-    : 'from' test
-    | testlist
+string
+    : STRING
     ;
 
 strings
-    : STRING+
+    : (fstring | string)+
     ;
+
+list
+    : '[' star_named_expressions? ']'
+    ;
+
+tuple
+    : '(' (star_named_expression ',' (star_named_expressions))? ')'
+    ;
+
+set
+    : '{' star_named_expressions '}'
+    ;
+
+// Dicts
+// -----
+
+dict
+    : '{' double_starred_kvpairs? '}'
+    ;
+
+double_starred_kvpairs
+    : double_starred_kvpair (',' double_starred_kvpair)* ','?
+    ;
+
+double_starred_kvpair
+    : '**' bitwise_or
+    | kvpair
+    ;
+
+kvpair
+    : expression ':' expression
+    ;
+
+// Comprehensions & Generators
+// ---------------------------
+
+for_if_clauses
+    : for_if_clause+
+    ;
+
+for_if_clause
+    : 'async'? 'for' star_targets 'in' disjunction ('if' disjunction)*
+    ;
+
+listcomp
+    : '[' named_expression for_if_clauses ']'
+    ;
+
+setcomp
+    : '{' named_expression for_if_clauses '}'
+    ;
+
+genexp
+    : '(' (assignment_expression | expression) for_if_clauses ')'
+    ;
+
+dictcomp
+    : '{' kvpair for_if_clauses '}'
+    ;
+
+// FUNCTION CALL ARGUMENTS
+// =======================
+
+arguments
+    : args ','?
+    ;
+
+args
+    : arg (',' arg)* (',' kwargs)?
+    | kwargs
+    ;
+
+arg
+    : starred_expression
+    | assignment_expression
+    | expression
+    ;
+
+kwargs
+    : kwarg_or_starred (',' kwarg_or_starred)* ',' kwarg_or_double_starred (',' kwarg_or_double_starred)*
+    | kwarg_or_starred (',' kwarg_or_starred)*
+    | kwarg_or_double_starred (',' kwarg_or_double_starred)*
+    ;
+
+starred_expression
+    : '*' expression
+    ;
+
+kwarg_or_starred
+    : NAME '=' expression
+    | starred_expression
+    ;
+
+kwarg_or_double_starred
+    : NAME '=' expression
+    | '**' expression
+    ;
+
+// ASSIGNMENT TARGETS
+// ==================
+
+// Generic targets
+// ---------------
+
+// NOTE: star_targets may contain *bitwise_or, targets may not.
+star_targets
+    : star_target (',' star_target )* ','?
+    ;
+
+star_targets_list_seq
+    : star_target (',' star_target )* ','?
+    ;
+
+star_targets_tuple_seq
+    : star_target (',' star_target )+ ','?
+    | star_target ','
+    ;
+
+star_target
+    : '*' star_target
+    | target_with_star_atom
+    ;
+
+target_with_star_atom
+    : t_primary '.' NAME
+    | t_primary '[' slices ']'
+    | star_atom
+    ;
+
+star_atom
+    : NAME
+    | '(' target_with_star_atom ')'
+    | '(' star_targets_tuple_seq? ')'
+    | '[' star_targets_list_seq? ']'
+    ;
+
+single_target
+    : single_subscript_attribute_target
+    | NAME
+    | '(' single_target ')'
+    ;
+
+single_subscript_attribute_target
+    : t_primary '.' NAME
+    | t_primary '[' slices ']'
+    ;
+
+t_primary
+    : t_primary '.' NAME
+    | t_primary '[' slices ']'
+    | t_primary genexp
+    | t_primary '(' arguments? ')'
+    | atom
+    ;
+
+// Targets for del statements
+// --------------------------
+
+del_targets
+    : del_target (',' del_target)* ','?
+    ;
+
+del_target
+    : t_primary '.' NAME
+    | t_primary '[' slices ']'
+    | del_t_atom
+    ;
+
+del_t_atom
+    : NAME
+    | '(' del_targets? ')'
+    | '[' del_targets? ']'
+    ;
+
+// TYPING ELEMENTS
+// ---------------
+
+// type_expressions allow */** but ignore them
+type_expressions
+    : expression (',' expression)* ',' '*' expression ',' '**' expression
+    | expression (',' expression)* ',' '*' expression
+    | expression (',' expression)* ',' '**' expression
+    | '*' expression ',' '**' expression
+    | '*' expression
+    | '**' expression
+    | expression (',' expression)*
+    ;
+
+func_type_comment
+    : NEWLINE
+    ;
+
+// ========================= END OF THE GRAMMAR ===========================

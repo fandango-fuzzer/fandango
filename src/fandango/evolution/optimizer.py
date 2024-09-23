@@ -23,10 +23,19 @@ class GeneticAlgorithmOptimizer:
     :param verbose: Whether to print progress during evolution
     """
 
-    def __init__(self, grammar: Grammar, constraints: List[Constraint], population_size: int = 100,
-                 generations: int = 100, elite_fraction: float = 0.1, mutation_rate: float = 0.01,
-                 mutation_method: str = "random", crossover_rate: float = 0.2, crossover_method: str = "random",
-                 verbose: bool = False):
+    def __init__(
+        self,
+        grammar: Grammar,
+        constraints: List[Constraint],
+        population_size: int = 100,
+        generations: int = 100,
+        elite_fraction: float = 0.1,
+        mutation_rate: float = 0.01,
+        mutation_method: str = "random",
+        crossover_rate: float = 0.2,
+        crossover_method: str = "random",
+        verbose: bool = False,
+    ):
         self.grammar = grammar
         self.constraints = constraints
         self.generations = generations
@@ -41,10 +50,15 @@ class GeneticAlgorithmOptimizer:
         # Initialize population
         self.population = [self.grammar.fuzz() for _ in range(population_size)]
 
-        self.current_fitness = sum([self.evaluate_fitness(tree)[0] for tree in self.population]) / population_size
+        self.current_fitness = (
+            sum([self.evaluate_fitness(tree)[0] for tree in self.population])
+            / population_size
+        )
         self.current_generation = 0
 
-    def evaluate_fitness(self, tree: DerivationTree) -> Tuple[float, Set[DerivationTree]]:
+    def evaluate_fitness(
+        self, tree: DerivationTree
+    ) -> Tuple[float, Set[DerivationTree]]:
         """
         Retrieves the fitness score and failing nodes for a derivation tree based on the constraint system.
         :param tree: The derivation tree to evaluate
@@ -151,12 +165,21 @@ class GeneticAlgorithmOptimizer:
 
         # Sort the population by fitness in descending order
         fitness_scores = [self.evaluate_fitness(tree) for tree in self.population]
-        sorted_population = [tree for _, tree in sorted(zip(fitness_scores, self.population), key=lambda pair: pair[0], reverse=True)]
+        sorted_population = [
+            tree
+            for _, tree in sorted(
+                zip(fitness_scores, self.population),
+                key=lambda pair: pair[0],
+                reverse=True,
+            )
+        ]
 
         # Return the top-performing trees
         return sorted_population[:num_elites]
 
-    def crossover(self, parent1: DerivationTree, parent2: DerivationTree) -> List[DerivationTree]:
+    def crossover(
+        self, parent1: DerivationTree, parent2: DerivationTree
+    ) -> List[DerivationTree]:
         """
         Perform intelligent crossover between two parent derivation trees focusing on failing parts.
         :param parent1: First parent tree
@@ -168,9 +191,13 @@ class GeneticAlgorithmOptimizer:
         elif self.crossover_method == "constraint_driven":
             return self._constraint_driven_crossover(parent1, parent2)
         else:
-            raise ValueError("Invalid crossover method. Choose 'random' or 'constraint_driven'.")
+            raise ValueError(
+                "Invalid crossover method. Choose 'random' or 'constraint_driven'."
+            )
 
-    def _random_crossover(self, parent1: DerivationTree, parent2: DerivationTree) -> List[DerivationTree]:
+    def _random_crossover(
+        self, parent1: DerivationTree, parent2: DerivationTree
+    ) -> List[DerivationTree]:
         offspring1 = copy.deepcopy(parent1)
         offspring2 = copy.deepcopy(parent2)
 
@@ -193,12 +220,16 @@ class GeneticAlgorithmOptimizer:
 
         return [offspring1, offspring2]
 
-    def _random_crossover_point(self, tree: DerivationTree) -> (DerivationTree, DerivationTree):
+    def _random_crossover_point(
+        self, tree: DerivationTree
+    ) -> (DerivationTree, DerivationTree):
         all_nodes = []
         self._collect_nodes(tree, all_nodes, None)
 
         # Exclude root nodes
-        valid_nodes = [(node, parent) for node, parent in all_nodes if parent is not None]
+        valid_nodes = [
+            (node, parent) for node, parent in all_nodes if parent is not None
+        ]
 
         if not valid_nodes:
             return None, None
@@ -206,8 +237,12 @@ class GeneticAlgorithmOptimizer:
         node, parent = random.choice(valid_nodes)
         return node, parent
 
-    def _collect_nodes(self, tree: DerivationTree, all_nodes: List[Tuple[DerivationTree, DerivationTree]],
-                       parent: DerivationTree):
+    def _collect_nodes(
+        self,
+        tree: DerivationTree,
+        all_nodes: List[Tuple[DerivationTree, DerivationTree]],
+        parent: DerivationTree,
+    ):
         """
         Helper function to collect all nodes in a tree along with their parent nodes.
         :param tree: The derivation tree to traverse
@@ -221,7 +256,9 @@ class GeneticAlgorithmOptimizer:
         for child in tree.children:
             self._collect_nodes(child, all_nodes, tree)  # Recursively collect children
 
-    def _constraint_driven_crossover(self, parent1: DerivationTree, parent2: DerivationTree) -> List[DerivationTree]:
+    def _constraint_driven_crossover(
+        self, parent1: DerivationTree, parent2: DerivationTree
+    ) -> List[DerivationTree]:
         """
         Perform intelligent crossover between two parent derivation trees focusing on failing parts.
         :param parent1: First parent tree
@@ -292,7 +329,9 @@ class GeneticAlgorithmOptimizer:
             parent_node = node_to_mutate.parent
 
             # Replace the failing node with a new subtree generated from the same symbol
-            new_subtree = NonTerminal(node_to_mutate.symbol.symbol).fuzz(self.grammar.rules)[0]
+            new_subtree = NonTerminal(node_to_mutate.symbol.symbol).fuzz(
+                self.grammar.rules
+            )[0]
             new_subtree.parent = parent_node
 
             if parent_node:
@@ -329,15 +368,21 @@ class GeneticAlgorithmOptimizer:
             self.select_next_generation()
 
             # Evaluate the fitness of the new population
-            fitness_scores = [self.evaluate_fitness(tree)[0] for tree in self.population]
+            fitness_scores = [
+                self.evaluate_fitness(tree)[0] for tree in self.population
+            ]
             self.current_fitness = sum(fitness_scores) / len(fitness_scores)
 
             if self.verbose:
-                print(f"Generation {generation + 1}: average fitness = {self.current_fitness:.4f}")
+                print(
+                    f"Generation {generation + 1}: average fitness = {self.current_fitness:.4f}"
+                )
 
             # Stop early if the entire population reaches perfect fitness
             if self.current_fitness > 0.80:
-                print(f"All individuals have perfect fitness in generation {generation + 1}")
+                print(
+                    f"All individuals have perfect fitness in generation {generation + 1}"
+                )
                 break
 
         return self.population

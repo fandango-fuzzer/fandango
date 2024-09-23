@@ -28,6 +28,26 @@ class NonTerminalSearch(abc.ABC):
         return all_nodes
 
 
+class LengthSearch(NonTerminalSearch):
+    def __init__(self, value: NonTerminalSearch, grammar: Grammar):
+        super().__init__(grammar)
+        self.value = value
+
+    def find(
+        self,
+        trees: List[DerivationTree],
+        scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
+    ) -> List[DerivationTree]:
+        return [len(self.value.find(trees, scope=scope))]
+
+    def find_all(
+        self,
+        trees: List[DerivationTree],
+        scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
+    ) -> List[DerivationTree]:
+        return [len(self.value.find_all(trees, scope=scope))]
+
+
 class RuleSearch(NonTerminalSearch):
     def __init__(self, symbol: NonTerminal, grammar: Grammar):
         super().__init__(grammar)
