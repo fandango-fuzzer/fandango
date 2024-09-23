@@ -1,10 +1,9 @@
 import abc
-import ast
 import enum
 import itertools
 from typing import Tuple, List, Dict, Any, Optional
 
-from fandango.language.grammar import DerivationTree
+from fandango.language.grammar import DerivationTree, NonTerminal
 from fandango.language.search import NonTerminalSearch
 
 
@@ -38,14 +37,16 @@ class Constraint(abc.ABC):
 
     @abc.abstractmethod
     def fitness(
-        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
+        self,
+        tree: DerivationTree,
+        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
     ) -> Fitness:
         raise NotImplementedError("Fitness function not implemented")
 
     def combinations(
         self,
         trees: List[DerivationTree],
-        scope: Optional[Dict[str, DerivationTree]] = None,
+        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
     ):
         nodes: List[List[Tuple[str, DerivationTree]]] = []
         for name, search in self.searches.items():
@@ -74,9 +75,8 @@ class ExpressionConstraint(Constraint):
             return Fitness(0, 0, False)
         for combination in self.combinations(tree.children, scope):
             local_variables = self.local_variables.copy()
-            local_variables.update({name: str(node) for name, node in combination})
+            local_variables.update({name: node for name, node in combination})
             try:
-                ast.literal_eval()
                 if eval(self.expression, self.global_variables, local_variables):
                     solved += 1
                 else:
@@ -150,19 +150,30 @@ class ComparisonConstraint(Constraint):
 
 
 class ConjunctionConstraint(Constraint):
-    def __init__(self, constraints: List[Constraint], *args, **kwargs):
+    def __init__(
+        self, constraints: List[Constraint], *args, lazy: bool = False, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self.constraints = constraints
+        self.lazy = lazy
 
     def fitness(
         self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
     ) -> Fitness:
-        fitness_values = [
-            constraint.fitness(tree, scope) for constraint in self.constraints
-        ]
+        if self.lazy:
+            fitness_values = list()
+            for constraint in self.constraints:
+                fitness = constraint.fitness(tree, scope)
+                fitness_values.append(fitness)
+                if not fitness.success:
+                    break
+        else:
+            fitness_values = [
+                constraint.fitness(tree, scope) for constraint in self.constraints
+            ]
         solved = sum(fitness.solved for fitness in fitness_values)
         total = sum(fitness.total for fitness in fitness_values)
-        overall = any(fitness.success for fitness in fitness_values)
+        overall = all(fitness.success for fitness in fitness_values)
         failing_trees = list(
             itertools.chain.from_iterable(
                 fitness.failing_trees for fitness in fitness_values
@@ -181,16 +192,27 @@ class ConjunctionConstraint(Constraint):
 
 
 class DisjunctionConstraint(Constraint):
-    def __init__(self, constraints: List[Constraint], *args, **kwargs):
+    def __init__(
+        self, constraints: List[Constraint], *args, lazy: bool = False, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self.constraints = constraints
+        self.lazy = lazy
 
     def fitness(
         self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
     ) -> Fitness:
-        fitness_values = [
-            constraint.fitness(tree, scope) for constraint in self.constraints
-        ]
+        if self.lazy:
+            fitness_values = list()
+            for constraint in self.constraints:
+                fitness = constraint.fitness(tree, scope)
+                fitness_values.append(fitness)
+                if fitness.success:
+                    break
+        else:
+            fitness_values = [
+                constraint.fitness(tree, scope) for constraint in self.constraints
+            ]
         solved = sum(fitness.solved for fitness in fitness_values)
         total = sum(fitness.total for fitness in fitness_values)
         overall = any(fitness.success for fitness in fitness_values)
@@ -229,6 +251,102 @@ class ImplicationConstraint(Constraint):
                 1,
                 True,
             )
+
+
+class ExistsConstraint(Constraint):
+    def __init__(
+        self,
+        statement: Constraint,
+        bound: NonTerminal,
+        search: NonTerminalSearch,
+        *args,
+        lazy: bool = False,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.statement = statement
+        self.bound = bound
+        self.search = search
+        self.lazy = lazy
+
+    def fitness(
+        self,
+        tree: DerivationTree,
+        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+    ) -> Fitness:
+        fitness_values = list()
+        scope = scope or dict()
+        for dt in self.search.find_all(trees=[tree], scope=scope):
+            scope[self.bound] = dt
+            fitness = self.statement.fitness(tree, scope)
+            fitness_values.append(fitness)
+            if self.lazy and fitness.success:
+                break
+        solved = sum(fitness.solved for fitness in fitness_values)
+        total = sum(fitness.total for fitness in fitness_values)
+        overall = any(fitness.success for fitness in fitness_values)
+        failing_trees = list(
+            itertools.chain.from_iterable(
+                fitness.failing_trees for fitness in fitness_values
+            )
+        )
+        total += 1
+        if overall:
+            solved = total + 1
+        return Fitness(
+            solved,
+            total,
+            overall,
+            failing_trees=failing_trees,
+        )
+
+
+class ForallConstraint(Constraint):
+    def __init__(
+        self,
+        statement: Constraint,
+        bound: NonTerminal,
+        search: NonTerminalSearch,
+        *args,
+        lazy: bool = False,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.statement = statement
+        self.bound = bound
+        self.search = search
+        self.lazy = lazy
+
+    def fitness(
+        self,
+        tree: DerivationTree,
+        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+    ) -> Fitness:
+        fitness_values = list()
+        scope = scope or dict()
+        for dt in self.search.find_all(trees=[tree], scope=scope):
+            scope[self.bound] = dt
+            fitness = self.statement.fitness(tree, scope)
+            fitness_values.append(fitness)
+            if self.lazy and not fitness.success:
+                break
+        solved = sum(fitness.solved for fitness in fitness_values)
+        total = sum(fitness.total for fitness in fitness_values)
+        overall = all(fitness.success for fitness in fitness_values)
+        failing_trees = list(
+            itertools.chain.from_iterable(
+                fitness.failing_trees for fitness in fitness_values
+            )
+        )
+        total += 1
+        if overall:
+            solved = total + 1
+        return Fitness(
+            solved,
+            total,
+            overall,
+            failing_trees=failing_trees,
+        )
 
 
 """

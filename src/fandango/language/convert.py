@@ -2,8 +2,6 @@ import ast
 from io import UnsupportedOperation
 from typing import List, Tuple, Dict
 
-from numpy.ma.core import identity
-
 from fandango.constraints.base import (
     ConjunctionConstraint,
     DisjunctionConstraint,
@@ -105,9 +103,7 @@ class ConstraintProcessor(FandangoParserVisitor):
             return DisjunctionConstraint(constraints)
 
     def visitFormula_conjunction(self, ctx: FandangoParser.Formula_conjunctionContext):
-        constraints = [
-            self.visit(constraint) for constraint in ctx.formula_conjunction()
-        ]
+        constraints = [self.visit(constraint) for constraint in ctx.formula_atom()]
         if len(constraints) == 1:
             return constraints[0]
         else:
@@ -130,7 +126,6 @@ class ConstraintProcessor(FandangoParserVisitor):
             expr, _, search_map = self.searches.visit(ctx.expression())
         else:
             raise ValueError(f"Unknown expression: {ctx.getText()}")
-        expr: ast.AST
         return ExpressionConstraint(ast.unparse(expr), searches=search_map)
 
     def visitFormula_comparison(self, ctx: FandangoParser.Formula_comparisonContext):
@@ -150,9 +145,12 @@ class ConstraintProcessor(FandangoParserVisitor):
             raise UnsupportedOperation(f"Unknown operator in {ctx}")
         left, _, left_map = self.searches.visit(ctx.expr(0))
         right, _, right_map = self.searches.visit(ctx.expr(1))
-        left = ast.unparse(left)
-        right = ast.unparse(right)
-        return ComparisonConstraint(op, left, right, searches={**left_map, **right_map})
+        return ComparisonConstraint(
+            op,
+            ast.unparse(left),
+            ast.unparse(right),
+            searches={**left_map, **right_map},
+        )
 
 
 class SearchProcessor(FandangoParserVisitor):
