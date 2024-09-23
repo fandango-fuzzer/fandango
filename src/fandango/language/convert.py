@@ -9,6 +9,8 @@ from fandango.constraints.base import (
     ExpressionConstraint,
     Comparison,
     ComparisonConstraint,
+    ExistsConstraint,
+    ForallConstraint,
 )
 from fandango.language.grammar import (
     Grammar,
@@ -72,12 +74,13 @@ class GrammarProcessor(FandangoParserVisitor):
 
 
 class ConstraintProcessor(FandangoParserVisitor):
-    def __init__(self, grammar: Grammar):
+    def __init__(self, grammar: Grammar, lazy: bool = False):
         self.searches = SearchProcessor(grammar)
+        self.lazy = lazy
 
     def get_constraints(self, constraints: List[FandangoParser.ConstraintContext]):
         return ConjunctionConstraint(
-            [self.visit(constraint) for constraint in constraints]
+            [self.visit(constraint) for constraint in constraints], lazy=self.lazy
         )
 
     def visitConstraint(self, ctx: FandangoParser.ConstraintContext):
@@ -92,6 +95,18 @@ class ConstraintProcessor(FandangoParserVisitor):
     def visitQuantifier(self, ctx: FandangoParser.QuantifierContext):
         if ctx.formula_disjunction():
             return self.visit(ctx.formula_disjunction())
+        elif ctx.EXISTS() or ctx.FORALL():
+            constraint = self.visit(ctx.quantifier())
+            bound = NonTerminal(ctx.RULE_NAME().getText())
+            search = self.searches.visit(ctx.selector())[1][0]
+            if ctx.EXISTS():
+                return ExistsConstraint(constraint, bound, search, lazy=self.lazy)
+            elif ctx.FORALL():
+                return ForallConstraint(constraint, bound, search, lazy=self.lazy)
+            else:
+                raise ValueError(f"Unknown quantifier: {ctx.getText()}")
+        else:
+            raise ValueError(f"Unknown quantifier: {ctx.getText()}")
 
     def visitFormula_disjunction(self, ctx: FandangoParser.Formula_disjunctionContext):
         constraints = [
@@ -100,14 +115,14 @@ class ConstraintProcessor(FandangoParserVisitor):
         if len(constraints) == 1:
             return constraints[0]
         else:
-            return DisjunctionConstraint(constraints)
+            return DisjunctionConstraint(constraints, lazy=self.lazy)
 
     def visitFormula_conjunction(self, ctx: FandangoParser.Formula_conjunctionContext):
         constraints = [self.visit(constraint) for constraint in ctx.formula_atom()]
         if len(constraints) == 1:
             return constraints[0]
         else:
-            return ConjunctionConstraint(constraints)
+            return ConjunctionConstraint(constraints, lazy=self.lazy)
 
     def visitFormula_atom(self, ctx: FandangoParser.Formula_atomContext):
         if ctx.implies():
