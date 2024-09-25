@@ -11,14 +11,17 @@ from fuzzingbook.GrammarFuzzer import (
     FasterGrammarFuzzer,
 )
 
+from fandango.constraints.base import ComparisonConstraint, Comparison
+from fandango.language.parse import parse
 from fandango.language.convert import (
     FandangoSplitter,
     GrammarProcessor,
     SearchProcessor,
 )
-from fandango.language.grammar import Alternative, Grammar
+from fandango.language.grammar import Alternative, Grammar, NonTerminal
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
+from fandango.language.search import RuleSearch
 
 
 class TestLanguage(unittest.TestCase):
@@ -178,3 +181,83 @@ class TestLanguage(unittest.TestCase):
     )
     def test_conversion_without_replace(self, expression):
         self._test_conversion_without_replace(expression)
+
+    @parameterized.expand(
+        [
+            ("<x>", True, True),
+            ("<x> and True", True, True),
+            ("<x> or False", True, True),
+            ("<x> + 3", 2, 5),
+            ("<x> - 3", 2, -1),
+            ("<x> * 3", 2, 6),
+            ("<x> / 2", 2, 1),
+            ("<x> // 2", 3, 1),
+            ("<x> ** 3", 2, 8),
+            ("<x> << 2", 2, 8),
+            ("<x> >> 2", 8, 2),
+            ("<x> | 2", 1, 3),
+            ("<x> ^ 5", 4, 1),
+            ("~ <x>", 1, -2),
+            ("not <x>", True, False),
+            ("+ <x>", 2, 2),
+            ("- <x>", 2, -2),
+            ("2 if <x> else 1", True, 2),
+            ("{1: <x>, 3: 4}", 2, {1: 2, 3: 4}),
+            ("{1, <x>, 3}", 2, {1, 2, 3}),
+            ("[1, <x>, 3]", 2, [1, 2, 3]),
+            ("(1, <x>, 3)", 2, (1, 2, 3)),
+            ("{x: x for x in <x> if x % 2 == 1}", [1, 2, 3], {1: 1, 3: 3}),
+            ("{x for x in <x> if x % 2 == 1}", [1, 2, 3], {1, 3}),
+            ("[x for x in <x> if x % 2 == 1]", [1, 2, 3], [1, 3]),
+            ("tuple(x for x in <x> if x % 2 == 1)", [1, 2, 3], (1, 3)),
+            ("<x> < 3", 2, True),
+            ("<x> <= 3", 2, True),
+            ("<x> > 3", 2, False),
+            ("<x> >= 3", 2, False),
+            ("<x> == 3", 2, False),
+            ("<x> != 3", 2, True),
+            ("<x> is 3", 2, False),
+            ("<x> is not 3", 2, True),
+            ("<x> in [1, 2, 3]", 2, True),
+            ("<x> not in [1, 2, 3]", 2, False),
+            ("int(<x>)", "2", 2),
+            ("<x>.lower()", "AbC", "abc"),
+            # ("<x>[0, 2::2]", [1, 2, 3, 4], [1, 2, 4]),
+        ]
+    )
+    def test_conversion_with_replacement(self, expression, value, expected):
+        fandango_tree: FandangoParser.ExpressionContext = self.get_tree(
+            expression, start="expression", ignore_eof=True
+        )
+        processor = SearchProcessor(Grammar({}))
+        fandango_tree, searches, search_map = processor.visit(fandango_tree)
+        self.assertEqual(1, len(search_map))
+        self.assertEqual(1, len(searches))
+        placeholder = list(search_map.keys())[0]
+        self.assertEqual(
+            expected, eval(ast.unparse(fandango_tree), {placeholder: value})
+        )
+
+    def test_parsing(self):
+        fan = (
+            self.FANDANGO_GRAMMAR
+            + """
+int(<number>) % 2 == 0;        
+"""
+        )
+        grammar, constraint, _ = parse(fan)
+        self.assertIsInstance(grammar, Grammar)
+        self.assertEqual(4, len(grammar.rules))
+        self.assertIn("<start>", grammar)
+        self.assertIn("<number>", grammar)
+        self.assertIn("<non_zero>", grammar)
+        self.assertIn("<digit>", grammar)
+        self.assertIsInstance(constraint, ComparisonConstraint)
+        self.assertEqual("0", constraint.right)
+        self.assertEqual(Comparison.EQUAL, constraint.operator)
+        self.assertEqual(1, len(constraint.searches))
+        placeholder = list(constraint.searches.keys())[0]
+        self.assertEqual(f"int({placeholder}) % 2", constraint.left)
+        self.assertIsInstance(constraint.searches[placeholder], RuleSearch)
+        search: RuleSearch = constraint.searches[placeholder]
+        self.assertEqual(search.symbol, NonTerminal("<number>"))

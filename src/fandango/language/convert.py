@@ -2,6 +2,8 @@ import ast
 from io import UnsupportedOperation
 from typing import List, Tuple, Dict
 
+from antlr4.tree.Tree import TerminalNodeImpl
+
 from fandango.constraints.base import (
     ConjunctionConstraint,
     DisjunctionConstraint,
@@ -11,6 +13,7 @@ from fandango.constraints.base import (
     ComparisonConstraint,
     ExistsConstraint,
     ForallConstraint,
+    Constraint,
 )
 from fandango.language.grammar import (
     Grammar,
@@ -78,10 +81,14 @@ class ConstraintProcessor(FandangoParserVisitor):
         self.searches = SearchProcessor(grammar)
         self.lazy = lazy
 
-    def get_constraints(self, constraints: List[FandangoParser.ConstraintContext]):
-        return ConjunctionConstraint(
-            [self.visit(constraint) for constraint in constraints], lazy=self.lazy
-        )
+    def get_constraints(
+        self, constraints: List[FandangoParser.ConstraintContext]
+    ) -> Constraint:
+        constraints = [self.visit(constraint) for constraint in constraints]
+        if len(constraints) == 1:
+            return constraints[0]
+        else:
+            return ConjunctionConstraint(constraints, lazy=self.lazy)
 
     def visitConstraint(self, ctx: FandangoParser.ConstraintContext):
         return self.visit(ctx.implies())
@@ -422,7 +429,11 @@ class SearchProcessor(FandangoParserVisitor):
     def visitPrimary(self, ctx: FandangoParser.PrimaryContext):
         if ctx.NAME():
             tree, searches, search_map = self.visit(ctx.primary())
-            return ast.Attribute(value=tree, attr=ctx.NAME().getText())
+            return (
+                ast.Attribute(value=tree, attr=ctx.NAME().getText()),
+                searches,
+                search_map,
+            )
         elif ctx.genexp():
             tree, searches, search_map = self.visit(ctx.primary())
             gen_tree, gen_searches, gen_search_map = self.visit(ctx.genexp())
@@ -543,7 +554,7 @@ class SearchProcessor(FandangoParserVisitor):
             searches = list()
             search_map = dict()
             for child in ctx.getChildren():
-                if child == FandangoParser.COLON:
+                if child.getText() == ":":
                     slice_count += 1
                 else:
                     slice_tree, slice_searches, slice_search_map = self.visit(child)
