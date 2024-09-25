@@ -17,11 +17,13 @@ class FandangoLexerBase(Lexer):
         self.tokens = []
         self.indents = []
         self.opened = 0
+        self.in_python = False
 
     def reset(self):
         self.tokens = []
         self.indents = []
         self.opened = 0
+        self.in_python = False
         super().reset()
 
     def emitToken(self, token):
@@ -83,28 +85,33 @@ class FandangoLexerBase(Lexer):
     def close_brace(self):
         self.opened -= 1
 
+    def python_start(self):
+        self.in_python = True
+
+    def python_end(self):
+        self.in_python = False
+
     def on_newline(self):
-        new_line = self.NEW_LINE_PATTERN.sub("", self.text)
-        spaces = self.SPACES_PATTERN.sub("", self.text)
+        if self.in_python:
+            new_line = self.NEW_LINE_PATTERN.sub("", self.text)
+            spaces = self.SPACES_PATTERN.sub("", self.text)
 
-        # Strip newlines inside open clauses except if we are near EOF. We keep NEWLINEs near EOF to
-        # satisfy the final newline needed by the single_put rule used by the REPL.
-        next_ = self._input.LA(1)
-        next_next = self._input.LA(2)
+            next_ = self._input.LA(1)
+            next_next = self._input.LA(2)
 
-        if self.opened > 0 or (next_next != -1 and next_ in (10, 13, 35)):
-            self.skip()
-        else:
-            self.emitToken(self.commonToken(FandangoParser.NEWLINE, new_line))
-            indent = self.get_indentation_count(spaces)
-            previous = 0 if len(self.indents) == 0 else self.indents[-1]
-
-            if indent == previous:
+            if self.opened > 0 or (next_next != -1 and next_ in (10, 13, 35)):
                 self.skip()
-            elif indent > previous:
-                self.indents.append(indent)
-                self.emitToken(self.commonToken(FandangoParser.INDENT, spaces))
             else:
-                while len(self.indents) > 0 and self.indents[-1] > indent:
-                    self.emitToken(self.createDedent())
-                    self.indents.pop()
+                self.emitToken(self.commonToken(FandangoParser.NEWLINE, new_line))
+                indent = self.get_indentation_count(spaces)
+                previous = 0 if len(self.indents) == 0 else self.indents[-1]
+
+                if indent == previous:
+                    self.skip()
+                elif indent > previous:
+                    self.indents.append(indent)
+                    self.emitToken(self.commonToken(FandangoParser.INDENT, spaces))
+                else:
+                    while len(self.indents) > 0 and self.indents[-1] > indent:
+                        self.emitToken(self.createDedent())
+                        self.indents.pop()

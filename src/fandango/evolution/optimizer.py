@@ -1,6 +1,5 @@
-import random
 import copy
-
+import random
 from typing import List, Tuple, Set
 
 from fandango.constraints.base import Constraint, Fitness
@@ -24,17 +23,17 @@ class GeneticAlgorithmOptimizer:
     """
 
     def __init__(
-        self,
-        grammar: Grammar,
-        constraints: List[Constraint],
-        population_size: int = 100,
-        generations: int = 100,
-        elite_fraction: float = 0.1,
-        mutation_rate: float = 0.01,
-        mutation_method: str = "random",
-        crossover_rate: float = 0.2,
-        crossover_method: str = "random",
-        verbose: bool = False,
+            self,
+            grammar: Grammar,
+            constraints: List[Constraint],
+            population_size: int = 100,
+            generations: int = 100,
+            elite_fraction: float = 0.1,
+            mutation_rate: float = 0.01,
+            mutation_method: str = "random",
+            crossover_rate: float = 0.2,
+            crossover_method: str = "random",
+            verbose: bool = False,
     ):
         self.grammar = grammar
         self.constraints = constraints
@@ -47,23 +46,30 @@ class GeneticAlgorithmOptimizer:
         self.crossover_method = crossover_method
         self.verbose = verbose
 
+        self.fitness_cache = {}
+
         # Initialize population
         self.population = [self.grammar.fuzz() for _ in range(population_size)]
 
         self.current_fitness = (
-            sum([self.evaluate_fitness(tree)[0] for tree in self.population])
-            / population_size
+                sum([self.evaluate_fitness(tree)[0] for tree in self.population])
+                / population_size
         )
         self.current_generation = 0
 
     def evaluate_fitness(
-        self, tree: DerivationTree
+            self, tree: DerivationTree
     ) -> Tuple[float, Set[DerivationTree]]:
         """
         Retrieves the fitness score and failing nodes for a derivation tree based on the constraint system.
         :param tree: The derivation tree to evaluate
         :return: A tuple containing a fitness score (normalized between 0 and 1) and a set of failing nodes
         """
+
+        tree_id = id(tree)
+        if tree_id in self.fitness_cache:
+            return self.fitness_cache[tree_id]
+
         total_fitness = Fitness(0, 0, False)  # Initialize an empty fitness object
         failing_nodes = set()
 
@@ -79,6 +85,10 @@ class GeneticAlgorithmOptimizer:
 
         # Return normalized fitness as solved/total and the failing nodes
         fitness_score = total_fitness.fitness() if total_fitness.total > 0 else 0
+
+        # Cache the result
+        self.fitness_cache[tree_id] = (fitness_score, failing_nodes)
+
         return fitness_score, failing_nodes
 
     # NOTE: THE SELECTION CAN CHOOSE THE SAME FATHER TWICE IF THERE IS NO OTHER GOOD FIT! (DISCUSS WITH TEAM)
@@ -183,7 +193,7 @@ class GeneticAlgorithmOptimizer:
         return sorted_population[:num_elites]
 
     def crossover(
-        self, parent1: DerivationTree, parent2: DerivationTree
+            self, parent1: DerivationTree, parent2: DerivationTree
     ) -> List[DerivationTree]:
         """
         Perform intelligent crossover between two parent derivation trees focusing on failing parts.
@@ -201,7 +211,7 @@ class GeneticAlgorithmOptimizer:
             )
 
     def _random_crossover(
-        self, parent1: DerivationTree, parent2: DerivationTree
+            self, parent1: DerivationTree, parent2: DerivationTree
     ) -> List[DerivationTree]:
         offspring1 = copy.deepcopy(parent1)
         offspring2 = copy.deepcopy(parent2)
@@ -226,7 +236,7 @@ class GeneticAlgorithmOptimizer:
         return [offspring1, offspring2]
 
     def _random_crossover_point(
-        self, tree: DerivationTree
+            self, tree: DerivationTree
     ) -> (DerivationTree, DerivationTree):
         all_nodes = []
         self._collect_nodes(tree, all_nodes, None)
@@ -243,10 +253,10 @@ class GeneticAlgorithmOptimizer:
         return node, parent
 
     def _collect_nodes(
-        self,
-        tree: DerivationTree,
-        all_nodes: List[Tuple[DerivationTree, DerivationTree]],
-        parent: DerivationTree,
+            self,
+            tree: DerivationTree,
+            all_nodes: List[Tuple[DerivationTree, DerivationTree]],
+            parent: DerivationTree,
     ):
         """
         Helper function to collect all nodes in a tree along with their parent nodes.
@@ -262,7 +272,7 @@ class GeneticAlgorithmOptimizer:
             self._collect_nodes(child, all_nodes, tree)  # Recursively collect children
 
     def _constraint_driven_crossover(
-        self, parent1: DerivationTree, parent2: DerivationTree
+            self, parent1: DerivationTree, parent2: DerivationTree
     ) -> List[DerivationTree]:
         """
         Perform intelligent crossover between two parent derivation trees focusing on failing parts.
@@ -380,15 +390,24 @@ class GeneticAlgorithmOptimizer:
         all_nodes = []
         self._collect_nodes(tree_copy, all_nodes, None)
 
-        # Select a random node to mutate and get its parent (cannot be None nor the same node)
-
+        # Filter valid nodes for mutation (i.e., non-root nodes with parents)
         valid_nodes = [(node, parent) for node, parent in all_nodes if parent is not None and str(node) != str(parent)]
+
         if not valid_nodes:
-            return tree_copy  # or handle the case appropriately
+            # If no valid nodes are available for mutation, return the original tree
+            return tree_copy
+
+        # Select a random node to mutate and get its parent
         node_to_mutate, parent_node = random.choice(valid_nodes)
 
-        # Generate a new subtree for the selected node
-        new_subtree = NonTerminal(node_to_mutate.symbol.symbol).fuzz(self.grammar.rules)[0]
+        # Ensure the symbol is valid in the grammar's rules
+        symbol = node_to_mutate.symbol.symbol
+        if symbol not in self.grammar.rules:
+            print(f"Warning: Symbol {symbol} not found in grammar rules. Skipping mutation.")
+            return tree_copy  # Return original tree without mutation
+
+        # Generate a new subtree from the same symbol
+        new_subtree = NonTerminal(symbol).fuzz(self.grammar.rules)[0]
         new_subtree.parent = parent_node
 
         # Replace the selected node with the new subtree

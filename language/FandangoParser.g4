@@ -1,7 +1,7 @@
 parser grammar FandangoParser;
 
 options {
-    tokenVocab=FandangoLexer;
+    tokenVocab = FandangoLexer;
 }
 
 // start
