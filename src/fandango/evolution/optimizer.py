@@ -84,7 +84,7 @@ class GeneticAlgorithmOptimizer:
     # NOTE: THE SELECTION CAN CHOOSE THE SAME FATHER TWICE IF THERE IS NO OTHER GOOD FIT! (DISCUSS WITH TEAM)
     def select_parents(self) -> List[DerivationTree]:
         """
-        Selects two parents from the population using fitness-proportional selection (roulette wheel).
+        Selects two different parents from the population using fitness-proportional selection (roulette wheel).
         :return: Two parent derivation trees
         """
         fitness_scores = [self.evaluate_fitness(tree)[0] for tree in self.population]
@@ -96,7 +96,12 @@ class GeneticAlgorithmOptimizer:
 
         # Use fitness scores as weights for selection
         parent1 = random.choices(self.population, weights=fitness_scores, k=1)[0]
-        parent2 = random.choices(self.population, weights=fitness_scores, k=1)[0]
+
+        # Select a different parent2
+        while True:
+            parent2 = random.choices(self.population, weights=fitness_scores, k=1)[0]
+            if parent2 != parent1:
+                break
 
         return [parent1, parent2]
 
