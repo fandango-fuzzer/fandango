@@ -114,7 +114,7 @@ class TestOptimizer(unittest.TestCase):
 
     def test_parent_selection(self):
         # Initialize the optimizer
-        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint],
+        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=self.constraints,
                                               population_size=10)
 
         # Test the parent selection mechanism
@@ -129,36 +129,72 @@ class TestOptimizer(unittest.TestCase):
         self.assertIsInstance(parents[1], DerivationTree)
         self.assertNotEqual(parents[0], parents[1])
 
-    # def test_random_crossover(self):
-    #     # Initialize the optimizer
-    #     optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint],
-    #                                           population_size=10, crossover_rate=1.0, crossover_method="random")
-    #
-    #     # Select two parents
-    #     parent1, parent2 = optimizer.select_parents()
-    #
-    #     # Perform random crossover
-    #     children = optimizer.crossover(parent1, parent2)
-    #     self.assertEqual(len(children), 2)
-    #
-    #     for child in children:
-    #         self.assertIsInstance(child, DerivationTree)
-    #         self.assertEqual(child.symbol, NonTerminal("<start>"))
-    #
-    # def test_random_mutation(self):
-    #     # Initialize the optimizer
-    #     optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=[self.odd_constraint],
-    #                                           population_size=100, mutation_rate=1.0, mutation_method="random")
-    #
-    #     # Select a parent
-    #     parent = optimizer.select_parents()[0]
-    #
-    #     # Perform random mutation
-    #     child = optimizer.mutate(parent)
-    #
-    #     self.assertIsInstance(child, DerivationTree)
-    #     self.assertEqual(child.symbol, NonTerminal("<start>"))
+    def test_random_crossover(self):
+        # Initialize the optimizer
+        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=self.constraints,
+                                              population_size=10, crossover_rate=1.0, crossover_method="random")
 
+        # Select two parents
+        parent1, parent2 = optimizer.select_parents()
+
+        # Perform random crossover
+        children = optimizer.crossover(parent1, parent2)
+        self.assertEqual(len(children), 2)
+
+        for child in children:
+            self.assertIsInstance(child, DerivationTree)
+            self.assertEqual(child.symbol, NonTerminal("<start>"))
+            self.assertNotEqual(child, parent1)
+            self.assertNotEqual(child, parent2)
+
+    def test_constraint_driven_crossover(self):
+        # Initialize the optimizer
+        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=self.constraints,
+                                              population_size=10, crossover_rate=1.0, crossover_method="constraint_driven")
+
+        # Select two parents
+        parent1, parent2 = optimizer.select_parents()
+
+        # Perform constraint-driven crossover
+        children = optimizer.crossover(parent1, parent2)
+        self.assertEqual(len(children), 2)
+
+        for child in children:
+            self.assertIsInstance(child, DerivationTree)
+            self.assertEqual(child.symbol, NonTerminal("<start>"))
+            self.assertNotEqual(child, parent1)
+            self.assertNotEqual(child, parent2)
+
+
+    def test_random_mutation(self):
+        # Initialize the optimizer
+        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=self.constraints,
+                                              population_size=100, mutation_rate=1.0, mutation_method="random")
+
+        # Select a parent
+        parent = optimizer.select_parents()[0]
+
+        # Perform random mutation
+        child = optimizer.mutate(parent)
+
+        self.assertIsInstance(child, DerivationTree)
+        self.assertEqual(child.symbol, NonTerminal("<start>"))
+        self.assertNotEqual(child, parent)
+
+    def test_constraint_driven_mutation(self):
+        # Initialize the optimizer
+        optimizer = GeneticAlgorithmOptimizer(grammar=self.grammar, constraints=self.constraints,
+                                              population_size=100, mutation_rate=1.0, mutation_method="constraint_driven")
+
+        # Select a parent
+        parent = optimizer.select_parents()[0]
+
+        # Perform constraint-driven mutation
+        child = optimizer.mutate(parent)
+
+        self.assertIsInstance(child, DerivationTree)
+        self.assertEqual(child.symbol, NonTerminal("<start>"))
+        self.assertNotEqual(child, parent)
 
 if __name__ == "__main__":
     unittest.main()

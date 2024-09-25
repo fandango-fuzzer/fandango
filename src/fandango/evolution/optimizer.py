@@ -319,6 +319,21 @@ class GeneticAlgorithmOptimizer:
 
     def mutate(self, tree: DerivationTree) -> DerivationTree:
         """
+        Apply mutation to a derivation tree.
+        :param tree: The derivation tree to mutate
+        :return: The mutated derivation tree
+        """
+        if self.mutation_method == "random":
+            return self._random_mutation(tree)
+        elif self.mutation_method == "constraint_driven":
+            return self._constraint_driven_mutate(tree)
+        else:
+            raise ValueError(
+                "Invalid mutation method. Choose 'random' or 'constraint_driven'."
+            )
+
+    def _constraint_driven_mutate(self, tree: DerivationTree) -> DerivationTree:
+        """
         Apply intelligent mutation to a derivation tree focusing on failing parts.
         :param tree: The derivation tree to mutate
         :return: The mutated derivation tree
@@ -353,15 +368,34 @@ class GeneticAlgorithmOptimizer:
         return tree_copy
 
     def _random_mutation(self, tree: DerivationTree) -> DerivationTree:
-        node_to_mutate, parent_node = self._random_crossover_point(tree)
+        """
+        Apply random mutation to a derivation tree.
+        :param tree: The derivation tree to mutate
+        :return: The mutated derivation tree
+        """
+        # Make a deep copy of the tree to avoid mutating the original
+        tree_copy = copy.deepcopy(tree)
 
-        if parent_node:
-            parent_node.children.remove(node_to_mutate)
-            parent_node.children.append(self.grammar.fuzz())
-        else:
-            tree = self.grammar.fuzz()
+        # Collect all nodes along with their parents
+        all_nodes = []
+        self._collect_nodes(tree_copy, all_nodes, None)
 
-        return tree
+        # Select a random node to mutate and get its parent (cannot be None nor the same node)
+
+        valid_nodes = [(node, parent) for node, parent in all_nodes if parent is not None and str(node) != str(parent)]
+        if not valid_nodes:
+            return tree_copy  # or handle the case appropriately
+        node_to_mutate, parent_node = random.choice(valid_nodes)
+
+        # Generate a new subtree for the selected node
+        new_subtree = NonTerminal(node_to_mutate.symbol.symbol).fuzz(self.grammar.rules)[0]
+        new_subtree.parent = parent_node
+
+        # Replace the selected node with the new subtree
+        index = parent_node.children.index(node_to_mutate)
+        parent_node.children[index] = new_subtree
+
+        return tree_copy
 
     def evolve(self) -> [DerivationTree]:
         """
