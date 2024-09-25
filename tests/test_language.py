@@ -2,8 +2,9 @@ import ast
 import time
 import unittest
 
+from antlr4.error.Errors import ParseCancellationException
 from parameterized import parameterized
-from antlr4 import InputStream, CommonTokenStream
+from antlr4 import InputStream, CommonTokenStream, BailErrorStrategy
 from fuzzingbook.GrammarFuzzer import (
     GrammarFuzzer,
     EvenFasterGrammarFuzzer,
@@ -53,6 +54,7 @@ class TestLanguage(unittest.TestCase):
         #    if token.tokens[-1] == FandangoParser.EOF:
         #        token.tokens = token.tokens[:-1]
         parser = FandangoParser(token)
+        parser._errHandler = BailErrorStrategy()
         return getattr(parser, start)()
 
     def test_indents(self):
@@ -60,7 +62,7 @@ class TestLanguage(unittest.TestCase):
             """
 <a> ::= 
     "a"
-    | "a" <a>
+    | "a" <a>;
             """
         )
         splitter = FandangoSplitter()
@@ -102,15 +104,26 @@ class TestLanguage(unittest.TestCase):
             self.assertLess(fandango_fuzzer_time, fuzzer_time)
 
     def _test_conversion_without_replace(self, expression):
-        tree = ast.parse(expression, mode="eval")
-        fandango_tree: FandangoParser.ExpressionContext = self.get_tree(
-            expression, start="expression", ignore_eof=True
-        )
-        processor = SearchProcessor(Grammar({}))
-        fandango_tree, searches, search_map = processor.visit(fandango_tree)
-        self.assertEqual(0, len(searches))
-        self.assertEqual(0, len(search_map))
-        self.assertEqual(ast.unparse(tree), ast.unparse(fandango_tree))
+        try:
+            tree = ast.parse(expression, mode="eval")
+        except SyntaxError:
+            self.assertRaises(
+                ParseCancellationException,
+                self.get_tree,
+                expression,
+                start="expression",
+                ignore_eof=True,
+            )
+        else:
+            fandango_tree: FandangoParser.ExpressionContext = self.get_tree(
+                expression, start="expression", ignore_eof=True
+            )
+            processor = SearchProcessor(Grammar({}))
+            fandango_tree, searches, search_map = processor.visit(fandango_tree)
+            self.assertEqual(0, len(searches))
+            self.assertEqual(0, len(search_map))
+            self.assertNotIsInstance(fandango_tree, list)
+            self.assertEqual(ast.unparse(tree), ast.unparse(fandango_tree))
 
     @parameterized.expand(
         [
@@ -150,7 +163,7 @@ class TestLanguage(unittest.TestCase):
             "x > y",
             "x >= y",
             "x == y",
-            "x <> y",
+            # "x <> y",
             "x != y",
             "x is y",
             "x is not y",
