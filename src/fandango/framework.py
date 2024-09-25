@@ -61,24 +61,28 @@ constraints = [
 
 def main():
     # Initialize the optimizer
-    optimizer = GeneticAlgorithmOptimizer(
-        grammar=grammar,
-        constraints=constraints,
-        population_size=100,
-        generations=100,
-        verbose=True,
-        crossover_rate=0.5,
-        crossover_method="constraint_driven",
-        mutation_rate=0.5,
-        mutation_method="constraint_driven",
-    )
+    times = []
+    while len(times) < 100:
 
-    # Run the optimizer
-    start_time = time.time()
-    solution = optimizer.evolve()
+        optimizer = GeneticAlgorithmOptimizer(
+            grammar=grammar,
+            constraints=constraints,
+            population_size=100,
+            generations=100,
+            verbose=False,
+            crossover_rate=0.5,
+            crossover_method="constraint_driven",
+            mutation_rate=0.5,
+            mutation_method="constraint_driven",
+        )
 
-    print(f"Time taken: {time.time() - start_time}")
-    print(f"Solution: {solution}")
+        # Run the optimizer
+        start_time = time.time()
+        solution = optimizer.evolve()
+        end_time = time.time()
+        times.append(end_time - start_time)
+
+    print(f"Average time: {sum(times) / len(times)}")
 
 
 
