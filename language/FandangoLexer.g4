@@ -16,8 +16,8 @@ NUMBER: INTEGER | FLOAT_NUMBER | IMAG_NUMBER;
 
 INTEGER: DECIMAL_INTEGER | OCT_INTEGER | HEX_INTEGER | BIN_INTEGER;
 
-PYTHON_START: '<py>';
-PYTHON_END  : '</py>';
+PYTHON_START: '<py>' {self.python_start()};
+PYTHON_END  : '</py>' {self.python_end()};
 RULE_NAME: '<' ID_CONTINUE+ '>';
 
 // python keywords
