@@ -347,22 +347,3 @@ class ForallConstraint(Constraint):
             overall,
             failing_trees=failing_trees,
         )
-
-
-"""
-Don't have them
-class NotConstraint(Constraint):
-    def __init__(self, constraint: Constraint, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.constraint = constraint
-        
-    def fitness(
-        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
-    ) -> Fitness:
-        fitness = self.constraint.fitness(tree, scope)
-        return Fitness(
-            fitness.total - fitness.solved,
-            fitness.total,
-            not fitness.success,
-        )
-"""
