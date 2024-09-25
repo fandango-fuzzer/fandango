@@ -230,7 +230,7 @@ class SearchProcessor(FandangoParserVisitor):
         if ctx.IF():
             then_ast, then_searches, then_map = self.visit(ctx.disjunction(0))
             test_ast, test_searches, test_map = self.visit(ctx.disjunction(1))
-            else_ast, else_searches, else_map = self.visit(ctx.disjunction(2))
+            else_ast, else_searches, else_map = self.visit(ctx.expression())
             return (
                 ast.IfExp(
                     test=test_ast,
@@ -241,7 +241,7 @@ class SearchProcessor(FandangoParserVisitor):
                 {**then_map, **test_map, **else_map},
             )
         elif ctx.disjunction():
-            return self.visit(ctx.disjunction())
+            return self.visit(ctx.disjunction(0))
         else:
             return self.visit(ctx.lambdef())
 
@@ -256,7 +256,7 @@ class SearchProcessor(FandangoParserVisitor):
                 searches,
                 search_map,
             )
-        return self.visit(ctx.conjunction())
+        return self.visit(ctx.conjunction(0))
 
     def visitConjunction(self, ctx: FandangoParser.ConjunctionContext):
         if ctx.AND():
@@ -269,14 +269,14 @@ class SearchProcessor(FandangoParserVisitor):
                 searches,
                 search_map,
             )
-        return self.visit(ctx.inversion())
+        return self.visit(ctx.inversion(0))
 
     def _visit_unary_op(self, ctx, op):
         trees, searches, search_map = self.visitChildren(ctx)
         return (
             ast.UnaryOp(
                 op=op,
-                operand=trees[1],
+                operand=trees[0],
             ),
             searches,
             search_map,
@@ -316,34 +316,34 @@ class SearchProcessor(FandangoParserVisitor):
         return self.visit(ctx.children[0])
 
     def visitEq_bitwise_or(self, ctx: FandangoParser.Eq_bitwise_orContext):
-        return ast.Eq, self.visit(ctx.bitwise_or())
+        return ast.Eq(), self.visit(ctx.bitwise_or())
 
     def visitNoteq_bitwise_or(self, ctx: FandangoParser.Noteq_bitwise_orContext):
-        return ast.NotEq, self.visit(ctx.bitwise_or())
+        return ast.NotEq(), self.visit(ctx.bitwise_or())
 
     def visitLte_bitwise_or(self, ctx: FandangoParser.Lte_bitwise_orContext):
-        return ast.LtE, self.visit(ctx.bitwise_or())
+        return ast.LtE(), self.visit(ctx.bitwise_or())
 
     def visitGte_bitwise_or(self, ctx: FandangoParser.Gte_bitwise_orContext):
-        return ast.GtE, self.visit(ctx.bitwise_or())
+        return ast.GtE(), self.visit(ctx.bitwise_or())
 
     def visitLt_bitwise_or(self, ctx: FandangoParser.Lt_bitwise_orContext):
-        return ast.Lt, self.visit(ctx.bitwise_or())
+        return ast.Lt(), self.visit(ctx.bitwise_or())
 
     def visitGt_bitwise_or(self, ctx: FandangoParser.Gt_bitwise_orContext):
-        return ast.Gt, self.visit(ctx.bitwise_or())
+        return ast.Gt(), self.visit(ctx.bitwise_or())
 
     def visitNotin_bitwise_or(self, ctx: FandangoParser.Notin_bitwise_orContext):
-        return ast.NotIn, self.visit(ctx.bitwise_or())
+        return ast.NotIn(), self.visit(ctx.bitwise_or())
 
     def visitIn_bitwise_or(self, ctx: FandangoParser.In_bitwise_orContext):
-        return ast.In, self.visit(ctx.bitwise_or())
+        return ast.In(), self.visit(ctx.bitwise_or())
 
     def visitIs_bitwise_or(self, ctx: FandangoParser.Is_bitwise_orContext):
-        return ast.Is, self.visit(ctx.bitwise_or())
+        return ast.Is(), self.visit(ctx.bitwise_or())
 
     def visitIsnot_bitwise_or(self, ctx: FandangoParser.Isnot_bitwise_orContext):
-        return ast.IsNot, self.visit(ctx.bitwise_or())
+        return ast.IsNot(), self.visit(ctx.bitwise_or())
 
     def _visit_bin_op(self, ctx, op):
         trees, searches, search_map = self.visitChildren(ctx)
@@ -351,7 +351,7 @@ class SearchProcessor(FandangoParserVisitor):
             ast.BinOp(
                 left=trees[0],
                 op=op,
-                right=trees[2],
+                right=trees[1],
             ),
             searches,
             search_map,
