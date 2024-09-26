@@ -1,78 +1,21 @@
 import time
 
-from antlr4 import InputStream, CommonTokenStream
-
-from fandango.constraints.base import (
-    ExpressionConstraint,
-    ComparisonConstraint,
-    Comparison,
-)
-from fandango.evolution.optimizer import GeneticAlgorithmOptimizer
-from fandango.language.convert import FandangoSplitter, GrammarProcessor
-from fandango.language.grammar import NonTerminal, DerivationTree
-from fandango.language.parser.FandangoLexer import FandangoLexer
-from fandango.language.parser.FandangoParser import FandangoParser
-from fandango.language.search import RuleSearch
-
-
-FANDANGO_GRAMMAR = """
-<start> ::= <number> ;
-<number> ::= <non_zero> <digit>* | "0" ;
-<non_zero> ::= "1" | "2" | "3"| "4" | "5" | "6" | "7" | "8" | "9" ;
-<digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
-"""
-
-lexer = FandangoLexer(InputStream(FANDANGO_GRAMMAR))
-token_stream = CommonTokenStream(lexer)
-parser = FandangoParser(token_stream)
-tree = parser.fandango()
-
-# Step 2: Split and process the grammar
-splitter = FandangoSplitter()
-splitter.visit(tree)
-
-processor = GrammarProcessor()
-grammar = processor.get_grammar(splitter.productions)
-
-# Step 3: Define an odd-number constraint
-odd_constraint = ComparisonConstraint(
-    operator=Comparison.NOT_EQUAL,
-    left="int(number) % 2",
-    right="0",
-    searches={"number": RuleSearch(NonTerminal("<number>"), grammar)},
-)
-
-smaller_than_10000_constraint = ComparisonConstraint(
-    operator=Comparison.LESS,
-    left="int(number)",
-    right="10000",
-    searches={"number": RuleSearch(NonTerminal("<number>"), grammar)},
-)
-
-always_ends_with_1_constraint = ComparisonConstraint(
-    operator=Comparison.EQUAL,
-    left="int(number) % 10",
-    right="1",
-    searches={"number": RuleSearch(NonTerminal("<number>"), grammar)},
-)
-
-constraints = [
-    odd_constraint,
-    smaller_than_10000_constraint,
-    always_ends_with_1_constraint,
-]
+from fandango.evolution.OLD_IMPL import GeneticAlgorithmOptimizer
+from fandango.language.parse import parse_file
 
 
 def main():
+    grammar, constraints, _ = parse_file("../evaluation/csv/csv.fan")
+
     # Initialize the optimizer
     times = []
-    while len(times) < 100:
+    while len(times) < 1:
         optimizer = GeneticAlgorithmOptimizer(
             grammar=grammar,
             constraints=constraints,
-            population_size=100,
+            population_size=500,
             generations=100,
-            verbose=False,
+            verbose=True,
             crossover_rate=0.5,
             crossover_method="constraint_driven",
             mutation_rate=0.5,
@@ -84,6 +27,8 @@ def main():
         solution = optimizer.evolve()
         end_time = time.time()
         times.append(end_time - start_time)
+
+        print(f"Solution: {solution}")
 
     print(f"Average time: {sum(times) / len(times)}")
 

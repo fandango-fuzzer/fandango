@@ -3,7 +3,7 @@ import unittest
 from antlr4 import InputStream, CommonTokenStream
 
 from fandango.constraints.base import ExpressionConstraint, ComparisonConstraint, Comparison
-from fandango.evolution.optimizer import GeneticAlgorithmOptimizer
+from fandango.evolution.OLD_IMPL import GeneticAlgorithmOptimizer
 from fandango.language.convert import FandangoSplitter, GrammarProcessor
 from fandango.language.grammar import NonTerminal, DerivationTree
 from fandango.language.parser.FandangoLexer import FandangoLexer
