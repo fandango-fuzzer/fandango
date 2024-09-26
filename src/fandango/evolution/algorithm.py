@@ -84,10 +84,6 @@ class FANDANGO:
             self.currentFitness, self.currentFailingNodes = evaluate_population(self.currentBestPopulation, self.constraints)
 
         # Return the final population
-        fitnesses = [fitness for _, fitness, _ in self.currentFitness]
-        print(f"Evolution completed after {self.generations} generations.")
-        print(f"Final fitness: {sum(fitnesses) / len(fitnesses):.2f}")
-        print(f"Final population: {self.currentBestPopulation}")
         return self.currentBestPopulation
 
 if __name__ == "__main__":
@@ -103,4 +99,8 @@ if __name__ == "__main__":
     # Run the genetic algorithm
     start_time = time.time()
     fandango.evolve()
-    print(f"Elapsed time: {time.time() - start_time:.2f} seconds")
+    end_time = time.time()
+    print(f"Elapsed time: {end_time - start_time:.2f} seconds")
+    print(f"Evolution completed after {fandango.generations} generations.")
+    print(f"Final fitness: {sum([fitness for _, fitness, _ in fandango.currentFitness]) / len([fitness for _, fitness, _ in fandango.currentFitness]):.2f}")
+    print(f"Final population: {fandango.currentBestPopulation}")
