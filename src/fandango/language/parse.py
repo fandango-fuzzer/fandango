@@ -3,6 +3,7 @@ from typing import Tuple, Dict, Any
 from antlr4 import InputStream, CommonTokenStream, BailErrorStrategy
 
 from fandango.constraints.base import Constraint
+from fandango.constraints import predicates
 from fandango.language.convert import (
     FandangoSplitter,
     GrammarProcessor,
@@ -23,9 +24,10 @@ def parse(fan: str, lazy: bool = False) -> Tuple[Grammar, Constraint, Dict[str, 
     splitter.visit(tree)
     grammar_processor = GrammarProcessor()
     grammar = grammar_processor.get_grammar(splitter.productions)
-    constraint_processor = ConstraintProcessor(grammar, lazy=lazy)
+    default_predicates = predicates.__dict__
+    constraint_processor = ConstraintProcessor(grammar, default_predicates, lazy=lazy)
     constraint = constraint_processor.get_constraints(splitter.constraints)
-    return grammar, constraint, {}
+    return grammar, constraint, default_predicates
 
 
 def parse_file(*args, lazy: bool = False):
