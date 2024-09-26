@@ -64,7 +64,7 @@ if __name__ == "__main__":
     from fandango.evolution.initialization import generate_initial_population
 
     # Parse grammar from src/evaluation/csv/csv.fan
-    grammar, constraints, _ = parse_file("../../evaluation/int/int.fan")
+    grammar, constraints, _ = parse_file("../../evaluation/csv/csv.fan")
 
     # Generate an initial population of 500 derivation trees
     population = generate_initial_population(grammar, 500)
@@ -76,9 +76,9 @@ if __name__ == "__main__":
 
     print(f"Elapsed time: {time.time() - start_time:.2f} seconds")
 
-    # # Print the fitness score of each individual
-    # for individual, fitness_score, failing_nodes in evaluated_population:
-    #     print(f"Fitness: {fitness_score}")
-    #     print(f"Failing nodes: {failing_nodes}")
-    #     print(individual)
-    #     print()
+    # print the fitness score of each individual
+    for individual, fitness_score, failing_nodes in evaluated_population:
+        print(f"Fitness: {fitness_score}")
+        print(f"Failing nodes: {failing_nodes}")
+        print(individual)
+        print()
