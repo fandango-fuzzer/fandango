@@ -1,4 +1,8 @@
 import random
+from typing import List, Tuple, Set
+
+from fandango.language.grammar import DerivationTree
+
 
 def roulette_wheel_selection(evaluated_population, num_parents):
     total_fitness = sum(fitness for _, fitness, _ in evaluated_population)
@@ -29,6 +33,23 @@ def rank_selection(evaluated_population, num_parents):
         k=num_parents
     )
     return parents
+
+def select_elites(population: List[DerivationTree], fitness_scores: List[Tuple[DerivationTree, float, Set[DerivationTree]]], num_elites: int) -> List[DerivationTree]:
+    """
+    Selects the top-performing individuals as elites.
+    :param population: The current population.
+    :param fitness_scores: Fitness scores corresponding to the population.
+    :param num_elites: Number of elites to select.
+    :return: A list of elite individuals.
+    """
+    # Pair individuals with their fitness scores
+    individuals_with_fitness = list(zip(population, [fitness for _, fitness, _ in fitness_scores]))
+    # Sort by fitness in descending order
+    sorted_by_fitness = sorted(individuals_with_fitness, key=lambda x: x[1], reverse=True)
+    # Select the top individuals
+    elites = [ind for ind, fitness in sorted_by_fitness[:num_elites]]
+    return elites
+
 
 if __name__ == "__main__":
     from fandango.language.parse import parse_file

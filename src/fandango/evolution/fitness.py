@@ -40,7 +40,7 @@ def evaluate_fitness(individual: DerivationTree, constraints: List[Constraint], 
     return fitness_score, failing_nodes
 
 
-def evaluate_population(population: List[DerivationTree], constraints: List[Constraint]) -> List[Tuple[DerivationTree, float, Set[DerivationTree]]]:
+def evaluate_population(population: List[DerivationTree], constraints: List[Constraint]) -> [List[Tuple[DerivationTree, float, Set[DerivationTree]]], Set[DerivationTree]]:
     """
     Evaluates the fitness of each individual in the population, using caching.
 
@@ -49,13 +49,15 @@ def evaluate_population(population: List[DerivationTree], constraints: List[Cons
     :return: A list of tuples containing the individual, its fitness score, and failing nodes.
     """
     evaluated_population = []
+    evaluated_failing_nodes = set()
     fitness_cache = {}
 
     for individual in population:
         fitness_score, failing_nodes = evaluate_fitness(individual, constraints, fitness_cache)
         evaluated_population.append((individual, fitness_score, failing_nodes))
+        evaluated_failing_nodes.update(failing_nodes)
 
-    return evaluated_population
+    return evaluated_population, evaluated_failing_nodes
 
 
 if __name__ == "__main__":
@@ -72,7 +74,7 @@ if __name__ == "__main__":
     start_time = time.time()
 
     # Evaluate the fitness of each individual in the population
-    evaluated_population = evaluate_population(population, constraints)
+    evaluated_population, _ = evaluate_population(population, constraints)
 
     print(f"Elapsed time: {time.time() - start_time:.2f} seconds")
 
