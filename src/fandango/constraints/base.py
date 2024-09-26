@@ -59,6 +59,13 @@ class Constraint(abc.ABC):
     def get_failing_nodes(self, tree: DerivationTree):
         return self.fitness(tree).failing_trees
 
+    @abc.abstractmethod
+    def __repr__(self):
+        pass
+
+    def __str__(self):
+        return self.__repr__()
+
 
 class ExpressionConstraint(Constraint):
     def __init__(self, expression: str, *args, **kwargs):
@@ -87,6 +94,14 @@ class ExpressionConstraint(Constraint):
                 pass
             total += 1
         return Fitness(solved, total, solved == total, failing_trees=failing_trees)
+
+    def __repr__(self):
+        representation = self.expression
+        for identifier in self.searches:
+            representation = representation.replace(
+                identifier, repr(self.searches[identifier])
+            )
+        return representation
 
 
 class Comparison(enum.Enum):
@@ -148,6 +163,14 @@ class ComparisonConstraint(Constraint):
             total += 1
         return Fitness(solved, total, solved == total, failing_trees=failing_trees)
 
+    def __repr__(self):
+        representation = f"{self.left} {self.operator.value} {self.right}"
+        for identifier in self.searches:
+            representation = representation.replace(
+                identifier, repr(self.searches[identifier])
+            )
+        return representation
+
 
 class ConjunctionConstraint(Constraint):
     def __init__(
@@ -189,6 +212,9 @@ class ConjunctionConstraint(Constraint):
             overall,
             failing_trees=failing_trees,
         )
+
+    def __repr__(self):
+        return "(" + " and ".join(repr(c) for c in self.constraints) + ")"
 
 
 class DisjunctionConstraint(Constraint):
@@ -232,6 +258,9 @@ class DisjunctionConstraint(Constraint):
             failing_trees=failing_trees,
         )
 
+    def __repr__(self):
+        return "(" + " or ".join(repr(c) for c in self.constraints) + ")"
+
 
 class ImplicationConstraint(Constraint):
     def __init__(self, antecedent: Constraint, consequent: Constraint, *args, **kwargs):
@@ -251,6 +280,9 @@ class ImplicationConstraint(Constraint):
                 1,
                 True,
             )
+
+    def __repr__(self):
+        return f"({repr(self.antecedent)} -> {repr(self.consequent)})"
 
 
 class ExistsConstraint(Constraint):
@@ -300,6 +332,9 @@ class ExistsConstraint(Constraint):
             failing_trees=failing_trees,
         )
 
+    def __repr__(self):
+        return f"(exists {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
+
 
 class ForallConstraint(Constraint):
     def __init__(
@@ -347,3 +382,6 @@ class ForallConstraint(Constraint):
             overall,
             failing_trees=failing_trees,
         )
+
+    def __repr__(self):
+        return f"(forall {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
