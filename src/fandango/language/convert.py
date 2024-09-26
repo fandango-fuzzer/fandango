@@ -1,8 +1,6 @@
 import ast
 from io import UnsupportedOperation
-from typing import List, Tuple, Dict
-
-from antlr4.tree.Tree import TerminalNodeImpl
+from typing import List, Tuple, Dict, Optional, Any
 
 from fandango.constraints.base import (
     ConjunctionConstraint,
@@ -77,9 +75,17 @@ class GrammarProcessor(FandangoParserVisitor):
 
 
 class ConstraintProcessor(FandangoParserVisitor):
-    def __init__(self, grammar: Grammar, lazy: bool = False):
+    def __init__(
+        self,
+        grammar: Grammar,
+        local_variables: Optional[Dict[str, Any]] = None,
+        global_variables: Optional[Dict[str, Any]] = None,
+        lazy: bool = False,
+    ):
         self.searches = SearchProcessor(grammar)
         self.lazy = lazy
+        self.local_variables = local_variables
+        self.global_variables = global_variables
 
     def get_constraints(
         self, constraints: List[FandangoParser.ConstraintContext]
@@ -88,7 +94,12 @@ class ConstraintProcessor(FandangoParserVisitor):
         if len(constraints) == 1:
             return constraints[0]
         else:
-            return ConjunctionConstraint(constraints, lazy=self.lazy)
+            return ConjunctionConstraint(
+                constraints,
+                local_variables=self.local_variables,
+                global_variables=self.global_variables,
+                lazy=self.lazy,
+            )
 
     def visitConstraint(self, ctx: FandangoParser.ConstraintContext):
         return self.visit(ctx.implies())
@@ -96,7 +107,12 @@ class ConstraintProcessor(FandangoParserVisitor):
     def visitImplies(self, ctx: FandangoParser.ImpliesContext):
         constraint = self.visit(ctx.quantifier())
         if ctx.ARROW():
-            return ImplicationConstraint(constraint, self.visit(ctx.implies()))
+            return ImplicationConstraint(
+                constraint,
+                self.visit(ctx.implies()),
+                local_variables=self.local_variables,
+                global_variables=self.global_variables,
+            )
         return self.visit(ctx.quantifier())
 
     def visitQuantifier(self, ctx: FandangoParser.QuantifierContext):
@@ -107,9 +123,23 @@ class ConstraintProcessor(FandangoParserVisitor):
             bound = NonTerminal(ctx.RULE_NAME().getText())
             search = self.searches.visit(ctx.selector())[1][0]
             if ctx.EXISTS():
-                return ExistsConstraint(constraint, bound, search, lazy=self.lazy)
+                return ExistsConstraint(
+                    constraint,
+                    bound,
+                    search,
+                    local_variables=self.local_variables,
+                    global_variables=self.global_variables,
+                    lazy=self.lazy,
+                )
             elif ctx.FORALL():
-                return ForallConstraint(constraint, bound, search, lazy=self.lazy)
+                return ForallConstraint(
+                    constraint,
+                    bound,
+                    search,
+                    local_variables=self.local_variables,
+                    global_variables=self.global_variables,
+                    lazy=self.lazy,
+                )
             else:
                 raise ValueError(f"Unknown quantifier: {ctx.getText()}")
         else:
@@ -122,14 +152,24 @@ class ConstraintProcessor(FandangoParserVisitor):
         if len(constraints) == 1:
             return constraints[0]
         else:
-            return DisjunctionConstraint(constraints, lazy=self.lazy)
+            return DisjunctionConstraint(
+                constraints,
+                local_variables=self.local_variables,
+                global_variables=self.global_variables,
+                lazy=self.lazy,
+            )
 
     def visitFormula_conjunction(self, ctx: FandangoParser.Formula_conjunctionContext):
         constraints = [self.visit(constraint) for constraint in ctx.formula_atom()]
         if len(constraints) == 1:
             return constraints[0]
         else:
-            return ConjunctionConstraint(constraints, lazy=self.lazy)
+            return ConjunctionConstraint(
+                constraints,
+                local_variables=self.local_variables,
+                global_variables=self.global_variables,
+                lazy=self.lazy,
+            )
 
     def visitFormula_atom(self, ctx: FandangoParser.Formula_atomContext):
         if ctx.implies():
@@ -148,7 +188,12 @@ class ConstraintProcessor(FandangoParserVisitor):
             expr, _, search_map = self.searches.visit(ctx.expression())
         else:
             raise ValueError(f"Unknown expression: {ctx.getText()}")
-        return ExpressionConstraint(ast.unparse(expr), searches=search_map)
+        return ExpressionConstraint(
+            ast.unparse(expr),
+            searches=search_map,
+            local_variables=self.local_variables,
+            global_variables=self.global_variables,
+        )
 
     def visitFormula_comparison(self, ctx: FandangoParser.Formula_comparisonContext):
         if ctx.LESS_THAN():
@@ -172,6 +217,8 @@ class ConstraintProcessor(FandangoParserVisitor):
             ast.unparse(left),
             ast.unparse(right),
             searches={**left_map, **right_map},
+            local_variables=self.local_variables,
+            global_variables=self.global_variables,
         )
 
 
