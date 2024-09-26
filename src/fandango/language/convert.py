@@ -90,16 +90,16 @@ class ConstraintProcessor(FandangoParserVisitor):
     def get_constraints(
         self, constraints: List[FandangoParser.ConstraintContext]
     ) -> Constraint:
-        constraints = [self.visit(constraint) for constraint in constraints]
-        if len(constraints) == 1:
-            return constraints[0]
-        else:
-            return ConjunctionConstraint(
-                constraints,
-                local_variables=self.local_variables,
-                global_variables=self.global_variables,
-                lazy=self.lazy,
-            )
+        return [self.visit(constraint) for constraint in constraints]
+        # if len(constraints) == 1:
+        #     return constraints[0]
+        # else:
+        #     return ConjunctionConstraint(
+        #         constraints,
+        #         local_variables=self.local_variables,
+        #         global_variables=self.global_variables,
+        #         lazy=self.lazy,
+        #    )
 
     def visitConstraint(self, ctx: FandangoParser.ConstraintContext):
         return self.visit(ctx.implies())
