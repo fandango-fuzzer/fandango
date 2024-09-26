@@ -113,10 +113,10 @@ class Terminal(Node):
     @staticmethod
     def from_symbol(symbol: str) -> "Terminal":
         if symbol[0] == symbol[-1] == "'":
-            while symbol[0] == symbol[-1] == "'":
+            while symbol and symbol[0] == symbol[-1] == "'":
                 symbol = symbol[1:-1]
         elif symbol[0] == symbol[-1] == '"':
-            while symbol[0] == symbol[-1] == '"':
+            while symbol and symbol[0] == symbol[-1] == '"':
                 symbol = symbol[1:-1]
         return Terminal(symbol)
 

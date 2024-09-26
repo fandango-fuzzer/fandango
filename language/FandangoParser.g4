@@ -34,7 +34,11 @@ operator
 kleene: symbol STAR;
 plus  : symbol ADD;
 option: symbol QUESTION;
-repeat: symbol OPEN_BRACE NUMBER (COMMA NUMBER)? CLOSE_BRACE;
+repeat
+    : symbol OPEN_BRACE NUMBER CLOSE_BRACE
+    | symbol OPEN_BRACE NUMBER? COMMA NUMBER CLOSE_BRACE
+    | symbol OPEN_BRACE NUMBER COMMA NUMBER? CLOSE_BRACE
+    ;
 
 symbol
     : NEWLINE*
@@ -56,28 +60,51 @@ constraint:
     ;
 
 implies:
-    quantifier ARROW implies
-    | quantifier
+    NEWLINE*
+    (
+        quantifier ARROW implies
+        | quantifier
+    )
+    NEWLINE*
     ;
 
 quantifier:
-    FORALL RULE_NAME IN selector COLON quantifier
-    | EXISTS RULE_NAME IN selector COLON quantifier
-    | formula_disjunction
+    NEWLINE*
+    (
+        FORALL RULE_NAME IN selector COLON quantifier
+        | EXISTS RULE_NAME IN selector COLON quantifier
+        | formula_disjunction
+    )
+    NEWLINE*
     ;
 
 formula_disjunction:
-    formula_conjunction (OR formula_conjunction)*
+
+    NEWLINE*
+    (
+        formula_conjunction (OR formula_conjunction)*
+    )
+    NEWLINE*
     ;
 
 formula_conjunction:
-    formula_atom (AND formula_atom)*
+
+    NEWLINE*
+    (
+        formula_atom (AND formula_atom)*
+    )
+    NEWLINE*
     ;
 
 formula_atom
-    : formula_comparison
-    | OPEN_PAREN implies CLOSE_PAREN
-    | expr
+    :
+    NEWLINE*
+    (
+        formula_comparison
+        | OPEN_PAREN implies CLOSE_PAREN
+        | expr
+    )
+    NEWLINE*
     ;
 
 formula_comparison:

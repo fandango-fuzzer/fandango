@@ -23,17 +23,17 @@ class GeneticAlgorithmOptimizer:
     """
 
     def __init__(
-            self,
-            grammar: Grammar,
-            constraints: List[Constraint],
-            population_size: int = 100,
-            generations: int = 100,
-            elite_fraction: float = 0.1,
-            mutation_rate: float = 0.01,
-            mutation_method: str = "random",
-            crossover_rate: float = 0.2,
-            crossover_method: str = "random",
-            verbose: bool = False,
+        self,
+        grammar: Grammar,
+        constraints: List[Constraint],
+        population_size: int = 100,
+        generations: int = 100,
+        elite_fraction: float = 0.1,
+        mutation_rate: float = 0.01,
+        mutation_method: str = "random",
+        crossover_rate: float = 0.2,
+        crossover_method: str = "random",
+        verbose: bool = False,
     ):
         self.grammar = grammar
         self.constraints = constraints
@@ -52,13 +52,13 @@ class GeneticAlgorithmOptimizer:
         self.population = [self.grammar.fuzz() for _ in range(population_size)]
 
         self.current_fitness = (
-                sum([self.evaluate_fitness(tree)[0] for tree in self.population])
-                / population_size
+            sum([self.evaluate_fitness(tree)[0] for tree in self.population])
+            / population_size
         )
         self.current_generation = 0
 
     def evaluate_fitness(
-            self, tree: DerivationTree
+        self, tree: DerivationTree
     ) -> Tuple[float, Set[DerivationTree]]:
         """
         Retrieves the fitness score and failing nodes for a derivation tree based on the constraint system.
@@ -193,7 +193,7 @@ class GeneticAlgorithmOptimizer:
         return sorted_population[:num_elites]
 
     def crossover(
-            self, parent1: DerivationTree, parent2: DerivationTree
+        self, parent1: DerivationTree, parent2: DerivationTree
     ) -> List[DerivationTree]:
         """
         Perform intelligent crossover between two parent derivation trees focusing on failing parts.
@@ -211,7 +211,7 @@ class GeneticAlgorithmOptimizer:
             )
 
     def _random_crossover(
-            self, parent1: DerivationTree, parent2: DerivationTree
+        self, parent1: DerivationTree, parent2: DerivationTree
     ) -> List[DerivationTree]:
         offspring1 = copy.deepcopy(parent1)
         offspring2 = copy.deepcopy(parent2)
@@ -236,7 +236,7 @@ class GeneticAlgorithmOptimizer:
         return [offspring1, offspring2]
 
     def _random_crossover_point(
-            self, tree: DerivationTree
+        self, tree: DerivationTree
     ) -> (DerivationTree, DerivationTree):
         all_nodes = []
         self._collect_nodes(tree, all_nodes, None)
@@ -253,10 +253,10 @@ class GeneticAlgorithmOptimizer:
         return node, parent
 
     def _collect_nodes(
-            self,
-            tree: DerivationTree,
-            all_nodes: List[Tuple[DerivationTree, DerivationTree]],
-            parent: DerivationTree,
+        self,
+        tree: DerivationTree,
+        all_nodes: List[Tuple[DerivationTree, DerivationTree]],
+        parent: DerivationTree,
     ):
         """
         Helper function to collect all nodes in a tree along with their parent nodes.
@@ -272,7 +272,7 @@ class GeneticAlgorithmOptimizer:
             self._collect_nodes(child, all_nodes, tree)  # Recursively collect children
 
     def _constraint_driven_crossover(
-            self, parent1: DerivationTree, parent2: DerivationTree
+        self, parent1: DerivationTree, parent2: DerivationTree
     ) -> List[DerivationTree]:
         """
         Perform intelligent crossover between two parent derivation trees focusing on failing parts.
@@ -391,7 +391,11 @@ class GeneticAlgorithmOptimizer:
         self._collect_nodes(tree_copy, all_nodes, None)
 
         # Filter valid nodes for mutation (i.e., non-root nodes with parents)
-        valid_nodes = [(node, parent) for node, parent in all_nodes if parent is not None and str(node) != str(parent)]
+        valid_nodes = [
+            (node, parent)
+            for node, parent in all_nodes
+            if parent is not None and str(node) != str(parent)
+        ]
 
         if not valid_nodes:
             # If no valid nodes are available for mutation, return the original tree
@@ -403,7 +407,9 @@ class GeneticAlgorithmOptimizer:
         # Ensure the symbol is valid in the grammar's rules
         symbol = node_to_mutate.symbol.symbol
         if symbol not in self.grammar.rules:
-            print(f"Warning: Symbol {symbol} not found in grammar rules. Skipping mutation.")
+            print(
+                f"Warning: Symbol {symbol} not found in grammar rules. Skipping mutation."
+            )
             return tree_copy  # Return original tree without mutation
 
         # Generate a new subtree from the same symbol

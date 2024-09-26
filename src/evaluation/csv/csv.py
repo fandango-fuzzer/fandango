@@ -7,5 +7,6 @@ def main():
     print("Grammar:", grammar)
     print("Constraint:", constraint)
 
+
 if __name__ == "__main__":
     main()
