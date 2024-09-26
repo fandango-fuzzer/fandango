@@ -27,11 +27,11 @@ class Fitness:
 class Constraint(abc.ABC):
     def __init__(
         self,
-        searches: Dict[str, NonTerminalSearch],
+        searches: Optional[Dict[str, NonTerminalSearch]] = None,
         local_variables: Optional[Dict[str, Any]] = None,
         global_variables: Optional[Dict[str, Any]] = None,
     ):
-        self.searches = searches
+        self.searches = searches or dict()
         self.local_variables = local_variables or dict()
         self.global_variables = global_variables or dict()
 

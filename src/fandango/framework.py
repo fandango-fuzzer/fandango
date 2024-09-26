@@ -2,7 +2,11 @@ import time
 
 from antlr4 import InputStream, CommonTokenStream
 
-from fandango.constraints.base import ExpressionConstraint, ComparisonConstraint, Comparison
+from fandango.constraints.base import (
+    ExpressionConstraint,
+    ComparisonConstraint,
+    Comparison,
+)
 from fandango.evolution.optimizer import GeneticAlgorithmOptimizer
 from fandango.language.convert import FandangoSplitter, GrammarProcessor
 from fandango.language.grammar import NonTerminal, DerivationTree
@@ -35,27 +39,27 @@ odd_constraint = ComparisonConstraint(
     operator=Comparison.NOT_EQUAL,
     left="int(number) % 2",
     right="0",
-    searches={"number": RuleSearch(NonTerminal("<number>"), grammar)}
+    searches={"number": RuleSearch(NonTerminal("<number>"), grammar)},
 )
 
 smaller_than_10000_constraint = ComparisonConstraint(
     operator=Comparison.LESS,
     left="int(number)",
     right="10000",
-    searches={"number": RuleSearch(NonTerminal("<number>"), grammar)}
+    searches={"number": RuleSearch(NonTerminal("<number>"), grammar)},
 )
 
 always_ends_with_1_constraint = ComparisonConstraint(
     operator=Comparison.EQUAL,
     left="int(number) % 10",
     right="1",
-    searches={"number": RuleSearch(NonTerminal("<number>"), grammar)}
+    searches={"number": RuleSearch(NonTerminal("<number>"), grammar)},
 )
 
 constraints = [
     odd_constraint,
     smaller_than_10000_constraint,
-    always_ends_with_1_constraint
+    always_ends_with_1_constraint,
 ]
 
 
@@ -63,7 +67,6 @@ def main():
     # Initialize the optimizer
     times = []
     while len(times) < 100:
-
         optimizer = GeneticAlgorithmOptimizer(
             grammar=grammar,
             constraints=constraints,
@@ -83,7 +86,6 @@ def main():
         times.append(end_time - start_time)
 
     print(f"Average time: {sum(times) / len(times)}")
-
 
 
 if __name__ == "__main__":
