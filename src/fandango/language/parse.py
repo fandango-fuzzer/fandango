@@ -28,8 +28,9 @@ def parse(fan: str, lazy: bool = False) -> Tuple[Grammar, Constraint, Dict[str, 
     return grammar, constraint, {}
 
 
-def parse_file(*args):
+def parse_file(*args, lazy: bool = False):
     contents = ""
     for file in args:
         with open(file, "r") as fp:
             contents += fp.read()
+    return parse(contents, lazy=lazy)
