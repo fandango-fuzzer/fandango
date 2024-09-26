@@ -27,6 +27,13 @@ class NonTerminalSearch(abc.ABC):
         all_nodes.extend(self.find(trees, scope))
         return all_nodes
 
+    @abc.abstractmethod
+    def __repr__(self):
+        pass
+
+    def __str__(self):
+        return self.__repr__()
+
 
 class LengthSearch(NonTerminalSearch):
     def __init__(self, value: NonTerminalSearch, grammar: Grammar):
@@ -47,6 +54,9 @@ class LengthSearch(NonTerminalSearch):
     ) -> List[DerivationTree]:
         return [len(self.value.find_all(trees, scope=scope))]
 
+    def __repr__(self):
+        return f"|{repr(self.value)}|"
+
 
 class RuleSearch(NonTerminalSearch):
     def __init__(self, symbol: NonTerminal, grammar: Grammar):
@@ -61,6 +71,9 @@ class RuleSearch(NonTerminalSearch):
         if scope and self.symbol in scope:
             return scope[self.symbol]
         return [tree for tree in trees if tree.symbol == self.symbol]
+
+    def __repr__(self):
+        return repr(self.symbol)
 
 
 class AttributeSearch(NonTerminalSearch):
@@ -79,3 +92,6 @@ class AttributeSearch(NonTerminalSearch):
         return self.attribute.find(
             [child for tree in self.base.find(trees) for child in tree.children]
         )
+
+    def __repr__(self):
+        return f"{repr(self.base)}.{repr(self.attribute)}"
