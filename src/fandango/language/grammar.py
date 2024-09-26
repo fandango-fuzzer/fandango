@@ -103,6 +103,8 @@ class NonTerminal(Node):
         return hash(self.symbol)
 
 
+
+
 class Terminal(Node):
     def __init__(self, symbol: str):
         self.symbol = symbol
@@ -227,6 +229,12 @@ class DerivationTree:
 
     def __str__(self):
         return self.__repr__()
+
+    def __hash__(self):
+        """
+        Computes a hash of the derivation tree based on its structure and symbols.
+        """
+        return hash((self.symbol, tuple(hash(child) for child in self.children)))
 
 
 class Grammar:
