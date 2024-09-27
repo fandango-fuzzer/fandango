@@ -1,4 +1,5 @@
 import ast
+import os
 import time
 import unittest
 
@@ -17,6 +18,7 @@ from fandango.language.convert import (
     FandangoSplitter,
     GrammarProcessor,
     SearchProcessor,
+    PythonProcessor,
 )
 from fandango.language.grammar import Alternative, Grammar, NonTerminal
 from fandango.language.parser.FandangoLexer import FandangoLexer
@@ -238,26 +240,55 @@ class TestLanguage(unittest.TestCase):
             expected, eval(ast.unparse(fandango_tree), {placeholder: value})
         )
 
+    @parameterized.expand(
+        [
+            ("x = 1", 1),
+            ("x: int = 1", 1),
+            ("x = 0\nx += 1", 1),
+            ("import os\nx = os.path.join('a', 'b')", os.path.join("a", "b")),
+            ("try:\n   raise ValueError()\nexcept:\n    x = 1\nelse:\n    x = 1", 1),
+            ("a = [0, 1]\ndel a[0]\nx = a[0]", 1),
+        ]
+    )
+    def test_conversion_statement(self, stmt, value):
+        fandango_tree: FandangoParser.ExpressionContext = self.get_tree(stmt)
+        splitter = FandangoSplitter()
+        splitter.visit(fandango_tree)
+        code = splitter.python_code
+        processor = PythonProcessor()
+        fandango_tree = processor.get_code(code)
+        tree = ast.parse(stmt)
+        self.assertEqual(ast.unparse(tree), ast.unparse(fandango_tree))
+        local_vars = {}
+        exec(ast.unparse(fandango_tree), {}, local_vars)
+        self.assertEqual(value, local_vars["x"])
+
     def test_parsing(self):
         fan = (
             self.FANDANGO_GRAMMAR
             + """
-int(<number>) % 2 == 0;        
+
+def f(x):
+    return int(x)            
+
+f(<number>) % 2 == 0;        
 """
         )
-        grammar, constraint, _ = parse(fan)
+        grammar, constraints, _ = parse(fan)
         self.assertIsInstance(grammar, Grammar)
         self.assertEqual(4, len(grammar.rules))
         self.assertIn("<start>", grammar)
         self.assertIn("<number>", grammar)
         self.assertIn("<non_zero>", grammar)
         self.assertIn("<digit>", grammar)
+        self.assertEqual(1, len(constraints))
+        constraint = constraints[0]
         self.assertIsInstance(constraint, ComparisonConstraint)
         self.assertEqual("0", constraint.right)
         self.assertEqual(Comparison.EQUAL, constraint.operator)
         self.assertEqual(1, len(constraint.searches))
         placeholder = list(constraint.searches.keys())[0]
-        self.assertEqual(f"int({placeholder}) % 2", constraint.left)
+        self.assertEqual(f"f({placeholder}) % 2", constraint.left)
         self.assertIsInstance(constraint.searches[placeholder], RuleSearch)
         search: RuleSearch = constraint.searches[placeholder]
         self.assertEqual(search.symbol, NonTerminal("<number>"))

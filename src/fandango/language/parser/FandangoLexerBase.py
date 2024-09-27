@@ -17,13 +17,13 @@ class FandangoLexerBase(Lexer):
         self.tokens = []
         self.indents = []
         self.opened = 0
-        self.in_python = False
+        self.in_python = 0
 
     def reset(self):
         self.tokens = []
         self.indents = []
         self.opened = 0
-        self.in_python = False
+        self.in_python = 0
         super().reset()
 
     def emitToken(self, token):
@@ -86,13 +86,13 @@ class FandangoLexerBase(Lexer):
         self.opened -= 1
 
     def python_start(self):
-        self.in_python = True
+        self.in_python += 1
 
     def python_end(self):
-        self.in_python = False
+        self.in_python = 0
 
     def on_newline(self):
-        if self.in_python:
+        if self.in_python > 0:
             new_line = self.NEW_LINE_PATTERN.sub("", self.text)
             spaces = self.SPACES_PATTERN.sub("", self.text)
 
@@ -113,5 +113,6 @@ class FandangoLexerBase(Lexer):
                     self.emitToken(self.commonToken(FandangoParser.INDENT, spaces))
                 else:
                     while len(self.indents) > 0 and self.indents[-1] > indent:
+                        self.in_python -= 1
                         self.emitToken(self.createDedent())
                         self.indents.pop()

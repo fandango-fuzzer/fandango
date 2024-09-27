@@ -6,21 +6,27 @@ from fandango.language.grammar import DerivationTree
 
 def roulette_wheel_selection(evaluated_population, num_parents):
     total_fitness = sum(fitness for _, fitness, _ in evaluated_population)
-    selection_probabilities = [fitness / total_fitness for _, fitness, _ in evaluated_population]
+    selection_probabilities = [
+        fitness / total_fitness for _, fitness, _ in evaluated_population
+    ]
     parents = random.choices(
         population=[individual for individual, _, _ in evaluated_population],
         weights=selection_probabilities,
-        k=num_parents
+        k=num_parents,
     )
     return parents
+
 
 def tournament_selection(evaluated_population, tournament_size, num_parents):
     parents = []
     for _ in range(num_parents):
         tournament = random.sample(evaluated_population, tournament_size)
-        best_individual = max(tournament, key=lambda x: x[1])  # x[1] is the fitness score
+        best_individual = max(
+            tournament, key=lambda x: x[1]
+        )  # x[1] is the fitness score
         parents.append(best_individual[0])  # x[0] is the individual
     return parents
+
 
 def rank_selection(evaluated_population, num_parents):
     sorted_population = sorted(evaluated_population, key=lambda x: x[1])
@@ -30,11 +36,16 @@ def rank_selection(evaluated_population, num_parents):
     parents = random.choices(
         population=[individual for individual, _, _ in sorted_population],
         weights=selection_probabilities,
-        k=num_parents
+        k=num_parents,
     )
     return parents
 
-def select_elites(population: List[DerivationTree], fitness_scores: List[Tuple[DerivationTree, float, Set[DerivationTree]]], num_elites: int) -> List[DerivationTree]:
+
+def select_elites(
+    population: List[DerivationTree],
+    fitness_scores: List[Tuple[DerivationTree, float, Set[DerivationTree]]],
+    num_elites: int,
+) -> List[DerivationTree]:
     """
     Selects the top-performing individuals as elites.
     :param population: The current population.
@@ -43,9 +54,13 @@ def select_elites(population: List[DerivationTree], fitness_scores: List[Tuple[D
     :return: A list of elite individuals.
     """
     # Pair individuals with their fitness scores
-    individuals_with_fitness = list(zip(population, [fitness for _, fitness, _ in fitness_scores]))
+    individuals_with_fitness = list(
+        zip(population, [fitness for _, fitness, _ in fitness_scores])
+    )
     # Sort by fitness in descending order
-    sorted_by_fitness = sorted(individuals_with_fitness, key=lambda x: x[1], reverse=True)
+    sorted_by_fitness = sorted(
+        individuals_with_fitness, key=lambda x: x[1], reverse=True
+    )
     # Select the top individuals
     elites = [ind for ind, fitness in sorted_by_fitness[:num_elites]]
     return elites
@@ -82,6 +97,3 @@ if __name__ == "__main__":
     parents = rank_selection(evaluated_population, 10)
     for parent in parents:
         print(parent)
-
-
-

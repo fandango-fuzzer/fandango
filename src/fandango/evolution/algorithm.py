@@ -7,14 +7,26 @@ from fandango.constraints.base import Constraint
 from fandango.evolution.selection import tournament_selection, select_elites
 from fandango.language.grammar import Grammar, DerivationTree
 from fandango.evolution.initialization import generate_initial_population
-from fandango.evolution.mutate import constraint_guided_mutation, random_subtree_replacement
+from fandango.evolution.mutate import (
+    constraint_guided_mutation,
+    random_subtree_replacement,
+)
 from fandango.evolution.crossover import type_safe_crossover
 from fandango.evolution.fitness import evaluate_fitness, evaluate_population
 
+
 class FANDANGO:
-    def __init__(self, grammar: Grammar, constraints: List[Constraint],
-                 population_size: int, generations: int, mutation_rate: float,
-                 crossover_rate: float, elitism_rate: float, tournament_size: int):
+    def __init__(
+        self,
+        grammar: Grammar,
+        constraints: List[Constraint],
+        population_size: int,
+        generations: int,
+        mutation_rate: float,
+        crossover_rate: float,
+        elitism_rate: float,
+        tournament_size: int,
+    ):
         self.grammar = grammar
         self.constraints = constraints
         self.population_size = population_size
@@ -24,8 +36,12 @@ class FANDANGO:
         self.elitism_rate = elitism_rate  # Fraction of elites to carry over
         self.tournament_size = tournament_size  # Size of tournament for selection
 
-        self.currentBestPopulation = generate_initial_population(self.grammar, self.population_size)
-        self.currentFitness, self.currentFailingNodes = evaluate_population(self.currentBestPopulation, self.constraints)
+        self.currentBestPopulation = generate_initial_population(
+            self.grammar, self.population_size
+        )
+        self.currentFitness, self.currentFailingNodes = evaluate_population(
+            self.currentBestPopulation, self.constraints
+        )
 
     def evolve(self) -> List[DerivationTree]:
         """
@@ -38,7 +54,9 @@ class FANDANGO:
         for generation in range(self.generations):
             # Evaluate current population if not already evaluated
             if not self.currentFitness:
-                self.currentFitness, self.currentFailingNodes = evaluate_population(self.currentBestPopulation, self.constraints)
+                self.currentFitness, self.currentFailingNodes = evaluate_population(
+                    self.currentBestPopulation, self.constraints
+                )
 
             # Check for optimal solution
             if all(fitness == 1.0 for _, fitness, _ in self.currentFitness):
@@ -47,14 +65,23 @@ class FANDANGO:
 
             # a. Select Elites
             num_elites = max(1, int(self.elitism_rate * self.population_size))
-            elites = select_elites(self.currentBestPopulation, self.currentFitness, num_elites)
+            elites = select_elites(
+                self.currentBestPopulation, self.currentFitness, num_elites
+            )
 
             # b. Select Parents for Crossover (excluding elites if desired)
-            non_elite_fitness = [(individual, fitness, tree) for (individual, fitness, tree) in self.currentFitness
-                                    if individual not in elites]
+            non_elite_fitness = [
+                (individual, fitness, tree)
+                for (individual, fitness, tree) in self.currentFitness
+                if individual not in elites
+            ]
 
-            num_parents = self.population_size - num_elites or 2  # Ensure at least 2 parents
-            parents = tournament_selection(non_elite_fitness, self.tournament_size, num_parents)
+            num_parents = (
+                self.population_size - num_elites or 2
+            )  # Ensure at least 2 parents
+            parents = tournament_selection(
+                non_elite_fitness, self.tournament_size, num_parents
+            )
 
             # c. Perform Crossover
             offspring = []
@@ -81,10 +108,13 @@ class FANDANGO:
 
             # f. Form New Generation
             self.currentBestPopulation = elites + mutated_offspring
-            self.currentFitness, self.currentFailingNodes = evaluate_population(self.currentBestPopulation, self.constraints)
+            self.currentFitness, self.currentFailingNodes = evaluate_population(
+                self.currentBestPopulation, self.constraints
+            )
 
         # Return the final population
         return self.currentBestPopulation
+
 
 if __name__ == "__main__":
     from fandango.language.parse import parse_file
@@ -93,8 +123,16 @@ if __name__ == "__main__":
     grammar, constraints, _ = parse_file("../../evaluation/csv/csv.fan")
 
     # Initialize FANDANGO with parameters
-    fandango = FANDANGO(grammar, constraints, population_size=500, generations=1000,
-                        mutation_rate=0.2, crossover_rate=0.8, elitism_rate=0.2, tournament_size=10)
+    fandango = FANDANGO(
+        grammar,
+        constraints,
+        population_size=500,
+        generations=1000,
+        mutation_rate=0.2,
+        crossover_rate=0.8,
+        elitism_rate=0.2,
+        tournament_size=10,
+    )
 
     # Run the genetic algorithm
     start_time = time.time()
@@ -102,5 +140,7 @@ if __name__ == "__main__":
     end_time = time.time()
     print(f"Elapsed time: {end_time - start_time:.2f} seconds")
     print(f"Evolution completed after {fandango.generations} generations.")
-    print(f"Final fitness: {sum([fitness for _, fitness, _ in fandango.currentFitness]) / len([fitness for _, fitness, _ in fandango.currentFitness]):.2f}")
+    print(
+        f"Final fitness: {sum([fitness for _, fitness, _ in fandango.currentFitness]) / len([fitness for _, fitness, _ in fandango.currentFitness]):.2f}"
+    )
     print(f"Final population: {fandango.currentBestPopulation}")

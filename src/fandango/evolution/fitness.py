@@ -4,7 +4,11 @@ from fandango.constraints.base import Constraint
 from fandango.language.grammar import DerivationTree
 
 
-def evaluate_fitness(individual: DerivationTree, constraints: List[Constraint], fitness_cache: Dict[int, Tuple[float, Set[DerivationTree]]]) -> Tuple[float, Set[DerivationTree]]:
+def evaluate_fitness(
+    individual: DerivationTree,
+    constraints: List[Constraint],
+    fitness_cache: Dict[int, Tuple[float, Set[DerivationTree]]],
+) -> Tuple[float, Set[DerivationTree]]:
     """
     Evaluates the fitness of an individual derivation tree, using a cache to avoid redundant computations.
 
@@ -40,7 +44,9 @@ def evaluate_fitness(individual: DerivationTree, constraints: List[Constraint], 
     return fitness_score, failing_nodes
 
 
-def evaluate_population(population: List[DerivationTree], constraints: List[Constraint]) -> [List[Tuple[DerivationTree, float, Set[DerivationTree]]], Set[DerivationTree]]:
+def evaluate_population(
+    population: List[DerivationTree], constraints: List[Constraint]
+) -> [List[Tuple[DerivationTree, float, Set[DerivationTree]]], Set[DerivationTree]]:
     """
     Evaluates the fitness of each individual in the population, using caching.
 
@@ -53,7 +59,9 @@ def evaluate_population(population: List[DerivationTree], constraints: List[Cons
     fitness_cache = {}
 
     for individual in population:
-        fitness_score, failing_nodes = evaluate_fitness(individual, constraints, fitness_cache)
+        fitness_score, failing_nodes = evaluate_fitness(
+            individual, constraints, fitness_cache
+        )
         evaluated_population.append((individual, fitness_score, failing_nodes))
         evaluated_failing_nodes.update(failing_nodes)
 
