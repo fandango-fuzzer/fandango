@@ -6,7 +6,9 @@ from fandango.evolution.fitness import evaluate_fitness
 from fandango.language.grammar import Grammar, NonTerminal, DerivationTree
 
 
-def random_subtree_replacement(individual: DerivationTree, grammar: Grammar) -> DerivationTree:
+def random_subtree_replacement(
+    individual: DerivationTree, grammar: Grammar
+) -> DerivationTree:
     # Deep copy the individual to avoid modifying the original
     mutant = copy.deepcopy(individual)
 
@@ -50,8 +52,9 @@ def generate_tree_from_symbol(grammar: Grammar, symbol: NonTerminal) -> Derivati
     return symbol.fuzz(grammar.rules)[0]
 
 
-def constraint_guided_mutation(individual: DerivationTree, failing_nodes: Set[DerivationTree],
-                               grammar: Grammar) -> DerivationTree:
+def constraint_guided_mutation(
+    individual: DerivationTree, failing_nodes: Set[DerivationTree], grammar: Grammar
+) -> DerivationTree:
     # Deep copy the individual
     mutant = copy.deepcopy(individual)
 
@@ -77,7 +80,6 @@ def constraint_guided_mutation(individual: DerivationTree, failing_nodes: Set[De
         mutant.parent = None
 
     return mutant
-
 
 
 if __name__ == "__main__":

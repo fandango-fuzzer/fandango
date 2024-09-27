@@ -1,11 +1,21 @@
 import random
 from typing import List, Optional
 
-from fandango.language.grammar import DerivationTree, Node, Terminal, NonTerminal, Alternative, Concatenation, \
-    Repetition, Grammar
+from fandango.language.grammar import (
+    DerivationTree,
+    Node,
+    Terminal,
+    NonTerminal,
+    Alternative,
+    Concatenation,
+    Repetition,
+    Grammar,
+)
 
 
-def generate_initial_population(grammar: Grammar, population_size: int) -> List[DerivationTree]:
+def generate_initial_population(
+    grammar: Grammar, population_size: int
+) -> List[DerivationTree]:
     """
     Generates an initial population of derivation trees using the fuzzer.
     Ensures diversity by varying the depth and choices in the grammar expansion.
@@ -38,8 +48,12 @@ def generate_initial_population(grammar: Grammar, population_size: int) -> List[
     return population
 
 
-def generate_tree_with_random_depth(grammar: Grammar, max_depth: int, current_depth: int = 0,
-                                    symbol: Optional[NonTerminal] = None) -> DerivationTree:
+def generate_tree_with_random_depth(
+    grammar: Grammar,
+    max_depth: int,
+    current_depth: int = 0,
+    symbol: Optional[NonTerminal] = None,
+) -> DerivationTree:
     """
     Recursively generates a derivation tree with a random structure, up to a maximum depth.
 
@@ -81,22 +95,32 @@ def generate_tree_with_random_depth(grammar: Grammar, max_depth: int, current_de
     if isinstance(selected_node, Concatenation):
         for sub_node in selected_node.nodes:
             if isinstance(sub_node, NonTerminal):
-                child = generate_tree_with_random_depth(grammar, max_depth, current_depth + 1, sub_node)
+                child = generate_tree_with_random_depth(
+                    grammar, max_depth, current_depth + 1, sub_node
+                )
                 children.append(child)
             elif isinstance(sub_node, Terminal):
                 children.append(DerivationTree(sub_node))
             elif isinstance(sub_node, (Alternative, Concatenation)):
                 # Recurse into nested structures
-                child = generate_tree_with_random_depth(grammar, max_depth, current_depth + 1, NonTerminal(sub_node))
+                child = generate_tree_with_random_depth(
+                    grammar, max_depth, current_depth + 1, NonTerminal(sub_node)
+                )
                 children.append(child)
             elif isinstance(sub_node, Repetition):
                 # Generate a random number of repetitions
-                repetitions = random.randint(sub_node.min, min(sub_node.max, 3))  # Limit repetitions for diversity
+                repetitions = random.randint(
+                    sub_node.min, min(sub_node.max, 3)
+                )  # Limit repetitions for diversity
                 for _ in range(repetitions):
-                    rep_child = generate_tree_with_random_depth(grammar, max_depth, current_depth + 1, sub_node.node)
+                    rep_child = generate_tree_with_random_depth(
+                        grammar, max_depth, current_depth + 1, sub_node.node
+                    )
                     children.append(rep_child)
     elif isinstance(selected_node, NonTerminal):
-        child = generate_tree_with_random_depth(grammar, max_depth, current_depth + 1, selected_node)
+        child = generate_tree_with_random_depth(
+            grammar, max_depth, current_depth + 1, selected_node
+        )
         children.append(child)
     elif isinstance(selected_node, Terminal):
         children.append(DerivationTree(selected_node))
@@ -104,7 +128,9 @@ def generate_tree_with_random_depth(grammar: Grammar, max_depth: int, current_de
         # Handle repetitions
         repetitions = random.randint(selected_node.min, min(selected_node.max, 3))
         for _ in range(repetitions):
-            rep_child = generate_tree_with_random_depth(grammar, max_depth, current_depth + 1, selected_node.node)
+            rep_child = generate_tree_with_random_depth(
+                grammar, max_depth, current_depth + 1, selected_node.node
+            )
             children.append(rep_child)
     else:
         # If the node type is unhandled, return an empty tree
@@ -135,6 +161,7 @@ def extract_terminals(node: Node) -> List[str]:
     elif isinstance(node, Repetition):
         terminals.extend(extract_terminals(node.node))
     return terminals
+
 
 if __name__ == "__main__":
     from fandango.language.parse import parse_file

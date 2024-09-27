@@ -1,4 +1,4 @@
-from typing import Tuple, Dict, Any
+from typing import Tuple, Dict, Any, List
 
 from antlr4 import InputStream, CommonTokenStream, BailErrorStrategy
 
@@ -14,7 +14,9 @@ from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 
 
-def parse(fan: str, lazy: bool = False) -> Tuple[Grammar, Constraint, Dict[str, Any]]:
+def parse(
+    fan: str, lazy: bool = False
+) -> Tuple[Grammar, List[Constraint], Dict[str, Any]]:
     lexer = FandangoLexer(InputStream(fan))
     token = CommonTokenStream(lexer)
     parser = FandangoParser(token)
@@ -30,7 +32,9 @@ def parse(fan: str, lazy: bool = False) -> Tuple[Grammar, Constraint, Dict[str, 
     return grammar, constraint, default_predicates
 
 
-def parse_file(*args, lazy: bool = False):
+def parse_file(
+    *args, lazy: bool = False
+) -> Tuple[Grammar, List[Constraint], Dict[str, Any]]:
     contents = ""
     for file in args:
         with open(file, "r") as fp:

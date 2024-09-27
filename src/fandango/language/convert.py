@@ -40,7 +40,7 @@ class FandangoSplitter(FandangoParserVisitor):
         self.constraints.append(ctx)
 
     def visitPython(self, ctx: FandangoParser.PythonContext):
-        self.visitChildren(ctx.python_tag())
+        self.python_code.append(ctx)
 
 
 class GrammarProcessor(FandangoParserVisitor):
@@ -883,3 +883,325 @@ class SearchProcessor(FandangoParserVisitor):
                 search_map,
             )
         return self.visit(ctx.atom())
+
+    def visitParameters(self, ctx: FandangoParser.ParametersContext):
+        if ctx.slash_no_default() or ctx.slash_no_default():
+            raise UnsupportedOperation("Slash params unsupported for function args.")
+        return ast.arguments()
+
+
+class PythonProcessor(FandangoParserVisitor):
+    def __init__(self):
+        self.search_processor = SearchProcessor(Grammar.dummy())
+
+    def get_expression(self, expression):
+        if expression:
+            tree, searches, _ = self.search_processor.visit(expression)
+            if searches:
+                raise SyntaxError(
+                    f"NonTerminal selection not allowed in Python contexts: {expression}"
+                )
+            return tree
+        return None
+
+    def visitStatements(self, ctx: FandangoParser.StatementsContext):
+        return [tree for stmt in ctx.stmt() for tree in self.visitStmt(stmt)]
+
+    def visitSimple_stmts(self, ctx: FandangoParser.Simple_stmtsContext):
+        return [self.visitSimple_stmt(stmt) for stmt in ctx.simple_stmt()]
+
+    def visitStmt(self, ctx: FandangoParser.StmtContext):
+        if ctx.compound_stmt():
+            return [self.visitCompound_stmt(ctx.compound_stmt())]
+        elif ctx.simple_stmts():
+            return self.visitSimple_stmts(ctx.simple_stmts())
+        else:
+            raise ValueError(f"Unknown symbol: {ctx.getText()}")
+
+    def visitSimple_stmt(self, ctx: FandangoParser.Simple_stmtContext):
+        if ctx.assignment():
+            return self.visitAssignment(ctx.assignment())
+        elif ctx.type_alias():
+            return self.visitType_alias(ctx.type_alias())
+        elif ctx.star_expressions():
+            return ast.Expr(value=self.get_expression(ctx.star_expressions()))
+        elif ctx.return_stmt():
+            return self.visitReturn_stmt(ctx.return_stmt())
+        elif ctx.import_stmt():
+            return self.visitImport_stmt(ctx.import_stmt())
+        elif ctx.raise_stmt():
+            return self.visitRaise_stmt(ctx.raise_stmt())
+        elif ctx.PASS():
+            return ast.Pass()
+        elif ctx.del_stmt():
+            return self.visitDel_stmt(ctx.del_stmt())
+        elif ctx.yield_stmt():
+            return self.visitYield_stmt(ctx.yield_stmt())
+        elif ctx.assert_stmt():
+            return self.visitAssert_stmt(ctx.assert_stmt())
+        elif ctx.BREAK():
+            return ast.Break()
+        elif ctx.CONTINUE():
+            return ast.Continue()
+        elif ctx.global_stmt():
+            return self.visitGlobal_stmt(ctx.global_stmt())
+        elif ctx.nonlocal_stmt():
+            return self.visitNonlocal_stmt(ctx.nonlocal_stmt())
+        else:
+            raise ValueError(f"Unknown symbol: {ctx.getText()}")
+
+    def visitAssignment(self, ctx: FandangoParser.AssignmentContext):
+        if ctx.COLON():
+            right = self.get_expression(ctx.annotated_rhs())
+            if ctx.NAME():
+                return ast.AnnAssign(
+                    target=ast.Name(id=ctx.NAME().getText()),
+                    annotation=self.get_expression(ctx.expression()),
+                    value=right,
+                    simple=1,
+                )
+            if ctx.single_target():
+                left = self.get_expression(ctx.single_target())
+            elif ctx.single_subscript_attribute_target():
+                left = self.get_expression(ctx.single_subscript_attribute_target())
+            else:
+                raise ValueError(f"Unsupported lhs for ann assign {ctx.getText()}")
+            return ast.AnnAssign(
+                target=left,
+                annotation=self.get_expression(ctx.expression()),
+                value=right,
+                simple=0,
+                lineno=0,
+            )
+        else:
+            if ctx.yield_expr():
+                value = self.get_expression(ctx.yield_expr())
+            elif ctx.star_expressions():
+                value = self.get_expression(ctx.star_expressions())
+            else:
+                raise ValueError(f"Unsupported rhs for assign {ctx.getText()}")
+            if ctx.ASSIGN():
+                return ast.Assign(
+                    targets=[
+                        self.get_expression(target) for target in ctx.star_targets()
+                    ],
+                    value=value,
+                    lineno=0,
+                )
+            aug: FandangoParser.AugassignContext = ctx.augassign()
+            if aug.ADD_ASSIGN():
+                op = ast.Add()
+            elif aug.SUB_ASSIGN():
+                op = ast.Sub()
+            elif aug.MULT_ASSIGN():
+                op = ast.Mult()
+            elif aug.AT_ASSIGN():
+                op = ast.MatMult()
+            elif aug.DIV_ASSIGN():
+                op = ast.Div()
+            elif aug.MOD_ASSIGN():
+                op = ast.Mod()
+            elif aug.AND_ASSIGN():
+                op = ast.BitAnd()
+            elif aug.OR_ASSIGN():
+                op = ast.BitOr()
+            elif aug.XOR_ASSIGN():
+                op = ast.BitXor()
+            elif aug.LEFT_SHIFT_ASSIGN():
+                op = ast.LShift()
+            elif aug.RIGHT_SHIFT_ASSIGN():
+                op = ast.RShift()
+            elif aug.POWER_ASSIGN():
+                op = ast.Pow()
+            elif aug.IDIV_ASSIGN():
+                op = ast.FloorDiv()
+            else:
+                raise ValueError(f"Unsupported operator for augassign {aug.getText()}")
+            return ast.AugAssign(
+                target=self.get_expression(ctx.single_target()),
+                op=op,
+                value=value,
+                lineno=0,
+            )
+
+    def visitType_alias(self, ctx: FandangoParser.Type_aliasContext):
+        raise UnsupportedOperation("Type alias currently not supported.")
+
+    def visitReturn_stmt(self, ctx: FandangoParser.Return_stmtContext):
+        return ast.Return(value=self.get_expression(ctx.star_expressions()))
+
+    def visitRaise_stmt(self, ctx: FandangoParser.Raise_stmtContext):
+        return ast.Raise(
+            exc=self.get_expression(ctx.expression(0)),
+            cause=self.get_expression(ctx.expression(1)),
+        )
+
+    def visitGlobal_stmt(self, ctx: FandangoParser.Global_stmtContext):
+        return ast.Global(names=[name.getText() for name in ctx.NAME()])
+
+    def visitNonlocal_stmt(self, ctx: FandangoParser.Nonlocal_stmtContext):
+        return ast.Nonlocal(names=[name.getText() for name in ctx.NAME()])
+
+    def visitDel_stmt(self, ctx: FandangoParser.Del_stmtContext):
+        return ast.Delete(targets=self.get_expression(ctx.del_targets()))
+
+    def visitYield_stmt(self, ctx: FandangoParser.Yield_stmtContext):
+        return ast.Expr(value=self.get_expression(ctx.yield_expr()))
+
+    def visitAssert_stmt(self, ctx: FandangoParser.Assert_stmtContext):
+        return ast.Assert(
+            test=self.get_expression(ctx.expression(0)),
+            msg=self.get_expression(ctx.expression(1)),
+        )
+
+    def visitImport_stmt(self, ctx: FandangoParser.Import_stmtContext):
+        if ctx.import_name():
+            return self.visitImport_name(ctx.import_name())
+        elif ctx.import_from():
+            return self.visitImport_from(ctx.import_from())
+        else:
+            raise ValueError(f"Unknown symbol: {ctx.getText()}")
+
+    def visitImport_name(self, ctx: FandangoParser.Import_nameContext):
+        return ast.Import(names=self.visitDotted_as_names(ctx.dotted_as_names()))
+
+    def visitImport_from(self, ctx: FandangoParser.Import_fromContext):
+        level = len(ctx.DOT()) + 3 * len(ctx.ELLIPSIS())
+        return ast.ImportFrom(
+            module=ctx.dotted_name().getText() if ctx.dotted_name() else None,
+            names=self.visitImport_from_targets(ctx.import_from_targets()),
+            level=level,
+        )
+
+    def visitDotted_as_names(self, ctx: FandangoParser.Dotted_as_namesContext):
+        return [self.visitDotted_as_name(name) for name in ctx.dotted_as_name()]
+
+    def visitDotted_as_name(self, ctx: FandangoParser.Dotted_as_nameContext):
+        return ast.alias(
+            name=ctx.dotted_name().getText(),
+            asname=ctx.NAME().getText() if ctx.NAME() else None,
+        )
+
+    def visitImport_from_targets(self, ctx: FandangoParser.Import_from_targetsContext):
+        if ctx.STAR():
+            return [ast.alias(name="*", asname=None)]
+        else:
+            return self.visitImport_from_as_names(ctx.import_from_as_names())
+
+    def visitImport_from_as_names(
+        self, ctx: FandangoParser.Import_from_as_namesContext
+    ):
+        return [
+            self.visitImport_from_as_name(name) for name in ctx.import_from_as_name()
+        ]
+
+    def visitImport_from_as_name(self, ctx: FandangoParser.Import_from_as_nameContext):
+        return ast.alias(
+            name=ctx.NAME(0).getText(),
+            asname=ctx.NAME(1).getText() if ctx.NAME(1) else None,
+        )
+
+    def visitCompound_stmt(self, ctx: FandangoParser.Compound_stmtContext):
+        if ctx.function_def():
+            return self.visitFunction_def(ctx.function_def())
+        elif ctx.if_stmt():
+            return self.visitIf_stmt(ctx.if_stmt())
+        elif ctx.class_def():
+            return self.visitClass_def(ctx.class_def())
+        elif ctx.with_stmt():
+            return self.visitWith_stmt(ctx.with_stmt())
+        elif ctx.for_stmt():
+            return self.visitFor_stmt(ctx.for_stmt())
+        elif ctx.try_stmt():
+            return self.visitTry_stmt(ctx.try_stmt())
+        elif ctx.while_stmt():
+            return self.visitWhile_stmt(ctx.while_stmt())
+        elif ctx.match_stmt():
+            return self.visitMatch_stmt(ctx.match_stmt())
+        else:
+            raise ValueError(f"Unknown symbol: {ctx.getText()}")
+
+    def visitClass_def(self, ctx: FandangoParser.Class_defContext):
+        class_def = self.visitClass_def_raw(ctx.class_def_raw())
+        if ctx.decorators():
+            class_def.decorator_list = self.visitDecorators(ctx.decorators())
+        return class_def
+
+    def visitClass_def_raw(self, ctx: FandangoParser.Class_def_rawContext):
+        bases = list()
+        keywords = list()
+        if ctx.type_params():
+            raise UnsupportedOperation("Type params unsupported for class def.")
+        if ctx.arguments():
+            base_trees, base_searches, _ = self.search_processor.visitArguments(
+                ctx.arguments()
+            )
+            if base_searches:
+                raise SyntaxError(
+                    f"NonTerminal selection not allowed in Python contexts: {ctx}"
+                )
+            for base in base_trees:
+                if isinstance(base, ast.keyword):
+                    keywords.append(base)
+                else:
+                    bases.append(base)
+        body = self.visitBlock(ctx.block())
+        return ast.ClassDef(
+            name=ctx.NAME().getText(),
+            bases=bases,
+            keywords=keywords,
+            body=body,
+            decorator_list=[],
+        )
+
+    def visitFunction_def(self, ctx: FandangoParser.Function_defContext):
+        function_def = self.visitClass_def_raw(ctx.function_def_raw())
+        if ctx.decorators():
+            function_def.decorator_list = self.visitDecorators(ctx.decorators())
+        return function_def
+
+    def visitFunction_def_raw(self, ctx: FandangoParser.Function_def_rawContext):
+        if ctx.type_params():
+            raise UnsupportedOperation("Type params unsupported for class def.")
+        if ctx.params():
+            params = self.visitParams(ctx.params())
+        else:
+            params = list()
+        body = self.visitBlock(ctx.block())
+        if ctx.ASYNC():
+            class_ = ast.AsyncFunctionDef
+        else:
+            class_ = ast.FunctionDef
+        return class_(
+            name=ctx.NAME().getText(),
+            args=params,
+            body=body,
+            decorator_list=[],
+            returns=self.get_expression(ctx.expression()),
+            type_comment=None,
+        )
+
+    def visitDecorators(self, ctx: FandangoParser.DecoratorsContext):
+        decorators = list()
+        for expression in ctx.named_expression():
+            tree, searches, _ = self.search_processor.visitNamed_expression(expression)
+            if searches:
+                raise SyntaxError(
+                    f"NonTerminal selection not allowed in Python contexts: {ctx}"
+                )
+            decorators.append(expression)
+        return decorators
+
+    def visitBlock(self, ctx: FandangoParser.BlockContext):
+        if ctx.statements():
+            return self.visitStatements(ctx.statements())
+        elif ctx.simple_stmts():
+            return self.visitSimple_stmts(ctx.simple_stmts())
+        else:
+            raise ValueError(f"Unknown symbol: {ctx.getText()}")
+
+    def visitParams(self, ctx: FandangoParser.ParamsContext):
+        return self.get_expression(ctx.parameters())
+
+    def get_code(self, stmts: List[FandangoParser.PythonContext]):
+        return ast.Module(body=[self.visit(stmt) for stmt in stmts], type_ignores=[])

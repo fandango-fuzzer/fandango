@@ -5,7 +5,9 @@ from typing import Tuple, List, Dict
 from fandango.language.grammar import DerivationTree, NonTerminal, Grammar
 
 
-def random_crossover(parent1: DerivationTree, parent2: DerivationTree) -> Tuple[DerivationTree, DerivationTree]:
+def random_crossover(
+    parent1: DerivationTree, parent2: DerivationTree
+) -> Tuple[DerivationTree, DerivationTree]:
     # Deep copy the parents to avoid modifying the originals
     offspring1 = copy.deepcopy(parent1)
     offspring2 = copy.deepcopy(parent2)
@@ -27,6 +29,7 @@ def random_crossover(parent1: DerivationTree, parent2: DerivationTree) -> Tuple[
 
     return offspring1, offspring2
 
+
 def collect_non_terminal_nodes(tree: DerivationTree) -> List[DerivationTree]:
     non_terminal_nodes = []
 
@@ -38,6 +41,7 @@ def collect_non_terminal_nodes(tree: DerivationTree) -> List[DerivationTree]:
 
     traverse(tree)
     return non_terminal_nodes
+
 
 def swap_subtrees(node1: DerivationTree, node2: DerivationTree):
     parent1 = node1.parent
@@ -58,7 +62,9 @@ def swap_subtrees(node1: DerivationTree, node2: DerivationTree):
     node1.parent, node2.parent = parent2, parent1
 
 
-def type_safe_crossover(parent1: DerivationTree, parent2: DerivationTree) -> Tuple[DerivationTree, DerivationTree]:
+def type_safe_crossover(
+    parent1: DerivationTree, parent2: DerivationTree
+) -> Tuple[DerivationTree, DerivationTree]:
     # Deep copy the parents
     offspring1 = copy.deepcopy(parent1)
     offspring2 = copy.deepcopy(parent2)
@@ -86,6 +92,7 @@ def type_safe_crossover(parent1: DerivationTree, parent2: DerivationTree) -> Tup
 
     return offspring1, offspring2
 
+
 def collect_nodes_by_symbol(tree: DerivationTree) -> Dict[str, List[DerivationTree]]:
     nodes_by_symbol = {}
 
@@ -101,9 +108,11 @@ def collect_nodes_by_symbol(tree: DerivationTree) -> Dict[str, List[DerivationTr
     traverse(tree)
     return nodes_by_symbol
 
+
 def generate_tree_from_symbol(grammar: Grammar, symbol: NonTerminal) -> DerivationTree:
     # Generate a new derivation tree starting from the given non-terminal symbol
     return symbol.fuzz(grammar.rules)[0]
+
 
 if __name__ == "__main__":
     # Example usage

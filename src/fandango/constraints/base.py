@@ -53,8 +53,12 @@ class Constraint(abc.ABC):
             nodes.append([(name, node) for node in search.find_all(trees, scope=scope)])
         return itertools.product(*nodes)
 
-    def check(self, tree: DerivationTree):
-        return self.fitness(tree).success
+    def check(
+        self,
+        tree: DerivationTree,
+        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+    ):
+        return self.fitness(tree, scope).success
 
     def get_failing_nodes(self, tree: DerivationTree):
         return self.fitness(tree).failing_trees
@@ -80,7 +84,7 @@ class ExpressionConstraint(Constraint):
         failing_trees = []
         if tree is None:
             return Fitness(0, 0, False)
-        for combination in self.combinations(tree.children, scope):
+        for combination in self.combinations([tree], scope):
             local_variables = self.local_variables.copy()
             local_variables.update({name: node for name, node in combination})
             try:

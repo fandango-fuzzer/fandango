@@ -135,7 +135,9 @@ selection:
 // python part
 
 python
-    : PYTHON_START (python_tag | NEWLINE)* PYTHON_END
+    : compound_stmt
+    | simple_stmt
+    // PYTHON_START (python_tag | NEWLINE)* PYTHON_END
     ;
 
 python_tag:
@@ -218,7 +220,7 @@ assignment
     : NAME ':' expression ('=' annotated_rhs)?
     | ('(' single_target ')'
          | single_subscript_attribute_target) ':' expression ('=' annotated_rhs)?
-    | (star_targets '=' )+ (yield_expr | star_expressions) ~'='
+    | (star_targets '=' )+ (yield_expr | star_expressions)
     | single_target augassign (yield_expr | star_expressions)
     ;
 

@@ -103,8 +103,6 @@ class NonTerminal(Node):
         return hash(self.symbol)
 
 
-
-
 class Terminal(Node):
     def __init__(self, symbol: str):
         self.symbol = symbol
@@ -267,3 +265,7 @@ class Grammar:
 
     def __str__(self):
         return self.__repr__()
+
+    @staticmethod
+    def dummy():
+        return Grammar({})
