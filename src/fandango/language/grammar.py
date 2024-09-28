@@ -111,14 +111,14 @@ class Terminal(Node):
         return [DerivationTree(self)]
 
     @staticmethod
+    def clean(symbol: str) -> str:
+        if symbol[0] == symbol[-1] == "'" or symbol[0] == symbol[-1] == '"':
+            return eval(symbol)
+        return symbol
+
+    @staticmethod
     def from_symbol(symbol: str) -> "Terminal":
-        if symbol[0] == symbol[-1] == "'":
-            while symbol and symbol[0] == symbol[-1] == "'":
-                symbol = symbol[1:-1]
-        elif symbol[0] == symbol[-1] == '"':
-            while symbol and symbol[0] == symbol[-1] == '"':
-                symbol = symbol[1:-1]
-        return Terminal(symbol)
+        return Terminal(Terminal.clean(symbol))
 
     def __repr__(self):
         return f'"{self.symbol}"'

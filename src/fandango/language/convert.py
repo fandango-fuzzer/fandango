@@ -2,6 +2,8 @@ import ast
 from io import UnsupportedOperation
 from typing import List, Tuple, Dict, Optional, Any
 
+from fontTools.ttLib.scaleUpem import visit
+
 from fandango.constraints.base import (
     ConjunctionConstraint,
     DisjunctionConstraint,
@@ -508,18 +510,24 @@ class SearchProcessor(FandangoParserVisitor):
             )
         elif ctx.slices():
             tree, searches, search_map = self.visit(ctx.primary())
-            slice_trees, slice_searches, slice_search_map = self.visit(ctx.slices())
-            if isinstance(slice_trees, list):
-                slice_trees = ast.Tuple(elts=slice_trees)
-            return (
-                ast.Subscript(value=tree, slice=slice_trees),
-                searches + slice_searches,
-                {**search_map, **slice_search_map},
-            )
+            return self._process_slices(ctx.slices(), tree, searches, search_map)
         elif ctx.atom():
             return self.visit(ctx.atom())
         else:
             raise SyntaxError(f"Unsupported atom {ctx}")
+
+    def _process_slices(self, slices, tree, searches, search_map):
+        slice_trees, slice_searches, slice_search_map = self.visit(slices)
+        if isinstance(slice_trees, list):
+            if len(slice_trees) == 1:
+                slice_trees = slice_trees[0]
+            else:
+                slice_trees = ast.Tuple(elts=slice_trees)
+        return (
+            ast.Subscript(value=tree, slice=slice_trees),
+            searches + slice_searches,
+            {**search_map, **slice_search_map},
+        )
 
     def visitAtom(self, ctx: FandangoParser.AtomContext):
         if ctx.NAME():
@@ -531,7 +539,7 @@ class SearchProcessor(FandangoParserVisitor):
         elif ctx.NONE():
             return ast.Constant(value=None), [], {}
         elif ctx.strings():
-            return self.visit(ctx.strings())
+            return self.visitStrings(ctx.strings())
         elif ctx.NUMBER():
             return ast.parse(ctx.NUMBER().getText(), mode="eval").body, [], {}
         elif ctx.tuple_():
@@ -629,7 +637,7 @@ class SearchProcessor(FandangoParserVisitor):
         else:
             string = ""
             for child in ctx.string():
-                string += child.STRING().getText()
+                string += Terminal.clean(child.STRING().getText())
             return ast.Constant(value=string), [], {}
 
     def visitTuple(self, ctx: FandangoParser.TupleContext):
@@ -813,14 +821,7 @@ class SearchProcessor(FandangoParserVisitor):
             )
         elif ctx.slices():
             tree, searches, search_map = self.visit(ctx.t_primary())
-            slice_trees, slice_searches, slice_search_map = self.visit(ctx.slices())
-            if isinstance(slice_trees, list):
-                slice_trees = ast.Tuple(elts=slice_trees)
-            return (
-                ast.Subscript(value=tree, slice=slice_trees),
-                searches + slice_searches,
-                {**search_map, **slice_search_map},
-            )
+            return self._process_slices(ctx.slices(), tree, searches, search_map)
         return self.visit(ctx.star_atom())
 
     def visitStar_atom(self, ctx: FandangoParser.Star_atomContext):
@@ -849,14 +850,7 @@ class SearchProcessor(FandangoParserVisitor):
             )
         elif ctx.slices():
             tree, searches, search_map = self.visit(ctx.t_primary())
-            slice_trees, slice_searches, slice_search_map = self.visit(ctx.slices())
-            if isinstance(slice_trees, list):
-                slice_trees = ast.Tuple(elts=slice_trees)
-            return (
-                ast.Subscript(value=tree, slice=slice_trees),
-                searches + slice_searches,
-                {**search_map, **slice_search_map},
-            )
+            return self._process_slices(ctx.slices(), tree, searches, search_map)
         elif ctx.genexp():
             tree, searches, search_map = self.visit(ctx.t_primary())
             gen_tree, gen_searches, gen_search_map = self.visit(ctx.genexp())
@@ -885,14 +879,229 @@ class SearchProcessor(FandangoParserVisitor):
         return self.visit(ctx.atom())
 
     def visitParameters(self, ctx: FandangoParser.ParametersContext):
-        if ctx.slash_no_default() or ctx.slash_no_default():
-            raise UnsupportedOperation("Slash params unsupported for function args.")
-        return ast.arguments()
+        posonlyargs, defaults = [], []
+        searches = []
+        search_map = {}
+        if ctx.slash_no_default():
+            p = self.visitSlash_no_default(ctx.slash_no_default())
+            posonlyargs.extend(p)
+        elif ctx.slash_with_default():
+            p, d, s, m = self.visitSlash_with_default(ctx.slash_with_default())
+            posonlyargs.extend(p)
+            defaults.extend(d)
+            searches.extend(s)
+            search_map.update(m)
+        args = []
+        for param in ctx.param_no_default():
+            arg, s, m = self.visitParam_no_default(param)
+            args.append(arg)
+            searches.extend(s)
+            search_map.update(m)
+        kwonlyargs = []
+        kw_defaults = []
+        for param in ctx.param_with_default():
+            arg, d, s, m = self.visitParam_with_default(param)
+            if ctx.slash_with_default():
+                args.append(arg),
+                defaults.append(d)
+            else:
+                kwonlyargs.append(arg)
+                kw_defaults.append(d)
+            searches.extend(s)
+            search_map.update(m)
+        if ctx.star_etc():
+            vararg, kw_args, kw_d, kwarg, s, m = self.visitStar_etc(ctx.star_etc())
+            kwonlyargs.extend(kw_args)
+            kw_defaults.extend(kw_d)
+            searches.extend(s)
+            search_map.update(m)
+        else:
+            vararg, kwarg = None, None
+        return (
+            ast.arguments(
+                posonlyargs=posonlyargs,
+                args=args,
+                vararg=vararg,
+                kwonlyargs=kwonlyargs,
+                kw_defaults=kw_defaults,
+                kwarg=kwarg,
+                defaults=defaults,
+            ),
+            searches,
+            search_map,
+        )
+
+    def visitStar_etc(self, ctx: FandangoParser.Star_etcContext):
+        searches, search_map = [], {}
+        vararg = None
+        if ctx.STAR():
+            if ctx.param_no_default():
+                vararg, s, m = self.visitParam_no_default(ctx.param_no_default())
+            else:
+                vararg, s, m = self.visitParam_no_default_star_annotation(
+                    ctx.param_no_default_star_annotation()
+                )
+            searches.extend(s)
+            search_map.update(m)
+        kwonlyargs = []
+        kw_defaults = []
+        for param in ctx.param_maybe_default():
+            arg, d, s, m = self.visitParam_maybe_default(param)
+            kwonlyargs.append(arg)
+            kw_defaults.append(d)
+            searches.extend(s)
+            search_map.update(m)
+        kwarg = None
+        if ctx.kwds():
+            kwarg, s, m = self.visitParam_no_default(ctx.kwds().param_no_default())
+            searches.extend(s)
+            search_map.update(m)
+        return vararg, kwonlyargs, kw_defaults, kwarg, searches, search_map
+
+    def visitParam_no_default(self, ctx: FandangoParser.Param_no_defaultContext):
+        return self.visitParam(ctx.param())
+
+    def visitParam_no_default_star_annotation(
+        self, ctx: FandangoParser.Param_no_default_star_annotationContext
+    ):
+        return self.visitParam_star_annotation(ctx.param_star_annotation())
+
+    def visitParam_with_default(self, ctx: FandangoParser.Param_with_defaultContext):
+        arg, searches, search_map = self.visitParam(ctx.param())
+        default, default_searches, default_search_map = self.visitExpression(
+            ctx.default().expression()
+        )
+        return (
+            arg,
+            default,
+            searches + default_searches,
+            {**search_map, **default_search_map},
+        )
+
+    def visitParam_maybe_default(self, ctx: FandangoParser.Param_maybe_defaultContext):
+        arg, searches, search_map = self.visitParam(ctx.param())
+        if ctx.default():
+            default, default_searches, default_search_map = self.visitExpression(
+                ctx.default().expression()
+            )
+            return (
+                arg,
+                default,
+                searches + default_searches,
+                {**search_map, **default_search_map},
+            )
+        else:
+            return arg, None, searches, search_map
+
+    def visitParam(self, ctx: FandangoParser.ParamContext):
+        if ctx.annotation():
+            annotation, searches, search_map = self.visitExpression(
+                ctx.annotation().expression()
+            )
+        else:
+            annotation, searches, search_map = None, [], {}
+        return (
+            ast.arg(
+                arg=ctx.NAME().getText(),
+                annotation=annotation,
+            ),
+            searches,
+            search_map,
+        )
+
+    def visitParam_star_annotation(
+        self, ctx: FandangoParser.Param_star_annotationContext
+    ):
+        if ctx.star_annotation():
+            annotation, searches, search_map = self.visitStar_expression(
+                ctx.star_annotation().expression()
+            )
+        else:
+            annotation, searches, search_map = None, [], {}
+        return (
+            ast.arg(
+                arg=ctx.NAME().getText(),
+                annotation=annotation,
+            ),
+            searches,
+            search_map,
+        )
+
+    def visitSingle_target(self, ctx: FandangoParser.Single_targetContext):
+        if ctx.NAME():
+            return ast.Name(id=ctx.NAME().getText()), [], {}
+        elif ctx.single_subscript_attribute_target():
+            return self.visitSingle_subscript_attribute_target(
+                ctx.single_subscript_attribute_target()
+            )
+        else:
+            return self.visitSingle_target(ctx.single_target())
+
+    def visitSingle_subscript_attribute_target(
+        self, ctx: FandangoParser.Single_subscript_attribute_targetContext
+    ):
+        tree, searches, search_map = self.visit(ctx.t_primary())
+        if ctx.DOT():
+            return (
+                ast.Attribute(value=tree, attr=ctx.NAME().getText()),
+                searches,
+                search_map,
+            )
+        else:
+            return self._process_slices(ctx.slices(), tree, searches, search_map)
+
+    def visitDel_target(self, ctx: FandangoParser.Del_targetContext):
+        if ctx.DOT():
+            tree, searches, search_map = self.visit(ctx.t_primary())
+            return (
+                ast.Attribute(value=tree, attr=ctx.NAME().getText()),
+                searches,
+                search_map,
+            )
+        elif ctx.slices():
+            tree, searches, search_map = self.visit(ctx.t_primary())
+            return self._process_slices(ctx.slices(), tree, searches, search_map)
+        else:
+            return self.visitDel_t_atom(ctx.del_t_atom())
+
+    def visitDel_t_atom(self, ctx: FandangoParser.Del_t_atomContext):
+        if ctx.NAME():
+            return ast.Name(id=ctx.NAME().getText()), [], {}
+        else:
+            if ctx.del_targets():
+                trees, searches, search_map = self.visitDel_targets(ctx.del_targets())
+            else:
+                trees, searches, search_map = self.defaultResult()
+            if ctx.OPEN_PAREN():
+                return ast.Tuple(elts=trees), searches, search_map
+            else:
+                return ast.List(elts=trees), searches, search_map
+
+    def visitStar_expressions(self, ctx: FandangoParser.Star_expressionsContext):
+        expressions, searches, search_map = self.visitChildren(ctx)
+        if isinstance(expressions, list):
+            if len(expressions) == 1:
+                expression = expressions[0]
+            else:
+                expression = ast.Tuple(elts=expressions)
+        else:
+            expression = expressions
+        return expression, searches, search_map
+
+    def visitStar_expression(self, ctx: FandangoParser.Star_expressionContext):
+        if ctx.STAR():
+            tree, searches, search_map = self.visitBitwise_or(ctx.bitwise_or())
+            return ast.Starred(value=tree), searches, search_map
+        else:
+            return self.visitExpression(ctx.expression())
 
 
 class PythonProcessor(FandangoParserVisitor):
     def __init__(self):
         self.search_processor = SearchProcessor(Grammar.dummy())
+
+    def get_code(self, stmts: List[FandangoParser.PythonContext]):
+        return ast.Module(body=[self.visit(stmt) for stmt in stmts], type_ignores=[])
 
     def get_expression(self, expression):
         if expression:
@@ -1155,7 +1364,7 @@ class PythonProcessor(FandangoParserVisitor):
         )
 
     def visitFunction_def(self, ctx: FandangoParser.Function_defContext):
-        function_def = self.visitClass_def_raw(ctx.function_def_raw())
+        function_def = self.visitFunction_def_raw(ctx.function_def_raw())
         if ctx.decorators():
             function_def.decorator_list = self.visitDecorators(ctx.decorators())
         return function_def
@@ -1179,6 +1388,7 @@ class PythonProcessor(FandangoParserVisitor):
             decorator_list=[],
             returns=self.get_expression(ctx.expression()),
             type_comment=None,
+            lineno=0,
         )
 
     def visitDecorators(self, ctx: FandangoParser.DecoratorsContext):
@@ -1203,5 +1413,135 @@ class PythonProcessor(FandangoParserVisitor):
     def visitParams(self, ctx: FandangoParser.ParamsContext):
         return self.get_expression(ctx.parameters())
 
-    def get_code(self, stmts: List[FandangoParser.PythonContext]):
-        return ast.Module(body=[self.visit(stmt) for stmt in stmts], type_ignores=[])
+    def _process_if(
+        self, ctx: FandangoParser.If_stmtContext | FandangoParser.Elif_stmtContext
+    ):
+        test = self.get_expression(ctx.named_expression())
+        body = self.visitBlock(ctx.block())
+        if ctx.elif_stmt():
+            orelse = [self._process_if(ctx.elif_stmt())]
+        elif ctx.else_block():
+            orelse = self.visitBlock(ctx.else_block().block())
+        else:
+            orelse = None
+        return ast.If(
+            test=test,
+            body=body,
+            orelse=orelse,
+        )
+
+    def visitIf_stmt(self, ctx: FandangoParser.If_stmtContext):
+        return self._process_if(ctx)
+
+    def visitElif_stmt(self, ctx: FandangoParser.Elif_stmtContext):
+        return self._process_if(ctx)
+
+    def visitWith_stmt(self, ctx: FandangoParser.With_stmtContext):
+        items = [self.visitWith_item(item) for item in ctx.with_item()]
+        body = self.visitBlock(ctx.block())
+        if ctx.ASYNC():
+            return ast.AsyncWith(
+                items=items,
+                body=body,
+                lineno=0,
+            )
+        return ast.With(
+            items=items,
+            body=body,
+            lineno=0,
+        )
+
+    def visitWith_item(self, ctx: FandangoParser.With_itemContext):
+        return ast.withitem(
+            context_expr=self.get_expression(ctx.expression()),
+            optional_vars=self.get_expression(ctx.star_target()),
+        )
+
+    def visitFor_stmt(self, ctx: FandangoParser.For_stmtContext):
+        target = self.get_expression(ctx.star_targets())
+        iter_ = self.get_expression(ctx.star_expressions())
+        body = self.visitBlock(ctx.block())
+        if ctx.else_block():
+            orelse = self.visitBlock(ctx.else_block().block())
+        else:
+            orelse = None
+        if ctx.ASYNC():
+            return ast.AsyncFor(
+                target=target,
+                iter=iter_,
+                body=body,
+                orelse=orelse,
+                lineno=0,
+            )
+        return ast.For(
+            target=target,
+            iter=iter_,
+            body=body,
+            orelse=orelse,
+            lineno=0,
+        )
+
+    def visitWhile_stmt(self, ctx: FandangoParser.While_stmtContext):
+        if ctx.else_block():
+            orelse = self.visitBlock(ctx.else_block().block())
+        else:
+            orelse = None
+        return ast.While(
+            test=self.get_expression(ctx.named_expression()),
+            body=self.visitBlock(ctx.block()),
+            orelse=orelse,
+        )
+
+    def visitTry_stmt(self, ctx: FandangoParser.Try_stmtContext):
+        body = self.visitBlock(ctx.block())
+        if ctx.else_block():
+            orelse = self.visitBlock(ctx.else_block().block())
+        else:
+            orelse = None
+        if ctx.finally_block():
+            finalbody = self.visitBlock(ctx.finally_block().block())
+        else:
+            finalbody = None
+        if ctx.except_star_block():
+            return ast.TryStar(
+                body=body,
+                handlers=[
+                    self.visitExcept_star_block(handler)
+                    for handler in ctx.except_star_block()
+                ],
+                orelse=orelse,
+                finalbody=finalbody,
+            )
+        return ast.Try(
+            body=body,
+            handlers=[
+                self.visitExcept_block(handler) for handler in ctx.except_block()
+            ],
+            orelse=orelse,
+            finalbody=finalbody,
+        )
+
+    def visitExcept_block(self, ctx: FandangoParser.Except_blockContext):
+        if ctx.NAME():
+            name = ctx.NAME().getText()
+        else:
+            name = None
+        return ast.ExceptHandler(
+            type=self.get_expression(ctx.expression()),
+            name=name,
+            body=self.visitBlock(ctx.block()),
+        )
+
+    def visitExcept_star_block(self, ctx: FandangoParser.Except_star_blockContext):
+        if ctx.NAME():
+            name = ctx.NAME().getText()
+        else:
+            name = None
+        return ast.ExceptHandler(
+            type=self.get_expression(ctx.expression()),
+            name=name,
+            body=self.visitBlock(ctx.block()),
+        )
+
+    def visitMatch_stmt(self, ctx: FandangoParser.Match_stmtContext):
+        raise UnsupportedOperation("Match statement currently not supported.")
