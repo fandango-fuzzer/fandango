@@ -69,8 +69,17 @@ class RuleSearch(NonTerminalSearch):
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[DerivationTree]:
         if scope and self.symbol in scope:
-            return scope[self.symbol]
+            return [scope[self.symbol]]
         return [tree for tree in trees if tree.symbol == self.symbol]
+
+    def find_all(
+        self,
+        trees: List[DerivationTree],
+        scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
+    ) -> List[DerivationTree]:
+        if scope and self.symbol in scope:
+            return [scope[self.symbol]]
+        return super().find_all(trees, scope=scope)
 
     def __repr__(self):
         return repr(self.symbol)

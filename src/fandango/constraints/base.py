@@ -130,9 +130,9 @@ class ComparisonConstraint(Constraint):
         solved = 0
         total = 0
         failing_trees = []
-        for combination in self.combinations(tree.children, scope):
+        for combination in self.combinations([tree], scope):
             local_variables = self.local_variables.copy()
-            local_variables.update({name: str(node) for name, node in combination})
+            local_variables.update({name: node for name, node in combination})
             try:
                 left = eval(self.left, self.global_variables, local_variables)
                 right = eval(self.right, self.global_variables, local_variables)
