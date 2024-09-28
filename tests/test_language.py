@@ -57,8 +57,8 @@ def get_tree(example, start="fandango"):
     return getattr(parser, start)()
 
 
-def test_indents(self):
-    tree = self.get_tree(
+def test_indents():
+    tree = get_tree(
         """
 <a> ::= 
     "a"
@@ -69,10 +69,10 @@ def test_indents(self):
     splitter.visit(tree)
     processor = GrammarProcessor()
     grammar = processor.get_grammar(splitter.productions)
-    self.assertEqual(1, len(grammar.rules))
+    assert len(grammar.rules) == 1
     rule = list(grammar.rules.values())[0]
-    self.assertIsInstance(rule, Alternative)
-    self.assertEqual(2, len(rule.alternatives))
+    assert isinstance(rule, Alternative)
+    assert len(rule.alternatives) == 2
 
 
 def test_speed():
@@ -305,9 +305,9 @@ def test_conversion_statement(stmt, value, is_global):
         assert value == local_vars["x"]
 
 
-def test_parsing(self):
+def test_parsing():
     fan = (
-        self.FANDANGO_GRAMMAR
+        FANDANGO_GRAMMAR
         + """
 
 def f(x):
@@ -316,21 +316,23 @@ def f(x):
 f(<number>) % 2 == 0;        
 """
     )
-    grammar, constraints, _ = parse(fan)
-    self.assertIsInstance(grammar, Grammar)
-    self.assertEqual(4, len(grammar.rules))
-    self.assertIn("<start>", grammar)
-    self.assertIn("<number>", grammar)
-    self.assertIn("<non_zero>", grammar)
-    self.assertIn("<digit>", grammar)
-    self.assertEqual(1, len(constraints))
+    grammar, constraints = parse(fan)
+    assert isinstance(grammar, Grammar)
+    assert len(grammar.rules) == 4
+    assert "<start>" in grammar
+    assert "<number>" in grammar
+    assert "<non_zero>" in grammar
+    assert "<digit>" in grammar
+    assert len(constraints) == 1
     constraint = constraints[0]
-    self.assertIsInstance(constraint, ComparisonConstraint)
-    self.assertEqual("0", constraint.right)
-    self.assertEqual(Comparison.EQUAL, constraint.operator)
-    self.assertEqual(1, len(constraint.searches))
+    assert isinstance(constraint, ComparisonConstraint)
+    assert constraint.right == "0"
+    assert constraint.operator == Comparison.EQUAL
+    assert len(constraint.searches) == 1
     placeholder = list(constraint.searches.keys())[0]
-    self.assertEqual(f"f({placeholder}) % 2", constraint.left)
-    self.assertIsInstance(constraint.searches[placeholder], RuleSearch)
+    assert constraint.left == f"f({placeholder}) % 2"
+    assert "f" in constraint.local_variables
+    assert eval("f('1')", constraint.global_variables, constraint.local_variables) == 1
+    assert isinstance(constraint.searches[placeholder], RuleSearch)
     search: RuleSearch = constraint.searches[placeholder]
-    self.assertEqual(search.symbol, NonTerminal("<number>"))
+    assert NonTerminal("<number>") == search.symbol
