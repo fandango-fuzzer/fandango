@@ -2,8 +2,6 @@ import ast
 from io import UnsupportedOperation
 from typing import List, Tuple, Dict, Optional, Any
 
-from fontTools.ttLib.scaleUpem import visit
-
 from fandango.constraints.base import (
     ConjunctionConstraint,
     DisjunctionConstraint,
@@ -185,9 +183,19 @@ class ConstraintProcessor(FandangoParserVisitor):
 
     def visitExpr(self, ctx: FandangoParser.ExprContext):
         if ctx.selector_length():
-            expr, _, search_map = self.searches.visit(ctx.selector_length())
-        elif ctx.expression():
-            expr, _, search_map = self.searches.visit(ctx.expression())
+            expr, _, search_map = self.searches.visitSelector_length(
+                ctx.selector_length()
+            )
+        elif ctx.IF():
+            body, _, body_search_map = self.searches.visitInversion(ctx.inversion(0))
+            test, _, test_search_map = self.searches.visitInversion(ctx.inversion(1))
+            orelse, _, orelse_search_map = self.searches.visitInversion(
+                ctx.inversion(2)
+            )
+            search_map = {**body_search_map, **test_search_map, **orelse_search_map}
+            expr = ast.IfExp(test=test, body=body, orelse=orelse)
+        elif ctx.inversion():
+            expr, _, search_map = self.searches.visitInversion(ctx.inversion(0))
         else:
             raise ValueError(f"Unknown expression: {ctx.getText()}")
         return ExpressionConstraint(

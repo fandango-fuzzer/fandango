@@ -79,7 +79,6 @@ quantifier:
     ;
 
 formula_disjunction:
-
     NEWLINE*
     (
         formula_conjunction (OR formula_conjunction)*
@@ -88,7 +87,6 @@ formula_disjunction:
     ;
 
 formula_conjunction:
-
     NEWLINE*
     (
         formula_atom (AND formula_atom)*
@@ -113,7 +111,8 @@ formula_comparison:
 
 expr:
     selector_length
-    | expression
+    | inversion
+    | inversion 'if' inversion 'else' inversion
     ;
 
 selector_length
