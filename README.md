@@ -37,7 +37,7 @@ FANDANGO is a **Fuzzing framework** that leverages **grammar-based genetic algor
 
 ### Prerequisites
 
-- **Python 3.6 or higher**
+- **Python 3.11**
 
 ### Steps
 
