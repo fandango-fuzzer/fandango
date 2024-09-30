@@ -1,6 +1,7 @@
 # evolution/algorithm.py
 
 import copy
+import os.path
 import random
 from typing import List, Set, Tuple
 
@@ -111,11 +112,13 @@ class FANDANGO:
 
         return elites
 
+    @staticmethod
     def fitness_proportionate_selection(
-        self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]
+        population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]
     ) -> DerivationTree:
         """
-        Select an individual from the population using fitness-proportionate selection. Uses choices with k based on fitness.
+        Select an individual from the population using fitness-proportionate selection. Uses choices with k based on
+        fitness.
 
         :param population: A list of tuples containing the individual, its fitness score, and failing nodes.
         :return: A selected parent individual.
@@ -229,8 +232,9 @@ class FANDANGO:
             fitness_score, failing_nodes = self.evaluate_fitness(tree, self.constraints)
             return list(failing_nodes)
 
+    @staticmethod
     def get_matching_nodes(
-        self, nodes1: List[DerivationTree], nodes2: List[DerivationTree]
+        nodes1: List[DerivationTree], nodes2: List[DerivationTree]
     ) -> List[Tuple[DerivationTree, DerivationTree]]:
         """
         Find all pairs of nodes from two lists where the non-terminal symbols match.
@@ -254,8 +258,9 @@ class FANDANGO:
 
         return matching_nodes
 
+    @staticmethod
     def get_matching_nonterminal_nodes(
-        self, tree1: DerivationTree, tree2: DerivationTree
+        tree1: DerivationTree, tree2: DerivationTree
     ) -> List[Tuple[DerivationTree, DerivationTree]]:
         """
         Find all pairs of nodes from two trees where the non-terminal symbols match.
@@ -291,7 +296,8 @@ class FANDANGO:
 
         return matching_nodes
 
-    def swap_subtrees(self, node1: DerivationTree, node2: DerivationTree):
+    @staticmethod
+    def swap_subtrees(node1: DerivationTree, node2: DerivationTree):
         """
         Swap the subtrees rooted at node1 and node2.
 
@@ -376,7 +382,8 @@ class FANDANGO:
             # If the node is a terminal, replace it with a new terminal
             node.symbol = node.symbol.fuzz(self.grammar.rules)[0].symbol
 
-    def select_random_node(self, tree: DerivationTree) -> DerivationTree:
+    @staticmethod
+    def select_random_node(tree: DerivationTree) -> DerivationTree:
         """
         Select a random node from the derivation tree.
 
@@ -430,9 +437,11 @@ class FANDANGO:
 
 
 if __name__ == "__main__":
-    grammar, constraints = parse_file("../../../tests/resources/int.fan")
+    grammar_, constraints_ = parse_file(
+        os.path.join("..", "..", "..", "tests", "resources", "int.fan")
+    )
 
-    fandango = FANDANGO(grammar, constraints)
+    fandango = FANDANGO(grammar_, constraints_)
     fandango.evolve()
 
     if fandango.population:

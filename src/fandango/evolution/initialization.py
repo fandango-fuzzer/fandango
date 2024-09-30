@@ -3,14 +3,23 @@
 import random
 from typing import List, Set, Tuple
 
-from fandango.language.grammar import Grammar, DerivationTree, NonTerminal, Terminal, Node, Repetition, Concatenation, \
-    Alternative, Star, Plus, Option
+from fandango.language.grammar import (
+    Grammar,
+    DerivationTree,
+    NonTerminal,
+    Terminal,
+    Node,
+    Repetition,
+    Concatenation,
+    Alternative,
+    Star,
+    Plus,
+    Option,
+)
 
 
 def generate_k_paths(
-        grammar: Grammar,
-        start_symbol: str = "<start>",
-        k: int = 2
+    grammar: Grammar, start_symbol: str = "<start>", k: int = 2
 ) -> Set[Tuple[Node, ...]]:
     """
     Generate all unique k-paths in the grammar starting from the start symbol.
@@ -47,11 +56,11 @@ def generate_k_paths(
 
 
 def generate_k_path_population(
-        grammar: Grammar,
-        population_size: int,
-        start_symbol: str = "<start>",
-        k: int = 2,
-        max_depth: int = 10
+    grammar: Grammar,
+    population_size: int,
+    start_symbol: str = "<start>",
+    k: int = 2,
+    max_depth: int = 10,
 ) -> List[DerivationTree]:
     """
     Create an initial population of derivation trees using the k-path algorithm.
@@ -64,18 +73,18 @@ def generate_k_path_population(
     :return: A list of derivation trees covering as many unique k-paths as possible.
     """
     forest = []
-    P = list(generate_k_paths(grammar, start_symbol, k))
-    random.shuffle(P)
-    P = set(P)  # Convert back to set for efficient removal
+    ps = list(generate_k_paths(grammar, start_symbol, k))
+    random.shuffle(ps)
+    ps = set(ps)  # Convert back to set for efficient removal
     paths_used = set()
 
-    while P and len(forest) < population_size:
-        p = P.pop()
+    while ps and len(forest) < population_size:
+        p = ps.pop()
         paths_used.add(p)
         r = DerivationTree(NonTerminal(start_symbol))
-        Q = [(r, 0)]  # Queue of (node, depth)
-        while Q:
-            current_node, depth = Q.pop(0)
+        qs = [(r, 0)]  # Queue of (node, depth)
+        while qs:
+            current_node, depth = qs.pop(0)
             if depth > max_depth:
                 continue
             # Get the next uncovered node in p
@@ -99,15 +108,14 @@ def generate_k_path_population(
                 # Select an expansion
                 if n != "X":
                     # Choose expansion closest to n
-                    m = min(
-                        alternatives,
-                        key=lambda alt: 0 if alt == n else 1
-                    )
+                    m = min(alternatives, key=lambda alt: 0 if alt == n else 1)
                 else:
                     # Choose expansion with fewest k-paths used
                     m = min(
                         alternatives,
-                        key=lambda alt: len(generate_k_paths_from_node(alt, grammar, k) & paths_used)
+                        key=lambda alt: len(
+                            generate_k_paths_from_node(alt, grammar, k) & paths_used
+                        ),
                     )
                 # Fill current_node with m
                 children = expand_node(m, grammar)
@@ -116,16 +124,18 @@ def generate_k_path_population(
                     child.parent = current_node
                 # Remove covered k-paths
                 new_paths = generate_k_paths_from_node(m, grammar, k)
-                P -= new_paths
+                ps -= new_paths
                 paths_used.update(new_paths)
                 # Add child slots to Q
                 for child in children:
-                    Q.append((child, depth + 1))
+                    qs.append((child, depth + 1))
         forest.append(r)
     return forest
 
 
-def generate_k_paths_from_node(node: Node, grammar: Grammar, k: int) -> Set[Tuple[Node, ...]]:
+def generate_k_paths_from_node(
+    node: Node, grammar: Grammar, k: int
+) -> Set[Tuple[Node, ...]]:
     """
     Generate k-paths starting from a specific node.
 
