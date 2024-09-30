@@ -12,17 +12,17 @@ from fandango.language.parse import parse_file
 
 class FANDANGO:
     def __init__(
-            self,
-            grammar: Grammar,
-            constraints: List[Constraint],
-            population_size: int = 100,
-            mutation_rate: float = 0.01,
-            crossover_rate: float = 0.7,
-            max_generations: int = 100,
-            elitism_rate: float = 0.1,
-            k: int = 20,
-            max_depth: int = 40,
-            verbose: bool = True
+        self,
+        grammar: Grammar,
+        constraints: List[Constraint],
+        population_size: int = 100,
+        mutation_rate: float = 0.01,
+        crossover_rate: float = 0.7,
+        max_generations: int = 100,
+        elitism_rate: float = 0.1,
+        k: int = 20,
+        max_depth: int = 40,
+        verbose: bool = True,
     ):
         """
         Initialize the FANDANGO genetic algorithm.
@@ -36,7 +36,7 @@ class FANDANGO:
         self.elitism_rate = elitism_rate
         self.tournament_size = max(10, int(0.1 * population_size))
         self.k = k
-        self.max_depth = max_depth,
+        self.max_depth = (max_depth,)
         self.verbose = verbose
 
         # Initialize population
@@ -46,7 +46,9 @@ class FANDANGO:
         self.fitness_cache = {}
         self.fitness = self.evaluate_population(self.population, constraints)
 
-    def evaluate_fitness(self, individual: DerivationTree, constraints: List[Constraint]) -> Tuple[float, Set[DerivationTree]]:
+    def evaluate_fitness(
+        self, individual: DerivationTree, constraints: List[Constraint]
+    ) -> Tuple[float, Set[DerivationTree]]:
         """
         Evaluates the fitness of an individual derivation tree, using a cache to avoid redundant computations.
         """
@@ -65,14 +67,18 @@ class FANDANGO:
             failing_nodes.update(fitness_result.failing_trees)
 
         # Normalize the fitness score to be between 0 and 1
-        fitness_score = total_fitness / total_constraints if total_constraints > 0 else 0.0
+        fitness_score = (
+            total_fitness / total_constraints if total_constraints > 0 else 0.0
+        )
 
         # Cache the result
         self.fitness_cache[individual_hash] = (fitness_score, failing_nodes)
 
         return fitness_score, failing_nodes
 
-    def evaluate_population(self, population: List[DerivationTree], constraints: List[Constraint]) -> List[Tuple[DerivationTree, float, Set[DerivationTree]]]:
+    def evaluate_population(
+        self, population: List[DerivationTree], constraints: List[Constraint]
+    ) -> List[Tuple[DerivationTree, float, Set[DerivationTree]]]:
         """
         Evaluates the fitness of each individual in the population, using caching.
         """
@@ -85,7 +91,9 @@ class FANDANGO:
             evaluated_population.append((individual, fitness_score, failing_nodes))
         return evaluated_population
 
-    def select_elites(self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]) -> List[DerivationTree]:
+    def select_elites(
+        self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]
+    ) -> List[DerivationTree]:
         """
         Select the elite individuals from the population based on their fitness scores.
 
@@ -103,7 +111,9 @@ class FANDANGO:
 
         return elites
 
-    def fitness_proportionate_selection(self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]) -> DerivationTree:
+    def fitness_proportionate_selection(
+        self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]
+    ) -> DerivationTree:
         """
         Select an individual from the population using fitness-proportionate selection. Uses choices with k based on fitness.
 
@@ -118,7 +128,9 @@ class FANDANGO:
         probabilities = [fitness / total_fitness for _, fitness, _ in population]
         return random.choices(population, weights=probabilities, k=1)[0][0]
 
-    def crossover(self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]) -> List[DerivationTree]:
+    def crossover(
+        self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]
+    ) -> List[DerivationTree]:
         """
         Perform crossover operations to produce offspring.
 
@@ -143,8 +155,12 @@ class FANDANGO:
                 child1_hash = hash(child1)
                 child2_hash = hash(child2)
 
-                self.fitness_cache[child1_hash] = self.evaluate_fitness(child1, self.constraints)
-                self.fitness_cache[child2_hash] = self.evaluate_fitness(child2, self.constraints)
+                self.fitness_cache[child1_hash] = self.evaluate_fitness(
+                    child1, self.constraints
+                )
+                self.fitness_cache[child2_hash] = self.evaluate_fitness(
+                    child2, self.constraints
+                )
 
                 # Add offspring to the new population
                 offspring.extend([child1, child2])
@@ -153,11 +169,13 @@ class FANDANGO:
                 offspring.extend([copy.deepcopy(parent1), copy.deepcopy(parent2)])
 
         # Trim the offspring list to match the population size
-        offspring = offspring[:self.population_size]
+        offspring = offspring[: self.population_size]
 
         return offspring
 
-    def crossover_parents(self, parent1: DerivationTree, parent2: DerivationTree) -> Tuple[DerivationTree, DerivationTree]:
+    def crossover_parents(
+        self, parent1: DerivationTree, parent2: DerivationTree
+    ) -> Tuple[DerivationTree, DerivationTree]:
         """
         Crossover two parent derivation trees to produce two offspring, focusing on failing subtrees.
 
@@ -174,7 +192,9 @@ class FANDANGO:
         failing_nodes_parent2 = self.get_failing_nodes(child2)
 
         # Find matching failing nodes
-        matching_failing_nodes = self.get_matching_nodes(failing_nodes_parent1, failing_nodes_parent2)
+        matching_failing_nodes = self.get_matching_nodes(
+            failing_nodes_parent1, failing_nodes_parent2
+        )
 
         if matching_failing_nodes:
             # Swap at a matching failing node
@@ -209,7 +229,9 @@ class FANDANGO:
             fitness_score, failing_nodes = self.evaluate_fitness(tree, self.constraints)
             return list(failing_nodes)
 
-    def get_matching_nodes(self, nodes1: List[DerivationTree], nodes2: List[DerivationTree]) -> List[Tuple[DerivationTree, DerivationTree]]:
+    def get_matching_nodes(
+        self, nodes1: List[DerivationTree], nodes2: List[DerivationTree]
+    ) -> List[Tuple[DerivationTree, DerivationTree]]:
         """
         Find all pairs of nodes from two lists where the non-terminal symbols match.
 
@@ -232,7 +254,9 @@ class FANDANGO:
 
         return matching_nodes
 
-    def get_matching_nonterminal_nodes(self, tree1: DerivationTree, tree2: DerivationTree) -> List[Tuple[DerivationTree, DerivationTree]]:
+    def get_matching_nonterminal_nodes(
+        self, tree1: DerivationTree, tree2: DerivationTree
+    ) -> List[Tuple[DerivationTree, DerivationTree]]:
         """
         Find all pairs of nodes from two trees where the non-terminal symbols match.
 
@@ -293,7 +317,9 @@ class FANDANGO:
         node1.parent = parent2
         node2.parent = parent1
 
-    def mutation(self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]) -> List[DerivationTree]:
+    def mutation(
+        self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]
+    ) -> List[DerivationTree]:
         """
         Apply mutation operations to the population, focusing on failing nodes.
 
@@ -376,10 +402,14 @@ class FANDANGO:
                 print(f"Generation {generation}")
 
             # Evaluate population
-            evaluated_population = self.evaluate_population(self.population, self.constraints)
+            evaluated_population = self.evaluate_population(
+                self.population, self.constraints
+            )
 
             # Check for termination condition
-            total_fitness = sum(fitness for _, fitness, _ in evaluated_population) / len(evaluated_population)
+            total_fitness = sum(
+                fitness for _, fitness, _ in evaluated_population
+            ) / len(evaluated_population)
             if self.verbose:
                 print(f"Average fitness in generation {generation}: {total_fitness}")
 
@@ -398,6 +428,7 @@ class FANDANGO:
             # Update population
             self.population = mutated_offspring
 
+
 if __name__ == "__main__":
     grammar, constraints = parse_file("../../../tests/resources/int.fan")
 
@@ -407,4 +438,3 @@ if __name__ == "__main__":
     if fandango.population:
         print("\nBest solution found:")
         print(fandango.population)
-

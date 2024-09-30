@@ -84,7 +84,9 @@ class ExpressionConstraint(Constraint):
         failing_trees = []
         if tree is None:
             return Fitness(0, 0, False)
+        has_combinations = False
         for combination in self.combinations([tree], scope):
+            has_combinations = True
             local_variables = self.local_variables.copy()
             local_variables.update({name: node for name, node in combination})
             try:
@@ -96,6 +98,9 @@ class ExpressionConstraint(Constraint):
                             failing_trees.append(node)
             except:
                 pass
+            total += 1
+        if not has_combinations:
+            solved += 1
             total += 1
         return Fitness(solved, total, solved == total, failing_trees=failing_trees)
 
@@ -130,7 +135,9 @@ class ComparisonConstraint(Constraint):
         solved = 0
         total = 0
         failing_trees = []
+        has_combinations = False
         for combination in self.combinations([tree], scope):
+            has_combinations = True
             local_variables = self.local_variables.copy()
             local_variables.update({name: node for name, node in combination})
             try:
@@ -164,6 +171,9 @@ class ComparisonConstraint(Constraint):
                             failing_trees.append(node)
             except Exception as e:
                 pass
+            total += 1
+        if not has_combinations:
+            solved += 1
             total += 1
         return Fitness(solved, total, solved == total, failing_trees=failing_trees)
 
