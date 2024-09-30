@@ -195,13 +195,3 @@ def expand_node(node: Node, grammar: Grammar) -> List[DerivationTree]:
         return children
     else:
         return []
-
-
-if __name__ == "__main__":
-    grammar, constraints = parse_file("../../evaluation/csv/csv.fan")
-
-    population = generate_k_path_population(grammar, 10, k=10)
-
-    for individual in population:
-        print(individual)
-        print((len(population)))
