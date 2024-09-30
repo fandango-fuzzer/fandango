@@ -12,7 +12,7 @@ authors = [
     { name = "José Antonio Zamudio Amaya", email = "jose.zamudio@cispa.de" },
     { name = "Marius Smytzek", email = "marius.smytzek@cispa.de" },
 ]
-description = "Fandango is a fuzzing framework for genetacilly solving constraints of inputs to generate test cases."
+description = "Fandango is a fuzzing framework for genetically solving constraints of inputs to generate better test cases that satisfy semantic and syntactical constraints."
 readme = "README.md"
 license = { file = "COPYING" }
 requires-python = ">=3.11"
