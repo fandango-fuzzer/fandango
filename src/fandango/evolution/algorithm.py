@@ -45,10 +45,7 @@ class FANDANGO:
         self.fitness_cache = {}
         self.fitness = self.evaluate_population(self.population, constraints)
 
-    def evaluate_fitness(self,
-                         individual: DerivationTree,
-                         constraints: List[Constraint],
-                         ) -> Tuple[float, Set[DerivationTree]]:
+    def evaluate_fitness(self, individual: DerivationTree, constraints: List[Constraint]) -> Tuple[float, Set[DerivationTree]]:
         """
         Evaluates the fitness of an individual derivation tree, using a cache to avoid redundant computations.
         """
@@ -74,10 +71,7 @@ class FANDANGO:
 
         return fitness_score, failing_nodes
 
-    def evaluate_population(self,
-                            population: List[DerivationTree],
-                            constraints: List[Constraint]
-                            ) -> List[Tuple[DerivationTree, float, Set[DerivationTree]]]:
+    def evaluate_population(self, population: List[DerivationTree], constraints: List[Constraint]) -> List[Tuple[DerivationTree, float, Set[DerivationTree]]]:
         """
         Evaluates the fitness of each individual in the population, using caching.
         """
@@ -90,8 +84,7 @@ class FANDANGO:
             evaluated_population.append((individual, fitness_score, failing_nodes))
         return evaluated_population
 
-    def select_elites(self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]) -> List[
-        DerivationTree]:
+    def select_elites(self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]) -> List[DerivationTree]:
         """
         Select the elite individuals from the population based on their fitness scores.
 
@@ -109,8 +102,7 @@ class FANDANGO:
 
         return elites
 
-    def fitness_proportionate_selection(self, population: List[
-        Tuple[DerivationTree, float, Set[DerivationTree]]]) -> DerivationTree:
+    def fitness_proportionate_selection(self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]) -> DerivationTree:
         """
         Select an individual from the population using fitness-proportionate selection. Uses choices with k based on fitness.
 
@@ -118,15 +110,12 @@ class FANDANGO:
         :return: A selected parent individual.
         """
         total_fitness = sum(fitness for _, fitness, _ in population)
+
         if total_fitness == 0:
-            # If total fitness is zero, select randomly
             return random.choice(population)[0]
 
-        # Normalize the fitness scores to be probabilities
         probabilities = [fitness / total_fitness for _, fitness, _ in population]
-
-        # Select a parent using fitness-proportionate selection
-        return random.choices(population, weights=probabilities, k=self.k)[0][0]
+        return random.choices(population, weights=probabilities, k=1)[0][0]
 
     def crossover(self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]) -> List[DerivationTree]:
         """
@@ -167,8 +156,7 @@ class FANDANGO:
 
         return offspring
 
-    def crossover_parents(self, parent1: DerivationTree, parent2: DerivationTree) -> Tuple[
-        DerivationTree, DerivationTree]:
+    def crossover_parents(self, parent1: DerivationTree, parent2: DerivationTree) -> Tuple[DerivationTree, DerivationTree]:
         """
         Crossover two parent derivation trees to produce two offspring, focusing on failing subtrees.
 
@@ -220,8 +208,7 @@ class FANDANGO:
             fitness_score, failing_nodes = self.evaluate_fitness(tree, self.constraints)
             return list(failing_nodes)
 
-    def get_matching_nodes(self, nodes1: List[DerivationTree], nodes2: List[DerivationTree]) -> List[
-        Tuple[DerivationTree, DerivationTree]]:
+    def get_matching_nodes(self, nodes1: List[DerivationTree], nodes2: List[DerivationTree]) -> List[Tuple[DerivationTree, DerivationTree]]:
         """
         Find all pairs of nodes from two lists where the non-terminal symbols match.
 
@@ -244,8 +231,7 @@ class FANDANGO:
 
         return matching_nodes
 
-    def get_matching_nonterminal_nodes(self, tree1: DerivationTree, tree2: DerivationTree) -> List[
-        Tuple[DerivationTree, DerivationTree]]:
+    def get_matching_nonterminal_nodes(self, tree1: DerivationTree, tree2: DerivationTree) -> List[Tuple[DerivationTree, DerivationTree]]:
         """
         Find all pairs of nodes from two trees where the non-terminal symbols match.
 
