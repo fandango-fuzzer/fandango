@@ -1,176 +1,207 @@
+# initialization.py
+
 import random
-from typing import List, Optional
+from typing import List, Set, Tuple
 
-from fandango.language.grammar import (
-    DerivationTree,
-    Node,
-    Terminal,
-    NonTerminal,
-    Alternative,
-    Concatenation,
-    Repetition,
-    Grammar,
-)
+from fandango.language.grammar import Grammar, DerivationTree, NonTerminal, Terminal, Node, Repetition, Concatenation, \
+    Alternative, Star, Plus, Option
+from fandango.language.parse import parse_file
 
 
-def generate_initial_population(
-    grammar: Grammar, population_size: int
+def generate_k_paths(
+        grammar: Grammar,
+        start_symbol: str = "<start>",
+        k: int = 2
+) -> Set[Tuple[Node, ...]]:
+    """
+    Generate all unique k-paths in the grammar starting from the start symbol.
+
+    :param grammar: The grammar used to generate k-paths.
+    :param start_symbol: The starting non-terminal symbol in the grammar.
+    :param k: The length of paths to generate.
+    :return: A set of k-paths, each represented as a tuple of Nodes.
+    """
+    paths = set()
+
+    def dfs(node: Node, current_path: List[Node]):
+        if len(current_path) == k:
+            paths.add(tuple(current_path))
+            return
+        if isinstance(node, NonTerminal):
+            if node.symbol not in grammar.rules:
+                return
+            expansions = grammar.rules[node.symbol]
+            if isinstance(expansions, Alternative):
+                alternatives = expansions.alternatives
+            else:
+                alternatives = [expansions]
+            for expansion in alternatives:
+                dfs(expansion, current_path + [expansion])
+        elif isinstance(node, (Concatenation, Repetition, Star, Plus, Option)):
+            for child in node.nodes:
+                dfs(child, current_path + [child])
+        elif isinstance(node, Terminal):
+            paths.add(tuple(current_path + [node]))
+
+    dfs(NonTerminal(start_symbol), [])
+    return paths
+
+
+def generate_k_path_population(
+        grammar: Grammar,
+        population_size: int,
+        start_symbol: str = "<start>",
+        k: int = 2,
+        max_depth: int = 10
 ) -> List[DerivationTree]:
     """
-    Generates an initial population of derivation trees using the fuzzer.
-    Ensures diversity by varying the depth and choices in the grammar expansion.
+    Create an initial population of derivation trees using the k-path algorithm.
 
-    :param grammar: The Grammar object containing production rules.
-    :param population_size: The desired size of the population.
-    :return: A list of diverse derivation trees.
+    :param grammar: The grammar used to generate derivation trees.
+    :param population_size: The desired number of individuals in the population.
+    :param start_symbol: The starting non-terminal symbol in the grammar.
+    :param k: The length of paths to cover in the grammar.
+    :param max_depth: The maximum depth to which the derivation tree can be expanded.
+    :return: A list of derivation trees covering as many unique k-paths as possible.
     """
-    population = []
-    seen_trees = set()
+    forest = []
+    P = list(generate_k_paths(grammar, start_symbol, k))
+    random.shuffle(P)
+    P = set(P)  # Convert back to set for efficient removal
+    paths_used = set()
 
-    max_attempts = population_size * 10  # To prevent infinite loops
-    attempts = 0
-
-    while len(population) < population_size and attempts < max_attempts:
-        # Generate a new derivation tree
-        tree = generate_tree_with_random_depth(grammar, max_depth=random.randint(1, 10))
-
-        # Use the string representation as a simple hash to detect duplicates
-        tree_str = str(tree)
-        if tree_str not in seen_trees:
-            population.append(tree)
-            seen_trees.add(tree_str)
-
-        attempts += 1
-
-    if len(population) < population_size:
-        print(f"Warning: Could only generate {len(population)} unique individuals.")
-
-    return population
-
-
-def generate_tree_with_random_depth(
-    grammar: Grammar,
-    max_depth: int,
-    current_depth: int = 0,
-    symbol: Optional[NonTerminal] = None,
-) -> DerivationTree:
-    """
-    Recursively generates a derivation tree with a random structure, up to a maximum depth.
-
-    :param grammar: The Grammar object containing production rules.
-    :param max_depth: The maximum depth allowed for the tree.
-    :param current_depth: The current depth in the recursion.
-    :param symbol: The current NonTerminal symbol to expand.
-    :return: A DerivationTree object.
-    """
-    if symbol is None:
-        symbol = NonTerminal("<start>")  # Assuming <start> is the starting symbol
-
-    # Base case: If maximum depth reached, select only terminals
-    if current_depth >= max_depth or symbol.symbol not in grammar.rules:
-        # Try to select a terminal expansion if possible
-        node = grammar.rules.get(symbol.symbol, Terminal(""))
-        if isinstance(node, Terminal):
-            return DerivationTree(node)
-        else:
-            # Select a random terminal from the possible expansions
-            terminals = extract_terminals(node)
-            if terminals:
-                terminal_symbol = random.choice(terminals)
-                return DerivationTree(Terminal(terminal_symbol))
-            else:
-                # If no terminals are available, return an empty tree
-                return DerivationTree(Terminal(""))
-
-    # Recursive case: Expand the non-terminal symbol
-    node = grammar.rules[symbol.symbol]
-
-    if isinstance(node, Alternative):
-        # Randomly select one of the alternatives
-        selected_node = random.choice(node.alternatives)
-    else:
-        selected_node = node
-
-    children = []
-    if isinstance(selected_node, Concatenation):
-        for sub_node in selected_node.nodes:
-            if isinstance(sub_node, NonTerminal):
-                child = generate_tree_with_random_depth(
-                    grammar, max_depth, current_depth + 1, sub_node
-                )
-                children.append(child)
-            elif isinstance(sub_node, Terminal):
-                children.append(DerivationTree(sub_node))
-            elif isinstance(sub_node, (Alternative, Concatenation)):
-                # Recurse into nested structures
-                child = generate_tree_with_random_depth(
-                    grammar, max_depth, current_depth + 1, NonTerminal(sub_node)
-                )
-                children.append(child)
-            elif isinstance(sub_node, Repetition):
-                # Generate a random number of repetitions
-                repetitions = random.randint(
-                    sub_node.min, min(sub_node.max, 3)
-                )  # Limit repetitions for diversity
-                for _ in range(repetitions):
-                    rep_child = generate_tree_with_random_depth(
-                        grammar, max_depth, current_depth + 1, sub_node.node
+    while P and len(forest) < population_size:
+        p = P.pop()
+        paths_used.add(p)
+        r = DerivationTree(NonTerminal(start_symbol))
+        Q = [(r, 0)]  # Queue of (node, depth)
+        while Q:
+            current_node, depth = Q.pop(0)
+            if depth > max_depth:
+                continue
+            # Get the next uncovered node in p
+            n = None
+            for node in p:
+                if node not in paths_used:
+                    n = node
+                    break
+            if n is None:
+                n = "X"
+            # Get possible expansions for current_node
+            if isinstance(current_node.symbol, NonTerminal):
+                symbol = current_node.symbol.symbol
+                if symbol not in grammar.rules:
+                    continue
+                expansions = grammar.rules[symbol]
+                if isinstance(expansions, Alternative):
+                    alternatives = expansions.alternatives
+                else:
+                    alternatives = [expansions]
+                # Select an expansion
+                if n != "X":
+                    # Choose expansion closest to n
+                    m = min(
+                        alternatives,
+                        key=lambda alt: 0 if alt == n else 1
                     )
-                    children.append(rep_child)
-    elif isinstance(selected_node, NonTerminal):
-        child = generate_tree_with_random_depth(
-            grammar, max_depth, current_depth + 1, selected_node
-        )
-        children.append(child)
-    elif isinstance(selected_node, Terminal):
-        children.append(DerivationTree(selected_node))
-    elif isinstance(selected_node, Repetition):
-        # Handle repetitions
-        repetitions = random.randint(selected_node.min, min(selected_node.max, 3))
-        for _ in range(repetitions):
-            rep_child = generate_tree_with_random_depth(
-                grammar, max_depth, current_depth + 1, selected_node.node
-            )
-            children.append(rep_child)
-    else:
-        # If the node type is unhandled, return an empty tree
-        return DerivationTree(Terminal(""))
+                else:
+                    # Choose expansion with fewest k-paths used
+                    m = min(
+                        alternatives,
+                        key=lambda alt: len(generate_k_paths_from_node(alt, grammar, k) & paths_used)
+                    )
+                # Fill current_node with m
+                children = expand_node(m, grammar)
+                current_node.children = children
+                for child in children:
+                    child.parent = current_node
+                # Remove covered k-paths
+                new_paths = generate_k_paths_from_node(m, grammar, k)
+                P -= new_paths
+                paths_used.update(new_paths)
+                # Add child slots to Q
+                for child in children:
+                    Q.append((child, depth + 1))
+        forest.append(r)
+    return forest
 
-    return DerivationTree(symbol, children)
 
-
-def extract_terminals(node: Node) -> List[str]:
+def generate_k_paths_from_node(node: Node, grammar: Grammar, k: int) -> Set[Tuple[Node, ...]]:
     """
-    Extracts terminal symbols from a grammar node.
+    Generate k-paths starting from a specific node.
 
-    :param node: The grammar node to extract terminals from.
-    :return: A list of terminal symbols.
+    :param node: The starting node.
+    :param grammar: The grammar used for expansion.
+    :param k: The length of paths to generate.
+    :return: A set of k-paths.
     """
-    terminals = []
+    paths = set()
+
+    def dfs(current_node: Node, current_path: List[Node]):
+        if len(current_path) == k:
+            paths.add(tuple(current_path))
+            return
+        if isinstance(current_node, NonTerminal):
+            symbol = current_node.symbol
+            if symbol not in grammar.rules:
+                return
+            expansions = grammar.rules[symbol]
+            if isinstance(expansions, Alternative):
+                alternatives = expansions.alternatives
+            else:
+                alternatives = [expansions]
+            for expansion in alternatives:
+                dfs(expansion, current_path + [expansion])
+        elif isinstance(current_node, (Concatenation, Repetition, Star, Plus, Option)):
+            for child in current_node.nodes:
+                dfs(child, current_path + [child])
+        elif isinstance(current_node, Terminal):
+            paths.add(tuple(current_path + [current_node]))
+
+    dfs(node, [])
+    return paths
+
+
+def expand_node(node: Node, grammar: Grammar) -> List[DerivationTree]:
+    """
+    Expand a node into a list of derivation tree nodes.
+
+    :param node: The node to expand.
+    :param grammar: The grammar used for expansion.
+    :return: A list of DerivationTree nodes.
+    """
     if isinstance(node, Terminal):
-        terminals.append(node.symbol)
+        return [DerivationTree(node)]
     elif isinstance(node, NonTerminal):
-        # Non-terminals do not contain terminals directly
-        pass
-    elif isinstance(node, Alternative):
-        for sub_node in node.alternatives:
-            terminals.extend(extract_terminals(sub_node))
+        symbol = node.symbol
+        if symbol not in grammar.rules:
+            return []
+        expansions = grammar.rules[symbol]
+        if isinstance(expansions, Alternative):
+            expansion = random.choice(expansions.alternatives)
+        else:
+            expansion = expansions
+        return expand_node(expansion, grammar)
     elif isinstance(node, Concatenation):
-        for sub_node in node.nodes:
-            terminals.extend(extract_terminals(sub_node))
+        children = []
+        for child in node.nodes:
+            children.extend(expand_node(child, grammar))
+        return children
     elif isinstance(node, Repetition):
-        terminals.extend(extract_terminals(node.node))
-    return terminals
+        repetitions = random.randint(node.min, node.max)
+        children = []
+        for _ in range(repetitions):
+            children.extend(expand_node(node.node, grammar))
+        return children
+    else:
+        return []
 
 
 if __name__ == "__main__":
-    from fandango.language.parse import parse_file
+    grammar, constraints = parse_file("../../evaluation/csv/csv.fan")
 
-    # Parse grammar from src/evaluation/csv/csv.fan
-    grammar, constraints, _ = parse_file("../../evaluation/csv/csv.fan")
+    population = generate_k_path_population(grammar, 10, k=10)
 
-    # Generate an initial population of 10 derivation trees
-    population = generate_initial_population(grammar, 500)
-
-    for tree in population:
-        print(tree)
+    for individual in population:
+        print(individual)
+        print((len(population)))
