@@ -5,7 +5,6 @@ from typing import List, Set, Tuple
 
 from fandango.language.grammar import Grammar, DerivationTree, NonTerminal, Terminal, Node, Repetition, Concatenation, \
     Alternative, Star, Plus, Option
-from fandango.language.parse import parse_file
 
 
 def generate_k_paths(
