@@ -31,5 +31,3 @@
 <underline> ::= <eqs> | <dashes> ;
 <eqs> ::= "=" | "=" <eqs> ;
 <dashes> ::= "-" | "-" <dashes> ;
-
-len(<body_elements>) > 10;
