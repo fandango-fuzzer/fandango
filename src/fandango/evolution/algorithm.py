@@ -7,6 +7,7 @@ from typing import List, Set, Tuple
 from fandango.constraints.base import Constraint
 from fandango.evolution.initialization import generate_k_path_population
 from fandango.language.grammar import Grammar, DerivationTree, NonTerminal
+from fandango.language.parse import parse_file
 
 
 class FANDANGO:
@@ -19,8 +20,8 @@ class FANDANGO:
             crossover_rate: float = 0.7,
             max_generations: int = 100,
             elitism_rate: float = 0.1,
-            k: int = 2,
-            max_depth: int = 10,
+            k: int = 20,
+            max_depth: int = 40,
             verbose: bool = True
     ):
         """
@@ -396,3 +397,14 @@ class FANDANGO:
 
             # Update population
             self.population = mutated_offspring
+
+if __name__ == "__main__":
+    grammar, constraints = parse_file("../../../tests/resources/int.fan")
+
+    fandango = FANDANGO(grammar, constraints)
+    fandango.evolve()
+
+    if fandango.population:
+        print("\nBest solution found:")
+        print(fandango.population)
+
