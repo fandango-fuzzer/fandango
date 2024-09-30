@@ -62,6 +62,7 @@ WITH       : 'with' {self.python_start()};
 YIELD      : 'yield';
 FORALL     : 'forall';
 EXISTS     : 'exists';
+FITNESS    : 'fitness';
 
 // identifiers
 NAME: ID_START ID_CONTINUE*;

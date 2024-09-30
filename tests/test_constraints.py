@@ -7,6 +7,7 @@ from fandango.language.parse import parse
 
 class ConstraintTest(unittest.TestCase):
     GRAMMAR = """
+<start> ::= <ab>;
 <ab> ::= 
       "a" <ab> 
     | <ab> "b"
@@ -18,6 +19,45 @@ class ConstraintTest(unittest.TestCase):
         _, constraints = parse(constraint)
         self.assertEqual(1, len(constraints))
         return constraints[0]
+
+    def test_explicit_fitness(self):
+        constraint = self.get_constraint("fitness len(str(<start>));")
+        example = DerivationTree(
+            NonTerminal("<start>"),
+            [
+                DerivationTree(
+                    NonTerminal("<ab>"),
+                    [
+                        DerivationTree(
+                            NonTerminal("<ab>"),
+                            [
+                                DerivationTree(
+                                    NonTerminal("<ab>"), [DerivationTree(Terminal(""))]
+                                ),
+                                DerivationTree(Terminal("b")),
+                            ],
+                        ),
+                        DerivationTree(Terminal("b")),
+                    ],
+                )
+            ],
+        )
+        self.assertEqual(2, constraint.fitness(example).fitness())
+        example = DerivationTree(
+            NonTerminal("<start>"),
+            [
+                DerivationTree(
+                    NonTerminal("<ab>"),
+                    [
+                        DerivationTree(
+                            NonTerminal("<ab>"), [DerivationTree(Terminal(""))]
+                        ),
+                        DerivationTree(Terminal("b")),
+                    ],
+                )
+            ],
+        )
+        self.assertEqual(1, constraint.fitness(example).fitness())
 
     def test_expression_constraint(self):
         constraint = self.get_constraint("'a' not in str(<ab>);")

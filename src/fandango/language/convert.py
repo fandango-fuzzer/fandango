@@ -12,6 +12,7 @@ from fandango.constraints.base import (
     ExistsConstraint,
     ForallConstraint,
     Constraint,
+    Value,
 )
 from fandango.language.grammar import (
     Grammar,
@@ -102,7 +103,18 @@ class ConstraintProcessor(FandangoParserVisitor):
         #    )
 
     def visitConstraint(self, ctx: FandangoParser.ConstraintContext):
-        return self.visit(ctx.implies())
+        if ctx.implies():
+            return self.visit(ctx.implies())
+        elif ctx.FITNESS():
+            expression_constraint = self.visitExpr(ctx.expr())
+            return Value(
+                expression_constraint.expression,
+                searches=expression_constraint.searches,
+                local_variables=expression_constraint.local_variables,
+                global_variables=expression_constraint.global_variables,
+            )
+        else:
+            raise ValueError(f"Unknown constraint: {ctx.getText()}")
 
     def visitImplies(self, ctx: FandangoParser.ImpliesContext):
         constraint = self.visit(ctx.quantifier())
