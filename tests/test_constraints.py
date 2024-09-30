@@ -226,7 +226,7 @@ class ConstraintTest(unittest.TestCase):
         )
         self.assertTrue(constraint.check(example))
 
-    def test_forall_constrain(self):
+    def test_forall_constraint(self):
         constraint = self.get_constraint("forall <x> in <ab>: 'a' not in str(<x>);")
         example = DerivationTree(
             NonTerminal("<ab>"),
@@ -261,7 +261,18 @@ class ConstraintTest(unittest.TestCase):
         )
         self.assertFalse(constraint.check(counter_example))
 
-    def test_exists_constrain(self):
+    def test_hash(self):
+        tree_1 = DerivationTree(
+            NonTerminal("<ab>"),
+            [
+                DerivationTree(Terminal("a")),
+                DerivationTree(NonTerminal("<ab>"), [DerivationTree(Terminal(""))]),
+            ],
+        )
+        tree_2 = DerivationTree(NonTerminal("<ab>"), [DerivationTree(Terminal(""))])
+        self.assertNotEqual(tree_1, tree_2)
+
+    def test_exists_constraint(self):
         constraint = self.get_constraint("exists <x> in <ab>: 'a' == str(<x>);")
         counter_example = DerivationTree(
             NonTerminal("<ab>"),
