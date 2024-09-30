@@ -1,6 +1,7 @@
 import abc
 import enum
 import itertools
+from copy import copy
 from typing import Tuple, List, Dict, Any, Optional
 
 from fandango.language.grammar import DerivationTree, NonTerminal
@@ -23,6 +24,14 @@ class Fitness:
     def fitness(self):
         return self.solved / self.total
 
+    def __copy__(self):
+        return Fitness(
+            solved=self.solved,
+            total=self.total,
+            success=self.success,
+            failing_trees=self.failing_trees[:],
+        )
+
 
 class Constraint(abc.ABC):
     def __init__(
@@ -34,6 +43,7 @@ class Constraint(abc.ABC):
         self.searches = searches or dict()
         self.local_variables = local_variables or dict()
         self.global_variables = global_variables or dict()
+        self.cache: Dict[int, Fitness] = dict()
 
     @abc.abstractmethod
     def fitness(
@@ -42,6 +52,13 @@ class Constraint(abc.ABC):
         scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
     ) -> Fitness:
         raise NotImplementedError("Fitness function not implemented")
+
+    @staticmethod
+    def get_hash(
+        tree: DerivationTree,
+        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+    ):
+        return hash((tree, tuple((scope or {}).items())))
 
     def combinations(
         self,
@@ -79,6 +96,9 @@ class ExpressionConstraint(Constraint):
     def fitness(
         self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
     ) -> Fitness:
+        tree_hash = self.get_hash(tree, scope)
+        if tree_hash in self.cache:
+            return copy(self.cache[tree_hash])
         solved = 0
         total = 0
         failing_trees = []
@@ -102,7 +122,9 @@ class ExpressionConstraint(Constraint):
         if not has_combinations:
             solved += 1
             total += 1
-        return Fitness(solved, total, solved == total, failing_trees=failing_trees)
+        fitness = Fitness(solved, total, solved == total, failing_trees=failing_trees)
+        self.cache[tree_hash] = fitness
+        return fitness
 
     def __repr__(self):
         representation = self.expression
@@ -132,6 +154,9 @@ class ComparisonConstraint(Constraint):
     def fitness(
         self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
     ) -> Fitness:
+        tree_hash = self.get_hash(tree, scope)
+        if tree_hash in self.cache:
+            return copy(self.cache[tree_hash])
         solved = 0
         total = 0
         failing_trees = []
@@ -169,13 +194,15 @@ class ComparisonConstraint(Constraint):
                     for _, node in combination:
                         if node not in failing_trees:
                             failing_trees.append(node)
-            except Exception as e:
+            except:
                 pass
             total += 1
         if not has_combinations:
             solved += 1
             total += 1
-        return Fitness(solved, total, solved == total, failing_trees=failing_trees)
+        fitness = Fitness(solved, total, solved == total, failing_trees=failing_trees)
+        self.cache[tree_hash] = fitness
+        return fitness
 
     def __repr__(self):
         representation = f"{self.left} {self.operator.value} {self.right}"
@@ -197,6 +224,9 @@ class ConjunctionConstraint(Constraint):
     def fitness(
         self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
     ) -> Fitness:
+        tree_hash = self.get_hash(tree, scope)
+        if tree_hash in self.cache:
+            return copy(self.cache[tree_hash])
         if self.lazy:
             fitness_values = list()
             for constraint in self.constraints:
@@ -220,12 +250,9 @@ class ConjunctionConstraint(Constraint):
             total += 1
             if overall:
                 solved += 1
-        return Fitness(
-            solved,
-            total,
-            overall,
-            failing_trees=failing_trees,
-        )
+        fitness = Fitness(solved, total, overall, failing_trees=failing_trees)
+        self.cache[tree_hash] = fitness
+        return fitness
 
     def __repr__(self):
         return "(" + " and ".join(repr(c) for c in self.constraints) + ")"
@@ -242,6 +269,9 @@ class DisjunctionConstraint(Constraint):
     def fitness(
         self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
     ) -> Fitness:
+        tree_hash = self.get_hash(tree, scope)
+        if tree_hash in self.cache:
+            return copy(self.cache[tree_hash])
         if self.lazy:
             fitness_values = list()
             for constraint in self.constraints:
@@ -265,12 +295,9 @@ class DisjunctionConstraint(Constraint):
             total += 1
             if overall:
                 solved = total + 1
-        return Fitness(
-            solved,
-            total,
-            overall,
-            failing_trees=failing_trees,
-        )
+        fitness = Fitness(solved, total, overall, failing_trees=failing_trees)
+        self.cache[tree_hash] = fitness
+        return fitness
 
     def __repr__(self):
         return "(" + " or ".join(repr(c) for c in self.constraints) + ")"
@@ -285,15 +312,23 @@ class ImplicationConstraint(Constraint):
     def fitness(
         self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
     ) -> Fitness:
+        tree_hash = self.get_hash(tree, scope)
+        if tree_hash in self.cache:
+            return copy(self.cache[tree_hash])
         antecedent_fitness = self.antecedent.fitness(tree, scope)
         if antecedent_fitness.success:
-            return self.consequent.fitness(tree, scope)
+            fitness = copy(self.consequent.fitness(tree, scope))
+            if fitness.success:
+                fitness.solved += 1
+            fitness.total += 1
         else:
-            return Fitness(
+            fitness = Fitness(
                 1,
                 1,
                 True,
             )
+        self.cache[tree_hash] = fitness
+        return fitness
 
     def __repr__(self):
         return f"({repr(self.antecedent)} -> {repr(self.consequent)})"
@@ -320,6 +355,9 @@ class ExistsConstraint(Constraint):
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
     ) -> Fitness:
+        tree_hash = self.get_hash(tree, scope)
+        if tree_hash in self.cache:
+            return copy(self.cache[tree_hash])
         fitness_values = list()
         scope = scope or dict()
         for dt in self.search.find_all(trees=[tree], scope=scope):
@@ -339,12 +377,9 @@ class ExistsConstraint(Constraint):
         total += 1
         if overall:
             solved = total + 1
-        return Fitness(
-            solved,
-            total,
-            overall,
-            failing_trees=failing_trees,
-        )
+        fitness = Fitness(solved, total, overall, failing_trees=failing_trees)
+        self.cache[tree_hash] = fitness
+        return fitness
 
     def __repr__(self):
         return f"(exists {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
@@ -371,6 +406,9 @@ class ForallConstraint(Constraint):
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
     ) -> Fitness:
+        tree_hash = self.get_hash(tree, scope)
+        if tree_hash in self.cache:
+            return copy(self.cache[tree_hash])
         fitness_values = list()
         scope = scope or dict()
         for dt in self.search.find_all(trees=[tree], scope=scope):
@@ -390,12 +428,9 @@ class ForallConstraint(Constraint):
         total += 1
         if overall:
             solved = total + 1
-        return Fitness(
-            solved,
-            total,
-            overall,
-            failing_trees=failing_trees,
-        )
+        fitness = Fitness(solved, total, overall, failing_trees=failing_trees)
+        self.cache[tree_hash] = fitness
+        return fitness
 
     def __repr__(self):
         return f"(forall {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
