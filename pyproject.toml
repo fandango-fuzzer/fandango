@@ -1,0 +1,54 @@
+[build-system]
+requires = [
+    "setuptools>=73.0.1",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fandango"
+version = "0.0.1"
+authors = [
+    { name = "José Antonio Zamudio Amaya", email = "jose.zamudio@cispa.de" },
+    { name = "Marius Smytzek", email = "marius.smytzek@cispa.de" },
+]
+description = "Fandango is a fuzzing framework for genetically solving constraints of inputs to generate better test cases that satisfy semantic and syntactical constraints."
+readme = "README.md"
+license = { file = "COPYING" }
+requires-python = ">=3.11"
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Testing"
+]
+dependencies = [
+    "antlr4-python3-runtime>=4.13",
+    "matplotlib>=3.9.2",
+    "numpy>=2.1.0",
+    "deap>=1.4.1",
+    "scipy>=1.14.1",
+    "fuzzingbook>=1.2.1",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/joszamama/fandango"
+"Bug Tracker" = "https://github.com/joszamama/fandango/issues"
+
+[project.scripts]
+fandango = "fandango.cli:main"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.2.2",
+    "pytest-cov>=4.1.0",
+    "pytest-html>=3.2.0",
+    "pytest-rerunfailures>=11.1.2",
+    "parameterized>=0.8.1"
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
