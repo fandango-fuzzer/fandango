@@ -1,5 +1,6 @@
 import unittest
 
+
 from fandango.language.grammar import DerivationTree, Terminal, NonTerminal
 from fandango.language.parse import parse
 
@@ -12,10 +13,6 @@ class ConstraintTest(unittest.TestCase):
     | ""
     ;
 """
-
-    @classmethod
-    def setUpClass(cls):
-        cls.grammar, _ = parse(cls.GRAMMAR)
 
     def get_constraint(self, constraint):
         _, constraints = parse(constraint)
@@ -298,3 +295,35 @@ class ConstraintTest(unittest.TestCase):
             ],
         )
         self.assertTrue(constraint.check(example))
+
+    def test_complex_constraint(self):
+        constraint = """
+int(<number>) % 2 == 0;
+int(<number>) > 10000;
+int(<number>) < 100000;
+"""
+        _, constraints = parse(constraint)
+        self.assertEqual(3, len(constraints))
+
+        def get_tree(x):
+            return DerivationTree(
+                NonTerminal("<number>"), [DerivationTree(Terminal(str(x)))]
+            )
+
+        examples = [
+            (get_tree(20002), True, True, True),
+            (get_tree(20001), False, True, True),
+            (get_tree(2), True, False, True),
+            (get_tree(1), False, False, True),
+            (get_tree(200002), True, True, False),
+            (get_tree(200001), False, True, False),
+        ]
+
+        for tree, sat_even, sat_greater, sat_less in examples:
+            for sat, constraint in zip((sat_even, sat_greater, sat_less), constraints):
+                fitness = constraint.fitness(tree)
+                self.assertEqual(sat, fitness.success)
+                self.assertEqual(1 if sat else 0, fitness.solved)
+                if not sat:
+                    self.assertEqual(1, len(fitness.failing_trees))
+                    self.assertIn(tree, fitness.failing_trees)

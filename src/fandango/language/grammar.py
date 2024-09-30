@@ -185,19 +185,19 @@ class DerivationTree:
 
     def to_int(self):
         try:
-            int(self.__repr__())
+            return int(self.__repr__())
         except ValueError:
             return None
 
     def to_float(self):
         try:
-            int(self.__repr__())
+            return int(self.__repr__())
         except ValueError:
             return None
 
     def to_complex(self):
         try:
-            complex(self.__repr__())
+            return complex(self.__repr__())
         except ValueError:
             return None
 
