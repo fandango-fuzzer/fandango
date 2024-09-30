@@ -162,7 +162,7 @@ class ComparisonConstraint(Constraint):
                     for _, node in combination:
                         if node not in failing_trees:
                             failing_trees.append(node)
-            except:
+            except Exception as e:
                 pass
             total += 1
         return Fitness(solved, total, solved == total, failing_trees=failing_trees)
