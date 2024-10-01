@@ -3,7 +3,7 @@ import random
 import copy
 from typing import Dict, List, Optional
 
-MAX_REPETITIONS = 40
+MAX_REPETITIONS = 20
 
 
 class Node(abc.ABC):

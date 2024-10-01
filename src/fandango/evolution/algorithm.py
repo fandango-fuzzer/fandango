@@ -22,6 +22,7 @@ class FANDANGO:
             max_generations: int = 100,
             elitism_rate: float = 0.1,
             verbose: bool = True,
+            constraintsOverSuite: bool = False
     ):
         """
         Initialize the FANDANGO genetic algorithm.
@@ -35,6 +36,7 @@ class FANDANGO:
         self.elitism_rate = elitism_rate
         self.tournament_size = max(10, int(0.1 * population_size))
         self.verbose = verbose
+        self.constraintsOverSuite = constraintsOverSuite
 
         # Initialize population
         self.population = self.generate_initial_population(grammar, population_size)
@@ -463,8 +465,8 @@ class FANDANGO:
             if self.verbose:
                 print(f"Average fitness in generation {generation}: {total_fitness}")
 
-            if total_fitness >= 0.95 or generation == self.max_generations or len(
-                    valid_solutions) >= self.population_size:
+            if total_fitness >= 0.95 or generation == self.max_generations or (len(
+                    valid_solutions) >= self.population_size and not self.constraintsOverSuite):
                 if self.verbose:
                     print("Termination condition met.")
                     print(f"Total mutations made: {self.mutations_made}")
@@ -511,7 +513,7 @@ class FANDANGO:
 if __name__ == "__main__":
     grammar_, constraints_ = parse_file("../../evaluation/int/int.fan")
 
-    fandango = FANDANGO(grammar_, constraints_, max_generations=1000, verbose=True)
+    fandango = FANDANGO(grammar_, constraints_, max_generations=1000, verbose=True, constraintsOverSuite=True)
 
     start_time = time.time()
     fandango.evolve()
