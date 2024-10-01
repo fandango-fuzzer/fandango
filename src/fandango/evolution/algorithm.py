@@ -17,7 +17,7 @@ class FANDANGO:
             grammar: Grammar,
             constraints: List[Constraint],
             population_size: int = 100,
-            mutation_rate: float = 0.01,
+            mutation_rate: float = 0.2,
             crossover_rate: float = 0.7,
             max_generations: int = 100,
             elitism_rate: float = 0.1,
@@ -39,7 +39,7 @@ class FANDANGO:
         # Initialize population
         self.population = self.generate_initial_population(grammar, population_size)
         self.fitness_cache = {}
-        self.fitness = self.evaluate_population(self.population, constraints)
+        self.fitness, _ = self.evaluate_population(self.population, constraints)
 
         self.mutations_made = 0
         self.crossovers_made = 0
@@ -113,18 +113,20 @@ class FANDANGO:
 
     def evaluate_population(
             self, population: List[DerivationTree], constraints: List[Constraint]
-    ) -> List[Tuple[DerivationTree, float, Set[DerivationTree]]]:
+    ) -> Tuple[List[Tuple[DerivationTree, float, Set[DerivationTree]]], List[DerivationTree]]:
         """
         Evaluates the fitness of each individual in the population, using caching.
         """
         evaluated_population = []
-
+        valid_inputs = []
         for individual in population:
             fitness_score, failing_nodes = self.evaluate_fitness(
                 individual, constraints
             )
             evaluated_population.append((individual, fitness_score, failing_nodes))
-        return evaluated_population
+            if fitness_score >= 0.95:
+                valid_inputs.append(individual)
+        return evaluated_population, valid_inputs
 
     def select_elites(
             self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]
@@ -246,7 +248,7 @@ class FANDANGO:
                 return child1, child2
 
         # Swap subtrees at the selected nodes
-        self.swap_subtrees(self, node1, node2)
+        self.swap_subtrees(node1, node2)
 
         return child1, child2
 
@@ -330,7 +332,6 @@ class FANDANGO:
 
         return matching_nodes
 
-    @staticmethod
     def swap_subtrees(self, node1: DerivationTree, node2: DerivationTree):
         """
         Swap the subtrees rooted at node1 and node2.
@@ -374,7 +375,6 @@ class FANDANGO:
             if random.random() < self.mutation_rate:
                 # Make a deep copy of the individual to avoid modifying the original
                 mutated_individual = copy.deepcopy(individual)
-
                 # If there are failing nodes, focus mutation on them
                 if failing_nodes:
                     node_to_mutate = random.choice(list(failing_nodes))
@@ -438,18 +438,22 @@ class FANDANGO:
         traverse(tree)
         return random.choice(nodes)
 
-    def evolve(self):
+    def evolve(self) -> List[DerivationTree]:
         """
         Run the genetic algorithm to evolve the population over multiple generations.
         """
+        valid_solutions = []
+
         for generation in range(1, self.max_generations + 1):
             if self.verbose:
                 print(f"Generation {generation}")
 
             # Evaluate population
-            evaluated_population = self.evaluate_population(
+            evaluated_population, valid_inputs = self.evaluate_population(
                 self.population, self.constraints
             )
+
+            valid_solutions.extend(valid_inputs)
 
             # Check for termination condition
             total_fitness = sum(
@@ -458,7 +462,8 @@ class FANDANGO:
             if self.verbose:
                 print(f"Average fitness in generation {generation}: {total_fitness}")
 
-            if total_fitness >= 0.95 or generation == self.max_generations:
+            if total_fitness >= 0.95 or generation == self.max_generations or len(
+                    valid_solutions) >= self.population_size:
                 if self.verbose:
                     print("Termination condition met.")
                     print(f"Total mutations made: {self.mutations_made}")
@@ -469,11 +474,32 @@ class FANDANGO:
             offspring = self.crossover(evaluated_population)
 
             # Mutation
-            evaluated_offspring = self.evaluate_population(offspring, self.constraints)
+            evaluated_offspring, _ = self.evaluate_population(offspring, self.constraints)
             mutated_offspring = self.mutation(evaluated_offspring)
 
+            # remove the valid inputs from the mutated_offspring
+            for valid_input in valid_inputs:
+                if valid_input in mutated_offspring:
+                    mutated_offspring.remove(valid_input)
+
+            # After mutation, remove duplicates
+            unique_individuals = {}
+            for individual in mutated_offspring:
+                key = str(individual)
+                if key not in unique_individuals:
+                    unique_individuals[key] = individual
+
+            # Fill gaps with new individuals if necessary
+            while len(unique_individuals) < self.population_size:
+                new_individual = self.grammar.fuzz()
+                key = str(new_individual)
+                if key not in unique_individuals:
+                    unique_individuals[key] = new_individual
+
             # Update population
-            self.population = mutated_offspring
+            self.population = list(unique_individuals.values())[:self.population_size]
+
+        return valid_solutions
 
 
 if __name__ == "__main__":
@@ -482,9 +508,8 @@ if __name__ == "__main__":
     fandango = FANDANGO(grammar_, constraints_, max_generations=1000, verbose=True)
 
     start_time = time.time()
-    fandango.evolve()
+    solution = fandango.evolve()
     end_time = time.time()
 
-    if fandango.population:
-        print(f"\nBest solution found (in {end_time - start_time:.2f}s):")
-        print(fandango.population)
+    print(f"\nBest solution found (in {end_time - start_time:.2f}s):")
+    print(solution)
