@@ -69,8 +69,8 @@ class GeneticTest(unittest.TestCase):
             grammar=grammar_int,
             constraints=constraints_int,
             population_size=20,
-            mutation_rate=0.1,
-            crossover_rate=0.9,
+            mutation_rate=0.2,
+            crossover_rate=0.8,
             max_generations=100,
             elitism_rate=0.2,
             verbose=False
@@ -106,7 +106,7 @@ class GeneticTest(unittest.TestCase):
         population = self.fandango.population
 
         # Evaluate the fitness of the population
-        evaluation = self.fandango.evaluate_population(population, self.fandango.constraints)
+        evaluation, _ = self.fandango.evaluate_population(population, self.fandango.constraints)
         for tree, fitness, failing_trees in evaluation:
             self.assertIsInstance(tree, DerivationTree)
             self.assertIsInstance(fitness, float)
@@ -120,7 +120,7 @@ class GeneticTest(unittest.TestCase):
         # Generate a population of derivation trees
         population = self.fandango.population
         # Evaluate the fitness of the population
-        evaluation = self.fandango.evaluate_population(population, self.fandango.constraints)
+        evaluation, _ = self.fandango.evaluate_population(population, self.fandango.constraints)
         # Select the elites
         elites = self.fandango.select_elites(evaluation)
 
@@ -137,7 +137,8 @@ class GeneticTest(unittest.TestCase):
         population = self.fandango.population
 
         # Evaluate the fitness of the population
-        evaluation = self.fandango.evaluate_population(population, self.fandango.constraints)
+        evaluation, _ = self.fandango.evaluate_population(population, self.fandango.constraints)
+        evaluation, _ = self.fandango.evaluate_population(population, self.fandango.constraints)
         # Select the elites
         elites = self.fandango.select_elites(evaluation)
 
@@ -166,13 +167,13 @@ class GeneticTest(unittest.TestCase):
         population = self.fandango.population
 
         # Evaluate the fitness of the population
-        evaluation = self.fandango.evaluate_population(population, self.fandango.constraints)
+        evaluation, _ = self.fandango.evaluate_population(population, self.fandango.constraints)
 
         # Select the parents
         parent1 = self.fandango.fitness_proportionate_selection(evaluation)
         parent2 = self.fandango.fitness_proportionate_selection(evaluation)
 
-        parent_evaluation = self.fandango.evaluate_population([parent1, parent2], self.fandango.constraints)
+        parent_evaluation, _ = self.fandango.evaluate_population([parent1, parent2], self.fandango.constraints)
 
         # Perform crossover
         children = self.fandango.crossover(parent_evaluation)
@@ -184,26 +185,25 @@ class GeneticTest(unittest.TestCase):
         # Check that the children are different
         self.assertNotEqual(children[0], children[1])
 
-
     def test_mutation(self):
         self.setUp()
         # Generate a population of derivation trees
         population = self.fandango.population
 
         # Evaluate the fitness of the population
-        evaluation = self.fandango.evaluate_population(population, self.fandango.constraints)
+        evaluation, _ = self.fandango.evaluate_population(population, self.fandango.constraints)
 
         # Select the parents
         parent1 = self.fandango.fitness_proportionate_selection(evaluation)
         parent2 = self.fandango.fitness_proportionate_selection(evaluation)
 
-        parent_evaluation = self.fandango.evaluate_population([parent1, parent2], self.fandango.constraints)
+        parent_evaluation, _ = self.fandango.evaluate_population([parent1, parent2], self.fandango.constraints)
 
         # Perform crossover
         children = self.fandango.crossover(parent_evaluation)
 
         # Evaluate the fitness of the children
-        children_evaluation = self.fandango.evaluate_population(children, self.fandango.constraints)
+        children_evaluation, _s = self.fandango.evaluate_population(children, self.fandango.constraints)
 
         # Perform mutation
         mutated_children = self.fandango.mutation(children_evaluation)
@@ -229,13 +229,13 @@ class GeneticTest(unittest.TestCase):
         self.setUp()
         population = self.fandango.population
 
-        first_computation = self.fandango.evaluate_population(population, self.fandango.constraints)
+        first_computation, _ = self.fandango.evaluate_population(population, self.fandango.constraints)
         initial_fitness = sum([f for _, f, _ in first_computation]) / len([f for _, f, _ in first_computation])
 
         # Run the evolution process
         self.fandango.evolve()
 
-        final_computation = self.fandango.evaluate_population(self.fandango.population, self.fandango.constraints)
+        final_computation, _ = self.fandango.evaluate_population(self.fandango.population, self.fandango.constraints)
         final_fitness = sum([f for _, f, _ in final_computation]) / len([f for _, f, _ in final_computation])
 
         # Check that the population has been updated
@@ -257,7 +257,7 @@ class GeneticTest(unittest.TestCase):
 
         # Mutate a population and check if they are still valid according to the grammar
         population = self.fandango.population
-        fitness = self.fandango.evaluate_population(population, self.fandango.constraints)
+        fitness, _ = self.fandango.evaluate_population(population, self.fandango.constraints)
         mutated_population = self.fandango.mutation(fitness)
 
         self.assertTrue(check_validity(mutated_population, INT_GRAMMAR))
@@ -269,7 +269,7 @@ class GeneticTest(unittest.TestCase):
         population = self.fandango.population
 
         # Evaluate the fitness of the population
-        evaluation = self.fandango.evaluate_population(population, self.fandango.constraints)
+        evaluation, _ = self.fandango.evaluate_population(population, self.fandango.constraints)
 
         offspring = []
 
@@ -278,7 +278,7 @@ class GeneticTest(unittest.TestCase):
             parent1 = self.fandango.fitness_proportionate_selection(evaluation)
             parent2 = self.fandango.fitness_proportionate_selection(evaluation)
 
-            parent_evaluation = self.fandango.evaluate_population([parent1, parent2], self.fandango.constraints)
+            parent_evaluation, _ = self.fandango.evaluate_population([parent1, parent2], self.fandango.constraints)
 
             # Perform crossover
             children = self.fandango.crossover(parent_evaluation)
