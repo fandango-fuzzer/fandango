@@ -12,13 +12,13 @@ from fandango.evolution.algorithm import FANDANGO
 from fandango.language.grammar import DerivationTree
 from fandango.language.parse import parse_file
 
-CSV_GRAMMAR = {
-    "<start>": ["<csv_-file>"],
-    "<csv_-file>": ["<csv_-header><csv_-records>"],
-    "<csv_-header>": ["<csv_-record>"],
-    "<csv_-records>": ["<csv_-record><csv_-records>", ""],
-    "<csv_-record>": ["<csv_-string-list>\n"],
-    "<csv_-string-list>": ["<raw-field>", "<raw-field>;<csv_-string-list>"],
+csvGRAMMAR = {
+    "<start>": ["<csv-file>"],
+    "<csv-file>": ["<csv-header><csv-records>"],
+    "<csv-header>": ["<csv-record>"],
+    "<csv-records>": ["<csv-record><csv-records>", ""],
+    "<csv-record>": ["<csv-string-list>\n"],
+    "<csv-string-list>": ["<raw-field>", "<raw-field>;<csv-string-list>"],
     "<raw-field>": ["<simple-field>", "<quoted-field>"],
     "<simple-field>": ["<spaces><simple-characters><spaces>"],
     "<simple-characters>": [
@@ -62,7 +62,7 @@ class GeneticTest(unittest.TestCase):
     def setUp(self):
         # Define a simple grammar for testing
         grammar_int, constraints_int = parse_file("resources/int.fan")
-        grammar_csv, constraints_csv = parse_file("resources/csv_.fan")
+        grammar_csv, constraints_csv = parse_file("resources/csv.fan")
 
         # Initialize FANDANGO with a fixed random seed for reproducibility
         self.fandango = FANDANGO(
