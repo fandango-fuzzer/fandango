@@ -1,10 +1,10 @@
 import ast
-from typing import Tuple, Dict, Any, List
+from typing import Tuple, List
 
 from antlr4 import InputStream, CommonTokenStream, BailErrorStrategy
 
-from fandango.constraints.base import Constraint
 from fandango.constraints import predicates
+from fandango.constraints.base import Constraint
 from fandango.language.convert import (
     FandangoSplitter,
     GrammarProcessor,
@@ -41,9 +41,7 @@ def parse(fan: str, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
     return grammar, constraint
 
 
-def parse_file(
-    *args, lazy: bool = False
-) -> Tuple[Grammar, List[Constraint], Dict[str, Any]]:
+def parse_file(*args, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
     contents = ""
     for file in args:
         with open(file, "r") as fp:
