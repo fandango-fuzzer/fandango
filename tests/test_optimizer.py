@@ -48,16 +48,13 @@ INT_GRAMMAR = {
 
 def check_validity(population: [DerivationTree], grammar: Grammar) -> bool:
     parser = EarleyParser(grammar)
-
     checks = 0
-
     for inp_ in population:
         try:
             for tree in parser.parse(str(inp_)):
                 checks += 1
         except:
             pass
-
     return checks == len(population)
 
 
