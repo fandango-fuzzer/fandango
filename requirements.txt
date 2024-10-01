@@ -7,3 +7,4 @@ fuzzingbook>=1.2.1
 pegen>=0.3.0
 pytest
 parameterized>=0.9.0
+Faker

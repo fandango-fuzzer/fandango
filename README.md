@@ -305,7 +305,7 @@ To reproduce the results from our paper or to run the evaluation suite:
 1. **Navigate to the Evaluation Directory**
 
    ```bash
-   cd src/evaluation
+   cd src/vs-isla
    ```
 
 2. **Run the Evaluation Script**
