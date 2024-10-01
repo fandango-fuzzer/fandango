@@ -1,16 +1,16 @@
 <start> ::= <image> ;
 <image> ::= <width> <height> <pixels> ;
-<width> ::= <uint8> ;
-<height> ::= <uint8> ;
-<uint8> ::= <byte> ;
+<width> ::= <uint16> ;
+<height> ::= <uint16> ;
+<uint16> ::= <byte> <byte> ;
 <pixels> ::= <rgb>* ;
-<rgb> ::= <byte> ;
+<rgb> ::= <byte> <byte> <byte> ;
 <byte> ::= <bit> <bit> <bit> <bit> <bit> <bit> <bit> <bit> ;
 <bit> ::= '0' | '1' ;
 
 
 from struct import unpack
-def uint8(s):
+def uint16(s):
     return unpack('>H', s)[0]
 
-len(<pixels>) == uint8(<width>) * uint8(<height>) * 3 ;
+len(<pixels>) == uint16(<width>) * uint16(<height>) * 3 ;
