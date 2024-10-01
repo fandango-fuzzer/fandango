@@ -40,6 +40,7 @@ class FANDANGO:
         self.population = self.generate_initial_population(grammar, population_size)
         self.fitness_cache = {}
         self.fitness, _ = self.evaluate_population(self.population, constraints)
+        self.solution = None
 
         self.mutations_made = 0
         self.crossovers_made = 0
@@ -438,11 +439,11 @@ class FANDANGO:
         traverse(tree)
         return random.choice(nodes)
 
-    def evolve(self) -> List[DerivationTree]:
+    def evolve(self):
         """
         Run the genetic algorithm to evolve the population over multiple generations.
         """
-        valid_solutions = []
+        valid_solutions = set()
 
         for generation in range(1, self.max_generations + 1):
             if self.verbose:
@@ -453,7 +454,7 @@ class FANDANGO:
                 self.population, self.constraints
             )
 
-            valid_solutions.extend(valid_inputs)
+            valid_solutions.update(str(individual) for individual in valid_inputs)
 
             # Check for termination condition
             total_fitness = sum(
@@ -499,7 +500,12 @@ class FANDANGO:
             # Update population
             self.population = list(unique_individuals.values())[:self.population_size]
 
-        return valid_solutions
+            if self.verbose:
+                print(f"Population size: {len(self.population)}")
+                print(f"Valid solutions: {len(valid_solutions)}")
+                print(f"Population: {self.population}")
+
+        self.solution = valid_solutions
 
 
 if __name__ == "__main__":
@@ -508,8 +514,8 @@ if __name__ == "__main__":
     fandango = FANDANGO(grammar_, constraints_, max_generations=1000, verbose=True)
 
     start_time = time.time()
-    solution = fandango.evolve()
+    fandango.evolve()
     end_time = time.time()
 
     print(f"\nBest solution found (in {end_time - start_time:.2f}s):")
-    print(solution)
+    print(fandango.solution)
