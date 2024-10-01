@@ -5,7 +5,7 @@ from fandango.language.grammar import DerivationTree
 from fandango.language.parse import parse_file
 
 
-def evaluate_csv(population_size: int = 10, max_generations: int = 3000) -> Set[DerivationTree]:
+def evaluate_csv(population_size: int = 100, max_generations: int = 3000) -> Set[DerivationTree]:
     grammar, constraints = parse_file("csv.fan")
 
     print(grammar)
@@ -14,9 +14,7 @@ def evaluate_csv(population_size: int = 10, max_generations: int = 3000) -> Set[
     fandango = FANDANGO(grammar, constraints, population_size=population_size, max_generations=max_generations)
     fandango.evolve()
 
-    print(fandango.solution)
-
     return fandango.solution
 
 if __name__ == "__main__":
-    evaluate_csv()
+    evaluate_csv(population_size=1000)

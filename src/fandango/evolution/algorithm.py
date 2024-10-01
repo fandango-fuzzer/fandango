@@ -446,6 +446,7 @@ class FANDANGO:
         Run the genetic algorithm to evolve the population over multiple generations.
         """
         valid_solutions = set()
+        start_time = time.time()
 
         for generation in range(1, self.max_generations + 1):
             if self.verbose:
@@ -508,16 +509,16 @@ class FANDANGO:
                 print(f"Population: {self.population}")
 
         self.solution = valid_solutions
+        end_time = time.time()
+
+        if self.verbose:
+            print(f"\nBest solution found (in {end_time - start_time:.2f}s):")
+            print(self.solution)
+
 
 
 if __name__ == "__main__":
     grammar_, constraints_ = parse_file("../../evaluation/experiments/int/int.fan")
 
     fandango = FANDANGO(grammar_, constraints_, max_generations=1000, verbose=True, constraintsOverSuite=False)
-
-    start_time = time.time()
     fandango.evolve()
-    end_time = time.time()
-
-    print(f"\nBest solution found (in {end_time - start_time:.2f}s):")
-    print(fandango.solution)
