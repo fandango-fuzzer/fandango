@@ -155,6 +155,9 @@ class DerivationTree:
         for child in self.children:
             child.parent = self
 
+    def __tree__(self):
+        return self.symbol, [child.__tree__() for child in self.children]
+
     def __deepcopy__(self, memo):
         if id(self) in memo:
             return memo[id(self)]

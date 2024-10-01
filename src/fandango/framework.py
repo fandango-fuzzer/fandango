@@ -51,19 +51,6 @@ def main():
         help="Elitism rate (default: 0.2)",
     )
     parser.add_argument(
-        "-k",
-        type=int,
-        default=10,
-        help="Number of paths in initial population generation (default: 10)",
-    )
-    parser.add_argument(
-        "-d",
-        "--max_depth",
-        type=int,
-        default=20,
-        help="Maximum depth of derivation trees (default: 20)",
-    )
-    parser.add_argument(
         "-v", "--verbose", action="store_true", help="Enable verbose output"
     )
 
@@ -81,8 +68,6 @@ def main():
         crossover_rate=args.crossover_rate,
         max_generations=args.max_generations,
         elitism_rate=args.elitism_rate,
-        k=args.k,
-        max_depth=args.max_depth,
         verbose=args.verbose,
     )
 
