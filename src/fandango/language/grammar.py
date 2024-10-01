@@ -3,7 +3,7 @@ import random
 import copy
 from typing import Dict, List, Optional
 
-MAX_REPETITIONS = 20
+MAX_REPETITIONS = 40
 
 
 class Node(abc.ABC):
@@ -155,6 +155,9 @@ class DerivationTree:
         for child in self.children:
             child.parent = self
 
+    def __tree__(self):
+        return self.symbol, [child.__tree__() for child in self.children]
+
     def __deepcopy__(self, memo):
         if id(self) in memo:
             return memo[id(self)]
@@ -185,19 +188,19 @@ class DerivationTree:
 
     def to_int(self):
         try:
-            int(self.__repr__())
+            return int(self.__repr__())
         except ValueError:
             return None
 
     def to_float(self):
         try:
-            int(self.__repr__())
+            return int(self.__repr__())
         except ValueError:
             return None
 
     def to_complex(self):
         try:
-            complex(self.__repr__())
+            return complex(self.__repr__())
         except ValueError:
             return None
 

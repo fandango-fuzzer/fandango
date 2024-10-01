@@ -55,8 +55,9 @@ char_set
     ;
 
 // constraint part
-constraint:
-    implies ';'
+constraint
+    : implies ';'
+    | 'fitness' expr ';'
     ;
 
 implies:
