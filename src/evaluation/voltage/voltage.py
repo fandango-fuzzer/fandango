@@ -2,7 +2,7 @@ from fandango.evolution.algorithm import FANDANGO
 from fandango.language.parse import parse_file
 
 
-def evaluate_img():
+def evaluate_voltage():
     grammar, constraints = parse_file("voltage.fan")
 
     print(grammar)
@@ -15,4 +15,4 @@ def evaluate_img():
 
 
 if __name__ == "__main__":
-    evaluate_img()
+    evaluate_voltage()
