@@ -511,9 +511,9 @@ class FANDANGO:
 
 
 if __name__ == "__main__":
-    grammar_, constraints_ = parse_file("../../evaluation/int/int.fan")
+    grammar_, constraints_ = parse_file("../../evaluation/experiments/int/int.fan")
 
-    fandango = FANDANGO(grammar_, constraints_, max_generations=1000, verbose=True, constraintsOverSuite=True)
+    fandango = FANDANGO(grammar_, constraints_, max_generations=1000, verbose=True, constraintsOverSuite=False)
 
     start_time = time.time()
     fandango.evolve()

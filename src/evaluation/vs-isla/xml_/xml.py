@@ -1,3 +1,4 @@
+
 from typing import Set
 
 from fandango.evolution.algorithm import FANDANGO
@@ -5,8 +6,8 @@ from fandango.language.grammar import DerivationTree
 from fandango.language.parse import parse_file
 
 
-def evaluate_img(population_size: int = 10, max_generations: int = 3000) -> Set[DerivationTree]:
-    grammar, constraints = parse_file("img.fan")
+def evaluate_xml(population_size: int = 10, max_generations: int = 3000) -> Set[DerivationTree]:
+    grammar, constraints = parse_file("xml.fan")
 
     print(grammar)
     print(constraints)
@@ -19,4 +20,4 @@ def evaluate_img(population_size: int = 10, max_generations: int = 3000) -> Set[
     return fandango.solution
 
 if __name__ == "__main__":
-    evaluate_img()
+    evaluate_xml()
