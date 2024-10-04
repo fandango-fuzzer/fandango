@@ -1,4 +1,4 @@
-from fandango.language.grammar import DerivationTree
+from fandango.language.tree import DerivationTree
 
 actual_int = int
 actual_float = float
