@@ -126,8 +126,12 @@ selector:
     | selector DOT selection
     ;
 
-selection:
-    RULE_NAME ('[' slices ']' | '{' slices '}')*
+
+selection
+    : RULE_NAME
+    | RULE_NAME ('[' slices ']')+
+    | RULE_NAME '[' RULE_NAME ']' ('{' slices '}')?
+    | RULE_NAME '[' RULE_NAME ']' ('{' slices '}')? ('[' slices ']')+
     ;
 
 

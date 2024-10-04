@@ -280,6 +280,8 @@ class SearchProcessor(FandangoParserVisitor):
         return identifier
 
     def transform_selection(self, ctx: FandangoParser.SelectionContext):
+        if ctx.OPEN_BRACE():
+            pass
         return RuleSearch(NonTerminal(ctx.RULE_NAME().getText()))
 
     def get_attribute_searches(self, ctx: FandangoParser.SelectorContext):

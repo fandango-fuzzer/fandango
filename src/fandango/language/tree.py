@@ -29,7 +29,7 @@ class DerivationTree:
         self._children.append(child)
         child._parent = self
 
-    def find_all_trees(self, symbol: NonTerminal):
+    def find_all_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
         trees = sum(
             [
                 child.find_all_trees(symbol)
@@ -42,11 +42,14 @@ class DerivationTree:
             trees.append(self)
         return trees
 
-    def find_direct_trees(self, symbol: NonTerminal):
+    def find_direct_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
         return [child for child in self._children if child.symbol == symbol]
 
     def __getitem__(self, item):
-        return self._children.__getitem__(item)
+        items = self._children.__getitem__(item)
+        if not isinstance(items, list):
+            items = [items]
+        return items
 
     def __str__(self):
         return self.__repr__()
