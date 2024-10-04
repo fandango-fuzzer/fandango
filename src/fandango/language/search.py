@@ -1,17 +1,23 @@
 import abc
 from typing import List, Optional, Dict
 
-from fandango.language.grammar import DerivationTree, Grammar, NonTerminal
+from fandango.language.symbol import NonTerminal
+from fandango.language.tree import DerivationTree
 
 
 class NonTerminalSearch(abc.ABC):
-    def __init__(self, grammar: Grammar):
-        self.grammar = grammar
-
     @abc.abstractmethod
     def find(
         self,
-        trees: List[DerivationTree],
+        tree: DerivationTree,
+        scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
+    ) -> List[DerivationTree]:
+        pass
+
+    @abc.abstractmethod
+    def find_direct(
+        self,
+        tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[DerivationTree]:
         pass
@@ -20,12 +26,11 @@ class NonTerminalSearch(abc.ABC):
         self,
         trees: List[DerivationTree],
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
-    ) -> List[DerivationTree]:
-        all_nodes = []
+    ):
+        targets = []
         for tree in trees:
-            all_nodes.extend(self.find_all(tree.children, scope))
-        all_nodes.extend(self.find(trees, scope))
-        return all_nodes
+            targets.extend(self.find(tree, scope=scope))
+        return targets
 
     @abc.abstractmethod
     def __repr__(self):
@@ -36,71 +41,79 @@ class NonTerminalSearch(abc.ABC):
 
 
 class LengthSearch(NonTerminalSearch):
-    def __init__(self, value: NonTerminalSearch, grammar: Grammar):
-        super().__init__(grammar)
+    def __init__(self, value: NonTerminalSearch):
         self.value = value
 
     def find(
         self,
-        trees: List[DerivationTree],
+        tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[DerivationTree]:
-        return [len(self.value.find(trees, scope=scope))]
+        return [len(self.value.find(tree, scope=scope))]
 
-    def find_all(
+    def find_direct(
         self,
-        trees: List[DerivationTree],
+        tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[DerivationTree]:
-        return [len(self.value.find_all(trees, scope=scope))]
+        return [len(self.value.find_direct(tree, scope=scope))]
 
     def __repr__(self):
         return f"|{repr(self.value)}|"
 
 
 class RuleSearch(NonTerminalSearch):
-    def __init__(self, symbol: NonTerminal, grammar: Grammar):
-        super().__init__(grammar)
+    def __init__(self, symbol: NonTerminal):
         self.symbol = symbol
 
     def find(
         self,
-        trees: List[DerivationTree],
+        tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[DerivationTree]:
         if scope and self.symbol in scope:
             return [scope[self.symbol]]
-        return [tree for tree in trees if tree.symbol == self.symbol]
+        return tree.find_all_trees(self.symbol)
 
-    def find_all(
+    def find_direct(
         self,
-        trees: List[DerivationTree],
+        tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[DerivationTree]:
         if scope and self.symbol in scope:
             return [scope[self.symbol]]
-        return super().find_all(trees, scope=scope)
+        return tree.find_direct_trees(self.symbol)
 
     def __repr__(self):
         return repr(self.symbol)
 
 
 class AttributeSearch(NonTerminalSearch):
-    def __init__(
-        self, base: NonTerminalSearch, attribute: NonTerminalSearch, grammar: Grammar
-    ):
-        super().__init__(grammar)
+    def __init__(self, base: NonTerminalSearch, attribute: NonTerminalSearch):
         self.base = base
         self.attribute = attribute
 
     def find(
         self,
-        trees: List[DerivationTree],
+        tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[DerivationTree]:
-        return self.attribute.find(
-            [child for tree in self.base.find(trees) for child in tree.children]
-        )
+        bases = self.base.find(tree)
+        targets = []
+        for base in bases:
+            targets.extend(self.attribute.find_direct(base, scope=scope))
+        return targets
+
+    def find_direct(
+        self,
+        tree: DerivationTree,
+        scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
+    ) -> List[DerivationTree]:
+        bases = self.base.find_direct(tree)
+        targets = []
+        for base in bases:
+            targets.extend(self.attribute.find_direct(base, scope=scope))
+        return targets
 
     def __repr__(self):
         return f"{repr(self.base)}.{repr(self.attribute)}"

@@ -1,7 +1,7 @@
 import abc
 from typing import List
 
-from fandango.language.grammar import DerivationTree
+from fandango.language.tree import DerivationTree
 
 
 class Fitness(abc.ABC):

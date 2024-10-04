@@ -18,11 +18,12 @@ from fandango.language.convert import (
     SearchProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import Alternative, Grammar, NonTerminal
+from fandango.language.grammar import Alternative, Grammar
 from fandango.language.parse import parse
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.search import RuleSearch
+from fandango.language.symbol import NonTerminal
 
 FANDANGO_GRAMMAR = """
     <start> ::= <number>;

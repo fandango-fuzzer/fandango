@@ -5,7 +5,8 @@ from copy import copy
 from typing import Tuple, List, Dict, Any, Optional
 
 from fandango.constraints.fitness import ConstraintFitness, Fitness, ValueFitness
-from fandango.language.grammar import DerivationTree, NonTerminal
+from fandango.language.symbol import NonTerminal
+from fandango.language.tree import DerivationTree
 from fandango.language.search import NonTerminalSearch
 
 
@@ -37,12 +38,12 @@ class GeneticBase(abc.ABC):
 
     def combinations(
         self,
-        trees: List[DerivationTree],
+        tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
     ):
         nodes: List[List[Tuple[str, DerivationTree]]] = []
         for name, search in self.searches.items():
-            nodes.append([(name, node) for node in search.find_all(trees, scope=scope)])
+            nodes.append([(name, node) for node in search.find(tree, scope=scope)])
         return itertools.product(*nodes)
 
     def check(
@@ -82,7 +83,7 @@ class Value(GeneticBase):
         else:
             trees = []
             values = []
-            for combination in self.combinations([tree], scope):
+            for combination in self.combinations(tree, scope):
                 local_variables = self.local_variables.copy()
                 local_variables.update({name: node for name, node in combination})
                 for _, node in combination:
@@ -143,7 +144,7 @@ class ExpressionConstraint(Constraint):
         if tree is None:
             return ConstraintFitness(0, 0, False)
         has_combinations = False
-        for combination in self.combinations([tree], scope):
+        for combination in self.combinations(tree, scope):
             has_combinations = True
             local_variables = self.local_variables.copy()
             local_variables.update({name: node for name, node in combination})
@@ -201,7 +202,7 @@ class ComparisonConstraint(Constraint):
         total = 0
         failing_trees = []
         has_combinations = False
-        for combination in self.combinations([tree], scope):
+        for combination in self.combinations(tree, scope):
             has_combinations = True
             local_variables = self.local_variables.copy()
             local_variables.update({name: node for name, node in combination})
@@ -402,7 +403,7 @@ class ExistsConstraint(Constraint):
             return copy(self.cache[tree_hash])
         fitness_values = list()
         scope = scope or dict()
-        for dt in self.search.find_all(trees=[tree], scope=scope):
+        for dt in self.search.find(tree, scope=scope):
             scope[self.bound] = dt
             fitness = self.statement.fitness(tree, scope)
             fitness_values.append(fitness)
@@ -453,7 +454,7 @@ class ForallConstraint(Constraint):
             return copy(self.cache[tree_hash])
         fitness_values = list()
         scope = scope or dict()
-        for dt in self.search.find_all(trees=[tree], scope=scope):
+        for dt in self.search.find(tree, scope=scope):
             scope[self.bound] = dt
             fitness = self.statement.fitness(tree, scope)
             fitness_values.append(fitness)

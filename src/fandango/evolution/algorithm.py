@@ -6,23 +6,32 @@ import time
 from typing import List, Set, Tuple
 
 from fandango.constraints.base import Constraint
-from fandango.language.grammar import Grammar, DerivationTree, NonTerminal, Terminal, Alternative, Node, Concatenation, \
-    Repetition
+from fandango.language.grammar import (
+    Grammar,
+    NonTerminalNode,
+    TerminalNode,
+    Alternative,
+    Node,
+    Concatenation,
+    Repetition,
+)
 from fandango.language.parse import parse_file
+from fandango.language.symbol import Terminal
+from fandango.language.tree import DerivationTree
 
 
 class FANDANGO:
     def __init__(
-            self,
-            grammar: Grammar,
-            constraints: List[Constraint],
-            population_size: int = 100,
-            mutation_rate: float = 0.2,
-            crossover_rate: float = 0.7,
-            max_generations: int = 100,
-            elitism_rate: float = 0.1,
-            verbose: bool = True,
-            constraintsOverSuite: bool = False
+        self,
+        grammar: Grammar,
+        constraints: List[Constraint],
+        population_size: int = 100,
+        mutation_rate: float = 0.2,
+        crossover_rate: float = 0.7,
+        max_generations: int = 100,
+        elitism_rate: float = 0.1,
+        verbose: bool = True,
+        constraints_over_suite: bool = False,
     ):
         """
         Initialize the FANDANGO genetic algorithm.
@@ -36,7 +45,7 @@ class FANDANGO:
         self.elitism_rate = elitism_rate
         self.tournament_size = max(10, int(0.1 * population_size))
         self.verbose = verbose
-        self.constraintsOverSuite = constraintsOverSuite
+        self.constraintsOverSuite = constraints_over_suite
 
         # Initialize population
         self.population = self.generate_initial_population(grammar, population_size)
@@ -47,7 +56,10 @@ class FANDANGO:
         self.mutations_made = 0
         self.crossovers_made = 0
 
-    def generate_initial_population(self, grammar: Grammar, population_size: int) -> List[DerivationTree]:
+    @staticmethod
+    def generate_initial_population(
+        grammar: Grammar, population_size: int
+    ) -> List[DerivationTree]:
         """
         Generates an initial population of derivation trees using the fuzzer.
 
@@ -69,9 +81,9 @@ class FANDANGO:
         :return: A list of terminal symbols.
         """
         terminals = []
-        if isinstance(node, Terminal):
+        if isinstance(node, TerminalNode):
             terminals.append(node.symbol)
-        elif isinstance(node, NonTerminal):
+        elif isinstance(node, NonTerminalNode):
             # Non-terminals do not contain terminals directly
             pass
         elif isinstance(node, Alternative):
@@ -85,7 +97,7 @@ class FANDANGO:
         return terminals
 
     def evaluate_fitness(
-            self, individual: DerivationTree, constraints: List[Constraint]
+        self, individual: DerivationTree, constraints: List[Constraint]
     ) -> Tuple[float, Set[DerivationTree]]:
         """
         Evaluates the fitness of an individual derivation tree, using a cache to avoid redundant computations.
@@ -115,8 +127,10 @@ class FANDANGO:
         return fitness_score, failing_nodes
 
     def evaluate_population(
-            self, population: List[DerivationTree], constraints: List[Constraint]
-    ) -> Tuple[List[Tuple[DerivationTree, float, Set[DerivationTree]]], List[DerivationTree]]:
+        self, population: List[DerivationTree], constraints: List[Constraint]
+    ) -> Tuple[
+        List[Tuple[DerivationTree, float, Set[DerivationTree]]], List[DerivationTree]
+    ]:
         """
         Evaluates the fitness of each individual in the population, using caching.
         """
@@ -132,7 +146,7 @@ class FANDANGO:
         return evaluated_population, valid_inputs
 
     def select_elites(
-            self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]
+        self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]
     ) -> List[DerivationTree]:
         """
         Select the elite individuals from the population based on their fitness scores.
@@ -153,7 +167,7 @@ class FANDANGO:
 
     @staticmethod
     def fitness_proportionate_selection(
-            population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]
+        population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]
     ) -> DerivationTree:
         """
         Select an individual from the population using fitness-proportionate selection. Uses choices with k based on
@@ -171,7 +185,7 @@ class FANDANGO:
         return random.choices(population, weights=probabilities, k=1)[0][0]
 
     def crossover(
-            self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]
+        self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]
     ) -> List[DerivationTree]:
         """
         Perform crossover operations to produce offspring.
@@ -216,7 +230,7 @@ class FANDANGO:
         return offspring
 
     def crossover_parents(
-            self, parent1: DerivationTree, parent2: DerivationTree
+        self, parent1: DerivationTree, parent2: DerivationTree
     ) -> Tuple[DerivationTree, DerivationTree]:
         """
         Crossover two parent derivation trees to produce two offspring, focusing on failing subtrees.
@@ -273,7 +287,7 @@ class FANDANGO:
 
     @staticmethod
     def get_matching_nodes(
-            nodes1: List[DerivationTree], nodes2: List[DerivationTree]
+        nodes1: List[DerivationTree], nodes2: List[DerivationTree]
     ) -> List[Tuple[DerivationTree, DerivationTree]]:
         """
         Find all pairs of nodes from two lists where the non-terminal symbols match.
@@ -284,12 +298,12 @@ class FANDANGO:
         """
         nodes_dict2 = {}
         for node in nodes2:
-            if isinstance(node.symbol, NonTerminal):
+            if node.symbol.is_non_terminal:
                 nodes_dict2.setdefault(node.symbol.symbol, []).append(node)
 
         matching_nodes = []
         for node1 in nodes1:
-            if isinstance(node1.symbol, NonTerminal):
+            if node1.symbol.is_non_terminal:
                 symbol = node1.symbol.symbol
                 if symbol in nodes_dict2:
                     for node2 in nodes_dict2[symbol]:
@@ -299,7 +313,7 @@ class FANDANGO:
 
     @staticmethod
     def get_matching_nonterminal_nodes(
-            tree1: DerivationTree, tree2: DerivationTree
+        tree1: DerivationTree, tree2: DerivationTree
     ) -> List[Tuple[DerivationTree, DerivationTree]]:
         """
         Find all pairs of nodes from two trees where the non-terminal symbols match.
@@ -312,15 +326,15 @@ class FANDANGO:
         nodes2 = {}
 
         def collect_nodes(node, nodes_list):
-            if isinstance(node.symbol, NonTerminal):
+            if node.symbol.is_non_terminal:
                 nodes_list.append(node)
-            for child in node.children:
+            for child in node._children:
                 collect_nodes(child, nodes_list)
 
         def collect_nodes_dict(node, nodes_dict):
-            if isinstance(node.symbol, NonTerminal):
+            if node.symbol.is_non_terminal:
                 nodes_dict.setdefault(node.symbol.symbol, []).append(node)
-            for child in node.children:
+            for child in node._children:
                 collect_nodes_dict(child, nodes_dict)
 
         collect_nodes(tree1, nodes1)
@@ -343,28 +357,28 @@ class FANDANGO:
         :param node2: The node in the second tree.
         """
         # Swap the nodes in their respective parents
-        parent1 = node1.parent
-        parent2 = node2.parent
+        parent1 = node1._parent
+        parent2 = node2._parent
 
         if parent1 is None or parent2 is None:
             # Cannot swap root nodes
             return
 
         # Find the indices of node1 and node2 in their parents' children
-        index1 = parent1.children.index(node1)
-        index2 = parent2.children.index(node2)
+        index1 = parent1._children.index(node1)
+        index2 = parent2._children.index(node2)
 
         # Swap the nodes
-        parent1.children[index1], parent2.children[index2] = node2, node1
+        parent1._children[index1], parent2._children[index2] = node2, node1
 
         # Update parent references
-        node1.parent = parent2
-        node2.parent = parent1
+        node1._parent = parent2
+        node2._parent = parent1
 
         self.crossovers_made += 1
 
     def mutation(
-            self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]
+        self, population: List[Tuple[DerivationTree, float, Set[DerivationTree]]]
     ) -> List[DerivationTree]:
         """
         Apply mutation operations to the population, focusing on failing nodes.
@@ -407,19 +421,16 @@ class FANDANGO:
 
         :param node: The node to mutate.
         """
-        if isinstance(node.symbol, NonTerminal):
-            non_terminal = node.symbol.symbol
+        if node.symbol.is_non_terminal:
             # Generate a new subtree from the same non-terminal
-            new_subtree = NonTerminal(non_terminal).fuzz(self.grammar.rules)[0]
+            new_subtree = self.grammar.fuzz(node.symbol)
             # Replace the node's children and symbol with those of the new subtree
-            node.symbol = new_subtree.symbol
-            node.children = new_subtree.children
+            # node.symbol = new_subtree.symbol
             # Update parent references in the children
-            for child in node.children:
-                child.parent = node
+            node.set_children(new_subtree._children)
         else:
             # If the node is a terminal, replace it with a new terminal
-            node.symbol = node.symbol.fuzz(self.grammar.rules)[0].symbol
+            node.symbol = Terminal(node.symbol.symbol[:])
 
         self.mutations_made += 1
 
@@ -435,7 +446,7 @@ class FANDANGO:
 
         def traverse(node):
             nodes.append(node)
-            for child in node.children:
+            for child in node._children:
                 traverse(child)
 
         traverse(tree)
@@ -466,8 +477,14 @@ class FANDANGO:
             if self.verbose:
                 print(f"Average fitness in generation {generation}: {total_fitness}")
 
-            if total_fitness >= 0.95 or generation == self.max_generations or (len(
-                    valid_solutions) >= self.population_size and not self.constraintsOverSuite):
+            if (
+                total_fitness >= 0.95
+                or generation == self.max_generations
+                or (
+                    len(valid_solutions) >= self.population_size
+                    and not self.constraintsOverSuite
+                )
+            ):
                 if self.verbose:
                     print("Termination condition met.")
                     print(f"Total mutations made: {self.mutations_made}")
@@ -478,7 +495,9 @@ class FANDANGO:
             offspring = self.crossover(evaluated_population)
 
             # Mutation
-            evaluated_offspring, _ = self.evaluate_population(offspring, self.constraints)
+            evaluated_offspring, _ = self.evaluate_population(
+                offspring, self.constraints
+            )
             mutated_offspring = self.mutation(evaluated_offspring)
 
             # remove the valid inputs from the mutated_offspring
@@ -501,7 +520,7 @@ class FANDANGO:
                     unique_individuals[key] = new_individual
 
             # Update population
-            self.population = list(unique_individuals.values())[:self.population_size]
+            self.population = list(unique_individuals.values())[: self.population_size]
 
             if self.verbose:
                 print(f"Population size: {len(self.population)}")
@@ -516,9 +535,14 @@ class FANDANGO:
             print(self.solution)
 
 
-
 if __name__ == "__main__":
     grammar_, constraints_ = parse_file("../../evaluation/experiments/int/int.fan")
 
-    fandango = FANDANGO(grammar_, constraints_, max_generations=1000, verbose=True, constraintsOverSuite=False)
+    fandango = FANDANGO(
+        grammar_,
+        constraints_,
+        max_generations=1000,
+        verbose=True,
+        constraints_over_suite=False,
+    )
     fandango.evolve()
