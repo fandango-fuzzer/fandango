@@ -19,12 +19,12 @@
 
 # Constraints
 
-## invoke date_time to fill the <date> (This invokes a external lib)
-
 ## <start_balance> and <end_balance> must be positive integers (logic constraint)
 
-## <account_number> must be unique. (there are 2 account numbers, receiver and sender)
+## <account_number> must be different. (there are 2 account numbers, receiver and sender)
 
 ## first <end_balance> must be equal to the first <start_balance> - <amount>. User who is sending the money (we invoke a user defined function)
 
 ## second <end_balance> must be equal to the first <start_balance> + <amount>. User who is receiving the money (we invoke a user defined function)
+
+## invoke date_time to fill the <date> (This invokes a external lib)
