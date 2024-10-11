@@ -128,9 +128,14 @@ selector:
     ;
 
 selection
+    : base_selection
+    | base_selection '[' rs_slices ']'
+    | base_selection '{' rs_pairs '}'
+    ;
+
+base_selection
     : RULE_NAME
-    | RULE_NAME '[' slices ']'
-    | RULE_NAME '{' rs_pairs '}'
+    | '(' selector ')'
     ;
 
 rs_pairs
@@ -138,10 +143,18 @@ rs_pairs
     ;
 
 rs_pair
-    : '*' RULE_NAME (':' slice)?
+    : '*' RULE_NAME (':' rs_slice)?
     ;
 
+rs_slices
+    : rs_slice (',' rs_slice)* ','?
+    ;
 
+rs_slice
+    : NUMBER
+    | NUMBER? ':' NUMBER?
+    | NUMBER? ':' NUMBER? ':' NUMBER?
+    ;
 
 // python part
 
