@@ -106,6 +106,14 @@ class FandangoParserVisitor(ParseTreeVisitor):
     def visitSelection(self, ctx: FandangoParser.SelectionContext):
         return self.visitChildren(ctx)
 
+    # Visit a parse tree produced by FandangoParser#rs_pairs.
+    def visitRs_pairs(self, ctx: FandangoParser.Rs_pairsContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#rs_pair.
+    def visitRs_pair(self, ctx: FandangoParser.Rs_pairContext):
+        return self.visitChildren(ctx)
+
     # Visit a parse tree produced by FandangoParser#python.
     def visitPython(self, ctx: FandangoParser.PythonContext):
         return self.visitChildren(ctx)

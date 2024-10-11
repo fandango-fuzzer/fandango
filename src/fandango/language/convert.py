@@ -282,7 +282,7 @@ class SearchProcessor(FandangoParserVisitor):
     def transform_selection(self, ctx: FandangoParser.SelectionContext):
         if ctx.OPEN_BRACE():
             pass
-        return RuleSearch(NonTerminal(ctx.RULE_NAME().getText()))
+        return RuleSearch(NonTerminal(ctx.RULE_NAME()[0].getText()))
 
     def get_attribute_searches(self, ctx: FandangoParser.SelectorContext):
         search = self.transform_selection(ctx.selection())

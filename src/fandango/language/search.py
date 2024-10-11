@@ -119,6 +119,37 @@ class AttributeSearch(NonTerminalSearch):
         return f"{repr(self.base)}.{repr(self.attribute)}"
 
 
+class StarAttributeSearch(NonTerminalSearch):
+    def __init__(self, base: NonTerminalSearch, attribute: NonTerminalSearch):
+        self.base = base
+        self.attribute = attribute
+
+    def find(
+        self,
+        tree: DerivationTree,
+        scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
+    ) -> List[DerivationTree]:
+        bases = self.base.find(tree)
+        targets = []
+        for base in bases:
+            targets.extend(self.attribute.find(base, scope=scope))
+        return targets
+
+    def find_direct(
+        self,
+        tree: DerivationTree,
+        scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
+    ) -> List[DerivationTree]:
+        bases = self.base.find_direct(tree)
+        targets = []
+        for base in bases:
+            targets.extend(self.attribute.find(base, scope=scope))
+        return targets
+
+    def __repr__(self):
+        return f"{repr(self.base)}*{repr(self.attribute)}"
+
+
 class ItemSearch(NonTerminalSearch):
     def __init__(self, base: NonTerminalSearch, slices: Tuple[Any]):
         self.base = base
@@ -162,64 +193,56 @@ class SelectiveSearch(NonTerminalSearch):
     def __init__(
         self,
         base: NonTerminalSearch,
-        symbol: NonTerminal,
-        slices: Optional[Tuple[Any] | Any] = None,
+        symbols: List[Tuple[NonTerminal, bool]],
+        slices: List[Optional[Any]] = None,
     ):
         self.base = base
-        self.symbol = symbol
-        self.slices = slices
+        self.symbols = symbols
+        self.slices = slices or [None] * len(symbols)
+
+    def _find(self, bases: List[DerivationTree]):
+        result = []
+        for symbol, is_direct, items in zip(*zip(*self.symbols), self.slices):
+            if is_direct:
+                children = [base.find_direct_trees(symbol) for base in bases]
+            else:
+                children = [base.find_all_trees(symbol) for base in bases]
+            if items is not None:
+                for index, child in enumerate(children):
+                    values = child.__getitem__(items)
+                    children[index] = values if isinstance(values, list) else [values]
+            result.extend(sum(children, []))
+        return result
 
     def find(
         self,
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[DerivationTree]:
-        bases = self.base.find(tree)
-        children = [base.find_direct_trees(self.symbol) for base in bases]
-        if self.slices is not None:
-            result = []
-            for child in children:
-                items = child.__getitem__(self.slices)
-                if isinstance(items, list):
-                    result.extend(items)
-                else:
-                    result.append(items)
-            return result
-        return sum(children, [])
+        return self._find(self.base.find(tree))
 
     def find_direct(
         self,
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[DerivationTree]:
-        bases = self.base.find_direct(tree)
-        children = [base.find_direct_trees(self.symbol) for base in bases]
-        if self.slices is not None:
-            result = []
-            for child in children:
-                items = child.__getitem__(self.slices)
-                if isinstance(items, list):
-                    result.extend(items)
-                else:
-                    result.append(items)
-            return result
-        return sum(children, [])
+        return self._find(self.base.find_direct(tree))
 
     def __repr__(self):
-        if self.slices:
-            slice_reprs = []
-            for slice_ in self.slices:
-                if isinstance(slice_, slice):
-                    slice_repr = ""
-                    if slice_.start is not None:
-                        slice_repr += repr(slice_.start)
+        slice_reprs = []
+        for symbol, is_direct, items in zip(*self.symbols, self.slices):
+            slice_repr = f"{'' if is_direct else '*'}{repr(symbol)}"
+            if items is not None:
+                slice_repr += ": "
+                if isinstance(items, slice):
+                    if items.start is not None:
+                        slice_repr += repr(items.start)
                     slice_repr += ":"
-                    if slice_.stop is not None:
-                        slice_repr += repr(slice_.stop)
-                    if slice_.step is not None:
-                        slice_repr += ":" + repr(slice_.step)
-                    slice_reprs.append(slice_repr)
+                    if items.stop is not None:
+                        slice_repr += repr(items.stop)
+                    if items.step is not None:
+                        slice_repr += ":" + repr(items.step)
                 else:
-                    slice_reprs.append(repr(slice_))
-            return f"{repr(self.base)}[{repr(self.symbol)}]{{{', '.join(slice_reprs)}}}"
-        return f"{repr(self.base)}[{repr(self.symbol)}]"
+                    slice_reprs += repr(items)
+            slice_reprs.append(slice_repr)
+        return f"{repr(self.base)}{{{', '.join(slice_reprs)}}}"

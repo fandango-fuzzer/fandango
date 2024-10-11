@@ -18,5 +18,5 @@ fake = Faker()
 def generate_iban():
     return fake.iban()
 
-str(<sender>) == generate_iban()
-str(<receiver>) == generate_iban()
+str(<sender>) == generate_iban();
+str(<receiver>) == generate_iban();

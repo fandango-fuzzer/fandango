@@ -201,6 +201,22 @@ class FandangoParserListener(ParseTreeListener):
     def exitSelection(self, ctx: FandangoParser.SelectionContext):
         pass
 
+    # Enter a parse tree produced by FandangoParser#rs_pairs.
+    def enterRs_pairs(self, ctx: FandangoParser.Rs_pairsContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#rs_pairs.
+    def exitRs_pairs(self, ctx: FandangoParser.Rs_pairsContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#rs_pair.
+    def enterRs_pair(self, ctx: FandangoParser.Rs_pairContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#rs_pair.
+    def exitRs_pair(self, ctx: FandangoParser.Rs_pairContext):
+        pass
+
     # Enter a parse tree produced by FandangoParser#python.
     def enterPython(self, ctx: FandangoParser.PythonContext):
         pass

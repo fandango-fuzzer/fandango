@@ -5,8 +5,7 @@
 <uint16> ::= <byte> <byte> ;
 <pixels> ::= <rgb>* ;
 <rgb> ::= <byte> <byte> <byte> ;
-<byte> ::= <bit> <bit> <bit> <bit> <bit> <bit> <bit> <bit> ;
-<bit> ::= '0' | '1' ;
+<byte> ::= b"\x00" | b"\x01" | b"\x02" |
 
 
 from struct import unpack

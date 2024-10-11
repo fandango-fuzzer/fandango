@@ -123,15 +123,22 @@ selector_length
 
 selector:
     selection
-    | selector DOT selection
+    | selector '.' selection
+    | selector '*' selection
     ;
-
 
 selection
     : RULE_NAME
-    | RULE_NAME ('[' slices ']')+
-    | RULE_NAME '[' RULE_NAME ']' ('{' slices '}')?
-    | RULE_NAME '[' RULE_NAME ']' ('{' slices '}')? ('[' slices ']')+
+    | RULE_NAME '[' slices ']'
+    | RULE_NAME '{' rs_pairs '}'
+    ;
+
+rs_pairs
+    : rs_pair (',' rs_pair)* ','?
+    ;
+
+rs_pair
+    : '*' RULE_NAME (':' slice)?
     ;
 
 
