@@ -7,8 +7,4 @@
 
 import hashlib
 
-def check_hash(s, th):
-    h = hashlib.new('sha256')
-    return hashlib.sha256(str(<s>).encode('utf-8')).hexdigest() == str(<th>)
-
-check_hash(str(<string>), str(<hash>)) ;
+hashlib.sha256(str(<string>).encode('utf-8')).hexdigest() == str(<hash>);

@@ -5,6 +5,7 @@ from fandango.language.search import (
     AttributeSearch,
     ItemSearch,
     SelectiveSearch,
+    StarAttributeSearch,
 )
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
@@ -123,6 +124,26 @@ class TestSearches(unittest.TestCase):
         self.assertEqual(1, len(trees))
         self.assertIn(self._C2, trees)
 
+    def test_star_attribute_search(self):
+        search = StarAttributeSearch(
+            RuleSearch(NonTerminal("<a>")), RuleSearch(NonTerminal("<b>"))
+        )
+        trees = search.find(self.EXAMPLE)
+        self.assertEqual(2, len(trees))
+        self.assertIn(self._B1, trees)
+        self.assertIn(self._B2, trees)
+
+    def test_star_attribute_search_complex(self):
+        search = StarAttributeSearch(
+            AttributeSearch(
+                RuleSearch(NonTerminal("<a>")), RuleSearch(NonTerminal("<d>"))
+            ),
+            RuleSearch(NonTerminal("<c>")),
+        )
+        trees = search.find(self.EXAMPLE)
+        self.assertEqual(1, len(trees))
+        self.assertIn(self._C2, trees)
+
     def test_item_search(self):
         search = ItemSearch(RuleSearch(NonTerminal("<c>")), 0)
         trees = search.find(self.EXAMPLE)
@@ -140,16 +161,34 @@ class TestSearches(unittest.TestCase):
         self.assertIn(self._0, trees)
 
     def test_selective_search(self):
-        search = SelectiveSearch(RuleSearch(NonTerminal("<a>")), NonTerminal("<d>"))
+        search = SelectiveSearch(
+            RuleSearch(NonTerminal("<a>")), [(NonTerminal("<d>"), True)], [None]
+        )
         trees = search.find(self.EXAMPLE)
         self.assertEqual(1, len(trees))
         self.assertIn(self._D, trees)
 
     def test_selective_search_complex(self):
         search = AttributeSearch(
-            SelectiveSearch(RuleSearch(NonTerminal("<a>")), NonTerminal("<d>"), 0),
-            SelectiveSearch(RuleSearch(NonTerminal("<b>")), NonTerminal("<c>"), 0),
+            SelectiveSearch(
+                RuleSearch(NonTerminal("<a>")), [(NonTerminal("<d>"), True)], [0]
+            ),
+            SelectiveSearch(
+                RuleSearch(NonTerminal("<b>")), [(NonTerminal("<c>"), True)], [0]
+            ),
         )
         trees = search.find(self.EXAMPLE)
         self.assertEqual(1, len(trees))
+        self.assertIn(self._C2, trees)
+
+    def test_selective_search_more_complex(self):
+        search = AttributeSearch(
+            SelectiveSearch(
+                RuleSearch(NonTerminal("<a>")), [(NonTerminal("<b>"), False)], [None]
+            ),
+            RuleSearch(NonTerminal("<c>")),
+        )
+        trees = search.find(self.EXAMPLE)
+        self.assertEqual(2, len(trees))
+        self.assertIn(self._C1, trees)
         self.assertIn(self._C2, trees)
