@@ -2,66 +2,17 @@ import abc
 import enum
 import itertools
 from copy import copy
-from typing import Tuple, List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional
 
-from fandango.constraints.fitness import ConstraintFitness, Fitness, ValueFitness
+from fandango.constraints.fitness import (
+    ConstraintFitness,
+    ValueFitness,
+    GeneticBase,
+    FailingTree,
+)
+from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
-from fandango.language.search import NonTerminalSearch
-
-
-class GeneticBase(abc.ABC):
-    def __init__(
-        self,
-        searches: Optional[Dict[str, NonTerminalSearch]] = None,
-        local_variables: Optional[Dict[str, Any]] = None,
-        global_variables: Optional[Dict[str, Any]] = None,
-    ):
-        self.searches = searches or dict()
-        self.local_variables = local_variables or dict()
-        self.global_variables = global_variables or dict()
-
-    @abc.abstractmethod
-    def fitness(
-        self,
-        tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
-    ) -> Fitness:
-        raise NotImplementedError("Fitness function not implemented")
-
-    @staticmethod
-    def get_hash(
-        tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
-    ):
-        return hash((tree, tuple((scope or {}).items())))
-
-    def combinations(
-        self,
-        tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
-    ):
-        nodes: List[List[Tuple[str, DerivationTree]]] = []
-        for name, search in self.searches.items():
-            nodes.append([(name, node) for node in search.find(tree, scope=scope)])
-        return itertools.product(*nodes)
-
-    def check(
-        self,
-        tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
-    ):
-        return self.fitness(tree, scope).success
-
-    def get_failing_nodes(self, tree: DerivationTree):
-        return self.fitness(tree).failing_trees
-
-    @abc.abstractmethod
-    def __repr__(self):
-        pass
-
-    def __str__(self):
-        return self.__repr__()
 
 
 class Value(GeneticBase):
@@ -88,7 +39,7 @@ class Value(GeneticBase):
                 local_variables.update({name: node for name, node in combination})
                 for _, node in combination:
                     if node not in trees:
-                        trees.append(node)
+                        trees.append(FailingTree(node, self))
                 try:
                     values.append(
                         eval(self.expression, self.global_variables, local_variables)
@@ -154,7 +105,7 @@ class ExpressionConstraint(Constraint):
                 else:
                     for _, node in combination:
                         if node not in failing_trees:
-                            failing_trees.append(node)
+                            failing_trees.append(FailingTree(node, self))
             except:
                 pass
             total += 1
@@ -234,7 +185,7 @@ class ComparisonConstraint(Constraint):
                 else:
                     for _, node in combination:
                         if node not in failing_trees:
-                            failing_trees.append(node)
+                            failing_trees.append(FailingTree(node, self))
             except:
                 pass
             total += 1
