@@ -8,9 +8,11 @@ def main():
     grammar, constraints = parse_file("demo.fan")
 
     start_time = time.time()
-    for _ in range(1000):
+    for _ in range(1):
         solution = grammar.fuzz()
-        # print(solution)
+        print(solution)
+        print()
+        print(solution.__tree__())
 
     print("Time taken: ", time.time() - start_time)
 
