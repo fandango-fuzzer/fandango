@@ -1,3 +1,5 @@
+import time
+
 from fandango.language.parse import parse_file
 
 
@@ -5,11 +7,12 @@ def main():
     # Load the fandango file
     grammar, constraints = parse_file("demo.fan")
 
-    print("Grammar:")
-    print(grammar)
+    start_time = time.time()
+    for _ in range(1000):
+        solution = grammar.fuzz()
+        # print(solution)
 
-    print("Constraints:")
-    print(constraints)
+    print("Time taken: ", time.time() - start_time)
 
 if __name__ == "__main__":
     main()
