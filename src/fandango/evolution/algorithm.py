@@ -51,7 +51,8 @@ class FANDANGO:
         # Evaluate population
         self.fitness_cache = {}
         self.evaluation = self.evaluate_population()
-        self.fitness = sum(fitness for fitness, _ in self.evaluation) / len(self.evaluation)
+        self.fitness = 0
+        # self.fitness = sum(fitness for fitness, _ in self.evaluation) / len(self.evaluation)
 
         self.verbose = verbose
         self.mutations_made = 0
@@ -60,32 +61,43 @@ class FANDANGO:
         self.solution = None
         self.time_taken = None
 
-    def evolve(self) -> List[DerivationTree]:
+    def evolve(self) -> Set[DerivationTree]:
         """
         Run the genetic algorithm to evolve the population over multiple generations.
 
         :return: The best solution found by the algorithm.
         """
-        valid_solutions = set()
         start_time = time.time()
 
         for generation in range(1, self.max_generations + 1):
+            if self.verbose:
+                print(f"[DEBUG] - Generation {generation} - Fitness: {self.fitness}")
+
             if self.fitness >= 0.95:
+                print(f"[INFO] - Solution found in generation {generation}!")
                 return self.population
 
-    def generate_random_initial_population(self) -> List[DerivationTree]:
+    def generate_random_initial_population(self) -> Set[DerivationTree]:
         """
         Generate the initial population of individuals.
 
-        :return: A list of individuals.
+        :return: A set of individuals.
         """
-        return [self.grammar.fuzz() for _ in range(self.population_size)]
 
-    def generate_coverage_initial_population(self) -> List[DerivationTree]:
+        population = set()
+        str_repr = set()
+        while len(population) < self.population_size:
+            individual = self.grammar.fuzz()
+            if str(individual) not in str_repr:
+                population.add(individual)
+                str_repr.add(str(individual))
+        return population
+
+    def generate_coverage_initial_population(self) -> Set[DerivationTree]:
         """
         Generate the initial population of individuals that maximize the coverage of the grammar.
 
-        :return: A list of individuals.
+        :return: A set of individuals.
         """
         pass
 
@@ -101,7 +113,7 @@ class FANDANGO:
 if __name__ == "__main__":
     grammar_, constraints_ = parse_file("../../evaluation/experiments/int/int.fan")
 
-    fandango = FANDANGO(grammar_, constraints_, verbose=True)
+    fandango = FANDANGO(grammar_, constraints_, verbose=False)
     fandango.evolve()
 
     print(fandango.population)
