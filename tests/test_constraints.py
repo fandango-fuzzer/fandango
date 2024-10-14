@@ -379,4 +379,4 @@ int(<number>) < 100000;
                 self.assertEqual(1 if sat else 0, fitness.solved)
                 if not sat:
                     self.assertEqual(1, len(fitness.failing_trees))
-                    self.assertIn(tree, fitness.failing_trees)
+                    self.assertEqual(tree, fitness.failing_trees[0].tree)

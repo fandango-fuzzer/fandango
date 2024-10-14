@@ -22,6 +22,8 @@ from fandango.language.grammar import (
     NonTerminalNode,
     CharSet,
     TerminalNode,
+    Plus,
+    Option,
 )
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.parser.FandangoParserVisitor import FandangoParserVisitor
@@ -69,6 +71,12 @@ class GrammarProcessor(FandangoParserVisitor):
 
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
         return Star(self.visit(ctx.symbol()))
+
+    def visitPlus(self, ctx: FandangoParser.PlusContext):
+        return Plus(self.visit(ctx.symbol()))
+
+    def visitOption(self, ctx: FandangoParser.OptionContext):
+        return Option(self.visit(ctx.symbol()))
 
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
         if ctx.RULE_NAME():
