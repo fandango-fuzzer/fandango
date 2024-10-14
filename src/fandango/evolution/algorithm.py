@@ -1,7 +1,6 @@
 # evolution/algorithm.py
-
+import random
 import time
-from time import sleep
 from typing import List, Set, Tuple
 
 from build.lib.fandango.language.grammar import DerivationTree
@@ -22,6 +21,7 @@ class FANDANGO:
             max_generations: int = 1000,
             elitism_rate: float = 0.1,
             crossover_rate: float = 0.8,
+            tournament_size: float = 0.05,
             mutation_rate: float = 0.2,
             verbose: bool = False,
     ):
@@ -43,6 +43,7 @@ class FANDANGO:
         self.population_size = population_size
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
+        self.tournament_size = int(population_size * tournament_size)
         self.max_generations = max_generations
         self.elitism_rate = elitism_rate
 
@@ -61,7 +62,7 @@ class FANDANGO:
         self.evaluation = self.evaluate_population()
         self.fitness = sum(fitness for _, fitness, _ in self.evaluation) / len(self.evaluation)
 
-        self.solution = []
+        self.solution = set()
 
     def evolve(self) -> Set[DerivationTree]:
         """
@@ -118,7 +119,7 @@ class FANDANGO:
                 str_repr.add(str(individual))
         return population
 
-    def generate_coverage_initial_population(self) -> Set[DerivationTree]:
+    def generate_coverage_based_initial_population(self) -> Set[DerivationTree]:
         """
         Generate the initial population of individuals that maximize the coverage of the grammar.
 
@@ -159,8 +160,9 @@ class FANDANGO:
 
         :return: A list of tuples, each containing an individual, its fitness, and the list of failing trees.
         """
-
-        return [(individual, *self.evaluate_individual(individual)) for individual in self.population]
+        evaluation = [(individual, *self.evaluate_individual(individual)) for individual in self.population]
+        self.fitness = sum(fitness for _, fitness, _ in evaluation) / len(evaluation)
+        return evaluation
 
     def select_elites(self) -> List[DerivationTree]:
         """
@@ -168,7 +170,16 @@ class FANDANGO:
 
         :return: A list of elite individuals.
         """
-        return [x[0] for x in sorted(self.evaluation, key=lambda x: x[1], reverse=True)[:int(self.elitism_rate * self.population_size)]]
+        return [x[0] for x in sorted(self.evaluation, key=lambda x: x[1], reverse=True)[
+                              :int(self.elitism_rate * self.population_size)]]
+
+    def tournament_selection(self) -> Tuple[DerivationTree, DerivationTree]:
+        """
+        Perform tournament selection to choose two parents for crossover.
+        """
+        tournament = random.sample(self.population, self.tournament_size)
+        tournament.sort(key=lambda x: x['fitness'], reverse=True)
+        return tournament[0], tournament[1]
 
 
 if __name__ == "__main__":
