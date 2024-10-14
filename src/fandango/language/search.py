@@ -161,7 +161,7 @@ class ItemSearch(NonTerminalSearch):
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[DerivationTree]:
         bases = self.base.find(tree)
-        return sum([base.__getitem__(self.slices) for base in bases], [])
+        return sum([base.__getitem__(self.slices, as_list=True) for base in bases], [])
 
     def find_direct(
         self,
@@ -169,7 +169,7 @@ class ItemSearch(NonTerminalSearch):
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[DerivationTree]:
         bases = self.base.find_direct(tree)
-        return sum([base.__getitem__(self.slices) for base in bases], [])
+        return sum([base.__getitem__(self.slices, as_list=True) for base in bases], [])
 
     def __repr__(self):
         slice_reprs = []
