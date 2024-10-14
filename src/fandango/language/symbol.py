@@ -12,6 +12,12 @@ class Symbol(abc.ABC):
         self.symbol = symbol
         self.type = type_
 
+    def check(self, word: str) -> bool:
+        return False
+
+    def check_all(self, word: str) -> bool:
+        return False
+
     @property
     def is_terminal(self):
         return self.type == SymbolType.TERMINAL
@@ -61,6 +67,12 @@ class Terminal(Symbol):
     @staticmethod
     def from_symbol(symbol: str) -> "Terminal":
         return Terminal(Terminal.clean(symbol))
+
+    def check(self, word: str) -> bool:
+        return word.startswith(self.symbol)
+
+    def check_all(self, word: str) -> bool:
+        return word == self.symbol
 
     def __repr__(self):
         return f'"{self.symbol}"'

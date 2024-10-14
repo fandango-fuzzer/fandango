@@ -144,3 +144,6 @@ class DerivationTree:
 
     def is_num(self):
         return self.is_float()
+
+    def __eq__(self, other):
+        return isinstance(other, DerivationTree) and self.__tree__() == other.__tree__()
