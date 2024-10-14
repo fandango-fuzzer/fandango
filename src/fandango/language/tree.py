@@ -20,6 +20,9 @@ class DerivationTree:
         self.set_children(children or [])
         self._parent = parent
 
+    def __len__(self):
+        return len(self._children)
+
     def set_children(self, children: List["DerivationTree"]):
         self._children = children
         for child in self._children:
@@ -45,9 +48,11 @@ class DerivationTree:
     def find_direct_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
         return [child for child in self._children if child.symbol == symbol]
 
-    def __getitem__(self, item):
+    def __getitem__(
+        self, item, as_list=False
+    ) -> Union["DerivationTree", List["DerivationTree"]]:
         items = self._children.__getitem__(item)
-        if not isinstance(items, list):
+        if as_list and not isinstance(items, list):
             items = [items]
         return items
 

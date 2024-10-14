@@ -23,7 +23,7 @@ from fandango.language.parse import parse
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.search import RuleSearch
-from fandango.language.symbol import NonTerminal
+from fandango.language.symbol import NonTerminal, Terminal
 
 FANDANGO_GRAMMAR = """
     <start> ::= <number>;
@@ -337,3 +337,89 @@ f(<number>) % 2 == 0;
     assert isinstance(constraint.searches[placeholder], RuleSearch)
     search: RuleSearch = constraint.searches[placeholder]
     assert NonTerminal("<number>") == search.symbol
+
+
+def test_grammar_parsing_simple():
+    grammar, _ = parse("<a> ::= 'a';")
+    trees = grammar.parse("a", start="<a>")
+    assert len(trees) == 1
+    tree = trees[0]
+    assert tree.symbol == NonTerminal("<a>")
+    assert len(tree) == 1
+    assert tree[0].symbol == Terminal("a")
+
+
+def test_grammar_parsing_simple_2():
+    grammar, _ = parse("<a> ::= <b><c>;<b> ::= 'b';<c> ::= 'c';")
+    trees = grammar.parse("bc", start="<a>")
+    assert len(trees) == 1
+    tree = trees[0]
+    assert tree.symbol == NonTerminal("<a>")
+    assert len(tree) == 2
+    assert tree[0].symbol == NonTerminal("<b>")
+    assert tree[1].symbol == NonTerminal("<c>")
+    assert len(tree[0]) == 1
+    assert tree[0][0].symbol == Terminal("b")
+    assert len(tree[1]) == 1
+    assert tree[1][0].symbol == Terminal("c")
+
+
+def test_grammar_parsing_simple_3():
+    grammar, _ = parse("<a> ::= <b> | <c>;<b> ::= 'b';<c> ::= 'c';")
+    trees = grammar.parse("b", start="<a>")
+    assert len(trees) == 1
+    tree = trees[0]
+    assert tree.symbol == NonTerminal("<a>")
+    assert len(tree) == 1
+    assert tree[0].symbol == NonTerminal("<b>")
+    assert len(tree[0]) == 1
+    assert tree[0][0].symbol == Terminal("b")
+    trees = grammar.parse("c", start="<a>")
+    assert len(trees) == 1
+    tree = trees[0]
+    assert tree.symbol == NonTerminal("<a>")
+    assert len(tree) == 1
+    assert tree[0].symbol == NonTerminal("<c>")
+    assert len(tree[0]) == 1
+    assert tree[0][0].symbol == Terminal("c")
+
+
+def test_grammar_parsing_simple_4():
+    grammar, _ = parse("<a> ::= <b> | <c>;<b> ::= 'b' <c>;<c> ::= 'c';")
+    trees = grammar.parse("bc", start="<a>")
+    assert len(trees) == 1
+    tree = trees[0]
+    assert tree.symbol == NonTerminal("<a>")
+    assert len(tree) == 1
+    assert tree[0].symbol == NonTerminal("<b>")
+    assert len(tree[0]) == 2
+    assert tree[0][0].symbol == Terminal("b")
+    assert tree[0][1].symbol == NonTerminal("<c>")
+    assert len(tree[0][1]) == 1
+    assert tree[0][1][0].symbol == Terminal("c")
+    trees = grammar.parse("c", start="<a>")
+    assert len(trees) == 1
+    tree = trees[0]
+    assert tree.symbol == NonTerminal("<a>")
+    assert len(tree) == 1
+    assert tree[0].symbol == NonTerminal("<c>")
+    assert len(tree[0]) == 1
+    assert tree[0][0].symbol == Terminal("c")
+
+
+def test_grammar_parsing_simple_5():
+    grammar, _ = parse("<a> ::= 'a'+ ;")
+    trees = grammar.parse("a", start="<a>")
+    assert len(trees) == 1
+    tree = trees[0]
+    assert tree.symbol == NonTerminal("<a>")
+    assert len(tree) == 1
+    assert tree[0].symbol == Terminal("a")
+    trees = grammar.parse("aaa", start="<a>")
+    assert len(trees) == 1
+    tree = trees[0]
+    assert tree.symbol == NonTerminal("<a>")
+    assert len(tree) == 3
+    assert tree[0].symbol == Terminal("a")
+    assert tree[1].symbol == Terminal("a")
+    assert tree[2].symbol == Terminal("a")

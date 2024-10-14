@@ -43,6 +43,9 @@ class Terminal(Symbol):
     def __init__(self, symbol: str):
         super().__init__(symbol, SymbolType.TERMINAL)
 
+    def __len__(self):
+        return len(self.symbol)
+
     @staticmethod
     def clean(symbol: str) -> str | bytes:
         if len(symbol) >= 2:
