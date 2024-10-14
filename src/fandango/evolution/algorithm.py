@@ -1,13 +1,14 @@
 # evolution/algorithm.py
 
 import time
+from time import sleep
 from typing import List, Set, Tuple
 
 from build.lib.fandango.language.grammar import DerivationTree
 from fandango.constraints.base import Constraint
+from fandango.constraints.fitness import FailingTree
 from fandango.language.grammar import (
     Grammar,
-    Node,
 )
 from fandango.language.parse import parse_file
 
@@ -45,21 +46,22 @@ class FANDANGO:
         self.max_generations = max_generations
         self.elitism_rate = elitism_rate
 
+        self.verbose = verbose
+        self.checks_made = 0
+        self.crossovers_made = 0
+        self.mutations_made = 0
+
+        self.time_taken = None
+
         # Initialize population
         self.population = self.generate_random_initial_population()
 
         # Evaluate population
         self.fitness_cache = {}
         self.evaluation = self.evaluate_population()
-        self.fitness = 0
-        # self.fitness = sum(fitness for fitness, _ in self.evaluation) / len(self.evaluation)
+        self.fitness = sum(fitness for _, fitness, _ in self.evaluation) / len(self.evaluation)
 
-        self.verbose = verbose
-        self.mutations_made = 0
-        self.crossovers_made = 0
-
-        self.solution = None
-        self.time_taken = None
+        self.solution = []
 
     def evolve(self) -> Set[DerivationTree]:
         """
@@ -71,11 +73,34 @@ class FANDANGO:
 
         for generation in range(1, self.max_generations + 1):
             if self.verbose:
-                print(f"[DEBUG] - Generation {generation} - Fitness: {self.fitness}")
+                print(f"[DEBUG] - Generation {generation} - Fitness: {self.fitness:.2f}")
 
-            if self.fitness >= 0.95:
-                print(f"[INFO] - Solution found in generation {generation}!")
-                return self.population
+            if self.fitness >= 0.95 or len(self.solution) >= self.population_size:
+                break
+
+            # Select elites
+            population = self.select_elites()
+
+            if self.verbose:
+                print(f"[DEBUG] - Elites: {population}")
+
+            # Crossover
+            while len(population) < self.population_size:
+                pass
+
+        self.time_taken = time.time() - start_time
+        self.solution = self.population
+        print(f"[INFO] - Solution not found after {self.max_generations} generations.")
+        print(f"[INFO] - Best solution: {self.solution}")
+
+        if self.verbose:
+            print(f"[DEBUG] - Fitness: {self.fitness}")
+            print(f"[DEBUG] - Fitness checks: {self.checks_made}")
+            print(f"[DEBUG] - Crossovers made: {self.crossovers_made}")
+            print(f"[DEBUG] - Mutations made: {self.mutations_made}")
+            print(f"[DEBUG] - Time taken: {self.time_taken:.2f} seconds")
+
+        return self.population
 
     def generate_random_initial_population(self) -> Set[DerivationTree]:
         """
@@ -101,19 +126,53 @@ class FANDANGO:
         """
         pass
 
-    def evaluate_population(self) -> Tuple[List[Node], Set[Node]]:
+    def evaluate_individual(self, individual: DerivationTree) -> Tuple[float, List[FailingTree]]:
+        """
+        Evaluate the fitness of an individual.
+
+        :param individual: The individual to evaluate.
+        :return: The fitness of the individual and the list of failing trees.
+        """
+        fitness = 0.0
+        failing_trees = []
+
+        if str(individual) in self.fitness_cache:
+            return self.fitness_cache[str(individual)]
+
+        for constraint in self.constraints:
+            result = constraint.fitness(individual)
+            if result.success:
+                fitness += result.fitness()
+            else:
+                failing_trees.extend(result.failing_trees)
+                fitness += result.fitness()
+
+            self.checks_made += 1
+            self.fitness_cache[str(individual)] = [fitness, failing_trees]
+
+        fitness /= len(self.constraints)
+        return fitness, failing_trees
+
+    def evaluate_population(self) -> List[Tuple[DerivationTree, float, List[FailingTree]]]:
         """
         Evaluate the fitness of each individual in the population.
 
-        :return: A list of tuples, each containing an individual, its fitness, and its validity.
+        :return: A list of tuples, each containing an individual, its fitness, and the list of failing trees.
         """
-        pass
+
+        return [(individual, *self.evaluate_individual(individual)) for individual in self.population]
+
+    def select_elites(self) -> List[DerivationTree]:
+        """
+        Select the 'elitism'% elite individuals from the population based on the fitness.
+
+        :return: A list of elite individuals.
+        """
+        return [x[0] for x in sorted(self.evaluation, key=lambda x: x[1], reverse=True)[:int(self.elitism_rate * self.population_size)]]
 
 
 if __name__ == "__main__":
     grammar_, constraints_ = parse_file("../../evaluation/experiments/int/int.fan")
 
-    fandango = FANDANGO(grammar_, constraints_, verbose=False)
+    fandango = FANDANGO(grammar_, constraints_, verbose=True)
     fandango.evolve()
-
-    print(fandango.population)
