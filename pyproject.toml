@@ -31,6 +31,7 @@ dependencies = [
     "deap>=1.4.1",
     "scipy>=1.14.1",
     "fuzzingbook>=1.2.1",
+    "ordered-set>=4.0.2",
 ]
 
 [project.urls]

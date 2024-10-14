@@ -8,50 +8,16 @@ from fandango.language.tree import DerivationTree
 MAX_REPETITIONS = 50
 
 
-class ParseResult:
-    def __init__(
-        self, trees: List[DerivationTree] | DerivationTree, remaining: str | bytes
-    ):
-        self.trees = trees
-        self.remaining = remaining
-
-    def append(self, tree: List[DerivationTree] | DerivationTree):
-        if isinstance(self.trees, list):
-            if isinstance(tree, list):
-                self.trees.extend(tree)
-            else:
-                self.trees.append(tree)
-        else:
-            if isinstance(tree, list):
-                self.trees = [self.trees, *tree]
-            else:
-                self.trees = [self.trees, tree]
-
-    def offspring(self, tree: DerivationTree, remaining: str | bytes):
-        new_result = ParseResult(self.trees, remaining)
-        new_result.append(tree)
-        return new_result
-
-    def build(self, symbol: NonTerminal):
-        if isinstance(self.trees, list):
-            tree = DerivationTree(symbol, self.trees)
-        else:
-            tree = DerivationTree(symbol, [self.trees])
-        return ParseResult(tree, self.remaining)
-
-    def __repr__(self):
-        return f"ParseResult({self.trees}, {self.remaining})"
-
-    def __str__(self):
-        return self.__repr__()
-
-
 class Node(abc.ABC):
     def fuzz(self, rules: Dict[str, "Node"]) -> List[DerivationTree]:
         return ""
 
-    def parse(self, s: str | bytes, rules: Dict[str, "Node"]) -> List[ParseResult]:
-        raise NotImplementedError("Parsing not implemented")
+    @abc.abstractmethod
+    def accept(self, visitor: "NodeVisitor"):
+        raise NotImplementedError("accept method not implemented")
+
+    def children(self):
+        return []
 
     def __repr__(self):
         return ""
@@ -67,10 +33,11 @@ class Alternative(Node):
     def fuzz(self, rules: Dict[str, Node]) -> List[DerivationTree]:
         return random.choice(self.alternatives).fuzz(rules)
 
-    def parse(self, s: str | bytes, rules: Dict[str, Node]) -> List[ParseResult]:
-        for alternative in self.alternatives:
-            for result in alternative.parse(s, rules):
-                yield result
+    def accept(self, visitor: "NodeVisitor"):
+        return visitor.visitAlternative(self)
+
+    def children(self):
+        return self.alternatives
 
     def __getitem__(self, item):
         return self.alternatives.__getitem__(item)
@@ -89,17 +56,11 @@ class Concatenation(Node):
     def fuzz(self, rules: Dict[str, Node]) -> List[DerivationTree]:
         return sum([node.fuzz(rules) for node in self.nodes], [])
 
-    def _parse(
-        self, s: str | bytes, rules: Dict[str, Node], nodes: List[Node]
-    ) -> List[ParseResult]:
-        if not nodes:
-            return [ParseResult([], s)]
-        for result in self._parse(s, rules, nodes[:-1]):
-            for tmp_result in nodes[-1].parse(result.remaining, rules):
-                yield result.offspring(tmp_result.trees, tmp_result.remaining)
+    def accept(self, visitor: "NodeVisitor"):
+        return visitor.visitConcatenation(self)
 
-    def parse(self, s: str | bytes, rules: Dict[str, Node]) -> List[ParseResult]:
-        return self._parse(s, rules, self.nodes)
+    def children(self):
+        return self.nodes
 
     def __getitem__(self, item):
         return self.nodes.__getitem__(item)
@@ -121,46 +82,14 @@ class Repetition(Node):
         self.min = min_
         self.max = max_
 
+    def accept(self, visitor: "NodeVisitor"):
+        return visitor.visitRepetition(self)
+
     def fuzz(self, rules: Dict[str, Node]) -> List[DerivationTree]:
         return sum(
             [self.node.fuzz(rules) for _ in range(random.randint(self.min, self.max))],
             [],
         )
-
-    def _parse(
-        self, s: str | bytes, rules: Dict[str, Node], current, min_: int, max_: int
-    ) -> List[ParseResult]:
-        if current == max_:
-            return [ParseResult([], s)]
-        for result in self.node.parse(s, rules):
-            for tmp_result in self._parse(result.remaining, rules, current + 1, max_):
-                yield result.offspring(tmp_result.trees, tmp_result.remaining)
-
-    def parse(self, s: str | bytes, rules: Dict[str, Node]) -> List[ParseResult]:
-        for _ in range(self.min):
-            new_results = []
-            for result in intermediate_results:
-                tmp_results = self.node.parse(result.remaining, rules)
-                new_results.extend(
-                    [
-                        result.offspring(tmp_result.trees, tmp_result.remaining)
-                        for tmp_result in tmp_results
-                    ]
-                )
-            intermediate_results = new_results
-        for _ in range(self.min, self.max):
-            new_results = []
-            for result in intermediate_results:
-                tmp_results = self.node.parse(result.remaining, rules)
-                new_results.extend(
-                    [
-                        result.offspring(tmp_result.trees, tmp_result.remaining)
-                        for tmp_result in tmp_results
-                    ]
-                )
-            intermediate_results = new_results
-            results.extend(intermediate_results)
-        return results
 
     def __repr__(self):
         return f"{self.node}{{{self.min},{self.max}}}"
@@ -170,6 +99,9 @@ class Star(Repetition):
     def __init__(self, node: Node):
         super().__init__(node, 0)
 
+    def accept(self, visitor: "NodeVisitor"):
+        return visitor.visitStar(self)
+
     def __repr__(self):
         return f"{self.node}*"
 
@@ -178,6 +110,9 @@ class Plus(Repetition):
     def __init__(self, node: Node):
         super().__init__(node, 1)
 
+    def accept(self, visitor: "NodeVisitor"):
+        return visitor.visitPlus(self)
+
     def __repr__(self):
         return f"{self.node}+"
 
@@ -185,6 +120,9 @@ class Plus(Repetition):
 class Option(Repetition):
     def __init__(self, node: Node):
         super().__init__(node, 0, 1)
+
+    def accept(self, visitor: "NodeVisitor"):
+        return visitor.visitOption(self)
 
     def __repr__(self):
         return f"{self.node}?"
@@ -200,11 +138,8 @@ class NonTerminalNode(Node):
         children = rules[self.symbol].fuzz(rules)
         return [DerivationTree(self.symbol, children)]
 
-    def parse(self, s: str | bytes, rules: Dict[str, Node]) -> List[ParseResult]:
-        if self.symbol not in rules:
-            raise ValueError(f"Symbol {self.symbol} not found in rules")
-        results = rules[self.symbol].parse(s, rules)
-        return [result.build(self.symbol) for result in results]
+    def accept(self, visitor: "NodeVisitor"):
+        return visitor.visitNonTerminalNode(self)
 
     def __repr__(self):
         return self.symbol.__repr__()
@@ -223,10 +158,8 @@ class TerminalNode(Node):
     def fuzz(self, rules: Dict[str, Node]) -> List[DerivationTree]:
         return [DerivationTree(self.symbol)]
 
-    def parse(self, s: str | bytes, rules: Dict[str, Node]) -> List[ParseResult]:
-        if s.startswith(self.symbol.symbol):
-            return [ParseResult(DerivationTree(self.symbol), s[len(self.symbol) :])]
-        return []
+    def accept(self, visitor: "NodeVisitor"):
+        return visitor.visitTerminalNode(self)
 
     def __repr__(self):
         return self.symbol.__repr__()
@@ -245,6 +178,58 @@ class CharSet(Node):
     def fuzz(self, rules: Dict[str, "Node"]) -> List["DerivationTree"]:
         raise NotImplementedError("CharSet fuzzing not implemented")
 
+    def accept(self, visitor: "NodeVisitor"):
+        return visitor.visitCharSet(self)
+
+
+class NodeVisitor(abc.ABC):
+    def visit(self, node: Node):
+        return node.accept(self)
+
+    def default_result(self):
+        pass
+
+    def aggregate_results(self, aggregate, result):
+        pass
+
+    def visitChildren(self, node: Node):
+        # noinspection PyNoneFunctionAssignment
+        result = self.default_result()
+        for child in node.children():
+            # noinspection PyNoneFunctionAssignment
+            result = self.aggregate_results(result, self.visit(child))
+        return result
+
+    def visitAlternative(self, node: Alternative):
+        return self.visitChildren(node)
+
+    def visitConcatenation(self, node: Concatenation):
+        return self.visitChildren(node)
+
+    def visitRepetition(self, node: Repetition):
+        return self.visit(node.node)
+
+    def visitStar(self, node: Star):
+        return self.visit(node.node)
+
+    def visitPlus(self, node: Plus):
+        return self.visit(node.node)
+
+    def visitOption(self, node: Option):
+        return self.visit(node.node)
+
+    # noinspection PyUnusedLocal
+    def visitNonTerminalNode(self, node: NonTerminalNode):
+        return self.default_result()
+
+    # noinspection PyUnusedLocal
+    def visitTerminalNode(self, node: TerminalNode):
+        return self.default_result()
+
+    # noinspection PyUnusedLocal
+    def visitCharSet(self, node: CharSet):
+        return self.default_result()
+
 
 class Grammar:
     def __init__(self, rules: Optional[Dict[NonTerminal, Node]] = None):
@@ -254,24 +239,6 @@ class Grammar:
         if isinstance(start, str):
             start = NonTerminal(start)
         return NonTerminalNode(start).fuzz(self.rules)[0]
-
-    def parse(
-        self,
-        s: str | bytes,
-        start: str | NonTerminal = "<start>",
-        fail_on_error: bool = False,
-    ) -> List[DerivationTree]:
-        if isinstance(start, str):
-            start = NonTerminal(start)
-        parse_trees = NonTerminalNode(start).parse(s, self.rules)
-        trees = [
-            tree.trees
-            for tree in parse_trees
-            if tree.remaining == "" and isinstance(tree.trees, DerivationTree)
-        ]
-        if fail_on_error and not trees:
-            raise ValueError(f"Could not parse {s} with start symbol {start}")
-        return trees
 
     def __contains__(self, item: str | NonTerminal):
         if isinstance(item, str):
