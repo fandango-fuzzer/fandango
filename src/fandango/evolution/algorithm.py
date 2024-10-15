@@ -6,10 +6,10 @@ import re
 import time
 from typing import List, Set, Tuple
 
-from fandango.language.grammar import DerivationTree
 from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree, Comparison
 from fandango.language.earley import Parser
+from fandango.language.grammar import DerivationTree
 from fandango.language.grammar import (
     Grammar,
 )
@@ -19,16 +19,16 @@ from fandango.language.symbol import NonTerminal
 
 class FANDANGO:
     def __init__(
-        self,
-        grammar: Grammar,
-        constraints: List[Constraint],
-        population_size: int = 100,
-        max_generations: int = 1000,
-        elitism_rate: float = 0.1,
-        crossover_rate: float = 0.8,
-        tournament_size: float = 0.05,
-        mutation_rate: float = 0.2,
-        verbose: bool = False,
+            self,
+            grammar: Grammar,
+            constraints: List[Constraint],
+            population_size: int = 100,
+            max_generations: int = 1000,
+            elitism_rate: float = 0.1,
+            crossover_rate: float = 0.8,
+            tournament_size: float = 0.05,
+            mutation_rate: float = 0.2,
+            verbose: bool = False,
     ):
         """
         Initialize the FANDANGO genetic algorithm. The algorithm will evolve a population of individuals
@@ -70,7 +70,7 @@ class FANDANGO:
         # Evaluate population
         self.evaluation = self.evaluate_population()
         self.fitness = (
-            sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+                sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
 
     def evolve(self) -> Set[DerivationTree]:
@@ -127,7 +127,7 @@ class FANDANGO:
             self.population = new_population
             self.evaluation = self.evaluate_population()
             self.fitness = (
-                sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+                    sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
 
         self.time_taken = time.time() - start_time
@@ -184,13 +184,15 @@ class FANDANGO:
             if failing_tree.suggestions[1][0] == Comparison.EQUAL:
                 match = re.search(r'<(.*?)>', str(failing_tree.cause))
                 if match:
-                    suggestion = failing_tree.suggestions[1][1]
+                    suggestion = str(failing_tree.suggestions[1][1])
                     rule = NonTerminal(match.group(0))
                     suggestion_tree = self.parser.parse(suggestion, rule)
+                    print(f"[DEBUG] - Suggestion: {suggestion} - Rule: {rule}")
+                    print(f"[DEBUG] - Fixing {failing_tree.cause} with {suggestion_tree}")
         return individual
 
     def evaluate_individual(
-        self, individual: DerivationTree
+            self, individual: DerivationTree
     ) -> Tuple[float, List[FailingTree]]:
         """
         Evaluate the fitness of an individual.
@@ -222,7 +224,7 @@ class FANDANGO:
         return fitness, failing_trees
 
     def evaluate_population(
-        self,
+            self,
     ) -> List[Tuple[DerivationTree, float, List[FailingTree]]]:
         """
         Evaluate the fitness of each individual in the population.
@@ -244,8 +246,8 @@ class FANDANGO:
         return [
             x[0]
             for x in sorted(self.evaluation, key=lambda x: x[1], reverse=True)[
-                : int(self.elitism_rate * self.population_size)
-            ]
+                     : int(self.elitism_rate * self.population_size)
+                     ]
         ]
 
     def tournament_selection(self) -> Tuple[DerivationTree, DerivationTree]:
@@ -259,7 +261,7 @@ class FANDANGO:
         return parent1, parent2
 
     def crossover(
-        self, parent1: DerivationTree, parent2: DerivationTree
+            self, parent1: DerivationTree, parent2: DerivationTree
     ) -> Tuple[DerivationTree, DerivationTree]:
         """
         Perform crossover between two parents to generate two children by swapping subtrees rooted at a common non-terminal symbol.
