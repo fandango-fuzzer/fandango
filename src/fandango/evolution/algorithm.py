@@ -50,6 +50,7 @@ class FANDANGO:
         self.elitism_rate = elitism_rate
 
         self.verbose = verbose
+        self.fixes_made = 0
         self.checks_made = 0
         self.crossovers_made = 0
         self.mutations_made = 0
@@ -125,6 +126,7 @@ class FANDANGO:
         print(f"[INFO] - Time taken: {self.time_taken:.2f} seconds")
 
         if self.verbose:
+            print(f"[DEBUG] - Fixes made: {self.fixes_made}")
             print(f"[DEBUG] - Fitness checks: {self.checks_made}")
             print(f"[DEBUG] - Crossovers made: {self.crossovers_made}")
             print(f"[DEBUG] - Mutations made: {self.mutations_made}")
@@ -145,7 +147,13 @@ class FANDANGO:
             if str(individual) not in str_repr:
                 population.add(individual)
                 str_repr.add(str(individual))
-        return population
+
+        # Fix individuals
+        fixed_population = set()
+        for individual in population:
+            fixed_population.add(self.fix_individual(individual))
+
+        return fixed_population
 
     def generate_coverage_based_initial_population(self) -> Set[DerivationTree]:
         """
@@ -154,6 +162,12 @@ class FANDANGO:
         :return: A set of individuals.
         """
         pass
+
+    def fix_individual(self, individual: DerivationTree) -> DerivationTree:
+        """
+        Fix an individual by replacing failing subtrees if ComparisonConstraint.EQUAL are involved.
+        """
+        return individual
 
     def evaluate_individual(self, individual: DerivationTree) -> Tuple[float, List[FailingTree]]:
         """
@@ -272,4 +286,5 @@ if __name__ == "__main__":
     grammar_, constraints_ = parse_file("../../evaluation/experiments/int/int.fan")
 
     fandango = FANDANGO(grammar_, constraints_, verbose=False)
+    print(fandango.population)
     fandango.evolve()
