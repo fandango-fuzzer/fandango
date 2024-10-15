@@ -159,8 +159,12 @@ class ComparisonConstraint(Constraint):
                         if left == right:
                             is_solved = True
                         else:
-                            suggestions.append((Comparison.EQUAL, left))
-                            suggestions.append((Comparison.EQUAL, right))
+                            suggestions.append(
+                                (Comparison.EQUAL, left, ComparisonSide.RIGHT)
+                            )
+                            suggestions.append(
+                                (Comparison.EQUAL, right, ComparisonSide.LEFT)
+                            )
                     case Comparison.NOT_EQUAL:
                         if left != right:
                             is_solved = True
