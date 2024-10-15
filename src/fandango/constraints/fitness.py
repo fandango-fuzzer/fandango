@@ -1,10 +1,20 @@
 import abc
+import enum
 import itertools
 from typing import List, Optional, Dict, Any, Tuple
 
 from fandango.language.search import NonTerminalSearch
-from fandango.language.symbol import Symbol, NonTerminal
+from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
+
+
+class Comparison(enum.Enum):
+    EQUAL = "=="
+    NOT_EQUAL = "!="
+    GREATER = ">"
+    GREATER_EQUAL = ">="
+    LESS = "<"
+    LESS_EQUAL = "<="
 
 
 class FailingTree:
@@ -12,9 +22,11 @@ class FailingTree:
         self,
         tree: DerivationTree,
         cause: "GeneticBase",
+        suggestions: Optional[List[Tuple[Comparison, Any]]] = None,
     ):
         self.tree = tree
         self.cause = cause
+        self.suggestions = suggestions or []
 
     def __hash__(self):
         return hash((self.tree, self.cause))

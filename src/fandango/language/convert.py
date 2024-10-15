@@ -7,13 +7,13 @@ from fandango.constraints.base import (
     DisjunctionConstraint,
     ImplicationConstraint,
     ExpressionConstraint,
-    Comparison,
     ComparisonConstraint,
     ExistsConstraint,
     ForallConstraint,
     Constraint,
     Value,
 )
+from fandango.constraints.fitness import Comparison
 from fandango.language.grammar import (
     Grammar,
     Alternative,
