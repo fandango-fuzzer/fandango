@@ -2,16 +2,19 @@
 import copy
 import itertools
 import random
+import re
 import time
 from typing import List, Set, Tuple
 
 from build.lib.fandango.language.grammar import DerivationTree
 from fandango.constraints.base import Constraint
-from fandango.constraints.fitness import FailingTree
+from fandango.constraints.fitness import FailingTree, Comparison
+from fandango.language.earley import Parser
 from fandango.language.grammar import (
     Grammar,
 )
 from fandango.language.parse import parse_file
+from fandango.language.symbol import NonTerminal
 
 
 class FANDANGO:
@@ -49,6 +52,9 @@ class FANDANGO:
         self.max_generations = max_generations
         self.elitism_rate = elitism_rate
 
+        self.fitness_cache = {}
+        self.parser = Parser(grammar)
+
         self.verbose = verbose
         self.fixes_made = 0
         self.checks_made = 0
@@ -62,7 +68,6 @@ class FANDANGO:
         self.population = self.generate_random_initial_population()
 
         # Evaluate population
-        self.fitness_cache = {}
         self.evaluation = self.evaluate_population()
         self.fitness = sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
 
@@ -167,6 +172,16 @@ class FANDANGO:
         """
         Fix an individual by replacing failing subtrees if ComparisonConstraint.EQUAL are involved.
         """
+
+        evaluation = self.evaluate_individual(individual)
+        failing_trees = evaluation[1]
+        for failing_tree in failing_trees:
+            if failing_tree.suggestions[1][0] == Comparison.EQUAL:
+                match = re.search(r'<(.*?)>', str(failing_tree.cause))
+                if match:
+                    suggestion = failing_tree.suggestions[1][1]
+                    rule = NonTerminal(match.group(0))
+                    suggestion_tree = self.parser.parse(suggestion, rule)
         return individual
 
     def evaluate_individual(self, individual: DerivationTree) -> Tuple[float, List[FailingTree]]:
