@@ -55,14 +55,13 @@ class FANDANGO:
         self.time_taken = None
 
         # Initialize population
+        self.solution = set()
         self.population = self.generate_random_initial_population()
 
         # Evaluate population
         self.fitness_cache = {}
         self.evaluation = self.evaluate_population()
-        self.fitness = sum(fitness for _, fitness, _ in self.evaluation) / len(self.evaluation)
-
-        self.solution = set()
+        self.fitness = sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
 
     def evolve(self) -> Set[DerivationTree]:
         """
@@ -76,8 +75,11 @@ class FANDANGO:
             if self.verbose:
                 print(f"[DEBUG] - Generation {generation} - Fitness: {self.fitness:.2f}")
 
-            if self.fitness >= 0.95 or len(self.solution) >= self.population_size:
+            if len(self.solution) >= self.population_size:
                 break
+
+            if self.verbose:
+                print(f"[DEBUG] - Population: {self.population}")
 
             # Select elites
             population = self.select_elites()
@@ -85,13 +87,31 @@ class FANDANGO:
             if self.verbose:
                 print(f"[DEBUG] - Elites: {population}")
 
-            # Crossover
+            # # Crossover
+            # while len(population) < self.population_size:
+            #     break
+
+            # Mutation
+            for individual in population:
+                if random.random() < self.mutation_rate:
+                    population.remove(individual)
+                    population.append(self.mutate(individual))
+                    self.mutations_made += 1
+
+            # Remove duplicates
+            population = set(population)
+
+            # Add new individuals
             while len(population) < self.population_size:
-                pass
+                population.add(self.grammar.fuzz())
+
+            # Evaluate population
+            self.population = population
+            self.evaluation = self.evaluate_population()
+            self.fitness = sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+            cosa = [fitness for _, fitness, _ in self.evaluation]
 
         self.time_taken = time.time() - start_time
-        self.solution = self.population
-        print(f"[INFO] - Solution not found after {self.max_generations} generations.")
         print(f"[INFO] - Best solution: {self.solution}")
 
         if self.verbose:
@@ -147,11 +167,14 @@ class FANDANGO:
             else:
                 failing_trees.extend(result.failing_trees)
                 fitness += result.fitness()
-
             self.checks_made += 1
-            self.fitness_cache[str(individual)] = [fitness, failing_trees]
 
-        fitness /= len(self.constraints)
+        # Normalize fitness
+        fitness = fitness / len(self.constraints)
+        if fitness >= 0.99:
+            self.solution.add(individual)
+
+        self.fitness_cache[str(individual)] = [fitness, failing_trees]
         return fitness, failing_trees
 
     def evaluate_population(self) -> List[Tuple[DerivationTree, float, List[FailingTree]]]:
@@ -160,8 +183,13 @@ class FANDANGO:
 
         :return: A list of tuples, each containing an individual, its fitness, and the list of failing trees.
         """
-        evaluation = [(individual, *self.evaluate_individual(individual)) for individual in self.population]
-        self.fitness = sum(fitness for _, fitness, _ in evaluation) / len(evaluation)
+        evaluation = []
+        for individual in self.population:
+            fitness, failing_trees = self.evaluate_individual(individual)
+            if fitness > 1.0:
+                print(f"[WARNING] - Fitness of individual {individual} is greater than 1.0: {fitness}")
+            evaluation.append((individual, fitness, failing_trees))
+        print(evaluation)
         return evaluation
 
     def select_elites(self) -> List[DerivationTree]:
@@ -180,6 +208,32 @@ class FANDANGO:
         tournament = random.sample(self.population, self.tournament_size)
         tournament.sort(key=lambda x: x['fitness'], reverse=True)
         return tournament[0], tournament[1]
+
+    def crossover(self, parent1: DerivationTree, parent2: DerivationTree) -> [DerivationTree, DerivationTree]:
+        """
+        Perform crossover between two parents to generate two children based on the failing trees.
+        """
+        pass
+
+    def mutate(self, individual: DerivationTree) -> DerivationTree:
+        """
+        Perform mutation on an individual to generate a new individual based on the failing trees.
+        """
+        failing_trees = self.evaluate_individual(individual)[1]
+        selection = []
+
+        for failing_tree in failing_trees:
+            selection.append(failing_tree.tree)
+
+        if len(selection) == 0:
+            return individual
+        else:
+            node_to_mutate = random.choice(selection)
+            if node_to_mutate.symbol.is_non_terminal:
+                new_subtree = self.grammar.fuzz(node_to_mutate.symbol)
+                individual = individual.replace(node_to_mutate, new_subtree)
+                self.mutations_made += 1
+        return individual
 
 
 if __name__ == "__main__":

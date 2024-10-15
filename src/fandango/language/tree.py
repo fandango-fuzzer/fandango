@@ -147,3 +147,15 @@ class DerivationTree:
 
     def __eq__(self, other):
         return isinstance(other, DerivationTree) and self.__tree__() == other.__tree__()
+
+    def replace(self, tree_to_replace, new_subtree):
+        """
+        Replace the subtree rooted at the given node with the new subtree.
+        """
+        if self == tree_to_replace:
+            return new_subtree
+        else:
+            return DerivationTree(
+                self.symbol,
+                [child.replace(tree_to_replace, new_subtree) for child in self._children],
+            )
