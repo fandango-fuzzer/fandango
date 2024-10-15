@@ -22,7 +22,7 @@ class FANDANGO:
             grammar: Grammar,
             constraints: List[Constraint],
             population_size: int = 100,
-            max_generations: int = 1000,
+            max_generations: int = 100,
             elitism_rate: float = 0.1,
             crossover_rate: float = 0.8,
             tournament_size: float = 0.05,
@@ -63,7 +63,7 @@ class FANDANGO:
         self.time_taken = None
 
         # Initialize population
-        self.solution = set()
+        self.solution = list()
         self.population = self.generate_random_initial_population()
 
         # Evaluate population
@@ -72,7 +72,7 @@ class FANDANGO:
                 sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
 
-    def evolve(self) -> Set[DerivationTree]:
+    def evolve(self) -> List[DerivationTree]:
         """
         Run the genetic algorithm to evolve the population over multiple generations.
 
@@ -85,7 +85,7 @@ class FANDANGO:
                 f"[INFO] - Generation {generation} - Fitness: {self.fitness:.2f} - #solutions found: {len(self.solution)}"
             )
 
-            if len(self.solution) >= self.population_size:
+            if len(self.solution) >= self.population_size or self.fitness >= 0.99:
                 break
 
             if self.verbose:
@@ -115,23 +115,26 @@ class FANDANGO:
                     new_population.append(self.mutate(individual))
                     self.mutations_made += 1
 
-            # Remove duplicates
-            new_population = set(new_population)
-
             # Add new individuals
             while len(new_population) < self.population_size:
-                new_population.add(self.grammar.fuzz())
+                new_population.append(self.grammar.fuzz())
+
+            # Fix individuals
+            fixed_population = list()
+            for individual in new_population:
+                fixed_population.append(self.fix_individual(individual))
 
             # Evaluate population
-            self.population = new_population
+            self.population = fixed_population
             self.evaluation = self.evaluate_population()
             self.fitness = (
                     sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
 
         self.time_taken = time.time() - start_time
-        self.solution = set(itertools.islice(self.solution, self.population_size))
-        print(f"[INFO] - Best solution: {self.solution}")
+        self.solution = self.population[: self.population_size]
+        print(f"[INFO] - Solutions found: ({len(self.solution)}): {self.solution}")
+        print(f"[INFO] - Best population: {self.solution}")
         print(f"[INFO] - Time taken: {self.time_taken:.2f} seconds")
 
         if self.verbose:
@@ -142,25 +145,19 @@ class FANDANGO:
 
         return self.population
 
-    def generate_random_initial_population(self) -> Set[DerivationTree]:
+    def generate_random_initial_population(self) -> List[DerivationTree]:
         """
         Generate the initial population of individuals.
 
         :return: A set of individuals.
         """
 
-        population = set()
-        str_repr = set()
-        while len(population) < self.population_size:
-            individual = self.grammar.fuzz()
-            if str(individual) not in str_repr:
-                population.add(individual)
-                str_repr.add(str(individual))
+        population = [self.grammar.fuzz() for _ in range(self.population_size)]
 
         # Fix individuals
-        fixed_population = set()
+        fixed_population = list()
         for individual in population:
-            fixed_population.add(self.fix_individual(individual))
+            fixed_population.append(self.fix_individual(individual))
 
         return fixed_population
 
@@ -185,8 +182,7 @@ class FANDANGO:
                 if match:
                     suggestion = str(failing_tree.suggestions[1][1])
                     suggestion_tree = self.parser.parse(suggestion, match.group(0))
-                    print(f"[DEBUG] - Suggestion: {suggestion} - Rule: {match.group(0)}")
-                    print(f"[DEBUG] - Fixing {failing_tree.cause} with {suggestion_tree}")
+                    individual = individual.replace(failing_tree.tree, suggestion_tree)
         return individual
 
     def evaluate_individual(
@@ -216,7 +212,7 @@ class FANDANGO:
         # Normalize fitness
         fitness = fitness / len(self.constraints)
         if fitness >= 0.99:
-            self.solution.add(individual)
+            self.solution.append(individual)
 
         self.fitness_cache[str(individual)] = [fitness, failing_trees]
         return fitness, failing_trees
