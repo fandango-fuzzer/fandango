@@ -72,8 +72,8 @@ class FANDANGO:
         start_time = time.time()
 
         for generation in range(1, self.max_generations + 1):
-            if self.verbose:
-                print(f"[DEBUG] - Generation {generation} - Fitness: {self.fitness:.2f}")
+            print(
+                f"[INFO] - Generation {generation} - Fitness: {self.fitness:.2f} - #solutions found: {len(self.solution)}")
 
             if len(self.solution) >= self.population_size:
                 break
@@ -186,10 +186,7 @@ class FANDANGO:
         evaluation = []
         for individual in self.population:
             fitness, failing_trees = self.evaluate_individual(individual)
-            if fitness > 1.0:
-                print(f"[WARNING] - Fitness of individual {individual} is greater than 1.0: {fitness}")
             evaluation.append((individual, fitness, failing_trees))
-        print(evaluation)
         return evaluation
 
     def select_elites(self) -> List[DerivationTree]:
@@ -237,7 +234,7 @@ class FANDANGO:
 
 
 if __name__ == "__main__":
-    grammar_, constraints_ = parse_file("../../evaluation/experiments/int/int.fan")
+    grammar_, constraints_ = parse_file("../../evaluation/demo/demo.fan")
 
-    fandango = FANDANGO(grammar_, constraints_, verbose=True)
+    fandango = FANDANGO(grammar_, constraints_, verbose=False)
     fandango.evolve()
