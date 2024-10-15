@@ -17,12 +17,17 @@ class Comparison(enum.Enum):
     LESS_EQUAL = "<="
 
 
+class ComparisonSide(enum.Enum):
+    LEFT = "left"
+    RIGHT = "right"
+
+
 class FailingTree:
     def __init__(
         self,
         tree: DerivationTree,
         cause: "GeneticBase",
-        suggestions: Optional[List[Tuple[Comparison, Any]]] = None,
+        suggestions: Optional[List[Tuple[Comparison, Any, ComparisonSide]]] = None,
     ):
         self.tree = tree
         self.cause = cause

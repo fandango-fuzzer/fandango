@@ -9,6 +9,7 @@ from fandango.constraints.fitness import (
     GeneticBase,
     FailingTree,
     Comparison,
+    ComparisonSide,
 )
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
@@ -164,32 +165,52 @@ class ComparisonConstraint(Constraint):
                         if left != right:
                             is_solved = True
                         else:
-                            suggestions.append((Comparison.NOT_EQUAL, left))
-                            suggestions.append((Comparison.NOT_EQUAL, right))
+                            suggestions.append(
+                                (Comparison.NOT_EQUAL, left, ComparisonSide.RIGHT)
+                            )
+                            suggestions.append(
+                                (Comparison.NOT_EQUAL, right, ComparisonSide.LEFT)
+                            )
                     case Comparison.GREATER:
                         if left > right:
                             is_solved = True
                         else:
-                            suggestions.append((Comparison.GREATER, right))
-                            suggestions.append((Comparison.LESS, left))
+                            suggestions.append(
+                                (Comparison.LESS, left, ComparisonSide.RIGHT)
+                            )
+                            suggestions.append(
+                                (Comparison.GREATER, right, ComparisonSide.LEFT)
+                            )
                     case Comparison.GREATER_EQUAL:
                         if left >= right:
                             is_solved = True
                         else:
-                            suggestions.append((Comparison.GREATER_EQUAL, right))
-                            suggestions.append((Comparison.LESS_EQUAL, left))
+                            suggestions.append(
+                                (Comparison.LESS_EQUAL, left, ComparisonSide.RIGHT)
+                            )
+                            suggestions.append(
+                                (Comparison.GREATER_EQUAL, right, ComparisonSide.LEFT)
+                            )
                     case Comparison.LESS:
                         if left < right:
                             is_solved = True
                         else:
-                            suggestions.append((Comparison.LESS, right))
-                            suggestions.append((Comparison.GREATER, left))
+                            suggestions.append(
+                                (Comparison.GREATER, left, ComparisonSide.RIGHT)
+                            )
+                            suggestions.append(
+                                (Comparison.LESS, right, ComparisonSide.LEFT)
+                            )
                     case Comparison.LESS_EQUAL:
                         if left <= right:
                             is_solved = True
                         else:
-                            suggestions.append((Comparison.LESS_EQUAL, right))
-                            suggestions.append((Comparison.GREATER_EQUAL, left))
+                            suggestions.append(
+                                (Comparison.GREATER_EQUAL, left, ComparisonSide.RIGHT)
+                            )
+                            suggestions.append(
+                                (Comparison.LESS_EQUAL, right, ComparisonSide.LEFT)
+                            )
                 if is_solved:
                     solved += 1
                 else:
