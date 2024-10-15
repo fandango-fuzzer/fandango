@@ -14,7 +14,7 @@
 <account_number> ::= <digit><digit><digit><digit><digit> <digit><digit><digit><digit><digit> <digit><digit><digit><digit><digit> <digit><digit><digit><digit><digit> <digit><digit> ;
 <bank_key> ::= '      <bank_key>' <bank_id> '</bank_key>\n' ;
 <bank_id> ::= <digit><digit><digit><digit><digit> ;
-<start_balance> ::= '      <start_balance>' <st_bal>* '</start_balance>\n' ;
+<start_balance> ::= '      <start_balance>' <st_bal> '</start_balance>\n' ;
 <st_bal> ::= <digit>* ;
 <end_balance> ::= '      <end_balance>' <end_bal> '</end_balance>\n' ;
 <end_bal> ::= <digit>* ;
@@ -22,36 +22,22 @@
 
 # Constraints
 
-## Both <start_balance> and <end_balance> must be greater than 0.
+## The <amount> must be greater than 0.
 
-int(<st_bal>) > 0;
-int(<end_bal>) >= 0;
+int(<am>) > 0;
 
-## The <account_number> must be different for both sender and receiver.
+## The sender <start_balance> must be greater than the <amount>.
 
-int(<account_number>[0]) != int(<account_number>[1]);
+int(<sender>*<end_bal>) > int(<am>);
 
 ## The <end_balance> of sender must be equal to the <start_balance> - <amount>.
 
 def compute_end_balance_sender(start_balance, amount):
-    return start_balance - amount;
+    return start_balance - amount
 
-int(<end_bal>[0]) == compute_end_balance_sender(int(<st_bal>[0]), int(<amount>));
+int(<sender>*<end_bal>) == compute_end_balance_sender(int(<sender>*<st_bal>), int(<am>));
 
 ## The <end_balance> of receiver must be equal to the <start_balance> + <amount>.
 
-def compute_end_balance_receiver(start_balance, amount):
-    return start_balance + amount;
-
-int(<end_bal>[1]) == compute_end_balance_receiver(int(<st_bal>[1]), int(<amount>));
-
-## The <stmt_date> must be now.
-
-import time;
-
-def now():
-    return time.strftime("%Y-%m-%d");
-
-<stmt_date> == '      <stmt_date>' now() '</stmt_date>\n';
-
+int(<receiver>*<end_bal>) == int(<receiver>*<st_bal>) + int(<am>);
 

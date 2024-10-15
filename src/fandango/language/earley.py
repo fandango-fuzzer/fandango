@@ -204,7 +204,7 @@ class Parser(NodeVisitor):
                         self.scan(state, word, table, k)
         return table
 
-    def parse_forest(self, word: str, start: str | NonTerminal = "<start>"):
+    def parse_forest(self, word: str, start: str | Symbol = "<start>"):
         if isinstance(start, str):
             start = NonTerminal(start)
         table = [OrderedSet() for _ in range(len(word) + 1)]
@@ -226,7 +226,7 @@ class Parser(NodeVisitor):
                     else:
                         self.scan(state, word, table, k)
 
-    def parse(self, word: str, start: str | NonTerminal = "<start>"):
+    def parse(self, word: str, start: str | Symbol = "<start>"):
         for tree in self.parse_forest(word, start):
             return tree
         return None
