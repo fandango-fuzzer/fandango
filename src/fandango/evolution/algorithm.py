@@ -14,7 +14,6 @@ from fandango.language.grammar import (
     Grammar,
 )
 from fandango.language.parse import parse_file
-from fandango.language.symbol import NonTerminal
 
 
 class FANDANGO:

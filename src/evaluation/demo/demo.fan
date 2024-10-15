@@ -22,34 +22,36 @@
 
 # Constraints
 
-## <start_balance> and <end_balance> must be positive integers (logic constraint)
+## Both <start_balance> and <end_balance> must be greater than 0.
 
 int(<st_bal>) > 0;
 int(<end_bal>) >= 0;
 
-## <account_number> must be different. (there are 2 account numbers, receiver and sender)
+## The <account_number> must be different for both sender and receiver.
 
 int(<account_number>[0]) != int(<account_number>[1]);
 
-## first <end_bal> must be equal to the first <st_bal> - <amount>. User who is sending the money (we invoke a user defined function)
+## The <end_balance> of sender must be equal to the <start_balance> - <amount>.
 
-#def remove_balance(start_balance, end_balance, amount):
-#    return start_balance - amount;
+def compute_end_balance_sender(start_balance, amount):
+    return start_balance - amount;
 
-#int(<end_bal>[0]) == remove_balance(int(<st_bal>[0]), int(<end_bal>[0]), int(<am>));
+int(<end_bal>[0]) == compute_end_balance_sender(int(<st_bal>[0]), int(<amount>));
 
-## second <end_balance> must be equal to the first <start_balance> + <amount>. User who is receiving the money (we invoke a user defined function)
+## The <end_balance> of receiver must be equal to the <start_balance> + <amount>.
 
-#def check_valid_balance_receiver(start_balance, end_balance, amount):
-#    return start_balance + amount == end_balance ;
+def compute_end_balance_receiver(start_balance, amount):
+    return start_balance + amount;
 
-#check_valid_balance_receiver(int(<start_balance>[1]), int(<end_balance>[1]), int(<amount>));
+int(<end_bal>[1]) == compute_end_balance_receiver(int(<st_bal>[1]), int(<amount>));
 
-## invoke date_time to fill the <date> (This invokes a external lib)
+## The <stmt_date> must be now.
 
-# import time ;
+import time;
 
-#def fill_date(): ;
-#    return time.strftime("%Y-%m-%d");
+def now():
+    return time.strftime("%Y-%m-%d");
 
-# str(<stmt_date>) == fill_date();
+<stmt_date> == '      <stmt_date>' now() '</stmt_date>\n';
+
+
