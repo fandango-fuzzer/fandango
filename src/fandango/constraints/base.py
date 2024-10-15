@@ -1,5 +1,4 @@
 import abc
-import enum
 import itertools
 from copy import copy
 from typing import List, Dict, Any, Optional
@@ -9,6 +8,7 @@ from fandango.constraints.fitness import (
     ValueFitness,
     GeneticBase,
     FailingTree,
+    Comparison,
 )
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
@@ -127,15 +127,6 @@ class ExpressionConstraint(Constraint):
         return representation
 
 
-class Comparison(enum.Enum):
-    EQUAL = "=="
-    NOT_EQUAL = "!="
-    GREATER = ">"
-    GREATER_EQUAL = ">="
-    LESS = "<"
-    LESS_EQUAL = "<="
-
-
 class ComparisonConstraint(Constraint):
     def __init__(self, operator: Comparison, left: str, right: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -160,32 +151,53 @@ class ComparisonConstraint(Constraint):
             try:
                 left = eval(self.left, self.global_variables, local_variables)
                 right = eval(self.right, self.global_variables, local_variables)
+                suggestions = []
                 is_solved = False
                 match self.operator:
                     case Comparison.EQUAL:
                         if left == right:
                             is_solved = True
+                        else:
+                            suggestions.append((Comparison.EQUAL, left))
+                            suggestions.append((Comparison.EQUAL, right))
                     case Comparison.NOT_EQUAL:
                         if left != right:
                             is_solved = True
+                        else:
+                            suggestions.append((Comparison.NOT_EQUAL, left))
+                            suggestions.append((Comparison.NOT_EQUAL, right))
                     case Comparison.GREATER:
                         if left > right:
                             is_solved = True
+                        else:
+                            suggestions.append((Comparison.GREATER, right))
+                            suggestions.append((Comparison.LESS, left))
                     case Comparison.GREATER_EQUAL:
                         if left >= right:
                             is_solved = True
+                        else:
+                            suggestions.append((Comparison.GREATER_EQUAL, right))
+                            suggestions.append((Comparison.LESS_EQUAL, left))
                     case Comparison.LESS:
                         if left < right:
                             is_solved = True
+                        else:
+                            suggestions.append((Comparison.LESS, right))
+                            suggestions.append((Comparison.GREATER, left))
                     case Comparison.LESS_EQUAL:
                         if left <= right:
                             is_solved = True
+                        else:
+                            suggestions.append((Comparison.LESS_EQUAL, right))
+                            suggestions.append((Comparison.GREATER_EQUAL, left))
                 if is_solved:
                     solved += 1
                 else:
                     for _, node in combination:
                         if node not in failing_trees:
-                            failing_trees.append(FailingTree(node, self))
+                            failing_trees.append(
+                                FailingTree(node, self, suggestions=suggestions)
+                            )
             except:
                 pass
             total += 1
