@@ -109,6 +109,11 @@ class GeneticBase(abc.ABC):
         self.local_variables = local_variables or dict()
         self.global_variables = global_variables or dict()
 
+    def get_access_points(self):
+        return sum(
+            [search.get_access_points() for search in self.searches.values()], []
+        )
+
     @abc.abstractmethod
     def fitness(
         self,

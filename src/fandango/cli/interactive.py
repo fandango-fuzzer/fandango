@@ -1,4 +1,5 @@
 import ast
+import enum
 import os.path
 from typing import Optional
 
@@ -8,7 +9,6 @@ from antlr4.error.ErrorStrategy import BailErrorStrategy
 
 from fandango.constraints import predicates
 from fandango.constraints.fitness import GeneticBase
-from fandango.evolution.algorithm import FANDANGO
 from fandango.language.convert import (
     FandangoSplitter,
     GrammarProcessor,
@@ -17,12 +17,11 @@ from fandango.language.convert import (
 )
 from fandango.language.earley import Parser
 from fandango.language.grammar import Grammar
-from fandango.language.parse import parse
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 
 
-class InteractiveCommands:
+class InteractiveCommands(enum.Enum):
     EXIT = "exit"
     HELP = "help"
     RULES = "rule"
@@ -30,8 +29,50 @@ class InteractiveCommands:
     PYTHON = "python"
     TEST = "test"
     FUZZ = "fuzz"
-    LIST = "list"
     SHOW = "show"
+    DEL = "del"
+    CLEAR = "clear"
+
+    def usage(self):
+        return {
+            InteractiveCommands.EXIT: "exit",
+            InteractiveCommands.HELP: "help [<command>]",
+            InteractiveCommands.RULES: "rule [<rule>]",
+            InteractiveCommands.CONSTRAINTS: "constraint [<constraint>]",
+            InteractiveCommands.PYTHON: "python [<code>]",
+            InteractiveCommands.TEST: "test [<identifier>] [<non-terminal>] <string>",
+            InteractiveCommands.FUZZ: "fuzz",
+            InteractiveCommands.SHOW: "show [<non-terminal> | <identifier>]",
+            InteractiveCommands.DEL: "del <identifier>",
+            InteractiveCommands.CLEAR: "clear",
+        }[self]
+
+    def description(self):
+        return {
+            InteractiveCommands.EXIT: "Exit the interactive mode",
+            InteractiveCommands.HELP: "Show help for a command if specified, otherwise show all commands",
+            InteractiveCommands.RULES: "Add or update a rule. If no rule is specified, this command will open a stream "
+            "where you can write multiple rules (terminate with two newlines)",
+            InteractiveCommands.CONSTRAINTS: "Add a constraint. If no constraint is specified, this command will open "
+            "a stream where you can write multiple constraints "
+            "(terminate with two newlines)",
+            InteractiveCommands.PYTHON: "Add or update a python code. If no code is specified, this command will open "
+            "a stream where you can write multiple python code "
+            "(terminate with two newlines)",
+            InteractiveCommands.TEST: "Test a string against the current specification. If an identifier is specified"
+            ", the constraint with that identifier will be used for testing, otherwise all "
+            "constraints will be used. If a non-terminal is specified, the string will be "
+            "interpreted as a derivation tree from that non-terminal instead of the start "
+            "symbol",
+            InteractiveCommands.FUZZ: "Fuzz a string from the current specification",
+            InteractiveCommands.SHOW: "Show the rule for a non-terminal or the constraint with the specified "
+            "identifier. If no argument is specified, show all rules and constraints",
+            InteractiveCommands.DEL: "Delete a constraint with the specified identifier",
+            InteractiveCommands.CLEAR: "Clear all rules, constraints and python code",
+        }[self]
+
+    def help(self):
+        return f"usage: {self.usage()} \n\n    {self.description()}"
 
 
 class Interactive:
@@ -80,16 +121,16 @@ class Interactive:
         self._grammar: Grammar = self._grammar_processor.get_grammar(
             self._splitter.productions
         )
-        global_vars = {}
-        local_vars = predicates.__dict__
+        self._global_vars = {}
+        self._local_vars = predicates.__dict__
         self._python_processor = PythonProcessor()
         exec(
             ast.unparse(self._python_processor.get_code(self._splitter.python_code)),
-            global_vars,
-            local_vars,
+            self._global_vars,
+            self._local_vars,
         )
         self._constraint_processor = ConstraintProcessor(
-            self._grammar, local_vars, global_vars, lazy=lazy
+            self._grammar, self._local_vars, self._global_vars, lazy=lazy
         )
         constraints = self._constraint_processor.get_constraints(
             self._splitter.constraints
@@ -125,6 +166,40 @@ class Interactive:
         for constraint in new_constraints:
             self._add_constraint(constraint)
         self._updated_constraints = True
+
+    def _update_python(self, python: str):
+        exec(
+            ast.unparse(python),
+            self._global_vars,
+            self._local_vars,
+        )
+
+    def _del(self, identifier: int):
+        del self._constraints[identifier]
+
+    def _clear(self):
+        self._constraints = {}
+        self.constraints_identifier = 0
+        self._grammar = Grammar.dummy()
+        self._fandango = None
+        self._updated_grammar = False
+        self._updated_constraints = False
+        self._local_vars = predicates.__dict__
+        self._global_vars = {}
+
+    def _help(self, command: Optional[str] = None):
+        if command:
+            if command in InteractiveCommands:
+                command = InteractiveCommands[command]
+                print(f"Help for {command.value}\n" f"{command.description()}\n")
+            else:
+                print(f"Command '{command}' not found")
+
+        else:
+            print(
+                f"Commands: {', '.join(InteractiveCommands.__dict__.values())}\n"
+                f"Type 'help <command>' for more information about a command"
+            )
 
     def run(self):
         pass

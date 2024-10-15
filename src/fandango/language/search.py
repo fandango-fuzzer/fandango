@@ -39,6 +39,10 @@ class NonTerminalSearch(abc.ABC):
     def __str__(self):
         return self.__repr__()
 
+    @abc.abstractmethod
+    def get_access_points(self) -> List[NonTerminal]:
+        pass
+
 
 class LengthSearch(NonTerminalSearch):
     def __init__(self, value: NonTerminalSearch):
@@ -60,6 +64,9 @@ class LengthSearch(NonTerminalSearch):
 
     def __repr__(self):
         return f"|{repr(self.value)}|"
+
+    def get_access_points(self):
+        return self.value.get_access_points()
 
 
 class RuleSearch(NonTerminalSearch):
@@ -86,6 +93,9 @@ class RuleSearch(NonTerminalSearch):
 
     def __repr__(self):
         return repr(self.symbol)
+
+    def get_access_points(self):
+        return [self.symbol]
 
 
 class AttributeSearch(NonTerminalSearch):
@@ -118,6 +128,9 @@ class AttributeSearch(NonTerminalSearch):
     def __repr__(self):
         return f"{repr(self.base)}.{repr(self.attribute)}"
 
+    def get_access_points(self):
+        return self.attribute.get_access_points()
+
 
 class StarAttributeSearch(NonTerminalSearch):
     def __init__(self, base: NonTerminalSearch, attribute: NonTerminalSearch):
@@ -148,6 +161,9 @@ class StarAttributeSearch(NonTerminalSearch):
 
     def __repr__(self):
         return f"{repr(self.base)}*{repr(self.attribute)}"
+
+    def get_access_points(self):
+        return self.attribute.get_access_points()
 
 
 class ItemSearch(NonTerminalSearch):
@@ -187,6 +203,9 @@ class ItemSearch(NonTerminalSearch):
             else:
                 slice_reprs.append(repr(slice_))
         return f"{repr(self.base)}[{', '.join(slice_reprs)}]"
+
+    def get_access_points(self):
+        return self.base.get_access_points()
 
 
 class SelectiveSearch(NonTerminalSearch):
@@ -246,3 +265,6 @@ class SelectiveSearch(NonTerminalSearch):
                     slice_reprs += repr(items)
             slice_reprs.append(slice_repr)
         return f"{repr(self.base)}{{{', '.join(slice_reprs)}}}"
+
+    def get_access_points(self):
+        return [symbol for symbol, _ in self.symbols]
