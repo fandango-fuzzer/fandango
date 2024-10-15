@@ -1,13 +1,11 @@
 # evolution/algorithm.py
 import copy
-import itertools
 import random
-import re
 import time
 from typing import List, Set, Tuple
 
 from fandango.constraints.base import Constraint
-from fandango.constraints.fitness import FailingTree, Comparison
+from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
 from fandango.language.earley import Parser
 from fandango.language.grammar import DerivationTree
 from fandango.language.grammar import (
@@ -177,12 +175,12 @@ class FANDANGO:
         evaluation = self.evaluate_individual(individual)
         failing_trees = evaluation[1]
         for failing_tree in failing_trees:
-            if failing_tree.suggestions[1][0] == Comparison.EQUAL:
-                match = re.search(r'<(.*?)>', str(failing_tree.cause))
-                if match:
-                    suggestion = str(failing_tree.suggestions[1][1])
-                    suggestion_tree = self.parser.parse(suggestion, match.group(0))
-                    individual = individual.replace(failing_tree.tree, suggestion_tree)
+            for (operator, value, side) in failing_tree.suggestions:
+                if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
+                    suggested_tree = self.parser.parse(str(value), failing_tree.tree.symbol)
+                    if suggested_tree is None:
+                        continue
+                    individual = individual.replace(failing_tree.tree, suggested_tree)
         return individual
 
     def evaluate_individual(
@@ -309,8 +307,7 @@ class FANDANGO:
 
 
 if __name__ == "__main__":
-    grammar_, constraints_ = parse_file("../../evaluation/experiments/int/int.fan")
+    grammar_, constraints_ = parse_file("../../evaluation/demo/demo.fan")
 
     fandango = FANDANGO(grammar_, constraints_, verbose=False)
-    print(fandango.population)
     fandango.evolve()
