@@ -1,4 +1,6 @@
 # evolution/algorithm.py
+import copy
+import itertools
 import random
 import time
 from typing import List, Set, Tuple
@@ -82,44 +84,50 @@ class FANDANGO:
                 print(f"[DEBUG] - Population: {self.population}")
 
             # Select elites
-            population = self.select_elites()
+            new_population = self.select_elites()
 
             if self.verbose:
-                print(f"[DEBUG] - Elites: {population}")
+                print(f"[DEBUG] - Elites: {new_population}")
 
-            # # Crossover
-            # while len(population) < self.population_size:
-            #     break
+            # Crossover
+            while len(new_population) < self.population_size:
+                if random.random() < self.crossover_rate:
+                    parent1, parent2 = self.tournament_selection()
+                    child1, child2 = self.crossover(parent1, parent2)
+                    new_population.append(child1)
+                    new_population.append(child2)
+                    self.crossovers_made += 1
+
+            new_population = new_population[:self.population_size]
 
             # Mutation
-            for individual in population:
+            for individual in new_population:
                 if random.random() < self.mutation_rate:
-                    population.remove(individual)
-                    population.append(self.mutate(individual))
+                    new_population.remove(individual)
+                    new_population.append(self.mutate(individual))
                     self.mutations_made += 1
 
             # Remove duplicates
-            population = set(population)
+            new_population = set(new_population)
 
             # Add new individuals
-            while len(population) < self.population_size:
-                population.add(self.grammar.fuzz())
+            while len(new_population) < self.population_size:
+                new_population.add(self.grammar.fuzz())
 
             # Evaluate population
-            self.population = population
+            self.population = new_population
             self.evaluation = self.evaluate_population()
             self.fitness = sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
-            cosa = [fitness for _, fitness, _ in self.evaluation]
 
         self.time_taken = time.time() - start_time
+        self.solution = set(itertools.islice(self.solution, self.population_size))
         print(f"[INFO] - Best solution: {self.solution}")
+        print(f"[INFO] - Time taken: {self.time_taken:.2f} seconds")
 
         if self.verbose:
-            print(f"[DEBUG] - Fitness: {self.fitness}")
             print(f"[DEBUG] - Fitness checks: {self.checks_made}")
             print(f"[DEBUG] - Crossovers made: {self.crossovers_made}")
             print(f"[DEBUG] - Mutations made: {self.mutations_made}")
-            print(f"[DEBUG] - Time taken: {self.time_taken:.2f} seconds")
 
         return self.population
 
@@ -202,15 +210,42 @@ class FANDANGO:
         """
         Perform tournament selection to choose two parents for crossover.
         """
-        tournament = random.sample(self.population, self.tournament_size)
-        tournament.sort(key=lambda x: x['fitness'], reverse=True)
-        return tournament[0], tournament[1]
+        tournament = random.sample(self.evaluation, k=self.tournament_size)
+        tournament.sort(key=lambda x: x[1], reverse=True)
+        parent1 = tournament[0][0]
+        parent2 = tournament[1][0]
+        return parent1, parent2
 
-    def crossover(self, parent1: DerivationTree, parent2: DerivationTree) -> [DerivationTree, DerivationTree]:
+    def crossover(self, parent1: DerivationTree, parent2: DerivationTree) -> Tuple[DerivationTree, DerivationTree]:
         """
-        Perform crossover between two parents to generate two children based on the failing trees.
+        Perform crossover between two parents to generate two children by swapping subtrees rooted at a common non-terminal symbol.
         """
-        pass
+        # Get all non-terminal symbols in parent1 and parent2
+        symbols1 = parent1.get_non_terminal_symbols()
+        symbols2 = parent2.get_non_terminal_symbols()
+
+        # Find common non-terminal symbols
+        common_symbols = symbols1.intersection(symbols2)
+
+        if not common_symbols:
+            return parent1, parent2
+
+        # Randomly select a common non-terminal symbol
+        symbol = random.choice(list(common_symbols))
+
+        # Find all nodes with that symbol in parent1 and parent2
+        nodes1 = parent1.find_all_nodes(symbol)
+        nodes2 = parent2.find_all_nodes(symbol)
+
+        # Randomly select one node from each parent
+        node1 = random.choice(nodes1)
+        node2 = random.choice(nodes2)
+
+        # Swap subtrees
+        child1 = parent1.replace(node1, copy.deepcopy(node2))
+        child2 = parent2.replace(node2, copy.deepcopy(node1))
+
+        return child1, child2
 
     def mutate(self, individual: DerivationTree) -> DerivationTree:
         """
@@ -234,7 +269,7 @@ class FANDANGO:
 
 
 if __name__ == "__main__":
-    grammar_, constraints_ = parse_file("../../evaluation/demo/demo.fan")
+    grammar_, constraints_ = parse_file("../../evaluation/experiments/int/int.fan")
 
     fandango = FANDANGO(grammar_, constraints_, verbose=False)
     fandango.evolve()
