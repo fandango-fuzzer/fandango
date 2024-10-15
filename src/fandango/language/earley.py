@@ -213,8 +213,7 @@ class Parser(NodeVisitor):
         for k in range(len(word) + 1):
             visited = set()
             while len(visited) < len(table[k]):
-                remaining: Set[State] = table[k] - visited
-                state: State = remaining.pop()
+                state: State = list(table[k] - visited)[0]
                 visited.add(state)
                 if state.finished():
                     if state.nonterminal == implicit_start and k == len(word):
