@@ -240,6 +240,11 @@ class Grammar:
             start = NonTerminal(start)
         return NonTerminalNode(start).fuzz(self.rules)[0]
 
+    def update(self, grammar: "Grammar" | Dict[NonTerminal, Node]):
+        if isinstance(grammar, Grammar):
+            grammar = grammar.rules
+        self.rules.update(grammar)
+
     def __contains__(self, item: str | NonTerminal):
         if isinstance(item, str):
             item = NonTerminal(item)

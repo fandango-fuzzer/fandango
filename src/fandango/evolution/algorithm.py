@@ -6,7 +6,7 @@ import re
 import time
 from typing import List, Set, Tuple
 
-from build.lib.fandango.language.grammar import DerivationTree
+from fandango.language.grammar import DerivationTree
 from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree, Comparison
 from fandango.language.earley import Parser
@@ -19,16 +19,16 @@ from fandango.language.symbol import NonTerminal
 
 class FANDANGO:
     def __init__(
-            self,
-            grammar: Grammar,
-            constraints: List[Constraint],
-            population_size: int = 100,
-            max_generations: int = 1000,
-            elitism_rate: float = 0.1,
-            crossover_rate: float = 0.8,
-            tournament_size: float = 0.05,
-            mutation_rate: float = 0.2,
-            verbose: bool = False,
+        self,
+        grammar: Grammar,
+        constraints: List[Constraint],
+        population_size: int = 100,
+        max_generations: int = 1000,
+        elitism_rate: float = 0.1,
+        crossover_rate: float = 0.8,
+        tournament_size: float = 0.05,
+        mutation_rate: float = 0.2,
+        verbose: bool = False,
     ):
         """
         Initialize the FANDANGO genetic algorithm. The algorithm will evolve a population of individuals
@@ -69,7 +69,9 @@ class FANDANGO:
 
         # Evaluate population
         self.evaluation = self.evaluate_population()
-        self.fitness = sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+        self.fitness = (
+            sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+        )
 
     def evolve(self) -> Set[DerivationTree]:
         """
@@ -81,7 +83,8 @@ class FANDANGO:
 
         for generation in range(1, self.max_generations + 1):
             print(
-                f"[INFO] - Generation {generation} - Fitness: {self.fitness:.2f} - #solutions found: {len(self.solution)}")
+                f"[INFO] - Generation {generation} - Fitness: {self.fitness:.2f} - #solutions found: {len(self.solution)}"
+            )
 
             if len(self.solution) >= self.population_size:
                 break
@@ -104,7 +107,7 @@ class FANDANGO:
                     new_population.append(child2)
                     self.crossovers_made += 1
 
-            new_population = new_population[:self.population_size]
+            new_population = new_population[: self.population_size]
 
             # Mutation
             for individual in new_population:
@@ -123,7 +126,9 @@ class FANDANGO:
             # Evaluate population
             self.population = new_population
             self.evaluation = self.evaluate_population()
-            self.fitness = sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+            self.fitness = (
+                sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+            )
 
         self.time_taken = time.time() - start_time
         self.solution = set(itertools.islice(self.solution, self.population_size))
@@ -184,7 +189,9 @@ class FANDANGO:
                     suggestion_tree = self.parser.parse(suggestion, rule)
         return individual
 
-    def evaluate_individual(self, individual: DerivationTree) -> Tuple[float, List[FailingTree]]:
+    def evaluate_individual(
+        self, individual: DerivationTree
+    ) -> Tuple[float, List[FailingTree]]:
         """
         Evaluate the fitness of an individual.
 
@@ -214,7 +221,9 @@ class FANDANGO:
         self.fitness_cache[str(individual)] = [fitness, failing_trees]
         return fitness, failing_trees
 
-    def evaluate_population(self) -> List[Tuple[DerivationTree, float, List[FailingTree]]]:
+    def evaluate_population(
+        self,
+    ) -> List[Tuple[DerivationTree, float, List[FailingTree]]]:
         """
         Evaluate the fitness of each individual in the population.
 
@@ -232,8 +241,12 @@ class FANDANGO:
 
         :return: A list of elite individuals.
         """
-        return [x[0] for x in sorted(self.evaluation, key=lambda x: x[1], reverse=True)[
-                              :int(self.elitism_rate * self.population_size)]]
+        return [
+            x[0]
+            for x in sorted(self.evaluation, key=lambda x: x[1], reverse=True)[
+                : int(self.elitism_rate * self.population_size)
+            ]
+        ]
 
     def tournament_selection(self) -> Tuple[DerivationTree, DerivationTree]:
         """
@@ -245,7 +258,9 @@ class FANDANGO:
         parent2 = tournament[1][0]
         return parent1, parent2
 
-    def crossover(self, parent1: DerivationTree, parent2: DerivationTree) -> Tuple[DerivationTree, DerivationTree]:
+    def crossover(
+        self, parent1: DerivationTree, parent2: DerivationTree
+    ) -> Tuple[DerivationTree, DerivationTree]:
         """
         Perform crossover between two parents to generate two children by swapping subtrees rooted at a common non-terminal symbol.
         """
