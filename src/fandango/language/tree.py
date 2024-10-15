@@ -1,5 +1,5 @@
 import copy
-from typing import Optional, List, Any, Union
+from typing import Optional, List, Any, Union, Set
 
 from fandango.language.symbol import Symbol, NonTerminal
 
@@ -10,10 +10,10 @@ class DerivationTree:
     """
 
     def __init__(
-        self,
-        symbol: Symbol,
-        children: Optional[List["DerivationTree"]] = None,
-        parent: Optional["DerivationTree"] = None,
+            self,
+            symbol: Symbol,
+            children: Optional[List["DerivationTree"]] = None,
+            parent: Optional["DerivationTree"] = None,
     ):
         self.symbol = symbol
         self._children = []
@@ -49,7 +49,7 @@ class DerivationTree:
         return [child for child in self._children if child.symbol == symbol]
 
     def __getitem__(
-        self, item, as_list=False
+            self, item, as_list=False
     ) -> Union["DerivationTree", List["DerivationTree"]]:
         items = self._children.__getitem__(item)
         if as_list and not isinstance(items, list):
@@ -159,3 +159,25 @@ class DerivationTree:
                 self.symbol,
                 [child.replace(tree_to_replace, new_subtree) for child in self._children],
             )
+
+    def get_non_terminal_symbols(self) -> Set[NonTerminal]:
+        """
+        Retrieve all non-terminal symbols present in the derivation tree.
+        """
+        symbols = set()
+        if self.symbol.is_non_terminal:
+            symbols.add(self.symbol)
+        for child in self._children:
+            symbols.update(child.get_non_terminal_symbols())
+        return symbols
+
+    def find_all_nodes(self, symbol: NonTerminal) -> List["DerivationTree"]:
+        """
+        Find all nodes in the derivation tree with the given non-terminal symbol.
+        """
+        nodes = []
+        if self.symbol == symbol:
+            nodes.append(self)
+        for child in self._children:
+            nodes.extend(child.find_all_nodes(symbol))
+        return nodes
