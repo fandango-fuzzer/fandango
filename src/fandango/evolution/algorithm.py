@@ -185,9 +185,8 @@ class FANDANGO:
                 match = re.search(r'<(.*?)>', str(failing_tree.cause))
                 if match:
                     suggestion = str(failing_tree.suggestions[1][1])
-                    rule = NonTerminal(match.group(0))
-                    suggestion_tree = self.parser.parse(suggestion, rule)
-                    print(f"[DEBUG] - Suggestion: {suggestion} - Rule: {rule}")
+                    suggestion_tree = self.parser.parse(suggestion, match.group(0))
+                    print(f"[DEBUG] - Suggestion: {suggestion} - Rule: {match.group(0)}")
                     print(f"[DEBUG] - Fixing {failing_tree.cause} with {suggestion_tree}")
         return individual
 
