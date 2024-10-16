@@ -33,6 +33,7 @@ dependencies = [
     "ordered-set>=4.0.2",
     "pytest>=8.3.3",
     "scikit-learn>=1.5.2",
+    "Faker>=30.4.0",
 ]
 
 [project.urls]
