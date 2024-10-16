@@ -1,20 +1,17 @@
 # test_optimizer.py
 import random
 import unittest
-from typing import Set, List
-
-from fuzzingbook.PythonFuzzer import initial_population
+from typing import List
 
 from fandango.constraints.fitness import FailingTree
 from fandango.evolution.algorithm import FANDANGO
-from fandango.language.grammar import Grammar
 from fandango.language.parse import parse_file
 from fandango.language.tree import DerivationTree
 
 class GeneticTest(unittest.TestCase):
     def setUp(self):
         # Define a simple grammar for testing
-        grammar_int, constraints_int = parse_file("resources/int.fan")
+        grammar_int, constraints_int = parse_file("tests/resources/int.fan")
         # grammar_csv, constraints_csv = parse_file("resources/csv.fan")
 
         random.seed(25)  # Set random seed
