@@ -39,6 +39,12 @@ class FailingTree:
     def __eq__(self, other):
         return self.tree == other.tree and self.cause == other.cause
 
+    def __repr__(self):
+        return f"FailingTree({self.tree}, {self.cause}, {self.suggestions})"
+
+    def __str__(self):
+        return self.__repr__()
+
 
 class Fitness(abc.ABC):
     def __init__(self, success: bool, failing_trees: List[FailingTree] = None):
@@ -136,7 +142,9 @@ class GeneticBase(abc.ABC):
     ):
         nodes: List[List[Tuple[str, DerivationTree]]] = []
         for name, search in self.searches.items():
-            nodes.append([(name, node) for node in search.find(tree, scope=scope)])
+            nodes.append(
+                [(name, container) for container in search.find(tree, scope=scope)]
+            )
         return itertools.product(*nodes)
 
     def check(

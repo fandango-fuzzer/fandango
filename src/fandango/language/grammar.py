@@ -141,13 +141,7 @@ class NonTerminalNode(Node):
         if self.symbol not in grammar:
             raise ValueError(f"Symbol {self.symbol} not found in grammar")
         if self.symbol in grammar.generators:
-            tree = grammar.generate(self.symbol)
-            if tree:
-                return [tree]
-            else:
-                raise ValueError(
-                    f"Could not parse generated value for {self.symbol} by {grammar.generators[self.symbol]}"
-                )
+            return [grammar.generate(self.symbol)]
         children = grammar[self.symbol].fuzz(grammar)
         return [DerivationTree(self.symbol, children)]
 
@@ -484,7 +478,13 @@ class Grammar:
         )
 
     def generate(self, symbol: str | NonTerminal = "<start>") -> str:
-        return self.parse(self.generate_string(symbol), symbol)
+        string = self.generate_string(symbol)
+        tree = self.parse(string, symbol)
+        if tree is None:
+            raise ValueError(
+                f"Failed to parse generated string: {string} for {symbol} with generator {self.generators[symbol]}"
+            )
+        return tree
 
     def fuzz(self, start: str | NonTerminal = "<start>") -> DerivationTree:
         if isinstance(start, str):
@@ -538,7 +538,9 @@ class Grammar:
             ]
         )
 
-    def get_repr_for_rule(self, symbol: NonTerminal):
+    def get_repr_for_rule(self, symbol: str | NonTerminal):
+        if isinstance(symbol, str):
+            symbol = NonTerminal(symbol)
         return (
             f"{symbol} ::= {self.rules[symbol]}"
             f"{' :: ' + self.generators[symbol] if symbol in self.generators else ''};"
