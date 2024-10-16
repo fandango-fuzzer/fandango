@@ -4,9 +4,11 @@ import random
 import time
 from typing import List, Set, Tuple
 
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics import jaccard_score
+
 from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
-from fandango.language.earley import Parser
 from fandango.language.grammar import DerivationTree
 from fandango.language.grammar import (
     Grammar,
@@ -16,16 +18,17 @@ from fandango.language.parse import parse_file
 
 class FANDANGO:
     def __init__(
-            self,
-            grammar: Grammar,
-            constraints: List[Constraint],
-            population_size: int = 50,
-            max_generations: int = 100,
-            elitism_rate: float = 0.1,
-            crossover_rate: float = 0.8,
-            tournament_size: float = 0.05,
-            mutation_rate: float = 0.2,
-            verbose: bool = False,
+        self,
+        grammar: Grammar,
+        constraints: List[Constraint],
+        population_size: int = 50,
+        initial_population: Set[DerivationTree] = None,
+        max_generations: int = 100,
+        elitism_rate: float = 0.1,
+        crossover_rate: float = 0.8,
+        tournament_size: float = 0.05,
+        mutation_rate: float = 0.2,
+        verbose: bool = False,
     ):
         """
         Initialize the FANDANGO genetic algorithm. The algorithm will evolve a population of individuals
@@ -40,6 +43,7 @@ class FANDANGO:
         :param mutation_rate: The rate of individuals that will undergo mutation.
         :param verbose: Whether to print information about the evolution process.
         """
+        print(f" ---------- Initializing FANDANGO algorithm ---------- ")
         self.grammar = grammar
         self.constraints = constraints
         self.population_size = population_size
@@ -50,7 +54,6 @@ class FANDANGO:
         self.elitism_rate = elitism_rate
 
         self.fitness_cache = {}
-        self.parser = Parser(grammar)
 
         self.verbose = verbose
         self.fixes_made = 0
@@ -62,13 +65,23 @@ class FANDANGO:
 
         # Initialize population
         self.solution = list()
-        self.population = self.generate_random_initial_population()
+
+        if initial_population is not None:
+            self.population = list(initial_population)
+        else:
+            print("[INFO] - Generating initial population...")
+            st_time = time.time()
+            self.population = self.generate_random_initial_population()
+            print(
+                f"[INFO] - Initial population generated in {time.time() - st_time:.2f} seconds"
+            )
 
         # Evaluate population
         self.evaluation = self.evaluate_population()
         self.fitness = (
-                sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+            sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
+        print(f" ---------- Starting evolution ---------- ")
 
     def evolve(self) -> List[DerivationTree]:
         """
@@ -79,12 +92,13 @@ class FANDANGO:
         start_time = time.time()
 
         for generation in range(1, self.max_generations + 1):
-            print(
-                f"[INFO] - Generation {generation} - Fitness: {self.fitness:.2f} - #solutions found: {len(self.solution)}"
-            )
-
             if len(self.solution) >= self.population_size or self.fitness >= 0.99:
                 break
+
+            print(
+                f"[INFO] - Generation {generation} - Fitness: {self.fitness:.2f} - "
+                f"#solutions found: {len(self.solution)}"
+            )
 
             # Select elites
             new_population = self.select_elites()
@@ -120,16 +134,28 @@ class FANDANGO:
             self.population = fixed_population
             self.evaluation = self.evaluate_population()
             self.fitness = (
-                    sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+                sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
 
         self.time_taken = time.time() - start_time
-        self.solution = self.population[: self.population_size]
+        self.solution = self.solution[: self.population_size]
 
-        print(f"[INFO] - Solutions found: ({len(self.solution)}) - Fitness of population: {self.fitness:.2f}")
+        if len(self.solution) >= self.population_size:
+            self.population = self.solution
+            self.fitness = 1.0
+
+        self.population = self.population[: self.population_size]
+
+        print(f" ---------- Evolution finished ---------- ")
+        print(
+            f"[INFO] - Perfect solutions found: ({len(self.solution)}) "
+            f"- Fitness of final population: {self.fitness:.2f}"
+        )
+        print(f"[INFO] - Time taken: {self.time_taken:.2f} seconds")
 
         if self.verbose:
-            print(f"[INFO] - Time taken: {self.time_taken:.2f} seconds")
+            print(f" ---------- FANDANGO statistics ---------- ")
+            print(f"[DEBUG] - Diversity score: {self.compute_diversity_score():.2f}")
             print(f"[DEBUG] - Fixes made: {self.fixes_made}")
             print(f"[DEBUG] - Fitness checks: {self.checks_made}")
             print(f"[DEBUG] - Crossovers made: {self.crossovers_made}")
@@ -169,9 +195,11 @@ class FANDANGO:
         evaluation = self.evaluate_individual(individual)
         failing_trees = evaluation[1]
         for failing_tree in failing_trees:
-            for (operator, value, side) in failing_tree.suggestions:
+            for operator, value, side in failing_tree.suggestions:
                 if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
-                    suggested_tree = self.parser.parse(str(value), failing_tree.tree.symbol)
+                    suggested_tree = self.grammar.parse(
+                        str(value), failing_tree.tree.symbol
+                    )
                     if suggested_tree is None:
                         continue
                     individual = individual.replace(failing_tree.tree, suggested_tree)
@@ -179,7 +207,7 @@ class FANDANGO:
         return individual
 
     def evaluate_individual(
-            self, individual: DerivationTree
+        self, individual: DerivationTree
     ) -> Tuple[float, List[FailingTree]]:
         """
         Evaluate the fitness of an individual.
@@ -203,7 +231,7 @@ class FANDANGO:
             self.checks_made += 1
 
         # Normalize fitness
-        fitness = fitness / len(self.constraints)
+        fitness /= len(self.constraints)
         if fitness >= 0.99:
             self.solution.append(individual)
 
@@ -211,7 +239,7 @@ class FANDANGO:
         return fitness, failing_trees
 
     def evaluate_population(
-            self,
+        self,
     ) -> List[Tuple[DerivationTree, float, List[FailingTree]]]:
         """
         Evaluate the fitness of each individual in the population.
@@ -221,6 +249,8 @@ class FANDANGO:
         evaluation = []
         for individual in self.population:
             fitness, failing_trees = self.evaluate_individual(individual)
+            if len(self.solution) >= self.population_size:
+                break
             evaluation.append((individual, fitness, failing_trees))
         return evaluation
 
@@ -233,8 +263,8 @@ class FANDANGO:
         return [
             x[0]
             for x in sorted(self.evaluation, key=lambda x: x[1], reverse=True)[
-                     : int(self.elitism_rate * self.population_size)
-                     ]
+                : int(self.elitism_rate * self.population_size)
+            ]
         ]
 
     def tournament_selection(self) -> Tuple[DerivationTree, DerivationTree]:
@@ -247,11 +277,13 @@ class FANDANGO:
         parent2 = tournament[1][0]
         return parent1, parent2
 
+    # noinspection PyMethodMayBeStatic
     def crossover(
-            self, parent1: DerivationTree, parent2: DerivationTree
+        self, parent1: DerivationTree, parent2: DerivationTree
     ) -> Tuple[DerivationTree, DerivationTree]:
         """
-        Perform crossover between two parents to generate two children by swapping subtrees rooted at a common non-terminal symbol.
+        Perform crossover between two parents to generate two children by swapping subtrees rooted at a common
+        non-terminal symbol.
         """
         # Get all non-terminal symbols in parent1 and parent2
         symbols1 = parent1.get_non_terminal_symbols()
@@ -300,9 +332,50 @@ class FANDANGO:
                 self.mutations_made += 1
         return individual
 
+    def compute_diversity_score(self, ngram_range=(2, 2)):
+        """
+        Compute the diversity score of a list of strings based on pairwise Jaccard distance.
+
+        Args:
+        - str_list: List of strings to evaluate.
+        - ngram_range: The n-gram range for tokenization (default is bigrams).
+
+        Returns:
+        - diversity_score: A number between 0 and 1 representing the overall diversity.
+        """
+        population = [str(x) for x in self.population]
+
+        # Step 1: Convert strings into n-gram sets using CountVectorizer
+        vectorizer = CountVectorizer(analyzer='char', ngram_range=ngram_range, binary=True)
+        ngram_matrix = vectorizer.fit_transform(population).toarray()
+
+        # Step 2: Compute pairwise Jaccard distances
+        num_strings = len(population)
+        total_distance = 0
+        num_pairs = 0
+
+        # Iterate over all pairs of strings to compute average dissimilarity
+        for i in range(num_strings):
+            for j in range(i + 1, num_strings):
+                # Compute Jaccard similarity
+                sim = jaccard_score(ngram_matrix[i], ngram_matrix[j])
+                # Convert to Jaccard distance
+                distance = 1 - sim
+                total_distance += distance
+                num_pairs += 1
+
+        # Step 3: Compute the average Jaccard distance (dissimilarity)
+        if num_pairs == 0:
+            return 0  # Only one string, no diversity
+
+        avg_dissimilarity = total_distance / num_pairs
+
+        # Return diversity score (between 0 and 1)
+        return avg_dissimilarity
+
 
 if __name__ == "__main__":
     grammar_, constraints_ = parse_file("../../evaluation/demo/demo.fan")
 
-    fandango = FANDANGO(grammar_, constraints_, verbose=True, max_generations=10)
+    fandango = FANDANGO(grammar_, constraints_, verbose=True, population_size=50)
     fandango.evolve()
