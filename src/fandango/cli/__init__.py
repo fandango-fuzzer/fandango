@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 
+from fandango.cli.interactive import Interactive
 from fandango.constants import INTERACTIVE
 from fandango.logger import LOGGER
 
@@ -16,7 +17,7 @@ def get_parser():
     arguments.add_argument(
         "--version",
         action="version",
-        version=importlib.metadata.version("tests4py"),
+        version=importlib.metadata.version("fandango"),
         help="Show version number",
     )
 
@@ -89,7 +90,8 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
         LOGGER.setLevel(logging.DEBUG)
 
     if args.command == INTERACTIVE:
-        interactive(args.fan, args.grammar, args.constraints, args.python)
+        interactive = Interactive(args.fan, args.grammar, args.constraints, args.python)
+        interactive.run()
 
 
 if __name__ == "__main__":

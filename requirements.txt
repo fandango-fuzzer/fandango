@@ -5,7 +5,9 @@ deap>=1.4.1
 scipy>=1.14.1
 fuzzingbook>=1.2.1
 pegen>=0.3.0
-pytest
+pytest~=8.3.2
 parameterized>=0.9.0
-Faker
+Faker~=30.1.0
 ordered-set>=4.1.0
+fandango~=0.0.1
+scikit-learn~=1.5.1
