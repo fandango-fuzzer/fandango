@@ -5,7 +5,8 @@
 <statement> ::= '<statement>\n' <info> <sender> <receiver> '</statement>' ;
 <info> ::= '   <info>\n' <currency> <stmt_date> <amount>'   </info>' ;
 <currency> ::= '      <currency>' 'EUR' '</currency>\n' | '      <currency>' 'USD' '</currency>\n' ;
-<stmt_date> ::= '      <stmt_date>' 'dummy_date' '</stmt_date>\n' ;
+<stmt_date> ::= '      <stmt_date>' <now> '</stmt_date>\n' ;
+<now> ::= <digit>* ;
 <amount> ::= '      <amount>' <am> '</amount>\n' ;
 <am> ::= <digit>* ;
 <sender> ::= '\n   <sender>' <account_no> <bank_key> <start_balance> <end_balance> '   </sender>' ;

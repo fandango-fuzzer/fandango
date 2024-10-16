@@ -86,14 +86,8 @@ class FANDANGO:
             if len(self.solution) >= self.population_size or self.fitness >= 0.99:
                 break
 
-            if self.verbose:
-                print(f"[DEBUG] - Population: {self.population}")
-
             # Select elites
             new_population = self.select_elites()
-
-            if self.verbose:
-                print(f"[DEBUG] - Elites: {new_population}")
 
             # Crossover
             while len(new_population) < self.population_size:
@@ -131,11 +125,11 @@ class FANDANGO:
 
         self.time_taken = time.time() - start_time
         self.solution = self.population[: self.population_size]
-        print(f"[INFO] - Solutions found: ({len(self.solution)}): {self.solution}")
-        print(f"[INFO] - Best population: {self.solution}")
-        print(f"[INFO] - Time taken: {self.time_taken:.2f} seconds")
+
+        print(f"[INFO] - Solutions found: ({len(self.solution)}) - Fitness of population: {self.fitness:.2f}")
 
         if self.verbose:
+            print(f"[INFO] - Time taken: {self.time_taken:.2f} seconds")
             print(f"[DEBUG] - Fixes made: {self.fixes_made}")
             print(f"[DEBUG] - Fitness checks: {self.checks_made}")
             print(f"[DEBUG] - Crossovers made: {self.crossovers_made}")
@@ -181,6 +175,7 @@ class FANDANGO:
                     if suggested_tree is None:
                         continue
                     individual = individual.replace(failing_tree.tree, suggested_tree)
+                    self.fixes_made += 1
         return individual
 
     def evaluate_individual(
@@ -309,5 +304,5 @@ class FANDANGO:
 if __name__ == "__main__":
     grammar_, constraints_ = parse_file("../../evaluation/demo/demo.fan")
 
-    fandango = FANDANGO(grammar_, constraints_, verbose=False)
+    fandango = FANDANGO(grammar_, constraints_, verbose=True)
     fandango.evolve()
