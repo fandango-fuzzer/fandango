@@ -141,7 +141,7 @@ class NonTerminalNode(Node):
         if self.symbol not in grammar:
             raise ValueError(f"Symbol {self.symbol} not found in grammar")
         if self.symbol in grammar.generators:
-            tree = grammar.parse(eval(grammar.generators[self.symbol]), self.symbol)
+            tree = grammar.generate(self.symbol)
             if tree:
                 return [tree]
             else:
@@ -476,12 +476,15 @@ class Grammar:
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
 
-    def generate(self, symbol: str | NonTerminal = "<start>") -> str:
+    def generate_string(self, symbol: str | NonTerminal = "<start>") -> str:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         return eval(
             self.generators[symbol], self._global_variables, self._local_variables
         )
+
+    def generate(self, symbol: str | NonTerminal = "<start>") -> str:
+        return self.parse(self.generate_string(symbol), symbol)
 
     def fuzz(self, start: str | NonTerminal = "<start>") -> DerivationTree:
         if isinstance(start, str):
