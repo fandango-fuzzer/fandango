@@ -2,10 +2,15 @@
 
 import time
 
+from faker import Faker
+fake = Faker()
+
+import hashlib
+
 # Grammar for XML Bank Transaction
 
 <start> ::= <xml_bank_transaction> ;
-<xml_bank_transaction> ::= '<?xml version="1.0" encoding="windows-1251"?>\n' <statement> ;
+<xml_bank_transaction> ::= '<?xml version="1.0" encoding="windows-1251"?>\n' <hash> <statement> ;
 <statement> ::= '<statement>\n' <info> <sender> <receiver> '</statement>' ;
 <info> ::= '   <info>\n' <currency> <stmt_date> <amount>'   </info>' ;
 <currency> ::= '      <currency>' 'EUR' '</currency>\n' | '      <currency>' 'USD' '</currency>\n' ;
@@ -13,8 +18,10 @@ import time
 <timestamp> ::= <digit>* :: str(int(time.time())) ;
 <amount> ::= '      <amount>' <am> '</amount>\n' ;
 <am> ::= <digit>* ;
-<sender> ::= '\n   <sender>' <account_no> <bank_key> <start_balance> <end_balance> '   </sender>' ;
-<receiver> ::= '\n   <receiver>' <account_no> <bank_key> <start_balance> <end_balance> '   </receiver>\n' ;
+<sender> ::= '\n   <sender>' <name> <account_no> <bank_key> <start_balance> <end_balance> '   </sender>' ;
+<receiver> ::= '\n   <receiver>' <name> <account_no> <bank_key> <start_balance> <end_balance> '   </receiver>\n' ;
+<name> ::= '\n      <name>' <name_str> '</name>' ;
+<name_str> ::= <letter>* :: str(fake.name()).upper();
 <account_no> ::= '\n      <account_no>' <account_number> '</account_no>\n' ;
 <account_number> ::= <digit><digit><digit><digit><digit> <digit><digit><digit><digit><digit> <digit><digit><digit><digit><digit> <digit><digit><digit><digit><digit> <digit><digit> ;
 <bank_key> ::= '      <bank_key>' <bank_id> '</bank_key>\n' ;
@@ -24,7 +31,15 @@ import time
 <end_balance> ::= '      <end_balance>' <end_bal> '</end_balance>\n' ;
 <end_bal> ::= <digit>* ;
 <digit> ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' ;
+<letter> ::= ' ' | '.' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' ;
+<hash> ::= '<hash>' <hash_val> '</hash>\n' ;
+<hash_val> ::= <hex>* ;
+<hex> ::= <digit> | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' ;
 
+# The <hash> value needs to be the hash of <info>.
 
+def produce_hash(string):
+    return hashlib.sha256(string.encode()).hexdigest()
 
+str(<hash_val>) == produce_hash(str(<info>));
 
