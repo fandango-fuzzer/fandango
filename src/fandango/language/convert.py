@@ -84,6 +84,7 @@ class GrammarProcessor(FandangoParserVisitor):
                         "Searches in expressions are currently not supported."
                     )
                 grammar.set_generator(symbol, ast.unparse(expr))
+        grammar.update_parser()
         return grammar
 
     def visitAlternative(self, ctx: FandangoParser.AlternativeContext):

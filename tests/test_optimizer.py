@@ -8,6 +8,7 @@ from fandango.evolution.algorithm import FANDANGO
 from fandango.language.parse import parse_file
 from fandango.language.tree import DerivationTree
 
+
 class GeneticTest(unittest.TestCase):
     def setUp(self):
         # Define a simple grammar for testing
@@ -37,7 +38,7 @@ class GeneticTest(unittest.TestCase):
         self.assertEqual(len(population), self.fandango.population_size)
         for individual in population:
             self.assertIsInstance(individual, DerivationTree)
-            self.assertTrue(self.fandango.parser.parse(str(individual)))
+            self.assertTrue(self.fandango.grammar.parse(str(individual)))
 
     def test_evaluate_fitness(self):
         # Evaluate the fitness of the population
@@ -49,7 +50,7 @@ class GeneticTest(unittest.TestCase):
             self.assertIsInstance(failing_trees, List)
             for failing_tree in failing_trees:
                 self.assertIsInstance(failing_tree, FailingTree)
-            self.assertTrue(self.fandango.parser.parse(str(individual)))
+            self.assertTrue(self.fandango.grammar.parse(str(individual)))
 
     def test_evaluate_population(self):
         # Evaluate the fitness of the population
@@ -65,17 +66,19 @@ class GeneticTest(unittest.TestCase):
 
         # Check that the population is valid
         for individual in self.fandango.population:
-            self.assertTrue(self.fandango.parser.parse(str(individual)))
+            self.assertTrue(self.fandango.grammar.parse(str(individual)))
 
     def test_select_elites(self):
         # Select the elites
         elites = self.fandango.select_elites()
 
-        self.assertEqual(len(elites), self.fandango.elitism_rate * self.fandango.population_size)
+        self.assertEqual(
+            len(elites), self.fandango.elitism_rate * self.fandango.population_size
+        )
 
         # Check that the population is valid
         for individual in elites:
-            self.assertTrue(self.fandango.parser.parse(str(individual)))
+            self.assertTrue(self.fandango.grammar.parse(str(individual)))
 
     def test_selection(self):
         # Select the parents
@@ -94,7 +97,7 @@ class GeneticTest(unittest.TestCase):
 
         # Check that the population is valid
         for individual in [parent1, parent2]:
-            self.assertTrue(self.fandango.parser.parse(str(individual)))
+            self.assertTrue(self.fandango.grammar.parse(str(individual)))
 
     def test_crossover(self):
         # Select the parents
@@ -112,7 +115,7 @@ class GeneticTest(unittest.TestCase):
 
         # Check that the population is valid
         for individual in children:
-            self.assertTrue(self.fandango.parser.parse(str(individual)))
+            self.assertTrue(self.fandango.grammar.parse(str(individual)))
 
     def test_mutation(self):
         # Select the parents
@@ -133,7 +136,7 @@ class GeneticTest(unittest.TestCase):
 
         # Check that the population is valid
         for individual in [mutant1, mutant2]:
-            self.assertTrue(self.fandango.parser.parse(str(individual)))
+            self.assertTrue(self.fandango.grammar.parse(str(individual)))
 
     def test_evolve(self):
         initial_population = self.fandango.population
@@ -151,7 +154,7 @@ class GeneticTest(unittest.TestCase):
 
         # Check that the population is valid
         for individual in self.fandango.population:
-            self.assertTrue(self.fandango.parser.parse(str(individual)))
+            self.assertTrue(self.fandango.grammar.parse(str(individual)))
 
 
 if __name__ == "__main__":
