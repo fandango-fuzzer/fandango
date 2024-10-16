@@ -1,11 +1,9 @@
 # Imports
 
 import time
-
 from faker import Faker
 fake = Faker()
 
-import hashlib
 
 # Grammar for XML Bank Transaction
 
@@ -35,6 +33,8 @@ import hashlib
 <hash> ::= '<hash>' <hash_val> '</hash>\n' ;
 <hash_val> ::= <hex>* ;
 <hex> ::= <digit> | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' ;
+
+
 # Constraints
 
 ## The <amount> must be greater than 0.
@@ -55,7 +55,4 @@ int(<sender>*<end_bal>) == compute_end_balance_sender(int(<sender>*<st_bal>), in
 ## The <end_balance> of receiver must be equal to the <start_balance> + <amount>.
 
 int(<receiver>*<end_bal>) == int(<receiver>*<st_bal>) + int(<am>);
-
-## The <hash> must be equal to the hash of the <info>.
-
 
