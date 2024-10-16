@@ -7,25 +7,35 @@ from fandango.constraints.base import (
     DisjunctionConstraint,
     ImplicationConstraint,
     ExpressionConstraint,
-    Comparison,
     ComparisonConstraint,
     ExistsConstraint,
     ForallConstraint,
     Constraint,
     Value,
 )
+from fandango.constraints.fitness import Comparison
 from fandango.language.grammar import (
     Grammar,
     Alternative,
     Concatenation,
     Star,
-    NonTerminal,
+    NonTerminalNode,
     CharSet,
-    Terminal,
+    TerminalNode,
+    Plus,
+    Option,
 )
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.parser.FandangoParserVisitor import FandangoParserVisitor
-from fandango.language.search import AttributeSearch, RuleSearch, LengthSearch
+from fandango.language.search import (
+    AttributeSearch,
+    RuleSearch,
+    LengthSearch,
+    StarAttributeSearch,
+    ItemSearch,
+    SelectiveSearch,
+)
+from fandango.language.symbol import Terminal, NonTerminal
 
 
 class FandangoSplitter(FandangoParserVisitor):
@@ -46,12 +56,12 @@ class FandangoSplitter(FandangoParserVisitor):
 
 class GrammarProcessor(FandangoParserVisitor):
     def get_grammar(self, productions: List[FandangoParser.ProductionContext]):
-        rules = {}
+        grammar = Grammar()
         for production in productions:
-            rules[production.RULE_NAME().getText()] = self.visit(
+            grammar[production.RULE_NAME().getText()] = self.visit(
                 production.alternative()
             )
-        return Grammar(rules)
+        return grammar
 
     def visitAlternative(self, ctx: FandangoParser.AlternativeContext):
         return Alternative([self.visit(child) for child in ctx.concatenation()])
@@ -62,11 +72,17 @@ class GrammarProcessor(FandangoParserVisitor):
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
         return Star(self.visit(ctx.symbol()))
 
+    def visitPlus(self, ctx: FandangoParser.PlusContext):
+        return Plus(self.visit(ctx.symbol()))
+
+    def visitOption(self, ctx: FandangoParser.OptionContext):
+        return Option(self.visit(ctx.symbol()))
+
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
         if ctx.RULE_NAME():
-            return NonTerminal(ctx.RULE_NAME().getText())
+            return NonTerminalNode(NonTerminal(ctx.RULE_NAME().getText()))
         elif ctx.STRING():
-            return Terminal.from_symbol(ctx.STRING().getText())
+            return TerminalNode(Terminal.from_symbol(ctx.STRING().getText()))
         elif ctx.char_set():
             return CharSet(ctx.char_set().getText())
         elif ctx.alternative():
@@ -278,23 +294,66 @@ class SearchProcessor(FandangoParserVisitor):
         self.identifier_id += 1
         return identifier
 
+    def visitRs_pairs(self, ctx: FandangoParser.Rs_pairsContext):
+        symbols = list()
+        slices = list()
+        for child in ctx.rs_pair():
+            sym, items = self.visitRs_pair(child)
+            symbols.append(sym)
+            slices.append(items)
+        return symbols, slices
+
+    def visitRs_pair(self, ctx: FandangoParser.Rs_pairContext):
+        symbol = (NonTerminal(ctx.RULE_NAME().getText()), False if ctx.STAR() else True)
+        if ctx.rs_slice():
+            return symbol, self.visitRs_slice(ctx.rs_slice())
+        return symbol, None
+
+    def visitRs_slice(self, ctx: FandangoParser.Rs_sliceContext):
+        if ctx.COLON():
+            return slice(
+                int(ctx.NUMBER(0).getText()) if ctx.NUMBER(0) else None,
+                int(ctx.NUMBER(1).getText()) if ctx.NUMBER(1) else None,
+                int(ctx.NUMBER(2).getText()) if ctx.NUMBER(2) else None,
+            )
+        else:
+            return int(ctx.NUMBER().getText())
+
+    def visitRs_slices(self, ctx: FandangoParser.Rs_slicesContext):
+        return [self.visitRs_slice(child) for child in ctx.rs_slice()]
+
+    def visitBase_selection(self, ctx: FandangoParser.Base_selectionContext):
+        if ctx.RULE_NAME():
+            return RuleSearch(NonTerminal(ctx.RULE_NAME().getText()))
+        elif ctx.selector():
+            return self.get_attribute_searches(ctx.selector())
+        else:
+            raise ValueError(f"Unknown base selection: {ctx.getText()}")
+
     def transform_selection(self, ctx: FandangoParser.SelectionContext):
-        return RuleSearch(NonTerminal(ctx.RULE_NAME().getText()), self.grammar)
+        base = self.visitBase_selection(ctx.base_selection())
+        if ctx.rs_pairs():
+            symbols, slices = self.visitRs_pairs(ctx.rs_pairs())
+            return SelectiveSearch(base, symbols, slices)
+        elif ctx.rs_slices():
+            return ItemSearch(base, self.visitRs_slices(ctx.rs_slices()))
+        return base
 
     def get_attribute_searches(self, ctx: FandangoParser.SelectorContext):
         search = self.transform_selection(ctx.selection())
-        if ctx.selector():
-            return AttributeSearch(
-                self.get_attribute_searches(ctx.selector()), search, self.grammar
+        if ctx.DOT():
+            return AttributeSearch(self.get_attribute_searches(ctx.selector()), search)
+        elif ctx.STAR():
+            return StarAttributeSearch(
+                self.get_attribute_searches(ctx.selector()), search
             )
         else:
             return search
 
     def visitSelector_length(self, ctx: FandangoParser.Selector_lengthContext):
-        tree, searches, search_map = self.visit(ctx.selector())
+        tree, searches, search_map = self.visitSelector(ctx.selector())
         if ctx.OR_OP():
-            search = [LengthSearch(searches[0], grammar=self.grammar)]
-            search_map[tree.id] = search[0]
+            search_map[tree.id] = LengthSearch(searches[0])
         return tree, searches, search_map
 
     def visitSelector(self, ctx: FandangoParser.SelectorContext):

@@ -1,14 +1,23 @@
 import abc
 import random
-import copy
 from typing import Dict, List, Optional
 
-MAX_REPETITIONS = 40
+from fandango.language.symbol import NonTerminal, Terminal
+from fandango.language.tree import DerivationTree
+
+MAX_REPETITIONS = 50
 
 
 class Node(abc.ABC):
-    def fuzz(self, rules: Dict[str, "Node"]) -> List["DerivationTree"]:
+    def fuzz(self, rules: Dict[str, "Node"]) -> List[DerivationTree]:
         return ""
+
+    @abc.abstractmethod
+    def accept(self, visitor: "NodeVisitor"):
+        raise NotImplementedError("accept method not implemented")
+
+    def children(self):
+        return []
 
     def __repr__(self):
         return ""
@@ -21,8 +30,20 @@ class Alternative(Node):
     def __init__(self, alternatives: list[Node]):
         self.alternatives = alternatives
 
-    def fuzz(self, rules: Dict[str, "Node"]) -> List["DerivationTree"]:
+    def fuzz(self, rules: Dict[str, Node]) -> List[DerivationTree]:
         return random.choice(self.alternatives).fuzz(rules)
+
+    def accept(self, visitor: "NodeVisitor"):
+        return visitor.visitAlternative(self)
+
+    def children(self):
+        return self.alternatives
+
+    def __getitem__(self, item):
+        return self.alternatives.__getitem__(item)
+
+    def __len__(self):
+        return len(self.alternatives)
 
     def __repr__(self):
         return "(" + "|".join(map(repr, self.alternatives)) + ")"
@@ -32,8 +53,20 @@ class Concatenation(Node):
     def __init__(self, nodes: list[Node]):
         self.nodes = nodes
 
-    def fuzz(self, rules: Dict[str, "Node"]) -> List["DerivationTree"]:
+    def fuzz(self, rules: Dict[str, Node]) -> List[DerivationTree]:
         return sum([node.fuzz(rules) for node in self.nodes], [])
+
+    def accept(self, visitor: "NodeVisitor"):
+        return visitor.visitConcatenation(self)
+
+    def children(self):
+        return self.nodes
+
+    def __getitem__(self, item):
+        return self.nodes.__getitem__(item)
+
+    def __len__(self):
+        return len(self.nodes)
 
     def __repr__(self):
         return " ".join(map(repr, self.nodes))
@@ -49,7 +82,10 @@ class Repetition(Node):
         self.min = min_
         self.max = max_
 
-    def fuzz(self, rules: Dict[str, "Node"]) -> List["DerivationTree"]:
+    def accept(self, visitor: "NodeVisitor"):
+        return visitor.visitRepetition(self)
+
+    def fuzz(self, rules: Dict[str, Node]) -> List[DerivationTree]:
         return sum(
             [self.node.fuzz(rules) for _ in range(random.randint(self.min, self.max))],
             [],
@@ -63,6 +99,9 @@ class Star(Repetition):
     def __init__(self, node: Node):
         super().__init__(node, 0)
 
+    def accept(self, visitor: "NodeVisitor"):
+        return visitor.visitStar(self)
+
     def __repr__(self):
         return f"{self.node}*"
 
@@ -70,6 +109,9 @@ class Star(Repetition):
 class Plus(Repetition):
     def __init__(self, node: Node):
         super().__init__(node, 1)
+
+    def accept(self, visitor: "NodeVisitor"):
+        return visitor.visitPlus(self)
 
     def __repr__(self):
         return f"{self.node}+"
@@ -79,52 +121,51 @@ class Option(Repetition):
     def __init__(self, node: Node):
         super().__init__(node, 0, 1)
 
+    def accept(self, visitor: "NodeVisitor"):
+        return visitor.visitOption(self)
+
     def __repr__(self):
         return f"{self.node}?"
 
 
-class NonTerminal(Node):
-    def __init__(self, symbol: str):
+class NonTerminalNode(Node):
+    def __init__(self, symbol: NonTerminal):
         self.symbol = symbol
 
-    def fuzz(self, rules: Dict[str, "Node"]) -> List["DerivationTree"]:
+    def fuzz(self, rules: Dict[NonTerminal, Node]) -> List[DerivationTree]:
         if self.symbol not in rules:
             raise ValueError(f"Symbol {self.symbol} not found in rules")
         children = rules[self.symbol].fuzz(rules)
-        return [DerivationTree(self, children)]
+        return [DerivationTree(self.symbol, children)]
+
+    def accept(self, visitor: "NodeVisitor"):
+        return visitor.visitNonTerminalNode(self)
 
     def __repr__(self):
-        return self.symbol
+        return self.symbol.__repr__()
 
     def __eq__(self, other):
-        return isinstance(other, NonTerminal) and self.symbol == other.symbol
+        return isinstance(other, NonTerminalNode) and self.symbol == other.symbol
 
     def __hash__(self):
         return hash(self.symbol)
 
 
-class Terminal(Node):
-    def __init__(self, symbol: str):
+class TerminalNode(Node):
+    def __init__(self, symbol: Terminal):
         self.symbol = symbol
 
-    def fuzz(self, rules: Dict[str, "Node"]) -> List["DerivationTree"]:
-        return [DerivationTree(self)]
+    def fuzz(self, rules: Dict[str, Node]) -> List[DerivationTree]:
+        return [DerivationTree(self.symbol)]
 
-    @staticmethod
-    def clean(symbol: str) -> str:
-        if symbol[0] == symbol[-1] == "'" or symbol[0] == symbol[-1] == '"':
-            return eval(symbol)
-        return symbol
-
-    @staticmethod
-    def from_symbol(symbol: str) -> "Terminal":
-        return Terminal(Terminal.clean(symbol))
+    def accept(self, visitor: "NodeVisitor"):
+        return visitor.visitTerminalNode(self)
 
     def __repr__(self):
-        return f'"{self.symbol}"'
+        return self.symbol.__repr__()
 
     def __eq__(self, other):
-        return isinstance(other, Terminal) and self.symbol == other.symbol
+        return isinstance(other, TerminalNode) and self.symbol == other.symbol
 
     def __hash__(self):
         return hash(self.symbol)
@@ -137,124 +178,91 @@ class CharSet(Node):
     def fuzz(self, rules: Dict[str, "Node"]) -> List["DerivationTree"]:
         raise NotImplementedError("CharSet fuzzing not implemented")
 
+    def accept(self, visitor: "NodeVisitor"):
+        return visitor.visitCharSet(self)
 
-class DerivationTree:
-    """
-    This class is used to represent a node in the derivation tree.
-    """
 
-    def __init__(
-        self,
-        symbol: NonTerminal | Terminal,
-        children: Optional[List["DerivationTree"]] = None,
-        parent: Optional["DerivationTree"] = None,
-    ):
-        self.symbol = symbol
-        self.children = children or []
-        self.parent = parent
-        for child in self.children:
-            child.parent = self
+class NodeVisitor(abc.ABC):
+    def visit(self, node: Node):
+        return node.accept(self)
 
-    def __tree__(self):
-        return self.symbol, [child.__tree__() for child in self.children]
+    def default_result(self):
+        pass
 
-    def __deepcopy__(self, memo):
-        if id(self) in memo:
-            return memo[id(self)]
+    def aggregate_results(self, aggregate, result):
+        pass
 
-        # Create a new instance without copying the parent
-        copied = DerivationTree(self.symbol, [])
-        memo[id(self)] = copied
+    def visitChildren(self, node: Node):
+        # noinspection PyNoneFunctionAssignment
+        result = self.default_result()
+        for child in node.children():
+            # noinspection PyNoneFunctionAssignment
+            result = self.aggregate_results(result, self.visit(child))
+        return result
 
-        # Deepcopy the children
-        copied.children = [copy.deepcopy(child, memo) for child in self.children]
+    def visitAlternative(self, node: Alternative):
+        return self.visitChildren(node)
 
-        # Set parent pointers
-        for child in copied.children:
-            child.parent = copied
+    def visitConcatenation(self, node: Concatenation):
+        return self.visitChildren(node)
 
-        # Set the parent to None or update if necessary
-        copied.parent = None  # or copy.deepcopy(self.parent, memo) if parent is needed
+    def visitRepetition(self, node: Repetition):
+        return self.visit(node.node)
 
-        return copied
+    def visitStar(self, node: Star):
+        return self.visit(node.node)
 
-    def __repr__(self):
-        if isinstance(self.symbol, NonTerminal):
-            return "".join([repr(child) for child in self.children])
-        elif isinstance(self.symbol, Terminal):
-            return self.symbol.symbol
-        else:
-            raise ValueError("Invalid symbol type")
+    def visitPlus(self, node: Plus):
+        return self.visit(node.node)
 
-    def to_int(self):
-        try:
-            return int(self.__repr__())
-        except ValueError:
-            return None
+    def visitOption(self, node: Option):
+        return self.visit(node.node)
 
-    def to_float(self):
-        try:
-            return int(self.__repr__())
-        except ValueError:
-            return None
+    # noinspection PyUnusedLocal
+    def visitNonTerminalNode(self, node: NonTerminalNode):
+        return self.default_result()
 
-    def to_complex(self):
-        try:
-            return complex(self.__repr__())
-        except ValueError:
-            return None
+    # noinspection PyUnusedLocal
+    def visitTerminalNode(self, node: TerminalNode):
+        return self.default_result()
 
-    def is_int(self):
-        try:
-            int(self.__repr__())
-        except ValueError:
-            return False
-        return True
-
-    def is_float(self):
-        try:
-            float(self.__repr__())
-        except ValueError:
-            return False
-        return True
-
-    def is_complex(self):
-        try:
-            complex(self.__repr__())
-        except ValueError:
-            return False
-        return True
-
-    def is_num(self):
-        return self.is_float()
-
-    def __str__(self):
-        return self.__repr__()
-
-    def __hash__(self):
-        """
-        Computes a hash of the derivation tree based on its structure and symbols.
-        """
-        return hash((self.symbol, tuple(hash(child) for child in self.children)))
+    # noinspection PyUnusedLocal
+    def visitCharSet(self, node: CharSet):
+        return self.default_result()
 
 
 class Grammar:
-    def __init__(self, rules: Dict[str, Node]):
-        self.rules = rules
+    def __init__(self, rules: Optional[Dict[NonTerminal, Node]] = None):
+        self.rules = rules or {}
 
-    def fuzz(self, start: str = "<start>") -> DerivationTree:
-        return NonTerminal(start).fuzz(self.rules)[0]
+    def fuzz(self, start: str | NonTerminal = "<start>") -> DerivationTree:
+        if isinstance(start, str):
+            start = NonTerminal(start)
+        return NonTerminalNode(start).fuzz(self.rules)[0]
 
-    def __contains__(self, item: str):
+    def update(self, grammar: "Grammar" | Dict[NonTerminal, Node]):
+        if isinstance(grammar, Grammar):
+            grammar = grammar.rules
+        self.rules.update(grammar)
+
+    def __contains__(self, item: str | NonTerminal):
+        if isinstance(item, str):
+            item = NonTerminal(item)
         return item in self.rules
 
-    def __getitem__(self, item: str):
+    def __getitem__(self, item: str | NonTerminal):
+        if isinstance(item, str):
+            item = NonTerminal(item)
         return self.rules[item]
 
-    def __setitem__(self, key: str, value: Node):
+    def __setitem__(self, key: str | NonTerminal, value: Node):
+        if isinstance(key, str):
+            key = NonTerminal(key)
         self.rules[key] = value
 
-    def __delitem__(self, key: str):
+    def __delitem__(self, key: str | NonTerminal):
+        if isinstance(key, str):
+            key = NonTerminal(key)
         del self.rules[key]
 
     def __iter__(self):

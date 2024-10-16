@@ -1,66 +1,19 @@
 import abc
-import enum
 import itertools
 from copy import copy
-from typing import Tuple, List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional
 
-from fandango.constraints.fitness import ConstraintFitness, Fitness, ValueFitness
-from fandango.language.grammar import DerivationTree, NonTerminal
+from fandango.constraints.fitness import (
+    ConstraintFitness,
+    ValueFitness,
+    GeneticBase,
+    FailingTree,
+    Comparison,
+    ComparisonSide,
+)
 from fandango.language.search import NonTerminalSearch
-
-
-class GeneticBase(abc.ABC):
-    def __init__(
-        self,
-        searches: Optional[Dict[str, NonTerminalSearch]] = None,
-        local_variables: Optional[Dict[str, Any]] = None,
-        global_variables: Optional[Dict[str, Any]] = None,
-    ):
-        self.searches = searches or dict()
-        self.local_variables = local_variables or dict()
-        self.global_variables = global_variables or dict()
-
-    @abc.abstractmethod
-    def fitness(
-        self,
-        tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
-    ) -> Fitness:
-        raise NotImplementedError("Fitness function not implemented")
-
-    @staticmethod
-    def get_hash(
-        tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
-    ):
-        return hash((tree, tuple((scope or {}).items())))
-
-    def combinations(
-        self,
-        trees: List[DerivationTree],
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
-    ):
-        nodes: List[List[Tuple[str, DerivationTree]]] = []
-        for name, search in self.searches.items():
-            nodes.append([(name, node) for node in search.find_all(trees, scope=scope)])
-        return itertools.product(*nodes)
-
-    def check(
-        self,
-        tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
-    ):
-        return self.fitness(tree, scope).success
-
-    def get_failing_nodes(self, tree: DerivationTree):
-        return self.fitness(tree).failing_trees
-
-    @abc.abstractmethod
-    def __repr__(self):
-        pass
-
-    def __str__(self):
-        return self.__repr__()
+from fandango.language.symbol import NonTerminal
+from fandango.language.tree import DerivationTree
 
 
 class Value(GeneticBase):
@@ -82,12 +35,12 @@ class Value(GeneticBase):
         else:
             trees = []
             values = []
-            for combination in self.combinations([tree], scope):
+            for combination in self.combinations(tree, scope):
                 local_variables = self.local_variables.copy()
                 local_variables.update({name: node for name, node in combination})
                 for _, node in combination:
                     if node not in trees:
-                        trees.append(node)
+                        trees.append(FailingTree(node, self))
                 try:
                     values.append(
                         eval(self.expression, self.global_variables, local_variables)
@@ -143,7 +96,7 @@ class ExpressionConstraint(Constraint):
         if tree is None:
             return ConstraintFitness(0, 0, False)
         has_combinations = False
-        for combination in self.combinations([tree], scope):
+        for combination in self.combinations(tree, scope):
             has_combinations = True
             local_variables = self.local_variables.copy()
             local_variables.update({name: node for name, node in combination})
@@ -153,7 +106,7 @@ class ExpressionConstraint(Constraint):
                 else:
                     for _, node in combination:
                         if node not in failing_trees:
-                            failing_trees.append(node)
+                            failing_trees.append(FailingTree(node, self))
             except:
                 pass
             total += 1
@@ -175,15 +128,6 @@ class ExpressionConstraint(Constraint):
         return representation
 
 
-class Comparison(enum.Enum):
-    EQUAL = "=="
-    NOT_EQUAL = "!="
-    GREATER = ">"
-    GREATER_EQUAL = ">="
-    LESS = "<"
-    LESS_EQUAL = "<="
-
-
 class ComparisonConstraint(Constraint):
     def __init__(self, operator: Comparison, left: str, right: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -201,39 +145,84 @@ class ComparisonConstraint(Constraint):
         total = 0
         failing_trees = []
         has_combinations = False
-        for combination in self.combinations([tree], scope):
+        for combination in self.combinations(tree, scope):
             has_combinations = True
             local_variables = self.local_variables.copy()
             local_variables.update({name: node for name, node in combination})
             try:
                 left = eval(self.left, self.global_variables, local_variables)
                 right = eval(self.right, self.global_variables, local_variables)
+                suggestions = []
                 is_solved = False
                 match self.operator:
                     case Comparison.EQUAL:
                         if left == right:
                             is_solved = True
+                        else:
+                            suggestions.append(
+                                (Comparison.EQUAL, left, ComparisonSide.RIGHT)
+                            )
+                            suggestions.append(
+                                (Comparison.EQUAL, right, ComparisonSide.LEFT)
+                            )
                     case Comparison.NOT_EQUAL:
                         if left != right:
                             is_solved = True
+                        else:
+                            suggestions.append(
+                                (Comparison.NOT_EQUAL, left, ComparisonSide.RIGHT)
+                            )
+                            suggestions.append(
+                                (Comparison.NOT_EQUAL, right, ComparisonSide.LEFT)
+                            )
                     case Comparison.GREATER:
                         if left > right:
                             is_solved = True
+                        else:
+                            suggestions.append(
+                                (Comparison.LESS, left, ComparisonSide.RIGHT)
+                            )
+                            suggestions.append(
+                                (Comparison.GREATER, right, ComparisonSide.LEFT)
+                            )
                     case Comparison.GREATER_EQUAL:
                         if left >= right:
                             is_solved = True
+                        else:
+                            suggestions.append(
+                                (Comparison.LESS_EQUAL, left, ComparisonSide.RIGHT)
+                            )
+                            suggestions.append(
+                                (Comparison.GREATER_EQUAL, right, ComparisonSide.LEFT)
+                            )
                     case Comparison.LESS:
                         if left < right:
                             is_solved = True
+                        else:
+                            suggestions.append(
+                                (Comparison.GREATER, left, ComparisonSide.RIGHT)
+                            )
+                            suggestions.append(
+                                (Comparison.LESS, right, ComparisonSide.LEFT)
+                            )
                     case Comparison.LESS_EQUAL:
                         if left <= right:
                             is_solved = True
+                        else:
+                            suggestions.append(
+                                (Comparison.GREATER_EQUAL, left, ComparisonSide.RIGHT)
+                            )
+                            suggestions.append(
+                                (Comparison.LESS_EQUAL, right, ComparisonSide.LEFT)
+                            )
                 if is_solved:
                     solved += 1
                 else:
                     for _, node in combination:
                         if node not in failing_trees:
-                            failing_trees.append(node)
+                            failing_trees.append(
+                                FailingTree(node, self, suggestions=suggestions)
+                            )
             except:
                 pass
             total += 1
@@ -402,7 +391,7 @@ class ExistsConstraint(Constraint):
             return copy(self.cache[tree_hash])
         fitness_values = list()
         scope = scope or dict()
-        for dt in self.search.find_all(trees=[tree], scope=scope):
+        for dt in self.search.find(tree, scope=scope):
             scope[self.bound] = dt
             fitness = self.statement.fitness(tree, scope)
             fitness_values.append(fitness)
@@ -453,7 +442,7 @@ class ForallConstraint(Constraint):
             return copy(self.cache[tree_hash])
         fitness_values = list()
         scope = scope or dict()
-        for dt in self.search.find_all(trees=[tree], scope=scope):
+        for dt in self.search.find(tree, scope=scope):
             scope[self.bound] = dt
             fitness = self.statement.fitness(tree, scope)
             fitness_values.append(fitness)
