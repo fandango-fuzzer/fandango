@@ -7,11 +7,10 @@ def main():
     # Load the fandango file
     grammar, constraints = parse_file("demo.fan")
 
-    fandango = FANDANGO(grammar, constraints)
+    fandango = FANDANGO(grammar, constraints, desired_solutions=1)
     fandango.evolve()
 
-    for i in range(1):
-        print(fandango.population[i])
+    print(fandango.solution)
 
 
 if __name__ == "__main__":

@@ -22,6 +22,7 @@ class FANDANGO:
             grammar: Grammar,
             constraints: List[Constraint],
             population_size: int = 100,
+            desired_solutions: int = 0,
             initial_population: List[DerivationTree] = None,
             max_generations: int = 1000,
             elitism_rate: float = 0.1,
@@ -66,6 +67,8 @@ class FANDANGO:
         # Initialize population
         self.solution = list()
 
+        self.desired_solutions = desired_solutions
+
         if initial_population is not None:
             self.population = list(initial_population)
         else:
@@ -92,7 +95,11 @@ class FANDANGO:
         start_time = time.time()
 
         for generation in range(1, self.max_generations + 1):
-            if len(self.solution) >= self.population_size or self.fitness >= 0.99:
+            if self.fitness >= 0.99:
+                break
+            if self.desired_solutions == 0 and len(self.solution) >= self.population_size:
+                break
+            if 0 < self.desired_solutions <= len(self.solution):
                 break
 
             print(
@@ -131,20 +138,23 @@ class FANDANGO:
                 fixed_population.append(self.fix_individual(individual))
 
             # Evaluate population
-            self.population = fixed_population
+            self.population = fixed_population[: self.population_size]
             self.evaluation = self.evaluate_population()
             self.fitness = (
                     sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
 
         self.time_taken = time.time() - start_time
-        self.solution = self.solution[: self.population_size]
+        if self.desired_solutions == 0:
+            self.solution = self.solution[:self.population_size]
+        else:
+            self.solution = self.solution[:self.desired_solutions]
 
         if len(self.solution) >= self.population_size:
             self.population = self.solution
             self.fitness = 1.0
 
-        self.population = self.population[: self.population_size]
+        self.population = self.population
 
         print(f" ---------- Evolution finished ---------- ")
         print(
@@ -226,7 +236,6 @@ class FANDANGO:
             if result.success:
                 fitness += result.fitness()
             else:
-                print(f"[DEBUG] - Failing tree: {result.failing_trees}")
                 failing_trees.extend(result.failing_trees)
                 fitness += result.fitness()
             self.checks_made += 1
