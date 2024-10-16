@@ -19,7 +19,7 @@ class FANDANGO:
             self,
             grammar: Grammar,
             constraints: List[Constraint],
-            population_size: int = 100,
+            population_size: int = 50,
             max_generations: int = 100,
             elitism_rate: float = 0.1,
             crossover_rate: float = 0.8,
@@ -304,5 +304,5 @@ class FANDANGO:
 if __name__ == "__main__":
     grammar_, constraints_ = parse_file("../../evaluation/demo/demo.fan")
 
-    fandango = FANDANGO(grammar_, constraints_, verbose=True)
+    fandango = FANDANGO(grammar_, constraints_, verbose=True, max_generations=10)
     fandango.evolve()
