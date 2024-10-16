@@ -11,18 +11,20 @@ from fuzzingbook.GrammarFuzzer import (
     FasterGrammarFuzzer,
 )
 
-from fandango.constraints.base import ComparisonConstraint, Comparison
+from fandango.constraints.base import ComparisonConstraint
+from fandango.constraints.fitness import Comparison
 from fandango.language.convert import (
     FandangoSplitter,
     GrammarProcessor,
     SearchProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import Alternative, Grammar, NonTerminal
+from fandango.language.grammar import Alternative, Grammar
 from fandango.language.parse import parse
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.search import RuleSearch
+from fandango.language.symbol import NonTerminal, Terminal
 
 FANDANGO_GRAMMAR = """
     <start> ::= <number>;

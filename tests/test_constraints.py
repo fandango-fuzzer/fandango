@@ -1,7 +1,8 @@
 import unittest
 
 
-from fandango.language.grammar import DerivationTree, Terminal, NonTerminal
+from fandango.language.symbol import NonTerminal, Terminal
+from fandango.language.tree import DerivationTree
 from fandango.language.parse import parse
 
 
@@ -32,7 +33,8 @@ class ConstraintTest(unittest.TestCase):
                             NonTerminal("<ab>"),
                             [
                                 DerivationTree(
-                                    NonTerminal("<ab>"), [DerivationTree(Terminal(""))]
+                                    NonTerminal("<ab>"),
+                                    [DerivationTree(Terminal(""))],
                                 ),
                                 DerivationTree(Terminal("b")),
                             ],
@@ -377,4 +379,4 @@ int(<number>) < 100000;
                 self.assertEqual(1 if sat else 0, fitness.solved)
                 if not sat:
                     self.assertEqual(1, len(fitness.failing_trees))
-                    self.assertIn(tree, fitness.failing_trees)
+                    self.assertEqual(tree, fitness.failing_trees[0].tree)

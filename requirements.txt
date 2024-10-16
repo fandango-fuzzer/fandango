@@ -1,9 +1,11 @@
 antlr4-python3-runtime>=4.13
 matplotlib>=3.9.2
-numpy==2.1.1
+numpy>=2.1.2
 deap>=1.4.1
 scipy>=1.14.1
 fuzzingbook>=1.2.1
 pegen>=0.3.0
 pytest
 parameterized>=0.9.0
+Faker
+ordered-set>=4.1.0
