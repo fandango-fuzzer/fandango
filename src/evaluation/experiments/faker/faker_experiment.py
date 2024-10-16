@@ -8,10 +8,10 @@ def evaluate_faker():
     print(grammar)
     print(constraints)
 
-    # fandango = FANDANGO(grammar, constraints, population_size=10, max_generations=3000)
-    # fandango.evolve()
-    #
-    # print(fandango.solution)
+    fandango = FANDANGO(grammar, constraints, verbose=True)
+    fandango.evolve()
+
+    print(fandango.solution)
 
 
 if __name__ == "__main__":
