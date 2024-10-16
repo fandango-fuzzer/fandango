@@ -1,6 +1,6 @@
 import unittest
 
-from fandango.language.earley import Parser, State
+from fandango.language.grammar import ParseState
 from fandango.language.parse import parse
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
@@ -27,14 +27,13 @@ class ParserTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.grammar, _ = parse(cls.FANDANGO_GRAMMAR)
-        cls.parser = Parser(cls.grammar)
 
     def test_rules(self):
-        self.assertEqual(len(self.parser._rules), 4)
-        self.assertEqual(len(self.parser._implicit_rules), 1)
+        self.assertEqual(len(self.grammar._parser._rules), 4)
+        self.assertEqual(len(self.grammar._parser._implicit_rules), 1)
         self.assertEqual(
             [[NonTerminal("<number>")]],
-            self.parser._rules[NonTerminal("<start>")],
+            self.grammar._parser._rules[NonTerminal("<start>")],
         )
         self.assertEqual(
             [
@@ -44,7 +43,7 @@ class ParserTests(unittest.TestCase):
                 ],
                 [Terminal("0")],
             ],
-            self.parser._rules[NonTerminal("<number>")],
+            self.grammar._parser._rules[NonTerminal("<number>")],
         )
         self.assertEqual(
             [
@@ -58,7 +57,7 @@ class ParserTests(unittest.TestCase):
                 [Terminal("8")],
                 [Terminal("9")],
             ],
-            self.parser._rules[NonTerminal("<non_zero>")],
+            self.grammar._parser._rules[NonTerminal("<non_zero>")],
         )
         self.assertEqual(
             [
@@ -73,7 +72,7 @@ class ParserTests(unittest.TestCase):
                 [Terminal("8")],
                 [Terminal("9")],
             ],
-            self.parser._rules[NonTerminal("<digit>")],
+            self.grammar._parser._rules[NonTerminal("<digit>")],
         )
         self.assertEqual(
             [
@@ -83,13 +82,13 @@ class ParserTests(unittest.TestCase):
                     NonTerminal("<*0*>"),
                 ],
             ],
-            self.parser._implicit_rules[NonTerminal("<*0*>")],
+            self.grammar._parser._implicit_rules[NonTerminal("<*0*>")],
         )
 
     def test_parse_table(self):
-        table = self.parser.parse_table("1")
+        table = self.grammar._parser.parse_table("1")
         self.assertIn(
-            State(NonTerminal("<*start*>"), 0, (NonTerminal("<start>"),), dot=1),
+            ParseState(NonTerminal("<*start*>"), 0, (NonTerminal("<start>"),), dot=1),
             table[1],
         )
 
@@ -107,11 +106,10 @@ class TestComplexParsing(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.grammar, _ = parse(cls.GRAMMAR)
-        cls.parser = Parser(cls.grammar)
 
     def _test(self, example, tree):
-        for actual_tree in self.parser.parse(example, "<ab>"):
-            self.assertEqual(tree, actual_tree)
+        actual_tree = self.grammar.parse(example, "<ab>")
+        self.assertEqual(tree, actual_tree)
 
     def test_bb(self):
         self._test(
