@@ -562,3 +562,6 @@ class Grammar:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         return self.generators.get(symbol, None)
+
+    def update_parser(self):
+        self._parser = Grammar.Parser(self.rules)

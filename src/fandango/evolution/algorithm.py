@@ -5,7 +5,7 @@ import time
 from typing import List, Set, Tuple
 
 from fandango.constraints.base import Constraint
-from fandango.constraints.fitness import FailingTree, Comparison
+from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
 from fandango.language.grammar import DerivationTree
 from fandango.language.grammar import (
     Grammar,
@@ -15,17 +15,17 @@ from fandango.language.parse import parse_file
 
 class FANDANGO:
     def __init__(
-            self,
-            grammar: Grammar,
-            constraints: List[Constraint],
-            population_size: int = 50,
-            initial_population: Set[DerivationTree] = None,
-            max_generations: int = 100,
-            elitism_rate: float = 0.1,
-            crossover_rate: float = 0.8,
-            tournament_size: float = 0.05,
-            mutation_rate: float = 0.2,
-            verbose: bool = False,
+        self,
+        grammar: Grammar,
+        constraints: List[Constraint],
+        population_size: int = 50,
+        initial_population: Set[DerivationTree] = None,
+        max_generations: int = 100,
+        elitism_rate: float = 0.1,
+        crossover_rate: float = 0.8,
+        tournament_size: float = 0.05,
+        mutation_rate: float = 0.2,
+        verbose: bool = False,
     ):
         """
         Initialize the FANDANGO genetic algorithm. The algorithm will evolve a population of individuals
@@ -51,7 +51,6 @@ class FANDANGO:
         self.elitism_rate = elitism_rate
 
         self.fitness_cache = {}
-        self.parser = Parser(grammar)
 
         self.verbose = verbose
         self.fixes_made = 0
@@ -70,7 +69,9 @@ class FANDANGO:
             print("[INFO] - Generating initial population...")
             st_time = time.time()
             self.population = self.generate_random_initial_population()
-            print(f"[INFO] - Initial population generated in {time.time() - st_time:.2f} seconds")
+            print(
+                f"[INFO] - Initial population generated in {time.time() - st_time:.2f} seconds"
+            )
 
         # Evaluate population
         self.evaluation = self.evaluate_population()
@@ -144,7 +145,9 @@ class FANDANGO:
 
         print(f" ---------- Evolution finished ---------- ")
         print(
-            f"[INFO] - Perfect solutions found: ({len(self.solution)}) - Fitness of final population: {self.fitness:.2f}")
+            f"[INFO] - Perfect solutions found: ({len(self.solution)}) "
+            f"- Fitness of final population: {self.fitness:.2f}"
+        )
         print(f"[INFO] - Time taken: {self.time_taken:.2f} seconds")
 
         if self.verbose:
@@ -188,9 +191,11 @@ class FANDANGO:
         evaluation = self.evaluate_individual(individual)
         failing_trees = evaluation[1]
         for failing_tree in failing_trees:
-            for (operator, value, side) in failing_tree.suggestions:
+            for operator, value, side in failing_tree.suggestions:
                 if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
-                    suggested_tree = self.parser.parse(str(value), failing_tree.tree.symbol)
+                    suggested_tree = self.grammar.parse(
+                        str(value), failing_tree.tree.symbol
+                    )
                     if suggested_tree is None:
                         continue
                     individual = individual.replace(failing_tree.tree, suggested_tree)
@@ -230,7 +235,7 @@ class FANDANGO:
         return fitness, failing_trees
 
     def evaluate_population(
-            self,
+        self,
     ) -> List[Tuple[DerivationTree, float, List[FailingTree]]]:
         """
         Evaluate the fitness of each individual in the population.

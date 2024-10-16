@@ -32,56 +32,56 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(len(self.grammar._parser._rules), 4)
         self.assertEqual(len(self.grammar._parser._implicit_rules), 1)
         self.assertEqual(
-            [[NonTerminal("<number>")]],
+            {(NonTerminal("<number>"),)},
             self.grammar._parser._rules[NonTerminal("<start>")],
         )
         self.assertEqual(
-            [
-                [
+            {
+                (
                     NonTerminal("<non_zero>"),
                     NonTerminal("<*0*>"),
-                ],
-                [Terminal("0")],
-            ],
+                ),
+                (Terminal("0"),),
+            },
             self.grammar._parser._rules[NonTerminal("<number>")],
         )
         self.assertEqual(
-            [
-                [Terminal("1")],
-                [Terminal("2")],
-                [Terminal("3")],
-                [Terminal("4")],
-                [Terminal("5")],
-                [Terminal("6")],
-                [Terminal("7")],
-                [Terminal("8")],
-                [Terminal("9")],
-            ],
+            {
+                (Terminal("1"),),
+                (Terminal("2"),),
+                (Terminal("3"),),
+                (Terminal("4"),),
+                (Terminal("5"),),
+                (Terminal("6"),),
+                (Terminal("7"),),
+                (Terminal("8"),),
+                (Terminal("9"),),
+            },
             self.grammar._parser._rules[NonTerminal("<non_zero>")],
         )
         self.assertEqual(
-            [
-                [Terminal("0")],
-                [Terminal("1")],
-                [Terminal("2")],
-                [Terminal("3")],
-                [Terminal("4")],
-                [Terminal("5")],
-                [Terminal("6")],
-                [Terminal("7")],
-                [Terminal("8")],
-                [Terminal("9")],
-            ],
+            {
+                (Terminal("0"),),
+                (Terminal("1"),),
+                (Terminal("2"),),
+                (Terminal("3"),),
+                (Terminal("4"),),
+                (Terminal("5"),),
+                (Terminal("6"),),
+                (Terminal("7"),),
+                (Terminal("8"),),
+                (Terminal("9"),),
+            },
             self.grammar._parser._rules[NonTerminal("<digit>")],
         )
         self.assertEqual(
-            [
-                [Terminal("")],
-                [
+            {
+                (),
+                (
                     NonTerminal("<digit>"),
                     NonTerminal("<*0*>"),
-                ],
-            ],
+                ),
+            },
             self.grammar._parser._implicit_rules[NonTerminal("<*0*>")],
         )
 
