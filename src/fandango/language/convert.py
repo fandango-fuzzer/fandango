@@ -44,6 +44,12 @@ class FandangoSplitter(FandangoParserVisitor):
         self.constraints = []
         self.python_code = []
 
+    def visitFandango(self, ctx: FandangoParser.FandangoContext):
+        self.productions = []
+        self.constraints = []
+        self.python_code = []
+        self.visitChildren(ctx)
+
     def visitProduction(self, ctx: FandangoParser.ProductionContext):
         self.productions.append(ctx)
 
@@ -55,12 +61,30 @@ class FandangoSplitter(FandangoParserVisitor):
 
 
 class GrammarProcessor(FandangoParserVisitor):
+    def __init__(
+        self,
+        local_variables: Optional[Dict[str, Any]] = None,
+        global_variables: Optional[Dict[str, Any]] = None,
+    ):
+        self.local_variables = local_variables
+        self.global_variables = global_variables
+        self.searches = SearchProcessor(Grammar.dummy())
+
     def get_grammar(self, productions: List[FandangoParser.ProductionContext]):
-        grammar = Grammar()
+        grammar = Grammar(
+            local_variables=self.local_variables, global_variables=self.global_variables
+        )
         for production in productions:
-            grammar[production.RULE_NAME().getText()] = self.visit(
-                production.alternative()
-            )
+            symbol = NonTerminal(production.RULE_NAME().getText())
+            grammar[symbol] = self.visit(production.alternative())
+            if production.expression():
+                expr, searches, _ = self.searches.visit(production.expression())
+                if searches:
+                    raise UnsupportedOperation(
+                        "Searches in expressions are currently not supported."
+                    )
+                grammar.set_generator(symbol, ast.unparse(expr))
+        grammar.update_parser()
         return grammar
 
     def visitAlternative(self, ctx: FandangoParser.AlternativeContext):
