@@ -35,11 +35,27 @@ import hashlib
 <hash> ::= '<hash>' <hash_val> '</hash>\n' ;
 <hash_val> ::= <hex>* ;
 <hex> ::= <digit> | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' ;
+# Constraints
 
-# The <hash> value needs to be the hash of <info>.
+## The <amount> must be greater than 0.
 
-def produce_hash(string):
-    return hashlib.sha256(string.encode()).hexdigest()
+int(<am>) > 0;
 
-str(<hash_val>) == produce_hash(str(<info>));
+## The sender <start_balance> must be greater than the <amount>.
+
+int(<sender>*<end_bal>) > int(<am>);
+
+## The <end_balance> of sender must be equal to the <start_balance> - <amount>.
+
+def compute_end_balance_sender(start_balance, amount):
+    return start_balance - amount
+
+int(<sender>*<end_bal>) == compute_end_balance_sender(int(<sender>*<st_bal>), int(<am>));
+
+## The <end_balance> of receiver must be equal to the <start_balance> + <amount>.
+
+int(<receiver>*<end_bal>) == int(<receiver>*<st_bal>) + int(<am>);
+
+## The <hash> must be equal to the hash of the <info>.
+
 
