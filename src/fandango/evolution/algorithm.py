@@ -20,6 +20,7 @@ class FANDANGO:
             grammar: Grammar,
             constraints: List[Constraint],
             population_size: int = 50,
+            initial_population: Set[DerivationTree] = None,
             max_generations: int = 100,
             elitism_rate: float = 0.1,
             crossover_rate: float = 0.8,
@@ -40,6 +41,7 @@ class FANDANGO:
         :param mutation_rate: The rate of individuals that will undergo mutation.
         :param verbose: Whether to print information about the evolution process.
         """
+        print(f" ---------- Initializing FANDANGO algorithm ---------- ")
         self.grammar = grammar
         self.constraints = constraints
         self.population_size = population_size
@@ -62,13 +64,21 @@ class FANDANGO:
 
         # Initialize population
         self.solution = list()
-        self.population = self.generate_random_initial_population()
+
+        if initial_population is not None:
+            self.population = list(initial_population)
+        else:
+            print("[INFO] - Generating initial population...")
+            st_time = time.time()
+            self.population = self.generate_random_initial_population()
+            print(f"[INFO] - Initial population generated in {time.time() - st_time:.2f} seconds")
 
         # Evaluate population
         self.evaluation = self.evaluate_population()
         self.fitness = (
                 sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
+        print(f" ---------- Starting evolution ---------- ")
 
     def evolve(self) -> List[DerivationTree]:
         """
@@ -79,12 +89,12 @@ class FANDANGO:
         start_time = time.time()
 
         for generation in range(1, self.max_generations + 1):
+            if len(self.solution) >= self.population_size or self.fitness >= 0.99:
+                break
+
             print(
                 f"[INFO] - Generation {generation} - Fitness: {self.fitness:.2f} - #solutions found: {len(self.solution)}"
             )
-
-            if len(self.solution) >= self.population_size or self.fitness >= 0.99:
-                break
 
             # Select elites
             new_population = self.select_elites()
@@ -124,12 +134,21 @@ class FANDANGO:
             )
 
         self.time_taken = time.time() - start_time
-        self.solution = self.population[: self.population_size]
+        self.solution = self.solution[: self.population_size]
 
-        print(f"[INFO] - Solutions found: ({len(self.solution)}) - Fitness of population: {self.fitness:.2f}")
+        if len(self.solution) >= self.population_size:
+            self.population = self.solution
+            self.fitness = 1.0
+
+        self.population = self.population[: self.population_size]
+
+        print(f" ---------- Evolution finished ---------- ")
+        print(
+            f"[INFO] - Perfect solutions found: ({len(self.solution)}) - Fitness of final population: {self.fitness:.2f}")
+        print(f"[INFO] - Time taken: {self.time_taken:.2f} seconds")
 
         if self.verbose:
-            print(f"[INFO] - Time taken: {self.time_taken:.2f} seconds")
+            print(f" ---------- FANDANGO statistics ---------- ")
             print(f"[DEBUG] - Fixes made: {self.fixes_made}")
             print(f"[DEBUG] - Fitness checks: {self.checks_made}")
             print(f"[DEBUG] - Crossovers made: {self.crossovers_made}")
@@ -221,6 +240,8 @@ class FANDANGO:
         evaluation = []
         for individual in self.population:
             fitness, failing_trees = self.evaluate_individual(individual)
+            if len(self.solution) >= self.population_size:
+                break
             evaluation.append((individual, fitness, failing_trees))
         return evaluation
 
@@ -304,5 +325,5 @@ class FANDANGO:
 if __name__ == "__main__":
     grammar_, constraints_ = parse_file("../../evaluation/demo/demo.fan")
 
-    fandango = FANDANGO(grammar_, constraints_, verbose=True, max_generations=10)
+    fandango = FANDANGO(grammar_, constraints_, verbose=False)
     fandango.evolve()

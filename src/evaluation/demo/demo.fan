@@ -5,8 +5,8 @@
 <statement> ::= '<statement>\n' <info> <sender> <receiver> '</statement>' ;
 <info> ::= '   <info>\n' <currency> <stmt_date> <amount>'   </info>' ;
 <currency> ::= '      <currency>' 'EUR' '</currency>\n' | '      <currency>' 'USD' '</currency>\n' ;
-<stmt_date> ::= '      <stmt_date>' <now> '</stmt_date>\n' ;
-<now> ::= <digit>* ;
+<stmt_date> ::= '      <stmt_date>' <timestamp> '</stmt_date>\n' ;
+<timestamp> ::= <digit>* ;
 <amount> ::= '      <amount>' <am> '</amount>\n' ;
 <am> ::= <digit>* ;
 <sender> ::= '\n   <sender>' <account_no> <bank_key> <start_balance> <end_balance> '   </sender>' ;
@@ -41,4 +41,6 @@ int(<sender>*<end_bal>) == compute_end_balance_sender(int(<sender>*<st_bal>), in
 ## The <end_balance> of receiver must be equal to the <start_balance> + <amount>.
 
 int(<receiver>*<end_bal>) == int(<receiver>*<st_bal>) + int(<am>);
+
+
 
