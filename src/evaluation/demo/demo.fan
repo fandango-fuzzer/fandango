@@ -3,6 +3,8 @@
 import time
 from faker import Faker
 fake = Faker()
+def compute_end_balance_sender(start_balance, amount):
+        return start_balance - amount
 
 
 # Grammar for XML Bank Transaction
@@ -46,9 +48,6 @@ int(<am>) > 0;
 int(<sender>*<end_bal>) > int(<am>);
 
 ## The <end_balance> of sender must be equal to the <start_balance> - <amount>.
-
-def compute_end_balance_sender(start_balance, amount):
-    return start_balance - amount
 
 int(<sender>*<end_bal>) == compute_end_balance_sender(int(<sender>*<st_bal>), int(<am>));
 
