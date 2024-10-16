@@ -1,15 +1,9 @@
 import ast
 import os
-import time
 
 import pytest
 from antlr4 import InputStream, CommonTokenStream, BailErrorStrategy
 from antlr4.error.Errors import ParseCancellationException
-from fuzzingbook.GrammarFuzzer import (
-    GrammarFuzzer,
-    EvenFasterGrammarFuzzer,
-    FasterGrammarFuzzer,
-)
 
 from fandango.constraints.base import ComparisonConstraint
 from fandango.constraints.fitness import Comparison
@@ -75,36 +69,6 @@ def test_indents():
     rule = list(grammar.rules.values())[0]
     assert isinstance(rule, Alternative)
     assert len(rule.alternatives) == 2
-
-
-def test_speed():
-    lexer = FandangoLexer(InputStream(FANDANGO_GRAMMAR))
-    token = CommonTokenStream(lexer)
-    parser = FandangoParser(token)
-    tree = parser.fandango()
-
-    splitter = FandangoSplitter()
-    splitter.visit(tree)
-
-    processor = GrammarProcessor()
-    grammar = processor.get_grammar(splitter.productions)
-
-    start = time.time()
-    for _ in range(100):
-        grammar.fuzz()
-    fandango_fuzzer_time = time.time() - start
-
-    for fuzzer_class in (
-        GrammarFuzzer,
-        FasterGrammarFuzzer,
-        EvenFasterGrammarFuzzer,
-    ):
-        fuzzer = fuzzer_class(FUZZINGBOOK_GRAMMAR)
-        start = time.time()
-        for _ in range(100):
-            fuzzer.fuzz_tree()
-        fuzzer_time = time.time() - start
-        assert fandango_fuzzer_time < fuzzer_time
 
 
 @pytest.mark.parametrize(

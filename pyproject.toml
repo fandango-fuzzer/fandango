@@ -30,8 +30,9 @@ dependencies = [
     "numpy>=2.1.0",
     "deap>=1.4.1",
     "scipy>=1.14.1",
-    "fuzzingbook>=1.2.1",
     "ordered-set>=4.0.2",
+    "pytest>=8.3.3",
+    "scikit-learn>=1.5.2",
 ]
 
 [project.urls]
