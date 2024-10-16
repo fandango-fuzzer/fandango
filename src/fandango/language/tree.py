@@ -10,10 +10,10 @@ class DerivationTree:
     """
 
     def __init__(
-            self,
-            symbol: Symbol,
-            children: Optional[List["DerivationTree"]] = None,
-            parent: Optional["DerivationTree"] = None,
+        self,
+        symbol: Symbol,
+        children: Optional[List["DerivationTree"]] = None,
+        parent: Optional["DerivationTree"] = None,
     ):
         self.symbol = symbol
         self._children = []
@@ -49,7 +49,7 @@ class DerivationTree:
         return [child for child in self._children if child.symbol == symbol]
 
     def __getitem__(
-            self, item, as_list=False
+        self, item, as_list=False
     ) -> Union["DerivationTree", List["DerivationTree"]]:
         items = self._children.__getitem__(item)
         if as_list and not isinstance(items, list):
@@ -157,7 +157,10 @@ class DerivationTree:
         else:
             return DerivationTree(
                 self.symbol,
-                [child.replace(tree_to_replace, new_subtree) for child in self._children],
+                [
+                    child.replace(tree_to_replace, new_subtree)
+                    for child in self._children
+                ],
             )
 
     def get_non_terminal_symbols(self) -> Set[NonTerminal]:
