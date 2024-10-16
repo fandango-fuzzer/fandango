@@ -538,7 +538,9 @@ class Grammar:
             ]
         )
 
-    def get_repr_for_rule(self, symbol: NonTerminal):
+    def get_repr_for_rule(self, symbol: str | NonTerminal):
+        if isinstance(symbol, str):
+            symbol = NonTerminal(symbol)
         return (
             f"{symbol} ::= {self.rules[symbol]}"
             f"{' :: ' + self.generators[symbol] if symbol in self.generators else ''};"
