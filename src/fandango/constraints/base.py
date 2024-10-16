@@ -37,10 +37,13 @@ class Value(GeneticBase):
             values = []
             for combination in self.combinations(tree, scope):
                 local_variables = self.local_variables.copy()
-                local_variables.update({name: node for name, node in combination})
-                for _, node in combination:
-                    if node not in trees:
-                        trees.append(FailingTree(node, self))
+                local_variables.update(
+                    {name: container.evaluate() for name, container in combination}
+                )
+                for _, container in combination:
+                    for node in container.get_trees():
+                        if node not in trees:
+                            trees.append(FailingTree(node, self))
                 try:
                     values.append(
                         eval(self.expression, self.global_variables, local_variables)
@@ -99,14 +102,17 @@ class ExpressionConstraint(Constraint):
         for combination in self.combinations(tree, scope):
             has_combinations = True
             local_variables = self.local_variables.copy()
-            local_variables.update({name: node for name, node in combination})
+            local_variables.update(
+                {name: container.evaluate() for name, container in combination}
+            )
             try:
                 if eval(self.expression, self.global_variables, local_variables):
                     solved += 1
                 else:
-                    for _, node in combination:
-                        if node not in failing_trees:
-                            failing_trees.append(FailingTree(node, self))
+                    for _, container in combination:
+                        for node in container.get_trees():
+                            if node not in failing_trees:
+                                failing_trees.append(FailingTree(node, self))
             except:
                 pass
             total += 1
@@ -148,7 +154,9 @@ class ComparisonConstraint(Constraint):
         for combination in self.combinations(tree, scope):
             has_combinations = True
             local_variables = self.local_variables.copy()
-            local_variables.update({name: node for name, node in combination})
+            local_variables.update(
+                {name: container.evaluate() for name, container in combination}
+            )
             try:
                 left = eval(self.left, self.global_variables, local_variables)
                 right = eval(self.right, self.global_variables, local_variables)
@@ -218,11 +226,12 @@ class ComparisonConstraint(Constraint):
                 if is_solved:
                     solved += 1
                 else:
-                    for _, node in combination:
-                        if node not in failing_trees:
-                            failing_trees.append(
-                                FailingTree(node, self, suggestions=suggestions)
-                            )
+                    for _, container in combination:
+                        for node in container.get_trees():
+                            if node not in failing_trees:
+                                failing_trees.append(
+                                    FailingTree(node, self, suggestions=suggestions)
+                                )
             except:
                 pass
             total += 1
@@ -391,8 +400,8 @@ class ExistsConstraint(Constraint):
             return copy(self.cache[tree_hash])
         fitness_values = list()
         scope = scope or dict()
-        for dt in self.search.find(tree, scope=scope):
-            scope[self.bound] = dt
+        for container in self.search.find(tree, scope=scope):
+            scope[self.bound] = container.evaluate()
             fitness = self.statement.fitness(tree, scope)
             fitness_values.append(fitness)
             if self.lazy and fitness.success:
@@ -442,8 +451,8 @@ class ForallConstraint(Constraint):
             return copy(self.cache[tree_hash])
         fitness_values = list()
         scope = scope or dict()
-        for dt in self.search.find(tree, scope=scope):
-            scope[self.bound] = dt
+        for container in self.search.find(tree, scope=scope):
+            scope[self.bound] = container.evaluate()
             fitness = self.statement.fitness(tree, scope)
             fitness_values.append(fitness)
             if self.lazy and not fitness.success:

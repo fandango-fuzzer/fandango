@@ -90,8 +90,10 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
         LOGGER.setLevel(logging.DEBUG)
 
     if args.command == INTERACTIVE:
-        interactive = Interactive(args.fan, args.grammar, args.constraints, args.python)
-        interactive.run()
+        interactive_ = Interactive(
+            args.fan, args.grammar, args.constraints, args.python
+        )
+        interactive_.run()
 
 
 if __name__ == "__main__":

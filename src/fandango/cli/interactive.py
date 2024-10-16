@@ -9,6 +9,7 @@ from antlr4.error.ErrorStrategy import BailErrorStrategy
 
 from fandango.constraints import predicates
 from fandango.constraints.fitness import GeneticBase
+from fandango.evolution.algorithm import FANDANGO
 from fandango.language.convert import (
     FandangoSplitter,
     GrammarProcessor,
@@ -20,6 +21,15 @@ from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
+
+_PARAMETERS = {
+    "population": "_population_size",
+    "generations": "_max_generations",
+    "elitism": "_elitism_rate",
+    "crossover": "_crossover_rate",
+    "tournament": "_tournament_size",
+    "mutation": "_mutation_rate",
+}
 
 
 class InteractiveCommands(enum.Enum):
@@ -35,6 +45,7 @@ class InteractiveCommands(enum.Enum):
     DEL = "del"
     CLEAR = "clear"
     START = "start"
+    SET = "set"
 
     def usage(self):
         return {
@@ -45,11 +56,12 @@ class InteractiveCommands(enum.Enum):
             InteractiveCommands.PYTHON: "python [<code>]",
             InteractiveCommands.TEST: 'test[-<identifier>][-<non-terminal>] ("<string>" | <identifier>)',
             InteractiveCommands.FUZZ: "fuzz [<non-terminal>] [= <identifier>]",
-            InteractiveCommands.FANDANGO: "fandango",
+            InteractiveCommands.FANDANGO: "fandango [= <identifier>]",
             InteractiveCommands.SHOW: "show [<non-terminal> | <identifier>]",
             InteractiveCommands.DEL: "del <identifier>",
             InteractiveCommands.CLEAR: "clear",
             InteractiveCommands.START: "start <non-terminal>",
+            InteractiveCommands.SET: "set <parameter> <value>",
         }[self]
 
     def description(self):
@@ -73,12 +85,16 @@ class InteractiveCommands(enum.Enum):
             "the fuzzed string will be assigned to that identifier to use in further "
             "commands. If a non-terminal is specified, the string will be fuzzed from "
             "that non-terminal instead of the start symbol",
-            InteractiveCommands.FANDANGO: "Run the fandango algorithm with the current specification",
+            InteractiveCommands.FANDANGO: "Run the fandango algorithm with the current specification. If an identifier "
+            "is specified, the result will be assigned to that identifier to use in "
+            "further commands",
             InteractiveCommands.SHOW: "Show the rule for a non-terminal or the constraint with the specified "
             "identifier. If no argument is specified, show all rules and constraints",
             InteractiveCommands.DEL: "Delete a constraint with the specified identifier",
             InteractiveCommands.CLEAR: "Clear all rules, constraints and python code",
             InteractiveCommands.START: "Set the start symbol for fuzzing and testing, defaults to <start>",
+            InteractiveCommands.SET: "Set a parameter for the fandango algorithm. Parameters are: "
+            + ", ".join(_PARAMETERS.keys()),
         }[self]
 
     def help(self):
@@ -155,11 +171,18 @@ class Interactive:
         for constraint in constraints:
             self._add_constraint(constraint)
 
-        self._fandango = None
+        self._fandango_object = None
         self._updated_grammar = False
         self._updated_constraints = False
         self._start_symbol = NonTerminal("<start>")
         self._scope = {}
+        self._population_size: int = 50
+        self._max_generations: int = 100
+        self._elitism_rate: float = 0.1
+        self._crossover_rate: float = 0.8
+        self._tournament_size: float = 0.05
+        self._mutation_rate: float = 0.2
+        self._updated_parameters = False
 
     def _rule(self, rule: str, single: bool = False):
         parser = FandangoParser(CommonTokenStream(FandangoLexer(InputStream(rule))))
@@ -208,7 +231,7 @@ class Interactive:
         self._constraints = {}
         self.constraints_identifier = 0
         self._grammar = Grammar.dummy()
-        self._fandango = None
+        self._fandango_object = None
         self._updated_grammar = False
         self._updated_constraints = False
         self._local_vars = predicates.__dict__
@@ -279,23 +302,37 @@ class Interactive:
         except Exception:
             print("Failed to evaluate string or identifier")
             return
-        if isinstance(string, DerivationTree):
-            tree = string
+        if isinstance(string, list):
+            trees = string
+        elif isinstance(string, tuple):
+            trees = list(string)
+        elif isinstance(string, set):
+            trees = list(string)
         else:
-            tree = self._grammar.parse(string, start)
-        if tree is None:
-            print(f"Failed to parse string from start symbol {start}")
-            return
-        for constraint in constraints:
-            print(
-                ("PASSED" if constraint.fitness(tree).success else "FAILED")
-                + f" {constraint}"
-            )
+            trees = [string]
+        for s in trees:
+            if isinstance(s, DerivationTree):
+                tree = s
+            else:
+                try:
+                    tree = self._grammar.parse(s)
+                except:
+                    tree = None
+            if tree is None:
+                print(f"Failed to parse string from start symbol {start}")
+                return
+            print(f"Testing {tree}")
+            for constraint in constraints:
+                print(
+                    ("PASSED" if constraint.fitness(tree).success else "FAILED")
+                    + f" {constraint}"
+                )
+            print()
 
     def _start(self, non_terminal: str):
         self._start_symbol = NonTerminal(non_terminal)
 
-    def fuzz(
+    def _fuzz(
         self, identifier: Optional[str] = None, non_terminal: Optional[str] = None
     ):
         if non_terminal:
@@ -306,6 +343,64 @@ class Interactive:
         if identifier:
             self._scope[identifier] = tree
         print(tree)
+
+    def _set(self, parameter: str, value: str):
+        if parameter in _PARAMETERS:
+            if parameter in {"population", "generations"}:
+                value = int(value)
+                if value < 1:
+                    print("Value must be greater than 0")
+                    return
+            else:
+                value = float(value)
+                if value < 0 or value > 1:
+                    print("Value must be between 0 and 1")
+                    return
+            setattr(self, f"_{_PARAMETERS[parameter]}", float(value))
+            self._updated_parameters = True
+        else:
+            print(f"Parameter {parameter} not found")
+
+    def _fandango(self, identifier: Optional[str] = None):
+        if self._fandango_object is None:
+            self._fandango_object = FANDANGO(
+                grammar=self._grammar,
+                constraints=list(self._constraints.values()),
+                population_size=self._population_size,
+                mutation_rate=self._mutation_rate,
+                crossover_rate=self._crossover_rate,
+                max_generations=self._max_generations,
+                elitism_rate=self._elitism_rate,
+                verbose=False,
+            )
+            population = self._fandango_object.evolve()
+        elif (
+            self._updated_grammar
+            or self._updated_constraints
+            or self._updated_parameters
+        ):
+            if self._updated_grammar:
+                self._grammar.update_parser()
+                self._updated_grammar = False
+            self._fandango_object = FANDANGO(
+                grammar=self._grammar,
+                constraints=list(self._constraints.values()),
+                population_size=self._population_size,
+                mutation_rate=self._mutation_rate,
+                crossover_rate=self._crossover_rate,
+                max_generations=self._max_generations,
+                elitism_rate=self._elitism_rate,
+                verbose=False,
+            )
+            self._updated_constraints = False
+            self._updated_parameters = False
+            population = self._fandango_object.evolve()
+        else:
+            population = self._fandango_object.population
+        for individual in population:
+            print(individual)
+        if identifier:
+            self._scope[identifier] = population
 
     def run(self):
         try:
@@ -373,13 +468,13 @@ class Interactive:
                 elif command.startswith(InteractiveCommands.FUZZ.value):
                     command = command.split(" ", 1)
                     if len(command) == 1:
-                        self.fuzz()
+                        self._fuzz()
                     else:
                         target = command[1].split("=")
                         if len(target) == 2:
-                            self.fuzz(target[1].strip(), target[0].strip())
+                            self._fuzz(target[1].strip(), target[0].strip())
                         else:
-                            self.fuzz(command[0].strip())
+                            self._fuzz(command[0].strip())
                 elif command.startswith(InteractiveCommands.SHOW.value):
                     command = command.split(" ", 1)
                     if len(command) == 1:
@@ -400,6 +495,20 @@ class Interactive:
                         print("Missing non-terminal")
                     else:
                         self._start(command[1])
+                elif command.startswith(InteractiveCommands.SET.value):
+                    command = command.split(" ")
+                    if len(command) < 3:
+                        print("Missing parameter or value")
+                    elif len(command) > 3:
+                        print("Too many arguments")
+                    else:
+                        self._set(command[1], command[2])
+                elif command.startswith(InteractiveCommands.FANDANGO.value):
+                    command = command.split("=", 1)
+                    if len(command) == 1:
+                        self._fandango()
+                    else:
+                        self._fandango(command[1].strip())
                 else:
                     print(f"Command not found {command}")
         except KeyboardInterrupt:
