@@ -1,4 +1,4 @@
-from faker.faker import evaluate_faker
+from faker.faker_experiment import evaluate_faker
 from hash.hash import evaluate_hash
 from img.img import evaluate_img
 from int.int import evaluate_int

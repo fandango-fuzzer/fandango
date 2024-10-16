@@ -1,3 +1,7 @@
+# Imports
+
+import time
+
 # Grammar for XML Bank Transaction
 
 <start> ::= <xml_bank_transaction> ;
@@ -6,7 +10,7 @@
 <info> ::= '   <info>\n' <currency> <stmt_date> <amount>'   </info>' ;
 <currency> ::= '      <currency>' 'EUR' '</currency>\n' | '      <currency>' 'USD' '</currency>\n' ;
 <stmt_date> ::= '      <stmt_date>' <timestamp> '</stmt_date>\n' ;
-<timestamp> ::= <digit>* ;
+<timestamp> ::= <digit>* :: str(int(time.time())) ;
 <amount> ::= '      <amount>' <am> '</amount>\n' ;
 <am> ::= <digit>* ;
 <sender> ::= '\n   <sender>' <account_no> <bank_key> <start_balance> <end_balance> '   </sender>' ;
@@ -21,26 +25,6 @@
 <end_bal> ::= <digit>* ;
 <digit> ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' ;
 
-# Constraints
-
-## The <amount> must be greater than 0.
-
-int(<am>) > 0;
-
-## The sender <start_balance> must be greater than the <amount>.
-
-int(<sender>*<end_bal>) > int(<am>);
-
-## The <end_balance> of sender must be equal to the <start_balance> - <amount>.
-
-def compute_end_balance_sender(start_balance, amount):
-    return start_balance - amount
-
-int(<sender>*<end_bal>) == compute_end_balance_sender(int(<sender>*<st_bal>), int(<am>));
-
-## The <end_balance> of receiver must be equal to the <start_balance> + <amount>.
-
-int(<receiver>*<end_bal>) == int(<receiver>*<st_bal>) + int(<am>);
 
 
 

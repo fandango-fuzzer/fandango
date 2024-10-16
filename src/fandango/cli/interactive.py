@@ -6,7 +6,6 @@ from typing import Optional
 from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.InputStream import InputStream
 from antlr4.error.ErrorStrategy import BailErrorStrategy
-from selenium.webdriver.support.expected_conditions import element_attribute_to_include
 
 from fandango.constraints import predicates
 from fandango.constraints.fitness import GeneticBase
@@ -20,6 +19,7 @@ from fandango.language.grammar import Grammar
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.symbol import NonTerminal
+from fandango.language.tree import DerivationTree
 
 
 class InteractiveCommands(enum.Enum):
@@ -30,6 +30,7 @@ class InteractiveCommands(enum.Enum):
     PYTHON = "python"
     TEST = "test"
     FUZZ = "fuzz"
+    FANDANGO = "fandango"
     SHOW = "show"
     DEL = "del"
     CLEAR = "clear"
@@ -42,8 +43,9 @@ class InteractiveCommands(enum.Enum):
             InteractiveCommands.RULES: "rule [<rule>]",
             InteractiveCommands.CONSTRAINTS: "constraint [<constraint>]",
             InteractiveCommands.PYTHON: "python [<code>]",
-            InteractiveCommands.TEST: "test[-<identifier>][-<non-terminal>] <string>",
-            InteractiveCommands.FUZZ: "fuzz",
+            InteractiveCommands.TEST: 'test[-<identifier>][-<non-terminal>] ("<string>" | <identifier>)',
+            InteractiveCommands.FUZZ: "fuzz [<non-terminal>] [= <identifier>]",
+            InteractiveCommands.FANDANGO: "fandango",
             InteractiveCommands.SHOW: "show [<non-terminal> | <identifier>]",
             InteractiveCommands.DEL: "del <identifier>",
             InteractiveCommands.CLEAR: "clear",
@@ -67,7 +69,11 @@ class InteractiveCommands(enum.Enum):
             "constraints will be used. If a non-terminal is specified, the string will be "
             "interpreted as a derivation tree from that non-terminal instead of the start "
             "symbol",
-            InteractiveCommands.FUZZ: "Fuzz a string from the current specification",
+            InteractiveCommands.FUZZ: "Fuzz a string from the current specification. If an identifier is specified, "
+            "the fuzzed string will be assigned to that identifier to use in further "
+            "commands. If a non-terminal is specified, the string will be fuzzed from "
+            "that non-terminal instead of the start symbol",
+            InteractiveCommands.FANDANGO: "Run the fandango algorithm with the current specification",
             InteractiveCommands.SHOW: "Show the rule for a non-terminal or the constraint with the specified "
             "identifier. If no argument is specified, show all rules and constraints",
             InteractiveCommands.DEL: "Delete a constraint with the specified identifier",
@@ -153,6 +159,7 @@ class Interactive:
         self._updated_grammar = False
         self._updated_constraints = False
         self._start_symbol = NonTerminal("<start>")
+        self._scope = {}
 
     def _rule(self, rule: str, single: bool = False):
         parser = FandangoParser(CommonTokenStream(FandangoLexer(InputStream(rule))))
@@ -206,6 +213,7 @@ class Interactive:
         self._updated_constraints = False
         self._local_vars = predicates.__dict__
         self._global_vars = {}
+        self._scope = {}
 
     @staticmethod
     def _help(command: Optional[str] = None):
@@ -260,12 +268,21 @@ class Interactive:
         else:
             constraints = list(self._constraints.values())
         if self._updated_grammar:
+            self._grammar.update_parser()
             self._updated_grammar = False
         if non_terminal:
             start = NonTerminal(non_terminal)
         else:
             start = self._start_symbol
-        tree = self._grammar.parse(string, start)
+        try:
+            string = eval(string, self._scope)
+        except Exception:
+            print("Failed to evaluate string or identifier")
+            return
+        if isinstance(string, DerivationTree):
+            tree = string
+        else:
+            tree = self._grammar.parse(string, start)
         if tree is None:
             print(f"Failed to parse string from start symbol {start}")
             return
@@ -277,6 +294,18 @@ class Interactive:
 
     def _start(self, non_terminal: str):
         self._start_symbol = NonTerminal(non_terminal)
+
+    def fuzz(
+        self, identifier: Optional[str] = None, non_terminal: Optional[str] = None
+    ):
+        if non_terminal:
+            start = NonTerminal(non_terminal)
+        else:
+            start = self._start_symbol
+        tree = self._grammar.fuzz(start)
+        if identifier:
+            self._scope[identifier] = tree
+        print(tree)
 
     def run(self):
         try:
@@ -342,7 +371,15 @@ class Interactive:
                         else:
                             self._test(command[1])
                 elif command.startswith(InteractiveCommands.FUZZ.value):
-                    pass
+                    command = command.split(" ", 1)
+                    if len(command) == 1:
+                        self.fuzz()
+                    else:
+                        target = command[1].split("=")
+                        if len(target) == 2:
+                            self.fuzz(target[1].strip(), target[0].strip())
+                        else:
+                            self.fuzz(command[0].strip())
                 elif command.startswith(InteractiveCommands.SHOW.value):
                     command = command.split(" ", 1)
                     if len(command) == 1:
