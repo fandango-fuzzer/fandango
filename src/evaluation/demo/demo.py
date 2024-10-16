@@ -1,20 +1,17 @@
-import time
-
+from fandango.evolution.algorithm import FANDANGO
 from fandango.language.parse import parse_file
 
+import hashlib
 
 def main():
     # Load the fandango file
     grammar, constraints = parse_file("demo.fan")
 
-    start_time = time.time()
-    for _ in range(1):
-        solution = grammar.fuzz()
-        print(solution)
-        print()
-        print(solution.__tree__())
+    fandango = FANDANGO(grammar, constraints)
+    fandango.evolve()
 
-    print("Time taken: ", time.time() - start_time)
+    for i in range(1):
+        print(fandango.population[i])
 
 
 if __name__ == "__main__":

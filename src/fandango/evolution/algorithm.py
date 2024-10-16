@@ -21,9 +21,9 @@ class FANDANGO:
             self,
             grammar: Grammar,
             constraints: List[Constraint],
-            population_size: int = 50,
+            population_size: int = 100,
             initial_population: List[DerivationTree] = None,
-            max_generations: int = 100,
+            max_generations: int = 1000,
             elitism_rate: float = 0.1,
             crossover_rate: float = 0.8,
             tournament_size: float = 0.05,
@@ -226,6 +226,7 @@ class FANDANGO:
             if result.success:
                 fitness += result.fitness()
             else:
+                print(f"[DEBUG] - Failing tree: {result.failing_trees}")
                 failing_trees.extend(result.failing_trees)
                 fitness += result.fitness()
             self.checks_made += 1
