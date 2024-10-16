@@ -5,8 +5,7 @@ import time
 from typing import List, Set, Tuple
 
 from fandango.constraints.base import Constraint
-from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
-from fandango.language.earley import Parser
+from fandango.constraints.fitness import FailingTree, Comparison
 from fandango.language.grammar import DerivationTree
 from fandango.language.grammar import (
     Grammar,
@@ -76,7 +75,7 @@ class FANDANGO:
         # Evaluate population
         self.evaluation = self.evaluate_population()
         self.fitness = (
-                sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+            sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
         print(f" ---------- Starting evolution ---------- ")
 
@@ -93,7 +92,8 @@ class FANDANGO:
                 break
 
             print(
-                f"[INFO] - Generation {generation} - Fitness: {self.fitness:.2f} - #solutions found: {len(self.solution)}"
+                f"[INFO] - Generation {generation} - Fitness: {self.fitness:.2f} - "
+                f"#solutions found: {len(self.solution)}"
             )
 
             # Select elites
@@ -130,7 +130,7 @@ class FANDANGO:
             self.population = fixed_population
             self.evaluation = self.evaluate_population()
             self.fitness = (
-                    sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+                sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
 
         self.time_taken = time.time() - start_time
@@ -198,7 +198,7 @@ class FANDANGO:
         return individual
 
     def evaluate_individual(
-            self, individual: DerivationTree
+        self, individual: DerivationTree
     ) -> Tuple[float, List[FailingTree]]:
         """
         Evaluate the fitness of an individual.
@@ -222,7 +222,7 @@ class FANDANGO:
             self.checks_made += 1
 
         # Normalize fitness
-        fitness = fitness / len(self.constraints)
+        fitness /= len(self.constraints)
         if fitness >= 0.99:
             self.solution.append(individual)
 
@@ -254,8 +254,8 @@ class FANDANGO:
         return [
             x[0]
             for x in sorted(self.evaluation, key=lambda x: x[1], reverse=True)[
-                     : int(self.elitism_rate * self.population_size)
-                     ]
+                : int(self.elitism_rate * self.population_size)
+            ]
         ]
 
     def tournament_selection(self) -> Tuple[DerivationTree, DerivationTree]:
@@ -268,11 +268,13 @@ class FANDANGO:
         parent2 = tournament[1][0]
         return parent1, parent2
 
+    # noinspection PyMethodMayBeStatic
     def crossover(
-            self, parent1: DerivationTree, parent2: DerivationTree
+        self, parent1: DerivationTree, parent2: DerivationTree
     ) -> Tuple[DerivationTree, DerivationTree]:
         """
-        Perform crossover between two parents to generate two children by swapping subtrees rooted at a common non-terminal symbol.
+        Perform crossover between two parents to generate two children by swapping subtrees rooted at a common
+        non-terminal symbol.
         """
         # Get all non-terminal symbols in parent1 and parent2
         symbols1 = parent1.get_non_terminal_symbols()
