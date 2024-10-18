@@ -232,8 +232,8 @@ class ComparisonConstraint(Constraint):
                                 failing_trees.append(
                                     FailingTree(node, self, suggestions=suggestions)
                                 )
-            except:
-                pass
+            except Exception as e:
+                raise e
             total += 1
         if not has_combinations:
             solved += 1
