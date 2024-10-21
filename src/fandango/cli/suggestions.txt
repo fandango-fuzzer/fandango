@@ -1,0 +1,44 @@
+# Design proposal for a fandango command line
+
+Usage:
+fandango [GLOBAL-OPTIONS] COMMAND [OPTIONS...] [ARGS...]
+
+where COMMAND is one of
+
+fuzz [-n NUMBER] [-o OUTPUT] [-c CONSTRAINT] [-d OUTPUT-DIR] FILES...
+    Create input strings according to FILES (.fan and .py files).
+    If a FILE is '-', read from stdin.
+    -h, --help:
+    	Show help
+    -n, --num-solutions:
+    	define the number of inputs to be created (default: 1)
+    -o OUTPUT, --output OUTPUT:
+    	write output to OUTPUT (default: stdout)
+    -c CONSTRAINT, --constraint CONSTRAINT:
+    	define an additional constraint
+    -d OUTPUT-DIR, --directory OUTPUT-DIR:
+    	place outputs in separate (numbered) files in OUTPUT-DIR
+    return 0 if ok, 1 on errors in FILES, 2 on output errors
+
+parse [-i INPUT] [-c CONSTRAINT] FILES...
+    Parse input strings according to FILES (.fan and .py files)
+    If a FILE is '-', read it from stdin (requires -i)
+    -i INPUT, --input INPUT:
+    	read input from INPUT (default: stdin)
+    -c CONSTRAINT, --constraint CONSTRAINT:
+    	define an additional constraint
+    return 0 if ok,
+           1 on errors in FILES,
+           2 if INPUT is syntactically invalid,
+	   3 if INPUT is semantically invalid
+
+interactive [FILES...]
+    Interact with fandango after reading FILES (.fan and .py files) - for demos and exploration
+
+More commands may include
+* test - invoke a given command with the generated inputs (may later be guided)
+* compile - create an executable producer/parser
+* mutate - read in an input; mutate it; write out again
+* repair - read in an input; fix it as to satisfy the spec
+* create - create a stub .fan file
+* find - filter files
