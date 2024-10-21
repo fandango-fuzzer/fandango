@@ -96,10 +96,15 @@ class FANDANGO:
 
         for generation in range(1, self.max_generations + 1):
             if self.fitness >= 0.99:
+                self.solution = self.population[:self.population_size]
                 break
             if self.desired_solutions == 0 and len(self.solution) >= self.population_size:
+                self.fitness = 1.0
+                self.solution = self.solution[:self.population_size]
                 break
-            if 0 < self.desired_solutions <= len(self.solution):
+            if 0 < self.desired_solutions >= len(self.solution):
+                self.fitness = 1.0
+                self.solution = self.solution[:self.desired_solutions]
                 break
 
             print(
@@ -145,16 +150,6 @@ class FANDANGO:
             )
 
         self.time_taken = time.time() - start_time
-        if self.desired_solutions == 0:
-            self.solution = self.solution[:self.population_size]
-        else:
-            self.solution = self.solution[:self.desired_solutions]
-
-        if len(self.solution) >= self.population_size:
-            self.population = self.solution
-            self.fitness = 1.0
-
-        self.population = self.population
 
         print(f" ---------- Evolution finished ---------- ")
         print(
