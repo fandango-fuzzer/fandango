@@ -1,29 +1,69 @@
-from typing import Set
+import os
+import subprocess
+import tempfile
 
-from fandango.evolution.algorithm import FANDANGO
-from fandango.language.tree import DerivationTree
+from tccbox import tcc_bin_path
+
+
+def is_valid_tinyc_code(c_code: str) -> bool:
+    """
+    This function takes a string containing Tiny C code and checks if it is syntactically valid.
+    Returns True if valid, False otherwise.
+    """
+    # Create a temporary file to store the C code
+    with tempfile.NamedTemporaryFile(suffix=".c", delete=False) as temp_file:
+        temp_file.write(c_code.encode())
+        temp_file.flush()  # Ensure the content is written to the file
+        temp_file_path = temp_file.name
+
+    try:
+        # Use tcc to try and compile the file without generating an output (-c option)
+        # This is equivalent to a syntax check
+        result = subprocess.run(
+            [tcc_bin_path(), '-c', temp_file_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+
+        # If return code is 0, the syntax is valid
+        if result.returncode == 0:
+            return True
+        if "include file" in result.stderr.decode():
+            return True
+        else:
+            print(f"Syntax error:\n{result.stderr.decode()}")
+            return False
+    finally:
+        # Clean up the temporary file
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+
+
 from fandango.language.parse import parse_file
 
 
-def evaluate_scriptsizec(
-    population_size: int = 10, max_generations: int = 3000
-) -> Set[DerivationTree]:
+def evaluate_scriptsizec():
     grammar, constraints = parse_file("scriptsizec.fan")
 
-    print(grammar)
-    print(constraints)
+    code = """
+#include <stdio.h>
 
-    fandango = FANDANGO(
-        grammar,
-        constraints,
-        population_size=population_size,
-        max_generations=max_generations,
-    )
-    fandango.evolve()
+int main() {
+    int a = 5;
+    int b;
 
-    print(fandango.solution)
+    if (a > 5) {
+        b = 10;
+    } else {
+        b = 20;
+    }
 
-    return fandango.solution
+    printf("b = %d\n", b);
+    return 0;
+}
+"""
+
+    print(is_valid_tinyc_code(code))
 
 
 if __name__ == "__main__":
