@@ -1,4 +1,4 @@
-from csv_.csv import evaluate_csv
+from csv_evaluation.csv import evaluate_csv
 from rest.rest import evaluate_rest
 from scriptsizec.scriptsizec import evaluate_scriptsizec
 from tar.tar import evaluate_tar
