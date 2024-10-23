@@ -4,6 +4,9 @@ import tempfile
 
 from tccbox import tcc_bin_path
 
+from fandango.evolution.algorithm import FANDANGO
+from fandango.language.parse import parse_file
+
 
 def is_valid_tinyc_code(c_code: str) -> bool:
     """
@@ -39,31 +42,19 @@ def is_valid_tinyc_code(c_code: str) -> bool:
             os.remove(temp_file_path)
 
 
-from fandango.language.parse import parse_file
-
-
 def evaluate_scriptsizec():
     grammar, constraints = parse_file("scriptsizec.fan")
 
-    code = """
-#include <stdio.h>
+    fandango = FANDANGO(grammar, constraints, verbose=True)
 
-int main() {
-    int a = 5;
-    int b;
+    print(fandango.solution)
 
-    if (a > 5) {
-        b = 10;
-    } else {
-        b = 20;
-    }
+    not_valid = []
+    for solution in fandango.solution:
+        if not is_valid_tinyc_code(str(solution)):
+            not_valid.append(solution)
 
-    printf("b = %d\n", b);
-    return 0;
-}
-"""
-
-    print(is_valid_tinyc_code(code))
+    print(f"Number of invalid solutions: {len(not_valid)}")
 
 
 if __name__ == "__main__":
