@@ -28,22 +28,15 @@ def is_syntactically_valid_csv(csv_string):
 def evaluate_csv():
     grammar, constraints = parse_file("csv.fan")
 
-    print(grammar)
-    print(constraints)
-
-    fandango = FANDANGO(grammar, constraints, verbose=False)
+    fandango = FANDANGO(grammar, constraints, verbose=False, desired_solutions=1000)
     fandango.evolve()
 
-    print(fandango.solution)
-
-    parser = []
-
+    not_valid = []
     for solution in fandango.solution:
-        tree = grammar.parse(str(solution))
-        if tree:
-            parser.append(tree)
+        if not is_syntactically_valid_csv(str(solution)):
+            not_valid.append(solution)
 
-    print(f"Number of valid solutions: {len(parser)}")
+    print(f"Invalid CSV solutions: {len(not_valid)}")
 
 
 if __name__ == "__main__":
