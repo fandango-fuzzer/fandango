@@ -120,7 +120,7 @@ class ExpressionConstraint(Constraint):
             solved += 1
             total += 1
         fitness = ConstraintFitness(
-            solved, total, solved == total, failing_trees=[FailingTree(t, self) for t in trees]
+            solved, total, solved == total, failing_trees=[FailingTree(t, self) for t in failing_trees]
         )
         self.cache[tree_hash] = fitness
         return fitness
