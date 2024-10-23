@@ -34,6 +34,8 @@ def evaluate_csv():
     fandango = FANDANGO(grammar, constraints, verbose=False)
     fandango.evolve()
 
+    print(fandango.solution)
+
     parser = []
 
     for solution in fandango.solution:
