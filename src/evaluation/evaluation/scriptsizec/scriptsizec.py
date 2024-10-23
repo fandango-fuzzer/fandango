@@ -49,12 +49,20 @@ def evaluate_scriptsizec():
 
     print(fandango.solution)
 
-    not_valid = []
-    for solution in fandango.solution:
-        if not is_valid_tinyc_code(str(solution)):
-            not_valid.append(solution)
+    parser = []
 
-    print(f"Number of invalid solutions: {len(not_valid)}")
+    for solution in fandango.solution:
+        tree = grammar.parse(str(solution))
+        if tree:
+            parser.append(tree)
+
+    print(f"Number of valid solutions: {len(parser)}")
+
+    # not_valid = []
+    # for solution in fandango.solution:
+    #     if not is_valid_tinyc_code(str(solution)):
+    #         not_valid.append(solution)
+    # print(f"Number of invalid solutions: {len(not_valid)}")
 
 
 if __name__ == "__main__":
