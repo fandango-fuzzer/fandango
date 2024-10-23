@@ -7,11 +7,11 @@ from ordered_set import OrderedSet
 from fandango.language.symbol import NonTerminal, Terminal, Symbol
 from fandango.language.tree import DerivationTree
 
-MAX_REPETITIONS = 10
+MAX_REPETITIONS = 50
 
 
 class Node(abc.ABC):
-    def fuzz(self, grammar: "Grammar", max_depth: int = 10, current_depth: int = 0) -> List[DerivationTree]:
+    def fuzz(self, grammar: "Grammar") -> List[DerivationTree]:
         return []
 
     @abc.abstractmethod
@@ -32,8 +32,8 @@ class Alternative(Node):
     def __init__(self, alternatives: list[Node]):
         self.alternatives = alternatives
 
-    def fuzz(self, grammar: "Grammar", max_depth: int = 10, current_depth: int = 0) -> List[DerivationTree]:
-        return random.choice(self.alternatives).fuzz(grammar, max_depth, current_depth)
+    def fuzz(self, grammar: "Grammar") -> List[DerivationTree]:
+        return random.choice(self.alternatives).fuzz(grammar)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitAlternative(self)
@@ -55,11 +55,8 @@ class Concatenation(Node):
     def __init__(self, nodes: list[Node]):
         self.nodes = nodes
 
-    def fuzz(self, grammar: "Grammar", max_depth: int = 10, current_depth: int = 0) -> List[DerivationTree]:
-        return sum(
-            [node.fuzz(grammar, max_depth, current_depth) for node in self.nodes],
-            [],
-        )
+    def fuzz(self, grammar: "Grammar") -> List[DerivationTree]:
+        return sum([node.fuzz(grammar) for node in self.nodes], [])
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitConcatenation(self)
@@ -90,12 +87,12 @@ class Repetition(Node):
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitRepetition(self)
 
-    def fuzz(self, grammar: "Grammar", max_depth: int = 10, current_depth: int = 0) -> List[DerivationTree]:
-        if current_depth >= max_depth:
-            return []
-        repetitions = random.randint(self.min, self.max)
+    def fuzz(self, grammar: "Grammar") -> List[DerivationTree]:
         return sum(
-            [self.node.fuzz(grammar, max_depth, current_depth + 1) for _ in range(repetitions)],
+            [
+                self.node.fuzz(grammar)
+                for _ in range(random.randint(self.min, self.max))
+            ],
             [],
         )
 
@@ -140,15 +137,12 @@ class NonTerminalNode(Node):
     def __init__(self, symbol: NonTerminal):
         self.symbol = symbol
 
-    def fuzz(self, grammar: "Grammar", max_depth: int = 10, current_depth: int = 0) -> List[DerivationTree]:
-        if current_depth >= max_depth:
-            # Return a terminal or empty expansion to prevent further recursion
-            return [DerivationTree(self.symbol)]
+    def fuzz(self, grammar: "Grammar") -> List[DerivationTree]:
         if self.symbol not in grammar:
             raise ValueError(f"Symbol {self.symbol} not found in grammar")
         if self.symbol in grammar.generators:
             return [grammar.generate(self.symbol)]
-        children = grammar[self.symbol].fuzz(grammar, max_depth, current_depth + 1)
+        children = grammar[self.symbol].fuzz(grammar)
         return [DerivationTree(self.symbol, children)]
 
     def accept(self, visitor: "NodeVisitor"):
@@ -168,7 +162,7 @@ class TerminalNode(Node):
     def __init__(self, symbol: Terminal):
         self.symbol = symbol
 
-    def fuzz(self, grammar: "Grammar", max_depth: int = 10, current_depth: int = 0) -> List[DerivationTree]:
+    def fuzz(self, grammar: "Grammar") -> List[DerivationTree]:
         return [DerivationTree(self.symbol)]
 
     def accept(self, visitor: "NodeVisitor"):
@@ -246,12 +240,12 @@ class NodeVisitor(abc.ABC):
 
 class ParseState:
     def __init__(
-            self,
-            nonterminal: NonTerminal,
-            position: int,
-            symbols: Tuple[Symbol, ...],
-            dot: int = 0,
-            children: Optional[List[DerivationTree]] = None,
+        self,
+        nonterminal: NonTerminal,
+        position: int,
+        symbols: Tuple[Symbol, ...],
+        dot: int = 0,
+        children: Optional[List[DerivationTree]] = None,
     ):
         self.nonterminal = nonterminal
         self.position = position
@@ -277,24 +271,24 @@ class ParseState:
 
     def __eq__(self, other):
         return (
-                isinstance(other, ParseState)
-                and self.nonterminal == other.nonterminal
-                and self.position == other.position
-                and self.symbols == other.symbols
-                and self._dot == other._dot
+            isinstance(other, ParseState)
+            and self.nonterminal == other.nonterminal
+            and self.position == other.position
+            and self.symbols == other.symbols
+            and self._dot == other._dot
         )
 
     def __repr__(self):
         return (
-                f"({self.nonterminal} -> "
-                + "".join(
-            [
-                f"{'*' if i == self._dot else ''}{s.symbol}"
-                for i, s in enumerate(self.symbols)
-            ]
-        )
-                + ("*" if self.finished() else "")
-                + f", {self.position})"
+            f"({self.nonterminal} -> "
+            + "".join(
+                [
+                    f"{'*' if i == self._dot else ''}{s.symbol}"
+                    for i, s in enumerate(self.symbols)
+                ]
+            )
+            + ("*" if self.finished() else "")
+            + f", {self.position})"
         )
 
     def next(self, position: Optional[int] = None):
@@ -465,10 +459,10 @@ class Grammar:
             return None
 
     def __init__(
-            self,
-            rules: Optional[Dict[NonTerminal, Node]] = None,
-            local_variables: Optional[Dict[str, Any]] = None,
-            global_variables: Optional[Dict[str, Any]] = None,
+        self,
+        rules: Optional[Dict[NonTerminal, Node]] = None,
+        local_variables: Optional[Dict[str, Any]] = None,
+        global_variables: Optional[Dict[str, Any]] = None,
     ):
         self.rules = rules or {}
         self.generators = {}
