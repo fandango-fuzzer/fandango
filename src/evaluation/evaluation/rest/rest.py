@@ -1,29 +1,52 @@
-from typing import Set
+from io import StringIO
+
+from docutils.core import publish_doctree
+from docutils.utils import SystemMessage
 
 from fandango.evolution.algorithm import FANDANGO
-from fandango.language.tree import DerivationTree
 from fandango.language.parse import parse_file
 
 
-def evaluate_rest(
-    population_size: int = 10, max_generations: int = 3000
-) -> Set[DerivationTree]:
+def is_syntactically_valid_rest(rst_string):
+    # StringIO to capture output messages (warnings, errors, etc.)
+    error_stream = StringIO()
+
+    try:
+        # Parse the reST string into a document tree, capturing system messages
+        doctree = publish_doctree(rst_string, settings_overrides={'warning_stream': error_stream})
+
+        # Check if any errors or warnings were captured in the error stream
+        errors_warnings = error_stream.getvalue().strip()
+
+        if errors_warnings:
+            return False
+
+        return True
+
+    except SystemMessage as e:
+        # If an exception is raised, it's definitely not valid
+        return False
+
+
+def evaluate_rest():
     grammar, constraints = parse_file("rest.fan")
 
-    print(grammar)
-    print(constraints)
+    solutions = []
+    time_taken = 0
+    while len(solutions) < 50000:
+        fandango = FANDANGO(grammar, constraints, verbose=False, desired_solutions=1000)
+        fandango.evolve()
+        time_taken += fandango.time_taken
 
-    fandango = FANDANGO(
-        grammar,
-        constraints,
-        population_size=population_size,
-        max_generations=max_generations,
-    )
-    fandango.evolve()
+        valid = []
+        for solution in fandango.solution:
+            if is_syntactically_valid_rest(str(solution)):
+                valid.append(solution)
 
-    print(fandango.solution)
+        solutions.extend(valid)
 
-    return fandango.solution
+    print(f"Valid CSV solutions: {len(solutions)}")
+    print(f"Time taken: {time_taken}")
 
 
 if __name__ == "__main__":
