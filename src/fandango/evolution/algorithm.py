@@ -24,10 +24,10 @@ class FANDANGO:
             population_size: int = 100,
             desired_solutions: int = 0,
             initial_population: List[DerivationTree] = None,
-            max_generations: int = 1000,
+            max_generations: int = 500,
             elitism_rate: float = 0.1,
             crossover_rate: float = 0.8,
-            tournament_size: float = 0.05,
+            tournament_size: float = 0.1,
             mutation_rate: float = 0.2,
             verbose: bool = False,
     ):
@@ -50,7 +50,7 @@ class FANDANGO:
         self.population_size = population_size
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
-        self.tournament_size = int(population_size * tournament_size)
+        self.tournament_size = int(population_size * tournament_size) or population_size
         self.max_generations = max_generations
         self.elitism_rate = elitism_rate
 
@@ -95,17 +95,18 @@ class FANDANGO:
         start_time = time.time()
 
         for generation in range(1, self.max_generations + 1):
-            if self.fitness >= 0.99:
-                self.solution = self.population[:self.population_size]
-                break
-            if self.desired_solutions == 0 and len(self.solution) >= self.population_size:
-                self.fitness = 1.0
-                self.solution = self.solution[:self.population_size]
-                break
-            if 0 < self.desired_solutions >= len(self.solution):
+            if 0 < self.desired_solutions <= len(self.solution):
                 self.fitness = 1.0
                 self.solution = self.solution[:self.desired_solutions]
                 break
+            elif self.desired_solutions == 0:
+                if self.fitness >= 0.99:
+                    self.fitness = 1.0
+                    self.solution = self.population[:self.population_size]
+                    break
+                if len(self.solution) >= self.population_size:
+                    self.fitness = 1.0
+                    self.solution = self.solution[:self.population_size]
 
             print(
                 f"[INFO] - Generation {generation} - Fitness: {self.fitness:.2f} - "
@@ -258,8 +259,6 @@ class FANDANGO:
         evaluation = []
         for individual in self.population:
             fitness, failing_trees = self.evaluate_individual(individual)
-            if len(self.solution) >= self.population_size:
-                break
             evaluation.append((individual, fitness, failing_trees))
         return evaluation
 
