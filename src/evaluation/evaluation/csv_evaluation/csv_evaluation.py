@@ -31,15 +31,17 @@ def evaluate_csv():
     print(grammar)
     print(constraints)
 
-    fandango = FANDANGO(grammar, constraints, verbose=False, population_size=200, desired_solutions=1000)
+    fandango = FANDANGO(grammar, constraints, verbose=False)
     fandango.evolve()
 
-    not_valid = []
-    for inp_ in fandango.solution:
-        if not is_syntactically_valid_csv(str(inp_)):
-            not_valid.append(inp_)
+    parser = []
 
-    print(f"Invalid CSVs:{len(not_valid)}")
+    for solution in fandango.solution:
+        tree = grammar.parse(str(solution))
+        if tree:
+            parser.append(tree)
+
+    print(f"Number of valid solutions: {len(parser)}")
 
 
 if __name__ == "__main__":
