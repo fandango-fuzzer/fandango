@@ -5,6 +5,3 @@
 <digit> ::= "0" | <digit_nonzero> ;
 <digit_nonzero> ::= "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
 
-int(<voltage>) <= 20 ;
-int(<voltage>) >= -20 ;
-int(<voltage>) != 0 ;
