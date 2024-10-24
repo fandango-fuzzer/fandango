@@ -1,11 +1,13 @@
 <start> ::= <xml_tree> ;
-<xml_tree> ::= <xml_open_tag> <inner_xml_tree> <xml_close_tag> | <xml_openclose_tag> ;
-<inner_xml_tree> ::= <xml_tree> <inner_xml_tree> | <xml_tree> | <text> ;
-<xml_open_tag> ::= "<" <id> <xml_attribute> ">" | "<" <id> ">" ;
-<xml_openclose_tag> ::= "<" <id> <xml_attribute> "/>" | "<" <id> "/>" ;
+<xml_tree> ::= <xml_open_tag> <inner_xml_tree> <xml_close_tag>  ;
+<inner_xml_tree> ::= <xml_tree> | <text> ;
+<xml_open_tag> ::= "<" <id> " " <xml_attributes> ">" | "<" <id> ">" ;
 <xml_close_tag> ::= "</" <id> ">" ;
-<xml_attribute> ::= <xml_attribute> <xml_attribute> | <id> '=\"' <text> '\"' ;
+<xml_attributes> ::= <xml_attribute> | <xml_attribute> " " <xml_attributes> ;
+<xml_attribute> ::= <id> '=\"' <text> '\"' ;
+# <id> ::= <id_with_prefix> | <id_no_prefix> ;
 <id> ::= <id_start_char> <id_chars> | <id_start_char> ;
+# <id_with_prefix> ::= <id_no_prefix> ':' <id_no_prefix> ;
 <id_start_char> ::= "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j"
                   | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t"
                   | "u" | "v" | "w" | "x" | "y" | "z"
@@ -37,3 +39,14 @@
               | "="
               | ":"
               | "+" ;
+
+forall <xml_tree> in <start>:
+    <xml_tree>.<xml_open_tag>.<id> == <xml_tree>.<xml_close_tag>.<id>
+;
+
+forall <xml_open_tag> in <xml_tree>:
+    forall <xml_attribute_1> in <xml_open_tag>.<xml_attributes>:
+        forall <xml_attribute_2> in <xml_open_tag>.<xml_attributes>:
+            <xml_attribute_1>.<xml_attribute>.<id> != <xml_attribute_2>.<xml_attribute>.<id>
+;
+
