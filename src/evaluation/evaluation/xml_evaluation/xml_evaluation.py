@@ -25,14 +25,12 @@ def evaluate_xml():
 
     print(fandango.solution)
 
-    # check = True
-    # not_Valid = []
-    # for inp_ in fandango.solution:
-    #     if not is_syntactically_valid_xml(str(inp_)):
-    #         check = False
-    #         not_Valid.append(inp_)
-    #         break
+    not_valid = []
+    for inp_ in fandango.solution:
+        if not is_syntactically_valid_xml(str(inp_)):
+            not_valid.append(inp_)
 
+    print(f"Number of invalid XMLs: {len(not_valid)}")
 
 if __name__ == "__main__":
     evaluate_xml()
