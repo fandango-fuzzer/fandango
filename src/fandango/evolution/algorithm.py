@@ -107,6 +107,7 @@ class FANDANGO:
                 if len(self.solution) >= self.population_size:
                     self.fitness = 1.0
                     self.solution = self.solution[:self.population_size]
+                    break
 
             print(
                 f"[INFO] - Generation {generation} - Fitness: {self.fitness:.2f} - "
