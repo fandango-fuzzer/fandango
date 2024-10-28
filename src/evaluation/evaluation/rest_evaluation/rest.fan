@@ -13,7 +13,7 @@
 <internal_reference_nospace> ::= <id> "_" <postsep> ;
 <enumeration> ::= <enumeration_items> "\n" ;
 <enumeration_items> ::= <enumeration_item> "\n" <enumeration_items> | <enumeration_item> ;
-<enumeration_item> ::= <number> ". " <nobr_string> ;
+<enumeration_item> ::= "#. " <nobr_string> ;
 <paragraph_chars> ::= <paragraph_char> <paragraph_chars> | <paragraph_char> ;
 <paragraph_chars_nospace> ::= <paragraph_char_nospace> <paragraph_chars_nospace> | <paragraph_char_nospace> ;
 <paragraph_char> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "!" | "\"" | "#" | "$" | "%" | "&" | "'" | "(" | ")" | "+" | "," | "-" | "." | "/" | ":" | ";" | "<" | "=" | ">" | "?" | "@" | "[" | "\\" | "]" | "^" | "~" | " " | "\t" | "\n" | "\r" | "\x0b" | "\x0c" ;
@@ -32,4 +32,28 @@
 <eqs> ::= "=" | "=" <eqs> ;
 <dashes> ::= "-" | "-" <dashes> ;
 
-int(len(<underline>)) >= int(len(<title_text>)) ;
+
+forall <body> in <body_elements>:
+    len(str(<body>.<body_element>.<section_title>.<title_text>)) <= len(str(<body>.<body_element>.<section_title>.<underline>))
+;
+
+forall <internal> in <paragraph_element>:
+    exists <labeled_p> in <body_element>:
+        str(<labeled_p>.<labeled_paragraph>.<label>.<id>) == str(<internal>.<internal_reference>.<id>)
+;
+
+from docutils.core import publish_doctree
+from io import StringIO
+
+def is_syntactically_valid_rest(rst_string):
+    error_stream = StringIO()
+    try:
+        doctree = publish_doctree(rst_string, settings_overrides={'warning_stream': error_stream})
+        errors_warnings = error_stream.getvalue().strip()
+        if errors_warnings:
+            return False
+        return True
+    except:
+        return False
+
+is_syntactically_valid_rest(<start>);
