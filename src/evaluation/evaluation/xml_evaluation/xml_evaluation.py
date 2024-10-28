@@ -1,4 +1,6 @@
+import time
 import xml.etree.ElementTree as ET
+from typing import Tuple
 
 from fandango.evolution.algorithm import FANDANGO
 from fandango.language.parse import parse_file
@@ -11,30 +13,26 @@ def is_syntactically_valid_xml(xml_string):
         return True
     except ET.ParseError as e:
         # If parsing fails, it's not a valid XML
-        print(f"XML syntax error: {e}")
         return False
 
-def evaluate_xml():
-    grammar, constraints = parse_file("xml.fan")
 
-    fandango = FANDANGO(grammar, constraints, verbose=True, desired_solutions=1000)
-    fandango.evolve()
+def evaluate_xml(seconds=60) -> Tuple[str, int, int, float, float, float, float]:
+    grammar, constraints = parse_file("xml_evaluation/xml.fan")
+    solutions = []
 
-    not_valid = []
-    for inp_ in fandango.solution:
-        if not is_syntactically_valid_xml(str(inp_)):
-            print(f"Invalid XML: {inp_}")
-            not_valid.append(inp_)
-            print("--------------------")
+    time_in_an_hour = time.time() + seconds
 
-    #compute mean and median len of input in fandango.solution
-    mean_len = sum([len(str(inp_)) for inp_ in fandango.solution]) / len(fandango.solution)
-    print(f"Mean length of XMLs: {mean_len}")
+    while time.time() < time_in_an_hour:
+        fandango = FANDANGO(grammar, constraints, verbose=False, desired_solutions=100)
+        fandango.evolve()
+        solutions.extend(fandango.solution)
 
-    median_len = sorted([len(str(inp_)) for inp_ in fandango.solution])[len(fandango.solution) // 2]
-    print(f"Median length of XMLs: {median_len}")
+    valid = []
+    for solution in solutions:
+        if is_syntactically_valid_xml(str(solution)):
+            valid.append(solution)
 
-    print(f"Number of invalid XMLs: {len(not_valid)}")
-
-if __name__ == "__main__":
-    evaluate_xml()
+    set_mean_length = sum(len(str(x)) for x in valid) / len(valid)
+    set_medium_length = sorted(len(str(x)) for x in valid)[len(valid) // 2]
+    valid_percentage = len(valid) / len(solutions) * 100
+    return "XML", len(solutions), len(valid), valid_percentage, 0, set_mean_length, set_medium_length
