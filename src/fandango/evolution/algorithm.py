@@ -44,7 +44,8 @@ class FANDANGO:
         :param mutation_rate: The rate of individuals that will undergo mutation.
         :param verbose: Whether to print information about the evolution process.
         """
-        print(f" ---------- Initializing FANDANGO algorithm ---------- ")
+        if verbose:
+            print(f" ---------- Initializing FANDANGO algorithm ---------- ")
         self.grammar = grammar
         self.constraints = constraints
         self.population_size = population_size
@@ -72,19 +73,22 @@ class FANDANGO:
         if initial_population is not None:
             self.population = list(initial_population)
         else:
-            print("[INFO] - Generating initial population...")
+            if self.verbose:
+                print("[INFO] - Generating initial population...")
             st_time = time.time()
             self.population = self.generate_random_initial_population()
-            print(
-                f"[INFO] - Initial population generated in {time.time() - st_time:.2f} seconds"
-            )
+            if self.verbose:
+                print(
+                    f"[INFO] - Initial population generated in {time.time() - st_time:.2f} seconds"
+                )
 
         # Evaluate population
         self.evaluation = self.evaluate_population()
         self.fitness = (
                 sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
-        print(f" ---------- Starting evolution ---------- ")
+        if self.verbose:
+            print(f" ---------- Starting evolution ---------- ")
 
     def evolve(self) -> List[DerivationTree]:
         """
@@ -109,10 +113,11 @@ class FANDANGO:
                     self.solution = self.solution[:self.population_size]
                     break
 
-            print(
-                f"[INFO] - Generation {generation} - Fitness: {self.fitness:.2f} - "
-                f"#solutions found: {len(self.solution)}"
-            )
+            if self.verbose:
+                print(
+                    f"[INFO] - Generation {generation} - Fitness: {self.fitness:.2f} - "
+                    f"#solutions found: {len(self.solution)}"
+                )
 
             # Select elites
             new_population = self.select_elites()
@@ -153,12 +158,13 @@ class FANDANGO:
 
         self.time_taken = time.time() - start_time
 
-        print(f" ---------- Evolution finished ---------- ")
-        print(
-            f"[INFO] - Perfect solutions found: ({len(self.solution)}) "
-            f"- Fitness of final population: {self.fitness:.2f}"
-        )
-        print(f"[INFO] - Time taken: {self.time_taken:.2f} seconds")
+        if self.verbose:
+            print(f" ---------- Evolution finished ---------- ")
+            print(
+                f"[INFO] - Perfect solutions found: ({len(self.solution)}) "
+                f"- Fitness of final population: {self.fitness:.2f}"
+            )
+            print(f"[INFO] - Time taken: {self.time_taken:.2f} seconds")
 
         if self.verbose:
             print(f" ---------- FANDANGO statistics ---------- ")
