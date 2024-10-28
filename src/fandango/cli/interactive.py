@@ -292,6 +292,7 @@ class Interactive:
             constraints = list(self._constraints.values())
         if self._updated_grammar:
             self._grammar.update_parser()
+            self._grammar.prime()
             self._updated_grammar = False
         if non_terminal:
             start = NonTerminal(non_terminal)
@@ -381,6 +382,7 @@ class Interactive:
         ):
             if self._updated_grammar:
                 self._grammar.update_parser()
+                self._grammar.prime()
                 self._updated_grammar = False
             self._fandango_object = FANDANGO(
                 grammar=self._grammar,

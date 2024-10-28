@@ -85,6 +85,7 @@ class GrammarProcessor(FandangoParserVisitor):
                     )
                 grammar.set_generator(symbol, ast.unparse(expr))
         grammar.update_parser()
+        grammar.prime()
         return grammar
 
     def visitAlternative(self, ctx: FandangoParser.AlternativeContext):
