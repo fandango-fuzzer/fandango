@@ -7,7 +7,7 @@ from ordered_set import OrderedSet
 from fandango.language.symbol import NonTerminal, Terminal, Symbol
 from fandango.language.tree import DerivationTree
 
-MAX_REPETITIONS = 50
+MAX_REPETITIONS = 5
 
 
 class Node(abc.ABC):
@@ -240,12 +240,12 @@ class NodeVisitor(abc.ABC):
 
 class ParseState:
     def __init__(
-        self,
-        nonterminal: NonTerminal,
-        position: int,
-        symbols: Tuple[Symbol, ...],
-        dot: int = 0,
-        children: Optional[List[DerivationTree]] = None,
+            self,
+            nonterminal: NonTerminal,
+            position: int,
+            symbols: Tuple[Symbol, ...],
+            dot: int = 0,
+            children: Optional[List[DerivationTree]] = None,
     ):
         self.nonterminal = nonterminal
         self.position = position
@@ -271,24 +271,24 @@ class ParseState:
 
     def __eq__(self, other):
         return (
-            isinstance(other, ParseState)
-            and self.nonterminal == other.nonterminal
-            and self.position == other.position
-            and self.symbols == other.symbols
-            and self._dot == other._dot
+                isinstance(other, ParseState)
+                and self.nonterminal == other.nonterminal
+                and self.position == other.position
+                and self.symbols == other.symbols
+                and self._dot == other._dot
         )
 
     def __repr__(self):
         return (
-            f"({self.nonterminal} -> "
-            + "".join(
-                [
-                    f"{'*' if i == self._dot else ''}{s.symbol}"
-                    for i, s in enumerate(self.symbols)
-                ]
-            )
-            + ("*" if self.finished() else "")
-            + f", {self.position})"
+                f"({self.nonterminal} -> "
+                + "".join(
+            [
+                f"{'*' if i == self._dot else ''}{s.symbol}"
+                for i, s in enumerate(self.symbols)
+            ]
+        )
+                + ("*" if self.finished() else "")
+                + f", {self.position})"
         )
 
     def next(self, position: Optional[int] = None):
@@ -459,10 +459,10 @@ class Grammar:
             return None
 
     def __init__(
-        self,
-        rules: Optional[Dict[NonTerminal, Node]] = None,
-        local_variables: Optional[Dict[str, Any]] = None,
-        global_variables: Optional[Dict[str, Any]] = None,
+            self,
+            rules: Optional[Dict[NonTerminal, Node]] = None,
+            local_variables: Optional[Dict[str, Any]] = None,
+            global_variables: Optional[Dict[str, Any]] = None,
     ):
         self.rules = rules or {}
         self.generators = {}
@@ -570,3 +570,85 @@ class Grammar:
 
     def update_parser(self):
         self._parser = Grammar.Parser(self.rules)
+
+
+    def compute_kpath_coverage(self, derivation_trees: List[DerivationTree], k: int) -> float:
+        """
+        Computes the k-path coverage of the grammar given a set of derivation trees.
+        Returns a score between 0 and 1 representing the fraction of k-paths covered.
+        """
+        # Generate all possible k-paths in the grammar
+        all_kpaths = self._generate_all_kpaths(k)
+
+        # Extract k-paths from the derivation trees
+        covered_kpaths = set()
+        for tree in derivation_trees:
+            covered_kpaths.update(self._extract_kpaths_from_tree(tree, k))
+
+
+        # Compute coverage score
+        if not all_kpaths:
+            return 1.0  # If there are no k-paths, coverage is 100%
+        return len(covered_kpaths) / len(all_kpaths)
+
+
+    def _generate_all_kpaths(self, k: int) -> Set[Tuple[str, ...]]:
+        """
+        Generates all possible k-length paths (k-paths) in the grammar.
+        """
+        all_paths = set()
+
+        def traverse(node: Node, current_path: Tuple[str, ...], depth: int, visited: Set[int]):
+            if depth >= k:
+                return
+            node_id = id(node)
+            if node_id in visited:
+                return
+            visited.add(node_id)
+
+            if isinstance(node, Alternative):
+                for alt in node.alternatives:
+                    traverse(alt, current_path, depth, visited.copy())
+            elif isinstance(node, Concatenation):
+                for child in node.nodes:
+                    traverse(child, current_path, depth, visited.copy())
+            elif isinstance(node, Repetition):
+                # Consider minimum repetitions to limit paths
+                traverse(node.node, current_path, depth, visited.copy())
+            elif isinstance(node, NonTerminalNode):
+                symbol = node.symbol.symbol
+                new_path = current_path + (symbol,)
+                if len(new_path) <= k:
+                    all_paths.add(new_path)
+                if symbol in self.rules:
+                    traverse(self.rules[node.symbol], new_path, depth + 1, visited.copy())
+            elif isinstance(node, TerminalNode):
+                symbol = node.symbol.symbol
+                new_path = current_path + (symbol,)
+                if len(new_path) <= k:
+                    all_paths.add(new_path)
+
+        for start_symbol in self.rules:
+            traverse(self.rules[start_symbol], (start_symbol.symbol,), 0, set())
+
+        # Filter paths to exact length k
+        return {path for path in all_paths if len(path) == k}
+
+
+    def _extract_kpaths_from_tree(self, tree: DerivationTree, k: int) -> Set[Tuple[str, ...]]:
+        """
+        Extracts all k-length paths (k-paths) from a derivation tree.
+        """
+        paths = set()
+
+        def traverse(node: DerivationTree, current_path: Tuple[str, ...]):
+            new_path = current_path + (node.symbol.symbol,)
+            if len(new_path) == k:
+                paths.add(new_path)
+                # Do not traverse further to keep path length at k
+                return
+            for child in node.children:
+                traverse(child, new_path)
+
+        traverse(tree, ())
+        return paths
