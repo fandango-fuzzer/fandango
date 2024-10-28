@@ -184,3 +184,7 @@ class DerivationTree:
         for child in self._children:
             nodes.extend(child.find_all_nodes(symbol))
         return nodes
+
+    @property
+    def children(self):
+        return self._children
