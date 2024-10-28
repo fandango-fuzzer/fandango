@@ -168,7 +168,6 @@ class FANDANGO:
 
         if self.verbose:
             print(f" ---------- FANDANGO statistics ---------- ")
-            print(f"[DEBUG] - Diversity score: {self.compute_diversity_score():.2f}")
             print(f"[DEBUG] - Fixes made: {self.fixes_made}")
             print(f"[DEBUG] - Fitness checks: {self.checks_made}")
             print(f"[DEBUG] - Crossovers made: {self.crossovers_made}")
