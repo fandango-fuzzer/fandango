@@ -17,19 +17,25 @@ class DerivationTree:
     ):
         self.symbol = symbol
         self._children = []
+        self._size = 1
         self.set_children(children or [])
         self._parent = parent
 
     def __len__(self):
         return len(self._children)
 
+    def size(self):
+        return self._size
+
     def set_children(self, children: List["DerivationTree"]):
         self._children = children
+        self._size = 1 + sum(child.size() for child in self._children)
         for child in self._children:
             child._parent = self
 
     def add_child(self, child: "DerivationTree"):
         self._children.append(child)
+        self._size += child.size()
         child._parent = self
 
     def find_all_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:

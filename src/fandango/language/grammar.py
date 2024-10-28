@@ -11,7 +11,10 @@ MAX_REPETITIONS = 5
 
 
 class Node(abc.ABC):
-    def fuzz(self, grammar: "Grammar") -> List[DerivationTree]:
+    def __init__(self, distance_to_completion: float = float("inf")):
+        self.distance_to_completion = distance_to_completion
+
+    def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
         return []
 
     @abc.abstractmethod
@@ -30,10 +33,15 @@ class Node(abc.ABC):
 
 class Alternative(Node):
     def __init__(self, alternatives: list[Node]):
+        super().__init__()
         self.alternatives = alternatives
 
-    def fuzz(self, grammar: "Grammar") -> List[DerivationTree]:
-        return random.choice(self.alternatives).fuzz(grammar)
+    def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
+        if self.distance_to_completion >= max_nodes:
+            return min(self.alternatives, key=lambda x: x.distance_to_completion).fuzz(
+                grammar, 0
+            )
+        return random.choice(self.alternatives).fuzz(grammar, max_nodes - 1)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitAlternative(self)
@@ -53,10 +61,19 @@ class Alternative(Node):
 
 class Concatenation(Node):
     def __init__(self, nodes: list[Node]):
+        super().__init__()
         self.nodes = nodes
 
-    def fuzz(self, grammar: "Grammar") -> List[DerivationTree]:
-        return sum([node.fuzz(grammar) for node in self.nodes], [])
+    def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
+        trees = []
+        for node in self.nodes:
+            if node.distance_to_completion >= max_nodes:
+                tree = node.fuzz(grammar, 0)
+            else:
+                tree = node.fuzz(grammar, max_nodes - 1)
+            trees.extend(tree)
+            max_nodes -= sum(t.size() for t in tree)
+        return trees
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitConcatenation(self)
@@ -76,6 +93,7 @@ class Concatenation(Node):
 
 class Repetition(Node):
     def __init__(self, node: Node, min_: int = 0, max_: int = MAX_REPETITIONS):
+        super().__init__()
         if min_ < 0:
             raise ValueError("Minimum repetitions must be greater than or equal to 0")
         if max_ <= 0:
@@ -87,14 +105,18 @@ class Repetition(Node):
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitRepetition(self)
 
-    def fuzz(self, grammar: "Grammar") -> List[DerivationTree]:
-        return sum(
-            [
-                self.node.fuzz(grammar)
-                for _ in range(random.randint(self.min, self.max))
-            ],
-            [],
-        )
+    def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
+        trees = []
+        for rep in range(random.randint(self.min, self.max)):
+            if self.node.distance_to_completion >= max_nodes:
+                if rep > self.min:
+                    break
+                tree = self.node.fuzz(grammar, 0)
+            else:
+                tree = self.node.fuzz(grammar, max_nodes - 1)
+            trees.extend(tree)
+            max_nodes -= sum(t.size() for t in tree)
+        return trees
 
     def __repr__(self):
         return f"{self.node}{{{self.min},{self.max}}}"
@@ -135,14 +157,15 @@ class Option(Repetition):
 
 class NonTerminalNode(Node):
     def __init__(self, symbol: NonTerminal):
+        super().__init__()
         self.symbol = symbol
 
-    def fuzz(self, grammar: "Grammar") -> List[DerivationTree]:
+    def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
         if self.symbol not in grammar:
             raise ValueError(f"Symbol {self.symbol} not found in grammar")
         if self.symbol in grammar.generators:
             return [grammar.generate(self.symbol)]
-        children = grammar[self.symbol].fuzz(grammar)
+        children = grammar[self.symbol].fuzz(grammar, max_nodes - 1)
         return [DerivationTree(self.symbol, children)]
 
     def accept(self, visitor: "NodeVisitor"):
@@ -160,9 +183,10 @@ class NonTerminalNode(Node):
 
 class TerminalNode(Node):
     def __init__(self, symbol: Terminal):
+        super().__init__(0)
         self.symbol = symbol
 
-    def fuzz(self, grammar: "Grammar") -> List[DerivationTree]:
+    def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
         return [DerivationTree(self.symbol)]
 
     def accept(self, visitor: "NodeVisitor"):
@@ -180,9 +204,10 @@ class TerminalNode(Node):
 
 class CharSet(Node):
     def __init__(self, chars: str):
+        super().__init__()
         self.chars = chars
 
-    def fuzz(self, grammar: "Grammar") -> List[DerivationTree]:
+    def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
         raise NotImplementedError("CharSet fuzzing not implemented")
 
     def accept(self, visitor: "NodeVisitor"):
@@ -199,7 +224,7 @@ class NodeVisitor(abc.ABC):
     def aggregate_results(self, aggregate, result):
         pass
 
-    def visitChildren(self, node: Node):
+    def visitChildren(self, node: Node) -> Any:
         # noinspection PyNoneFunctionAssignment
         result = self.default_result()
         for child in node.children():
@@ -240,12 +265,12 @@ class NodeVisitor(abc.ABC):
 
 class ParseState:
     def __init__(
-            self,
-            nonterminal: NonTerminal,
-            position: int,
-            symbols: Tuple[Symbol, ...],
-            dot: int = 0,
-            children: Optional[List[DerivationTree]] = None,
+        self,
+        nonterminal: NonTerminal,
+        position: int,
+        symbols: Tuple[Symbol, ...],
+        dot: int = 0,
+        children: Optional[List[DerivationTree]] = None,
     ):
         self.nonterminal = nonterminal
         self.position = position
@@ -271,24 +296,24 @@ class ParseState:
 
     def __eq__(self, other):
         return (
-                isinstance(other, ParseState)
-                and self.nonterminal == other.nonterminal
-                and self.position == other.position
-                and self.symbols == other.symbols
-                and self._dot == other._dot
+            isinstance(other, ParseState)
+            and self.nonterminal == other.nonterminal
+            and self.position == other.position
+            and self.symbols == other.symbols
+            and self._dot == other._dot
         )
 
     def __repr__(self):
         return (
-                f"({self.nonterminal} -> "
-                + "".join(
-            [
-                f"{'*' if i == self._dot else ''}{s.symbol}"
-                for i, s in enumerate(self.symbols)
-            ]
-        )
-                + ("*" if self.finished() else "")
-                + f", {self.position})"
+            f"({self.nonterminal} -> "
+            + "".join(
+                [
+                    f"{'*' if i == self._dot else ''}{s.symbol}"
+                    for i, s in enumerate(self.symbols)
+                ]
+            )
+            + ("*" if self.finished() else "")
+            + f", {self.position})"
         )
 
     def next(self, position: Optional[int] = None):
@@ -301,7 +326,7 @@ class ParseState:
         )
 
 
-class Grammar:
+class Grammar(NodeVisitor):
     class Parser(NodeVisitor):
         def __init__(self, rules: Dict[NonTerminal, Node]):
             self.grammar_rules = rules
@@ -459,16 +484,17 @@ class Grammar:
             return None
 
     def __init__(
-            self,
-            rules: Optional[Dict[NonTerminal, Node]] = None,
-            local_variables: Optional[Dict[str, Any]] = None,
-            global_variables: Optional[Dict[str, Any]] = None,
+        self,
+        rules: Optional[Dict[NonTerminal, Node]] = None,
+        local_variables: Optional[Dict[str, Any]] = None,
+        global_variables: Optional[Dict[str, Any]] = None,
     ):
         self.rules = rules or {}
         self.generators = {}
         self._parser = Grammar.Parser(self.rules)
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
+        self._visited = set()
 
     def generate_string(self, symbol: str | NonTerminal = "<start>") -> str:
         if isinstance(symbol, str):
@@ -486,10 +512,12 @@ class Grammar:
             )
         return tree
 
-    def fuzz(self, start: str | NonTerminal = "<start>") -> DerivationTree:
+    def fuzz(
+        self, start: str | NonTerminal = "<start>", max_nodes: int = 100
+    ) -> DerivationTree:
         if isinstance(start, str):
             start = NonTerminal(start)
-        return NonTerminalNode(start).fuzz(self)[0]
+        return NonTerminalNode(start).fuzz(self, max_nodes=max_nodes)[0]
 
     def update(self, grammar: "Grammar" | Dict[NonTerminal, Node]):
         if isinstance(grammar, Grammar):
@@ -500,6 +528,7 @@ class Grammar:
         self.rules.update(grammar)
         self.generators.update(generators)
         self._parser = Grammar.Parser(self.rules)
+        self.prime()
 
     def parse(self, word: str, start: str | NonTerminal = "<start>"):
         return self._parser.parse(word, start)
@@ -571,34 +600,35 @@ class Grammar:
     def update_parser(self):
         self._parser = Grammar.Parser(self.rules)
 
-
-    def compute_kpath_coverage(self, derivation_trees: List[DerivationTree], k: int) -> float:
+    def compute_kpath_coverage(
+        self, derivation_trees: List[DerivationTree], k: int
+    ) -> float:
         """
         Computes the k-path coverage of the grammar given a set of derivation trees.
         Returns a score between 0 and 1 representing the fraction of k-paths covered.
         """
         # Generate all possible k-paths in the grammar
-        all_kpaths = self._generate_all_kpaths(k)
+        all_k_paths = self._generate_all_k_paths(k)
 
         # Extract k-paths from the derivation trees
-        covered_kpaths = set()
+        covered_k_paths = set()
         for tree in derivation_trees:
-            covered_kpaths.update(self._extract_kpaths_from_tree(tree, k))
-
+            covered_k_paths.update(self._extract_k_paths_from_tree(tree, k))
 
         # Compute coverage score
-        if not all_kpaths:
+        if not all_k_paths:
             return 1.0  # If there are no k-paths, coverage is 100%
-        return len(covered_kpaths) / len(all_kpaths)
+        return len(covered_k_paths) / len(all_k_paths)
 
-
-    def _generate_all_kpaths(self, k: int) -> Set[Tuple[str, ...]]:
+    def _generate_all_k_paths(self, k: int) -> Set[Tuple[str, ...]]:
         """
         Generates all possible k-length paths (k-paths) in the grammar.
         """
         all_paths = set()
 
-        def traverse(node: Node, current_path: Tuple[str, ...], depth: int, visited: Set[int]):
+        def traverse(
+            node: Node, current_path: Tuple[str, ...], depth: int, visited: Set[int]
+        ):
             if depth >= k:
                 return
             node_id = id(node)
@@ -621,7 +651,9 @@ class Grammar:
                 if len(new_path) <= k:
                     all_paths.add(new_path)
                 if symbol in self.rules:
-                    traverse(self.rules[node.symbol], new_path, depth + 1, visited.copy())
+                    traverse(
+                        self.rules[node.symbol], new_path, depth + 1, visited.copy()
+                    )
             elif isinstance(node, TerminalNode):
                 symbol = node.symbol.symbol
                 new_path = current_path + (symbol,)
@@ -634,8 +666,10 @@ class Grammar:
         # Filter paths to exact length k
         return {path for path in all_paths if len(path) == k}
 
-
-    def _extract_kpaths_from_tree(self, tree: DerivationTree, k: int) -> Set[Tuple[str, ...]]:
+    @staticmethod
+    def _extract_k_paths_from_tree(
+        tree: DerivationTree, k: int
+    ) -> Set[Tuple[str, ...]]:
         """
         Extracts all k-length paths (k-paths) from a derivation tree.
         """
@@ -652,3 +686,52 @@ class Grammar:
 
         traverse(tree, ())
         return paths
+
+    def prime(self):
+        self._visited = set()
+        for symbol in self.rules:
+            self.visit(self.rules[symbol])
+
+    def visit(self, node: Node):
+        if node in self._visited:
+            return
+        self._visited.add(node)
+        return super().visit(node)
+
+    def visitAlternative(self, node: Alternative):
+        self.visitChildren(node)
+        node.distance_to_completion = (
+            min([n.distance_to_completion for n in node.alternatives]) + 1
+        )
+
+    def visitConcatenation(self, node: Concatenation):
+        self.visitChildren(node)
+        node.distance_to_completion = (
+            sum([n.distance_to_completion for n in node.nodes]) + 1
+        )
+
+    def visitRepetition(self, node: Repetition):
+        self.visit(node.node)
+        node.distance_to_completion = node.node.distance_to_completion * node.min + 1
+
+    def visitStar(self, node: Star):
+        node.distance_to_completion = 0
+
+    def visitPlus(self, node: Plus):
+        self.visit(node.node)
+        node.distance_to_completion = node.node.distance_to_completion + 1
+
+    def visitOption(self, node: Option):
+        node.distance_to_completion = 0
+
+    def visitNonTerminalNode(self, node: NonTerminalNode):
+        if node.symbol not in self.rules:
+            raise ValueError(f"Symbol {node.symbol} not found in grammar")
+        self.visit(self.rules[node.symbol])
+        node.distance_to_completion = self.rules[node.symbol].distance_to_completion + 1
+
+    def visitTerminalNode(self, node: TerminalNode):
+        node.distance_to_completion = 0
+
+    def visitCharSet(self, node: CharSet):
+        node.distance_to_completion = 0
