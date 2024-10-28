@@ -1,4 +1,5 @@
 import abc
+import enum
 import random
 from typing import Dict, List, Optional, Tuple, Set, Any
 
@@ -10,8 +11,23 @@ from fandango.language.tree import DerivationTree
 MAX_REPETITIONS = 5
 
 
+class NodeType(enum.Enum):
+    ALTERNATIVE = 0
+    CONCATENATION = 1
+    REPETITION = 2
+    STAR = 3
+    PLUS = 4
+    OPTION = 5
+    NON_TERMINAL = 6
+    TERMINAL = 7
+    CHAR_SET = 8
+
+
 class Node(abc.ABC):
-    def __init__(self, distance_to_completion: float = float("inf")):
+    def __init__(
+        self, node_type: NodeType, distance_to_completion: float = float("inf")
+    ):
+        self.node_type = node_type
         self.distance_to_completion = distance_to_completion
 
     def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
@@ -33,7 +49,7 @@ class Node(abc.ABC):
 
 class Alternative(Node):
     def __init__(self, alternatives: list[Node]):
-        super().__init__()
+        super().__init__(NodeType.ALTERNATIVE)
         self.alternatives = alternatives
 
     def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
@@ -61,7 +77,7 @@ class Alternative(Node):
 
 class Concatenation(Node):
     def __init__(self, nodes: list[Node]):
-        super().__init__()
+        super().__init__(NodeType.CONCATENATION)
         self.nodes = nodes
 
     def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
@@ -93,7 +109,7 @@ class Concatenation(Node):
 
 class Repetition(Node):
     def __init__(self, node: Node, min_: int = 0, max_: int = MAX_REPETITIONS):
-        super().__init__()
+        super().__init__(NodeType.REPETITION)
         if min_ < 0:
             raise ValueError("Minimum repetitions must be greater than or equal to 0")
         if max_ <= 0:
@@ -157,7 +173,7 @@ class Option(Repetition):
 
 class NonTerminalNode(Node):
     def __init__(self, symbol: NonTerminal):
-        super().__init__()
+        super().__init__(NodeType.NON_TERMINAL)
         self.symbol = symbol
 
     def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
@@ -183,7 +199,7 @@ class NonTerminalNode(Node):
 
 class TerminalNode(Node):
     def __init__(self, symbol: Terminal):
-        super().__init__(0)
+        super().__init__(NodeType.TERMINAL, 0)
         self.symbol = symbol
 
     def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
@@ -204,7 +220,7 @@ class TerminalNode(Node):
 
 class CharSet(Node):
     def __init__(self, chars: str):
-        super().__init__()
+        super().__init__(NodeType.CHAR_SET, 0)
         self.chars = chars
 
     def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
@@ -513,7 +529,7 @@ class Grammar(NodeVisitor):
         return tree
 
     def fuzz(
-        self, start: str | NonTerminal = "<start>", max_nodes: int = 100
+        self, start: str | NonTerminal = "<start>", max_nodes: int = 50
     ) -> DerivationTree:
         if isinstance(start, str):
             start = NonTerminal(start)
@@ -688,50 +704,73 @@ class Grammar(NodeVisitor):
         return paths
 
     def prime(self):
-        self._visited = set()
-        for symbol in self.rules:
-            self.visit(self.rules[symbol])
+        nodes = sum([self.visit(self.rules[symbol]) for symbol in self.rules], [])
+        while nodes:
+            node = nodes.pop(0)
+            if node.node_type == NodeType.TERMINAL:
+                continue
+            elif node.node_type == NodeType.NON_TERMINAL:
+                if node.symbol not in self.rules:
+                    raise ValueError(f"Symbol {node.symbol} not found in grammar")
+                if self.rules[node.symbol].distance_to_completion == float("inf"):
+                    nodes.append(node)
+                else:
+                    node.distance_to_completion = (
+                        self.rules[node.symbol].distance_to_completion + 1
+                    )
+            elif node.node_type == NodeType.ALTERNATIVE:
+                node.distance_to_completion = (
+                    min([n.distance_to_completion for n in node.alternatives]) + 1
+                )
+                if node.distance_to_completion == float("inf"):
+                    nodes.append(node)
+            elif node.node_type == NodeType.CONCATENATION:
+                if any([n.distance_to_completion == float("inf") for n in node.nodes]):
+                    nodes.append(node)
+                else:
+                    node.distance_to_completion = (
+                        sum([n.distance_to_completion for n in node.nodes]) + 1
+                    )
+            elif node.node_type == NodeType.REPETITION:
+                if node.node.distance_to_completion == float("inf"):
+                    nodes.append(node)
+                else:
+                    node.distance_to_completion = (
+                        node.node.distance_to_completion * node.min + 1
+                    )
+            else:
+                raise ValueError(f"Unknown node type {node.node_type}")
 
-    def visit(self, node: Node):
-        if node in self._visited:
-            return
-        self._visited.add(node)
-        return super().visit(node)
+    def default_result(self):
+        return []
+
+    def aggregate_results(self, aggregate, result):
+        aggregate.extend(result)
+        return aggregate
 
     def visitAlternative(self, node: Alternative):
-        self.visitChildren(node)
-        node.distance_to_completion = (
-            min([n.distance_to_completion for n in node.alternatives]) + 1
-        )
+        return self.visitChildren(node) + [node]
 
     def visitConcatenation(self, node: Concatenation):
-        self.visitChildren(node)
-        node.distance_to_completion = (
-            sum([n.distance_to_completion for n in node.nodes]) + 1
-        )
+        return self.visitChildren(node) + [node]
 
     def visitRepetition(self, node: Repetition):
-        self.visit(node.node)
-        node.distance_to_completion = node.node.distance_to_completion * node.min + 1
+        return self.visit(node.node) + [node]
 
     def visitStar(self, node: Star):
-        node.distance_to_completion = 0
+        return self.visit(node.node) + [node]
 
     def visitPlus(self, node: Plus):
-        self.visit(node.node)
-        node.distance_to_completion = node.node.distance_to_completion + 1
+        return self.visit(node.node) + [node]
 
     def visitOption(self, node: Option):
-        node.distance_to_completion = 0
+        return self.visit(node.node) + [node]
 
     def visitNonTerminalNode(self, node: NonTerminalNode):
-        if node.symbol not in self.rules:
-            raise ValueError(f"Symbol {node.symbol} not found in grammar")
-        self.visit(self.rules[node.symbol])
-        node.distance_to_completion = self.rules[node.symbol].distance_to_completion + 1
+        return [node]
 
     def visitTerminalNode(self, node: TerminalNode):
-        node.distance_to_completion = 0
+        return []
 
     def visitCharSet(self, node: CharSet):
-        node.distance_to_completion = 0
+        return []
