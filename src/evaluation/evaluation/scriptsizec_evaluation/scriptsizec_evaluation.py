@@ -1,6 +1,8 @@
 import os
 import subprocess
 import tempfile
+import time
+from typing import Tuple
 
 from tccbox import tcc_bin_path
 
@@ -40,30 +42,35 @@ def is_valid_tinyc_code(c_code: str) -> bool:
         # Clean up the temporary file
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
+        # if any file extension is .o, remove it
+        if os.path.exists(temp_file_path[:-2]):
+            os.remove(temp_file_path[:-2])
 
 
-def evaluate_scriptsizec():
-    grammar, constraints = parse_file("scriptsizec.fan")
+def evaluate_scriptsizec(seconds=1) -> Tuple[str, int, int, float, float, float, float]:
+    grammar, constraints = parse_file("scriptsizec_evaluation/scriptsizec.fan")
+    solutions = []
 
-    fandango = FANDANGO(grammar, constraints, verbose=True)
+    time_in_an_hour = time.time() + seconds
 
-    print(fandango.solution)
-
-    parser = []
-
-    for solution in fandango.solution:
-        tree = grammar.parse(str(solution))
-        if tree:
-            parser.append(tree)
-
-    print(f"Number of valid solutions: {len(parser)}")
-
-    # not_valid = []
-    # for solution in fandango.solution:
-    #     if not is_valid_tinyc_code(str(solution)):
-    #         not_valid.append(solution)
-    # print(f"Number of invalid solutions: {len(not_valid)}")
+    while time.time() < time_in_an_hour:
+        fandango = FANDANGO(grammar, constraints, verbose=True, desired_solutions=10)
+        fandango.evolve()
+        solutions.extend(fandango.solution)
 
 
-if __name__ == "__main__":
-    evaluate_scriptsizec()
+    valid = []
+    for solution in solutions:
+        parsed_solution = "int main() {\n"
+        parsed_solution += "\n" + str(solution).replace("\n", "    \t")
+        parsed_solution += "\n" + "}"
+
+        if is_valid_tinyc_code(str(parsed_solution)):
+            valid.append(solution)
+
+    coverage = grammar.compute_kpath_coverage(valid, 3)
+
+    set_mean_length = sum(len(str(x)) for x in valid) / len(valid)
+    set_medium_length = sorted(len(str(x)) for x in valid)[len(valid) // 2]
+    valid_percentage = len(valid) / len(solutions) * 100
+    return "SCRIPTSIZEC", len(solutions), len(valid), valid_percentage, coverage, set_mean_length, set_medium_length

@@ -35,6 +35,7 @@ dependencies = [
     "scikit-learn>=1.5.2",
     "Faker>=30.4.0",
     "docutils>=0.21.2",
+    "tccbox==2024.7.1",
 ]
 
 [project.urls]
