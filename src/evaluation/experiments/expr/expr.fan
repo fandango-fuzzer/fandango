@@ -1,3 +1,5 @@
+# Grammar for Arithmetic Expressions
+
 <start> ::= <expr> ;
 <expr> ::=  <term> | <expr> '+' <term> | <expr> '-' <term> ;
 <term> ::= <factor> | <term> '*' <factor> | <term> '/' <factor> ;

@@ -89,10 +89,16 @@ class GrammarProcessor(FandangoParserVisitor):
         return grammar
 
     def visitAlternative(self, ctx: FandangoParser.AlternativeContext):
-        return Alternative([self.visit(child) for child in ctx.concatenation()])
+        nodes = [self.visit(child) for child in ctx.concatenation()]
+        if len(nodes) == 1:
+            return nodes[0]
+        return Alternative(nodes)
 
     def visitConcatenation(self, ctx: FandangoParser.ConcatenationContext):
-        return Concatenation([self.visit(child) for child in ctx.operator()])
+        nodes = [self.visit(child) for child in ctx.operator()]
+        if len(nodes) == 1:
+            return nodes[0]
+        return Concatenation(nodes)
 
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
         return Star(self.visit(ctx.symbol()))
