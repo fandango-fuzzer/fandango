@@ -1,7 +1,8 @@
+import time
 from io import StringIO
+from typing import Tuple
 
 from docutils.core import publish_doctree
-from docutils.utils import SystemMessage
 
 from fandango.evolution.algorithm import FANDANGO
 from fandango.language.parse import parse_file
@@ -23,31 +24,27 @@ def is_syntactically_valid_rest(rst_string):
 
         return True
 
-    except SystemMessage as e:
-        # If an exception is raised, it's definitely not valid
+    except:
         return False
 
 
-def evaluate_rest():
-    grammar, constraints = parse_file("rest.fan")
-
+def evaluate_rest(seconds=60) -> Tuple[str, int, int, float, float, float, float]:
+    grammar, constraints = parse_file("rest_evaluation/rest.fan")
     solutions = []
-    time_taken = 0
-    while len(solutions) < 50000:
-        fandango = FANDANGO(grammar, constraints, verbose=False, desired_solutions=1000)
+
+    time_in_an_hour = time.time() + seconds
+
+    while time.time() < time_in_an_hour:
+        fandango = FANDANGO(grammar, constraints, verbose=False, desired_solutions=100)
         fandango.evolve()
-        time_taken += fandango.time_taken
+        solutions.extend(fandango.solution)
 
-        valid = []
-        for solution in fandango.solution:
-            if is_syntactically_valid_rest(str(solution)):
-                valid.append(solution)
+    valid = []
+    for solution in solutions:
+        if is_syntactically_valid_rest(str(solution)):
+            valid.append(solution)
 
-        solutions.extend(valid)
-
-    print(f"Valid CSV solutions: {len(solutions)}")
-    print(f"Time taken: {time_taken}")
-
-
-if __name__ == "__main__":
-    evaluate_rest()
+    set_mean_length = sum(len(str(x)) for x in valid) / len(valid)
+    set_medium_length = sorted(len(str(x)) for x in valid)[len(valid) // 2]
+    valid_percentage = len(valid) / len(solutions) * 100
+    return "REST", len(solutions), len(valid), valid_percentage, 0, set_mean_length, set_medium_length
