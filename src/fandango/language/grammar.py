@@ -55,6 +55,7 @@ class Node(abc.ABC):
         """
         yield from ()
 
+
 class Alternative(Node):
     def __init__(self, alternatives: list[Node]):
         super().__init__(NodeType.ALTERNATIVE)
@@ -125,9 +126,13 @@ class Repetition(Node):
     def __init__(self, node: Node, min_: int = 0, max_: int = MAX_REPETITIONS):
         super().__init__(NodeType.REPETITION)
         if min_ < 0:
-            raise ValueError("Minimum repetitions must be greater than or equal to 0")
-        if max_ <= 0:
-            raise ValueError("Maximum repetitions must be greater than 0")
+            raise ValueError(
+                f"Minimum repetitions {min_} must be greater than or equal to 0"
+            )
+        if max_ <= 0 or max_ < min_:
+            raise ValueError(
+                f"Maximum repetitions {max_} must be greater than 0 or greater than min {min_}"
+            )
         self.node = node
         self.min = min_
         self.max = max_
@@ -678,7 +683,6 @@ class Grammar(NodeVisitor):
                 continue
             initial.add(node)
             initial_work.extend(node.descendents(self.rules))
-
 
         work: [[Node]] = [[x] for x in initial]
 

@@ -6,7 +6,7 @@
     <file_name><file_mode><uid><gid><file_size><mod_time><checksum><typeflag><linked_file_name>
     'ustar' <NUL> '00' <uname><gname><dev_maj_num><dev_min_num><file_name_prefix><header_padding>
 ;
-<file_name> ::= <file_name_str><maybe_nuls>;
+<file_name> ::= <file_name_first_char><file_name_chars>{,99}<nul>{,99};
 <file_name_str> ::= <file_name_first_char><file_name_chars> | <file_name_first_char> ;
 <file_mode> ::= <octal_digits_for_mode><SPACE><NUL>;
 <octal_digits_for_mode> ::=
@@ -16,14 +16,14 @@
 <uid> ::= <octal_digits_length_5><SPACE><NUL> ;
 <octal_digits_length_5> ::= '0'<octal_digit><octal_digit><octal_digit><octal_digit><octal_digit> ;
 <gid> ::= <octal_digits_length_5><SPACE><NUL> ;
-<file_size> ::= <octal_digits><SPACE>;
-<mod_time> ::= <octal_digits><SPACE>;
+<file_size> ::= <octal_digit>{8}<SPACE>;
+<mod_time> ::= <octal_digit>{8}<SPACE>;
 <checksum> ::= <octal_digits_for_checksum><NUL><SPACE> ;
 <octal_digits_for_checksum> ::= <octal_digit>* ;
 <typeflag> ::= '0' ; # | '2' ; # we only support regular files
-<linked_file_name> ::= <file_name_str><maybe_nuls> | <nuls>;
-<uname> ::= <uname_str><maybe_nuls> ;
-<gname> ::= <uname_str><maybe_nuls> ;
+<linked_file_name> ::= <file_name_str>{1,100}<nul>{,100} | <nul>{100};
+<uname> ::= <uname_first_char> <uname_char>{,31} '$'? <nul>{,31} ;
+<gname> ::= <uname_first_char> <uname_char>{,31} '$'? <nul>{,31} ;
 <uname_str> ::= <uname_first_char><uname_chars><maybe_dollar> | <uname_first_char><maybe_dollar> ;
 <uname_first_char> ::=
     'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm'
@@ -38,11 +38,11 @@
 <maybe_dollar> ::= '$' | '' ;
 <dev_maj_num> ::= <octal_digits_for_devs><SPACE><NUL> ;
 <dev_min_num> ::= <octal_digits_for_devs><SPACE><NUL> ;
-<octal_digits_for_devs> ::= <octal_digit>*;
-<file_name_prefix> ::= <nuls>;
-<header_padding> ::= <nuls>;
-<content> ::= <maybe_characters><maybe_nuls>;
-<final_entry> ::= <nuls>;
+<octal_digits_for_devs> ::= <octal_digit>{8};
+<file_name_prefix> ::= <nul>{155};
+<header_padding> ::= <nul>{12};
+<content> ::= <character>{512}<maybe_nuls>;
+<final_entry> ::= <nul>{1024};
 <octal_digits> ::= <octal_digit><octal_digits> | <octal_digit> ;
 <octal_digit> ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' ;
 <maybe_characters> ::= <characters> | '' ;
@@ -87,8 +87,7 @@
 
 forall <entr> in <entry>:
     int(<entr>.<header>.<file_size>, 8) >= 10 and
-    int(<entr>.<header>.<file_size>, 8) <= 100 and
-    len(str(<entr>.<header>.<file_size>.<octal_digits>)) == 12
+    int(<entr>.<header>.<file_size>, 8) <= 100
 ;
 
 ## File Name Length Constraint "file_name_length_constraint" (generator in grammar)
@@ -177,9 +176,6 @@ forall <entr> in <entry>:
 
 ## 15. Content Length Constraint "content_length_constraint" (generator in grammar)
 
-def produce_valid_content():
-    return "".ljust(512, "\x00")
-
 forall <entr> in <entry>:
     len(str(<entr>.<content>.<maybe_characters>)) == 512
 ;
@@ -192,8 +188,8 @@ forall <entr> in <entry>:
 
 ## 17. Final Entry Length Constraint "final_entry_length_constraint" (generator in grammar)
 
-forall <entr> in <entry>:
-    len(str(<entr>.<final_entry>)) == 1024
+forall <entr> in <final_entry>:
+    len(str(<entr>)) == 1024
 ;
 
 ## 18. Link Constraint "link_constraint" (constraint for the fuzzer) # NOT IMPLEMENTED

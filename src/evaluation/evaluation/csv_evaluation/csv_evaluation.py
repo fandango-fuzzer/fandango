@@ -47,4 +47,12 @@ def evaluate_csv(seconds=60) -> Tuple[str, int, int, float, float, float, float]
     set_mean_length = sum(len(str(x)) for x in valid) / len(valid)
     set_medium_length = sorted(len(str(x)) for x in valid)[len(valid) // 2]
     valid_percentage = len(valid) / len(solutions) * 100
-    return "CSV", len(solutions), len(valid), valid_percentage, coverage, set_mean_length, set_medium_length
+    return (
+        "CSV",
+        len(solutions),
+        len(valid),
+        valid_percentage,
+        coverage,
+        set_mean_length,
+        set_medium_length,
+    )

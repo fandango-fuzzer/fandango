@@ -16,8 +16,10 @@ def declare_variables(c_code):
     import random
 
     # Regular expressions to find variable usage and check for declarations
-    var_usage_pattern = r'\b([a-zA-Z])\b'  # Matches single-letter variables
-    declaration_pattern = r'\bint\s+([a-zA-Z])\b'  # Matches declared single-letter variables
+    var_usage_pattern = r"\b([a-zA-Z])\b"  # Matches single-letter variables
+    declaration_pattern = (
+        r"\bint\s+([a-zA-Z])\b"  # Matches declared single-letter variables
+    )
 
     # Find all single-letter variable uses in the code
     var_usage = set(re.findall(var_usage_pattern, c_code))
@@ -26,7 +28,9 @@ def declare_variables(c_code):
     declared_vars = set(re.findall(declaration_pattern, c_code))
 
     # Identify undeclared single-letter variables
-    undeclared_vars = var_usage - declared_vars - {'while', 'if', 'for', 'return', 'main'}
+    undeclared_vars = (
+        var_usage - declared_vars - {"while", "if", "for", "return", "main"}
+    )
 
     # Generate declarations for undeclared variables
     declarations = ""
@@ -35,7 +39,9 @@ def declare_variables(c_code):
         declarations += f"    int {var} = {value};\n"
 
     # Insert the declarations at the start of the main function
-    modified_code = re.sub(r'(\bint main\(\) {)', r'\1\n' + declarations, c_code, count=1)
+    modified_code = re.sub(
+        r"(\bint main\(\) {)", r"\1\n" + declarations, c_code, count=1
+    )
 
     return modified_code
 
@@ -60,7 +66,7 @@ def is_valid_tinyc_code(c_code: str) -> bool:
             [tcc_bin_path(), "-c", temp_file_path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            cwd=temp_dir  # Set the working directory to the temp directory
+            cwd=temp_dir,  # Set the working directory to the temp directory
         )
 
         # If return code is 0, the syntax is valid
@@ -75,7 +81,9 @@ def is_valid_tinyc_code(c_code: str) -> bool:
         shutil.rmtree(temp_dir)
 
 
-def evaluate_scriptsizec(seconds=60) -> Tuple[str, int, int, float, float, float, float]:
+def evaluate_scriptsizec(
+    seconds=60,
+) -> Tuple[str, int, int, float, float, float, float]:
     grammar, constraints = parse_file("scriptsizec_evaluation/scriptsizec.fan")
     solutions = []
 

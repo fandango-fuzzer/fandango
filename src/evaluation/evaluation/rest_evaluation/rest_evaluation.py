@@ -14,7 +14,9 @@ def is_syntactically_valid_rest(rst_string):
 
     try:
         # Parse the reST string into a document tree, capturing system messages
-        doctree = publish_doctree(rst_string, settings_overrides={'warning_stream': error_stream})
+        doctree = publish_doctree(
+            rst_string, settings_overrides={"warning_stream": error_stream}
+        )
 
         # Check if any errors or warnings were captured in the error stream
         errors_warnings = error_stream.getvalue().strip()
@@ -49,4 +51,12 @@ def evaluate_rest(seconds=60) -> Tuple[str, int, int, float, float, float, float
     set_mean_length = sum(len(str(x)) for x in valid) / len(valid)
     set_medium_length = sorted(len(str(x)) for x in valid)[len(valid) // 2]
     valid_percentage = len(valid) / len(solutions) * 100
-    return "REST", len(solutions), len(valid), valid_percentage, coverage, set_mean_length, set_medium_length
+    return (
+        "REST",
+        len(solutions),
+        len(valid),
+        valid_percentage,
+        coverage,
+        set_mean_length,
+        set_medium_length,
+    )
