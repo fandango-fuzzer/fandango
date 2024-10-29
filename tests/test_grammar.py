@@ -20,3 +20,9 @@ class ConstraintTest(unittest.TestCase):
 
         for i in range(5):
             print(grammar.k_paths(i+1))
+
+    def test_generate_k_paths(self):
+        grammar = parse(self.GRAMMAR)[0]
+
+        for i in range(5):
+            print(grammar._generate_all_k_paths(i+1))
