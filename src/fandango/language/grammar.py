@@ -589,7 +589,7 @@ class Grammar(NodeVisitor):
         """
 
         initial = set()
-        initial_work: [Node] = [NonTerminal(name) for name in self.rules.keys()]
+        initial_work: [Node] = [NonTerminalNode(name) for name in self.rules.keys()]
         while initial_work:
             node = initial_work.pop(0)
             if node in initial:
