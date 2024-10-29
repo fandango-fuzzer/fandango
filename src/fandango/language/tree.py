@@ -194,3 +194,22 @@ class DerivationTree:
     @property
     def children(self):
         return self._children
+
+    def flatten(self):
+        """
+        Flatten the derivation tree into a list of symbols.
+        """
+        flat = [self]
+        for child in self._children:
+            flat.extend(child.flatten())
+        return flat
+
+    def get_index(self, target):
+        """
+        Get the index of the target node in the tree.
+        """
+        flat = self.flatten()
+        try:
+            return flat.index(target)
+        except ValueError:
+            return -1

@@ -15,6 +15,9 @@ def is_valid_tinyc_code(c_code: str) -> bool:
     This function takes a string containing Tiny C code and checks if it is syntactically valid.
     Returns True if valid, False otherwise.
     """
+    print("=====================================")
+    print(c_code)
+    print("=====================================")
     # Create a temporary file to store the C code
     with tempfile.NamedTemporaryFile(suffix=".c", delete=False) as temp_file:
         temp_file.write(c_code.encode())
@@ -25,9 +28,9 @@ def is_valid_tinyc_code(c_code: str) -> bool:
         # Use tcc to try and compile the file without generating an output (-c option)
         # This is equivalent to a syntax check
         result = subprocess.run(
-            [tcc_bin_path(), '-c', temp_file_path],
+            [tcc_bin_path(), "-c", temp_file_path],
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
         )
 
         # If return code is 0, the syntax is valid
@@ -58,7 +61,6 @@ def evaluate_scriptsizec(seconds=1) -> Tuple[str, int, int, float, float, float,
         fandango.evolve()
         solutions.extend(fandango.solution)
 
-
     valid = []
     for solution in solutions:
         parsed_solution = "int main() {\n"
@@ -73,4 +75,12 @@ def evaluate_scriptsizec(seconds=1) -> Tuple[str, int, int, float, float, float,
     set_mean_length = sum(len(str(x)) for x in valid) / len(valid)
     set_medium_length = sorted(len(str(x)) for x in valid)[len(valid) // 2]
     valid_percentage = len(valid) / len(solutions) * 100
-    return "SCRIPTSIZEC", len(solutions), len(valid), valid_percentage, coverage, set_mean_length, set_medium_length
+    return (
+        "SCRIPTSIZEC",
+        len(solutions),
+        len(valid),
+        valid_percentage,
+        coverage,
+        set_mean_length,
+        set_medium_length,
+    )
