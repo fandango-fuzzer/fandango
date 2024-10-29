@@ -21,9 +21,9 @@ def better_print_results(results: Tuple[str, int, int, float, float, float, floa
 
 
 def run_evaluation():
-    # better_print_results(evaluate_csv())
-    # better_print_results(evaluate_rest())
-    # better_print_results(evaluate_scriptsizec())
+    better_print_results(evaluate_csv())
+    better_print_results(evaluate_rest())
+    better_print_results(evaluate_scriptsizec())
     better_print_results(evaluate_xml())
 
 
