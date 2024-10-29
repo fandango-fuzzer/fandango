@@ -1,7 +1,7 @@
 import abc
 import enum
 import random
-from typing import Dict, List, Optional, Tuple, Set, Any
+from typing import Dict, List, Optional, Tuple, Set, Any, Iterable
 
 from ordered_set import OrderedSet
 
@@ -46,6 +46,14 @@ class Node(abc.ABC):
     def __str__(self):
         return self.__repr__()
 
+    def descendents(self, rules: Dict[str, "Node"]) -> Iterable["Node"]:
+        """
+        Returns an iterable of the descendents of this node.
+
+        :param rules: The rules upon which to base non-terminal lookups
+        :return An iterator over the descendent nodes.
+        """
+        yield from ()
 
 class Alternative(Node):
     def __init__(self, alternatives: list[Node]):
@@ -73,6 +81,9 @@ class Alternative(Node):
 
     def __repr__(self):
         return "(" + "|".join(map(repr, self.alternatives)) + ")"
+
+    def descendents(self, rules: Dict[str, "Node"]) -> Iterable["Node"]:
+        yield from self.alternatives
 
 
 class Concatenation(Node):
@@ -106,6 +117,9 @@ class Concatenation(Node):
     def __repr__(self):
         return " ".join(map(repr, self.nodes))
 
+    def descendents(self, rules: Dict[str, "Node"]) -> Iterable["Node"]:
+        yield from self.nodes
+
 
 class Repetition(Node):
     def __init__(self, node: Node, min_: int = 0, max_: int = MAX_REPETITIONS):
@@ -136,6 +150,9 @@ class Repetition(Node):
 
     def __repr__(self):
         return f"{self.node}{{{self.min},{self.max}}}"
+
+    def descendents(self, rules: Dict[str, "Node"]) -> Iterable["Node"]:
+        yield self.node
 
 
 class Star(Repetition):
@@ -170,6 +187,9 @@ class Option(Repetition):
     def __repr__(self):
         return f"{self.node}?"
 
+    def descendents(self, rules: Dict[str, "Node"]) -> Iterable["Node"]:
+        yield from (self.node, Terminal(""))
+
 
 class NonTerminalNode(Node):
     def __init__(self, symbol: NonTerminal):
@@ -195,6 +215,9 @@ class NonTerminalNode(Node):
 
     def __hash__(self):
         return hash(self.symbol)
+
+    def descendents(self, rules: Dict[str, "Node"]) -> Iterable["Node"]:
+        yield from rules[self.symbol].descendents(rules)
 
 
 class TerminalNode(Node):
@@ -228,6 +251,9 @@ class CharSet(Node):
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitCharSet(self)
+
+    def descendents(self, rules: Dict[str, "Node"]) -> Iterable["Node"]:
+        yield from self.chars
 
 
 class NodeVisitor(abc.ABC):
@@ -553,6 +579,37 @@ class Grammar(NodeVisitor):
         if isinstance(item, str):
             item = NonTerminal(item)
         return item in self.rules
+
+    def k_paths(self, k: int) -> List[List[Node]]:
+        """
+        Computes the *k*-paths for this grammar, constructively. See: doi.org/10.1109/ASE.2019.00027
+
+        :param k: The length of the paths.
+        :return All *k*-paths of this grammar.
+        """
+
+        initial = set()
+        initial_work: [Node] = [NonTerminalNode(name) for name in self.rules.keys()]
+        while initial_work:
+            node = initial_work.pop(0)
+            if node in initial:
+                continue
+            initial.add(node)
+            initial_work.extend(node.descendents(self.rules))
+
+
+        work: [[Node]] = [[x] for x in initial]
+
+        for _ in range(1, k):
+            next_work = []
+            for base in work:
+                for descendent in base[-1].descendents(self.rules):
+                    path = base.copy()
+                    path.append(descendent)
+                    next_work.append(path)
+            work = next_work
+
+        return work
 
     def __getitem__(self, item: str | NonTerminal):
         if isinstance(item, str):
