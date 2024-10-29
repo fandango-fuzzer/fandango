@@ -1,0 +1,451 @@
+Tar isla exec
+
+Last login: Thu Sep 26 09:19:25 on ttys001
+/Users/c01joza
+% ssh se02
+Enter passphrase for key '/Users/c01joza/.ssh/id_rsa':
+Welcome to Ubuntu 22.04.4 LTS (GNU/Linux 6.8.0-40-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+Expanded Security Maintenance for Applications is not enabled.
+
+7 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+29 additional security updates can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+New release '24.04.1 LTS' available.
+Run 'do-release-upgrade' to upgrade to it.
+
+Last login: Thu Sep 26 09:19:32 2024 from 10.17.232.221
+Found pyenv, but it is badly configured (pyenv command not found in $PATH). pyenv might not
+work correctly for non-interactive shells (for example, when run from a script).
+
+To fix this message, add these lines to the '.profile' and '.zprofile' files
+in your home directory:
+
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init --path)"
+
+You'll need to restart your user session for the changes to take effect.
+For more information go to https://github.com/pyenv/pyenv/#installation.
+[oh-my-zsh] ssh-agent plugin requires ~/.ssh directory
+ zamudio@shuttle02se  ~  sudo docker rm /isla
+[sudo] password for zamudio:
+Sorry, try again.
+[sudo] password for zamudio:
+/isla
+ zamudio@shuttle02se  ~  sudo docker run -it --name isla dsteinhoefel/isla:0.10.6
+Welcome to fish, the friendly interactive shell
+Type help for instructions on how to use fish
+isla@529ea1cfb728 ~> cd isla/
+isla@529ea1cfb728 ~/isla ((v0.10.6))> ls
+CHANGELOG.md                run_eval.fish
+Dockerfile                  run_eval_csv.fish
+LICENSE                     run_eval_rest.fish
+README.md                   run_eval_scriptsize_c.fish
+TODO.md                     run_eval_tar.fish
+evaluations                 run_eval_xml.fish
+pyproject.toml              setup.cfg
+pytest.ini                  setup.py
+requirements.txt            src
+requirements_test.txt       tests
+resume_solver.py            tox.ini
+isla@529ea1cfb728 ~/isla ((v0.10.6))> fish run_eval_tar.fish
+Database: /home/isla/isla/isla_evaluation_tar.sqlite
+Jobs: Grammar Fuzzer, Length, Length + Checksum, Length + Checksum + Def-Use
+Running each job 2 times for 3600 seconds.
+[08:15:42] Collecting data for 3600 seconds (tar Grammar Fuzzer)
+[09:15:43] Collected 41697 inputs in 3600 seconds (tar Grammar Fuzzer)
+[09:17:22] Collecting data for 3600 seconds (tar Grammar Fuzzer)
+[10:17:23] Collected 40779 inputs in 3600 seconds (tar Grammar Fuzzer)
+[10:19:00] Collecting data for 3600 seconds (tar Length)
+[11:19:02] Collected 1164 inputs in 3600 seconds (tar Length)
+[11:21:03] Collecting data for 3600 seconds (tar Length)
+[12:21:05] Collected 1158 inputs in 3600 seconds (tar Length)
+[12:23:06] Collecting data for 3600 seconds (tar Length + Checksum)
+[13:23:07] Collected 1010 inputs in 3600 seconds (tar Length + Checksum)
+[13:24:51] Collecting data for 3600 seconds (tar Length + Checksum)
+[14:24:52] Collected 1008 inputs in 3600 seconds (tar Length + Checksum)
+[14:26:24] Collecting data for 3600 seconds (tar Length + Checksum + Def-Use)
+[15:26:25] Collected 1011 inputs in 3600 seconds (tar Length + Checksum + Def-Use)
+[15:28:09] Collecting data for 3600 seconds (tar Length + Checksum + Def-Use)
+Read from remote host 134.96.235.97: Operation timed out
+Connection to 134.96.235.97 closed.
+client_loop: send disconnect: Broken pipe
+/Users/c01joza
+% ssh se02
+Enter passphrase for key '/Users/c01joza/.ssh/id_rsa':
+Welcome to Ubuntu 22.04.4 LTS (GNU/Linux 6.8.0-40-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+Expanded Security Maintenance for Applications is not enabled.
+
+7 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+30 additional security updates can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+New release '24.04.1 LTS' available.
+Run 'do-release-upgrade' to upgrade to it.
+
+Last login: Fri Sep 27 10:15:06 2024 from 10.17.232.221
+Found pyenv, but it is badly configured (pyenv command not found in $PATH). pyenv might not
+work correctly for non-interactive shells (for example, when run from a script).
+
+To fix this message, add these lines to the '.profile' and '.zprofile' files
+in your home directory:
+
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init --path)"
+
+You'll need to restart your user session for the changes to take effect.
+For more information go to https://github.com/pyenv/pyenv/#installation.
+[oh-my-zsh] ssh-agent plugin requires ~/.ssh directory
+ zamudio@shuttle02se  ~  sudo docker rm /isla
+[sudo] password for zamudio:
+Sorry, try again.
+[sudo] password for zamudio:
+/isla
+ zamudio@shuttle02se  ~  sudo docker run -it --name isla dsteinhoefel/isla:0.10.6
+Welcome to fish, the friendly interactive shell
+Type help for instructions on how to use fish
+isla@656e0fd2fbe6 ~> cd is`
+cd: The directory 'is`' does not exist
+isla@656e0fd2fbe6 ~ [1]> cd isla/
+isla@656e0fd2fbe6 ~/isla ((v0.10.6))> ls
+CHANGELOG.md                README.md                   pyproject.toml              requirements_test.txt       run_eval_csv.fish           run_eval_tar.fish           setup.py                    tox.ini
+Dockerfile                  TODO.md                     pytest.ini                  resume_solver.py            run_eval_rest.fish          run_eval_xml.fish           src
+LICENSE                     evaluations                 requirements.txt            run_eval.fish               run_eval_scriptsize_c.fish  setup.cfg                   tests
+isla@656e0fd2fbe6 ~/isla ((v0.10.6))> fish run_eval_tar.fish
+Database: /home/isla/isla/isla_evaluation_tar.sqlite
+Jobs: Grammar Fuzzer, Length, Length + Checksum, Length + Checksum + Def-Use
+Running each job 2 times for 3600 seconds.
+[06:49:31] Collecting data for 3600 seconds (tar Grammar Fuzzer)
+[07:49:32] Collected 40983 inputs in 3600 seconds (tar Grammar Fuzzer)
+[07:51:05] Collecting data for 3600 seconds (tar Grammar Fuzzer)
+[08:51:06] Collected 40394 inputs in 3600 seconds (tar Grammar Fuzzer)
+[08:52:41] Collecting data for 3600 seconds (tar Length)
+[09:52:42] Collected 1149 inputs in 3600 seconds (tar Length)
+[09:54:29] Collecting data for 3600 seconds (tar Length)
+[10:54:31] Collected 1142 inputs in 3600 seconds (tar Length)
+[10:56:31] Collecting data for 3600 seconds (tar Length + Checksum)
+[11:56:40] Collected 1007 inputs in 3600 seconds (tar Length + Checksum)
+[11:58:11] Collecting data for 3600 seconds (tar Length + Checksum)
+[12:58:13] Collected 1007 inputs in 3600 seconds (tar Length + Checksum)
+[12:59:57] Collecting data for 3600 seconds (tar Length + Checksum + Def-Use)
+[13:59:59] Collected 1010 inputs in 3600 seconds (tar Length + Checksum + Def-Use)
+[14:01:45] Collecting data for 3600 seconds (tar Length + Checksum + Def-Use)
+[15:01:47] Collected 1010 inputs in 3600 seconds (tar Length + Checksum + Def-Use)
+[15:03:33] Evaluating validity for session 1 of tar Grammar Fuzzer
+[15:03:33] Evaluating validity for session 2 of tar Grammar FuzzerReading inputs for session 1 of tar Grammar Fuzzer from database...
+
+Reading inputs for session 2 of tar Grammar Fuzzer from database...
+[15:03:33] Evaluating validity for session 1 of tar Length
+Reading inputs for session 1 of tar Length from database...
+[15:03:33] Evaluating validity for session 2 of tar Length
+Reading inputs for session 2 of tar Length from database...
+[15:03:33] Evaluating validity for session 1 of tar Length + Checksum
+Reading inputs for session 1 of tar Length + Checksum from database...
+[15:03:33] Evaluating validity for session 1 of tar Length + Checksum + Def-Use
+Reading inputs for session 1 of tar Length + Checksum + Def-Use from database...
+[15:03:33] Evaluating validity for session 2 of tar Length + Checksum
+Reading inputs for session 2 of tar Length + Checksum from database...
+[15:03:33] Evaluating validity for session 2 of tar Length + Checksum + Def-Use
+Reading inputs for session 2 of tar Length + Checksum + Def-Use from database...
+Evaluating validity of inputs for session 2 of tar Grammar Fuzzer...
+Evaluating validity of inputs for session 1 of tar Grammar Fuzzer...
+Writing validity data for inputs from session 1 of tar Grammar Fuzzer to database...
+[15:07:02] DONE Evaluating validity for session 1 of tar Grammar Fuzzer
+Writing validity data for inputs from session 2 of tar Grammar Fuzzer to database...
+[15:07:03] DONE Evaluating validity for session 2 of tar Grammar Fuzzer
+Evaluating validity of inputs for session 2 of tar Length + Checksum...
+Evaluating validity of inputs for session 1 of tar Length + Checksum...
+Evaluating validity of inputs for session 2 of tar Length + Checksum + Def-Use...
+Evaluating validity of inputs for session 1 of tar Length + Checksum + Def-Use...
+Evaluating validity of inputs for session 2 of tar Length...
+Evaluating validity of inputs for session 1 of tar Length...
+Writing validity data for inputs from session 2 of tar Length + Checksum to database...
+[15:15:19] DONE Evaluating validity for session 2 of tar Length + Checksum
+Writing validity data for inputs from session 1 of tar Length + Checksum to database...
+[15:15:22] DONE Evaluating validity for session 1 of tar Length + Checksum
+Writing validity data for inputs from session 2 of tar Length + Checksum + Def-Use to database...
+[15:15:27] DONE Evaluating validity for session 2 of tar Length + Checksum + Def-Use
+Writing validity data for inputs from session 1 of tar Length + Checksum + Def-Use to database...
+[15:15:32] DONE Evaluating validity for session 1 of tar Length + Checksum + Def-Use
+Writing validity data for inputs from session 2 of tar Length to database...
+[15:17:11] DONE Evaluating validity for session 2 of tar Length
+Writing validity data for inputs from session 1 of tar Length to database...
+[15:17:28] DONE Evaluating validity for session 1 of tar Length
+[15:17:33] Evaluating 3-paths for session 1 of tar Grammar Fuzzer
+[15:17:33] Evaluating 3-paths for session 2 of tar Grammar Fuzzer
+[15:17:33] Evaluating 4-paths for session 1 of tar Grammar Fuzzer
+[15:17:33] Evaluating 4-paths for session 2 of tar Grammar Fuzzer
+[15:17:33] Evaluating 3-paths for session 1 of tar Length
+[15:17:33] Evaluating 3-paths for session 2 of tar Length
+[15:17:33] Evaluating 4-paths for session 1 of tar Length
+[15:17:33] Evaluating 4-paths for session 2 of tar Length
+[15:17:33] Evaluating 3-paths for session 1 of tar Length + Checksum
+[15:17:33] Evaluating 3-paths for session 2 of tar Length + Checksum
+[15:17:33] Evaluating 4-paths for session 1 of tar Length + Checksum
+[15:17:33] Evaluating 4-paths for session 2 of tar Length + Checksum
+[15:17:33] Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use
+[15:17:33] Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use
+[15:17:33] Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use
+[15:17:33] Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use
+[15:17:33] DONE Evaluating 3-paths for session 2 of tar Grammar Fuzzer
+[15:17:33] DONE Evaluating 4-paths for session 2 of tar Grammar Fuzzer
+[15:17:33] DONE Evaluating 4-paths for session 1 of tar Grammar Fuzzer
+[15:17:33] DONE Evaluating 3-paths for session 1 of tar Grammar Fuzzer
+[15:17:33] DONE Evaluating 3-paths for session 1 of tar Length
+[15:17:33] DONE Evaluating 4-paths for session 2 of tar Length
+[15:17:33] DONE Evaluating 3-paths for session 2 of tar Length
+[15:17:33] DONE Evaluating 4-paths for session 1 of tar Length
+Evaluating 4-paths for session 1 of tar Length + Checksum: 0.00% done (0 of 525 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum: 0.00% done (0 of 525 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 0.00% done (0 of 565 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 0.00% done (0 of 565 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum: 5.71% done (30 of 525 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 5.31% done (30 of 565 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 5.31% done (30 of 565 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum: 5.71% done (30 of 525 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 0.00% done (0 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 0.00% done (0 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 0.00% done (0 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 0.00% done (0 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum: 11.43% done (60 of 525 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 2.97% done (30 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 10.62% done (60 of 565 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 2.97% done (30 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 2.97% done (30 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 2.97% done (30 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 10.62% done (60 of 565 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum: 11.43% done (60 of 525 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum: 17.14% done (90 of 525 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 15.93% done (90 of 565 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 5.94% done (60 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum: 17.14% done (90 of 525 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 5.94% done (60 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 5.94% done (60 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 15.93% done (90 of 565 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 5.94% done (60 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 21.24% done (120 of 565 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 8.91% done (90 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum: 22.86% done (120 of 525 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 8.91% done (90 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 8.91% done (90 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum: 22.86% done (120 of 525 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 21.24% done (120 of 565 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 8.91% done (90 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 26.55% done (150 of 565 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 11.88% done (120 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum: 28.57% done (150 of 525 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 11.88% done (120 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 11.88% done (120 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum: 28.57% done (150 of 525 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 11.88% done (120 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 26.55% done (150 of 565 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 14.85% done (150 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 31.86% done (180 of 565 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 14.85% done (150 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 14.85% done (150 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum: 34.29% done (180 of 525 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 14.85% done (150 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum: 34.29% done (180 of 525 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 31.86% done (180 of 565 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 17.82% done (180 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 17.82% done (180 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 37.17% done (210 of 565 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 17.82% done (180 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum: 40.00% done (210 of 525 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 17.82% done (180 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum: 40.00% done (210 of 525 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 37.17% done (210 of 565 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 20.79% done (210 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 20.79% done (210 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 42.48% done (240 of 565 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 20.79% done (210 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 20.79% done (210 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum: 45.71% done (240 of 525 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum: 45.71% done (240 of 525 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 42.48% done (240 of 565 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 23.76% done (240 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 47.79% done (270 of 565 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 23.76% done (240 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum: 51.43% done (270 of 525 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 23.76% done (240 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 23.76% done (240 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum: 51.43% done (270 of 525 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 47.79% done (270 of 565 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 26.73% done (270 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 53.10% done (300 of 565 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 26.73% done (270 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum: 57.14% done (300 of 525 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 26.73% done (270 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 26.73% done (270 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum: 57.14% done (300 of 525 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 53.10% done (300 of 565 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 58.41% done (330 of 565 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 29.70% done (300 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum: 62.86% done (330 of 525 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 29.70% done (300 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 29.70% done (300 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 29.70% done (300 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum: 62.86% done (330 of 525 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 58.41% done (330 of 565 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 63.72% done (360 of 565 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 32.67% done (330 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum: 68.57% done (360 of 525 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 32.67% done (330 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 32.67% done (330 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 32.67% done (330 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum: 68.57% done (360 of 525 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 69.03% done (390 of 565 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 63.72% done (360 of 565 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 35.64% done (360 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum: 74.29% done (390 of 525 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 35.64% done (360 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 35.64% done (360 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 35.64% done (360 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum: 74.29% done (390 of 525 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 74.34% done (420 of 565 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 38.61% done (390 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 69.03% done (390 of 565 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 38.61% done (390 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum: 80.00% done (420 of 525 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 38.61% done (390 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 38.61% done (390 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 41.58% done (420 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 79.65% done (450 of 565 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum: 80.00% done (420 of 525 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 74.34% done (420 of 565 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 41.58% done (420 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum: 85.71% done (450 of 525 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 41.58% done (420 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 41.58% done (420 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 44.55% done (450 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 84.96% done (480 of 565 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum: 85.71% done (450 of 525 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 44.55% done (450 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 79.65% done (450 of 565 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum: 91.43% done (480 of 525 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 44.55% done (450 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 44.55% done (450 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 47.52% done (480 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 90.27% done (510 of 565 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 47.52% done (480 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum: 91.43% done (480 of 525 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 84.96% done (480 of 565 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 47.52% done (480 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 47.52% done (480 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum: 97.14% done (510 of 525 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 50.50% done (510 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum: 95.58% done (540 of 565 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 50.50% done (510 of 1010 inputs)
+[16:12:55] DONE Evaluating 4-paths for session 1 of tar Length + Checksum
+Evaluating 3-paths for session 1 of tar Length + Checksum: 97.14% done (510 of 525 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 90.27% done (510 of 565 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 50.50% done (510 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 50.50% done (510 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 53.47% done (540 of 1010 inputs)
+[16:14:43] DONE Evaluating 3-paths for session 1 of tar Length + Checksum
+[16:15:06] DONE Evaluating 3-paths for session 2 of tar Length + Checksum
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 53.47% done (540 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum: 95.58% done (540 of 565 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 53.47% done (540 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 53.47% done (540 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 56.44% done (570 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 56.44% done (570 of 1010 inputs)
+[16:19:24] DONE Evaluating 4-paths for session 2 of tar Length + Checksum
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 56.44% done (570 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 56.44% done (570 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 59.41% done (600 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 59.41% done (600 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 59.41% done (600 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 59.41% done (600 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 62.38% done (630 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 62.38% done (630 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 62.38% done (630 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 65.35% done (660 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 62.38% done (630 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 65.35% done (660 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 65.35% done (660 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 68.32% done (690 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 65.35% done (660 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 68.32% done (690 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 68.32% done (690 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 71.29% done (720 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 68.32% done (690 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 71.29% done (720 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 71.29% done (720 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 74.26% done (750 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 71.29% done (720 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 74.26% done (750 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 77.23% done (780 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 74.26% done (750 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 74.26% done (750 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 77.23% done (780 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 80.20% done (810 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 77.23% done (780 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 80.20% done (810 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 77.23% done (780 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 83.17% done (840 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 80.20% done (810 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 83.17% done (840 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 80.20% done (810 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 83.17% done (840 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 86.14% done (870 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 83.17% done (840 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 86.14% done (870 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 89.11% done (900 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 86.14% done (870 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 86.14% done (870 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 89.11% done (900 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 92.08% done (930 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 89.11% done (900 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 92.08% done (930 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 89.11% done (900 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 95.05% done (960 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 92.08% done (930 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 95.05% done (960 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 92.08% done (930 of 1010 inputs)
+Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use: 98.02% done (990 of 1010 inputs)
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 95.05% done (960 of 1010 inputs)
+Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use: 98.02% done (990 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 95.05% done (960 of 1010 inputs)
+[17:03:54] DONE Evaluating 3-paths for session 1 of tar Length + Checksum + Def-Use
+[17:04:30] DONE Evaluating 3-paths for session 2 of tar Length + Checksum + Def-Use
+Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use: 98.02% done (990 of 1010 inputs)
+Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use: 98.02% done (990 of 1010 inputs)
+[17:07:50] DONE Evaluating 4-paths for session 2 of tar Length + Checksum + Def-Use
+[17:08:26] DONE Evaluating 4-paths for session 1 of tar Length + Checksum + Def-Use
+Analyzing sessions 1, 2 for tar Grammar Fuzzer
+Analyzing sessions 1, 2 for tar Length
+Analyzing sessions 1, 2 for tar Length + Checksum
+Analyzing sessions 1, 2 for tar Length + Checksum + Def-Use
+
+
++---------------------------------+------------+------------------+------------+--------------------------+
+| Job                             | Efficiency |    Precision     | Diversity  | Mean/Median Input Length |
++---------------------------------+------------+------------------+------------+--------------------------+
+| tar Grammar Fuzzer              |     678.14 |   0.00 (  0.00%) |      0.00% |            0.00 /   0.00 |
+| tar Length                      |      19.09 |   0.00 (  0.00%) |      0.00% |            0.00 /   0.00 |
+| tar Length + Checksum           |      16.78 |   9.08 ( 54.12%) |     87.42% |        4126.06 / 4096.00 |
+| tar Length + Checksum + Def-Use |      16.83 |  16.83 (100.00%) |     87.42% |        4025.03 / 4096.00 |
++---------------------------------+------------+------------------+------------+--------------------------+
+isla@656e0fd2fbe6 ~/isla ((v0.10.6))>
+
+￼
