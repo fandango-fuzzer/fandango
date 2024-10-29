@@ -6,7 +6,6 @@ from evaluation.evaluation.scriptsizec_evaluation.scriptsizec_evaluation import 
 from evaluation.evaluation.xml_evaluation.xml_evaluation import evaluate_xml
 
 
-
 # Return the evaluation results as a tuple of values (subject, total, valid, percentage, diversity, mean_length, median)
 def better_print_results(results: Tuple[str, int, int, float, float, float, float]):
     print("================================")
@@ -22,8 +21,10 @@ def better_print_results(results: Tuple[str, int, int, float, float, float, floa
 
 
 def run_evaluation():
-    better_print_results(evaluate_scriptsizec())
-
+    # better_print_results(evaluate_csv())
+    # better_print_results(evaluate_rest())
+    # better_print_results(evaluate_scriptsizec())
+    better_print_results(evaluate_xml())
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import tempfile
 import time
@@ -10,19 +11,47 @@ from fandango.evolution.algorithm import FANDANGO
 from fandango.language.parse import parse_file
 
 
+def declare_variables(c_code):
+    import re
+    import random
+
+    # Regular expressions to find variable usage and check for declarations
+    var_usage_pattern = r'\b([a-zA-Z])\b'  # Matches single-letter variables
+    declaration_pattern = r'\bint\s+([a-zA-Z])\b'  # Matches declared single-letter variables
+
+    # Find all single-letter variable uses in the code
+    var_usage = set(re.findall(var_usage_pattern, c_code))
+
+    # Find all declared single-letter variables
+    declared_vars = set(re.findall(declaration_pattern, c_code))
+
+    # Identify undeclared single-letter variables
+    undeclared_vars = var_usage - declared_vars - {'while', 'if', 'for', 'return', 'main'}
+
+    # Generate declarations for undeclared variables
+    declarations = ""
+    for var in undeclared_vars:
+        value = random.randint(1, 100000)  # Random integer placeholder value
+        declarations += f"    int {var} = {value};\n"
+
+    # Insert the declarations at the start of the main function
+    modified_code = re.sub(r'(\bint main\(\) {)', r'\1\n' + declarations, c_code, count=1)
+
+    return modified_code
+
+
 def is_valid_tinyc_code(c_code: str) -> bool:
     """
     This function takes a string containing Tiny C code and checks if it is syntactically valid.
     Returns True if valid, False otherwise.
     """
-    print("=====================================")
-    print(c_code)
-    print("=====================================")
-    # Create a temporary file to store the C code
-    with tempfile.NamedTemporaryFile(suffix=".c", delete=False) as temp_file:
-        temp_file.write(c_code.encode())
-        temp_file.flush()  # Ensure the content is written to the file
-        temp_file_path = temp_file.name
+    # Create a temporary directory to store the C code and any generated files
+    temp_dir = tempfile.mkdtemp()
+    temp_file_path = os.path.join(temp_dir, "temp_code.c")
+
+    # Write the C code to a file in the temporary directory
+    with open(temp_file_path, "w") as temp_file:
+        temp_file.write(c_code)
 
     try:
         # Use tcc to try and compile the file without generating an output (-c option)
@@ -31,6 +60,7 @@ def is_valid_tinyc_code(c_code: str) -> bool:
             [tcc_bin_path(), "-c", temp_file_path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            cwd=temp_dir  # Set the working directory to the temp directory
         )
 
         # If return code is 0, the syntax is valid
@@ -39,38 +69,35 @@ def is_valid_tinyc_code(c_code: str) -> bool:
         if "include file" in result.stderr.decode():
             return True
         else:
-            print(f"Syntax error:\n{result.stderr.decode()}")
             return False
     finally:
-        # Clean up the temporary file
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
-        # if any file extension is .o, remove it
-        if os.path.exists(temp_file_path[:-2]):
-            os.remove(temp_file_path[:-2])
+        # Clean up the temporary directory and its contents
+        shutil.rmtree(temp_dir)
 
 
-def evaluate_scriptsizec(seconds=1) -> Tuple[str, int, int, float, float, float, float]:
+def evaluate_scriptsizec(seconds=60) -> Tuple[str, int, int, float, float, float, float]:
     grammar, constraints = parse_file("scriptsizec_evaluation/scriptsizec.fan")
     solutions = []
 
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
-        fandango = FANDANGO(grammar, constraints, verbose=True, desired_solutions=10)
+        fandango = FANDANGO(grammar, constraints, verbose=False, desired_solutions=100)
         fandango.evolve()
         solutions.extend(fandango.solution)
 
     valid = []
     for solution in solutions:
         parsed_solution = "int main() {\n"
-        parsed_solution += "\n" + str(solution).replace("\n", "    \t")
+        parsed_solution += "    " + str(solution).replace("\n", "    \t")
         parsed_solution += "\n" + "}"
 
-        if is_valid_tinyc_code(str(parsed_solution)):
+        fixed_solution = declare_variables(parsed_solution)
+
+        if is_valid_tinyc_code(str(fixed_solution)):
             valid.append(solution)
 
-    coverage = grammar.compute_kpath_coverage(valid, 3)
+    coverage = grammar.compute_kpath_coverage(valid, 4)
 
     set_mean_length = sum(len(str(x)) for x in valid) / len(valid)
     set_medium_length = sorted(len(str(x)) for x in valid)[len(valid) // 2]
