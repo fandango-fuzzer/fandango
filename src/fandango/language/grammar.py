@@ -580,37 +580,6 @@ class Grammar(NodeVisitor):
             item = NonTerminal(item)
         return item in self.rules
 
-    def k_paths(self, k: int) -> List[List[Node]]:
-        """
-        Computes the *k*-paths for this grammar, constructively. See: doi.org/10.1109/ASE.2019.00027
-
-        :param k: The length of the paths.
-        :return All *k*-paths of this grammar.
-        """
-
-        initial = set()
-        initial_work: [Node] = [NonTerminalNode(name) for name in self.rules.keys()]
-        while initial_work:
-            node = initial_work.pop(0)
-            if node in initial:
-                continue
-            initial.add(node)
-            initial_work.extend(node.descendents(self.rules))
-
-
-        work: [[Node]] = [[x] for x in initial]
-
-        for _ in range(1, k):
-            next_work = []
-            for base in work:
-                for descendent in base[-1].descendents(self.rules):
-                    path = base.copy()
-                    path.append(descendent)
-                    next_work.append(path)
-            work = next_work
-
-        return work
-
     def __getitem__(self, item: str | NonTerminal):
         if isinstance(item, str):
             item = NonTerminal(item)
@@ -695,49 +664,34 @@ class Grammar(NodeVisitor):
 
     def _generate_all_k_paths(self, k: int) -> Set[Tuple[str, ...]]:
         """
-        Generates all possible k-length paths (k-paths) in the grammar.
+        Computes the *k*-paths for this grammar, constructively. See: doi.org/10.1109/ASE.2019.00027
+
+        :param k: The length of the paths.
+        :return All *k*-paths of this grammar.
         """
-        all_paths = set()
 
-        def traverse(
-            node: Node, current_path: Tuple[str, ...], depth: int, visited: Set[int]
-        ):
-            if depth >= k:
-                return
-            node_id = id(node)
-            if node_id in visited:
-                return
-            visited.add(node_id)
+        initial = set()
+        initial_work: [Node] = [NonTerminalNode(name) for name in self.rules.keys()]
+        while initial_work:
+            node = initial_work.pop(0)
+            if node in initial:
+                continue
+            initial.add(node)
+            initial_work.extend(node.descendents(self.rules))
 
-            if isinstance(node, Alternative):
-                for alt in node.alternatives:
-                    traverse(alt, current_path, depth, visited.copy())
-            elif isinstance(node, Concatenation):
-                for child in node.nodes:
-                    traverse(child, current_path, depth, visited.copy())
-            elif isinstance(node, Repetition):
-                # Consider minimum repetitions to limit paths
-                traverse(node.node, current_path, depth, visited.copy())
-            elif isinstance(node, NonTerminalNode):
-                symbol = node.symbol.symbol
-                new_path = current_path + (symbol,)
-                if len(new_path) <= k:
-                    all_paths.add(new_path)
-                if symbol in self.rules:
-                    traverse(
-                        self.rules[node.symbol], new_path, depth + 1, visited.copy()
-                    )
-            elif isinstance(node, TerminalNode):
-                symbol = node.symbol.symbol
-                new_path = current_path + (symbol,)
-                if len(new_path) <= k:
-                    all_paths.add(new_path)
 
-        for start_symbol in self.rules:
-            traverse(self.rules[start_symbol], (start_symbol.symbol,), 0, set())
+        work: [[Node]] = [[x] for x in initial]
 
-        # Filter paths to exact length k
-        return {path for path in all_paths if len(path) == k}
+        for _ in range(1, k):
+            next_work = []
+            for base in work:
+                for descendent in base[-1].descendents(self.rules):
+                    path = base.copy()
+                    path.append(descendent)
+                    next_work.append(path)
+            work = next_work
+
+        return work
 
     @staticmethod
     def _extract_k_paths_from_tree(
