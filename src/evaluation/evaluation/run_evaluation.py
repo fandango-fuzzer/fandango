@@ -2,8 +2,11 @@ from typing import Tuple
 
 from evaluation.evaluation.csv_evaluation.csv_evaluation import evaluate_csv
 from evaluation.evaluation.rest_evaluation.rest_evaluation import evaluate_rest
-from evaluation.evaluation.scriptsizec_evaluation.scriptsizec_evaluation import evaluate_scriptsizec
+from evaluation.evaluation.scriptsizec_evaluation.scriptsizec_evaluation import (
+    evaluate_scriptsizec,
+)
 from evaluation.evaluation.xml_evaluation.xml_evaluation import evaluate_xml
+from evaluation.evaluation.tar_evaluation.tar_evaluation import evaluate_tar
 
 
 # Return the evaluation results as a tuple of values (subject, total, valid, percentage, diversity, mean_length, median)
@@ -21,10 +24,11 @@ def better_print_results(results: Tuple[str, int, int, float, float, float, floa
 
 
 def run_evaluation():
-    better_print_results(evaluate_csv())
-    better_print_results(evaluate_rest())
-    better_print_results(evaluate_scriptsizec())
-    better_print_results(evaluate_xml())
+    # better_print_results(evaluate_csv())
+    # better_print_results(evaluate_rest())
+    # better_print_results(evaluate_scriptsizec())
+    # better_print_results(evaluate_xml())
+    better_print_results(evaluate_tar())
 
 
 if __name__ == "__main__":

@@ -25,8 +25,9 @@ def is_syntactically_valid_tar(tree: str):
             print(f"Error: {err_msg}")
             return False
 
+
 def evaluate_tar():
-    grammar, constraints = parse_file("tar.fan")
+    grammar, constraints = parse_file("tar_evaluation/tar.fan")
 
     fandango = FANDANGO(grammar, constraints, verbose=True)
     fandango.evolve()
@@ -39,13 +40,16 @@ def evaluate_tar():
 
     print(f"Valid solutions: {len(valid)}")
 
+
 def produce_single_valid_tar():
     grammar, constraints = parse_file("tar.fan")
 
     valid = []
 
     while len(valid) < 1:
-        fandango = FANDANGO(grammar, constraints, verbose=True, desired_solutions=1, population_size=30)
+        fandango = FANDANGO(
+            grammar, constraints, verbose=True, desired_solutions=1, population_size=30
+        )
         fandango.evolve()
 
         for sol in fandango.solution:

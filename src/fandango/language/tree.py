@@ -109,27 +109,27 @@ class DerivationTree:
     def __iter__(self):
         return iter(self._children)
 
-    def to_int(self):
+    def to_int(self, *args, **kwargs):
         try:
-            return int(self.__repr__())
+            return int(self.__repr__(), *args, **kwargs)
         except ValueError:
             return None
 
     def to_float(self):
         try:
-            return int(self.__repr__())
+            return float(self.__repr__())
         except ValueError:
             return None
 
-    def to_complex(self):
+    def to_complex(self, *args, **kwargs):
         try:
-            return complex(self.__repr__())
+            return complex(self.__repr__(), *args, **kwargs)
         except ValueError:
             return None
 
-    def is_int(self):
+    def is_int(self, *args, **kwargs):
         try:
-            int(self.__repr__())
+            int(self.__repr__(), *args, **kwargs)
         except ValueError:
             return False
         return True
@@ -141,9 +141,9 @@ class DerivationTree:
             return False
         return True
 
-    def is_complex(self):
+    def is_complex(self, *args, **kwargs):
         try:
-            complex(self.__repr__())
+            complex(self.__repr__(), *args, **kwargs)
         except ValueError:
             return False
         return True
