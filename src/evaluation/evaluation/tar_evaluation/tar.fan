@@ -6,7 +6,7 @@
     <file_name><file_mode><uid><gid><file_size><mod_time><checksum><typeflag><linked_file_name>
     'ustar' <NUL> '00' <uname><gname><dev_maj_num><dev_min_num><file_name_prefix><header_padding>
 ;
-<file_name> ::= <file_name_first_char><file_name_chars>{,99}<nul>{,99};
+<file_name> ::= <file_name_first_char><file_name_chars>{,99}<NUL>{,99};
 <file_name_str> ::= <file_name_first_char><file_name_chars> | <file_name_first_char> ;
 <file_mode> ::= <octal_digits_for_mode><SPACE><NUL>;
 <octal_digits_for_mode> ::=
@@ -21,9 +21,9 @@
 <checksum> ::= <octal_digits_for_checksum><NUL><SPACE> ;
 <octal_digits_for_checksum> ::= <octal_digit>* ;
 <typeflag> ::= '0' ; # | '2' ; # we only support regular files
-<linked_file_name> ::= <file_name_str>{1,100}<nul>{,100} | <nul>{100};
-<uname> ::= <uname_first_char> <uname_char>{,31} '$'? <nul>{,31} ;
-<gname> ::= <uname_first_char> <uname_char>{,31} '$'? <nul>{,31} ;
+<linked_file_name> ::= <file_name_str>{1,100}<NUL>{,100} | <NUL>{100};
+<uname> ::= <uname_first_char> <uname_char>{,31} '$'? <NUL>{,31} ;
+<gname> ::= <uname_first_char> <uname_char>{,31} '$'? <NUL>{,31} ;
 <uname_str> ::= <uname_first_char><uname_chars><maybe_dollar> | <uname_first_char><maybe_dollar> ;
 <uname_first_char> ::=
     'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm'
@@ -39,10 +39,10 @@
 <dev_maj_num> ::= <octal_digits_for_devs><SPACE><NUL> ;
 <dev_min_num> ::= <octal_digits_for_devs><SPACE><NUL> ;
 <octal_digits_for_devs> ::= <octal_digit>{8};
-<file_name_prefix> ::= <nul>{155};
-<header_padding> ::= <nul>{12};
+<file_name_prefix> ::= <NUL>{155};
+<header_padding> ::= <NUL>{12};
 <content> ::= <character>{512}<maybe_nuls>;
-<final_entry> ::= <nul>{1024};
+<final_entry> ::= <NUL>{1024};
 <octal_digits> ::= <octal_digit><octal_digits> | <octal_digit> ;
 <octal_digit> ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' ;
 <maybe_characters> ::= <characters> | '' ;
