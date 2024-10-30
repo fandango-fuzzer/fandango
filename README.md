@@ -245,4 +245,4 @@ Please ensure all tests pass and adhere to the coding style guidelines.
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](https://github.com/fandango-fuzzer/fandango/blob/main/LICENSE.md) file for details.
+This project is licensed under the GNU General Public License v3.0. See the [LICENSE](https://github.com/fandango-fuzzer/fandango/blob/main/LICENSE.md) file for details.
