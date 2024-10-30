@@ -6,7 +6,7 @@
     <file_name><file_mode><uid><gid><file_size><mod_time><checksum><typeflag><linked_file_name>
     'ustar' <NUL> '00' <uname><gname><dev_maj_num><dev_min_num><file_name_prefix><header_padding>
 ;
-<file_name> ::= <file_name_first_char><file_name_chars>{,99}<NUL>{,99};
+<file_name> ::= <file_name_first_char><file_name_char>{,99}<NUL>{,99} :: generate_file_name() ;
 <file_name_str> ::= <file_name_first_char><file_name_chars> | <file_name_first_char> ;
 <file_mode> ::= <octal_digits_for_mode><SPACE><NUL>;
 <octal_digits_for_mode> ::=
@@ -21,9 +21,9 @@
 <checksum> ::= <octal_digits_for_checksum><NUL><SPACE> ;
 <octal_digits_for_checksum> ::= <octal_digit>* ;
 <typeflag> ::= '0' ; # | '2' ; # we only support regular files
-<linked_file_name> ::= <file_name_str>{1,100}<NUL>{,100} | <NUL>{100};
-<uname> ::= <uname_first_char> <uname_char>{,31} '$'? <NUL>{,31} ;
-<gname> ::= <uname_first_char> <uname_char>{,31} '$'? <NUL>{,31} ;
+<linked_file_name> ::= <file_name_first_char><file_name_char>{,99}<NUL>{,99} | <NUL>{100} :: generate_linked_file_name();
+<uname> ::= <uname_first_char> <uname_char>{,31} '$'? <NUL>{,31} :: generate_uname("<uname>") ;
+<gname> ::= <uname_first_char> <uname_char>{,31} '$'? <NUL>{,31} :: generate_uname("<gname>") ;
 <uname_str> ::= <uname_first_char><uname_chars><maybe_dollar> | <uname_first_char><maybe_dollar> ;
 <uname_first_char> ::=
     'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm'
@@ -93,9 +93,37 @@ forall <entr> in <entry>:
 
 ## File Name Length Constraint "file_name_length_constraint" (generator in grammar)
 
-forall <entr> in <entry>:
-    len(str(<entr>.<header>.<file_name>)) == 100
-;
+# forall <entr> in <entry>:
+#    len(str(<entr>.<header>.<file_name>)) == 100
+# ;
+
+def generate_file_name():
+    first = [
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '_'
+    ]
+    char = [
+        '&', '^', 'I', '}', 'F', 'J', '|', 'd', '~', '@', '<', ')',
+        'S', 'q', 'k', 'E', 'r', 'X', 'H', '`', 'K', ':', 'Q', '_',
+        '+', '4', ';', '/', 'P', 'n', "'", 'g', 'j', 't', 'p', 'z',
+        'c', '!', 'T', 'o', 'Y', 'N', 'e', '>', '0', 'G', '=', '{',
+        '$', '[', 'a', 's', 'C', 'A', '2', 'W', '1', 'V', 'O', '#',
+        'u', 'L', 'R', '6', 'y', 'l', 'f', 'h', 'w', '(', ',', '%',
+        '5', '-', '*', 'Z', '?', '3', 'b', 'v', 'U', 'D', '"', '9',
+        'M', 'i', 'm', '8', ']', 'x', '7', '.', 'B'
+    ]
+    import random
+    n = random.randint(0, 99)
+    c = [("<file_name_first_char>", [(random.choice(first), [])])]
+    for i in range(n):
+        c.append(("<file_name_char>", [(random.choice(char), [])]))
+    for i in range(99 - n):
+        c.append(("<NUL>", [("\0", [])]))
+    return "<file_name>", c
+
 
 ## File Mode Length Constraint "file_mode_length_constraint"
 ## (modified in the grammar structure to produce only valid fields)
@@ -148,21 +176,76 @@ forall <entr> in <entry>:
 
 ## Linked File Name Length Constraint "linked_file_name_length_constraint" (generator in grammar)
 
-forall <entr> in <entry>:
-    len(str(<entr>.<header>.<linked_file_name>)) == 100
-;
+# forall <entr> in <entry>:
+#    len(str(<entr>.<header>.<linked_file_name>)) == 100
+# ;
+
+def generate_linked_file_name():
+    import random
+    if random.random() < 0.25:
+        c = []
+        for i  in range(100):
+            c.append(("<NUL>", [("\0", [])]))
+        return "<linked_file_name>", c
+    first = [
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '_'
+    ]
+    char = [
+        '&', '^', 'I', '}', 'F', 'J', '|', 'd', '~', '@', '<', ')',
+        'S', 'q', 'k', 'E', 'r', 'X', 'H', '`', 'K', ':', 'Q', '_',
+        '+', '4', ';', '/', 'P', 'n', "'", 'g', 'j', 't', 'p', 'z',
+        'c', '!', 'T', 'o', 'Y', 'N', 'e', '>', '0', 'G', '=', '{',
+        '$', '[', 'a', 's', 'C', 'A', '2', 'W', '1', 'V', 'O', '#',
+        'u', 'L', 'R', '6', 'y', 'l', 'f', 'h', 'w', '(', ',', '%',
+        '5', '-', '*', 'Z', '?', '3', 'b', 'v', 'U', 'D', '"', '9',
+        'M', 'i', 'm', '8', ']', 'x', '7', '.', 'B'
+    ]
+    import random
+    n = random.randint(0, 99)
+    c = [("<file_name_first_char>", [(random.choice(first), [])])]
+    for i in range(n):
+        c.append(("<file_name_char>", [(random.choice(char), [])]))
+    for i in range(99 - n):
+        c.append(("<NUL>", [("\0", [])]))
+    return "<linked_file_name>", c
 
 ## User Name Length Constraint "uname_length_constraint" (generator in grammar)
 
-forall <entr> in <entry>:
-    len(str(<entr>.<header>.<uname>)) == 32
-;
+# forall <entr> in <entry>:
+#     len(str(<entr>.<header>.<uname>)) == 32
+# ;
+
+def generate_uname(name):
+    first = [
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '_'
+    ]
+    char = [
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '_', '-'
+    ]
+    import random
+    n = random.randint(0, 31)
+    c = [("<uname_first_char>", [(random.choice(first), [])])]
+    for i in range(n):
+        c.append(("<uname_char>", [(random.choice(char), [])]))
+    if n < 31 and random.random() < 0.5:
+        c.append(("$", []))
+        n += 1
+    for i in range(31 - n):
+        c.append(("<NUL>", [("\0", [])]))
+    return name, c
 
 ## Group Name Length Constraint "gname_length_constraint" (generator in grammar)
 
-forall <entr> in <entry>:
-    len(str(<entr>.<header>.<gname>)) == 32
-;
+# forall <entr> in <entry>:
+#     len(str(<entr>.<header>.<gname>)) == 32
+# ;
 
 ## Device Major Number Length Constraint "dev_maj_num_length_constraint" (generator in grammar)
 

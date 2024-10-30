@@ -594,16 +594,19 @@ class Grammar(NodeVisitor):
         self._global_variables = global_variables or {}
         self._visited = set()
 
-    def generate_string(self, symbol: str | NonTerminal = "<start>") -> str:
+    def generate_string(self, symbol: str | NonTerminal = "<start>") -> str | Tuple:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         return eval(
             self.generators[symbol], self._global_variables, self._local_variables
         )
 
-    def generate(self, symbol: str | NonTerminal = "<start>") -> str:
+    def generate(self, symbol: str | NonTerminal = "<start>") -> DerivationTree:
         string = self.generate_string(symbol)
-        tree = self.parse(string, symbol)
+        if isinstance(string, tuple):
+            return DerivationTree.from_tree(string)
+        else:
+            tree = self.parse(string, symbol)
         if tree is None:
             raise ValueError(
                 f"Failed to parse generated string: {string} for {symbol} with generator {self.generators[symbol]}"

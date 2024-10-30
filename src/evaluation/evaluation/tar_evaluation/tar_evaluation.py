@@ -11,7 +11,7 @@ def is_syntactically_valid_tar(tree: str):
         outfile.flush()
         cmd = ["tar", "tf", outfile.name]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (stdout, stderr) = process.communicate(timeout=2)
+        (stdout, stderr) = process.communicate(timeout=10)
         exit_code = process.wait()
 
         output_msg = stdout.decode("utf-8").strip()
@@ -38,6 +38,9 @@ def evaluate_tar():
             print(str(sol))
             valid.append(str(sol))
 
+    for sol in fandango.solution:
+        print(str(sol).encode("utf8"))
+
     print(f"Valid solutions: {len(valid)}")
 
 
@@ -53,7 +56,7 @@ def produce_single_valid_tar():
         fandango.evolve()
 
         for sol in fandango.solution:
-            print(str(sol))
+            print(str(sol).encode("utf8"))
             if is_syntactically_valid_tar(str(sol)):
                 valid.append(str(sol))
 

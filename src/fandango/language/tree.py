@@ -1,7 +1,7 @@
 import copy
 from typing import Optional, List, Any, Union, Set, Tuple
 
-from fandango.language.symbol import Symbol, NonTerminal
+from fandango.language.symbol import Symbol, NonTerminal, Terminal
 
 
 class DerivationTree:
@@ -73,6 +73,17 @@ class DerivationTree:
 
     def __tree__(self):
         return self.symbol, [child.__tree__() for child in self._children]
+
+    @staticmethod
+    def from_tree(tree: Tuple[str, List[Tuple[str, List]]]) -> "DerivationTree":
+        symbol, children = tree
+        if symbol.startswith("<") and symbol.endswith(">"):
+            symbol = NonTerminal(symbol)
+        else:
+            symbol = Terminal(symbol)
+        return DerivationTree(
+            symbol, [DerivationTree.from_tree(child) for child in children]
+        )
 
     def __deepcopy__(self, memo):
         if id(self) in memo:
@@ -221,7 +232,7 @@ class DerivationTree:
         """
         paths = set()
 
-        def traverse(node: 'DerivationTree', current_path: List[str]):
+        def traverse(node: "DerivationTree", current_path: List[str]):
             current_path.append(node.symbol.symbol)
             if len(current_path) == k:
                 paths.add(tuple(current_path))
@@ -231,7 +242,7 @@ class DerivationTree:
                     traverse(child, current_path)
             current_path.pop()
 
-        def start_from_node(node: 'DerivationTree'):
+        def start_from_node(node: "DerivationTree"):
             # Start traversal from this node
             traverse(node, [])
             # Also start traversal from its children
