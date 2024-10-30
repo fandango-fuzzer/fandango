@@ -25,7 +25,7 @@ class NodeType(enum.Enum):
 
 class Node(abc.ABC):
     def __init__(
-        self, node_type: NodeType, distance_to_completion: float = float("inf")
+            self, node_type: NodeType, distance_to_completion: float = float("inf")
     ):
         self.node_type = node_type
         self.distance_to_completion = distance_to_completion
@@ -312,12 +312,12 @@ class NodeVisitor(abc.ABC):
 
 class ParseState:
     def __init__(
-        self,
-        nonterminal: NonTerminal,
-        position: int,
-        symbols: Tuple[Symbol, ...],
-        dot: int = 0,
-        children: Optional[List[DerivationTree]] = None,
+            self,
+            nonterminal: NonTerminal,
+            position: int,
+            symbols: Tuple[Symbol, ...],
+            dot: int = 0,
+            children: Optional[List[DerivationTree]] = None,
     ):
         self.nonterminal = nonterminal
         self.position = position
@@ -343,24 +343,24 @@ class ParseState:
 
     def __eq__(self, other):
         return (
-            isinstance(other, ParseState)
-            and self.nonterminal == other.nonterminal
-            and self.position == other.position
-            and self.symbols == other.symbols
-            and self._dot == other._dot
+                isinstance(other, ParseState)
+                and self.nonterminal == other.nonterminal
+                and self.position == other.position
+                and self.symbols == other.symbols
+                and self._dot == other._dot
         )
 
     def __repr__(self):
         return (
-            f"({self.nonterminal} -> "
-            + "".join(
-                [
-                    f"{'*' if i == self._dot else ''}{s.symbol}"
-                    for i, s in enumerate(self.symbols)
-                ]
-            )
-            + ("*" if self.finished() else "")
-            + f", {self.position})"
+                f"({self.nonterminal} -> "
+                + "".join(
+            [
+                f"{'*' if i == self._dot else ''}{s.symbol}"
+                for i, s in enumerate(self.symbols)
+            ]
+        )
+                + ("*" if self.finished() else "")
+                + f", {self.position})"
         )
 
     def next(self, position: Optional[int] = None):
@@ -531,10 +531,10 @@ class Grammar(NodeVisitor):
             return None
 
     def __init__(
-        self,
-        rules: Optional[Dict[NonTerminal, Node]] = None,
-        local_variables: Optional[Dict[str, Any]] = None,
-        global_variables: Optional[Dict[str, Any]] = None,
+            self,
+            rules: Optional[Dict[NonTerminal, Node]] = None,
+            local_variables: Optional[Dict[str, Any]] = None,
+            global_variables: Optional[Dict[str, Any]] = None,
     ):
         self.rules = rules or {}
         self.generators = {}
@@ -560,7 +560,7 @@ class Grammar(NodeVisitor):
         return tree
 
     def fuzz(
-        self, start: str | NonTerminal = "<start>", max_nodes: int = 50
+            self, start: str | NonTerminal = "<start>", max_nodes: int = 50
     ) -> DerivationTree:
         if isinstance(start, str):
             start = NonTerminal(start)
@@ -648,7 +648,7 @@ class Grammar(NodeVisitor):
         self._parser = Grammar.Parser(self.rules)
 
     def compute_kpath_coverage(
-        self, derivation_trees: List[DerivationTree], k: int
+            self, derivation_trees: List[DerivationTree], k: int
     ) -> float:
         """
         Computes the k-path coverage of the grammar given a set of derivation trees.
@@ -699,7 +699,7 @@ class Grammar(NodeVisitor):
 
     @staticmethod
     def _extract_k_paths_from_tree(
-        tree: DerivationTree, k: int
+            tree: DerivationTree, k: int
     ) -> Set[Tuple[str, ...]]:
         """
         Extracts all k-length paths (k-paths) from a derivation tree.
@@ -731,11 +731,11 @@ class Grammar(NodeVisitor):
                     nodes.append(node)
                 else:
                     node.distance_to_completion = (
-                        self.rules[node.symbol].distance_to_completion + 1
+                            self.rules[node.symbol].distance_to_completion + 1
                     )
             elif node.node_type == NodeType.ALTERNATIVE:
                 node.distance_to_completion = (
-                    min([n.distance_to_completion for n in node.alternatives]) + 1
+                        min([n.distance_to_completion for n in node.alternatives]) + 1
                 )
                 if node.distance_to_completion == float("inf"):
                     nodes.append(node)
@@ -744,14 +744,14 @@ class Grammar(NodeVisitor):
                     nodes.append(node)
                 else:
                     node.distance_to_completion = (
-                        sum([n.distance_to_completion for n in node.nodes]) + 1
+                            sum([n.distance_to_completion for n in node.nodes]) + 1
                     )
             elif node.node_type == NodeType.REPETITION:
                 if node.node.distance_to_completion == float("inf"):
                     nodes.append(node)
                 else:
                     node.distance_to_completion = (
-                        node.node.distance_to_completion * node.min + 1
+                            node.node.distance_to_completion * node.min + 1
                     )
             else:
                 raise ValueError(f"Unknown node type {node.node_type}")
@@ -789,3 +789,109 @@ class Grammar(NodeVisitor):
 
     def visitCharSet(self, node: CharSet):
         return []
+
+    def compute_k_paths(self, k: int) -> Set[Tuple[str, ...]]:
+        """
+        Computes all possible k-paths in the grammar.
+
+        :param k: The length of the paths.
+        :return: A set of tuples, each tuple representing a k-path as a sequence of symbols.
+        """
+        all_paths = set()
+        for start_symbol in self.rules:
+            self._compute_paths_from_symbol(start_symbol, k, all_paths)
+        return all_paths
+
+    def _compute_paths_from_symbol(self, symbol: NonTerminal, k: int, all_paths: Set[Tuple[str, ...]]):
+        """
+        Computes all k-paths starting from a given symbol.
+
+        :param symbol: The starting NonTerminal symbol.
+        :param k: The length of the paths.
+        :param all_paths: A set to store the resulting paths.
+        """
+        visited = set()
+        self._compute_k_paths_recursive(symbol, [], all_paths, k, visited)
+
+    def _compute_k_paths_recursive(self, symbol: Symbol, current_path: List[str], all_paths: Set[Tuple[str, ...]],
+                                   k: int,
+                                   visited: Set[int]):
+        """
+        Recursively computes k-paths from the given symbol.
+
+        :param symbol: The current symbol being processed.
+        :param current_path: The current path of symbols.
+        :param all_paths: A set to store the resulting paths.
+        :param k: The desired path length.
+        :param visited: A set of visited node IDs to avoid infinite recursion.
+        """
+        if len(current_path) == k:
+            all_paths.add(tuple(current_path))
+            return
+
+        current_path.append(symbol.symbol)
+
+        if len(current_path) == k:
+            all_paths.add(tuple(current_path))
+            current_path.pop()
+            return
+
+        if isinstance(symbol, NonTerminal) and symbol in self.rules:
+            node = self.rules[symbol]
+            self._traverse_node(node, current_path, all_paths, k, visited)
+        else:
+            # Terminal symbol or undefined NonTerminal; cannot expand further
+            if len(current_path) == k:
+                all_paths.add(tuple(current_path))
+        current_path.pop()
+
+    def _traverse_node(self, node: Node, current_path: List[str], all_paths: Set[Tuple[str, ...]], k: int,
+                       visited: Set[int]):
+        """
+        Traverses a grammar node to compute k-paths.
+
+        :param node: The grammar node to traverse.
+        :param current_path: The current path of symbols.
+        :param all_paths: A set to store the resulting paths.
+        :param k: The desired path length.
+        :param visited: A set of visited node IDs to avoid infinite recursion.
+        """
+        if len(current_path) == k:
+            all_paths.add(tuple(current_path))
+            return
+
+        node_id = id(node)
+        if node_id in visited:
+            return
+        visited.add(node_id)
+
+        if isinstance(node, Alternative):
+            for alternative in node.alternatives:
+                self._traverse_node(alternative, current_path, all_paths, k, visited.copy())
+        elif isinstance(node, Concatenation):
+            for child in node.nodes:
+                self._traverse_node(child, current_path, all_paths, k, visited.copy())
+        elif isinstance(node, Repetition):
+            # For repetitions, consider minimum repetitions to limit paths
+            min_reps = max(1, node.min) if node.min > 0 else 1
+            for _ in range(min_reps):
+                self._traverse_node(node.node, current_path, all_paths, k, visited.copy())
+        elif isinstance(node, NonTerminalNode):
+            self._compute_k_paths_recursive(node.symbol, current_path, all_paths, k, visited.copy())
+        elif isinstance(node, TerminalNode):
+            current_path.append(node.symbol.symbol)
+            if len(current_path) == k:
+                all_paths.add(tuple(current_path))
+            else:
+                # Cannot expand further from a terminal symbol
+                pass
+            current_path.pop()
+        elif isinstance(node, Option):
+            # Optionally include the node
+            self._traverse_node(node.node, current_path, all_paths, k, visited.copy())
+        elif isinstance(node, Star) or isinstance(node, Plus):
+            # Similar to Repetition
+            self._traverse_node(node.node, current_path, all_paths, k, visited.copy())
+        # Add handling for other node types if necessary
+
+        visited.remove(node_id)
