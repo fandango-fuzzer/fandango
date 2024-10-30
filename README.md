@@ -103,15 +103,18 @@ Here's a minimal example to get started with FANDANGO:
 
 ### Defining Grammars
 
-FANDANGO uses grammars defined in Extended Backus-Naur Form (EBNF). Here's an example of a grammar file `expr.fan`:
+FANDANGO uses grammars defined in Extended Backus-Naur Form (EBNF). Here's an example of a grammar file `pixels.fan`:
 
 ```ebnf
-<start> ::= <expr> ;
-<expr> ::= <term> | <expr> "+" <term> | <expr> "-" <term> ;
-<term> ::= <factor> | <term> "*" <factor> | <term> "/" <factor> ;
-<factor> ::= <number> | "(" <expr> ")" ;
-<number> ::= <digit><number> | <digit> ;
-<digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+<start> ::= <img> ;
+<img> ::= <width> <height> <pixels> ;
+<width> ::= <uint16> ;
+<height> ::= <uint16> ;
+<pixels> ::= <rgb>* ;
+<uint16> ::= <byte> <byte> ;
+<rgb> ::= <byte> <byte> <byte> ;
+<byte> ::= <bit> <bit> <bit> <bit> <bit> <bit> <bit> <bit> ;
+<bit> ::= "0" | "1" ;
 ```
 
 ### Defining Constraints
@@ -121,8 +124,7 @@ Constraints are Python expressions that evaluate over non-terminal rules. They r
 Example constraints:
 
 ```python
-int(<number>) > 0
-str(<expr>) != ""
+int(<pixels>) == int(<width>) * int(<height>) * 3;
 ```
 
 Constraints can use any Python code and libraries, allowing for complex conditions.
@@ -136,7 +138,7 @@ from fandango.evolution.algorithm import FANDANGO
 from fandango.language.parse import parse_file
 
 # Parse grammar and constraints
-grammar, constraints = parse_file('demo.fan')
+grammar, constraints = parse_file('pixels.fan')
 
 # Initialize FANDANGO with desired parameters
 fandango = FANDANGO(
@@ -169,16 +171,16 @@ Suppose you want to generate inputs where a string and its SHA-256 hash are incl
 <start> ::= <data_record> ;
 <data_record> ::= <string> ' = ' <hash> ;
 <string> ::= <char>* ;
-<char> ::= "A" | "B" | "C" | ... | "Z" ;
+<char> ::= "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" ;
 <hash> ::= <hex_digit>* ;
-<hex_digit> ::= "0" | "1" | ... | "f" ;
+<hex_digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "a" | "b" | "c" | "d" | "e" | "f" ;
 ```
 
 **Constraint**:
 
 ```python
 import hashlib
-str(<hash>) == hashlib.sha256(str(<string>).encode('utf-8')).hexdigest()
+str(<hash>) == hashlib.sha256(str(<string>).encode('utf-8')).hexdigest();
 ```
 
 **Running FANDANGO**:
@@ -208,13 +210,24 @@ Generate CSV files with specific constraints:
 <csv_header> ::= <csv_record> ;
 <csv_records> ::= <csv_record> <csv_records> | "" ;
 <csv_record> ::= <csv_string_list> "\n" ;
-...
+<csv_string_list> ::= <raw_field> | <raw_field> ";" <csv_string_list> ;
+<raw_field> ::= <simple_field> | <quoted_field> ;
+<simple_field> ::= <spaces> <simple_characters> <spaces> ;
+<simple_characters> ::= <simple_character> <simple_characters> | <simple_character> ;
+<simple_character> ::= "!" | "#" | "$" | "%" | "&" | "'" | "(" | ")" | "*" | "+" | "-" | "." | "/" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | ":" | "<" | "=" | ">" | "?" | "@" | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "[" | "\\" | "]" | "^" | "_" | "`" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" | "{" | "|" | "}" | "~" ;
+<quoted_field> ::= '"' <escaped_field> '"' ;
+<escaped_field> ::= <escaped_characters> ;
+<escaped_characters> ::= <escaped_character> <escaped_characters> | "" ;
+<escaped_character> ::= "!" | "#" | "$" | "%" | "&" | "'" | "(" | ")" | "*" | "+" | "-" | "." | "/" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | ":" | ";" | "<" | "=" | ">" | "?" | "@" | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "[" | "\\" | "]" | "^" | "_" | "`" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" | "{" | "|" | "}" | "~" | " " | "\t" | "\r" |"\n" ;
+<spaces> ::= "" | " " <spaces> ;
 ```
 
 **Constraint**:
 
 ```python
-len(<csv_records>) >= 10  # Ensure at least 10 records
+forall <records> in <csv_records>:
+    len(str(<records>.<csv_record>)) > 100
+;
 ```
 
 #### Need more examples? Check the [evaluation directory](https://github.com/fandango-fuzzer/fandango/tree/main/src/evaluation/evaluation) for more use cases! You will find grammars and constraints for well-known file formats such as XML, CSV, C. In addition, you will find more examples in the [experiments directory](https://github.com/fandango-fuzzer/fandango/tree/main/src/evaluation/experiments), where we have tried to produce statistical distributions, hashes and dynamic library invocation!
