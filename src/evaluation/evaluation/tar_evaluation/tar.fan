@@ -124,13 +124,24 @@ forall <entr> in <entry>:
 
 ## Checksum Constraint "checksum_constraint" (constraint for the fuzzer)
 
+def replace_checksum(tree):
+    if tree.symbol.symbol == "<checksum>":
+        return " " * 6
+    else:
+        if self.symbol.is_non_terminal:
+            return "".join([replace_checksum(child) for child in self._children])
+        elif self.symbol.is_terminal:
+            return self.symbol.symbol
+        else:
+            raise ValueError("Invalid symbol type")
+
 def produce_valid_checksum(header):
-    header_bytes = list(str(header).encode("ascii"))
+    header_bytes = list(replace_checksum(header).encode("ascii"))
     checksum_value = str(oct(sum(header_bytes)))[2:].rjust(6, "0")
-    return checksum_value
+    return checksum_value + "\0 "
 
 forall <entr> in <entry>:
-    str(<entr>.<header>.<checksum>.<octal_digits_for_checksum>) == produce_valid_checksum(<entr>.<header>)
+    str(<entr>.<header>.<checksum>) == produce_valid_checksum(<entr>.<header>)
 ;
 
 ## Linked File Name Length Constraint "linked_file_name_length_constraint" (generator in grammar)
