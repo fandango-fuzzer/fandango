@@ -1,352 +1,248 @@
 # FANDANGO: Evolving Language-Based Testing
 
-## Introduction
-
-FANDANGO is a **Fuzzing framework** that leverages **grammar-based genetic algorithms** to generate inputs that satisfy complex constraints. It allows users to define grammars and constraints in a unified `.fan` file format and evolves inputs to meet the specified conditions. This framework is particularly useful for testing and validating software that expects inputs adhering to specific syntactical and semantical rules.
-
-## Features
-
-- **Grammar-Based Input Generation**: Define complex input structures using grammars.
-- **Constraint Specification**: Incorporate constraints directly into the grammar files.
-- **Genetic Algorithm Optimization**: Utilize genetic algorithms to evolve inputs that satisfy the constraints.
-- **Customizable Parameters**: Adjust population size, mutation rates, crossover rates, and more via command-line arguments.
-- **Command-Line Interface**: Easily run and configure the framework using CLI options.
-- **Extensible Framework**: Easily add new constraints and grammars.
-
----
+FANDANGO is a language-based fuzzer that leverages formal input specifications (grammars) combined with constraints to generate diverse sets of valid inputs for programs under test. Unlike traditional symbolic constraint solvers, FANDANGO uses a search-based approach to systematically evolve a population of inputs through syntactically valid mutations until semantic input constraints are satisfied.
 
 ## Table of Contents
 
+- [Introduction](#introduction)
+- [Features](#features)
 - [Installation](#installation)
-- [Writing FANDANGO Files](#writing-fandango-files)
-  - [Grammar Definition](#grammar-definition)
-  - [Constraint Specification](#constraint-specification)
-  - [Examples](#examples)
-    - [Number Example](#number-example)
-    - [CSV Example](#csv-example)
-- [Running the Framework](#running-the-framework)
-  - [Framework Code](#framework-code)
-  - [Command-Line Arguments](#command-line-arguments)
-- [Running the Evaluation](#running-the-evaluation)
+- [Quick Start](#quick-start)
+- [Usage](#usage)
+  - [Defining Grammars](#defining-grammars)
+  - [Defining Constraints](#defining-constraints)
+  - [Running FANDANGO](#running-fandango)
+- [Examples](#examples)
+- [Evaluation](#evaluation)
 - [Contributing](#contributing)
 - [License](#license)
 
----
+## Introduction
+
+Modern language-based test generators often rely on symbolic constraint solvers to satisfy both syntactic and semantic input constraints. While precise, this approach can be slow and restricts the expressiveness of constraints due to the limitations of solver languages.
+
+FANDANGO introduces a search-based alternative, using genetic algorithms to evolve inputs until they meet the specified constraints. This approach not only enhances efficiency—being one to three orders of magnitude faster in our experiments compared to leading tools like [ISLa](https://github.com/rindPHI/isla/tree/ESEC_FSE_22)—but also allows for the use of the full Python language and libraries in defining constraints.
+
+With FANDANGO, testers gain unprecedented flexibility in shaping test inputs and can state arbitrary goals for test generation. For example:
+
+> "Please produce 1,000 valid test inputs where the ⟨voltage⟩ field follows a Gaussian distribution but never exceeds 20 mV."
+
+## Features
+
+- **Grammar-Based Input Generation**: Define formal grammars to specify the syntactic structure of inputs.
+- **Constraint Satisfaction**: Use arbitrary Python code to define semantic constraints over grammar elements.
+- **Genetic Algorithms**: Employ a search-based approach to evolve inputs, improving efficiency over symbolic solvers.
+- **Flexible Constraint Language**: Leverage the full power of Python and its libraries in constraints.
+- **Performance**: Achieve faster input generation without sacrificing precision.
 
 ## Installation
 
-### Prerequisites
+FANDANGO requires [Python 3.11](https://www.python.org/downloads/release/python-3118/). After installing Python, it is recommended to use FANDANGO from a _python virtual environment_, so there is no version issues between libraries. After creating a new environment, change your directory to the root of the repository, and install the requirements:
 
-- **Python 3.11**
-
-### Steps
-
-1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/joszamama/fandango
-   cd fandango
-   ```
-
-2. **Create a virtual environment (optional but recommended)**
-
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-3. **Install the required packages**
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
----
-
-## Writing FANDANGO Files
-
-A FANDANGO (`.fan`) file combines both **grammar definitions** and **constraints**.
-
-### Grammar Definition
-
-Grammars are defined using Backus-Naur Form (BNF)-like syntax:
-
-- **Non-Terminals**: Enclosed in `<` and `>`, e.g., `<number>`.
-- **Terminals**: Enclosed in double quotes, e.g., `"0"`.
-- **Rules**: Defined using `::=`, with alternatives separated by `|`.
-
-Example:
-
-```bnf
-<digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+```bash
+pip install -r requirements.txt &&
+pip install -e .
 ```
 
-### Constraint Specification
-
-Constraints are specified using Python code within the `.fan` file. They can be:
-
-- **Boolean Functions**: Functions that return `True` or `False`.
-- **Assertions**: Using the `assert` statement.
-- **Quantifiers**: Using `forall` or `exists` to specify constraints over parts of the grammar.
-
-Syntax:
-
-- **Define a Function**:
-
-  ```python
-  def is_odd(x):
-      return x % 2 != 0
-  ```
-
-- **Use an Assertion**:
-
-  ```python
-  assert is_odd(3)
-  ```
-
-- **Apply Constraint to a Non-Terminal**:
-
-  ```python
-  is_odd(<number>);
-  ```
-
-- **Use Quantifiers**:
-
-  ```python
-  forall <r1> in <csv_record>:
-      |<r1>.<csv_string_list>.<raw_field>| == 3;
-  ```
-
-### Examples
-
-#### Number Example
-
-**File**: `number.fan`
-
-```bnf
-<start> ::= <number>;
-<number> ::= <non_zero><digit>* | "0";
-<non_zero> ::=
-              "1"
-            | "2"
-            | "3"
-            | "4"
-            | "5"
-            | "6"
-            | "7"
-            | "8"
-            | "9"
-            ;
-<digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+In order to see if your installation is correct, run the FANDANGO tests with:
+```bash
+pytest
 ```
 
-**Constraints**:
+If all tests pass, you are ready to use FANDANGO!
+
+## Quick Start
+
+Here's a minimal example to get started with FANDANGO:
+
+1. **Define a Grammar**: Create a file `grammar.fan` containing your grammar rules.
+
+   ```ebnf
+   <start> ::= <number> ;
+   <number> ::= <digit><number> | <digit> ;
+   <digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+   ```
+
+2. **Define Constraints**: Specify constraints using Python code.
+
+   ```python
+   <start> ::= <number> ;
+   <number> ::= <digit><number> | <digit> ;
+   <digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+   
+   int(<number>) % 2 == 0
+   ```
+
+3. **Run FANDANGO**:
+
+   ```python
+   from fandango.evolution.algorithm import FANDANGO
+   from fandango.language.parse import parse_file
+
+   # Parse grammar and constraints
+   grammar, constraints = parse_file('grammar.fan')
+
+   # Initialize FANDANGO
+   fandango = FANDANGO(grammar, constraints, verbose=True)
+
+   # Evolve solutions
+   solutions = fandango.evolve()
+
+   # Print solutions
+   for solution in solutions:
+       print(str(solution))
+   ```
+
+## Usage
+
+### Defining Grammars
+
+FANDANGO uses grammars defined in Extended Backus-Naur Form (EBNF). Here's an example of a grammar file `expr.fan`:
+
+```ebnf
+<start> ::= <expr> ;
+<expr> ::= <term> | <expr> "+" <term> | <expr> "-" <term> ;
+<term> ::= <factor> | <term> "*" <factor> | <term> "/" <factor> ;
+<factor> ::= <number> | "(" <expr> ")" ;
+<number> ::= <digit><number> | <digit> ;
+<digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+```
+
+### Defining Constraints
+
+Constraints are Python expressions that evaluate over non-terminal rules. They reference grammar elements enclosed in angle brackets.
+
+Example constraints:
 
 ```python
-def is_odd(x):
-    return x % 2 != 0
-
-assert is_odd(3)
-
-is_odd(<number>);
+int(<number>) > 0
+str(<expr>) != ""
 ```
 
-**Explanation**:
+Constraints can use any Python code and libraries, allowing for complex conditions.
 
-- **Grammar**: Defines numbers, including digits and non-zero digits.
-- **Constraint**: The `is_odd` function checks if a number is odd. The constraint `is_odd(<number>);` ensures that generated numbers are odd.
+### Running FANDANGO
 
-#### CSV Example
+Use the `FANDANGO` class to run the genetic algorithm:
 
-**File**: `csv.fan`
+```python
+from fandango.evolution.algorithm import FANDANGO
+from fandango.language.parse import parse_file
 
-```bnf
-<start> ::= <csv_file> ;
-<csv_file> ::= <csv_header> <csv_records> ;
-<csv_header> ::= <csv_record> ;
-<csv_records> ::= <csv_record> <csv_records> | "" ;
-<csv_record> ::= <csv_string_list> "\n" ;
-<csv_string_list> ::= <raw_field> | <raw_field> ";" <csv_string_list> ;
-<raw_field> ::= <simple_field> | <quoted_field> ;
-<simple_field> ::= <spaces> <simple_characters> <spaces> ;
-<simple_characters> ::= <simple_character> <simple_characters> | <simple_character> ;
-<simple_character> ::= /* All printable ASCII characters except special ones */;
-<quoted_field> ::= '"' <escaped_field> '"' ;
-<escaped_field> ::= <escaped_characters> ;
-<escaped_characters> ::= <escaped_character> <escaped_characters> | "" ;
-<escaped_character> ::= /* All printable ASCII characters, including spaces and control characters */;
-<spaces> ::= "" | " " <spaces> ;
+# Parse grammar and constraints
+grammar, constraints = parse_file('demo.fan')
+
+# Initialize FANDANGO with desired parameters
+fandango = FANDANGO(
+    grammar=grammar,
+    constraints=constraints,
+    population_size=100,
+    max_generations=500,
+    verbose=True
+)
+
+# Evolve solutions
+solutions = fandango.evolve()
+
+# Output solutions
+for solution in solutions:
+    print(str(solution))
+```
+
+## Examples
+
+### Example 1: Hash Constraint
+
+Suppose you want to generate inputs where a string and its SHA-256 hash are included:
+
+**Grammar**:
+
+```ebnf
+<start> ::= <data_record> ;
+<data_record> ::= <string> ' = ' <hash> ;
+<string> ::= <char>* ;
+<char> ::= "A" | "B" | "C" | ... | "Z" ;
+<hash> ::= <hex_digit>* ;
+<hex_digit> ::= "0" | "1" | ... | "f" ;
 ```
 
 **Constraint**:
 
 ```python
-forall <r1> in <csv_record>:
-    forall <r2> in <csv_record>:
-        |<r1>.<csv_string_list>.<raw_field>| == |<r2>.<csv_string_list>.<raw_field>|
-;
+import hashlib
+str(<hash>) == hashlib.sha256(str(<string>).encode('utf-8')).hexdigest()
 ```
 
-**Explanation**:
-
-- **Grammar**: Defines the structure of a CSV file.
-- **Constraint**: Ensures that all CSV records have the same number of fields.
-
----
-
-## Running the Framework
-
-To run the FANDANGO framework with your `.fan` files and utilize the command-line interface, use the `framework.py` script.
-
-### Framework Code
-
-**File**: `framework.py`
+**Running FANDANGO**:
 
 ```python
-# framework.py
-
-import argparse
 from fandango.evolution.algorithm import FANDANGO
 from fandango.language.parse import parse_file
 
-def main():
-    parser = argparse.ArgumentParser(description='FANDANGO Grammar-Based Genetic Algorithm Framework')
-    parser.add_argument('fan_file_path', type=str, help='Path to the .fan file containing the grammar and constraints')
-    parser.add_argument('-p', '--population_size', type=int, default=100, help='Population size (default: 100)')
-    parser.add_argument('-m', '--mutation_rate', type=float, default=0.1, help='Mutation rate (default: 0.1)')
-    parser.add_argument('-c', '--crossover_rate', type=float, default=0.9, help='Crossover rate (default: 0.9)')
-    parser.add_argument('-g', '--max_generations', type=int, default=100, help='Maximum number of generations (default: 100)')
-    parser.add_argument('-e', '--elitism_rate', type=float, default=0.2, help='Elitism rate (default: 0.2)')
-    parser.add_argument('-k', type=int, default=10, help='Number of paths in initial population generation (default: 10)')
-    parser.add_argument('-d', '--max_depth', type=int, default=20, help='Maximum depth of derivation trees (default: 20)')
-    parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose output')
+grammar, constraints = parse_file('hash_example.fan')
 
-    args = parser.parse_args()
+fandango = FANDANGO(grammar, constraints, verbose=True)
+solutions = fandango.evolve()
 
-    # Parse the grammar and constraints from the .fan file
-    grammar, constraints = parse_file(args.fan_file_path)
-
-    # Initialize FANDANGO
-    fandango = FANDANGO(
-        grammar=grammar,
-        constraints=constraints,
-        population_size=args.population_size,
-        mutation_rate=args.mutation_rate,
-        crossover_rate=args.crossover_rate,
-        max_generations=args.max_generations,
-        elitism_rate=args.elitism_rate,
-        k=args.k,
-        max_depth=args.max_depth,
-        verbose=args.verbose
-    )
-
-    # Run the evolution process
-    fandango.evolve()
-
-    # Output the best solution found
-    if fandango.best_individual:
-        print("\nBest individual found:")
-        print(fandango.best_individual)
-    else:
-        print("\nNo individual satisfying all constraints was found.")
-
-if __name__ == "__main__":
-    main()
+for solution in solutions:
+    print(str(solution))
 ```
 
-### Command-Line Arguments
+### Example 2: CSV File Generation
 
-You can customize the behavior of the framework using various command-line arguments.
+Generate CSV files with specific constraints:
 
-#### Usage
+**Grammar**:
+
+```ebnf
+<start> ::= <csv_file> ;
+<csv_file> ::= <csv_header> <csv_records> ;
+<csv_header> ::= <csv_record> ;
+<csv_records> ::= <csv_record> <csv_records> | "" ;
+<csv_record> ::= <csv_string_list> "\n" ;
+...
+```
+
+**Constraint**:
+
+```python
+len(<csv_records>) >= 10  # Ensure at least 10 records
+```
+
+#### Need more examples? Check the [evaluation directory](https://github.com/fandango-fuzzer/fandango/tree/main/src/evaluation/evaluation) for more use cases! You will find grammars and constraints for well-known file formats such as XML, CSV, C. In addition, you will find more examples in the [experiments directory](https://github.com/fandango-fuzzer/fandango/tree/main/src/evaluation/experiments), where we have tried to produce statistical distributions, hashes and dynamic library invocation!
+## Evaluation
+
+FANDANGO has been submitted to ISSTA 2025, and it is currently under review. As stated in the submitted paper, FANDANGO has been evaluated against [ISLa](https://github.com/rindPHI/isla/tree/ESEC_FSE_22), a state-of-the-art language-based fuzzer. The results show that FANDANGO is faster and more scalable than ISLa, while maintaining the same level of precision.
+
+To reproduce the evaluation results from ISLa, please refer to [their replication package](https://dl.acm.org/do/10.1145/3554336/full/), published in FSE 2022.
+To reproduce the evaluation results from FANDANGO, execute: (from the root directory)
 
 ```bash
-python framework.py path/to/yourfile.fan [options]
+cd src/evaluation/evaluation &&
+python run_evaluation.py
 ```
 
-#### Example Command
+This script will execute FANDANGO on 4 subjects (CSV, reST, ScriptSizeC, and XML) and compare the results with ISLa. The results will be printed in the terminal. Our evaluation showcases FANDANGO's search-based approach as a viable alternative to symbolic solvers, offering the following advantages:
 
-```bash
-python framework.py number.fan -p 200 -m 0.05 -c 0.8 -g 50 -e 0.1 -k 5 -d 15 -v
-```
+- **Speed**: Faster by one to three orders of magnitude compared to symbolic solvers.
+- **Precision**: Maintains precision in satisfying constraints.
+- **Scalability**: Efficiently handles large grammars and complex constraints.
 
-#### Displaying Help
-
-To see all available options and their descriptions, run:
-
-```bash
-python framework.py -h
-```
-
-- **`fan_file_path`**: The path to your `.fan` file containing the grammar and constraints.
-
-- **`-p`, `--population_size`**: Sets the number of individuals in the population. Increasing this can improve diversity but may increase computation time.
-
-- **`-m`, `--mutation_rate`**: Sets the probability of mutation occurring during evolution. Higher rates introduce more variability.
-
-- **`-c`, `--crossover_rate`**: Sets the probability of crossover (recombination) occurring. Controls how often offspring are produced from parents.
-
-- **`-g`, `--max_generations`**: Sets the maximum number of generations for the evolution process.
-
-- **`-e`, `--elitism_rate`**: Sets the proportion of top-performing individuals carried over to the next generation.
-
-- **`-k`**: Determines the number of paths used in the initial population generation.
-
-- **`-d`, `--max_depth`**: Sets the maximum depth of derivation trees to prevent excessively large structures.
-
-- **`-v`, `--verbose`**: Enables verbose output to monitor the evolution process.
-
----
-
-## Running the Evaluation
-
-To reproduce the results from our paper or to run the evaluation suite:
-
-1. **Navigate to the Evaluation Directory**
-
-   ```bash
-   cd src/vs-isla
-   ```
-
-2. **Run the Evaluation Script**
-
-   ```bash
-   python run_evaluation.py
-   ```
-
-   - This script will process all `.fan` files in the `src/evaluation` directory.
-   - It will generate inputs and evaluate them against the specified constraints.
-   - Results will be output to the console.
-
----
 
 ## Contributing
 
-We welcome contributions to the FANDANGO project! To contribute:
+Contributions are welcome! Please follow these steps:
 
-1. **Fork the Repository**
+1. Fork the repository.
+2. Create a new branch: `git checkout -b feature-name`.
+3. Commit your changes: `git commit -am 'Add new feature'`.
+4. Push to the branch: `git push origin feature-name`.
+5. Submit a pull request.
 
-2. **Create a Feature Branch**
-
-3. **Commit Your Changes**
-
-4. **Submit a Pull Request**
-
-Please ensure that your code adheres to the project's coding standards and includes appropriate tests.
+Please ensure all tests pass and adhere to the coding style guidelines.
 
 ---
 
 ## License
 
-This project is licensed under the **MIT License**.
-
----
-
-## Contact
-
-For questions or suggestions, please open an issue on the [GitHub repository](https://github.com/yourusername/fandango).
-
----
-
-© 2024 FANDANGO Contributors
-```
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
