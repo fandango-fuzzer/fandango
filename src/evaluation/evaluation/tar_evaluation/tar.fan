@@ -41,7 +41,8 @@
 <octal_digits_for_devs> ::= <octal_digit>{8};
 <file_name_prefix> ::= <NUL>{155};
 <header_padding> ::= <NUL>{12};
-<content> ::= <character>{512}<maybe_nuls>;
+<content> ::= <content_chars><maybe_nuls>;
+<content_chars> ::= <character>{512} ;
 <final_entry> ::= <NUL>{1024};
 <octal_digits> ::= <octal_digit><octal_digits> | <octal_digit> ;
 <octal_digit> ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' ;
@@ -117,9 +118,9 @@ forall <entr> in <entry>:
 
 ## Modification Time Length Constraint "mod_time_length_constraint" (generator in grammar)
 
-forall <entr> in <entry>:
-    len(str(<entr>.<header>.<mod_time>.<octal_digits>)) == 12
-;
+# forall <entr> in <entry>:
+#     len(str(<entr>.<header>.<mod_time>.<octal_digits>)) == 12
+# ;
 
 ## Checksum Constraint "checksum_constraint" (constraint for the fuzzer)
 
@@ -152,44 +153,44 @@ forall <entr> in <entry>:
 
 ## Device Major Number Length Constraint "dev_maj_num_length_constraint" (generator in grammar)
 
-forall <entr> in <entry>:
-    len(str(<entr>.<header>.<dev_maj_num>.<octal_digits>)) == 8
-;
+# forall <entr> in <entry>:
+#     len(str(<entr>.<header>.<dev_maj_num>.<octal_digits>)) == 8
+# ;
 
 ## Device Minor Number Length Constraint "dev_min_num_length_constraint" (generator in grammar)
 
-forall <entr> in <entry>:
-    len(str(<entr>.<header>.<dev_min_num>.<octal_digits>)) == 8
-;
+# forall <entr> in <entry>:
+#     len(str(<entr>.<header>.<dev_min_num>.<octal_digits>)) == 8
+# ;
 
 ## Prefix Length Constraint "prefix_length_constraint" (generator in grammar)
 
-forall <entr> in <entry>:
-    len(str(<entr>.<header>.<file_name_prefix>)) == 155
-;
+# forall <entr> in <entry>:
+#     len(str(<entr>.<header>.<file_name_prefix>)) == 155
+# ;
 
 ## Header Padding Length Constraint "header_padding_length_constraint" (generator in grammar)
 
-forall <entr> in <entry>:
-    len(str(<entr>.<header>.<header_padding>)) == 12
-;
+# forall <entr> in <entry>:
+#     len(str(<entr>.<header>.<header_padding>)) == 12
+# ;
 
 ## 15. Content Length Constraint "content_length_constraint" (generator in grammar)
 
-forall <entr> in <entry>:
-    len(str(<entr>.<content>.<maybe_characters>)) == 512
-;
+# forall <entr> in <entry>:
+#     len(str(<entr>.<content>.<maybe_characters>)) == 512
+# ;
 
 ## 16. Content Size Constraint "content_size_constr" (constraint for the fuzzer)
 
 forall <entr> in <entry>:
-    str(<entr>.<content>.<maybe_characters>) == str(<entr>.<content>.<maybe_characters>).ljust(int(<entr>.<header>.<file_size>, 8), " ")
+    str(<entr>.<content>.<content_chars>) == str(<entr>.<content>.<content_chars>).ljust(int(<entr>.<header>.<file_size>, 8), " ")
 ;
 
 ## 17. Final Entry Length Constraint "final_entry_length_constraint" (generator in grammar)
 
-forall <entr> in <final_entry>:
-    len(str(<entr>)) == 1024
-;
+# forall <entr> in <final_entry>:
+#     len(str(<entr>)) == 1024
+# ;
 
 ## 18. Link Constraint "link_constraint" (constraint for the fuzzer) # NOT IMPLEMENTED
