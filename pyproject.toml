@@ -32,7 +32,6 @@ dependencies = [
     "scipy>=1.14.1",
     "ordered-set>=4.0.2",
     "pytest>=8.3.3",
-    "scikit-learn>=1.5.2",
     "Faker>=30.4.0",
     "docutils>=0.21.2",
     "tccbox==2024.7.1",
