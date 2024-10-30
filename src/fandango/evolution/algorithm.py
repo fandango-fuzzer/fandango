@@ -342,23 +342,3 @@ class FANDANGO:
                 individual = individual.replace(node_to_mutate, new_subtree)
                 self.mutations_made += 1
         return individual
-
-
-if __name__ == "__main__":
-    grammar_, constraints_ = parse_file("../../evaluation/evaluation/csv_evaluation/csv.fan")
-
-    # paths = grammar_.compute_k_paths(3)
-    # for path in paths:
-    #     print(path)
-    #
-    # # K=2: 109, K=3: 183, K=4: 185, K=5: 245, K=6: 225, K=7: 178, K=8: 156, K=9: 0, K=10: 0, K=11: 0, K=12: 0
-    # print(len(paths))
-
-    fandango = FANDANGO(grammar_, constraints_, verbose=False)
-    solutions = fandango.evolve()
-
-    # for solution in solutions:
-    #     for path in solution.extract_k_paths(3):
-    #         print(path)
-
-    print(f"Grammar coverage: {grammar_.compute_grammar_coverage(solutions, 3):.2f}")
