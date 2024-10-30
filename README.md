@@ -35,6 +35,8 @@ With FANDANGO, testers gain unprecedented flexibility in shaping test inputs and
 - **Flexible Constraint Language**: Leverage the full power of Python and its libraries in constraints.
 - **Performance**: Achieve faster input generation without sacrificing precision.
 
+---
+
 ## Installation
 
 FANDANGO requires [Python 3.11](https://www.python.org/downloads/release/python-3118/). After installing Python, it is recommended to use FANDANGO from a _python virtual environment_, so there is no version issues between libraries. After creating a new environment, change your directory to the root of the repository, and install the requirements:
@@ -48,6 +50,8 @@ In order to see if your installation is correct, run the FANDANGO tests with:
 ```bash
 pytest
 ```
+
+---
 
 If all tests pass, you are ready to use FANDANGO!
 
@@ -92,6 +96,8 @@ Here's a minimal example to get started with FANDANGO:
    for solution in solutions:
        print(str(solution))
    ```
+
+---
 
 ## Usage
 
@@ -148,6 +154,8 @@ solutions = fandango.evolve()
 for solution in solutions:
     print(str(solution))
 ```
+
+---
 
 ## Examples
 
@@ -210,6 +218,9 @@ len(<csv_records>) >= 10  # Ensure at least 10 records
 ```
 
 #### Need more examples? Check the [evaluation directory](https://github.com/fandango-fuzzer/fandango/tree/main/src/evaluation/evaluation) for more use cases! You will find grammars and constraints for well-known file formats such as XML, CSV, C. In addition, you will find more examples in the [experiments directory](https://github.com/fandango-fuzzer/fandango/tree/main/src/evaluation/experiments), where we have tried to produce statistical distributions, hashes and dynamic library invocation!
+
+---
+
 ## Evaluation
 
 FANDANGO has been submitted to ISSTA 2025, and it is currently under review. As stated in the submitted paper, FANDANGO has been evaluated against [ISLa](https://github.com/rindPHI/isla/tree/ESEC_FSE_22), a state-of-the-art language-based fuzzer. The results show that FANDANGO is faster and more scalable than ISLa, while maintaining the same level of precision.
@@ -228,6 +239,7 @@ This script will execute FANDANGO on 4 subjects (CSV, reST, ScriptSizeC, and XML
 - **Precision**: Maintains precision in satisfying constraints.
 - **Scalability**: Efficiently handles large grammars and complex constraints.
 
+---
 
 ## Contributing
 
