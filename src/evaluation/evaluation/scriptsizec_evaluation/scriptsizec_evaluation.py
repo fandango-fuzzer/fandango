@@ -29,7 +29,7 @@ def declare_variables(c_code):
 
     # Identify undeclared single-letter variables
     undeclared_vars = (
-        var_usage - declared_vars - {"while", "if", "for", "return", "main"}
+            var_usage - declared_vars - {"while", "if", "for", "return", "main"}
     )
 
     # Generate declarations for undeclared variables
@@ -82,7 +82,7 @@ def is_valid_tinyc_code(c_code: str) -> bool:
 
 
 def evaluate_scriptsizec(
-    seconds=60,
+        seconds=60,
 ) -> Tuple[str, int, int, float, float, float, float]:
     grammar, constraints = parse_file("scriptsizec_evaluation/scriptsizec.fan")
     solutions = []
@@ -94,6 +94,8 @@ def evaluate_scriptsizec(
         fandango.evolve()
         solutions.extend(fandango.solution)
 
+    coverage = grammar.compute_grammar_coverage(solutions, 4)
+
     valid = []
     for solution in solutions:
         parsed_solution = "int main() {\n"
@@ -104,8 +106,6 @@ def evaluate_scriptsizec(
 
         if is_valid_tinyc_code(str(fixed_solution)):
             valid.append(solution)
-
-    coverage = grammar.compute_grammar_coverage(valid, 4)
 
     set_mean_length = sum(len(str(x)) for x in valid) / len(valid)
     set_medium_length = sorted(len(str(x)) for x in valid)[len(valid) // 2]
