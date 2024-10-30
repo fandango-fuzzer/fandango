@@ -4,8 +4,6 @@ import random
 from copy import deepcopy
 from typing import Dict, List, Optional, Tuple, Set, Any, Iterable
 
-from ordered_set import OrderedSet
-
 from fandango.language.symbol import NonTerminal, Terminal, Symbol
 from fandango.language.tree import DerivationTree
 
@@ -542,14 +540,11 @@ class Grammar(NodeVisitor):
         def parse_forest(self, word: str, start: str | NonTerminal = "<start>"):
             if isinstance(start, str):
                 start = NonTerminal(start)
-            table = [OrderedSet() for _ in range(len(word) + 1)]
+            table = [Column() for _ in range(len(word) + 1)]
             implicit_start = NonTerminal("<*start*>")
             table[0].add(ParseState(implicit_start, 0, (start,)))
             for k in range(len(word) + 1):
-                visited = set()
-                while len(visited) < len(table[k]):
-                    state: ParseState = list(table[k] - visited)[0]
-                    visited.add(state)
+                for state in table[k]:
                     if state.finished():
                         if state.nonterminal == implicit_start and k == len(word):
                             for child in state.children:
