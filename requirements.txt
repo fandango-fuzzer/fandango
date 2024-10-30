@@ -12,12 +12,14 @@ cycler==0.12.1
     # via matplotlib
 deap==1.4.1
     # via fandango (pyproject.toml)
+docutils==0.21.2
+    # via fandango (pyproject.toml)
+faker==30.8.1
+    # via fandango (pyproject.toml)
 fonttools==4.54.1
     # via matplotlib
 iniconfig==2.0.0
     # via pytest
-joblib==1.4.2
-    # via scikit-learn
 kiwisolver==1.4.7
     # via matplotlib
 matplotlib==3.9.2
@@ -28,7 +30,6 @@ numpy==2.1.2
     #   deap
     #   fandango (pyproject.toml)
     #   matplotlib
-    #   scikit-learn
     #   scipy
 ordered-set==4.1.0
     # via fandango (pyproject.toml)
@@ -45,14 +46,14 @@ pyparsing==2.4.7
 pytest==8.3.3
     # via fandango (pyproject.toml)
 python-dateutil==2.9.0.post0
-    # via matplotlib
-scikit-learn==1.5.2
-    # via fandango (pyproject.toml)
-scipy==1.14.1
     # via
-    #   fandango (pyproject.toml)
-    #   scikit-learn
+    #   faker
+    #   matplotlib
+scipy==1.14.1
+    # via fandango (pyproject.toml)
 six==1.16.0
     # via python-dateutil
-threadpoolctl==3.5.0
-    # via scikit-learn
+tccbox==2024.7.1
+    # via fandango (pyproject.toml)
+typing-extensions==4.12.2
+    # via faker
