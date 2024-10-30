@@ -895,3 +895,26 @@ class Grammar(NodeVisitor):
         # Add handling for other node types if necessary
 
         visited.remove(node_id)
+
+    def compute_grammar_coverage(self, derivation_trees: List[DerivationTree], k: int) -> float:
+        """
+        Compute the coverage of k-paths in the grammar based on the given derivation trees.
+
+        :param derivation_trees: A list of derivation trees (solutions produced by FANDANGO).
+        :param grammar: The Grammar object containing your grammar rules.
+        :param k: The length of the paths (k).
+        :return: A float between 0 and 1 representing the coverage.
+        """
+        # Compute all possible k-paths in the grammar
+        all_k_paths = self.compute_k_paths(k)
+
+        # Extract k-paths from the derivation trees
+        covered_k_paths = set()
+        for tree in derivation_trees:
+            covered_k_paths.update(tree.extract_k_paths(k))
+
+        # Compute coverage
+        if not all_k_paths:
+            return 1000.0  # If there are no k-paths, coverage is 100%
+        coverage = len(covered_k_paths) / len(all_k_paths)
+        return coverage
