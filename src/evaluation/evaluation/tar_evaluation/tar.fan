@@ -124,18 +124,20 @@ forall <entr> in <entry>:
 
 ## Checksum Constraint "checksum_constraint" (constraint for the fuzzer)
 
-def replace_checksum(tree):
-    if tree.symbol.symbol == "<checksum>":
-        return " " * 6
-    else:
-        if self.symbol.is_non_terminal:
-            return "".join([replace_checksum(child) for child in self._children])
-        elif self.symbol.is_terminal:
-            return self.symbol.symbol
-        else:
-            raise ValueError("Invalid symbol type")
-
 def produce_valid_checksum(header):
+    def replace_checksum(tree):
+        if tree.symbol.symbol == "<checksum>":
+            return " " * 6
+        if tree.symbol.is_non_terminal:
+            buf = ""
+            for child in tree._children:
+                buf += replace_checksum(child)
+            return buf
+            # return "".join([replace_checksum(child) for child in tree._children])
+        if tree.symbol.is_terminal:
+            return tree.symbol.symbol
+        raise ValueError("Invalid symbol type")
+
     header_bytes = list(replace_checksum(header).encode("ascii"))
     checksum_value = str(oct(sum(header_bytes)))[2:].rjust(6, "0")
     return checksum_value + "\0 "
