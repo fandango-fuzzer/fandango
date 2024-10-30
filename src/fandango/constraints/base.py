@@ -43,14 +43,16 @@ class Value(GeneticBase):
                 for _, container in combination:
                     for node in container.get_trees():
                         if node not in trees:
-                            trees.append(FailingTree(node, self))
+                            trees.append(node)
                 try:
                     values.append(
                         eval(self.expression, self.global_variables, local_variables)
                     )
                 except:
                     values.append(0)
-            fitness = ValueFitness(values, failing_trees=trees)
+            fitness = ValueFitness(
+                values, failing_trees=[FailingTree(t, self) for t in trees]
+            )
         self.cache[tree_hash] = fitness
         return fitness
 
@@ -112,7 +114,7 @@ class ExpressionConstraint(Constraint):
                     for _, container in combination:
                         for node in container.get_trees():
                             if node not in failing_trees:
-                                failing_trees.append(FailingTree(node, self))
+                                failing_trees.append(node)
             except:
                 pass
             total += 1
@@ -120,7 +122,10 @@ class ExpressionConstraint(Constraint):
             solved += 1
             total += 1
         fitness = ConstraintFitness(
-            solved, total, solved == total, failing_trees=failing_trees
+            solved,
+            total,
+            solved == total,
+            failing_trees=[FailingTree(t, self) for t in failing_trees],
         )
         self.cache[tree_hash] = fitness
         return fitness
@@ -167,12 +172,14 @@ class ComparisonConstraint(Constraint):
                         if left == right:
                             is_solved = True
                         else:
-                            suggestions.append(
-                                (Comparison.EQUAL, left, ComparisonSide.RIGHT)
-                            )
-                            suggestions.append(
-                                (Comparison.EQUAL, right, ComparisonSide.LEFT)
-                            )
+                            if not self.right.strip().startswith("len("):
+                                suggestions.append(
+                                    (Comparison.EQUAL, left, ComparisonSide.RIGHT)
+                                )
+                            if not self.left.strip().startswith("len("):
+                                suggestions.append(
+                                    (Comparison.EQUAL, right, ComparisonSide.LEFT)
+                                )
                     case Comparison.NOT_EQUAL:
                         if left != right:
                             is_solved = True
@@ -228,12 +235,11 @@ class ComparisonConstraint(Constraint):
                 else:
                     for _, container in combination:
                         for node in container.get_trees():
-                            if node not in failing_trees:
-                                failing_trees.append(
-                                    FailingTree(node, self, suggestions=suggestions)
-                                )
-            except:
-                pass
+                            ft = FailingTree(node, self, suggestions=suggestions)
+                            if ft not in failing_trees:
+                                failing_trees.append(ft)
+            except Exception as e:
+                raise e
             total += 1
         if not has_combinations:
             solved += 1

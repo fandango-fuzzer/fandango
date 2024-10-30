@@ -1,5 +1,5 @@
 <start> ::= <number>;
-<number> ::= <non_zero><digit>* | "0";
+<number> ::= <non_zero><digit>*;
 <non_zero> ::=
               "1"
             | "2"

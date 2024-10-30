@@ -8,7 +8,7 @@ def evaluate_faker():
     print(grammar)
     print(constraints)
 
-    fandango = FANDANGO(grammar, constraints, verbose=True, desired_solutions=1)
+    fandango = FANDANGO(grammar, constraints, verbose=True)
     fandango.evolve()
 
     print(fandango.solution)
