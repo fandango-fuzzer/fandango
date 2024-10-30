@@ -45,11 +45,11 @@ class Node(abc.ABC):
     def __str__(self):
         return self.__repr__()
 
-    def descendents(self, rules: Dict[str, "Node"]) -> Iterable["Node"]:
+    def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterable["Node"]:
         """
-        Returns an iterable of the descendents of this node.
+        Returns an iterator of the descendents of this node.
 
-        :param rules: The rules upon which to base non-terminal lookups
+        :param rules: The rules upon which to base non-terminal lookups.
         :return An iterator over the descendent nodes.
         """
         yield from ()
@@ -82,7 +82,7 @@ class Alternative(Node):
     def __repr__(self):
         return "(" + "|".join(map(repr, self.alternatives)) + ")"
 
-    def descendents(self, rules: Dict[str, "Node"]) -> Iterable["Node"]:
+    def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterable["Node"]:
         yield from self.alternatives
 
 
@@ -117,7 +117,7 @@ class Concatenation(Node):
     def __repr__(self):
         return " ".join(map(repr, self.nodes))
 
-    def descendents(self, rules: Dict[str, "Node"]) -> Iterable["Node"]:
+    def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterable["Node"]:
         yield from self.nodes
 
 
@@ -155,8 +155,8 @@ class Repetition(Node):
     def __repr__(self):
         return f"{self.node}{{{self.min},{self.max}}}"
 
-    def descendents(self, rules: Dict[str, "Node"]) -> Iterable["Node"]:
-        yield self.node
+    def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterable["Node"]:
+        pass
 
 
 class Star(Repetition):
@@ -169,6 +169,9 @@ class Star(Repetition):
     def __repr__(self):
         return f"{self.node}*"
 
+    def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterable["Node"]:
+        yield from (self.node, Terminal(""))
+
 
 class Plus(Repetition):
     def __init__(self, node: Node):
@@ -179,6 +182,9 @@ class Plus(Repetition):
 
     def __repr__(self):
         return f"{self.node}+"
+
+    def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterable["Node"]:
+        yield from (self.node, Terminal(""))
 
 
 class Option(Repetition):
@@ -191,7 +197,7 @@ class Option(Repetition):
     def __repr__(self):
         return f"{self.node}?"
 
-    def descendents(self, rules: Dict[str, "Node"]) -> Iterable["Node"]:
+    def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterable["Node"]:
         yield from (self.node, Terminal(""))
 
 
@@ -220,8 +226,8 @@ class NonTerminalNode(Node):
     def __hash__(self):
         return hash(self.symbol)
 
-    def descendents(self, rules: Dict[str, "Node"]) -> Iterable["Node"]:
-        yield from rules[self.symbol].descendents(rules)
+    def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterable["Node"]:
+        yield rules[self.symbol]
 
 
 class TerminalNode(Node):
@@ -256,8 +262,9 @@ class CharSet(Node):
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitCharSet(self)
 
-    def descendents(self, rules: Dict[str, "Node"]) -> Iterable["Node"]:
-        yield from self.chars
+    def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterable["Node"]:
+        for char in self.chars:
+            yield TerminalNode(Terminal(char))
 
 
 class NodeVisitor(abc.ABC):
