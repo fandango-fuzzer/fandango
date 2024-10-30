@@ -41,7 +41,7 @@
 <octal_digits_for_devs> ::= <octal_digit>{8};
 <file_name_prefix> ::= <NUL>{155};
 <header_padding> ::= <NUL>{12};
-<content> ::= <content_chars><maybe_nuls>;
+<content> ::= <character>{,512}<NUL>{,512} :: generate_content() ;
 <content_chars> ::= <character>{512} ;
 <final_entry> ::= <NUL>{1024};
 <octal_digits> ::= <octal_digit><octal_digits> | <octal_digit> ;
@@ -56,7 +56,7 @@
     | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'
     | '!' | '"' | '#' | '$' | '%' | '&' | "'" | '(' | ')' | '*' | '+' | ',' | '-'
     | '.' | '/' | ':' | ';' | '<' | '=' | '>' | '?' | '@' | '[' | ']' | '^' | '_'
-    | '`' | '{' | '|' | '}' | '~' | ' ' | '	'
+    | '`' | '{' | '|' | '}' | '~' | ' '
 ;
 <file_name_first_char> ::=
     'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm'
@@ -276,6 +276,26 @@ def generate_uname(name):
 # forall <entr> in <entry>:
 #     len(str(<entr>.<content>.<maybe_characters>)) == 512
 # ;
+
+def generate_content():
+    import random
+    chars = [
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+        '!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-',
+        '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', ']', '^', '_',
+        '`', '{', '|', '}', '~', ' '
+    ]
+    c = []
+    n = random.randint(0, 512)
+    for i in range(n):
+        c.append(("<character>", [(random.choice(chars), [])]))
+    for i in range(512 - n):
+        c.append(("<NUL>", [("\0", [])]))
+    return "<content>", c
 
 ## 16. Content Size Constraint "content_size_constr" (constraint for the fuzzer)
 
