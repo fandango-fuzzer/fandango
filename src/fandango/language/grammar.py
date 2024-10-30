@@ -463,11 +463,19 @@ class Grammar(NodeVisitor):
             return result
 
         def visitRepetition(self, node: Repetition):
-            results = []
-            for r in self.visit(node.node):
-                for rep in range(node.min, node.max + 1):
-                    results.append(r * rep)
-            return results
+            alternatives = self.visit(node.node)
+            nt = self.set_implicit_rule(alternatives)
+            prev = None
+            for rep in range(node.min, node.max):
+                alts = [[nt]]
+                if prev is not None:
+                    alts.append([nt, prev])
+                prev = self.set_implicit_rule(alts)
+            alts = [node.min * [nt]]
+            if prev is not None:
+                alts.append(node.min * [nt] + [prev])
+            min_nt = self.set_implicit_rule(alts)
+            return [[min_nt]]
 
         def visitStar(self, node: Star):
             alternatives = [[]]
