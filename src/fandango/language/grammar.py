@@ -915,6 +915,11 @@ class Grammar(NodeVisitor):
 
         # Compute coverage
         if not all_k_paths:
-            return 1000.0  # If there are no k-paths, coverage is 100%
-        coverage = len(covered_k_paths) / len(all_k_paths)
+            raise ValueError("No k-paths found in the grammar")
+
+        coverage = 0
+        for path in all_k_paths:
+            if path in covered_k_paths:
+                coverage += 1
+        coverage /= len(all_k_paths)
         return coverage

@@ -46,7 +46,7 @@ def evaluate_rest(seconds=60) -> Tuple[str, int, int, float, float, float, float
         if is_syntactically_valid_rest(str(solution)):
             valid.append(solution)
 
-    coverage = grammar.compute_kpath_coverage(valid, 4)
+    coverage = grammar.compute_grammar_coverage(valid, 4)
 
     set_mean_length = sum(len(str(x)) for x in valid) / len(valid)
     set_medium_length = sorted(len(str(x)) for x in valid)[len(valid) // 2]
