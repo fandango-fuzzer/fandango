@@ -1,6 +1,7 @@
 import abc
 import enum
 import random
+from copy import deepcopy
 from typing import Dict, List, Optional, Tuple, Set, Any, Iterable
 
 from ordered_set import OrderedSet
@@ -418,6 +419,7 @@ class Grammar(NodeVisitor):
             self._rules = {}
             self._implicit_rules = {}
             self._process()
+            self._cache: Dict[Tuple[str, NonTerminal], DerivationTree] = {}
 
         def _process(self):
             for nonterminal in self.grammar_rules:
@@ -560,7 +562,12 @@ class Grammar(NodeVisitor):
                             self.scan(state, word, table, k)
 
         def parse(self, word: str, start: str | NonTerminal = "<start>"):
+            if isinstance(start, str):
+                start = NonTerminal(start)
+            if (word, start) in self._cache:
+                return deepcopy(self._cache[(word, start)])
             for tree in self.parse_forest(word, start):
+                self._cache[(word, start)] = tree
                 return tree
             return None
 
