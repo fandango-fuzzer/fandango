@@ -172,11 +172,11 @@ class ComparisonConstraint(Constraint):
                         if left == right:
                             is_solved = True
                         else:
-                            if not self.right.startswith("len("):
+                            if not self.right.strip().startswith("len("):
                                 suggestions.append(
                                     (Comparison.EQUAL, left, ComparisonSide.RIGHT)
                                 )
-                            if not self.left.startswith("len("):
+                            if not self.left.strip().startswith("len("):
                                 suggestions.append(
                                     (Comparison.EQUAL, right, ComparisonSide.LEFT)
                                 )
