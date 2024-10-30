@@ -1,5 +1,5 @@
 import copy
-from typing import Optional, List, Any, Union, Set
+from typing import Optional, List, Any, Union, Set, Tuple
 
 from fandango.language.symbol import Symbol, NonTerminal
 
@@ -17,19 +17,25 @@ class DerivationTree:
     ):
         self.symbol = symbol
         self._children = []
+        self._size = 1
         self.set_children(children or [])
         self._parent = parent
 
     def __len__(self):
         return len(self._children)
 
+    def size(self):
+        return self._size
+
     def set_children(self, children: List["DerivationTree"]):
         self._children = children
+        self._size = 1 + sum(child.size() for child in self._children)
         for child in self._children:
             child._parent = self
 
     def add_child(self, child: "DerivationTree"):
         self._children.append(child)
+        self._size += child.size()
         child._parent = self
 
     def find_all_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
@@ -103,27 +109,27 @@ class DerivationTree:
     def __iter__(self):
         return iter(self._children)
 
-    def to_int(self):
+    def to_int(self, *args, **kwargs):
         try:
-            return int(self.__repr__())
+            return int(self.__repr__(), *args, **kwargs)
         except ValueError:
             return None
 
     def to_float(self):
         try:
-            return int(self.__repr__())
+            return float(self.__repr__())
         except ValueError:
             return None
 
-    def to_complex(self):
+    def to_complex(self, *args, **kwargs):
         try:
-            return complex(self.__repr__())
+            return complex(self.__repr__(), *args, **kwargs)
         except ValueError:
             return None
 
-    def is_int(self):
+    def is_int(self, *args, **kwargs):
         try:
-            int(self.__repr__())
+            int(self.__repr__(), *args, **kwargs)
         except ValueError:
             return False
         return True
@@ -135,9 +141,9 @@ class DerivationTree:
             return False
         return True
 
-    def is_complex(self):
+    def is_complex(self, *args, **kwargs):
         try:
-            complex(self.__repr__())
+            complex(self.__repr__(), *args, **kwargs)
         except ValueError:
             return False
         return True
@@ -184,3 +190,53 @@ class DerivationTree:
         for child in self._children:
             nodes.extend(child.find_all_nodes(symbol))
         return nodes
+
+    @property
+    def children(self):
+        return self._children
+
+    def flatten(self):
+        """
+        Flatten the derivation tree into a list of symbols.
+        """
+        flat = [self]
+        for child in self._children:
+            flat.extend(child.flatten())
+        return flat
+
+    def get_index(self, target):
+        """
+        Get the index of the target node in the tree.
+        """
+        flat = self.flatten()
+        try:
+            return flat.index(target)
+        except ValueError:
+            return -1
+
+    def extract_k_paths(self, k: int) -> Set[Tuple[str, ...]]:
+        """
+        Extract all k-length paths (k-paths) from the derivation tree,
+        starting from any node.
+        """
+        paths = set()
+
+        def traverse(node: 'DerivationTree', current_path: List[str]):
+            current_path.append(node.symbol.symbol)
+            if len(current_path) == k:
+                paths.add(tuple(current_path))
+                # Continue traversal to find longer paths starting from this node
+            else:
+                for child in node.children:
+                    traverse(child, current_path)
+            current_path.pop()
+
+        def start_from_node(node: 'DerivationTree'):
+            # Start traversal from this node
+            traverse(node, [])
+            # Also start traversal from its children
+            for child in node.children:
+                start_from_node(child)
+
+        start_from_node(self)
+        return paths

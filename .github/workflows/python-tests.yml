@@ -1,6 +1,5 @@
-# GitHub Actions Workflow: Python Tests
-# This workflow automates the process of running tests on Python code using pytest.
-# It triggers on pushes to the main and dev branches, and on pull requests targeting main.
+# GitHub Actions Workflow: Python Tests with Caching
+# This workflow automates running tests on Python code using pytest and speeds up the process using caching.
 
 name: Python Tests  # Workflow name, visible in the Actions tab
 
@@ -15,39 +14,54 @@ on:
 
 jobs:
   test:
-    # Define the environment this job will run on
     runs-on: ubuntu-latest  # Use the latest Ubuntu runner provided by GitHub
 
     strategy:
-      # Matrix lets you run the job for multiple Python versions (in this case, only Python 3.11)
       matrix:
-        python-version: [ 3.11 ]
+        python-version: [ 3.11 ]  # Python version to run
 
     steps:
       # Step 1: Checkout the repository's code
       - name: Checkout code
-        uses: actions/checkout@v3  # Official GitHub action to checkout the repository's code
+        uses: actions/checkout@v3
 
-      # Step 2: Set up the Python environment
+      # Step 2: Set up Python environment
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4  # Official action to set up the specified Python version
+        uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}  # Python version from matrix strategy
+          python-version: ${{ matrix.python-version }}
 
-      # Step 3: Install system-level dependencies required by the project
+      # Step 3: Cache pip dependencies to speed up installs
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip  # Path to cache
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}  # Unique cache key based on the OS, Python version, and requirements file hash
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
+      # Step 4: Install system-level dependencies required by the project
       - name: Install system dependencies
         run: |
-          sudo apt-get update && sudo apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config  # Install essential system packages
-          pip install pygraphviz  # Install pygraphviz via pip
+          sudo apt-get update && sudo apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config
+          pip install pygraphviz
 
-      # Step 4: Install Python dependencies (FANDANGO and additional libraries)
+      # Step 5: Install Python dependencies (FANDANGO and additional libraries)
       - name: Install FANDANGO dependencies
         run: |
           python -m pip install --upgrade pip  # Upgrade pip to the latest version
           pip install -e .  # Install the project in editable mode
           pip install -r requirements.txt  # Install all dependencies listed in requirements.txt
 
-      # Step 5: Run the test suite using pytest
+      # Step 6: Cache installed packages for system dependencies
+      - name: Cache pygraphviz dependencies
+        uses: actions/cache@v3
+        with:
+          path: /usr/local/lib/python3.11/dist-packages  # Path to cache the installed system dependencies
+          key: pygraphviz-${{ runner.os }}-python3.11
+          restore-keys: |
+            pygraphviz-${{ runner.os }}-
+
+      # Step 7: Run the test suite using pytest
       - name: Run tests
-        run: |
-          pytest  # Execute tests with pytest
+        run: pytest  # Execute tests with pytest

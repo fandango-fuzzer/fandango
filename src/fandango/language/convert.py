@@ -24,6 +24,7 @@ from fandango.language.grammar import (
     TerminalNode,
     Plus,
     Option,
+    Repetition,
 )
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.parser.FandangoParserVisitor import FandangoParserVisitor
@@ -85,13 +86,20 @@ class GrammarProcessor(FandangoParserVisitor):
                     )
                 grammar.set_generator(symbol, ast.unparse(expr))
         grammar.update_parser()
+        grammar.prime()
         return grammar
 
     def visitAlternative(self, ctx: FandangoParser.AlternativeContext):
-        return Alternative([self.visit(child) for child in ctx.concatenation()])
+        nodes = [self.visit(child) for child in ctx.concatenation()]
+        if len(nodes) == 1:
+            return nodes[0]
+        return Alternative(nodes)
 
     def visitConcatenation(self, ctx: FandangoParser.ConcatenationContext):
-        return Concatenation([self.visit(child) for child in ctx.operator()])
+        nodes = [self.visit(child) for child in ctx.operator()]
+        if len(nodes) == 1:
+            return nodes[0]
+        return Concatenation(nodes)
 
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
         return Star(self.visit(ctx.symbol()))
@@ -101,6 +109,33 @@ class GrammarProcessor(FandangoParserVisitor):
 
     def visitOption(self, ctx: FandangoParser.OptionContext):
         return Option(self.visit(ctx.symbol()))
+
+    def visitRepeat(self, ctx: FandangoParser.RepeatContext):
+        node = self.visit(ctx.symbol())
+        if ctx.COMMA():
+            bounds = [None, None]
+            bounds_index = 0
+            started = False
+            for child in ctx.getChildren():
+                if child.getText() == "{":
+                    started = True
+                elif child.getText() == "}":
+                    break
+                elif started:
+                    if child.getText() == ",":
+                        bounds_index += 1
+                    else:
+                        bounds[bounds_index] = int(child.getText())
+            min_, max_ = bounds
+            if min_ is None and max_ is None:
+                return Repetition(node)
+            elif min_ is None:
+                return Repetition(node, max_=max_)
+            elif max_ is None:
+                return Repetition(node, min_=min_)
+            return Repetition(node, min_, max_)
+        reps = int(ctx.NUMBER(0).getText())
+        return Repetition(node, reps, reps)
 
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
         if ctx.RULE_NAME():

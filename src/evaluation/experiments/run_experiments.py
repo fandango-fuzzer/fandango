@@ -1,6 +1,6 @@
 from faker.faker_experiment import evaluate_faker
 from hash.hash import evaluate_hash
-from img.img import evaluate_img
+from pixels.img import evaluate_img
 from int.int import evaluate_int
 from voltage.voltage import evaluate_voltage
 

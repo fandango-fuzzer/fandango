@@ -34,6 +34,8 @@ dependencies = [
     "pytest>=8.3.3",
     "scikit-learn>=1.5.2",
     "Faker>=30.4.0",
+    "docutils>=0.21.2",
+    "tccbox==2024.7.1",
 ]
 
 [project.urls]
@@ -49,7 +51,7 @@ test = [
     "pytest-cov>=4.1.0",
     "pytest-html>=3.2.0",
     "pytest-rerunfailures>=11.1.2",
-    "parameterized>=0.8.1"
+    "parameterized>=0.8.1",
 ]
 
 [tool.black]

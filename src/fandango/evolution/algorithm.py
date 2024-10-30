@@ -4,9 +4,6 @@ import random
 import time
 from typing import List, Set, Tuple
 
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics import jaccard_score
-
 from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
 from fandango.language.grammar import DerivationTree
@@ -24,10 +21,10 @@ class FANDANGO:
             population_size: int = 100,
             desired_solutions: int = 0,
             initial_population: List[DerivationTree] = None,
-            max_generations: int = 1000,
+            max_generations: int = 500,
             elitism_rate: float = 0.1,
             crossover_rate: float = 0.8,
-            tournament_size: float = 0.05,
+            tournament_size: float = 0.1,
             mutation_rate: float = 0.2,
             verbose: bool = False,
     ):
@@ -44,13 +41,14 @@ class FANDANGO:
         :param mutation_rate: The rate of individuals that will undergo mutation.
         :param verbose: Whether to print information about the evolution process.
         """
-        print(f" ---------- Initializing FANDANGO algorithm ---------- ")
+        if verbose:
+            print(f" ---------- Initializing FANDANGO algorithm ---------- ")
         self.grammar = grammar
         self.constraints = constraints
         self.population_size = population_size
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
-        self.tournament_size = int(population_size * tournament_size)
+        self.tournament_size = int(population_size * tournament_size) or population_size
         self.max_generations = max_generations
         self.elitism_rate = elitism_rate
 
@@ -72,19 +70,22 @@ class FANDANGO:
         if initial_population is not None:
             self.population = list(initial_population)
         else:
-            print("[INFO] - Generating initial population...")
+            if self.verbose:
+                print("[INFO] - Generating initial population...")
             st_time = time.time()
             self.population = self.generate_random_initial_population()
-            print(
-                f"[INFO] - Initial population generated in {time.time() - st_time:.2f} seconds"
-            )
+            if self.verbose:
+                print(
+                    f"[INFO] - Initial population generated in {time.time() - st_time:.2f} seconds"
+                )
 
         # Evaluate population
         self.evaluation = self.evaluate_population()
         self.fitness = (
                 sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
-        print(f" ---------- Starting evolution ---------- ")
+        if self.verbose:
+            print(f" ---------- Starting evolution ---------- ")
 
     def evolve(self) -> List[DerivationTree]:
         """
@@ -95,17 +96,25 @@ class FANDANGO:
         start_time = time.time()
 
         for generation in range(1, self.max_generations + 1):
-            if self.fitness >= 0.99:
-                break
-            if self.desired_solutions == 0 and len(self.solution) >= self.population_size:
-                break
             if 0 < self.desired_solutions <= len(self.solution):
+                self.fitness = 1.0
+                self.solution = self.solution[: self.desired_solutions]
                 break
+            elif self.desired_solutions == 0:
+                if self.fitness >= 0.99:
+                    self.fitness = 1.0
+                    self.solution = self.population[: self.population_size]
+                    break
+                if len(self.solution) >= self.population_size:
+                    self.fitness = 1.0
+                    self.solution = self.solution[: self.population_size]
+                    break
 
-            print(
-                f"[INFO] - Generation {generation} - Fitness: {self.fitness:.2f} - "
-                f"#solutions found: {len(self.solution)}"
-            )
+            if self.verbose:
+                print(
+                    f"[INFO] - Generation {generation} - Fitness: {self.fitness:.2f} - "
+                    f"#solutions found: {len(self.solution)}"
+                )
 
             # Select elites
             new_population = self.select_elites()
@@ -145,27 +154,17 @@ class FANDANGO:
             )
 
         self.time_taken = time.time() - start_time
-        if self.desired_solutions == 0:
-            self.solution = self.solution[:self.population_size]
-        else:
-            self.solution = self.solution[:self.desired_solutions]
 
-        if len(self.solution) >= self.population_size:
-            self.population = self.solution
-            self.fitness = 1.0
-
-        self.population = self.population
-
-        print(f" ---------- Evolution finished ---------- ")
-        print(
-            f"[INFO] - Perfect solutions found: ({len(self.solution)}) "
-            f"- Fitness of final population: {self.fitness:.2f}"
-        )
-        print(f"[INFO] - Time taken: {self.time_taken:.2f} seconds")
+        if self.verbose:
+            print(f" ---------- Evolution finished ---------- ")
+            print(
+                f"[INFO] - Perfect solutions found: ({len(self.solution)}) "
+                f"- Fitness of final population: {self.fitness:.2f}"
+            )
+            print(f"[INFO] - Time taken: {self.time_taken:.2f} seconds")
 
         if self.verbose:
             print(f" ---------- FANDANGO statistics ---------- ")
-            print(f"[DEBUG] - Diversity score: {self.compute_diversity_score():.2f}")
             print(f"[DEBUG] - Fixes made: {self.fixes_made}")
             print(f"[DEBUG] - Fitness checks: {self.checks_made}")
             print(f"[DEBUG] - Crossovers made: {self.crossovers_made}")
@@ -263,8 +262,6 @@ class FANDANGO:
         evaluation = []
         for individual in self.population:
             fitness, failing_trees = self.evaluate_individual(individual)
-            if len(self.solution) >= self.population_size:
-                break
             evaluation.append((individual, fitness, failing_trees))
         return evaluation
 
@@ -346,50 +343,22 @@ class FANDANGO:
                 self.mutations_made += 1
         return individual
 
-    def compute_diversity_score(self, ngram_range=(2, 2)):
-        """
-        Compute the diversity score of a list of strings based on pairwise Jaccard distance.
-
-        Args:
-        - str_list: List of strings to evaluate.
-        - ngram_range: The n-gram range for tokenization (default is bigrams).
-
-        Returns:
-        - diversity_score: A number between 0 and 1 representing the overall diversity.
-        """
-        population = [str(x) for x in self.population]
-
-        # Step 1: Convert strings into n-gram sets using CountVectorizer
-        vectorizer = CountVectorizer(analyzer='char', ngram_range=ngram_range, binary=True)
-        ngram_matrix = vectorizer.fit_transform(population).toarray()
-
-        # Step 2: Compute pairwise Jaccard distances
-        num_strings = len(population)
-        total_distance = 0
-        num_pairs = 0
-
-        # Iterate over all pairs of strings to compute average dissimilarity
-        for i in range(num_strings):
-            for j in range(i + 1, num_strings):
-                # Compute Jaccard similarity
-                sim = jaccard_score(ngram_matrix[i], ngram_matrix[j])
-                # Convert to Jaccard distance
-                distance = 1 - sim
-                total_distance += distance
-                num_pairs += 1
-
-        # Step 3: Compute the average Jaccard distance (dissimilarity)
-        if num_pairs == 0:
-            return 0  # Only one string, no diversity
-
-        avg_dissimilarity = total_distance / num_pairs
-
-        # Return diversity score (between 0 and 1)
-        return avg_dissimilarity
-
 
 if __name__ == "__main__":
-    grammar_, constraints_ = parse_file("../../evaluation/demo/demo.fan")
+    grammar_, constraints_ = parse_file("../../evaluation/evaluation/csv_evaluation/csv.fan")
+
+    # paths = grammar_.compute_k_paths(3)
+    # for path in paths:
+    #     print(path)
+    #
+    # # K=2: 109, K=3: 183, K=4: 185, K=5: 245, K=6: 225, K=7: 178, K=8: 156, K=9: 0, K=10: 0, K=11: 0, K=12: 0
+    # print(len(paths))
 
     fandango = FANDANGO(grammar_, constraints_, verbose=False)
-    fandango.evolve()
+    solutions = fandango.evolve()
+
+    # for solution in solutions:
+    #     for path in solution.extract_k_paths(3):
+    #         print(path)
+
+    print(f"Grammar coverage: {grammar_.compute_grammar_coverage(solutions, 3):.2f}")
