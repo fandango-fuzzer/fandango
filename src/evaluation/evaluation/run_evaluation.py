@@ -23,13 +23,13 @@ def better_print_results(results: Tuple[str, int, int, float, float, float, floa
     print("")
 
 
-def run_evaluation():
-    # better_print_results(evaluate_csv())
-    # better_print_results(evaluate_rest())
-    # better_print_results(evaluate_scriptsizec())
-    # better_print_results(evaluate_xml())
-    better_print_results(evaluate_tar())
+def run_evaluation(seconds: int = 60):
+    better_print_results(evaluate_csv(seconds))
+    better_print_results(evaluate_rest(seconds))
+    better_print_results(evaluate_scriptsizec(seconds))
+    better_print_results(evaluate_xml(seconds))
+    # better_print_results(evaluate_tar())
 
 
 if __name__ == "__main__":
-    run_evaluation()
+    run_evaluation(1)
