@@ -34,12 +34,11 @@ def evaluate_tar():
 
     valid = []
     for sol in fandango.solution:
+        print("\n" * 3)
+        print(str(sol).encode("utf8"))
         if is_syntactically_valid_tar(str(sol)):
             print(str(sol))
             valid.append(str(sol))
-
-    for sol in fandango.solution:
-        print(str(sol).encode("utf8"))
 
     print(f"Valid solutions: {len(valid)}")
 
