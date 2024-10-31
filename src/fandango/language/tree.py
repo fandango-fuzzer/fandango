@@ -224,30 +224,3 @@ class DerivationTree:
             return flat.index(target)
         except ValueError:
             return -1
-
-    def extract_k_paths(self, k: int) -> Set[Tuple[str, ...]]:
-        """
-        Extract all k-length paths (k-paths) from the derivation tree,
-        starting from any node.
-        """
-        paths = set()
-
-        def traverse(node: "DerivationTree", current_path: List[str]):
-            current_path.append(node.symbol.symbol)
-            if len(current_path) == k:
-                paths.add(tuple(current_path))
-                # Continue traversal to find longer paths starting from this node
-            else:
-                for child in node.children:
-                    traverse(child, current_path)
-            current_path.pop()
-
-        def start_from_node(node: "DerivationTree"):
-            # Start traversal from this node
-            traverse(node, [])
-            # Also start traversal from its children
-            for child in node.children:
-                start_from_node(child)
-
-        start_from_node(self)
-        return paths
