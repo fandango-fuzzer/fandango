@@ -21,11 +21,11 @@ def better_print_results(results: Tuple[str, int, int, float, Tuple[float, int, 
 
 
 def run_evaluation(seconds: int = 60):
-    # better_print_results(evaluate_csv(seconds))
-    # better_print_results(evaluate_rest(seconds))
-    # better_print_results(evaluate_scriptsizec(seconds))
+    better_print_results(evaluate_csv(seconds))
+    better_print_results(evaluate_rest(seconds))
+    better_print_results(evaluate_scriptsizec(seconds))
     better_print_results(evaluate_tar(seconds))
-    # better_print_results(evaluate_xml(seconds))
+    better_print_results(evaluate_xml(seconds))
 
 
 if __name__ == "__main__":
