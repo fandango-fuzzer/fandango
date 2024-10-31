@@ -21,10 +21,6 @@
 <presep> ::= " " | "\t" | "," | ";" | "(" | ")" ;
 <postsep> ::= " " | "\t" | "," | "." | ";" | "(" | ")" ;
 <id> ::= "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" ;
-<number> ::= <digit_nonzero> <digits> | <digit> ;
-<digit_nonzero> ::= "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
-<digits> ::= <digit> <digits> | <digit> ;
-<digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
 <nobr_string> ::= <nobr_char> | <nobr_char> <nobr_string> ;
 <nobr_char> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "!" | "\"" | "#" | "$" | "%" | "&" | "'" | "(" | ")" | "*" | "+" | "," | "-" | "." | "/" | ":" | ";" | "<" | "=" | ">" | "?" | "@" | "[" | "\\" | "]" | "^" | "~" | " " | "\x0b" | "\x0c" ;
 <title_first_char> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "!" | "\"" | "#" | "$" | "%" | "&" | "'" | "(" | ")" | "," | "." | "/" | ":" | ";" | "<" | "=" | ">" | "?" | "@" | "[" | "\\" | "]" | "^" | "~" ;
@@ -42,6 +38,16 @@ forall <internal> in <paragraph_element>:
         str(<labeled_p>.<labeled_paragraph>.<label>.<id>) == str(<internal>.<internal_reference>.<id>)
 ;
 
+forall <inter> in <internal_reference_nospace>:
+    exists <labeled_p> in <body_element>:
+        str(<labeled_p>.<labeled_paragraph>.<label>.<id>) == str(<inter>.<id>)
+;
+
+forall <l1> in <label>:
+    exists <l2> in <label>:
+        str(<l>.<id>) == str(<l2>.<id>) and <l> != <l2>
+;
+
 from docutils.core import publish_doctree
 from io import StringIO
 
@@ -57,3 +63,4 @@ def is_syntactically_valid_rest(rst_string):
         return False
 
 is_syntactically_valid_rest(<start>);
+
