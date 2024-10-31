@@ -6,6 +6,7 @@ from evaluation.evaluation.scriptsizec_evaluation.scriptsizec_evaluation import 
 from evaluation.evaluation.tar_evaluation.tar_evaluation import evaluate_tar
 from evaluation.evaluation.xml_evaluation.xml_evaluation import evaluate_xml
 
+
 # Return the evaluation results as a tuple of values (subject, total, valid, percentage, diversity, mean_length, median)
 def better_print_results(results: Tuple[str, int, int, float, Tuple[float, int, int], float, float]):
     print("================================")
