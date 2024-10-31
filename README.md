@@ -74,7 +74,7 @@ Here's a minimal example to get started with FANDANGO:
    <number> ::= <digit><number> | <digit> ;
    <digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
    
-   int(<number>) % 2 == 0
+   int(<number>) % 2 == 0;
    ```
 
 3. **Run FANDANGO**:
