@@ -30,7 +30,7 @@ def is_syntactically_valid_rest(rst_string):
         return False
 
 
-def evaluate_rest(seconds=60) -> Tuple[str, int, int, float, float, float, float]:
+def evaluate_rest(seconds=60) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
     grammar, constraints = parse_file("rest_evaluation/rest.fan")
     solutions = []
 
