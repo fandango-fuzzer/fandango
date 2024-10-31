@@ -152,7 +152,7 @@ def generate_file_name():
 def produce_valid_checksum(header):
     def replace_checksum(tree):
         if tree.symbol.symbol == "<checksum>":
-            return " " * 6
+            return " " * 8
         if tree.symbol.is_non_terminal:
             buf = ""
             for child in tree._children:
