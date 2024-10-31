@@ -83,7 +83,7 @@ def is_valid_tinyc_code(c_code: str) -> bool:
 
 def evaluate_scriptsizec(
         seconds=60,
-) -> Tuple[str, int, int, float, float, float, float]:
+) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
     grammar, constraints = parse_file("scriptsizec_evaluation/scriptsizec.fan")
     solutions = []
 
