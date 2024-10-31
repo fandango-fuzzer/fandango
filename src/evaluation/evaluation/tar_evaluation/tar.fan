@@ -1,6 +1,6 @@
 # Grammar
 <start> ::= <entries> <final_entry> ;
-<entries> ::= <entry> | <entry> <entries> ; # for testing purposes we just produce a single entry <entry><entries> ;
+<entries> ::= <entry> | <entry> <entries> ;
 <entry> ::= <header> <content> ;
 <header> ::=
     <file_name>
@@ -23,16 +23,12 @@
 ;
 <file_name> ::= <file_name_first_char> <file_name_char>* <NUL>* :: generate_file_name() ;
 <file_mode> ::= <octal_digit>{6} <SPACE> <NUL>;
-# <octal_digits_for_mode> ::=
-#     '004000' | '002000' | '001000' | '000400' | '000200' | '000100'
-#     | '000040' | '000020' | '000010' | '000004' | '000002' | '000001'
-# ;
 <uid> ::= <octal_digit>{6} <SPACE> <NUL> ;
 <gid> ::= <octal_digit>{6} <SPACE> <NUL> ;
 <file_size> ::= <octal_digit>{11} <SPACE>;
 <mod_time> ::= <octal_digit>{11} <SPACE>;
 <checksum> ::= <octal_digit>{6} <NUL> <SPACE> ;
-<typeflag> ::= '0' ; # | '2' ; # we only support regular files
+<typeflag> ::= '0' ;
 <linked_file_name> ::= <file_name_first_char> (<file_name_char> | <NUL>){99} | <NUL>{100} :: generate_linked_file_name();
 <uname> ::= <uname_first_char> (<uname_char> | '$' | <NUL>){31} :: generate_uname("<uname>") ;
 <gname> ::= <uname_first_char> (<uname_char> | '$' | <NUL>){31} :: generate_uname("<gname>") ;
@@ -156,7 +152,7 @@ def generate_file_name():
 def produce_valid_checksum(header):
     def replace_checksum(tree):
         if tree.symbol.symbol == "<checksum>":
-            return " " * 6
+            return " " * 8
         if tree.symbol.is_non_terminal:
             buf = ""
             for child in tree._children:
