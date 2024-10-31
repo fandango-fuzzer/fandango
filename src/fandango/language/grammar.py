@@ -1,8 +1,9 @@
 import abc
 import enum
 import random
+import typing
 from copy import deepcopy
-from typing import Dict, List, Optional, Tuple, Set, Any, Iterable
+from typing import Dict, List, Optional, Tuple, Set, Any, Iterable, Union
 
 from fandango.language.symbol import NonTerminal, Terminal, Symbol
 from fandango.language.tree import DerivationTree
@@ -320,6 +321,76 @@ class NodeVisitor(abc.ABC):
     def visitCharSet(self, node: CharSet):
         return self.default_result()
 
+
+class Disambiguator(NodeVisitor):
+    def __init__(self):
+        self.known_disambiguations = {}
+
+    def visit(self, node: Node) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+        if node in self.known_disambiguations:
+            return self.known_disambiguations[node]
+        result = super().visit(node)
+        self.known_disambiguations[node] = result
+        return result
+
+    def visitAlternative(self, node: Alternative) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+        child_endpoints = {}
+        for child in node.children():
+            endpoints: Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]] = self.visit(child)
+            for children in endpoints:
+                # prepend the alternative to all paths
+                if not children in child_endpoints:
+                    child_endpoints[children] = []
+                # join observed paths (these are impossible to disambiguate)
+                child_endpoints[children].extend((node,) + path for path in endpoints[children])
+
+        return child_endpoints
+
+
+    def visitConcatenation(self, node: Concatenation) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+        child_endpoints = {(): []}
+        for child in node.children():
+            next_endpoints = {}
+            endpoints: Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]] = self.visit(child)
+            for children in endpoints:
+                for existing in child_endpoints:
+                    concatenation = existing + children
+                    if not concatenation in next_endpoints:
+                        next_endpoints[concatenation] = []
+                    next_endpoints[concatenation].extend(child_endpoints[existing])
+                    next_endpoints[concatenation].extend(endpoints[children])
+            child_endpoints = next_endpoints
+
+        return {children: [(node,) + path for path in child_endpoints[children]] for children in child_endpoints}
+
+
+    def visitRepetition(self, node: Repetition) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+        # repetitions are alternatives over concatenations
+        implicit_alternative = Alternative(
+            [Concatenation([node.node] * r) for r in range(node.min, node.max)]
+        )
+        return self.visit(implicit_alternative)
+
+    def visitStar(self, node: Star) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+        return self.visitRepetition(node)
+
+    def visitPlus(self, node: Plus) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+        return self.visitRepetition(node)
+
+    def visitOption(self, node: Option) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+        implicit_alternative = Alternative(
+            [Concatenation([]), Concatenation([node.node])]
+        )
+        return self.visit(implicit_alternative)
+
+    def visitNonTerminalNode(self, node: NonTerminalNode) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+        return {(node.symbol,): [(node,)]}
+
+    def visitTerminalNode(self, node: TerminalNode) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+        return {(node.symbol,): [(node,)]}
+
+    def visitCharSet(self, node: CharSet) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+        return {(Terminal(c),): [(node, TerminalNode(Terminal(c)))] for c in node.chars}
 
 class ParseState:
     def __init__(
@@ -728,7 +799,7 @@ class Grammar(NodeVisitor):
             return 1.0  # If there are no k-paths, coverage is 100%
         return len(covered_k_paths) / len(all_k_paths)
 
-    def _generate_all_k_paths(self, k: int) -> Set[Tuple[str, ...]]:
+    def _generate_all_k_paths(self, k: int) -> Set[Tuple[Node, ...]]:
         """
         Computes the *k*-paths for this grammar, constructively. See: doi.org/10.1109/ASE.2019.00027
 
@@ -756,12 +827,12 @@ class Grammar(NodeVisitor):
                     next_work.append(path)
             work = next_work
 
-        return work
+        return set(tuple(path) for path in work)
 
     @staticmethod
     def _extract_k_paths_from_tree(
         tree: DerivationTree, k: int
-    ) -> Set[Tuple[str, ...]]:
+    ) -> Set[Tuple[Node, ...]]:
         """
         Extracts all k-length paths (k-paths) from a derivation tree.
         """
@@ -851,130 +922,30 @@ class Grammar(NodeVisitor):
     def visitCharSet(self, node: CharSet):
         return []
 
-    def compute_k_paths(self, k: int) -> Set[Tuple[str, ...]]:
+    def compute_k_paths(self, k: int) -> Set[Tuple[Node, ...]]:
         """
         Computes all possible k-paths in the grammar.
 
         :param k: The length of the paths.
         :return: A set of tuples, each tuple representing a k-path as a sequence of symbols.
         """
-        all_paths = set()
-        for start_symbol in self.rules:
-            self._compute_paths_from_symbol(start_symbol, k, all_paths)
-        return all_paths
+        return self._generate_all_k_paths(k)
 
-    def _compute_paths_from_symbol(
-        self, symbol: NonTerminal, k: int, all_paths: Set[Tuple[str, ...]]
-    ):
-        """
-        Computes all k-paths starting from a given symbol.
-
-        :param symbol: The starting NonTerminal symbol.
-        :param k: The length of the paths.
-        :param all_paths: A set to store the resulting paths.
-        """
-        visited = set()
-        self._compute_k_paths_recursive(symbol, [], all_paths, k, visited)
-
-    def _compute_k_paths_recursive(
-        self,
-        symbol: Symbol,
-        current_path: List[str],
-        all_paths: Set[Tuple[str, ...]],
-        k: int,
-        visited: Set[int],
-    ):
-        """
-        Recursively computes k-paths from the given symbol.
-
-        :param symbol: The current symbol being processed.
-        :param current_path: The current path of symbols.
-        :param all_paths: A set to store the resulting paths.
-        :param k: The desired path length.
-        :param visited: A set of visited node IDs to avoid infinite recursion.
-        """
-        if len(current_path) == k:
-            all_paths.add(tuple(current_path))
-            return
-
-        current_path.append(symbol.symbol)
-
-        if len(current_path) == k:
-            all_paths.add(tuple(current_path))
-            current_path.pop()
-            return
-
-        if isinstance(symbol, NonTerminal) and symbol in self.rules:
-            node = self.rules[symbol]
-            self._traverse_node(node, current_path, all_paths, k, visited)
+    def traverse_derivation(self, tree: DerivationTree, disambiguator: Disambiguator = Disambiguator(), paths: Set[Tuple[Node, ...]] = None, cur_path: Tuple[Node, ...] = None) -> Set[Tuple[Node, ...]]:
+        if paths is None:
+            paths = set()
+        if tree.symbol.is_terminal:
+            if cur_path is None:
+                cur_path = (TerminalNode(tree.symbol),)
+            paths.add(cur_path)
         else:
-            # Terminal symbol or undefined NonTerminal; cannot expand further
-            if len(current_path) == k:
-                all_paths.add(tuple(current_path))
-        current_path.pop()
-
-    def _traverse_node(
-        self,
-        node: Node,
-        current_path: List[str],
-        all_paths: Set[Tuple[str, ...]],
-        k: int,
-        visited: Set[int],
-    ):
-        """
-        Traverses a grammar node to compute k-paths.
-
-        :param node: The grammar node to traverse.
-        :param current_path: The current path of symbols.
-        :param all_paths: A set to store the resulting paths.
-        :param k: The desired path length.
-        :param visited: A set of visited node IDs to avoid infinite recursion.
-        """
-        if len(current_path) == k:
-            all_paths.add(tuple(current_path))
-            return
-
-        node_id = id(node)
-        if node_id in visited:
-            return
-        visited.add(node_id)
-
-        if isinstance(node, Alternative):
-            for alternative in node.alternatives:
-                self._traverse_node(
-                    alternative, current_path, all_paths, k, visited.copy()
-                )
-        elif isinstance(node, Concatenation):
-            for child in node.nodes:
-                self._traverse_node(child, current_path, all_paths, k, visited.copy())
-        elif isinstance(node, Repetition):
-            # For repetitions, consider minimum repetitions to limit paths
-            min_reps = max(1, node.min) if node.min > 0 else 1
-            for _ in range(min_reps):
-                self._traverse_node(
-                    node.node, current_path, all_paths, k, visited.copy()
-                )
-        elif isinstance(node, NonTerminalNode):
-            self._compute_k_paths_recursive(
-                node.symbol, current_path, all_paths, k, visited.copy()
-            )
-        elif isinstance(node, TerminalNode):
-            current_path.append(node.symbol.symbol)
-            if len(current_path) == k:
-                all_paths.add(tuple(current_path))
-            else:
-                # Cannot expand further from a terminal symbol
-                pass
-            current_path.pop()
-        elif isinstance(node, Option):
-            # Optionally include the node
-            self._traverse_node(node.node, current_path, all_paths, k, visited.copy())
-        elif isinstance(node, Star) or isinstance(node, Plus):
-            # Similar to Repetition
-            self._traverse_node(node.node, current_path, all_paths, k, visited.copy())
-        # Add handling for other node types if necessary
-
-        visited.remove(node_id)
+            if cur_path is None:
+                cur_path = (NonTerminalNode(tree.symbol),)
+            assert tree.symbol == typing.cast(NonTerminalNode, cur_path[-1]).symbol
+            disambiguation = disambiguator.visit(self.rules[tree.symbol])
+            for tree, path in zip(tree.children, disambiguation[tuple(c.symbol for c in tree.children)]):
+                self.traverse_derivation(tree, disambiguator, paths, cur_path + path)
+        return paths
 
     def compute_grammar_coverage(
         self, derivation_trees: List[DerivationTree], k: int
@@ -986,13 +957,18 @@ class Grammar(NodeVisitor):
         :param k: The length of the paths (k).
         :return: A float between 0 and 1 representing the coverage.
         """
+
         # Compute all possible k-paths in the grammar
         all_k_paths = self.compute_k_paths(k)
+
+        disambiguator = Disambiguator()
 
         # Extract k-paths from the derivation trees
         covered_k_paths = set()
         for tree in derivation_trees:
-            covered_k_paths.update(tree.extract_k_paths(k))
+            for path in self.traverse_derivation(tree, disambiguator):
+                for window in range(len(path) - k + 1):
+                    covered_k_paths.add(path[window:window + k])
 
         # Compute coverage
         if not all_k_paths:
