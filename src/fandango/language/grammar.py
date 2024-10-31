@@ -804,7 +804,7 @@ class Grammar(NodeVisitor):
         Computes the *k*-paths for this grammar, constructively. See: doi.org/10.1109/ASE.2019.00027
 
         :param k: The length of the paths.
-        :return: All *k*-paths of this grammar.
+        :return: All paths of length up to *k* within this grammar.
         """
 
         initial = set()
@@ -816,18 +816,17 @@ class Grammar(NodeVisitor):
             initial.add(node)
             initial_work.extend(node.descendents(self.rules))
 
-        work: [[Node]] = [[x] for x in initial]
+        work: List[Set[Tuple[Node]]] = [set((x,) for x in initial)]
 
         for _ in range(1, k):
-            next_work = []
-            for base in work:
+            next_work = set()
+            for base in work[-1]:
                 for descendent in base[-1].descendents(self.rules):
-                    path = base.copy()
-                    path.append(descendent)
-                    next_work.append(path)
-            work = next_work
+                    next_work.add(base + (descendent,))
+            work.append(next_work)
 
-        return set(tuple(path) for path in work)
+        # return set.union(*work)
+        return work[-1]
 
     @staticmethod
     def _extract_k_paths_from_tree(
@@ -967,6 +966,7 @@ class Grammar(NodeVisitor):
         covered_k_paths = set()
         for tree in derivation_trees:
             for path in self.traverse_derivation(tree, disambiguator):
+                # for length in range(1, k + 1):
                 for window in range(len(path) - k + 1):
                     covered_k_paths.add(path[window:window + k])
 
@@ -974,9 +974,4 @@ class Grammar(NodeVisitor):
         if not all_k_paths:
             raise ValueError("No k-paths found in the grammar")
 
-        coverage = 0
-        for path in all_k_paths:
-            if path in covered_k_paths:
-                coverage += 1
-        coverage /= len(all_k_paths)
-        return coverage
+        return len(covered_k_paths) / len(all_k_paths)
