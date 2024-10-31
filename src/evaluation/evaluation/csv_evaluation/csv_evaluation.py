@@ -26,7 +26,7 @@ def is_syntactically_valid_csv(csv_string):
         return False
 
 
-def evaluate_csv(seconds=60) -> Tuple[str, int, int, float, float, float, float]:
+def evaluate_csv(seconds=60) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
     grammar, constraints = parse_file("csv_evaluation/csv.fan")
     solutions = []
 

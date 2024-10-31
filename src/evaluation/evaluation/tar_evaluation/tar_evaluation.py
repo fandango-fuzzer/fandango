@@ -11,7 +11,7 @@ def is_syntactically_valid_tar(tree: str):
     with tempfile.NamedTemporaryFile(suffix=".tar") as outfile:
         outfile.write(tree.encode())
         outfile.flush()
-        cmd = ["tar", "tf", outfile.name]
+        cmd = ["bsdtar", "-tf", outfile.name]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdout, stderr) = process.communicate(timeout=10)
         exit_code = process.wait()
@@ -22,7 +22,7 @@ def is_syntactically_valid_tar(tree: str):
             return False
 
 
-def evaluate_tar(seconds=60) -> Tuple[str, int, int, float, float, float, float]:
+def evaluate_tar(seconds=60) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
     grammar, constraints = parse_file("tar_evaluation/tar.fan")
     solutions = []
 
@@ -33,7 +33,7 @@ def evaluate_tar(seconds=60) -> Tuple[str, int, int, float, float, float, float]
         fandango.evolve()
         solutions.extend(fandango.solution)
 
-    # coverage = grammar.compute_grammar_coverage(solutions, 4)
+    coverage = grammar.compute_grammar_coverage(solutions, 4)
 
     valid = []
     for solution in solutions:
@@ -48,7 +48,7 @@ def evaluate_tar(seconds=60) -> Tuple[str, int, int, float, float, float, float]
         len(solutions),
         len(valid),
         valid_percentage,
-        0,
+        coverage,
         set_mean_length,
         set_medium_length,
     )
