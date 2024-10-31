@@ -21,7 +21,9 @@
     <file_name_prefix>
     <header_padding>
 ;
-<file_name> ::= <file_name_first_char> <file_name_char>* <NUL>* :: generate_file_name() ;
+<file_name> ::= <file_name_first_char> <file_name_chars> <NULs> :: generate_file_name() ;
+<file_name_chars> ::= <file_name_char> <file_name_chars> | "" ;
+<NULs> ::= <NUL> <NULs> | "" ;
 <file_mode> ::= <octal_digit>{6} <SPACE> <NUL>;
 <uid> ::= <octal_digit>{6} <SPACE> <NUL> ;
 <gid> ::= <octal_digit>{6} <SPACE> <NUL> ;
@@ -29,9 +31,11 @@
 <mod_time> ::= <octal_digit>{11} <SPACE>;
 <checksum> ::= <octal_digit>{6} <NUL> <SPACE> ;
 <typeflag> ::= '0' ;
-<linked_file_name> ::= <file_name_first_char> (<file_name_char> | <NUL>){99} | <NUL>{100} :: generate_linked_file_name();
-<uname> ::= <uname_first_char> (<uname_char> | '$' | <NUL>){31} :: generate_uname("<uname>") ;
-<gname> ::= <uname_first_char> (<uname_char> | '$' | <NUL>){31} :: generate_uname("<gname>") ;
+<linked_file_name> ::= <file_name_first_char> <file_name_char_or_nul>{99} | <NUL>{100} :: generate_linked_file_name();
+<file_name_char_or_nul> ::= <file_name_char> | <NUL> ;
+<uname> ::= <uname_first_char> <name_char_dollar_nul>{31} :: generate_uname("<uname>") ;
+<gname> ::= <uname_first_char> <name_char_dollar_nul>{31} :: generate_uname("<gname>") ;
+<name_char_dollar_nul> ::= <uname_char> | '$' | <NUL> ;
 <uname_first_char> ::=
     'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm'
     | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | '_'
@@ -45,7 +49,8 @@
 <dev_min_num> ::= <octal_digit>{6} <SPACE> <NUL> ;
 <file_name_prefix> ::= <NUL>{155};
 <header_padding> ::= <NUL>{12};
-<content> ::= (<character> | <NUL>){512} :: generate_content() ;
+<content> ::= <char_or_nul>{512} :: generate_content() ;
+<char_or_nul> ::= <character> | <NUL> ;
 <final_entry> ::= <NUL>{1024};
 <octal_digit> ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' ;
 <character> ::=
@@ -115,10 +120,14 @@ def generate_file_name():
     import random
     n = random.randint(0, 99)
     c = [("<file_name_first_char>", [(random.choice(first), [])])]
+    file_name_chars = ("<file_name_chars>", [("", [])])
     for i in range(n):
-        c.append(("<file_name_char>", [(random.choice(char), [])]))
+        file_name_chars = ("<file_name_chars>", [("<file_name_char>", [(random.choice(char), [])]), file_name_chars])
+    c.append(file_name_chars)
+    nuls = ("<NULs>", [("", [])])
     for i in range(99 - n):
-        c.append(("<NUL>", [("\0", [])]))
+        nuls = ("<NULs>", [("<NUL>", [("\0", [])]), nuls])
+    c.append(nuls)
     return "<file_name>", c
 
 
@@ -181,7 +190,7 @@ def generate_linked_file_name():
     import random
     if random.random() < 0.25 or True:
         c = []
-        for i  in range(100):
+        for i in range(100):
             c.append(("<NUL>", [("\0", [])]))
         return "<linked_file_name>", c
     first = [
@@ -205,9 +214,9 @@ def generate_linked_file_name():
     n = random.randint(0, 99)
     c = [("<file_name_first_char>", [(random.choice(first), [])])]
     for i in range(n):
-        c.append(("<file_name_char>", [(random.choice(char), [])]))
+        c.append(("<file_name_char_or_nul>", [("<file_name_char>", [(random.choice(char), [])])]))
     for i in range(99 - n):
-        c.append(("<NUL>", [("\0", [])]))
+        c.append(("<file_name_char_or_nul>", [("<NUL>", [("\0", [])])]))
     return "<linked_file_name>", c
 
 ## User Name Length Constraint "uname_length_constraint" (generator in grammar)
@@ -230,12 +239,12 @@ def generate_uname(name):
     n = random.randint(0, 31)
     c = [("<uname_first_char>", [(random.choice(first), [])])]
     for i in range(n):
-        c.append(("<uname_char>", [(random.choice(char), [])]))
+        c.append(("<name_char_dollar_nul>", [("<uname_char>", [(random.choice(char), [])])]))
     if n < 31 and random.random() < 0.5:
-        c.append(("$", []))
+        c.append(("<name_char_dollar_nul>", [("$", [])]))
         n += 1
     for i in range(31 - n):
-        c.append(("<NUL>", [("\0", [])]))
+        c.append(("<name_char_dollar_nul>", [("<NUL>", [("\0", [])])]))
     return name, c
 
 ## Group Name Length Constraint "gname_length_constraint" (generator in grammar)
@@ -289,9 +298,9 @@ def generate_content():
     c = []
     n = random.randint(0, 512)
     for i in range(n):
-        c.append(("<character>", [(random.choice(chars), [])]))
+        c.append(("<char_or_nul>", [("<character>", [(random.choice(chars), [])])]))
     for i in range(512 - n):
-        c.append(("<NUL>", [("\0", [])]))
+        c.append(("<char_or_nul>", [("<NUL>", [("\0", [])])]))
     return "<content>", c
 
 ## 16. Content Size Constraint "content_size_constr" (constraint for the fuzzer)
