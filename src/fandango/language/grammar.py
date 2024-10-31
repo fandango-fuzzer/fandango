@@ -62,9 +62,14 @@ class Alternative(Node):
 
     def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
         if self.distance_to_completion >= max_nodes:
-            return min(self.alternatives, key=lambda x: x.distance_to_completion).fuzz(
-                grammar, 0
-            )
+            min_ = min(self.alternatives, key=lambda x: x.distance_to_completion)
+            return random.choice(
+                [
+                    a
+                    for a in self.alternatives
+                    if a.distance_to_completion <= min_.distance_to_completion
+                ]
+            ).fuzz(grammar, 0)
         return random.choice(self.alternatives).fuzz(grammar, max_nodes - 1)
 
     def accept(self, visitor: "NodeVisitor"):
@@ -559,7 +564,9 @@ class Grammar(NodeVisitor):
             implicit_start = NonTerminal("<*start*>")
             table[0].add(ParseState(implicit_start, 0, (start,)))
             for k in range(len(word) + 1):
+                s = 0
                 for state in table[k]:
+                    s += 1
                     if state.finished():
                         if state.nonterminal == implicit_start and k == len(word):
                             for child in state.children:

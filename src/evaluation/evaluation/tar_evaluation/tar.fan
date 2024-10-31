@@ -1,30 +1,41 @@
 # Grammar
-<start> ::= <entries><final_entry> ;
-<entries> ::= <entry> ; # for testing purposes we just produce a single entry <entry><entries> ;
-<entry> ::= <header><content> ;
+<start> ::= <entries> <final_entry> ;
+<entries> ::= <entry> | <entry> <entries> ; # for testing purposes we just produce a single entry <entry><entries> ;
+<entry> ::= <header> <content> ;
 <header> ::=
-    <file_name><file_mode><uid><gid><file_size><mod_time><checksum><typeflag><linked_file_name>
-    'ustar' <NUL> '00' <uname><gname><dev_maj_num><dev_min_num><file_name_prefix><header_padding>
+    <file_name>
+    <file_mode>
+    <uid>
+    <gid>
+    <file_size>
+    <mod_time>
+    <checksum>
+    <typeflag>
+    <linked_file_name>
+    'ustar' <NUL>
+    '00'
+    <uname>
+    <gname>
+    <dev_maj_num>
+    <dev_min_num>
+    <file_name_prefix>
+    <header_padding>
 ;
-<file_name> ::= <file_name_first_char><file_name_char>{,99}<NUL>{,99} :: generate_file_name() ;
-<file_name_str> ::= <file_name_first_char><file_name_chars> | <file_name_first_char> ;
-<file_mode> ::= <octal_digits_for_mode><SPACE><NUL>;
-<octal_digits_for_mode> ::=
-    '004000' | '002000' | '001000' | '000400' | '000200' | '000100'
-    | '000040' | '000020' | '000010' | '000004' | '000002' | '000001'
-;
-<uid> ::= <octal_digits_length_5><SPACE><NUL> ;
-<octal_digits_length_5> ::= '0'<octal_digit><octal_digit><octal_digit><octal_digit><octal_digit> ;
-<gid> ::= <octal_digits_length_5><SPACE><NUL> ;
-<file_size> ::= <octal_digit>{8}<SPACE>;
-<mod_time> ::= <octal_digit>{8}<SPACE>;
-<checksum> ::= <octal_digits_for_checksum><NUL><SPACE> ;
-<octal_digits_for_checksum> ::= <octal_digit>* ;
+<file_name> ::= <file_name_first_char> <file_name_char>* <NUL>* :: generate_file_name() ;
+<file_mode> ::= <octal_digit>{6} <SPACE> <NUL>;
+# <octal_digits_for_mode> ::=
+#     '004000' | '002000' | '001000' | '000400' | '000200' | '000100'
+#     | '000040' | '000020' | '000010' | '000004' | '000002' | '000001'
+# ;
+<uid> ::= <octal_digit>{6} <SPACE> <NUL> ;
+<gid> ::= <octal_digit>{6} <SPACE> <NUL> ;
+<file_size> ::= <octal_digit>{11} <SPACE>;
+<mod_time> ::= <octal_digit>{11} <SPACE>;
+<checksum> ::= <octal_digit>{6} <NUL> <SPACE> ;
 <typeflag> ::= '0' ; # | '2' ; # we only support regular files
-<linked_file_name> ::= <file_name_first_char><file_name_char>{,99}<NUL>{,99} | <NUL>{100} :: generate_linked_file_name();
-<uname> ::= <uname_first_char> <uname_char>{,31} '$'? <NUL>{,31} :: generate_uname("<uname>") ;
-<gname> ::= <uname_first_char> <uname_char>{,31} '$'? <NUL>{,31} :: generate_uname("<gname>") ;
-<uname_str> ::= <uname_first_char><uname_chars><maybe_dollar> | <uname_first_char><maybe_dollar> ;
+<linked_file_name> ::= <file_name_first_char> (<file_name_char> | <NUL>){99} | <NUL>{100} :: generate_linked_file_name();
+<uname> ::= <uname_first_char> (<uname_char> | '$' | <NUL>){31} :: generate_uname("<uname>") ;
+<gname> ::= <uname_first_char> (<uname_char> | '$' | <NUL>){31} :: generate_uname("<gname>") ;
 <uname_first_char> ::=
     'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm'
     | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | '_'
@@ -34,20 +45,13 @@
     | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z'
     | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '_' | '-'
 ;
-<uname_chars> ::= <uname_char><uname_chars> | <uname_char> ;
-<maybe_dollar> ::= '$' | '' ;
-<dev_maj_num> ::= <octal_digits_for_devs><SPACE><NUL> ;
-<dev_min_num> ::= <octal_digits_for_devs><SPACE><NUL> ;
-<octal_digits_for_devs> ::= <octal_digit>{8};
+<dev_maj_num> ::= <octal_digit>{6} <SPACE> <NUL> ;
+<dev_min_num> ::= <octal_digit>{6} <SPACE> <NUL> ;
 <file_name_prefix> ::= <NUL>{155};
 <header_padding> ::= <NUL>{12};
-<content> ::= <character>{,512}<NUL>{,512} :: generate_content() ;
-<content_chars> ::= <character>{512} ;
+<content> ::= (<character> | <NUL>){512} :: generate_content() ;
 <final_entry> ::= <NUL>{1024};
-<octal_digits> ::= <octal_digit><octal_digits> | <octal_digit> ;
 <octal_digit> ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' ;
-<maybe_characters> ::= <characters> | '' ;
-<characters> ::= <character><characters> | <character> ;
 <character> ::=
     '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
     | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm'
@@ -56,7 +60,7 @@
     | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'
     | '!' | '"' | '#' | '$' | '%' | '&' | "'" | '(' | ')' | '*' | '+' | ',' | '-'
     | '.' | '/' | ':' | ';' | '<' | '=' | '>' | '?' | '@' | '[' | ']' | '^' | '_'
-    | '`' | '{' | '|' | '}' | '~' | ' '
+    | '`' | '{' | '|' | '}' | '~' | ' ' | '\t' | '\n' | '\r' | '\x0b' | '\x0c'
 ;
 <file_name_first_char> ::=
     'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm'
@@ -65,7 +69,6 @@
     | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'
     | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '_'
 ;
-<file_name_chars> ::= <file_name_char>* ;
 <file_name_char> ::=
     '&' | '^' | 'I' | '}' | 'F' | 'J' | '|' | 'd' | '~' | '@' | '<' | ')'
     | 'S' | 'q' | 'k' | 'E' | 'r' | 'X' | 'H' | '`' | 'K' | ':' | 'Q' | '_'
@@ -76,8 +79,6 @@
     | '5' | '-' | '*' | 'Z' | '?' | '3' | 'b' | 'v' | 'U' | 'D' | '"' | '9'
     | 'M' | 'i' | 'm' | '8' | ']' | 'x' | '7' | '.' | 'B'
 ;
-<maybe_nuls> ::= <nuls> | '' ;
-<nuls> ::= <NUL><nuls> | <NUL> ;
 <NUL> ::= '\x00' ;
 <SPACE> ::= ' ' ;
 
@@ -182,7 +183,7 @@ forall <entr> in <entry>:
 
 def generate_linked_file_name():
     import random
-    if random.random() < 0.25:
+    if random.random() < 0.25 or True:
         c = []
         for i  in range(100):
             c.append(("<NUL>", [("\0", [])]))
