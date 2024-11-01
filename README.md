@@ -246,7 +246,7 @@ cd src/evaluation/evaluation &&
 python run_evaluation.py
 ```
 
-This script will execute FANDANGO on 4 subjects (CSV, reST, ScriptSizeC, and XML) and compare the results with ISLa. The results will be printed in the terminal. Our evaluation showcases FANDANGO's search-based approach as a viable alternative to symbolic solvers, offering the following advantages:
+This script will execute FANDANGO on 5 subjects (CSV, reST, ScriptSizeC, TAR and XML). Each subject will be run for an hour, followed up by a computation on each grammar coverage (This process can take a while). The results will be printed in the terminal. Our evaluation showcases FANDANGO's search-based approach as a viable alternative to symbolic solvers, offering the following advantages:
 
 - **Speed**: Faster by one to three orders of magnitude compared to symbolic solvers.
 - **Precision**: Maintains precision in satisfying constraints.
