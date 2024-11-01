@@ -29,38 +29,30 @@
 <dashes> ::= "-" | "-" <dashes> ;
 
 
+# 1. refers to LENGTH_UNDERLINE constraint
 forall <body> in <body_elements>:
     len(str(<body>.<body_element>.<section_title>.<title_text>)) <= len(str(<body>.<body_element>.<section_title>.<underline>))
 ;
 
+# 2. refers to DEF_LINK_TARGETS (1) constraint
 forall <internal> in <paragraph_element>:
     exists <labeled_p> in <body_element>:
         str(<labeled_p>.<labeled_paragraph>.<label>.<id>) == str(<internal>.<internal_reference>.<id>)
 ;
 
+# 3. refers to DEF_LINK_TARGETS (2) constraint
 forall <inter> in <internal_reference_nospace>:
     exists <labeled_p> in <body_element>:
         str(<labeled_p>.<labeled_paragraph>.<label>.<id>) == str(<inter>.<id>)
 ;
 
+# 4. refers to NO_LINK_TARGET_REDEF  constraint
 forall <l1> in <label>:
     exists <l2> in <label>:
         str(<l>.<id>) == str(<l2>.<id>) and <l> != <l2>
 ;
 
-from docutils.core import publish_doctree
-from io import StringIO
-
-def is_syntactically_valid_rest(rst_string):
-    error_stream = StringIO()
-    try:
-        doctree = publish_doctree(rst_string, settings_overrides={'warning_stream': error_stream})
-        errors_warnings = error_stream.getvalue().strip()
-        if errors_warnings:
-            return False
-        return True
-    except:
-        return False
-
-is_syntactically_valid_rest(<start>);
-
+# LIST_NUMBERING_CONSECUTIVE constraint is implemented within the grammar.
+# When dealing with enumeration items, ISLA will verify that for each item, the number is one greater than the previous one.
+# However, from the reST specification, if instead of specifying the number of the item, we use '#. ', the reST parser will automatically number the items in the order they appear in the document.
+# In our grammar, we can see '<enumeration_item> ::= "#. " <nobr_string> ;', which means that the number of the item is not specified, so the reST parser will automatically number the items in the order they appear in the document.
