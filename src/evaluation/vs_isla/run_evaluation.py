@@ -1,10 +1,10 @@
 from typing import Tuple
 
-from evaluation.evaluation.csv_evaluation.csv_evaluation import evaluate_csv
-from evaluation.evaluation.rest_evaluation.rest_evaluation import evaluate_rest
-from evaluation.evaluation.scriptsizec_evaluation.scriptsizec_evaluation import evaluate_scriptsizec
-from evaluation.evaluation.tar_evaluation.tar_evaluation import evaluate_tar
-from evaluation.evaluation.xml_evaluation.xml_evaluation import evaluate_xml
+from evaluation.vs_isla.csv_evaluation.csv_evaluation import evaluate_csv
+from evaluation.vs_isla.rest_evaluation.rest_evaluation import evaluate_rest
+from evaluation.vs_isla.scriptsizec_evaluation.scriptsizec_evaluation import evaluate_scriptsizec
+from evaluation.vs_isla.tar_evaluation.tar_evaluation import evaluate_tar
+from evaluation.vs_isla.xml_evaluation.xml_evaluation import evaluate_xml
 
 
 # Return the evaluation results as a tuple of values (subject, total, valid, percentage, diversity, mean_length, median)
@@ -22,11 +22,11 @@ def better_print_results(results: Tuple[str, int, int, float, Tuple[float, int, 
 
 
 def run_evaluation(seconds: int = 60):
-    # better_print_results(evaluate_csv(seconds))
+    better_print_results(evaluate_csv(seconds))
     better_print_results(evaluate_rest(seconds))
-    # better_print_results(evaluate_scriptsizec(seconds))
-    # better_print_results(evaluate_tar(seconds))
-    # better_print_results(evaluate_xml(seconds))
+    better_print_results(evaluate_scriptsizec(seconds))
+    better_print_results(evaluate_tar(seconds))
+    better_print_results(evaluate_xml(seconds))
 
 
 if __name__ == "__main__":

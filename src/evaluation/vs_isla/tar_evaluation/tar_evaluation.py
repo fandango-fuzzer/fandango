@@ -29,7 +29,7 @@ def evaluate_tar(seconds=60) -> Tuple[str, int, int, float, Tuple[float, int, in
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
-        fandango = FANDANGO(grammar, constraints, verbose=False, desired_solutions=100)
+        fandango = FANDANGO(grammar, constraints, verbose=True, desired_solutions=200, population_size=200)
         fandango.evolve()
         solutions.extend(fandango.solution)
 
