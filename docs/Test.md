@@ -11,7 +11,7 @@ kernelspec:
 ---
 
 (sec:test)=
-# Testing with Fandango
+# Creating Test Inputs
 
 Let us build a simple application.
 

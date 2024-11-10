@@ -11,7 +11,7 @@ kernelspec:
 ---
 
 (sec:specify)=
-# Fandango Specifications
+# Specifying Inputs
 
 Let us build a simple application.
 
