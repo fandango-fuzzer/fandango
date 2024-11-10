@@ -7,7 +7,7 @@ BOOK=../doc
 # Targets.
 default: html
 html: _build/html refresh
-latex: _build/latex/fandangobook.pdf
+latex: _build/latex/fandango.pdf
 
 .PHONY: default html latex refresh clean install
 	
@@ -19,6 +19,10 @@ install:
 _build/html: $(BOOK_SOURCES)
 	$(JB) build $(BOOK)
 
+# view HTML
+view: _build/html
+	open _build/html/fandango.html
+
 # Refresh Safari
 refresh: _build/html
 	osascript -e 'tell application "Safari" to set URL of document of window 1 to URL of document of window 1'
@@ -28,7 +32,7 @@ refresh: _build/html
 _build/latex: $(BOOK_SOURCES)
 	$(JB) --builder latex $(BOOK)
 
-_build/latex/fandangobook.pdf: _build/latex
+_build/latex/fandango.pdf: _build/latex
 	cd _build/latex && $(MAKE)
 
 clean:
