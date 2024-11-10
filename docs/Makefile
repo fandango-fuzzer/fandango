@@ -12,7 +12,7 @@ html: $(HTML_MARKER) refresh
 latex: $(LATEX_MARKER)
 pdf: _build/latex/fandango.pdf
 
-.PHONY: default html latex pdf refresh clean install
+.PHONY: default html latex pdf refresh clean rebuild install
 	
 # Install the necessary tools
 install:
@@ -42,3 +42,6 @@ _build/latex/fandango.pdf: $(LATEX_MARKER)
 
 clean:
 	$(JB) clean $(BOOK)
+
+rebuild:
+	$(JB) build --all $(BOOK)

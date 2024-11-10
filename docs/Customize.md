@@ -11,7 +11,7 @@ kernelspec:
 ---
 
 (sec:customize)=
-# Customizing Fandango
+# Shaping Inputs
 
 Let us build a simple application.
 
