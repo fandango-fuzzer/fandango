@@ -9,9 +9,10 @@ LATEX_MARKER=_build/latex/marker.txt
 # Targets.
 default: html
 html: $(HTML_MARKER) refresh
-latex: $(LATEX_MARKER) _build/latex/fandango.pdf
+latex: $(LATEX_MARKER)
+pdf: _build/latex/fandango.pdf
 
-.PHONY: default html latex refresh clean install
+.PHONY: default html latex pdf refresh clean install
 	
 # Install the necessary tools
 install:
@@ -33,7 +34,7 @@ refresh: $(HTML_MARKER)
 
 # Re-create the book in PDF
 $(LATEX_MARKER): $(BOOK_SOURCES)
-	$(JB) --builder latex $(BOOK)
+	$(JB) build --builder latex $(BOOK)
 	echo 'Success' > $@
 
 _build/latex/fandango.pdf: $(LATEX_MARKER)
