@@ -10,8 +10,8 @@ kernelspec:
   name: python3
 ---
 
-
-# First Steps with Fandango
+(sec:specify)=
+# Fandango Specifications
 
 Let us build a simple application.
 
