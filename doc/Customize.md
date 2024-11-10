@@ -10,7 +10,7 @@ kernelspec:
   name: python3
 ---
 
-
+(sec:customize)=
 # Customizing Fandango
 
 Let us build a simple application.

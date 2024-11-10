@@ -47,18 +47,18 @@ Get Started
 :gutter: 1 1 1 2
 
 :::{grid-item-card} {material-regular}`edit_note;2em` Specify
-:link: First_steps
+:link: sec:getting-started
 :link-type: ref
 
 Specify the format of your input data in a single file, combining _grammars_ (for input syntax) and _constraints_ (for arbitrary input features).
 Constraints come as Python code, so there are no limits to what you can specify.
 
 +++
-[Learn more »](First_steps)
+[Learn more »](sec:getting-started)
 :::
 
 :::{grid-item-card} {material-regular}`published_with_changes;2em` Test
-:link: Test
+:link: sec:test
 :link-type: ref
 
 Produce valid inputs at high speeds, from hundreds to thousands of inputs per second, quickly covering the entire input space.
@@ -70,7 +70,7 @@ Test with extreme and uncommon values, uncovering bugs before your users do.
 :::
 
 :::{grid-item-card} {material-regular}`settings;2em` Customize
-:link: Customize
+:link: sec:customize
 :link-type: ref
 
 Shape inputs using your _own testing targets_, constraints, and statistical distributions.
@@ -78,7 +78,7 @@ Make use of _existing samples_ to obtain realistic inputs.
 Use _feedback_ from the program under test to guide test generation to uncovered code.
 
 +++
-[Learn more »](Customize)
+[Learn more »](sec:customize)
 :::
 
 ::::

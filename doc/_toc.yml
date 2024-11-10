@@ -1,6 +1,7 @@
 format: jb-book
 root: Intro
 chapters:
+- file: GettingStarted.md
 - file: Installing.md
 - file: Specify.md
 - file: Test.md

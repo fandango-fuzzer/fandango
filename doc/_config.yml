@@ -8,5 +8,5 @@ bibtex_bibfiles:
     
 latex:
   latex_documents:
-     targetname: fandangobook.tex
+     targetname: fandango.tex
 

@@ -10,10 +10,28 @@ kernelspec:
   name: python3
 ---
 
-(sec:testing)=
-# Testing with Fandango
+(sec:getting-started)=
+# Getting Started with Fandango
+
+## Installing
+
+To install Fandango, run the following command:
+
+```
+$ pip install fandango
+```
+
+For additional information, see [](sec:installing).
+
+
+## Building your first Fandango Spec
 
 Let us build a simple application.
+
+A Fandango specification comes in two parts:
+
+* A _grammar_ describing the _syntax_ of the inputs to be generated
+* Optionally, _constraints_ that specify additional properties.
 
 ```{code-cell}
 :tags: ["remove-input"]
@@ -27,12 +45,3 @@ NAME_FAN = """
 print(NAME_FAN)	
 ```
 
-
-
-
-
-
-A Fandango specification comes in two parts:
-
-* A _grammar_ describing the _syntax_ of the inputs to be generated
-* Optionally, _constraints_ that specify additional properties.

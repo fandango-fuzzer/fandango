@@ -10,7 +10,7 @@ kernelspec:
   name: python3
 ---
 
-
+(sec:installing)=
 # Installing Fandango
 
 ## Installing the public version of Fandango
