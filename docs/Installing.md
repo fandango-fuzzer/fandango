@@ -51,7 +51,7 @@ At this point, only registered developers have access to Fandango.
 Clone the Fandango repository:
 
 ```
-$ git clone https://github.com/joszamama/fandango
+$ git clone https://github.com/fandango-fuzzer/fandango/
 ```
 
 In the top-level `fandango/` folder, run
