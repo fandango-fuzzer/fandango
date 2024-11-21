@@ -11,7 +11,7 @@ kernelspec:
 ---
 
 (sec:getting-started)=
-# Getting Started
+# Getting Started with Fandango
 
 ## Installing
 
