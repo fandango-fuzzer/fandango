@@ -29,7 +29,7 @@ sd_hide_title: true
 
 Fandango produces myriads of _high-quality random inputs_ to test programs, giving users unprecedented control over format and shape of the inputs.
 
-```{button-ref} GettingStarted
+```{button-ref} first-steps
 :ref-type: doc
 :color: primary
 :class: sd-rounded-pill
