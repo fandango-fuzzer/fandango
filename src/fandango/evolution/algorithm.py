@@ -47,7 +47,7 @@ class FANDANGO:
         self.population_size = population_size
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
-        self.tournament_size = int(population_size * tournament_size) or population_size
+        self.tournament_size = max(2, int(population_size * tournament_size))
         self.max_generations = max_generations
         self.elitism_rate = elitism_rate
 
@@ -95,17 +95,17 @@ class FANDANGO:
         start_time = time.time()
 
         for generation in range(1, self.max_generations + 1):
-            if self.fitness >= 0.99:
+            if 0 < self.desired_solutions <= len(self.solution):
                 self.fitness = 1.0
-                self.solution = self.population[: self.population_size]
+                self.solution = self.solution[: self.desired_solutions]
                 break
             if len(self.solution) >= self.population_size:
                 self.fitness = 1.0
                 self.solution = self.solution[: self.population_size]
                 break
-            if 0 < self.desired_solutions <= len(self.solution):
+            if self.fitness >= 0.99:
                 self.fitness = 1.0
-                self.solution = self.solution[: self.desired_solutions]
+                self.solution = self.population[: self.population_size]
                 break
 
             if self.verbose:
