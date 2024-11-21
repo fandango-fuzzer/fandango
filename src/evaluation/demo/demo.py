@@ -8,7 +8,7 @@ def main():
     # Load the fandango file
     grammar, constraints = parse_file("demo.fan")
 
-    fandango = FANDANGO(grammar, constraints, desired_solutions=1)
+    fandango = FANDANGO(grammar, constraints, desired_solutions=1, verbose=True)
     fandango.evolve()
 
     print(fandango.solution)
