@@ -14,18 +14,18 @@ from fandango.language.grammar import (
 
 class FANDANGO:
     def __init__(
-        self,
-        grammar: Grammar,
-        constraints: List[Constraint],
-        population_size: int = 100,
-        desired_solutions: int = 0,
-        initial_population: List[DerivationTree] = None,
-        max_generations: int = 500,
-        elitism_rate: float = 0.1,
-        crossover_rate: float = 0.8,
-        tournament_size: float = 0.1,
-        mutation_rate: float = 0.2,
-        verbose: bool = False,
+            self,
+            grammar: Grammar,
+            constraints: List[Constraint],
+            population_size: int = 100,
+            desired_solutions: int = 0,
+            initial_population: List[DerivationTree] = None,
+            max_generations: int = 500,
+            elitism_rate: float = 0.1,
+            crossover_rate: float = 0.8,
+            tournament_size: float = 0.1,
+            mutation_rate: float = 0.2,
+            verbose: bool = False,
     ):
         """
         Initialize the FANDANGO genetic algorithm. The algorithm will evolve a population of individuals
@@ -81,7 +81,7 @@ class FANDANGO:
         # Evaluate population
         self.evaluation = self.evaluate_population()
         self.fitness = (
-            sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+                sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
         if self.verbose:
             print(f" ---------- Starting evolution ---------- ")
@@ -95,19 +95,18 @@ class FANDANGO:
         start_time = time.time()
 
         for generation in range(1, self.max_generations + 1):
+            if self.fitness >= 0.99:
+                self.fitness = 1.0
+                self.solution = self.population[: self.population_size]
+                break
+            if len(self.solution) >= self.population_size:
+                self.fitness = 1.0
+                self.solution = self.solution[: self.population_size]
+                break
             if 0 < self.desired_solutions <= len(self.solution):
                 self.fitness = 1.0
                 self.solution = self.solution[: self.desired_solutions]
                 break
-            elif self.desired_solutions == 0:
-                if self.fitness >= 0.99:
-                    self.fitness = 1.0
-                    self.solution = self.population[: self.population_size]
-                    break
-                if len(self.solution) >= self.population_size:
-                    self.fitness = 1.0
-                    self.solution = self.solution[: self.population_size]
-                    break
 
             if self.verbose:
                 print(
@@ -149,7 +148,7 @@ class FANDANGO:
             self.population = fixed_population[: self.population_size]
             self.evaluation = self.evaluate_population()
             self.fitness = (
-                sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+                    sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
 
         self.time_taken = time.time() - start_time
@@ -215,7 +214,7 @@ class FANDANGO:
         return individual
 
     def evaluate_individual(
-        self, individual: DerivationTree
+            self, individual: DerivationTree
     ) -> Tuple[float, List[FailingTree]]:
         """
         Evaluate the fitness of an individual.
@@ -251,7 +250,7 @@ class FANDANGO:
         return fitness, failing_trees
 
     def evaluate_population(
-        self,
+            self,
     ) -> List[Tuple[DerivationTree, float, List[FailingTree]]]:
         """
         Evaluate the fitness of each individual in the population.
@@ -273,8 +272,8 @@ class FANDANGO:
         return [
             x[0]
             for x in sorted(self.evaluation, key=lambda x: x[1], reverse=True)[
-                : int(self.elitism_rate * self.population_size)
-            ]
+                     : int(self.elitism_rate * self.population_size)
+                     ]
         ]
 
     def tournament_selection(self) -> Tuple[DerivationTree, DerivationTree]:
@@ -289,7 +288,7 @@ class FANDANGO:
 
     # noinspection PyMethodMayBeStatic
     def crossover(
-        self, parent1: DerivationTree, parent2: DerivationTree
+            self, parent1: DerivationTree, parent2: DerivationTree
     ) -> Tuple[DerivationTree, DerivationTree]:
         """
         Perform crossover between two parents to generate two children by swapping subtrees rooted at a common
