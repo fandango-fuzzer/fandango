@@ -7,9 +7,7 @@ from typing import List, Set, Tuple
 from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
 from fandango.language.grammar import DerivationTree
-from fandango.language.grammar import (
-    Grammar,
-)
+from fandango.language.grammar import Grammar
 
 
 class FANDANGO:
@@ -67,10 +65,13 @@ class FANDANGO:
         self.desired_solutions = desired_solutions
 
         if initial_population is not None:
+            if self.verbose:
+                print("[INFO] - Storing provided initial population...")
             self.population = list(initial_population)
         else:
             if self.verbose:
                 print("[INFO] - Generating initial population...")
+
             st_time = time.time()
             self.population = self.generate_random_initial_population()
             if self.verbose:
@@ -83,8 +84,6 @@ class FANDANGO:
         self.fitness = (
                 sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
-        if self.verbose:
-            print(f" ---------- Starting evolution ---------- ")
 
     def evolve(self) -> List[DerivationTree]:
         """
@@ -92,6 +91,9 @@ class FANDANGO:
 
         :return: The best solution found by the algorithm.
         """
+        if self.verbose:
+            print(f" ---------- Starting evolution ---------- ")
+            
         start_time = time.time()
 
         for generation in range(1, self.max_generations + 1):
