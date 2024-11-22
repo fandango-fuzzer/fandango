@@ -402,7 +402,12 @@ class SearchProcessor(FandangoParserVisitor):
         search = self.transform_selection(ctx.selection())
         if ctx.DOT():
             return AttributeSearch(self.get_attribute_searches(ctx.selector()), search)
+        elif ctx.DOTDOT():
+            return StarAttributeSearch(
+                self.get_attribute_searches(ctx.selector()), search
+            )
         elif ctx.STAR():
+            print("Warning: <a>*<b> syntax is deprecated, use <a>..<b> instead")
             return StarAttributeSearch(
                 self.get_attribute_searches(ctx.selector()), search
             )
