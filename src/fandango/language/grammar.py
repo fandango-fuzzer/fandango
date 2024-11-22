@@ -168,7 +168,11 @@ class Repetition(Node):
         if self.min <= 1 <= self.max:
             base.append(self.node)
         yield Alternative(
-            base + [Concatenation([self.node] * r) for r in range(max(2, self.min), self.max + 1)]
+            base
+            + [
+                Concatenation([self.node] * r)
+                for r in range(max(2, self.min), self.max + 1)
+            ]
         )
 
 
@@ -327,32 +331,43 @@ class Disambiguator(NodeVisitor):
     def __init__(self):
         self.known_disambiguations = {}
 
-    def visit(self, node: Node) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    def visit(
+        self, node: Node
+    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
         if node in self.known_disambiguations:
             return self.known_disambiguations[node]
         result = super().visit(node)
         self.known_disambiguations[node] = result
         return result
 
-    def visitAlternative(self, node: Alternative) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    def visitAlternative(
+        self, node: Alternative
+    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
         child_endpoints = {}
         for child in node.children():
-            endpoints: Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]] = self.visit(child)
+            endpoints: Dict[
+                Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]
+            ] = self.visit(child)
             for children in endpoints:
                 # prepend the alternative to all paths
                 if not children in child_endpoints:
                     child_endpoints[children] = []
                 # join observed paths (these are impossible to disambiguate)
-                child_endpoints[children].extend((node,) + path for path in endpoints[children])
+                child_endpoints[children].extend(
+                    (node,) + path for path in endpoints[children]
+                )
 
         return child_endpoints
 
-
-    def visitConcatenation(self, node: Concatenation) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    def visitConcatenation(
+        self, node: Concatenation
+    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
         child_endpoints = {(): []}
         for child in node.children():
             next_endpoints = {}
-            endpoints: Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]] = self.visit(child)
+            endpoints: Dict[
+                Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]
+            ] = self.visit(child)
             for children in endpoints:
                 for existing in child_endpoints:
                     concatenation = existing + children
@@ -362,34 +377,51 @@ class Disambiguator(NodeVisitor):
                     next_endpoints[concatenation].extend(endpoints[children])
             child_endpoints = next_endpoints
 
-        return {children: [(node,) + path for path in child_endpoints[children]] for children in child_endpoints}
+        return {
+            children: [(node,) + path for path in child_endpoints[children]]
+            for children in child_endpoints
+        }
 
-
-    def visitRepetition(self, node: Repetition) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    def visitRepetition(
+        self, node: Repetition
+    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
         # repetitions are alternatives over concatenations
         implicit_alternative = next(node.descendents(None))
         return self.visit(implicit_alternative)
 
-    def visitStar(self, node: Star) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    def visitStar(
+        self, node: Star
+    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
         return self.visitRepetition(node)
 
-    def visitPlus(self, node: Plus) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    def visitPlus(
+        self, node: Plus
+    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
         return self.visitRepetition(node)
 
-    def visitOption(self, node: Option) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    def visitOption(
+        self, node: Option
+    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
         implicit_alternative = Alternative(
             [Concatenation([]), Concatenation([node.node])]
         )
         return self.visit(implicit_alternative)
 
-    def visitNonTerminalNode(self, node: NonTerminalNode) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    def visitNonTerminalNode(
+        self, node: NonTerminalNode
+    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
         return {(node.symbol,): [(node,)]}
 
-    def visitTerminalNode(self, node: TerminalNode) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    def visitTerminalNode(
+        self, node: TerminalNode
+    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
         return {(node.symbol,): [(node,)]}
 
-    def visitCharSet(self, node: CharSet) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    def visitCharSet(
+        self, node: CharSet
+    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
         return {(Terminal(c),): [(node, TerminalNode(Terminal(c)))] for c in node.chars}
+
 
 class ParseState:
     def __init__(
@@ -929,7 +961,13 @@ class Grammar(NodeVisitor):
         """
         return self._generate_all_k_paths(k)
 
-    def traverse_derivation(self, tree: DerivationTree, disambiguator: Disambiguator = Disambiguator(), paths: Set[Tuple[Node, ...]] = None, cur_path: Tuple[Node, ...] = None) -> Set[Tuple[Node, ...]]:
+    def traverse_derivation(
+        self,
+        tree: DerivationTree,
+        disambiguator: Disambiguator = Disambiguator(),
+        paths: Set[Tuple[Node, ...]] = None,
+        cur_path: Tuple[Node, ...] = None,
+    ) -> Set[Tuple[Node, ...]]:
         if paths is None:
             paths = set()
         if tree.symbol.is_terminal:
@@ -941,7 +979,9 @@ class Grammar(NodeVisitor):
                 cur_path = (NonTerminalNode(tree.symbol),)
             assert tree.symbol == typing.cast(NonTerminalNode, cur_path[-1]).symbol
             disambiguation = disambiguator.visit(self.rules[tree.symbol])
-            for tree, path in zip(tree.children, disambiguation[tuple(c.symbol for c in tree.children)]):
+            for tree, path in zip(
+                tree.children, disambiguation[tuple(c.symbol for c in tree.children)]
+            ):
                 self.traverse_derivation(tree, disambiguator, paths, cur_path + path)
         return paths
 
@@ -967,10 +1007,14 @@ class Grammar(NodeVisitor):
             for path in self.traverse_derivation(tree, disambiguator):
                 # for length in range(1, k + 1):
                 for window in range(len(path) - k + 1):
-                    covered_k_paths.add(path[window:window + k])
+                    covered_k_paths.add(path[window : window + k])
 
         # Compute coverage
         if not all_k_paths:
             raise ValueError("No k-paths found in the grammar")
 
-        return len(covered_k_paths) / len(all_k_paths), len(covered_k_paths), len(all_k_paths)
+        return (
+            len(covered_k_paths) / len(all_k_paths),
+            len(covered_k_paths),
+            len(all_k_paths),
+        )
