@@ -16,7 +16,9 @@ def is_syntactically_valid_xml(xml_string):
         return False
 
 
-def evaluate_xml(seconds=60) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
+def evaluate_xml(
+    seconds=60,
+) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
     grammar, constraints = parse_file("xml_evaluation/xml.fan")
     solutions = []
 

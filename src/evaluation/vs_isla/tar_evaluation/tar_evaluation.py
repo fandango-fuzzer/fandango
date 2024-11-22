@@ -22,14 +22,22 @@ def is_syntactically_valid_tar(tree: str):
             return False
 
 
-def evaluate_tar(seconds=60) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
+def evaluate_tar(
+    seconds=60,
+) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
     grammar, constraints = parse_file("tar_evaluation/tar.fan")
     solutions = []
 
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
-        fandango = FANDANGO(grammar, constraints, verbose=True, desired_solutions=200, population_size=200)
+        fandango = FANDANGO(
+            grammar,
+            constraints,
+            verbose=True,
+            desired_solutions=200,
+            population_size=200,
+        )
         fandango.evolve()
         solutions.extend(fandango.solution)
 
