@@ -123,7 +123,8 @@ selector_length
 selector:
     selection
     | selector '.' selection
-    | selector '*' selection
+    | selector '..' selection
+    | selector '*' selection  // deprecated
     ;
 
 selection
