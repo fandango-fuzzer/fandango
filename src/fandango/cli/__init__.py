@@ -11,7 +11,7 @@ from fandango.logger import LOGGER
 
 def get_parser():
     arguments = argparse.ArgumentParser(
-        description="The access point to the fandango framework"
+        description="The access point to the Fandango framework"
     )
 
     arguments.add_argument(
@@ -90,11 +90,19 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
         LOGGER.setLevel(logging.DEBUG)
 
     if args.command == INTERACTIVE:
-        interactive_ = Interactive(
-            args.fan, args.grammar, args.constraints, args.python
-        )
-        interactive_.run()
+        try:
+            interactive_ = Interactive(
+                args.fan, args.grammar, args.constraints, args.python
+            )
+        except Exception as e:
+            print(f"Error during initialization: {type(e)}")
+            sys.exit(1)
 
+        try:
+            interactive_.run()
+        except Exception as e:
+            print(f"Error during execution: {type(e)}")
+            sys.exit(1)
 
 if __name__ == "__main__":
     if "-O" in sys.argv:
