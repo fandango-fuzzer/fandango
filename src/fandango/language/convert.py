@@ -400,14 +400,15 @@ class SearchProcessor(FandangoParserVisitor):
 
     def get_attribute_searches(self, ctx: FandangoParser.SelectorContext):
         search = self.transform_selection(ctx.selection())
+
         if ctx.DOT():
+            print("Warning: <a>.<b> syntax is deprecated, use <a>/<b> instead")
+        if ctx.STAR():
+            print("Warning: <a>*<b> syntax is deprecated, use <a>//<b> instead")
+
+        if ctx.DOT() or ctx.DIV():
             return AttributeSearch(self.get_attribute_searches(ctx.selector()), search)
-        elif ctx.DOTDOT():
-            return StarAttributeSearch(
-                self.get_attribute_searches(ctx.selector()), search
-            )
-        elif ctx.STAR():
-            print("Warning: <a>*<b> syntax is deprecated, use <a>..<b> instead")
+        elif ctx.STAR() or ctx.IDIV():
             return StarAttributeSearch(
                 self.get_attribute_searches(ctx.selector()), search
             )

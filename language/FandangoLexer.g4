@@ -82,7 +82,6 @@ GRAMMAR_ASSIGN     : '::=';
 QUESTION           : '?';
 BACKSLASH          : '\\';
 DOT                : '.';
-DOTDOT             : '..';
 ELLIPSIS           : '...';
 STAR               : '*';
 OPEN_PAREN         : '(' {self.open_brace()};
