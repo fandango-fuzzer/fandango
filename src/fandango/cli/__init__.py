@@ -6,7 +6,7 @@ import sys
 import textwrap
 
 from fandango.cli.interactive import Interactive
-from fandango.constants import INTERACTIVE, FUZZ, HELP, TEST
+from fandango.constants import INTERACTIVE, FUZZ, HELP
 from fandango.logger import LOGGER
 
 
@@ -238,6 +238,9 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
         test(args)
     elif args.command == HELP:
         help(args)
+    else:
+        # This should not be reachable, but just in case
+        parser.print_usage()
 
 if __name__ == "__main__":
     if "-O" in sys.argv:
