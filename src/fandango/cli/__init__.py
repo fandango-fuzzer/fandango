@@ -130,7 +130,7 @@ def get_parser():
         "test_args",
         metavar="args",
         type=str,
-        nargs="*",
+        nargs=argparse.REMAINDER,
         help="Command arguments",
     )
 
