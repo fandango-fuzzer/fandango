@@ -158,10 +158,8 @@ class Fandango:
         self.time_taken = time.time() - start_time
 
         LOGGER.info(f"---------- Evolution finished ----------")
-        LOGGER.info(
-            f"Perfect solutions found: ({len(self.solution)}) "
-            f"- Fitness of final population: {self.fitness:.2f}"
-        )
+        LOGGER.info(f"Perfect solutions found: ({len(self.solution)})")
+        LOGGER.info(f"Fitness of final population: {self.fitness:.2f}")
         LOGGER.info(f"Time taken: {self.time_taken:.2f} seconds")
 
         LOGGER.debug(f"---------- FANDANGO statistics ----------")
