@@ -9,6 +9,28 @@ from fandango.cli.interactive import Interactive
 from fandango.constants import INTERACTIVE, FUZZ, HELP
 from fandango.logger import LOGGER
 
+import ast
+
+from antlr4.CommonTokenStream import CommonTokenStream
+from antlr4.InputStream import InputStream
+from antlr4.error.ErrorStrategy import BailErrorStrategy
+
+from fandango.constraints import predicates
+from fandango.constraints.fitness import GeneticBase
+from fandango.evolution.algorithm import Fandango
+from fandango.language.convert import (
+    FandangoSplitter,
+    GrammarProcessor,
+    PythonProcessor,
+    ConstraintProcessor,
+)
+from fandango.language.grammar import Grammar
+from fandango.language.parser.FandangoLexer import FandangoLexer
+from fandango.language.parser.FandangoParser import FandangoParser
+from fandango.language.symbol import NonTerminal
+from fandango.language.tree import DerivationTree
+
+
 
 def get_parser():
 
@@ -74,7 +96,8 @@ def get_parser():
     file_parser.add_argument(
         "-f", "--fandango-file",
         type=argparse.FileType('r'),
-        dest="fan_file",
+        dest="fan_files",
+        metavar="FAN_FILE",
         default=None,
         action="append",
         help="Fandango file (.fan, .py) to be processed. Can be given multiple times.",
@@ -82,7 +105,8 @@ def get_parser():
     file_parser.add_argument(
         "-c", "--constraint",
         type=int,
-        dest="constraint",
+        dest="constraints",
+        metavar="CONSTRAINTS",
         default=None,
         action="append",
         help="define an additional constraint CONSTRAINT. Can be given multiple times.",
@@ -212,8 +236,81 @@ def help(args):
     else:
         parser.print_help()
 
+def merged_fan_contents(args):
+    fan_contents = ""
+    if args.fan_files:
+        for file in args.fan_files:
+            fan_contents += file.read()
+    if args.constraints:
+        for constraint in args.constraints:
+            fan_contents += '\n' + constraint + ';\n'
+    return fan_contents
+
+def parsed_fan_contents(args, lazy: bool = False):
+    # This should go into a separate module, not here -- AZ
+    LOGGER.info("---------- Parsing FANDANGO content ----------")
+
+    LOGGER.debug("Reading .fan files")
+    fan_contents = merged_fan_contents(args)
+
+    LOGGER.debug("Parsing .fan content")
+    input_stream = InputStream(fan_contents)
+    lexer = FandangoLexer(input_stream)
+    token_stream = CommonTokenStream(lexer)
+    parser = FandangoParser(token_stream)
+    parser._errHandler = BailErrorStrategy()
+    tree = parser.fandango()
+
+    LOGGER.debug("Extracting code")
+    splitter = FandangoSplitter()
+    splitter.visit(tree)
+    global_vars: dict = {}
+    local_vars = predicates.__dict__
+    python_processor = PythonProcessor()
+    code_tree = python_processor.get_code(splitter.python_code)
+    code_text = ast.unparse(code_tree)
+
+    LOGGER.debug("Running code")
+    exec(code_text, global_vars, local_vars)
+
+    LOGGER.debug("Extracting grammar")
+    grammar_processor = GrammarProcessor(
+        local_variables=local_vars, global_variables=global_vars
+    )
+    grammar: Grammar = grammar_processor.get_grammar(splitter.productions)
+
+    LOGGER.debug("Extracting constraints")
+    constraint_processor = ConstraintProcessor(grammar,
+        local_variables=local_vars, global_variables=global_vars,
+        lazy=lazy,
+    )
+    constraints = constraint_processor.get_constraints(splitter.constraints)
+
+    LOGGER.debug("Parsing complete")
+    return grammar, constraints
+
 def fuzz(args):
     print(args, sys.argv)
+    grammar, constraints = parsed_fan_contents(args)
+
+    LOGGER.debug("Starting Fandango")
+    fandango = Fandango(
+        grammar=grammar,
+        constraints=constraints,
+        population_size=args.population_size,
+        mutation_rate=args.mutation_rate,
+        crossover_rate=args.crossover_rate,
+        max_generations=args.max_generations,
+        elitism_rate=args.elitism_rate,
+    )
+
+    LOGGER.debug("Evolving population")
+    population = fandango.evolve()
+
+    # For now, we just print
+    for individual in population:
+        print(individual)
+
 
 def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
     if "-O" in sys.argv:
