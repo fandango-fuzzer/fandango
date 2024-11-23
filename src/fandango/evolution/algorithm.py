@@ -2,6 +2,7 @@
 import copy
 import random
 import time
+import deprecation
 from typing import List, Set, Tuple
 
 from fandango.constraints.base import Constraint
@@ -343,5 +344,9 @@ class Fandango:
                 self.mutations_made += 1
         return individual
 
+
 # Backwards compatibility
-FANDANGO = Fandango
+class FANDANGO(Fandango):
+    @deprecation.deprecated(details='Use `Fandango` instead')
+    def __init__(*args, **kwargs):
+        super().__init__(*args, **kwargs)
