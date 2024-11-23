@@ -347,6 +347,6 @@ class Fandango:
 
 # Backwards compatibility
 class FANDANGO(Fandango):
-    @deprecation.deprecated(details='Use `Fandango` instead')
+    @deprecation.deprecated(details="Use `Fandango` instead")
     def __init__(*args, **kwargs):
         super().__init__(*args, **kwargs)
