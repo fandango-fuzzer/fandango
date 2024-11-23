@@ -5,7 +5,6 @@ PARSE = "parse"
 HELP = "help"
 
 # Future commands
-TEST = "test"
 COMPILE = "compile"
 MUTATE = "mutate"
 REPAIR = "repair"
