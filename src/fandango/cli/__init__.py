@@ -92,6 +92,8 @@ def get_parser():
                                  help="the rate of individuals that will undergo mutation", default=0.1)
     settings_group.add_argument("-n", "--num-outputs", type=int,
                                  help="the number of outputs to produce (default: 100)", default=100)
+    settings_group.add_argument("-S", "--start-symbol", type=str,
+                                 help="the grammar start symbol (default: `start`)", default="start")
 
     # Shared file options
     file_parser = argparse.ArgumentParser(add_help=False)
@@ -101,6 +103,7 @@ def get_parser():
         dest="fan_files",
         metavar="FAN_FILE",
         default=None,
+        required=True,
         action="append",
         help="Fandango file (.fan, .py) to be processed. Can be given multiple times.",
     )
@@ -108,7 +111,7 @@ def get_parser():
         "-c", "--constraint",
         type=int,
         dest="constraints",
-        metavar="CONSTRAINTS",
+        metavar="CONSTRAINT",
         default=None,
         action="append",
         help="define an additional constraint CONSTRAINT. Can be given multiple times.",
@@ -315,6 +318,7 @@ def fuzz(args):
         crossover_rate=args.crossover_rate,
         max_generations=args.max_generations,
         elitism_rate=args.elitism_rate,
+        start_symbol=f"<{args.start_symbol}>"
     )
 
     LOGGER.debug("Evolving population")

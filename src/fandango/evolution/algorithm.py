@@ -29,6 +29,7 @@ class Fandango:
         tournament_size: float = 0.1,
         mutation_rate: float = 0.2,
         verbose: bool = False,
+        start_symbol = '<start>',
     ):
         """
         Initialize the FANDANGO genetic algorithm. The algorithm will evolve a population of individuals
@@ -41,7 +42,7 @@ class Fandango:
         :param elitism_rate: The rate of individuals that will be preserved in the next generation.
         :param crossover_rate: The rate of individuals that will undergo crossover.
         :param mutation_rate: The rate of individuals that will undergo mutation.
-        :param verbose: Whether to print information about the evolution process.
+        :param start_symbol: The start symbol to use with the grammar.
         """
 
         if verbose:
@@ -57,6 +58,7 @@ class Fandango:
         self.tournament_size = max(2, int(population_size * tournament_size))
         self.max_generations = max_generations
         self.elitism_rate = elitism_rate
+        self.start_symbol = start_symbol
 
         self.fitness_cache = {}
 
@@ -141,7 +143,8 @@ class Fandango:
 
             # Add new individuals
             while len(new_population) < self.population_size:
-                new_population.append(self.grammar.fuzz())
+                new_population.append(self.grammar.fuzz(
+                                        start=self.start_symbol))
 
             # Fix individuals
             fixed_population = list()
@@ -177,7 +180,8 @@ class Fandango:
         :return: A set of individuals.
         """
 
-        population = [self.grammar.fuzz() for _ in range(self.population_size)]
+        population = [self.grammar.fuzz(self.start_symbol)
+                      for _ in range(self.population_size)]
 
         # Fix individuals
         fixed_population = list()
