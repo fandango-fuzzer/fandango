@@ -74,10 +74,10 @@ class Fandango:
         self.desired_solutions = desired_solutions
 
         if initial_population is not None:
-            LOGGER.info("Storing provided initial population...")
+            LOGGER.info(f"Storing provided initial population...")
             self.population = list(initial_population)
         else:
-            LOGGER.info("Generating initial population...")
+            LOGGER.info(f"Generating initial population (size: {self.population_size})...")
 
             st_time = time.time()
             self.population = self.generate_random_initial_population()

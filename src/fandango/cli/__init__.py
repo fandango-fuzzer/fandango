@@ -303,7 +303,7 @@ def fuzz(args):
     fandango = Fandango(
         grammar=grammar,
         constraints=constraints,
-        population_size=args.population_size,
+        population_size=max(args.population_size, args.num_outputs),
         mutation_rate=args.mutation_rate,
         crossover_rate=args.crossover_rate,
         max_generations=args.max_generations,
@@ -312,6 +312,9 @@ def fuzz(args):
 
     LOGGER.debug("Evolving population")
     population = fandango.evolve()
+
+    LOGGER.debug("Reducing population")
+    population = population[:args.num_outputs]
 
     output_on_stdout = True
 
