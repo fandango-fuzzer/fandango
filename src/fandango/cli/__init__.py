@@ -29,11 +29,18 @@ def get_parser():
         help="show version number",
     )
 
-    main_parser.add_argument(
-        "-v", "--verbose",
+    verbosity_option = main_parser.add_mutually_exclusive_group()
+    verbosity_option.add_argument(
+        "--verbose", "-v",
         dest="verbose",
+        action="count",
+        help="increase verbosity. Can be given multiple times (-vv)",
+    )
+    verbosity_option.add_argument(
+        "--quiet", "-q",
+        dest="quiet",
         action="store_true",
-        help="enable verbose output",
+        help="suppress warnings",
     )
 
     # The subparsers
@@ -191,14 +198,11 @@ def interactive(args):
             args.fan, args.grammar, args.constraints, args.python
         )
     except Exception as e:
-        print(f"Error during initialization: {type(e)}")
+        # This should catch all kinds of parsing errors
+        LOGGER.critical(f"Error during initialization: {type(e)}")
         sys.exit(1)
 
-    try:
-        interactive_.run()
-    except Exception as e:
-        print(f"Error during execution: {type(e)}")
-        sys.exit(1)
+    interactive_.run()
 
 def help(args):
     parser = get_parser()
@@ -209,9 +213,6 @@ def help(args):
         parser.print_help()
 
 def fuzz(args):
-    print(args, sys.argv)
-
-def test(args):
     print(args, sys.argv)
 
 def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
@@ -227,15 +228,18 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
     parser = get_parser()
     args = parser.parse_args(args or sys.argv[1:])
 
-    if args.verbose:
-        LOGGER.setLevel(logging.DEBUG)
+    LOGGER.setLevel(logging.WARNING)  # Default
+    if args.quiet:
+        LOGGER.setLevel(logging.ERROR)  # Suppress warnings
+    elif args.verbose and args.verbose == 1:
+            LOGGER.setLevel(logging.INFO)  # Give more info
+    elif args.verbose and args.verbose > 1:
+            LOGGER.setLevel(logging.DEBUG)  # Even more info
 
     if args.command == INTERACTIVE:
         interactive(args)
     elif args.command == FUZZ:
         fuzz(args)
-    elif args.command == TEST:
-        test(args)
     elif args.command == HELP:
         help(args)
     else:

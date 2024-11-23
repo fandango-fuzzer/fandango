@@ -3,12 +3,16 @@ import copy
 import random
 import time
 import deprecation
+import logging
+
 from typing import List, Set, Tuple
+
 
 from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
 from fandango.language.grammar import DerivationTree
 from fandango.language.grammar import Grammar
+from fandango.logger import LOGGER
 
 
 class Fandango:
@@ -39,8 +43,12 @@ class Fandango:
         :param mutation_rate: The rate of individuals that will undergo mutation.
         :param verbose: Whether to print information about the evolution process.
         """
+
         if verbose:
-            print(f" ---------- Initializing FANDANGO algorithm ---------- ")
+            LOGGER.setLevel(logging.DEBUG)
+            LOGGER.warning(f"Fandango.__init__(): The `verbose` parameter will be deprecated; use LOGGER.setLevel() instead")
+
+        LOGGER.info(f" ---------- Initializing FANDANGO algorithm ---------- ")
         self.grammar = grammar
         self.constraints = constraints
         self.population_size = population_size
@@ -66,19 +74,14 @@ class Fandango:
         self.desired_solutions = desired_solutions
 
         if initial_population is not None:
-            if self.verbose:
-                print("[INFO] - Storing provided initial population...")
+            LOGGER.info("Storing provided initial population...")
             self.population = list(initial_population)
         else:
-            if self.verbose:
-                print("[INFO] - Generating initial population...")
+            LOGGER.info("Generating initial population...")
 
             st_time = time.time()
             self.population = self.generate_random_initial_population()
-            if self.verbose:
-                print(
-                    f"[INFO] - Initial population generated in {time.time() - st_time:.2f} seconds"
-                )
+            LOGGER.info(f"Initial population generated in {time.time() - st_time:.2f} seconds")
 
         # Evaluate population
         self.evaluation = self.evaluate_population()
@@ -92,8 +95,7 @@ class Fandango:
 
         :return: The best solution found by the algorithm.
         """
-        if self.verbose:
-            print(f" ---------- Starting evolution ---------- ")
+        LOGGER.info(f" ---------- Starting evolution ---------- ")
 
         start_time = time.time()
 
@@ -111,11 +113,10 @@ class Fandango:
                 self.solution = self.population[: self.population_size]
                 break
 
-            if self.verbose:
-                print(
-                    f"[INFO] - Generation {generation} - Fitness: {self.fitness:.2f} - "
-                    f"#solutions found: {len(self.solution)}"
-                )
+            LOGGER.info(
+                f"Generation {generation} - Fitness: {self.fitness:.2f} - "
+                f"#solutions found: {len(self.solution)}"
+            )
 
             # Select elites
             new_population = self.select_elites()
@@ -156,20 +157,18 @@ class Fandango:
 
         self.time_taken = time.time() - start_time
 
-        if self.verbose:
-            print(f" ---------- Evolution finished ---------- ")
-            print(
-                f"[INFO] - Perfect solutions found: ({len(self.solution)}) "
-                f"- Fitness of final population: {self.fitness:.2f}"
-            )
-            print(f"[INFO] - Time taken: {self.time_taken:.2f} seconds")
+        LOGGER.info(f" ---------- Evolution finished ---------- ")
+        LOGGER.info(
+            f"Perfect solutions found: ({len(self.solution)}) "
+            f"- Fitness of final population: {self.fitness:.2f}"
+        )
+        LOGGER.info(f"Time taken: {self.time_taken:.2f} seconds")
 
-        if self.verbose:
-            print(f" ---------- FANDANGO statistics ---------- ")
-            print(f"[DEBUG] - Fixes made: {self.fixes_made}")
-            print(f"[DEBUG] - Fitness checks: {self.checks_made}")
-            print(f"[DEBUG] - Crossovers made: {self.crossovers_made}")
-            print(f"[DEBUG] - Mutations made: {self.mutations_made}")
+        LOGGER.debug(f" ---------- FANDANGO statistics ---------- ")
+        LOGGER.debug(f"Fixes made: {self.fixes_made}")
+        LOGGER.debug(f"Fitness checks: {self.checks_made}")
+        LOGGER.debug(f"Crossovers made: {self.crossovers_made}")
+        LOGGER.debug(f"Mutations made: {self.mutations_made}")
 
         return self.population
 
