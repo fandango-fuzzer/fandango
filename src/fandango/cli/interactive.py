@@ -473,7 +473,7 @@ class Interactive:
 
         try:
             while True:
-                command = input(">>> ").lstrip()
+                command = input("(fandango) ").lstrip()
                 if command.startswith(InteractiveCommands.EXIT.value):
                     break
                 elif command.startswith(InteractiveCommands.HELP.value):
