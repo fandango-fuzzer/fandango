@@ -137,21 +137,14 @@ def get_parser():
         help="create individual output files in DIRECTORY",
     )
 
-    test_group = fuzz_parser.add_argument_group("command invocation settings")
+    command_group = fuzz_parser.add_argument_group("command invocation settings")
 
-    input_option = test_group.add_mutually_exclusive_group()
-    input_option.add_argument(
-        "--to-stdin",
-        action="store_true",
-        help="Fandango input will be passed as standard input",
-    )
-    input_option.add_argument(
-        "--to-arg",
-        action="store_true",
-        help="Fandango input file will be passed as last command-line argument",
+    command_group.add_argument(
+        "--input-method",
+        choices=['stdin', 'filename'],
+        help="When invoking COMMAND, choose whether Fandango input will be passed as standard input (`stdin`) or as last argument on the command line (`filename`) (default)",
     )
 
-    command_group = test_group.add_argument_group()
     command_group.add_argument(
         "test_command",
         metavar="command",
@@ -347,17 +340,19 @@ def fuzz(args):
         LOGGER.info(f"Running {args.test_command}")
         base_cmd = [args.test_command] + args.test_args
         for individual in population:
-            if args.to_arg:
+            if args.input_method == 'filename':
                 with tempfile.NamedTemporaryFile(mode='w') as fd:
                     fd.write(str(individual))
                     fd.flush()
                     cmd = base_cmd + [fd.name]
                     LOGGER.debug(f"Running {cmd}")
                     subprocess.run(cmd, text=True)
-            if args.to_stdin:
+            elif args.input_method == 'stdin':
                 cmd = base_cmd
                 LOGGER.debug(f"Running {cmd} with individual as stdin")
                 subprocess.run(cmd, input=str(individual), text=True)
+            else:
+                raise ValueError("Unsupported input method")
 
         output_on_stdout = False
 
