@@ -1,6 +1,8 @@
 import ast
 import enum
 import os.path
+import readline
+
 from typing import Optional
 
 from antlr4.CommonTokenStream import CommonTokenStream
