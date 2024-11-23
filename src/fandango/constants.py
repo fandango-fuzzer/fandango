@@ -2,6 +2,7 @@
 INTERACTIVE = "interactive"
 FUZZ = "fuzz"
 PARSE = "parse"
+HELP = "help"
 
 # Future commands
 TEST = "test"
