@@ -310,6 +310,10 @@ def fuzz(args):
     grammar, constraints = parse_fan_contents(args)
 
     LOGGER.debug("Starting Fandango")
+    if args.start_symbol.startswith('<'):
+        start_symbol = args.start_symbol
+    else:
+        start_symbol=f"<{args.start_symbol}>"
     fandango = Fandango(
         grammar=grammar,
         constraints=constraints,
@@ -318,7 +322,7 @@ def fuzz(args):
         crossover_rate=args.crossover_rate,
         max_generations=args.max_generations,
         elitism_rate=args.elitism_rate,
-        start_symbol=f"<{args.start_symbol}>"
+        start_symbol=start_symbol,
     )
 
     LOGGER.debug("Evolving population")
