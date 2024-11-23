@@ -1,4 +1,5 @@
 import ast
+from fandango.logger import LOGGER
 from io import UnsupportedOperation
 from typing import List, Tuple, Dict, Optional, Any
 
@@ -401,10 +402,11 @@ class SearchProcessor(FandangoParserVisitor):
     def get_attribute_searches(self, ctx: FandangoParser.SelectorContext):
         search = self.transform_selection(ctx.selection())
 
+        # FIXME: There should be a way to output the location where these occurred - AZ
         if ctx.DOT():
-            print("Warning: <a>.<b> syntax is deprecated, use <a>/<b> instead")
+            LOGGER.warning("<a>.<b> syntax is deprecated, use <a>/<b> instead")
         if ctx.STAR():
-            print("Warning: <a>*<b> syntax is deprecated, use <a>//<b> instead")
+            LOGGER.warning("<a>*<b> syntax is deprecated, use <a>//<b> instead")
 
         if ctx.DOT() or ctx.DIV():
             return AttributeSearch(self.get_attribute_searches(ctx.selector()), search)
