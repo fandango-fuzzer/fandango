@@ -113,6 +113,12 @@ def get_parser():
         action="append",
         help="define an additional constraint CONSTRAINT. Can be given multiple times.",
     )
+    file_parser.add_argument(
+        "-s", "--separator",
+        type=str,
+        default='\n',
+        help="output SEPARATOR between individual inputs. (default: newline)",
+    )
 
     # Commands
 
@@ -244,7 +250,7 @@ def merged_fan_contents(args) -> str:
 
 def extract_grammar_and_constraints(fan_contents: str, lazy: bool = False):
     """Extract grammar and constraints from the given content"""
-    # This should go into a separate module (parser.py maybe?), not here -- AZ
+    # TODO: This should go into a separate module (parser.py maybe?), not here -- AZ
 
     LOGGER.debug("Parsing .fan content")
     input_stream = InputStream(fan_contents)
@@ -330,7 +336,7 @@ def fuzz(args):
         LOGGER.debug(f"Storing population in file")
         for individual in population:
             args.output.write(str(individual))
-            args.output.write('\n')  # separator should be configurable
+            args.output.write(args.separator)
 
         args.output.close()
         output_on_stdout = False
@@ -360,7 +366,7 @@ def fuzz(args):
         # Default
         LOGGER.debug(f"Printing population on stdout")
         for individual in population:
-            print(individual, end='\n')  # separator should be configurable
+            print(individual, end=args.separator)
 
 
 
