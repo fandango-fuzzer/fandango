@@ -122,14 +122,14 @@ def get_parser():
     )
     fuzz_parser.add_argument(
         "-o", "--output",
-        type=int,
+        type=argparse.FileType('w'),
         dest="output",
         default=None,
         help="write output to OUTPUT (default: stdout)",
     )
     fuzz_parser.add_argument(
         "-d", "--directory",
-        type=int,
+        type=str,
         dest="directory",
         default=None,
         help="create individual output files in DIRECTORY",
@@ -236,22 +236,20 @@ def help(args):
     else:
         parser.print_help()
 
-def merged_fan_contents(args):
+def merged_fan_contents(args) -> str:
+    """Merge all given files and constraints into one; return content"""
     fan_contents = ""
     if args.fan_files:
         for file in args.fan_files:
-            fan_contents += file.read()
+            fan_contents += file.read() + '\n'
     if args.constraints:
         for constraint in args.constraints:
             fan_contents += '\n' + constraint + ';\n'
     return fan_contents
 
-def parsed_fan_contents(args, lazy: bool = False):
-    # This should go into a separate module, not here -- AZ
-    LOGGER.info("---------- Parsing FANDANGO content ----------")
-
-    LOGGER.debug("Reading .fan files")
-    fan_contents = merged_fan_contents(args)
+def extract_grammar_and_constraints(fan_contents: str, lazy: bool = False):
+    """Extract grammar and constraints from the given content"""
+    # This should go into a separate module (parser.py maybe?), not here -- AZ
 
     LOGGER.debug("Parsing .fan content")
     input_stream = InputStream(fan_contents)
@@ -289,9 +287,16 @@ def parsed_fan_contents(args, lazy: bool = False):
     LOGGER.debug("Parsing complete")
     return grammar, constraints
 
+def parse_fan_contents(args):
+    """Parse .fan content as given in args"""
+    LOGGER.debug("Reading .fan files")
+    fan_contents = merged_fan_contents(args)
+    grammar, constraints = extract_grammar_and_constraints(fan_contents)
+    return grammar, constraints
+
 def fuzz(args):
-    print(args, sys.argv)
-    grammar, constraints = parsed_fan_contents(args)
+    LOGGER.info("---------- Parsing FANDANGO content ----------")
+    grammar, constraints = parse_fan_contents(args)
 
     LOGGER.debug("Starting Fandango")
     fandango = Fandango(
@@ -307,9 +312,46 @@ def fuzz(args):
     LOGGER.debug("Evolving population")
     population = fandango.evolve()
 
-    # For now, we just print
-    for individual in population:
-        print(individual)
+    output_on_stdout = True
+
+    if args.directory:
+        LOGGER.debug(f"Storing population in {args.directory} directory")
+        try:
+            os.mkdir(args.directory)
+        except FileExistsError as e:
+            pass
+
+        counter = 1
+        for individual in population:
+            basename = "fandango-{:04d}.txt".format(counter)  # format should be configurable
+            filename = os.path.join(args.directory, basename)
+            with open(filename, 'w') as fd:
+                fd.write(str(individual))
+            counter += 1
+
+        output_on_stdout = False
+
+    if args.output:
+        LOGGER.debug(f"Storing population in file")
+        for individual in population:
+            args.output.write(str(individual))
+            args.output.write('\n')  # separator should be configurable
+
+        args.output.close()
+        output_on_stdout = False
+
+    if args.test_command:
+        LOGGER.debug(f"Invoking {args.test_command}")
+        ...
+        output_on_stdout = False
+
+    if output_on_stdout:
+        # Default
+        LOGGER.debug(f"Printing population on stdout")
+        for individual in population:
+            print(individual, end='\n')  # separator should be configurable
+
+
 
 
 def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
