@@ -4,6 +4,8 @@ import logging
 import os
 import sys
 import textwrap
+import subprocess
+import tempfile
 
 from fandango.cli.interactive import Interactive
 from fandango.constants import INTERACTIVE, FUZZ, HELP
@@ -341,8 +343,22 @@ def fuzz(args):
         output_on_stdout = False
 
     if args.test_command:
-        LOGGER.debug(f"Invoking {args.test_command}")
-        ...
+        print(args, sys.argv)
+        LOGGER.info(f"Running {args.test_command}")
+        base_cmd = [args.test_command] + args.test_args
+        for individual in population:
+            if args.to_arg:
+                with tempfile.NamedTemporaryFile(mode='w') as fd:
+                    fd.write(str(individual))
+                    fd.flush()
+                    cmd = base_cmd + [fd.name]
+                    LOGGER.debug(f"Running {cmd}")
+                    subprocess.run(cmd, text=True)
+            if args.to_stdin:
+                cmd = base_cmd
+                LOGGER.debug(f"Running {cmd} with individual as stdin")
+                subprocess.run(cmd, input=str(individual), text=True)
+
         output_on_stdout = False
 
     if output_on_stdout:
