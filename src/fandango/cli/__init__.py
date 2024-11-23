@@ -148,7 +148,14 @@ def get_parser():
     command_group.add_argument(
         "--input-method",
         choices=['stdin', 'filename'],
+        default='filename',
         help="When invoking COMMAND, choose whether Fandango input will be passed as standard input (`stdin`) or as last argument on the command line (`filename`) (default)",
+    )
+    command_group.add_argument(
+        "--filename-format",
+        type=str,
+        default='fandango-{:04d}.txt',
+        help="Format of generated file names (default: 'fandango-{:04d}.txt')",
     )
 
     command_group.add_argument(
@@ -163,7 +170,7 @@ def get_parser():
         metavar="args",
         type=str,
         nargs=argparse.REMAINDER,
-        help="Command arguments",
+        help="The arguments of the command",
     )
 
 
