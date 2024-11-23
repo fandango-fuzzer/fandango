@@ -1,3 +1,5 @@
+# Fandango Makefile. For development only.
+
 PYTHON = python
 ANTLR = antlr
 BLACK = black
