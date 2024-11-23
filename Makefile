@@ -1,12 +1,13 @@
 # Fandango Makefile. For development only.
 
+MAKEFLAGS=--warn-undefined-variables
 PYTHON = python
 ANTLR = antlr
 BLACK = black
 PIP = pip
-PARSER_DIR = src/fandango/language/parser
 
 targets: requirements.txt parser install
+.PHONY: parser install
 
 
 ## Requirements
@@ -16,9 +17,10 @@ requirements.txt:	pyproject.toml
 
 
 ## Parser
-	
-LEXER = language/FandangoLexer.g4
-PARSER = language/FandangoParser.g4
+
+PARSER_DIR = src/fandango/language/parser
+LEXER_G4 = language/FandangoLexer.g4
+PARSER_G4 = language/FandangoParser.g4
 
 PARSERS = \
 	$(PARSER_DIR)/FandangoLexer.py \
@@ -28,10 +30,10 @@ PARSERS = \
 
 parser: $(PARSERS)
 
-$(PARSERS): $(PARSER_SOURCES)
+$(PARSERS) &: $(LEXER_G4) $(PARSER_G4)
 	# $(PYTHON) scripts/update-grammar.py
-	$(ANTLR) -Dlanguage=Python3 -o $(PARSER_DIR) \
-		-visitor -listener $(LEXER) $(PARSER)
+	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER_DIR) \
+		-visitor -listener $(LEXER_G4) $(PARSER_G4)
 	$(BLACK) src
 
 
