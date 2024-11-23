@@ -3,7 +3,7 @@ import tempfile
 import time
 from typing import Tuple
 
-from fandango.evolution.algorithm import FANDANGO
+from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse_file
 
 
@@ -31,7 +31,7 @@ def evaluate_tar(
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
-        fandango = FANDANGO(
+        fandango = Fandango(
             grammar,
             constraints,
             verbose=True,
