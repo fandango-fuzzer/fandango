@@ -17,7 +17,9 @@ statement
 
 // grammar part
 
-production: RULE_NAME '::=' alternative (':' ':' expression)? ';';
+production
+    : RULE_NAME '::=' alternative ('=' expression)? ';'
+    | RULE_NAME '::=' alternative (':' ':' expression)? ';'; // deprecated
 
 alternative: concatenation ('|' concatenation)*;
 
