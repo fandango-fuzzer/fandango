@@ -48,7 +48,7 @@ class Fandango:
             LOGGER.setLevel(logging.DEBUG)
             LOGGER.warning(f"Fandango.__init__(): The `verbose` parameter will be deprecated; use LOGGER.setLevel() instead")
 
-        LOGGER.info(f" ---------- Initializing FANDANGO algorithm ---------- ")
+        LOGGER.info(f"---------- Initializing FANDANGO algorithm ---------- ")
         self.grammar = grammar
         self.constraints = constraints
         self.population_size = population_size
@@ -95,7 +95,7 @@ class Fandango:
 
         :return: The best solution found by the algorithm.
         """
-        LOGGER.info(f" ---------- Starting evolution ---------- ")
+        LOGGER.info(f"---------- Starting evolution ----------")
 
         start_time = time.time()
 
@@ -157,14 +157,14 @@ class Fandango:
 
         self.time_taken = time.time() - start_time
 
-        LOGGER.info(f" ---------- Evolution finished ---------- ")
+        LOGGER.info(f"---------- Evolution finished ----------")
         LOGGER.info(
             f"Perfect solutions found: ({len(self.solution)}) "
             f"- Fitness of final population: {self.fitness:.2f}"
         )
         LOGGER.info(f"Time taken: {self.time_taken:.2f} seconds")
 
-        LOGGER.debug(f" ---------- FANDANGO statistics ---------- ")
+        LOGGER.debug(f"---------- FANDANGO statistics ----------")
         LOGGER.debug(f"Fixes made: {self.fixes_made}")
         LOGGER.debug(f"Fitness checks: {self.checks_made}")
         LOGGER.debug(f"Crossovers made: {self.crossovers_made}")
