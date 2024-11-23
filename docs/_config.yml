@@ -3,7 +3,8 @@ logo: fandango.png
 copyright: 2024 CISPA Helmholtz Center for Information Security (www.cispa.de). All Rights Reserved.
 
 bibtex_bibfiles:
-    
+  fandango.bib
+
 latex:
   latex_documents:
      targetname: fandango.tex
