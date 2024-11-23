@@ -153,7 +153,8 @@ def interactive(args):
         print(f"Error during execution: {type(e)}")
         sys.exit(1)
 
-def help(parser, args):
+def help(args):
+    parser = get_parser()
     for cmd in args.help_command:
         parser.parse_args([cmd] + ["--help"])
     else:
@@ -180,7 +181,7 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
     elif args.command == FUZZ:
         fuzz(args)
     elif args.command == HELP:
-        help(parser, args)
+        help(args)
 
 if __name__ == "__main__":
     if "-O" in sys.argv:
