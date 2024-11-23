@@ -10,7 +10,7 @@ from fandango.language.grammar import DerivationTree
 from fandango.language.grammar import Grammar
 
 
-class FANDANGO:
+class Fandango:
     def __init__(
         self,
         grammar: Grammar,
@@ -342,3 +342,6 @@ class FANDANGO:
                 individual = individual.replace(node_to_mutate, new_subtree)
                 self.mutations_made += 1
         return individual
+
+# Backwards compatibility
+FANDANGO = Fandango

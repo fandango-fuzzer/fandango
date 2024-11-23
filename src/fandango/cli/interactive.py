@@ -9,7 +9,7 @@ from antlr4.error.ErrorStrategy import BailErrorStrategy
 
 from fandango.constraints import predicates
 from fandango.constraints.fitness import GeneticBase
-from fandango.evolution.algorithm import FANDANGO
+from fandango.evolution.algorithm import Fandango
 from fandango.language.convert import (
     FandangoSplitter,
     GrammarProcessor,
@@ -364,7 +364,7 @@ class Interactive:
 
     def _fandango(self, identifier: Optional[str] = None):
         if self._fandango_object is None:
-            self._fandango_object = FANDANGO(
+            self._fandango_object = Fandango(
                 grammar=self._grammar,
                 constraints=list(self._constraints.values()),
                 population_size=self._population_size,
@@ -384,7 +384,7 @@ class Interactive:
                 self._grammar.update_parser()
                 self._grammar.prime()
                 self._updated_grammar = False
-            self._fandango_object = FANDANGO(
+            self._fandango_object = Fandango(
                 grammar=self._grammar,
                 constraints=list(self._constraints.values()),
                 population_size=self._population_size,

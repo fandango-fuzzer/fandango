@@ -3,7 +3,7 @@ import time
 from io import StringIO
 from typing import Tuple
 
-from fandango.evolution.algorithm import FANDANGO
+from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse_file
 
 
@@ -35,7 +35,7 @@ def evaluate_csv(
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
-        fandango = FANDANGO(grammar, constraints, verbose=False, desired_solutions=100)
+        fandango = Fandango(grammar, constraints, verbose=False, desired_solutions=100)
         fandango.evolve()
         solutions.extend(fandango.solution)
 
