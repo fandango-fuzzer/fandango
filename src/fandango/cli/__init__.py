@@ -6,12 +6,14 @@ import sys
 import textwrap
 
 from fandango.cli.interactive import Interactive
-from fandango.constants import INTERACTIVE, FUZZ, HELP
+from fandango.constants import INTERACTIVE, FUZZ, HELP, TEST
 from fandango.logger import LOGGER
 
 
 def get_parser():
-    arguments = argparse.ArgumentParser(
+
+    # Main parser
+    main_parser = argparse.ArgumentParser(
         prog="fandango",
         description="The access point to the Fandango framework",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -20,14 +22,14 @@ def get_parser():
                                Use `%(prog)s help COMMAND` to learn more about COMMAND.""")
     )
 
-    arguments.add_argument(
+    main_parser.add_argument(
         "--version",
         action="version",
         version="%(prog)s " + importlib.metadata.version("fandango"),
         help="show version number",
     )
 
-    arguments.add_argument(
+    main_parser.add_argument(
         "-v", "--verbose",
         dest="verbose",
         action="store_true",
@@ -35,7 +37,7 @@ def get_parser():
     )
 
     # The subparsers
-    commands = arguments.add_subparsers(
+    commands = main_parser.add_subparsers(
         title="commands",
         # description="Valid commands",
         help="the command to execute",
@@ -43,19 +45,49 @@ def get_parser():
         required=True,
     )
 
+    # Shared Settings
+    settings_parser = argparse.ArgumentParser(add_help=False)
+    settings_group = settings_parser.add_argument_group("algorithm settings")
+
+    settings_group.add_argument('-N', '--max-generations', type=int,
+                                 help="the maximum number of generations to run the algorithm", default=500)
+    settings_group.add_argument('--population-size', type=int,
+                                 help="the size of the population", default=100)
+    settings_group.add_argument('--elitism-rate', type=float,
+                                 help="the rate of individuals preserved in the next generation", default=0.1)
+    settings_group.add_argument('--crossover-rate', type=float,
+                                 help="the rate of individuals that will undergo crossover", default=0.8)
+    settings_group.add_argument('--mutation-rate', type=float,
+                                 help="the rate of individuals that will undergo mutation", default=0.1)
+    settings_group.add_argument("-n", "--num-outputs", type=int,
+                                 help="the number of outputs to produce (default: 100)", default=100)
+
+    # Shared file options
+    file_parser = argparse.ArgumentParser(add_help=False)
+    file_parser.add_argument(
+        "-f", "--fandango-file",
+        type=argparse.FileType('r'),
+        dest="fan_file",
+        default=None,
+        action="append",
+        help="Fandango file (.fan, .py) to be processed. Can be given multiple times.",
+    )
+    file_parser.add_argument(
+        "-c", "--constraint",
+        type=int,
+        dest="constraint",
+        default=None,
+        action="append",
+        help="define an additional constraint CONSTRAINT. Can be given multiple times.",
+    )
+
     # Commands
 
     # Fuzz
     fuzz_parser = commands.add_parser(
         FUZZ,
-        help="produce outputs from .fan files"
-    )
-    fuzz_parser.add_argument(
-        "-n", "--num-outputs",
-        type=int,
-        dest="num_outputs",
-        default=1,
-        help="the number of outputs to produce (default: 1)",
+        help="produce outputs from .fan files and test programs",
+        parents=[file_parser, settings_parser],
     )
     fuzz_parser.add_argument(
         "-o", "--output",
@@ -65,26 +97,41 @@ def get_parser():
         help="write output to OUTPUT (default: stdout)",
     )
     fuzz_parser.add_argument(
-        "-c", "--constraint",
-        type=int,
-        dest="constraint",
-        default=None,
-        action="append",
-        help="define an additional constraint CONSTRAINT",
-    )
-    fuzz_parser.add_argument(
         "-d", "--directory",
         type=int,
         dest="directory",
         default=None,
         help="create individual output files in DIRECTORY",
     )
-    fuzz_parser.add_argument(
-        "fan-file",
-        type=argparse.FileType('r'),
-        nargs="+",
-        default=None,
-        help="Fandango file (.fan, .py) to be processed",
+
+    test_group = fuzz_parser.add_argument_group("command invocation settings")
+
+    input_option = test_group.add_mutually_exclusive_group()
+    input_option.add_argument(
+        "--to-stdin",
+        action="store_true",
+        help="Fandango input will be passed as standard input",
+    )
+    input_option.add_argument(
+        "--to-arg",
+        action="store_true",
+        help="Fandango input file will be passed as last command-line argument",
+    )
+
+    command_group = test_group.add_argument_group()
+    command_group.add_argument(
+        "test_command",
+        metavar="command",
+        type=str,
+        nargs="?",
+        help="Command to be invoked with a Fandango input",
+    )
+    command_group.add_argument(
+        "test_args",
+        metavar="args",
+        type=str,
+        nargs="*",
+        help="Command arguments",
     )
 
 
@@ -136,7 +183,7 @@ def get_parser():
         help="command to get help on",
     )
 
-    return arguments
+    return main_parser
 
 def interactive(args):
     try:
@@ -156,9 +203,16 @@ def interactive(args):
 def help(args):
     parser = get_parser()
     for cmd in args.help_command:
+        # Alas, this exits after the first command
         parser.parse_args([cmd] + ["--help"])
     else:
         parser.print_help()
+
+def fuzz(args):
+    print(args, sys.argv)
+
+def test(args):
+    print(args, sys.argv)
 
 def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
     if "-O" in sys.argv:
@@ -180,6 +234,8 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
         interactive(args)
     elif args.command == FUZZ:
         fuzz(args)
+    elif args.command == TEST:
+        test(args)
     elif args.command == HELP:
         help(args)
 
