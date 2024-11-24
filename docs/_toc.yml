@@ -7,5 +7,13 @@ chapters:
   - file: Installing
   - file: FirstSpec
   - file: Invoking
-  - file: SimpleFuzzing
+  - file: Fuzzing
+  - file: Constraints
+  - file: Generators
+  - file: Recursive
+  - file: Quantors
+  - file: Whitebox
+  - file: Distributions
+  - file: Binary
+  - file: Hatching
 - file: Reference
