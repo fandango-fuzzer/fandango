@@ -8,6 +8,7 @@ chapters:
   - file: FirstSpec
   - file: Invoking
   - file: Fuzzing
+  - file: Strategies
   - file: Constraints
   - file: Generators
   - file: Recursive

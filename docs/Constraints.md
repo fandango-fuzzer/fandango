@@ -69,6 +69,7 @@ For instance, we can use Python Boolean operators (`and`, `or`, `not`) to reques
 
 :::margin
 Interestingly, having symbols in `<...>` does not conflict with the rest of Python syntax.
+Be sure, though, to leave spaces around `<` and `>` operators to avoid confusion.
 :::
 
 ```
