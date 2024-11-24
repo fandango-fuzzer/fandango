@@ -29,6 +29,4 @@ Time is precious, so let's get started!
 
 ## Acknowledgments
 
-----------------
-
 ```{include} Footer.md

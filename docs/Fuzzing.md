@@ -10,8 +10,8 @@ kernelspec:
   name: python3
 ---
 
-(sec:simple-fuzzing)=
-# Simple Fuzzing with Fandango
+(sec:fuzzing)=
+# Fuzzing with Fandango
 
 ## Creating a Name Database
 
@@ -233,4 +233,4 @@ Try adding such alternatives to _all_ data fields processed by a system; feed th
 Don't try this with other people's systems.
 :::
 
-Let us continue with the opposite, namely creating _more natural_ inputs.
+Let us discuss how to [get even more control over our inputs](sec:constraints).

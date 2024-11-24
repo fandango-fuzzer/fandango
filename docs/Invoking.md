@@ -70,4 +70,4 @@ Some of these options are very useful, such as `-o` and `-d`, which redirect the
 You can also specify a _command_ to be executed with the inputs Fandango generated.
 
 We will go through these commands and options in due time.
-For now, let us get back to our specifications and actually [_fuzz with Fandango_](sec:simple-fuzzing).
+For now, let us get back to our specifications and actually [_fuzz with Fandango_](sec:fuzzing).
