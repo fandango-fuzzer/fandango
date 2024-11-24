@@ -1,13 +1,6 @@
 format: jb-book
 root: Intro
-parts:
-  - caption: Tutorial
-    chapters:
-      - file: GettingStarted.md
-      - file: Specify.md
-      - file: Test.md
-      - file: Customize.md
-  - caption: Reference
-    chapters:
-      - file: Installing.md
-      - file: Reference.md
+chapters:
+- file: About.md
+- file: Tutorial.md
+- file: Reference.md
