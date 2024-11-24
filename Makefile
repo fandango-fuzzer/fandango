@@ -51,7 +51,8 @@ JB = jupyter-book
 HTML_MARKER = $(DOCS)/_build/html/marker.txt
 LATEX_MARKER = $(DOCS)/_build/latex/marker.txt
 
-# Command to refresh the Web view
+# Command to open and refresh the Web view (on a Mac)
+VIEW_HTML = open $(DOCS)/_build/html/index.html
 REFRESH_HTML = osascript -e 'tell application "Safari" to set URL of document of window 1 to URL of document of window 1'
 
 # Targets.
@@ -68,7 +69,7 @@ $(HTML_MARKER): $(DOCS_SOURCES)
 
 # view HTML
 view: $(HTML_MARKER)
-	open _build/html/index.html
+	$(VIEW_HTML)
 
 # Refresh Safari
 refresh: $(HTML_MARKER)
@@ -83,11 +84,11 @@ $(LATEX_MARKER): $(DOCS_SOURCES)
 $(DOCS)/_build/latex/fandango.pdf: $(LATEX_MARKER)
 	cd $(DOCS)/_build/latex && $(MAKE)
 
-# clean:
-# 	$(JB) clean $(BOOK)
-#
-# rebuild:
-# 	$(JB) build --all $(BOOK)
+clean-docs:
+	$(JB) clean $(DOCS)
+
+rebuild-docs:
+	$(JB) build --all $(DOCS)
 
 
 ## Installation
