@@ -10,38 +10,25 @@ kernelspec:
   name: python3
 ---
 
-(sec:getting-started)=
-# Getting Started with Fandango
+(sec:about)=
+# About Fandango
 
-## Installing
+Given a specification of the program's input language, Fandango quickly generates myriads of valid sample inputs for testing.
 
-To install Fandango, run the following command:
+The specification language combines a _grammar_ with _constraints_ written in Python, so it is extremely expressive and flexible.
+Most notably, you can define your own _testing goals_ in Fandango.
+If you need the inputs to have particular values or distributions, you can express all these right away in Fandango.
 
-```
-$ pip install fandango
-```
+Fandango supports multiple modes of operation:
 
-For additional information, see [](sec:installing).
+* By default, Fandango operates as a _black-box_ fuzzer - that is, it creates inputs from a `.fan` Fandango specification file.
+* If you have _sample inputs_, Fandango can _mutate_ these to obtain more realistic inputs.
+* Fandango can also operate as a _white-box_ fuzzer - that is, it runs a program under test to maximize coverage. In this case, only a minimal specification may be needed.
+
+Fandango comes as a portable Python program and can easily be run on a large variety of platforms.
+
+Under the hood, Fandango uses sophisticated _evolutionary algorithms_ to produce inputs,
+It starts with a population of random inputs, and evolving these through mutations and cross-over until they fulfill the given constraints.
 
 
-## Building your first Fandango Spec
-
-Let us build a simple application.
-
-A Fandango specification comes in two parts:
-
-* A _grammar_ describing the _syntax_ of the inputs to be generated
-* Optionally, _constraints_ that specify additional properties.
-
-```{code-cell}
-:tags: ["remove-input"]
-from myst_nb import glue
-NAME_FAN = """
-<start> ::= <name> ", " <age>;
-<name> ::= "Alice" | "Bob";
-<age> ::= <digit>+;
-<digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
-"""
-print(NAME_FAN)	
-```
-
+```{include} Footer.md
