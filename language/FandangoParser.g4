@@ -18,8 +18,8 @@ statement
 // grammar part
 
 production
-    : RULE_NAME '::=' alternative ('=' expression)? ';'
-    | RULE_NAME '::=' alternative (':' ':' expression)? ';'; // deprecated
+    : NONTERMINAL '::=' alternative ('=' expression)? ';'
+    | NONTERMINAL '::=' alternative (':' ':' expression)? ';'; // deprecated
 
 alternative: concatenation ('|' concatenation)*;
 
@@ -43,7 +43,7 @@ repeat
 
 symbol
     : NEWLINE*
-        ( RULE_NAME
+        ( NONTERMINAL
         | STRING
         | OPEN_PAREN alternative CLOSE_PAREN
         | char_set
@@ -73,8 +73,8 @@ implies:
 quantifier:
     NEWLINE*
     (
-        FORALL RULE_NAME IN selector COLON quantifier
-        | EXISTS RULE_NAME IN selector COLON quantifier
+        FORALL NONTERMINAL IN selector COLON quantifier
+        | EXISTS NONTERMINAL IN selector COLON quantifier
         | formula_disjunction
     )
     NEWLINE*
@@ -137,7 +137,7 @@ selection
     ;
 
 base_selection
-    : RULE_NAME
+    : NONTERMINAL
     | '(' selector ')'
     ;
 
@@ -146,7 +146,7 @@ rs_pairs
     ;
 
 rs_pair
-    : '*' RULE_NAME (':' rs_slice)?
+    : '*' NONTERMINAL (':' rs_slice)?
     ;
 
 rs_slices

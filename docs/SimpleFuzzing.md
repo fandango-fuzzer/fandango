@@ -10,8 +10,60 @@ kernelspec:
   name: python3
 ---
 
-(sec:first-spec)=
-# A First Fandango Spec
+(sec:simple-fuzzing)=
+# Simple Fuzzing with Fandango
+
+Let us now come up with an input that is slightly more complex.
+We want to create a set of inputs with _names of persons_ and their respective _age_.
+These two values would be _comma-separated_, such that typical inputs would look like this:
+
+```
+Alice Doe,27
+John Smith,45
+...
+```
+
+This makes the overall format of our input look like this:
+
+```
+<start> ::= <person_name> "," <age>;
+```
+
+with `<age>` again being a sequence of digits, and a `<person>`'s name being defined as
+
+```
+<person_name> ::= <first_name> " " <last_name>;
+```
+
+where both first and last name would be a sequence of letters - first, an uppercase letter, and then a sequence of lowercase letters.
+The full definition looks like this:
+
+```{margin}
+In Fandango specs, symbol names are formed as identifiers in Python - that is, they consist of letters, underscores, and digits.
+```
+
+```{margin}
+In Fandango specs, every grammar rule must end with a semicolon.
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!cat persons.fan
+```
+
+Create or download a file [`persons.fan`](persons.fan) and run Fandango on it:
+
+```shell
+$ fandango fuzz -f persons.fan -n 10
+```
+
+Your output will look like this:
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons.fan -n 10
+```
+
 
 To create test inputs, Fandango needs a _Fandango spec_ – a file that describes how the input should be structured.
 
@@ -24,10 +76,6 @@ A Fandango specification contains three types of elements:
 Only the first of these (the _grammar_) is actually required.
 Here is a very simple Fandango grammar that will get us started:
 
-```{code-cell}
-:tags: ["remove-input"]
-!cat digits.fan
-```
 
 This grammar defines a _sequence of digits_:
 
@@ -55,4 +103,4 @@ So,
 * each `<digit>` becomes a digit from zero to nine;
 * and in the end, we get a string such as `8347`, `66`, `2`, or others.
 
-Let us try this right away by [_invoking Fandango_](sec:Invoking).
+Let us try this right away by _invoking Fandango_.

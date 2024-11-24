@@ -7,4 +7,5 @@ chapters:
   - file: Installing
   - file: FirstSpec
   - file: Invoking
+  - file: SimpleFuzzing
 - file: Reference

@@ -29,7 +29,7 @@ class Fandango:
         tournament_size: float = 0.1,
         mutation_rate: float = 0.2,
         verbose: bool = False,
-        start_symbol = '<start>',
+        start_symbol="<start>",
     ):
         """
         Initialize the FANDANGO genetic algorithm. The algorithm will evolve a population of individuals
@@ -47,7 +47,9 @@ class Fandango:
 
         if verbose:
             LOGGER.setLevel(logging.DEBUG)
-            LOGGER.warning(f"Fandango.__init__(): The `verbose` parameter will be deprecated; use LOGGER.setLevel() instead")
+            LOGGER.warning(
+                f"Fandango.__init__(): The `verbose` parameter will be deprecated; use LOGGER.setLevel() instead"
+            )
 
         LOGGER.info(f"---------- Initializing FANDANGO algorithm ---------- ")
         self.grammar = grammar
@@ -79,11 +81,15 @@ class Fandango:
             LOGGER.info(f"Storing provided initial population...")
             self.population = list(initial_population)
         else:
-            LOGGER.info(f"Generating initial population (size: {self.population_size})...")
+            LOGGER.info(
+                f"Generating initial population (size: {self.population_size})..."
+            )
 
             st_time = time.time()
             self.population = self.generate_random_initial_population()
-            LOGGER.info(f"Initial population generated in {time.time() - st_time:.2f} seconds")
+            LOGGER.info(
+                f"Initial population generated in {time.time() - st_time:.2f} seconds"
+            )
 
         # Evaluate population
         self.evaluation = self.evaluate_population()
@@ -143,8 +149,7 @@ class Fandango:
 
             # Add new individuals
             while len(new_population) < self.population_size:
-                new_population.append(self.grammar.fuzz(
-                                        start=self.start_symbol))
+                new_population.append(self.grammar.fuzz(start=self.start_symbol))
 
             # Fix individuals
             fixed_population = list()
@@ -180,8 +185,9 @@ class Fandango:
         :return: A set of individuals.
         """
 
-        population = [self.grammar.fuzz(self.start_symbol)
-                      for _ in range(self.population_size)]
+        population = [
+            self.grammar.fuzz(self.start_symbol) for _ in range(self.population_size)
+        ]
 
         # Fix individuals
         fixed_population = list()

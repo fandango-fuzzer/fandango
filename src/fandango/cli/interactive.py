@@ -429,7 +429,9 @@ class Interactive:
         # print("Completing", repr(text), repr(state), self._commands())
         if state == 0:  # first trigger
             if text:
-                self.matches = [s + ' ' for s in self._commands() if s and s.startswith(text)]
+                self.matches = [
+                    s + " " for s in self._commands() if s and s.startswith(text)
+                ]
             else:
                 self.matches = self._commands()
 
@@ -465,7 +467,7 @@ class Interactive:
         self._read_history()
         readline.set_completer_delims(" \t\n;")
         readline.set_completer(self._complete)
-        readline.parse_and_bind('tab: complete')  # Linux
+        readline.parse_and_bind("tab: complete")  # Linux
         readline.parse_and_bind("bind '\t' rl_complete")  # Mac
 
         readline.set_completion_display_matches_hook(self._display_matches)
