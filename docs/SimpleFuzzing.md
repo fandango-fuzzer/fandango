@@ -13,6 +13,8 @@ kernelspec:
 (sec:simple-fuzzing)=
 # Simple Fuzzing with Fandango
 
+## Creating a Name Database
+
 Let us now come up with an input that is slightly more complex.
 We want to create a set of inputs with _names of persons_ and their respective _age_.
 These two values would be _comma-separated_, such that typical inputs would look like this:
@@ -38,13 +40,18 @@ with `<age>` again being a sequence of digits, and a `<person>`'s name being def
 where both first and last name would be a sequence of letters - first, an uppercase letter, and then a sequence of lowercase letters.
 The full definition looks like this:
 
-```{margin}
+:::{margin}
 In Fandango specs, symbol names are formed as identifiers in Python - that is, they consist of letters, underscores, and digits.
-```
+:::
 
-```{margin}
+:::{margin}
 In Fandango specs, every grammar rule must end with a semicolon.
-```
+:::
+
+% TODO
+:::{margin}
+Future Fandango versions will have shortcuts for specifying character ranges.
+:::
 
 ```{code-cell}
 :tags: ["remove-input"]
@@ -64,43 +71,166 @@ Your output will look like this:
 !fandango fuzz -f persons.fan -n 10
 ```
 
+Such random names are a typical result of _fuzzing_ – that is, testing with randomly generated values.
+The idea of fuzzing is to have inputs that are _out of the ordinary_, so we can detect errors in input parsers and beyond.
+Despite clearly looking non-natural to humans, the above names are unlikely to trigger errors in a program, because programs typically treat all letters equally.
+So let us bring a bit more _weirdness_ into our inputs.
 
-To create test inputs, Fandango needs a _Fandango spec_ – a file that describes how the input should be structured.
-
-A Fandango specification contains three types of elements:
-
-* A _grammar_ describing the _syntax_ of the inputs to be generated;
-* Optionally, _constraints_ that specify additional properties; and
-* Optionally, _definitions_ of functions and constants within these constraints.
-
-Only the first of these (the _grammar_) is actually required.
-Here is a very simple Fandango grammar that will get us started:
+:::{danger}
+Don't feed such fuzz inputs into other people's systems.
+In most countries, even _trying_ will get you into jail.
+:::
 
 
-This grammar defines a _sequence of digits_:
 
-* The first line in our grammar defines `<start>` – this is the input to be generated.
-* What is `<start>`? This comes on the right-hand side of the "define" operator (`::=`).
-* We see that `<start>` is defined as `<digit>+`, which means a non-empty sequence of `<digit>` symbols.
+## Looooooong Inputs
+
+One way to increase the probability of detecting bugs is to test with _long_ inputs.
+While processing data, many programs have limited storage for individual data fields, and thus need to cope with inputs that exceed this storage space.
+If programmers do not care for such long inputs, serious errors may follow.
+So-called _buffer overflows_ have long been among the most dangerous vulnerabilities, as they can be exploited to gain unauthorized access to systems.
+
+
+We can easily create long inputs by specifying the _number of repetitions_ in our grammar:
+
+* Appending `{N}` to a symbol, where `N` is a number, makes Fandango repeat this symbol `N` times.
+* Appending `{N,M}` to a symbol makes Fandango repeat this symbol between `N` and `M` times.
+* Appending `{N,}` to a symbol makes Fandango repeat this symbol at least `N` times.
+
 ```{margin}
-In Fandango grammars, you can affix these characters to a symbol:
-
-* `+` indicates _one or more_ repetitions;
-* `*` indicates _zero or more_ repetitions; and
-* `?` indicates that the symbol is _optional_.
+The `+`, `*`, and `?` suffixes are actually equivalent to `{1,}`, `{0,}`, and `{0,1}`, respectively.
 ```
-* What is a `<digit>`? This is defined in the next line: one of ten alternative strings, separated by `|`, each representing a single digit.
 
-To produce inputs from the grammar, Fandango
+If, for instance, we want the above names to be 100 characters long, we can set up a new rule for `<name>`
 
-* starts with the start symbol (`<start>`)
-* repeatedly replaces symbols (in `<...>`) by _one of their definitions_ (= one of the alternatives separated by `|`) on the right-hand side;
-* until no symbols are left.
+```
+<name> ::= <uppercase_letter><lowercase_letter>{99};
+```
 
-So,
+and the lowercase letters will be repeated 99 times.
 
-* `<start>` first becomes `<digit><digit><digit>...` (any number of digits, but at least one);
-* each `<digit>` becomes a digit from zero to nine;
-* and in the end, we get a string such as `8347`, `66`, `2`, or others.
+This is the effect of this rule:
 
-Let us try this right away by _invoking Fandango_.
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons100.fan -n 10
+```
+
+We see that the names are now much longer.
+For real-world fuzzing, we may try even longer fields (say, 1,000) to test the limits of our system.
+
+:::{note}
+Programmers often make "off-by-one" errors, so if an input is specified to have at most `N` characters, you should test this exact boundary - say, by giving `N` and `N`+1 characters.
+:::
+
+:::{danger}
+Don't try this with other people's systems.
+:::
+
+
+
+## Unusual Inputs
+
+Having "weird" inputs also applies to numerical values.
+Think about our "age" field, for instance.
+What happens if we have a person with a negative age?
+
+:::{margin}
+Note that the grammar already can produce ages way above 100.
+:::
+
+Try it yourself and modify [`persons.fan`](persons.fan) such that it can also produce negative numbers, as in
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons-neg.fan -n 10
+```
+
+Did you succeed? Compare your answer against the solution below.
+
+:::{admonition} Solution
+:class: tip, dropdown
+You can, for instance, change the `<age>` rule such that it introduces an alternative for negative numbers:
+```
+<age> ::= <digit>+ | "-" <digit>+;
+```
+Another way to do it is to use the `?` modifier, which indicates an optional symbol:
+```
+<age> ::= "-"? <digit>+;
+```
+:::
+
+Other kinds of unusual inputs would be character sets that are out of the ordinary - for instance, Chinese or Hebrew characters - or plain Latin characters if your system expects Chinese names.
+A simple Emoji, for instance, could be enough to cause the system to fail.
+
+:::{margin}
+In Python, try `float('nan') * float('inf')` and other variations.
+:::
+
+For numbers, besides being out of range, there are a few constants that are interesting.
+Some common number parsers and converters accept values such as `Inf` (infinity) or `NaN` (not a number) as floating-point values. These actually _are_ valid and have special rules – anything multiplied with `Inf` also becomes infinitely large (`Inf` times zero is zero, though); and any operation involving a `NaN` becomes `NaN`.
+
+:::{margin}
+Fortunately, number converters typically treat `NaN` as invalid.
+:::
+
+Imagine what happens if we manage to place a `NaN` value in a database?
+Any computation involving this value would also become a `NaN`, so in our example, the average age of persons would become `NaN`.
+The `NaN` could even go viral across Excel sheets, companies, shareholder reports, and eventually the stock market.
+Luckily, programs are prepared against that - or are they?
+
+:::{danger}
+Don't try this with other people's systems.
+:::
+
+
+## String Injections
+
+Another kind of attack is to insert special _strings_ into the input – strings that would be interpreted by the program not as data, but as _commands_.
+A typical example for this is a _SQL injection_.
+Many programs use the SQL, the _structured query language_, as a means to interact with databases.
+A command such as
+
+```sql
+INSERT INTO CUSTOMERS VALUES ('John Smith', 34);
+```
+
+would be used to save the values `John Smith` (name) and `34` (age) in the `CUSTOMERS` table.
+
+A SQL injection uses specially formed strings and values to subvert these commands.
+If our "age" value, for instance, is not `34`, but, say
+
+```
+34); CREATE TABLE PWNED (Phone CHAR(20)); --
+```
+
+then creating the above `INSERT` command with this special "age" could result in the following command:
+
+:::{margin}
+Two dashes (`--`) start a comment in SQL.
+:::
+```sql
+INSERT INTO CUSTOMERS VALUES ('John Smith', 34); CREATE TABLE PWNED (Phone CHAR(20)); --);
+```
+
+and suddenly, we have "injected" a new command that will alter the database by adding a `PWNED` table.
+
+How would one do this with a grammar?
+Well, for the above, it suffices to have one more alternative to the `<age>` rule.
+
+:::{admonition} Solution
+:class: tip, dropdown
+Here's how one could change the `<age>` rule:
+```
+<age> ::= <digit>+ | "-" <digit>+ 
+        | <digit>+ "); CREATE TABLE PWNED (Phone CHAR(20)); --"
+```
+:::
+
+Try adding such alternatives to _all_ data fields processed by a system; feed the Fandango-generated inputs to it; and if you then find a `PWNED` table on your system, you know that you have a vulnerability.
+
+:::{danger}
+Don't try this with other people's systems.
+:::
+
+Let us continue with the opposite, namely creating _more natural_ inputs.

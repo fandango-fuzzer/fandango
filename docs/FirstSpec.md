@@ -35,7 +35,7 @@ This grammar defines a _sequence of digits_:
 * What is `<start>`? This comes on the right-hand side of the "define" operator (`::=`).
 * We see that `<start>` is defined as `<digit>+`, which means a non-empty sequence of `<digit>` symbols.
 ```{margin}
-In Fandango grammars, you can affix these characters to a symbol:
+In Fandango grammars, you can append these operators to a symbol:
 
 * `+` indicates _one or more_ repetitions;
 * `*` indicates _zero or more_ repetitions; and
