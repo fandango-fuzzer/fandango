@@ -1,7 +1,7 @@
 
 ````{margin}
 ```{figure} logo_cispa.png
-:width: 100%
+:width: 75%
 ```
 ````
 
@@ -9,7 +9,7 @@
 
 ````{margin}
 ```{figure} logo_erc.png
-:width: 100%
+:width: 75%
 ```
 ````
 

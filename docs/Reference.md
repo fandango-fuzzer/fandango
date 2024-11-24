@@ -13,10 +13,17 @@ kernelspec:
 (sec:reference)=
 # Fandango Reference
 
-(sec:installing)=
-## Installing Fandango
+## Table of Contents
 
-### Installing Fandango for Usage
+```{tableofcontents}
+```
+
+
+
+(sec:installing)=
+## Fandango Installation Options
+
+### Installing Fandango for Normal Usage
 
 ```{warning}
 While Fandango is in beta, only development versions can be installed.
@@ -25,7 +32,7 @@ While Fandango is in beta, only development versions can be installed.
 Fandango comes as a Python package. To install Fandango, run the following command:
 
 ```
-$ pip install fandango
+$ pip install fandango-fuzzer
 ```
 
 To test if everything worked well, try
@@ -40,6 +47,15 @@ which should give you a list of options:
 :tags: ["remove-input"]
 !fandango --help
 ```
+
+% If this did not work, try
+% 
+% ```
+% $ python -m fandango --help
+% ```
+% 
+% instead, and replace `fandango` with `python -m fandango` to invoke fandango.
+
 
 ## Installing Fandango for Development
 
@@ -94,6 +110,7 @@ A Fandango specification comes in two parts:
 
 
 
-----------------
+
+## Acknowledgments
 
 ```{include} Footer.md

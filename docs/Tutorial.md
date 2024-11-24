@@ -13,66 +13,21 @@ kernelspec:
 (sec:tutorial)=
 # Fandango Tutorial
 
-## Installing
+Welcome to Fandango! In this tutorial, you will learn how to
 
-To install Fandango, run the following command:
+* write *Fandango specs*
+* use the `fandango` *command-line tool*
+* *test programs* with Fandango.
 
-```
-$ pip install fandango
-```
+Time is precious, so let's get started!
 
-For additional information, see [](sec:installing).
+## Table of Contents
 
-
-## Building your first Fandango Spec
-
-Let us build a simple application.
-
-A Fandango specification comes in two parts:
-
-* A _grammar_ describing the _syntax_ of the inputs to be generated
-* Optionally, _constraints_ that specify additional properties.
-
-```{code-cell}
-:tags: ["remove-input"]
-from myst_nb import glue
-NAME_FAN = """
-<start> ::= <name> ", " <age>;
-<name> ::= "Alice" | "Bob";
-<age> ::= <digit>+;
-<digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
-"""
-print(NAME_FAN)	
+```{tableofcontents}
 ```
 
 
-
-Let us build a simple application.
-
-```{code-cell}
-:tags: ["remove-input"]
-from myst_nb import glue
-NAME_FAN = """
-<start> ::= <name> ", " <age>;
-<name> ::= "Alice" | "Bob";
-<age> ::= <digit>+;
-<digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
-"""
-print(NAME_FAN)	
-```
-
-
-
-
-
-
-A Fandango specification comes in two parts:
-
-* A _grammar_ describing the _syntax_ of the inputs to be generated
-* Optionally, _constraints_ that specify additional properties.
-
-
-
+## Acknowledgments
 
 ----------------
 

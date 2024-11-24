@@ -3,4 +3,8 @@ root: Intro
 chapters:
 - file: About
 - file: Tutorial
+  sections:
+  - file: Installing
+  - file: FirstSpec
+  - file: Invoking
 - file: Reference
