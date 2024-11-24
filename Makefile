@@ -46,7 +46,7 @@ $(PARSERS) &: $(LEXER_G4) $(PARSER_G4)
 
 ## Documentation
 DOCS = docs
-DOCS_SOURCES = $(wildcard $(DOCS)/*.md $(DOCS)/*.ipynb $(DOCS)/*.yml $(DOCS)/*.bib Makefile)
+DOCS_SOURCES = $(wildcard $(DOCS)/*.md $(DOCS)/*.fan $(DOCS)/*.ipynb $(DOCS)/*.yml $(DOCS)/*.bib Makefile)
 JB = jupyter-book
 HTML_MARKER = $(DOCS)/_build/html/marker.txt
 LATEX_MARKER = $(DOCS)/_build/latex/marker.txt

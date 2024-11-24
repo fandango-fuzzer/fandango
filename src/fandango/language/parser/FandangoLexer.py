@@ -11126,7 +11126,7 @@ class FandangoLexer(FandangoLexerBase):
     INTEGER = 5
     PYTHON_START = 6
     PYTHON_END = 7
-    RULE_NAME = 8
+    NONTERMINAL = 8
     AND = 9
     AS = 10
     ASSERT = 11
@@ -11347,7 +11347,7 @@ class FandangoLexer(FandangoLexerBase):
         "INTEGER",
         "PYTHON_START",
         "PYTHON_END",
-        "RULE_NAME",
+        "NONTERMINAL",
         "AND",
         "AS",
         "ASSERT",
@@ -11462,7 +11462,7 @@ class FandangoLexer(FandangoLexerBase):
         "INTEGER",
         "PYTHON_START",
         "PYTHON_END",
-        "RULE_NAME",
+        "NONTERMINAL",
         "AND",
         "AS",
         "ASSERT",

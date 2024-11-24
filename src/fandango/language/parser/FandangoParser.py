@@ -24053,7 +24053,7 @@ class FandangoParser(Parser):
         "INTEGER",
         "PYTHON_START",
         "PYTHON_END",
-        "RULE_NAME",
+        "NONTERMINAL",
         "AND",
         "AS",
         "ASSERT",
@@ -24625,7 +24625,7 @@ class FandangoParser(Parser):
     INTEGER = 5
     PYTHON_START = 6
     PYTHON_END = 7
-    RULE_NAME = 8
+    NONTERMINAL = 8
     AND = 9
     AS = 10
     ASSERT = 11
@@ -24960,8 +24960,8 @@ class FandangoParser(Parser):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def RULE_NAME(self):
-            return self.getToken(FandangoParser.RULE_NAME, 0)
+        def NONTERMINAL(self):
+            return self.getToken(FandangoParser.NONTERMINAL, 0)
 
         def GRAMMAR_ASSIGN(self):
             return self.getToken(FandangoParser.GRAMMAR_ASSIGN, 0)
@@ -25013,7 +25013,7 @@ class FandangoParser(Parser):
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 474
-                self.match(FandangoParser.RULE_NAME)
+                self.match(FandangoParser.NONTERMINAL)
                 self.state = 475
                 self.match(FandangoParser.GRAMMAR_ASSIGN)
                 self.state = 476
@@ -25034,7 +25034,7 @@ class FandangoParser(Parser):
             elif la_ == 2:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 483
-                self.match(FandangoParser.RULE_NAME)
+                self.match(FandangoParser.NONTERMINAL)
                 self.state = 484
                 self.match(FandangoParser.GRAMMAR_ASSIGN)
                 self.state = 485
@@ -25540,8 +25540,8 @@ class FandangoParser(Parser):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def RULE_NAME(self):
-            return self.getToken(FandangoParser.RULE_NAME, 0)
+        def NONTERMINAL(self):
+            return self.getToken(FandangoParser.NONTERMINAL, 0)
 
         def STRING(self):
             return self.getToken(FandangoParser.STRING, 0)
@@ -25603,7 +25603,7 @@ class FandangoParser(Parser):
             token = self._input.LA(1)
             if token in [8]:
                 self.state = 550
-                self.match(FandangoParser.RULE_NAME)
+                self.match(FandangoParser.NONTERMINAL)
                 pass
             elif token in [3]:
                 self.state = 551
@@ -25910,8 +25910,8 @@ class FandangoParser(Parser):
         def FORALL(self):
             return self.getToken(FandangoParser.FORALL, 0)
 
-        def RULE_NAME(self):
-            return self.getToken(FandangoParser.RULE_NAME, 0)
+        def NONTERMINAL(self):
+            return self.getToken(FandangoParser.NONTERMINAL, 0)
 
         def IN(self):
             return self.getToken(FandangoParser.IN, 0)
@@ -25980,7 +25980,7 @@ class FandangoParser(Parser):
                 self.state = 606
                 self.match(FandangoParser.FORALL)
                 self.state = 607
-                self.match(FandangoParser.RULE_NAME)
+                self.match(FandangoParser.NONTERMINAL)
                 self.state = 608
                 self.match(FandangoParser.IN)
                 self.state = 609
@@ -25994,7 +25994,7 @@ class FandangoParser(Parser):
                 self.state = 613
                 self.match(FandangoParser.EXISTS)
                 self.state = 614
-                self.match(FandangoParser.RULE_NAME)
+                self.match(FandangoParser.NONTERMINAL)
                 self.state = 615
                 self.match(FandangoParser.IN)
                 self.state = 616
@@ -26844,8 +26844,8 @@ class FandangoParser(Parser):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def RULE_NAME(self):
-            return self.getToken(FandangoParser.RULE_NAME, 0)
+        def NONTERMINAL(self):
+            return self.getToken(FandangoParser.NONTERMINAL, 0)
 
         def OPEN_PAREN(self):
             return self.getToken(FandangoParser.OPEN_PAREN, 0)
@@ -26884,7 +26884,7 @@ class FandangoParser(Parser):
             if token in [8]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 743
-                self.match(FandangoParser.RULE_NAME)
+                self.match(FandangoParser.NONTERMINAL)
                 pass
             elif token in [66]:
                 self.enterOuterAlt(localctx, 2)
@@ -26993,8 +26993,8 @@ class FandangoParser(Parser):
         def STAR(self):
             return self.getToken(FandangoParser.STAR, 0)
 
-        def RULE_NAME(self):
-            return self.getToken(FandangoParser.RULE_NAME, 0)
+        def NONTERMINAL(self):
+            return self.getToken(FandangoParser.NONTERMINAL, 0)
 
         def COLON(self):
             return self.getToken(FandangoParser.COLON, 0)
@@ -27029,7 +27029,7 @@ class FandangoParser(Parser):
             self.state = 761
             self.match(FandangoParser.STAR)
             self.state = 762
-            self.match(FandangoParser.RULE_NAME)
+            self.match(FandangoParser.NONTERMINAL)
             self.state = 765
             self._errHandler.sync(self)
             _la = self._input.LA(1)

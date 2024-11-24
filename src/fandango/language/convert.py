@@ -77,7 +77,7 @@ class GrammarProcessor(FandangoParserVisitor):
             local_variables=self.local_variables, global_variables=self.global_variables
         )
         for production in productions:
-            symbol = NonTerminal(production.RULE_NAME().getText())
+            symbol = NonTerminal(production.NONTERMINAL().getText())
             grammar[symbol] = self.visit(production.alternative())
             if production.expression():
                 expr, searches, _ = self.searches.visit(production.expression())
@@ -139,8 +139,8 @@ class GrammarProcessor(FandangoParserVisitor):
         return Repetition(node, reps, reps)
 
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
-        if ctx.RULE_NAME():
-            return NonTerminalNode(NonTerminal(ctx.RULE_NAME().getText()))
+        if ctx.NONTERMINAL():
+            return NonTerminalNode(NonTerminal(ctx.NONTERMINAL().getText()))
         elif ctx.STRING():
             return TerminalNode(Terminal.from_symbol(ctx.STRING().getText()))
         elif ctx.char_set():
@@ -208,7 +208,7 @@ class ConstraintProcessor(FandangoParserVisitor):
             return self.visit(ctx.formula_disjunction())
         elif ctx.EXISTS() or ctx.FORALL():
             constraint = self.visit(ctx.quantifier())
-            bound = NonTerminal(ctx.RULE_NAME().getText())
+            bound = NonTerminal(ctx.NONTERMINAL().getText())
             search = self.searches.visit(ctx.selector())[1][0]
             if ctx.EXISTS():
                 return ExistsConstraint(
@@ -364,7 +364,10 @@ class SearchProcessor(FandangoParserVisitor):
         return symbols, slices
 
     def visitRs_pair(self, ctx: FandangoParser.Rs_pairContext):
-        symbol = (NonTerminal(ctx.RULE_NAME().getText()), False if ctx.STAR() else True)
+        symbol = (
+            NonTerminal(ctx.NONTERMINAL().getText()),
+            False if ctx.STAR() else True,
+        )
         if ctx.rs_slice():
             return symbol, self.visitRs_slice(ctx.rs_slice())
         return symbol, None
@@ -383,8 +386,8 @@ class SearchProcessor(FandangoParserVisitor):
         return [self.visitRs_slice(child) for child in ctx.rs_slice()]
 
     def visitBase_selection(self, ctx: FandangoParser.Base_selectionContext):
-        if ctx.RULE_NAME():
-            return RuleSearch(NonTerminal(ctx.RULE_NAME().getText()))
+        if ctx.NONTERMINAL():
+            return RuleSearch(NonTerminal(ctx.NONTERMINAL().getText()))
         elif ctx.selector():
             return self.get_attribute_searches(ctx.selector())
         else:
