@@ -142,7 +142,7 @@ def get_parser():
     file_parser.add_argument(
         "-c",
         "--constraint",
-        type=int,
+        type=str,
         dest="constraints",
         metavar="CONSTRAINT",
         default=None,
