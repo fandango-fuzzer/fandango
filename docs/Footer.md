@@ -1,7 +1,7 @@
 
 ````{margin}
 ```{figure} logo_cispa.png
-:width: 50%
+:width: 100%
 ```
 ````
 
