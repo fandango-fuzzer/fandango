@@ -1,6 +1,6 @@
 format: jb-book
 root: Intro
 chapters:
-- file: About.md
-- file: Tutorial.md
-- file: Reference.md
+- file: About
+- file: Tutorial
+- file: Reference

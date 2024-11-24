@@ -1,3 +1,4 @@
+___
 
 <small>Fandango is a project of the [CISPA Helmholtz Center for Information Security](https://www.cispa.de/) to facilitate highly efficient and highly customizable software testing.
 
