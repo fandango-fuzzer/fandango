@@ -94,6 +94,6 @@ A Fandango specification comes in two parts:
 
 
 
-
+----------------
 
 ```{include} Footer.md
