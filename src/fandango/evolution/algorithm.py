@@ -1,12 +1,11 @@
 # evolution/algorithm.py
 import copy
+import logging
 import random
 import time
-import deprecation
-import logging
-
 from typing import List, Set, Tuple
 
+import deprecation
 
 from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
@@ -17,19 +16,20 @@ from fandango.logger import LOGGER
 
 class Fandango:
     def __init__(
-        self,
-        grammar: Grammar,
-        constraints: List[Constraint],
-        population_size: int = 100,
-        desired_solutions: int = 0,
-        initial_population: List[DerivationTree] = None,
-        max_generations: int = 500,
-        elitism_rate: float = 0.1,
-        crossover_rate: float = 0.8,
-        tournament_size: float = 0.1,
-        mutation_rate: float = 0.2,
-        verbose: bool = False,
-        start_symbol="<start>",
+            self,
+            grammar: Grammar,
+            constraints: List[Constraint],
+            population_size: int = 100,
+            desired_solutions: int = 0,
+            initial_population: List[DerivationTree] = None,
+            max_generations: int = 500,
+            elitism_rate: float = 0.1,
+            crossover_rate: float = 0.8,
+            tournament_size: float = 0.1,
+            mutation_rate: float = 0.2,
+            destruction_rate: float = 0.0,
+            verbose: bool = False,
+            start_symbol="<start>",
     ):
         """
         Initialize the FANDANGO genetic algorithm. The algorithm will evolve a population of individuals
@@ -38,10 +38,15 @@ class Fandango:
         :param grammar: The grammar used to generate individuals.
         :param constraints: The constraints used to evaluate individuals.
         :param population_size: The size of the population.
+        :param desired_solutions: The number of perfect solutions to find before stopping the algorithm.
+        :param initial_population: A list of individuals to use as the initial population.
         :param max_generations: The maximum number of generations to run the algorithm.
         :param elitism_rate: The rate of individuals that will be preserved in the next generation.
         :param crossover_rate: The rate of individuals that will undergo crossover.
         :param mutation_rate: The rate of individuals that will undergo mutation.
+        :param tournament_size: The size of the tournament selection.
+        :param destruction_rate: The rate of individuals that will be destroyed.
+        :param verbose: Whether to print debug information.
         :param start_symbol: The start symbol to use with the grammar.
         """
 
@@ -60,6 +65,7 @@ class Fandango:
         self.tournament_size = max(2, int(population_size * tournament_size))
         self.max_generations = max_generations
         self.elitism_rate = elitism_rate
+        self.destruction_rate = destruction_rate
         self.start_symbol = start_symbol
 
         self.fitness_cache = {}
@@ -94,7 +100,7 @@ class Fandango:
         # Evaluate population
         self.evaluation = self.evaluate_population()
         self.fitness = (
-            sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+                sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
 
     def evolve(self) -> List[DerivationTree]:
@@ -147,6 +153,12 @@ class Fandango:
                     new_population.append(self.mutate(individual))
                     self.mutations_made += 1
 
+            # Destruction
+            if self.destruction_rate > 0:
+                LOGGER.debug(f"Destroying {self.destruction_rate * 100:.2f}% of the population")
+                random.shuffle(new_population)
+                new_population = new_population[: int(self.population_size * (1 - self.destruction_rate))]
+
             # Add new individuals
             while len(new_population) < self.population_size:
                 new_population.append(self.grammar.fuzz(start=self.start_symbol))
@@ -160,7 +172,7 @@ class Fandango:
             self.population = fixed_population[: self.population_size]
             self.evaluation = self.evaluate_population()
             self.fitness = (
-                sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+                    sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
 
         self.time_taken = time.time() - start_time
@@ -224,7 +236,7 @@ class Fandango:
         return individual
 
     def evaluate_individual(
-        self, individual: DerivationTree
+            self, individual: DerivationTree
     ) -> Tuple[float, List[FailingTree]]:
         """
         Evaluate the fitness of an individual.
@@ -260,7 +272,7 @@ class Fandango:
         return fitness, failing_trees
 
     def evaluate_population(
-        self,
+            self,
     ) -> List[Tuple[DerivationTree, float, List[FailingTree]]]:
         """
         Evaluate the fitness of each individual in the population.
@@ -282,8 +294,8 @@ class Fandango:
         return [
             x[0]
             for x in sorted(self.evaluation, key=lambda x: x[1], reverse=True)[
-                : int(self.elitism_rate * self.population_size)
-            ]
+                     : int(self.elitism_rate * self.population_size)
+                     ]
         ]
 
     def tournament_selection(self) -> Tuple[DerivationTree, DerivationTree]:
@@ -298,7 +310,7 @@ class Fandango:
 
     # noinspection PyMethodMayBeStatic
     def crossover(
-        self, parent1: DerivationTree, parent2: DerivationTree
+            self, parent1: DerivationTree, parent2: DerivationTree
     ) -> Tuple[DerivationTree, DerivationTree]:
         """
         Perform crossover between two parents to generate two children by swapping subtrees rooted at a common
