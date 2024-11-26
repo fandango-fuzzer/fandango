@@ -4,7 +4,7 @@ import unittest
 from typing import List
 
 from fandango.constraints.fitness import FailingTree
-from fandango.evolution.algorithm import FANDANGO
+from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse_file
 from fandango.language.tree import DerivationTree
 
@@ -20,7 +20,7 @@ class GeneticTest(unittest.TestCase):
         random.seed(25)  # Set random seed
 
         # Initialize FANDANGO with a fixed random seed for reproducibility
-        self.fandango = FANDANGO(
+        self.fandango = Fandango(
             grammar=grammar_int,
             constraints=constraints_int,
             population_size=50,

@@ -1,4 +1,4 @@
-from fandango.evolution.algorithm import FANDANGO
+from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse_file
 
 
@@ -8,7 +8,7 @@ def evaluate_hash():
     print(grammar)
     print(constraints)
 
-    fandango = FANDANGO(grammar, constraints, verbose=True)
+    fandango = Fandango(grammar, constraints, verbose=True)
     fandango.evolve()
 
     print(fandango.solution)
