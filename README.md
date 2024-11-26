@@ -80,14 +80,14 @@ Here's a minimal example to get started with FANDANGO:
 3. **Run FANDANGO**:
 
    ```python
-   from fandango.evolution.algorithm import FANDANGO
+   from fandango.evolution.algorithm import Fandango
    from fandango.language.parse import parse_file
 
    # Parse grammar and constraints
    grammar, constraints = parse_file('grammar.fan')
 
    # Initialize FANDANGO
-   fandango = FANDANGO(grammar, constraints, verbose=True)
+   fandango = Fandango(grammar, constraints, verbose=True)
 
    # Evolve solutions
    solutions = fandango.evolve()
@@ -134,14 +134,14 @@ Constraints can use any Python code and libraries, allowing for complex conditio
 Use the `FANDANGO` class to run the genetic algorithm:
 
 ```python
-from fandango.evolution.algorithm import FANDANGO
+from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse_file
 
 # Parse grammar and constraints
 grammar, constraints = parse_file('pixels.fan')
 
 # Initialize FANDANGO with desired parameters
-fandango = FANDANGO(
+fandango = Fandango(
     grammar=grammar,
     constraints=constraints,
     population_size=100,
@@ -186,12 +186,12 @@ str(<hash>) == hashlib.sha256(str(<string>).encode('utf-8')).hexdigest();
 **Running FANDANGO**:
 
 ```python
-from fandango.evolution.algorithm import FANDANGO
+from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse_file
 
 grammar, constraints = parse_file('hash_example.fan')
 
-fandango = FANDANGO(grammar, constraints, verbose=True)
+fandango = Fandango(grammar, constraints, verbose=True)
 solutions = fandango.evolve()
 
 for solution in solutions:

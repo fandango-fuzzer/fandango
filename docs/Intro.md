@@ -1,4 +1,13 @@
 ---
+jupytext:
+  formats: md:myst
+  text_representation:
+    extension: .md
+    format_name: myst
+kernelspec:
+  display_name: Python 3
+  language: python
+  name: python3
 sd_hide_title: true
 ---
 
@@ -29,7 +38,7 @@ sd_hide_title: true
 
 Fandango produces myriads of _high-quality random inputs_ to test programs, giving users unprecedented control over format and shape of the inputs.
 
-```{button-ref} GettingStarted
+```{button-ref} Tutorial
 :ref-type: doc
 :color: primary
 :class: sd-rounded-pill
@@ -46,68 +55,52 @@ Get Started
 ::::{grid} 1 2 2 3
 :gutter: 1 1 1 2
 
-:::{grid-item-card} {material-regular}`edit_note;2em` Specify
-:link: sec:getting-started
+:::{grid-item-card} <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="2em" fill="#5f6368"><path d="m787-145 28-28-75-75v-112h-40v128l87 87Zm-587 25q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v268q-19-9-39-15.5t-41-9.5v-243H200v560h242q3 22 9.5 42t15.5 38H200Zm0-120v40-560 243-3 280Zm80-40h163q3-21 9.5-41t14.5-39H280v80Zm0-160h244q32-30 71.5-50t84.5-27v-3H280v80Zm0-160h400v-80H280v80ZM720-40q-83 0-141.5-58.5T520-240q0-83 58.5-141.5T720-440q83 0 141.5 58.5T920-240q0 83-58.5 141.5T720-40Z"/></svg> At a Glance
+:link: sec:about
 :link-type: ref
+% icons from https://fonts.google.com/icons
+% overview icon
 
 Specify the format of your input data in a single file, combining _grammars_ (for input syntax) and _constraints_ (for arbitrary input features).
 Constraints come as Python code, so there are no limits to what you can specify.
 
 +++
-[Learn more »](sec:getting-started)
+[Learn more »](sec:about)
 :::
 
-:::{grid-item-card} {material-regular}`published_with_changes;2em` Test
-:link: sec:test
+
+
+
+:::{grid-item-card} <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="2em" fill="#5f6368"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-640v560h560v-560h-80v280l-100-60-100 60v-280H200Zm0 560v-560 560Z"/></svg> Tutorial
+:link: sec:tutorial
 :link-type: ref
+% developer_guide icon
 
 Produce valid inputs at high speeds, from hundreds to thousands of inputs per second, quickly covering the entire input space.
 Test with extreme and uncommon values, uncovering bugs before your users do.
 
 
 +++
-[Learn more »](Test)
+[Learn more »](Tutorial)
 :::
 
-:::{grid-item-card} {material-regular}`settings;2em` Customize
-:link: sec:customize
+
+
+:::{grid-item-card} <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="2em" fill="#5f6368"><path d="M480-60q-72-68-165-104t-195-36v-440q101 0 194 36.5T480-498q73-69 166-105.5T840-640v440q-103 0-195.5 36T480-60Zm0-104q63-47 134-75t146-37v-276q-73 13-143.5 52.5T480-394q-66-66-136.5-105.5T200-552v276q75 9 146 37t134 75Zm0-436q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Zm0-80q33 0 56.5-23.5T560-760q0-33-23.5-56.5T480-840q-33 0-56.5 23.5T400-760q0 33 23.5 56.5T480-680Zm0-80Zm0 366Z"/></svg> Reference
+:link: sec:reference
 :link-type: ref
+% local_library icon; was {material-regular}`local_library;2em`
 
 Shape inputs using your _own testing targets_, constraints, and statistical distributions.
 Make use of _existing samples_ to obtain realistic inputs.
 Use _feedback_ from the program under test to guide test generation to uncovered code.
 
 +++
-[Learn more »](sec:customize)
+[Learn more »](sec:reference)
 :::
 
 ::::
 
 ----------------
 
-Fandango is a project of the [CISPA Helmholtz Center for Information Security](https://www.cispa.de/) to facilitate highly efficient and highly customizable software testing.
-
-This research was funded by the European Union ([ERC S3](https://www.cispa.de/s3), 101093186). Views and opinions expressed are however those of the authors only and do not necessarily reflect those of the European Union or the European Research Council. Neither the European Union nor the granting authority can be held responsible for them.
-
-
-
-
-<!--
-Given a specification of the program's input language, Fandango quickly generates myriads of valid sample inputs for testing.
-
-
-The specification language combines a _grammar_ with _constraints_ written in Python, so it is extremely expressive and flexible.
-Most notably, you can define your own _testing goals_ in Fandango.
-If you need the inputs to have particular values or distributions, you can express all these right away in Fandango.
-
-Fandango supports multiple modes of operation:
-
-* By default, Fandango operates as a _black-box_ fuzzer - that is, it creates inputs from a `.fan` Fandango specification file.
-* If you have _sample inputs_, Fandango can _mutate_ these to obtain more realistic inputs.
-* Fandango can also operate as a _white-box_ fuzzer - that is, it runs a program under test to maximize coverage. In this case, only a minimal specification may be needed.
-
-Fandango comes as a portable Python program and can easily be run on a large variety of platforms.
-
-Under the hood, Fandango uses sophisticated _evolutionary algorithms_ to produce inputs,
-It starts with a population of random inputs, and evolving these through mutations and cross-over until they fulfill the given constraints.
--->
+```{include} Footer.md
