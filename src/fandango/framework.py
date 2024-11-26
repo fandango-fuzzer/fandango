@@ -2,7 +2,7 @@
 
 import argparse
 
-from fandango.evolution.algorithm import FANDANGO
+from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse_file
 
 
@@ -60,7 +60,7 @@ def main():
     grammar, constraints = parse_file(args.fan_file_path)
 
     # Initialize FANDANGO
-    fandango = FANDANGO(
+    fandango = Fandango(
         grammar=grammar,
         constraints=constraints,
         population_size=args.population_size,

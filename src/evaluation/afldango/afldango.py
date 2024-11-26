@@ -1,6 +1,6 @@
 import warnings
 
-from fandango.evolution.algorithm import FANDANGO
+from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse_file
 
 warnings.filterwarnings("ignore")
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     xml_grammar, xml_constraints = parse_file(
         "xml.fan"
     )  # Load the XML grammar and constraints
-    xml_files = FANDANGO(
+    xml_files = Fandango(
         xml_grammar, xml_constraints, verbose=False
     ).evolve()  # Generate XML files
     xml_binaries = [
@@ -50,7 +50,7 @@ if __name__ == "__main__":
         bytes_grammar.parse(xml_binary) for xml_binary in xml_binaries
     ]  # Parse the binary repr into derivation trees
 
-    solutions = FANDANGO(
+    solutions = Fandango(
         bytes_grammar,
         bytes_constraints,
         initial_population=xml_binary_trees,

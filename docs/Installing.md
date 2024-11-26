@@ -10,56 +10,32 @@ kernelspec:
   name: python3
 ---
 
-(sec:installing)=
+(sec:installing_tut)=
 # Installing Fandango
 
-## Installing the public version of Fandango
-
-```{warning}
-While Fandango is in beta, only development versions can be installed.
-```
-
-Fandango comes as a Python package. To install Fandango, run the following command:
+To install Fandango, you first need to install [Python](https://www.python.org/).
+Then, run the following command:
 
 ```
-$ pip install fandango
+$ pip install fandango-fuzzer
 ```
 
-To test if everything worked well, try
+```{note}
+In this tutorial, `$` and `!` characters at the beginning of a command line stand for your input prompt.
+Do not enter them yourself.
+```
+
+You can check if everything works well by running
 
 ```
 $ fandango --help
 ```
 
-which should give you a list of options:
+Entering `fandango --help` should result in an output like this:
 
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango --help
 ```
 
-## Installing development versions of Fandango
-
-```{caution}
-This will get you the very latest version of Fandango, which may be unstable. Use at your own risk.
-```
-
-```{note}
-At this point, only registered developers have access to Fandango.
-```
-
-Clone the Fandango repository:
-
-```
-$ git clone https://github.com/fandango-fuzzer/fandango/
-```
-
-In the top-level `fandango/` folder, run
-```
-$ pip install -e .
-```
-
-You should then be able to invoke Fandango as described above.
-
-
-
+If this did not work, try out an alternate option; see [](sec:installing).
