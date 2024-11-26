@@ -5,10 +5,7 @@ from fandango.language.parse import parse_file
 def evaluate_faker():
     grammar, constraints = parse_file("faker.fan")
 
-    print(grammar)
-    print(constraints)
-
-    fandango = Fandango(grammar, constraints, verbose=True)
+    fandango = Fandango(grammar, constraints, verbose=True, destruction_rate=0.6)
     fandango.evolve()
 
     print(fandango.solution)
