@@ -18,7 +18,7 @@ INTEGER: DECIMAL_INTEGER | OCT_INTEGER | HEX_INTEGER | BIN_INTEGER;
 
 PYTHON_START: '<py>' {self.python_start()};
 PYTHON_END  : '</py>' {self.python_end()};
-RULE_NAME: '<' ID_CONTINUE+ '>';
+NONTERMINAL: '<' ID_CONTINUE+ '>';
 
 // python keywords
 AND        : 'and';
@@ -82,7 +82,6 @@ GRAMMAR_ASSIGN     : '::=';
 QUESTION           : '?';
 BACKSLASH          : '\\';
 DOT                : '.';
-DOTDOT             : '..';
 ELLIPSIS           : '...';
 STAR               : '*';
 OPEN_PAREN         : '(' {self.open_brace()};

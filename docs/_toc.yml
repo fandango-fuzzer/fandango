@@ -1,13 +1,20 @@
 format: jb-book
 root: Intro
-parts:
-  - caption: Tutorial
-    chapters:
-      - file: GettingStarted.md
-      - file: Specify.md
-      - file: Test.md
-      - file: Customize.md
-  - caption: Reference
-    chapters:
-      - file: Installing.md
-      - file: Reference.md
+chapters:
+- file: About
+- file: Tutorial
+  sections:
+  - file: Installing
+  - file: FirstSpec
+  - file: Invoking
+  - file: Fuzzing
+  - file: Strategies
+  - file: Constraints
+  - file: Generators
+  - file: Recursive
+  - file: Quantors
+  - file: Whitebox
+  - file: Distributions
+  - file: Binary
+  - file: Hatching
+- file: Reference

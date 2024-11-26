@@ -1,7 +1,12 @@
 import ast
 import enum
 import os.path
+import readline
+import atexit
+import sys
+
 from typing import Optional
+from os import environ
 
 from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.InputStream import InputStream
@@ -9,7 +14,7 @@ from antlr4.error.ErrorStrategy import BailErrorStrategy
 
 from fandango.constraints import predicates
 from fandango.constraints.fitness import GeneticBase
-from fandango.evolution.algorithm import FANDANGO
+from fandango.evolution.algorithm import Fandango
 from fandango.language.convert import (
     FandangoSplitter,
     GrammarProcessor,
@@ -239,9 +244,16 @@ class Interactive:
         self._scope = {}
 
     @staticmethod
+    def _commands():
+        commands = []
+        for c in InteractiveCommands:
+            commands.append(c.value)
+        return commands
+
+    @staticmethod
     def _help(command: Optional[str] = None):
         if command:
-            if command in {c.value for c in InteractiveCommands}:
+            if command in Interactive._commands():
                 command = InteractiveCommands(command)
                 print(f"Help for {command.value}\n" f"{command.help()}\n")
             else:
@@ -364,7 +376,7 @@ class Interactive:
 
     def _fandango(self, identifier: Optional[str] = None):
         if self._fandango_object is None:
-            self._fandango_object = FANDANGO(
+            self._fandango_object = Fandango(
                 grammar=self._grammar,
                 constraints=list(self._constraints.values()),
                 population_size=self._population_size,
@@ -384,7 +396,7 @@ class Interactive:
                 self._grammar.update_parser()
                 self._grammar.prime()
                 self._updated_grammar = False
-            self._fandango_object = FANDANGO(
+            self._fandango_object = Fandango(
                 grammar=self._grammar,
                 constraints=list(self._constraints.values()),
                 population_size=self._population_size,
@@ -404,10 +416,66 @@ class Interactive:
         if identifier:
             self._scope[identifier] = population
 
+    def _read_history(self):
+        histfile = os.path.join(os.path.expanduser("~"), ".fandango_history")
+        try:
+            readline.read_history_file(histfile)
+            readline.set_history_length(1000)
+        except FileNotFoundError:
+            pass
+        atexit.register(readline.write_history_file, histfile)
+
+    def _complete(self, text, state):
+        # print("Completing", repr(text), repr(state), self._commands())
+        if state == 0:  # first trigger
+            if text:
+                self.matches = [
+                    s + " " for s in self._commands() if s and s.startswith(text)
+                ]
+            else:
+                self.matches = self._commands()
+
+        try:
+            return self.matches[state]
+        except IndexError:
+            return None
+
+    def _display_matches(self, substitution, matches, longest_match_length):
+        line_buffer = readline.get_line_buffer()
+        columns = environ.get("COLUMNS", 80)
+
+        print()
+
+        tpl = "{:<" + str(int(max(map(len, matches)) * 1.2)) + "}"
+
+        buffer = ""
+        for match in matches:
+            match = tpl.format(match[len(substitution) :])
+            if len(buffer + match) > columns:
+                print(buffer)
+                buffer = ""
+            buffer += match
+
+        if buffer:
+            print(buffer)
+
+        print("> ", end="")
+        print(line_buffer, end="")
+        sys.stdout.flush()
+
     def run(self):
+        self._read_history()
+        readline.set_completer_delims(" \t\n;")
+        readline.set_completer(self._complete)
+        readline.parse_and_bind("tab: complete")  # Linux
+        readline.parse_and_bind("bind '\t' rl_complete")  # Mac
+
+        readline.set_completion_display_matches_hook(self._display_matches)
+        print("Enter a command, or 'help'")
+
         try:
             while True:
-                command = input(">>> ").lstrip()
+                command = input("(fandango) ").lstrip()
                 if command.startswith(InteractiveCommands.EXIT.value):
                     break
                 elif command.startswith(InteractiveCommands.HELP.value):
@@ -513,5 +581,8 @@ class Interactive:
                         self._fandango(command[1].strip())
                 else:
                     print(f"Command not found {command}")
+
         except KeyboardInterrupt:
+            pass
+        except EOFError:
             pass
