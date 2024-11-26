@@ -125,6 +125,11 @@ def get_parser():
         help="the grammar start symbol (default: `start`)",
         default="start",
     )
+    settings_group.add_argument(
+        "--warnings-are-errors",
+        dest="warn",
+        action="store_true"
+    )
 
     # Shared file options
     file_parser = argparse.ArgumentParser(add_help=False)
@@ -180,6 +185,11 @@ def get_parser():
         dest="directory",
         default=None,
         help="create individual output files in DIRECTORY",
+    )
+    fuzz_parser.add_argument(
+        '--best-effort',
+        dest="effort",
+        action="store_true"
     )
 
     command_group = fuzz_parser.add_argument_group("command invocation settings")
@@ -375,6 +385,16 @@ def fuzz(args):
 
     LOGGER.debug("Reducing population")
     population = population[: args.num_outputs]
+
+    if len(fandango.solution) < args.num_outputs:
+        if args.warn:
+            LOGGER.error(f"Only found {len(fandango.solution)} perfect solutions, instead of the required {args.num_outputs}")
+            LOGGER.error(f"If 'best-effort' individuals are desired, enable the --best-effort option")
+        else:
+            LOGGER.warning(f"Only found {len(fandango.solution)} perfect solutions, instead of the required {args.num_outputs}")
+            LOGGER.warning(f"If 'best-effort' individuals are desired, enable the --best-effort option")
+        if not args.effort:
+            population = fandango.solution
 
     output_on_stdout = True
 
