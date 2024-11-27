@@ -13,11 +13,6 @@ kernelspec:
 (sec:generators)=
 # Data Generators and Fakers
 
-```{error}
-This chapter is still in construction.
-```
-
-
 Often, you don't want to generate _totally_ random data; it suffices that _some_ aspects of it are random.
 This naturally raises the question: Where can one get non-random, _natural_ data from, and how can one integrate this into Fandango?
 
@@ -115,13 +110,17 @@ Use the Python `import` features to do that.
 
 This is what the output of the above spec looks like:
 
+:::{margin}
+The "age" fields are still very random, though.
+See the [statistical distributions](Distributions.md) on how to improve this.
+:::
+
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons-faker.fan -n 10
 ```
 
 You see that all first and last names now stem from the Faker library.
-(The "age" fields are still very random, though.)
 
 
 ## Generators and Random Productions
@@ -145,10 +144,6 @@ With this, both random names (`<name>`) and natural names (`<natural_name>`) wil
 !fandango fuzz -f persons-faker50.fan -n 10
 ```
 
-## Creating Distributions
-
-(TODO)
-
 
 ## Combining Generators and Constraints
 
@@ -166,7 +161,7 @@ To allow access to the elements of the generator output, Fandango _parses_ the o
 In our example, the latter can be used to further narrow down the set of names.
 If we want all last names to start with an `S`, for instance, we can invoke Fandango as
 
-% TODO: Why does one need a str() conversion here?
+% TODO: Can we get rid of the str() conversion here?
 :::{margin}
 The type of grammar symbols `<...>` is `DerivationTree`.
 To apply a string function on them (such as `startswith()`), you need to convert them into a string (`str(...)`) first.
