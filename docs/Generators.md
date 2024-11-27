@@ -110,10 +110,6 @@ Use the Python `import` features to do that.
 
 This is what the output of the above spec looks like:
 
-:::{margin}
-The "age" fields are still very random, though.
-See the [statistical distributions](Distributions.md) on how to improve this.
-:::
 
 ```{code-cell}
 :tags: ["remove-input"]
@@ -121,6 +117,55 @@ See the [statistical distributions](Distributions.md) on how to improve this.
 ```
 
 You see that all first and last names now stem from the Faker library.
+
+## Number Generators
+
+In the above output, the "age" fields are still very random, though.
+With generators, we can achieve much more natural distributions.
+
+After importing the Python `random` module:
+
+```python
+import random
+```
+
+we can make use of [dozens of random number functions](https://docs.python.org/3/library/random.html) to use as generators.
+For instance, `random.randint(A, B)` return a random integer $n$ such that $A \le n \le B$ holds.
+To obtain a range of ages between 25 and 35, we can thus write:
+
+```
+<age> ::= <digit>+ = str(random.randint(25, 35));
+```
+
+:::{warning}
+All Fandango generators must return strings.
+Use `str()` to convert numbers into strings.
+:::
+
+The resulting [Fandango spec file](persons-faker-age.fan) produces the desired range of ages:
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons-faker-age.fan -n 10
+```
+
+We can also create a Gaussian (normal) distribution this way:
+
+```
+<age> ::= <digit>+ = str(int(random.gauss(35)));
+```
+
+`random.gauss()` returns floating point numbers.
+However, the final value must fit the given symbol rules (in our case, `<digit>+`), so we convert the age into an integer (`int()`).
+
+These are the ages we get this way:
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons-faker-gauss.fan -n 10
+```
+
+In {ref}`sec:distributions`, we will introduce more ways to obtain specific distributions.
 
 
 ## Generators and Random Productions
@@ -144,7 +189,7 @@ With this, both random names (`<name>`) and natural names (`<natural_name>`) wil
 !fandango fuzz -f persons-faker50.fan -n 10
 ```
 
-
+(sec:generators-and-constraints)=
 ## Combining Generators and Constraints
 
 When using a generator, why does one still have to specify the format of the data, say `<name>`?
@@ -178,6 +223,9 @@ and we get
 !fandango fuzz -f persons-faker.fan -c 'str(<last_name>).startswith("S")' -n 10
 ```
 
+
+
+
 ## When to use Generators, and when Constraints
 
 One might assume that instead of a generator, one could also use a _constraint_ to achieve the same effect. So, couldn't one simply add a constraint that says
@@ -200,12 +248,26 @@ The reason is that the faker returns _a different value_ every time it is invoke
 Remember that Fandango solves constraints by applying mutations to a population, getting closer to the target with each iteration.
 If the target keeps on changing, the algorithm will lose guidance and will not progress towards the solution.
 
-As a rule of thumb,
+Likewise, in contrast to our example in {ref}`sec:generators-and-constraints`, one may think about using a _constraint_ to set a limit to a number, say:
 
+```shell
+$ fandango fuzz -f persons-faker.fan -c 'str(<last_name>).startswith("S")' -c 'int(<age>) >= 25 and int(<age>) <= 35' -n 10
+```
+
+This would work:
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons-faker.fan -c 'str(<last_name>).startswith("S")' -c 'int(<age>) >= 25 and int(<age>) <= 35' -n 10
+```
+
+But while the values will fit the constraint, they will not be randomly distributed.
+This is because Fandango treats and generates them as _strings_ (= sequences of digits), ignoring thur semantics as numerical values.
+To obtain well-distributed numbers from the beginning, use a generator.
+
+:::{important}
 1. If a value to be produced is _random_, it should be added via a _generator_.
 2. If a value to be produced is _constant_, it can go into a _generator_ or a _constraint_.
 3. If a value to be produced must be _part of a valid input_, it should go into a _constraint_. (Constraints are checked during parsing _and_ production.)
-
-
+:::
 
 In the next section, we'll talk about [recursive inputs](sec:recursive).
