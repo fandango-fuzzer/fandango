@@ -12,9 +12,9 @@ chapters:
   - file: Constraints
   - file: Generators
   - file: Recursive
-  - file: Quantors
-  - file: Whitebox
   - file: Distributions
+  - file: Quantors
   - file: Binary
+  - file: Whitebox
   - file: Hatching
 - file: Reference
