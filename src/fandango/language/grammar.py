@@ -712,6 +712,9 @@ class Grammar(NodeVisitor):
 
     def generate(self, symbol: str | NonTerminal = "<start>") -> DerivationTree:
         string = self.generate_string(symbol)
+        if not (isinstance(string, str) or isinstance(string, tuple)):
+            raise TypeError(f"Generator {self.generators[symbol]} must return string or tuple")
+        
         if isinstance(string, tuple):
             return DerivationTree.from_tree(string)
         else:
