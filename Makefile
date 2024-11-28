@@ -23,6 +23,7 @@ dev-tools:
 	brew install antlr
 	pip install -U black
 	pip install -U jupyter-book pyppeteer ghp-import
+	brew install pdftk
 
 ## Parser
 
@@ -51,16 +52,21 @@ DOCS_SOURCES = $(wildcard $(DOCS)/*.md $(DOCS)/*.fan $(DOCS)/*.ipynb $(DOCS)/*.y
 JB = jupyter-book
 HTML_MARKER = $(DOCS)/_build/html/marker.txt
 LATEX_MARKER = $(DOCS)/_build/latex/marker.txt
+PDF_RAW = $(DOCS)/_build/latex/fandango.pdf
+PDF_TARGET = $(DOCS)/fandango.pdf
 
 # Command to open and refresh the Web view (on a Mac)
 VIEW_HTML = open $(DOCS)/_build/html/index.html
 REFRESH_HTML = osascript -e 'tell application "Safari" to set URL of document of window 1 to URL of document of window 1'
 
+# Command to open the PDF (on a Mac)
+VIEW_PDF = open $(PDF_TARGET)
+
+
 # Targets.
 html: $(HTML_MARKER)
 latex: $(LATEX_MARKER)
-pdf: $(DOCS)/_build/latex/fandango.pdf
-	
+pdf: $(PDF_TARGET)
 
 # Re-create the book in HTML
 $(HTML_MARKER): $(DOCS_SOURCES)
@@ -82,12 +88,22 @@ $(LATEX_MARKER): $(DOCS_SOURCES) $(DOCS)/_book_toc.yml
 	cd $(DOCS); $(JB) build --builder latex --toc _book_toc.yml .
 	echo 'Success' > $@
 	
-$(DOCS)/_book_toc.yml: $(DOCS)/_toc.yml Makefile
+$(DOCS)/_book_toc.yml: $(DOCS)/_toc.yml
 	echo '# Automatically generated from `$<`. Do not edit.' > $@
 	$(SED) s/Intro/BookIntro/ $< >> $@
 
-$(DOCS)/_build/latex/fandango.pdf: $(LATEX_MARKER)
+$(PDF_RAW): $(LATEX_MARKER)
 	cd $(DOCS)/_build/latex && $(MAKE)
+
+PDF_BODY = $(DOCS)/_build/latex/_body.pdf
+$(PDF_BODY): $(DOCS)/Title.pdf $(PDF_RAW)
+	pdftk $(PDF_RAW) cat 2-end output $@
+
+$(PDF_TARGET): $(PDF_BODY) Makefile
+	pdftk $(DOCS)/Title.pdf $(PDF_BODY) cat output $@
+
+view-pdf: $(PDF_TARGET)
+	$(VIEW_PDF)
 
 clean-docs:
 	$(JB) clean $(DOCS)
