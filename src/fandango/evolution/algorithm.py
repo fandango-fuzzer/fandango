@@ -21,7 +21,7 @@ class Fandango:
         grammar: Grammar,
         constraints: List[Constraint],
         population_size: int = 100,
-        desired_solutions: int = 0,
+        desired_solutions: int = 100,
         initial_population: List[DerivationTree] = None,
         max_generations: int = 500,
         elitism_rate: float = 0.1,
@@ -30,6 +30,8 @@ class Fandango:
         mutation_rate: float = 0.2,
         verbose: bool = False,
         start_symbol="<start>",
+        warnings_are_errors: bool = False,
+        best_effort: bool = False,
     ):
         """
         Initialize the FANDANGO genetic algorithm. The algorithm will evolve a population of individuals
@@ -43,13 +45,20 @@ class Fandango:
         :param crossover_rate: The rate of individuals that will undergo crossover.
         :param mutation_rate: The rate of individuals that will undergo mutation.
         :param start_symbol: The start symbol to use with the grammar.
+        :param warnings_are_errors: If set, turns warnings into errors
+        :param best_effort: If set, returns also soltions not satisfying all constraints
         """
 
         if verbose:
             LOGGER.setLevel(logging.DEBUG)
-            LOGGER.warning(
-                f"Fandango.__init__(): The `verbose` parameter will be deprecated; use LOGGER.setLevel() instead"
-            )
+            if warnings_are_errors:
+                LOGGER.error(
+                    f"Fandango.__init__(): The `verbose` parameter will be deprecated; use LOGGER.setLevel() instead"
+                )
+            else:
+                LOGGER.warning(
+                    f"Fandango.__init__(): The `verbose` parameter will be deprecated; use LOGGER.setLevel() instead"
+                )
 
         LOGGER.info(f"---------- Initializing FANDANGO algorithm ---------- ")
         self.grammar = grammar
@@ -71,6 +80,9 @@ class Fandango:
         self.mutations_made = 0
 
         self.time_taken = None
+
+        self.warnings_are_erros = warnings_are_errors
+        self.best_effort = best_effort
 
         # Initialize population
         self.solution = list()
@@ -176,7 +188,16 @@ class Fandango:
         LOGGER.debug(f"Crossovers made: {self.crossovers_made}")
         LOGGER.debug(f"Mutations made: {self.mutations_made}")
 
-        return self.population
+        if len(self.solution) < self.desired_solutions:
+            if self.warnings_are_erros:
+                LOGGER.error(f"Only found {len(self.solution)} perfect solutions, instead of the required {self.desired_solutions}")
+            else:
+                LOGGER.warning(f"Only found {len(self.solution)} perfect solutions, instead of the required {self.desired_solutions}")
+            if self.best_effort:
+                return self.population[:self.desired_solutions]
+            else:
+                return self.solution
+        return self.solution[:self.desired_solutions]
 
     def generate_random_initial_population(self) -> List[DerivationTree]:
         """

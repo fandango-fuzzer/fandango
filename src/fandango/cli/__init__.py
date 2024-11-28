@@ -373,28 +373,22 @@ def fuzz(args):
         grammar=grammar,
         constraints=constraints,
         population_size=max(args.population_size, args.num_outputs),
+        desired_solutions=args.num_outputs,
         mutation_rate=args.mutation_rate,
         crossover_rate=args.crossover_rate,
         max_generations=args.max_generations,
         elitism_rate=args.elitism_rate,
         start_symbol=start_symbol,
+        warnings_are_errors=args.warn,
+        best_effort=args.effort
     )
 
     LOGGER.debug("Evolving population")
     population = fandango.evolve()
 
-    LOGGER.debug("Reducing population")
-    population = population[: args.num_outputs]
-
-    if len(fandango.solution) < args.num_outputs:
-        if args.warn:
-            LOGGER.error(f"Only found {len(fandango.solution)} perfect solutions, instead of the required {args.num_outputs}")
-            LOGGER.error(f"If 'best-effort' individuals are desired, enable the --best-effort option")
-        else:
-            LOGGER.warning(f"Only found {len(fandango.solution)} perfect solutions, instead of the required {args.num_outputs}")
-            LOGGER.warning(f"If 'best-effort' individuals are desired, enable the --best-effort option")
-        if not args.effort:
-            population = fandango.solution
+    # Not necessary anymore
+    #LOGGER.debug("Reducing population")
+    #population = population[: args.num_outputs]
 
     output_on_stdout = True
 
