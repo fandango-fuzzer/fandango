@@ -22,8 +22,8 @@ requirements.txt:	pyproject.toml
 dev-tools:
 	brew install antlr
 	pip install -U black
-	pip install -U jupyter-book pyppeteer ghp-import
-	brew install pdftk
+	pip install -U jupyter-book pyppeteer ghp-import pagelabels
+	brew install pdftk 
 
 ## Parser
 
@@ -99,8 +99,10 @@ PDF_BODY = $(DOCS)/_build/latex/_body.pdf
 $(PDF_BODY): $(DOCS)/Title.pdf $(PDF_RAW)
 	pdftk $(PDF_RAW) cat 2-end output $@
 
+PAGELABELS = python3 -m pagelabels
 $(PDF_TARGET): $(PDF_BODY) Makefile
 	pdftk $(DOCS)/Title.pdf $(PDF_BODY) cat output $@
+	$(PAGELABELS) --load $(PDF_RAW) $@
 
 view-pdf: $(PDF_TARGET)
 	$(VIEW_PDF)
