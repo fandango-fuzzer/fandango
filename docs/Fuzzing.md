@@ -142,11 +142,6 @@ $ fandango fuzz -f persons.fan -n 10 wc -c
 
 The `wc` program is then invoked as `wc -c FILE_1`, `wc -c FILE_2`, etc., where each `FILE` contains an individual input from Fandango.
 
-% TODO
-```{note}
-At this point, the file name extension passed is `.txt`, and cannot be changed from the command line.
-```
-
 
 ### Passing Inputs via Standard Input
 
