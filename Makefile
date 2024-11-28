@@ -97,10 +97,10 @@ $(PDF_RAW): $(LATEX_MARKER)
 
 PDF_BODY = $(DOCS)/_build/latex/_body.pdf
 $(PDF_BODY): $(DOCS)/Title.pdf $(PDF_RAW)
-	pdftk $(PDF_RAW) cat 2-end output $@
+	pdftk $(PDF_RAW) cat 3-end output $@
 
 PAGELABELS = python3 -m pagelabels
-$(PDF_TARGET): $(PDF_BODY) Makefile
+$(PDF_TARGET): $(PDF_BODY)
 	pdftk $(DOCS)/Title.pdf $(PDF_BODY) cat output $@
 	$(PAGELABELS) --load $(PDF_RAW) $@
 
