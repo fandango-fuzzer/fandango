@@ -5,6 +5,7 @@ PYTHON = python
 ANTLR = antlr
 BLACK = black
 PIP = pip
+SED = sed
 
 
 # Default targets
@@ -77,9 +78,13 @@ refresh: $(HTML_MARKER)
 	
 
 # Re-create the book in PDF
-$(LATEX_MARKER): $(DOCS_SOURCES)
-	$(JB) build --builder latex $(DOCS)
+$(LATEX_MARKER): $(DOCS_SOURCES) $(DOCS)/_book_toc.yml
+	cd $(DOCS); $(JB) build --builder latex --toc _book_toc.yml .
 	echo 'Success' > $@
+	
+$(DOCS)/_book_toc.yml: $(DOCS)/_toc.yml Makefile
+	echo '# Automatically generated from `$<`. Do not edit.' > $@
+	$(SED) s/Intro/BookIntro/ $< >> $@
 
 $(DOCS)/_build/latex/fandango.pdf: $(LATEX_MARKER)
 	cd $(DOCS)/_build/latex && $(MAKE)
