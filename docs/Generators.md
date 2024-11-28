@@ -206,21 +206,19 @@ To allow access to the elements of the generator output, Fandango _parses_ the o
 In our example, the latter can be used to further narrow down the set of names.
 If we want all last names to start with an `S`, for instance, we can invoke Fandango as
 
-% TODO: Can we get rid of the str() conversion here?
 :::{margin}
-The type of grammar symbols `<...>` is `DerivationTree`.
-To apply a string function on them (such as `startswith()`), you need to convert them into a string (`str(...)`) first.
+Grammar symbols `<...>` support all [Python string methods](https://docs.python.org/3/library/stdtypes.html#string-methods).
 :::
 
 ```shell
-$ fandango fuzz -f persons-faker.fan -c 'str(<last_name>).startswith("S")' -n 10
+$ fandango fuzz -f persons-faker.fan -c '<last_name>.startswith("S")' -n 10
 ```
 
 and we get
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons-faker.fan -c 'str(<last_name>).startswith("S")' -n 10
+!fandango fuzz -f persons-faker.fan -c '<last_name>.startswith("S")' -n 10
 ```
 
 
