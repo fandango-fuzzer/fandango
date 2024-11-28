@@ -1,16 +1,22 @@
 # Fandango Makefile. For development only.
 
+# Settings
 MAKEFLAGS=--warn-undefined-variables
+
+# Programs
 PYTHON = python
 ANTLR = antlr
 BLACK = black
 PIP = pip
 SED = sed
+PAGELABELS = $(PYTHON) -m pagelabels
 
 
 # Default targets
-all: requirements.txt parser html
-.PHONY: parser install dev-tools docs latex pdf
+web: requirements.txt parser html
+all: web pdf
+
+.PHONY: web all parser install dev-tools docs html latex pdf
 
 
 ## Requirements
@@ -48,7 +54,7 @@ $(PARSERS) &: $(LEXER_G4) $(PARSER_G4)
 
 ## Documentation
 DOCS = docs
-DOCS_SOURCES = $(wildcard $(DOCS)/*.md $(DOCS)/*.fan $(DOCS)/*.ipynb $(DOCS)/*.yml $(DOCS)/*.bib Makefile)
+DOCS_SOURCES = $(wildcard $(DOCS)/*.md $(DOCS)/*.fan $(DOCS)/*.ipynb $(DOCS)/*.yml $(DOCS)/*.bib)
 JB = jupyter-book
 HTML_MARKER = $(DOCS)/_build/html/marker.txt
 LATEX_MARKER = $(DOCS)/_build/latex/marker.txt
@@ -56,7 +62,8 @@ PDF_RAW = $(DOCS)/_build/latex/fandango.pdf
 PDF_TARGET = $(DOCS)/fandango.pdf
 
 # Command to open and refresh the Web view (on a Mac)
-VIEW_HTML = open $(DOCS)/_build/html/index.html
+HTML_INDEX = $(DOCS)/_build/html/index.html
+VIEW_HTML = open $(HTML_INDEX)
 REFRESH_HTML = osascript -e 'tell application "Safari" to set URL of document of window 1 to URL of document of window 1'
 
 # Command to open the PDF (on a Mac)
@@ -73,6 +80,7 @@ $(HTML_MARKER): $(DOCS_SOURCES)
 	$(JB) build $(DOCS)
 	echo 'Success' > $@
 	$(REFRESH_HTML)
+	@echo Output written to $(HTML_INDEX)
 
 # view HTML
 view: $(HTML_MARKER)
@@ -93,16 +101,16 @@ $(DOCS)/_book_toc.yml: $(DOCS)/_toc.yml
 	$(SED) s/Intro/BookIntro/ $< >> $@
 
 $(PDF_RAW): $(LATEX_MARKER)
-	cd $(DOCS)/_build/latex && $(MAKE)
+	cd $(DOCS)/_build/latex && $(MAKE) && cd ../../.. && touch $@
 
 PDF_BODY = $(DOCS)/_build/latex/_body.pdf
 $(PDF_BODY): $(DOCS)/Title.pdf $(PDF_RAW)
 	pdftk $(PDF_RAW) cat 3-end output $@
 
-PAGELABELS = python3 -m pagelabels
 $(PDF_TARGET): $(PDF_BODY)
 	pdftk $(DOCS)/Title.pdf $(PDF_BODY) cat output $@
 	$(PAGELABELS) --load $(PDF_RAW) $@
+	@echo Output written to $@
 
 view-pdf: $(PDF_TARGET)
 	$(VIEW_PDF)
