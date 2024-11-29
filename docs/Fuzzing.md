@@ -118,7 +118,7 @@ If the directory is already present, Fandango will use that directory.
 Fandango will overwrite files `Fandango-0001.txt`, `Fandango-0002.txt`, etc., but leave other files in the directory unchanged.
 ```
 
-If you want different file names (for instance, because `.txt` is not suitable), Fandango provides a `--filename-format` option to change the file name format.
+If you want a different file extension (for instance, because `.txt` is not suitable), Fandango provides a `--filename-extension` option to set a different one.
 
 
 ## Invoking Programs Directly
@@ -141,11 +141,6 @@ $ fandango fuzz -f persons.fan -n 10 wc -c
 ```
 
 The `wc` program is then invoked as `wc -c FILE_1`, `wc -c FILE_2`, etc., where each `FILE` contains an individual input from Fandango.
-
-% TODO
-```{note}
-At this point, the file name extension passed is `.txt`, and cannot be changed from the command line.
-```
 
 
 ### Passing Inputs via Standard Input

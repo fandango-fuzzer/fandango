@@ -13,11 +13,10 @@ kernelspec:
 (sec:reference)=
 # Fandango Reference
 
-## Table of Contents
-
-```{tableofcontents}
-```
-
+% ## Table of Contents
+% 
+% ```{tableofcontents}
+% ```
 
 
 (sec:installing)=
@@ -82,6 +81,6 @@ You should then be able to invoke Fandango as described above.
 
 
 
-## Acknowledgments
-
-```{include} Footer.md
+% ## Acknowledgments
+% 
+% ```{include} Footer.md

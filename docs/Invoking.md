@@ -17,9 +17,11 @@ kernelspec:
 
 To run Fandango on [our "digits" example](sec:first-spec),
 create or download a file [digits.fan](digits.fan) with the "digits" grammar in the current folder.
-```{margin}
+
+:::{margin}
 Fandango specs have a `.fan` extension.
-```
+:::
+
 Then, you can run Fandango on it to create inputs.
 The command we need is called `fandango fuzz`, and it takes two important parameters:
 
