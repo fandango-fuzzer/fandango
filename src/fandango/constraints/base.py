@@ -83,6 +83,13 @@ class Constraint(GeneticBase, abc.ABC):
     ) -> ConstraintFitness:
         raise NotImplementedError("Fitness function not implemented")
 
+    @staticmethod
+    def is_debug_statement(expression: str) -> bool:
+        """
+        Determines if the expression is a print statement.
+        """
+        return expression.startswith("print(")
+
 
 class ExpressionConstraint(Constraint):
     def __init__(self, expression: str, *args, **kwargs):
@@ -108,6 +115,9 @@ class ExpressionConstraint(Constraint):
                 {name: container.evaluate() for name, container in combination}
             )
             try:
+                if eval(self.expression, self.global_variables, local_variables) is None:
+                    # fitness is perfect and return
+                    return ConstraintFitness(1, 1, True)
                 if eval(self.expression, self.global_variables, local_variables):
                     solved += 1
                 else:
