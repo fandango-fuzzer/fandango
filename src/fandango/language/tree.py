@@ -77,6 +77,8 @@ class DerivationTree:
     @staticmethod
     def from_tree(tree: Tuple[str, List[Tuple[str, List]]]) -> "DerivationTree":
         symbol, children = tree
+        if not isinstance(symbol, str):
+            raise TypeError(f"{symbol} must be string")
         if symbol.startswith("<") and symbol.endswith(">"):
             symbol = NonTerminal(symbol)
         else:
