@@ -125,6 +125,11 @@ def get_parser():
         help="the grammar start symbol (default: `start`)",
         default="start",
     )
+    settings_group.add_argument(
+        "--warnings-are-errors",
+        dest="warn",
+        action="store_true"
+    )
 
     # Shared file options
     file_parser = argparse.ArgumentParser(add_help=False)
@@ -180,6 +185,11 @@ def get_parser():
         dest="directory",
         default=None,
         help="create individual output files in DIRECTORY",
+    )
+    fuzz_parser.add_argument(
+        '--best-effort',
+        dest="effort",
+        action="store_true"
     )
 
     command_group = fuzz_parser.add_argument_group("command invocation settings")
@@ -363,18 +373,22 @@ def fuzz(args):
         grammar=grammar,
         constraints=constraints,
         population_size=max(args.population_size, args.num_outputs),
+        desired_solutions=args.num_outputs,
         mutation_rate=args.mutation_rate,
         crossover_rate=args.crossover_rate,
         max_generations=args.max_generations,
         elitism_rate=args.elitism_rate,
         start_symbol=start_symbol,
+        warnings_are_errors=args.warn,
+        best_effort=args.effort
     )
 
     LOGGER.debug("Evolving population")
     population = fandango.evolve()
 
-    LOGGER.debug("Reducing population")
-    population = population[: args.num_outputs]
+    # Not necessary anymore
+    #LOGGER.debug("Reducing population")
+    #population = population[: args.num_outputs]
 
     output_on_stdout = True
 
