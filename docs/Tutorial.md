@@ -21,12 +21,12 @@ Welcome to Fandango! In this tutorial, you will learn how to
 
 Time is precious, so let's get started!
 
-## Table of Contents
+% ## Table of Contents
+% 
+% ```{tableofcontents}
+% ```
 
-```{tableofcontents}
-```
 
-
-## Acknowledgments
-
-```{include} Footer.md
+% ## Acknowledgments
+% 
+% ```{include} Footer.md

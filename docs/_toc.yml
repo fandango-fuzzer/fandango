@@ -1,20 +1,25 @@
 format: jb-book
 root: Intro
-chapters:
-- file: About
-- file: Tutorial
-  sections:
-  - file: Installing
-  - file: FirstSpec
-  - file: Invoking
-  - file: Fuzzing
-  - file: Strategies
-  - file: Constraints
-  - file: Generators
-  - file: Recursive
-  - file: Quantors
-  - file: Whitebox
-  - file: Distributions
-  - file: Binary
-  - file: Hatching
-- file: Reference
+parts:
+  - caption: About Fandango
+    chapters:
+    - file: About
+  - caption: Fandango Tutorial
+    chapters:
+    - file: Tutorial
+    - file: Installing
+    - file: FirstSpec
+    - file: Invoking
+    - file: Fuzzing
+    - file: Strategies
+    - file: Constraints
+    - file: Generators
+    - file: Recursive
+    - file: Distributions
+    - file: Quantors
+    - file: Binary
+    - file: Whitebox
+    - file: Hatching
+  - caption: Fandango Reference
+    chapters:
+    - file: Reference

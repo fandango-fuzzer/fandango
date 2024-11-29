@@ -201,10 +201,10 @@ def get_parser():
         help="When invoking COMMAND, choose whether Fandango input will be passed as standard input (`stdin`) or as last argument on the command line (`filename`) (default)",
     )
     command_group.add_argument(
-        "--filename-format",
+        "-x", "--filename-extension",
         type=str,
-        default="fandango-{:04d}.txt",
-        help="Format of generated file names (default: 'fandango-{:04d}.txt')",
+        default=".txt",
+        help="Extension of generated file names (default: '.txt')",
     )
 
     command_group.add_argument(
@@ -401,9 +401,7 @@ def fuzz(args):
 
         counter = 1
         for individual in population:
-            basename = "fandango-{:04d}.txt".format(
-                counter
-            )  # format should be configurable
+            basename = f"fandango-{counter:04d}{args.filename_extension}"
             filename = os.path.join(args.directory, basename)
             with open(filename, "w") as fd:
                 fd.write(str(individual))
@@ -426,7 +424,11 @@ def fuzz(args):
         base_cmd = [args.test_command] + args.test_args
         for individual in population:
             if args.input_method == "filename":
-                with tempfile.NamedTemporaryFile(mode="w") as fd:
+                prefix = 'fandango-'
+                suffix = args.filename_extension
+                with tempfile.NamedTemporaryFile(mode="w",
+                                                 prefix=prefix,
+                                                 suffix=suffix) as fd:
                     fd.write(str(individual))
                     fd.flush()
                     cmd = base_cmd + [fd.name]
