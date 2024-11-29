@@ -14,7 +14,9 @@ kernelspec:
 # Statistical Distributions
 
 ```{error}
-This chapter is under construction.
+This chapter is still in construction.
 ```
+
+When introducing [generators](Generators.md), we have seen a first method on how to create distributions.
 
 In the next section, we'll talk about [binary inputs](sec:binary).

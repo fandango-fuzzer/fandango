@@ -226,3 +226,15 @@ class DerivationTree:
             return flat.index(target)
         except ValueError:
             return -1
+
+    def __getattr__(self, name):
+        """
+        Catch-all: All other attributes and methods apply to the string representation
+        """
+        if name in str.__dict__:
+            def fn(*args, **kwargs):
+                return str.__dict__[name](str(self), *args, **kwargs)
+            return fn
+
+        raise AttributeError(f"<{self.symbol}> has no attribute {repr(name)}")
+

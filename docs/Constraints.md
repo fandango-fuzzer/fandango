@@ -169,13 +169,17 @@ Some constraints, however, may be difficult or even impossible to solve.
 After a maximum number of generations (which can be set using `-N`), Fandango stops and produces the inputs it has generated so far.
 We can see this if we specify `False` as a constraint:
 
+:::{margin}
+The `-N` option limits the number of generations - the default is 500.
+:::
+
 ```shell
-$ fandango -v fuzz -f persons.fan -n 10 -c 'False'
+$ fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50
 ```
 
 ```{code-cell}
 :tags: ["remove-input", "scroll-output"]
-!fandango -v fuzz -f persons.fan -n 10 -c 'False'
+!fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50
 ```
 
 As you see, Fandango still outputs the last population - these "fittest" ones get closest in fulfilling the constraint.
