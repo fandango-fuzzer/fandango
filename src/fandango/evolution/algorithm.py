@@ -3,7 +3,7 @@ import copy
 import logging
 import random
 import time
-from typing import List, Set, Tuple
+from typing import List, Tuple
 
 import deprecation
 
@@ -51,19 +51,14 @@ class Fandango:
         :param verbose: Whether to print debug information.
         :param start_symbol: The start symbol to use with the grammar.
         :param warnings_are_errors: If set, turns warnings into errors
-        :param best_effort: If set, returns also soltions not satisfying all constraints
+        :param best_effort: If set, returns also solutions not satisfying all constraints
         """
 
         if verbose:
             LOGGER.setLevel(logging.DEBUG)
-            if warnings_are_errors:
-                LOGGER.error(
-                    f"Fandango.__init__(): The `verbose` parameter will be deprecated; use LOGGER.setLevel() instead"
-                )
-            else:
-                LOGGER.warning(
-                    f"Fandango.__init__(): The `verbose` parameter will be deprecated; use LOGGER.setLevel() instead"
-                )
+            LOGGER.warning(
+                f"Fandango.__init__(): The `verbose` parameter will be deprecated; use LOGGER.setLevel() instead"
+            )
 
         LOGGER.info(f"---------- Initializing FANDANGO algorithm ---------- ")
         self.grammar = grammar
@@ -87,16 +82,15 @@ class Fandango:
 
         self.time_taken = None
 
-        self.warnings_are_erros = warnings_are_errors
+        self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
 
         # Initialize population
         self.solution = list()
-
         self.desired_solutions = desired_solutions
 
         if initial_population is not None:
-            LOGGER.info(f"Storing provided initial population...")
+            LOGGER.info(f"Saving the provided initial population...")
             self.population = list(initial_population)
         else:
             LOGGER.info(
@@ -200,16 +194,22 @@ class Fandango:
         LOGGER.debug(f"Crossovers made: {self.crossovers_made}")
         LOGGER.debug(f"Mutations made: {self.mutations_made}")
 
-        if len(self.solution) < self.desired_solutions:
-            if self.warnings_are_erros:
-                LOGGER.error(f"Only found {len(self.solution)} perfect solutions, instead of the required {self.desired_solutions}")
-            else:
-                LOGGER.warning(f"Only found {len(self.solution)} perfect solutions, instead of the required {self.desired_solutions}")
+        if self.fitness < 1.0:
+            LOGGER.error(f"Population did not converge to a perfect population")
+            if self.warnings_are_errors:
+                raise RuntimeError("Failed to find a perfect solution")
+            if self.best_effort:
+                return self.population
+
+        if self.desired_solutions > 0 and len(self.solution) < self.desired_solutions:
+            LOGGER.error(
+                f"Only found {len(self.solution)} perfect solutions, instead of the required {self.desired_solutions}")
+            if self.warnings_are_errors:
+                raise RuntimeError("Failed to find the required number of perfect solutions")
             if self.best_effort:
                 return self.population[:self.desired_solutions]
-            else:
-                return self.solution
-        return self.solution[:self.desired_solutions]
+
+        return self.solution
 
     def generate_random_initial_population(self) -> List[DerivationTree]:
         """
@@ -228,14 +228,6 @@ class Fandango:
             fixed_population.append(self.fix_individual(individual))
 
         return fixed_population
-
-    def generate_coverage_based_initial_population(self) -> Set[DerivationTree]:
-        """
-        Generate the initial population of individuals that maximize the coverage of the grammar.
-
-        :return: A set of individuals.
-        """
-        pass
 
     def fix_individual(self, individual: DerivationTree) -> DerivationTree:
         """
@@ -269,6 +261,8 @@ class Fandango:
         failing_trees = []
 
         if str(individual) in self.fitness_cache:
+            if self.fitness_cache[str(individual)][0] >= 0.99:
+                self.solution.append(individual)
             return self.fitness_cache[str(individual)]
 
         for constraint in self.constraints:
