@@ -9,7 +9,12 @@ import tempfile
 import readline
 import shlex
 import atexit
+import re
+import glob
+import os.path
+
 from os import environ
+from io import StringIO
 
 
 from fandango.cli.interactive import Interactive
@@ -244,7 +249,7 @@ def get_parser(in_command_line=True):
         # Set
         set_parser = commands.add_parser(
             "set",
-            help="set defaults",
+            help="set or print default arguments",
             parents=[file_parser, settings_parser],
         )
 
@@ -253,6 +258,13 @@ def get_parser(in_command_line=True):
         set_parser = commands.add_parser(
             "reset",
             help="reset defaults",
+        )
+
+    if not in_command_line:
+        # Reset
+        set_parser = commands.add_parser(
+            "exit",
+            help="exit Fandango",
         )
 
     if in_command_line:
@@ -589,6 +601,103 @@ COMMANDS = {
     "help": help_command,
 }
 
+
+def get_help(cmd):
+    """Return the help text for CMD"""
+    parser = get_parser(in_command_line=False)
+    old_stdout = sys.stdout
+    sys.stdout = mystdout = StringIO()
+
+    parser.exit_on_error = False
+    try:
+        parser.parse_args([cmd] + ["--help"])
+    except SystemExit:
+        pass
+
+    sys.stdout = old_stdout
+    return mystdout.getvalue()
+
+def get_options(cmd):
+    """Return all --options for CMD"""
+    help = get_help(cmd)
+    options = []
+    for option in re.findall(r'--?[a-zA-Z0-9_-]*', help):
+        if option not in options:
+            options.append(option)
+    return options
+
+def get_filenames(prefix = ""):
+    """Return all files that match PREFIX"""
+    filenames = []
+    all_filenames = glob.glob(prefix + "*")
+    for filename in all_filenames:
+        if os.path.isdir(filename):
+            filenames.append(filename + os.sep)
+        if (filename.lower().endswith(".fan") or 
+            filename.lower().endswith(".py")):
+            filenames.append(filename)
+
+    return filenames
+
+# print(get_filenames("docs/per"))
+
+
+def complete(text):
+    """Return possible completions for TEXT"""
+    # print("Completing ", repr(text))
+
+    if not text:
+        # No text entered, all commands possible
+        return [s for s in COMMANDS.keys()]
+
+    commands = [s + " " for s in COMMANDS if s and s.startswith(text)]
+    if commands:
+        # Beginning of command entered
+        return commands
+
+    words = text.split()
+    cmd = words[0]
+
+    if len(words) == 1 or text.endswith(" "):
+        last_arg = ""
+        cmd_except_last_arg = " ".join(words)
+    else:
+        last_arg = words[-1]
+        cmd_except_last_arg = " ".join(words[0:-1])
+
+    # print(f"last_arg = {last_arg}")
+    # print(f"cmd_except_last_arg = {cmd_except_last_arg}")
+
+    completions = []
+
+    cmd_options = get_options(cmd)
+    for option in cmd_options:
+        if not last_arg or option.startswith(last_arg):
+            completion = cmd_except_last_arg + " " + option + " "
+            completions.append(completion)
+
+    if len(words) >= 2:
+        # Argument for an option
+        filenames = get_filenames(prefix=last_arg)
+        for filename in filenames:
+            completion = cmd_except_last_arg + " " + filename
+            if not filename.endswith(os.sep):
+                completion += " "
+            completions.append(completion)
+
+    if completions:
+        # Command plus beginning of options entered
+        return completions
+
+    return None
+
+# print(complete(""))
+# print(complete("set "))
+# print(complete("set -"))
+# print(complete("set -f "))
+# print(complete("set -f do"))
+
+
 MATCHES = []
 
 def shell_command(args):
@@ -606,27 +715,20 @@ def shell_command(args):
         # print("Completing", repr(text), repr(state), COMMANDS)
         global MATCHES
         if state == 0:  # first trigger
-            if text:
-                MATCHES = [
-                    s + " " for s in COMMANDS if s and s.startswith(text)
-                ]
-            else:
-                # No text entered, all matches possible
-                MATCHES = [s for s in COMMANDS.keys()]
-
+            MATCHES = complete(text)
         try:
             return MATCHES[state]
         except IndexError:
             return None
 
     _read_history()
-    readline.set_completer_delims(" \t\n;")
+    readline.set_completer_delims("\n;")
     readline.set_completer(_complete)
     readline.parse_and_bind("tab: complete")  # Linux
     readline.parse_and_bind("bind '\t' rl_complete")  # Mac
 
-    print("Fandango", importlib.metadata.version("fandango"))
-    print("Enter a command, 'help', or 'exit'")
+    print("Welcome to Fandango", importlib.metadata.version("fandango"))
+    print("Enter a command, 'help', or 'exit'. Use TAB to complete commands.")
 
     while True:
         try:
