@@ -6,6 +6,10 @@ import sys
 import textwrap
 import subprocess
 import tempfile
+import readline
+import shlex
+import atexit
+
 
 from fandango.cli.interactive import Interactive
 from fandango.constants import INTERACTIVE, FUZZ, HELP
@@ -33,42 +37,50 @@ from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
 
 
-def get_parser():
-
+def get_parser(in_command_line=True):
     # Main parser
+    if in_command_line:
+        prog = "fandango"
+        epilog = """\
+            Use `%(prog)s help` to get a list of commands.
+            Use `%(prog)s help COMMAND` to learn more about COMMAND."""
+    else:
+        prog = ""
+        epilog = """
+            Use `help` to get a list of commands.
+            Use `help COMMAND` to learn more about COMMAND."""
+
     main_parser = argparse.ArgumentParser(
-        prog="fandango",
+        prog=prog,
         description="The access point to the Fandango framework",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=textwrap.dedent(
-            """\
-                               Use `%(prog)s help` to get a list of commands.
-                               Use `%(prog)s help COMMAND` to learn more about COMMAND."""
-        ),
+        add_help=in_command_line,
+        epilog=textwrap.dedent(epilog),
     )
 
-    main_parser.add_argument(
-        "--version",
-        action="version",
-        version="%(prog)s " + importlib.metadata.version("fandango"),
-        help="show version number",
-    )
+    if in_command_line:
+        main_parser.add_argument(
+            "--version",
+            action="version",
+            version="%(prog)s " + importlib.metadata.version("fandango"),
+            help="show version number",
+        )
 
-    verbosity_option = main_parser.add_mutually_exclusive_group()
-    verbosity_option.add_argument(
-        "--verbose",
-        "-v",
-        dest="verbose",
-        action="count",
-        help="increase verbosity. Can be given multiple times (-vv)",
-    )
-    verbosity_option.add_argument(
-        "--quiet",
-        "-q",
-        dest="quiet",
-        action="store_true",
-        help="suppress warnings",
-    )
+        verbosity_option = main_parser.add_mutually_exclusive_group()
+        verbosity_option.add_argument(
+            "--verbose",
+            "-v",
+            dest="verbose",
+            action="count",
+            help="increase verbosity. Can be given multiple times (-vv)",
+        )
+        verbosity_option.add_argument(
+            "--quiet",
+            "-q",
+            dest="quiet",
+            action="store_true",
+            help="suppress warnings",
+        )
 
     # The subparsers
     commands = main_parser.add_subparsers(
@@ -76,7 +88,7 @@ def get_parser():
         # description="Valid commands",
         help="the command to execute",
         dest="command",
-        required=True,
+        # required=True,
     )
 
     # Shared Settings
@@ -141,7 +153,7 @@ def get_parser():
         dest="fan_files",
         metavar="FAN_FILE",
         default=None,
-        required=True,
+        # required=True,
         action="append",
         help="Fandango file (.fan, .py) to be processed. Can be given multiple times.",
     )
@@ -224,42 +236,52 @@ def get_parser():
         help="The arguments of the command",
     )
 
-    # Interactive
-    interactive_parser = commands.add_parser(
-        INTERACTIVE, help="open the interactive command line interface"
-    )
-    interactive_parser.add_argument(
-        "-f",
-        "--fan",
-        type=str,
-        dest="fan",
-        default=None,
-        help="the fan file to use for the interactive mode",
-    )
-    interactive_parser.add_argument(
-        "-g",
-        "--grammar",
-        type=str,
-        dest="grammar",
-        default=None,
-        help="the grammar to use for the interactive mode",
-    )
-    interactive_parser.add_argument(
-        "-c",
-        "--constraints",
-        type=str,
-        dest="constraints",
-        default=None,
-        help="the constraints to use for the interactive mode",
-    )
-    interactive_parser.add_argument(
-        "-p",
-        "--python",
-        type=str,
-        dest="python",
-        default=None,
-        help="the Python code to use in the interactive mode",
-    )
+    if in_command_line:
+        # Shell
+        fuzz_parser = commands.add_parser(
+            "shell",
+            help="run an interactive shell (default)",
+            parents=[file_parser, settings_parser],
+        )
+
+    if in_command_line:
+        # Interactive
+        interactive_parser = commands.add_parser(
+            INTERACTIVE,
+            help="open the interactive command line interface (deprecated)",
+        )
+        interactive_parser.add_argument(
+            "-f",
+            "--fan",
+            type=str,
+            dest="fan",
+            default=None,
+            help="the fan file to use for the interactive mode",
+        )
+        interactive_parser.add_argument(
+            "-g",
+            "--grammar",
+            type=str,
+            dest="grammar",
+            default=None,
+            help="the grammar to use for the interactive mode",
+        )
+        interactive_parser.add_argument(
+            "-c",
+            "--constraints",
+            type=str,
+            dest="constraints",
+            default=None,
+            help="the constraints to use for the interactive mode",
+        )
+        interactive_parser.add_argument(
+            "-p",
+            "--python",
+            type=str,
+            dest="python",
+            default=None,
+            help="the Python code to use in the interactive mode",
+        )
 
     # Help
     help_parser = commands.add_parser(
@@ -278,6 +300,7 @@ def get_parser():
 
 
 def interactive(args):
+    LOGGER.warn("Deprecated. Use the 'shell' command instead.")
     try:
         interactive_ = Interactive(
             args.fan, args.grammar, args.constraints, args.python
@@ -290,13 +313,20 @@ def interactive(args):
     interactive_.run()
 
 
-def help(args):
-    parser = get_parser()
+def help(args, in_command_line=False):
+    parser = get_parser(in_command_line)
+    parser.exit_on_error = False
+
     for cmd in args.help_command:
-        # Alas, this exits after the first command
-        parser.parse_args([cmd] + ["--help"])
+        try:
+            parser.parse_args([cmd] + ["--help"])
+        except SystemExit:
+            pass
     else:
-        parser.print_help()
+        try:
+            parser.print_help()
+        except SystemExit:
+            pass
 
 
 def merged_fan_contents(args) -> str:
@@ -392,6 +422,8 @@ def make_fandango_settings(args, initial_settings={}):
 
 
 def fuzz(args):
+    """Invoke the fuzzer"""
+
     LOGGER.info("---------- Parsing FANDANGO content ----------")
     grammar, constraints = parse_fan_contents(args)
 
@@ -467,6 +499,103 @@ def fuzz(args):
         for individual in population:
             print(individual, end=args.separator)
 
+COMMANDS = {
+    "fuzz": fuzz,
+    "interactive": interactive,
+    "help": help,
+}
+
+def shell(args):
+    """(New) interactive mode"""
+    def _read_history():
+        histfile = os.path.join(os.path.expanduser("~"), ".fandango_history")
+        try:
+            readline.read_history_file(histfile)
+            readline.set_history_length(1000)
+        except FileNotFoundError:
+            pass
+        atexit.register(readline.write_history_file, histfile)
+
+    def _complete(text, state):
+        # print("Completing", repr(text), repr(state), COMMANDS)
+        if state == 0:  # first trigger
+            if text:
+                self.matches = [
+                    s + " " for s in COMMANDS if s and s.startswith(text)
+                ]
+            else:
+                self.matches = COMMANDS
+
+        try:
+            return self.matches[state]
+        except IndexError:
+            return None
+
+    def _display_matches(self, substitution, matches, longest_match_length):
+        line_buffer = readline.get_line_buffer()
+        columns = environ.get("COLUMNS", 80)
+
+        print()
+
+        tpl = "{:<" + str(int(max(map(len, matches)) * 1.2)) + "}"
+
+        buffer = ""
+        for match in matches:
+            match = tpl.format(match[len(substitution) :])
+            if len(buffer + match) > columns:
+                print(buffer)
+                buffer = ""
+            buffer += match
+
+        if buffer:
+            print(buffer)
+
+        print("> ", end="")
+        print(line_buffer, end="")
+        sys.stdout.flush()
+
+    _read_history()
+    readline.set_completer_delims(" \t\n;")
+    readline.set_completer(_complete)
+    readline.parse_and_bind("tab: complete")  # Linux
+    readline.parse_and_bind("bind '\t' rl_complete")  # Mac
+    readline.set_completion_display_matches_hook(_display_matches)
+
+    print("Fandango", importlib.metadata.version("fandango"))
+    print("Enter a command, 'help', or 'exit'")
+
+    while True:
+        try:
+            command_line = input("(fandango) ").lstrip()
+        except KeyboardInterrupt:
+            print("\nEnter a command, 'help', or 'exit'")
+            continue
+        except EOFError:
+            break
+
+        command = shlex.split(command_line, comments=True)
+        if not command:
+            continue
+
+        if command[0].startswith("exit"):
+            break
+
+        parser = get_parser(in_command_line=False)
+        parser.exit_on_error = False
+        try:
+            args = parser.parse_args(command)
+        except argparse.ArgumentError:
+            parser.print_usage()
+            continue
+
+        if args.command in COMMANDS:
+            command = COMMANDS[args.command]
+            command(args)
+        else:
+            parser.print_usage()
+
+    SHELL = False
+
 
 def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
     if "-O" in sys.argv:
@@ -478,7 +607,7 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
     if stderr is not None:
         sys.stderr = stderr
 
-    parser = get_parser()
+    parser = get_parser(in_command_line=True)
     args = parser.parse_args(args or sys.argv[1:])
 
     LOGGER.setLevel(logging.WARNING)  # Default
@@ -489,20 +618,14 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
     elif args.verbose and args.verbose > 1:
         LOGGER.setLevel(logging.DEBUG)  # Even more info
 
-    if args.command == INTERACTIVE:
-        interactive(args)
-    elif args.command == FUZZ:
-        fuzz(args)
-    elif args.command == HELP:
-        help(args)
+    if args.command in COMMANDS:
+        command = COMMANDS[args.command]
+        command(args)
+    elif args.command is None or args.command == 'shell':
+        shell(args)
     else:
-        # This should not be reachable, but just in case
         parser.print_usage()
 
 
 if __name__ == "__main__":
-    if "-O" in sys.argv:
-        sys.argv.remove("-O")
-        os.execl(sys.executable, sys.executable, "-O", *sys.argv)
-    else:
-        main()
+    main()
