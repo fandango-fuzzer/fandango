@@ -15,7 +15,7 @@ import os.path
 
 from os import environ
 from io import StringIO
-
+from io import UnsupportedOperation
 
 from fandango.cli.interactive import Interactive
 from fandango.constants import INTERACTIVE, FUZZ, HELP
@@ -26,6 +26,7 @@ import ast
 from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.InputStream import InputStream
 from antlr4.error.ErrorStrategy import BailErrorStrategy
+from antlr4.error.Errors import ParseCancellationException
 
 from fandango.constraints import predicates
 from fandango.constraints.fitness import GeneticBase
@@ -775,7 +776,15 @@ def shell_command(args):
         except EOFError:
             break
 
-        command = shlex.split(command_line, comments=True)
+        command = None
+        try:
+            command = shlex.split(command_line, comments=True)
+        except ValueError as e:
+            if isinstance(e.args[0], str):
+                print(e.args[0], file=sys.stderr)
+            else:
+                raise e from None
+
         if not command:
             continue
 
@@ -802,10 +811,34 @@ def shell_command(args):
                 help_command(args, in_command_line=False)
             else:
                 command = COMMANDS[args.command]
-                command(args)
+                run(command, args)
         except SystemExit:
             pass
 
+def run(command, args):
+    try:
+        command(args)
+    except ParseCancellationException as e:
+        # We already have the error message
+        print("Syntax error", file=sys.stderr)
+        return 1
+    except ValueError as e:
+        if isinstance(e.args[0], str):
+            print("Error:", e.args[0], file=sys.stderr)
+            return 1
+        raise e from None
+
+    except UnsupportedOperation as e:
+        if isinstance(e.args[0], str):
+            print("Not supported:", e.args[0], file=sys.stderr)
+            return 1
+        raise e from None
+
+    except Exception as e:
+        print("Error:", e, file=sys.stderr)
+        return 1
+
+    return 0
 
 def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
     if "-O" in sys.argv:
@@ -830,9 +863,9 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
 
     if args.command in COMMANDS:
         command = COMMANDS[args.command]
-        command(args)
+        run(command, args)
     elif args.command is None or args.command == 'shell':
-        shell_command(args)
+        run(shell_command, args)
     else:
         parser.print_usage()
 
