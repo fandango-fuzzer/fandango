@@ -323,6 +323,7 @@ def get_parser(in_command_line=True):
     help_parser.add_argument(
         "help_command",
         type=str,
+        metavar="command",
         nargs="*",
         default=None,
         help="command to get help on",
@@ -350,7 +351,12 @@ def help_command(args, **kwargs):
     parser.exit_on_error = False
 
     for cmd in args.help_command:
-        parser.parse_args([cmd] + ["--help"])
+        try:
+            parser.parse_args([cmd] + ["--help"])
+        except SystemExit:
+            pass
+        except argparse.ArgumentError:
+            print("Unknown command:", cmd, file=sys.stderr)
     else:
         parser.print_help()
 
@@ -621,6 +627,9 @@ def get_help(cmd):
 
 def get_options(cmd):
     """Return all --options for CMD"""
+    if cmd == 'help':
+        return COMMANDS.keys()
+
     help = get_help(cmd)
     options = []
     for option in re.findall(r'--?[a-zA-Z0-9_-]*', help):
