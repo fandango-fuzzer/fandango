@@ -115,9 +115,10 @@ class DerivationTree:
         else:
             raise ValueError("Invalid symbol type")
 
-    def __contains__(self, item: Union["DerivationTree", Any]) -> bool:
-        if isinstance(item, DerivationTree):
-            return item in self._children
+    def __contains__(self, other: Union["DerivationTree", Any]) -> bool:
+        if isinstance(other, DerivationTree):
+            return other in self._children
+        return other in str(self)
 
     def __iter__(self):
         return iter(self._children)
@@ -165,7 +166,32 @@ class DerivationTree:
         return self.is_float()
 
     def __eq__(self, other):
-        return isinstance(other, DerivationTree) and self.__tree__() == other.__tree__()
+        if isinstance(other, DerivationTree):
+            return self.__tree__() == other.__tree__()
+        return str(self) == other
+
+    def __le__(self, other):
+        if isinstance(other, DerivationTree):
+            return str(self) <= str(other)
+        return str(self) <= other
+
+    def __lt__(self, other):
+        if isinstance(other, DerivationTree):
+            return str(self) < str(other)
+        return str(self) < other
+
+    def __ge__(self, other):
+        if isinstance(other, DerivationTree):
+            return str(self) >= str(other)
+        return str(self) >= other
+
+    def __gt__(self, other):
+        if isinstance(other, DerivationTree):
+            return str(self) > str(other)
+        return str(self) > other
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def replace(self, tree_to_replace, new_subtree):
         """
