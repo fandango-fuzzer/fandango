@@ -435,8 +435,8 @@ def make_fandango_settings(args, initial_settings={}):
 
     return settings
 
-# Default Fandango file contents; set with `set`
-DEFAULT_FAN = (None, None)
+# Default Fandango file content (grammar, constraints); set with `set`
+DEFAULT_FAN_CONTENT = (None, None)
 
 # Additional Fandango constraints; set with `set`
 DEFAULT_CONSTRAINTS = []
@@ -446,28 +446,39 @@ DEFAULT_SETTINGS = {}
 
 def set_command(args):
     """Set global settings"""
-    LOGGER.info("---------- Parsing FANDANGO content ----------")
+    global DEFAULT_FAN_CONTENT
+    global DEFAULT_CONSTRAINTS
+    global DEFAULT_SETTINGS
 
     if args.fan_files:
-        global DEFAULT_FAN
+        LOGGER.info("---------- Parsing FANDANGO content ----------")
         fan_contents = ""
         for file in args.fan_files:
             fan_contents += file.read() + "\n"
         grammar, constraints = extract_grammar_and_constraints(fan_contents)
-        DEFAULT_FAN = (grammar, constraints)
+        DEFAULT_FAN_CONTENT = (grammar, constraints)
+        DEFAULT_CONSTRAINTS = []  # Don't leave these over
 
     if args.constraints:
-        global DEFAULT_CONSTRAINTS
+        LOGGER.info("---------- Parsing FANDANGO constraints ----------")
         fan_contents = ""
         for constraint in args.constraints:
             fan_contents += "\n" + constraint + ";\n"
         _, constraints = extract_grammar_and_constraints(fan_contents)
         DEFAULT_CONSTRAINTS = constraints
 
-    global DEFAULT_SETTINGS
     settings = make_fandango_settings(args)
     for setting in settings:
         DEFAULT_SETTINGS[setting] = settings[setting]
+
+    # Report current settings
+    if DEFAULT_CONSTRAINTS:
+        for constraint in DEFAULT_CONSTRAINTS:
+            print("Constraint", constraint)
+    if DEFAULT_SETTINGS:
+        for setting in DEFAULT_SETTINGS:
+            print("Setting", setting, "=", DEFAULT_SETTINGS[setting])
+
 
 def reset_command(args):
     """Reset global settings"""
@@ -485,7 +496,7 @@ def fuzz_command(args):
         # Override given default content (if any)
         grammar, constraints = parse_fan_contents(args)
     else:
-        grammar, constraints = DEFAULT_FAN
+        grammar, constraints = DEFAULT_FAN_CONTENT
 
     if grammar is None:
         print("fuzz: Use -f to specify a .fan file", file=sys.stderr)
