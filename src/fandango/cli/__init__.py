@@ -12,6 +12,7 @@ import atexit
 import re
 import glob
 import os.path
+import traceback
 
 from os import environ
 from io import StringIO
@@ -26,6 +27,7 @@ import ast
 from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.InputStream import InputStream
 from antlr4.error.ErrorStrategy import BailErrorStrategy
+from antlr4.error.ErrorListener import ErrorListener
 from antlr4.error.Errors import ParseCancellationException
 
 from fandango.constraints import predicates
@@ -380,16 +382,24 @@ def merged_fan_contents(args) -> str:
     return fan_contents
 
 
+class MyErrorListener(ErrorListener):
+    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+        raise ParseCancellationException(
+            f"Line %{line}, Column {column}: error: {msg}")
+
 def extract_grammar_and_constraints(fan_contents: str, lazy: bool = False):
     """Extract grammar and constraints from the given content"""
     # TODO: This should go into a separate module (parser.py maybe?), not here -- AZ
 
     LOGGER.debug("Parsing .fan content")
+    error_listener = MyErrorListener()
     input_stream = InputStream(fan_contents)
     lexer = FandangoLexer(input_stream)
+    lexer.addErrorListener(error_listener)
     token_stream = CommonTokenStream(lexer)
     parser = FandangoParser(token_stream)
-    parser._errHandler = BailErrorStrategy()
+    parser.addErrorListener(error_listener)
+    # parser._errHandler = BailErrorStrategy()
     tree = parser.fandango()
 
     LOGGER.debug("Extracting code")
@@ -824,22 +834,27 @@ def run(command, args):
     try:
         command(args)
     except ParseCancellationException as e:
-        # We already have the error message
+        LOGGER.debug(traceback.format_exc())
+        # ANTLR already prints out the error message
         print("Syntax error", file=sys.stderr)
         return 1
+
     except ValueError as e:
+        LOGGER.debug(traceback.format_exc())
         if isinstance(e.args[0], str):
             print("Error:", e.args[0], file=sys.stderr)
             return 1
         raise e from None
 
     except UnsupportedOperation as e:
+        LOGGER.debug(traceback.format_exc())
         if isinstance(e.args[0], str):
             print("Not supported:", e.args[0], file=sys.stderr)
             return 1
         raise e from None
 
     except Exception as e:
+        LOGGER.debug(traceback.format_exc())
         print("Error:", e, file=sys.stderr)
         return 1
 
