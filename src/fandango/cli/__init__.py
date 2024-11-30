@@ -667,15 +667,16 @@ def get_options(cmd):
             options.append(option)
     return options
 
-def get_filenames(prefix = ""):
+def get_filenames(prefix = "", fan_only=True):
     """Return all files that match PREFIX"""
     filenames = []
     all_filenames = glob.glob(prefix + "*")
     for filename in all_filenames:
         if os.path.isdir(filename):
             filenames.append(filename + os.sep)
-        if (filename.lower().endswith(".fan") or 
-            filename.lower().endswith(".py")):
+        elif (not fan_only or
+              filename.lower().endswith(".fan") or 
+              filename.lower().endswith(".py")):
             filenames.append(filename)
 
     return filenames
@@ -703,30 +704,29 @@ def complete(text):
     # Complete command
     words = text.split()
     cmd = words[0]
+    shell = cmd.startswith("!")
 
-    if cmd not in COMMANDS.keys():
+    if not shell and cmd not in COMMANDS.keys():
         # Unknown command
         return []
 
     if len(words) == 1 or text.endswith(" "):
         last_arg = ""
-        cmd_except_last_arg = " ".join(words)
     else:
         last_arg = words[-1]
-        cmd_except_last_arg = " ".join(words[0:-1])
 
     # print(f"last_arg = {last_arg}")
-    # print(f"cmd_except_last_arg = {cmd_except_last_arg}")
     completions = []
 
-    cmd_options = get_options(cmd)
-    for option in cmd_options:
-        if not last_arg or option.startswith(last_arg):
-            completions.append(option + " ")
+    if not shell:
+        cmd_options = get_options(cmd)
+        for option in cmd_options:
+            if not last_arg or option.startswith(last_arg):
+                completions.append(option + " ")
 
-    if len(words) >= 2:
+    if shell or len(words) >= 2:
         # Argument for an option
-        filenames = get_filenames(prefix=last_arg)
+        filenames = get_filenames(prefix=last_arg, fan_only=not shell)
         for filename in filenames:
             if filename.endswith(os.sep):
                 completions.append(filename)
@@ -786,6 +786,12 @@ def shell_command(args):
             continue
         except EOFError:
             break
+
+        if command_line.startswith("!"):
+            # Shell escape
+            LOGGER.debug(command_line)
+            os.system(command_line[1:])
+            continue
 
         command = None
         try:
