@@ -380,7 +380,7 @@ class SearchProcessor(FandangoParserVisitor):
                 int(ctx.NUMBER(2).getText()) if ctx.NUMBER(2) else None,
             )
         else:
-            return int(ctx.NUMBER().getText())
+            return int(ctx.NUMBER(0).getText())
 
     def visitRs_slices(self, ctx: FandangoParser.Rs_slicesContext):
         return [self.visitRs_slice(child) for child in ctx.rs_slice()]
