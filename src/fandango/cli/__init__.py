@@ -531,7 +531,7 @@ def fuzz_command(args):
         grammar, constraints = parse_fan_contents(args)
     else:
         grammar = DEFAULT_FAN_CONTENT[0]
-        constraints = DEFAULT_FAN_CONTENT[1].copy()
+        constraints = DEFAULT_FAN_CONTENT[1]
 
     if grammar is None:
         print("fuzz: Use -f to specify a .fan file", file=sys.stderr)
@@ -539,6 +539,9 @@ def fuzz_command(args):
 
     if DEFAULT_CONSTRAINTS:
         constraints += DEFAULT_CONSTRAINTS
+
+    # Avoid messing with default constraints
+    constraints = constraints.copy()
 
     if args.constraints:
         # Add given constraints
@@ -760,7 +763,7 @@ def shell_command(args):
     readline.parse_and_bind("tab: complete")  # Linux
     readline.parse_and_bind("bind '\t' rl_complete")  # Mac
 
-    print("Welcome to Fandango", importlib.metadata.version("fandango"))
+    print("Fandango", importlib.metadata.version("fandango"))
     print("Enter a command, 'help', or 'exit'.")
 
     while True:
