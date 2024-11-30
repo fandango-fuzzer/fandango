@@ -589,6 +589,8 @@ COMMANDS = {
     "help": help_command,
 }
 
+MATCHES = []
+
 def shell_command(args):
     """(New) interactive mode"""
     def _read_history():
@@ -602,48 +604,26 @@ def shell_command(args):
 
     def _complete(text, state):
         # print("Completing", repr(text), repr(state), COMMANDS)
+        global MATCHES
         if state == 0:  # first trigger
             if text:
-                matches = [
+                MATCHES = [
                     s + " " for s in COMMANDS if s and s.startswith(text)
                 ]
             else:
-                matches = COMMANDS
+                # No text entered, all matches possible
+                MATCHES = [s for s in COMMANDS.keys()]
 
         try:
-            return matches[state]
+            return MATCHES[state]
         except IndexError:
             return None
-
-    def _display_matches(self, substitution, matches, longest_match_length):
-        line_buffer = readline.get_line_buffer()
-        columns = environ.get("COLUMNS", 80)
-
-        print()
-
-        tpl = "{:<" + str(int(max(map(len, matches)) * 1.2)) + "}"
-
-        buffer = ""
-        for match in matches:
-            match = tpl.format(match[len(substitution) :])
-            if len(buffer + match) > columns:
-                print(buffer)
-                buffer = ""
-            buffer += match
-
-        if buffer:
-            print(buffer)
-
-        print("> ", end="")
-        print(line_buffer, end="")
-        sys.stdout.flush()
 
     _read_history()
     readline.set_completer_delims(" \t\n;")
     readline.set_completer(_complete)
     readline.parse_and_bind("tab: complete")  # Linux
     readline.parse_and_bind("bind '\t' rl_complete")  # Mac
-    readline.set_completion_display_matches_hook(_display_matches)
 
     print("Fandango", importlib.metadata.version("fandango"))
     print("Enter a command, 'help', or 'exit'")
