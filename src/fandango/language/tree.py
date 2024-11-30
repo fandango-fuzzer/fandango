@@ -57,6 +57,8 @@ class DerivationTree:
     def __getitem__(
         self, item, as_list=False
     ) -> Union["DerivationTree", List["DerivationTree"]]:
+        if isinstance(item, list) and len(item) == 1:
+            item = item[0]
         items = self._children.__getitem__(item)
         if as_list and not isinstance(items, list):
             items = [items]
