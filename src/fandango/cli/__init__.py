@@ -54,7 +54,9 @@ def get_parser(in_command_line=True):
         prog = ""
         epilog = """
             Use `help` to get a list of commands.
-            Use `help COMMAND` to learn more about COMMAND."""
+            Use `help COMMAND` to learn more about COMMAND.
+            Use TAB to complete commands.
+            """
 
     main_parser = argparse.ArgumentParser(
         prog=prog,
@@ -486,10 +488,10 @@ def set_command(args):
     # Report current settings
     if DEFAULT_CONSTRAINTS:
         for constraint in DEFAULT_CONSTRAINTS:
-            print("Constraint", constraint)
+            print(constraint)
     if DEFAULT_SETTINGS:
         for setting in DEFAULT_SETTINGS:
-            print("Setting", setting, "=", DEFAULT_SETTINGS[setting])
+            print(setting, "=", DEFAULT_SETTINGS[setting])
 
 
 def reset_command(args):
@@ -639,8 +641,6 @@ def get_filenames(prefix = ""):
 
     return filenames
 
-# print(get_filenames("docs/per"))
-
 
 def complete(text):
     """Return possible completions for TEXT"""
@@ -673,17 +673,16 @@ def complete(text):
     cmd_options = get_options(cmd)
     for option in cmd_options:
         if not last_arg or option.startswith(last_arg):
-            completion = cmd_except_last_arg + " " + option + " "
-            completions.append(completion)
+            completions.append(option + " ")
 
     if len(words) >= 2:
         # Argument for an option
         filenames = get_filenames(prefix=last_arg)
         for filename in filenames:
-            completion = cmd_except_last_arg + " " + filename
-            if not filename.endswith(os.sep):
-                completion += " "
-            completions.append(completion)
+            if filename.endswith(os.sep):
+                completions.append(filename)
+            else:
+                completions.append(filename + " ")
 
     if completions:
         # Command plus beginning of options entered
@@ -702,6 +701,8 @@ MATCHES = []
 
 def shell_command(args):
     """(New) interactive mode"""
+
+    PROMPT = "(fandango)"
     def _read_history():
         histfile = os.path.join(os.path.expanduser("~"), ".fandango_history")
         try:
@@ -712,27 +713,27 @@ def shell_command(args):
         atexit.register(readline.write_history_file, histfile)
 
     def _complete(text, state):
-        # print("Completing", repr(text), repr(state), COMMANDS)
         global MATCHES
         if state == 0:  # first trigger
-            MATCHES = complete(text)
+            buffer = readline.get_line_buffer()[:readline.get_endidx()]
+            MATCHES = complete(buffer)
         try:
             return MATCHES[state]
         except IndexError:
             return None
 
     _read_history()
-    readline.set_completer_delims("\n;")
+    readline.set_completer_delims(" \t\n;")
     readline.set_completer(_complete)
     readline.parse_and_bind("tab: complete")  # Linux
     readline.parse_and_bind("bind '\t' rl_complete")  # Mac
 
     print("Welcome to Fandango", importlib.metadata.version("fandango"))
-    print("Enter a command, 'help', or 'exit'. Use TAB to complete commands.")
+    print("Enter a command, 'help', or 'exit'.")
 
     while True:
         try:
-            command_line = input("(fandango) ").lstrip()
+            command_line = input(PROMPT + " ").lstrip()
         except KeyboardInterrupt:
             print("\nEnter a command, 'help', or 'exit'")
             continue
