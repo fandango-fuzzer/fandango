@@ -88,47 +88,48 @@ def get_parser():
         "--max-generations",
         type=int,
         help="the maximum number of generations to run the algorithm",
-        default=500,
+        default=None,
     )
     settings_group.add_argument(
-        "--population-size", type=int, help="the size of the population", default=100
+        "--population-size", type=int, help="the size of the population", default=None
     )
     settings_group.add_argument(
         "--elitism-rate",
         type=float,
         help="the rate of individuals preserved in the next generation",
-        default=0.1,
+        default=None,
     )
     settings_group.add_argument(
         "--crossover-rate",
         type=float,
         help="the rate of individuals that will undergo crossover",
-        default=0.8,
+        default=None,
     )
     settings_group.add_argument(
         "--mutation-rate",
         type=float,
         help="the rate of individuals that will undergo mutation",
-        default=0.1,
+        default=None,
     )
     settings_group.add_argument(
         "-n",
         "--num-outputs",
         type=int,
         help="the number of outputs to produce (default: 100)",
-        default=100,
+        default=None,
     )
     settings_group.add_argument(
         "-S",
         "--start-symbol",
         type=str,
         help="the grammar start symbol (default: `start`)",
-        default="start",
+        default=None,
     )
     settings_group.add_argument(
         "--warnings-are-errors",
-        dest="warn",
-        action="store_true"
+        dest="warnings_are_errors",
+        action="store_true",
+        default=None,
     )
 
     # Shared file options
@@ -188,8 +189,9 @@ def get_parser():
     )
     fuzz_parser.add_argument(
         '--best-effort',
-        dest="effort",
-        action="store_true"
+        dest="best_effort",
+        action="store_true",
+        default=None,
     )
 
     command_group = fuzz_parser.add_argument_group("command invocation settings")
@@ -360,28 +362,44 @@ def parse_fan_contents(args):
     return grammar, constraints
 
 
+def make_fandango_settings(args, initial_settings={}):
+    """Create keyword settings for Fandango() constructor"""
+    settings = initial_settings.copy()
+    if args.population_size is not None:
+        settings['population_size'] = args.population_size
+    if args.num_outputs is not None:
+        settings['desired_solutions'] = args.num_outputs
+    if args.mutation_rate is not None:
+        settings['mutation_rate'] = args.mutation_rate
+    if args.crossover_rate is not None:
+        settings['crossover_rate'] = args.crossover_rate
+    if args.max_generations is not None:
+        settings['max_generations'] = args.max_generations
+    if args.elitism_rate is not None:
+        settings['elitism_rate'] = args.elitism_rate
+    if args.warnings_are_errors is not None:
+        settings['warnings_are_errors'] = args.warnings_are_errors
+    if args.best_effort is not None:
+        settings['best_effort'] = args.best_effort
+    if args.start_symbol is not None:
+        if args.start_symbol.startswith("<"):
+            start_symbol = args.start_symbol
+        else:
+            start_symbol = f"<{args.start_symbol}>"
+        settings['start_symbol'] = start_symbol
+
+    return settings
+
+
 def fuzz(args):
     LOGGER.info("---------- Parsing FANDANGO content ----------")
     grammar, constraints = parse_fan_contents(args)
 
     LOGGER.debug("Starting Fandango")
-    if args.start_symbol.startswith("<"):
-        start_symbol = args.start_symbol
-    else:
-        start_symbol = f"<{args.start_symbol}>"
-    fandango = Fandango(
-        grammar=grammar,
-        constraints=constraints,
-        population_size=max(args.population_size, args.num_outputs),
-        desired_solutions=args.num_outputs,
-        mutation_rate=args.mutation_rate,
-        crossover_rate=args.crossover_rate,
-        max_generations=args.max_generations,
-        elitism_rate=args.elitism_rate,
-        start_symbol=start_symbol,
-        warnings_are_errors=args.warn,
-        best_effort=args.effort
-    )
+    settings = make_fandango_settings(args)
+
+    LOGGER.debug(f"Settings: {settings}")
+    fandango = Fandango(grammar, constraints, **settings)
 
     LOGGER.debug("Evolving population")
     population = fandango.evolve()
