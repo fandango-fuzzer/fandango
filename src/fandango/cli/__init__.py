@@ -497,13 +497,21 @@ def set_command(args):
     for setting in settings:
         DEFAULT_SETTINGS[setting] = settings[setting]
 
-    # Report current settings
+    if not args.fan_files and not args.constraints and not settings:
+        # Report current settings
+        grammar, constraints = DEFAULT_FAN_CONTENT
+        if grammar:
+            print(grammar)
+        if constraints:
+            for constraint in constraints:
+                print(str(constraint) + ";")
+
     if DEFAULT_CONSTRAINTS:
         for constraint in DEFAULT_CONSTRAINTS:
-            print(constraint)
+            print(str(constraint) + ";  # set by user")
     if DEFAULT_SETTINGS:
         for setting in DEFAULT_SETTINGS:
-            print(setting, "=", DEFAULT_SETTINGS[setting])
+            print("#", setting, "=", DEFAULT_SETTINGS[setting])
 
 
 def reset_command(args):
@@ -522,7 +530,8 @@ def fuzz_command(args):
         # Override given default content (if any)
         grammar, constraints = parse_fan_contents(args)
     else:
-        grammar, constraints = DEFAULT_FAN_CONTENT
+        grammar = DEFAULT_FAN_CONTENT[0]
+        constraints = DEFAULT_FAN_CONTENT[1].copy()
 
     if grammar is None:
         print("fuzz: Use -f to specify a .fan file", file=sys.stderr)
@@ -784,6 +793,7 @@ def shell_command(args):
             parser.print_usage()
             continue
 
+        LOGGER.debug(args.command + "(" + str(args) + ")")
         try:
             if args.command == "help":
                 help_command(args, in_command_line=False)
