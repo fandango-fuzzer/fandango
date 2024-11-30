@@ -350,16 +350,22 @@ def help_command(args, **kwargs):
     parser = get_parser(**kwargs)
     parser.exit_on_error = False
 
+    help_issued = False
     for cmd in args.help_command:
         try:
             parser.parse_args([cmd] + ["--help"])
+            help_issued = True
         except SystemExit:
+            help_issued = True
             pass
         except argparse.ArgumentError:
             print("Unknown command:", cmd, file=sys.stderr)
-    else:
+
+    if not help_issued:
         parser.print_help()
 
+def exit_command(args):
+    pass
 
 def merged_fan_contents(args) -> str:
     """Merge all given files and constraints into one; return content"""
@@ -607,6 +613,7 @@ COMMANDS = {
     "fuzz": fuzz_command,
     "interactive": interactive_command,
     "help": help_command,
+    "exit": exit_command,
 }
 
 
@@ -653,19 +660,30 @@ def get_filenames(prefix = ""):
 
 def complete(text):
     """Return possible completions for TEXT"""
-    # print("Completing ", repr(text))
+    LOGGER.debug("Completing " + repr(text))
 
     if not text:
         # No text entered, all commands possible
-        return [s for s in COMMANDS.keys()]
+        completions = [s for s in COMMANDS.keys()]
+        LOGGER.debug("Completions: " + repr(completions))
+        return completions
 
-    commands = [s + " " for s in COMMANDS if s and s.startswith(text)]
-    if commands:
+    completions = []
+    for s in COMMANDS.keys():
+        if s.startswith(text):
+            completions.append(s + " ")
+    if completions:
         # Beginning of command entered
-        return commands
+        LOGGER.debug("Completions: " + repr(completions))
+        return completions
 
+    # Complete command
     words = text.split()
     cmd = words[0]
+
+    if cmd not in COMMANDS.keys():
+        # Unknown command
+        return []
 
     if len(words) == 1 or text.endswith(" "):
         last_arg = ""
@@ -676,7 +694,6 @@ def complete(text):
 
     # print(f"last_arg = {last_arg}")
     # print(f"cmd_except_last_arg = {cmd_except_last_arg}")
-
     completions = []
 
     cmd_options = get_options(cmd)
@@ -693,11 +710,8 @@ def complete(text):
             else:
                 completions.append(filename + " ")
 
-    if completions:
-        # Command plus beginning of options entered
-        return completions
-
-    return None
+    LOGGER.debug("Completions: " + repr(completions))
+    return completions
 
 # print(complete(""))
 # print(complete("set "))
