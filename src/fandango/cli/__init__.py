@@ -766,6 +766,7 @@ def shell_command(args):
 
     print("Fandango", importlib.metadata.version("fandango"))
     print("Enter a command, 'help', or 'exit'.")
+    last_status = 0
 
     while True:
         try:
@@ -782,6 +783,7 @@ def shell_command(args):
         except ValueError as e:
             if isinstance(e.args[0], str):
                 print(e.args[0], file=sys.stderr)
+                last_status = 1
             else:
                 raise e from None
 
@@ -811,9 +813,12 @@ def shell_command(args):
                 help_command(args, in_command_line=False)
             else:
                 command = COMMANDS[args.command]
-                run(command, args)
+                last_status = run(command, args)
         except SystemExit:
             pass
+
+    return last_status
+
 
 def run(command, args):
     try:
@@ -863,12 +868,15 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
 
     if args.command in COMMANDS:
         command = COMMANDS[args.command]
-        run(command, args)
+        last_status = run(command, args)
     elif args.command is None or args.command == 'shell':
-        run(shell_command, args)
+        last_status = run(shell_command, args)
     else:
         parser.print_usage()
+        last_status = 2
+
+    return last_status
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
