@@ -9,6 +9,7 @@ import tempfile
 import readline
 import shlex
 import atexit
+from os import environ
 
 
 from fandango.cli.interactive import Interactive
@@ -141,8 +142,17 @@ def get_parser(in_command_line=True):
         "--warnings-are-errors",
         dest="warnings_are_errors",
         action="store_true",
+        help="treat warnings as errors",
         default=None,
     )
+    settings_group.add_argument(
+        '--best-effort',
+        dest="best_effort",
+        action="store_true",
+        help="produce a 'best effort' population (may not satisfy all constraints)",
+        default=None,
+    )
+
 
     # Shared file options
     file_parser = argparse.ArgumentParser(add_help=False)
@@ -199,12 +209,6 @@ def get_parser(in_command_line=True):
         default=None,
         help="create individual output files in DIRECTORY",
     )
-    fuzz_parser.add_argument(
-        '--best-effort',
-        dest="best_effort",
-        action="store_true",
-        default=None,
-    )
 
     command_group = fuzz_parser.add_argument_group("command invocation settings")
 
@@ -236,12 +240,26 @@ def get_parser(in_command_line=True):
         help="The arguments of the command",
     )
 
+    if not in_command_line:
+        # Set
+        set_parser = commands.add_parser(
+            "set",
+            help="set defaults",
+            parents=[file_parser, settings_parser],
+        )
+
+    if not in_command_line:
+        # Reset
+        set_parser = commands.add_parser(
+            "reset",
+            help="reset defaults",
+        )
+
     if in_command_line:
         # Shell
-        fuzz_parser = commands.add_parser(
+        shell_parser = commands.add_parser(
             "shell",
             help="run an interactive shell (default)",
-            parents=[file_parser, settings_parser],
         )
 
     if in_command_line:
@@ -299,7 +317,7 @@ def get_parser(in_command_line=True):
     return main_parser
 
 
-def interactive(args):
+def interactive_command(args):
     LOGGER.warn("Deprecated. Use the 'shell' command instead.")
     try:
         interactive_ = Interactive(
@@ -313,20 +331,14 @@ def interactive(args):
     interactive_.run()
 
 
-def help(args, in_command_line=False):
-    parser = get_parser(in_command_line)
+def help_command(args, **kwargs):
+    parser = get_parser(**kwargs)
     parser.exit_on_error = False
 
     for cmd in args.help_command:
-        try:
-            parser.parse_args([cmd] + ["--help"])
-        except SystemExit:
-            pass
+        parser.parse_args([cmd] + ["--help"])
     else:
-        try:
-            parser.print_help()
-        except SystemExit:
-            pass
+        parser.print_help()
 
 
 def merged_fan_contents(args) -> str:
@@ -388,6 +400,9 @@ def parse_fan_contents(args):
     """Parse .fan content as given in args"""
     LOGGER.debug("Reading .fan files")
     fan_contents = merged_fan_contents(args)
+    if not fan_contents:
+        return None, None
+
     grammar, constraints = extract_grammar_and_constraints(fan_contents)
     return grammar, constraints
 
@@ -420,25 +435,81 @@ def make_fandango_settings(args, initial_settings={}):
 
     return settings
 
+# Default Fandango file contents; set with `set`
+DEFAULT_FAN = (None, None)
 
-def fuzz(args):
+# Additional Fandango constraints; set with `set`
+DEFAULT_CONSTRAINTS = []
+
+# Default Fandango algorithm settings; set with `set`
+DEFAULT_SETTINGS = {}
+
+def set_command(args):
+    """Set global settings"""
+    LOGGER.info("---------- Parsing FANDANGO content ----------")
+
+    if args.fan_files:
+        global DEFAULT_FAN
+        fan_contents = ""
+        for file in args.fan_files:
+            fan_contents += file.read() + "\n"
+        grammar, constraints = extract_grammar_and_constraints(fan_contents)
+        DEFAULT_FAN = (grammar, constraints)
+
+    if args.constraints:
+        global DEFAULT_CONSTRAINTS
+        fan_contents = ""
+        for constraint in args.constraints:
+            fan_contents += "\n" + constraint + ";\n"
+        _, constraints = extract_grammar_and_constraints(fan_contents)
+        DEFAULT_CONSTRAINTS = constraints
+
+    global DEFAULT_SETTINGS
+    settings = make_fandango_settings(args)
+    for setting in settings:
+        DEFAULT_SETTINGS[setting] = settings[setting]
+
+def reset_command(args):
+    """Reset global settings"""
+    global DEFAULT_SETTINGS
+    DEFAULT_SETTINGS = {}
+
+    global DEFAULT_CONSTRAINTS
+    DEFAULT_CONSTRAINTS = []
+
+def fuzz_command(args):
     """Invoke the fuzzer"""
 
     LOGGER.info("---------- Parsing FANDANGO content ----------")
-    grammar, constraints = parse_fan_contents(args)
+    if args.fan_files:
+        # Override given default content (if any)
+        grammar, constraints = parse_fan_contents(args)
+    else:
+        grammar, constraints = DEFAULT_FAN
+
+    if grammar is None:
+        print("fuzz: Use -f to specify a .fan file", file=sys.stderr)
+        return
+
+    if DEFAULT_CONSTRAINTS:
+        constraints += DEFAULT_CONSTRAINTS
+
+    if args.constraints:
+        # Add given constraints
+        fan_contents = ""
+        for constraint in args.constraints:
+            fan_contents += "\n" + constraint + ";\n"
+        _, extra_constraints = extract_grammar_and_constraints(fan_contents)
+        constraints += extra_constraints
+
+    settings = make_fandango_settings(args, DEFAULT_SETTINGS)
+    LOGGER.debug(f"Settings: {settings}")
 
     LOGGER.debug("Starting Fandango")
-    settings = make_fandango_settings(args)
-
-    LOGGER.debug(f"Settings: {settings}")
     fandango = Fandango(grammar, constraints, **settings)
 
     LOGGER.debug("Evolving population")
     population = fandango.evolve()
-
-    # Not necessary anymore
-    #LOGGER.debug("Reducing population")
-    #population = population[: args.num_outputs]
 
     output_on_stdout = True
 
@@ -500,12 +571,14 @@ def fuzz(args):
             print(individual, end=args.separator)
 
 COMMANDS = {
-    "fuzz": fuzz,
-    "interactive": interactive,
-    "help": help,
+    "set": set_command,
+    "reset": reset_command,
+    "fuzz": fuzz_command,
+    "interactive": interactive_command,
+    "help": help_command,
 }
 
-def shell(args):
+def shell_command(args):
     """(New) interactive mode"""
     def _read_history():
         histfile = os.path.join(os.path.expanduser("~"), ".fandango_history")
@@ -520,14 +593,14 @@ def shell(args):
         # print("Completing", repr(text), repr(state), COMMANDS)
         if state == 0:  # first trigger
             if text:
-                self.matches = [
+                matches = [
                     s + " " for s in COMMANDS if s and s.startswith(text)
                 ]
             else:
-                self.matches = COMMANDS
+                matches = COMMANDS
 
         try:
-            return self.matches[state]
+            return matches[state]
         except IndexError:
             return None
 
@@ -587,14 +660,21 @@ def shell(args):
         except argparse.ArgumentError:
             parser.print_usage()
             continue
+        except SystemExit:
+            continue
 
-        if args.command in COMMANDS:
-            command = COMMANDS[args.command]
-            command(args)
-        else:
+        if args.command not in COMMANDS:
             parser.print_usage()
+            continue
 
-    SHELL = False
+        try:
+            if args.command == "help":
+                help_command(args, in_command_line=False)
+            else:
+                command = COMMANDS[args.command]
+                command(args)
+        except SystemExit:
+            pass
 
 
 def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
@@ -622,7 +702,7 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
         command = COMMANDS[args.command]
         command(args)
     elif args.command is None or args.command == 'shell':
-        shell(args)
+        shell_command(args)
     else:
         parser.print_usage()
 
