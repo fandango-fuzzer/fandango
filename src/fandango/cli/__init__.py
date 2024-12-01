@@ -14,7 +14,7 @@ import glob
 import os.path
 import traceback
 
-
+from pathlib import Path
 from os import environ
 from io import StringIO
 from io import UnsupportedOperation
@@ -264,6 +264,20 @@ def get_parser(in_command_line=True):
         set_parser = commands.add_parser(
             "reset",
             help="reset defaults",
+        )
+
+    if not in_command_line:
+        # cd
+        cd_parser = commands.add_parser(
+            "cd",
+            help="change directory",
+        )
+        cd_parser.add_argument(
+            "directory",
+            type=str,
+            nargs='?',
+            default=None,
+            help="the directory to change into",
         )
 
     if not in_command_line:
@@ -567,6 +581,13 @@ def reset_command(args):
     global DEFAULT_CONSTRAINTS
     DEFAULT_CONSTRAINTS = []
 
+def cd_command(args):
+    """Change current directory"""
+    if args.directory:
+        os.chdir(args.directory)
+    else:
+        os.chdir(Path.home())
+
 def fuzz_command(args):
     """Invoke the fuzzer"""
 
@@ -672,6 +693,7 @@ COMMANDS = {
     "set": set_command,
     "reset": reset_command,
     "fuzz": fuzz_command,
+    "cd": cd_command,
     "interactive": interactive_command,
     "help": help_command,
     "exit": exit_command,
@@ -842,7 +864,7 @@ def shell_command(args):
                 break
         else:
             try:
-                command_line = input()
+                command_line = input().lstrip()
             except EOFError:
                 break
 
