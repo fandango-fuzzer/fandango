@@ -37,7 +37,7 @@ from fandango.language.convert import (
     PythonProcessor,
     ConstraintProcessor,
 )
-from fandango.language.grammar import Grammar
+from fandango.language.grammar import Grammar, NodeType
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 
@@ -434,7 +434,78 @@ class MyErrorListener(ErrorListener):
         raise ParseCancellationException(f"Line %{line}, Column {column}: error: {msg}")
 
 
-def extract_grammar_and_constraints(fan_contents: str, lazy: bool = False):
+def check_grammar(grammar, start_symbol="<start>"):
+    LOGGER.debug("Checking grammar")
+
+    used_symbols = set()
+    undefined_symbols = set()
+    defined_symbols = set()
+
+    if grammar:
+        for symbol in grammar.rules.keys():
+            defined_symbols.add(symbol)
+
+    def collect_used_symbols(tree):
+        if tree.node_type == NodeType.NON_TERMINAL:
+            used_symbols.add(tree.symbol)
+        if tree.node_type == NodeType.REPETITION:
+            collect_used_symbols(tree.node)
+        for child in tree.children():
+            collect_used_symbols(child)
+
+    for tree in grammar.rules.values():
+        collect_used_symbols(tree)
+
+    for symbol in used_symbols:
+        if symbol not in defined_symbols:
+            undefined_symbols.add(symbol)
+
+    for symbol in defined_symbols:
+        if symbol not in used_symbols and str(symbol) != start_symbol:
+            LOGGER.info(f"Symbol {symbol} defined, but not used")
+
+    if undefined_symbols:
+        error = ValueError(f"Undefined symbols {undefined_symbols} in grammar")
+        error.add_note(f"Possible symbols: {defined_symbols}")
+        raise error
+
+
+def check_constraints(constraints, grammar):
+    LOGGER.debug("Checking constraints")
+
+    used_symbols = set()
+    undefined_symbols = set()
+    defined_symbols = set()
+
+    if grammar:
+        for symbol in grammar.rules.keys():
+            defined_symbols.add(str(symbol))
+
+    def collect_used_symbols(constraint):
+        nonlocal used_symbols
+        # FIXME: This should actually traverse the constraint
+        matches = re.findall('<[a-zA-Z0-9_]*>', str(constraint))
+        for match in matches:
+            used_symbols.add(match)
+
+    for constraint in constraints:
+        collect_used_symbols(constraint)
+
+    for symbol in used_symbols:
+        if not symbol in defined_symbols:
+            undefined_symbols.add(symbol)
+
+    if undefined_symbols:
+        error = ValueError(f"Undefined symbols {undefined_symbols} in constraints")
+        error.add_note(f"Possible symbols: {defined_symbols}")
+        raise error
+
+
+
+
+def extract_grammar_and_constraints(fan_contents: str, 
+                                    lazy: bool = False,
+                                    given_grammar = None):
     """Extract grammar and constraints from the given content"""
     # TODO: This should go into a separate module (parser.py maybe?), not here -- AZ
 
@@ -467,6 +538,8 @@ def extract_grammar_and_constraints(fan_contents: str, lazy: bool = False):
     )
     grammar: Grammar = grammar_processor.get_grammar(splitter.productions)
 
+    check_grammar(grammar)
+
     LOGGER.debug("Extracting constraints")
     constraint_processor = ConstraintProcessor(
         grammar,
@@ -475,6 +548,12 @@ def extract_grammar_and_constraints(fan_contents: str, lazy: bool = False):
         lazy=lazy,
     )
     constraints = constraint_processor.get_constraints(splitter.constraints)
+
+    if len(grammar.rules) == 0:
+        # No grammar found; check constraints against given (existing) grammar
+        check_constraints(constraints, given_grammar)
+    else:
+        check_constraints(constraints, grammar)
 
     LOGGER.debug("Parsing complete")
     return grammar, constraints
@@ -550,7 +629,7 @@ def set_command(args):
         fan_contents = ""
         for constraint in args.constraints:
             fan_contents += "\n" + constraint + ";\n"
-        _, constraints = extract_grammar_and_constraints(fan_contents)
+        _, constraints = extract_grammar_and_constraints(fan_contents, given_grammar=DEFAULT_FAN_CONTENT[0])
         DEFAULT_CONSTRAINTS = constraints
 
     settings = make_fandango_settings(args)
