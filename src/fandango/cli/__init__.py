@@ -562,7 +562,9 @@ def set_command(args):
     for setting in settings:
         DEFAULT_SETTINGS[setting] = settings[setting]
 
-    if not args.fan_files and not args.constraints and not settings:
+    no_args = not args.fan_files and not args.constraints and not settings
+
+    if no_args:
         # Report current settings
         grammar, constraints = DEFAULT_FAN_CONTENT
         if grammar:
@@ -571,10 +573,10 @@ def set_command(args):
             for constraint in constraints:
                 print(str(constraint) + ";")
 
-    if DEFAULT_CONSTRAINTS:
+    if no_args or (DEFAULT_CONSTRAINTS and sys.stdin.isatty()):
         for constraint in DEFAULT_CONSTRAINTS:
             print(str(constraint) + ";  # set by user")
-    if DEFAULT_SETTINGS:
+    if no_args or (DEFAULT_SETTINGS and sys.stdin.isatty()):
         for setting in DEFAULT_SETTINGS:
             print(
                 "--" + setting.replace("_", "-") + "=" + str(DEFAULT_SETTINGS[setting])
@@ -596,8 +598,9 @@ def cd_command(args):
         os.chdir(args.directory)
     else:
         os.chdir(Path.home())
-    print(os.getcwd())
 
+    if sys.stdin.isatty():
+        print(os.getcwd())
 
 def fuzz_command(args):
     """Invoke the fuzzer"""
@@ -666,7 +669,6 @@ def fuzz_command(args):
         output_on_stdout = False
 
     if args.test_command:
-        print(args, sys.argv)
         LOGGER.info(f"Running {args.test_command}")
         base_cmd = [args.test_command] + args.test_args
         for individual in population:
