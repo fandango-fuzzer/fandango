@@ -14,7 +14,7 @@ from fandango.constraints.fitness import (
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
-
+from fandango.logger import LOGGER, print_exception
 
 class Value(GeneticBase):
     def __init__(self, expression: str, *args, **kwargs):
@@ -48,8 +48,10 @@ class Value(GeneticBase):
                     values.append(
                         eval(self.expression, self.global_variables, local_variables)
                     )
-                except:
+                except Exception as e:
+                    print_exception(e)
                     values.append(0)
+
             fitness = ValueFitness(
                 values, failing_trees=[FailingTree(t, self) for t in trees]
             )
@@ -115,8 +117,9 @@ class ExpressionConstraint(Constraint):
                         for node in container.get_trees():
                             if node not in failing_trees:
                                 failing_trees.append(node)
-            except:
-                pass
+            except Exception as e:
+                print_exception(e)
+
             total += 1
         if not has_combinations:
             solved += 1
@@ -165,85 +168,90 @@ class ComparisonConstraint(Constraint):
             try:
                 left = eval(self.left, self.global_variables, local_variables)
                 right = eval(self.right, self.global_variables, local_variables)
-                suggestions = []
-                is_solved = False
-                match self.operator:
-                    case Comparison.EQUAL:
-                        if left == right:
-                            is_solved = True
-                        else:
-                            if not self.right.strip().startswith("len("):
-                                suggestions.append(
-                                    (Comparison.EQUAL, left, ComparisonSide.RIGHT)
-                                )
-                            if not self.left.strip().startswith("len("):
-                                suggestions.append(
-                                    (Comparison.EQUAL, right, ComparisonSide.LEFT)
-                                )
-                    case Comparison.NOT_EQUAL:
-                        if left != right:
-                            is_solved = True
-                        else:
-                            suggestions.append(
-                                (Comparison.NOT_EQUAL, left, ComparisonSide.RIGHT)
-                            )
-                            suggestions.append(
-                                (Comparison.NOT_EQUAL, right, ComparisonSide.LEFT)
-                            )
-                    case Comparison.GREATER:
-                        if left > right:
-                            is_solved = True
-                        else:
-                            suggestions.append(
-                                (Comparison.LESS, left, ComparisonSide.RIGHT)
-                            )
-                            suggestions.append(
-                                (Comparison.GREATER, right, ComparisonSide.LEFT)
-                            )
-                    case Comparison.GREATER_EQUAL:
-                        if left >= right:
-                            is_solved = True
-                        else:
-                            suggestions.append(
-                                (Comparison.LESS_EQUAL, left, ComparisonSide.RIGHT)
-                            )
-                            suggestions.append(
-                                (Comparison.GREATER_EQUAL, right, ComparisonSide.LEFT)
-                            )
-                    case Comparison.LESS:
-                        if left < right:
-                            is_solved = True
-                        else:
-                            suggestions.append(
-                                (Comparison.GREATER, left, ComparisonSide.RIGHT)
-                            )
-                            suggestions.append(
-                                (Comparison.LESS, right, ComparisonSide.LEFT)
-                            )
-                    case Comparison.LESS_EQUAL:
-                        if left <= right:
-                            is_solved = True
-                        else:
-                            suggestions.append(
-                                (Comparison.GREATER_EQUAL, left, ComparisonSide.RIGHT)
-                            )
-                            suggestions.append(
-                                (Comparison.LESS_EQUAL, right, ComparisonSide.LEFT)
-                            )
-                if is_solved:
-                    solved += 1
-                else:
-                    for _, container in combination:
-                        for node in container.get_trees():
-                            ft = FailingTree(node, self, suggestions=suggestions)
-                            if ft not in failing_trees:
-                                failing_trees.append(ft)
             except Exception as e:
-                raise e
+                print_exception(e)
+                continue
+
+            suggestions = []
+            is_solved = False
+            match self.operator:
+                case Comparison.EQUAL:
+                    if left == right:
+                        is_solved = True
+                    else:
+                        if not self.right.strip().startswith("len("):
+                            suggestions.append(
+                                (Comparison.EQUAL, left, ComparisonSide.RIGHT)
+                            )
+                        if not self.left.strip().startswith("len("):
+                            suggestions.append(
+                                (Comparison.EQUAL, right, ComparisonSide.LEFT)
+                            )
+                case Comparison.NOT_EQUAL:
+                    if left != right:
+                        is_solved = True
+                    else:
+                        suggestions.append(
+                            (Comparison.NOT_EQUAL, left, ComparisonSide.RIGHT)
+                        )
+                        suggestions.append(
+                            (Comparison.NOT_EQUAL, right, ComparisonSide.LEFT)
+                        )
+                case Comparison.GREATER:
+                    if left > right:
+                        is_solved = True
+                    else:
+                        suggestions.append(
+                            (Comparison.LESS, left, ComparisonSide.RIGHT)
+                        )
+                        suggestions.append(
+                            (Comparison.GREATER, right, ComparisonSide.LEFT)
+                        )
+                case Comparison.GREATER_EQUAL:
+                    if left >= right:
+                        is_solved = True
+                    else:
+                        suggestions.append(
+                            (Comparison.LESS_EQUAL, left, ComparisonSide.RIGHT)
+                        )
+                        suggestions.append(
+                            (Comparison.GREATER_EQUAL, right, ComparisonSide.LEFT)
+                        )
+                case Comparison.LESS:
+                    if left < right:
+                        is_solved = True
+                    else:
+                        suggestions.append(
+                            (Comparison.GREATER, left, ComparisonSide.RIGHT)
+                        )
+                        suggestions.append(
+                            (Comparison.LESS, right, ComparisonSide.LEFT)
+                        )
+                case Comparison.LESS_EQUAL:
+                    if left <= right:
+                        is_solved = True
+                    else:
+                        suggestions.append(
+                            (Comparison.GREATER_EQUAL, left, ComparisonSide.RIGHT)
+                        )
+                        suggestions.append(
+                            (Comparison.LESS_EQUAL, right, ComparisonSide.LEFT)
+                        )
+            if is_solved:
+                solved += 1
+            else:
+                for _, container in combination:
+                    for node in container.get_trees():
+                        ft = FailingTree(node, self, suggestions=suggestions)
+                        if ft not in failing_trees:
+                            failing_trees.append(ft)
+
             total += 1
+
         if not has_combinations:
             solved += 1
             total += 1
+
         fitness = ConstraintFitness(
             solved, total, solved == total, failing_trees=failing_trees
         )
