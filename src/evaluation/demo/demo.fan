@@ -45,9 +45,6 @@ int(<am>) > 0;
 
 ## The sender <start_balance> must be greater than the <amount>.
 
-int(<sender>*<end_bal>) > int(<am>);
+## The sender <start_balance> must be greater than the <amount>.
 
-## The <end_balance> of sender must be equal to the <start_balance> - <amount>.
-
-int(<sender>*<end_bal>) > compute_end_balance_sender(int(<sender>*<st_bal>), int(<am>));
-
+int(<sender>.<end_balance>.<end_bal>) > int(<am>);
