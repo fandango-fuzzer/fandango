@@ -10,8 +10,8 @@ kernelspec:
   name: python3
 ---
 
-(sec:quantors)=
-# Quantors and Paths
+(sec:paths)=
+# Accessing Input Elements
 
 ```{error}
 This chapter is still in construction.

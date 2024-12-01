@@ -15,8 +15,8 @@ parts:
     - file: Constraints
     - file: Shell
     - file: Generators
-    - file: Quantors
     - file: Recursive
+    - file: Paths
     - file: Binary
     - file: Distributions
     - file: Whitebox
