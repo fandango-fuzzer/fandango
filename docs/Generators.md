@@ -268,4 +268,4 @@ To obtain well-distributed numbers from the beginning, use a generator.
 3. If a value to be produced must be _part of a valid input_, it should go into a _constraint_. (Constraints are checked during parsing _and_ production.)
 :::
 
-In the next section, we'll talk about [recursive inputs](sec:recursive).
+In the next section, we'll talk about [quantors and paths](sec:quantors).

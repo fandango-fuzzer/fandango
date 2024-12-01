@@ -405,15 +405,9 @@ class SearchProcessor(FandangoParserVisitor):
     def get_attribute_searches(self, ctx: FandangoParser.SelectorContext):
         search = self.transform_selection(ctx.selection())
 
-        # FIXME: There should be a way to output the location where these occurred - AZ
         if ctx.DOT():
-            LOGGER.warning("<a>.<b> syntax is deprecated, use <a>/<b> instead")
-        if ctx.STAR():
-            LOGGER.warning("<a>*<b> syntax is deprecated, use <a>//<b> instead")
-
-        if ctx.DOT() or ctx.DIV():
             return AttributeSearch(self.get_attribute_searches(ctx.selector()), search)
-        elif ctx.STAR() or ctx.IDIV():
+        elif ctx.DOTDOT():
             return StarAttributeSearch(
                 self.get_attribute_searches(ctx.selector()), search
             )
@@ -1323,7 +1317,9 @@ class PythonProcessor(FandangoParserVisitor):
             elif ctx.single_subscript_attribute_target():
                 left = self.get_expression(ctx.single_subscript_attribute_target())
             else:
-                raise ValueError(f"Unsupported left hand side for assignment {ctx.getText()}")
+                raise ValueError(
+                    f"Unsupported left hand side for assignment {ctx.getText()}"
+                )
             return ast.AnnAssign(
                 target=left,
                 annotation=self.get_expression(ctx.expression()),
@@ -1337,7 +1333,9 @@ class PythonProcessor(FandangoParserVisitor):
             elif ctx.star_expressions():
                 value = self.get_expression(ctx.star_expressions())
             else:
-                raise ValueError(f"Unsupported right hand side for assignment {ctx.getText()}")
+                raise ValueError(
+                    f"Unsupported right hand side for assignment {ctx.getText()}"
+                )
             if ctx.ASSIGN():
                 return ast.Assign(
                     targets=[
@@ -1374,7 +1372,9 @@ class PythonProcessor(FandangoParserVisitor):
             elif aug.IDIV_ASSIGN():
                 op = ast.FloorDiv()
             else:
-                raise ValueError(f"Unsupported operator for augmented assignment: {aug.getText()}")
+                raise ValueError(
+                    f"Unsupported operator for augmented assignment: {aug.getText()}"
+                )
             return ast.AugAssign(
                 target=self.get_expression(ctx.single_target()),
                 op=op,
@@ -1383,7 +1383,9 @@ class PythonProcessor(FandangoParserVisitor):
             )
 
     def visitType_alias(self, ctx: FandangoParser.Type_aliasContext):
-        raise UnsupportedOperation("Type alias currently not supported: {ctx.getText()}")
+        raise UnsupportedOperation(
+            "Type alias currently not supported: {ctx.getText()}"
+        )
 
     def visitReturn_stmt(self, ctx: FandangoParser.Return_stmtContext):
         return ast.Return(value=self.get_expression(ctx.star_expressions()))
@@ -1489,7 +1491,9 @@ class PythonProcessor(FandangoParserVisitor):
         bases = list()
         keywords = list()
         if ctx.type_params():
-            raise UnsupportedOperation(f"Type params unsupported for class definitions {ctx.getText()}")
+            raise UnsupportedOperation(
+                f"Type params unsupported for class definitions {ctx.getText()}"
+            )
         if ctx.arguments():
             base_trees, base_searches, _ = self.search_processor.visitArguments(
                 ctx.arguments()
@@ -1520,7 +1524,9 @@ class PythonProcessor(FandangoParserVisitor):
 
     def visitFunction_def_raw(self, ctx: FandangoParser.Function_def_rawContext):
         if ctx.type_params():
-            raise UnsupportedOperation(f"Type params unsupported for class definitions: {ctx.getText()}")
+            raise UnsupportedOperation(
+                f"Type params unsupported for class definitions: {ctx.getText()}"
+            )
         if ctx.params():
             params = self.visitParams(ctx.params())
         else:
@@ -1693,4 +1699,6 @@ class PythonProcessor(FandangoParserVisitor):
         )
 
     def visitMatch_stmt(self, ctx: FandangoParser.Match_stmtContext):
-        raise UnsupportedOperation(f"Match statement currently not supported: {ctx.getText()}")
+        raise UnsupportedOperation(
+            f"Match statement currently not supported: {ctx.getText()}"
+        )

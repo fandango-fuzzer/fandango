@@ -46,7 +46,6 @@ PARSERS = \
 parser: $(PARSERS)
 
 $(PARSERS) &: $(LEXER_G4) $(PARSER_G4)
-	# $(PYTHON) scripts/update-grammar.py
 	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
 		-visitor -listener $(LEXER_G4) $(PARSER_G4)
 	$(BLACK) src
