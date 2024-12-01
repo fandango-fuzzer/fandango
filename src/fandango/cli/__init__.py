@@ -12,7 +12,6 @@ import atexit
 import re
 import glob
 import os.path
-import traceback
 
 from pathlib import Path
 from os import environ
@@ -21,7 +20,7 @@ from io import UnsupportedOperation
 
 from fandango.cli.interactive import Interactive
 from fandango.constants import INTERACTIVE, FUZZ, HELP
-from fandango.logger import LOGGER
+from fandango.logger import LOGGER, print_exception
 
 import ast
 
@@ -831,14 +830,7 @@ def exec_single(code, _globals={}, _locals={}):
     exec(block, _globals, _locals)
 
 
-def print_exception(e):
-    LOGGER.info(traceback.format_exc().rstrip())
-    if not LOGGER.isEnabledFor(logging.INFO):
-        print(type(e).__name__ + ":", e, file=sys.stderr)
-
-
 MATCHES = []
-
 
 def shell_command(args):
     """(New) interactive mode"""
