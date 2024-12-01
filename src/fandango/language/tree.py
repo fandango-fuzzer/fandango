@@ -260,9 +260,10 @@ class DerivationTree:
         Catch-all: All other attributes and methods apply to the string representation
         """
         if name in str.__dict__:
+
             def fn(*args, **kwargs):
                 return str.__dict__[name](str(self), *args, **kwargs)
+
             return fn
 
         raise AttributeError(f"<{self.symbol}> has no attribute {repr(name)}")
-

@@ -158,13 +158,12 @@ def get_parser(in_command_line=True):
         default=None,
     )
     settings_group.add_argument(
-        '--best-effort',
+        "--best-effort",
         dest="best_effort",
         action="store_true",
         help="produce a 'best effort' population (may not satisfy all constraints)",
         default=None,
     )
-
 
     # Shared file options
     file_parser = argparse.ArgumentParser(add_help=False)
@@ -231,7 +230,8 @@ def get_parser(in_command_line=True):
         help="When invoking COMMAND, choose whether Fandango input will be passed as standard input (`stdin`) or as last argument on the command line (`filename`) (default)",
     )
     command_group.add_argument(
-        "-x", "--filename-extension",
+        "-x",
+        "--filename-extension",
         type=str,
         default=".txt",
         help="Extension of generated file names (default: '.txt')",
@@ -276,7 +276,7 @@ def get_parser(in_command_line=True):
         cd_parser.add_argument(
             "directory",
             type=str,
-            nargs='?',
+            nargs="?",
             default=None,
             help="the directory to change into",
         )
@@ -417,8 +417,10 @@ def help_command(args, **kwargs):
     if not help_issued:
         parser.print_help()
 
+
 def exit_command(args):
     pass
+
 
 def merged_fan_contents(args) -> str:
     """Merge all given files and constraints into one; return content"""
@@ -434,8 +436,8 @@ def merged_fan_contents(args) -> str:
 
 class MyErrorListener(ErrorListener):
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise ParseCancellationException(
-            f"Line %{line}, Column {column}: error: {msg}")
+        raise ParseCancellationException(f"Line %{line}, Column {column}: error: {msg}")
+
 
 def extract_grammar_and_constraints(fan_contents: str, lazy: bool = False):
     """Extract grammar and constraints from the given content"""
@@ -498,29 +500,30 @@ def make_fandango_settings(args, initial_settings={}):
     """Create keyword settings for Fandango() constructor"""
     settings = initial_settings.copy()
     if args.population_size is not None:
-        settings['population_size'] = args.population_size
+        settings["population_size"] = args.population_size
     if args.num_outputs is not None:
-        settings['desired_solutions'] = args.num_outputs
+        settings["desired_solutions"] = args.num_outputs
     if args.mutation_rate is not None:
-        settings['mutation_rate'] = args.mutation_rate
+        settings["mutation_rate"] = args.mutation_rate
     if args.crossover_rate is not None:
-        settings['crossover_rate'] = args.crossover_rate
+        settings["crossover_rate"] = args.crossover_rate
     if args.max_generations is not None:
-        settings['max_generations'] = args.max_generations
+        settings["max_generations"] = args.max_generations
     if args.elitism_rate is not None:
-        settings['elitism_rate'] = args.elitism_rate
+        settings["elitism_rate"] = args.elitism_rate
     if args.warnings_are_errors is not None:
-        settings['warnings_are_errors'] = args.warnings_are_errors
+        settings["warnings_are_errors"] = args.warnings_are_errors
     if args.best_effort is not None:
-        settings['best_effort'] = args.best_effort
+        settings["best_effort"] = args.best_effort
     if args.start_symbol is not None:
         if args.start_symbol.startswith("<"):
             start_symbol = args.start_symbol
         else:
             start_symbol = f"<{args.start_symbol}>"
-        settings['start_symbol'] = start_symbol
+        settings["start_symbol"] = start_symbol
 
     return settings
+
 
 # Default Fandango file content (grammar, constraints); set with `set`
 DEFAULT_FAN_CONTENT = (None, None)
@@ -530,6 +533,7 @@ DEFAULT_CONSTRAINTS = []
 
 # Default Fandango algorithm settings; set with `set`
 DEFAULT_SETTINGS = {}
+
 
 def set_command(args):
     """Set global settings"""
@@ -572,7 +576,10 @@ def set_command(args):
             print(str(constraint) + ";  # set by user")
     if DEFAULT_SETTINGS:
         for setting in DEFAULT_SETTINGS:
-            print("--" + setting.replace('_', '-') + "=" + str(DEFAULT_SETTINGS[setting]))
+            print(
+                "--" + setting.replace("_", "-") + "=" + str(DEFAULT_SETTINGS[setting])
+            )
+
 
 def reset_command(args):
     """Reset global settings"""
@@ -582,6 +589,7 @@ def reset_command(args):
     global DEFAULT_CONSTRAINTS
     DEFAULT_CONSTRAINTS = []
 
+
 def cd_command(args):
     """Change current directory"""
     if args.directory:
@@ -589,6 +597,7 @@ def cd_command(args):
     else:
         os.chdir(Path.home())
     print(os.getcwd())
+
 
 def fuzz_command(args):
     """Invoke the fuzzer"""
@@ -662,11 +671,11 @@ def fuzz_command(args):
         base_cmd = [args.test_command] + args.test_args
         for individual in population:
             if args.input_method == "filename":
-                prefix = 'fandango-'
+                prefix = "fandango-"
                 suffix = args.filename_extension
-                with tempfile.NamedTemporaryFile(mode="w",
-                                                 prefix=prefix,
-                                                 suffix=suffix) as fd:
+                with tempfile.NamedTemporaryFile(
+                    mode="w", prefix=prefix, suffix=suffix
+                ) as fd:
                     fd.write(str(individual))
                     fd.flush()
                     cmd = base_cmd + [fd.name]
@@ -687,9 +696,11 @@ def fuzz_command(args):
         for individual in population:
             print(individual, end=args.separator)
 
+
 def nop_command(args):
     # Dummy command such that we can list ! and / as commands. Never executed.
     pass
+
 
 COMMANDS = {
     "set": set_command,
@@ -719,28 +730,32 @@ def get_help(cmd):
     sys.stdout = old_stdout
     return mystdout.getvalue()
 
+
 def get_options(cmd):
     """Return all --options for CMD"""
-    if cmd == 'help':
+    if cmd == "help":
         return COMMANDS.keys()
 
     help = get_help(cmd)
     options = []
-    for option in re.findall(r'--?[a-zA-Z0-9_-]*', help):
+    for option in re.findall(r"--?[a-zA-Z0-9_-]*", help):
         if option not in options:
             options.append(option)
     return options
 
-def get_filenames(prefix = "", fan_only=True):
+
+def get_filenames(prefix="", fan_only=True):
     """Return all files that match PREFIX"""
     filenames = []
     all_filenames = glob.glob(prefix + "*")
     for filename in all_filenames:
         if os.path.isdir(filename):
             filenames.append(filename + os.sep)
-        elif (not fan_only or
-              filename.lower().endswith(".fan") or 
-              filename.lower().endswith(".py")):
+        elif (
+            not fan_only
+            or filename.lower().endswith(".fan")
+            or filename.lower().endswith(".py")
+        ):
             filenames.append(filename)
 
     return filenames
@@ -800,6 +815,7 @@ def complete(text):
     LOGGER.debug("Completions: " + repr(completions))
     return completions
 
+
 # print(complete(""))
 # print(complete("set "))
 # print(complete("set -"))
@@ -809,8 +825,9 @@ def complete(text):
 
 def exec_single(code, _globals={}, _locals={}):
     """Execute CODE in 'single' mode, printing out results if any"""
-    block = compile(code, "<input>", mode='single')
+    block = compile(code, "<input>", mode="single")
     exec(block, _globals, _locals)
+
 
 def print_exception(e):
     LOGGER.info(traceback.format_exc().rstrip())
@@ -820,10 +837,12 @@ def print_exception(e):
 
 MATCHES = []
 
+
 def shell_command(args):
     """(New) interactive mode"""
 
     PROMPT = "(fandango)"
+
     def _read_history():
         histfile = os.path.join(os.path.expanduser("~"), ".fandango_history")
         try:
@@ -836,7 +855,7 @@ def shell_command(args):
     def _complete(text, state):
         global MATCHES
         if state == 0:  # first trigger
-            buffer = readline.get_line_buffer()[:readline.get_endidx()]
+            buffer = readline.get_line_buffer()[: readline.get_endidx()]
             MATCHES = complete(buffer)
         try:
             return MATCHES[state]
@@ -876,7 +895,9 @@ def shell_command(args):
             if sys.stdin.isatty():
                 os.system(command_line[1:])
             else:
-                raise ValueError("Shell escape (`!`) is only available in interactive mode")
+                raise ValueError(
+                    "Shell escape (`!`) is only available in interactive mode"
+                )
             continue
 
         if command_line.startswith("/"):
@@ -888,7 +909,9 @@ def shell_command(args):
                 except Exception as e:
                     print_exception(e)
             else:
-                raise ValueError("Python escape (`/`) is only available in interactive mode")
+                raise ValueError(
+                    "Python escape (`/`) is only available in interactive mode"
+                )
             continue
 
         command = None
@@ -930,6 +953,7 @@ def shell_command(args):
 
     return last_status
 
+
 def run(command, args):
     try:
         command(args)
@@ -952,6 +976,7 @@ def run(command, args):
         return 1
 
     return 0
+
 
 def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
     if "-O" in sys.argv:
@@ -977,7 +1002,7 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
     if args.command in COMMANDS:
         command = COMMANDS[args.command]
         last_status = run(command, args)
-    elif args.command is None or args.command == 'shell':
+    elif args.command is None or args.command == "shell":
         last_status = run(shell_command, args)
     else:
         parser.print_usage()

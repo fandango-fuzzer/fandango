@@ -124,10 +124,8 @@ selector_length
 
 selector:
     selection
-    | selector '/' selection
-    | selector '.' selection  // deprecated
-    | selector '//' selection
-    | selector '*' selection  // deprecated
+    | selector '.' selection
+    | selector '..' selection
     ;
 
 selection
