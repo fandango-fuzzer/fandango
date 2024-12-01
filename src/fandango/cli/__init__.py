@@ -690,6 +690,7 @@ def cd_command(args):
         print(os.getcwd())
 
 
+
 def fuzz_command(args):
     """Invoke the fuzzer"""
 
