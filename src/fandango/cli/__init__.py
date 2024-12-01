@@ -14,6 +14,7 @@ import glob
 import os.path
 import traceback
 
+
 from os import environ
 from io import StringIO
 from io import UnsupportedOperation
@@ -283,7 +284,10 @@ def get_parser(in_command_line=True):
         # Interactive
         interactive_parser = commands.add_parser(
             INTERACTIVE,
-            help="open the interactive command line interface (deprecated)",
+            help="""
+            open the interactive command line interface
+            (deprecated, use `shell` instead)
+            """,
         )
         interactive_parser.add_argument(
             "-f",
@@ -316,6 +320,37 @@ def get_parser(in_command_line=True):
             dest="python",
             default=None,
             help="the Python code to use in the interactive mode",
+        )
+
+    if not in_command_line:
+        # Shell escape
+        # Not processed by argparse,
+        # but we have it here so that it is listed in help
+        shell_parser = commands.add_parser(
+            "!",
+            help="execute shell command",
+        )
+        shell_parser.add_argument(
+            dest="shell_command",
+            metavar="command",
+            nargs=argparse.REMAINDER,
+            default=None,
+            help="the shell command to execute",
+        )
+
+        # Python escape
+        # Not processed by argparse,
+        # but we have it here so that it is listed in help
+        python_parser = commands.add_parser(
+            "/",
+            help="execute Python command",
+        )
+        python_parser.add_argument(
+            dest="python_command",
+            metavar="command",
+            nargs=argparse.REMAINDER,
+            default=None,
+            help="the Python command to execute",
         )
 
     # Help
@@ -630,6 +665,10 @@ def fuzz_command(args):
         for individual in population:
             print(individual, end=args.separator)
 
+def nop_command(args):
+    # Dummy command such that we can list ! and / as commands. Never executed.
+    pass
+
 COMMANDS = {
     "set": set_command,
     "reset": reset_command,
@@ -637,6 +676,8 @@ COMMANDS = {
     "interactive": interactive_command,
     "help": help_command,
     "exit": exit_command,
+    "!": nop_command,
+    "/": nop_command,
 }
 
 
@@ -704,7 +745,7 @@ def complete(text):
     # Complete command
     words = text.split()
     cmd = words[0]
-    shell = cmd.startswith("!")
+    shell = cmd.startswith("!") or cmd.startswith("/")
 
     if not shell and cmd not in COMMANDS.keys():
         # Unknown command
@@ -741,6 +782,17 @@ def complete(text):
 # print(complete("set -"))
 # print(complete("set -f "))
 # print(complete("set -f do"))
+
+
+def exec_single(code, _globals={}, _locals={}):
+    """Execute CODE in 'single' mode, printing out results if any"""
+    block = compile(code, "<input>", mode='single')
+    exec(block, _globals, _locals)
+
+def print_exception(e):
+    LOGGER.info(traceback.format_exc().rstrip())
+    if not LOGGER.isEnabledFor(logging.INFO):
+        print(type(e).__name__ + ":", e, file=sys.stderr)
 
 
 MATCHES = []
@@ -793,15 +845,21 @@ def shell_command(args):
             os.system(command_line[1:])
             continue
 
+        if command_line.startswith("/"):
+            # Python escape
+            LOGGER.debug(command_line)
+            try:
+                exec_single(command_line[1:].lstrip(), globals())
+            except Exception as e:
+                print_exception(e)
+            continue
+
         command = None
         try:
             command = shlex.split(command_line, comments=True)
-        except ValueError as e:
-            if isinstance(e.args[0], str):
-                print(e.args[0], file=sys.stderr)
-                last_status = 1
-            else:
-                raise e from None
+        except Exception as e:
+            print_exception(e)
+            continue
 
         if not command:
             continue
@@ -835,33 +893,25 @@ def shell_command(args):
 
     return last_status
 
-
 def run(command, args):
     try:
         command(args)
     except ParseCancellationException as e:
-        LOGGER.debug(traceback.format_exc())
         # ANTLR already prints out the error message
+        print_exception(e)
         print("Syntax error", file=sys.stderr)
         return 1
 
     except ValueError as e:
-        LOGGER.debug(traceback.format_exc())
-        if isinstance(e.args[0], str):
-            print("Error:", e.args[0], file=sys.stderr)
-            return 1
-        raise e from None
+        print_exception(e)
+        return 1
 
     except UnsupportedOperation as e:
-        LOGGER.debug(traceback.format_exc())
-        if isinstance(e.args[0], str):
-            print("Not supported:", e.args[0], file=sys.stderr)
-            return 1
-        raise e from None
+        print_exception(e)
+        return 1
 
     except Exception as e:
-        LOGGER.debug(traceback.format_exc())
-        print("Error:", e, file=sys.stderr)
+        print_exception(e)
         return 1
 
     return 0
