@@ -557,8 +557,7 @@ def set_command(args):
             print(str(constraint) + ";  # set by user")
     if DEFAULT_SETTINGS:
         for setting in DEFAULT_SETTINGS:
-            print("#", setting, "=", DEFAULT_SETTINGS[setting])
-
+            print("--" + setting.replace('_', '-') + "=" + str(DEFAULT_SETTINGS[setting]))
 
 def reset_command(args):
     """Reset global settings"""
