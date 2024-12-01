@@ -26,15 +26,19 @@ Fandango offers a few mechanisms to disambiguate these, and to specify specific 
 ```{code-cell}
 
 from graphviz import Digraph
+from IPython.display import display_svg, display_png
 
 # import os
 # os.chdir('../src')
 # from fandango.language.tree import DerivationTree
 
-def visualize(root, title="A Tree"):
-    dot = Digraph(comment=title)
-    dot.attr('node', shape='record', fontname='monospaced')
+def visualize(root, title="Derivation Tree"):
+    """Display root as a PNG"""
+    # https://graphviz.org/doc/info/lang.html
+    dot = Digraph(comment=title, format='png')  # PNG works with HTML and PDF
+    dot.attr('node', shape='none', fontname='courier-bold', fontsize='18pt')
     dot.attr('graph', rankdir='TB', tooltip=title)
+    dot.attr('edge', penwidth='2pt')
 
     id_counter = 1
 
@@ -43,9 +47,16 @@ def visualize(root, title="A Tree"):
         name = f"node-{id_counter}"
         id_counter += 1
         label = tree.symbol
+
+        # https://graphviz.org/doc/info/colors.html
+        if tree.symbol.startswith('<'):
+            color = 'firebrick'
+        else:
+            color = 'darkblue'
+
         label = label.replace('<', '\\<')
         label = label.replace('>', '\\>')
-        dot.node(name, label)
+        dot.node(name, label, fontcolor=color)
 
         for child in tree.children():
             child_name = _visualize(child)
@@ -54,7 +65,7 @@ def visualize(root, title="A Tree"):
         return name
 
     _visualize(root)
-    return dot
+    display_png(dot)
 ```
 
 ```{code-cell}
@@ -67,14 +78,13 @@ class Tree:
 ```
 
 ```{code-cell}
-tree = Tree("<foo>", Tree("<bar>"), Tree("<baz>"))
+tree = Tree('<foo>', Tree('"bar"'), Tree('<baz>', Tree('"qux"')))
 visualize(tree)
 ```
 
 ```{error}
 (Introduce derivation trees)
 ```
-% TODO: Use ASCII art? Dot? Implement this for DerivationTree!
 
 
 ## Specifying Paths
