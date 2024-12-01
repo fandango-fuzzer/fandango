@@ -819,38 +819,52 @@ def shell_command(args):
         except IndexError:
             return None
 
-    _read_history()
-    readline.set_completer_delims(" \t\n;")
-    readline.set_completer(_complete)
-    readline.parse_and_bind("tab: complete")  # Linux
-    readline.parse_and_bind("bind '\t' rl_complete")  # Mac
+    if sys.stdin.isatty():
+        _read_history()
+        readline.set_completer_delims(" \t\n;")
+        readline.set_completer(_complete)
+        readline.parse_and_bind("tab: complete")  # Linux
+        readline.parse_and_bind("bind '\t' rl_complete")  # Mac
 
-    print("Fandango", importlib.metadata.version("fandango"))
-    print("Enter a command, 'help', or 'exit'.")
+        print("Fandango", importlib.metadata.version("fandango"))
+        print("Enter a command, 'help', or 'exit'.")
+
     last_status = 0
 
     while True:
-        try:
-            command_line = input(PROMPT + " ").lstrip()
-        except KeyboardInterrupt:
-            print("\nEnter a command, 'help', or 'exit'")
-            continue
-        except EOFError:
-            break
+        if sys.stdin.isatty():
+            try:
+                command_line = input(PROMPT + " ").lstrip()
+            except KeyboardInterrupt:
+                print("\nEnter a command, 'help', or 'exit'")
+                continue
+            except EOFError:
+                break
+        else:
+            try:
+                command_line = input()
+            except EOFError:
+                break
 
         if command_line.startswith("!"):
             # Shell escape
             LOGGER.debug(command_line)
-            os.system(command_line[1:])
+            if sys.stdin.isatty():
+                os.system(command_line[1:])
+            else:
+                raise ValueError("Shell escape (`!`) is only available in interactive mode")
             continue
 
         if command_line.startswith("/"):
             # Python escape
             LOGGER.debug(command_line)
-            try:
-                exec_single(command_line[1:].lstrip(), globals())
-            except Exception as e:
-                print_exception(e)
+            if sys.stdin.isatty():
+                try:
+                    exec_single(command_line[1:].lstrip(), globals())
+                except Exception as e:
+                    print_exception(e)
+            else:
+                raise ValueError("Python escape (`/`) is only available in interactive mode")
             continue
 
         command = None
