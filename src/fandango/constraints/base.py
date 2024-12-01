@@ -49,6 +49,7 @@ class Value(GeneticBase):
                         eval(self.expression, self.global_variables, local_variables)
                     )
                 except Exception as e:
+                    e.add_note("Evaluation failed: " + self.expression)
                     print_exception(e)
                     values.append(0)
 
@@ -118,6 +119,7 @@ class ExpressionConstraint(Constraint):
                             if node not in failing_trees:
                                 failing_trees.append(node)
             except Exception as e:
+                e.add_note("Evaluation failed: " + self.expression)
                 print_exception(e)
 
             total += 1
@@ -167,8 +169,15 @@ class ComparisonConstraint(Constraint):
             )
             try:
                 left = eval(self.left, self.global_variables, local_variables)
+            except Exception as e:
+                e.add_note("Evaluation failed: " + self.left)
+                print_exception(e)
+                continue
+
+            try:
                 right = eval(self.right, self.global_variables, local_variables)
             except Exception as e:
+                e.add_note("Evaluation failed: " + self.right)
                 print_exception(e)
                 continue
 
