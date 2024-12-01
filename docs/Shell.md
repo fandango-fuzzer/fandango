@@ -18,7 +18,12 @@ Sometimes, you may find cumbersome to invoke Fandango from the command line agai
 * You want to explore the effects of different constraints.
 * You want to explore the effects of different algorithm settings.
 
-This is why Fandango offers a _shell_, in which you can enter commands directly at a Fandango prompt, and in which settings are preserved during your session.
+This is why Fandango offers a _shell_, in which
+
+* you can enter commands directly at a Fandango prompt
+* you can set and edit parameters _once_ for future commands
+* settings are preserved during your session
+* your command history is preserved across sessions.
 
 
 ## Invoking the Fandango Shell
@@ -62,7 +67,7 @@ There is an important advantage though: You can set (and edit) a _common environ
 
 ## Setting a Common Environment
 
-The `set` command (available only at the `(fandango)` prompt) allows you to specify resources and settings that are then applied to all later commands (notably, `fuzz`).
+The `set` command (available only in the Fandango shell) allows you to specify resources and settings that are then applied to all later commands (notably, `fuzz`).
 
 You can, for instance, specify a `.fan` file with
 
@@ -75,18 +80,18 @@ A big advantage of the `set` command is that the `.fan` file is read only _once_
 and then available for all later commands.
 :::
 
-After this is set, you can omit it from later `fuzz` commands:
+After options for resources and settings are set, you can omit them from later `fuzz` commands:
 
 ```
 (fandango) fuzz
 ```
 
 :::{note}
-If you give `fuzz` additional options, these _override_ the settings with `set`.
-As an exception, constraints are _added_ to those already set.
+If you give `fuzz` additional options, these temporarily _override_ the settings given with `set` earlier.
+As an exception, _constraints_ (`-c`) are _added_ to those already set.
 :::
 
-The options for the `set` command are roughly the same as for the `fuzz` command:
+The options for the `set` command are roughly the same as for the `fuzz` command and include
 
 * `.fan` files (`set -f FILE`)
 * constraints (`set -c CONSTRAINT`)
