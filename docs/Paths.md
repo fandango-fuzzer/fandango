@@ -23,63 +23,63 @@ Fandango offers a few mechanisms to disambiguate these, and to specify specific 
 
 ## Derivation Trees
 
-```{code-cell}
+% Could also compute and display derivation trees on the fly:
+% import os
+% os.chdir('../src')
+% from fandango.language.tree import DerivationTree
 
+
+```{code-cell}
 from graphviz import Digraph
 from IPython.display import display_svg, display_png
 
-# import os
-# os.chdir('../src')
-# from fandango.language.tree import DerivationTree
-
-def visualize(root, title="Derivation Tree"):
-    """Display root as a PNG"""
-    # https://graphviz.org/doc/info/lang.html
-    dot = Digraph(comment=title, format='png')  # PNG works with HTML and PDF
-    dot.attr('node', shape='none', fontname='courier-bold', fontsize='18pt')
-    dot.attr('graph', rankdir='TB', tooltip=title)
-    dot.attr('edge', penwidth='2pt')
-
+class Tree:
     id_counter = 1
+    dot = None
 
-    def _visualize(tree):
-        nonlocal id_counter
-        name = f"node-{id_counter}"
-        id_counter += 1
-        label = tree.symbol
+    def __init__(self, symbol, *children):
+        self.symbol = symbol
+        self._children = children
+
+    def children(self):
+        return self._children
+
+    def visualize(self, title="Derivation Tree"):
+        """Display as PNG. (PNG works with HTML and PDF books, SVG does not)"""
+        # https://graphviz.org/doc/info/lang.html
+        Tree.dot = Digraph(comment=title, format='png')
+        Tree.dot.attr('node', shape='none', fontname='courier-bold', fontsize='18pt')
+        Tree.dot.attr('graph', rankdir='TB', tooltip=title)
+        Tree.dot.attr('edge', penwidth='2pt')
+        Tree.id_counter = 1
+        self._visualize()
+        display_png(self.dot)
+
+    def _visualize(self):
+        name = f"node-{Tree.id_counter}"
+        Tree.id_counter += 1
+        label = self.symbol
 
         # https://graphviz.org/doc/info/colors.html
-        if tree.symbol.startswith('<'):
+        if self.symbol.startswith('<'):
             color = 'firebrick'
         else:
             color = 'darkblue'
 
         label = label.replace('<', '\\<')
         label = label.replace('>', '\\>')
-        dot.node(name, label, fontcolor=color)
+        Tree.dot.node(name, label, fontcolor=color)
 
-        for child in tree.children():
-            child_name = _visualize(child)
-            dot.edge(name, child_name)
+        for child in self.children():
+            child_name = child._visualize()
+            Tree.dot.edge(name, child_name)
 
         return name
-
-    _visualize(root)
-    display_png(dot)
-```
-
-```{code-cell}
-class Tree:
-    def __init__(self, symbol, *children):
-        self.symbol = symbol
-        self._children = children
-    def children(self):
-        return self._children
 ```
 
 ```{code-cell}
 tree = Tree('<foo>', Tree('"bar"'), Tree('<baz>', Tree('"qux"')))
-visualize(tree)
+tree.visualize()
 ```
 
 ```{error}
