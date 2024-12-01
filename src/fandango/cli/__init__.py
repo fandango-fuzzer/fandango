@@ -138,6 +138,7 @@ def get_parser(in_command_line=True):
     settings_group.add_argument(
         "-n",
         "--num-outputs",
+        "--desired-solutions",
         type=int,
         help="the number of outputs to produce (default: 100)",
         default=None,
