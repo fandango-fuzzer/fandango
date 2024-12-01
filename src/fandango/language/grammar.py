@@ -128,6 +128,7 @@ class Concatenation(Node):
 
 
 class Repetition(Node):
+    # TODO: Shouldn't a children() method return [self.node]? -- AZ
     def __init__(self, node: Node, min_: int = 0, max_: int = MAX_REPETITIONS):
         super().__init__(NodeType.REPETITION)
         if min_ < 0:
