@@ -23,6 +23,54 @@ Fandango offers a few mechanisms to disambiguate these, and to specify specific 
 
 ## Derivation Trees
 
+```{code-cell}
+
+from graphviz import Digraph
+
+# import os
+# os.chdir('../src')
+# from fandango.language.tree import DerivationTree
+
+def visualize(root, title="A Tree"):
+    dot = Digraph(comment=title)
+    dot.attr('node', shape='record', fontname='monospaced')
+    dot.attr('graph', rankdir='TB', tooltip=title)
+
+    id_counter = 1
+
+    def _visualize(tree):
+        nonlocal id_counter
+        name = f"node-{id_counter}"
+        id_counter += 1
+        label = tree.symbol
+        label = label.replace('<', '\\<')
+        label = label.replace('>', '\\>')
+        dot.node(name, label)
+
+        for child in tree.children():
+            child_name = _visualize(child)
+            dot.edge(name, child_name)
+
+        return name
+
+    _visualize(root)
+    return dot
+```
+
+```{code-cell}
+class Tree:
+    def __init__(self, symbol, *children):
+        self.symbol = symbol
+        self._children = children
+    def children(self):
+        return self._children
+```
+
+```{code-cell}
+tree = Tree("<foo>", Tree("<bar>"), Tree("<baz>"))
+visualize(tree)
+```
+
 ```{error}
 (Introduce derivation trees)
 ```
