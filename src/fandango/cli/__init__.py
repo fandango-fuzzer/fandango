@@ -26,12 +26,10 @@ import ast
 
 from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.InputStream import InputStream
-from antlr4.error.ErrorStrategy import BailErrorStrategy
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4.error.Errors import ParseCancellationException
 
 from fandango.constraints import predicates
-from fandango.constraints.fitness import GeneticBase
 from fandango.evolution.algorithm import Fandango
 from fandango.language.convert import (
     FandangoSplitter,
@@ -42,8 +40,6 @@ from fandango.language.convert import (
 from fandango.language.grammar import Grammar
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
-from fandango.language.symbol import NonTerminal
-from fandango.language.tree import DerivationTree
 
 
 def get_parser(in_command_line=True):
