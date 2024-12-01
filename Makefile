@@ -28,8 +28,10 @@ requirements.txt:	pyproject.toml
 dev-tools:
 	brew install antlr
 	pip install -U black
-	pip install -U jupyter-book pyppeteer ghp-import pagelabels
+	pip install -U jupyter-book pyppeteer ghp-import pagelabels 
 	brew install pdftk 
+	brew install graphviz
+	pip install -U graphviz
 
 ## Parser
 
@@ -79,7 +81,7 @@ pdf: $(PDF_TARGET)
 $(HTML_MARKER): $(DOCS_SOURCES) $(ALL_HTML_MARKER)
 	$(JB) build $(DOCS)
 	echo 'Success' > $@
-	$(REFRESH_HTML)
+	-$(REFRESH_HTML)
 	@echo Output written to $(HTML_INDEX)
 
 # If we change _toc.yml, all tocs need to be rebuilt
