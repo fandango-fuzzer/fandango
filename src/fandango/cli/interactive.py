@@ -26,6 +26,7 @@ from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
+from fandango.logger import print_exception
 
 _PARAMETERS = {
     "population": "_population_size",
@@ -312,8 +313,8 @@ class Interactive:
             start = self._start_symbol
         try:
             string = eval(string, self._scope)
-        except Exception:
-            print("Failed to evaluate string or identifier")
+        except Exception as e:
+            print_exception(e)
             return
         if isinstance(string, list):
             trees = string
