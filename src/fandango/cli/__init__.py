@@ -587,6 +587,7 @@ def cd_command(args):
         os.chdir(args.directory)
     else:
         os.chdir(Path.home())
+    print(os.getcwd())
 
 def fuzz_command(args):
     """Invoke the fuzzer"""
