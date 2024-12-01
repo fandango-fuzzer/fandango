@@ -13,10 +13,6 @@ kernelspec:
 (sec:recursive)=
 # Complex Input Structures
 
-```{warning}
-This chapter is still in construction.
-```
-
 The _context-free grammars_ that Fandango uses can specify very complex input formats.
 In particular, they allow specifying _recursive_ inputs - that is, element types that can contain other elements of the same type again.
 In this chapter, we explore some typical patterns as they occur within grammars.
