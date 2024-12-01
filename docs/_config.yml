@@ -10,3 +10,5 @@ latex:
   latex_documents:
      targetname: fandango.tex
 
+execute:
+  execute_notebooks: cache
