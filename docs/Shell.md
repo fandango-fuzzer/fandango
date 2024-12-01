@@ -174,20 +174,20 @@ The command history is saved in `~/.fandango_history`.
 
 ## Invoking Commands from the Shell
 
-In the Fandango shell, you can invoke system commands by prefixing them with `!`:
+In the Fandango shell, you can invoke _system commands_ by prefixing them with `!`:
 
 ```
 (fandango) !ls
-LICENSE.md   docs           requirements.txt
-Makefile     language		    src
-README.md    pyproject.toml tests
+LICENSE.md		docs			requirements.txt
+Makefile		language		src
+README.md		pyproject.toml		tests
 ```
 
 :::{hint}
 Use TAB to complete file names.
 :::
 
-You can also invoke and evaluate Python commands by prefixing them with `/`:
+You can also invoke and evaluate _Python commands_ by prefixing them with `/`:
 
 ```python
 (fandango) /import random
@@ -196,6 +196,59 @@ You can also invoke and evaluate Python commands by prefixing them with `/`:
 ```
 
 If the command you enter has a value, the value is automatically printed.
+
+:::{note}
+Invoking system and Python commands is only available when the input is a terminal.
+:::
+
+
+## Changing the Current Directory
+
+To change the current directory, Fandango provides a built-in `cd` command:
+
+:::{margin}
+The alternative `!cd` does not work, as this changes the directory of the invoked shell.
+:::
+
+```
+(fandango) cd docs/
+```
+
+Without arguments, `cd` switches to the home directory.
+
+:::{warning}
+This is different from Windows, where `cd` reports the current directory.
+:::
+
+
+## Getting Shell Commands from a File
+
+Instead of entering commands by keyboard, one can also have Fandango read in commands from a file or another command.
+This is done by redirecting the `fandango` standard input.
+To have Fandango read and execute commands from, say, `commands.txt`, use
+
+```
+$ fandango < commands.txt
+```
+
+Fandango can also process the commands issued from another program:
+
+```
+$ echo 'fuzz -n 10 -f persons.fan' | fandango
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!echo 'fuzz -n 10 -f persons.fan' | fandango
+```
+
+```{hint}
+The input file can contain blank lines as well as comments prefixed with `#`.
+```
+
+:::{note}
+System commands (`!`) and Python commands (`/`) are not available when reading from a file.
+:::
 
 
 ## Exiting the Fandango Shell
