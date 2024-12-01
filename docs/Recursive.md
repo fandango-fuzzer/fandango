@@ -193,17 +193,22 @@ $ fandango fuzz -f expr-float.fan -n 10
 !fandango fuzz -f expr-float.fan -n 10
 ```
 
-However, some of these expressions may not evaluate, for instance because they contain divisions by zero.
-In the next section, we'll talk about [accessing input elements](sec:paths) in complex inputs so we can impose further constraints on them.
+With extra constraints, we can now have Fandango produce only expressions that satisfy further properties – say, evaluate to a value above 1000 in Python:
 
-% TODO: Does not work yet
-% With an extra constraint, we can have Fandango produce only expressions that in Python evaluate to a value above 1000:
-% 
-% ```shell
-% $ fandango fuzz -f expr-float.fan -n 10 -c 'eval(<start>) > 1000'
-% ```
-% 
-% ```{code-cell}
-% :tags: ["remove-input"]
-% !fandango fuzz -f expr-float.fan -n 10 -c 'eval(str(<start>)) > 1000' -c 'str(<int>) != "0"'
-% ```
+```shell
+$ fandango fuzz -f expr-float.fan -n 10 -c 'eval(str(<start>)) > 1000'
+```
+
+```{code-cell}
+:tags: ["remove-input", "remove-stderr"]
+!fandango fuzz -f expr-float.fan -n 10 -c 'eval(str(<start>)) > 1000' 2> /dev/null
+```
+
+Note that some of these expressions raise divisions by zero errors:
+
+```
+ZeroDivisionError: float division by zero
+```
+
+In the next section, we'll talk about [accessing input elements](sec:paths) in complex inputs, so we can impose further constraints on them.
+
