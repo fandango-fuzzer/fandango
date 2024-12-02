@@ -16,22 +16,22 @@ from fandango.logger import LOGGER
 
 class Fandango:
     def __init__(
-            self,
-            grammar: Grammar,
-            constraints: List[Constraint],
-            population_size: int = 100,
-            desired_solutions: int = 0,
-            initial_population: List[DerivationTree] = None,
-            max_generations: int = 500,
-            elitism_rate: float = 0.1,
-            crossover_rate: float = 0.8,
-            tournament_size: float = 0.1,
-            mutation_rate: float = 0.2,
-            destruction_rate: float = 0.0,
-            verbose: bool = False,
-            warnings_are_errors: bool = False,
-            best_effort: bool = False,
-            start_symbol="<start>",
+        self,
+        grammar: Grammar,
+        constraints: List[Constraint],
+        population_size: int = 100,
+        desired_solutions: int = 0,
+        initial_population: List[DerivationTree] = None,
+        max_generations: int = 500,
+        elitism_rate: float = 0.1,
+        crossover_rate: float = 0.8,
+        tournament_size: float = 0.1,
+        mutation_rate: float = 0.2,
+        destruction_rate: float = 0.0,
+        verbose: bool = False,
+        warnings_are_errors: bool = False,
+        best_effort: bool = False,
+        start_symbol="<start>",
     ):
         """
         Initialize the FANDANGO genetic algorithm. The algorithm will evolve a population of individuals
@@ -106,7 +106,7 @@ class Fandango:
         # Evaluate population
         self.evaluation = self.evaluate_population()
         self.fitness = (
-                sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+            sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
 
     def evolve(self) -> List[DerivationTree]:
@@ -161,9 +161,13 @@ class Fandango:
 
             # Destruction
             if self.destruction_rate > 0:
-                LOGGER.debug(f"Destroying {self.destruction_rate * 100:.2f}% of the population")
+                LOGGER.debug(
+                    f"Destroying {self.destruction_rate * 100:.2f}% of the population"
+                )
                 random.shuffle(new_population)
-                new_population = new_population[: int(self.population_size * (1 - self.destruction_rate))]
+                new_population = new_population[
+                    : int(self.population_size * (1 - self.destruction_rate))
+                ]
 
             # Add new individuals
             while len(new_population) < self.population_size:
@@ -178,7 +182,7 @@ class Fandango:
             self.population = fixed_population[: self.population_size]
             self.evaluation = self.evaluate_population()
             self.fitness = (
-                    sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+                sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
 
         self.time_taken = time.time() - start_time
@@ -203,11 +207,14 @@ class Fandango:
 
         if self.desired_solutions > 0 and len(self.solution) < self.desired_solutions:
             LOGGER.error(
-                f"Only found {len(self.solution)} perfect solutions, instead of the required {self.desired_solutions}")
+                f"Only found {len(self.solution)} perfect solutions, instead of the required {self.desired_solutions}"
+            )
             if self.warnings_are_errors:
-                raise RuntimeError("Failed to find the required number of perfect solutions")
+                raise RuntimeError(
+                    "Failed to find the required number of perfect solutions"
+                )
             if self.best_effort:
-                return self.population[:self.desired_solutions]
+                return self.population[: self.desired_solutions]
 
         return self.solution
 
@@ -249,7 +256,7 @@ class Fandango:
         return individual
 
     def evaluate_individual(
-            self, individual: DerivationTree
+        self, individual: DerivationTree
     ) -> Tuple[float, List[FailingTree]]:
         """
         Evaluate the fitness of an individual.
@@ -287,7 +294,7 @@ class Fandango:
         return fitness, failing_trees
 
     def evaluate_population(
-            self,
+        self,
     ) -> List[Tuple[DerivationTree, float, List[FailingTree]]]:
         """
         Evaluate the fitness of each individual in the population.
@@ -309,8 +316,8 @@ class Fandango:
         return [
             x[0]
             for x in sorted(self.evaluation, key=lambda x: x[1], reverse=True)[
-                     : int(self.elitism_rate * self.population_size)
-                     ]
+                : int(self.elitism_rate * self.population_size)
+            ]
         ]
 
     def tournament_selection(self) -> Tuple[DerivationTree, DerivationTree]:
@@ -325,7 +332,7 @@ class Fandango:
 
     # noinspection PyMethodMayBeStatic
     def crossover(
-            self, parent1: DerivationTree, parent2: DerivationTree
+        self, parent1: DerivationTree, parent2: DerivationTree
     ) -> Tuple[DerivationTree, DerivationTree]:
         """
         Perform crossover between two parents to generate two children by swapping subtrees rooted at a common
