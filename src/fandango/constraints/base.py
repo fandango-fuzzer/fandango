@@ -16,6 +16,7 @@ from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER, print_exception
 
+
 class Value(GeneticBase):
     def __init__(self, expression: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
