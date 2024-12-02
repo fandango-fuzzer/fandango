@@ -83,7 +83,7 @@ class GrammarProcessor(FandangoParserVisitor):
                 expr, searches, _ = self.searches.visit(production.expression())
                 if searches:
                     raise UnsupportedOperation(
-                        "Searches in expressions are currently not supported."
+                        "Searches in expressions are currently not supported"
                     )
                 grammar.set_generator(symbol, ast.unparse(expr))
         grammar.update_parser()
@@ -307,7 +307,7 @@ class ConstraintProcessor(FandangoParserVisitor):
         elif ctx.NOT_EQ_1() or ctx.NOT_EQ_2():
             op = Comparison.NOT_EQUAL
         else:
-            raise UnsupportedOperation(f"Unknown operator in {ctx}")
+            raise UnsupportedOperation(f"Unknown operator in {ctx.getText()}")
         left, _, left_map = self.searches.visit(ctx.expr(0))
         right, _, right_map = self.searches.visit(ctx.expr(1))
         return ComparisonConstraint(
@@ -380,7 +380,7 @@ class SearchProcessor(FandangoParserVisitor):
                 int(ctx.NUMBER(2).getText()) if ctx.NUMBER(2) else None,
             )
         else:
-            return int(ctx.NUMBER().getText())
+            return int(ctx.NUMBER(0).getText())
 
     def visitRs_slices(self, ctx: FandangoParser.Rs_slicesContext):
         return [self.visitRs_slice(child) for child in ctx.rs_slice()]
@@ -405,15 +405,9 @@ class SearchProcessor(FandangoParserVisitor):
     def get_attribute_searches(self, ctx: FandangoParser.SelectorContext):
         search = self.transform_selection(ctx.selection())
 
-        # FIXME: There should be a way to output the location where these occurred - AZ
         if ctx.DOT():
-            LOGGER.warning("<a>.<b> syntax is deprecated, use <a>/<b> instead")
-        if ctx.STAR():
-            LOGGER.warning("<a>*<b> syntax is deprecated, use <a>//<b> instead")
-
-        if ctx.DOT() or ctx.DIV():
             return AttributeSearch(self.get_attribute_searches(ctx.selector()), search)
-        elif ctx.STAR() or ctx.IDIV():
+        elif ctx.DOTDOT():
             return StarAttributeSearch(
                 self.get_attribute_searches(ctx.selector()), search
             )
@@ -663,7 +657,7 @@ class SearchProcessor(FandangoParserVisitor):
         elif ctx.atom():
             return self.visit(ctx.atom())
         else:
-            raise SyntaxError(f"Unsupported atom {ctx}")
+            raise SyntaxError(f"Unsupported atom {ctx.getText()}")
 
     def _process_slices(self, slices, tree, searches, search_map):
         slice_trees, slice_searches, slice_search_map = self.visit(slices)
@@ -714,7 +708,7 @@ class SearchProcessor(FandangoParserVisitor):
         elif ctx.selector_length():
             return self.visit(ctx.selector_length())
         else:
-            raise SyntaxError(f"Unsupported atom {ctx}")
+            raise SyntaxError(f"Unsupported atom {ctx.getText()}")
 
     def visitKwarg_or_starred(self, ctx: FandangoParser.Kwarg_or_starredContext):
         if ctx.ASSIGN():
@@ -748,7 +742,7 @@ class SearchProcessor(FandangoParserVisitor):
         self, ctx: FandangoParser.Assignment_expressionContext
     ):
         raise UnsupportedOperation(
-            "Assignment expressions are currently not supported."
+            f"Assignment expressions are currently not supported: {ctx.getText()}"
         )
 
     def visitSlice(self, ctx: FandangoParser.SliceContext):
@@ -781,7 +775,7 @@ class SearchProcessor(FandangoParserVisitor):
     def visitStrings(self, ctx: FandangoParser.StringsContext):
         if ctx.fstring():
             raise UnsupportedOperation(
-                "JoinedStr with formats are currently not supported"
+                f"Fstrings are currently not supported {ctx.getText()}"
             )
         else:
             string = ""
@@ -1256,8 +1250,8 @@ class PythonProcessor(FandangoParserVisitor):
         if expression:
             tree, searches, _ = self.search_processor.visit(expression)
             if searches:
-                raise SyntaxError(
-                    f"NonTerminal selection not allowed in Python contexts: {expression}"
+                raise ValueError(
+                    f"Nonterminals can only be used in grammars and constraints, not in regular Python code: {expression.getText()}"
                 )
             return tree
         return None
@@ -1323,7 +1317,9 @@ class PythonProcessor(FandangoParserVisitor):
             elif ctx.single_subscript_attribute_target():
                 left = self.get_expression(ctx.single_subscript_attribute_target())
             else:
-                raise ValueError(f"Unsupported lhs for ann assign {ctx.getText()}")
+                raise ValueError(
+                    f"Unsupported left hand side for assignment {ctx.getText()}"
+                )
             return ast.AnnAssign(
                 target=left,
                 annotation=self.get_expression(ctx.expression()),
@@ -1337,7 +1333,9 @@ class PythonProcessor(FandangoParserVisitor):
             elif ctx.star_expressions():
                 value = self.get_expression(ctx.star_expressions())
             else:
-                raise ValueError(f"Unsupported rhs for assign {ctx.getText()}")
+                raise ValueError(
+                    f"Unsupported right hand side for assignment {ctx.getText()}"
+                )
             if ctx.ASSIGN():
                 return ast.Assign(
                     targets=[
@@ -1374,7 +1372,9 @@ class PythonProcessor(FandangoParserVisitor):
             elif aug.IDIV_ASSIGN():
                 op = ast.FloorDiv()
             else:
-                raise ValueError(f"Unsupported operator for augassign {aug.getText()}")
+                raise ValueError(
+                    f"Unsupported operator for augmented assignment: {aug.getText()}"
+                )
             return ast.AugAssign(
                 target=self.get_expression(ctx.single_target()),
                 op=op,
@@ -1383,7 +1383,9 @@ class PythonProcessor(FandangoParserVisitor):
             )
 
     def visitType_alias(self, ctx: FandangoParser.Type_aliasContext):
-        raise UnsupportedOperation("Type alias currently not supported.")
+        raise UnsupportedOperation(
+            "Type alias currently not supported: {ctx.getText()}"
+        )
 
     def visitReturn_stmt(self, ctx: FandangoParser.Return_stmtContext):
         return ast.Return(value=self.get_expression(ctx.star_expressions()))
@@ -1489,14 +1491,16 @@ class PythonProcessor(FandangoParserVisitor):
         bases = list()
         keywords = list()
         if ctx.type_params():
-            raise UnsupportedOperation("Type params unsupported for class def.")
+            raise UnsupportedOperation(
+                f"Type params unsupported for class definitions {ctx.getText()}"
+            )
         if ctx.arguments():
             base_trees, base_searches, _ = self.search_processor.visitArguments(
                 ctx.arguments()
             )
             if base_searches:
-                raise SyntaxError(
-                    f"NonTerminal selection not allowed in Python contexts: {ctx}"
+                raise ValueError(
+                    f"Nonterminals can only be used in grammars and constraints, not in regular Python code: {ctx.getText()}"
                 )
             for base in base_trees:
                 if isinstance(base, ast.keyword):
@@ -1520,7 +1524,9 @@ class PythonProcessor(FandangoParserVisitor):
 
     def visitFunction_def_raw(self, ctx: FandangoParser.Function_def_rawContext):
         if ctx.type_params():
-            raise UnsupportedOperation("Type params unsupported for class def.")
+            raise UnsupportedOperation(
+                f"Type params unsupported for class definitions: {ctx.getText()}"
+            )
         if ctx.params():
             params = self.visitParams(ctx.params())
         else:
@@ -1545,8 +1551,8 @@ class PythonProcessor(FandangoParserVisitor):
         for expression in ctx.named_expression():
             tree, searches, _ = self.search_processor.visitNamed_expression(expression)
             if searches:
-                raise SyntaxError(
-                    f"NonTerminal selection not allowed in Python contexts: {ctx}"
+                raise ValueError(
+                    f"Nonterminals can only be used in grammars and constraints, not in regular Python code: {ctx.getText()}"
                 )
             decorators.append(expression)
         return decorators
@@ -1693,4 +1699,6 @@ class PythonProcessor(FandangoParserVisitor):
         )
 
     def visitMatch_stmt(self, ctx: FandangoParser.Match_stmtContext):
-        raise UnsupportedOperation("Match statement currently not supported.")
+        raise UnsupportedOperation(
+            f"Match statement currently not supported: {ctx.getText()}"
+        )

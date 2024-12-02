@@ -128,6 +128,7 @@ class Concatenation(Node):
 
 
 class Repetition(Node):
+    # TODO: Shouldn't a children() method return [self.node]? -- AZ
     def __init__(self, node: Node, min_: int = 0, max_: int = MAX_REPETITIONS):
         super().__init__(NodeType.REPETITION)
         if min_ < 0:
@@ -713,8 +714,10 @@ class Grammar(NodeVisitor):
     def generate(self, symbol: str | NonTerminal = "<start>") -> DerivationTree:
         string = self.generate_string(symbol)
         if not (isinstance(string, str) or isinstance(string, tuple)):
-            raise TypeError(f"Generator {self.generators[symbol]} must return string or tuple")
-        
+            raise TypeError(
+                f"Generator {self.generators[symbol]} must return string or tuple"
+            )
+
         if isinstance(string, tuple):
             return DerivationTree.from_tree(string)
         else:
@@ -775,7 +778,7 @@ class Grammar(NodeVisitor):
     def __repr__(self):
         return "\n".join(
             [
-                f"{key} ::= {value}{' :: ' + self.generators[key] if key in self.generators else ''};"
+                f"{key} ::= {value}{' = ' + self.generators[key] if key in self.generators else ''};"
                 for key, value in self.rules.items()
             ]
         )

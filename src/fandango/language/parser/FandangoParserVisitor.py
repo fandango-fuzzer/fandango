@@ -1,4 +1,4 @@
-# Generated from language/FandangoParser.g4 by ANTLR 4.13.2
+# Generated from FandangoParser.g4 by ANTLR 4.13.2
 from antlr4 import *
 
 if "." in __name__:

@@ -6,7 +6,7 @@ import hashlib
 
 def main():
     # Load the fandango file
-    grammar, constraints = parse_file("demo.fan")
+    grammar, constraints = parse_file("transactions.fan")
 
     fandango = Fandango(grammar, constraints, desired_solutions=1, verbose=True)
     fandango.evolve()
