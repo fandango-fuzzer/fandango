@@ -38,7 +38,7 @@
 # C1: Ensures that any identifier used in an expression is declared before its use, and the declaration occurs in the same or a higher block level (i.e., considering variable scope).
 
 
-forall <use_id> in <statement>*<expr>*<id>:
+forall <use_id> in <statement>..<expr>..<id>:
     exists <dec> in <declaration>:
         str(<dec>.<id>) == str(<id>) and is_before(<start>, <dec>, <use_id>)
 ;

@@ -13,11 +13,12 @@ parts:
     - file: Fuzzing
     - file: Strategies
     - file: Constraints
+    - file: Shell
     - file: Generators
     - file: Recursive
-    - file: Distributions
-    - file: Quantors
+    - file: Paths
     - file: Binary
+    - file: Distributions
     - file: Whitebox
     - file: Hatching
   - caption: Fandango Reference
