@@ -484,7 +484,7 @@ def check_constraints(constraints, grammar):
     def collect_used_symbols(constraint):
         nonlocal used_symbols
         # FIXME: This should actually traverse the constraint
-        matches = re.findall('<[a-zA-Z0-9_]*>', str(constraint))
+        matches = re.findall("<[a-zA-Z0-9_]*>", str(constraint))
         for match in matches:
             used_symbols.add(match)
 
@@ -501,11 +501,9 @@ def check_constraints(constraints, grammar):
         raise error
 
 
-
-
-def extract_grammar_and_constraints(fan_contents: str, 
-                                    lazy: bool = False,
-                                    given_grammar = None):
+def extract_grammar_and_constraints(
+    fan_contents: str, lazy: bool = False, given_grammar=None
+):
     """Extract grammar and constraints from the given content"""
     # TODO: This should go into a separate module (parser.py maybe?), not here -- AZ
 
@@ -629,7 +627,9 @@ def set_command(args):
         fan_contents = ""
         for constraint in args.constraints:
             fan_contents += "\n" + constraint + ";\n"
-        _, constraints = extract_grammar_and_constraints(fan_contents, given_grammar=DEFAULT_FAN_CONTENT[0])
+        _, constraints = extract_grammar_and_constraints(
+            fan_contents, given_grammar=DEFAULT_FAN_CONTENT[0]
+        )
         DEFAULT_CONSTRAINTS = constraints
 
     settings = make_fandango_settings(args)
@@ -675,6 +675,7 @@ def cd_command(args):
 
     if sys.stdin.isatty():
         print(os.getcwd())
+
 
 def fuzz_command(args):
     """Invoke the fuzzer"""
@@ -906,6 +907,7 @@ def exec_single(code, _globals={}, _locals={}):
 
 
 MATCHES = []
+
 
 def shell_command(args):
     """(New) interactive mode"""

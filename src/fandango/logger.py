@@ -7,6 +7,8 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(name)s:%(levelname)s: %(message)s",
 )
+
+
 def print_exception(e):
     LOGGER.info(traceback.format_exc().rstrip())
     if not LOGGER.isEnabledFor(logging.INFO):
