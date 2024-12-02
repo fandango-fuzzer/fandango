@@ -11,7 +11,7 @@ kernelspec:
 ---
 
 (sec:paths)=
-# Accessing Input Elements
+# Handling Input Elements
 
 ```{error}
 This chapter is still under construction.
@@ -23,15 +23,42 @@ Fandango offers a few mechanisms to disambiguate these, and to specify specific 
 
 ## Derivation Trees
 
+To start, let us dive a bit into the structure of _Fandango symbols_ – that is, the input elements enclosed in `<...>`.
+While you can use these as strings in many context - say, in comparisons such as `<name> == "José"` or method calls such as `<name>.startswith('S')` – these are actually not strings, but _trees_ that represent the structure of the input.
+As an example, consider the grammar in the [`persons.fan`](persons.fan) `.fan` file:
+
+```{code-cell}
+:tags: ["remove-input"]
+!cat persons.fan
+```
+
+If one has a constraint `<name>.startswith('S')`, what is actually in a `<name>` symbol?
+
+```{code-cell}
+:tags: ["remove-input"]
+from Tree import Tree
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+tree = \
+Tree('<name>',
+  Tree('<uppercase_letter>', Tree('A')),
+  Tree('<lowercase_letter>', Tree('a')))
+tree.visualize()
+```
+
+
+
+
 % Could also compute and display derivation trees on the fly:
 % import os
 % os.chdir('../src')
 % from fandango.language.tree import DerivationTree
 
+
 ```{code-cell}
 :tags: ["remove-input"]
-from Tree import Tree
-
 tree = Tree('<foo>', Tree('"bar"'), Tree('<baz>', Tree('"qux"')))
 tree.visualize()
 ```
