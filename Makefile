@@ -28,8 +28,10 @@ requirements.txt:	pyproject.toml
 dev-tools:
 	brew install antlr
 	pip install -U black
-	pip install -U jupyter-book pyppeteer ghp-import pagelabels
+	pip install -U jupyter-book pyppeteer ghp-import pagelabels 
 	brew install pdftk 
+	brew install graphviz
+	pip install -U graphviz
 
 ## Parser
 
@@ -46,7 +48,6 @@ PARSERS = \
 parser: $(PARSERS)
 
 $(PARSERS) &: $(LEXER_G4) $(PARSER_G4)
-	# $(PYTHON) scripts/update-grammar.py
 	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
 		-visitor -listener $(LEXER_G4) $(PARSER_G4)
 	$(BLACK) src
@@ -57,6 +58,7 @@ DOCS = docs
 DOCS_SOURCES = $(wildcard $(DOCS)/*.md $(DOCS)/*.fan $(DOCS)/*.ipynb $(DOCS)/*.yml $(DOCS)/*.bib)
 JB = jupyter-book
 HTML_MARKER = $(DOCS)/_build/html/marker.txt
+ALL_HTML_MARKER = $(DOCS)/_build/html/all-marker.txt
 LATEX_MARKER = $(DOCS)/_build/latex/marker.txt
 PDF_RAW = $(DOCS)/_build/latex/fandango.pdf
 PDF_TARGET = $(DOCS)/fandango.pdf
@@ -76,11 +78,16 @@ latex: $(LATEX_MARKER)
 pdf: $(PDF_TARGET)
 
 # Re-create the book in HTML
-$(HTML_MARKER): $(DOCS_SOURCES)
+$(HTML_MARKER): $(DOCS_SOURCES) $(ALL_HTML_MARKER)
 	$(JB) build $(DOCS)
 	echo 'Success' > $@
-	$(REFRESH_HTML)
+	-$(REFRESH_HTML)
 	@echo Output written to $(HTML_INDEX)
+
+# If we change _toc.yml, all tocs need to be rebuilt
+$(ALL_HTML_MARKER): $(DOCS)/_toc.yml
+	$(JB) build --all $(DOCS)
+	echo 'Success' > $@
 
 # view HTML
 view: $(HTML_MARKER)
@@ -89,13 +96,13 @@ view: $(HTML_MARKER)
 # Refresh Safari
 refresh: $(HTML_MARKER)
 	$(REFRESH_HTML)
-	
+
 
 # Re-create the book in PDF
 $(LATEX_MARKER): $(DOCS_SOURCES) $(DOCS)/_book_toc.yml
 	cd $(DOCS); $(JB) build --builder latex --toc _book_toc.yml .
 	echo 'Success' > $@
-	
+
 $(DOCS)/_book_toc.yml: $(DOCS)/_toc.yml
 	echo '# Automatically generated from `$<`. Do not edit.' > $@
 	$(SED) s/Intro/BookIntro/ $< >> $@
@@ -118,8 +125,6 @@ view-pdf: $(PDF_TARGET)
 clean-docs:
 	$(JB) clean $(DOCS)
 
-rebuild-docs:
-	$(JB) build --all $(DOCS)
 
 
 ## Installation

@@ -29,7 +29,7 @@ def binary_to_string(binary):
     binary = '001111000111100000110001001101110011111001010100001111000010111101111000001100010011011100111110'
     binary_to_string(binary) -> '<x17>T</x17>'
     """
-    return "".join(chr(int(binary[i : i + 8], 2)) for i in range(0, len(binary), 8))
+    return "".join(chr(int(binary[i: i + 8], 2)) for i in range(0, len(binary), 8))
 
 
 if __name__ == "__main__":
