@@ -131,6 +131,12 @@ def get_parser(in_command_line=True):
         default=None,
     )
     settings_group.add_argument(
+        "--destruction-rate",
+        type=float,
+        help="the rate of individuals that will be randomly destroyed in every generation",
+        default=None,
+    )
+    settings_group.add_argument(
         "-n",
         "--num-outputs",
         "--desired-solutions",
@@ -583,6 +589,8 @@ def make_fandango_settings(args, initial_settings={}):
         settings["max_generations"] = args.max_generations
     if args.elitism_rate is not None:
         settings["elitism_rate"] = args.elitism_rate
+    if args.destruction_rate is not None:
+        settings["destruction_rate"] = args.destruction_rate
     if args.warnings_are_errors is not None:
         settings["warnings_are_errors"] = args.warnings_are_errors
     if args.best_effort is not None:
