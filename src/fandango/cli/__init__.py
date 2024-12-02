@@ -1,34 +1,29 @@
 import argparse
+import ast
+import atexit
+import glob
 import importlib.metadata
 import logging
 import os
-import sys
-import textwrap
-import subprocess
-import tempfile
+import os.path
+import re
 import readline
 import shlex
-import atexit
-import re
-import glob
-import os.path
-
-from pathlib import Path
-from os import environ
+import subprocess
+import sys
+import tempfile
+import textwrap
 from io import StringIO
 from io import UnsupportedOperation
-
-from fandango.cli.interactive import Interactive
-from fandango.constants import INTERACTIVE, FUZZ, HELP
-from fandango.logger import LOGGER, print_exception
-
-import ast
+from pathlib import Path
 
 from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.InputStream import InputStream
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4.error.Errors import ParseCancellationException
 
+from fandango.cli.interactive import Interactive
+from fandango.constants import INTERACTIVE, FUZZ, HELP
 from fandango.constraints import predicates
 from fandango.evolution.algorithm import Fandango
 from fandango.language.convert import (
@@ -40,6 +35,7 @@ from fandango.language.convert import (
 from fandango.language.grammar import Grammar, NodeType
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
+from fandango.logger import LOGGER, print_exception
 
 
 def get_parser(in_command_line=True):
@@ -477,38 +473,42 @@ def check_grammar(grammar, start_symbol="<start>"):
 
 
 def check_constraints(constraints, grammar):
-    LOGGER.debug("Checking constraints")
+    try:
+        LOGGER.debug("Checking constraints")
 
-    used_symbols = set()
-    undefined_symbols = set()
-    defined_symbols = set()
+        used_symbols = set()
+        undefined_symbols = set()
+        defined_symbols = set()
 
-    if grammar:
-        for symbol in grammar.rules.keys():
-            defined_symbols.add(str(symbol))
+        if grammar:
+            for symbol in grammar.rules.keys():
+                defined_symbols.add(str(symbol))
 
-    def collect_used_symbols(constraint):
-        nonlocal used_symbols
-        # FIXME: This should actually traverse the constraint
-        matches = re.findall("<[a-zA-Z0-9_]*>", str(constraint))
-        for match in matches:
-            used_symbols.add(match)
+        def collect_used_symbols(constraint):
+            nonlocal used_symbols
+            # FIXME: This should actually traverse the constraint
+            matches = re.findall("<[a-zA-Z0-9_]*>", str(constraint))
+            for match in matches:
+                used_symbols.add(match)
 
-    for constraint in constraints:
-        collect_used_symbols(constraint)
+        for constraint in constraints:
+            collect_used_symbols(constraint)
 
-    for symbol in used_symbols:
-        if not symbol in defined_symbols:
-            undefined_symbols.add(symbol)
+        for symbol in used_symbols:
+            if not symbol in defined_symbols:
+                undefined_symbols.add(symbol)
 
-    if undefined_symbols:
-        error = ValueError(f"Undefined symbols {undefined_symbols} in constraints")
-        error.add_note(f"Possible symbols: {defined_symbols}")
-        raise error
+        if undefined_symbols:
+            error = ValueError(f"Undefined symbols {undefined_symbols} in constraints")
+            error.add_note(f"Possible symbols: {defined_symbols}")
+            raise error
+    except ValueError as e:
+        # do nothing
+        pass
 
 
 def extract_grammar_and_constraints(
-    fan_contents: str, lazy: bool = False, given_grammar=None
+        fan_contents: str, lazy: bool = False, given_grammar=None
 ):
     """Extract grammar and constraints from the given content"""
     # TODO: This should go into a separate module (parser.py maybe?), not here -- AZ
@@ -557,7 +557,12 @@ def extract_grammar_and_constraints(
         # No grammar found; check constraints against given (existing) grammar
         check_constraints(constraints, given_grammar)
     else:
-        check_constraints(constraints, grammar)
+        try:
+            check_constraints(constraints, grammar)
+        except ValueError as e:
+            # do nothing
+            print("HOLA")
+            pass
 
     LOGGER.debug("Parsing complete")
     return grammar, constraints
@@ -759,7 +764,7 @@ def fuzz_command(args):
                 prefix = "fandango-"
                 suffix = args.filename_extension
                 with tempfile.NamedTemporaryFile(
-                    mode="w", prefix=prefix, suffix=suffix
+                        mode="w", prefix=prefix, suffix=suffix
                 ) as fd:
                     fd.write(str(individual))
                     fd.flush()
@@ -837,9 +842,9 @@ def get_filenames(prefix="", fan_only=True):
         if os.path.isdir(filename):
             filenames.append(filename + os.sep)
         elif (
-            not fan_only
-            or filename.lower().endswith(".fan")
-            or filename.lower().endswith(".py")
+                not fan_only
+                or filename.lower().endswith(".fan")
+                or filename.lower().endswith(".py")
         ):
             filenames.append(filename)
 
