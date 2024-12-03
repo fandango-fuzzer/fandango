@@ -1,5 +1,6 @@
 import abc
 import itertools
+import sys
 from copy import copy
 from typing import List, Dict, Any, Optional
 
@@ -14,7 +15,7 @@ from fandango.constraints.fitness import (
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
-from fandango.logger import LOGGER, print_exception
+from fandango.logger import print_exception
 
 
 class Value(GeneticBase):
@@ -24,9 +25,9 @@ class Value(GeneticBase):
         self.cache: Dict[int, ValueFitness] = dict()
 
     def fitness(
-        self,
-        tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+            self,
+            tree: DerivationTree,
+            scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
     ) -> ValueFitness:
         tree_hash = self.get_hash(tree, scope)
         if tree_hash in self.cache:
@@ -71,19 +72,19 @@ class Value(GeneticBase):
 
 class Constraint(GeneticBase, abc.ABC):
     def __init__(
-        self,
-        searches: Optional[Dict[str, NonTerminalSearch]] = None,
-        local_variables: Optional[Dict[str, Any]] = None,
-        global_variables: Optional[Dict[str, Any]] = None,
+            self,
+            searches: Optional[Dict[str, NonTerminalSearch]] = None,
+            local_variables: Optional[Dict[str, Any]] = None,
+            global_variables: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(searches, local_variables, global_variables)
         self.cache: Dict[int, ConstraintFitness] = dict()
 
     @abc.abstractmethod
     def fitness(
-        self,
-        tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+            self,
+            tree: DerivationTree,
+            scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
     ) -> ConstraintFitness:
         raise NotImplementedError("Fitness function not implemented")
 
@@ -94,6 +95,9 @@ class Constraint(GeneticBase, abc.ABC):
         """
         return expression.startswith("print(")
 
+    def get_symbols(self):
+        return self.searches.values()
+
 
 class ExpressionConstraint(Constraint):
     def __init__(self, expression: str, *args, **kwargs):
@@ -101,7 +105,7 @@ class ExpressionConstraint(Constraint):
         self.expression = expression
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
+            self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
         tree_hash = self.get_hash(tree, scope)
         if tree_hash in self.cache:
@@ -163,7 +167,7 @@ class ComparisonConstraint(Constraint):
         self.right = right
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
+            self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
         tree_hash = self.get_hash(tree, scope)
         if tree_hash in self.cache:
@@ -183,7 +187,7 @@ class ComparisonConstraint(Constraint):
             except Exception as e:
                 e.add_note("Evaluation failed: " + self.left)
                 print_exception(e)
-                continue
+                sys.exit("Evaluation failed: " + self.left)
 
             try:
                 right = eval(self.right, self.global_variables, local_variables)
@@ -289,14 +293,14 @@ class ComparisonConstraint(Constraint):
 
 class ConjunctionConstraint(Constraint):
     def __init__(
-        self, constraints: List[Constraint], *args, lazy: bool = False, **kwargs
+            self, constraints: List[Constraint], *args, lazy: bool = False, **kwargs
     ):
         super().__init__(*args, **kwargs)
         self.constraints = constraints
         self.lazy = lazy
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
+            self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
         tree_hash = self.get_hash(tree, scope)
         if tree_hash in self.cache:
@@ -334,14 +338,14 @@ class ConjunctionConstraint(Constraint):
 
 class DisjunctionConstraint(Constraint):
     def __init__(
-        self, constraints: List[Constraint], *args, lazy: bool = False, **kwargs
+            self, constraints: List[Constraint], *args, lazy: bool = False, **kwargs
     ):
         super().__init__(*args, **kwargs)
         self.constraints = constraints
         self.lazy = lazy
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
+            self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
         tree_hash = self.get_hash(tree, scope)
         if tree_hash in self.cache:
@@ -384,7 +388,7 @@ class ImplicationConstraint(Constraint):
         self.consequent = consequent
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
+            self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
         tree_hash = self.get_hash(tree, scope)
         if tree_hash in self.cache:
@@ -410,13 +414,13 @@ class ImplicationConstraint(Constraint):
 
 class ExistsConstraint(Constraint):
     def __init__(
-        self,
-        statement: Constraint,
-        bound: NonTerminal,
-        search: NonTerminalSearch,
-        *args,
-        lazy: bool = False,
-        **kwargs,
+            self,
+            statement: Constraint,
+            bound: NonTerminal,
+            search: NonTerminalSearch,
+            *args,
+            lazy: bool = False,
+            **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.statement = statement
@@ -425,9 +429,9 @@ class ExistsConstraint(Constraint):
         self.lazy = lazy
 
     def fitness(
-        self,
-        tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+            self,
+            tree: DerivationTree,
+            scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
     ) -> ConstraintFitness:
         tree_hash = self.get_hash(tree, scope)
         if tree_hash in self.cache:
@@ -461,13 +465,13 @@ class ExistsConstraint(Constraint):
 
 class ForallConstraint(Constraint):
     def __init__(
-        self,
-        statement: Constraint,
-        bound: NonTerminal,
-        search: NonTerminalSearch,
-        *args,
-        lazy: bool = False,
-        **kwargs,
+            self,
+            statement: Constraint,
+            bound: NonTerminal,
+            search: NonTerminalSearch,
+            *args,
+            lazy: bool = False,
+            **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.statement = statement
@@ -476,9 +480,9 @@ class ForallConstraint(Constraint):
         self.lazy = lazy
 
     def fitness(
-        self,
-        tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+            self,
+            tree: DerivationTree,
+            scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
     ) -> ConstraintFitness:
         tree_hash = self.get_hash(tree, scope)
         if tree_hash in self.cache:
