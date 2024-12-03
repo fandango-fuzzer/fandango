@@ -24,14 +24,27 @@ all: web pdf
 requirements.txt:	pyproject.toml
 	pip-compile $<
 
-# Install the necessary tools
-dev-tools:
-	brew install antlr
+# Install tools for development
+UNAME := $(shell uname)
+ifeq ($(UNAME), Darwin)
+# Mac
+SYSTEM_DEV_TOOLS = antlr pdftk graphviz
+SYSTEM_DEV_INSTALL = brew install
+else
+# Linux
+SYSTEM_DEV_TOOLS = antlr pdftk graphviz
+SYSTEM_DEV_INSTALL = apt-get install
+endif
+
+
+dev-tools: system-dev-tools
 	pip install -U black
 	pip install -U jupyter-book pyppeteer ghp-import pagelabels 
-	brew install pdftk 
-	brew install graphviz
 	pip install -U graphviz
+
+system-dev-tools:
+	$(SYSTEM_DEV_INSTALL) $(SYSTEM_DEV_TOOLS)
+
 
 ## Parser
 
