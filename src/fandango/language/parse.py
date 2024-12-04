@@ -16,6 +16,7 @@ from fandango.language.convert import (
 from fandango.language.grammar import Grammar
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
+from fandango.language.symbol import NonTerminal
 
 
 def parse(fan: str, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
@@ -46,22 +47,46 @@ def parse(fan: str, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
     return grammar, constraint
 
 def check_constraints_existence(grammar, constraints):
-    # TODO: Check for direct and indirect children. You can try this by running faker_experiment.py adding the following constraints: str(<name>..<start>[0]) == 'A'; for undirected children, and str(<name>.<start>[0]) == 'A'; for directed children.
+    indirect_child = {str(k) : {str(l) : None for l in grammar.rules.keys()} for k in grammar.rules.keys()}
+    
     for constraint in constraints:
-        # get all non-terminal symbols in the constraint
         constraint_symbols = constraint.get_symbols()
+
         for value in constraint_symbols:
             constraint_matches = re.findall(r"<(.*?)>", str(value))
             grammar_symbols = grammar.rules.keys()
             grammar_matches = re.findall(r"<(.*?)>", str(grammar_symbols))
             missing = [match for match in constraint_matches if match not in grammar_matches]
+
             if len(missing) > 0:
                 raise ValueError(f"Constraint {constraint} contains non-terminal symbols {missing} that are not in the grammar")
-            # Check for valid indirect children (<name>*<alpha>) means alpha is a child of name, or any of the children of name.
-            print(value) # <name>*<start>
-            # Check for valid direct children (<name>.<alpha>) means alpha is a direct child of name.
 
+            for i in range(len(constraint_matches) - 1):
+                parent = constraint_matches[i]
+                symbol = constraint_matches[i+1]
+                indirect = f"<{parent}>*<{symbol}>" in str(value)
+                if not check_constraints_existence_children(grammar, parent, symbol, indirect, indirect_child):
+                    raise ValueError(f"In constraint {constraint}: <{parent}> has no child <{symbol}>")
 
+def check_constraints_existence_children(grammar, parent, symbol, recurse, indirect_child):
+    if indirect_child[f"<{parent}>"][f"<{symbol}>"] is not None:
+        return indirect_child[f"<{parent}>"][f"<{symbol}>"]
+    
+    grammar_symbols = grammar.rules[NonTerminal(f"<{parent}>")]
+    grammar_matches = re.findall(r'(?<!")<(.*?)>(?!.*")', str(grammar_symbols))
+
+    if symbol not in grammar_matches:
+        if recurse:
+            is_child = False
+            for match in grammar_matches:
+                is_child = is_child or check_constraints_existence_children(grammar, match, symbol, recurse, indirect_child)
+            indirect_child[f"<{parent}>"][f"<{symbol}>"] = is_child
+            return is_child
+        else:
+            return False
+        
+    indirect_child[f"<{parent}>"][f"<{symbol}>"] = True
+    return True
 
 def parse_file(*args, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
     contents = ""
