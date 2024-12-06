@@ -4,33 +4,34 @@ def gen_dns_for_name_field():
     fake = Faker()
     names = fake.domain_name().split('.')
     result = ""
-    for name in reversed(names):
+    for name in names:
         result += str(len(name)) + name
     return result
 
 
 <start> ::= <dns_req>;
 <dns_req> ::= <header_req> <question>;
-<header_req> ::= <h_id> <h_qr_query> <h_opcode_standard> <h_tc> <h_rd> <h_ra> <h_z> <h_rcode> <h_qd_count> <h_an_count> <h_ns_count> <h_ar_count>;
-<h_qr_query> ::= '0';
-<h_qr_resp> ::= '1';
-<h_opcode> ::= <h_opcode_standard> | <h_opcode_inverse> | <h_opcode_status_req> | <h_opcode_other>;
-<h_opcode_standard> ::= '0000';
-<h_opcode_inverse> ::= '0001';
-<h_opcode_status_req> ::= '0010';
-<h_opcode_other> ::= <bit>{4, 4};
-<h_tc> ::= <bit>;
-<h_rd> ::= <bit>;
-<h_ra> ::= <bit>;
-<h_z> ::= '0';
-<h_rcode> ::= <h_rcode_none> | <h_rcode_format> | <h_rcode_server> | <h_rcode_name> | <h_rcode_ni> | <h_rcode_refused> | <h_rcode_other>;
+<header_req> ::= <h_id> <h_qr_query> <h_opcode_standard> <h_aa> <h_tc> <h_rd> <h_ra> <h_z> <h_rcode_none> <h_qd_count> <h_an_count> <h_ns_count> <h_ar_count>;
+<h_qr_query> ::= '0b0';
+<h_qr_resp> ::= '0b1';
+# <h_opcode> ::= <h_opcode_standard> | <h_opcode_inverse> | <h_opcode_status_req> | <h_opcode_other>;
+<h_opcode_standard> ::= '0x0';
+# <h_opcode_inverse> ::= '0x1';
+# <h_opcode_status_req> ::= '0x2';
+# <h_opcode_other> ::= '0b' <bit>{4, 4};
+<h_aa> ::= '0b' <bit>;
+<h_tc> ::= '0b' <bit>;
+<h_rd> ::= '0b' <bit>;
+<h_ra> ::= '0b' <bit>;
+<h_z> ::= '0b0';
+#<h_rcode> ::= <h_rcode_none> | <h_rcode_format> | <h_rcode_server> | <h_rcode_name> | <h_rcode_ni> | <h_rcode_refused> | <h_rcode_other>;
 <h_rcode_none> ::= '0x0';
-<h_rcode_format> ::= '0x1';
-<h_rcode_server> ::= '0x2';
-<h_rcode_name> ::= '0x3';
-<h_rcode_ni> ::= '0x4';
-<h_rcode_refused> ::= '0x5';
-<h_rcode_other> ::= '0x' <hex>;
+#<h_rcode_format> ::= '0x1';
+#<h_rcode_server> ::= '0x2';
+#<h_rcode_name> ::= '0x3';
+#<h_rcode_ni> ::= '0x4';
+#<h_rcode_refused> ::= '0x5';
+#<h_rcode_other> ::= '0x' <hex>;
 <h_qd_count> ::= '0x0001';
 <h_an_count> ::= '0x0000';
 <h_ns_count> ::= '0x0000';
@@ -61,7 +62,7 @@ def gen_dns_for_name_field():
 <ip_address_sequence> ::= <number> | <number_start> <number>{0, 2};
 
 int(str(<h_rcode_other>), 16) > 5;
-int(str(<h_opcode_other>), 2) > 2;
+# int(str(<h_opcode_other>), 2) > 2;
 int(str(<a_rd_length>), 2) == len(<a_rdata>);
 int(str(<answer>.<a_rd_length>), 2) == len(<answer>.<a_rdata>);
 int(<ip_address_sequence>) <= 255;
