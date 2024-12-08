@@ -188,5 +188,3 @@ Of course, if the constraint is `False`, then there can be no success.
 ```{warning}
 At this point, outputs produced by Fandango should be seen as "best effort"; they are not guaranteed to satisfy the constraints.
 ```
-
-In the next section, we'll talk about [custom generators](sec:generators).

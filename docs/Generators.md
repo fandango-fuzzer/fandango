@@ -267,5 +267,3 @@ To obtain well-distributed numbers from the beginning, use a generator.
 2. If a value to be produced is _constant_, it can go into a _generator_ or a _constraint_.
 3. If a value to be produced must be _part of a valid input_, it should go into a _constraint_. (Constraints are checked during parsing _and_ production.)
 :::
-
-In the next section, we'll talk about [accessing input elements](sec:paths).

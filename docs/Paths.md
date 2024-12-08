@@ -11,7 +11,7 @@ kernelspec:
 ---
 
 (sec:paths)=
-# Handling Input Elements
+# Accessing Input Elements
 
 ```{error}
 This chapter is still under construction.
@@ -381,8 +381,8 @@ $ fandango fuzz -f persons.fan -n 10 -c '<start>[0].<last_name>..<lowercase_lett
 
 ## Quantifiers
 
+TODO
 
 ## Implications
 
-
-The next section talks about [binary inputs](sec:binary).
+TODO
