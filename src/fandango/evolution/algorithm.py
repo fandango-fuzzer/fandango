@@ -31,6 +31,7 @@ class Fandango:
         verbose: bool = False,
         warnings_are_errors: bool = False,
         best_effort: bool = False,
+        random_seed: int = None,
         start_symbol="<start>",
     ):
         """
@@ -52,7 +53,10 @@ class Fandango:
         :param start_symbol: The start symbol to use with the grammar.
         :param warnings_are_errors: If set, turns warnings into errors
         :param best_effort: If set, returns also solutions not satisfying all constraints
+        :param random_seed: The random seed to use for reproducibility.
         """
+        if random_seed is not None:
+            random.seed(random_seed)
 
         if verbose:
             LOGGER.setLevel(logging.DEBUG)
