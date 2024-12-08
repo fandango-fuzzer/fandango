@@ -127,6 +127,12 @@ def get_parser(in_command_line=True):
         default=None,
     )
     settings_group.add_argument(
+        "--random-seed",
+        type=int,
+        help="the random seed to use for the algorithm",
+        default=None,
+    )
+    settings_group.add_argument(
         "--destruction-rate",
         type=float,
         help="the rate of individuals that will be randomly destroyed in every generation",
@@ -600,6 +606,8 @@ def make_fandango_settings(args, initial_settings={}):
         settings["warnings_are_errors"] = args.warnings_are_errors
     if args.best_effort is not None:
         settings["best_effort"] = args.best_effort
+    if args.random_seed is not None:
+        settings["random_seed"] = args.random_seed
     if args.start_symbol is not None:
         if args.start_symbol.startswith("<"):
             start_symbol = args.start_symbol
