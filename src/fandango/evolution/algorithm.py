@@ -113,10 +113,16 @@ class Fandango:
 
     def trigger_event(self, event: FandangoLifecycle):
         # Todo get IO instance
-        pass
-        # if event in self.lifecycle_events:
-        #     function = self.lifecycle_events[event]
-        #     eval(function, globals(), dict())
+        local_env, global_env = self.grammar.get_python_env()
+        pyenv_data = dict()
+        if 'FandangoIO' in local_env.keys():
+            io_class_env = local_env['FandangoIO']
+            if '_FandangoIO__instance' in io_class_env.keys():
+                instance_env = io_class_env['_FandangoIO__instance']
+                pyenv_data = instance_env.data
+        if event in pyenv_data.keys():
+            function = pyenv_data[event]
+            eval(function, global_env, local_env)
 
     def evolve(self) -> List[DerivationTree]:
         """
