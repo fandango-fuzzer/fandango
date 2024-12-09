@@ -7,26 +7,31 @@
 # === fandango is responding ===
 
 def send_response():
-    write(server_fp, '<ping> . <ping_resp>'
+    pass
+    # write(server_fp, '<ping> . <ping_resp>'
 
 def get_request():
-    server_fp = open('https://lorem-ipsum.example')
-    set_tree({
-        '<ping_req>': read(server_fp)
-    })
+    pass
+    # server_fp = open('https://lorem-ipsum.example')
+    # set_tree({
+    #      '<ping_req>': read(server_fp)
+    #  })
 
-on_lifecycle(PRE_EVOLVE, get_request)
-on_lifecycle(FINALLY, send_response)
+on_lifecycle(FandangoLifecycle.PRE_EVOLVE, get_request)
+on_lifecycle(FandangoLifecycle.FINALLY, send_response)
 
 # ===========================================
 # === alternative, fandango is requesting ===
 
-def send_request():
-    request = get_str('<ping> . <ping_req>')
-    server_fp = write('https://lorem-ipsum.example', request)
-    response = read(server_fp)
-    set_tree({
-        '<ping_res>': response
-    })
+# def send_request():
+#     request = get_str('<ping> . <ping_req>')
+#     server_fp = write('https://lorem-ipsum.example', request)
+#     response = read(server_fp)
+#     set_tree({
+#         '<ping_res>': response
+#     })
+#
+# on_lifecycle(FandangoLifecycle.POST_EVOLVE, send_request)
 
-on_lifecycle(POST_EVOLVE, send_request)
+
+# Note to myself. Solve locals/globals problem by using a dict that passes fuzzing results to .fan environment and accepts string to populate tree with
