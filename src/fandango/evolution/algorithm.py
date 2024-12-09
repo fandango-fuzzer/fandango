@@ -3,6 +3,7 @@ import copy
 import logging
 import random
 import time
+from enum import Enum
 from typing import List, Tuple
 
 import deprecation
@@ -13,6 +14,10 @@ from fandango.language.grammar import DerivationTree
 from fandango.language.grammar import Grammar
 from fandango.logger import LOGGER
 
+class FandangoLifecycle(Enum):
+    PRE_EVOLVE = 1
+    POST_EVOLVE = 2
+    FINALLY = 3
 
 class Fandango:
     def __init__(
@@ -81,6 +86,7 @@ class Fandango:
         self.mutations_made = 0
 
         self.time_taken = None
+        self.lifecycle_events = dict()
 
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
@@ -217,6 +223,22 @@ class Fandango:
                 return self.population[: self.desired_solutions]
 
         return self.solution
+
+    def on_lifecycle(self, lifecycle: FandangoLifecycle, function):
+        """
+        Sets a lifecycle hook and assigns a function to it. The functions is being executed at the occurence of the
+        corresponding event.
+        :param lifecycle: The lifecycle hook to assign the function to.
+        :param function: The function to execute.
+        """
+        self.lifecycle_events[lifecycle] = function
+
+
+    def set_tree(self, tree: dict[str, str]):
+        pass
+
+    def get_str(self, start_non_terminal = '<start>') -> List[str]:
+        return [str(item) for item in [sol.find_all_trees(path) for sol in self.solution]]
 
     def generate_random_initial_population(self) -> List[DerivationTree]:
         """
