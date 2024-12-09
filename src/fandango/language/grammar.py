@@ -1024,3 +1024,6 @@ class Grammar(NodeVisitor):
             len(covered_k_paths),
             len(all_k_paths),
         )
+
+    def get_python_env(self):
+        return self._local_variables, self._global_variables
