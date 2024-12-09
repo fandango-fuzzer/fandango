@@ -5,7 +5,7 @@ from faker import Faker
 
 def main():
     # Parse grammar and constraints
-    grammar, constraints = parse_file('dns_simplified.fan')
+    grammar, constraints = parse_file('io_example.fan')
 
     # Initialize FANDANGO with desired parameters
     fandango = Fandango(
