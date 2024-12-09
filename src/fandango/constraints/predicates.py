@@ -1,3 +1,4 @@
+from fandango.language.io import FandangoIO, FandangoLifecycle
 from fandango.language.tree import DerivationTree
 
 actual_int = int
@@ -32,6 +33,18 @@ def is_int(x):
         return False
     else:
         return True
+
+
+def get_solutions() -> list[str]:
+    return FandangoIO.instance().get_solutions()
+
+
+def set_partial_solution(path: str, value: str):
+    FandangoIO.instance().set_partial_solution(path, value)
+
+
+def on_lifecycle(lifecycle: FandangoLifecycle, function):
+    FandangoIO.instance().on_lifecycle(lifecycle, function)
 
 
 def is_float(x):

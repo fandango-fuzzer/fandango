@@ -12,12 +12,9 @@ from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
 from fandango.language.grammar import DerivationTree
 from fandango.language.grammar import Grammar
+from fandango.language.io import FandangoLifecycle
 from fandango.logger import LOGGER
 
-class FandangoLifecycle(Enum):
-    PRE_EVOLVE = 1
-    POST_EVOLVE = 2
-    FINALLY = 3
 
 class Fandango:
     def __init__(
@@ -86,7 +83,6 @@ class Fandango:
         self.mutations_made = 0
 
         self.time_taken = None
-        self.lifecycle_events = dict()
 
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
@@ -115,6 +111,13 @@ class Fandango:
             sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
 
+    def trigger_event(self, event: FandangoLifecycle):
+        # Todo get IO instance
+        pass
+        # if event in self.lifecycle_events:
+        #     function = self.lifecycle_events[event]
+        #     eval(function, globals(), dict())
+
     def evolve(self) -> List[DerivationTree]:
         """
         Run the genetic algorithm to evolve the population over multiple generations.
@@ -124,6 +127,8 @@ class Fandango:
         LOGGER.info(f"---------- Starting evolution ----------")
 
         start_time = time.time()
+
+        self.trigger_event(FandangoLifecycle.PRE_EVOLVE)
 
         for generation in range(1, self.max_generations + 1):
             if 0 < self.desired_solutions <= len(self.solution):
@@ -191,6 +196,8 @@ class Fandango:
                 sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
 
+        self.trigger_event(FandangoLifecycle.FINALLY)
+
         self.time_taken = time.time() - start_time
 
         LOGGER.info(f"---------- Evolution finished ----------")
@@ -233,12 +240,6 @@ class Fandango:
         """
         self.lifecycle_events[lifecycle] = function
 
-
-    def set_tree(self, tree: dict[str, str]):
-        pass
-
-    def get_str(self, start_non_terminal = '<start>') -> List[str]:
-        return [str(item) for item in [sol.find_all_trees(path) for sol in self.solution]]
 
     def generate_random_initial_population(self) -> List[DerivationTree]:
         """
