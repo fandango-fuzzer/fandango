@@ -90,7 +90,17 @@ def check_constraints_existence_children(grammar, parent, symbol, recurse, indir
 
 def parse_file(*args, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
     contents = ""
-    for file in args:
-        with open(file, "r") as fp:
-            contents += fp.read()
+    try:
+        for file in args:
+            with open(file, "r") as fp:
+                contents += fp.read()
+    except FileNotFoundError:
+        print(f"File not found, trying with default .fan specification", file=sys.stderr)
+        try:
+            with open("default.fan", "r") as fp:
+                contents = fp.read()
+        except FileNotFoundError:
+            print(f"Default .fan specification not found, exiting", file=sys.stderr)
+            sys.exit(1)
+
     return parse(contents, lazy=lazy)

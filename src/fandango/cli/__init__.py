@@ -710,8 +710,14 @@ def fuzz_command(args):
         constraints = DEFAULT_FAN_CONTENT[1]
 
     if grammar is None:
-        print("fuzz: Use -f to specify a .fan file", file=sys.stderr)
-        return
+        print("fuzz: No grammar found, looking for default .fan file...", file=sys.stderr)
+        try:
+            with open("default.fan", "r") as fp:
+                fan_contents = fp.read()
+                grammar, constraints = extract_grammar_and_constraints(fan_contents)
+        except FileNotFoundError:
+            print("fuzz: Default .fan file not found, exiting execution.", file=sys.stderr)
+            return
 
     if DEFAULT_CONSTRAINTS:
         constraints += DEFAULT_CONSTRAINTS
@@ -941,6 +947,7 @@ def shell_command(args):
             readline.read_history_file(histfile)
             readline.set_history_length(1000)
         except FileNotFoundError:
+
             pass
         atexit.register(readline.write_history_file, histfile)
 
