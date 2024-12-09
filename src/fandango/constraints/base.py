@@ -96,6 +96,7 @@ class Constraint(GeneticBase, ABC):
 
     @abstractmethod
     def accept(self, visitor):
+        """Accepts a visitor to traverse the constraint structure."""
         pass
 
 
@@ -159,6 +160,7 @@ class ExpressionConstraint(Constraint):
         return representation
 
     def accept(self, visitor: "ConstraintVisitor"):
+        """Accepts a visitor to traverse the constraint structure."""
         visitor.visit_expression_constraint(self)
 
 
@@ -294,6 +296,7 @@ class ComparisonConstraint(Constraint):
         return representation
 
     def accept(self, visitor):
+        """Accepts a visitor to traverse the constraint structure."""
         return visitor.visit_comparison_constraint(self)
 
 
@@ -342,6 +345,7 @@ class ConjunctionConstraint(Constraint):
         return "(" + " and ".join(repr(c) for c in self.constraints) + ")"
 
     def accept(self, visitor: "ConstraintVisitor"):
+        """Accepts a visitor to traverse the constraint structure."""
         visitor.visit_conjunction_constraint(self)
         if visitor.do_continue(self):
             for constraint in self.constraints:
@@ -393,6 +397,7 @@ class DisjunctionConstraint(Constraint):
         return "(" + " or ".join(repr(c) for c in self.constraints) + ")"
 
     def accept(self, visitor: "ConstraintVisitor"):
+        """Accepts a visitor to traverse the constraint structure."""
         visitor.visit_disjunction_constraint(self)
         if visitor.do_continue(self):
             for constraint in self.constraints:
@@ -430,6 +435,7 @@ class ImplicationConstraint(Constraint):
         return f"({repr(self.antecedent)} -> {repr(self.consequent)})"
 
     def accept(self, visitor: "ConstraintVisitor"):
+        """Accepts a visitor to traverse the constraint structure."""
         visitor.visit_implication_constraint(self)
         if visitor.do_continue(self):
             self.antecedent.accept(visitor)
@@ -487,6 +493,7 @@ class ExistsConstraint(Constraint):
         return f"(exists {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
 
     def accept(self, visitor: "ConstraintVisitor"):
+        """Accepts a visitor to traverse the constraint structure."""
         visitor.visit_exists_constraint(self)
         if visitor.do_continue(self):
             self.statement.accept(visitor)
@@ -543,6 +550,7 @@ class ForallConstraint(Constraint):
         return f"(forall {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
 
     def accept(self, visitor: "ConstraintVisitor"):
+        """Accepts a visitor to traverse the constraint structure."""
         visitor.visit_forall_constraint(self)
         if visitor.do_continue(self):
             self.statement.accept(visitor)
