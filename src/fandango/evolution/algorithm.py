@@ -12,7 +12,7 @@ from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
 from fandango.language.grammar import DerivationTree
 from fandango.language.grammar import Grammar
-from fandango.language.io import FandangoLifecycle
+from fandango.language.io import FandangoLifecycle, FandangoIO
 from fandango.logger import LOGGER
 
 
@@ -114,15 +114,10 @@ class Fandango:
     def trigger_event(self, event: FandangoLifecycle):
         # Todo get IO instance
         local_env, global_env = self.grammar.get_python_env()
-        pyenv_data = dict()
+        io_instance: FandangoIO = None
         if 'FandangoIO' in local_env.keys():
-            io_class_env = local_env['FandangoIO']
-            if '_FandangoIO__instance' in io_class_env.keys():
-                instance_env = io_class_env['_FandangoIO__instance']
-                pyenv_data = instance_env.data
-        if event in pyenv_data.keys():
-            function = pyenv_data[event]
-            eval(function, global_env, local_env)
+            io_instance = local_env['FandangoIO'].instance()
+        eval(f"FandangoIO.instance().dispatch_lifecycle({str(event)})", global_env, local_env)
 
     def evolve(self) -> List[DerivationTree]:
         """

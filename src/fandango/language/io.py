@@ -19,17 +19,28 @@ class FandangoIO:
     def __init__(self):
         if FandangoIO.__instance is not None:
             raise Exception("Singleton already created!")
-        self.data = dict(
-            {"solutions": list[str](), "partial_solution": dict[str, str]()}
-        )
+        self._data = dict({
+            "solutions": list[str](),
+            "partial_solution": dict[str, str]()
+        })
         self.lifecycle_events = dict()
         FandangoIO.__instance = self
 
     def get_solutions(self) -> list[str]:
-        return self.data["solutions"]
+        return self._data["solutions"]
 
     def set_partial_solution(self, path: str, value: str):
-        self.data["partial_solution"][path] = value
+        self._data["partial_solution"][path] = value
+
+    def get_partial_solutions(self) -> dict[str, str]:
+        return self._data["partial_solution"].copy()
 
     def on_lifecycle(self, lifecycle: FandangoLifecycle, function):
         self.lifecycle_events[lifecycle] = function
+
+    def get_lifecycle_events(self):
+        return self.lifecycle_events.copy()
+
+    def dispatch_lifecycle(self, lifecycle: FandangoLifecycle):
+        if lifecycle in self.lifecycle_events.keys():
+            self.lifecycle_events[lifecycle]()
