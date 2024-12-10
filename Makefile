@@ -92,14 +92,14 @@ pdf: $(PDF_TARGET)
 
 # Re-create the book in HTML
 $(HTML_MARKER): $(DOCS_SOURCES) $(ALL_HTML_MARKER)
-	$(JB) build $(DOCS)
+	$(JB) build -W $(DOCS)
 	echo 'Success' > $@
 	-$(REFRESH_HTML)
 	@echo Output written to $(HTML_INDEX)
 
 # If we change _toc.yml, all tocs need to be rebuilt
 $(ALL_HTML_MARKER): $(DOCS)/_toc.yml
-	$(JB) build --all $(DOCS)
+	$(JB) build -W --all $(DOCS)
 	echo 'Success' > $@
 
 # Same as above, but also clear the cache
@@ -121,8 +121,7 @@ refresh: $(HTML_MARKER)
 
 # Re-create the book in PDF
 $(LATEX_MARKER): $(DOCS_SOURCES) $(DOCS)/_book_toc.yml $(DOCS)/_book_config.yml
-	cd $(DOCS); \
-	$(JB) build --builder latex --toc _book_toc.yml --config _book_config.yml .
+	cd $(DOCS); $(JB) build -W --builder latex --toc _book_toc.yml --config _book_config.yml .
 	echo 'Success' > $@
 
 $(DOCS)/_book_toc.yml: $(DOCS)/_toc.yml Makefile
