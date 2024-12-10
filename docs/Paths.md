@@ -13,10 +13,6 @@ kernelspec:
 (sec:paths)=
 # Accessing Input Elements
 
-```{error}
-This chapter is still under construction.
-```
-
 When dealing with [complex input formats](sec:recursive), attaching [constraints](sec:constraints) can be complex, as elements can occur _multiple times_ in a generated input.
 Fandango offers a few mechanisms to disambiguate these, and to specify specific _contexts_ in which to search for elements.
 
@@ -368,7 +364,15 @@ This is why Fandango allows to express _quantifiers_ in constraints.
 
 ### Existential Quantifiers
 
-The expression
+To express that within a particular scope, at least one instance of a symbol should satisfy a constraint, write
+
+```
+exists SYMBOL in SCOPE: CONSTRAINT
+```
+
+where `SYMBOL` and `SCOPE` are nonterminals (e.g. `<age>`) and `CONSTRAINT` is a constraint.
+
+Hence, the expression
 
 ```
 exists <name> in <start>: <name>.startswith("A")
@@ -388,7 +392,15 @@ $ fandango fuzz -f persons.fan -n 10 -c 'exists <name> in <start>: <name>.starts
 ### Universal Quantifiers
 
 Where there are existential quantifiers, there also are _universal_ quantifiers.
-The expression
+The syntax is 
+
+```
+forall SYMBOL in SCOPE: CONSTRAINT
+```
+
+where `SYMBOL` and `SCOPE` are nonterminals (e.g. `<age>`) and `CONSTRAINT` is a constraint.
+
+Hence, the expression
 
 ```
 forall <lowercase_letter> in <first_name>: <lowercase_letter> == "a"
@@ -424,11 +436,47 @@ $ fandango fuzz -f persons.fan -n 10 -c '<first_name>..<lowercase_letter> == "a"
 :::
 
 
-
-
-
-
-
 ## Implications
 
-TODO
+Finally, Fandango supports _implications_ - that is, constraints that only need to hold if some other constraint is met.
+The syntax is
+
+```
+ANTECEDENT -> CONSEQUENCE
+```
+
+where `ANTECEDENT` and `CONSEQUENCE` are constraints.
+If `ANTECEDENT` is met, then `CONSEQUENCE` must also be met.
+
+Hence, the expression
+
+```
+int(<age>) > 30 -> <first_name>.startswith("A")
+```
+
+ensures that if a person is aged more than 30, then their first name should start with an `"A"`.
+Let's try this:
+
+```shell
+$ fandango fuzz -f persons.fan -n 10 -c 'int(<age>) > 30 -> <first_name>.startswith("A")'
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons.fan -n 10 -c 'int(<age>) > 30 -> <first_name>.startswith("A")'
+```
+
+Note how Fandango "solves" the problem by mostly producing only persons whose age is _below_ the threshold.
+But if we have the age come from a Gaussian distribution, as discussed in {ref}`sec:generators`, we get
+
+```shell
+$ fandango fuzz -f persons-faker-gauss.fan -n 10 -c 'int(<age>) > 30 -> <first_name>.startswith("A")'
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons-faker-gauss.fan -n 10 -c 'int(<age>) > 30 -> <first_name>.startswith("A")'
+```
+
+While the implication is indeed resolved, note that the Gaussian distribution no longer holds.
+We will revisit this issue in {ref}`sec:distributions`, when we specify targets that must hold for the entire population.
