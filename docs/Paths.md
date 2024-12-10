@@ -360,76 +360,117 @@ $ fandango fuzz -f persons.fan -n 10 -c '<start>[0].<last_name>..<lowercase_lett
 
 By default, whenever you use a symbol `<foo>` in a constraint, this constraint applies to _all_ occurrences of `<foo>` in the produced output string.
 For your purposes, though, one such instance already may suffice.
-This is why Fandango allows to express _quantifiers_ in constraints.
+This is why Fandango allows expressing _quantification_ in constraints.
 
-### Existential Quantifiers
 
-To express that within a particular scope, at least one instance of a symbol should satisfy a constraint, write
+### Star Expressions
 
+```{error}
+The `*` syntax is not operational yet.
 ```
-exists SYMBOL in SCOPE: CONSTRAINT
+
+In Fandango, you can prefix an element with `*` to obtain a collection of _all_ these elements within an individual string.
+Hence, `*<name>` is a collection of _all_ `<name>` elements within the generated string.
+This syntax can be used in a variety of ways.
+For instance, we can have a constraint check whether a particular element is in the collection:
+
+:::{margin}
+Not every constraint that can be _expressed_ also can be _solved_ by Fandango.
+:::
+
+```python
+"Pablo" in *<name>
 ```
 
-where `SYMBOL` and `SCOPE` are nonterminals (e.g. `<age>`) and `CONSTRAINT` is a constraint.
+This constraint evaluates to True if any of the values in `*<name>` (= one of the two `<name>` elements) is equal to `"Pablo"`.
+`*`-expressions are mostly useful in quantifiers, which we discuss below.
+
+
+### Existential Quantification
+
+To express that within a particular scope, at least one instance of a symbol must satisfy a constraint, use a `*`-expression in combination with `any()`:
+
+```python
+any(CONSTRAINT for ELEM in *SCOPE)
+```
+
+where
+* `SCOPE` is a nonterminal (e.g. `<age>`);
+* `ELEM` is a Python variable; and
+* `CONSTRAINT` is a constraint over `ELEM`
 
 Hence, the expression
 
 ```
-exists <name> in <start>: <name>.startswith("A")
+any(n.startswith("A") for n in *<name>)
 ```
 
-ensures there is at least _one_ subelement `<name>` of `<start>` that starts with an "A":
+ensures there is at least _one_ element `<name>` that starts with an "A":
+
+Let us decompose this expression for a moment:
+
+* The expression `for n in *<name>` lets Python iterate over `*<name>` (all `<name>` objects within a person)...
+* ... and evaluate `n.startswith("A")` for each of them, resulting in a collection of Boolean values.
+* The Python function `any(list)` returns `True` if at least one element in `list` is True.
+
+So, what we get is existential quantification:
 
 ```shell
-$ fandango fuzz -f persons.fan -n 10 -c 'exists <name> in <start>: <name>.startswith("A")'
+$ fandango fuzz -f persons.fan -n 10 -c 'any(n.startswith("A") for n in *<name>)'
 ```
 
+% FIXME: Old syntax
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10 -c 'exists <name> in <start>: <name>.startswith("A")'
 ```
 
-### Universal Quantifiers
+
+### Universal Quantification
 
 Where there are existential quantifiers, there also are _universal_ quantifiers.
-The syntax is 
+Here we use the Python `all()` function; `all(list)` evaluates to True only if _all_ elements in `list` are True.
 
-```
-forall SYMBOL in SCOPE: CONSTRAINT
-```
+We use a `*`-expression in combination with `all()`:
 
-where `SYMBOL` and `SCOPE` are nonterminals (e.g. `<age>`) and `CONSTRAINT` is a constraint.
+```python
+all(CONSTRAINT for ELEM in *SCOPE)
+```
 
 Hence, the expression
 
 ```
-forall <lowercase_letter> in <first_name>: <lowercase_letter> == "a"
+all(c == "a" for c in *<first_name>..<lowercase_letter>)
 ```
 
-ensures that _all_ subelements `<lowercase_letter>` in `<first_name>` have the value "a":
+ensures that _all_ subelements `<lowercase_letter>` in `<first_name>` have the value "a".
+
+Again, let us decompose this expression:
+
+* The expression `for c in *<first_name>..<lowercase_letter>` lets Python iterate over all `<lowercase_letter>` objects within `<first_name>`...
+* ... and evaluate `c == "A"` for each of them, resulting in a collection of Boolean values.
+* The Python function `all(list)` returns `True` if all elements in `list` are True.
+
+So, what we get is universal quantification:
+
 
 ```shell
-$ fandango fuzz -f persons.fan -n 10 -c 'forall <lowercase_letter> in <first_name>: <lowercase_letter> == "a"'
+$ fandango fuzz -f persons.fan -n 10 -c 'all(c == "a" for c in *<first_name>..<lowercase_letter>)'
 ```
-
-% FIXME: This does not work yet (#119) - AZ
-% ```{code-cell}
-% :tags: ["remove-input"]
-% !fandango fuzz -f persons.fan -n 10 -c 'forall <lowercase_letter> in <first_name>: <lowercase_letter> == "a"'
-% ```
 
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10 -c '<first_name>..<lowercase_letter> == "a"'
 ```
 
-By default, all symbols are universally quantified within `<start>` (as in `forall SYMBOL in <start>: ...`), so a universal quantifier is only needed if you want to limit the scope to some sub-element.
+By default, all symbols are universally quantified within `<start>`, so a dedicated universal quantifier is only needed if you want to _limit the scope_ to some sub-element.
+This is what we do here with `<first_name>..<lowercase_letter>`, limiting the scope to `<first_name>`.
 
-You can actually achieve the same effect as above without `forall`. How?
+Given the default universal quantification, you can actually achieve the same effect as above without `all()` and without a `*`. How?
 
 :::{admonition} Solution
 :class: tip, dropdown
-You can use a `..` selector to access all `<lowercase_letter>` elements within `<first_name>`:
+You can access all `<lowercase_letter>` elements within `<first_name>` directly:
 ```
 $ fandango fuzz -f persons.fan -n 10 -c '<first_name>..<lowercase_letter> == "a"'
 ```
