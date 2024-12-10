@@ -1,3 +1,4 @@
+import random
 from typing import Tuple
 
 from evaluation.vs_isla.csv_evaluation.csv_evaluation import evaluate_csv
@@ -11,7 +12,7 @@ from evaluation.vs_isla.xml_evaluation.xml_evaluation import evaluate_xml
 
 # Return the evaluation results as a tuple of values (subject, total, valid, percentage, diversity, mean_length, median)
 def better_print_results(
-    results: Tuple[str, int, int, float, Tuple[float, int, int], float, float]
+        results: Tuple[str, int, int, float, Tuple[float, int, int], float, float]
 ):
     print("================================")
     print(f"{results[0]} Evaluation Results")
@@ -27,7 +28,10 @@ def better_print_results(
     print("")
 
 
-def run_evaluation(seconds: int = 60):
+def run_evaluation(seconds: int = 3600, random_seed: int = 1):
+    # Set the random seed
+    random.seed(random_seed)
+
     better_print_results(evaluate_csv(seconds))
     better_print_results(evaluate_rest(seconds))
     better_print_results(evaluate_scriptsizec(seconds))
@@ -36,4 +40,4 @@ def run_evaluation(seconds: int = 60):
 
 
 if __name__ == "__main__":
-    run_evaluation(5)
+    run_evaluation()
