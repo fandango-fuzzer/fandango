@@ -21,7 +21,7 @@ class Fandango:
         constraints: List[Constraint],
         population_size: int = 100,
         desired_solutions: int = 0,
-        initial_population: List[DerivationTree] = None,
+        initial_population: List[DerivationTree | str] = None,
         max_generations: int = 500,
         elitism_rate: float = 0.1,
         crossover_rate: float = 0.8,
@@ -31,6 +31,7 @@ class Fandango:
         verbose: bool = False,
         warnings_are_errors: bool = False,
         best_effort: bool = False,
+        random_seed: int = None,
         start_symbol="<start>",
     ):
         """
@@ -52,7 +53,10 @@ class Fandango:
         :param start_symbol: The start symbol to use with the grammar.
         :param warnings_are_errors: If set, turns warnings into errors
         :param best_effort: If set, returns also solutions not satisfying all constraints
+        :param random_seed: The random seed to use for reproducibility.
         """
+        if random_seed is not None:
+            random.seed(random_seed)
 
         if verbose:
             LOGGER.setLevel(logging.DEBUG)
@@ -91,7 +95,21 @@ class Fandango:
 
         if initial_population is not None:
             LOGGER.info(f"Saving the provided initial population...")
-            self.population = list(initial_population)
+            self.population = []
+            for individual in initial_population:
+                if isinstance(individual, str):
+                    tree = self.grammar.parse(individual)
+                    if not tree:
+                        raise ValueError(
+                            f"Failed to parse initial individual: {individual}"
+                        )
+                    self.population.append(tree)
+                elif isinstance(individual, DerivationTree):
+                    self.population.append(individual)
+                else:
+                    raise TypeError(
+                        f"Inital individuals must be DerivationTree or String"                
+                    )
         else:
             LOGGER.info(
                 f"Generating initial population (size: {self.population_size})..."
