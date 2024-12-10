@@ -150,7 +150,7 @@ class Interactive:
         self._splitter = FandangoSplitter()
         self._splitter.visit(tree)
         self._global_vars = {}
-        self._local_vars = predicates.__dict__
+        self._local_vars = None
         self._python_processor = PythonProcessor()
         exec(
             ast.unparse(self._python_processor.get_code(self._splitter.python_code)),
