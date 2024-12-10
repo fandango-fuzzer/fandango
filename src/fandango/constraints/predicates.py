@@ -39,8 +39,8 @@ def get_solutions() -> list[str]:
     return FandangoIO.instance().get_solutions()
 
 
-def set_partial_solution(path: str, value: str):
-    FandangoIO.instance().set_partial_solution(path, value)
+def set_partial_solution(non_terminal: str, value: str):
+    FandangoIO.instance().set_partial_solution(non_terminal, value)
 
 
 def on_lifecycle(lifecycle: FandangoLifecycle, function):
