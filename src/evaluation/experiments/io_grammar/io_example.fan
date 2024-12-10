@@ -9,11 +9,10 @@
 # === fandango is responding ===
 
 def get_request():
-    pass
+    set_partial_solution('<ping_reqq>', 'header2body3')
+    # pass
     # server_fp = open('https://lorem-ipsum.example')
-    # set_tree({
-    #      '<ping_req>': read(server_fp)
-    #  })
+    # set_partial_solution('<ping_req>', read(server_fp))
 
 def send_answer():
     pass

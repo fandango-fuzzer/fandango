@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import List, Dict, Set
 
 
 class FandangoLifecycle(Enum):
@@ -20,7 +21,8 @@ class FandangoIO:
             raise Exception("Singleton already created!")
         self._data = dict({
             "solutions": list[str](),
-            "partial_solution": dict[str, str]()
+            "assigned_partial_solution": dict[str, str](),
+            "partial_solution": set[str]()
         })
         self._lifecycle_events = dict()
         FandangoIO.__instance = self
@@ -32,9 +34,15 @@ class FandangoIO:
         self._data["solutions"] = solutions
 
     def set_partial_solution(self, non_terminal: str, value: str):
-        self._data["partial_solution"][non_terminal] = value
+        self._data["assigned_partial_solution"][non_terminal] = value
 
-    def get_partial_solutions(self) -> dict[str, str]:
+    def add_partial_solution(self, value: str):
+        self._data["partial_solution"].add(value)
+
+    def get_assigned_partial_solutions(self) -> dict[str, str]:
+        return self._data["assigned_partial_solution"]
+
+    def get_partial_solutions(self) -> set[str]:
         return self._data["partial_solution"]
 
     def on_lifecycle(self, lifecycle: FandangoLifecycle, function):

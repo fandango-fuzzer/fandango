@@ -38,6 +38,8 @@ def is_int(x):
 def get_solutions() -> list[str]:
     return FandangoIO.instance().get_solutions()
 
+def add_partial_solution(value: str):
+    FandangoIO.instance().add_partial_solution(value)
 
 def set_partial_solution(non_terminal: str, value: str):
     FandangoIO.instance().set_partial_solution(non_terminal, value)
