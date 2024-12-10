@@ -103,3 +103,6 @@ $ fandango fuzz -n 1 -f binary.fan | od -c
 ! fandango fuzz -n 1 -f binary.fan | od -c
 ```
 
+:::{tip}
+Try to have a single symbol on the left hand side of an equality sign.
+:::
