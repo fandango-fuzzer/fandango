@@ -90,7 +90,7 @@ def evaluate_scriptsizec(
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
-        fandango = Fandango(grammar, constraints, verbose=False, desired_solutions=100)
+        fandango = Fandango(grammar, constraints, desired_solutions=100)
         fandango.evolve()
         solutions.extend(fandango.solution)
 
