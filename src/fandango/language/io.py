@@ -4,7 +4,6 @@ from enum import Enum
 class FandangoLifecycle(Enum):
     PRE_EVOLVE = 1
     POST_EVOLVE = 2
-    FINALLY = 3
 
 
 class FandangoIO:
@@ -32,11 +31,11 @@ class FandangoIO:
     def set_solutions(self, solutions: list[str]) -> None:
         self._data["solutions"] = solutions
 
-    def set_partial_solution(self, path: str, value: str):
-        self._data["partial_solution"][path] = value
+    def set_partial_solution(self, non_terminal: str, value: str):
+        self._data["partial_solution"][non_terminal] = value
 
     def get_partial_solutions(self) -> dict[str, str]:
-        return self._data["partial_solution"].copy()
+        return self._data["partial_solution"]
 
     def on_lifecycle(self, lifecycle: FandangoLifecycle, function):
         self._lifecycle_events[lifecycle] = function
