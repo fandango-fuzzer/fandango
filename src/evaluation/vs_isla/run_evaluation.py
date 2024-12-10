@@ -33,11 +33,11 @@ def run_evaluation(seconds: int = 3600, random_seed: int = 1):
     random.seed(random_seed)
 
     better_print_results(evaluate_csv(seconds))
-    # better_print_results(evaluate_rest(seconds))
-    # better_print_results(evaluate_scriptsizec(seconds))
-    # better_print_results(evaluate_tar(seconds))
-    # better_print_results(evaluate_xml(seconds))
+    better_print_results(evaluate_rest(seconds))
+    better_print_results(evaluate_scriptsizec(seconds))
+    better_print_results(evaluate_tar(seconds))
+    better_print_results(evaluate_xml(seconds))
 
 
 if __name__ == "__main__":
-    run_evaluation(seconds=5)
+    run_evaluation()
