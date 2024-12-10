@@ -25,7 +25,7 @@ from antlr4.error.Errors import ParseCancellationException
 from fandango.cli.interactive import Interactive
 from fandango.constants import INTERACTIVE, FUZZ, HELP
 from fandango.constraints import predicates
-from fandango.evolution.algorithm import Fandango
+from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.convert import (
     FandangoSplitter,
     GrammarProcessor,
@@ -625,6 +625,10 @@ def make_fandango_settings(args, initial_settings={}):
     # Set setting here
     if args.initial_population is not None:
         settings["initial_population"] = extract_initial_population(args.initial_population)
+    if args.verbose and args.verbose == 1:
+        settings["logger_level"] = LoggerLevel.INFO
+    elif args.verbose and args.verbose > 1:
+        settings["logger_level"] = LoggerLevel.DEBUG
     return settings
 
 # Add method for extracting here
