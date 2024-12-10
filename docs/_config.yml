@@ -13,4 +13,5 @@ latex:
 
 execute:
   execute_notebooks: cache
+  stderr_output: warn
 

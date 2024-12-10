@@ -97,8 +97,8 @@ $(HTML_MARKER): $(DOCS_SOURCES) $(ALL_HTML_MARKER)
 	-$(REFRESH_HTML)
 	@echo Output written to $(HTML_INDEX)
 
-# If we change _toc.yml, all tocs need to be rebuilt
-$(ALL_HTML_MARKER): $(DOCS)/_toc.yml
+# If we change _toc.yml or _config.yml, all docs need to be rebuilt
+$(ALL_HTML_MARKER): $(DOCS)/_toc.yml $(DOCS)/_config.yml
 	$(JB) build -W --all $(DOCS)
 	echo 'Success' > $@
 
