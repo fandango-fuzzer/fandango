@@ -178,8 +178,30 @@ The last character is a newline `\n` - this is produced by Fandango and not part
 The format is correct - we have successfully produced a length encoding.
 
 
+
+## Compression
+
+:::{error}
+To be completed later.
+:::
+
+Some parts of a binary file may be _compressed_ to save space.
+Here's a sketch on how to achieve this:
+
+```python
+<chunk> ::= <header> <compressed_content> <trailer>;
+<compressed_content> ::= <byte>*;
+<content> ::= <byte>*;
+
+<compressed_content> == compress(<content>);    # for producing
+<content> == uncompress(<compressed_content>);  # for parsing
+```
+
+
 ## Case Study: The GIF Format
 
 :::{error}
 To be added later.
 :::
+
+The [GIF format](https://www.fileformat.info/format/gif/egff.htm) is widely used to encode image sequences.
