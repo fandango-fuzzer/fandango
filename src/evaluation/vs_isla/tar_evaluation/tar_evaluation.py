@@ -34,9 +34,7 @@ def evaluate_tar(
         fandango = Fandango(
             grammar,
             constraints,
-            verbose=True,
-            desired_solutions=200,
-            population_size=200,
+            desired_solutions=100,
         )
         fandango.evolve()
         solutions.extend(fandango.solution)
