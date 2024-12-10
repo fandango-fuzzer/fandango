@@ -214,9 +214,9 @@ $ fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50
 !fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50
 ```
 
-As you see, Fandango still outputs the last population - these "fittest" ones get closest in fulfilling the constraint.
+As you see, Fandango produces a population of zero.
 Of course, if the constraint is `False`, then there can be no success.
 
-```{warning}
-At this point, outputs produced by Fandango should be seen as "best effort"; they are not guaranteed to satisfy the constraints.
+```{tip}
+Fandango has a `--best-effort` option that allows you to still output the final population.
 ```
