@@ -102,6 +102,14 @@ $(ALL_HTML_MARKER): $(DOCS)/_toc.yml
 	$(JB) build --all $(DOCS)
 	echo 'Success' > $@
 
+# Same as above, but also clear the cache
+clear-cache:
+	$(RM) -fr $(DOCS)/_build/.jupyter_cache
+	$(RM) $(ALL_HTML_MARKER)
+
+rebuild-docs: clear-cache $(ALL_HTML_MARKER)
+
+
 # view HTML
 view: $(HTML_MARKER)
 	$(VIEW_HTML)
@@ -117,10 +125,6 @@ $(LATEX_MARKER): $(DOCS_SOURCES) $(DOCS)/_book_toc.yml
 	echo 'Success' > $@
 	
 $(DOCS)/_book_toc.yml: $(DOCS)/_toc.yml Makefile
-	echo '# Automatically generated from `$<`. Do not edit.' > $@
-	$(SED) s/Intro/BookIntro/ $< >> $@
-
-$(DOCS)/_book_toc.yml: $(DOCS)/_toc.yml
 	echo '# Automatically generated from `$<`. Do not edit.' > $@
 	$(SED) s/Intro/BookIntro/ $< >> $@
 
