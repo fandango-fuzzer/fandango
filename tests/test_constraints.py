@@ -17,12 +17,13 @@ class ConstraintTest(unittest.TestCase):
 """
 
     def get_constraint(self, constraint):
-        _, constraints = parse(constraint)
+        _, constraints = parse(self.GRAMMAR + constraint)
+        print(constraints)
         self.assertEqual(1, len(constraints))
         return constraints[0]
 
     def test_explicit_fitness(self):
-        constraint = self.get_constraint("fitness len(str(<start>));")
+        constraint = self.get_constraint("len(str(<start>));")
         example = DerivationTree(
             NonTerminal("<start>"),
             [
@@ -44,7 +45,7 @@ class ConstraintTest(unittest.TestCase):
                 )
             ],
         )
-        self.assertEqual(2, constraint.fitness(example).fitness())
+        self.assertEqual(1, constraint.fitness(example).fitness())
         example = DerivationTree(
             NonTerminal("<start>"),
             [
@@ -350,12 +351,18 @@ class ConstraintTest(unittest.TestCase):
         self.assertTrue(constraint.check(example))
 
     def test_complex_constraint(self):
+        grammar = """
+<start> ::= <number>;
+<number> ::= <digit> | <digit><number>;
+<digit> ::= "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "0";
+"""
         constraint = """
 int(<number>) % 2 == 0;
 int(<number>) > 10000;
 int(<number>) < 100000;
 """
-        _, constraints = parse(constraint)
+        print(grammar + constraint)
+        _, constraints = parse(grammar + constraint)
         self.assertEqual(3, len(constraints))
 
         def get_tree(x):
