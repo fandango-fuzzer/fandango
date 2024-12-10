@@ -22,5 +22,4 @@ def main():
         print(str(solution))
 
 if __name__ == '__main__':
-    #print(int("0xB", 16))
     main()
