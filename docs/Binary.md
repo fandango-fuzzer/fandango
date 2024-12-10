@@ -145,7 +145,11 @@ In Python, `//` is used for integer division.
 !grep -v ';' binary.fan
 ```
 
-With that, we can now define how the value of `<length>` is related to the length of `<content>`:
+:::{tip}
+The Python [`struct` module](https://docs.python.org/3/library/struct.html) offers several functions to convert data into binary formats.
+:::
+
+Using `uint16()`, we can now define how the value of `<length>` is related to the length of `<content>`:
 
 ```{code-cell}
 :tags: ["remove-input"]
