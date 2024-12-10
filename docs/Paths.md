@@ -16,7 +16,6 @@ kernelspec:
 When dealing with [complex input formats](sec:recursive), attaching [constraints](sec:constraints) can be complex, as elements can occur _multiple times_ in a generated input.
 Fandango offers a few mechanisms to disambiguate these, and to specify specific _contexts_ in which to search for elements.
 
-
 (sec:derivation-trees)=
 ## Derivation Trees
 
@@ -24,7 +23,7 @@ So far, we have always assumed that Fandango generates _strings_ from the gramma
 Behind the scenes, though, Fandango creates a far richer data structure - a so-called _derivation tree_ that _maintains the structure of the string_ and _allows accessing individual elements_.
 Every time Fandango sees a grammar rule
 
-```
+```python
 <symbol> ::= ...
 ```
 
@@ -127,9 +126,11 @@ tree.visualize()
 Repeating the process, it thus obtains a tree like this:
 
 % Could also compute and display derivation trees on the fly:
+% ```
 % import os
 % os.chdir('../src')
 % from fandango.language.tree import DerivationTree
+% ```
 
 ```{code-cell}
 :tags: ["remove-input"]
@@ -183,20 +184,17 @@ To obtain a string from the tree, we traverse its children left-to-right,
 ignoring all _nonterminal_ symbols (in `<...>`) and considering only the _terminal_ symbols (in quotes).
 This is what we get for the above tree:
 
-```
+```text
 Ex Pltz,18
 ```
 
 And this is the string Fandango produces.
 However, viewing the Fandango results as derivation trees allows us to access _elements_ of the Fandango-produced strings and to express _constraints_ on them.
 
-
-
 ## Specifying Paths
 
 One effect of Fandango producing derivation trees rather than "just" strings is that we can define special _operators_ that allow us to access _subtrees_ (or sub-elements) of the produced strings - and express constraints on them.
 This is especially useful if we want constraints to apply only in specific _contexts_ - say, as part of some element `<a>`, but not as part of an element `<b>`.
-
 
 ### Accessing Children
 
@@ -209,7 +207,7 @@ The expression `<foo>[N]` accesses the `N`-th child of `<foo>`, starting with ze
 
 If `<foo>` is defined in the grammar as
 
-```
+```python
 <foo> ::= <bar> ":" <baz>
 ```
 
@@ -250,7 +248,6 @@ While symbols act as strings in many contexts, this is where they differ.
 To access the first _character_ of a symbol `<foo>`, you need to explicitly convert it to a string first, as in `str(<foo>)[0]`.
 :::
 
-
 ### Selecting Children
 
 Referring to children by _number_, as in `<foo>[0]` can be a bit cumbersome.
@@ -263,7 +260,7 @@ In XPath, the corresponding operator is `/`.
 The expression `<foo>.<bar>` allows accessing elements `<bar>` when they are a _direct child_ of a symbol `<foo>`.
 This requires that `<bar>` occurs in the grammar rule defining `<foo>`:
 
-```
+```python
 <foo> ::= ...some expansion that has <bar>...
 ```
 
@@ -283,7 +280,6 @@ $ fandango fuzz -f persons.fan -n 10 -c '<first_name>.<name>.endswith("x")'
 :::{note}
 You can only access _nonterminal_ children this way; `<person_name>." "` (the space in the `<person_name>`) gives an error.
 :::
-
 
 ### Selecting Descendants
 
@@ -307,9 +303,9 @@ The expression `<foo>..<bar>` allows accessing elements `<bar>` when they are a 
 If that sounds like a recursive definition, that is because it is.
 A simpler way to think about `<foo>..<bar>` may be "All `<bar>`s that occur within `<foo>`".
 
-Let us take a look at some of the rules in our `persons.fan` example:
+Let us take a look at some rules in our `persons.fan` example:
 
-```
+```python
 <first_name> ::= <name>;
 <last_name> ::= <name>;
 <name> ::= <uppercase_letter><lowercase_letter>+;
@@ -329,7 +325,6 @@ $ fandango fuzz -f persons.fan -n 10 -c '<first_name>..<uppercase_letter> == "X"
 !fandango fuzz -f persons.fan -n 10 -c '<first_name>..<uppercase_letter> == "X"'
 ```
 
-
 ### Chains
 
 You can freely combine `[]`, `.`, and `..` into _chains_ that select subtrees.
@@ -338,6 +333,7 @@ What would the expression `<start>[0].<last_name>..<lowercase_letter>` refer to,
 :::{admonition} Solution
 :class: tip, dropdown
 This is easy:
+
 * `<start>[0]` is the first element of start, hence a `<person_name>`.
 * `.<last_name>` refers to the child of type `<last_name>`
 * `..<lowercase_letter>` refers to all descendants of type `<lowercase_letter>`
@@ -354,14 +350,11 @@ $ fandango fuzz -f persons.fan -n 10 -c '<start>[0].<last_name>..<lowercase_lett
 !fandango fuzz -f persons.fan -n 10 -c '<start>[0].<last_name>..<lowercase_letter> == "x"'
 ```
 
-
-
 ## Quantifiers
 
 By default, whenever you use a symbol `<foo>` in a constraint, this constraint applies to _all_ occurrences of `<foo>` in the produced output string.
 For your purposes, though, one such instance already may suffice.
 This is why Fandango allows expressing _quantification_ in constraints.
-
 
 ### Star Expressions
 
@@ -385,7 +378,6 @@ Not every constraint that can be _expressed_ also can be _solved_ by Fandango.
 This constraint evaluates to True if any of the values in `*<name>` (= one of the two `<name>` elements) is equal to `"Pablo"`.
 `*`-expressions are mostly useful in quantifiers, which we discuss below.
 
-
 ### Existential Quantification
 
 To express that within a particular scope, at least one instance of a symbol must satisfy a constraint, use a `*`-expression in combination with `any()`:
@@ -395,13 +387,14 @@ any(CONSTRAINT for ELEM in *SCOPE)
 ```
 
 where
+
 * `SCOPE` is a nonterminal (e.g. `<age>`);
 * `ELEM` is a Python variable; and
 * `CONSTRAINT` is a constraint over `ELEM`
 
 Hence, the expression
 
-```
+```python
 any(n.startswith("A") for n in *<name>)
 ```
 
@@ -420,11 +413,11 @@ $ fandango fuzz -f persons.fan -n 10 -c 'any(n.startswith("A") for n in *<name>)
 ```
 
 % FIXME: Old syntax
+
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10 -c 'exists <name> in <start>: <name>.startswith("A")'
 ```
-
 
 ### Universal Quantification
 
@@ -439,11 +432,11 @@ all(CONSTRAINT for ELEM in *SCOPE)
 
 Hence, the expression
 
-```
+```python
 all(c == "a" for c in *<first_name>..<lowercase_letter>)
 ```
 
-ensures that _all_ subelements `<lowercase_letter>` in `<first_name>` have the value "a".
+ensures that _all_ sub-elements `<lowercase_letter>` in `<first_name>` have the value "a".
 
 Again, let us decompose this expression:
 
@@ -452,7 +445,6 @@ Again, let us decompose this expression:
 * The Python function `all(list)` returns `True` if all elements in `list` are True.
 
 So, what we get is universal quantification:
-
 
 ```shell
 $ fandango fuzz -f persons.fan -n 10 -c 'all(c == "a" for c in *<first_name>..<lowercase_letter>)'
@@ -471,18 +463,19 @@ Given the default universal quantification, you can actually achieve the same ef
 :::{admonition} Solution
 :class: tip, dropdown
 You can access all `<lowercase_letter>` elements within `<first_name>` directly:
-```
+
+```shell
 $ fandango fuzz -f persons.fan -n 10 -c '<first_name>..<lowercase_letter> == "a"'
 ```
-:::
 
+:::
 
 ## Implications
 
 Finally, Fandango supports _implications_ - that is, constraints that only need to hold if some other constraint is met.
 The syntax is
 
-```
+```python
 ANTECEDENT -> CONSEQUENCE
 ```
 
@@ -491,7 +484,7 @@ If `ANTECEDENT` is met, then `CONSEQUENCE` must also be met.
 
 Hence, the expression
 
-```
+```python
 int(<age>) > 30 -> <first_name>.startswith("A")
 ```
 
