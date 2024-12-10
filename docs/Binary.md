@@ -105,13 +105,13 @@ In Python, it is likely that someone has already implemented the specific checks
 * [The `binascii` module](https://docs.python.org/3/library/binascii.html) offers CRC checks.
 * [The `zlib` module](https://docs.python.org/3/library/zlib.html) provides CRC32 and ADLER32 checks used in zip files.
 
-
 ## Length Encodings
 
 The second set of features one frequently encounters in binary formats is _length encodings_ - that is, a particular field holds a value that represents the length of one or more fields that follow.
 Here is a simple grammar that expresses this characteristic: A `<field>` has a two-byte length, followed by the actual content (of length `<length>`).
 
 % This is how I got the `<byte>` definition in `binary.fan` -- AZ
+
 ```{code-cell}
 :tags: ["remove-input", "remove-output"]
 import string
@@ -177,8 +177,6 @@ The hexadecimal dump shows that the first two bytes encode the length of the str
 The last character is a newline `\n` - this is produced by Fandango and not part of the grammar.
 The format is correct - we have successfully produced a length encoding.
 
-
-
 ## Compression
 
 :::{error}
@@ -196,7 +194,6 @@ Here's a sketch on how to achieve this:
 <compressed_content> == compress(<content>);    # for producing
 <content> == uncompress(<compressed_content>);  # for parsing
 ```
-
 
 ## Case Study: The GIF Format
 
