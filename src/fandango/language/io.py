@@ -23,11 +23,14 @@ class FandangoIO:
             "solutions": list[str](),
             "partial_solution": dict[str, str]()
         })
-        self.lifecycle_events = dict()
+        self._lifecycle_events = dict()
         FandangoIO.__instance = self
 
     def get_solutions(self) -> list[str]:
         return self._data["solutions"]
+
+    def set_solutions(self, solutions: list[str]) -> None:
+        self._data["solutions"] = solutions
 
     def set_partial_solution(self, path: str, value: str):
         self._data["partial_solution"][path] = value
@@ -36,11 +39,11 @@ class FandangoIO:
         return self._data["partial_solution"].copy()
 
     def on_lifecycle(self, lifecycle: FandangoLifecycle, function):
-        self.lifecycle_events[lifecycle] = function
+        self._lifecycle_events[lifecycle] = function
 
     def get_lifecycle_events(self):
-        return self.lifecycle_events.copy()
+        return self._lifecycle_events.copy()
 
     def dispatch_lifecycle(self, lifecycle: FandangoLifecycle):
-        if lifecycle in self.lifecycle_events.keys():
-            self.lifecycle_events[lifecycle]()
+        if lifecycle in self._lifecycle_events.keys():
+            self._lifecycle_events[lifecycle]()

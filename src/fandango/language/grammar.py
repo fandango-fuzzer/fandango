@@ -1026,4 +1026,4 @@ class Grammar(NodeVisitor):
         )
 
     def get_python_env(self):
-        return self._local_variables, self._global_variables
+        return self._global_variables, self._local_variables
