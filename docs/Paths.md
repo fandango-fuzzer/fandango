@@ -34,8 +34,14 @@ Every time Fandango sees a grammar rule
 
 it generates a derivation tree whose root is `<symbol>` and whose children are the elements of the right-hand side of the rule.
 
-Let's take the `<start>` rule from our [`persons.fan`](persons.fan) spec.
-It says
+Let's have a look at our [`persons.fan`](persons.fan) spec:
+
+```{code-cell}
+:tags: ["remove-input"]
+!cat persons.fan
+```
+
+The `<start>` rule says
 
 ```{code-cell}
 :tags: ["remove-input"]
@@ -356,7 +362,72 @@ $ fandango fuzz -f persons.fan -n 10 -c '<start>[0].<last_name>..<lowercase_lett
 
 ## Quantifiers
 
-TODO
+By default, whenever you use a symbol `<foo>` in a constraint, this constraint applies to _all_ occurrences of `<foo>` in the produced output string.
+For your purposes, though, one such instance already may suffice.
+This is why Fandango allows to express _quantifiers_ in constraints.
+
+### Existential Quantifiers
+
+The expression
+
+```
+exists <name> in <start>: <name>.startswith("A")
+```
+
+ensures there is at least _one_ subelement `<name>` of `<start>` that starts with an "A":
+
+```shell
+$ fandango fuzz -f persons.fan -n 10 -c 'exists <name> in <start>: <name>.startswith("A")'
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons.fan -n 10 -c 'exists <name> in <start>: <name>.startswith("A")'
+```
+
+### Universal Quantifiers
+
+Where there are existential quantifiers, there also are _universal_ quantifiers.
+The expression
+
+```
+forall <lowercase_letter> in <first_name>: <lowercase_letter> == "a"
+```
+
+ensures that _all_ subelements `<lowercase_letter>` in `<first_name>` have the value "a":
+
+```shell
+$ fandango fuzz -f persons.fan -n 10 -c 'forall <lowercase_letter> in <first_name>: <lowercase_letter> == "a"'
+```
+
+% FIXME: This does not work yet (#119) - AZ
+% ```{code-cell}
+% :tags: ["remove-input"]
+% !fandango fuzz -f persons.fan -n 10 -c 'forall <lowercase_letter> in <first_name>: <lowercase_letter> == "a"'
+% ```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons.fan -n 10 -c '<first_name>..<lowercase_letter> == "a"'
+```
+
+By default, all symbols are universally quantified within `<start>` (as in `forall SYMBOL in <start>: ...`), so a universal quantifier is only needed if you want to limit the scope to some sub-element.
+
+You can actually achieve the same effect as above without `forall`. How?
+
+:::{admonition} Solution
+:class: tip, dropdown
+You can use a `..` selector to access all `<lowercase_letter>` elements within `<first_name>`:
+```
+$ fandango fuzz -f persons.fan -n 10 -c '<first_name>..<lowercase_letter> == "a"'
+```
+:::
+
+
+
+
+
+
 
 ## Implications
 
