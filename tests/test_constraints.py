@@ -18,7 +18,6 @@ class ConstraintTest(unittest.TestCase):
 
     def get_constraint(self, constraint):
         _, constraints = parse(self.GRAMMAR + constraint)
-        print(constraints)
         self.assertEqual(1, len(constraints))
         return constraints[0]
 
