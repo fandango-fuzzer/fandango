@@ -38,7 +38,7 @@ Luhn's algorithm, adapted from the [Faker library](https://github.com/joke2k/fak
 % ```{code-cell}
 % from faker import Faker
 % from faker.providers import credit_card
-% 
+%
 % fake = Faker()
 % for _ in range(100):
 %     num = fake.credit_card_number()
@@ -104,5 +104,5 @@ $ fandango fuzz -n 1 -f binary.fan | od -c
 ```
 
 :::{tip}
-Try to have a single symbol on the left hand side of an equality sign.
+Try to have a single symbol on the left-hand side of an equality sign.
 :::
