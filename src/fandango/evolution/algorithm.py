@@ -214,7 +214,6 @@ class Fandango:
                 sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
         self.trigger_event(FandangoLifecycle.POST_EVOLVE)
-        self.trigger_event(FandangoLifecycle.FINALLY)
 
         self.time_taken = time.time() - start_time
 

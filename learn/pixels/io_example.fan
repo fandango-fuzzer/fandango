@@ -1,24 +1,28 @@
-<start> ::= <ping>
-<ping> ::= <ping_req> <ping_resp>
-<ping_req> ::= 'ping'
-<ping_resp> ::= 'pong'
+<start> ::= <ping>;
+<ping> ::= <ping_req> <ping_resp>;
+<ping_req> ::= <req_header> <req_body>;
+<req_header> ::= 'header1' | 'header2' | 'header3';
+<req_body> ::= 'body1' | 'body2' | 'body3';
+<ping_resp> ::= 'pong';
 
 # ==============================
 # === fandango is responding ===
 
-def send_response():
-    pass
+def first():
+    print("test 2")
+    set_partial_solution('<ping_req>', 'header2body3')
     # write(server_fp, '<ping> . <ping_resp>'
 
-def get_request():
-    pass
+def second():
+    print("test 1")
     # server_fp = open('https://lorem-ipsum.example')
     # set_tree({
     #      '<ping_req>': read(server_fp)
     #  })
 
-on_lifecycle(FandangoLifecycle.PRE_EVOLVE, get_request)
-on_lifecycle(FandangoLifecycle.FINALLY, send_response)
+on_lifecycle(FandangoLifecycle.PRE_EVOLVE, first)
+on_lifecycle(FandangoLifecycle.POST_EVOLVE, second)
+print(get_solutions())
 
 # ===========================================
 # === alternative, fandango is requesting ===
