@@ -16,6 +16,4 @@
 def is_odd(x):
     return x % 2 != 0
 
-assert is_odd(3)
-
 is_odd(<number>);
