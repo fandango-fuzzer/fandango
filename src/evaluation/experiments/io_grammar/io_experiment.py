@@ -1,8 +1,6 @@
 from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse_file
 
-from faker import Faker
-
 def main():
     # Parse grammar and constraints
     grammar, constraints = parse_file('io_example.fan')
