@@ -167,14 +167,6 @@ def get_parser(in_command_line=True):
         help="produce a 'best effort' population (may not satisfy all constraints)",
         default=None,
     )
-    # Add argument here
-    settings_group.add_argument(
-        "-i",
-        "--initial_population",
-        type=str,
-        help="directory with initial population",
-        default=None,
-    )
 
     # Shared file options
     file_parser = argparse.ArgumentParser(add_help=False)
@@ -622,25 +614,11 @@ def make_fandango_settings(args, initial_settings={}):
         else:
             start_symbol = f"<{args.start_symbol}>"
         settings["start_symbol"] = start_symbol
-    # Set setting here
-    if args.initial_population is not None:
-        settings["initial_population"] = extract_initial_population(args.initial_population)
     if args.verbose and args.verbose == 1:
         settings["logger_level"] = LoggerLevel.INFO
     elif args.verbose and args.verbose > 1:
         settings["logger_level"] = LoggerLevel.DEBUG
     return settings
-
-# Add method for extracting here
-def extract_initial_population(path):
-    initial_populaition = list()
-    for file in os.listdir(path):
-        filename = os.path.join(path, file)
-        with open(filename, "r") as fd:
-            individual = fd.read()
-        initial_populaition.append(individual)
-    return initial_populaition 
-
 
 # Default Fandango file content (grammar, constraints); set with `set`
 DEFAULT_FAN_CONTENT = (None, None)
