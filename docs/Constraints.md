@@ -101,6 +101,35 @@ as a constraint.
 :::
 
 
+## Constraints and `DerivationTree` types
+
+Whenever Fandango evaluates a constraint, such as
+
+```
+int(<age>) > 20;
+```
+
+the type of `<age>` is actually not a string, but a `DerivationTree` object.
+`DerivationTree` objects offer multiple features that makes them (almost) similar to strings:
+
+* You can _convert_ them to other basic data types with (`int(<age>)`, `float(<age>)`, `str(<age>)`)
+* You can invoke _string methods_ on them (`<age>.startswith('0'))
+* You can _compare_ them against each other (`<age_1> == <age_2>`) as well as against other strings (`<age> != "19"`)
+* You can _print_ them, using implicit string conversions (`print(<age>)`, which invokes `<age>.__str__()`)
+
+One thing you _cannot_ do, though, is _passing them directly as arguments to functions_ that do not expect a `DerivationTree` type.
+This applies to the vast majority of Python functions.
+
+:::{warning}
+If you want to pass a symbol as a function argument, convert it to the proper type (`int(<age>)`, `float(<age>)`, `str(<age>)`) first.
+Otherwise, you will likely raise an internal error in that very function.
+:::
+
+We will learn more about derivation trees and `DerivationTree` types in {ref}`sec:paths`.
+For now, we will use them as if they were strings, subject to the constraints listed above.
+
+
+
 ## Constraints on the Command Line
 
 If you want to experiment with constraints, keeping on editing `.fan` files is a bit cumbersome.
