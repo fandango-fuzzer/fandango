@@ -100,7 +100,7 @@ int(<age>) % 7 == 0;
 as a constraint.
 :::
 
-
+(sec:DerivationTree)=
 ## Constraints and `DerivationTree` types
 
 Whenever Fandango evaluates a constraint, such as
@@ -109,8 +109,8 @@ Whenever Fandango evaluates a constraint, such as
 int(<age>) > 20;
 ```
 
-the type of `<age>` is actually not a string, but a `DerivationTree` object.
-`DerivationTree` objects offer multiple features that makes them (almost) similar to strings:
+the type of `<age>` is actually not a string, but a `DerivationTree` object - [a tree representing the structure of the output.](sec:paths).
+For now, you can use `DerivationTree` objects almost as if they were strings:
 
 * You can _convert_ them to other basic data types with (`int(<age>)`, `float(<age>)`, `str(<age>)`)
 * You can invoke _string methods_ on them (`<age>.startswith('0'))
@@ -125,9 +125,12 @@ If you want to pass a symbol as a function argument, convert it to the proper ty
 Otherwise, you will likely raise an internal error in that very function.
 :::
 
-We will learn more about derivation trees and `DerivationTree` types in {ref}`sec:paths`.
-For now, we will use them as if they were strings, subject to the constraints listed above.
+:::{warning}
+On symbols, the `[...]` operator operates differently from strings - it returns a _subtree_ (a substring) of the produced output: `<name>[0]` returns the `<first_name>` element, not the first character.
+If you want to access a character (or a range of characters) of a symbol, convert it into a string first, as in `str(<name>)[0]`.
+:::
 
+We will learn more about derivation trees, `DerivationTree` types, and their operators in {ref}`sec:paths`.
 
 
 ## Constraints on the Command Line
