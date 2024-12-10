@@ -13,6 +13,7 @@ from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
 from fandango.language.grammar import DerivationTree
 from fandango.language.grammar import Grammar
 from fandango.language.io import FandangoLifecycle, FandangoIO
+from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER
 
 
@@ -119,8 +120,21 @@ class Fandango:
 
         io_instance.set_solutions(self.solution)
         exec(f"FandangoIO.instance().dispatch_lifecycle({str(event)})", global_env, local_env)
+        partial = io_instance.get_partial_solutions()
+        if len(partial) > 0:
+            self.solution.clear()
+        for [key, value] in partial.items():
+            tree = self.grammar.parse(value, key)
+            new_population = []
+            for entry in self.population:
+                existing_trees = entry.find_all_trees(NonTerminal(key))
+                for existing_tree in existing_trees:
+                    new_population.append(entry.replace(existing_tree, tree))
+            self.population = new_population
 
-        io_instance.get_partial_solutions()
+        io_instance.get_partial_solutions().clear()
+        io_instance.set_solutions(list())
+
 
     def evolve(self) -> List[DerivationTree]:
         """
