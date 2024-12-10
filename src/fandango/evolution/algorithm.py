@@ -112,12 +112,15 @@ class Fandango:
         )
 
     def trigger_event(self, event: FandangoLifecycle):
-        # Todo get IO instance
-        local_env, global_env = self.grammar.get_python_env()
+        global_env, local_env = self.grammar.get_python_env()
         io_instance: FandangoIO = None
-        if 'FandangoIO' in local_env.keys():
-            io_instance = local_env['FandangoIO'].instance()
-        eval(f"FandangoIO.instance().dispatch_lifecycle({str(event)})", global_env, local_env)
+        if 'FandangoIO' in global_env.keys():
+            io_instance = global_env['FandangoIO'].instance()
+
+        io_instance.set_solutions(self.solution)
+        exec(f"FandangoIO.instance().dispatch_lifecycle({str(event)})", global_env, local_env)
+
+        io_instance.get_partial_solutions()
 
     def evolve(self) -> List[DerivationTree]:
         """
@@ -196,7 +199,7 @@ class Fandango:
             self.fitness = (
                 sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
-
+        self.trigger_event(FandangoLifecycle.POST_EVOLVE)
         self.trigger_event(FandangoLifecycle.FINALLY)
 
         self.time_taken = time.time() - start_time
