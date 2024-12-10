@@ -13,12 +13,26 @@ kernelspec:
 (sec:binary)=
 # Generating Binary Inputs
 
-```{error}
-This chapter is under construction.
-```
-
+Creating _binary_ inputs with Fandango is a bit more challenging than creating human-readable inputs.
+This is because they have a few special features, such as _checksums_ and _length encodings_.
+Fortunately, we can address all of them with dedicated constraints.
 
 ## Checksums
+
+:::{margin}
+Strictly speaking, this only holds for context-free grammars Fandango uses.
+_Context-sensitive_ and _universal_ grammars can perform arithmetic computations, but someone would have to implement them all.
+:::
+
+Our first challenge is _checksums_.
+Binary input formats frequently use checksums to ensure integrity.
+The problem is that checksums cannot be expressed in a grammar alone, as grammars lack the arithmetic functions required to compute and check checksums.
+In Fandango, though, we can express the computation of a checksum in a dedicated function, which is then used in a dedicated constraint.
+
+As an example for checksums, let's have a look at _credit card numbers_.
+These are definitely very human-readable and not binary at all, but for an example, they will do fine.
+A credit card number consists of a series of digits, where the last one is a _check digit_.
+Here is a grammar that expresses the structure for 16-digit credit card numbers:
 
 ```{code-cell}
 :tags: ["remove-input"]
@@ -26,8 +40,9 @@ This chapter is under construction.
 !grep '::=' credit_card.fan | grep -v '^<byte>'
 ```
 
-
-Luhn's algorithm, adapted from the [Faker library](https://github.com/joke2k/faker/blob/master/faker/providers/credit_card/__init__.py#L99).
+All credit cards use [Luhn's algorithm](https://en.wikipedia.org/wiki/Luhn_algorithm) to compute the check digit.
+Here is an implementation, adapted from the [Faker library](https://github.com/joke2k/faker/blob/master/faker/providers/credit_card/__init__.py#L99).
+The function `credit_card_check_digit()` gets all numbers of a credit card (except the last digit) and returns the computed check digit.
 
 ```{code-cell}
 :tags: ["remove-input"]
@@ -46,23 +61,55 @@ Luhn's algorithm, adapted from the [Faker library](https://github.com/joke2k/fak
 %     assert check_digit == num[-1], f"got check digit {check_digit} for {num}, expected {num[-1]}"
 % ```
 
+We can easily make use of `credit_card_check_digit()` in the constraint that ties `<check_digit>` and `<number>`:
+
 ```{code-cell}
 :tags: ["remove-input"]
 # show constraints
 !grep ';$' credit_card.fan | grep -v '::='
 ```
 
+All of this can go into a single `.fan` file: [`credit_card.fan`](credit_card.fan) joins the above grammar, the `credit_card_check_digit()` definition, and the above constraint into a single file.
+
+:::{margin}
+Do not use such numbers to test third-party systems.
+:::
+
+We can now use `credit-card.fan` to produce valid credit card numbers:
+
 ```shell
-$ fandango fuzz -n 10 -f credit_card.fan
+$ fandango fuzz -f credit_card.fan -n 10
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -n 10 -f credit_card.fan
+!fandango fuzz -f credit_card.fan -n 10
 ```
+
+And we can also use it to _parse_ and _check_ numbers.
+
+% TODO
+:::{error}
+Parsing functionality is not yet available on the command line.
+:::
+
+:::{margin}
+You can also simply do an Internet search for a Python implementation of the respective algorithm.
+Or ask your favorite AI assistant.
+:::
+
+Similarly, you can define any kind of checksum function and then use it in a constraint.
+In Python, it is likely that someone has already implemented the specific checksum function, so you can also _import_ it:
+
+* [The `hashlib` module](https://docs.python.org/3/library/hashlib.html) provides hash functions such as MD5 or SHA-256.
+* [The `binascii` module](https://docs.python.org/3/library/binascii.html) offers CRC checks.
+* [The `zlib` module](https://docs.python.org/3/library/zlib.html) provides CRC32 and ADLER32 checks used in zip files.
 
 
 ## Length Encodings
+
+The second set of features one frequently encounters in binary formats is _length encodings_ - that is, a particular field holds a value that represents the length of one or more fields that follow.
+Here is a simple grammar that expresses this characteristic: A `<field>` has a two-byte length, followed by the actual content (of length `<length>`).
 
 % This is how I got the `<byte>` definition in `binary.fan` -- AZ
 ```{code-cell}
@@ -82,17 +129,36 @@ for i in range(0, 256):
 !grep '::=' binary.fan | grep -v '^<byte>'
 ```
 
+The relationship between `<length>` and `<content>` can again be expressed using a constraint.
+We assume that `<length>` comes as a two-byte (16-bit) unsigned integer with _little-endian_ encoding - that is, the low byte comes first, and the high byte follows.
+The value 258 (hexadecimal `0x0102`) would thus be represented as the two bytes `\x02` and `\x01`.
+
+We can define a function `uint16()` that takes an integer and converts it to a two-byte string according to these rules:
+
+:::{margin}
+In Python, `//` is used for integer division.
+:::
+
 ```{code-cell}
 :tags: ["remove-input"]
 # show code
 !grep -v ';' binary.fan
 ```
 
+With that, we can now define how the value of `<length>` is related to the length of `<content>`:
+
 ```{code-cell}
 :tags: ["remove-input"]
 # show constraints
 !grep ';$' binary.fan | grep -v '::='
 ```
+
+:::{tip}
+Having a derived value (like `<length>`) isolated on the left-hand side of an equality equation makes it easy for Fandango to first compute the content and then compute and assign the derived value.
+:::
+
+Again, all of this goes into a single `.fan` file: [`binary.fan`](binary.fan) holds the grammar, the `uint16()` definition, and the constraint.
+Let us produce a single output using `binary.fan` and view its (binary) contents, using `od -c`:
 
 ```shell
 $ fandango fuzz -n 1 -f binary.fan | od -c
@@ -103,6 +169,13 @@ $ fandango fuzz -n 1 -f binary.fan | od -c
 ! fandango fuzz -n 1 -f binary.fan | od -c
 ```
 
-:::{tip}
-Try to have a single symbol on the left-hand side of an equality sign.
+The hexadecimal dump shows that the first two bytes encode the length of the string of digits that follows.
+The last character is a newline `\n` - this is produced by Fandango and not part of the grammar.
+The format is correct - we have successfully produced a length encoding.
+
+
+## Case Study: The GIF Format
+
+:::{error}
+To be added later.
 :::
