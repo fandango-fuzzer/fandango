@@ -1,5 +1,6 @@
 # evolution/algorithm.py
 import copy
+import enum
 import logging
 import random
 import time
@@ -13,6 +14,12 @@ from fandango.language.grammar import DerivationTree
 from fandango.language.grammar import Grammar
 from fandango.logger import LOGGER
 
+class LoggerLevel(enum.Enum):
+    DEBUG = logging.DEBUG
+    INFO = logging.INFO
+    WARNING = logging.WARNING
+    ERROR = logging.ERROR
+    CRITICAL = logging.CRITICAL
 
 class Fandango:
     def __init__(
@@ -28,7 +35,7 @@ class Fandango:
         tournament_size: float = 0.1,
         mutation_rate: float = 0.2,
         destruction_rate: float = 0.0,
-        verbose: bool = False,
+        logger_level: LoggerLevel = LoggerLevel.ERROR,
         warnings_are_errors: bool = False,
         best_effort: bool = False,
         random_seed: int = None,
@@ -49,7 +56,7 @@ class Fandango:
         :param mutation_rate: The rate of individuals that will undergo mutation.
         :param tournament_size: The size of the tournament selection.
         :param destruction_rate: The rate of individuals that will be destroyed.
-        :param verbose: Whether to print debug information.
+        :param logger_level: The level of logging to use. One of DEBUG, INFO, WARNING, ERROR, CRITICAL.
         :param start_symbol: The start symbol to use with the grammar.
         :param warnings_are_errors: If set, turns warnings into errors
         :param best_effort: If set, returns also solutions not satisfying all constraints
@@ -58,11 +65,7 @@ class Fandango:
         if random_seed is not None:
             random.seed(random_seed)
 
-        if verbose:
-            LOGGER.setLevel(logging.DEBUG)
-            LOGGER.warning(
-                f"Fandango.__init__(): The `verbose` parameter will be deprecated; use LOGGER.setLevel() instead"
-            )
+        LOGGER.setLevel(logger_level.value)
 
         LOGGER.info(f"---------- Initializing FANDANGO algorithm ---------- ")
         self.grammar = grammar
@@ -78,7 +81,6 @@ class Fandango:
 
         self.fitness_cache = {}
 
-        self.verbose = verbose
         self.fixes_made = 0
         self.checks_made = 0
         self.crossovers_made = 0
