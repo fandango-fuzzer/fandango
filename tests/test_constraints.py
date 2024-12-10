@@ -360,7 +360,7 @@ int(<number>) % 2 == 0;
 int(<number>) > 10000;
 int(<number>) < 100000;
 """
-        print(grammar + constraint)
+
         _, constraints = parse(grammar + constraint)
         self.assertEqual(3, len(constraints))
 
