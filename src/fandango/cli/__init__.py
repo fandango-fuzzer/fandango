@@ -35,6 +35,7 @@ from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.logger import LOGGER, print_exception
 
+
 def get_parser(in_command_line=True):
     # Main parser
     if in_command_line:
@@ -455,7 +456,7 @@ def check_constraints(constraints, grammar):
 
 
 def extract_grammar_and_constraints(
-        fan_contents: str, lazy: bool = False, given_grammar=None
+    fan_contents: str, lazy: bool = False, given_grammar=None
 ):
     """Extract grammar and constraints from the given content"""
     # TODO: This should go into a separate module (parser.py maybe?), not here -- AZ
@@ -639,8 +640,6 @@ def cd_command(args):
         print(os.getcwd())
 
 
-
-
 def fuzz_command(args):
     """Invoke the fuzzer"""
 
@@ -653,13 +652,17 @@ def fuzz_command(args):
         constraints = DEFAULT_FAN_CONTENT[1]
 
     if grammar is None:
-        print("fuzz: No grammar found, looking for default .fan file...", file=sys.stderr)
+        print(
+            "fuzz: No grammar found, looking for default .fan file...", file=sys.stderr
+        )
         try:
             with open("default.fan", "r") as fp:
                 fan_contents = fp.read()
                 grammar, constraints = extract_grammar_and_constraints(fan_contents)
         except FileNotFoundError:
-            print("fuzz: Default .fan file not found, exiting execution.", file=sys.stderr)
+            print(
+                "fuzz: Default .fan file not found, exiting execution.", file=sys.stderr
+            )
             return
 
     if DEFAULT_CONSTRAINTS:
@@ -721,7 +724,7 @@ def fuzz_command(args):
                 prefix = "fandango-"
                 suffix = args.filename_extension
                 with tempfile.NamedTemporaryFile(
-                        mode="w", prefix=prefix, suffix=suffix
+                    mode="w", prefix=prefix, suffix=suffix
                 ) as fd:
                     fd.write(str(individual))
                     fd.flush()
@@ -754,7 +757,7 @@ COMMANDS = {
     "reset": reset_command,
     "fuzz": fuzz_command,
     "cd": cd_command,
-#   "interactive": interactive_command,
+    #   "interactive": interactive_command,
     "help": help_command,
     "exit": exit_command,
     "!": nop_command,
@@ -799,9 +802,9 @@ def get_filenames(prefix="", fan_only=True):
         if os.path.isdir(filename):
             filenames.append(filename + os.sep)
         elif (
-                not fan_only
-                or filename.lower().endswith(".fan")
-                or filename.lower().endswith(".py")
+            not fan_only
+            or filename.lower().endswith(".fan")
+            or filename.lower().endswith(".py")
         ):
             filenames.append(filename)
 

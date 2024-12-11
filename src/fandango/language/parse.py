@@ -46,9 +46,13 @@ def parse(fan: str, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
     check_constraints_existence(grammar, constraint)
     return grammar, constraint
 
+
 def check_constraints_existence(grammar, constraints):
-    indirect_child = {str(k) : {str(l) : None for l in grammar.rules.keys()} for k in grammar.rules.keys()}
-    
+    indirect_child = {
+        str(k): {str(l): None for l in grammar.rules.keys()}
+        for k in grammar.rules.keys()
+    }
+
     for constraint in constraints:
         constraint_symbols = constraint.get_symbols()
 
@@ -56,22 +60,33 @@ def check_constraints_existence(grammar, constraints):
             constraint_matches = re.findall(r"<(.*?)>", str(value))
             grammar_symbols = grammar.rules.keys()
             grammar_matches = re.findall(r"<(.*?)>", str(grammar_symbols))
-            missing = [match for match in constraint_matches if match not in grammar_matches]
+            missing = [
+                match for match in constraint_matches if match not in grammar_matches
+            ]
 
             if len(missing) > 0:
-                raise ValueError(f"Constraint {constraint} contains non-terminal symbols {missing} that are not in the grammar")
+                raise ValueError(
+                    f"Constraint {constraint} contains non-terminal symbols {missing} that are not in the grammar"
+                )
 
             for i in range(len(constraint_matches) - 1):
                 parent = constraint_matches[i]
-                symbol = constraint_matches[i+1]
+                symbol = constraint_matches[i + 1]
                 indirect = f"<{parent}>*<{symbol}>" in str(value)
-                if not check_constraints_existence_children(grammar, parent, symbol, indirect, indirect_child):
-                    raise ValueError(f"In constraint {constraint}: <{parent}> has no child <{symbol}>")
+                if not check_constraints_existence_children(
+                    grammar, parent, symbol, indirect, indirect_child
+                ):
+                    raise ValueError(
+                        f"In constraint {constraint}: <{parent}> has no child <{symbol}>"
+                    )
 
-def check_constraints_existence_children(grammar, parent, symbol, recurse, indirect_child):
+
+def check_constraints_existence_children(
+    grammar, parent, symbol, recurse, indirect_child
+):
     if indirect_child[f"<{parent}>"][f"<{symbol}>"] is not None:
         return indirect_child[f"<{parent}>"][f"<{symbol}>"]
-    
+
     grammar_symbols = grammar.rules[NonTerminal(f"<{parent}>")]
     grammar_matches = re.findall(r'(?<!")<(.*?)>(?!.*")', str(grammar_symbols))
 
@@ -79,14 +94,17 @@ def check_constraints_existence_children(grammar, parent, symbol, recurse, indir
         if recurse:
             is_child = False
             for match in grammar_matches:
-                is_child = is_child or check_constraints_existence_children(grammar, match, symbol, recurse, indirect_child)
+                is_child = is_child or check_constraints_existence_children(
+                    grammar, match, symbol, recurse, indirect_child
+                )
             indirect_child[f"<{parent}>"][f"<{symbol}>"] = is_child
             return is_child
         else:
             return False
-        
+
     indirect_child[f"<{parent}>"][f"<{symbol}>"] = True
     return True
+
 
 def parse_file(*args, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
     contents = ""
@@ -95,7 +113,9 @@ def parse_file(*args, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
             with open(file, "r") as fp:
                 contents += fp.read()
     except FileNotFoundError:
-        print(f"File not found, trying with default .fan specification", file=sys.stderr)
+        print(
+            f"File not found, trying with default .fan specification", file=sys.stderr
+        )
         try:
             with open("default.fan", "r") as fp:
                 contents = fp.read()

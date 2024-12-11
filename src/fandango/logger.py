@@ -11,15 +11,20 @@ logging.basicConfig(
     format="%(name)s:%(levelname)s: %(message)s",
 )
 
+
 def print_exception(e: Exception):
     LOGGER.info(traceback.format_exc().rstrip())
     if not LOGGER.isEnabledFor(logging.INFO):
         print(type(e).__name__ + ":", e, file=sys.stderr)
     if "DerivationTree" in str(e):
-        print("Convert <symbol> to the expected type, say 'str(<symbol>)', 'int(<symbol>)', or 'float(<symbol>)'")
+        print(
+            "Convert <symbol> to the expected type, say 'str(<symbol>)', 'int(<symbol>)', or 'float(<symbol>)'"
+        )
+
 
 COLUMNS = None
 LINES = None
+
 
 def use_visualization():
     """Return True if we should use visualization while Fandango is running"""
@@ -72,11 +77,12 @@ def visualize_evaluation(generation, max_generations, evaluation):
             blue = 0
 
         s += styles.bgColor.ansi256(styles.rgbToAnsi256(red, green, blue))
-        s += '   '
+        s += "   "
         s += styles.bgColor.close
 
-    print(f'\r{s}', end="", file=sys.stderr)
+    print(f"\r{s}", end="", file=sys.stderr)
     return
+
 
 def clear_visualization():
     """Clear Fandango visualization"""
@@ -84,6 +90,5 @@ def clear_visualization():
         return
 
     time.sleep(0.5)
-    s = ' ' * (COLUMNS - 1)
-    print(f'\r{s}\r', end="", file=sys.stderr)
-
+    s = " " * (COLUMNS - 1)
+    print(f"\r{s}\r", end="", file=sys.stderr)
