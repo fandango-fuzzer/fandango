@@ -474,7 +474,7 @@ def extract_grammar_and_constraints(
     LOGGER.debug("Extracting code")
     splitter = FandangoSplitter()
     splitter.visit(tree)
-    global_vars: dict = {}
+    global_vars: dict = predicates.__dict__
     local_vars = None
     python_processor = PythonProcessor()
     code_tree = python_processor.get_code(splitter.python_code)
