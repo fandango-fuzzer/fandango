@@ -177,7 +177,7 @@ The hexadecimal dump shows that the first two bytes encode the length of the str
 The last character is a newline `\n` - this is produced by Fandango and not part of the grammar.
 The format is correct - we have successfully produced a length encoding.
 
-## Compression
+## Compression and Conversion
 
 :::{error}
 To be completed later.
@@ -194,6 +194,15 @@ Here's a sketch on how to achieve this:
 <compressed_content> == compress(<content>);    # for producing
 <content> == uncompress(<compressed_content>);  # for parsing
 ```
+
+or, using generators:
+
+```python
+<chunk> ::= <header> <compressed_content> <trailer>;
+<compressed_content> ::= <byte>* = compress(<content>);
+<content> ::= <byte>* = uncompress(<compressed_content>);
+```
+
 
 ## Case Study: The GIF Format
 
