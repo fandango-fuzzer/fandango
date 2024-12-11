@@ -11,10 +11,12 @@ logging.basicConfig(
     format="%(name)s:%(levelname)s: %(message)s",
 )
 
-def print_exception(e):
+def print_exception(e: Exception):
     LOGGER.info(traceback.format_exc().rstrip())
     if not LOGGER.isEnabledFor(logging.INFO):
         print(type(e).__name__ + ":", e, file=sys.stderr)
+    if "DerivationTree" in str(e):
+        print("Convert <symbol> to the expected type, say 'str(<symbol>)', 'int(<symbol>)', or 'float(<symbol>)'")
 
 COLUMNS = None
 LINES = None
