@@ -91,10 +91,14 @@ A generator applies to _all_ alternatives, not just the last one.
 :::
 
 ```
-<first_name> ::= <name> = fake.first_name();
+<first_name> ::= <name> := fake.first_name();
 ```
 
-The _generator_ `= EXPR` assigns the value produced by the expression `EXPR` (in our case, `fake.first_name()`) to the symbol on the left-hand side of the rule (in our case, `<first_name>`).
+:::{margin}
+`:=` is the assignment operator in several programming languages; in Python, it can be used to assign values within expressions.
+:::
+
+The _generator_ `:= EXPR` _assigns_ the value produced by the expression `EXPR` (in our case, `fake.first_name()`) to the symbol on the left-hand side of the rule (in our case, `<first_name>`).
 
 We can do the same for the last name, too; and then this is the full Fandango spec [persons-faker.fan](persons-faker.fan):
 
@@ -134,7 +138,7 @@ For instance, `random.randint(A, B)` return a random integer $n$ such that $A \l
 To obtain a range of ages between 25 and 35, we can thus write:
 
 ```
-<age> ::= <digit>+ = str(random.randint(25, 35));
+<age> ::= <digit>+ := str(random.randint(25, 35));
 ```
 
 :::{warning}
@@ -152,7 +156,7 @@ The resulting [Fandango spec file](persons-faker-age.fan) produces the desired r
 We can also create a Gaussian (normal) distribution this way:
 
 ```
-<age> ::= <digit>+ = str(int(random.gauss(35)));
+<age> ::= <digit>+ := str(int(random.gauss(35)));
 ```
 
 `random.gauss()` returns floating point numbers.
@@ -179,7 +183,7 @@ We can easily achieve such a mix by adding rules such as
 
 ```
 <first_name> ::= <name> | <natural_name>;
-<natural_name> ::= <name> = fake.first_name();
+<natural_name> ::= <name> := fake.first_name();
 ```
 
 With this, both random names (`<name>`) and natural names (`<natural_name>`) will have a chance of 50% to be produced:
