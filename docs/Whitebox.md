@@ -17,5 +17,3 @@ kernelspec:
 This chapter is still in construction.
 ```
 
-
-The next section talks about [statistical distributions](sec:distributions).

@@ -155,6 +155,3 @@ $ fandango fuzz -f persons.fan -n 10 --input-method=stdin cat -n
 ```
 
 The `cat` program is then invoked repeatedly, each time passing a new Fandango-generated input as its standard input.
-
-
-Let us now discuss [some specific fuzzing strategies](sec:strategies).

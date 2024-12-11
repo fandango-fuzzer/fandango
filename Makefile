@@ -97,10 +97,18 @@ $(HTML_MARKER): $(DOCS_SOURCES) $(ALL_HTML_MARKER)
 	-$(REFRESH_HTML)
 	@echo Output written to $(HTML_INDEX)
 
-# If we change _toc.yml, all tocs need to be rebuilt
-$(ALL_HTML_MARKER): $(DOCS)/_toc.yml
+# If we change _toc.yml or _config.yml, all docs need to be rebuilt
+$(ALL_HTML_MARKER): $(DOCS)/_toc.yml $(DOCS)/_config.yml
 	$(JB) build --all $(DOCS)
 	echo 'Success' > $@
+
+# Same as above, but also clear the cache
+clear-cache:
+	$(RM) -fr $(DOCS)/_build/.jupyter_cache
+	$(RM) $(ALL_HTML_MARKER)
+
+rebuild-docs: clear-cache $(ALL_HTML_MARKER)
+
 
 # view HTML
 view: $(HTML_MARKER)
@@ -112,13 +120,18 @@ refresh: $(HTML_MARKER)
 
 
 # Re-create the book in PDF
-$(LATEX_MARKER): $(DOCS_SOURCES) $(DOCS)/_book_toc.yml
-	cd $(DOCS); $(JB) build --builder latex --toc _book_toc.yml .
+$(LATEX_MARKER): $(DOCS_SOURCES) $(DOCS)/_book_toc.yml $(DOCS)/_book_config.yml
+	cd $(DOCS); $(JB) build --builder latex --toc _book_toc.yml --config _book_config.yml .
 	echo 'Success' > $@
 
-$(DOCS)/_book_toc.yml: $(DOCS)/_toc.yml
+$(DOCS)/_book_toc.yml: $(DOCS)/_toc.yml Makefile
 	echo '# Automatically generated from `$<`. Do not edit.' > $@
 	$(SED) s/Intro/BookIntro/ $< >> $@
+
+$(DOCS)/_book_config.yml: $(DOCS)/_config.yml Makefile
+	echo '# Automatically generated from `$<`. Do not edit.' > $@
+	$(SED) s/BookIntro/Intro/ $< >> $@
+
 
 $(PDF_RAW): $(LATEX_MARKER)
 	cd $(DOCS)/_build/latex && $(MAKE) && cd ../../.. && touch $@
