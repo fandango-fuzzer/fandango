@@ -12,7 +12,7 @@ from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
 from fandango.language.grammar import DerivationTree
 from fandango.language.grammar import Grammar
-from fandango.logger import LOGGER
+from fandango.logger import LOGGER, visualize_evaluation, clear_visualization
 
 class LoggerLevel(enum.Enum):
     DEBUG = logging.DEBUG
@@ -35,7 +35,7 @@ class Fandango:
         tournament_size: float = 0.1,
         mutation_rate: float = 0.2,
         destruction_rate: float = 0.0,
-        logger_level: LoggerLevel = LoggerLevel.ERROR,
+        logger_level: LoggerLevel = None,
         warnings_are_errors: bool = False,
         best_effort: bool = False,
         random_seed: int = None,
@@ -56,7 +56,7 @@ class Fandango:
         :param mutation_rate: The rate of individuals that will undergo mutation.
         :param tournament_size: The size of the tournament selection.
         :param destruction_rate: The rate of individuals that will be destroyed.
-        :param logger_level: The level of logging to use. One of DEBUG, INFO, WARNING, ERROR, CRITICAL.
+        :param logger_level: If set, the level of logging to use. One of DEBUG, INFO, WARNING, ERROR, CRITICAL.
         :param start_symbol: The start symbol to use with the grammar.
         :param warnings_are_errors: If set, turns warnings into errors
         :param best_effort: If set, returns also solutions not satisfying all constraints
@@ -65,7 +65,8 @@ class Fandango:
         if random_seed is not None:
             random.seed(random_seed)
 
-        LOGGER.setLevel(logger_level.value)
+        if logger_level is not None:
+            LOGGER.setLevel(logger_level.value)
 
         LOGGER.info(f"---------- Initializing FANDANGO algorithm ---------- ")
         self.grammar = grammar
@@ -205,6 +206,10 @@ class Fandango:
                 sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
 
+            # Report results
+            visualize_evaluation(generation, self.max_generations, self.evaluation)
+
+        clear_visualization()
         self.time_taken = time.time() - start_time
 
         LOGGER.info(f"---------- Evolution finished ----------")
