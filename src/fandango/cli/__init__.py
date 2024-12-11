@@ -22,8 +22,6 @@ from antlr4.InputStream import InputStream
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4.error.Errors import ParseCancellationException
 
-from fandango.cli.interactive import Interactive
-from fandango.constants import INTERACTIVE, FUZZ, HELP
 from fandango.constraints import predicates
 from fandango.evolution.algorithm import Fandango
 from fandango.language.convert import (
@@ -36,7 +34,6 @@ from fandango.language.grammar import Grammar, NodeType
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.logger import LOGGER, print_exception
-
 
 def get_parser(in_command_line=True):
     # Main parser
@@ -203,7 +200,7 @@ def get_parser(in_command_line=True):
 
     # Fuzz
     fuzz_parser = commands.add_parser(
-        FUZZ,
+        "fuzz",
         help="produce outputs from .fan files and test programs",
         parents=[file_parser, settings_parser],
     )
@@ -298,48 +295,6 @@ def get_parser(in_command_line=True):
             help="run an interactive shell (default)",
         )
 
-    if in_command_line:
-        # Interactive
-        interactive_parser = commands.add_parser(
-            INTERACTIVE,
-            help="""
-            open the interactive command line interface
-            (deprecated, use `shell` instead)
-            """,
-        )
-        interactive_parser.add_argument(
-            "-f",
-            "--fan",
-            type=str,
-            dest="fan",
-            default=None,
-            help="the fan file to use for the interactive mode",
-        )
-        interactive_parser.add_argument(
-            "-g",
-            "--grammar",
-            type=str,
-            dest="grammar",
-            default=None,
-            help="the grammar to use for the interactive mode",
-        )
-        interactive_parser.add_argument(
-            "-c",
-            "--constraints",
-            type=str,
-            dest="constraints",
-            default=None,
-            help="the constraints to use for the interactive mode",
-        )
-        interactive_parser.add_argument(
-            "-p",
-            "--python",
-            type=str,
-            dest="python",
-            default=None,
-            help="the Python code to use in the interactive mode",
-        )
-
     if not in_command_line:
         # Shell escape
         # Not processed by argparse,
@@ -373,7 +328,7 @@ def get_parser(in_command_line=True):
 
     # Help
     help_parser = commands.add_parser(
-        HELP,
+        "help",
         help="show this help and exit",
     )
     help_parser.add_argument(
@@ -386,20 +341,6 @@ def get_parser(in_command_line=True):
     )
 
     return main_parser
-
-
-def interactive_command(args):
-    LOGGER.warn("Deprecated. Use the 'shell' command instead.")
-    try:
-        interactive_ = Interactive(
-            args.fan, args.grammar, args.constraints, args.python
-        )
-    except Exception as e:
-        # This should catch all kinds of parsing errors
-        LOGGER.critical(f"Error during initialization: {type(e)}")
-        sys.exit(1)
-
-    interactive_.run()
 
 
 def help_command(args, **kwargs):
@@ -813,7 +754,7 @@ COMMANDS = {
     "reset": reset_command,
     "fuzz": fuzz_command,
     "cd": cd_command,
-    "interactive": interactive_command,
+#   "interactive": interactive_command,
     "help": help_command,
     "exit": exit_command,
     "!": nop_command,
