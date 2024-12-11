@@ -100,6 +100,38 @@ int(<age>) % 7 == 0;
 as a constraint.
 :::
 
+(sec:DerivationTree)=
+## Constraints and `DerivationTree` types
+
+Whenever Fandango evaluates a constraint, such as
+
+```
+int(<age>) > 20;
+```
+
+the type of `<age>` is actually not a string, but a `DerivationTree` object - [a tree representing the structure of the output.](sec:paths).
+For now, you can use `DerivationTree` objects almost as if they were strings:
+
+* You can _convert_ them to other basic data types with (`int(<age>)`, `float(<age>)`, `str(<age>)`)
+* You can invoke _string methods_ on them (`<age>.startswith('0'))
+* You can _compare_ them against each other (`<age_1> == <age_2>`) as well as against other strings (`<age> != "19"`)
+* You can _print_ them, using implicit string conversions (`print(<age>)`, which invokes `<age>.__str__()`)
+
+One thing you _cannot_ do, though, is _passing them directly as arguments to functions_ that do not expect a `DerivationTree` type.
+This applies to the vast majority of Python functions.
+
+:::{warning}
+If you want to pass a symbol as a function argument, convert it to the proper type (`int(<age>)`, `float(<age>)`, `str(<age>)`) first.
+Otherwise, you will likely raise an internal error in that very function.
+:::
+
+:::{warning}
+On symbols, the `[...]` operator operates differently from strings - it returns a _subtree_ (a substring) of the produced output: `<name>[0]` returns the `<first_name>` element, not the first character.
+If you want to access a character (or a range of characters) of a symbol, convert it into a string first, as in `str(<name>)[0]`.
+:::
+
+We will learn more about derivation trees, `DerivationTree` types, and their operators in {ref}`sec:paths`.
+
 
 ## Constraints on the Command Line
 
@@ -182,11 +214,9 @@ $ fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50
 !fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50
 ```
 
-As you see, Fandango still outputs the last population - these "fittest" ones get closest in fulfilling the constraint.
+As you see, Fandango produces a population of zero.
 Of course, if the constraint is `False`, then there can be no success.
 
-```{warning}
-At this point, outputs produced by Fandango should be seen as "best effort"; they are not guaranteed to satisfy the constraints.
+```{tip}
+Fandango has a `--best-effort` option that allows you to still output the final population.
 ```
-
-In the next section, we'll talk about [custom generators](sec:generators).

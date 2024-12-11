@@ -534,7 +534,7 @@ def extract_grammar_and_constraints(
     splitter = FandangoSplitter()
     splitter.visit(tree)
     global_vars: dict = {}
-    local_vars = predicates.__dict__
+    local_vars = None
     python_processor = PythonProcessor()
     code_tree = python_processor.get_code(splitter.python_code)
     code_text = ast.unparse(code_tree)
@@ -696,6 +696,8 @@ def cd_command(args):
 
     if sys.stdin.isatty():
         print(os.getcwd())
+
+
 
 
 def fuzz_command(args):
