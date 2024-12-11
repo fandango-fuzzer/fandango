@@ -28,7 +28,7 @@ def parse(fan: str, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
     splitter = FandangoSplitter()
     splitter.visit(tree)
     global_vars = {}
-    local_vars = predicates.__dict__
+    local_vars = None
     python_processor = PythonProcessor()
     exec(
         ast.unparse(python_processor.get_code(splitter.python_code)),
