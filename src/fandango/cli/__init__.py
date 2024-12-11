@@ -127,6 +127,12 @@ def get_parser(in_command_line=True):
         default=None,
     )
     settings_group.add_argument(
+        "--random-seed",
+        type=int,
+        help="the random seed to use for the algorithm",
+        default=None,
+    )
+    settings_group.add_argument(
         "--destruction-rate",
         type=float,
         help="the rate of individuals that will be randomly destroyed in every generation",
@@ -600,6 +606,8 @@ def make_fandango_settings(args, initial_settings={}):
         settings["warnings_are_errors"] = args.warnings_are_errors
     if args.best_effort is not None:
         settings["best_effort"] = args.best_effort
+    if args.random_seed is not None:
+        settings["random_seed"] = args.random_seed
     if args.start_symbol is not None:
         if args.start_symbol.startswith("<"):
             start_symbol = args.start_symbol
@@ -704,8 +712,14 @@ def fuzz_command(args):
         constraints = DEFAULT_FAN_CONTENT[1]
 
     if grammar is None:
-        print("fuzz: Use -f to specify a .fan file", file=sys.stderr)
-        return
+        print("fuzz: No grammar found, looking for default .fan file...", file=sys.stderr)
+        try:
+            with open("default.fan", "r") as fp:
+                fan_contents = fp.read()
+                grammar, constraints = extract_grammar_and_constraints(fan_contents)
+        except FileNotFoundError:
+            print("fuzz: Default .fan file not found, exiting execution.", file=sys.stderr)
+            return
 
     if DEFAULT_CONSTRAINTS:
         constraints += DEFAULT_CONSTRAINTS
@@ -935,6 +949,7 @@ def shell_command(args):
             readline.read_history_file(histfile)
             readline.set_history_length(1000)
         except FileNotFoundError:
+
             pass
         atexit.register(readline.write_history_file, histfile)
 

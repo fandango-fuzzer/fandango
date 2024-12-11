@@ -35,6 +35,7 @@ _PARAMETERS = {
     "crossover": "_crossover_rate",
     "tournament": "_tournament_size",
     "mutation": "_mutation_rate",
+    "random_seed": "_random_seed",
 }
 
 
@@ -188,6 +189,7 @@ class Interactive:
         self._crossover_rate: float = 0.8
         self._tournament_size: float = 0.05
         self._mutation_rate: float = 0.2
+        self._random_seed: Optional[int] = None
         self._updated_parameters = False
 
     def _rule(self, rule: str, single: bool = False):
@@ -385,6 +387,7 @@ class Interactive:
                 crossover_rate=self._crossover_rate,
                 max_generations=self._max_generations,
                 elitism_rate=self._elitism_rate,
+                random_seed=self._random_seed,
                 verbose=False,
             )
             population = self._fandango_object.evolve()
@@ -405,6 +408,7 @@ class Interactive:
                 crossover_rate=self._crossover_rate,
                 max_generations=self._max_generations,
                 elitism_rate=self._elitism_rate,
+                random_seed=self._random_seed,
                 verbose=False,
             )
             self._updated_constraints = False
