@@ -117,6 +117,12 @@ class Fandango:
             sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
 
+
+    def evolve_io(self):
+        original_grammar = self.grammar
+
+        pass
+
     def trigger_event(
         self, event: FandangoLifecycle, solution_integration_max_rounds: int = 5000
     ):
