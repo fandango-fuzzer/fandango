@@ -25,6 +25,7 @@ class Fandango:
         population_size: int = 100,
         desired_solutions: int = 0,
         initial_population: List[DerivationTree] = None,
+        partial_solution: List[DerivationTree] = None,
         max_generations: int = 500,
         elitism_rate: float = 0.1,
         crossover_rate: float = 0.8,
@@ -34,7 +35,7 @@ class Fandango:
         verbose: bool = False,
         warnings_are_errors: bool = False,
         best_effort: bool = False,
-        start_symbol="<start>",
+        start_symbol="<start>"
     ):
         """
         Initialize the FANDANGO genetic algorithm. The algorithm will evolve a population of individuals
@@ -91,6 +92,10 @@ class Fandango:
         # Initialize population
         self.solution = list()
         self.desired_solutions = desired_solutions
+
+        self.partial_solution = list()
+        if partial_solution is not None:
+            self.partial_solution.extend(partial_solution)
 
         if initial_population is not None:
             LOGGER.info(f"Saving the provided initial population...")
@@ -286,15 +291,6 @@ class Fandango:
                 return self.population[: self.desired_solutions]
 
         return self.solution
-
-    def on_lifecycle(self, lifecycle: FandangoLifecycle, function):
-        """
-        Sets a lifecycle hook and assigns a function to it. The functions is being executed at the occurence of the
-        corresponding event.
-        :param lifecycle: The lifecycle hook to assign the function to.
-        :param function: The function to execute.
-        """
-        self.lifecycle_events[lifecycle] = function
 
     def generate_random_initial_population(self) -> List[DerivationTree]:
         """
