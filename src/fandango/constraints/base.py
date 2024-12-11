@@ -119,7 +119,10 @@ class ExpressionConstraint(Constraint):
                 {name: container.evaluate() for name, container in combination}
             )
             try:
-                if eval(self.expression, self.global_variables, local_variables) is None:
+                if (
+                    eval(self.expression, self.global_variables, local_variables)
+                    is None
+                ):
                     # fitness is perfect and return
                     return ConstraintFitness(1, 1, True)
                 if eval(self.expression, self.global_variables, local_variables):

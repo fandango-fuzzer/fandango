@@ -1,4 +1,4 @@
-# Generated from FandangoParser.g4 by ANTLR 4.13.2
+# Generated from language/FandangoParser.g4 by ANTLR 4.13.2
 from antlr4 import *
 
 if "." in __name__:
@@ -104,6 +104,22 @@ class FandangoParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by FandangoParser#symbol.
     def exitSymbol(self, ctx: FandangoParser.SymbolContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#nonterminal_right.
+    def enterNonterminal_right(self, ctx: FandangoParser.Nonterminal_rightContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#nonterminal_right.
+    def exitNonterminal_right(self, ctx: FandangoParser.Nonterminal_rightContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#nonterminal.
+    def enterNonterminal(self, ctx: FandangoParser.NonterminalContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#nonterminal.
+    def exitNonterminal(self, ctx: FandangoParser.NonterminalContext):
         pass
 
     # Enter a parse tree produced by FandangoParser#char_set.

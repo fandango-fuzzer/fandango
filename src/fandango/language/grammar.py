@@ -214,9 +214,10 @@ class Option(Repetition):
 
 
 class NonTerminalNode(Node):
-    def __init__(self, symbol: NonTerminal):
+    def __init__(self, symbol: NonTerminal, role: str = None):
         super().__init__(NodeType.NON_TERMINAL)
         self.symbol = symbol
+        self.role = role
 
     def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
         if self.symbol not in grammar:

@@ -1,9 +1,10 @@
 from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse_file
 
+
 def main():
     # Parse grammar and constraints
-    grammar, constraints = parse_file('io_example.fan')
+    grammar, constraints = parse_file("io_example.fan")
 
     # Initialize FANDANGO with desired parameters
     fandango = Fandango(
@@ -11,7 +12,7 @@ def main():
         constraints=constraints,
         population_size=100,
         max_generations=10,
-        verbose=True
+        verbose=True,
     )
 
     # Evolve solutions
@@ -21,5 +22,6 @@ def main():
     for solution in solutions:
         print(str(solution))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

@@ -19,11 +19,13 @@ class FandangoIO:
     def __init__(self):
         if FandangoIO.__instance is not None:
             raise Exception("Singleton already created!")
-        self._data = dict({
-            "solutions": list[str](),
-            "assigned_partial_solution": dict[str, str](),
-            "partial_solution": set[str]()
-        })
+        self._data = dict(
+            {
+                "solutions": list[str](),
+                "assigned_partial_solution": dict[str, str](),
+                "partial_solution": set[str](),
+            }
+        )
         self._lifecycle_events = dict()
         FandangoIO.__instance = self
 
