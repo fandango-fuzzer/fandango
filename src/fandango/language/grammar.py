@@ -730,7 +730,8 @@ class Grammar(NodeVisitor):
         return tree
 
     def fuzz(
-        self, start: str | NonTerminal = "<start>", max_nodes: int = 50
+        self, start: str | NonTerminal = "<start>", max_nodes: int = 50,
+            is_io: bool = False, from_tree: DerivationTree = None
     ) -> DerivationTree:
         if isinstance(start, str):
             start = NonTerminal(start)
