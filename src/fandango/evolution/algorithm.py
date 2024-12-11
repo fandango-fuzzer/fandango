@@ -112,59 +112,68 @@ class Fandango:
             sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
 
-    def trigger_event(self, event: FandangoLifecycle, solution_integration_max_rounds: int = 5000):
-        global_env, local_env = self.grammar.get_python_env()
-        io_instance: FandangoIO = None
-        if 'FandangoIO' in global_env.keys():
-            io_instance = global_env['FandangoIO'].instance()
-
-        io_instance.set_solutions(self.solution)
-        exec(f"FandangoIO.instance().dispatch_lifecycle({str(event)})", global_env, local_env)
-        partial_assigned = io_instance.get_assigned_partial_solutions()
-        partial_unassigned = io_instance.get_partial_solutions()
-        if (len(partial_assigned) + len(partial_unassigned)) > 0:
-            self.solution.clear()
-
-        p_solution_trees = []
-        for [key, value] in partial_assigned.items():
-            tree = self.grammar.parse(value, key)
-            if tree is None:
-                raise RuntimeError(f"Couldn't parse partial solution with provided grammar. Key: {key}, Value: {value}")
-            p_solution_trees.append(tree)
-
-        for value in partial_unassigned:
-            p_solution_trees = []
-            for non_terminal in self.grammar.rules.keys():
-                tree = self.grammar.parse(value, non_terminal.symbol)
-                if tree is not None:
-                    p_solution_trees.append(tree)
-                    break
-            if len(p_solution_trees) == 0:
-                raise RuntimeError(f"Couldn't parse unassigned partial solution with provided grammar. Value: {value}")
-
-        if len(p_solution_trees) == 0:
-            return
-
-        new_population = list()
-
-        for entry in self.population:
-            for _ in range(solution_integration_max_rounds):
-                all_replaced = True
-                for p_solution in p_solution_trees:
-                    key = p_solution.symbol
-                    matching_subtrees = entry.find_all_trees(NonTerminal(key))
-                    if len(matching_subtrees) > 0:
-                        for match in matching_subtrees:
-                            entry = entry.replace(match, p_solution)
-                    else:
-                        entry = self.grammar.fuzz(self.start_symbol)
-                        all_replaced = False
-                        break
-                if all_replaced:
-                    new_population.append(entry)
-                    break
-        self.population = new_population
-
+    def trigger_event(
+        self, event: FandangoLifecycle, solution_integration_max_rounds: int = 5000
+    ):
+        pass
+        # global_env, local_env = self.grammar.get_python_env()
+        # io_instance: FandangoIO = None
+        # if "FandangoIO" in global_env.keys():
+        #     io_instance = global_env["FandangoIO"].instance()
+        #
+        # io_instance.set_solutions(self.solution)
+        # exec(
+        #     f"FandangoIO.instance().dispatch_lifecycle({str(event)})",
+        #     global_env,
+        #     local_env,
+        # )
+        # partial_assigned = io_instance.get_assigned_partial_solutions()
+        # partial_unassigned = io_instance.get_partial_solutions()
+        #
+        # p_solution_trees = []
+        # for [key, value] in partial_assigned.items():
+        #     tree = self.grammar.parse(value, key)
+        #     if tree is None:
+        #         raise RuntimeError(
+        #             f"Couldn't parse partial solution with provided grammar. Key: {key}, Value: {value}"
+        #         )
+        #     p_solution_trees.append(tree)
+        #
+        # for value in partial_unassigned:
+        #     p_solution_trees = []
+        #     for non_terminal in self.grammar.rules.keys():
+        #         tree = self.grammar.parse(value, non_terminal.symbol)
+        #         if tree is not None:
+        #             p_solution_trees.append(tree)
+        #             break
+        #     if len(p_solution_trees) == 0:
+        #         raise RuntimeError(
+        #             f"Couldn't parse unassigned partial solution with provided grammar. Value: {value}"
+        #         )
+        #
+        # if len(p_solution_trees) == 0:
+        #     return
+        #
+        # self.solution.clear()
+        # new_population = list()
+        #
+        # for entry in self.population:
+        #     for _ in range(solution_integration_max_rounds):
+        #         all_replaced = True
+        #         for p_solution in p_solution_trees:
+        #             key = p_solution.symbol
+        #             matching_subtrees = entry.find_all_trees(NonTerminal(key))
+        #             if len(matching_subtrees) > 0:
+        #                 for match in matching_subtrees:
+        #                     entry = entry.replace(match, p_solution)
+        #             else:
+        #                 entry = self.grammar.fuzz(self.start_symbol)
+        #                 all_replaced = False
+        #                 break
+        #         if all_replaced:
+        #             new_population.append(entry)
+        #             break
+        # self.population = new_population
 
     def evolve(self) -> List[DerivationTree]:
         """
@@ -286,7 +295,6 @@ class Fandango:
         :param function: The function to execute.
         """
         self.lifecycle_events[lifecycle] = function
-
 
     def generate_random_initial_population(self) -> List[DerivationTree]:
         """

@@ -77,7 +77,7 @@ class GrammarProcessor(FandangoParserVisitor):
             local_variables=self.local_variables, global_variables=self.global_variables
         )
         for production in productions:
-            symbol = NonTerminal(production.NONTERMINAL().getText())
+            symbol = NonTerminal(production.nonterminal().getText())
             grammar[symbol] = self.visit(production.alternative())
             if production.expression():
                 expr, searches, _ = self.searches.visit(production.expression())
@@ -139,8 +139,8 @@ class GrammarProcessor(FandangoParserVisitor):
         return Repetition(node, reps, reps)
 
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
-        if ctx.NONTERMINAL():
-            return NonTerminalNode(NonTerminal(ctx.NONTERMINAL().getText()))
+        if ctx.nonterminal_right():
+            return self.visit(ctx.nonterminal_right())
         elif ctx.STRING():
             return TerminalNode(Terminal.from_symbol(ctx.STRING().getText()))
         elif ctx.char_set():
@@ -149,6 +149,12 @@ class GrammarProcessor(FandangoParserVisitor):
             return self.visit(ctx.alternative())
         else:
             raise ValueError(f"Unknown symbol: {ctx.getText()}")
+
+    def visitNonterminal_right(self, ctx: FandangoParser.Nonterminal_rightContext):
+        if ctx.NAME(1) is None:
+            return NonTerminalNode(NonTerminal('<' + ctx.NAME(0).getText() + '>'))
+        else:
+            return NonTerminalNode(NonTerminal('<' + ctx.NAME(1).getText() + '>'), ctx.NAME(0).getText())
 
 
 class ConstraintProcessor(FandangoParserVisitor):
@@ -208,7 +214,7 @@ class ConstraintProcessor(FandangoParserVisitor):
             return self.visit(ctx.formula_disjunction())
         elif ctx.EXISTS() or ctx.FORALL():
             constraint = self.visit(ctx.quantifier())
-            bound = NonTerminal(ctx.NONTERMINAL().getText())
+            bound = NonTerminal(ctx.nonterminal().getText())
             search = self.searches.visit(ctx.selector())[1][0]
             if ctx.EXISTS():
                 return ExistsConstraint(

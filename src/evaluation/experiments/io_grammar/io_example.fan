@@ -1,5 +1,5 @@
 <start> ::= <ping>;
-<ping> ::= <ping_req> <ping_resp>;
+<ping> ::= <server:ping_req> <ping_resp>;
 <ping_req> ::= <req_header> <req_body>;
 <req_header> ::= 'header1' | 'header2' | 'header3';
 <req_body> ::= 'body1' | 'body2' | 'body3';
@@ -9,7 +9,7 @@
 # === fandango is responding ===
 
 def get_request():
-    set_partial_solution('<ping_reqq>', 'header2body3')
+    set_partial_solution('<ping_req>', 'header2body3')
     # pass
     # server_fp = open('https://lorem-ipsum.example')
     # set_partial_solution('<ping_req>', read(server_fp))

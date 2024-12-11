@@ -1,4 +1,4 @@
-# Generated from FandangoParser.g4 by ANTLR 4.13.2
+# Generated from language/FandangoParser.g4 by ANTLR 4.13.2
 from antlr4 import *
 
 if "." in __name__:
@@ -57,6 +57,14 @@ class FandangoParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by FandangoParser#symbol.
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#nonterminal_right.
+    def visitNonterminal_right(self, ctx: FandangoParser.Nonterminal_rightContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#nonterminal.
+    def visitNonterminal(self, ctx: FandangoParser.NonterminalContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by FandangoParser#char_set.

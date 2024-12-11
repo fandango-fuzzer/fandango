@@ -508,7 +508,7 @@ def check_constraints(constraints, grammar):
 
 
 def extract_grammar_and_constraints(
-        fan_contents: str, lazy: bool = False, given_grammar=None
+    fan_contents: str, lazy: bool = False, given_grammar=None
 ):
     """Extract grammar and constraints from the given content"""
     # TODO: This should go into a separate module (parser.py maybe?), not here -- AZ
@@ -764,7 +764,7 @@ def fuzz_command(args):
                 prefix = "fandango-"
                 suffix = args.filename_extension
                 with tempfile.NamedTemporaryFile(
-                        mode="w", prefix=prefix, suffix=suffix
+                    mode="w", prefix=prefix, suffix=suffix
                 ) as fd:
                     fd.write(str(individual))
                     fd.flush()
@@ -842,9 +842,9 @@ def get_filenames(prefix="", fan_only=True):
         if os.path.isdir(filename):
             filenames.append(filename + os.sep)
         elif (
-                not fan_only
-                or filename.lower().endswith(".fan")
-                or filename.lower().endswith(".py")
+            not fan_only
+            or filename.lower().endswith(".fan")
+            or filename.lower().endswith(".py")
         ):
             filenames.append(filename)
 

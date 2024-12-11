@@ -1,0 +1,2 @@
+class FandangoIO(object):
+    pass
