@@ -262,7 +262,6 @@ But while the values will fit the constraint, they will not be randomly distribu
 This is because Fandango treats and generates them as _strings_ (= sequences of digits), ignoring thur semantics as numerical values.
 To obtain well-distributed numbers from the beginning, use a generator.
 
-:::{important}
 1. If a value to be produced is _random_, it should be added via a _generator_.
 2. If a value to be produced is _constant_, it can go into a _generator_ or a _constraint_.
 3. If a value to be produced must be _part of a valid input_, it should go into a _constraint_. (Constraints are checked during parsing _and_ production.)
