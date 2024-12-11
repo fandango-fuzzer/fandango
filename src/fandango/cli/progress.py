@@ -9,6 +9,7 @@ FITNESS = []
 
 COLUMNS, LINES = os.get_terminal_size()
 
+
 def progress():
     columns = COLUMNS
     s = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango {styles.color.close}"
@@ -18,15 +19,15 @@ def progress():
         individual = int(column / columns * len(FITNESS))
         fitness = FITNESS[individual]
         if fitness == 0:
-            emoji = '💀'
+            emoji = "💀"
         elif fitness < 50:
-            emoji = '🥵'
+            emoji = "🥵"
         elif fitness < 99:
-            emoji = '🙂'
+            emoji = "🙂"
         else:
-            emoji = '🤩'
+            emoji = "🤩"
 
-        emoji = ' '
+        emoji = " "
         percentage = fitness / 100
 
         if fitness == 0:
@@ -37,15 +38,17 @@ def progress():
             blue = 0
 
         s += styles.bgColor.ansi256(styles.rgbToAnsi256(red, green, blue))
-        s += ' ' + emoji + ' '
+        s += " " + emoji + " "
         s += styles.bgColor.close
 
-    print(f'\r{s}', end="")
+    print(f"\r{s}", end="")
     return
 
+
 def clear():
-    s = ' ' * (COLUMNS - 1)
-    print(f'\r{s}\r', end="")
+    s = " " * (COLUMNS - 1)
+    print(f"\r{s}\r", end="")
+
 
 if __name__ == "__main__":
     FITNESS = [0] * 500

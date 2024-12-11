@@ -14,12 +14,14 @@ from fandango.language.grammar import DerivationTree
 from fandango.language.grammar import Grammar
 from fandango.logger import LOGGER, visualize_evaluation, clear_visualization
 
+
 class LoggerLevel(enum.Enum):
     DEBUG = logging.DEBUG
     INFO = logging.INFO
     WARNING = logging.WARNING
     ERROR = logging.ERROR
     CRITICAL = logging.CRITICAL
+
 
 class Fandango:
     def __init__(
@@ -111,7 +113,7 @@ class Fandango:
                     self.population.append(individual)
                 else:
                     raise TypeError(
-                        f"Inital individuals must be DerivationTree or String"                
+                        f"Inital individuals must be DerivationTree or String"
                     )
         else:
             LOGGER.info(
