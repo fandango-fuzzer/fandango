@@ -86,6 +86,11 @@ class GrammarProcessor(FandangoParserVisitor):
                         "Searches in expressions are currently not supported"
                     )
                 grammar.set_generator(symbol, ast.unparse(expr))
+            if production.ASSIGN():
+                LOGGER.warning("Using '=' for generators is deprecated. Use ':=' instead.")
+            if production.DOUBLE_COLON():
+                LOGGER.warning("Using '::' for generators is deprecated. Use ':=' instead.")
+
         grammar.update_parser()
         grammar.prime()
         return grammar
