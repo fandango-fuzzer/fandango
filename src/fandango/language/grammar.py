@@ -33,6 +33,7 @@ class FuzzingContext:
         self._roleDepth = None
         self._currentRole = None
         self._prev_role_completed = False
+        self.abort = False
 
     def on_enter_non_terminal(self, node: "NonTerminalNode"):
         self._process_role_enter(node.role)
@@ -90,7 +91,7 @@ class Node(abc.ABC):
 
     def fuzz(self, grammar: "Grammar", max_nodes: int = 100,
             mode: FuzzingMode = FuzzingMode.COMPLETE,
-            from_tree: DerivationTree = None,
+            complete_tree: DerivationTree = None,
             context: FuzzingContext = FuzzingContext()) -> List[DerivationTree]:
         return []
 
@@ -123,7 +124,7 @@ class Alternative(Node):
         self.alternatives = alternatives
 
     def fuzz(self, grammar: "Grammar", max_nodes: int = 100,
-            mode: FuzzingMode = FuzzingMode.COMPLETE, from_tree: DerivationTree = None,
+            mode: FuzzingMode = FuzzingMode.COMPLETE, complete_tree: DerivationTree = None,
             context: FuzzingContext = FuzzingContext()) -> List[DerivationTree]:
         if self.distance_to_completion >= max_nodes:
             min_ = min(self.alternatives, key=lambda x: x.distance_to_completion)
@@ -135,7 +136,7 @@ class Alternative(Node):
                 ]
             ).fuzz(grammar, 0)
         return random.choice(self.alternatives).fuzz(grammar, max_nodes - 1,
-                                                     mode=mode, from_tree=from_tree,
+                                                     mode=mode, complete_tree=complete_tree,
                                                      context=context)
 
     def accept(self, visitor: "NodeVisitor"):
@@ -164,18 +165,21 @@ class Concatenation(Node):
 
     def fuzz(self, grammar: "Grammar", max_nodes: int = 100,
             mode: FuzzingMode = FuzzingMode.COMPLETE,
-            from_tree: DerivationTree = None,
+            complete_tree: DerivationTree = None,
             context: FuzzingContext = FuzzingContext()) -> List[DerivationTree]:
         trees = []
         for node in self.nodes:
             if node.distance_to_completion >= max_nodes:
                 tree = node.fuzz(grammar, 0, mode=mode,
-                                 from_tree=from_tree, context=context)
+                                 complete_tree=complete_tree, context=context)
             else:
                 tree = node.fuzz(grammar, max_nodes - 1, mode=mode,
-                                 from_tree=from_tree, context=context)
+                                 complete_tree=complete_tree, context=context)
             trees.extend(tree)
             max_nodes -= sum(t.size() for t in tree)
+            if mode == FuzzingMode.IO and context.prev_completed_role():
+                context.abort = True
+                return trees
         return trees
 
     def accept(self, visitor: "NodeVisitor"):
@@ -290,7 +294,7 @@ class NonTerminalNode(Node):
         self.role = role
 
     def fuzz(self, grammar: "Grammar", max_nodes: int = 100,
-            mode: FuzzingMode = FuzzingMode.COMPLETE, from_tree: DerivationTree = None,
+            mode: FuzzingMode = FuzzingMode.COMPLETE, complete_tree: DerivationTree = None,
             context: FuzzingContext = FuzzingContext()) -> List[DerivationTree]:
         if self.symbol not in grammar:
             raise ValueError(f"Symbol {self.symbol} not found in grammar")
@@ -300,7 +304,7 @@ class NonTerminalNode(Node):
 
         context.on_enter_non_terminal(self)
         children = grammar[self.symbol].fuzz(grammar, max_nodes - 1, mode,
-                                             from_tree, context)
+                                             complete_tree, context)
         context.on_leave_non_terminal()
         return [DerivationTree(self.symbol, children)]
 
@@ -327,7 +331,7 @@ class TerminalNode(Node):
 
     def fuzz(self, grammar: "Grammar", max_nodes: int = 100,
             mode: FuzzingMode = FuzzingMode.COMPLETE,
-            from_tree: DerivationTree = None,
+            complete_tree: DerivationTree = None,
             context: FuzzingContext = FuzzingContext()) -> List[DerivationTree]:
         return [DerivationTree(self.symbol)]
 
@@ -800,7 +804,7 @@ class Grammar(NodeVisitor):
             )
 
         if isinstance(string, tuple):
-            return DerivationTree.from_tree(string)
+            return DerivationTree.complete_tree(string)
         else:
             tree = self.parse(string, symbol)
         if tree is None:
@@ -811,13 +815,13 @@ class Grammar(NodeVisitor):
 
     def fuzz(
         self, start: str | NonTerminal = "<start>", max_nodes: int = 50,
-            mode: FuzzingMode = FuzzingMode.COMPLETE, from_tree: DerivationTree = None,
+            mode: FuzzingMode = FuzzingMode.COMPLETE, complete_tree: DerivationTree = None,
             context: FuzzingContext = FuzzingContext()
     ) -> DerivationTree:
         if isinstance(start, str):
             start = NonTerminal(start)
         return NonTerminalNode(start).fuzz(self, max_nodes=max_nodes, mode=mode,
-                                           from_tree=from_tree, context=context)[0]
+                                           complete_tree=complete_tree, context=context)[0]
 
     def update(self, grammar: "Grammar" | Dict[NonTerminal, Node]):
         if isinstance(grammar, Grammar):
