@@ -1,7 +1,6 @@
 import copy
 from typing import Optional, List, Any, Union, Set, Tuple
 
-from fandango.language.grammar import Grammar
 from fandango.language.symbol import Symbol, NonTerminal, Terminal
 
 
@@ -39,7 +38,7 @@ class DerivationTree:
         self._size += child.size()
         child._parent = self
 
-    def extend_matching_grammar(self, other: "DerivationTree", grammar: Grammar):
+    def extend_matching_grammar(self, other: "DerivationTree", grammar: "Grammar"):
         pass
 
     def find_all_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
