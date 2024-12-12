@@ -3,8 +3,9 @@ import time
 from io import StringIO
 from typing import Tuple
 
-from fandango.evolution.algorithm import Fandango
+from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.parse import parse_file
+from fandango.logger import LOGGER
 
 
 def is_syntactically_valid_csv(csv_string):
@@ -35,7 +36,9 @@ def evaluate_csv(
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
-        fandango = Fandango(grammar, constraints, desired_solutions=100)
+        fandango = Fandango(
+            grammar, constraints, desired_solutions=100, logger_level=LoggerLevel.ERROR
+        )
         fandango.evolve()
         solutions.extend(fandango.solution)
 

@@ -36,7 +36,8 @@ dependencies = [
     "Faker>=30.4.0",
     "docutils>=0.21.2",
     "tccbox==2024.7.1",
-    "deprecation"
+    "deprecation",
+    "ansi_styles",
 ]
 
 [project.urls]
