@@ -5,6 +5,7 @@ MAKEFLAGS=--warn-undefined-variables
 
 # Programs
 PYTHON = python
+PYTEST = pytest
 ANTLR = antlr
 BLACK = black
 PIP = pip
@@ -151,6 +152,11 @@ view-pdf: $(PDF_TARGET)
 clean-docs:
 	$(JB) clean $(DOCS)
 
+
+## Test
+test tests:
+	$(PIP) install -e .
+	$(PYTEST)
 
 
 ## Installation

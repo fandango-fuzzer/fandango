@@ -20,6 +20,9 @@ from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.search import RuleSearch
 from fandango.language.symbol import NonTerminal
 
+from fandango.constraints import predicates
+
+
 FANDANGO_GRAMMAR = """
     <start> ::= <number>;
     <number> ::= <non_zero><digit>* | "0";
@@ -258,8 +261,8 @@ def test_conversion_statement(stmt, value, is_global):
     fandango_tree = processor.get_code(code)
     tree = ast.parse(stmt)
     assert ast.unparse(fandango_tree) == ast.unparse(tree)
-    local_vars = {}
     global_vars = {}
+    local_vars = predicates.__dict__.copy()
     exec(ast.unparse(fandango_tree), global_vars, local_vars)
     if is_global:
         assert "x" in global_vars
