@@ -645,9 +645,8 @@ def extract_initial_population(path):
                     individual = fd.read()
                 initial_populaition.append(individual)
         return initial_populaition
-    except FileNotFoundError:
-        print(f"Initial Population not found, exiting execution", file=sys.stderr)
-        sys.exit(1) 
+    except FileNotFoundError as e:
+        raise e
 
 # Default Fandango file content (grammar, constraints); set with `set`
 DEFAULT_FAN_CONTENT = (None, None)
