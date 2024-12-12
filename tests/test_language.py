@@ -261,8 +261,8 @@ def test_conversion_statement(stmt, value, is_global):
     fandango_tree = processor.get_code(code)
     tree = ast.parse(stmt)
     assert ast.unparse(fandango_tree) == ast.unparse(tree)
-    global_vars = predicates.__dict__
-    local_vars = None
+    global_vars = {}
+    local_vars = predicates.__dict__.copy()
     exec(ast.unparse(fandango_tree), global_vars, local_vars)
     if is_global:
         assert "x" in global_vars
