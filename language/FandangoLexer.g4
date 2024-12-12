@@ -89,7 +89,6 @@ OPEN_PAREN         : '(' {self.open_brace()};
 CLOSE_PAREN        : ')' {self.close_brace()};
 COMMA              : ',';
 COLON              : ':';
-DOUBLE_COLON       : '::';
 SEMI_COLON         : ';';
 POWER              : '**';
 ASSIGN             : '=';
