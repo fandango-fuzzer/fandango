@@ -7,7 +7,7 @@
 
 from struct import pack
 
-def uint16(n):
-    return pack('<H', n)
+def uint16(n: int) -> str:
+    return pack('<H', n).decode('iso8859-1')  # convert to string
 
 <length> == uint16(len(<content>));
