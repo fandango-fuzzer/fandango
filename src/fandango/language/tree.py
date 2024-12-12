@@ -14,18 +14,23 @@ class DerivationTree:
         symbol: Symbol,
         children: Optional[List["DerivationTree"]] = None,
         parent: Optional["DerivationTree"] = None,
+        read_only: bool = False,
     ):
         self.symbol = symbol
         self._children = []
         self._size = 1
         self.set_children(children or [])
         self._parent = parent
+        self._read_only = read_only
 
     def __len__(self):
         return len(self._children)
 
     def size(self):
         return self._size
+
+    def read_only(self):
+        return self._read_only
 
     def set_children(self, children: List["DerivationTree"]):
         self._children = children
@@ -37,9 +42,6 @@ class DerivationTree:
         self._children.append(child)
         self._size += child.size()
         child._parent = self
-
-    def extend_matching_grammar(self, other: "DerivationTree", grammar: "Grammar"):
-        pass
 
     def find_all_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
         trees = sum(
@@ -97,7 +99,7 @@ class DerivationTree:
             return memo[id(self)]
 
         # Create a new instance without copying the parent
-        copied = DerivationTree(self.symbol, [])
+        copied = DerivationTree(self.symbol, [], read_only=self.read_only())
         memo[id(self)] = copied
 
         # Deepcopy the children
