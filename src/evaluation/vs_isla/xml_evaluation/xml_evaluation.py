@@ -2,7 +2,7 @@ import time
 import xml.etree.ElementTree as ET
 from typing import Tuple
 
-from fandango.evolution.algorithm import Fandango
+from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.parse import parse_file
 
 
@@ -25,7 +25,7 @@ def evaluate_xml(
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
-        fandango = Fandango(grammar, constraints, desired_solutions=100)
+        fandango = Fandango(grammar, constraints, desired_solutions=100, logger_level=LoggerLevel.ERROR)
         fandango.evolve()
         solutions.extend(fandango.solution)
 

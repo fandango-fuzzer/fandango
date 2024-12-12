@@ -4,7 +4,7 @@ from typing import Tuple
 
 from docutils.core import publish_doctree
 
-from fandango.evolution.algorithm import Fandango
+from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.parse import parse_file
 
 
@@ -39,7 +39,7 @@ def evaluate_rest(
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
-        fandango = Fandango(grammar, constraints, desired_solutions=100)
+        fandango = Fandango(grammar, constraints, desired_solutions=100, logger_level=LoggerLevel.ERROR)
         fandango.evolve()
         solutions.extend(fandango.solution)
 
