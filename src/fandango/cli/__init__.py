@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+import zipfile
 from io import StringIO
 from io import UnsupportedOperation
 from pathlib import Path
@@ -22,10 +23,8 @@ from antlr4.InputStream import InputStream
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4.error.Errors import ParseCancellationException
 
-from fandango.cli.interactive import Interactive
-from fandango.constants import INTERACTIVE, FUZZ, HELP
 from fandango.constraints import predicates
-from fandango.evolution.algorithm import Fandango
+from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.convert import (
     FandangoSplitter,
     GrammarProcessor,
@@ -167,6 +166,13 @@ def get_parser(in_command_line=True):
         help="produce a 'best effort' population (may not satisfy all constraints)",
         default=None,
     )
+    settings_group.add_argument(
+        "-i",
+        "--initial-population",
+        type=str,
+        help="directory or ZIP archive with initial population",
+        default=None,
+    )
 
     # Shared file options
     file_parser = argparse.ArgumentParser(add_help=False)
@@ -203,7 +209,7 @@ def get_parser(in_command_line=True):
 
     # Fuzz
     fuzz_parser = commands.add_parser(
-        FUZZ,
+        "fuzz",
         help="produce outputs from .fan files and test programs",
         parents=[file_parser, settings_parser],
     )
@@ -298,48 +304,6 @@ def get_parser(in_command_line=True):
             help="run an interactive shell (default)",
         )
 
-    if in_command_line:
-        # Interactive
-        interactive_parser = commands.add_parser(
-            INTERACTIVE,
-            help="""
-            open the interactive command line interface
-            (deprecated, use `shell` instead)
-            """,
-        )
-        interactive_parser.add_argument(
-            "-f",
-            "--fan",
-            type=str,
-            dest="fan",
-            default=None,
-            help="the fan file to use for the interactive mode",
-        )
-        interactive_parser.add_argument(
-            "-g",
-            "--grammar",
-            type=str,
-            dest="grammar",
-            default=None,
-            help="the grammar to use for the interactive mode",
-        )
-        interactive_parser.add_argument(
-            "-c",
-            "--constraints",
-            type=str,
-            dest="constraints",
-            default=None,
-            help="the constraints to use for the interactive mode",
-        )
-        interactive_parser.add_argument(
-            "-p",
-            "--python",
-            type=str,
-            dest="python",
-            default=None,
-            help="the Python code to use in the interactive mode",
-        )
-
     if not in_command_line:
         # Shell escape
         # Not processed by argparse,
@@ -373,7 +337,7 @@ def get_parser(in_command_line=True):
 
     # Help
     help_parser = commands.add_parser(
-        HELP,
+        "help",
         help="show this help and exit",
     )
     help_parser.add_argument(
@@ -386,20 +350,6 @@ def get_parser(in_command_line=True):
     )
 
     return main_parser
-
-
-def interactive_command(args):
-    LOGGER.warn("Deprecated. Use the 'shell' command instead.")
-    try:
-        interactive_ = Interactive(
-            args.fan, args.grammar, args.constraints, args.python
-        )
-    except Exception as e:
-        # This should catch all kinds of parsing errors
-        LOGGER.critical(f"Error during initialization: {type(e)}")
-        sys.exit(1)
-
-    interactive_.run()
 
 
 def help_command(args, **kwargs):
@@ -514,7 +464,7 @@ def check_constraints(constraints, grammar):
 
 
 def extract_grammar_and_constraints(
-        fan_contents: str, lazy: bool = False, given_grammar=None
+    fan_contents: str, lazy: bool = False, given_grammar=None
 ):
     """Extract grammar and constraints from the given content"""
     # TODO: This should go into a separate module (parser.py maybe?), not here -- AZ
@@ -533,8 +483,8 @@ def extract_grammar_and_constraints(
     LOGGER.debug("Extracting code")
     splitter = FandangoSplitter()
     splitter.visit(tree)
-    global_vars: dict = {}
-    local_vars = None
+    global_vars = {}
+    local_vars = predicates.__dict__.copy()
     python_processor = PythonProcessor()
     code_tree = python_processor.get_code(splitter.python_code)
     code_text = ast.unparse(code_tree)
@@ -614,9 +564,31 @@ def make_fandango_settings(args, initial_settings={}):
         else:
             start_symbol = f"<{args.start_symbol}>"
         settings["start_symbol"] = start_symbol
-
+    if args.verbose and args.verbose == 1:
+        settings["logger_level"] = LoggerLevel.INFO
+    elif args.verbose and args.verbose > 1:
+        settings["logger_level"] = LoggerLevel.DEBUG
+    if args.initial_population is not None:
+        settings["initial_population"] = extract_initial_population(args.initial_population)
     return settings
 
+def extract_initial_population(path):
+    try:
+        initial_populaition = list()
+        if path.strip().endswith(".zip"):
+            with zipfile.ZipFile(path, "r") as zip:
+                for file in zip.namelist():
+                    data = zip.read(file).decode()
+                    initial_populaition.append(data)
+        else:    
+            for file in os.listdir(path):
+                filename = os.path.join(path, file)
+                with open(filename, "r") as fd:
+                    individual = fd.read()
+                initial_populaition.append(individual)
+        return initial_populaition
+    except FileNotFoundError as e:
+        raise e
 
 # Default Fandango file content (grammar, constraints); set with `set`
 DEFAULT_FAN_CONTENT = (None, None)
@@ -698,8 +670,6 @@ def cd_command(args):
         print(os.getcwd())
 
 
-
-
 def fuzz_command(args):
     """Invoke the fuzzer"""
 
@@ -712,13 +682,17 @@ def fuzz_command(args):
         constraints = DEFAULT_FAN_CONTENT[1]
 
     if grammar is None:
-        print("fuzz: No grammar found, looking for default .fan file...", file=sys.stderr)
+        print(
+            "fuzz: No grammar found, looking for default .fan file...", file=sys.stderr
+        )
         try:
             with open("default.fan", "r") as fp:
                 fan_contents = fp.read()
                 grammar, constraints = extract_grammar_and_constraints(fan_contents)
         except FileNotFoundError:
-            print("fuzz: Default .fan file not found, exiting execution.", file=sys.stderr)
+            print(
+                "fuzz: Default .fan file not found, exiting execution.", file=sys.stderr
+            )
             return
 
     if DEFAULT_CONSTRAINTS:
@@ -780,7 +754,7 @@ def fuzz_command(args):
                 prefix = "fandango-"
                 suffix = args.filename_extension
                 with tempfile.NamedTemporaryFile(
-                        mode="w", prefix=prefix, suffix=suffix
+                    mode="w", prefix=prefix, suffix=suffix
                 ) as fd:
                     fd.write(str(individual))
                     fd.flush()
@@ -813,7 +787,7 @@ COMMANDS = {
     "reset": reset_command,
     "fuzz": fuzz_command,
     "cd": cd_command,
-    "interactive": interactive_command,
+    #   "interactive": interactive_command,
     "help": help_command,
     "exit": exit_command,
     "!": nop_command,
@@ -858,9 +832,9 @@ def get_filenames(prefix="", fan_only=True):
         if os.path.isdir(filename):
             filenames.append(filename + os.sep)
         elif (
-                not fan_only
-                or filename.lower().endswith(".fan")
-                or filename.lower().endswith(".py")
+            not fan_only
+            or filename.lower().endswith(".fan")
+            or filename.lower().endswith(".py")
         ):
             filenames.append(filename)
 
@@ -949,8 +923,10 @@ def shell_command(args):
             readline.read_history_file(histfile)
             readline.set_history_length(1000)
         except FileNotFoundError:
-
             pass
+        except Exception as e:
+            LOGGER.warning(f"Could not read {histfile}: {e}")
+
         atexit.register(readline.write_history_file, histfile)
 
     def _complete(text, state):

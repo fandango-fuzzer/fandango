@@ -4,8 +4,8 @@ fake = Faker()
 <start> ::= <person_name> "," <age>;
 <person_name> ::= <first_name> " " <last_name>;
 <first_name> ::= <name> | <natural_name>;
-<natural_name> ::= <name> = fake.first_name();
-<last_name> ::= <name> = fake.last_name();
+<natural_name> ::= <name> := fake.first_name();
+<last_name> ::= <name> := fake.last_name();
 <name> ::= <uppercase_letter><lowercase_letter>+;
 <age> ::= <digit>+;
 <uppercase_letter> ::=
