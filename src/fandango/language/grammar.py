@@ -32,41 +32,53 @@ class FuzzingContext:
         self._depth = 0
         self._roleDepth = None
         self._currentRole = None
+        self._prev_role_completed = False
 
     def on_enter_non_terminal(self, node: "NonTerminalNode"):
-        self._process_role(node.role)
+        self._process_role_enter(node.role)
         self._depth += 1
 
-    def on_leave_non_terminal(self, node: "NonTerminalNode"):
+    def on_leave_non_terminal(self):
         self._depth -= 1
+        self._process_role_leave()
 
     def prev_completed_role(self):
-        if self._roleDepth is None:
-            return False
-        return self._roleDepth <= self._depth
+        """
+        :return True if a NonTerminal node with an assigned role has just completed
+        fuzzing on the same level in the grammar tree
+        """
+        return self._prev_role_completed
 
-    def _process_role(self, role: str):
-        """
-        returns True, if the role has been changed. False otherwise.
-        """
+    def _process_role_leave(self):
+        self._prev_role_completed = False
+        if self._currentRole is None:
+            return
+        if self._roleDepth <= self._depth:
+            self._currentRole = None
+            self._roleDepth = None
+            self._prev_role_completed = True
+            return
+
+    def _process_role_enter(self, role: str):
+        self._prev_role_completed = False
         if self._currentRole is None:
             # If begin of a role subtree
             if role is not None:
                 self._currentRole = role
                 self._roleDepth = self._depth
             # else: traversing tree before role assignment
-            return False
+            return
 
         # If we are within a role subtree
         if self._depth > self._roleDepth:
             if role is None:
-                return False
+                return
             else:
                 raise RuntimeError("Cannot swap role down the syntax tree")
         # else (If subtree is finished)
         self._currentRole = None
         self._roleDepth = None
-        return True
+        return
 
 
 class Node(abc.ABC):
@@ -286,8 +298,10 @@ class NonTerminalNode(Node):
         if self.symbol in grammar.generators:
             return [grammar.generate(self.symbol)]
 
+        context.on_enter_non_terminal(self)
         children = grammar[self.symbol].fuzz(grammar, max_nodes - 1, mode,
                                              from_tree, context)
+        context.on_leave_non_terminal()
         return [DerivationTree(self.symbol, children)]
 
     def accept(self, visitor: "NodeVisitor"):
