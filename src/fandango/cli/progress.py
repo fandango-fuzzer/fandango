@@ -60,6 +60,7 @@ if __name__ == "__main__":
                 break
 
         FITNESS[individual] = min(FITNESS[individual] + 10, 100)
+        FITNESS.sort(reverse=True)
         progress()
         time.sleep(0.001)
     clear()
