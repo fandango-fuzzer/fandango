@@ -145,10 +145,6 @@ In Python, `//` is used for integer division.
 !grep -v ';' binary.fan
 ```
 
-:::{tip}
-The Python [`struct` module](https://docs.python.org/3/library/struct.html) offers several functions to convert data into binary formats.
-:::
-
 Using `uint16()`, we can now define how the value of `<length>` is related to the length of `<content>`:
 
 ```{code-cell}
@@ -177,7 +173,64 @@ The hexadecimal dump shows that the first two bytes encode the length of the str
 The last character is a newline `\n` - this is produced by Fandango and not part of the grammar.
 The format is correct - we have successfully produced a length encoding.
 
-## Compression
+## Converting Values to Binary Formats
+
+Instead of implementing `uint16()` manually, we can also use the Python [`struct` module](https://docs.python.org/3/library/struct.html), which offers several functions to convert data into binary formats.
+Using `struct`, we can redefine `uint16()` as
+
+```{code-cell}
+:tags: ["remove-input"]
+# show code
+!grep -v ';' binary-pack.fan
+```
+
+and obtain the same result:
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -n 1 -f binary-pack.fan | od -c
+```
+
+Note that return value of `struct.pack()` has the type `bytes` (byte string), which is different from the `str` Unicode strings that Fandango uses:
+
+```{code-cell}
+:tags: ["remove-input"]
+from struct import pack
+```
+
+```{code-cell}
+pack('<H', 20)
+```
+
+```{code-cell}
+type(pack('<H', 20))
+```
+
+In Python, comparisons of different types always return `False`":
+
+```{code-cell}
+# Left hand is byte string, right hand is Unicode string
+b'\x14\x00' == '\x14\x00'
+```
+
+Hence, a constraint that compares a Fandango symbol against a byte string _will always fail_.
+
+```{warning}
+When comparing symbols against values, always be sure to convert the values to Unicode `str` strings first.
+```
+
+```{tip}
+Using the `'iso8859-1'` encoding (also known as `'latin-1'`) allows a 1:1 conversion of byte strings with values `'\x00'..'\xff'` into Unicode `str` strings without further interpretation.
+```
+
+```{tip}
+Adding _type annotations_ to functions in `.fan` files allows for future static type checking and further optimizations.
+```
+
+Check out the [`struct` module](https://docs.python.org/3/library/struct.html) for additional encodings, including float types, long and short integers, and many more.
+
+
+## Compression and Conversion
 
 :::{error}
 To be completed later.
@@ -194,6 +247,15 @@ Here's a sketch on how to achieve this:
 <compressed_content> == compress(<content>);    # for producing
 <content> == uncompress(<compressed_content>);  # for parsing
 ```
+
+or, using generators:
+
+```python
+<chunk> ::= <header> <compressed_content> <trailer>;
+<compressed_content> ::= <byte>* | <foo> | <bar> := compress(<content>);
+<content> ::= <byte>* = uncompress(<compressed_content>);
+```
+
 
 ## Case Study: The GIF Format
 

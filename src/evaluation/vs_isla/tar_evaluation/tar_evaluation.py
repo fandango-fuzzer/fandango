@@ -3,7 +3,7 @@ import tempfile
 import time
 from typing import Tuple
 
-from fandango.evolution.algorithm import Fandango
+from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.parse import parse_file
 
 
@@ -35,6 +35,7 @@ def evaluate_tar(
             grammar,
             constraints,
             desired_solutions=100,
+            logger_level=LoggerLevel.ERROR,
         )
         fandango.evolve()
         solutions.extend(fandango.solution)
