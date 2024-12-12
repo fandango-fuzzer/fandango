@@ -16,6 +16,7 @@ import textwrap
 from io import StringIO
 from io import UnsupportedOperation
 from pathlib import Path
+from ansi_styles import ansiStyles as styles
 
 from antlr4.CommonTokenStream import CommonTokenStream
 from antlr4.InputStream import InputStream
@@ -63,7 +64,7 @@ def get_parser(in_command_line=True):
         main_parser.add_argument(
             "--version",
             action="version",
-            version="%(prog)s " + importlib.metadata.version("fandango"),
+            version="Fandango " + importlib.metadata.version("fandango"),
             help="show version number",
         )
 
@@ -283,7 +284,7 @@ def get_parser(in_command_line=True):
         )
 
     if not in_command_line:
-        # Reset
+        # Exit
         set_parser = commands.add_parser(
             "exit",
             help="exit Fandango",
@@ -339,6 +340,18 @@ def get_parser(in_command_line=True):
         nargs="*",
         default=None,
         help="command to get help on",
+    )
+
+    # Copyright
+    copyright_parser = commands.add_parser(
+        "copyright",
+        help="show copyright",
+    )
+
+    # Version
+    version_parser = commands.add_parser(
+        "version",
+        help="show version",
     )
 
     return main_parser
@@ -751,14 +764,27 @@ def nop_command(args):
     # Dummy command such that we can list ! and / as commands. Never executed.
     pass
 
+def copyright_command(args):
+    print("Copyright (c) 2024-2025 CISPA Helmholtz Center for Information Security.")
+    print("All rights reserved.")
+
+def version_command(args):
+    version = importlib.metadata.version("fandango")
+    if sys.stdout.isatty():
+        version_line = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango{styles.color.close} {version}"
+    else:
+        version_line = f"Fandango {version}"
+    print(version_line)
+
 
 COMMANDS = {
     "set": set_command,
     "reset": reset_command,
     "fuzz": fuzz_command,
     "cd": cd_command,
-    #   "interactive": interactive_command,
     "help": help_command,
+    "copyright": copyright_command,
+    "version": version_command,
     "exit": exit_command,
     "!": nop_command,
     "/": nop_command,
@@ -881,7 +907,6 @@ def exec_single(code, _globals={}, _locals={}):
 
 MATCHES = []
 
-
 def shell_command(args):
     """(New) interactive mode"""
 
@@ -916,8 +941,8 @@ def shell_command(args):
         readline.parse_and_bind("tab: complete")  # Linux
         readline.parse_and_bind("bind '\t' rl_complete")  # Mac
 
-        print("Fandango", importlib.metadata.version("fandango"))
-        print("Enter a command, 'help', or 'exit'.")
+        version_command([])
+        print("Type a command, 'help', 'copyright', 'version', or 'exit'.")
 
     last_status = 0
 
