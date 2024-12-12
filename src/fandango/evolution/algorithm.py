@@ -62,6 +62,10 @@ class Fandango:
         :param best_effort: If set, returns also solutions not satisfying all constraints
         :param random_seed: The random seed to use for reproducibility.
         """
+        if tournament_size > 1:
+            raise ValueError(
+                f"Parameter tournament_size must be in range ]0, 1], but is {tournament_size}."
+            )
         if random_seed is not None:
             random.seed(random_seed)
 
@@ -112,6 +116,8 @@ class Fandango:
                     raise TypeError(
                         f"Inital individuals must be DerivationTree or String"                
                     )
+            for i in range(self.population_size - len(self.population)):
+                self.population.append(self.mutate(self.population[i]))
         else:
             LOGGER.info(
                 f"Generating initial population (size: {self.population_size})..."
@@ -124,6 +130,7 @@ class Fandango:
             )
 
         # Evaluate population
+        print("initial population: ", self.population)
         self.evaluation = self.evaluate_population()
         self.fitness = (
             sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
