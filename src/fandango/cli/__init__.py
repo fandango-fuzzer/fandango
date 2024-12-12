@@ -893,8 +893,10 @@ def shell_command(args):
             readline.read_history_file(histfile)
             readline.set_history_length(1000)
         except FileNotFoundError:
-
             pass
+        except Exception as e:
+            LOGGER.warning(f"Could not read {histfile}: {e}")
+
         atexit.register(readline.write_history_file, histfile)
 
     def _complete(text, state):
