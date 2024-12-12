@@ -207,7 +207,8 @@ class ComparisonConstraint(Constraint):
                 e.add_note("Evaluation failed: " + self.right)
                 print_exception(e)
                 continue
-
+            if not type(right) == type(left):
+                raise TypeError("Left and Right side of comparison are not of same type, will always evaluate to False")
             suggestions = []
             is_solved = False
             match self.operator:
