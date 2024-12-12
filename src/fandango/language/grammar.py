@@ -33,10 +33,11 @@ class FuzzingContext:
         self._roleDepth = None
         self._currentRole = None
 
-    def increase_depth(self):
+    def on_enter_non_terminal(self, node: "NonTerminalNode"):
+        self._process_role(node.role)
         self._depth += 1
 
-    def decrease_depth(self):
+    def on_leave_non_terminal(self, node: "NonTerminalNode"):
         self._depth -= 1
 
     def prev_completed_role(self):
@@ -44,7 +45,7 @@ class FuzzingContext:
             return False
         return self._roleDepth <= self._depth
 
-    def process_role(self, role: str):
+    def _process_role(self, role: str):
         """
         returns True, if the role has been changed. False otherwise.
         """
@@ -282,15 +283,11 @@ class NonTerminalNode(Node):
         if self.symbol not in grammar:
             raise ValueError(f"Symbol {self.symbol} not found in grammar")
 
-        context.process_role(self.role)
-
         if self.symbol in grammar.generators:
             return [grammar.generate(self.symbol)]
 
-        context.increase_depth()
         children = grammar[self.symbol].fuzz(grammar, max_nodes - 1, mode,
                                              from_tree, context)
-        context.decrease_depth()
         return [DerivationTree(self.symbol, children)]
 
     def accept(self, visitor: "NodeVisitor"):
