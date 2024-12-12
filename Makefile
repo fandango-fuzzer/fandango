@@ -155,6 +155,7 @@ clean-docs:
 
 ## Test
 test tests:
+	$(PIP) install -e .
 	$(PYTEST)
 
 
