@@ -10,7 +10,7 @@ import deprecation
 
 from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
-from fandango.language.grammar import DerivationTree
+from fandango.language.grammar import DerivationTree, FuzzingMode
 from fandango.language.grammar import Grammar
 from fandango.language.io import FandangoLifecycle, FandangoIO
 from fandango.language.symbol import NonTerminal
@@ -306,7 +306,7 @@ class Fandango:
         """
 
         population = [
-            self.grammar.fuzz(self.start_symbol) for _ in range(self.population_size)
+            self.grammar.fuzz(self.start_symbol, mode=FuzzingMode.IO) for _ in range(self.population_size)
         ]
 
         # Fix individuals
