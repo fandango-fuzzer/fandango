@@ -130,7 +130,6 @@ class Fandango:
             )
 
         # Evaluate population
-        print("initial population: ", self.population)
         self.evaluation = self.evaluate_population()
         self.fitness = (
             sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
