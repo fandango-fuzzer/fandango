@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+import zipfile
 from io import StringIO
 from io import UnsupportedOperation
 from pathlib import Path
@@ -24,7 +25,7 @@ from antlr4.error.ErrorListener import ErrorListener
 from antlr4.error.Errors import ParseCancellationException
 
 from fandango.constraints import predicates
-from fandango.evolution.algorithm import Fandango
+from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.convert import (
     FandangoSplitter,
     GrammarProcessor,
@@ -164,6 +165,13 @@ def get_parser(in_command_line=True):
         dest="best_effort",
         action="store_true",
         help="produce a 'best effort' population (may not satisfy all constraints)",
+        default=None,
+    )
+    settings_group.add_argument(
+        "-i",
+        "--initial-population",
+        type=str,
+        help="directory or ZIP archive with initial population",
         default=None,
     )
 
@@ -569,9 +577,31 @@ def make_fandango_settings(args, initial_settings={}):
         else:
             start_symbol = f"<{args.start_symbol}>"
         settings["start_symbol"] = start_symbol
-
+    if args.verbose and args.verbose == 1:
+        settings["logger_level"] = LoggerLevel.INFO
+    elif args.verbose and args.verbose > 1:
+        settings["logger_level"] = LoggerLevel.DEBUG
+    if args.initial_population is not None:
+        settings["initial_population"] = extract_initial_population(args.initial_population)
     return settings
 
+def extract_initial_population(path):
+    try:
+        initial_populaition = list()
+        if path.strip().endswith(".zip"):
+            with zipfile.ZipFile(path, "r") as zip:
+                for file in zip.namelist():
+                    data = zip.read(file).decode()
+                    initial_populaition.append(data)
+        else:    
+            for file in os.listdir(path):
+                filename = os.path.join(path, file)
+                with open(filename, "r") as fd:
+                    individual = fd.read()
+                initial_populaition.append(individual)
+        return initial_populaition
+    except FileNotFoundError as e:
+        raise e
 
 # Default Fandango file content (grammar, constraints); set with `set`
 DEFAULT_FAN_CONTENT = (None, None)

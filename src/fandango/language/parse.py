@@ -19,7 +19,14 @@ from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.symbol import NonTerminal
 
 
-def parse(fan: str, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
+def parse(fan: str, lazy: bool = False, check_existence=True) -> Tuple[Grammar, List[Constraint]]:
+    """
+    Parse a Fandango specification and return a Grammar and a list of Constraints.
+
+    :param fan: Fandango specification
+    :param lazy: If True, the constraints are evaluated lazily
+    :param check_existence: If True, check if the constraints contain non-terminal symbols that are not in the grammar
+    """
     lexer = FandangoLexer(InputStream(fan))
     token = CommonTokenStream(lexer)
     parser = FandangoParser(token)
@@ -43,7 +50,8 @@ def parse(fan: str, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
         grammar, local_variables=local_vars, global_variables=global_vars, lazy=lazy
     )
     constraint = constraint_processor.get_constraints(splitter.constraints)
-    check_constraints_existence(grammar, constraint)
+    if check_existence:
+        check_constraints_existence(grammar, constraint)
     return grammar, constraint
 
 
