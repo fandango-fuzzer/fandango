@@ -488,8 +488,8 @@ def extract_grammar_and_constraints(
     LOGGER.debug("Extracting code")
     splitter = FandangoSplitter()
     splitter.visit(tree)
-    global_vars = {}
-    local_vars = predicates.__dict__.copy()
+    global_vars = predicates.__dict__.copy()
+    local_vars = None  # Must be None to ensure top-level imports
     python_processor = PythonProcessor()
     code_tree = python_processor.get_code(splitter.python_code)
     code_text = ast.unparse(code_tree)
