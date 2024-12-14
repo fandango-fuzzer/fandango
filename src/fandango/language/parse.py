@@ -201,7 +201,7 @@ def parse(fan_contents: str, /, lazy: bool = False,
             g = given_grammar
         else:
             g = grammar
-        if g and len(grammar.rules) > 0:
+        if g and len(g.rules) > 0:
             check_constraints_existence(g, constraints)
 
     LOGGER.debug("Parsing complete")
