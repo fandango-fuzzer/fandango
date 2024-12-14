@@ -170,6 +170,3 @@ language/gen/*
 gen
 gen/*
 *.o
-
-# Fandango
-.fandango_cache
