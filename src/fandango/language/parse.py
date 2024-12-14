@@ -221,7 +221,7 @@ def parse(fan_contents: str, /, lazy: bool = False,
                 with open(pickle_file, 'rb') as fp:
                     LOGGER.info(f"Loading cached spec from {pickle_file}")
                     spec: FandangoSpec = pickle.load(fp)
-                    LOGGER.info(f"Cached spec version: {spec.version}")
+                    LOGGER.debug(f"Cached spec version: {spec.version}")
                     if spec.fan_contents != fan_contents:
                         raise ValueError("Hash collision")
                     from_cache = True
