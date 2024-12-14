@@ -2,6 +2,7 @@ import ast
 import re
 import os
 import sys
+import importlib
 
 from typing import Tuple, List, Any
 from fandango.logger import LOGGER, print_exception
@@ -150,45 +151,48 @@ def check_constraints_existence_children(
     indirect_child[f"<{parent}>"][f"<{symbol}>"] = True
     return True
 
-GLOBALS = predicates.__dict__
-LOCALS = None  # Must be None to ensure top-level imports
 
-def run_code(code_tree, global_vars, local_vars):
-    code_text = ast.unparse(code_tree)
-    exec(code_text, global_vars, local_vars)
+class FandangoSpec:
+    GLOBALS = predicates.__dict__
+    LOCALS = None  # Must be None to ensure top-level imports
 
-def split_tree(tree: Any, lazy: bool = False):
-    splitter = FandangoSplitter()
-    splitter.visit(tree)
-    global_vars = GLOBALS.copy()
-    local_vars = LOCALS
-    python_processor = PythonProcessor()
+    def __init__(self, tree: Any, fan_contents: str, lazy: bool = False):
+        self.version = importlib.metadata.version("fandango")
+        self.fan_contents = fan_contents
+        self.global_vars = self.GLOBALS.copy()
+        self.local_vars = self.LOCALS
+        self.lazy = lazy
 
-    LOGGER.debug("Extracting code")
-    code_tree = python_processor.get_code(splitter.python_code)
+        LOGGER.debug("Extracting code")
+        splitter = FandangoSplitter()
+        splitter.visit(tree)
+        python_processor = PythonProcessor()
+        code_tree = python_processor.get_code(splitter.python_code)
 
-    LOGGER.debug("Running code")
-    code_text = ast.unparse(code_tree)
-    exec(code_text, global_vars, local_vars)
+        LOGGER.debug("Running code")
+        self.code_text = ast.unparse(code_tree)
+        exec(self.code_text, self.global_vars, self.local_vars)
 
-    LOGGER.debug("Extracting grammar")
-    grammar_processor = GrammarProcessor(
-        local_variables=local_vars,
-        global_variables=global_vars
-    )
-    grammar: Grammar = grammar_processor.get_grammar(splitter.productions)
+        LOGGER.debug("Extracting grammar")
+        grammar_processor = GrammarProcessor(
+            local_variables=self.local_vars,
+            global_variables=self.global_vars
+        )
+        self.grammar: Grammar = \
+            grammar_processor.get_grammar(splitter.productions)
 
-    LOGGER.debug("Extracting constraints")
-    constraint_processor = ConstraintProcessor(
-        grammar,
-        local_variables=local_vars,
-        global_variables=global_vars,
-        lazy=lazy,
-    )
-    constraints: List[Constraint] = \
-        constraint_processor.get_constraints(splitter.constraints)
+        LOGGER.debug("Extracting constraints")
+        constraint_processor = ConstraintProcessor(
+            self.grammar,
+            local_variables=self.local_vars,
+            global_variables=self.global_vars,
+            lazy=self.lazy,
+        )
+        self.constraints: List[Constraint] = \
+            constraint_processor.get_constraints(splitter.constraints)
 
-    return code_tree, grammar, constraints, global_vars, local_vars
+    def run_code(self):
+        exec(self.code_text, self.global_vars, self.local_vars)
 
 
 CACHE_DIR = ".fandango_cache"
@@ -215,15 +219,16 @@ def parse(fan_contents: str, /, lazy: bool = False,
             try:
                 with open(pickle_file, 'rb') as fp:
                     LOGGER.info(f"Loading cached spec from {pickle_file}")
-                    spec = pickle.load(fp)
+                    spec: FandangoSpec = pickle.load(fp)
+                    LOGGER.info(f"Cached spec version: {spec.version}")
+                    if spec.fan_contents != fan_contents:
+                        raise ValueError("Hash collision")
+
+                LOGGER.debug("Running code")
+                spec.run_code()
                 from_cache = True
             except Exception as e:
-                print_exception(e)
-
-    try:
-        code_tree, grammar, constraints, global_vars, local_vars = spec
-    except Exception:
-        from_cache = False
+                LOGGER.debug(type(e).__name__ + ":" + str(e), file=sys.stderr)
 
     if not from_cache:
         LOGGER.debug("Setting up .fan parser")
@@ -239,23 +244,19 @@ def parse(fan_contents: str, /, lazy: bool = False,
         tree = parser.fandango()
 
         LOGGER.debug("Splitting content")
-        spec = split_tree(tree, lazy)
-        code_tree, grammar, constraints, global_vars, local_vars = spec
+        spec = FandangoSpec(tree, fan_contents, lazy)
 
-    if from_cache:
-        LOGGER.debug("Running code")
-        run_code(code_tree, global_vars, local_vars)
 
-    if len(grammar.rules) > 0:
-        check_grammar(grammar)
+    if len(spec.grammar.rules) > 0:
+        check_grammar(spec.grammar)
 
     if check_constraints:
-        if not grammar or len(grammar.rules) == 0:
+        if not spec.grammar or len(spec.grammar.rules) == 0:
             g = given_grammar
         else:
-            g = grammar
+            g = spec.grammar
         if g and len(g.rules) > 0:
-            check_constraints_existence(g, constraints)
+            check_constraints_existence(g, spec.constraints)
 
     if use_cache and not from_cache:
         try:
@@ -266,8 +267,7 @@ def parse(fan_contents: str, /, lazy: bool = False,
             print_exception(e)
 
     LOGGER.debug("Parsing complete")
-    return grammar, constraints
-
+    return spec.grammar, spec.constraints
 
 def parse_file(*filenames, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
     contents = ""
