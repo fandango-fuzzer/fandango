@@ -587,19 +587,19 @@ def make_fandango_settings(args, initial_settings={}):
 
 def extract_initial_population(path):
     try:
-        initial_populaition = list()
+        initial_population = list()
         if path.strip().endswith(".zip"):
             with zipfile.ZipFile(path, "r") as zip:
                 for file in zip.namelist():
                     data = zip.read(file).decode()
-                    initial_populaition.append(data)
-        else:    
+                    initial_population.append(data)
+        else:
             for file in os.listdir(path):
                 filename = os.path.join(path, file)
                 with open(filename, "r") as fd:
                     individual = fd.read()
-                initial_populaition.append(individual)
-        return initial_populaition
+                initial_population.append(individual)
+        return initial_population
     except FileNotFoundError as e:
         raise e
 
