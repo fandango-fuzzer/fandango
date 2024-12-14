@@ -509,12 +509,16 @@ def set_command(args):
         DEFAULT_CONSTRAINTS = []  # Don't leave these over
 
     if args.constraints:
+        default_grammar = DEFAULT_FAN_CONTENT[0]
+        if not default_grammar:
+            raise ValueError("Open a `.fan` file first ('set -f FILE.fan')")
+
         LOGGER.info("---------- Parsing FANDANGO constraints ----------")
         fan_contents = ""
         for constraint in args.constraints:
             fan_contents += "\n" + constraint + ";\n"
         _, constraints = extract_grammar_and_constraints(
-            fan_contents, given_grammar=DEFAULT_FAN_CONTENT[0]
+            fan_contents, given_grammar=default_grammar
         )
         DEFAULT_CONSTRAINTS = constraints
 
@@ -818,7 +822,7 @@ def exec_single(code, _globals={}, _locals={}):
 MATCHES = []
 
 def shell_command(args):
-    """(New) interactive mode"""
+    """Interactive mode"""
 
     PROMPT = "(fandango)"
 
@@ -973,8 +977,10 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
     parser = get_parser(in_command_line=True)
     args = parser.parse_args(args or sys.argv[1:])
 
+    LOGGER.setLevel(logging.WARNING)  # Default
+
     if args.quiet and args.quiet == 1:
-        LOGGER.setLevel(logging.WARNING)  # Default
+        LOGGER.setLevel(logging.WARNING)  # (Back to default)
     elif args.quiet and args.quiet > 1:
         LOGGER.setLevel(logging.ERROR)  # Even quieter
     elif args.verbose and args.verbose == 1:
