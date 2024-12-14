@@ -155,14 +155,16 @@ def parse(fan_contents: str, /, lazy: bool = False,
     :param check_constraints: If True, check if the constraints contain non-terminal symbols that are not in the grammar
     """
 
-    LOGGER.debug("Parsing .fan content")
-    error_listener = MyErrorListener()
+    LOGGER.debug("Setting up .fan parser")
     input_stream = InputStream(fan_contents)
+    error_listener = MyErrorListener()
     lexer = FandangoLexer(input_stream)
     lexer.addErrorListener(error_listener)
     token_stream = CommonTokenStream(lexer)
     parser = FandangoParser(token_stream)
     parser.addErrorListener(error_listener)
+
+    LOGGER.debug("Parsing .fan content")
     tree = parser.fandango()
 
     LOGGER.debug("Extracting code")
