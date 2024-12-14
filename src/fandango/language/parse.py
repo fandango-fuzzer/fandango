@@ -208,7 +208,7 @@ def parse(fan_contents: str, /, lazy: bool = False,
     """
     from_cache = False
 
-    CACHE_DIR = os.path.join(xdg_cache_home(), "fandango")
+    CACHE_DIR = xdg_cache_home() / "fandango"
 
     if use_cache:
         if not os.path.exists(CACHE_DIR):
@@ -216,7 +216,7 @@ def parse(fan_contents: str, /, lazy: bool = False,
             cachedir_tag.tag(CACHE_DIR, application="Fandango")
 
         hash = hashlib.sha256(fan_contents.encode()).hexdigest()
-        pickle_file = os.path.join(CACHE_DIR, hash + '.pickle')
+        pickle_file = CACHE_DIR / (hash + '.pickle')
 
         if os.path.exists(pickle_file):
             try:
