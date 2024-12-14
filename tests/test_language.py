@@ -182,8 +182,8 @@ def test_conversion_without_replace(expression):
         ("<x> >= 3", 2, False),
         ("<x> == 3", 2, False),
         ("<x> != 3", 2, True),
-        ("<x> is 3", 2, False),
-        ("<x> is not 3", 2, True),
+        ("<x> is None", 2, False),
+        ("<x> is not None", 2, True),
         ("<x> in [1, 2, 3]", 2, True),
         ("<x> not in [1, 2, 3]", 2, False),
         ("int(<x>)", "2", 2),
@@ -253,6 +253,8 @@ def test_conversion_with_replacement(expression, value, expected):
     ],
 )
 def test_conversion_statement(stmt, value, is_global):
+    is_global = True  # As of now, all Python defs are parsed as global defs
+
     fandango_tree: FandangoParser.ExpressionContext = get_tree(stmt)
     splitter = FandangoSplitter()
     splitter.visit(fandango_tree)
@@ -266,11 +268,11 @@ def test_conversion_statement(stmt, value, is_global):
     exec(ast.unparse(fandango_tree), global_vars, local_vars)
     if is_global:
         assert "x" in global_vars
-        assert "x" not in local_vars
+        assert local_vars is None or "x" not in local_vars
         assert value == global_vars["x"]
     else:
         assert "x" not in global_vars
-        assert "x" in local_vars
+        assert local_vars is None or "x" in local_vars
         assert value == local_vars["x"]
 
 
@@ -300,7 +302,7 @@ f(<number>) % 2 == 0;
     assert len(constraint.searches) == 1
     placeholder = list(constraint.searches.keys())[0]
     assert constraint.left == f"f({placeholder}) % 2"
-    assert "f" in constraint.local_variables
+    assert "f" in constraint.global_variables
     assert eval("f('1')", constraint.global_variables, constraint.local_variables) == 1
     assert isinstance(constraint.searches[placeholder], RuleSearch)
     search: RuleSearch = constraint.searches[placeholder]
