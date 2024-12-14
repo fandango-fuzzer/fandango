@@ -33,7 +33,7 @@ from fandango.language.search import (
     AttributeSearch,
     RuleSearch,
     LengthSearch,
-    StarAttributeSearch,
+    DescendantAttributeSearch,
     ItemSearch,
     SelectiveSearch,
 )
@@ -414,7 +414,7 @@ class SearchProcessor(FandangoParserVisitor):
         if ctx.DOT():
             return AttributeSearch(self.get_attribute_searches(ctx.selector()), search)
         elif ctx.DOTDOT():
-            return StarAttributeSearch(
+            return DescendantAttributeSearch(
                 self.get_attribute_searches(ctx.selector()), search
             )
         else:

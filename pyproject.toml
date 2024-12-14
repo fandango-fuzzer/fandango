@@ -36,8 +36,10 @@ dependencies = [
     "Faker>=30.4.0",
     "docutils>=0.21.2",
     "tccbox==2024.7.1",
-    "deprecation",
-    "ansi_styles",
+    "deprecation>=2.1.0",
+    "ansi_styles>=0.2.2",
+    "cachedir_tag>=0.0.3",
+    "xdg-base-dirs>=6.0.2",
 ]
 
 [project.urls]
