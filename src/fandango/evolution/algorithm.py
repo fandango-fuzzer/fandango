@@ -16,6 +16,7 @@ from fandango.logger import LOGGER, visualize_evaluation, clear_visualization
 
 
 class LoggerLevel(enum.Enum):
+    NOTSET = logging.NOTSET
     DEBUG = logging.DEBUG
     INFO = logging.INFO
     WARNING = logging.WARNING
