@@ -4,7 +4,7 @@ import sys
 from typing import Tuple, List
 from fandango.logger import LOGGER
 
-from antlr4 import InputStream, CommonTokenStream, BailErrorStrategy
+from antlr4 import InputStream, CommonTokenStream
 
 from fandango.constraints import predicates
 from fandango.constraints.base import Constraint
@@ -67,41 +67,6 @@ def check_grammar(grammar, start_symbol="<start>"):
         raise error
 
 
-def check_constraints(constraints, grammar):
-    try:
-        LOGGER.debug("Checking constraints")
-
-        used_symbols = set()
-        undefined_symbols = set()
-        defined_symbols = set()
-
-        if grammar:
-            for symbol in grammar.rules.keys():
-                defined_symbols.add(str(symbol))
-
-        def collect_used_symbols(constraint):
-            nonlocal used_symbols
-            # FIXME: This should actually traverse the constraint
-            matches = re.findall("<[a-zA-Z0-9_]*>", str(constraint))
-            for match in matches:
-                used_symbols.add(match)
-
-        for constraint in constraints:
-            collect_used_symbols(constraint)
-
-        for symbol in used_symbols:
-            if not symbol in defined_symbols:
-                undefined_symbols.add(symbol)
-
-        if undefined_symbols:
-            error = ValueError(f"Undefined symbols {undefined_symbols} in constraints")
-            error.add_note(f"Possible symbols: {defined_symbols}")
-            raise error
-    except ValueError as e:
-        # do nothing
-        pass
-
-
 def check_constraints_existence(grammar, constraints):
     LOGGER.debug("Checking constraints")
 
@@ -115,13 +80,18 @@ def check_constraints_existence(grammar, constraints):
         defined_symbols.append(str(symbol))
     defined_symbols_str = ", ".join(defined_symbols)
 
+    grammar_symbols = grammar.rules.keys()
+    grammar_matches = re.findall(r"<([^>]*)>", str(grammar_symbols))
+    # LOGGER.debug(f"All used symbols: {grammar_matches}")
+
     for constraint in constraints:
         constraint_symbols = constraint.get_symbols()
 
         for value in constraint_symbols:
-            constraint_matches = re.findall(r"<(.*?)>", str(value))
-            grammar_symbols = grammar.rules.keys()
-            grammar_matches = re.findall(r"<(.*?)>", str(grammar_symbols))
+            # LOGGER.debug(f"Constraint {constraint}: Checking {value}")
+
+            constraint_matches = re.findall(r"<([^>]*)>", str(value))  # was <(.*?)>
+
             missing = [
                 match for match in constraint_matches if match not in grammar_matches
             ]
@@ -152,11 +122,13 @@ def check_constraints_existence(grammar, constraints):
 def check_constraints_existence_children(
     grammar, parent, symbol, recurse, indirect_child
 ):
+    # LOGGER.debug(f"Checking {parent}, {symbol}")
+
     if indirect_child[f"<{parent}>"][f"<{symbol}>"] is not None:
         return indirect_child[f"<{parent}>"][f"<{symbol}>"]
 
     grammar_symbols = grammar.rules[NonTerminal(f"<{parent}>")]
-    grammar_matches = re.findall(r'(?<!")<(.*?)>(?!.*")', str(grammar_symbols))
+    grammar_matches = re.findall(r'(?<!")<([^>]*)>(?!.*")', str(grammar_symbols))
 
     if symbol not in grammar_matches:
         if recurse:
@@ -175,12 +147,12 @@ def check_constraints_existence_children(
 
 
 def parse(fan_contents: str, /, lazy: bool = False,
-          check_existence: bool = True, given_grammar=None) -> Tuple[Grammar, List[Constraint]]:
+          check_constraints: bool = True, given_grammar=None) -> Tuple[Grammar, List[Constraint]]:
     """
     Extract grammar and constraints from the given content
     :param fan: Fandango specification
     :param lazy: If True, the constraints are evaluated lazily
-    :param check_existence: If True, check if the constraints contain non-terminal symbols that are not in the grammar
+    :param check_constraints: If True, check if the constraints contain non-terminal symbols that are not in the grammar
     """
 
     LOGGER.debug("Parsing .fan content")
@@ -191,7 +163,6 @@ def parse(fan_contents: str, /, lazy: bool = False,
     token_stream = CommonTokenStream(lexer)
     parser = FandangoParser(token_stream)
     parser.addErrorListener(error_listener)
-    # parser._errHandler = BailErrorStrategy()
     tree = parser.fandango()
 
     LOGGER.debug("Extracting code")
@@ -225,21 +196,12 @@ def parse(fan_contents: str, /, lazy: bool = False,
     constraints: List[Constraint] = \
         constraint_processor.get_constraints(splitter.constraints)
 
-    # if len(grammar.rules) == 0:
-    #     # No grammar found; check constraints against given (existing) grammar
-    #     check_constraints(constraints, given_grammar)
-    # else:
-    #     try:
-    #         check_constraints(constraints, grammar)
-    #     except ValueError as e:
-    #         LOGGER.print_exception(e)
-
-    if check_existence:
-        if len(grammar.rules) == 0:
+    if check_constraints:
+        if not grammar or len(grammar.rules) == 0:
             g = given_grammar
         else:
             g = grammar
-        if g:
+        if g and len(grammar.rules) > 0:
             check_constraints_existence(g, constraints)
 
     LOGGER.debug("Parsing complete")
@@ -254,13 +216,13 @@ def parse_file(*args, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
                 contents += fp.read()
     except FileNotFoundError:
         print(
-            f"File not found, trying with default .fan specification", file=sys.stderr
+            f"File not found, trying `default.fan` specification", file=sys.stderr
         )
         try:
             with open("default.fan", "r") as fp:
                 contents = fp.read()
         except FileNotFoundError:
-            print(f"Default .fan specification not found, exiting", file=sys.stderr)
+            print(f"`default.fan` not found, exiting", file=sys.stderr)
             sys.exit(1)
 
     return parse(contents, lazy=lazy)
