@@ -404,12 +404,8 @@ def merged_fan_contents(args) -> str:
             fan_contents += "\n" + constraint + ";\n"
     return fan_contents
 
-def extract_grammar_and_constraints(
-    fan_contents: str, lazy: bool = False, check_existence: bool = True, given_grammar=None
-):
-    default_grammar = DEFAULT_FAN_CONTENT[0]
-    return parse(fan_contents, lazy, given_grammar=default_grammar)
-
+def parse_fan(fan_contents):
+    return parse(fan_contents, given_grammar=DEFAULT_FAN_CONTENT[0])
 
 def parse_fan_contents(args):
     """Parse .fan content as given in args"""
@@ -418,7 +414,7 @@ def parse_fan_contents(args):
     if not fan_contents:
         return None, None
 
-    grammar, constraints = extract_grammar_and_constraints(fan_contents)
+    grammar, constraints = parse_fan(fan_contents)
     return grammar, constraints
 
 
@@ -500,11 +496,11 @@ def set_command(args):
     global DEFAULT_SETTINGS
 
     if args.fan_files:
-        LOGGER.info("---------- Parsing FANDANGO content ----------")
+        LOGGER.info("Parsing Fandango content")
         fan_contents = ""
         for file in args.fan_files:
             fan_contents += file.read() + "\n"
-        grammar, constraints = extract_grammar_and_constraints(fan_contents)
+        grammar, constraints = parse_fan(fan_contents)
         DEFAULT_FAN_CONTENT = (grammar, constraints)
         DEFAULT_CONSTRAINTS = []  # Don't leave these over
 
@@ -513,13 +509,11 @@ def set_command(args):
         if not default_grammar:
             raise ValueError("Open a `.fan` file first ('set -f FILE.fan')")
 
-        LOGGER.info("---------- Parsing FANDANGO constraints ----------")
+        LOGGER.info("Parsing Fandango constraints")
         fan_contents = ""
         for constraint in args.constraints:
             fan_contents += "\n" + constraint + ";\n"
-        _, constraints = extract_grammar_and_constraints(
-            fan_contents, given_grammar=default_grammar
-        )
+        _, constraints = parse_fan(fan_contents)
         DEFAULT_CONSTRAINTS = constraints
 
     settings = make_fandango_settings(args)
@@ -592,7 +586,7 @@ def fuzz_command(args):
         fan_contents = ""
         for constraint in args.constraints:
             fan_contents += "\n" + constraint + ";\n"
-        _, extra_constraints = extract_grammar_and_constraints(fan_contents)
+        _, extra_constraints = parse_fan(fan_contents)
         constraints += extra_constraints
 
     settings = make_fandango_settings(args, DEFAULT_SETTINGS)
