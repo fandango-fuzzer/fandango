@@ -168,10 +168,11 @@ class FandangoSpec:
         splitter.visit(tree)
         python_processor = PythonProcessor()
         code_tree = python_processor.get_code(splitter.python_code)
+        ast.fix_missing_locations(code_tree)
+        self.code_text = ast.unparse(code_tree)
 
         LOGGER.debug("Running code")
-        self.code_text = ast.unparse(code_tree)
-        exec(self.code_text, self.global_vars, self.local_vars)
+        self.run_code()
 
         LOGGER.debug("Extracting grammar")
         grammar_processor = GrammarProcessor(
@@ -223,12 +224,20 @@ def parse(fan_contents: str, /, lazy: bool = False,
                     LOGGER.info(f"Cached spec version: {spec.version}")
                     if spec.fan_contents != fan_contents:
                         raise ValueError("Hash collision")
-
-                LOGGER.debug("Running code")
-                spec.run_code()
-                from_cache = True
+                    from_cache = True
             except Exception as e:
                 LOGGER.debug(type(e).__name__ + ":" + str(e))
+
+    if from_cache:
+        LOGGER.debug("Running code")
+        try:
+            spec.run_code()
+        except Exception as e:
+            print_exception(e)
+
+            # In case the error has anything to do with caching, play it safe
+            del spec
+            os.remove(pickle_file)
 
     if not from_cache:
         LOGGER.debug("Setting up .fan parser")
@@ -245,7 +254,6 @@ def parse(fan_contents: str, /, lazy: bool = False,
 
         LOGGER.debug("Splitting content")
         spec = FandangoSpec(tree, fan_contents, lazy)
-
 
     if len(spec.grammar.rules) > 0:
         check_grammar(spec.grammar)
