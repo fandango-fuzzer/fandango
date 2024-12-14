@@ -575,11 +575,11 @@ def fuzz_command(args):
     if grammar is None:
         raise ValueError("Use '-f FILE.fan' to open a Fandango spec")
 
-    if DEFAULT_CONSTRAINTS:
-        constraints += DEFAULT_CONSTRAINTS
-
     # Avoid messing with default constraints
     constraints = constraints.copy()
+
+    if DEFAULT_CONSTRAINTS:
+        constraints += DEFAULT_CONSTRAINTS
 
     if args.constraints:
         # Add given constraints
