@@ -19,22 +19,9 @@ from io import UnsupportedOperation
 from pathlib import Path
 from ansi_styles import ansiStyles as styles
 
-from antlr4.CommonTokenStream import CommonTokenStream
-from antlr4.InputStream import InputStream
-from antlr4.error.ErrorListener import ErrorListener
+from fandango.language.parse import parse
 from antlr4.error.Errors import ParseCancellationException
-
-from fandango.constraints import predicates
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-from fandango.language.convert import (
-    FandangoSplitter,
-    GrammarProcessor,
-    PythonProcessor,
-    ConstraintProcessor,
-)
-from fandango.language.grammar import Grammar, NodeType
-from fandango.language.parser.FandangoLexer import FandangoLexer
-from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.logger import LOGGER, print_exception
 
 
@@ -173,6 +160,20 @@ def get_parser(in_command_line=True):
         type=str,
         help="directory or ZIP archive with initial population",
         default=None,
+    )
+    settings_group.add_argument(
+        "--verbose",
+        "-v",
+        dest="verbose",
+        action="count",
+        help="increase verbosity. Can be given multiple times (-vv)",
+    )
+    settings_group.add_argument(
+        "--quiet",
+        "-q",
+        dest="quiet",
+        action="store_true",
+        help="suppress warnings",
     )
 
     # Shared file options
@@ -399,142 +400,11 @@ def merged_fan_contents(args) -> str:
             fan_contents += "\n" + constraint + ";\n"
     return fan_contents
 
-
-class MyErrorListener(ErrorListener):
-    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise ParseCancellationException(f"Line %{line}, Column {column}: error: {msg}")
-
-
-def check_grammar(grammar, start_symbol="<start>"):
-    LOGGER.debug("Checking grammar")
-
-    used_symbols = set()
-    undefined_symbols = set()
-    defined_symbols = set()
-
-    if grammar:
-        for symbol in grammar.rules.keys():
-            defined_symbols.add(symbol)
-
-    def collect_used_symbols(tree):
-        if tree.node_type == NodeType.NON_TERMINAL:
-            used_symbols.add(tree.symbol)
-        if tree.node_type == NodeType.REPETITION:
-            collect_used_symbols(tree.node)
-        for child in tree.children():
-            collect_used_symbols(child)
-
-    for tree in grammar.rules.values():
-        collect_used_symbols(tree)
-
-    for symbol in used_symbols:
-        if symbol not in defined_symbols:
-            undefined_symbols.add(symbol)
-
-    for symbol in defined_symbols:
-        if symbol not in used_symbols and str(symbol) != start_symbol:
-            LOGGER.info(f"Symbol {symbol} defined, but not used")
-
-    if undefined_symbols:
-        error = ValueError(f"Undefined symbols {undefined_symbols} in grammar")
-        error.add_note(f"Possible symbols: {defined_symbols}")
-        raise error
-
-
-def check_constraints(constraints, grammar):
-    try:
-        LOGGER.debug("Checking constraints")
-
-        used_symbols = set()
-        undefined_symbols = set()
-        defined_symbols = set()
-
-        if grammar:
-            for symbol in grammar.rules.keys():
-                defined_symbols.add(str(symbol))
-
-        def collect_used_symbols(constraint):
-            nonlocal used_symbols
-            # FIXME: This should actually traverse the constraint
-            matches = re.findall("<[a-zA-Z0-9_]*>", str(constraint))
-            for match in matches:
-                used_symbols.add(match)
-
-        for constraint in constraints:
-            collect_used_symbols(constraint)
-
-        for symbol in used_symbols:
-            if not symbol in defined_symbols:
-                undefined_symbols.add(symbol)
-
-        if undefined_symbols:
-            error = ValueError(f"Undefined symbols {undefined_symbols} in constraints")
-            error.add_note(f"Possible symbols: {defined_symbols}")
-            raise error
-    except ValueError as e:
-        # do nothing
-        pass
-
-
 def extract_grammar_and_constraints(
-    fan_contents: str, lazy: bool = False, given_grammar=None
+    fan_contents: str, lazy: bool = False, check_existence: bool = True, given_grammar=None
 ):
-    """Extract grammar and constraints from the given content"""
-    # TODO: This should go into a separate module (parser.py maybe?), not here -- AZ
-
-    LOGGER.debug("Parsing .fan content")
-    error_listener = MyErrorListener()
-    input_stream = InputStream(fan_contents)
-    lexer = FandangoLexer(input_stream)
-    lexer.addErrorListener(error_listener)
-    token_stream = CommonTokenStream(lexer)
-    parser = FandangoParser(token_stream)
-    parser.addErrorListener(error_listener)
-    # parser._errHandler = BailErrorStrategy()
-    tree = parser.fandango()
-
-    LOGGER.debug("Extracting code")
-    splitter = FandangoSplitter()
-    splitter.visit(tree)
-    global_vars = predicates.__dict__.copy()
-    local_vars = None  # Must be None to ensure top-level imports
-    python_processor = PythonProcessor()
-    code_tree = python_processor.get_code(splitter.python_code)
-    code_text = ast.unparse(code_tree)
-
-    LOGGER.debug("Running code")
-    exec(code_text, global_vars, local_vars)
-
-    LOGGER.debug("Extracting grammar")
-    grammar_processor = GrammarProcessor(
-        local_variables=local_vars, global_variables=global_vars
-    )
-    grammar: Grammar = grammar_processor.get_grammar(splitter.productions)
-
-    check_grammar(grammar)
-
-    LOGGER.debug("Extracting constraints")
-    constraint_processor = ConstraintProcessor(
-        grammar,
-        local_variables=local_vars,
-        global_variables=global_vars,
-        lazy=lazy,
-    )
-    constraints = constraint_processor.get_constraints(splitter.constraints)
-
-    if len(grammar.rules) == 0:
-        # No grammar found; check constraints against given (existing) grammar
-        check_constraints(constraints, given_grammar)
-    else:
-        try:
-            check_constraints(constraints, grammar)
-        except ValueError as e:
-            # do nothing
-            print("HOLA")
-            pass
-
-    LOGGER.debug("Parsing complete")
-    return grammar, constraints
+    default_grammar = DEFAULT_FAN_CONTENT[0]
+    return parse(fan_contents, lazy, given_grammar=default_grammar)
 
 
 def parse_fan_contents(args):
@@ -577,7 +447,9 @@ def make_fandango_settings(args, initial_settings={}):
         else:
             start_symbol = f"<{args.start_symbol}>"
         settings["start_symbol"] = start_symbol
-    if args.verbose and args.verbose == 1:
+    if args.quiet:
+        settings["logger_level"] = LoggerLevel.NOTSET
+    elif args.verbose and args.verbose == 1:
         settings["logger_level"] = LoggerLevel.INFO
     elif args.verbose and args.verbose > 1:
         settings["logger_level"] = LoggerLevel.DEBUG
