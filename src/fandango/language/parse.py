@@ -8,8 +8,10 @@ from typing import Tuple, List, Any
 from fandango.logger import LOGGER, print_exception
 
 from antlr4 import InputStream, CommonTokenStream
+
 import hashlib
 import pickle
+from xdg_base_dirs import xdg_cache_home
 import cachedir_tag
 
 from fandango.constraints import predicates
@@ -196,8 +198,6 @@ class FandangoSpec:
         exec(self.code_text, self.global_vars, self.local_vars)
 
 
-CACHE_DIR = ".fandango_cache"
-
 def parse(fan_contents: str, /, lazy: bool = False,
           check_constraints: bool = True, given_grammar=None, use_cache: bool = True) -> Tuple[Grammar, List[Constraint]]:
     """
@@ -208,10 +208,12 @@ def parse(fan_contents: str, /, lazy: bool = False,
     """
     from_cache = False
 
+    CACHE_DIR = os.path.join(xdg_cache_home(), "fandango")
+
     if use_cache:
         if not os.path.exists(CACHE_DIR):
             os.makedirs(CACHE_DIR)
-            cachedir_tag.tag(CACHE_DIR)
+            cachedir_tag.tag(CACHE_DIR, application="Fandango")
 
         hash = hashlib.sha256(fan_contents.encode()).hexdigest()
         pickle_file = os.path.join(CACHE_DIR, hash + '.pickle')
