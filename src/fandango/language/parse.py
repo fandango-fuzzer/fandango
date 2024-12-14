@@ -2,7 +2,7 @@ import ast
 import re
 import sys
 from typing import Tuple, List
-from fandango.logger import LOGGER
+from fandango.logger import LOGGER, print_exception
 
 from antlr4 import InputStream, CommonTokenStream
 
@@ -208,21 +208,19 @@ def parse(fan_contents: str, /, lazy: bool = False,
     return grammar, constraints
 
 
-def parse_file(*args, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
+def parse_file(*filenames, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
     contents = ""
-    try:
-        for file in args:
+    errors = False
+
+    for file in filenames:
+        try:
             with open(file, "r") as fp:
                 contents += fp.read()
-    except FileNotFoundError:
-        print(
-            f"File not found, trying `default.fan` specification", file=sys.stderr
-        )
-        try:
-            with open("default.fan", "r") as fp:
-                contents = fp.read()
-        except FileNotFoundError:
-            print(f"`default.fan` not found, exiting", file=sys.stderr)
-            sys.exit(1)
+        except Exception as e:
+            print_exception(e)
+            errors = True
+
+    if errors:
+        raise FileNotFoundError("No input files")
 
     return parse(contents, lazy=lazy)

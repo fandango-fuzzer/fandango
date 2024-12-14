@@ -579,18 +579,7 @@ def fuzz_command(args):
         constraints = DEFAULT_FAN_CONTENT[1]
 
     if grammar is None:
-        print(
-            "fuzz: No grammar found, looking for default .fan file...", file=sys.stderr
-        )
-        try:
-            with open("default.fan", "r") as fp:
-                fan_contents = fp.read()
-                grammar, constraints = extract_grammar_and_constraints(fan_contents)
-        except FileNotFoundError:
-            print(
-                "fuzz: Default .fan file not found, exiting execution.", file=sys.stderr
-            )
-            return
+        raise ValueError("Use '-f FILE.fan' to open a Fandango spec")
 
     if DEFAULT_CONSTRAINTS:
         constraints += DEFAULT_CONSTRAINTS
