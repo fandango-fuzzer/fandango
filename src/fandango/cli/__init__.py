@@ -21,7 +21,7 @@ from ansi_styles import ansiStyles as styles
 
 from fandango.language.parse import parse
 from antlr4.error.Errors import ParseCancellationException
-from fandango.evolution.algorithm import Fandango, LoggerLevel
+from fandango.evolution.algorithm import Fandango
 from fandango.logger import LOGGER, print_exception
 
 
@@ -68,8 +68,8 @@ def get_parser(in_command_line=True):
             "--quiet",
             "-q",
             dest="quiet",
-            action="store_true",
-            help="suppress warnings",
+            action="count",
+            help="decrease verbosity. Can be given multiple times (-qq)",
         )
 
     # The subparsers
@@ -161,20 +161,24 @@ def get_parser(in_command_line=True):
         help="directory or ZIP archive with initial population",
         default=None,
     )
-    settings_group.add_argument(
-        "--verbose",
-        "-v",
-        dest="verbose",
-        action="count",
-        help="increase verbosity. Can be given multiple times (-vv)",
-    )
-    settings_group.add_argument(
-        "--quiet",
-        "-q",
-        dest="quiet",
-        action="store_true",
-        help="suppress warnings",
-    )
+
+    if not in_command_line:
+        # Use `set -vv` or `set -q` to change logging levels
+        verbosity_option = settings_group.add_mutually_exclusive_group()
+        verbosity_option.add_argument(
+            "--verbose",
+            "-v",
+            dest="verbose",
+            action="count",
+            help="increase verbosity. Can be given multiple times (-vv)",
+        )
+        verbosity_option.add_argument(
+            "--quiet",
+            "-q",
+            dest="quiet",
+            action="store_true",
+            help="decrease verbosity. Can be given multiple times (-qq)",
+        )
 
     # Shared file options
     file_parser = argparse.ArgumentParser(add_help=False)
@@ -447,12 +451,16 @@ def make_fandango_settings(args, initial_settings={}):
         else:
             start_symbol = f"<{args.start_symbol}>"
         settings["start_symbol"] = start_symbol
-    if args.quiet:
-        settings["logger_level"] = LoggerLevel.NOTSET
+
+    if args.quiet and args.quiet == 1:
+        LOGGER.setLevel(logging.WARNING)  # Default
+    elif args.quiet and args.quiet > 1:
+        LOGGER.setLevel(logging.ERROR)  # Even quieter
     elif args.verbose and args.verbose == 1:
-        settings["logger_level"] = LoggerLevel.INFO
+        LOGGER.setLevel(logging.INFO)  # Give more info
     elif args.verbose and args.verbose > 1:
-        settings["logger_level"] = LoggerLevel.DEBUG
+        LOGGER.setLevel(logging.DEBUG)  # Even more info
+
     if args.initial_population is not None:
         settings["initial_population"] = extract_initial_population(args.initial_population)
     return settings
@@ -965,15 +973,17 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
     parser = get_parser(in_command_line=True)
     args = parser.parse_args(args or sys.argv[1:])
 
-    LOGGER.setLevel(logging.WARNING)  # Default
-    if args.quiet:
-        LOGGER.setLevel(logging.ERROR)  # Suppress warnings
+    if args.quiet and args.quiet == 1:
+        LOGGER.setLevel(logging.WARNING)  # Default
+    elif args.quiet and args.quiet > 1:
+        LOGGER.setLevel(logging.ERROR)  # Even quieter
     elif args.verbose and args.verbose == 1:
         LOGGER.setLevel(logging.INFO)  # Give more info
     elif args.verbose and args.verbose > 1:
         LOGGER.setLevel(logging.DEBUG)  # Even more info
 
     if args.command in COMMANDS:
+        LOGGER.info(args.command)
         command = COMMANDS[args.command]
         last_status = run(command, args)
     elif args.command is None or args.command == "shell":
