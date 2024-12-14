@@ -228,7 +228,7 @@ def parse(fan_contents: str, /, lazy: bool = False,
                 spec.run_code()
                 from_cache = True
             except Exception as e:
-                LOGGER.debug(type(e).__name__ + ":" + str(e), file=sys.stderr)
+                LOGGER.debug(type(e).__name__ + ":" + str(e))
 
     if not from_cache:
         LOGGER.debug("Setting up .fan parser")
