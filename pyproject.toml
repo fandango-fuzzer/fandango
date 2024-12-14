@@ -38,6 +38,7 @@ dependencies = [
     "tccbox==2024.7.1",
     "deprecation",
     "ansi_styles",
+    "cachedir_tag"
 ]
 
 [project.urls]
