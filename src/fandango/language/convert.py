@@ -25,7 +25,7 @@ from fandango.language.grammar import (
     TerminalNode,
     Plus,
     Option,
-    Repetition,
+    Repetition, Node,
 )
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.parser.FandangoParserVisitor import FandangoParserVisitor
@@ -71,6 +71,13 @@ class GrammarProcessor(FandangoParserVisitor):
         self.local_variables = local_variables
         self.global_variables = global_variables
         self.searches = SearchProcessor(Grammar.dummy())
+        self.alternativeCount = 0
+        self.concatenationCount = 0
+        self.repetitionCount = 0
+        self.starCount = 0
+        self.plusCount = 0
+        self.optionCount = 0
+        self.additionalRules = dict[NonTerminal, Node]()
 
     def get_grammar(self, productions: List[FandangoParser.ProductionContext]):
         grammar = Grammar(
@@ -86,6 +93,7 @@ class GrammarProcessor(FandangoParserVisitor):
                         "Searches in expressions are currently not supported"
                     )
                 grammar.set_generator(symbol, ast.unparse(expr))
+        grammar.rules.update(self.additionalRules)
         grammar.update_parser()
         grammar.prime()
         return grammar
@@ -94,22 +102,40 @@ class GrammarProcessor(FandangoParserVisitor):
         nodes = [self.visit(child) for child in ctx.concatenation()]
         if len(nodes) == 1:
             return nodes[0]
-        return Alternative(nodes)
+        non_terminal = NonTerminal(f"<alternative:{self.alternativeCount}>")
+        self.alternativeCount += 1
+        self.additionalRules[non_terminal] = Alternative(nodes)
+        return NonTerminalNode(non_terminal)
 
     def visitConcatenation(self, ctx: FandangoParser.ConcatenationContext):
         nodes = [self.visit(child) for child in ctx.operator()]
         if len(nodes) == 1:
             return nodes[0]
-        return Concatenation(nodes)
+        non_terminal = NonTerminal(f"<concatenation:{self.concatenationCount}>")
+        self.concatenationCount += 1
+        self.additionalRules[non_terminal] = Concatenation(nodes)
+        return NonTerminalNode(non_terminal)
 
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
-        return Star(self.visit(ctx.symbol()))
+        node = self.visit(ctx.symbol())
+        non_terminal = NonTerminal(f"<star:{self.starCount}>")
+        self.starCount += 1
+        self.additionalRules[non_terminal] = Star(node)
+        return NonTerminalNode(non_terminal)
 
     def visitPlus(self, ctx: FandangoParser.PlusContext):
-        return Plus(self.visit(ctx.symbol()))
+        node = self.visit(ctx.symbol())
+        non_terminal = NonTerminal(f"<plus:{self.plusCount}>")
+        self.plusCount += 1
+        self.additionalRules[non_terminal] = Plus(node)
+        return NonTerminalNode(non_terminal)
 
     def visitOption(self, ctx: FandangoParser.OptionContext):
-        return Option(self.visit(ctx.symbol()))
+        node = self.visit(ctx.symbol())
+        non_terminal = NonTerminal(f"<option:{self.optionCount}>")
+        self.optionCount += 1
+        self.additionalRules[non_terminal] = Option(node)
+        return NonTerminalNode(non_terminal)
 
     def visitRepeat(self, ctx: FandangoParser.RepeatContext):
         node = self.visit(ctx.symbol())
@@ -136,7 +162,12 @@ class GrammarProcessor(FandangoParserVisitor):
                 return Repetition(node, min_=min_)
             return Repetition(node, min_, max_)
         reps = int(ctx.NUMBER(0).getText())
-        return Repetition(node, reps, reps)
+
+        node = self.visit(ctx.symbol())
+        non_terminal = NonTerminal(f"<repetition:{self.repetitionCount}>")
+        self.repetitionCount += 1
+        self.additionalRules[non_terminal] = Repetition(node, reps, reps)
+        return NonTerminalNode(non_terminal)
 
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
         if ctx.nonterminal_right():
