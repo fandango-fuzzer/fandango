@@ -766,7 +766,7 @@ class Grammar(NodeVisitor):
                             self.scan(state, word, table, k)
             return table
 
-        def parse_forest(self, word: str, start: str | NonTerminal = "<start>"):
+        def parse_forest(self, word: str, start: str | NonTerminal = "<start>", return_incomplete: bool = True):
             if isinstance(start, str):
                 start = NonTerminal(start)
             table = [Column() for _ in range(len(word) + 1)]
@@ -786,6 +786,44 @@ class Grammar(NodeVisitor):
                             self.predict(state, table, k)
                         else:
                             self.scan(state, word, table, k)
+            if return_incomplete:
+                tmp_word = word
+                prev_stage = []
+                curr_stage = []
+                for col in reversed(table):
+                    for state in col.states:
+                        if state.finished():
+                            continue
+                        if state.dot == state.symbols[0] and len(prev_stage) == 0:
+                            continue
+                        state_tree = DerivationTree(state.nonterminal, state.children)
+                        if state.nonterminal not in self._rules:
+                            continue
+                        for prev_state in prev_stage:
+                            last_node = state_tree.flatten()[state_tree.size() - 1]
+                            if last_node.symbol == prev_state.symbol:
+                                curr_stage.append(state_tree.replace(last_node, prev_state))
+                        if len(prev_stage) == 0:
+                            curr_stage.append(state_tree)
+                    if len(curr_stage) != 0:
+                        prev_stage = curr_stage
+                        curr_stage = []
+
+
+                candidates = []
+                states = table[len(word)]
+                for state in states:
+                    if state.finished():
+                        continue
+                    if len(state.children) == 0:
+                        continue
+                    state_tree = DerivationTree(state.nonterminal, state.children)
+                    if str(state_tree) == word:
+                        candidates.append(state)
+
+                # lol
+
+                return table
 
         def parse(self, word: str, start: str | NonTerminal = "<start>"):
             if isinstance(start, str):
