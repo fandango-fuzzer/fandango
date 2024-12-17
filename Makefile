@@ -80,7 +80,8 @@ PDF_TARGET = $(DOCS)/fandango.pdf
 # Command to open and refresh the Web view (on a Mac)
 HTML_INDEX = $(DOCS)/_build/html/index.html
 VIEW_HTML = open $(HTML_INDEX)
-REFRESH_HTML = osascript -e 'tell application "Safari" to set URL of document of window 1 to URL of document of window 1'
+REFRESH_HTML = \
+osascript -e 'tell application "Safari" to set URL of document of window 1 to URL of document of window 1'
 
 # Command to open the PDF (on a Mac)
 VIEW_PDF = open $(PDF_TARGET)
@@ -116,7 +117,7 @@ view: $(HTML_MARKER)
 	$(VIEW_HTML)
 
 # Refresh Safari
-refresh: $(HTML_MARKER)
+refresh watch: $(HTML_MARKER)
 	$(REFRESH_HTML)
 
 
