@@ -177,6 +177,7 @@ class ComparisonConstraint(Constraint):
         self.operator = operator
         self.left = left
         self.right = right
+        self.types_checked = False
 
     def fitness(
         self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
@@ -207,6 +208,14 @@ class ComparisonConstraint(Constraint):
                 e.add_note("Evaluation failed: " + self.right)
                 print_exception(e)
                 continue
+
+            if not self.types_checked:
+                if not type(right) == type(left):
+                    raise TypeError(
+                        f"In constraint {self}, left and right side of comparison don't evaluate to the same type"
+                    )
+                else:
+                    self.types_checked = True
 
             suggestions = []
             is_solved = False
