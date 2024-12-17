@@ -218,7 +218,7 @@ class ComparisonConstraint(Constraint):
                     else:
                         self.types_checked = True
             except Exception as e:
-                print(e)
+                self.types_checked = False
 
             suggestions = []
             is_solved = False
