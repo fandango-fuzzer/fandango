@@ -10,7 +10,7 @@ from fandango.logger import LOGGER, print_exception
 from antlr4 import InputStream, CommonTokenStream
 
 import hashlib
-import pickle
+import dill as pickle
 from xdg_base_dirs import xdg_cache_home
 import cachedir_tag
 
@@ -208,7 +208,7 @@ def parse(fan_contents: str, /, lazy: bool = False,
     """
     from_cache = False
 
-    CACHE_DIR = os.path.join(xdg_cache_home(), "fandango")
+    CACHE_DIR = xdg_cache_home() / "fandango"
 
     if use_cache:
         if not os.path.exists(CACHE_DIR):
@@ -216,7 +216,7 @@ def parse(fan_contents: str, /, lazy: bool = False,
             cachedir_tag.tag(CACHE_DIR, application="Fandango")
 
         hash = hashlib.sha256(fan_contents.encode()).hexdigest()
-        pickle_file = os.path.join(CACHE_DIR, hash + '.pickle')
+        pickle_file = CACHE_DIR / (hash + '.pickle')
 
         if os.path.exists(pickle_file):
             try:
@@ -225,7 +225,9 @@ def parse(fan_contents: str, /, lazy: bool = False,
                     spec: FandangoSpec = pickle.load(fp)
                     LOGGER.debug(f"Cached spec version: {spec.version}")
                     if spec.fan_contents != fan_contents:
-                        raise ValueError("Hash collision")
+                        e = ValueError("Hash collision")
+                        e.add_note("If you get this, you'll be real famous")
+                        raise e
                     from_cache = True
             except Exception as e:
                 LOGGER.debug(type(e).__name__ + ":" + str(e))
@@ -275,6 +277,10 @@ def parse(fan_contents: str, /, lazy: bool = False,
                 pickle.dump(spec, fp)
         except Exception as e:
             print_exception(e)
+            try:
+                os.remove(pickle_file)  # might be inconsistent
+            except Exception:
+                pass
 
     LOGGER.debug("Parsing complete")
     return spec.grammar, spec.constraints
