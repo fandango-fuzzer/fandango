@@ -119,7 +119,7 @@ def check_constraints_existence(grammar, constraints):
             for i in range(len(constraint_matches) - 1):
                 parent = constraint_matches[i]
                 symbol = constraint_matches[i + 1]
-                indirect = f"<{parent}>*<{symbol}>" in str(value)
+                indirect = f"<{parent}>..<{symbol}>" in str(value)
                 if not check_constraints_existence_children(
                     grammar, parent, symbol, indirect, indirect_child
                 ):
