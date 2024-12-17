@@ -2,7 +2,7 @@ import ast
 import re
 import os
 import sys
-import importlib
+import importlib.metadata
 
 from typing import Tuple, List, Any
 from fandango.logger import LOGGER, print_exception
