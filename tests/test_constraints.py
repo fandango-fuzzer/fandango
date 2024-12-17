@@ -349,6 +349,62 @@ class ConstraintTest(unittest.TestCase):
         )
         self.assertTrue(constraint.check(example))
 
+    def test_constraint_check(self):
+        self.assertRaises(ValueError, self.get_constraint, "<start>.<a> == 'a'")
+        self.assertRaises(ValueError, self.get_constraint, "<start>..<a> == 'a'")
+
+    def test_direct_children(self):
+        constraint = self.get_constraint("str(<start>.<ab>) == 'a';")
+        counter_example = DerivationTree(
+            NonTerminal("<start>"),
+            [
+                DerivationTree(
+                    NonTerminal("<ab>"),
+                    [
+                        DerivationTree(
+                            Terminal("b"),
+                            []
+                        )
+                    ]
+                )
+            ]
+        )
+
+        self.assertFalse(constraint.check(counter_example))
+        example = DerivationTree(
+            NonTerminal("<start>"),
+            [
+                DerivationTree(
+                    NonTerminal("<ab>"),
+                    [
+                        DerivationTree(
+                            Terminal("a"),
+                            []
+                        )
+                    ]
+                )
+            ]
+        )
+        self.assertTrue(constraint.check(example))
+
+    def test_indirect_children(self):
+        grammar = """
+<start> ::= <number>;
+<number> ::= <digit> | <digit><number>;
+<digit> ::= "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "0";
+""" 
+        constraint = "int(<start>..<digit>) == 1;"
+        grammar, constraint = parse(grammar + constraint)
+        
+        self.assertEqual(1, len(constraint))
+        constraint = constraint[0]
+        
+        counter_example = grammar.parse("19")
+        self.assertFalse(constraint.check(counter_example))
+
+        example = grammar.parse("11")
+        self.assertTrue(constraint.check(example))
+
     def test_complex_constraint(self):
         grammar = """
 <start> ::= <number>;
