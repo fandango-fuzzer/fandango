@@ -37,7 +37,7 @@ if __name__ == "__main__":
         "xml.fan"
     )  # Load the XML grammar and constraints
     xml_files = Fandango(
-        xml_grammar, xml_constraints, verbose=False
+        xml_grammar, xml_constraints
     ).evolve()  # Generate XML files
     xml_binaries = [
         tree_to_binary(xml) for xml in xml_files
@@ -54,7 +54,6 @@ if __name__ == "__main__":
         bytes_grammar,
         bytes_constraints,
         initial_population=xml_binary_trees,
-        verbose=True,
     ).evolve()  # Generate bytes files
 
     for solution in solutions:
