@@ -16,7 +16,7 @@ authors = [
 description = "Fandango is a fuzzing framework for genetically solving constraints of inputs to generate better test cases that satisfy semantic and syntactical constraints."
 readme = "README.md"
 license = { file = "COPYING" }
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
