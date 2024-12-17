@@ -5,7 +5,7 @@ from fandango.language.parse import parse_file
 def evaluate_pixels():
     grammar, constraints = parse_file("pixels.fan")
 
-    fandango = Fandango(grammar, constraints, verbose=True)
+    fandango = Fandango(grammar, constraints)
     fandango.evolve()
 
     print(fandango.solution)
