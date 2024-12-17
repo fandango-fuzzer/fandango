@@ -36,7 +36,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip  # Path to cache
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}  # Unique cache key based on the OS, Python version, and requirements file hash
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('Makefile') }}  # Unique cache key based on the OS, Python version, and Makefile hash
           restore-keys: |
             ${{ runner.os }}-pip-${{ matrix.python-version }}-
 
@@ -46,12 +46,11 @@ jobs:
           sudo apt-get update && sudo apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config
           pip install pygraphviz
 
-      # Step 5: Install Python dependencies (FANDANGO and additional libraries)
-      - name: Install FANDANGO dependencies
+      # Step 5: Install Python dependencies using make
+      - name: Install dependencies with Makefile
         run: |
           python -m pip install --upgrade pip  # Upgrade pip to the latest version
-          pip install -e .  # Install the project in editable mode
-          pip install -r requirements.txt  # Install all dependencies listed in requirements.txt
+          make install  # Install dependencies using the Makefile
 
       # Step 6: Cache installed packages for system dependencies
       - name: Cache pygraphviz dependencies
