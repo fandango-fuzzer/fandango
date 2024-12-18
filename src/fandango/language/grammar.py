@@ -1,9 +1,10 @@
 import abc
 import enum
 import random
+import re
 import typing
 from copy import deepcopy
-from typing import Dict, List, Optional, Tuple, Set, Any, Union, Iterator
+from typing import Dict, List, Optional, Tuple, Set, Any, Union, Iterator, overload
 
 from fandango.language.symbol import NonTerminal, Terminal, Symbol
 from fandango.language.tree import DerivationTree
@@ -12,19 +13,22 @@ MAX_REPETITIONS = 5
 
 
 class NodeType(enum.Enum):
-    ALTERNATIVE = 0
-    CONCATENATION = 1
-    REPETITION = 2
-    STAR = 3
-    PLUS = 4
-    OPTION = 5
-    NON_TERMINAL = 6
-    TERMINAL = 7
-    CHAR_SET = 8
+    ALTERNATIVE = 'alternative'
+    CONCATENATION = 'concatenation'
+    REPETITION = 'repetition'
+    STAR = 'star'
+    PLUS = 'plus'
+    OPTION = 'option'
+    NON_TERMINAL = 'non_terminal'
+    TERMINAL = 'terminal'
+    CHAR_SET = 'char_set'
 
 class FuzzingMode(enum.Enum):
     COMPLETE = 0
     IO = 1
+
+class GrammarKeyError(KeyError):
+    pass
 
 class FuzzingContext:
 
@@ -34,6 +38,7 @@ class FuzzingContext:
         self._currentRole = None
         self._prev_role_completed = False
         self.abort = False
+        self.subtree_read_only = True
 
     def on_enter_non_terminal(self, node: "NonTerminalNode"):
         self._process_role_enter(node.role)
@@ -42,6 +47,9 @@ class FuzzingContext:
     def on_leave_non_terminal(self):
         self._depth -= 1
         self._process_role_leave()
+
+    def in_role(self):
+        return self._currentRole is not None
 
     def prev_completed_role(self):
         """
@@ -72,10 +80,7 @@ class FuzzingContext:
 
         # If we are within a role subtree
         if self._depth > self._roleDepth:
-            if role is None:
-                return
-            else:
-                raise RuntimeError("Cannot swap role down the syntax tree")
+            return
         # else (If subtree is finished)
         self._currentRole = None
         self._roleDepth = None
@@ -94,6 +99,19 @@ class Node(abc.ABC):
     ):
         self.node_type = node_type
         self.distance_to_completion = distance_to_completion
+
+    def validate_from_tree(self, from_sub_tree: DerivationTree = None, expect_node_type_symbol: NodeType = None,
+                           expect_children: int = None):
+        if from_sub_tree is None:
+            return
+        if expect_node_type_symbol is not None:
+            pattern = re.compile("<(.+):\d+>")
+            match = pattern.match(from_sub_tree.symbol.symbol)
+            if not match or match.group(1) != expect_node_type_symbol.value:
+                raise GrammarKeyError("NodeType not matching with from_sub_tree.node_type")
+        if expect_children is not None:
+            if len(from_sub_tree.children) == expect_children:
+                raise GrammarKeyError("Expected nr or children doesn't match!")
 
     def fuzz(self, grammar: "Grammar", max_nodes: int = 100, mode: FuzzingMode = FuzzingMode.COMPLETE,
             from_sub_tree: DerivationTree = None, context: FuzzingContext = None) -> List[DerivationTree]:
@@ -131,18 +149,30 @@ class Alternative(Node):
              from_sub_tree: DerivationTree = None, context: FuzzingContext = None) -> List[DerivationTree]:
         if context is None:
             context = FuzzingContext()
-        if self.distance_to_completion >= max_nodes:
-            min_ = min(self.alternatives, key=lambda x: x.distance_to_completion)
-            return random.choice(
-                [
-                    a
-                    for a in self.alternatives
-                    if a.distance_to_completion <= min_.distance_to_completion
-                ]
-            ).fuzz(grammar, 0, mode=mode, from_sub_tree=from_sub_tree, context=context)
-        return random.choice(self.alternatives).fuzz(grammar, max_nodes - 1,
-                                                     mode=mode, from_sub_tree=from_sub_tree,
-                                                     context=context)
+        self.validate_from_tree(from_sub_tree, expect_node_type_symbol=self.node_type)
+
+        if from_sub_tree is None:
+            if self.distance_to_completion >= max_nodes:
+                min_ = min(self.alternatives, key=lambda x: x.distance_to_completion)
+                return random.choice(
+                    [
+                        a
+                        for a in self.alternatives
+                        if a.distance_to_completion <= min_.distance_to_completion
+                    ]
+                ).fuzz(grammar, 0, mode=mode, from_sub_tree=from_sub_tree[0], context=context)
+            return random.choice(self.alternatives).fuzz(grammar, max_nodes - 1,
+                                                         mode=mode, from_sub_tree=from_sub_tree,
+                                                         context=context)
+        else:
+            node_sub_tree = from_sub_tree.children[0]
+            for alternative in self.alternatives:
+                try:
+                    return alternative.fuzz(grammar, max_nodes - 1, mode=mode,
+                                            from_sub_tree=node_sub_tree, context=context)
+                except GrammarKeyError as e:
+                    pass
+            raise GrammarKeyError("No alternative matching from_sub_tree DerivationTree!")
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitAlternative(self)
@@ -172,12 +202,19 @@ class Concatenation(Node):
             from_sub_tree: DerivationTree = None, context: FuzzingContext = None) -> List[DerivationTree]:
         if context is None:
             context = FuzzingContext()
+        self.validate_from_tree(from_sub_tree, expect_node_type_symbol=self.node_type)
+        if from_sub_tree is not None:
+            if context.subtree_read_only and len(from_sub_tree.children) != len(self.nodes):
+                raise GrammarKeyError("Read-only concatenation doesn't provide enough children!")
+
         trees = []
         for idx, node in enumerate(self.nodes):
             if from_sub_tree is not None and len(from_sub_tree.children) > idx:
                 node_sub_tree = from_sub_tree.children[idx]
+                context.subtree_read_only = len(from_sub_tree.children) > (idx + 1)
             else:
                 node_sub_tree = None
+                context.subtree_read_only = False
             if node.distance_to_completion >= max_nodes:
                 tree = node.fuzz(grammar, 0, mode=mode,
                                  from_sub_tree=node_sub_tree, context=context)
@@ -233,8 +270,22 @@ class Repetition(Node):
             from_sub_tree: DerivationTree = None, context: FuzzingContext = None) -> List[DerivationTree]:
         if context is None:
             context = FuzzingContext()
+        self.validate_from_tree(from_sub_tree, expect_node_type_symbol=self.node_type)
+
+        repetitions = random.randint(self.min, self.max)
+        if from_sub_tree is not None:
+            sub_tree_len = len(from_sub_tree.children)
+            if context.subtree_read_only:
+                if not (self.min <= sub_tree_len <= self.max):
+                    raise GrammarKeyError("Read-only repetition's children out of range!")
+                repetitions = sub_tree_len
+            else:
+                if sub_tree_len > self.max:
+                    raise GrammarKeyError("Repetition's children out of range!")
+                repetitions = random.randint(sub_tree_len, self.max)
+
         trees = []
-        for rep in range(random.randint(self.min, self.max)):
+        for rep in range(repetitions):
             if self.node.distance_to_completion >= max_nodes:
                 if rep > self.min:
                     break
@@ -314,6 +365,7 @@ class NonTerminalNode(Node):
              from_sub_tree: DerivationTree = None, context: FuzzingContext = None) -> List[DerivationTree]:
         if context is None:
             context = FuzzingContext()
+        self.validate_from_tree(from_sub_tree, expect_children=1)
 
         if self.symbol not in grammar:
             raise ValueError(f"Symbol {self.symbol} not found in grammar")
@@ -353,6 +405,8 @@ class TerminalNode(Node):
 
     def fuzz(self, grammar: "Grammar", max_nodes: int = 100, mode: FuzzingMode = FuzzingMode.COMPLETE,
             from_sub_tree: DerivationTree = None, context: FuzzingContext = None) -> List[DerivationTree]:
+        self.validate_from_tree(from_sub_tree, expect_children=0)
+
         return [DerivationTree(self.symbol)]
 
     def accept(self, visitor: "NodeVisitor"):
