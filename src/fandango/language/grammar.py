@@ -160,7 +160,7 @@ class Alternative(Node):
                         for a in self.alternatives
                         if a.distance_to_completion <= min_.distance_to_completion
                     ]
-                ).fuzz(grammar, 0, mode=mode, from_sub_tree=from_sub_tree[0], context=context)
+                ).fuzz(grammar, 0, mode=mode, from_sub_tree=None, context=context)
             return random.choice(self.alternatives).fuzz(grammar, max_nodes - 1,
                                                          mode=mode, from_sub_tree=from_sub_tree,
                                                          context=context)
