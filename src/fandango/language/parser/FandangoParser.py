@@ -23948,7 +23948,6 @@ def serializedATN():
 
 
 class FandangoParser(Parser):
-
     grammarFileName = "FandangoParser.g4"
 
     atn = ATNDeserializer().deserialize(serializedATN())
@@ -24808,7 +24807,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def fandango(self):
-
         localctx = FandangoParser.FandangoContext(self, self._ctx, self.state)
         self.enterRule(localctx, 0, self.RULE_fandango)
         try:
@@ -24864,7 +24862,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def program(self):
-
         localctx = FandangoParser.ProgramContext(self, self._ctx, self.state)
         self.enterRule(localctx, 2, self.RULE_program)
         self._la = 0  # Token type
@@ -24949,7 +24946,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def statement(self):
-
         localctx = FandangoParser.StatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 4, self.RULE_statement)
         try:
@@ -25036,7 +25032,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def production(self):
-
         localctx = FandangoParser.ProductionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 6, self.RULE_production)
         self._la = 0  # Token type
@@ -25156,7 +25151,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def alternative(self):
-
         localctx = FandangoParser.AlternativeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 8, self.RULE_alternative)
         self._la = 0  # Token type
@@ -25217,7 +25211,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def concatenation(self):
-
         localctx = FandangoParser.ConcatenationContext(self, self._ctx, self.state)
         self.enterRule(localctx, 10, self.RULE_concatenation)
         self._la = 0  # Token type
@@ -25292,7 +25285,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def operator(self):
-
         localctx = FandangoParser.OperatorContext(self, self._ctx, self.state)
         self.enterRule(localctx, 12, self.RULE_operator)
         try:
@@ -25370,7 +25362,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def kleene(self):
-
         localctx = FandangoParser.KleeneContext(self, self._ctx, self.state)
         self.enterRule(localctx, 14, self.RULE_kleene)
         try:
@@ -25420,7 +25411,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def plus(self):
-
         localctx = FandangoParser.PlusContext(self, self._ctx, self.state)
         self.enterRule(localctx, 16, self.RULE_plus)
         try:
@@ -25470,7 +25460,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def option(self):
-
         localctx = FandangoParser.OptionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 18, self.RULE_option)
         try:
@@ -25532,7 +25521,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def repeat(self):
-
         localctx = FandangoParser.RepeatContext(self, self._ctx, self.state)
         self.enterRule(localctx, 20, self.RULE_repeat)
         self._la = 0  # Token type
@@ -25637,7 +25625,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def symbol(self):
-
         localctx = FandangoParser.SymbolContext(self, self._ctx, self.state)
         self.enterRule(localctx, 22, self.RULE_symbol)
         self._la = 0  # Token type
@@ -25737,7 +25724,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def char_set(self):
-
         localctx = FandangoParser.Char_setContext(self, self._ctx, self.state)
         self.enterRule(localctx, 24, self.RULE_char_set)
         self._la = 0  # Token type
@@ -25803,7 +25789,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def constraint(self):
-
         localctx = FandangoParser.ConstraintContext(self, self._ctx, self.state)
         self.enterRule(localctx, 26, self.RULE_constraint)
         try:
@@ -25901,7 +25886,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def implies(self):
-
         localctx = FandangoParser.ImpliesContext(self, self._ctx, self.state)
         self.enterRule(localctx, 28, self.RULE_implies)
         try:
@@ -26012,7 +25996,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def quantifier(self):
-
         localctx = FandangoParser.QuantifierContext(self, self._ctx, self.state)
         self.enterRule(localctx, 30, self.RULE_quantifier)
         try:
@@ -26154,7 +26137,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def formula_disjunction(self):
-
         localctx = FandangoParser.Formula_disjunctionContext(
             self, self._ctx, self.state
         )
@@ -26251,7 +26233,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def formula_conjunction(self):
-
         localctx = FandangoParser.Formula_conjunctionContext(
             self, self._ctx, self.state
         )
@@ -26351,7 +26332,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def formula_atom(self):
-
         localctx = FandangoParser.Formula_atomContext(self, self._ctx, self.state)
         self.enterRule(localctx, 36, self.RULE_formula_atom)
         self._la = 0  # Token type
@@ -26462,7 +26442,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def formula_comparison(self):
-
         localctx = FandangoParser.Formula_comparisonContext(self, self._ctx, self.state)
         self.enterRule(localctx, 38, self.RULE_formula_comparison)
         self._la = 0  # Token type
@@ -26529,7 +26508,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def expr(self):
-
         localctx = FandangoParser.ExprContext(self, self._ctx, self.state)
         self.enterRule(localctx, 40, self.RULE_expr)
         try:
@@ -26606,7 +26584,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def selector_length(self):
-
         localctx = FandangoParser.Selector_lengthContext(self, self._ctx, self.state)
         self.enterRule(localctx, 42, self.RULE_selector_length)
         try:
@@ -26799,7 +26776,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def selection(self):
-
         localctx = FandangoParser.SelectionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 46, self.RULE_selection)
         try:
@@ -26883,7 +26859,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def base_selection(self):
-
         localctx = FandangoParser.Base_selectionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 48, self.RULE_base_selection)
         try:
@@ -26954,7 +26929,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def rs_pairs(self):
-
         localctx = FandangoParser.Rs_pairsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 50, self.RULE_rs_pairs)
         self._la = 0  # Token type
@@ -27029,7 +27003,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def rs_pair(self):
-
         localctx = FandangoParser.Rs_pairContext(self, self._ctx, self.state)
         self.enterRule(localctx, 52, self.RULE_rs_pair)
         self._la = 0  # Token type
@@ -27095,7 +27068,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def rs_slices(self):
-
         localctx = FandangoParser.Rs_slicesContext(self, self._ctx, self.state)
         self.enterRule(localctx, 54, self.RULE_rs_slices)
         self._la = 0  # Token type
@@ -27170,7 +27142,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def rs_slice(self):
-
         localctx = FandangoParser.Rs_sliceContext(self, self._ctx, self.state)
         self.enterRule(localctx, 56, self.RULE_rs_slice)
         self._la = 0  # Token type
@@ -27274,7 +27245,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def python(self):
-
         localctx = FandangoParser.PythonContext(self, self._ctx, self.state)
         self.enterRule(localctx, 58, self.RULE_python)
         try:
@@ -27372,7 +27342,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def python_tag(self):
-
         localctx = FandangoParser.Python_tagContext(self, self._ctx, self.state)
         self.enterRule(localctx, 60, self.RULE_python_tag)
         self._la = 0  # Token type
@@ -27441,7 +27410,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def python_file(self):
-
         localctx = FandangoParser.Python_fileContext(self, self._ctx, self.state)
         self.enterRule(localctx, 62, self.RULE_python_file)
         self._la = 0  # Token type
@@ -27502,7 +27470,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def interactive(self):
-
         localctx = FandangoParser.InteractiveContext(self, self._ctx, self.state)
         self.enterRule(localctx, 64, self.RULE_interactive)
         try:
@@ -27556,7 +27523,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def eval_(self):
-
         localctx = FandangoParser.EvalContext(self, self._ctx, self.state)
         self.enterRule(localctx, 66, self.RULE_eval)
         self._la = 0  # Token type
@@ -27640,7 +27606,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def func_type(self):
-
         localctx = FandangoParser.Func_typeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 68, self.RULE_func_type)
         self._la = 0  # Token type
@@ -27728,7 +27693,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def statements(self):
-
         localctx = FandangoParser.StatementsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 70, self.RULE_statements)
         self._la = 0  # Token type
@@ -27849,7 +27813,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def stmt(self):
-
         localctx = FandangoParser.StmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 72, self.RULE_stmt)
         try:
@@ -27947,7 +27910,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def statement_newline(self):
-
         localctx = FandangoParser.Statement_newlineContext(self, self._ctx, self.state)
         self.enterRule(localctx, 74, self.RULE_statement_newline)
         try:
@@ -28064,7 +28026,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def simple_stmts(self):
-
         localctx = FandangoParser.Simple_stmtsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 76, self.RULE_simple_stmts)
         self._la = 0  # Token type
@@ -28204,7 +28165,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def simple_stmt(self):
-
         localctx = FandangoParser.Simple_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 78, self.RULE_simple_stmt)
         try:
@@ -28354,7 +28314,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def compound_stmt(self):
-
         localctx = FandangoParser.Compound_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 80, self.RULE_compound_stmt)
         try:
@@ -28491,7 +28450,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def assignment(self):
-
         localctx = FandangoParser.AssignmentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 82, self.RULE_assignment)
         self._la = 0  # Token type
@@ -28691,7 +28649,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def annotated_rhs(self):
-
         localctx = FandangoParser.Annotated_rhsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 84, self.RULE_annotated_rhs)
         try:
@@ -28806,7 +28763,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def augassign(self):
-
         localctx = FandangoParser.AugassignContext(self, self._ctx, self.state)
         self.enterRule(localctx, 86, self.RULE_augassign)
         self._la = 0  # Token type
@@ -28860,7 +28816,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def return_stmt(self):
-
         localctx = FandangoParser.Return_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 88, self.RULE_return_stmt)
         try:
@@ -28921,7 +28876,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def raise_stmt(self):
-
         localctx = FandangoParser.Raise_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 90, self.RULE_raise_stmt)
         try:
@@ -29001,7 +28955,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def global_stmt(self):
-
         localctx = FandangoParser.Global_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 92, self.RULE_global_stmt)
         self._la = 0  # Token type
@@ -29073,7 +29026,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def nonlocal_stmt(self):
-
         localctx = FandangoParser.Nonlocal_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 94, self.RULE_nonlocal_stmt)
         self._la = 0  # Token type
@@ -29136,7 +29088,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def del_stmt(self):
-
         localctx = FandangoParser.Del_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 96, self.RULE_del_stmt)
         try:
@@ -29183,7 +29134,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def yield_stmt(self):
-
         localctx = FandangoParser.Yield_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 98, self.RULE_yield_stmt)
         try:
@@ -29237,7 +29187,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def assert_stmt(self):
-
         localctx = FandangoParser.Assert_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 100, self.RULE_assert_stmt)
         self._la = 0  # Token type
@@ -29297,7 +29246,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def import_stmt(self):
-
         localctx = FandangoParser.Import_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 102, self.RULE_import_stmt)
         try:
@@ -29358,7 +29306,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def import_name(self):
-
         localctx = FandangoParser.Import_nameContext(self, self._ctx, self.state)
         self.enterRule(localctx, 104, self.RULE_import_name)
         try:
@@ -29428,7 +29375,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def import_from(self):
-
         localctx = FandangoParser.Import_fromContext(self, self._ctx, self.state)
         self.enterRule(localctx, 106, self.RULE_import_from)
         self._la = 0  # Token type
@@ -29542,7 +29488,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def import_from_targets(self):
-
         localctx = FandangoParser.Import_from_targetsContext(
             self, self._ctx, self.state
         )
@@ -29632,7 +29577,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def import_from_as_names(self):
-
         localctx = FandangoParser.Import_from_as_namesContext(
             self, self._ctx, self.state
         )
@@ -29698,7 +29642,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def import_from_as_name(self):
-
         localctx = FandangoParser.Import_from_as_nameContext(
             self, self._ctx, self.state
         )
@@ -29764,7 +29707,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def dotted_as_names(self):
-
         localctx = FandangoParser.Dotted_as_namesContext(self, self._ctx, self.state)
         self.enterRule(localctx, 114, self.RULE_dotted_as_names)
         self._la = 0  # Token type
@@ -29828,7 +29770,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def dotted_as_name(self):
-
         localctx = FandangoParser.Dotted_as_nameContext(self, self._ctx, self.state)
         self.enterRule(localctx, 116, self.RULE_dotted_as_name)
         self._la = 0  # Token type
@@ -29979,7 +29920,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def block(self):
-
         localctx = FandangoParser.BlockContext(self, self._ctx, self.state)
         self.enterRule(localctx, 120, self.RULE_block)
         try:
@@ -30094,7 +30034,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def decorators(self):
-
         localctx = FandangoParser.DecoratorsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 122, self.RULE_decorators)
         self._la = 0  # Token type
@@ -30157,7 +30096,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def class_def(self):
-
         localctx = FandangoParser.Class_defContext(self, self._ctx, self.state)
         self.enterRule(localctx, 124, self.RULE_class_def)
         self._la = 0  # Token type
@@ -30231,7 +30169,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def class_def_raw(self):
-
         localctx = FandangoParser.Class_def_rawContext(self, self._ctx, self.state)
         self.enterRule(localctx, 126, self.RULE_class_def_raw)
         self._la = 0  # Token type
@@ -30312,7 +30249,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def function_def(self):
-
         localctx = FandangoParser.Function_defContext(self, self._ctx, self.state)
         self.enterRule(localctx, 128, self.RULE_function_def)
         self._la = 0  # Token type
@@ -30398,7 +30334,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def function_def_raw(self):
-
         localctx = FandangoParser.Function_def_rawContext(self, self._ctx, self.state)
         self.enterRule(localctx, 130, self.RULE_function_def_raw)
         self._la = 0  # Token type
@@ -30491,7 +30426,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def params(self):
-
         localctx = FandangoParser.ParamsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 132, self.RULE_params)
         try:
@@ -30560,7 +30494,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def parameters(self):
-
         localctx = FandangoParser.ParametersContext(self, self._ctx, self.state)
         self.enterRule(localctx, 134, self.RULE_parameters)
         self._la = 0  # Token type
@@ -30738,7 +30671,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def slash_no_default(self):
-
         localctx = FandangoParser.Slash_no_defaultContext(self, self._ctx, self.state)
         self.enterRule(localctx, 136, self.RULE_slash_no_default)
         self._la = 0  # Token type
@@ -30824,7 +30756,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def slash_with_default(self):
-
         localctx = FandangoParser.Slash_with_defaultContext(self, self._ctx, self.state)
         self.enterRule(localctx, 138, self.RULE_slash_with_default)
         self._la = 0  # Token type
@@ -30924,7 +30855,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def star_etc(self):
-
         localctx = FandangoParser.Star_etcContext(self, self._ctx, self.state)
         self.enterRule(localctx, 140, self.RULE_star_etc)
         self._la = 0  # Token type
@@ -31056,7 +30986,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def kwds(self):
-
         localctx = FandangoParser.KwdsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 142, self.RULE_kwds)
         try:
@@ -31106,7 +31035,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def param_no_default(self):
-
         localctx = FandangoParser.Param_no_defaultContext(self, self._ctx, self.state)
         self.enterRule(localctx, 144, self.RULE_param_no_default)
         try:
@@ -31170,7 +31098,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def param_no_default_star_annotation(self):
-
         localctx = FandangoParser.Param_no_default_star_annotationContext(
             self, self._ctx, self.state
         )
@@ -31237,7 +31164,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def param_with_default(self):
-
         localctx = FandangoParser.Param_with_defaultContext(self, self._ctx, self.state)
         self.enterRule(localctx, 148, self.RULE_param_with_default)
         try:
@@ -31306,7 +31232,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def param_maybe_default(self):
-
         localctx = FandangoParser.Param_maybe_defaultContext(
             self, self._ctx, self.state
         )
@@ -31385,7 +31310,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def param(self):
-
         localctx = FandangoParser.ParamContext(self, self._ctx, self.state)
         self.enterRule(localctx, 152, self.RULE_param)
         self._la = 0  # Token type
@@ -31441,7 +31365,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def param_star_annotation(self):
-
         localctx = FandangoParser.Param_star_annotationContext(
             self, self._ctx, self.state
         )
@@ -31493,7 +31416,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def annotation(self):
-
         localctx = FandangoParser.AnnotationContext(self, self._ctx, self.state)
         self.enterRule(localctx, 156, self.RULE_annotation)
         try:
@@ -31543,7 +31465,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def star_annotation(self):
-
         localctx = FandangoParser.Star_annotationContext(self, self._ctx, self.state)
         self.enterRule(localctx, 158, self.RULE_star_annotation)
         try:
@@ -31593,7 +31514,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def default(self):
-
         localctx = FandangoParser.DefaultContext(self, self._ctx, self.state)
         self.enterRule(localctx, 160, self.RULE_default)
         try:
@@ -31655,7 +31575,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def if_stmt(self):
-
         localctx = FandangoParser.If_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 162, self.RULE_if_stmt)
         self._la = 0  # Token type
@@ -31749,7 +31668,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def elif_stmt(self):
-
         localctx = FandangoParser.Elif_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 164, self.RULE_elif_stmt)
         self._la = 0  # Token type
@@ -31834,7 +31752,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def else_block(self):
-
         localctx = FandangoParser.Else_blockContext(self, self._ctx, self.state)
         self.enterRule(localctx, 166, self.RULE_else_block)
         try:
@@ -31895,7 +31812,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def while_stmt(self):
-
         localctx = FandangoParser.While_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 168, self.RULE_while_stmt)
         self._la = 0  # Token type
@@ -31975,7 +31891,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def for_stmt(self):
-
         localctx = FandangoParser.For_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 170, self.RULE_for_stmt)
         self._la = 0  # Token type
@@ -32097,7 +32012,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def with_stmt(self):
-
         localctx = FandangoParser.With_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 172, self.RULE_with_stmt)
         self._la = 0  # Token type
@@ -32273,7 +32187,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def with_item(self):
-
         localctx = FandangoParser.With_itemContext(self, self._ctx, self.state)
         self.enterRule(localctx, 174, self.RULE_with_item)
         try:
@@ -32362,7 +32275,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def try_stmt(self):
-
         localctx = FandangoParser.Try_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 176, self.RULE_try_stmt)
         self._la = 0  # Token type
@@ -32507,7 +32419,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def except_block(self):
-
         localctx = FandangoParser.Except_blockContext(self, self._ctx, self.state)
         self.enterRule(localctx, 178, self.RULE_except_block)
         self._la = 0  # Token type
@@ -32602,7 +32513,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def except_star_block(self):
-
         localctx = FandangoParser.Except_star_blockContext(self, self._ctx, self.state)
         self.enterRule(localctx, 180, self.RULE_except_star_block)
         self._la = 0  # Token type
@@ -32671,7 +32581,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def finally_block(self):
-
         localctx = FandangoParser.Finally_blockContext(self, self._ctx, self.state)
         self.enterRule(localctx, 182, self.RULE_finally_block)
         try:
@@ -32741,7 +32650,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def match_stmt(self):
-
         localctx = FandangoParser.Match_stmtContext(self, self._ctx, self.state)
         self.enterRule(localctx, 184, self.RULE_match_stmt)
         self._la = 0  # Token type
@@ -32822,7 +32730,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def subject_expr(self):
-
         localctx = FandangoParser.Subject_exprContext(self, self._ctx, self.state)
         self.enterRule(localctx, 186, self.RULE_subject_expr)
         self._la = 0  # Token type
@@ -32904,7 +32811,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def case_block(self):
-
         localctx = FandangoParser.Case_blockContext(self, self._ctx, self.state)
         self.enterRule(localctx, 188, self.RULE_case_block)
         self._la = 0  # Token type
@@ -32966,7 +32872,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def guard(self):
-
         localctx = FandangoParser.GuardContext(self, self._ctx, self.state)
         self.enterRule(localctx, 190, self.RULE_guard)
         try:
@@ -33018,7 +32923,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def patterns(self):
-
         localctx = FandangoParser.PatternsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 192, self.RULE_patterns)
         try:
@@ -33078,7 +32982,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def pattern(self):
-
         localctx = FandangoParser.PatternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 194, self.RULE_pattern)
         try:
@@ -33143,7 +33046,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def as_pattern(self):
-
         localctx = FandangoParser.As_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 196, self.RULE_as_pattern)
         try:
@@ -33201,7 +33103,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def or_pattern(self):
-
         localctx = FandangoParser.Or_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 198, self.RULE_or_pattern)
         self._la = 0  # Token type
@@ -33280,7 +33181,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def closed_pattern(self):
-
         localctx = FandangoParser.Closed_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 200, self.RULE_closed_pattern)
         try:
@@ -33388,7 +33288,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def literal_pattern(self):
-
         localctx = FandangoParser.Literal_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 202, self.RULE_literal_pattern)
         try:
@@ -33484,7 +33383,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def literal_expr(self):
-
         localctx = FandangoParser.Literal_exprContext(self, self._ctx, self.state)
         self.enterRule(localctx, 204, self.RULE_literal_expr)
         try:
@@ -33574,7 +33472,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def complex_number(self):
-
         localctx = FandangoParser.Complex_numberContext(self, self._ctx, self.state)
         self.enterRule(localctx, 206, self.RULE_complex_number)
         try:
@@ -33642,7 +33539,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def signed_number(self):
-
         localctx = FandangoParser.Signed_numberContext(self, self._ctx, self.state)
         self.enterRule(localctx, 208, self.RULE_signed_number)
         try:
@@ -33705,7 +33601,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def signed_real_number(self):
-
         localctx = FandangoParser.Signed_real_numberContext(self, self._ctx, self.state)
         self.enterRule(localctx, 210, self.RULE_signed_real_number)
         try:
@@ -33765,7 +33660,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def real_number(self):
-
         localctx = FandangoParser.Real_numberContext(self, self._ctx, self.state)
         self.enterRule(localctx, 212, self.RULE_real_number)
         try:
@@ -33810,7 +33704,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def imaginary_number(self):
-
         localctx = FandangoParser.Imaginary_numberContext(self, self._ctx, self.state)
         self.enterRule(localctx, 214, self.RULE_imaginary_number)
         try:
@@ -33857,7 +33750,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def capture_pattern(self):
-
         localctx = FandangoParser.Capture_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 216, self.RULE_capture_pattern)
         try:
@@ -33902,7 +33794,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def pattern_capture_target(self):
-
         localctx = FandangoParser.Pattern_capture_targetContext(
             self, self._ctx, self.state
         )
@@ -33949,7 +33840,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def wildcard_pattern(self):
-
         localctx = FandangoParser.Wildcard_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 220, self.RULE_wildcard_pattern)
         try:
@@ -33994,7 +33884,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def value_pattern(self):
-
         localctx = FandangoParser.Value_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 222, self.RULE_value_pattern)
         try:
@@ -34045,7 +33934,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def attr(self):
-
         localctx = FandangoParser.AttrContext(self, self._ctx, self.state)
         self.enterRule(localctx, 224, self.RULE_attr)
         try:
@@ -34184,7 +34072,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def group_pattern(self):
-
         localctx = FandangoParser.Group_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 228, self.RULE_group_pattern)
         try:
@@ -34252,7 +34139,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def sequence_pattern(self):
-
         localctx = FandangoParser.Sequence_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 230, self.RULE_sequence_pattern)
         self._la = 0  # Token type
@@ -34343,7 +34229,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def open_sequence_pattern(self):
-
         localctx = FandangoParser.Open_sequence_patternContext(
             self, self._ctx, self.state
         )
@@ -34416,7 +34301,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def maybe_sequence_pattern(self):
-
         localctx = FandangoParser.Maybe_sequence_patternContext(
             self, self._ctx, self.state
         )
@@ -34487,7 +34371,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def maybe_star_pattern(self):
-
         localctx = FandangoParser.Maybe_star_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 236, self.RULE_maybe_star_pattern)
         try:
@@ -34553,7 +34436,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def star_pattern(self):
-
         localctx = FandangoParser.Star_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 238, self.RULE_star_pattern)
         try:
@@ -34631,7 +34513,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def mapping_pattern(self):
-
         localctx = FandangoParser.Mapping_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 240, self.RULE_mapping_pattern)
         self._la = 0  # Token type
@@ -34753,7 +34634,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def items_pattern(self):
-
         localctx = FandangoParser.Items_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 242, self.RULE_items_pattern)
         try:
@@ -34820,7 +34700,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def key_value_pattern(self):
-
         localctx = FandangoParser.Key_value_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 244, self.RULE_key_value_pattern)
         try:
@@ -34886,7 +34765,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def double_star_pattern(self):
-
         localctx = FandangoParser.Double_star_patternContext(
             self, self._ctx, self.state
         )
@@ -34955,7 +34833,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def class_pattern(self):
-
         localctx = FandangoParser.Class_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 248, self.RULE_class_pattern)
         self._la = 0  # Token type
@@ -35081,7 +34958,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def positional_patterns(self):
-
         localctx = FandangoParser.Positional_patternsContext(
             self, self._ctx, self.state
         )
@@ -35152,7 +35028,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def keyword_patterns(self):
-
         localctx = FandangoParser.Keyword_patternsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 252, self.RULE_keyword_patterns)
         try:
@@ -35216,7 +35091,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def keyword_pattern(self):
-
         localctx = FandangoParser.Keyword_patternContext(self, self._ctx, self.state)
         self.enterRule(localctx, 254, self.RULE_keyword_pattern)
         try:
@@ -35277,7 +35151,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def type_alias(self):
-
         localctx = FandangoParser.Type_aliasContext(self, self._ctx, self.state)
         self.enterRule(localctx, 256, self.RULE_type_alias)
         self._la = 0  # Token type
@@ -35342,7 +35215,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def type_params(self):
-
         localctx = FandangoParser.Type_paramsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 258, self.RULE_type_params)
         try:
@@ -35400,7 +35272,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def type_param_seq(self):
-
         localctx = FandangoParser.Type_param_seqContext(self, self._ctx, self.state)
         self.enterRule(localctx, 260, self.RULE_type_param_seq)
         self._la = 0  # Token type
@@ -35475,7 +35346,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def type_param(self):
-
         localctx = FandangoParser.Type_paramContext(self, self._ctx, self.state)
         self.enterRule(localctx, 262, self.RULE_type_param)
         self._la = 0  # Token type
@@ -35553,7 +35423,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def type_param_bound(self):
-
         localctx = FandangoParser.Type_param_boundContext(self, self._ctx, self.state)
         self.enterRule(localctx, 264, self.RULE_type_param_bound)
         try:
@@ -35609,7 +35478,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def expressions(self):
-
         localctx = FandangoParser.ExpressionsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 266, self.RULE_expressions)
         self._la = 0  # Token type
@@ -35690,7 +35558,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def expression(self):
-
         localctx = FandangoParser.ExpressionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 268, self.RULE_expression)
         try:
@@ -35770,7 +35637,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def yield_expr(self):
-
         localctx = FandangoParser.Yield_exprContext(self, self._ctx, self.state)
         self.enterRule(localctx, 270, self.RULE_yield_expr)
         try:
@@ -35849,7 +35715,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def star_expressions(self):
-
         localctx = FandangoParser.Star_expressionsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 272, self.RULE_star_expressions)
         self._la = 0  # Token type
@@ -35921,7 +35786,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def star_expression(self):
-
         localctx = FandangoParser.Star_expressionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 274, self.RULE_star_expression)
         try:
@@ -36014,7 +35878,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def star_named_expressions(self):
-
         localctx = FandangoParser.Star_named_expressionsContext(
             self, self._ctx, self.state
         )
@@ -36088,7 +35951,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def star_named_expression(self):
-
         localctx = FandangoParser.Star_named_expressionContext(
             self, self._ctx, self.state
         )
@@ -36176,7 +36038,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def assignment_expression(self):
-
         localctx = FandangoParser.Assignment_expressionContext(
             self, self._ctx, self.state
         )
@@ -36232,7 +36093,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def named_expression(self):
-
         localctx = FandangoParser.Named_expressionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 282, self.RULE_named_expression)
         try:
@@ -36298,7 +36158,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def disjunction(self):
-
         localctx = FandangoParser.DisjunctionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 284, self.RULE_disjunction)
         self._la = 0  # Token type
@@ -36365,7 +36224,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def conjunction(self):
-
         localctx = FandangoParser.ConjunctionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 286, self.RULE_conjunction)
         self._la = 0  # Token type
@@ -36429,7 +36287,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def inversion(self):
-
         localctx = FandangoParser.InversionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 288, self.RULE_inversion)
         try:
@@ -36517,7 +36374,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def comparison(self):
-
         localctx = FandangoParser.ComparisonContext(self, self._ctx, self.state)
         self.enterRule(localctx, 290, self.RULE_comparison)
         try:
@@ -36600,7 +36456,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def compare_op_bitwise_or_pair(self):
-
         localctx = FandangoParser.Compare_op_bitwise_or_pairContext(
             self, self._ctx, self.state
         )
@@ -36710,7 +36565,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def eq_bitwise_or(self):
-
         localctx = FandangoParser.Eq_bitwise_orContext(self, self._ctx, self.state)
         self.enterRule(localctx, 294, self.RULE_eq_bitwise_or)
         try:
@@ -36760,7 +36614,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def noteq_bitwise_or(self):
-
         localctx = FandangoParser.Noteq_bitwise_orContext(self, self._ctx, self.state)
         self.enterRule(localctx, 296, self.RULE_noteq_bitwise_or)
         try:
@@ -36810,7 +36663,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def lte_bitwise_or(self):
-
         localctx = FandangoParser.Lte_bitwise_orContext(self, self._ctx, self.state)
         self.enterRule(localctx, 298, self.RULE_lte_bitwise_or)
         try:
@@ -36860,7 +36712,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def lt_bitwise_or(self):
-
         localctx = FandangoParser.Lt_bitwise_orContext(self, self._ctx, self.state)
         self.enterRule(localctx, 300, self.RULE_lt_bitwise_or)
         try:
@@ -36910,7 +36761,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def gte_bitwise_or(self):
-
         localctx = FandangoParser.Gte_bitwise_orContext(self, self._ctx, self.state)
         self.enterRule(localctx, 302, self.RULE_gte_bitwise_or)
         try:
@@ -36960,7 +36810,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def gt_bitwise_or(self):
-
         localctx = FandangoParser.Gt_bitwise_orContext(self, self._ctx, self.state)
         self.enterRule(localctx, 304, self.RULE_gt_bitwise_or)
         try:
@@ -37013,7 +36862,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def notin_bitwise_or(self):
-
         localctx = FandangoParser.Notin_bitwise_orContext(self, self._ctx, self.state)
         self.enterRule(localctx, 306, self.RULE_notin_bitwise_or)
         try:
@@ -37065,7 +36913,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def in_bitwise_or(self):
-
         localctx = FandangoParser.In_bitwise_orContext(self, self._ctx, self.state)
         self.enterRule(localctx, 308, self.RULE_in_bitwise_or)
         try:
@@ -37118,7 +36965,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def isnot_bitwise_or(self):
-
         localctx = FandangoParser.Isnot_bitwise_orContext(self, self._ctx, self.state)
         self.enterRule(localctx, 310, self.RULE_isnot_bitwise_or)
         try:
@@ -37170,7 +37016,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def is_bitwise_or(self):
-
         localctx = FandangoParser.Is_bitwise_orContext(self, self._ctx, self.state)
         self.enterRule(localctx, 312, self.RULE_is_bitwise_or)
         try:
@@ -37889,7 +37734,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def factor(self):
-
         localctx = FandangoParser.FactorContext(self, self._ctx, self.state)
         self.enterRule(localctx, 326, self.RULE_factor)
         try:
@@ -37969,7 +37813,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def power(self):
-
         localctx = FandangoParser.PowerContext(self, self._ctx, self.state)
         self.enterRule(localctx, 328, self.RULE_power)
         try:
@@ -38033,7 +37876,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def await_primary(self):
-
         localctx = FandangoParser.Await_primaryContext(self, self._ctx, self.state)
         self.enterRule(localctx, 330, self.RULE_await_primary)
         try:
@@ -38300,7 +38142,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def slices(self):
-
         localctx = FandangoParser.SlicesContext(self, self._ctx, self.state)
         self.enterRule(localctx, 334, self.RULE_slices)
         self._la = 0  # Token type
@@ -38444,7 +38285,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def slice_(self):
-
         localctx = FandangoParser.SliceContext(self, self._ctx, self.state)
         self.enterRule(localctx, 336, self.RULE_slice)
         self._la = 0  # Token type
@@ -38588,7 +38428,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def atom(self):
-
         localctx = FandangoParser.AtomContext(self, self._ctx, self.state)
         self.enterRule(localctx, 338, self.RULE_atom)
         try:
@@ -38756,7 +38595,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def group(self):
-
         localctx = FandangoParser.GroupContext(self, self._ctx, self.state)
         self.enterRule(localctx, 340, self.RULE_group)
         try:
@@ -38846,7 +38684,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def lambdef(self):
-
         localctx = FandangoParser.LambdefContext(self, self._ctx, self.state)
         self.enterRule(localctx, 342, self.RULE_lambdef)
         self._la = 0  # Token type
@@ -38903,7 +38740,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def lambda_params(self):
-
         localctx = FandangoParser.Lambda_paramsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 344, self.RULE_lambda_params)
         try:
@@ -38978,7 +38814,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def lambda_parameters(self):
-
         localctx = FandangoParser.Lambda_parametersContext(self, self._ctx, self.state)
         self.enterRule(localctx, 346, self.RULE_lambda_parameters)
         self._la = 0  # Token type
@@ -39158,7 +38993,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def lambda_slash_no_default(self):
-
         localctx = FandangoParser.Lambda_slash_no_defaultContext(
             self, self._ctx, self.state
         )
@@ -39248,7 +39082,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def lambda_slash_with_default(self):
-
         localctx = FandangoParser.Lambda_slash_with_defaultContext(
             self, self._ctx, self.state
         )
@@ -39347,7 +39180,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def lambda_star_etc(self):
-
         localctx = FandangoParser.Lambda_star_etcContext(self, self._ctx, self.state)
         self.enterRule(localctx, 352, self.RULE_lambda_star_etc)
         self._la = 0  # Token type
@@ -39456,7 +39288,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def lambda_kwds(self):
-
         localctx = FandangoParser.Lambda_kwdsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 354, self.RULE_lambda_kwds)
         try:
@@ -39506,7 +39337,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def lambda_param_no_default(self):
-
         localctx = FandangoParser.Lambda_param_no_defaultContext(
             self, self._ctx, self.state
         )
@@ -39567,7 +39397,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def lambda_param_with_default(self):
-
         localctx = FandangoParser.Lambda_param_with_defaultContext(
             self, self._ctx, self.state
         )
@@ -39630,7 +39459,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def lambda_param_maybe_default(self):
-
         localctx = FandangoParser.Lambda_param_maybe_defaultContext(
             self, self._ctx, self.state
         )
@@ -39692,7 +39520,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def lambda_param(self):
-
         localctx = FandangoParser.Lambda_paramContext(self, self._ctx, self.state)
         self.enterRule(localctx, 362, self.RULE_lambda_param)
         try:
@@ -39742,7 +39569,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def fstring_middle(self):
-
         localctx = FandangoParser.Fstring_middleContext(self, self._ctx, self.state)
         self.enterRule(localctx, 364, self.RULE_fstring_middle)
         try:
@@ -39820,7 +39646,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def fstring_replacement_field(self):
-
         localctx = FandangoParser.Fstring_replacement_fieldContext(
             self, self._ctx, self.state
         )
@@ -39929,7 +39754,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def fstring_conversion(self):
-
         localctx = FandangoParser.Fstring_conversionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 368, self.RULE_fstring_conversion)
         try:
@@ -39998,7 +39822,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def fstring_full_format_spec(self):
-
         localctx = FandangoParser.Fstring_full_format_specContext(
             self, self._ctx, self.state
         )
@@ -40061,7 +39884,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def fstring_format_spec(self):
-
         localctx = FandangoParser.Fstring_format_specContext(
             self, self._ctx, self.state
         )
@@ -40130,7 +39952,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def fstring(self):
-
         localctx = FandangoParser.FstringContext(self, self._ctx, self.state)
         self.enterRule(localctx, 374, self.RULE_fstring)
         self._la = 0  # Token type
@@ -40188,7 +40009,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def string(self):
-
         localctx = FandangoParser.StringContext(self, self._ctx, self.state)
         self.enterRule(localctx, 376, self.RULE_string)
         try:
@@ -40242,7 +40062,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def strings(self):
-
         localctx = FandangoParser.StringsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 378, self.RULE_strings)
         try:
@@ -40318,7 +40137,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def list_(self):
-
         localctx = FandangoParser.ListContext(self, self._ctx, self.state)
         self.enterRule(localctx, 380, self.RULE_list)
         self._la = 0  # Token type
@@ -40392,7 +40210,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def tuple_(self):
-
         localctx = FandangoParser.TupleContext(self, self._ctx, self.state)
         self.enterRule(localctx, 382, self.RULE_tuple)
         self._la = 0  # Token type
@@ -40463,7 +40280,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def set_(self):
-
         localctx = FandangoParser.SetContext(self, self._ctx, self.state)
         self.enterRule(localctx, 384, self.RULE_set)
         try:
@@ -40520,7 +40336,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def dict_(self):
-
         localctx = FandangoParser.DictContext(self, self._ctx, self.state)
         self.enterRule(localctx, 386, self.RULE_dict)
         self._la = 0  # Token type
@@ -40591,7 +40406,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def double_starred_kvpairs(self):
-
         localctx = FandangoParser.Double_starred_kvpairsContext(
             self, self._ctx, self.state
         )
@@ -40665,7 +40479,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def double_starred_kvpair(self):
-
         localctx = FandangoParser.Double_starred_kvpairContext(
             self, self._ctx, self.state
         )
@@ -40753,7 +40566,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def kvpair(self):
-
         localctx = FandangoParser.KvpairContext(self, self._ctx, self.state)
         self.enterRule(localctx, 392, self.RULE_kvpair)
         try:
@@ -40805,7 +40617,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def for_if_clauses(self):
-
         localctx = FandangoParser.For_if_clausesContext(self, self._ctx, self.state)
         self.enterRule(localctx, 394, self.RULE_for_if_clauses)
         self._la = 0  # Token type
@@ -40882,7 +40693,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def for_if_clause(self):
-
         localctx = FandangoParser.For_if_clauseContext(self, self._ctx, self.state)
         self.enterRule(localctx, 396, self.RULE_for_if_clause)
         self._la = 0  # Token type
@@ -40962,7 +40772,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def listcomp(self):
-
         localctx = FandangoParser.ListcompContext(self, self._ctx, self.state)
         self.enterRule(localctx, 398, self.RULE_listcomp)
         try:
@@ -41022,7 +40831,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def setcomp(self):
-
         localctx = FandangoParser.SetcompContext(self, self._ctx, self.state)
         self.enterRule(localctx, 400, self.RULE_setcomp)
         try:
@@ -41087,7 +40895,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def genexp(self):
-
         localctx = FandangoParser.GenexpContext(self, self._ctx, self.state)
         self.enterRule(localctx, 402, self.RULE_genexp)
         try:
@@ -41158,7 +40965,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def dictcomp(self):
-
         localctx = FandangoParser.DictcompContext(self, self._ctx, self.state)
         self.enterRule(localctx, 404, self.RULE_dictcomp)
         try:
@@ -41212,7 +41018,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def arguments(self):
-
         localctx = FandangoParser.ArgumentsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 406, self.RULE_arguments)
         self._la = 0  # Token type
@@ -41277,7 +41082,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def args(self):
-
         localctx = FandangoParser.ArgsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 408, self.RULE_args)
         try:
@@ -41364,7 +41168,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def arg(self):
-
         localctx = FandangoParser.ArgContext(self, self._ctx, self.state)
         self.enterRule(localctx, 410, self.RULE_arg)
         try:
@@ -41448,7 +41251,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def kwargs(self):
-
         localctx = FandangoParser.KwargsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 412, self.RULE_kwargs)
         try:
@@ -41570,7 +41372,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def starred_expression(self):
-
         localctx = FandangoParser.Starred_expressionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 414, self.RULE_starred_expression)
         try:
@@ -41626,7 +41427,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def kwarg_or_starred(self):
-
         localctx = FandangoParser.Kwarg_or_starredContext(self, self._ctx, self.state)
         self.enterRule(localctx, 416, self.RULE_kwarg_or_starred)
         try:
@@ -41697,7 +41497,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def kwarg_or_double_starred(self):
-
         localctx = FandangoParser.Kwarg_or_double_starredContext(
             self, self._ctx, self.state
         )
@@ -41772,7 +41571,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def star_targets(self):
-
         localctx = FandangoParser.Star_targetsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 420, self.RULE_star_targets)
         self._la = 0  # Token type
@@ -41847,7 +41645,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def star_targets_list_seq(self):
-
         localctx = FandangoParser.Star_targets_list_seqContext(
             self, self._ctx, self.state
         )
@@ -41924,7 +41721,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def star_targets_tuple_seq(self):
-
         localctx = FandangoParser.Star_targets_tuple_seqContext(
             self, self._ctx, self.state
         )
@@ -42017,7 +41813,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def star_target(self):
-
         localctx = FandangoParser.Star_targetContext(self, self._ctx, self.state)
         self.enterRule(localctx, 426, self.RULE_star_target)
         try:
@@ -42095,7 +41890,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def target_with_star_atom(self):
-
         localctx = FandangoParser.Target_with_star_atomContext(
             self, self._ctx, self.state
         )
@@ -42197,7 +41991,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def star_atom(self):
-
         localctx = FandangoParser.Star_atomContext(self, self._ctx, self.state)
         self.enterRule(localctx, 430, self.RULE_star_atom)
         self._la = 0  # Token type
@@ -42309,7 +42102,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def single_target(self):
-
         localctx = FandangoParser.Single_targetContext(self, self._ctx, self.state)
         self.enterRule(localctx, 432, self.RULE_single_target)
         try:
@@ -42391,7 +42183,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def single_subscript_attribute_target(self):
-
         localctx = FandangoParser.Single_subscript_attribute_targetContext(
             self, self._ctx, self.state
         )
@@ -42657,7 +42448,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def del_targets(self):
-
         localctx = FandangoParser.Del_targetsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 438, self.RULE_del_targets)
         self._la = 0  # Token type
@@ -42741,7 +42531,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def del_target(self):
-
         localctx = FandangoParser.Del_targetContext(self, self._ctx, self.state)
         self.enterRule(localctx, 440, self.RULE_del_target)
         try:
@@ -42829,7 +42618,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def del_t_atom(self):
-
         localctx = FandangoParser.Del_t_atomContext(self, self._ctx, self.state)
         self.enterRule(localctx, 442, self.RULE_del_t_atom)
         self._la = 0  # Token type
@@ -42932,7 +42720,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def type_expressions(self):
-
         localctx = FandangoParser.Type_expressionsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 444, self.RULE_type_expressions)
         self._la = 0  # Token type
@@ -43107,7 +42894,6 @@ class FandangoParser(Parser):
                 return visitor.visitChildren(self)
 
     def func_type_comment(self):
-
         localctx = FandangoParser.Func_type_commentContext(self, self._ctx, self.state)
         self.enterRule(localctx, 446, self.RULE_func_type_comment)
         try:

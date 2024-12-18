@@ -1,18 +1,16 @@
 import ast
-import re
-import os
-import sys
-import importlib.metadata
-
-from typing import Tuple, List, Any
-from fandango.logger import LOGGER, print_exception
-
-from antlr4 import InputStream, CommonTokenStream
-
 import hashlib
-import dill as pickle
-from xdg_base_dirs import xdg_cache_home
+import importlib.metadata
+import os
+import re
+from typing import Tuple, List, Any
+
 import cachedir_tag
+import dill as pickle
+from antlr4 import InputStream, CommonTokenStream
+from antlr4.error.ErrorListener import ErrorListener
+from antlr4.error.Errors import ParseCancellationException
+from xdg_base_dirs import xdg_cache_home
 
 from fandango.constraints import predicates
 from fandango.constraints.base import Constraint
@@ -26,13 +24,13 @@ from fandango.language.grammar import Grammar, NodeType
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.symbol import NonTerminal
+from fandango.logger import LOGGER, print_exception
 
-from antlr4.error.ErrorListener import ErrorListener
-from antlr4.error.Errors import ParseCancellationException
 
 class MyErrorListener(ErrorListener):
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
         raise ParseCancellationException(f"Line %{line}, Column {column}: error: {msg}")
+
 
 def check_grammar(grammar, start_symbol="<start>"):
     if not grammar:
@@ -105,14 +103,18 @@ def check_constraints_existence(grammar, constraints):
             ]
 
             if len(missing) > 1:
-                missing_symbols = ", ".join([ '<' + symbol + '>' for symbol in missing ])
-                error = ValueError(f"Constraint {constraint}: undefined symbols {missing_symbols}")
+                missing_symbols = ", ".join(["<" + symbol + ">" for symbol in missing])
+                error = ValueError(
+                    f"Constraint {constraint}: undefined symbols {missing_symbols}"
+                )
                 error.add_note(f"Possible symbols: {defined_symbols_str}")
                 raise error
 
             if len(missing) == 1:
                 missing_symbol = missing[0]
-                error = ValueError(f"Constraint {constraint}: undefined symbol <{missing_symbol}>")
+                error = ValueError(
+                    f"Constraint {constraint}: undefined symbol <{missing_symbol}>"
+                )
                 error.add_note(f"Possible symbols: {defined_symbols_str}")
                 raise error
 
@@ -158,7 +160,12 @@ class FandangoSpec:
     GLOBALS = predicates.__dict__
     LOCALS = None  # Must be None to ensure top-level imports
 
-    def __init__(self, tree: Any, fan_contents: str, lazy: bool = False):
+    def __init__(
+        self,
+        tree: Any,
+        fan_contents: str,
+        lazy: bool = False,
+    ):
         self.version = importlib.metadata.version("fandango")
         self.fan_contents = fan_contents
         self.global_vars = self.GLOBALS.copy()
@@ -179,10 +186,9 @@ class FandangoSpec:
         LOGGER.debug("Extracting grammar")
         grammar_processor = GrammarProcessor(
             local_variables=self.local_vars,
-            global_variables=self.global_vars
+            global_variables=self.global_vars,
         )
-        self.grammar: Grammar = \
-            grammar_processor.get_grammar(splitter.productions)
+        self.grammar: Grammar = grammar_processor.get_grammar(splitter.productions)
 
         LOGGER.debug("Extracting constraints")
         constraint_processor = ConstraintProcessor(
@@ -191,20 +197,30 @@ class FandangoSpec:
             global_variables=self.global_vars,
             lazy=self.lazy,
         )
-        self.constraints: List[Constraint] = \
-            constraint_processor.get_constraints(splitter.constraints)
+        self.constraints: List[Constraint] = constraint_processor.get_constraints(
+            splitter.constraints
+        )
 
     def run_code(self):
         exec(self.code_text, self.global_vars, self.local_vars)
 
 
-def parse(fan_contents: str, /, lazy: bool = False,
-          check_constraints: bool = True, given_grammar=None, use_cache: bool = True) -> Tuple[Grammar, List[Constraint]]:
+def parse(
+    fan_contents: str,
+    /,
+    lazy: bool = False,
+    check_constraints: bool = True,
+    given_grammar=None,
+    use_cache: bool = True,
+) -> Tuple[Grammar, List[Constraint]]:
     """
     Extract grammar and constraints from the given content
-    :param fan: Fandango specification
+    :param fan_contents: Fandango specification
     :param lazy: If True, the constraints are evaluated lazily
     :param check_constraints: If True, check if the constraints contain non-terminal symbols that are not in the grammar
+    :param given_grammar: If provided, check if the constraints contain non-terminal symbols that are not in the given grammar
+    :param use_cache: If True, use cache to store the parsed grammar and constraints
+    :return: Tuple of grammar and constraints
     """
     from_cache = False
 
@@ -215,12 +231,12 @@ def parse(fan_contents: str, /, lazy: bool = False,
             os.makedirs(CACHE_DIR)
             cachedir_tag.tag(CACHE_DIR, application="Fandango")
 
-        hash = hashlib.sha256(fan_contents.encode()).hexdigest()
-        pickle_file = CACHE_DIR / (hash + '.pickle')
+        hash_ = hashlib.sha256(fan_contents.encode()).hexdigest()
+        pickle_file = CACHE_DIR / (hash_ + ".pickle")
 
         if os.path.exists(pickle_file):
             try:
-                with open(pickle_file, 'rb') as fp:
+                with open(pickle_file, "rb") as fp:
                     LOGGER.info(f"Loading cached spec from {pickle_file}")
                     spec: FandangoSpec = pickle.load(fp)
                     LOGGER.debug(f"Cached spec version: {spec.version}")
@@ -232,16 +248,16 @@ def parse(fan_contents: str, /, lazy: bool = False,
             except Exception as e:
                 LOGGER.debug(type(e).__name__ + ":" + str(e))
 
-    if from_cache:
-        LOGGER.debug("Running code")
-        try:
-            spec.run_code()
-        except Exception as e:
-            print_exception(e)
+        if from_cache:
+            LOGGER.debug("Running code")
+            try:
+                spec.run_code()
+            except Exception as e:
+                print_exception(e)
 
-            # In case the error has anything to do with caching, play it safe
-            del spec
-            os.remove(pickle_file)
+                # In case the error has anything to do with caching, play it safe
+                del spec
+                os.remove(pickle_file)
 
     if not from_cache:
         LOGGER.debug("Setting up .fan parser")
@@ -272,7 +288,7 @@ def parse(fan_contents: str, /, lazy: bool = False,
 
     if use_cache and not from_cache:
         try:
-            with open(pickle_file, 'wb') as fp:
+            with open(pickle_file, "wb") as fp:
                 LOGGER.info(f"Saving spec to cache {pickle_file}")
                 pickle.dump(spec, fp)
         except Exception as e:
@@ -284,6 +300,7 @@ def parse(fan_contents: str, /, lazy: bool = False,
 
     LOGGER.debug("Parsing complete")
     return spec.grammar, spec.constraints
+
 
 def parse_file(*filenames, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
     contents = ""
