@@ -193,9 +193,7 @@ class TestIncompleteParsing(unittest.TestCase):
 
     def _test(self, example, tree):
         parsed = False
-        for actual_tree in self.grammar.parse_incomplete(
-            example, "<ab>", use_implicit=True
-        ):
+        for actual_tree in self.grammar.parse_incomplete(example, "<ab>"):
             self.assertEqual(tree, actual_tree)
             parsed = True
             break
