@@ -1,3 +1,4 @@
+import random
 from typing import Tuple
 
 from evaluation.vs_isla.csv_evaluation.csv_evaluation import evaluate_csv
@@ -27,7 +28,10 @@ def better_print_results(
     print("")
 
 
-def run_evaluation(seconds: int = 60):
+def run_evaluation(seconds: int = 3600, random_seed: int = 1):
+    # Set the random seed
+    random.seed(random_seed)
+
     better_print_results(evaluate_csv(seconds))
     better_print_results(evaluate_rest(seconds))
     better_print_results(evaluate_scriptsizec(seconds))
@@ -36,4 +40,4 @@ def run_evaluation(seconds: int = 60):
 
 
 if __name__ == "__main__":
-    run_evaluation(5)
+    run_evaluation()

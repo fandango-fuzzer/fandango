@@ -18,7 +18,8 @@ statement
 // grammar part
 
 production
-    : nonterminal '::=' alternative ('=' expression)? ';'
+    : nonterminal '::=' alternative (':=' expression)? ';'
+    | nonterminal '::=' alternative ('=' expression)? ';'   // deprecated
     | nonterminal '::=' alternative (':' ':' expression)? ';'; // deprecated
 
 alternative: concatenation ('|' concatenation)*;

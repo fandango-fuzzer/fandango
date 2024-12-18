@@ -33,7 +33,7 @@ from fandango.language.search import (
     AttributeSearch,
     RuleSearch,
     LengthSearch,
-    StarAttributeSearch,
+    DescendantAttributeSearch,
     ItemSearch,
     SelectiveSearch,
 )
@@ -81,7 +81,8 @@ class GrammarProcessor(FandangoParserVisitor):
 
     def get_grammar(self, productions: List[FandangoParser.ProductionContext]):
         grammar = Grammar(
-            local_variables=self.local_variables, global_variables=self.global_variables
+            local_variables=self.local_variables,
+            global_variables=self.global_variables,
         )
         for production in productions:
             symbol = NonTerminal(production.nonterminal().getText())
@@ -93,6 +94,12 @@ class GrammarProcessor(FandangoParserVisitor):
                         "Searches in expressions are currently not supported"
                     )
                 grammar.set_generator(symbol, ast.unparse(expr))
+
+                if not production.EXPR_ASSIGN():
+                    LOGGER.warning(
+                        "Using '=' and '::' for generators is deprecated. Use ':=' instead."
+                    )
+
         grammar.rules.update(self.additionalRules)
         grammar.update_parser()
         grammar.prime()
@@ -445,7 +452,7 @@ class SearchProcessor(FandangoParserVisitor):
         if ctx.DOT():
             return AttributeSearch(self.get_attribute_searches(ctx.selector()), search)
         elif ctx.DOTDOT():
-            return StarAttributeSearch(
+            return DescendantAttributeSearch(
                 self.get_attribute_searches(ctx.selector()), search
             )
         else:

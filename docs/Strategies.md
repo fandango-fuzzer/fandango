@@ -183,5 +183,3 @@ Try adding such alternatives to _all_ data fields processed by a system; feed th
 :::{danger}
 Don't try this with other people's systems.
 :::
-
-Let us discuss how to [get even more control over our inputs](sec:constraints).

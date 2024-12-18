@@ -28,7 +28,6 @@ class GeneticTest(unittest.TestCase):
             crossover_rate=0.8,
             max_generations=100,
             elitism_rate=0.2,
-            verbose=False,
         )
 
     def test_generate_initial_population(self):

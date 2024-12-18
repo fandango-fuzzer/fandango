@@ -13,28 +13,15 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+import zipfile
 from io import StringIO
 from io import UnsupportedOperation
 from pathlib import Path
+from ansi_styles import ansiStyles as styles
 
-from antlr4.CommonTokenStream import CommonTokenStream
-from antlr4.InputStream import InputStream
-from antlr4.error.ErrorListener import ErrorListener
+from fandango.language.parse import parse
 from antlr4.error.Errors import ParseCancellationException
-
-from fandango.cli.interactive import Interactive
-from fandango.constants import INTERACTIVE, FUZZ, HELP
-from fandango.constraints import predicates
 from fandango.evolution.algorithm import Fandango
-from fandango.language.convert import (
-    FandangoSplitter,
-    GrammarProcessor,
-    PythonProcessor,
-    ConstraintProcessor,
-)
-from fandango.language.grammar import Grammar, NodeType
-from fandango.language.parser.FandangoLexer import FandangoLexer
-from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.logger import LOGGER, print_exception
 
 
@@ -65,7 +52,7 @@ def get_parser(in_command_line=True):
         main_parser.add_argument(
             "--version",
             action="version",
-            version="%(prog)s " + importlib.metadata.version("fandango"),
+            version="Fandango " + importlib.metadata.version("fandango"),
             help="show version number",
         )
 
@@ -81,8 +68,8 @@ def get_parser(in_command_line=True):
             "--quiet",
             "-q",
             dest="quiet",
-            action="store_true",
-            help="suppress warnings",
+            action="count",
+            help="decrease verbosity. Can be given multiple times (-qq)",
         )
 
     # The subparsers
@@ -127,6 +114,12 @@ def get_parser(in_command_line=True):
         default=None,
     )
     settings_group.add_argument(
+        "--random-seed",
+        type=int,
+        help="the random seed to use for the algorithm",
+        default=None,
+    )
+    settings_group.add_argument(
         "--destruction-rate",
         type=float,
         help="the rate of individuals that will be randomly destroyed in every generation",
@@ -161,6 +154,31 @@ def get_parser(in_command_line=True):
         help="produce a 'best effort' population (may not satisfy all constraints)",
         default=None,
     )
+    settings_group.add_argument(
+        "-i",
+        "--initial-population",
+        type=str,
+        help="directory or ZIP archive with initial population",
+        default=None,
+    )
+
+    if not in_command_line:
+        # Use `set -vv` or `set -q` to change logging levels
+        verbosity_option = settings_group.add_mutually_exclusive_group()
+        verbosity_option.add_argument(
+            "--verbose",
+            "-v",
+            dest="verbose",
+            action="count",
+            help="increase verbosity. Can be given multiple times (-vv)",
+        )
+        verbosity_option.add_argument(
+            "--quiet",
+            "-q",
+            dest="quiet",
+            action="store_true",
+            help="decrease verbosity. Can be given multiple times (-qq)",
+        )
 
     # Shared file options
     file_parser = argparse.ArgumentParser(add_help=False)
@@ -197,7 +215,7 @@ def get_parser(in_command_line=True):
 
     # Fuzz
     fuzz_parser = commands.add_parser(
-        FUZZ,
+        "fuzz",
         help="produce outputs from .fan files and test programs",
         parents=[file_parser, settings_parser],
     )
@@ -279,7 +297,7 @@ def get_parser(in_command_line=True):
         )
 
     if not in_command_line:
-        # Reset
+        # Exit
         set_parser = commands.add_parser(
             "exit",
             help="exit Fandango",
@@ -290,48 +308,6 @@ def get_parser(in_command_line=True):
         shell_parser = commands.add_parser(
             "shell",
             help="run an interactive shell (default)",
-        )
-
-    if in_command_line:
-        # Interactive
-        interactive_parser = commands.add_parser(
-            INTERACTIVE,
-            help="""
-            open the interactive command line interface
-            (deprecated, use `shell` instead)
-            """,
-        )
-        interactive_parser.add_argument(
-            "-f",
-            "--fan",
-            type=str,
-            dest="fan",
-            default=None,
-            help="the fan file to use for the interactive mode",
-        )
-        interactive_parser.add_argument(
-            "-g",
-            "--grammar",
-            type=str,
-            dest="grammar",
-            default=None,
-            help="the grammar to use for the interactive mode",
-        )
-        interactive_parser.add_argument(
-            "-c",
-            "--constraints",
-            type=str,
-            dest="constraints",
-            default=None,
-            help="the constraints to use for the interactive mode",
-        )
-        interactive_parser.add_argument(
-            "-p",
-            "--python",
-            type=str,
-            dest="python",
-            default=None,
-            help="the Python code to use in the interactive mode",
         )
 
     if not in_command_line:
@@ -367,7 +343,7 @@ def get_parser(in_command_line=True):
 
     # Help
     help_parser = commands.add_parser(
-        HELP,
+        "help",
         help="show this help and exit",
     )
     help_parser.add_argument(
@@ -379,21 +355,19 @@ def get_parser(in_command_line=True):
         help="command to get help on",
     )
 
+    # Copyright
+    copyright_parser = commands.add_parser(
+        "copyright",
+        help="show copyright",
+    )
+
+    # Version
+    version_parser = commands.add_parser(
+        "version",
+        help="show version",
+    )
+
     return main_parser
-
-
-def interactive_command(args):
-    LOGGER.warn("Deprecated. Use the 'shell' command instead.")
-    try:
-        interactive_ = Interactive(
-            args.fan, args.grammar, args.constraints, args.python
-        )
-    except Exception as e:
-        # This should catch all kinds of parsing errors
-        LOGGER.critical(f"Error during initialization: {type(e)}")
-        sys.exit(1)
-
-    interactive_.run()
 
 
 def help_command(args, **kwargs):
@@ -431,141 +405,8 @@ def merged_fan_contents(args) -> str:
     return fan_contents
 
 
-class MyErrorListener(ErrorListener):
-    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise ParseCancellationException(f"Line %{line}, Column {column}: error: {msg}")
-
-
-def check_grammar(grammar, start_symbol="<start>"):
-    LOGGER.debug("Checking grammar")
-
-    used_symbols = set()
-    undefined_symbols = set()
-    defined_symbols = set()
-
-    if grammar:
-        for symbol in grammar.rules.keys():
-            defined_symbols.add(symbol)
-
-    def collect_used_symbols(tree):
-        if tree.node_type == NodeType.NON_TERMINAL:
-            used_symbols.add(tree.symbol)
-        if tree.node_type == NodeType.REPETITION:
-            collect_used_symbols(tree.node)
-        for child in tree.children():
-            collect_used_symbols(child)
-
-    for tree in grammar.rules.values():
-        collect_used_symbols(tree)
-
-    for symbol in used_symbols:
-        if symbol not in defined_symbols:
-            undefined_symbols.add(symbol)
-
-    for symbol in defined_symbols:
-        if symbol not in used_symbols and str(symbol) != start_symbol:
-            LOGGER.info(f"Symbol {symbol} defined, but not used")
-
-    if undefined_symbols:
-        error = ValueError(f"Undefined symbols {undefined_symbols} in grammar")
-        error.add_note(f"Possible symbols: {defined_symbols}")
-        raise error
-
-
-def check_constraints(constraints, grammar):
-    try:
-        LOGGER.debug("Checking constraints")
-
-        used_symbols = set()
-        undefined_symbols = set()
-        defined_symbols = set()
-
-        if grammar:
-            for symbol in grammar.rules.keys():
-                defined_symbols.add(str(symbol))
-
-        def collect_used_symbols(constraint):
-            nonlocal used_symbols
-            # FIXME: This should actually traverse the constraint
-            matches = re.findall("<[a-zA-Z0-9_]*>", str(constraint))
-            for match in matches:
-                used_symbols.add(match)
-
-        for constraint in constraints:
-            collect_used_symbols(constraint)
-
-        for symbol in used_symbols:
-            if not symbol in defined_symbols:
-                undefined_symbols.add(symbol)
-
-        if undefined_symbols:
-            error = ValueError(f"Undefined symbols {undefined_symbols} in constraints")
-            error.add_note(f"Possible symbols: {defined_symbols}")
-            raise error
-    except ValueError as e:
-        # do nothing
-        pass
-
-
-def extract_grammar_and_constraints(
-    fan_contents: str, lazy: bool = False, given_grammar=None
-):
-    """Extract grammar and constraints from the given content"""
-    # TODO: This should go into a separate module (parser.py maybe?), not here -- AZ
-
-    LOGGER.debug("Parsing .fan content")
-    error_listener = MyErrorListener()
-    input_stream = InputStream(fan_contents)
-    lexer = FandangoLexer(input_stream)
-    lexer.addErrorListener(error_listener)
-    token_stream = CommonTokenStream(lexer)
-    parser = FandangoParser(token_stream)
-    parser.addErrorListener(error_listener)
-    # parser._errHandler = BailErrorStrategy()
-    tree = parser.fandango()
-
-    LOGGER.debug("Extracting code")
-    splitter = FandangoSplitter()
-    splitter.visit(tree)
-    global_vars: dict = {}
-    local_vars = predicates.__dict__
-    python_processor = PythonProcessor()
-    code_tree = python_processor.get_code(splitter.python_code)
-    code_text = ast.unparse(code_tree)
-
-    LOGGER.debug("Running code")
-    exec(code_text, global_vars, local_vars)
-
-    LOGGER.debug("Extracting grammar")
-    grammar_processor = GrammarProcessor(
-        local_variables=local_vars, global_variables=global_vars
-    )
-    grammar: Grammar = grammar_processor.get_grammar(splitter.productions)
-
-    check_grammar(grammar)
-
-    LOGGER.debug("Extracting constraints")
-    constraint_processor = ConstraintProcessor(
-        grammar,
-        local_variables=local_vars,
-        global_variables=global_vars,
-        lazy=lazy,
-    )
-    constraints = constraint_processor.get_constraints(splitter.constraints)
-
-    if len(grammar.rules) == 0:
-        # No grammar found; check constraints against given (existing) grammar
-        check_constraints(constraints, given_grammar)
-    else:
-        try:
-            check_constraints(constraints, grammar)
-        except ValueError as e:
-            # do nothing
-            print("HOLA")
-            pass
-
-    LOGGER.debug("Parsing complete")
-    return grammar, constraints
+def parse_fan(fan_contents):
+    return parse(fan_contents, given_grammar=DEFAULT_FAN_CONTENT[0])
 
 
 def parse_fan_contents(args):
@@ -575,7 +416,7 @@ def parse_fan_contents(args):
     if not fan_contents:
         return None, None
 
-    grammar, constraints = extract_grammar_and_constraints(fan_contents)
+    grammar, constraints = parse_fan(fan_contents)
     return grammar, constraints
 
 
@@ -600,6 +441,8 @@ def make_fandango_settings(args, initial_settings={}):
         settings["warnings_are_errors"] = args.warnings_are_errors
     if args.best_effort is not None:
         settings["best_effort"] = args.best_effort
+    if args.random_seed is not None:
+        settings["random_seed"] = args.random_seed
     if args.start_symbol is not None:
         if args.start_symbol.startswith("<"):
             start_symbol = args.start_symbol
@@ -607,7 +450,39 @@ def make_fandango_settings(args, initial_settings={}):
             start_symbol = f"<{args.start_symbol}>"
         settings["start_symbol"] = start_symbol
 
+    if args.quiet and args.quiet == 1:
+        LOGGER.setLevel(logging.WARNING)  # Default
+    elif args.quiet and args.quiet > 1:
+        LOGGER.setLevel(logging.ERROR)  # Even quieter
+    elif args.verbose and args.verbose == 1:
+        LOGGER.setLevel(logging.INFO)  # Give more info
+    elif args.verbose and args.verbose > 1:
+        LOGGER.setLevel(logging.DEBUG)  # Even more info
+
+    if args.initial_population is not None:
+        settings["initial_population"] = extract_initial_population(
+            args.initial_population
+        )
     return settings
+
+
+def extract_initial_population(path):
+    try:
+        initial_population = list()
+        if path.strip().endswith(".zip"):
+            with zipfile.ZipFile(path, "r") as zip:
+                for file in zip.namelist():
+                    data = zip.read(file).decode()
+                    initial_population.append(data)
+        else:
+            for file in os.listdir(path):
+                filename = os.path.join(path, file)
+                with open(filename, "r") as fd:
+                    individual = fd.read()
+                initial_population.append(individual)
+        return initial_population
+    except FileNotFoundError as e:
+        raise e
 
 
 # Default Fandango file content (grammar, constraints); set with `set`
@@ -627,22 +502,24 @@ def set_command(args):
     global DEFAULT_SETTINGS
 
     if args.fan_files:
-        LOGGER.info("---------- Parsing FANDANGO content ----------")
+        LOGGER.info("Parsing Fandango content")
         fan_contents = ""
         for file in args.fan_files:
             fan_contents += file.read() + "\n"
-        grammar, constraints = extract_grammar_and_constraints(fan_contents)
+        grammar, constraints = parse_fan(fan_contents)
         DEFAULT_FAN_CONTENT = (grammar, constraints)
         DEFAULT_CONSTRAINTS = []  # Don't leave these over
 
     if args.constraints:
-        LOGGER.info("---------- Parsing FANDANGO constraints ----------")
+        default_grammar = DEFAULT_FAN_CONTENT[0]
+        if not default_grammar:
+            raise ValueError("Open a `.fan` file first ('set -f FILE.fan')")
+
+        LOGGER.info("Parsing Fandango constraints")
         fan_contents = ""
         for constraint in args.constraints:
             fan_contents += "\n" + constraint + ";\n"
-        _, constraints = extract_grammar_and_constraints(
-            fan_contents, given_grammar=DEFAULT_FAN_CONTENT[0]
-        )
+        _, constraints = parse_fan(fan_contents)
         DEFAULT_CONSTRAINTS = constraints
 
     settings = make_fandango_settings(args)
@@ -702,21 +579,20 @@ def fuzz_command(args):
         constraints = DEFAULT_FAN_CONTENT[1]
 
     if grammar is None:
-        print("fuzz: Use -f to specify a .fan file", file=sys.stderr)
-        return
-
-    if DEFAULT_CONSTRAINTS:
-        constraints += DEFAULT_CONSTRAINTS
+        raise ValueError("Use '-f FILE.fan' to open a Fandango spec")
 
     # Avoid messing with default constraints
     constraints = constraints.copy()
+
+    if DEFAULT_CONSTRAINTS:
+        constraints += DEFAULT_CONSTRAINTS
 
     if args.constraints:
         # Add given constraints
         fan_contents = ""
         for constraint in args.constraints:
             fan_contents += "\n" + constraint + ";\n"
-        _, extra_constraints = extract_grammar_and_constraints(fan_contents)
+        _, extra_constraints = parse_fan(fan_contents)
         constraints += extra_constraints
 
     settings = make_fandango_settings(args, DEFAULT_SETTINGS)
@@ -792,13 +668,28 @@ def nop_command(args):
     pass
 
 
+def copyright_command(args):
+    print("Copyright (c) 2024-2025 CISPA Helmholtz Center for Information Security.")
+    print("All rights reserved.")
+
+
+def version_command(args):
+    version = importlib.metadata.version("fandango")
+    if sys.stdout.isatty():
+        version_line = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango{styles.color.close} {version}"
+    else:
+        version_line = f"Fandango {version}"
+    print(version_line)
+
+
 COMMANDS = {
     "set": set_command,
     "reset": reset_command,
     "fuzz": fuzz_command,
     "cd": cd_command,
-    "interactive": interactive_command,
     "help": help_command,
+    "copyright": copyright_command,
+    "version": version_command,
     "exit": exit_command,
     "!": nop_command,
     "/": nop_command,
@@ -923,7 +814,7 @@ MATCHES = []
 
 
 def shell_command(args):
-    """(New) interactive mode"""
+    """Interactive mode"""
 
     PROMPT = "(fandango)"
 
@@ -934,6 +825,9 @@ def shell_command(args):
             readline.set_history_length(1000)
         except FileNotFoundError:
             pass
+        except Exception as e:
+            LOGGER.warning(f"Could not read {histfile}: {e}")
+
         atexit.register(readline.write_history_file, histfile)
 
     def _complete(text, state):
@@ -953,8 +847,8 @@ def shell_command(args):
         readline.parse_and_bind("tab: complete")  # Linux
         readline.parse_and_bind("bind '\t' rl_complete")  # Mac
 
-        print("Fandango", importlib.metadata.version("fandango"))
-        print("Enter a command, 'help', or 'exit'.")
+        version_command([])
+        print("Type a command, 'help', 'copyright', 'version', or 'exit'.")
 
     last_status = 0
 
@@ -1076,14 +970,18 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
     args = parser.parse_args(args or sys.argv[1:])
 
     LOGGER.setLevel(logging.WARNING)  # Default
-    if args.quiet:
-        LOGGER.setLevel(logging.ERROR)  # Suppress warnings
+
+    if args.quiet and args.quiet == 1:
+        LOGGER.setLevel(logging.WARNING)  # (Back to default)
+    elif args.quiet and args.quiet > 1:
+        LOGGER.setLevel(logging.ERROR)  # Even quieter
     elif args.verbose and args.verbose == 1:
         LOGGER.setLevel(logging.INFO)  # Give more info
     elif args.verbose and args.verbose > 1:
         LOGGER.setLevel(logging.DEBUG)  # Even more info
 
     if args.command in COMMANDS:
+        LOGGER.info(args.command)
         command = COMMANDS[args.command]
         last_status = run(command, args)
     elif args.command is None or args.command == "shell":
