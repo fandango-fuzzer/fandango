@@ -1,5 +1,9 @@
 import abc
 import enum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from fandango.language.grammar import NodeType
 
 
 class SymbolType(enum.Enum):
