@@ -38,7 +38,7 @@ class FuzzingContext:
         self._currentRole = None
         self._prev_role_completed = False
         self.abort = False
-        self.subtree_read_only = True
+        self.subtree_read_only = False
 
     def on_enter_non_terminal(self, node: "NonTerminalNode"):
         self._process_role_enter(node.role)
@@ -211,10 +211,9 @@ class Concatenation(Node):
         for idx, node in enumerate(self.nodes):
             if from_sub_tree is not None and len(from_sub_tree.children) > idx:
                 node_sub_tree = from_sub_tree.children[idx]
-                context.subtree_read_only = len(from_sub_tree.children) > (idx + 1)
             else:
                 node_sub_tree = None
-                context.subtree_read_only = False
+
             if node.distance_to_completion >= max_nodes:
                 tree = node.fuzz(grammar, 0, mode=mode,
                                  from_sub_tree=node_sub_tree, context=context)
@@ -286,13 +285,18 @@ class Repetition(Node):
 
         trees = []
         for rep in range(repetitions):
+            if from_sub_tree is not None and len(from_sub_tree.children) > rep:
+                node_sub_tree = from_sub_tree.children[rep]
+            else:
+                node_sub_tree = None
+
             if self.node.distance_to_completion >= max_nodes:
                 if rep > self.min:
                     break
-                tree = self.node.fuzz(grammar, 0, mode=mode, from_sub_tree=from_sub_tree,
+                tree = self.node.fuzz(grammar, 0, mode=mode, from_sub_tree=node_sub_tree,
                                       context=context)
             else:
-                tree = self.node.fuzz(grammar, max_nodes - 1, mode=mode, from_sub_tree=from_sub_tree,
+                tree = self.node.fuzz(grammar, max_nodes - 1, mode=mode, from_sub_tree=node_sub_tree,
                                       context=context)
             trees.extend(tree)
             max_nodes -= sum(t.size() for t in tree)
@@ -377,10 +381,14 @@ class NonTerminalNode(Node):
             from_sub_tree = from_sub_tree.children[0]
 
         context.on_enter_non_terminal(self)
+        old_read_only = context.subtree_read_only
+        if from_sub_tree is not None and context.in_role():
+            context.subtree_read_only = True
         children = grammar[self.symbol].fuzz(grammar, max_nodes - 1, mode,
                                              from_sub_tree, context)
+        context.subtree_read_only = old_read_only
         context.on_leave_non_terminal()
-        return [DerivationTree(self.symbol, children)]
+        return [DerivationTree(self.symbol, children, read_only=(from_sub_tree is not None))]
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitNonTerminalNode(self)
@@ -407,7 +415,7 @@ class TerminalNode(Node):
             from_sub_tree: DerivationTree = None, context: FuzzingContext = None) -> List[DerivationTree]:
         self.validate_from_tree(from_sub_tree, expect_children=0)
 
-        return [DerivationTree(self.symbol)]
+        return [DerivationTree(self.symbol, read_only=(from_sub_tree is not None))]
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitTerminalNode(self)
