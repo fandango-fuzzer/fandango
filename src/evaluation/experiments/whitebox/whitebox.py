@@ -36,9 +36,7 @@ if __name__ == "__main__":
     xml_grammar, xml_constraints = parse_file(
         "xml.fan"
     )  # Load the XML grammar and constraints
-    xml_files = Fandango(
-        xml_grammar, xml_constraints
-    ).evolve()  # Generate XML files
+    xml_files = Fandango(xml_grammar, xml_constraints).evolve()  # Generate XML files
     xml_binaries = [
         tree_to_binary(xml) for xml in xml_files
     ]  # Convert XML files to binary

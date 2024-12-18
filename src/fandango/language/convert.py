@@ -74,7 +74,8 @@ class GrammarProcessor(FandangoParserVisitor):
 
     def get_grammar(self, productions: List[FandangoParser.ProductionContext]):
         grammar = Grammar(
-            local_variables=self.local_variables, global_variables=self.global_variables
+            local_variables=self.local_variables,
+            global_variables=self.global_variables,
         )
         for production in productions:
             symbol = NonTerminal(production.NONTERMINAL().getText())
