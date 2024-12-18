@@ -271,4 +271,4 @@ class DerivationTree:
 
             return fn
 
-        raise AttributeError(f"<{self.symbol}> has no attribute {repr(name)}")
+        raise AttributeError(f"{self.symbol} has no attribute {repr(name)}")

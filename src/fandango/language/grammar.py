@@ -6,7 +6,7 @@ import typing
 from copy import deepcopy
 from typing import Dict, List, Optional, Tuple, Set, Any, Union, Iterator, overload
 
-from fandango.language.symbol import NonTerminal, Terminal, Symbol
+from fandango.language.symbol import NonTerminal, Terminal, Symbol, Implicit
 from fandango.language.tree import DerivationTree
 
 MAX_REPETITIONS = 5
@@ -376,7 +376,7 @@ class NonTerminalNode(Node):
 
         if self.symbol in grammar.generators:
             return [grammar.generate(self.symbol)]
-        
+
         if from_sub_tree is not None:
             from_sub_tree = from_sub_tree.children[0]
 
@@ -600,19 +600,21 @@ class ParseState:
         symbols: Tuple[Symbol, ...],
         dot: int = 0,
         children: Optional[List[DerivationTree]] = None,
+        is_incomplete: bool = False,
     ):
         self.nonterminal = nonterminal
         self.position = position
         self.symbols = symbols
         self._dot = dot
         self.children = children or []
+        self.is_incomplete = is_incomplete
 
     @property
     def dot(self):
         return self.symbols[self._dot] if self._dot < len(self.symbols) else None
 
     def finished(self):
-        return self._dot >= len(self.symbols)
+        return self._dot >= len(self.symbols) and not self.is_incomplete
 
     def next_symbol_is_nonterminal(self):
         return self._dot < len(self.symbols) and self.symbols[self._dot].is_non_terminal
@@ -692,15 +694,22 @@ class Column:
         for state in states:
             self.add(state)
 
+    def __repr__(self):
+        return f"Column({self.states})"
+
 
 class Grammar(NodeVisitor):
     class Parser(NodeVisitor):
-        def __init__(self, rules: Dict[NonTerminal, Node]):
+        def __init__(
+            self,
+            rules: Dict[NonTerminal, Node],
+        ):
             self.grammar_rules = rules
             self._rules = {}
             self._implicit_rules = {}
             self._process()
             self._cache: Dict[Tuple[str, NonTerminal], DerivationTree] = {}
+            self._incomplete = set()
 
         def _process(self):
             for nonterminal in self.grammar_rules:
@@ -800,7 +809,13 @@ class Grammar(NodeVisitor):
                 s.children.append(DerivationTree(state.dot))
                 table[k + len(state.dot)].add(s)
 
-        def complete(self, state: ParseState, table: List[Set[ParseState]], k: int):
+        def complete(
+            self,
+            state: ParseState,
+            table: List[Set[ParseState]],
+            k: int,
+            use_implicit: bool = False,
+        ):
             for s in list(table[state.position]):
                 if s.dot == state.nonterminal:
                     s = s.next()
@@ -810,7 +825,14 @@ class Grammar(NodeVisitor):
                             DerivationTree(state.nonterminal, state.children)
                         )
                     else:
-                        s.children.extend(state.children)
+                        if use_implicit and state.nonterminal in self._implicit_rules:
+                            s.children.append(
+                                DerivationTree(
+                                    Implicit(state.nonterminal.symbol), state.children
+                                )
+                            )
+                        else:
+                            s.children.extend(state.children)
 
         def parse_table(self, word, start: str | NonTerminal = "<start>"):
             if isinstance(start, str):
@@ -828,7 +850,12 @@ class Grammar(NodeVisitor):
                             self.scan(state, word, table, k)
             return table
 
-        def parse_forest(self, word: str, start: str | NonTerminal = "<start>", return_incomplete: bool = True):
+        def parse_forest(
+            self,
+            word: str,
+            start: str | NonTerminal = "<start>",
+            allow_incomplete: bool = False,
+        ):
             if isinstance(start, str):
                 start = NonTerminal(start)
             table = [Column() for _ in range(len(word) + 1)]
@@ -838,56 +865,32 @@ class Grammar(NodeVisitor):
                 s = 0
                 for state in table[k]:
                     s += 1
+                    if k == len(word):
+                        if allow_incomplete:
+                            if state.nonterminal == implicit_start:
+                                self._incomplete.update(state.children)
+                            state.is_incomplete = True
+                            self.complete(
+                                state,
+                                table,
+                                k,
+                            )
                     if state.finished():
                         if state.nonterminal == implicit_start and k == len(word):
                             for child in state.children:
                                 yield child
                         self.complete(state, table, k)
-                    else:
+                    elif not state.is_incomplete:
                         if state.next_symbol_is_nonterminal():
                             self.predict(state, table, k)
                         else:
                             self.scan(state, word, table, k)
-            if return_incomplete:
-                tmp_word = word
-                prev_stage = []
-                curr_stage = []
-                for col in reversed(table):
-                    for state in col.states:
-                        if state.finished():
-                            continue
-                        if state.dot == state.symbols[0] and len(prev_stage) == 0:
-                            continue
-                        state_tree = DerivationTree(state.nonterminal, state.children)
-                        if state.nonterminal not in self._rules:
-                            continue
-                        for prev_state in prev_stage:
-                            last_node = state_tree.flatten()[state_tree.size() - 1]
-                            if last_node.symbol == prev_state.symbol:
-                                curr_stage.append(state_tree.replace(last_node, prev_state))
-                        if len(prev_stage) == 0:
-                            curr_stage.append(state_tree)
-                    if len(curr_stage) != 0:
-                        prev_stage = curr_stage
-                        curr_stage = []
 
-
-                candidates = []
-                states = table[len(word)]
-                for state in states:
-                    if state.finished():
-                        continue
-                    if len(state.children) == 0:
-                        continue
-                    state_tree = DerivationTree(state.nonterminal, state.children)
-                    if str(state_tree) == word:
-                        candidates.append(state)
-
-                # lol
-
-                return table
-
-        def parse(self, word: str, start: str | NonTerminal = "<start>"):
+        def parse(
+            self,
+            word: str,
+            start: str | NonTerminal = "<start>",
+        ):
             if isinstance(start, str):
                 start = NonTerminal(start)
             if (word, start) in self._cache:
@@ -896,6 +899,20 @@ class Grammar(NodeVisitor):
                 self._cache[(word, start)] = tree
                 return tree
             return None
+
+        def parse_incomplete(
+            self,
+            word: str,
+            start: str | NonTerminal = "<start>",
+        ):
+            if isinstance(start, str):
+                start = NonTerminal(start)
+            self._incomplete = set()
+            for tree in self.parse_forest(word, start, allow_incomplete=True):
+                self._cache[(word, start)] = tree
+                yield tree
+            for tree in self._incomplete:
+                yield tree
 
     def __init__(
         self,
@@ -956,8 +973,19 @@ class Grammar(NodeVisitor):
         self._parser = Grammar.Parser(self.rules)
         self.prime()
 
-    def parse(self, word: str, start: str | NonTerminal = "<start>"):
+    def parse(
+        self,
+        word: str,
+        start: str | NonTerminal = "<start>",
+    ):
         return self._parser.parse(word, start)
+
+    def parse_incomplete(
+        self,
+        word: str,
+        start: str | NonTerminal = "<start>",
+    ):
+        return self._parser.parse_incomplete(word, start)
 
     def __contains__(self, item: str | NonTerminal):
         if isinstance(item, str):

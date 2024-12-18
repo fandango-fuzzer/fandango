@@ -5,7 +5,7 @@ from fandango.language.search import (
     AttributeSearch,
     ItemSearch,
     SelectiveSearch,
-    StarAttributeSearch,
+    DescendantAttributeSearch,
 )
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
@@ -124,8 +124,8 @@ class TestSearches(unittest.TestCase):
         self.assertEqual(1, len(trees))
         self.assertIn(self._C2, trees)
 
-    def test_star_attribute_search(self):
-        search = StarAttributeSearch(
+    def test_descendant_attribute_search(self):
+        search = DescendantAttributeSearch(
             RuleSearch(NonTerminal("<a>")), RuleSearch(NonTerminal("<b>"))
         )
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
@@ -133,8 +133,8 @@ class TestSearches(unittest.TestCase):
         self.assertIn(self._B1, trees)
         self.assertIn(self._B2, trees)
 
-    def test_star_attribute_search_complex(self):
-        search = StarAttributeSearch(
+    def test_descendant_attribute_search_complex(self):
+        search = DescendantAttributeSearch(
             AttributeSearch(
                 RuleSearch(NonTerminal("<a>")), RuleSearch(NonTerminal("<d>"))
             ),

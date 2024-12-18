@@ -1,5 +1,6 @@
-import abc
 import itertools
+from abc import ABC, abstractmethod
+import sys
 from copy import copy
 from typing import List, Dict, Any, Optional
 
@@ -14,7 +15,7 @@ from fandango.constraints.fitness import (
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
-from fandango.logger import LOGGER, print_exception
+from fandango.logger import print_exception
 
 
 class Value(GeneticBase):
@@ -69,7 +70,7 @@ class Value(GeneticBase):
         return f"fitness {representation}"
 
 
-class Constraint(GeneticBase, abc.ABC):
+class Constraint(GeneticBase, ABC):
     def __init__(
         self,
         searches: Optional[Dict[str, NonTerminalSearch]] = None,
@@ -79,7 +80,7 @@ class Constraint(GeneticBase, abc.ABC):
         super().__init__(searches, local_variables, global_variables)
         self.cache: Dict[int, ConstraintFitness] = dict()
 
-    @abc.abstractmethod
+    @abstractmethod
     def fitness(
         self,
         tree: DerivationTree,
@@ -93,6 +94,14 @@ class Constraint(GeneticBase, abc.ABC):
         Determines if the expression is a print statement.
         """
         return expression.startswith("print(")
+
+    @abstractmethod
+    def accept(self, visitor):
+        """Accepts a visitor to traverse the constraint structure."""
+        pass
+
+    def get_symbols(self):
+        return self.searches.values()
 
 
 class ExpressionConstraint(Constraint):
@@ -157,6 +166,10 @@ class ExpressionConstraint(Constraint):
             )
         return representation
 
+    def accept(self, visitor: "ConstraintVisitor"):
+        """Accepts a visitor to traverse the constraint structure."""
+        visitor.visit_expression_constraint(self)
+
 
 class ComparisonConstraint(Constraint):
     def __init__(self, operator: Comparison, left: str, right: str, *args, **kwargs):
@@ -164,6 +177,7 @@ class ComparisonConstraint(Constraint):
         self.operator = operator
         self.left = left
         self.right = right
+        self.types_checked = None
 
     def fitness(
         self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
@@ -186,7 +200,7 @@ class ComparisonConstraint(Constraint):
             except Exception as e:
                 e.add_note("Evaluation failed: " + self.left)
                 print_exception(e)
-                continue
+                sys.exit("Evaluation failed: " + self.left)
 
             try:
                 right = eval(self.right, self.global_variables, local_variables)
@@ -194,6 +208,17 @@ class ComparisonConstraint(Constraint):
                 e.add_note("Evaluation failed: " + self.right)
                 print_exception(e)
                 continue
+
+            try:
+                if self.types_checked is None:
+                    if not type(right) == type(left):
+                        raise TypeError(
+                            f"In constraint {self}, left and right side of comparison don't evaluate to the same type"
+                        )
+                    else:
+                        self.types_checked = True
+            except Exception as e:
+                self.types_checked = False
 
             suggestions = []
             is_solved = False
@@ -289,6 +314,10 @@ class ComparisonConstraint(Constraint):
             )
         return representation
 
+    def accept(self, visitor):
+        """Accepts a visitor to traverse the constraint structure."""
+        return visitor.visit_comparison_constraint(self)
+
 
 class ConjunctionConstraint(Constraint):
     def __init__(
@@ -333,6 +362,13 @@ class ConjunctionConstraint(Constraint):
 
     def __repr__(self):
         return "(" + " and ".join(repr(c) for c in self.constraints) + ")"
+
+    def accept(self, visitor: "ConstraintVisitor"):
+        """Accepts a visitor to traverse the constraint structure."""
+        visitor.visit_conjunction_constraint(self)
+        if visitor.do_continue(self):
+            for constraint in self.constraints:
+                constraint.accept(visitor)
 
 
 class DisjunctionConstraint(Constraint):
@@ -379,6 +415,13 @@ class DisjunctionConstraint(Constraint):
     def __repr__(self):
         return "(" + " or ".join(repr(c) for c in self.constraints) + ")"
 
+    def accept(self, visitor: "ConstraintVisitor"):
+        """Accepts a visitor to traverse the constraint structure."""
+        visitor.visit_disjunction_constraint(self)
+        if visitor.do_continue(self):
+            for constraint in self.constraints:
+                constraint.accept(visitor)
+
 
 class ImplicationConstraint(Constraint):
     def __init__(self, antecedent: Constraint, consequent: Constraint, *args, **kwargs):
@@ -409,6 +452,13 @@ class ImplicationConstraint(Constraint):
 
     def __repr__(self):
         return f"({repr(self.antecedent)} -> {repr(self.consequent)})"
+
+    def accept(self, visitor: "ConstraintVisitor"):
+        """Accepts a visitor to traverse the constraint structure."""
+        visitor.visit_implication_constraint(self)
+        if visitor.do_continue(self):
+            self.antecedent.accept(visitor)
+            self.consequent.accept(visitor)
 
 
 class ExistsConstraint(Constraint):
@@ -461,6 +511,12 @@ class ExistsConstraint(Constraint):
     def __repr__(self):
         return f"(exists {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
 
+    def accept(self, visitor: "ConstraintVisitor"):
+        """Accepts a visitor to traverse the constraint structure."""
+        visitor.visit_exists_constraint(self)
+        if visitor.do_continue(self):
+            self.statement.accept(visitor)
+
 
 class ForallConstraint(Constraint):
     def __init__(
@@ -511,3 +567,55 @@ class ForallConstraint(Constraint):
 
     def __repr__(self):
         return f"(forall {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
+
+    def accept(self, visitor: "ConstraintVisitor"):
+        """Accepts a visitor to traverse the constraint structure."""
+        visitor.visit_forall_constraint(self)
+        if visitor.do_continue(self):
+            self.statement.accept(visitor)
+
+
+class ConstraintVisitor:
+    """
+    A base class for visiting and processing different types of constraints.
+
+    This class uses the visitor pattern to traverse constraint structures. Each method
+    corresponds to a specific type of constraint, allowing implementations to define
+    custom behavior for processing or interacting with that type.
+    """
+
+    def __init__(self):
+        pass
+
+    def do_continue(self, constraint: "Constraint") -> bool:
+        """If this returns False, this formula should not call the visit methods for
+        its children."""
+        return True
+
+    def visit_expression_constraint(self, constraint: "ExpressionConstraint"):
+        """Visits an expression constraint."""
+        pass
+
+    def visit_comparison_constraint(self, constraint: "ComparisonConstraint"):
+        """Visits a comparison constraint."""
+        pass
+
+    def visit_forall_constraint(self, constraint: "ForallConstraint"):
+        """Visits a forall constraint."""
+        pass
+
+    def visit_exists_constraint(self, constraint: "ExistsConstraint"):
+        """Visits an exists constraint."""
+        pass
+
+    def visit_disjunction_constraint(self, constraint: "DisjunctionConstraint"):
+        """Visits a disjunction constraint."""
+        pass
+
+    def visit_conjunction_constraint(self, constraint: "ConjunctionConstraint"):
+        """Visits a conjunction constraint."""
+        pass
+
+    def visit_implication_constraint(self, constraint: "ImplicationConstraint"):
+        """Visits an implication constraint."""
+        pass

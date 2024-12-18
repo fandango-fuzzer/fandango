@@ -1,10 +1,10 @@
 # evolution/algorithm.py
 import copy
+import enum
 import logging
 import random
 import time
-from enum import Enum
-from typing import List, Tuple
+from typing import List, Set, Tuple
 
 import deprecation
 
@@ -15,6 +15,16 @@ from fandango.language.grammar import Grammar
 from fandango.language.io import FandangoLifecycle, FandangoIO
 from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER
+from fandango.logger import LOGGER, visualize_evaluation, clear_visualization
+
+
+class LoggerLevel(enum.Enum):
+    NOTSET = logging.NOTSET
+    DEBUG = logging.DEBUG
+    INFO = logging.INFO
+    WARNING = logging.WARNING
+    ERROR = logging.ERROR
+    CRITICAL = logging.CRITICAL
 
 
 class Fandango:
@@ -24,18 +34,18 @@ class Fandango:
         constraints: List[Constraint],
         population_size: int = 100,
         desired_solutions: int = 0,
-        initial_population: List[DerivationTree] = None,
-        partial_solution: List[DerivationTree] = None,
+        initial_population: List[DerivationTree | str] = None,
         max_generations: int = 500,
         elitism_rate: float = 0.1,
         crossover_rate: float = 0.8,
         tournament_size: float = 0.1,
         mutation_rate: float = 0.2,
         destruction_rate: float = 0.0,
-        verbose: bool = False,
+        logger_level: LoggerLevel = None,
         warnings_are_errors: bool = False,
         best_effort: bool = False,
-        start_symbol="<start>"
+        random_seed: int = None,
+        start_symbol="<start>",
     ):
         """
         Initialize the FANDANGO genetic algorithm. The algorithm will evolve a population of individuals
@@ -52,17 +62,21 @@ class Fandango:
         :param mutation_rate: The rate of individuals that will undergo mutation.
         :param tournament_size: The size of the tournament selection.
         :param destruction_rate: The rate of individuals that will be destroyed.
-        :param verbose: Whether to print debug information.
+        :param logger_level: If set, the level of logging to use. One of DEBUG, INFO, WARNING, ERROR, CRITICAL.
         :param start_symbol: The start symbol to use with the grammar.
         :param warnings_are_errors: If set, turns warnings into errors
         :param best_effort: If set, returns also solutions not satisfying all constraints
+        :param random_seed: The random seed to use for reproducibility.
         """
-
-        if verbose:
-            LOGGER.setLevel(logging.DEBUG)
-            LOGGER.warning(
-                f"Fandango.__init__(): The `verbose` parameter will be deprecated; use LOGGER.setLevel() instead"
+        if tournament_size > 1:
+            raise ValueError(
+                f"Parameter tournament_size must be in range ]0, 1], but is {tournament_size}."
             )
+        if random_seed is not None:
+            random.seed(random_seed)
+
+        if logger_level is not None:
+            LOGGER.setLevel(logger_level.value)
 
         LOGGER.info(f"---------- Initializing FANDANGO algorithm ---------- ")
         self.grammar = grammar
@@ -78,7 +92,6 @@ class Fandango:
 
         self.fitness_cache = {}
 
-        self.verbose = verbose
         self.fixes_made = 0
         self.checks_made = 0
         self.crossovers_made = 0
@@ -93,13 +106,25 @@ class Fandango:
         self.solution = list()
         self.desired_solutions = desired_solutions
 
-        self.partial_solution = list()
-        if partial_solution is not None:
-            self.partial_solution.extend(partial_solution)
-
         if initial_population is not None:
             LOGGER.info(f"Saving the provided initial population...")
-            self.population = list(initial_population)
+            self.population = []
+            for individual in initial_population:
+                if isinstance(individual, str):
+                    tree = self.grammar.parse(individual)
+                    if not tree:
+                        raise ValueError(
+                            f"Failed to parse initial individual: {individual}"
+                        )
+                    self.population.append(tree)
+                elif isinstance(individual, DerivationTree):
+                    self.population.append(individual)
+                else:
+                    raise TypeError(
+                        f"Inital individuals must be DerivationTree or String"
+                    )
+            for i in range(self.population_size - len(self.population)):
+                self.population.append(self.mutate(self.population[i]))
         else:
             LOGGER.info(
                 f"Generating initial population (size: {self.population_size})..."
@@ -117,75 +142,6 @@ class Fandango:
             sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
 
-
-    def evolve_io(self):
-        original_grammar = self.grammar
-
-        pass
-
-    def trigger_event(
-        self, event: FandangoLifecycle, solution_integration_max_rounds: int = 5000
-    ):
-        pass
-        # global_env, local_env = self.grammar.get_python_env()
-        # io_instance: FandangoIO = None
-        # if "FandangoIO" in global_env.keys():
-        #     io_instance = global_env["FandangoIO"].instance()
-        #
-        # io_instance.set_solutions(self.solution)
-        # exec(
-        #     f"FandangoIO.instance().dispatch_lifecycle({str(event)})",
-        #     global_env,
-        #     local_env,
-        # )
-        # partial_assigned = io_instance.get_assigned_partial_solutions()
-        # partial_unassigned = io_instance.get_partial_solutions()
-        #
-        # p_solution_trees = []
-        # for [key, value] in partial_assigned.items():
-        #     tree = self.grammar.parse(value, key)
-        #     if tree is None:
-        #         raise RuntimeError(
-        #             f"Couldn't parse partial solution with provided grammar. Key: {key}, Value: {value}"
-        #         )
-        #     p_solution_trees.append(tree)
-        #
-        # for value in partial_unassigned:
-        #     p_solution_trees = []
-        #     for non_terminal in self.grammar.rules.keys():
-        #         tree = self.grammar.parse(value, non_terminal.symbol)
-        #         if tree is not None:
-        #             p_solution_trees.append(tree)
-        #             break
-        #     if len(p_solution_trees) == 0:
-        #         raise RuntimeError(
-        #             f"Couldn't parse unassigned partial solution with provided grammar. Value: {value}"
-        #         )
-        #
-        # if len(p_solution_trees) == 0:
-        #     return
-        #
-        # self.solution.clear()
-        # new_population = list()
-        #
-        # for entry in self.population:
-        #     for _ in range(solution_integration_max_rounds):
-        #         all_replaced = True
-        #         for p_solution in p_solution_trees:
-        #             key = p_solution.symbol
-        #             matching_subtrees = entry.find_all_trees(NonTerminal(key))
-        #             if len(matching_subtrees) > 0:
-        #                 for match in matching_subtrees:
-        #                     entry = entry.replace(match, p_solution)
-        #             else:
-        #                 entry = self.grammar.fuzz(self.start_symbol)
-        #                 all_replaced = False
-        #                 break
-        #         if all_replaced:
-        #             new_population.append(entry)
-        #             break
-        # self.population = new_population
-
     def evolve(self) -> List[DerivationTree]:
         """
         Run the genetic algorithm to evolve the population over multiple generations.
@@ -195,8 +151,6 @@ class Fandango:
         LOGGER.info(f"---------- Starting evolution ----------")
 
         start_time = time.time()
-
-        self.trigger_event(FandangoLifecycle.PRE_EVOLVE)
 
         for generation in range(1, self.max_generations + 1):
             if 0 < self.desired_solutions <= len(self.solution):
@@ -263,8 +217,11 @@ class Fandango:
             self.fitness = (
                 sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
-        self.trigger_event(FandangoLifecycle.POST_EVOLVE)
 
+            # Report results
+            visualize_evaluation(generation, self.max_generations, self.evaluation)
+
+        clear_visualization()
         self.time_taken = time.time() - start_time
 
         LOGGER.info(f"---------- Evolution finished ----------")

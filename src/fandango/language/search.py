@@ -186,7 +186,7 @@ class AttributeSearch(NonTerminalSearch):
         return self.attribute.get_access_points()
 
 
-class StarAttributeSearch(NonTerminalSearch):
+class DescendantAttributeSearch(NonTerminalSearch):
     def __init__(self, base: NonTerminalSearch, attribute: NonTerminalSearch):
         self.base = base
         self.attribute = attribute
@@ -216,7 +216,7 @@ class StarAttributeSearch(NonTerminalSearch):
         return targets
 
     def __repr__(self):
-        return f"{repr(self.base)}*{repr(self.attribute)}"
+        return f"{repr(self.base)}..{repr(self.attribute)}"
 
     def get_access_points(self):
         return self.attribute.get_access_points()
