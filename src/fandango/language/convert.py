@@ -109,7 +109,7 @@ class GrammarProcessor(FandangoParserVisitor):
         nodes = [self.visit(child) for child in ctx.concatenation()]
         if len(nodes) == 1:
             return nodes[0]
-        non_terminal = NonTerminal(f"<{NodeType.ALTERNATIVE}:{self.alternativeCount}>")
+        non_terminal = NonTerminal(f"<_{NodeType.ALTERNATIVE}:{self.alternativeCount}>")
         self.alternativeCount += 1
         self.additionalRules[non_terminal] = Alternative(nodes)
         return NonTerminalNode(non_terminal)
@@ -118,28 +118,28 @@ class GrammarProcessor(FandangoParserVisitor):
         nodes = [self.visit(child) for child in ctx.operator()]
         if len(nodes) == 1:
             return nodes[0]
-        non_terminal = NonTerminal(f"<{NodeType.CONCATENATION}:{self.concatenationCount}>")
+        non_terminal = NonTerminal(f"<_{NodeType.CONCATENATION}:{self.concatenationCount}>")
         self.concatenationCount += 1
         self.additionalRules[non_terminal] = Concatenation(nodes)
         return NonTerminalNode(non_terminal)
 
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
         node = self.visit(ctx.symbol())
-        non_terminal = NonTerminal(f"<{NodeType.STAR}:{self.starCount}>")
+        non_terminal = NonTerminal(f"<_{NodeType.STAR}:{self.starCount}>")
         self.starCount += 1
         self.additionalRules[non_terminal] = Star(node)
         return NonTerminalNode(non_terminal)
 
     def visitPlus(self, ctx: FandangoParser.PlusContext):
         node = self.visit(ctx.symbol())
-        non_terminal = NonTerminal(f"<{NodeType.PLUS}:{self.plusCount}>")
+        non_terminal = NonTerminal(f"<_{NodeType.PLUS}:{self.plusCount}>")
         self.plusCount += 1
         self.additionalRules[non_terminal] = Plus(node)
         return NonTerminalNode(non_terminal)
 
     def visitOption(self, ctx: FandangoParser.OptionContext):
         node = self.visit(ctx.symbol())
-        non_terminal = NonTerminal(f"<{NodeType.OPTION}:{self.optionCount}>")
+        non_terminal = NonTerminal(f"<_{NodeType.OPTION}:{self.optionCount}>")
         self.optionCount += 1
         self.additionalRules[non_terminal] = Option(node)
         return NonTerminalNode(non_terminal)
@@ -171,7 +171,7 @@ class GrammarProcessor(FandangoParserVisitor):
         reps = int(ctx.NUMBER(0).getText())
 
         node = self.visit(ctx.symbol())
-        non_terminal = NonTerminal(f"<{NodeType.REPETITION}:{self.repetitionCount}>")
+        non_terminal = NonTerminal(f"<_{NodeType.REPETITION}:{self.repetitionCount}>")
         self.repetitionCount += 1
         self.additionalRules[non_terminal] = Repetition(node, reps, reps)
         return NonTerminalNode(non_terminal)
@@ -409,7 +409,7 @@ class SearchProcessor(FandangoParserVisitor):
 
     def visitRs_pair(self, ctx: FandangoParser.Rs_pairContext):
         symbol = (
-            NonTerminal(ctx.NONTERMINAL().getText()),
+            NonTerminal(ctx.nonterminal().getText()),
             False if ctx.STAR() else True,
         )
         if ctx.rs_slice():
@@ -430,8 +430,8 @@ class SearchProcessor(FandangoParserVisitor):
         return [self.visitRs_slice(child) for child in ctx.rs_slice()]
 
     def visitBase_selection(self, ctx: FandangoParser.Base_selectionContext):
-        if ctx.NONTERMINAL():
-            return RuleSearch(NonTerminal(ctx.NONTERMINAL().getText()))
+        if ctx.nonterminal():
+            return RuleSearch(NonTerminal(ctx.nonterminal().getText()))
         elif ctx.selector():
             return self.get_attribute_searches(ctx.selector())
         else:

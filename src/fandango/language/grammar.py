@@ -5,7 +5,7 @@ import typing
 from copy import deepcopy
 from typing import Dict, List, Optional, Tuple, Set, Any, Union, Iterator, overload
 
-from fandango.language.symbol import NonTerminal, Terminal, Symbol, Implicit
+from fandango.language.symbol import NonTerminal, Terminal, Symbol
 from fandango.language.tree import DerivationTree
 
 MAX_REPETITIONS = 5
@@ -809,8 +809,7 @@ class Grammar(NodeVisitor):
             self,
             state: ParseState,
             table: List[Set[ParseState]],
-            k: int,
-            use_implicit: bool = False,
+            k: int
         ):
             for s in list(table[state.position]):
                 if s.dot == state.nonterminal:
@@ -821,14 +820,7 @@ class Grammar(NodeVisitor):
                             DerivationTree(state.nonterminal, state.children)
                         )
                     else:
-                        if use_implicit and state.nonterminal in self._implicit_rules:
-                            s.children.append(
-                                DerivationTree(
-                                    Implicit(state.nonterminal.symbol), state.children
-                                )
-                            )
-                        else:
-                            s.children.extend(state.children)
+                        s.children.extend(state.children)
 
         def parse_table(self, word, start: str | NonTerminal = "<start>"):
             if isinstance(start, str):
