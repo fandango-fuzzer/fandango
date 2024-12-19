@@ -88,7 +88,7 @@ class FuzzingContext:
     def test_abort(self, mode):
         if self.abort:
             return
-        if mode == FuzzingMode.IO and self.prev_completed_role():
+        if mode == FuzzingMode.IO and self.prev_completed_role() and not self.subtree_read_only:
             self.abort = True
 
 
@@ -210,7 +210,8 @@ class Concatenation(Node):
                                  from_sub_tree=node_sub_tree, context=context)
             trees.extend(tree)
             max_nodes -= sum(t.size() for t in tree)
-            context.test_abort(mode)
+            if node_sub_tree is None:
+                context.test_abort(mode)
             if context.abort:
                 return trees
         return trees
@@ -260,7 +261,7 @@ class Repetition(Node):
 
         repetitions = random.randint(self.min, self.max)
         if from_sub_tree is not None:
-            sub_tree_len = len(from_sub_tree.children)
+            sub_tree_len = len(from_sub_tree)
             if context.subtree_read_only:
                 if not (self.min <= sub_tree_len <= self.max):
                     raise GrammarKeyError("Read-only repetition's children out of range!")
@@ -287,7 +288,8 @@ class Repetition(Node):
                                       context=context)
             trees.extend(tree)
             max_nodes -= sum(t.size() for t in tree)
-            context.test_abort(mode)
+            if node_sub_tree is None:
+                context.test_abort(mode)
             if context.abort:
                 return trees
         return trees
