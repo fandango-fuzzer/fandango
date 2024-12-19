@@ -22,7 +22,7 @@ from fandango.language.convert import (
     ConstraintProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import Grammar, NodeType
+from fandango.language.grammar import Grammar, NodeType, Alternative
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.symbol import NonTerminal
@@ -96,10 +96,12 @@ def check_constraints_existence(grammar, constraints):
         constraint_symbols = constraint.get_symbols()
 
         for value in constraint_symbols:
-            # LOGGER.debug(f"Constraint {constraint}: Checking {value}")
+            LOGGER.debug(f"Constraint {constraint}: Checking {value}")
 
-            constraint_matches = re.findall(r"<([^>]*)>", str(value))  # was <(.*?)>
-
+            constraint_matches = re.findall(r"<([^>]*)>", str(value))  # was <(.*?)> then <([^>]*)>
+            constraint_matches_children = re.findall(r"<([^>]*)>(\[.\])*", str(value))
+            LOGGER.debug(f"Found following constraint matches: {str(constraint_matches_children)}")
+            
             missing = [
                 match for match in constraint_matches if match not in grammar_matches
             ]
@@ -116,21 +118,55 @@ def check_constraints_existence(grammar, constraints):
                 error.add_note(f"Possible symbols: {defined_symbols_str}")
                 raise error
 
-            for i in range(len(constraint_matches) - 1):
-                parent = constraint_matches[i]
-                symbol = constraint_matches[i + 1]
-                indirect = f"<{parent}>..<{symbol}>" in str(value)
-                if not check_constraints_existence_children(
-                    grammar, parent, symbol, indirect, indirect_child
-                ):
-                    msg = f"Constraint {constraint}: <{parent}> has no child <{symbol}>"
-                    raise ValueError(msg)
+            parent = constraint_matches_children[0]
+            for i in range(len(constraint_matches_children) - 1):
+                parent_sym = parent[0]
+                if parent[1] == "":
+                    symbol = constraint_matches[i + 1][0]
+                    indirect = f"<{parent_sym}>..<{symbol}>" in str(value)
+                    if not check_constraints_existence_children(
+                                        grammar, parent_sym, symbol, indirect, indirect_child
+                                    ):
+                                        msg = f"Constraint {constraint}: <{parent_sym}> has no child <{symbol}>"
+                                        raise ValueError(msg)
+                else:
+                    indirect = f"<{parent_sym}>{parent[1]}..<{constraint_matches[i+1][0]}>" in str(value)
+                    if not check_constraint_existence_access(
+                                        grammar, parent_sym, parent[1][1:-1], indirect, constraint_matches[i+1][0]
+                                    ):
+                                        msg = f"Constraint {constraint}: <{parent_sym}> has no child <{symbol}>"
+                                        raise ValueError(msg) 
+                        
+                  
+                
+                
+def check_constraint_existence_access(grammar, parent, id, recurse, next):
+    rules = grammar.rules[NonTerminal(f"<{parent}>")]
+    if isinstance(rules, Alternative):
+        child = None
+        for rule in rules:
+            nonterminals = re.findall(r"<([^>]*)>", str(rule))
+            if len(nonterminals) < id:
+                continue
+            child = nonterminals[id]
+            if check_constraints_existence_children(grammar, child, next, recurse):
+                return True
+        if child is None:
+            raise IndexError(f"Nonterminal <{parent}> has no {id}-th children")
+    else:
+        nonterminals = re.findall(r"<([^>]*)>", str(rule))
+        if len(nonterminals) < id:
+            raise IndexError(f"Nonterminal <{parent}> has no {id}-th children")
+        child = nonterminals[id]
+        return check_constraints_existence_children(grammar, child, next, recurse)
+    return False
+            
 
 
 def check_constraints_existence_children(
     grammar, parent, symbol, recurse, indirect_child
 ):
-    # LOGGER.debug(f"Checking {parent}, {symbol}")
+    LOGGER.debug(f"Checking {parent}, {symbol}")
 
     if indirect_child[f"<{parent}>"][f"<{symbol}>"] is not None:
         return indirect_child[f"<{parent}>"][f"<{symbol}>"]
@@ -199,7 +235,7 @@ class FandangoSpec:
 
 
 def parse(fan_contents: str, /, lazy: bool = False,
-          check_constraints: bool = True, given_grammar=None, use_cache: bool = True) -> Tuple[Grammar, List[Constraint]]:
+          check_constraints: bool = True, given_grammar=None, use_cache: bool = False) -> Tuple[Grammar, List[Constraint]]:
     """
     Extract grammar and constraints from the given content
     :param fan: Fandango specification

@@ -69,7 +69,38 @@ class test_cli(unittest.TestCase):
             os.remove(filename)
         os.rmdir("tests/resources/test")
 
-    
+    def test_command_line_constraints(self):
+        command_single = ["fandango", "fuzz", "-f", "tests/resources/digit.fan", "-n", "10", "--random-seed", "426912", "-c", "25 <= int(<start>) and int(<start>) <= 45"]
+        expected = """30
+41
+29
+44
+44
+36
+28
+30
+41
+29
+"""
+        out, err, code = self.run_command(command_single)
+        self.assertEqual(0, code)
+        self.assertEqual(expected, out)
+        self.assertEqual("", err)
+        command_multiple = ["fandango", "fuzz", "-f", "tests/resources/digit.fan", "-n", "10", "--random-seed", "426912", "-c", "25 <= int(<start>)", "-c", "int(<start>) <= 45"]
+        out, err, code = self.run_command(command_multiple)
+        self.assertEqual(0, code)
+        self.assertEqual(expected, out)
+        self.assertEqual("", err)
+
+    def test_unsat(self):
+        command = ["fandango", "fuzz", "-f", "tests/resources/digit.fan", "-n", "10", "--random-seed", "426912", "-c", "False"]
+        expected ="""fandango:ERROR: Population did not converge to a perfect population
+fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
+"""
+        out, err, code = self.run_command(command)
+        self.assertEqual(0, code)
+        self.assertEqual("", out)
+        self.assertEqual(expected, err)
 
 
 
