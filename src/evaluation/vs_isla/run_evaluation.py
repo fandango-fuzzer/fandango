@@ -40,4 +40,4 @@ def run_evaluation(seconds: int = 3600, random_seed: int = 1):
 
 
 if __name__ == "__main__":
-    run_evaluation()
+    run_evaluation(seconds=1)
