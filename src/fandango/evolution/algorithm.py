@@ -10,7 +10,7 @@ import deprecation
 
 from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
-from fandango.language.grammar import DerivationTree, FuzzingMode
+from fandango.language.grammar import DerivationTree, FuzzingMode, FuzzingContext
 from fandango.language.grammar import Grammar
 from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER
@@ -262,8 +262,14 @@ class Fandango:
         :return: A set of individuals.
         """
 
-        it1 = self.grammar.fuzz(self.start_symbol, mode=mode)
-        it2 = self.grammar.fuzz(self.start_symbol, mode=mode, from_sub_tree=it1)
+        it1ctx = FuzzingContext()
+        it1 = self.grammar.fuzz(self.start_symbol, mode=FuzzingMode.IO, context=it1ctx)
+        it2ctx = FuzzingContext()
+        it2 = self.grammar.fuzz(self.start_symbol, mode=FuzzingMode.IO, continue_tree=it1, context=it2ctx)
+        it3ctx = FuzzingContext()
+        it3 = self.grammar.fuzz(self.start_symbol, mode=FuzzingMode.IO, continue_tree=it2, context=it3ctx)
+        it4ctx = FuzzingContext()
+        it4 = self.grammar.fuzz(self.start_symbol, mode=FuzzingMode.IO, continue_tree=it3, context=it4ctx)
 
         population = [
             self.grammar.fuzz(self.start_symbol, mode=mode) for _ in range(self.population_size)
