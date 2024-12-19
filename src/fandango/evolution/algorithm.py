@@ -44,6 +44,7 @@ class Fandango:
         warnings_are_errors: bool = False,
         best_effort: bool = False,
         random_seed: int = None,
+        mode: FuzzingMode = FuzzingMode.COMPLETE,
         start_symbol="<start>",
     ):
         """
@@ -130,7 +131,7 @@ class Fandango:
             )
 
             st_time = time.time()
-            self.population = self.generate_random_initial_population()
+            self.population = self.generate_random_initial_population(mode)
             LOGGER.info(
                 f"Initial population generated in {time.time() - st_time:.2f} seconds"
             )
@@ -254,15 +255,18 @@ class Fandango:
 
         return self.solution
 
-    def generate_random_initial_population(self) -> List[DerivationTree]:
+    def generate_random_initial_population(self, mode: FuzzingMode = FuzzingMode.COMPLETE) -> List[DerivationTree]:
         """
         Generate the initial population of individuals.
 
         :return: A set of individuals.
         """
 
+        it1 = self.grammar.fuzz(self.start_symbol, mode=mode)
+        it2 = self.grammar.fuzz(self.start_symbol, mode=mode, from_sub_tree=it1)
+
         population = [
-            self.grammar.fuzz(self.start_symbol, mode=FuzzingMode.IO) for _ in range(self.population_size)
+            self.grammar.fuzz(self.start_symbol, mode=mode) for _ in range(self.population_size)
         ]
 
         # Fix individuals
