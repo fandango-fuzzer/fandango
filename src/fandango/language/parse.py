@@ -140,20 +140,18 @@ def check_constraints_existence_children(
     grammar_symbols = grammar.rules[NonTerminal(f"<{parent}>")]
     grammar_matches = re.findall(r'(?<!")<([^>]*)>(?!.*")', str(grammar_symbols))
 
-    if symbol not in grammar_matches:
-        if recurse:
-            is_child = False
-            for match in grammar_matches:
-                is_child = is_child or check_constraints_existence_children(
-                    grammar, match, symbol, recurse, indirect_child
-                )
-            indirect_child[f"<{parent}>"][f"<{symbol}>"] = is_child
-            return is_child
-        else:
-            return False
+    if symbol in grammar_matches:
+        indirect_child[f"<{parent}>"][f"<{symbol}>"] = True
+        return True
 
-    indirect_child[f"<{parent}>"][f"<{symbol}>"] = True
-    return True
+    is_child = False
+    for match in grammar_matches:
+        if recurse or match.startswith("_"):
+            is_child = is_child or check_constraints_existence_children(
+                grammar, match, symbol, recurse, indirect_child
+            )
+    indirect_child[f"<{parent}>"][f"<{symbol}>"] = is_child
+    return is_child
 
 
 class FandangoSpec:

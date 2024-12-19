@@ -57,7 +57,14 @@ class DerivationTree:
         return trees
 
     def find_direct_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
-        return [child for child in self._children if child.symbol == symbol]
+        result = []
+        for child in self._children:
+            if child.symbol == symbol:
+                result.append(child)
+            if isinstance(child.symbol, NonTerminal):
+                if child.symbol.is_implicit:
+                    result.extend(child.find_direct_trees(symbol))
+        return result
 
     def __getitem__(
         self, item, as_list=False
