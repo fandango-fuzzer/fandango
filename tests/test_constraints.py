@@ -405,6 +405,22 @@ class ConstraintTest(unittest.TestCase):
         example = grammar.parse("11")
         self.assertTrue(constraint.check(example))
 
+    def test_accessing_children(self):
+        grammar = """
+<start> ::= <number>;
+<number> ::= <digit> | <digit><number>;
+<digit> ::= "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "0";
+""" 
+        constraint = "int(<start>[0].<digit>) == 0"
+        grammar, constraint = parse(grammar + constraint)
+        constraint = constraint[0]
+
+        counter_example = grammar.parse("11")
+        self.assertFalse(constraint.check(counter_example))
+
+        example = grammar.parse("01")
+        self.assertTrue(constraint.check(example))
+
     def test_complex_constraint(self):
         grammar = """
 <start> ::= <number>;
