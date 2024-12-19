@@ -12,7 +12,6 @@ from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
 from fandango.language.grammar import DerivationTree, FuzzingMode
 from fandango.language.grammar import Grammar
-from fandango.language.io import FandangoLifecycle, FandangoIO
 from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER
 from fandango.logger import LOGGER, visualize_evaluation, clear_visualization
