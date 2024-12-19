@@ -44,8 +44,8 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/joszamama/fandango"
-"Bug Tracker" = "https://github.com/joszamama/fandango/issues"
+"Homepage" = "https://github.com/fandango-fuzzer/fandango"
+"Bug Tracker" = "https://github.com/fandango-fuzzer/fandango/issues"
 
 [project.scripts]
 fandango = "fandango.cli:main"
