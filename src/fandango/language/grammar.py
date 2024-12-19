@@ -35,7 +35,7 @@ class FuzzingContext:
         self._depth = 0
         self._roleDepth = None
         self._currentRole = None
-        self._prev_role_completed = False
+        self._prev_role_completed = None
         self.abort = False
         self.subtree_read_only = False
 
@@ -43,32 +43,31 @@ class FuzzingContext:
         self._process_role_enter(node.role)
         self._depth += 1
 
-    def on_leave_non_terminal(self):
+    def on_leave_non_terminal(self, result: DerivationTree):
         self._depth -= 1
-        self._process_role_leave()
+        self._process_role_leave(result)
 
     def in_role(self):
         return self._currentRole is not None
 
-    def prev_completed_role(self):
+    def prev_completed_role(self) -> DerivationTree|None:
         """
         :return True if a NonTerminal node with an assigned role has just completed
         fuzzing on the same level in the grammar tree
         """
         return self._prev_role_completed
 
-    def _process_role_leave(self):
-        self._prev_role_completed = False
+    def _process_role_leave(self, result: DerivationTree):
         if self._currentRole is None:
             return
         if self._depth <= self._roleDepth:
             self._currentRole = None
             self._roleDepth = None
-            self._prev_role_completed = True
+            self._prev_role_completed = result
             return
 
     def _process_role_enter(self, role: str):
-        self._prev_role_completed = False
+        self._prev_role_completed = None
         if self._currentRole is None:
             # If begin of a role subtree
             if role is not None:
@@ -88,7 +87,7 @@ class FuzzingContext:
     def test_abort(self, mode):
         if self.abort:
             return
-        if mode == FuzzingMode.IO and self.prev_completed_role() and not self.subtree_read_only:
+        if mode == FuzzingMode.IO and self.prev_completed_role() is not None and not self.subtree_read_only:
             self.abort = True
 
 
@@ -379,8 +378,9 @@ class NonTerminalNode(Node):
         children = grammar[self.symbol].fuzz(grammar, max_nodes - 1, mode,
                                              from_sub_tree, context)
         context.subtree_read_only = old_read_only
-        context.on_leave_non_terminal()
-        return [DerivationTree(self.symbol, children, read_only=(from_sub_tree is not None))]
+        tree = DerivationTree(self.symbol, children, read_only=(from_sub_tree is not None))
+        context.on_leave_non_terminal(tree)
+        return [tree]
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitNonTerminalNode(self)
