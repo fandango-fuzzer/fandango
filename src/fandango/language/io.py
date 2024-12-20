@@ -12,7 +12,7 @@ class IoParty(object):
         pass
 
     @final
-    def receive(self, message: str) -> None:
+    def set_response(self, message: str) -> None:
         FandangoIO.instance().set_remote_response(self.class_name, message)
 
 class FandangoIO:
