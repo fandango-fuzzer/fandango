@@ -119,9 +119,10 @@ def check_constraints_existence(grammar, constraints):
             for i in range(len(constraint_matches) - 1):
                 parent = constraint_matches[i]
                 symbol = constraint_matches[i + 1]
-                indirect = f"<{parent}>*<{symbol}>" in str(value)
+                recurse = (f"<{parent}>[" in str(value) or
+                           f"..<{symbol}>" in str(value))
                 if not check_constraints_existence_children(
-                    grammar, parent, symbol, indirect, indirect_child
+                    grammar, parent, symbol, recurse, indirect_child
                 ):
                     msg = f"Constraint {constraint}: <{parent}> has no child <{symbol}>"
                     raise ValueError(msg)
@@ -130,13 +131,21 @@ def check_constraints_existence(grammar, constraints):
 def check_constraints_existence_children(
     grammar, parent, symbol, recurse, indirect_child
 ):
-    # LOGGER.debug(f"Checking {parent}, {symbol}")
+    # LOGGER.debug(f"Checking if <{symbol}> is a child of <{parent}>")
 
     if indirect_child[f"<{parent}>"][f"<{symbol}>"] is not None:
         return indirect_child[f"<{parent}>"][f"<{symbol}>"]
 
     grammar_symbols = grammar.rules[NonTerminal(f"<{parent}>")]
-    grammar_matches = re.findall(r'(?<!")<([^>]*)>(?!.*")', str(grammar_symbols))
+
+    # Original code; fails on <a> "b" <c> -- AZ
+    # grammar_matches = re.findall(r'(?<!")<([^>]*)>(?!.*")',
+    #                              str(grammar_symbols))
+    #
+    # Simpler bersion; may overfit (e.g. matches <...> in strings),
+    # but that should not hurt us -- AZ
+    grammar_matches = re.findall(r'<([^>]*)>',
+                                 str(grammar_symbols))
 
     if symbol not in grammar_matches:
         if recurse:
