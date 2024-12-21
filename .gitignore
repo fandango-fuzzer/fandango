@@ -170,3 +170,5 @@ language/gen/*
 gen
 gen/*
 *.o
+utils/lextab.py
+utils/yacctab.py
