@@ -119,6 +119,9 @@ def check_constraints_existence(grammar, constraints):
             for i in range(len(constraint_matches) - 1):
                 parent = constraint_matches[i]
                 symbol = constraint_matches[i + 1]
+                # This handles <parent>[...].<symbol> as <parent>..<symbol>.
+                # We could also interpret the actual [...] contents here,
+                # but slices and chains could make this hard -- AZ
                 recurse = (f"<{parent}>[" in str(value) or
                            f"..<{symbol}>" in str(value))
                 if not check_constraints_existence_children(
