@@ -235,6 +235,12 @@ def get_parser(in_command_line=True):
         default=None,
         help="create individual output files in DIRECTORY",
     )
+    fuzz_parser.add_argument(
+        "--format",
+        choices=["string", "tree"],
+        default="string",
+        help="produce output(s) as string (default) or as derivation tree",
+    )
 
     command_group = fuzz_parser.add_argument_group("command invocation settings")
 
@@ -560,7 +566,6 @@ def cd_command(args):
     if sys.stdin.isatty():
         print(os.getcwd())
 
-
 def fuzz_command(args):
     """Invoke the fuzzer"""
 
@@ -600,6 +605,13 @@ def fuzz_command(args):
 
     output_on_stdout = True
 
+    def output(tree) -> str:
+        if args.format == "string":
+            return str(tree)
+        elif args.format == "tree":
+            return tree.dump()
+        raise NotImplementedError("Unsupported output format")
+
     if args.directory:
         LOGGER.debug(f"Storing population in {args.directory} directory")
         try:
@@ -612,7 +624,7 @@ def fuzz_command(args):
             basename = f"fandango-{counter:04d}{args.filename_extension}"
             filename = os.path.join(args.directory, basename)
             with open(filename, "w") as fd:
-                fd.write(str(individual))
+                fd.write(output(individual))
             counter += 1
 
         output_on_stdout = False
@@ -620,7 +632,7 @@ def fuzz_command(args):
     if args.output:
         LOGGER.debug(f"Storing population in file")
         for individual in population:
-            args.output.write(str(individual))
+            args.output.write(output(individual))
             args.output.write(args.separator)
 
         args.output.close()
@@ -636,7 +648,7 @@ def fuzz_command(args):
                 with tempfile.NamedTemporaryFile(
                     mode="w", prefix=prefix, suffix=suffix
                 ) as fd:
-                    fd.write(str(individual))
+                    fd.write(output(individual))
                     fd.flush()
                     cmd = base_cmd + [fd.name]
                     LOGGER.debug(f"Running {cmd}")
@@ -644,7 +656,7 @@ def fuzz_command(args):
             elif args.input_method == "stdin":
                 cmd = base_cmd
                 LOGGER.debug(f"Running {cmd} with individual as stdin")
-                subprocess.run(cmd, input=str(individual), text=True)
+                subprocess.run(cmd, input=output(individual), text=True)
             else:
                 raise ValueError("Unsupported input method")
 
@@ -654,7 +666,7 @@ def fuzz_command(args):
         # Default
         LOGGER.debug(f"Printing population on stdout")
         for individual in population:
-            print(individual, end=args.separator)
+            print(output(individual), end=args.separator)
 
 
 def nop_command(args):

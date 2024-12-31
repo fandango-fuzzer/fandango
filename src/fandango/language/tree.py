@@ -267,3 +267,19 @@ class DerivationTree:
             return fn
 
         raise AttributeError(f"{self.symbol} has no attribute {repr(name)}")
+
+    def dump(self, indent=0) -> str:
+        """
+        Pretty-print the derivation tree (for visualization).
+        """
+        s = "  " * indent + "Tree(" + repr(str(self.symbol))
+        has_children = False
+        for child in self._children:
+            s += ",\n"
+            s += child.dump(indent + 1)
+            has_children = True
+        if has_children:
+            s += "\n" + "  " * indent + ")"
+        else:
+            s += ")"
+        return s
