@@ -74,10 +74,12 @@ class Terminal(Symbol):
     def from_number(number: str) -> "Terminal":
         return Terminal(Terminal.clean(number))
 
-    def check(self, word: str) -> bool:
+    def check(self, word: str | int) -> bool:
+        if isinstance(self.symbol, int) or isinstance(word, int):
+            return self.check_all(word)
         return word.startswith(self.symbol)
 
-    def check_all(self, word: str) -> bool:
+    def check_all(self, word: str | int) -> bool:
         return word == self.symbol
 
     def __repr__(self):
