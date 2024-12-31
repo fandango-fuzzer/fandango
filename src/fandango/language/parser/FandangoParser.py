@@ -8249,40 +8249,40 @@ def serializedATN():
         0,
         0,
         561,
+        568,
+        5,
+        4,
+        0,
+        0,
         562,
+        563,
         5,
         67,
         0,
         0,
-        562,
         563,
+        564,
         3,
         8,
         4,
         0,
-        563,
         564,
+        565,
         5,
         68,
         0,
         0,
-        564,
+        565,
         568,
         1,
         0,
         0,
         0,
-        565,
+        566,
         568,
         3,
         24,
         12,
-        0,
-        566,
-        568,
-        5,
-        5,
-        0,
         0,
         567,
         559,
@@ -8303,7 +8303,7 @@ def serializedATN():
         0,
         0,
         567,
-        565,
+        562,
         1,
         0,
         0,
@@ -25242,7 +25242,7 @@ class FandangoParser(Parser):
             self.state = 516
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3F) == 0 and ((1 << _la) & 296) != 0) or (
+            while (((_la) & ~0x3F) == 0 and ((1 << _la) & 280) != 0) or (
                 (((_la - 67)) & ~0x3F) == 0
                 and ((1 << (_la - 67)) & 70368744177793) != 0
             ):
@@ -25611,6 +25611,9 @@ class FandangoParser(Parser):
         def STRING(self):
             return self.getToken(FandangoParser.STRING, 0)
 
+        def NUMBER(self):
+            return self.getToken(FandangoParser.NUMBER, 0)
+
         def OPEN_PAREN(self):
             return self.getToken(FandangoParser.OPEN_PAREN, 0)
 
@@ -25622,9 +25625,6 @@ class FandangoParser(Parser):
 
         def char_set(self):
             return self.getTypedRuleContext(FandangoParser.Char_setContext, 0)
-
-        def INTEGER(self):
-            return self.getToken(FandangoParser.INTEGER, 0)
 
         def NEWLINE(self, i: int = None):
             if i is None:
@@ -25677,21 +25677,21 @@ class FandangoParser(Parser):
                 self.state = 560
                 self.match(FandangoParser.STRING)
                 pass
-            elif token in [67]:
+            elif token in [4]:
                 self.state = 561
-                self.match(FandangoParser.OPEN_PAREN)
+                self.match(FandangoParser.NUMBER)
+                pass
+            elif token in [67]:
                 self.state = 562
-                self.alternative()
+                self.match(FandangoParser.OPEN_PAREN)
                 self.state = 563
+                self.alternative()
+                self.state = 564
                 self.match(FandangoParser.CLOSE_PAREN)
                 pass
             elif token in [74]:
-                self.state = 565
-                self.char_set()
-                pass
-            elif token in [5]:
                 self.state = 566
-                self.match(FandangoParser.INTEGER)
+                self.char_set()
                 pass
             else:
                 raise NoViableAltException(self)

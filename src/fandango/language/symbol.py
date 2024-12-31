@@ -46,27 +46,33 @@ class NonTerminal(Symbol):
 
 
 class Terminal(Symbol):
-    def __init__(self, symbol: str):
+    def __init__(self, symbol: str | bytes | int):
         super().__init__(symbol, SymbolType.TERMINAL)
 
     def __len__(self):
+        if isinstance(self.symbol, int):
+            return 1
         return len(self.symbol)
 
     @staticmethod
-    def clean(symbol: str) -> str | bytes:
+    def clean(symbol: str) -> str | bytes | int:
         if len(symbol) >= 2:
             if symbol[0] == symbol[-1] == "'" or symbol[0] == symbol[-1] == '"':
                 return eval(symbol)
             elif len(symbol) >= 3:
                 if symbol[0] == "b" and (
-                    symbol[1] == symbol[-1] == "'" or symbol[1] == symbol[-1] == '"'
-                ):
+                    symbol[1] == symbol[-1] == "'" or
+                    symbol[1] == symbol[-1] == '"'):
                     return eval(symbol)
-        return symbol
+        return eval(symbol)
 
     @staticmethod
     def from_symbol(symbol: str) -> "Terminal":
         return Terminal(Terminal.clean(symbol))
+
+    @staticmethod
+    def from_number(number: str) -> "Terminal":
+        return Terminal(Terminal.clean(number))
 
     def check(self, word: str) -> bool:
         return word.startswith(self.symbol)

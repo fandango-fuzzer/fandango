@@ -1,4 +1,4 @@
 <start>    ::= <field>;
 <field>    ::= <bit>;
 
-<bit> ::= b'\x00' | b'\x01';
+<bit> ::= 0 | 1;

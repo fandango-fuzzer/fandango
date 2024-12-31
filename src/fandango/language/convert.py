@@ -149,6 +149,11 @@ class GrammarProcessor(FandangoParserVisitor):
             return NonTerminalNode(NonTerminal(ctx.NONTERMINAL().getText()))
         elif ctx.STRING():
             return TerminalNode(Terminal.from_symbol(ctx.STRING().getText()))
+        elif ctx.NUMBER():
+            number = ctx.NUMBER().getText()
+            if number not in ['0', '1']:
+                raise UnsupportedOperation(f"Unsupported bit spec: {number}")
+            return TerminalNode(Terminal.from_number(number))
         elif ctx.char_set():
             return CharSet(ctx.char_set().getText())
         elif ctx.alternative():
