@@ -324,6 +324,27 @@ Note how the last four bits (the `<brightness>` field) always represent a number
 Note that _parsing_ binary inputs (and hence mutating them) is not available yet.
 ```
 
+## Bits and Padding
+
+When generating binary inputs, you may need to adhere to specific _lengths_.
+Such lengths are often enforced by _padding_ – that is, adding bits until the required length is achieved.
+For instance, let us assume you have a field consisting of some bits.
+However, the overall length of the field must be a multiple of eight to have it byte-aligned.
+For such _padding_, define the field as
+
+```
+<field> ::= <bits> <padding>;
+<padding> ::= 0*;
+```
+
+combined with a constraint
+
+```
+len(<field>) % 8 == 0;
+```
+
+Note that applied on derivation trees, `len()` always returns the number of child elements, not the string length; here, we use this to access the number of elements in `<field>`.
+
 
 ## Compression and Conversion
 
