@@ -616,7 +616,7 @@ def fuzz_command(args):
         if args.format == "string":
             return tree.to_string()
         elif args.format == "tree":
-            return tree.dump()
+            return tree.to_tree()
         elif args.format == "bits":
             return tree.to_bits()
         raise NotImplementedError("Unsupported output format")
