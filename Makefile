@@ -106,8 +106,7 @@ $(ALL_HTML_MARKER): $(DOCS)/_toc.yml $(DOCS)/_config.yml
 
 # Same as above, but also clear the cache
 clear-cache:
-	$(RM) -fr $(DOCS)/_build/.jupyter_cache
-	$(RM) $(ALL_HTML_MARKER)
+	$(RM) -fr $(DOCS)/_build/
 
 rebuild-docs: clear-cache $(ALL_HTML_MARKER)
 
