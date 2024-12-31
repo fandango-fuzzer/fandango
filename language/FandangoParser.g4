@@ -46,9 +46,9 @@ symbol
     : NEWLINE*
         ( NONTERMINAL
         | STRING
+        | NUMBER  // for 0 and 1 bits
         | OPEN_PAREN alternative CLOSE_PAREN
         | char_set
-        | INTEGER
         )
       NEWLINE*
     ;

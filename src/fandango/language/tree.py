@@ -80,7 +80,7 @@ class DerivationTree:
     def from_tree(tree: Tuple[str, List[Tuple[str, List]]]) -> "DerivationTree":
         symbol, children = tree
         if not isinstance(symbol, str):
-            raise TypeError(f"{symbol} must be string")
+            raise TypeError(f"{symbol} must be a string")
         if symbol.startswith("<") and symbol.endswith(">"):
             symbol = NonTerminal(symbol)
         else:
@@ -119,6 +119,8 @@ class DerivationTree:
                 # Bytes get converted 1:1 to strings,
                 # without UTF-8 or other encoding
                 return self.symbol.symbol.decode("latin1")
+            elif isinstance(self.symbol.symbol, int):
+                return str(self.symbol.symbol)
             else:
                 raise ValueError("Invalid symbol string")
         else:
