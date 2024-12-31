@@ -32,7 +32,7 @@ from antlr4.error.Errors import ParseCancellationException
 
 class MyErrorListener(ErrorListener):
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise ParseCancellationException(f"Line %{line}, Column {column}: error: {msg}")
+        raise ParseCancellationException(f"Line {line}, Column {column}: error: {msg}")
 
 def check_grammar(grammar, start_symbol="<start>"):
     if not grammar:
