@@ -113,7 +113,14 @@ class DerivationTree:
         if self.symbol.is_non_terminal:
             return "".join([repr(child) for child in self._children])
         elif self.symbol.is_terminal:
-            return self.symbol.symbol
+            if isinstance(self.symbol.symbol, str):
+                return self.symbol.symbol
+            elif isinstance(self.symbol.symbol, bytes):
+                # Bytes get converted 1:1 to strings,
+                # without UTF-8 or other encoding
+                return self.symbol.symbol.decode("latin1")
+            else:
+                raise ValueError("Invalid symbol string")
         else:
             raise ValueError("Invalid symbol type")
 
@@ -272,7 +279,7 @@ class DerivationTree:
         """
         Pretty-print the derivation tree (for visualization).
         """
-        s = "  " * indent + "Tree(" + repr(str(self.symbol))
+        s = "  " * indent + "Tree(" + repr(self.symbol.symbol)
         has_children = False
         for child in self._children:
             s += ",\n"
