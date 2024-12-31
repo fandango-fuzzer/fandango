@@ -2,6 +2,7 @@ import copy
 from typing import Optional, List, Any, Union, Set, Tuple
 
 from fandango.language.symbol import Symbol, NonTerminal, Terminal
+from io import StringIO
 
 
 class DerivationTree:
@@ -109,22 +110,84 @@ class DerivationTree:
 
         return copied
 
-    def __repr__(self):
+    def _write_to_stream(self, stream):
+        """
+        Write the derivation tree to a stream (e.g., a file or StringIO).
+        """
         if self.symbol.is_non_terminal:
-            return "".join([repr(child) for child in self._children])
-        elif self.symbol.is_terminal:
-            if isinstance(self.symbol.symbol, str):
-                return self.symbol.symbol
-            elif isinstance(self.symbol.symbol, bytes):
-                # Bytes get converted 1:1 to strings,
-                # without UTF-8 or other encoding
-                return self.symbol.symbol.decode("latin1")
-            elif isinstance(self.symbol.symbol, int):
-                return str(self.symbol.symbol)
-            else:
-                raise ValueError("Invalid symbol string")
+            for child in self._children:
+                child._write_to_stream(stream)
+        elif isinstance(self.symbol.symbol, str):
+            # Strings get written as is
+            stream.write(self.symbol.symbol)
+        elif isinstance(self.symbol.symbol, bytes):
+            # Bytes get converted 1:1 to strings,
+            # without UTF-8 or other encoding
+            stream.write(self.symbol.symbol.decode("latin1"))
         else:
             raise ValueError("Invalid symbol type")
+
+    def _write_to_bitstream(self, stream):
+        if self.symbol.is_non_terminal:
+            for child in self._children:
+                child._write_to_bitstream(stream)
+        elif self.symbol.is_terminal:
+            symbol = self.symbol.symbol
+            if isinstance(symbol, int):
+                # Append single bit
+                bits = str(symbol)
+            else:
+                # Convert strings and bytes to bits
+                elem_stream = StringIO()
+                self._write_to_stream(elem_stream)
+                elem_stream.seek(0)
+                elem = elem_stream.read()
+                bits = ''.join(format(ord(c), '08b') for c in elem)
+            stream.write(bits)
+        else:
+            raise ValueError("Invalid symbol type")
+
+    def has_bits(self) -> bool:
+        """
+        Check if the derivation tree contains any bits.
+        """
+        if self.symbol.is_terminal and isinstance(self.symbol.symbol, int):
+            return True
+        for child in self._children:
+            if child.has_bits():
+                return True
+        return False  # No bits found
+
+    def to_bits(self) -> str:
+        """
+        Convert the derivation tree to a sequence of bits (0s and 1s).
+        """
+
+        stream = StringIO()
+        self._write_to_bitstream(stream)
+        stream.seek(0)
+        return stream.read()
+
+    def to_string(self) -> str:
+        """
+        Convert the derivation tree to a string.
+        """
+        if self.has_bits():
+            # Encode as bit string
+            bitstream = self.to_bits()
+
+            # Decode again
+            return ''.join(chr(int(bitstream[i:i + 8], 2))
+                           for i in range(0, len(bitstream), 8))
+
+        # Write directly, without conversion
+        stream = StringIO()
+        self._write_to_stream(stream)
+        stream.seek(0)
+        return stream.read()
+
+    def __repr__(self):
+        return self.to_string()
 
     def __contains__(self, other: Union["DerivationTree", Any]) -> bool:
         if isinstance(other, DerivationTree):

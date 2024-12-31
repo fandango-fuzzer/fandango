@@ -1,4 +1,4 @@
 <start>    ::= <field>;
-<field>    ::= <bit>;
+<field>    ::= <bit>{8};
 
-<bit> ::= 0 | 1;
+<bit> ::= 0 | 1 ;

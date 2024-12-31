@@ -237,9 +237,9 @@ def get_parser(in_command_line=True):
     )
     fuzz_parser.add_argument(
         "--format",
-        choices=["string", "tree"],
+        choices=["string", "bits", "tree"],
         default="string",
-        help="produce output(s) as string (default) or as derivation tree",
+        help="produce output(s) as string (default), as a bit string, or as derivation tree",
     )
 
     command_group = fuzz_parser.add_argument_group("command invocation settings")
@@ -614,9 +614,11 @@ def fuzz_command(args):
 
     def output(tree) -> str:
         if args.format == "string":
-            return str(tree)
+            return tree.to_string()
         elif args.format == "tree":
             return tree.dump()
+        elif args.format == "bits":
+            return tree.to_bits()
         raise NotImplementedError("Unsupported output format")
 
     if args.directory:
