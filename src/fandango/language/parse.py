@@ -30,9 +30,11 @@ from fandango.language.symbol import NonTerminal
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4.error.Errors import ParseCancellationException
 
+
 class MyErrorListener(ErrorListener):
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
         raise ParseCancellationException(f"Line {line}, Column {column}: error: {msg}")
+
 
 def check_grammar(grammar, start_symbol="<start>"):
     if not grammar:
@@ -105,14 +107,18 @@ def check_constraints_existence(grammar, constraints):
             ]
 
             if len(missing) > 1:
-                missing_symbols = ", ".join([ '<' + symbol + '>' for symbol in missing ])
-                error = ValueError(f"Constraint {constraint}: undefined symbols {missing_symbols}")
+                missing_symbols = ", ".join(["<" + symbol + ">" for symbol in missing])
+                error = ValueError(
+                    f"Constraint {constraint}: undefined symbols {missing_symbols}"
+                )
                 error.add_note(f"Possible symbols: {defined_symbols_str}")
                 raise error
 
             if len(missing) == 1:
                 missing_symbol = missing[0]
-                error = ValueError(f"Constraint {constraint}: undefined symbol <{missing_symbol}>")
+                error = ValueError(
+                    f"Constraint {constraint}: undefined symbol <{missing_symbol}>"
+                )
                 error.add_note(f"Possible symbols: {defined_symbols_str}")
                 raise error
 
@@ -122,8 +128,7 @@ def check_constraints_existence(grammar, constraints):
                 # This handles <parent>[...].<symbol> as <parent>..<symbol>.
                 # We could also interpret the actual [...] contents here,
                 # but slices and chains could make this hard -- AZ
-                recurse = (f"<{parent}>[" in str(value) or
-                           f"..<{symbol}>" in str(value))
+                recurse = f"<{parent}>[" in str(value) or f"..<{symbol}>" in str(value)
                 if not check_constraints_existence_children(
                     grammar, parent, symbol, recurse, indirect_child
                 ):
@@ -147,8 +152,7 @@ def check_constraints_existence_children(
     #
     # Simpler bersion; may overfit (e.g. matches <...> in strings),
     # but that should not hurt us -- AZ
-    grammar_matches = re.findall(r'<([^>]*)>',
-                                 str(grammar_symbols))
+    grammar_matches = re.findall(r"<([^>]*)>", str(grammar_symbols))
 
     if symbol not in grammar_matches:
         if recurse:
@@ -190,11 +194,9 @@ class FandangoSpec:
 
         LOGGER.debug("Extracting grammar")
         grammar_processor = GrammarProcessor(
-            local_variables=self.local_vars,
-            global_variables=self.global_vars
+            local_variables=self.local_vars, global_variables=self.global_vars
         )
-        self.grammar: Grammar = \
-            grammar_processor.get_grammar(splitter.productions)
+        self.grammar: Grammar = grammar_processor.get_grammar(splitter.productions)
 
         LOGGER.debug("Extracting constraints")
         constraint_processor = ConstraintProcessor(
@@ -203,15 +205,22 @@ class FandangoSpec:
             global_variables=self.global_vars,
             lazy=self.lazy,
         )
-        self.constraints: List[Constraint] = \
-            constraint_processor.get_constraints(splitter.constraints)
+        self.constraints: List[Constraint] = constraint_processor.get_constraints(
+            splitter.constraints
+        )
 
     def run_code(self):
         exec(self.code_text, self.global_vars, self.local_vars)
 
 
-def parse(fan_contents: str, /, lazy: bool = False,
-          check_constraints: bool = True, given_grammar=None, use_cache: bool = True) -> Tuple[Grammar, List[Constraint]]:
+def parse(
+    fan_contents: str,
+    /,
+    lazy: bool = False,
+    check_constraints: bool = True,
+    given_grammar=None,
+    use_cache: bool = True,
+) -> Tuple[Grammar, List[Constraint]]:
     """
     Extract grammar and constraints from the given content
     :param fan: Fandango specification
@@ -228,11 +237,11 @@ def parse(fan_contents: str, /, lazy: bool = False,
             cachedir_tag.tag(CACHE_DIR, application="Fandango")
 
         hash = hashlib.sha256(fan_contents.encode()).hexdigest()
-        pickle_file = CACHE_DIR / (hash + '.pickle')
+        pickle_file = CACHE_DIR / (hash + ".pickle")
 
         if os.path.exists(pickle_file):
             try:
-                with open(pickle_file, 'rb') as fp:
+                with open(pickle_file, "rb") as fp:
                     LOGGER.info(f"Loading cached spec from {pickle_file}")
                     spec: FandangoSpec = pickle.load(fp)
                     LOGGER.debug(f"Cached spec version: {spec.version}")
@@ -284,7 +293,7 @@ def parse(fan_contents: str, /, lazy: bool = False,
 
     if use_cache and not from_cache:
         try:
-            with open(pickle_file, 'wb') as fp:
+            with open(pickle_file, "wb") as fp:
                 LOGGER.info(f"Saving spec to cache {pickle_file}")
                 pickle.dump(spec, fp)
         except Exception as e:
@@ -296,6 +305,7 @@ def parse(fan_contents: str, /, lazy: bool = False,
 
     LOGGER.debug("Parsing complete")
     return spec.grammar, spec.constraints
+
 
 def parse_file(*filenames, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
     contents = ""

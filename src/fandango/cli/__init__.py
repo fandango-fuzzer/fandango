@@ -410,8 +410,10 @@ def merged_fan_contents(args) -> str:
             fan_contents += "\n" + constraint + ";\n"
     return fan_contents
 
+
 def parse_fan(fan_contents):
     return parse(fan_contents, given_grammar=DEFAULT_FAN_CONTENT[0])
+
 
 def parse_fan_contents(args):
     """Parse .fan content as given in args"""
@@ -464,8 +466,11 @@ def make_fandango_settings(args, initial_settings={}):
         LOGGER.setLevel(logging.DEBUG)  # Even more info
 
     if args.initial_population is not None:
-        settings["initial_population"] = extract_initial_population(args.initial_population)
+        settings["initial_population"] = extract_initial_population(
+            args.initial_population
+        )
     return settings
+
 
 def extract_initial_population(path):
     try:
@@ -484,6 +489,7 @@ def extract_initial_population(path):
         return initial_population
     except FileNotFoundError as e:
         raise e
+
 
 # Default Fandango file content (grammar, constraints); set with `set`
 DEFAULT_FAN_CONTENT = (None, None)
@@ -565,6 +571,7 @@ def cd_command(args):
 
     if sys.stdin.isatty():
         print(os.getcwd())
+
 
 def fuzz_command(args):
     """Invoke the fuzzer"""
@@ -673,9 +680,11 @@ def nop_command(args):
     # Dummy command such that we can list ! and / as commands. Never executed.
     pass
 
+
 def copyright_command(args):
     print("Copyright (c) 2024-2025 CISPA Helmholtz Center for Information Security.")
     print("All rights reserved.")
+
 
 def version_command(args):
     version = importlib.metadata.version("fandango")
@@ -815,6 +824,7 @@ def exec_single(code, _globals={}, _locals={}):
 
 
 MATCHES = []
+
 
 def shell_command(args):
     """Interactive mode"""

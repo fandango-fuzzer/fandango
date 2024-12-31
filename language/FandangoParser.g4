@@ -48,6 +48,7 @@ symbol
         | STRING
         | OPEN_PAREN alternative CLOSE_PAREN
         | char_set
+        | INTEGER
         )
       NEWLINE*
     ;
