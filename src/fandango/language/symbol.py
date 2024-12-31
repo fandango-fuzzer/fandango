@@ -64,7 +64,7 @@ class Terminal(Symbol):
                     symbol[1] == symbol[-1] == "'" or
                     symbol[1] == symbol[-1] == '"'):
                     return eval(symbol)
-        return eval(symbol)
+        return eval(symbol)  # also handles bits "0" and "1"
 
     @staticmethod
     def from_symbol(symbol: str) -> "Terminal":
