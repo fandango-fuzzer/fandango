@@ -191,7 +191,7 @@ and obtain the same result:
 !fandango fuzz -n 1 -f binary-pack.fan | od -c
 ```
 
-Note that return value of `struct.pack()` has the type `bytes` (byte string), which is different from the `str` Unicode strings that Fandango uses:
+Note that the return value of `struct.pack()` has the type `bytes` (byte string), which is different from the `str` Unicode strings that Fandango uses:
 
 ```{code-cell}
 :tags: ["remove-input"]
@@ -228,6 +228,101 @@ Adding _type annotations_ to functions in `.fan` files allows for future static 
 ```
 
 Check out the [`struct` module](https://docs.python.org/3/library/struct.html) for additional encodings, including float types, long and short integers, and many more.
+
+
+## Bits and Bytes
+
+Some binary inputs use individual _bits_ to specify contents.
+For instance, you might have a `flag` byte that holds multiple (bit) flags:
+
+```C
+struct {
+  unsigned int italic: 1;  // 1 bit
+  unsigned int bold: 1;
+  unsigned int underlined: 1;
+  unsigned int strikethrough: 1;
+  unsigned int brightness: 4;  // 4 bits
+} format_flags;
+```
+
+Such bit flags can be represented in Fandango using the special values `0` (for a zero bit) and `1` (for a non zero bit).
+Hence, you can define a `<bit>` value as
+
+```python
+<bit> ::= 0 | 1;
+```
+
+With this, the above `format_flag` byte would be specified as
+
+```{code-cell}
+:tags: ["remove-input"]
+!cat bits.fan
+```
+
+A `<format_flag>` symbol would thus always consist of these eight bits.
+We can use the special option ``--format=bits`` to view the output as a bit stream:
+
+```shell
+$ fandango fuzz --format=bits -f bits.fan -n 1
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz --format=bits -f bits.fan -n 1
+```
+
+Internally, Fandango treats the individual flags as if they were strings - that is, `"\x00"` for zero bits and `"\x01"` for nonzero bits.
+Hence, we can also apply _constraints_ to the individual flags:
+
+```shell
+$ fandango fuzz --format=bits -f bits.fan -n 10 -c '<italic> == "\x01" and <bold> == "\x00"'
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz --format=bits -f bits.fan -n 10 -c '<italic> == "\x01" and <bold> == "\x00"'
+```
+
+This alternative, using `chr()` to generate a single byte out of the specified integer might be more readable:
+
+```shell
+$ fandango fuzz --format=bits -f bits.fan -n 1 -c '<italic> == chr(1) and <bold> == chr(0)'
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz --format=bits -f bits.fan -n 1 -c '<italic> == chr(1) and <bold> == chr(0)'
+```
+
+Likewise, to set the value of the entire `format_flag` field, we can also set a constraint such as
+
+```shell
+$ fandango fuzz --format=bits -f bits.fan -n 1 -c '<format_flag> == chr(0b11110000)'
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz --format=bits -f bits.fan -n 1 -c '<format_flag> == chr(0b11110000)'
+```
+
+To convert a bit into a numerical value, applying the Python `ord()` function comes in handy.
+Note that its argument (the symbol) must be converted into a string first:
+
+```shell
+$ fandango fuzz --format=bits -f bits.fan -n 1 -c 'ord(str(<brightness>)) > 10'
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz --format=bits -f bits.fan -n 10 -c 'ord(str(<brightness>)) > 10'
+```
+
+Note how the last four bits (the `<brightness>` field) always represent a number greater than ten.
+
+
+```{error}
+Note that _parsing_ binary inputs (and hence mutating them) is not available yet.
+```
 
 
 ## Compression and Conversion
