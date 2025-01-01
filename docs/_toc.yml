@@ -17,6 +17,7 @@ parts:
     - file: Generators
     - file: Recursive
     - file: Paths
+    - file: ISO8601
     - file: Binary
     - file: Bits
     - file: Gif
