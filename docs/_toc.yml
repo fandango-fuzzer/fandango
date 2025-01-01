@@ -18,6 +18,8 @@ parts:
     - file: Recursive
     - file: Paths
     - file: Binary
+    - file: Bits
+    - file: Gif
     - file: Distributions
     - file: Whitebox
     - file: Hatching
