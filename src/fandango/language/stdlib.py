@@ -70,45 +70,10 @@ stdlib += make_rule("int64", ['<byte>{8}'])
 stdlib += make_rule("float32", ['<byte>{4}'])
 stdlib += make_rule("float64", ['<byte>{8}'])
 
-
-stdlib += make_header("UUIDs")
-stdlib += make_rule("uuid", ["<hexdigit>{8} '-' <hexdigit>{4} '-' <hexdigit>{4}'-' <hexdigit>{4} '-' <hexdigit>{12}"])
-
-
-stdlib += make_header("ISO 8601 date and time")
-stdlib += make_rule("iso8601date",
-                    ["<iso8601year> '-' <iso8601month> ('-' <iso8601day>)?",
-                     "<iso8601year><iso8601month><iso8601day>"])
-stdlib += make_rule("iso8601year", ["('+'|'-')? <digit>{4}"])
-stdlib += make_rule("iso8601month",
-                    [f"'{month:02d}'" for month in range(1, 13)])
-stdlib += make_rule("iso8601day",
-                    [f"'{day:02d}'" for day in range(1, 32)])
-
-stdlib += make_rule("iso8601weekdate",
-                    ["<iso8601year> '-'? 'W' <iso8601week> ('-' <iso8601weekday>)?"])
-stdlib += make_rule("iso8601week",
-                    [f"'{week:02d}'" for week in range(1, 54)])
-stdlib += make_rule("iso8601weekday",
-                    [f"'{weekday:1d}'" for weekday in range(1, 8)])
-stdlib += make_rule("iso8601ordinaldate",
-                    ["<iso8601year> '-'? <iso8601ordinalday>)?"])
-stdlib += make_rule("iso8601ordinalday",
-                    [f"'{day:03d}'" for day in range(1, 357)])
-
-stdlib += make_rule("iso8601time",
-                    ["'T'? <iso8601hour> (':'? <iso8601minute> (':'? <iso8601second> (('.' | ',') <iso8601fraction>)? )? )? <iso8601timezone>?"])
-stdlib += make_rule("iso8601hour",
-                    [f"'{hour:02d}'" for hour in range(0, 24)])
-stdlib += make_rule("iso8601minute",
-                    [f"'{minute:02d}'" for minute in range(0, 60)])
-stdlib += make_rule("iso8601second",
-                    [f"'{second:02d}'" for second in range(0, 61)])
-stdlib += make_rule("iso8601fraction", ["<digit>+"])
-
-stdlib += make_rule("iso8601timezone", ["'Z'",
-                                        "'+' <iso8601hour> (':'? <iso8601minute>)?",
-                                        "'-' <iso8601hour> (':'? <iso8601minute>)?"])
+# These should go into a separate file
+# We should also have specs for email, urls, network addresses, etc.
+# stdlib += make_header("UUIDs")
+# stdlib += make_rule("uuid", ["<hexdigit>{8} '-' <hexdigit>{4} '-' <hexdigit>{4}'-' <hexdigit>{4} '-' <hexdigit>{12}"])
 
 stdlib += make_header("Fandango dancer")
 stdlib += make_comment("We use this to test UTF-8 compatibility")
