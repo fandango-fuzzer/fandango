@@ -11,7 +11,7 @@ kernelspec:
 ---
 
 (sec:bits)=
-# Bits and Bytes
+# Bits and Bit Fields
 
 Some binary inputs use individual _bits_ to specify contents.
 For instance, you might have a `flag` byte that holds multiple (bit) flags:
@@ -26,10 +26,12 @@ struct {
 } format_flags;
 ```
 
+How does one represent such _bit fields_ in a Fandango spec?
+
 
 ## Representing Bits
 
-Bit fields and flags can be represented in Fandango using the special values `0` (for a zero bit) and `1` (for a non zero bit).
+In Fandango, bits can be represented in Fandango using the special values `0` (for a zero bit) and `1` (for a non-zero bit).
 Hence, you can define a `<bit>` value as
 
 ```python
@@ -82,8 +84,7 @@ $ fandango fuzz --format=bits -f bits.fan -n 1 -c '<italic> == chr(1) and <bold>
 !fandango fuzz --format=bits -f bits.fan -n 1 -c '<italic> == chr(1) and <bold> == chr(0)'
 ```
 
-When producing inputs, Fandango follows the order in which bits and bytes are specified in the grammar.
-This allows us to set the value of the entire `format_flag` field using a constraint such as
+We can also easily set the value of the entire `format_flag` field using a constraint:
 
 ```shell
 $ fandango fuzz --format=bits -f bits.fan -n 1 -c '<format_flag> == chr(0b11110000)'
@@ -92,6 +93,13 @@ $ fandango fuzz --format=bits -f bits.fan -n 1 -c '<format_flag> == chr(0b111100
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz --format=bits -f bits.fan -n 1 -c '<format_flag> == chr(0b11110000)'
+```
+
+Since Fandango strictly follows a "left-to-right" order - that is, the order in which bits and bytes are specified in the grammar, the most significant bit is stored first.
+Thus, the order of bits in the `chr()` argument is identical to the order of bits in the produced output.
+
+```{note}
+Fandango always strictly follows a "left-to-right" order - that is, the order in which bits and bytes are specified in the grammar.
 ```
 
 To convert a bit into a numerical value, applying the Python `ord()` function comes in handy.
@@ -113,8 +121,6 @@ When implementing a format, be sure to follow its conventions regarding
 
 * _bit ordering_ (most or least significant bit first)
 * _byte ordering_ (most or least significant byte first)
-
-Fandango always strictly follows the order in which buts and bytes are specified in the grammar.
 ```
 
 ```{error}
