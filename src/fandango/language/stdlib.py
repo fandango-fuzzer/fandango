@@ -48,6 +48,10 @@ stdlib += make_def("punctuation", string.punctuation)
 stdlib += make_def("alphanum", string.ascii_letters + string.digits)
 stdlib += make_def("alphanum_", string.ascii_letters + string.digits + "_")
 
+
+stdlib += make_header("ASCII characters")
+stdlib += make_def("ascii_char", "".join(chr(c) for c in range(0, 128)), force_binary=False)
+
 stdlib += make_header("ASCII control characters")
 ASCII_CONTROL = ['NUL', 'SOH', 'STX', 'ETX', 'EOT', 'ENQ', 'ACK', 'BEL', 'BS', 'HT', 'LF', 'VT', 'FF', 'CR', 'SO', 'SI', 'DLE', 'DC1', 'DC2', 'DC3', 'DC4', 'NAK', 'SYN', 'ETB', 'CAN', 'EM', 'SUB', 'ESC', 'FS', 'GS', 'RS', 'US', 'SP']
 for i in range(len(ASCII_CONTROL)):
@@ -58,11 +62,28 @@ stdlib += make_header("Bits")
 stdlib += make_rule("bit", ['0', '1'])
 
 stdlib += make_header("Bytes")
-stdlib += make_def("byte", "".join(chr(c) for c in range(256)), force_binary=True)
-stdlib += make_def("char", "".join(chr(c) for c in range(256)), force_binary=False)
+stdlib += make_def("byte", "".join(chr(c) for c in range(0, 256)), force_binary=True)
+
+
+stdlib += make_header("UTF-8 characters, read and processed as bytes")
+def make_utf8_rule(symbol: str, chars: list[int], suffix: str = "") -> str:
+    return make_rule(symbol,
+                     ["(" + " | ".join(f"b'\\x{c:02x}'" for c in chars) + ")" + suffix])
+
+stdlib += make_def("utf8_char1", "".join(chr(c) for c in range(0, 128)), force_binary=False)
+stdlib += make_def("utf8_continuation_byte",
+                   "".join(chr(c) for c in range(0x80, 0xC0)), force_binary=True)
+stdlib += make_utf8_rule("utf8_char2", range(0xC2, 0xE0),
+                         " <utf8_continuation_byte>")
+stdlib += make_utf8_rule("utf8_char3", range(0xE0, 0xF0),
+                         " <utf8_continuation_byte>{2}")
+stdlib += make_utf8_rule("utf8_char4", range(0xF0, 0xF6),
+                         " <utf8_continuation_byte>{3}")
+stdlib += make_rule("utf8_char", ["<utf8_char1>", "<utf8_char2>", "<utf8_char3>", "<utf8_char4>"])  # UTF-8 character
+
 
 stdlib += make_header("More data types")
-stdlib += make_comment("This just specifies the length; interpretation is up to the user")
+stdlib += make_comment("This only specifies the length; interpretation is up to the user")
 stdlib += make_rule("int8", ['<byte>'])
 stdlib += make_rule("int16", ['<byte><byte>'])
 stdlib += make_rule("int32", ['<byte>{4}'])
