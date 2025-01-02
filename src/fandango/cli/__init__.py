@@ -21,7 +21,7 @@ from io import UnsupportedOperation
 from pathlib import Path
 from ansi_styles import ansiStyles as styles
 
-from fandango.language.parse import parse
+from fandango.language.parse import parse, finalize
 from fandango.language.stdlib import stdlib
 from antlr4.error.Errors import ParseCancellationException
 from fandango.evolution.algorithm import Fandango
@@ -402,31 +402,30 @@ def exit_command(args):
     pass
 
 
-def merged_fan_contents(args) -> List [ IO | str ]:
-    """Merge all given files and constraints into one; return content"""
-    fan_contents = [ stdlib ]
-    if args.fan_files:
-        for file in args.fan_files:
-            fan_contents.append(file)
-    if args.constraints:
-        for constraint in args.constraints:
-            fan_contents.append(constraint)
-    return fan_contents
 
 
-def parse_fan(fan_contents):
-    return parse(fan_contents, given_grammar=DEFAULT_FAN_CONTENT[0])
-
-
-def parse_fan_contents(args):
+def parse_fan_contents(args, parse_files=True, parse_constraints=True):
     """Parse .fan content as given in args"""
     if not args.fan_files and not args.constraints:
         return None, None
 
     LOGGER.debug("Reading .fan files")
-    fan_contents = merged_fan_contents(args)
 
-    grammar, constraints = parse_fan(fan_contents)
+    grammar, constraints = parse(stdlib, "<stdlib>")
+    if parse_files and args.fan_files:
+        for file in args.fan_files:
+            fan_content = file.read()
+            new_grammar, new_constraints = \
+                parse(fan_content, filename=file.name)
+            grammar.update(new_grammar)
+            constraints += new_constraints
+
+    if parse_constraints and args.constraints:
+        for constraint in args.constraints:
+            _, new_constraints = parse(constraint, "<constraint>")
+            constraints += new_constraints
+
+    finalize(grammar, constraints)
     return grammar, constraints
 
 
@@ -512,11 +511,10 @@ def set_command(args):
     global DEFAULT_SETTINGS
 
     if args.fan_files:
+        DEFAULT_FAN_CONTENT = None, None
+        DEFAULT_CONSTRAINTS = []
         LOGGER.info("Parsing Fandango content")
-        fan_contents = ""
-        for file in args.fan_files:
-            fan_contents += file.read() + "\n"
-        grammar, constraints = parse_fan(fan_contents)
+        grammar, constraints = parse_fan_contents(args, parse_constraints=False)
         DEFAULT_FAN_CONTENT = (grammar, constraints)
         DEFAULT_CONSTRAINTS = []  # Don't leave these over
 
@@ -526,10 +524,7 @@ def set_command(args):
             raise ValueError("Open a `.fan` file first ('set -f FILE.fan')")
 
         LOGGER.info("Parsing Fandango constraints")
-        fan_contents = ""
-        for constraint in args.constraints:
-            fan_contents += "\n" + constraint + ";\n"
-        _, constraints = parse_fan(fan_contents)
+        _, constraints = parse_fan_contents(args, parse_files=False)
         DEFAULT_CONSTRAINTS = constraints
 
     settings = make_fandango_settings(args)
@@ -599,10 +594,7 @@ def fuzz_command(args):
 
     if args.constraints:
         # Add given constraints
-        fan_contents = ""
-        for constraint in args.constraints:
-            fan_contents += "\n" + constraint + ";\n"
-        _, extra_constraints = parse_fan(fan_contents)
+        _, extra_constraints = parse_fan_contents(fan_contents, parse_files=False)
         constraints += extra_constraints
 
     settings = make_fandango_settings(args, DEFAULT_SETTINGS)
@@ -954,10 +946,9 @@ def shell_command(args):
 def run(command, args):
     try:
         command(args)
-    except ParseCancellationException as e:
-        # ANTLR already prints out the error message
+
+    except SyntaxError as e:
         print_exception(e)
-        print("Syntax error", file=sys.stderr)
         return 1
 
     except ValueError as e:

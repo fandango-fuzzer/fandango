@@ -4,10 +4,10 @@ import os
 import sys
 import importlib.metadata
 
-from typing import Tuple, List, Any, IO
+from typing import Tuple, List, Any
 from fandango.logger import LOGGER, print_exception
 
-from antlr4 import InputStream, FileStream, CommonTokenStream
+from antlr4 import InputStream, CommonTokenStream
 
 import hashlib
 import dill as pickle
@@ -28,12 +28,14 @@ from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.symbol import NonTerminal
 
 from antlr4.error.ErrorListener import ErrorListener
-from antlr4.error.Errors import ParseCancellationException
 
 
 class MyErrorListener(ErrorListener):
+    def __init__(self, filename=None):
+        self.filename = filename
+        super().__init__()
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise ParseCancellationException(f"Line {line}, Column {column}: error: {msg}")
+        raise SyntaxError(f"{self.filename}:{line}:{column}: {msg}")
 
 
 def check_grammar_consistency(grammar, start_symbol="<start>"):
@@ -174,14 +176,15 @@ class FandangoSpec:
     GLOBALS = predicates.__dict__
     LOCALS = None  # Must be None to ensure top-level imports
 
-    def __init__(self, tree: Any, fan_contents: str, lazy: bool = False):
+    def __init__(self, tree: Any, fan_contents: str,
+                 lazy: bool = False, filename: str = "<input>",):
         self.version = importlib.metadata.version("fandango")
         self.fan_contents = fan_contents
         self.global_vars = self.GLOBALS.copy()
         self.local_vars = self.LOCALS
         self.lazy = lazy
 
-        LOGGER.debug("Extracting code")
+        LOGGER.debug(f"{filename}: extracting code")
         splitter = FandangoSplitter()
         splitter.visit(tree)
         python_processor = PythonProcessor()
@@ -189,58 +192,44 @@ class FandangoSpec:
         ast.fix_missing_locations(code_tree)
         self.code_text = ast.unparse(code_tree)
 
-        LOGGER.debug("Running code")
+        LOGGER.debug(f"{filename}: running code")
         self.run_code()
 
-        LOGGER.debug("Extracting grammar")
+        LOGGER.debug(f"{filename}: extracting grammar")
         grammar_processor = GrammarProcessor(
             local_variables=self.local_vars, global_variables=self.global_vars
         )
-        self.grammar: Grammar = grammar_processor.get_grammar(splitter.productions)
+        self.grammar: Grammar = \
+            grammar_processor.get_grammar(splitter.productions, prime=False)
 
-        LOGGER.debug("Extracting constraints")
+        LOGGER.debug(f"{filename}: extracting constraints")
         constraint_processor = ConstraintProcessor(
             self.grammar,
             local_variables=self.local_vars,
             global_variables=self.global_vars,
             lazy=self.lazy,
         )
-        self.constraints: List[Constraint] = constraint_processor.get_constraints(
-            splitter.constraints
-        )
+        self.constraints: List[Constraint] = \
+            constraint_processor.get_constraints(splitter.constraints)
 
     def run_code(self):
         exec(self.code_text, self.global_vars, self.local_vars)
 
 
 def parse(
-    fan_contents: str | List[IO | str],
+    fan_content: str,
     /,
+    filename: str = "<input>",
     lazy: bool = False,
-    check_constraints: bool = True,
-    check_grammar: bool = True,
-    given_grammar=None,
     use_cache: bool = True,
 ) -> Tuple[Grammar, List[Constraint]]:
     """
     Extract grammar and constraints from the given content
-    :param fan: Fandango specification:
-    - a string with contents or
-    - a list of (file pointers | contents)
+    :param fan_content: Fandango specification text
     :param lazy: If True, the constraints are evaluated lazily
     :param check_constraints: If True, check if the constraints contain non-terminal symbols that are not in the grammar
     """
     from_cache = False
-
-    if isinstance(fan_contents, str):
-        fan_contents = [fan_contents]
-
-    joint_contents = ""
-    for stream in fan_contents:
-        if isinstance(stream, str):
-            joint_contents += stream
-        else:
-            joint_contents += stream.read()
 
     CACHE_DIR = xdg_cache_home() / "fandango"
 
@@ -249,16 +238,16 @@ def parse(
             os.makedirs(CACHE_DIR)
             cachedir_tag.tag(CACHE_DIR, application="Fandango")
 
-        hash = hashlib.sha256(joint_contents.encode()).hexdigest()
+        hash = hashlib.sha256(fan_content.encode()).hexdigest()
         pickle_file = CACHE_DIR / (hash + ".pickle")
 
         if os.path.exists(pickle_file):
             try:
                 with open(pickle_file, "rb") as fp:
-                    LOGGER.info(f"Loading cached spec from {pickle_file}")
+                    LOGGER.info(f"{filename}: loading cached spec from {pickle_file}")
                     spec: FandangoSpec = pickle.load(fp)
                     LOGGER.debug(f"Cached spec version: {spec.version}")
-                    if spec.fan_contents != joint_contents:
+                    if spec.fan_contents != fan_content:
                         e = ValueError("Hash collision")
                         e.add_note("If you get this, you'll be real famous")
                         raise e
@@ -267,7 +256,7 @@ def parse(
                 LOGGER.debug(type(e).__name__ + ":" + str(e))
 
     if from_cache:
-        LOGGER.debug("Running code")
+        LOGGER.debug(f"{filename}: running code")
         try:
             spec.run_code()
         except Exception as e:
@@ -278,49 +267,25 @@ def parse(
             os.remove(pickle_file)
 
     if not from_cache:
-        tree = None
-        for stream in fan_contents:
-            if isinstance(stream, str):
-                filename = "input"
-                input_stream = InputStream(stream)
-            else:
-                filename = stream.name
-                input_stream = FileStream(filename)
+        LOGGER.debug(f"{filename}: setting up .fan parser and lexer")
+        input_stream = InputStream(fan_content)
+        error_listener = MyErrorListener(filename)
+        lexer = FandangoLexer(input_stream)
+        lexer.addErrorListener(error_listener)
+        token_stream = CommonTokenStream(lexer)
+        parser = FandangoParser(token_stream)
+        parser.addErrorListener(error_listener)
 
-            LOGGER.debug(f"Setting up .fan parser for {filename}")
-            error_listener = MyErrorListener()
-            lexer = FandangoLexer(input_stream)
-            lexer.addErrorListener(error_listener)
-            token_stream = CommonTokenStream(lexer)
-            parser = FandangoParser(token_stream)
-            parser.addErrorListener(error_listener)
+        LOGGER.debug(f"{filename}: parsing .fan content")
+        tree = parser.fandango()
 
-            LOGGER.debug(f"Parsing .fan content from {filename}")
-            new_tree = parser.fandango()
-            if tree is None:
-                tree = new_tree
-            else:
-                # Does this actually merge the trees? -- AZ
-                tree.children.extend(new_tree.children)
-
-        LOGGER.debug("Splitting content")
-        spec = FandangoSpec(tree, joint_contents, lazy)
-
-    if check_grammar and len(spec.grammar.rules) > 0:
-        check_grammar_consistency(spec.grammar)
-
-    if check_constraints:
-        if not spec.grammar or len(spec.grammar.rules) == 0:
-            g = given_grammar
-        else:
-            g = spec.grammar
-        if g and len(g.rules) > 0:
-            check_constraints_existence(g, spec.constraints)
+        LOGGER.debug(f"{filename}: splitting content")
+        spec = FandangoSpec(tree, fan_content, lazy)
 
     if use_cache and not from_cache:
         try:
             with open(pickle_file, "wb") as fp:
-                LOGGER.info(f"Saving spec to cache {pickle_file}")
+                LOGGER.info(f"{filename}: saving spec to cache {pickle_file}")
                 pickle.dump(spec, fp)
         except Exception as e:
             print_exception(e)
@@ -329,23 +294,39 @@ def parse(
             except Exception:
                 pass
 
-    LOGGER.debug("Parsing complete")
+    LOGGER.debug(f"{filename}: parsing complete")
     return spec.grammar, spec.constraints
 
 
-def parse_file(*filenames, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
-    contents = ""
-    errors = False
+def finalize(grammar, constraints, given_grammar=None):
+    """Run final checks after parsing of all grammars is done"""
+    if len(grammar.rules) > 0:
+        check_grammar_consistency(grammar)
 
-    for file in filenames:
-        try:
-            with open(file, "r") as fp:
-                contents += fp.read()
-        except Exception as e:
-            print_exception(e)
-            errors = True
+    if not grammar or len(grammar.rules) == 0:
+        g = given_grammar
+    else:
+        g = grammar
+    if g and len(g.rules) > 0:
+        check_constraints_existence(g, constraints)
 
-    if errors:
-        raise FileNotFoundError("No input files")
+    LOGGER.debug("Finalizing grammar")
+    grammar.prime()
 
-    return parse(contents, lazy=lazy)
+
+# def parse_file(*filenames, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
+#     contents = ""
+#     errors = False
+
+#     for file in filenames:
+#         try:
+#             with open(file, "r") as fp:
+#                 contents += fp.read()
+#         except Exception as e:
+#             print_exception(e)
+#             errors = True
+
+#     if errors:
+#         raise FileNotFoundError("No input files")
+
+#     return parse(contents, lazy=lazy)
