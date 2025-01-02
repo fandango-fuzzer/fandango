@@ -4,10 +4,10 @@ import os
 import sys
 import importlib.metadata
 
-from typing import Tuple, List, Any
+from typing import Tuple, List, Any, IO
 from fandango.logger import LOGGER, print_exception
 
-from antlr4 import InputStream, CommonTokenStream
+from antlr4 import InputStream, FileStream, CommonTokenStream
 
 import hashlib
 import dill as pickle
@@ -214,7 +214,7 @@ class FandangoSpec:
 
 
 def parse(
-    fan_contents: str,
+    fan_contents: str | List[IO | str],
     /,
     lazy: bool = False,
     check_constraints: bool = True,
@@ -224,11 +224,23 @@ def parse(
 ) -> Tuple[Grammar, List[Constraint]]:
     """
     Extract grammar and constraints from the given content
-    :param fan: Fandango specification
+    :param fan: Fandango specification:
+    - a string with contents or
+    - a list of (file pointers | contents)
     :param lazy: If True, the constraints are evaluated lazily
     :param check_constraints: If True, check if the constraints contain non-terminal symbols that are not in the grammar
     """
     from_cache = False
+
+    if isinstance(fan_contents, str):
+        fan_contents = [fan_contents]
+
+    joint_contents = ""
+    for stream in fan_contents:
+        if isinstance(stream, str):
+            joint_contents += stream
+        else:
+            joint_contents += stream.read()
 
     CACHE_DIR = xdg_cache_home() / "fandango"
 
@@ -237,7 +249,7 @@ def parse(
             os.makedirs(CACHE_DIR)
             cachedir_tag.tag(CACHE_DIR, application="Fandango")
 
-        hash = hashlib.sha256(fan_contents.encode()).hexdigest()
+        hash = hashlib.sha256(joint_contents.encode()).hexdigest()
         pickle_file = CACHE_DIR / (hash + ".pickle")
 
         if os.path.exists(pickle_file):
@@ -246,7 +258,7 @@ def parse(
                     LOGGER.info(f"Loading cached spec from {pickle_file}")
                     spec: FandangoSpec = pickle.load(fp)
                     LOGGER.debug(f"Cached spec version: {spec.version}")
-                    if spec.fan_contents != fan_contents:
+                    if spec.fan_contents != joint_contents:
                         e = ValueError("Hash collision")
                         e.add_note("If you get this, you'll be real famous")
                         raise e
@@ -266,20 +278,33 @@ def parse(
             os.remove(pickle_file)
 
     if not from_cache:
-        LOGGER.debug("Setting up .fan parser")
-        input_stream = InputStream(fan_contents)
-        error_listener = MyErrorListener()
-        lexer = FandangoLexer(input_stream)
-        lexer.addErrorListener(error_listener)
-        token_stream = CommonTokenStream(lexer)
-        parser = FandangoParser(token_stream)
-        parser.addErrorListener(error_listener)
+        tree = None
+        for stream in fan_contents:
+            if isinstance(stream, str):
+                filename = "input"
+                input_stream = InputStream(stream)
+            else:
+                filename = stream.name
+                input_stream = FileStream(filename)
 
-        LOGGER.debug("Parsing .fan content")
-        tree = parser.fandango()
+            LOGGER.debug(f"Setting up .fan parser for {filename}")
+            error_listener = MyErrorListener()
+            lexer = FandangoLexer(input_stream)
+            lexer.addErrorListener(error_listener)
+            token_stream = CommonTokenStream(lexer)
+            parser = FandangoParser(token_stream)
+            parser.addErrorListener(error_listener)
+
+            LOGGER.debug(f"Parsing .fan content from {filename}")
+            new_tree = parser.fandango()
+            if tree is None:
+                tree = new_tree
+            else:
+                # Does this actually merge the trees? -- AZ
+                tree.children.extend(new_tree.children)
 
         LOGGER.debug("Splitting content")
-        spec = FandangoSpec(tree, fan_contents, lazy)
+        spec = FandangoSpec(tree, joint_contents, lazy)
 
     if check_grammar and len(spec.grammar.rules) > 0:
         check_grammar_consistency(spec.grammar)
