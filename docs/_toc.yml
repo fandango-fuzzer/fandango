@@ -7,7 +7,7 @@ parts:
   - caption: Fandango Tutorial
     chapters:
     - file: Tutorial
-    - file: Installing
+    - file: Setup
     - file: FirstSpec
     - file: Invoking
     - file: Fuzzing
@@ -27,3 +27,4 @@ parts:
   - caption: Fandango Reference
     chapters:
     - file: Reference
+    - file: Installing
