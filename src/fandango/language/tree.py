@@ -14,14 +14,15 @@ class DerivationTree:
         symbol: Symbol,
         children: Optional[List["DerivationTree"]] = None,
         parent: Optional["DerivationTree"] = None,
-        read_only: bool = False,
+        role: str = None
     ):
         self.symbol = symbol
         self._children = []
         self._size = 1
         self.set_children(children or [])
         self._parent = parent
-        self._read_only = read_only
+        self.read_only = False
+        self.role = role
 
     def __len__(self):
         return len(self._children)
@@ -29,8 +30,19 @@ class DerivationTree:
     def size(self):
         return self._size
 
-    def read_only(self):
-        return self._read_only
+    def set_all_read_only(self, read_only: bool):
+        self.read_only = read_only
+        for child in self._children:
+            child.set_read_only(read_only)
+
+    def find_role_msgs(self) -> List[Tuple[str, "DerivationTree"]]:
+        if not isinstance(self.symbol, NonTerminal):
+            return []
+        if self.role is not None:
+            return [(self.role, self)]
+        subtrees = []
+        for child in self._children:
+            subtrees.extend(child.find_roles())
 
     def set_children(self, children: List["DerivationTree"]):
         self._children = children
@@ -83,7 +95,7 @@ class DerivationTree:
         """
         Computes a hash of the derivation tree based on its structure and symbols.
         """
-        return hash((self.symbol, tuple(hash(child) for child in self._children)))
+        return hash((self.symbol, self.role, tuple(hash(child) for child in self._children)))
 
     def __tree__(self):
         return self.symbol, [child.__tree__() for child in self._children]
@@ -106,7 +118,7 @@ class DerivationTree:
             return memo[id(self)]
 
         # Create a new instance without copying the parent
-        copied = DerivationTree(self.symbol, [], read_only=self.read_only())
+        copied = DerivationTree(self.symbol, [], role=self.role)
         memo[id(self)] = copied
 
         # Deepcopy the children

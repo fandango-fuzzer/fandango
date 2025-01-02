@@ -378,7 +378,7 @@ class NonTerminalNode(Node):
         children = grammar[self.symbol].fuzz(grammar, max_nodes - 1, mode,
                                              continue_tree, context)
         context.subtree_read_only = old_read_only
-        tree = DerivationTree(self.symbol, children, read_only=(continue_tree is not None))
+        tree = DerivationTree(self.symbol, children, role=self.role)
         context.on_leave_non_terminal(tree)
         return [tree]
 
