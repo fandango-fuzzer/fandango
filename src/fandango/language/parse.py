@@ -156,7 +156,7 @@ def check_constraints_existence_children(
     # grammar_matches = re.findall(r'(?<!")<([^>]*)>(?!.*")',
     #                              str(grammar_symbols))
     #
-    # Simpler bersion; may overfit (e.g. matches <...> in strings),
+    # Simpler version; may overfit (e.g. matches <...> in strings),
     # but that should not hurt us -- AZ
     grammar_matches = re.findall(r"<([^>]*)>", str(grammar_symbols))
 
@@ -275,9 +275,11 @@ def parse(
         input_stream = InputStream(fan_content)
         error_listener = MyErrorListener(filename)
         lexer = FandangoLexer(input_stream)
+        lexer.removeErrorListeners()
         lexer.addErrorListener(error_listener)
         token_stream = CommonTokenStream(lexer)
         parser = FandangoParser(token_stream)
+        parser.removeErrorListeners()
         parser.addErrorListener(error_listener)
 
         LOGGER.debug(f"{filename}: parsing .fan content")
