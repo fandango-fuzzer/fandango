@@ -14,6 +14,7 @@ import sys
 import tempfile
 import textwrap
 import zipfile
+from typing import IO, List
 
 from io import StringIO
 from io import UnsupportedOperation
@@ -401,15 +402,15 @@ def exit_command(args):
     pass
 
 
-def merged_fan_contents(args) -> str:
+def merged_fan_contents(args) -> List [ IO | str ]:
     """Merge all given files and constraints into one; return content"""
-    fan_contents = stdlib + "\n"
+    fan_contents = [ stdlib ]
     if args.fan_files:
         for file in args.fan_files:
-            fan_contents += file.read() + "\n"
+            fan_contents.append(file)
     if args.constraints:
         for constraint in args.constraints:
-            fan_contents += "\n" + constraint + ";\n"
+            fan_contents.append(constraint)
     return fan_contents
 
 
@@ -419,10 +420,11 @@ def parse_fan(fan_contents):
 
 def parse_fan_contents(args):
     """Parse .fan content as given in args"""
+    if not args.fan_files and not args.constraints:
+        return None, None
+
     LOGGER.debug("Reading .fan files")
     fan_contents = merged_fan_contents(args)
-    if not fan_contents:
-        return None, None
 
     grammar, constraints = parse_fan(fan_contents)
     return grammar, constraints
