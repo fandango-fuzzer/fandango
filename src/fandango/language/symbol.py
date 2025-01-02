@@ -77,6 +77,8 @@ class Terminal(Symbol):
     def check(self, word: str | int) -> bool:
         if isinstance(self.symbol, int) or isinstance(word, int):
             return self.check_all(word)
+        if isinstance(self.symbol, bytes):
+            return word.startswith(self.symbol.decode('iso-8859-1'))
         return word.startswith(self.symbol)
 
     def check_all(self, word: str | int) -> bool:
