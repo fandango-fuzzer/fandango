@@ -105,9 +105,24 @@ In Python, it is likely that someone has already implemented the specific checks
 * [The `binascii` module](https://docs.python.org/3/library/binascii.html) offers CRC checks.
 * [The `zlib` module](https://docs.python.org/3/library/zlib.html) provides CRC32 and ADLER32 checks used in zip files.
 
+
+## Characters and Bytes
+
+The second set of features one frequently encounters in binary formats is, well, _bytes_.
+By default, Fandango operates on strings of _characters_ in UTF-8 encoding.
+This clashes with a byte interpretation as soon as the produced string contains a UTF-8 prefix byte, such as `\xc2` or `\xe0`, which mark the beginning of a two- and three-byte UTF-8 sequence, respectively.
+To ensure bytes will be interpreted as bytes (and as bytes only), place a `b` (binary) prefix in front of them.
+Hence, `b'\xc2'` will always be interpreted as a single byte, whereas `💃` will be interpreted as a single character (despite occupying multiple bytes).
+
+```{tip}
+Fandango provides a `<byte>` symbol by default, which expands into all bytes 0..255.
+```
+
+
+
 ## Length Encodings
 
-The second set of features one frequently encounters in binary formats is _length encodings_ - that is, a particular field holds a value that represents the length of one or more fields that follow.
+The third set of features one frequently encounters in binary formats is _length encodings_ - that is, a particular field holds a value that represents the length of one or more fields that follow.
 Here is a simple grammar that expresses this characteristic: A `<field>` has a two-byte length, followed by the actual content (of length `<length>`).
 
 % This is how I got the `<byte>` definition in `binary.fan` -- AZ
@@ -130,7 +145,7 @@ for i in range(0, 256):
 ```
 
 The relationship between `<length>` and `<content>` can again be expressed using a constraint.
-We assume that `<length>` comes as a two-byte (16-bit) unsigned integer with _little-endian_ encoding - that is, the low byte comes first, and the high byte follows.
+Let us assume that `<length>` comes as a two-byte (16-bit) unsigned integer with _little-endian_ encoding - that is, the low byte comes first, and the high byte follows.
 The value 258 (hexadecimal `0x0102`) would thus be represented as the two bytes `\x02` and `\x01`.
 
 We can define a function `uint16()` that takes an integer and converts it to a two-byte string according to these rules:
