@@ -12,6 +12,7 @@ from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
 from fandango.language.grammar import DerivationTree, FuzzingMode, FuzzingContext
 from fandango.language.grammar import Grammar
+from fandango.language.io import FandangoIO
 from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER
 from fandango.logger import LOGGER, visualize_evaluation, clear_visualization
@@ -142,6 +143,42 @@ class Fandango:
             sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
 
+
+    def evolve_io(self) -> List[DerivationTree]:
+        global_env, local_env = self.grammar.get_python_env()
+        if 'FandangoIO' not in global_env.keys():
+            exec("FandangoIO.instance()")
+        io_instance: FandangoIO = global_env['FandangoIO'].instance()
+
+        while True:
+            results = self.evolve()
+            choice: DerivationTree = random.choice(results)
+
+            role_msgs = choice.find_role_msgs()
+
+            io_instance._data['local_response'] = choice
+            exec("FandangoIO.instance().io_instance.run_com_loop()", global_env, local_env)
+            # Todo: How to handle multiple remote responses from different roles? Preserve order in which they have been added.
+            history = str(choice)
+            for role, item in io_instance._data['remote_response'].items():
+                history += item
+
+            new_population = []
+            for idx, tree_option in self.grammar.parse_incomplete(history, self.start_symbol):
+                new_population.append(tree_option)
+                if len(new_population) >= self.population_size:
+                    break
+            if len(new_population) == 0:
+                raise RuntimeError("Failed to append remote response to generated history matching grammar!")
+            while len(new_population) < self.population_size:
+                new_population.append(random.choice(new_population))
+            self.population = new_population
+            self.population = self.generate_random_initial_population(FuzzingMode.IO)
+
+
+        return []
+
+
     def evolve(self) -> List[DerivationTree]:
         """
         Run the genetic algorithm to evolve the population over multiple generations.
@@ -261,19 +298,14 @@ class Fandango:
 
         :return: A set of individuals.
         """
-
-        it1ctx = FuzzingContext()
-        it1 = self.grammar.fuzz(self.start_symbol, mode=FuzzingMode.IO, context=it1ctx)
-        it2ctx = FuzzingContext()
-        it2 = self.grammar.fuzz(self.start_symbol, mode=FuzzingMode.IO, continue_tree=it1, context=it2ctx)
-        it3ctx = FuzzingContext()
-        it3 = self.grammar.fuzz(self.start_symbol, mode=FuzzingMode.IO, continue_tree=it2, context=it3ctx)
-        it4ctx = FuzzingContext()
-        it4 = self.grammar.fuzz(self.start_symbol, mode=FuzzingMode.IO, continue_tree=it3, context=it4ctx)
-
-        population = [
-            self.grammar.fuzz(self.start_symbol, mode=mode) for _ in range(self.population_size)
-        ]
+        if mode == FuzzingMode.IO and len(self.population) != 0:
+            population = [
+                self.grammar.fuzz(self.start_symbol, mode=mode, continue_tree=entry) for entry in self.population
+            ]
+        else:
+            population = [
+                self.grammar.fuzz(self.start_symbol, mode=mode) for _ in range(self.population_size)
+            ]
 
         # Fix individuals
         fixed_population = list()
