@@ -282,7 +282,7 @@ def parse(
         spec = FandangoSpec(tree, fan_contents, lazy)
 
     if check_grammar and len(spec.grammar.rules) > 0:
-        check_grammar_consistency(grammar)
+        check_grammar_consistency(spec.grammar)
 
     if check_constraints:
         if not spec.grammar or len(spec.grammar.rules) == 0:
