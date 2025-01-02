@@ -711,7 +711,6 @@ class Grammar(NodeVisitor):
     def generate_string(self, symbol: str | NonTerminal = "<start>") -> str | Tuple:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
-        print("Invoking eval() with globals:", self._global_variables.keys())
         return eval(
             self.generators[symbol], self._global_variables, self._local_variables
         )
