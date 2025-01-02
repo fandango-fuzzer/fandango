@@ -706,9 +706,12 @@ class Grammar(NodeVisitor):
         self._global_variables = global_variables or {}
         self._visited = set()
 
+        print("Initializing grammar with globals:", self._global_variables.keys())
+
     def generate_string(self, symbol: str | NonTerminal = "<start>") -> str | Tuple:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
+        print("Invoking eval() with globals:", self._global_variables.keys())
         return eval(
             self.generators[symbol], self._global_variables, self._local_variables
         )
@@ -740,12 +743,18 @@ class Grammar(NodeVisitor):
     def update(self, grammar: "Grammar" | Dict[NonTerminal, Node]):
         if isinstance(grammar, Grammar):
             generators = grammar.generators
-            grammar = grammar.rules
+            local_variables = grammar._local_variables
+            global_variables = grammar._global_variables
+            rules = grammar.rules
         else:
-            generators = {}
-        self.rules.update(grammar)
+            rules = grammar
+            generators = local_variables = global_variables = {}
+
+        self.rules.update(rules)
         self.generators.update(generators)
         self._parser = Grammar.Parser(self.rules)
+        self._local_variables.update(local_variables)
+        self._global_variables.update(global_variables)
         self.prime()
 
     def parse(self, word: str, start: str | NonTerminal = "<start>"):
