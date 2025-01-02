@@ -412,7 +412,13 @@ def parse_fan_contents(args, parse_files=True, parse_constraints=True,
 
     LOGGER.debug("Reading .fan files")
 
-    grammar, constraints = parse(stdlib, "<stdlib>")
+    stdlib_symbols = set()
+    stdlib_grammar, stdlib_constraints = parse(stdlib, "<stdlib>")
+    for symbol in stdlib_grammar.rules.keys():
+        stdlib_symbols.add(symbol)
+
+    grammar = stdlib_grammar
+    constraints = stdlib_constraints
     if given_grammar:
         grammar.update(given_grammar)
 
@@ -429,7 +435,7 @@ def parse_fan_contents(args, parse_files=True, parse_constraints=True,
             _, new_constraints = parse(constraint + ";", "<constraint>")
             constraints += new_constraints
 
-    finalize(grammar, constraints)
+    finalize(grammar, constraints, ignored_symbols=stdlib_symbols)
     return grammar, constraints
 
 

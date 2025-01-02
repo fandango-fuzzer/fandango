@@ -38,7 +38,8 @@ class MyErrorListener(ErrorListener):
         raise SyntaxError(f"{self.filename}:{line}:{column}: {msg}")
 
 
-def check_grammar_consistency(grammar, start_symbol="<start>"):
+def check_grammar_consistency(grammar, ignored_symbols=None, 
+                              start_symbol="<start>"):
     if not grammar:
         return
 
@@ -47,6 +48,7 @@ def check_grammar_consistency(grammar, start_symbol="<start>"):
     used_symbols = set()
     undefined_symbols = set()
     defined_symbols = set()
+    ignored_symbols = ignored_symbols or set()
 
     for symbol in grammar.rules.keys():
         defined_symbols.add(symbol)
@@ -67,12 +69,14 @@ def check_grammar_consistency(grammar, start_symbol="<start>"):
             undefined_symbols.add(symbol)
 
     for symbol in defined_symbols:
-        if symbol not in used_symbols and str(symbol) != start_symbol:
+        if (symbol not in used_symbols and
+            symbol not in ignored_symbols and 
+            str(symbol) != start_symbol):
             LOGGER.info(f"Symbol {symbol} defined, but not used")
 
     if undefined_symbols:
-        for symbol in grammar.rules.keys():
-            defined_symbols_str = ", ".join(symbol)
+        defined_symbols_str = ", ".join(symbol for symbol in defined_symbols
+                                        and symbol not in ignored_symbols)
 
         error = ValueError(f"Undefined symbols {undefined_symbols} in grammar")
         error.add_note(f"Possible symbols: {defined_symbols_str}")
@@ -298,10 +302,12 @@ def parse(
     return spec.grammar, spec.constraints
 
 
-def finalize(grammar, constraints):
+def finalize(grammar, constraints, ignored_symbols=None):
     """Run final checks after parsing of all grammars is done"""
+    ignored_symbols = ignored_symbols or set()
+
     if grammar and len(grammar.rules) > 0:
-        check_grammar_consistency(grammar)
+        check_grammar_consistency(grammar, ignored_symbols)
 
     if grammar and constraints:
         check_constraints_existence(grammar, constraints)
