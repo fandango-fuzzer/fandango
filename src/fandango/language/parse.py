@@ -36,7 +36,7 @@ class MyErrorListener(ErrorListener):
         raise ParseCancellationException(f"Line {line}, Column {column}: error: {msg}")
 
 
-def check_grammar(grammar, start_symbol="<start>"):
+def check_grammar_consistency(grammar, start_symbol="<start>"):
     if not grammar:
         return
 
@@ -218,6 +218,7 @@ def parse(
     /,
     lazy: bool = False,
     check_constraints: bool = True,
+    check_grammar: bool = True,
     given_grammar=None,
     use_cache: bool = True,
 ) -> Tuple[Grammar, List[Constraint]]:
@@ -280,8 +281,8 @@ def parse(
         LOGGER.debug("Splitting content")
         spec = FandangoSpec(tree, fan_contents, lazy)
 
-    if len(spec.grammar.rules) > 0:
-        check_grammar(spec.grammar)
+    if check_grammar and len(spec.grammar.rules) > 0:
+        check_grammar_consistency(grammar)
 
     if check_constraints:
         if not spec.grammar or len(spec.grammar.rules) == 0:
