@@ -606,7 +606,7 @@ def fuzz_command(args):
     if args.constraints:
         # Add given constraints
         _, extra_constraints = parse_fan_contents(args, parse_files=False,
-                                                  given_grammar=DEFAULT_FAN_CONTENT[0])
+                                                  given_grammar=grammar)
         constraints += extra_constraints
 
     settings = make_fandango_settings(args, DEFAULT_SETTINGS)
