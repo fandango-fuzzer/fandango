@@ -28,3 +28,4 @@ parts:
     chapters:
     - file: Reference
     - file: Installing
+    - file: Stdlib

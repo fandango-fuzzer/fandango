@@ -10,7 +10,7 @@ kernelspec:
   name: python3
 ---
 
-(sec:tutorial)=
+(sec:reference)=
 # Fandango Reference
 
 This manual contains reference information about Fandango:
