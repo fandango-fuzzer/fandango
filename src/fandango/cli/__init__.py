@@ -402,7 +402,7 @@ def exit_command(args):
     pass
 
 
-
+STDLIB_SYMBOLS = set()
 
 def parse_fan_contents(args, parse_files=True, parse_constraints=True,
                        given_grammar=None):
@@ -412,10 +412,11 @@ def parse_fan_contents(args, parse_files=True, parse_constraints=True,
 
     LOGGER.debug("Reading .fan files")
 
-    stdlib_symbols = set()
+    global STDLIB_SYMBOLS
+    STDLIB_SYMBOLS = set()
     stdlib_grammar, stdlib_constraints = parse(stdlib, "<stdlib>")
     for symbol in stdlib_grammar.rules.keys():
-        stdlib_symbols.add(symbol)
+        STDLIB_SYMBOLS.add(symbol)
 
     grammar = stdlib_grammar
     constraints = stdlib_constraints
@@ -427,6 +428,9 @@ def parse_fan_contents(args, parse_files=True, parse_constraints=True,
             fan_content = file.read()
             new_grammar, new_constraints = \
                 parse(fan_content, filename=file.name)
+            for symbol in new_grammar.rules.keys():
+                if symbol in STDLIB_SYMBOLS:
+                    STDLIB_SYMBOLS.remove(symbol)
             grammar.update(new_grammar)
             constraints += new_constraints
 
@@ -435,7 +439,7 @@ def parse_fan_contents(args, parse_files=True, parse_constraints=True,
             _, new_constraints = parse(constraint + ";", constraint)
             constraints += new_constraints
 
-    finalize(grammar, constraints, ignored_symbols=stdlib_symbols)
+    finalize(grammar, constraints, ignored_symbols=STDLIB_SYMBOLS)
     return grammar, constraints
 
 
@@ -519,6 +523,7 @@ def set_command(args):
     global DEFAULT_FAN_CONTENT
     global DEFAULT_CONSTRAINTS
     global DEFAULT_SETTINGS
+    global STDLIB_SYMBOLS
 
     if args.fan_files:
         DEFAULT_FAN_CONTENT = None, None
@@ -548,7 +553,9 @@ def set_command(args):
         # Report current settings
         grammar, constraints = DEFAULT_FAN_CONTENT
         if grammar:
-            print(grammar)
+            for symbol in grammar.rules:
+                if symbol not in STDLIB_SYMBOLS:
+                    print(grammar.get_repr_for_rule(symbol))
         if constraints:
             for constraint in constraints:
                 print(str(constraint) + ";")
