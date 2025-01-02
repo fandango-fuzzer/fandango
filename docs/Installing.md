@@ -11,9 +11,9 @@ kernelspec:
 ---
 
 (sec:installing)=
-## Installing Fandango
+# Installing Fandango
 
-### Installing Fandango for Normal Usage
+## Installing Fandango for Normal Usage
 
 ```{warning}
 While Fandango is in beta, only development versions can be installed.
@@ -69,9 +69,3 @@ $ pip install -e .
 ```
 
 You should then be able to invoke Fandango as described above.
-
-
-
-% ## Acknowledgments
-% 
-% ```{include} Footer.md
