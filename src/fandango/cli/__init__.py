@@ -422,7 +422,7 @@ def parse_fan_contents(args, parse_files=True, parse_constraints=True):
 
     if parse_constraints and args.constraints:
         for constraint in args.constraints:
-            _, new_constraints = parse(constraint, "<constraint>")
+            _, new_constraints = parse(constraint + ";", "<constraint>")
             constraints += new_constraints
 
     finalize(grammar, constraints)
@@ -594,7 +594,7 @@ def fuzz_command(args):
 
     if args.constraints:
         # Add given constraints
-        _, extra_constraints = parse_fan_contents(fan_contents, parse_files=False)
+        _, extra_constraints = parse_fan_contents(args, parse_files=False)
         constraints += extra_constraints
 
     settings = make_fandango_settings(args, DEFAULT_SETTINGS)
