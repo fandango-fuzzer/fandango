@@ -5,5 +5,4 @@
 <int>     ::= <digit> | <lead_digit> <digits>;
 <float>   ::= <int> "." <digits>;
 <digits>  ::= <digit>+;
-<digit>   ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
 <lead_digit> ::=    "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
