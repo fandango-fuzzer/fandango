@@ -35,7 +35,7 @@ class MyErrorListener(ErrorListener):
         self.filename = filename
         super().__init__()
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise SyntaxError(f"{self.filename}:{line}:{column}: {msg}")
+        raise SyntaxError(f'"{self.filename}", line {line}, column {column}: {msg}')
 
 
 def check_grammar_consistency(grammar, ignored_symbols=None, 
