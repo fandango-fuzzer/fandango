@@ -432,7 +432,7 @@ def parse_fan_contents(args, parse_files=True, parse_constraints=True,
 
     if parse_constraints and args.constraints:
         for constraint in args.constraints:
-            _, new_constraints = parse(constraint + ";", "<constraint>")
+            _, new_constraints = parse(constraint + ";", constraint)
             constraints += new_constraints
 
     finalize(grammar, constraints, ignored_symbols=stdlib_symbols)
