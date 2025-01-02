@@ -298,17 +298,13 @@ def parse(
     return spec.grammar, spec.constraints
 
 
-def finalize(grammar, constraints, given_grammar=None):
+def finalize(grammar, constraints):
     """Run final checks after parsing of all grammars is done"""
-    if len(grammar.rules) > 0:
+    if grammar and len(grammar.rules) > 0:
         check_grammar_consistency(grammar)
 
-    if not grammar or len(grammar.rules) == 0:
-        g = given_grammar
-    else:
-        g = grammar
-    if g and len(g.rules) > 0:
-        check_constraints_existence(g, constraints)
+    if grammar and constraints:
+        check_constraints_existence(grammar, constraints)
 
     LOGGER.debug("Finalizing grammar")
     grammar.prime()
