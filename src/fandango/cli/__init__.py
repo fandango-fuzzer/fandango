@@ -14,12 +14,14 @@ import sys
 import tempfile
 import textwrap
 import zipfile
+
 from io import StringIO
 from io import UnsupportedOperation
 from pathlib import Path
 from ansi_styles import ansiStyles as styles
 
 from fandango.language.parse import parse
+from fandango.language.stdlib import stdlib
 from antlr4.error.Errors import ParseCancellationException
 from fandango.evolution.algorithm import Fandango
 from fandango.logger import LOGGER, print_exception
@@ -401,7 +403,7 @@ def exit_command(args):
 
 def merged_fan_contents(args) -> str:
     """Merge all given files and constraints into one; return content"""
-    fan_contents = ""
+    fan_contents = stdlib + "\n"
     if args.fan_files:
         for file in args.fan_files:
             fan_contents += file.read() + "\n"
@@ -996,7 +998,7 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
         LOGGER.setLevel(logging.DEBUG)  # Even more info
 
     if args.command in COMMANDS:
-        LOGGER.info(args.command)
+        # LOGGER.info(args.command)
         command = COMMANDS[args.command]
         last_status = run(command, args)
     elif args.command is None or args.command == "shell":
