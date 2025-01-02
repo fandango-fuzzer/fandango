@@ -10,17 +10,8 @@ kernelspec:
   name: python3
 ---
 
-(sec:reference)=
-# Fandango Reference
-
-% ## Table of Contents
-% 
-% ```{tableofcontents}
-% ```
-
-
 (sec:installing)=
-## Fandango Installation Options
+## Installing Fandango
 
 ### Installing Fandango for Normal Usage
 
