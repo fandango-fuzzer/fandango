@@ -2,11 +2,15 @@ from typing import final
 
 
 class IoParty(object):
-    roles = dict[str, "IoParty"]()
 
-    def __init__(self):
+
+    def __init__(self, is_fandango: bool):
         self.class_name = type(self).__name__.lower()
-        IoParty.roles[self.class_name] = self
+        self._is_fandango = is_fandango
+        FandangoIO.instance().roles[self.class_name] = self
+
+    def is_fandango(self):
+        return self._is_fandango
 
     def on_fandango_msg(self, message: str):
         pass
@@ -34,6 +38,7 @@ class FandangoIO:
             }
         )
         FandangoIO.__instance = self
+        self.roles = dict[str, "IoParty"]()
 
     def run_com_loop(self):
         for role, msg in self._data["local_response"].items():
