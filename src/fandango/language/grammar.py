@@ -86,7 +86,7 @@ class Alternative(Node):
         return len(self.alternatives)
 
     def __repr__(self):
-        return "(" + "|".join(map(repr, self.alternatives)) + ")"
+        return "(" + " | ".join(map(repr, self.alternatives)) + ")"
 
     def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterator["Node"]:
         yield from self.alternatives
@@ -160,6 +160,8 @@ class Repetition(Node):
         return trees
 
     def __repr__(self):
+        if self.min == self.max:
+            return f"{self.node}{{{self.min}}}"
         return f"{self.node}{{{self.min},{self.max}}}"
 
     def descendents(self, rules: Dict[NonTerminal, "Node"] | None) -> Iterator["Node"]:

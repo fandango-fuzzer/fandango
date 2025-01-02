@@ -85,7 +85,7 @@ class Terminal(Symbol):
         return word == self.symbol
 
     def __repr__(self):
-        return f'"{self.symbol}"'
+        return repr(self.symbol)
 
     def __eq__(self, other):
         return isinstance(other, Terminal) and self.symbol == other.symbol
