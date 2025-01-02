@@ -2,7 +2,6 @@
 <credit_card_number> ::= <number> <check_digit>;
 <number>             ::= <digit>{15};  # for 16-digit numbers
 <check_digit>        ::= <digit>;
-<digit>              ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
 
 def credit_card_check_digit(number: str) -> str:
     """Create a check digit for the credit card number `number`."""
