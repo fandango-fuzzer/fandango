@@ -72,7 +72,7 @@ class GrammarProcessor(FandangoParserVisitor):
         self.global_variables = global_variables
         self.searches = SearchProcessor(Grammar.dummy())
 
-    def get_grammar(self, productions: List[FandangoParser.ProductionContext]):
+    def get_grammar(self, productions: List[FandangoParser.ProductionContext], prime=True):
         grammar = Grammar(
             local_variables=self.local_variables, global_variables=self.global_variables
         )
@@ -93,7 +93,8 @@ class GrammarProcessor(FandangoParserVisitor):
                     )
 
         grammar.update_parser()
-        grammar.prime()
+        if prime:
+            grammar.prime()
         return grammar
 
     def visitAlternative(self, ctx: FandangoParser.AlternativeContext):
