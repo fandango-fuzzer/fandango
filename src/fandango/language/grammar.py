@@ -706,8 +706,6 @@ class Grammar(NodeVisitor):
         self._global_variables = global_variables or {}
         self._visited = set()
 
-        print("Initializing grammar with globals:", self._global_variables.keys())
-
     def generate_string(self, symbol: str | NonTerminal = "<start>") -> str | Tuple:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
