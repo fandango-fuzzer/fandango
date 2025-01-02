@@ -150,13 +150,18 @@ class Fandango:
             exec("FandangoIO.instance()")
         io_instance: FandangoIO = global_env['FandangoIO'].instance()
 
-        while True:
+        finished = False
+        prev_role_msgs = 0
+        while not finished:
             results = self.evolve()
             choice: DerivationTree = random.choice(results)
 
             role_msgs = choice.find_role_msgs()
+            if len(role_msgs) <= prev_role_msgs:
+                # No new message generated. Finished
+                return [choice]
 
-            io_instance._data['local_response'] = choice
+            io_instance._data['local_response'] = role_msgs[-1][1]
             exec("FandangoIO.instance().io_instance.run_com_loop()", global_env, local_env)
             # Todo: How to handle multiple remote responses from different roles? Preserve order in which they have been added.
             history = str(choice)
@@ -164,7 +169,8 @@ class Fandango:
                 history += item
 
             new_population = []
-            for idx, tree_option in self.grammar.parse_incomplete(history, self.start_symbol):
+            for tree_option in self.grammar.parse_incomplete(history, self.start_symbol):
+                tree_option.set_read_only(True)
                 new_population.append(tree_option)
                 if len(new_population) >= self.population_size:
                     break
@@ -174,7 +180,6 @@ class Fandango:
                 new_population.append(random.choice(new_population))
             self.population = new_population
             self.population = self.generate_random_initial_population(FuzzingMode.IO)
-
 
         return []
 
