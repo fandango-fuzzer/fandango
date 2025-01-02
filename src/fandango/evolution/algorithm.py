@@ -161,15 +161,32 @@ class Fandango:
                 # No new message generated. Finished
                 return [choice]
 
-            io_instance._data['local_response'] = role_msgs[-1][1]
+            last_role, last_msg = role_msgs[-1]
+            grammar_roles = io_instance.roles
+
+            str_history = str(choice)
+            if last_role in grammar_roles.keys():
+                if grammar_roles[last_role].is_fandango():
+                    io_instance._data['local_response'][last_role] = last_msg
+                    exec("FandangoIO.instance().io_instance.run_com_loop()", global_env, local_env)
+                    # Todo: How to handle multiple remote responses from different roles? Preserve order in which they have been added.
+                else:
+                    # Todo: How to get a message. Current idea: messages from remote parties are received in the same step in which fandango sends messages.
+                    #       Maybe throw an exception if a remote message is required, but now received using the first approach?
+                    pass
+                for role, item in io_instance._data['remote_response'].items():
+                    str_history += item
+                io_instance._data['remote_response'].clear()
+            else:
+                # Todo: What is we don't have a class definition for a role. Just ignore the role completely?
+                pass
+
             exec("FandangoIO.instance().io_instance.run_com_loop()", global_env, local_env)
-            # Todo: How to handle multiple remote responses from different roles? Preserve order in which they have been added.
-            history = str(choice)
-            for role, item in io_instance._data['remote_response'].items():
-                history += item
+
+
 
             new_population = []
-            for tree_option in self.grammar.parse_incomplete(history, self.start_symbol):
+            for tree_option in self.grammar.parse_incomplete(str_history, self.start_symbol):
                 tree_option.set_read_only(True)
                 new_population.append(tree_option)
                 if len(new_population) >= self.population_size:
@@ -180,6 +197,7 @@ class Fandango:
                 new_population.append(random.choice(new_population))
             self.population = new_population
             self.population = self.generate_random_initial_population(FuzzingMode.IO)
+            self.solution.clear()
 
         return []
 
