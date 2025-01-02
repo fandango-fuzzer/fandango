@@ -50,8 +50,8 @@ printable += make_def("alphanum_", string.ascii_letters + string.digits + "_")
 stdlib += printable
 
 stdlib += make_header("ASCII characters")
-ascii = make_def("ascii_char", "".join(chr(c) for c in range(0, 128)), force_binary=False)
-stdlib += ascii
+ascii_char = make_def("ascii_char", "".join(chr(c) for c in range(0, 128)), force_binary=False)
+stdlib += ascii_char
 
 stdlib += make_header("ASCII control characters")
 ASCII_CONTROL = ['NUL', 'SOH', 'STX', 'ETX', 'EOT', 'ENQ', 'ACK', 'BEL', 'BS', 'HT', 'LF', 'VT', 'FF', 'CR', 'SO', 'SI', 'DLE', 'DC1', 'DC2', 'DC3', 'DC4', 'NAK', 'SYN', 'ETB', 'CAN', 'EM', 'SUB', 'ESC', 'FS', 'GS', 'RS', 'US', 'SP']
@@ -59,6 +59,7 @@ ascii_control = ""
 for i in range(len(ASCII_CONTROL)):
     ascii_control += make_def(ASCII_CONTROL[i], chr(i), force_binary=True)
 ascii_control += make_def('DEL', chr(127), force_binary=True)
+ascii_control += make_rule('ascii_control', (f"<{symbol}>" for symbol in ASCII_CONTROL + ['DEL']))
 stdlib += ascii_control
 
 stdlib += make_header("Bits")
