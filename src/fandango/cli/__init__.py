@@ -404,7 +404,8 @@ def exit_command(args):
 
 
 
-def parse_fan_contents(args, parse_files=True, parse_constraints=True):
+def parse_fan_contents(args, parse_files=True, parse_constraints=True,
+                       given_grammar=None):
     """Parse .fan content as given in args"""
     if not args.fan_files and not args.constraints:
         return None, None
@@ -412,6 +413,9 @@ def parse_fan_contents(args, parse_files=True, parse_constraints=True):
     LOGGER.debug("Reading .fan files")
 
     grammar, constraints = parse(stdlib, "<stdlib>")
+    if given_grammar:
+        grammar.update(given_grammar)
+
     if parse_files and args.fan_files:
         for file in args.fan_files:
             fan_content = file.read()
@@ -524,7 +528,8 @@ def set_command(args):
             raise ValueError("Open a `.fan` file first ('set -f FILE.fan')")
 
         LOGGER.info("Parsing Fandango constraints")
-        _, constraints = parse_fan_contents(args, parse_files=False)
+        _, constraints = parse_fan_contents(args, parse_files=False,
+                                            given_grammar=default_grammar)
         DEFAULT_CONSTRAINTS = constraints
 
     settings = make_fandango_settings(args)
@@ -594,7 +599,8 @@ def fuzz_command(args):
 
     if args.constraints:
         # Add given constraints
-        _, extra_constraints = parse_fan_contents(args, parse_files=False)
+        _, extra_constraints = parse_fan_contents(args, parse_files=False,
+                                                  given_grammar=DEFAULT_FAN_CONTENT[0])
         constraints += extra_constraints
 
     settings = make_fandango_settings(args, DEFAULT_SETTINGS)
