@@ -15,6 +15,7 @@ import tempfile
 import textwrap
 import zipfile
 from typing import IO, List
+from copy import deepcopy
 
 from io import StringIO
 from io import UnsupportedOperation
@@ -403,6 +404,8 @@ def exit_command(args):
 
 
 STDLIB_SYMBOLS = set()
+STDLIB_GRAMMAR = None
+STDLIB_CONSTRAINTS = None
 
 def parse_fan_contents(args, parse_files=True, parse_constraints=True,
                        given_grammar=None):
@@ -412,14 +415,16 @@ def parse_fan_contents(args, parse_files=True, parse_constraints=True,
 
     LOGGER.debug("Reading .fan files")
 
-    global STDLIB_SYMBOLS
+    global STDLIB_SYMBOLS, STDLIB_GRAMMAR, STDLIB_CONSTRAINTS
+    if STDLIB_GRAMMAR is None:
+        STDLIB_GRAMMAR, STDLIB_CONSTRAINTS = parse(stdlib, "<stdlib>")
+
     STDLIB_SYMBOLS = set()
-    stdlib_grammar, stdlib_constraints = parse(stdlib, "<stdlib>")
-    for symbol in stdlib_grammar.rules.keys():
+    for symbol in STDLIB_GRAMMAR.rules.keys():
         STDLIB_SYMBOLS.add(symbol)
 
-    grammar = stdlib_grammar
-    constraints = stdlib_constraints
+    grammar = deepcopy(STDLIB_GRAMMAR)
+    constraints = STDLIB_CONSTRAINTS.copy()
     if given_grammar:
         grammar.update(given_grammar)
 
@@ -596,7 +601,7 @@ def fuzz_command(args):
     LOGGER.info("---------- Parsing FANDANGO content ----------")
     if args.fan_files:
         # Override given default content (if any)
-        grammar, constraints = parse_fan_contents(args)
+        grammar, constraints = parse_fan_contents(args, parse_constraints=False)
     else:
         grammar = DEFAULT_FAN_CONTENT[0]
         constraints = DEFAULT_FAN_CONTENT[1]
