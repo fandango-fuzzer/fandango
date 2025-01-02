@@ -796,7 +796,7 @@ class Grammar(NodeVisitor):
             symbol = NonTerminal(symbol)
         return (
             f"{symbol} ::= {self.rules[symbol]}"
-            f"{' :: ' + self.generators[symbol] if symbol in self.generators else ''};"
+            f"{' = ' + self.generators[symbol] if symbol in self.generators else ''};"
         )
 
     def __str__(self):
