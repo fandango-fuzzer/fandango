@@ -20,7 +20,7 @@ This chapter is still in construction.
 ## The `include()` Function
 
 Fandango provides an `include()` function that you can use to _include_ existing Fandango content.
-Specifically, a call to `include(FILE)`
+Specifically, in a `.fan` file, a call to `include(FILE)`
 
 1. Finds and loads `FILE` (typically [in the same location as the including file](sec:including))
 2. Executes the _code_ in `FILE`
@@ -55,10 +55,10 @@ Python provides its own import mechanism for referring to existing features.
 In general, you should use
 
 * `import` whenever you want to make use of Python functions; and
-* `include()` whenever you want to make use of Fandango features.
+* `include()` only if you want to make use of Fandango features.
 
 :::{warning}
 Using `include` for Python code, as in `include('code.py')` is not recommended.
-Most importantly, the "included" Python code may only be processed after code in the "including" file, which is different from Python.
+Most importantly, the current Fandango implementation will process "included" Python code only _after_ all code in the "including" spec has been run. In contrast, the effects of `import` are immediate.
 :::
 
