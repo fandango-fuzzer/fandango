@@ -11,7 +11,7 @@ from antlr4 import InputStream, CommonTokenStream
 
 import hashlib
 import dill as pickle
-from xdg_base_dirs import xdg_cache_home, xdg_data_home
+from xdg_base_dirs import xdg_cache_home, xdg_data_home, xdg_data_dirs
 import cachedir_tag
 from copy import deepcopy
 from pathlib import Path
@@ -200,6 +200,7 @@ def include(file_to_be_included: str):
         path += ":" + os.environ["FANDANGO_PATH"]
     dirs = [Path(dir) for dir in path.split(":")]
     dirs += [xdg_data_home() / "fandango"]  # sth like ~/.local/share/fandango
+    dirs += [dir / "fandango" for dir in xdg_data_dirs()]  # sth like /usr/local/share/fandango
 
     for dir in dirs:
         try:
