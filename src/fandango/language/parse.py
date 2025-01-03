@@ -3,6 +3,7 @@ import re
 import os
 import importlib.metadata
 import string
+from fuzzywuzzy import process
 
 from typing import Tuple, List, Set, Any, IO, Optional
 from fandango.logger import LOGGER, print_exception
@@ -41,60 +42,8 @@ class MyErrorListener(ErrorListener):
         raise SyntaxError(f'{repr(self.filename)}, line {line}, column {column}: {msg}')
 
 
-# from https://norvig.com/spell-correct.html
-def edits1(word):
-   alphabet = string.ascii_letters + string.digits + '_'
-   splits     = [(word[:i], word[i:]) for i in range(len(word) + 1)]
-   deletes    = [a + b[1:] for a, b in splits if b]
-   transposes = [a + b[1] + b[0] + b[2:] for a, b in splits if len(b)>1]
-   replaces   = [a + c + b[1:] for a, b in splits for c in alphabet if b]
-   inserts    = [a + c + b     for a, b in splits for c in alphabet]
-   return set(deletes + transposes + replaces + inserts)
-
-def edits(word, n):
-    if n == 1:
-        return edits1(word)
-    else:
-        return set(e2 for e1 in edits(word, n - 1) for e2 in edits1(e1))
-
-def edit_distance(s1, s2):
-    # https://stackoverflow.com/questions/2460177/edit-distance-in-python
-    if len(s1) > len(s2):
-        s1, s2 = s2, s1
-
-    distances = range(len(s1) + 1)
-    for i2, c2 in enumerate(s2):
-        distances_ = [i2+1]
-        for i1, c1 in enumerate(s1):
-            if c1 == c2:
-                distances_.append(distances[i1])
-            else:
-                distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
-        distances = distances_
-    return distances[-1]
-
 def closest_match(word, candidates):
-    # Try up to three spelling mistakes
-    for distance in range(1, 3):
-        for alternate_spelling in edits(word, distance):
-            if alternate_spelling in candidates:
-                return alternate_spelling
-
-    # Try prefixes and suffixes
-    for candidate in candidates:
-        c = re.sub(r'[^a-zA-Z0-9_]', '', candidate)
-        w = re.sub(r'[^a-zA-Z0-9_]', '', word)
-        if c.startswith(w) or c.endswith(w):
-            return candidate
-
-    # Try case mismatches
-    for candidate in candidates:
-        if candidate.lower() == word.lower():
-            return candidate
-
-    # Try smallest edit distance
-    return min(candidates, key=lambda x: edit_distance(word, x))
-
+    return process.extractOne(word, candidates)[0]
 
 def check_grammar_consistency(grammar, given_used_symbols=set(),
                               start_symbol="<start>"):
