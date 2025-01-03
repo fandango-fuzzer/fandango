@@ -2,8 +2,7 @@ import ast
 import re
 import os
 import importlib.metadata
-import string
-from fuzzywuzzy import process
+from thefuzz import process as thefuzz_process
 
 from typing import Tuple, List, Set, Any, IO, Optional
 from fandango.logger import LOGGER, print_exception
@@ -43,7 +42,7 @@ class MyErrorListener(ErrorListener):
 
 
 def closest_match(word, candidates):
-    return process.extractOne(word, candidates)[0]
+    return thefuzz_process.extractOne(word, candidates)[0]
 
 def check_grammar_consistency(grammar, given_used_symbols=set(),
                               start_symbol="<start>"):
