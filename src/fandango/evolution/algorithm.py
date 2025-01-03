@@ -194,9 +194,10 @@ class Fandango:
                     break
             if len(new_population) == 0:
                 raise RuntimeError("Failed to append remote response to generated history matching grammar!")
-            while len(new_population) < self.population_size:
-                new_population.append(random.choice(new_population))
+
             self.population = new_population
+            while len(self.population) < self.population_size:
+                self.population.append(random.choice(new_population))
             self.population = self.generate_random_initial_population(FuzzingMode.IO)
             self.solution.clear()
 
