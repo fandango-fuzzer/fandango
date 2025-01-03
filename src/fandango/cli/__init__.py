@@ -512,11 +512,10 @@ def set_command(args):
         DEFAULT_FAN_CONTENT = None, None
         DEFAULT_CONSTRAINTS = []
         LOGGER.info("Parsing Fandango content")
-        grammar, constraints = parse_files_from_args(args)
+        grammar, constraints = parse_contents_from_args(args)
         DEFAULT_FAN_CONTENT = (grammar, constraints)
         DEFAULT_CONSTRAINTS = []  # Don't leave these over
-
-    if args.constraints:
+    elif args.constraints:
         default_grammar = DEFAULT_FAN_CONTENT[0]
         if not default_grammar:
             raise ValueError("Open a `.fan` file first ('set -f FILE.fan')")
@@ -578,7 +577,7 @@ def fuzz_command(args):
     LOGGER.info("---------- Parsing FANDANGO content ----------")
     if args.fan_files:
         # Override given default content (if any)
-        grammar, constraints = parse_files_from_args(args)
+        grammar, constraints = parse_contents_from_args(args)
     else:
         grammar = DEFAULT_FAN_CONTENT[0]
         constraints = DEFAULT_FAN_CONTENT[1]
@@ -591,12 +590,6 @@ def fuzz_command(args):
 
     if DEFAULT_CONSTRAINTS:
         constraints += DEFAULT_CONSTRAINTS
-
-    if args.constraints:
-        # Add given constraints
-        _, extra_constraints = parse_constraints_from_args(args, 
-                                                           given_grammars=[grammar])
-        constraints += extra_constraints
 
     settings = make_fandango_settings(args, DEFAULT_SETTINGS)
     LOGGER.debug(f"Settings: {settings}")

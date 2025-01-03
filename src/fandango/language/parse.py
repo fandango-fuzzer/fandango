@@ -461,12 +461,14 @@ def parse(fan_files: List[IO],
         n += 1
 
     LOGGER.debug("Processing constraints")
-    for constraint in constraints:
+    for constraint in constraints or []:
         LOGGER.debug(f"Constraint {constraint}")
         _, new_constraints = parse_content(constraint + ";", constraint)
         parsed_constraints += new_constraints
 
     finalize(grammar, parsed_constraints, given_used_symbols=USED_SYMBOLS)
+
+    LOGGER.debug("All contents parsed")
     return grammar, parsed_constraints
 
 
