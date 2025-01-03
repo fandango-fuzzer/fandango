@@ -183,6 +183,7 @@ def check_constraints_existence_children(
 
 CURRENT_FILENAME: str = "<undefined>"
 FILES_TO_PARSE: List[IO] = []
+INCLUDES: List[str] = []
 
 def include(file_to_be_included: str):
     """Include a file in the current context"""
@@ -193,6 +194,8 @@ def include(file_to_be_included: str):
     path = os.path.dirname(CURRENT_FILENAME)
     if not path:
         path = "."  # For strings and standard input
+    if INCLUDES:
+        path += ":" + ":".join(INCLUDES)
     if os.environ.get("FANDANGO_PATH"):
         path += ":" + os.environ["FANDANGO_PATH"]
     for dir in path.split(":"):
@@ -303,12 +306,10 @@ def parse_content(
         try:
             spec.run_code(filename=filename)
         except Exception as e:
-            print_exception(e)
-
             # In case the error has anything to do with caching, play it safe
             LOGGER.debug(f"Cached spec failed; removing {pickle_file}")
-            spec = None
             os.remove(pickle_file)
+            raise e
 
     if not spec:
         LOGGER.debug(f"{filename}: setting up .fan parser and lexer")
@@ -356,7 +357,8 @@ def parse(fan_files: List[IO],
           use_stdlib: bool = True,
           use_cache: bool = True,
           lazy: bool = False,
-          given_grammars: List[Grammar] = []) -> Tuple[Optional[Grammar], List[str]]:
+          given_grammars: List[Grammar] = [],
+          includes: List[str] = []) -> Tuple[Optional[Grammar], List[str]]:
     """
     Parse .fan content, handling standard library and includes.
     :param fan_files: List of (open) .fan files
@@ -365,6 +367,7 @@ def parse(fan_files: List[IO],
     :param use_cache: If True (default), cache parsing results
     :param lazy: If True, the constraints are evaluated lazily
     :param given_grammars: Grammars to use in addition to the standard library
+    :param includes: A list of directories to search for include files
     :return: A tuple of the grammar and constraints
     """
     if not fan_files and not constraints:
@@ -383,6 +386,9 @@ def parse(fan_files: List[IO],
     for symbol in STDLIB_GRAMMAR.rules.keys():
         # Do not complain about unused symbols in the standard library
         USED_SYMBOLS.add(symbol)
+
+    global INCLUDES
+    INCLUDES = includes
 
     # LOGGER.debug("Given grammars:", str(given_grammars))
 

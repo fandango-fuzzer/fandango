@@ -212,6 +212,16 @@ def get_parser(in_command_line=True):
         default="\n",
         help="output SEPARATOR between individual inputs. (default: newline)",
     )
+    file_parser.add_argument(
+        "-I",
+        "--include-dir",
+        type=str,
+        dest="includes",
+        metavar="DIR",
+        default=None,
+        action="append",
+        help="specify a directory DIR to search for included Fandango files",
+    )
 
     # Commands
 
@@ -403,15 +413,18 @@ def exit_command(args):
 
 def parse_files_from_args(args, given_grammars=[]):
     """Parse .fan files as given in args"""
-    return parse(args.fan_files, [], given_grammars=given_grammars)
+    return parse(args.fan_files, [], 
+                 given_grammars=given_grammars, includes=args.includes)
 
 def parse_constraints_from_args(args, given_grammars=[]):
     """Parse .fan constraints as given in args"""
-    return parse([], args.constraints, given_grammars=given_grammars)
+    return parse([], args.constraints,
+                 given_grammars=given_grammars, includes=args.includes)
 
 def parse_contents_from_args(args, given_grammars=[]):
     """Parse .fan content as given in args"""
-    return parse(args.fan_files, args.constraints, given_grammars=given_grammars)
+    return parse(args.fan_files, args.constraints, 
+                 given_grammars=given_grammars, includes=args.includes)
 
 
 def make_fandango_settings(args, initial_settings={}):
