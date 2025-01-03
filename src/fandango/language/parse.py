@@ -2,6 +2,8 @@ import ast
 import re
 import os
 import importlib.metadata
+import platform
+
 from thefuzz import process as thefuzz_process
 
 from typing import Tuple, List, Set, Any, IO, Optional
@@ -199,7 +201,12 @@ def include(file_to_be_included: str):
     if os.environ.get("FANDANGO_PATH"):
         path += ":" + os.environ["FANDANGO_PATH"]
     dirs = [Path(dir) for dir in path.split(":")]
-    dirs += [xdg_data_home() / "fandango"]  # sth like ~/.local/share/fandango
+
+    if platform.system() == 'Darwin':
+        dirs += [Path.home() / "Library" / "Fandango"]  # sth like ~/Library/Fandango
+        dirs += [Path("/Library/Fandango")] # sth like /Library/Fandango
+    else:
+        dirs += [xdg_data_home() / "fandango"]  # sth like ~/.local/share/fandango
     dirs += [dir / "fandango" for dir in xdg_data_dirs()]  # sth like /usr/local/share/fandango
 
     for dir in dirs:
@@ -282,7 +289,10 @@ def parse_content(
     spec: Optional[FandangoSpec] = None
     from_cache = False
 
-    CACHE_DIR = xdg_cache_home() / "fandango"
+    if platform.system() == 'Darwin':
+        CACHE_DIR = Path.home() / "Library" / "Caches" / "Fandango"
+    else:
+        CACHE_DIR = xdg_cache_home() / "fandango"
 
     if use_cache:
         if not os.path.exists(CACHE_DIR):
