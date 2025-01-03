@@ -275,7 +275,7 @@ def parse(fan_files: List[IO],
           use_cache: bool = True,
           lazy: bool = False,
           given_grammars: List[Grammar] = [],
-          start_symbol: str = "<start>",
+          start_symbol: Optional[str] = None,
           includes: List[str] = []) -> Tuple[Optional[Grammar], List[str]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
@@ -292,6 +292,9 @@ def parse(fan_files: List[IO],
     if not fan_files and not constraints:
         return None, []
 
+    if start_symbol is None:
+        start_symbol = "<start>"
+
     global STDLIB_SYMBOLS, STDLIB_GRAMMAR, STDLIB_CONSTRAINTS
     if STDLIB_GRAMMAR is None:
         LOGGER.debug("Reading standard library")
@@ -304,7 +307,7 @@ def parse(fan_files: List[IO],
     USED_SYMBOLS = set()
     for symbol in STDLIB_GRAMMAR.rules.keys():
         # Do not complain about unused symbols in the standard library
-        USED_SYMBOLS.add(symbol)
+        USED_SYMBOLS.add(str(symbol))
 
     global INCLUDES
     INCLUDES = includes
@@ -393,7 +396,7 @@ def parse(fan_files: List[IO],
 ### Consistency Checks
 
 def check_grammar_consistency(grammar, /, given_used_symbols=set(),
-                              start_symbol="<start>"):
+                              start_symbol='<start>'):
     if not grammar:
         return
 
@@ -404,15 +407,15 @@ def check_grammar_consistency(grammar, /, given_used_symbols=set(),
     defined_symbols = set()
 
     for symbol in grammar.rules.keys():
-        defined_symbols.add(symbol)
+        defined_symbols.add(str(symbol))
 
-    if start_symbol not in [str(symbol) for symbol in defined_symbols]:
+    if start_symbol not in defined_symbols:
         closest = closest_match(start_symbol, defined_symbols)
         raise NameError(f"Start symbol {start_symbol} not defined in grammar. Did you mean {closest}?")
 
     def collect_used_symbols(tree):
         if tree.node_type == NodeType.NON_TERMINAL:
-            used_symbols.add(tree.symbol)
+            used_symbols.add(str(tree.symbol))
         if tree.node_type == NodeType.REPETITION:
             collect_used_symbols(tree.node)
         for child in tree.children():
@@ -428,7 +431,7 @@ def check_grammar_consistency(grammar, /, given_used_symbols=set(),
     for symbol in defined_symbols:
         if (symbol not in used_symbols
             and symbol not in given_used_symbols
-            and str(symbol) != start_symbol):
+            and symbol != start_symbol):
             LOGGER.info(f"Symbol {symbol} defined, but not used")
 
     if undefined_symbols:
@@ -449,7 +452,6 @@ def check_constraints_existence(grammar, constraints):
     defined_symbols = []
     for symbol in grammar.rules.keys():
         defined_symbols.append(str(symbol))
-    defined_symbols_str = ", ".join(defined_symbols)
 
     grammar_symbols = grammar.rules.keys()
     grammar_matches = re.findall(r"<([^>]*)>", str(grammar_symbols))
