@@ -72,9 +72,12 @@ def check_grammar_consistency(grammar, ignored_symbols=None,
 
     for symbol in defined_symbols:
         if (symbol not in used_symbols and
-            symbol not in ignored_symbols and 
             str(symbol) != start_symbol):
-            LOGGER.info(f"Symbol {symbol} defined, but not used")
+            if symbol in ignored_symbols:
+                # Do not warn about imported and stdlib symbols
+                LOGGER.debug(f"Symbol {symbol} defined, but not used")
+            else:
+                LOGGER.info(f"Symbol {symbol} defined, but not used")
 
     if undefined_symbols:
         defined_symbols_str = ", ".join(symbol for symbol in defined_symbols
@@ -353,7 +356,7 @@ def parse(fan_files: List[IO],
           use_stdlib: bool = True,
           use_cache: bool = True,
           lazy: bool = False,
-          given_grammar: Optional[Grammar] = None) -> Tuple[Optional[Grammar], List[str]]:
+          given_grammars: List[Grammar] = []) -> Tuple[Optional[Grammar], List[str]]:
     """
     Parse .fan content, handling standard library and includes.
     :param fan_files: List of (open) .fan files
@@ -361,27 +364,31 @@ def parse(fan_files: List[IO],
     :param use_stdlib: If True (default), use the standard library
     :param use_cache: If True (default), cache parsing results
     :param lazy: If True, the constraints are evaluated lazily
-    :param given_grammar: An optional grammar to use in addition to the standard library
+    :param given_grammars: Grammars to use in addition to the standard library
     :return: A tuple of the grammar and constraints
     """
     if not fan_files and not constraints:
         return None, []
 
-    LOGGER.debug("Reading .fan files")
-
     global STDLIB_SYMBOLS, STDLIB_GRAMMAR, STDLIB_CONSTRAINTS
     if STDLIB_GRAMMAR is None:
+        LOGGER.debug("Reading standard library")
         STDLIB_GRAMMAR, STDLIB_CONSTRAINTS = parse_content(stdlib, "<stdlib>")
+
+    assert STDLIB_GRAMMAR is not None
+    assert STDLIB_CONSTRAINTS is not None
 
     IGNORED_SYMBOLS = set()
     for symbol in STDLIB_GRAMMAR.rules.keys():
         IGNORED_SYMBOLS.add(symbol)
 
-    grammar = deepcopy(STDLIB_GRAMMAR)
-    constraints: List[str] = STDLIB_CONSTRAINTS.copy()
-    if given_grammar:
-        grammar.update(given_grammar, prime=False)
+    LOGGER.debug("Given grammars:" + str(given_grammars))
 
+    grammars = [deepcopy(STDLIB_GRAMMAR)]
+    parsed_constraints = STDLIB_CONSTRAINTS.copy()
+    grammars += given_grammars
+
+    LOGGER.debug("Reading files")
     global FILES_TO_PARSE
     FILES_TO_PARSE = fan_files
     while FILES_TO_PARSE:
@@ -390,24 +397,37 @@ def parse(fan_files: List[IO],
         fan_content = file.read()
         new_grammar, new_constraints = \
             parse_content(fan_content, filename=file.name)
+        grammars.append(new_grammar)
+        parsed_constraints += new_constraints
+
         if file not in fan_files:
             # Included file; do not complain about unused symbols
             for symbol in new_grammar.rules.keys():
                 if symbol in IGNORED_SYMBOLS:
                     IGNORED_SYMBOLS.remove(symbol)
-        grammar.update(new_grammar, prime=False)
-        constraints += new_constraints
 
+    LOGGER.debug("Processing grammars")
+    grammar = grammars[0]
+    for g in grammars[1:]:
+        for symbol in g.rules.keys():
+            if symbol in grammar.rules:
+                LOGGER.debug(f"Redefining {symbol}")
+        grammar.update(g, prime=False)
+
+    LOGGER.debug("Processing constraints")
     for constraint in constraints:
+        LOGGER.debug(f"Constraint {constraint}")
         _, new_constraints = parse_content(constraint + ";", constraint)
-        constraints += new_constraints
+        parsed_constraints += new_constraints
 
-    finalize(grammar, constraints, ignored_symbols=IGNORED_SYMBOLS)
-    return grammar, constraints
+    finalize(grammar, parsed_constraints, ignored_symbols=IGNORED_SYMBOLS)
+    return grammar, parsed_constraints
 
 
 def finalize(grammar, constraints, ignored_symbols=None):
     """Run final checks after parsing of all grammars is done"""
+    LOGGER.debug("Finalizing contents")
+
     ignored_symbols = ignored_symbols or set()
 
     if grammar and len(grammar.rules) > 0:
@@ -416,5 +436,4 @@ def finalize(grammar, constraints, ignored_symbols=None):
     if grammar and constraints:
         check_constraints_existence(grammar, constraints)
 
-    LOGGER.debug("Finalizing grammar")
     grammar.prime()

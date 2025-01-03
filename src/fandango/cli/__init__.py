@@ -19,6 +19,7 @@ from io import StringIO
 from io import UnsupportedOperation
 from pathlib import Path
 from ansi_styles import ansiStyles as styles
+from enum import Enum
 
 from fandango.language.parse import parse
 from antlr4.error.Errors import ParseCancellationException
@@ -400,12 +401,17 @@ def exit_command(args):
     pass
 
 
-def parse_fan_contents(args, parse_files=True, parse_constraints=True,
-                       given_grammar=None):
+def parse_files_from_args(args, given_grammars=[]):
+    """Parse .fan files as given in args"""
+    return parse(args.fan_files, [], given_grammars=given_grammars)
+
+def parse_constraints_from_args(args, given_grammars=[]):
+    """Parse .fan constraints as given in args"""
+    return parse([], args.constraints, given_grammars=given_grammars)
+
+def parse_contents_from_args(args, given_grammars=[]):
     """Parse .fan content as given in args"""
-    fan_files = args.fan_files if parse_files else []
-    constraints = args.constraints if parse_constraints else []
-    return parse(fan_files, constraints, given_grammar)
+    return parse(args.fan_files, args.constraints, given_grammars=given_grammars)
 
 
 def make_fandango_settings(args, initial_settings={}):
@@ -488,13 +494,12 @@ def set_command(args):
     global DEFAULT_FAN_CONTENT
     global DEFAULT_CONSTRAINTS
     global DEFAULT_SETTINGS
-    global STDLIB_SYMBOLS
 
     if args.fan_files:
         DEFAULT_FAN_CONTENT = None, None
         DEFAULT_CONSTRAINTS = []
         LOGGER.info("Parsing Fandango content")
-        grammar, constraints = parse_fan_contents(args, parse_constraints=False)
+        grammar, constraints = parse_files_from_args(args)
         DEFAULT_FAN_CONTENT = (grammar, constraints)
         DEFAULT_CONSTRAINTS = []  # Don't leave these over
 
@@ -504,8 +509,8 @@ def set_command(args):
             raise ValueError("Open a `.fan` file first ('set -f FILE.fan')")
 
         LOGGER.info("Parsing Fandango constraints")
-        _, constraints = parse_fan_contents(args, parse_files=False,
-                                            given_grammar=default_grammar)
+        _, constraints = parse_constraints_from_args(args,
+                                                     given_grammars=[default_grammar])
         DEFAULT_CONSTRAINTS = constraints
 
     settings = make_fandango_settings(args)
@@ -519,8 +524,7 @@ def set_command(args):
         grammar, constraints = DEFAULT_FAN_CONTENT
         if grammar:
             for symbol in grammar.rules:
-                if symbol not in STDLIB_SYMBOLS:
-                    print(grammar.get_repr_for_rule(symbol))
+                print(grammar.get_repr_for_rule(symbol))
         if constraints:
             for constraint in constraints:
                 print(str(constraint) + ";")
@@ -561,7 +565,7 @@ def fuzz_command(args):
     LOGGER.info("---------- Parsing FANDANGO content ----------")
     if args.fan_files:
         # Override given default content (if any)
-        grammar, constraints = parse_fan_contents(args, parse_constraints=False)
+        grammar, constraints = parse_files_from_args(args)
     else:
         grammar = DEFAULT_FAN_CONTENT[0]
         constraints = DEFAULT_FAN_CONTENT[1]
@@ -577,8 +581,8 @@ def fuzz_command(args):
 
     if args.constraints:
         # Add given constraints
-        _, extra_constraints = parse_fan_contents(args, parse_files=False,
-                                                  given_grammar=grammar)
+        _, extra_constraints = parse_constraints_from_args(args, 
+                                                           given_grammars=[grammar])
         constraints += extra_constraints
 
     settings = make_fandango_settings(args, DEFAULT_SETTINGS)
@@ -950,7 +954,7 @@ def run(command, args):
     return 0
 
 
-def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
+def main(*argv: str, stdout=sys.stdout, stderr=sys.stderr):
     if "-O" in sys.argv:
         sys.argv.remove("-O")
         os.execl(sys.executable, sys.executable, "-O", *sys.argv)
@@ -961,7 +965,7 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
         sys.stderr = stderr
 
     parser = get_parser(in_command_line=True)
-    args = parser.parse_args(args or sys.argv[1:])
+    args = parser.parse_args(argv or sys.argv[1:])
 
     LOGGER.setLevel(logging.WARNING)  # Default
 

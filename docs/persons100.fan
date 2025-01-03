@@ -1,6 +1,3 @@
-<start> ::= <person_name> "," <age>;
-<person_name> ::= <first_name> " " <last_name>;
-<first_name> ::= <name>;
-<last_name> ::= <name>;
+include('persons.fan')
+
 <name> ::= <ascii_uppercase_letter><ascii_lowercase_letter>{99};
-<age> ::= <digit>+;
