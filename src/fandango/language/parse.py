@@ -285,7 +285,7 @@ def parse_content(
 
     if use_cache:
         if not os.path.exists(CACHE_DIR):
-            os.makedirs(CACHE_DIR)
+            os.makedirs(CACHE_DIR, mode = 0o700)
             cachedir_tag.tag(CACHE_DIR, application="Fandango")
 
         hash = hashlib.sha256(fan_content.encode()).hexdigest()
