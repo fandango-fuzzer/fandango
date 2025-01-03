@@ -264,7 +264,7 @@ class FandangoSpec:
 
 
 def parse_content(
-    fan_content: str,
+    fan_contents: str,
     /,
     filename: str = "<input>",
     use_cache: bool = True,
@@ -272,7 +272,8 @@ def parse_content(
 ) -> Tuple[Grammar, List[str]]:
     """
     Parse given content into a grammar and constraints.
-    :param fan_content: Fandango specification text
+    This is a helper function; use `parse()` as the main entry point.
+    :param fan_contents: Fandango specification text
     :param filename: The file name of the content (for error messages)
     :param use_cache: If True (default), cache parsing results.
     :param lazy: If True, the constraints are evaluated lazily
@@ -288,7 +289,7 @@ def parse_content(
             os.makedirs(CACHE_DIR, mode = 0o700)
             cachedir_tag.tag(CACHE_DIR, application="Fandango")
 
-        hash = hashlib.sha256(fan_content.encode()).hexdigest()
+        hash = hashlib.sha256(fan_contents.encode()).hexdigest()
         pickle_file = CACHE_DIR / (hash + ".pickle")
 
         if os.path.exists(pickle_file):
@@ -296,11 +297,12 @@ def parse_content(
                 with open(pickle_file, "rb") as fp:
                     LOGGER.info(f"{filename}: loading cached spec from {pickle_file}")
                     spec = pickle.load(fp)
+                    assert spec is not None
                     LOGGER.debug(f"Cached spec version: {spec.version}")
-                    if spec.fan_contents != fan_content:
-                        e = ValueError("Hash collision")
-                        e.add_note("If you get this, you'll be real famous")
+                    if spec.fan_contents != fan_contents:
+                        e = ValueError("Hash collision (If you get this, you'll be real famous)")
                         raise e
+
                     from_cache = True
             except Exception as e:
                 LOGGER.debug(type(e).__name__ + ":" + str(e))
@@ -317,7 +319,7 @@ def parse_content(
 
     if not spec:
         LOGGER.debug(f"{filename}: setting up .fan parser and lexer")
-        input_stream = InputStream(fan_content)
+        input_stream = InputStream(fan_contents)
         error_listener = MyErrorListener(filename)
         lexer = FandangoLexer(input_stream)
         lexer.removeErrorListeners()
@@ -331,7 +333,7 @@ def parse_content(
         tree = parser.fandango()
 
         LOGGER.debug(f"{filename}: splitting content")
-        spec = FandangoSpec(tree, fan_content, lazy, filename=filename)
+        spec = FandangoSpec(tree, fan_contents, lazy, filename=filename)
 
     assert spec is not None
 
@@ -364,7 +366,7 @@ def parse(fan_files: List[IO],
           given_grammars: List[Grammar] = [],
           includes: List[str] = []) -> Tuple[Optional[Grammar], List[str]]:
     """
-    Parse .fan content, handling standard library and includes.
+    Parse .fan content, handling multiple files, standard library, and includes.
     :param fan_files: List of (open) .fan files
     :param constraints: List of constraints (as strings)
     :param use_stdlib: If True (default), use the standard library
@@ -406,9 +408,9 @@ def parse(fan_files: List[IO],
     while FILES_TO_PARSE:
         file = FILES_TO_PARSE.pop(0)
         LOGGER.debug(f"Reading {file.name}")
-        fan_content = file.read()
+        fan_contents = file.read()
         new_grammar, new_constraints = \
-            parse_content(fan_content, filename=file.name)
+            parse_content(fan_contents, filename=file.name)
         grammars.append(new_grammar)
         parsed_constraints += new_constraints
 
