@@ -33,6 +33,7 @@ from fandango.language.stdlib import stdlib
 
 from antlr4.error.ErrorListener import ErrorListener
 
+### Error Handling
 
 class MyErrorListener(ErrorListener):
     """This is invoked from ANTLR when a syntax error is encountered"""
@@ -42,154 +43,38 @@ class MyErrorListener(ErrorListener):
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
         raise SyntaxError(f'{repr(self.filename)}, line {line}, column {column}: {msg}')
 
-
 def closest_match(word, candidates):
+    """
+        `word` raises a syntax error;
+        return alternate suggestion for `word` from `candidates`
+    """
     return thefuzz_process.extractOne(word, candidates)[0]
 
-def check_grammar_consistency(grammar, given_used_symbols=set(),
-                              start_symbol="<start>"):
-    if not grammar:
-        return
 
-    LOGGER.debug("Checking grammar")
+### Including Files
 
-    used_symbols = set()
-    undefined_symbols = set()
-    defined_symbols = set()
+# Some global variables for `include()`, bwlow
 
-    for symbol in grammar.rules.keys():
-        defined_symbols.add(symbol)
-
-    def collect_used_symbols(tree):
-        if tree.node_type == NodeType.NON_TERMINAL:
-            used_symbols.add(tree.symbol)
-        if tree.node_type == NodeType.REPETITION:
-            collect_used_symbols(tree.node)
-        for child in tree.children():
-            collect_used_symbols(child)
-
-    for tree in grammar.rules.values():
-        collect_used_symbols(tree)
-
-    for symbol in used_symbols:
-        if symbol not in defined_symbols:
-            undefined_symbols.add(symbol)
-
-    for symbol in defined_symbols:
-        if (symbol not in used_symbols
-            and symbol not in given_used_symbols
-            and str(symbol) != start_symbol):
-            LOGGER.info(f"Symbol {symbol} defined, but not used")
-
-    if undefined_symbols:
-        first_undefined_symbol = undefined_symbols.pop()
-        closest = closest_match(first_undefined_symbol, used_symbols)
-        error = ValueError(f"Undefined symbol {first_undefined_symbol} in grammar. Did you mean {closest}?")
-        raise error
-
-
-def check_constraints_existence(grammar, constraints):
-    LOGGER.debug("Checking constraints")
-
-    indirect_child = {
-        str(k): {str(l): None for l in grammar.rules.keys()}
-        for k in grammar.rules.keys()
-    }
-
-    defined_symbols = []
-    for symbol in grammar.rules.keys():
-        defined_symbols.append(str(symbol))
-    defined_symbols_str = ", ".join(defined_symbols)
-
-    grammar_symbols = grammar.rules.keys()
-    grammar_matches = re.findall(r"<([^>]*)>", str(grammar_symbols))
-    # LOGGER.debug(f"All used symbols: {grammar_matches}")
-
-    for constraint in constraints:
-        constraint_symbols = constraint.get_symbols()
-
-        for value in constraint_symbols:
-            # LOGGER.debug(f"Constraint {constraint}: Checking {value}")
-
-            constraint_matches = re.findall(r"<([^>]*)>", str(value))  # was <(.*?)>
-
-            missing = [
-                match for match in constraint_matches if match not in grammar_matches
-            ]
-
-            if missing:
-                first_missing_symbol = missing[0]
-                closest = closest_match(first_missing_symbol, defined_symbols)
-
-            if len(missing) > 1:
-                missing_symbols = ", ".join(["<" + symbol + ">" for symbol in missing])
-                error = ValueError(
-                    f"{constraint}: undefined symbols {missing_symbols}. Did you mean {closest}?"
-                )
-                raise error
-
-            if len(missing) == 1:
-                missing_symbol = missing[0]
-                error = ValueError(
-                    f"{constraint}: undefined symbol <{missing_symbol}>. Did you mean {closest}?"
-                )
-                raise error
-
-            for i in range(len(constraint_matches) - 1):
-                parent = constraint_matches[i]
-                symbol = constraint_matches[i + 1]
-                # This handles <parent>[...].<symbol> as <parent>..<symbol>.
-                # We could also interpret the actual [...] contents here,
-                # but slices and chains could make this hard -- AZ
-                recurse = f"<{parent}>[" in str(value) or f"..<{symbol}>" in str(value)
-                if not check_constraints_existence_children(
-                    grammar, parent, symbol, recurse, indirect_child
-                ):
-                    msg = f"{constraint}: <{parent}> has no child <{symbol}>"
-                    raise ValueError(msg)
-
-
-def check_constraints_existence_children(
-    grammar, parent, symbol, recurse, indirect_child
-):
-    # LOGGER.debug(f"Checking if <{symbol}> is a child of <{parent}>")
-
-    if indirect_child[f"<{parent}>"][f"<{symbol}>"] is not None:
-        return indirect_child[f"<{parent}>"][f"<{symbol}>"]
-
-    grammar_symbols = grammar.rules[NonTerminal(f"<{parent}>")]
-
-    # Original code; fails on <a> "b" <c> -- AZ
-    # grammar_matches = re.findall(r'(?<!")<([^>]*)>(?!.*")',
-    #                              str(grammar_symbols))
-    #
-    # Simpler version; may overfit (e.g. matches <...> in strings),
-    # but that should not hurt us -- AZ
-    grammar_matches = re.findall(r"<([^>]*)>", str(grammar_symbols))
-
-    if symbol not in grammar_matches:
-        if recurse:
-            is_child = False
-            for match in grammar_matches:
-                is_child = is_child or check_constraints_existence_children(
-                    grammar, match, symbol, recurse, indirect_child
-                )
-            indirect_child[f"<{parent}>"][f"<{symbol}>"] = is_child
-            return is_child
-        else:
-            return False
-
-    indirect_child[f"<{parent}>"][f"<{symbol}>"] = True
-    return True
-
-
+# The current file name, for error messages
 CURRENT_FILENAME: str = "<undefined>"
-FILES_TO_PARSE: List[Tuple[IO, int]] = []
+
+# The list of directories to search for include files
 INCLUDES: List[str] = []
+
+# The list of files to parse, with their include depth.
+# An include depth of 0 means the file was given as input.
+# A higher include depth means the file was included from another file;
+# hence its grammar and constraints should be processed _before_ the current file.
+FILES_TO_PARSE: List[Tuple[IO, int]] = []
+
+# The current include depth
 INCLUDE_DEPTH: int = 0
 
 def include(file_to_be_included: str):
-    """Include a file in the current context"""
+    """
+        Include FILE_TO_BE_INCLUDED in the current context.
+        This function is invoked from .fan files.
+    """
     global FILES_TO_PARSE
     global CURRENT_FILENAME
     global INCLUDE_DEPTH
@@ -204,10 +89,10 @@ def include(file_to_be_included: str):
     dirs = [Path(dir) for dir in path.split(":")]
 
     if platform.system() == 'Darwin':
-        dirs += [Path.home() / "Library" / "Fandango"]  # sth like ~/Library/Fandango
-        dirs += [Path("/Library/Fandango")] # sth like /Library/Fandango
-    else:
-        dirs += [xdg_data_home() / "fandango"]  # sth like ~/.local/share/fandango
+        dirs += [Path.home() / "Library" / "Fandango"]  # ~/Library/Fandango
+        dirs += [Path("/Library/Fandango")]  # /Library/Fandango
+
+    dirs += [xdg_data_home() / "fandango"]  # sth like ~/.local/share/fandango
     dirs += [dir / "fandango" for dir in xdg_data_dirs()]  # sth like /usr/local/share/fandango
 
     for dir in dirs:
@@ -218,14 +103,21 @@ def include(file_to_be_included: str):
             continue
         LOGGER.debug(f"{CURRENT_FILENAME}: including {full_file_name}")
 
-        INCLUDE_DEPTH += 1
+        INCLUDE_DEPTH += 1  # Will be lowered when the included file is done processing
         FILES_TO_PARSE.append((full_file, INCLUDE_DEPTH))
         return
 
     raise FileNotFoundError(f"{CURRENT_FILENAME}: {repr(file_to_be_included)} not found in {':'.join(str(dir) for dir in dirs)}")
 
+
+### Parsing
+
 class FandangoSpec:
-    """Helper class to pickle and unpickle parsed Fandango specifications"""
+    """
+        Helper class to pickle and unpickle parsed Fandango specifications.
+        This is necessary because the ANTLR4 parse trees cannot be pickled,
+        so we pickle the code text, grammar, and constraints instead.
+    """
     GLOBALS = predicates.__dict__
     GLOBALS.update({'include': include})
     LOCALS = None  # Must be None to ensure top-level imports
@@ -292,10 +184,11 @@ def parse_content(
     spec: Optional[FandangoSpec] = None
     from_cache = False
 
+    CACHE_DIR = xdg_cache_home() / "fandango"
     if platform.system() == 'Darwin':
-        CACHE_DIR = Path.home() / "Library" / "Caches" / "Fandango"
-    else:
-        CACHE_DIR = xdg_cache_home() / "fandango"
+        cache_path = Path.home() / "Library" / "Caches"
+        if os.path.exists(cache_path):
+            CACHE_DIR = cache_path / "Fandango"
 
     if use_cache:
         if not os.path.exists(CACHE_DIR):
@@ -332,18 +225,20 @@ def parse_content(
 
     if not spec:
         LOGGER.debug(f"{filename}: setting up .fan parser and lexer")
-        input_stream = InputStream(fan_contents)
         error_listener = MyErrorListener(filename)
+
+        input_stream = InputStream(fan_contents)
         lexer = FandangoLexer(input_stream)
         lexer.removeErrorListeners()
         lexer.addErrorListener(error_listener)
+
         token_stream = CommonTokenStream(lexer)
         parser = FandangoParser(token_stream)
         parser.removeErrorListeners()
         parser.addErrorListener(error_listener)
 
         LOGGER.debug(f"{filename}: parsing .fan content")
-        tree = parser.fandango()
+        tree = parser.fandango()  # Invoke the ANTLR parser
 
         LOGGER.debug(f"{filename}: splitting content")
         spec = FandangoSpec(tree, fan_contents, lazy, filename=filename)
@@ -366,7 +261,10 @@ def parse_content(
     return spec.grammar, spec.constraints
 
 
+# Save the set of symbols used in the standard library and imported grammars
 USED_SYMBOLS: Set[str] = set()
+
+# Save the standard library grammar and constraints
 STDLIB_GRAMMAR: Optional[Grammar] = None
 STDLIB_CONSTRAINTS: Optional[List[str]] = None
 
@@ -377,6 +275,7 @@ def parse(fan_files: List[IO],
           use_cache: bool = True,
           lazy: bool = False,
           given_grammars: List[Grammar] = [],
+          start_symbol: str = "<start>",
           includes: List[str] = []) -> Tuple[Optional[Grammar], List[str]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
@@ -386,6 +285,7 @@ def parse(fan_files: List[IO],
     :param use_cache: If True (default), cache parsing results
     :param lazy: If True, the constraints are evaluated lazily
     :param given_grammars: Grammars to use in addition to the standard library
+    :param start_symbol: The grammar start symbol (default: "<start>")
     :param includes: A list of directories to search for include files
     :return: A tuple of the grammar and constraints
     """
@@ -411,8 +311,12 @@ def parse(fan_files: List[IO],
 
     # LOGGER.debug("Given grammars:", str(given_grammars))
 
-    grammars = [deepcopy(STDLIB_GRAMMAR)]
-    parsed_constraints = STDLIB_CONSTRAINTS.copy()
+    grammars = []
+    parsed_constraints = []
+    if use_stdlib:
+        grammars = [deepcopy(STDLIB_GRAMMAR)]
+        parsed_constraints = STDLIB_CONSTRAINTS.copy()
+
     grammars += given_grammars
 
     LOGGER.debug("Reading files")
@@ -428,7 +332,8 @@ def parse(fan_files: List[IO],
         LOGGER.debug(f"Reading {file.name} (depth = {depth})")
         fan_contents = file.read()
         new_grammar, new_constraints = \
-            parse_content(fan_contents, filename=file.name)
+            parse_content(fan_contents, filename=file.name,
+                          use_cache=use_cache, lazy=lazy)
         parsed_constraints += new_constraints
 
         if depth == 0:
@@ -460,26 +365,169 @@ def parse(fan_files: List[IO],
         grammar.update(g, prime=False)
         n += 1
 
+    LOGGER.debug(f"Final grammar: {grammar.rules.keys()}")
+
     LOGGER.debug("Processing constraints")
     for constraint in constraints or []:
         LOGGER.debug(f"Constraint {constraint}")
-        _, new_constraints = parse_content(constraint + ";", constraint)
+        _, new_constraints = parse_content(constraint + ";",
+                                           filename=constraint,
+                                           use_cache=use_cache, lazy=lazy)
         parsed_constraints += new_constraints
 
-    finalize(grammar, parsed_constraints, given_used_symbols=USED_SYMBOLS)
+    LOGGER.debug("Checking and finalizing content")
+    if grammar and len(grammar.rules) > 0:
+        check_grammar_consistency(grammar, given_used_symbols=USED_SYMBOLS,
+                                  start_symbol=start_symbol)
+
+    if grammar and parsed_constraints:
+        check_constraints_existence(grammar, parsed_constraints)
+
+    # We invoke this at the very end, now that all data is there
+    grammar.prime()
 
     LOGGER.debug("All contents parsed")
     return grammar, parsed_constraints
 
 
-def finalize(grammar, constraints, given_used_symbols=set()):
-    """Run final checks after parsing of all grammars is done"""
-    LOGGER.debug("Finalizing contents")
+### Consistency Checks
 
-    if grammar and len(grammar.rules) > 0:
-        check_grammar_consistency(grammar, given_used_symbols)
+def check_grammar_consistency(grammar, /, given_used_symbols=set(),
+                              start_symbol="<start>"):
+    if not grammar:
+        return
 
-    if grammar and constraints:
-        check_constraints_existence(grammar, constraints)
+    LOGGER.debug("Checking grammar")
 
-    grammar.prime()
+    used_symbols = set()
+    undefined_symbols = set()
+    defined_symbols = set()
+
+    for symbol in grammar.rules.keys():
+        defined_symbols.add(symbol)
+
+    if start_symbol not in [str(symbol) for symbol in defined_symbols]:
+        closest = closest_match(start_symbol, defined_symbols)
+        raise NameError(f"Start symbol {start_symbol} not defined in grammar. Did you mean {closest}?")
+
+    def collect_used_symbols(tree):
+        if tree.node_type == NodeType.NON_TERMINAL:
+            used_symbols.add(tree.symbol)
+        if tree.node_type == NodeType.REPETITION:
+            collect_used_symbols(tree.node)
+        for child in tree.children():
+            collect_used_symbols(child)
+
+    for tree in grammar.rules.values():
+        collect_used_symbols(tree)
+
+    for symbol in used_symbols:
+        if symbol not in defined_symbols:
+            undefined_symbols.add(symbol)
+
+    for symbol in defined_symbols:
+        if (symbol not in used_symbols
+            and symbol not in given_used_symbols
+            and str(symbol) != start_symbol):
+            LOGGER.info(f"Symbol {symbol} defined, but not used")
+
+    if undefined_symbols:
+        first_undefined_symbol = undefined_symbols.pop()
+        closest = closest_match(first_undefined_symbol, used_symbols)
+        error = NameError(f"Undefined symbol {first_undefined_symbol} in grammar. Did you mean {closest}?")
+        raise error
+
+
+def check_constraints_existence(grammar, constraints):
+    LOGGER.debug("Checking constraints")
+
+    indirect_child = {
+        str(k): {str(l): None for l in grammar.rules.keys()}
+        for k in grammar.rules.keys()
+    }
+
+    defined_symbols = []
+    for symbol in grammar.rules.keys():
+        defined_symbols.append(str(symbol))
+    defined_symbols_str = ", ".join(defined_symbols)
+
+    grammar_symbols = grammar.rules.keys()
+    grammar_matches = re.findall(r"<([^>]*)>", str(grammar_symbols))
+    # LOGGER.debug(f"All used symbols: {grammar_matches}")
+
+    for constraint in constraints:
+        constraint_symbols = constraint.get_symbols()
+
+        for value in constraint_symbols:
+            # LOGGER.debug(f"Constraint {constraint}: Checking {value}")
+
+            constraint_matches = re.findall(r"<([^>]*)>", str(value))  # was <(.*?)>
+
+            missing = [
+                match for match in constraint_matches if match not in grammar_matches
+            ]
+
+            if missing:
+                first_missing_symbol = missing[0]
+                closest = closest_match(first_missing_symbol, defined_symbols)
+
+            if len(missing) > 1:
+                missing_symbols = ", ".join(["<" + symbol + ">" for symbol in missing])
+                error = NameError(
+                    f"{constraint}: undefined symbols {missing_symbols}. Did you mean {closest}?"
+                )
+                raise error
+
+            if len(missing) == 1:
+                missing_symbol = missing[0]
+                error = NameError(
+                    f"{constraint}: undefined symbol <{missing_symbol}>. Did you mean {closest}?"
+                )
+                raise error
+
+            for i in range(len(constraint_matches) - 1):
+                parent = constraint_matches[i]
+                symbol = constraint_matches[i + 1]
+                # This handles <parent>[...].<symbol> as <parent>..<symbol>.
+                # We could also interpret the actual [...] contents here,
+                # but slices and chains could make this hard -- AZ
+                recurse = f"<{parent}>[" in str(value) or f"..<{symbol}>" in str(value)
+                if not check_constraints_existence_children(
+                    grammar, parent, symbol, recurse, indirect_child
+                ):
+                    msg = f"{constraint}: <{parent}> has no child <{symbol}>"
+                    raise ValueError(msg)
+
+
+def check_constraints_existence_children(
+    grammar, parent, symbol, recurse, indirect_child
+):
+    # LOGGER.debug(f"Checking if <{symbol}> is a child of <{parent}>")
+
+    if indirect_child[f"<{parent}>"][f"<{symbol}>"] is not None:
+        return indirect_child[f"<{parent}>"][f"<{symbol}>"]
+
+    grammar_symbols = grammar.rules[NonTerminal(f"<{parent}>")]
+
+    # Original code; fails on <a> "b" <c> -- AZ
+    # grammar_matches = re.findall(r'(?<!")<([^>]*)>(?!.*")',
+    #                              str(grammar_symbols))
+    #
+    # Simpler version; may overfit (e.g. matches <...> in strings),
+    # but that should not hurt us -- AZ
+    grammar_matches = re.findall(r"<([^>]*)>", str(grammar_symbols))
+
+    if symbol not in grammar_matches:
+        if recurse:
+            is_child = False
+            for match in grammar_matches:
+                is_child = is_child or check_constraints_existence_children(
+                    grammar, match, symbol, recurse, indirect_child
+                )
+            indirect_child[f"<{parent}>"][f"<{symbol}>"] = is_child
+            return is_child
+        else:
+            return False
+
+    indirect_child[f"<{parent}>"][f"<{symbol}>"] = True
+    return True

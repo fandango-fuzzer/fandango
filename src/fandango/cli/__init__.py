@@ -414,18 +414,23 @@ def exit_command(args):
 def parse_files_from_args(args, given_grammars=[]):
     """Parse .fan files as given in args"""
     return parse(args.fan_files, [], 
-                 given_grammars=given_grammars, includes=args.includes)
+                 given_grammars=given_grammars,
+                 includes=args.includes,
+                 start_symbol=args.start_symbol)
 
 def parse_constraints_from_args(args, given_grammars=[]):
     """Parse .fan constraints as given in args"""
     return parse([], args.constraints,
-                 given_grammars=given_grammars, includes=args.includes)
+                 given_grammars=given_grammars,
+                 includes=args.includes,
+                 start_symbol=args.start_symbol)
 
 def parse_contents_from_args(args, given_grammars=[]):
     """Parse .fan content as given in args"""
     return parse(args.fan_files, args.constraints, 
-                 given_grammars=given_grammars, includes=args.includes)
-
+                 given_grammars=given_grammars,
+                 includes=args.includes,
+                 start_symbol=args.start_symbol)
 
 def make_fandango_settings(args, initial_settings={}):
     """Create keyword settings for Fandango() constructor"""
