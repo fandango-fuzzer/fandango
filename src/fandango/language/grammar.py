@@ -411,7 +411,10 @@ class TerminalNode(Node):
             if continue_tree[0].symbol.symbol != self.symbol.symbol:
                 raise GrammarKeyError("Symbol mismatch!")
 
-        return [DerivationTree(self.symbol, read_only=(continue_tree is not None))]
+        if mode == FuzzingMode.IO and not context.in_role():
+            raise RuntimeError(f"NonTerminal \"{self.symbol}\" doesn't belong to a role")
+
+        return [DerivationTree(self.symbol)]
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitTerminalNode(self)
