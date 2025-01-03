@@ -749,6 +749,13 @@ class Grammar(NodeVisitor):
 
         self.rules.update(rules)
         self.generators.update(generators)
+
+        for symbol in rules.keys():
+            # We're updating from a grammar with a rule, but no generator,
+            # so we should remove the generator if it exists
+            if symbol not in generators and symbol in self.generators:
+                del self.generators[symbol]
+
         self._parser = Grammar.Parser(self.rules)
         self._local_variables.update(local_variables)
         self._global_variables.update(global_variables)
