@@ -178,7 +178,7 @@ class ConstraintProcessor(FandangoParserVisitor):
 
     def get_constraints(
         self, constraints: List[FandangoParser.ConstraintContext]
-    ) -> Constraint:
+    ) -> List[str]:
         return [self.visit(constraint) for constraint in constraints]
         # if len(constraints) == 1:
         #     return constraints[0]

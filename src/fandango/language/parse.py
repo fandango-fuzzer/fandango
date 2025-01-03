@@ -4,7 +4,7 @@ import os
 import sys
 import importlib.metadata
 
-from typing import Tuple, List, Any
+from typing import Tuple, List, Set, Any, IO, Optional
 from fandango.logger import LOGGER, print_exception
 
 from antlr4 import InputStream, CommonTokenStream
@@ -13,6 +13,7 @@ import hashlib
 import dill as pickle
 from xdg_base_dirs import xdg_cache_home
 import cachedir_tag
+from copy import deepcopy
 
 from fandango.constraints import predicates
 from fandango.constraints.base import Constraint
@@ -26,6 +27,7 @@ from fandango.language.grammar import Grammar, NodeType
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.symbol import NonTerminal
+from fandango.language.stdlib import stdlib
 
 from antlr4.error.ErrorListener import ErrorListener
 
@@ -213,25 +215,27 @@ class FandangoSpec:
             global_variables=self.global_vars,
             lazy=self.lazy,
         )
-        self.constraints: List[Constraint] = \
+        self.constraints: List[str] = \
             constraint_processor.get_constraints(splitter.constraints)
 
     def run_code(self):
         exec(self.code_text, self.global_vars, self.local_vars)
 
 
-def parse(
+def parse_content(
     fan_content: str,
     /,
     filename: str = "<input>",
-    lazy: bool = False,
     use_cache: bool = True,
-) -> Tuple[Grammar, List[Constraint]]:
+    lazy: bool = False,
+) -> Tuple[Grammar, List[str]]:
     """
-    Extract grammar and constraints from the given content
+    Parse given content into a grammar and constraints.
     :param fan_content: Fandango specification text
+    :param filename: The file name of the content (for error messages)
+    :param use_cache: If True (default), cache parsing results.
     :param lazy: If True, the constraints are evaluated lazily
-    :param check_constraints: If True, check if the constraints contain non-terminal symbols that are not in the grammar
+    :return: A tuple of the grammar and constraints
     """
     from_cache = False
 
@@ -304,6 +308,63 @@ def parse(
     return spec.grammar, spec.constraints
 
 
+IGNORED_SYMBOLS: Set[str] = set()
+STDLIB_GRAMMAR: Optional[Grammar] = None
+STDLIB_CONSTRAINTS: Optional[List[str]] = None
+
+def parse(fan_files: List[IO],
+          constraints: List[str],
+          /,
+          use_stdlib: bool = True,
+          use_cache: bool = True,
+          lazy: bool = False,
+          given_grammar: Optional[Grammar] = None) -> Tuple[Optional[Grammar], List[str]]:
+    """
+    Parse .fan content, handling standard library and includes.
+    :param fan_files: List of (open) .fan files
+    :param constraints: List of constraints (as strings)
+    :param use_stdlib: If True (default), use the standard library
+    :param use_cache: If True (default), cache parsing results
+    :param lazy: If True, the constraints are evaluated lazily
+    :param given_grammar: An optional grammar to use in addition to the standard library
+    :return: A tuple of the grammar and constraints
+    """
+    if not fan_files and not constraints:
+        return None, []
+
+    LOGGER.debug("Reading .fan files")
+
+    global STDLIB_SYMBOLS, STDLIB_GRAMMAR, STDLIB_CONSTRAINTS
+    if STDLIB_GRAMMAR is None:
+        STDLIB_GRAMMAR, STDLIB_CONSTRAINTS = parse_content(stdlib, "<stdlib>")
+
+    IGNORED_SYMBOLS = set()
+    for symbol in STDLIB_GRAMMAR.rules.keys():
+        IGNORED_SYMBOLS.add(symbol)
+
+    grammar = deepcopy(STDLIB_GRAMMAR)
+    constraints: List[str] = STDLIB_CONSTRAINTS.copy()
+    if given_grammar:
+        grammar.update(given_grammar)
+
+    for file in fan_files:
+        fan_content = file.read()
+        new_grammar, new_constraints = \
+            parse_content(fan_content, filename=file.name)
+        for symbol in new_grammar.rules.keys():
+            if symbol in IGNORED_SYMBOLS:
+                IGNORED_SYMBOLS.remove(symbol)
+        grammar.update(new_grammar)
+        constraints += new_constraints
+
+    for constraint in constraints:
+        _, new_constraints = parse_content(constraint + ";", constraint)
+        constraints += new_constraints
+
+    finalize(grammar, constraints, ignored_symbols=IGNORED_SYMBOLS)
+    return grammar, constraints
+
+
 def finalize(grammar, constraints, ignored_symbols=None):
     """Run final checks after parsing of all grammars is done"""
     ignored_symbols = ignored_symbols or set()
@@ -316,21 +377,3 @@ def finalize(grammar, constraints, ignored_symbols=None):
 
     LOGGER.debug("Finalizing grammar")
     grammar.prime()
-
-
-# def parse_file(*filenames, lazy: bool = False) -> Tuple[Grammar, List[Constraint]]:
-#     contents = ""
-#     errors = False
-
-#     for file in filenames:
-#         try:
-#             with open(file, "r") as fp:
-#                 contents += fp.read()
-#         except Exception as e:
-#             print_exception(e)
-#             errors = True
-
-#     if errors:
-#         raise FileNotFoundError("No input files")
-
-#     return parse(contents, lazy=lazy)
