@@ -14,16 +14,13 @@ import sys
 import tempfile
 import textwrap
 import zipfile
-from typing import IO, List
-from copy import deepcopy
 
 from io import StringIO
 from io import UnsupportedOperation
 from pathlib import Path
 from ansi_styles import ansiStyles as styles
 
-from fandango.language.parse import parse, finalize
-from fandango.language.stdlib import stdlib
+from fandango.language.parse import parse
 from antlr4.error.Errors import ParseCancellationException
 from fandango.evolution.algorithm import Fandango
 from fandango.logger import LOGGER, print_exception
@@ -403,49 +400,12 @@ def exit_command(args):
     pass
 
 
-STDLIB_SYMBOLS = set()
-STDLIB_GRAMMAR = None
-STDLIB_CONSTRAINTS = None
-
 def parse_fan_contents(args, parse_files=True, parse_constraints=True,
                        given_grammar=None):
     """Parse .fan content as given in args"""
-    if not args.fan_files and not args.constraints:
-        return None, None
-
-    LOGGER.debug("Reading .fan files")
-
-    global STDLIB_SYMBOLS, STDLIB_GRAMMAR, STDLIB_CONSTRAINTS
-    if STDLIB_GRAMMAR is None:
-        STDLIB_GRAMMAR, STDLIB_CONSTRAINTS = parse(stdlib, "<stdlib>")
-
-    STDLIB_SYMBOLS = set()
-    for symbol in STDLIB_GRAMMAR.rules.keys():
-        STDLIB_SYMBOLS.add(symbol)
-
-    grammar = deepcopy(STDLIB_GRAMMAR)
-    constraints = STDLIB_CONSTRAINTS.copy()
-    if given_grammar:
-        grammar.update(given_grammar)
-
-    if parse_files and args.fan_files:
-        for file in args.fan_files:
-            fan_content = file.read()
-            new_grammar, new_constraints = \
-                parse(fan_content, filename=file.name)
-            for symbol in new_grammar.rules.keys():
-                if symbol in STDLIB_SYMBOLS:
-                    STDLIB_SYMBOLS.remove(symbol)
-            grammar.update(new_grammar)
-            constraints += new_constraints
-
-    if parse_constraints and args.constraints:
-        for constraint in args.constraints:
-            _, new_constraints = parse(constraint + ";", constraint)
-            constraints += new_constraints
-
-    finalize(grammar, constraints, ignored_symbols=STDLIB_SYMBOLS)
-    return grammar, constraints
+    fan_files = args.fan_files if parse_files else []
+    constraints = args.constraints if parse_constraints else []
+    return parse(fan_files, constraints, given_grammar)
 
 
 def make_fandango_settings(args, initial_settings={}):
