@@ -7,6 +7,7 @@ import time
 from typing import List, Set, Tuple
 
 import deprecation
+from pygments.lexers.csound import newline
 
 from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
@@ -152,38 +153,38 @@ class Fandango:
 
         finished = False
         prev_role_msgs = 0
+        prev_choice = ""
         while not finished:
             results = self.evolve()
             choice: DerivationTree = random.choice(results)
 
             role_msgs = choice.find_role_msgs()
-            if len(role_msgs) <= prev_role_msgs:
-                # No new message generated. Finished
-                return [choice]
+            fuzzing_ended = len(role_msgs) <= prev_role_msgs
 
-            last_role, last_msg = role_msgs[-1]
-            grammar_roles = io_instance.roles
+            new_msg_role = None
+            new_msg = None
+            if not fuzzing_ended:
+                new_msg_role, new_msg = role_msgs[-1]
+            role_io = io_instance.roles
 
             str_history = str(choice)
-            if last_role in grammar_roles.keys():
-                if grammar_roles[last_role].is_fandango():
-                    io_instance._data['local_response'][last_role] = last_msg
-                    exec("FandangoIO.instance().io_instance.run_com_loop()", global_env, local_env)
-                    # Todo: How to handle multiple remote responses from different roles? Preserve order in which they have been added.
-                else:
-                    # Todo: How to get a message. Current idea: messages from remote parties are received in the same step in which fandango sends messages.
-                    #       Maybe throw an exception if a remote message is required, but now received using the first approach?
-                    pass
-                for role, item in io_instance._data['remote_response'].items():
-                    str_history += item
-                io_instance._data['remote_response'].clear()
-            else:
-                # Todo: What is we don't have a class definition for a role. Just ignore the role completely?
-                pass
+            if new_msg_role in role_io.keys():
+                if role_io[new_msg_role].is_fandango() and new_msg is not None:
+                    io_instance._data['transmit'][new_msg_role] = new_msg
+                    role_msgs += 1
 
-            exec("FandangoIO.instance().io_instance.run_com_loop()", global_env, local_env)
+            exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
+            for role, item in io_instance._data['receive']:
+                str_history += item
+                role_msgs += 1
+            io_instance._data['receive'].clear()
 
+            if role_msgs <= prev_role_msgs:
+                # Finished
+                return [choice]
 
+            prev_choice = choice
+            prev_role_msgs = role_msgs
 
             new_population = []
             for tree_option in self.grammar.parse_incomplete(str_history, self.start_symbol):
