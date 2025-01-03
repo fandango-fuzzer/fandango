@@ -40,17 +40,16 @@ class MyErrorListener(ErrorListener):
         raise SyntaxError(f'{repr(self.filename)}, line {line}, column {column}: {msg}')
 
 
-def check_grammar_consistency(grammar, ignored_symbols=None, 
+def check_grammar_consistency(grammar, used_symbols=None, 
                               start_symbol="<start>"):
     if not grammar:
         return
 
     LOGGER.debug("Checking grammar")
 
-    used_symbols = set()
+    used_symbols = used_symbols or set()
     undefined_symbols = set()
     defined_symbols = set()
-    ignored_symbols = ignored_symbols or set()
 
     for symbol in grammar.rules.keys():
         defined_symbols.add(symbol)
@@ -71,17 +70,11 @@ def check_grammar_consistency(grammar, ignored_symbols=None,
             undefined_symbols.add(symbol)
 
     for symbol in defined_symbols:
-        if (symbol not in used_symbols and
-            str(symbol) != start_symbol):
-            if symbol in ignored_symbols:
-                # Do not warn about imported and stdlib symbols
-                LOGGER.debug(f"Symbol {symbol} defined, but not used")
-            else:
-                LOGGER.info(f"Symbol {symbol} defined, but not used")
+        if symbol not in used_symbols and str(symbol) != start_symbol:
+            LOGGER.info(f"Symbol {symbol} defined, but not used")
 
     if undefined_symbols:
-        defined_symbols_str = ", ".join(symbol for symbol in defined_symbols
-                                        and symbol not in ignored_symbols)
+        defined_symbols_str = ", ".join(symbol for symbol in defined_symbols)
 
         error = ValueError(f"Undefined symbols {undefined_symbols} in grammar")
         error.add_note(f"Possible symbols: {defined_symbols_str}")
@@ -346,7 +339,7 @@ def parse_content(
     return spec.grammar, spec.constraints
 
 
-IGNORED_SYMBOLS: Set[str] = set()
+USED_SYMBOLS: Set[str] = set()
 STDLIB_GRAMMAR: Optional[Grammar] = None
 STDLIB_CONSTRAINTS: Optional[List[str]] = None
 
@@ -378,9 +371,11 @@ def parse(fan_files: List[IO],
     assert STDLIB_GRAMMAR is not None
     assert STDLIB_CONSTRAINTS is not None
 
-    IGNORED_SYMBOLS = set()
+    global USED_SYMBOLS
+    USED_SYMBOLS = set()
     for symbol in STDLIB_GRAMMAR.rules.keys():
-        IGNORED_SYMBOLS.add(symbol)
+        # Do not complain about unused symbols in the standard library
+        USED_SYMBOLS.add(symbol)
 
     LOGGER.debug("Given grammars:" + str(given_grammars))
 
@@ -403,8 +398,7 @@ def parse(fan_files: List[IO],
         if file not in fan_files:
             # Included file; do not complain about unused symbols
             for symbol in new_grammar.rules.keys():
-                if symbol in IGNORED_SYMBOLS:
-                    IGNORED_SYMBOLS.remove(symbol)
+                USED_SYMBOLS.add(symbol)
 
     LOGGER.debug("Processing grammars")
     grammar = grammars[0]
@@ -420,18 +414,16 @@ def parse(fan_files: List[IO],
         _, new_constraints = parse_content(constraint + ";", constraint)
         parsed_constraints += new_constraints
 
-    finalize(grammar, parsed_constraints, ignored_symbols=IGNORED_SYMBOLS)
+    finalize(grammar, parsed_constraints, used_symbols=USED_SYMBOLS)
     return grammar, parsed_constraints
 
 
-def finalize(grammar, constraints, ignored_symbols=None):
+def finalize(grammar, constraints, used_symbols=set()):
     """Run final checks after parsing of all grammars is done"""
     LOGGER.debug("Finalizing contents")
 
-    ignored_symbols = ignored_symbols or set()
-
     if grammar and len(grammar.rules) > 0:
-        check_grammar_consistency(grammar, ignored_symbols)
+        check_grammar_consistency(grammar, used_symbols)
 
     if grammar and constraints:
         check_constraints_existence(grammar, constraints)
