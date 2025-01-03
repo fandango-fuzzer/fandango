@@ -33,12 +33,32 @@ from antlr4.error.ErrorListener import ErrorListener
 
 
 class MyErrorListener(ErrorListener):
+    """This is invoked from ANTLR when a syntax error is encountered"""
     def __init__(self, filename=None):
         self.filename = filename
         super().__init__()
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
         raise SyntaxError(f'{repr(self.filename)}, line {line}, column {column}: {msg}')
 
+
+def edit_distance(s1, s2):
+    # https://stackoverflow.com/questions/2460177/edit-distance-in-python
+    if len(s1) > len(s2):
+        s1, s2 = s2, s1
+
+    distances = range(len(s1) + 1)
+    for i2, c2 in enumerate(s2):
+        distances_ = [i2+1]
+        for i1, c1 in enumerate(s1):
+            if c1 == c2:
+                distances_.append(distances[i1])
+            else:
+                distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
+        distances = distances_
+    return distances[-1]
+
+def closest_match(s, candidates):
+    return min(candidates, key=lambda x: edit_distance(s, x))
 
 def check_grammar_consistency(grammar, used_symbols=None, 
                               start_symbol="<start>"):
@@ -74,10 +94,9 @@ def check_grammar_consistency(grammar, used_symbols=None,
             LOGGER.info(f"Symbol {symbol} defined, but not used")
 
     if undefined_symbols:
-        defined_symbols_str = ", ".join(symbol for symbol in defined_symbols)
-
-        error = ValueError(f"Undefined symbols {undefined_symbols} in grammar")
-        error.add_note(f"Possible symbols: {defined_symbols_str}")
+        first_undefined_symbol = undefined_symbols.pop()
+        closest = closest_match(first_undefined_symbol, defined_symbols)
+        error = ValueError(f"Undefined symbol {first_undefined_symbol} in grammar. Did you mean {closest}?")
         raise error
 
 
@@ -110,20 +129,22 @@ def check_constraints_existence(grammar, constraints):
                 match for match in constraint_matches if match not in grammar_matches
             ]
 
+            if missing:
+                first_missing_symbol = missing[0]
+                closest = closest_match(first_missing_symbol, defined_symbols)
+
             if len(missing) > 1:
                 missing_symbols = ", ".join(["<" + symbol + ">" for symbol in missing])
                 error = ValueError(
-                    f"Constraint {constraint}: undefined symbols {missing_symbols}"
+                    f"{constraint}: undefined symbols {missing_symbols}. Did you mean {closest}?"
                 )
-                error.add_note(f"Possible symbols: {defined_symbols_str}")
                 raise error
 
             if len(missing) == 1:
                 missing_symbol = missing[0]
                 error = ValueError(
-                    f"Constraint {constraint}: undefined symbol <{missing_symbol}>"
+                    f"{constraint}: undefined symbol <{missing_symbol}>. Did you mean {closest}?"
                 )
-                error.add_note(f"Possible symbols: {defined_symbols_str}")
                 raise error
 
             for i in range(len(constraint_matches) - 1):
@@ -136,7 +157,7 @@ def check_constraints_existence(grammar, constraints):
                 if not check_constraints_existence_children(
                     grammar, parent, symbol, recurse, indirect_child
                 ):
-                    msg = f"Constraint {constraint}: <{parent}> has no child <{symbol}>"
+                    msg = f"{constraint}: <{parent}> has no child <{symbol}>"
                     raise ValueError(msg)
 
 
