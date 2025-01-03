@@ -737,7 +737,7 @@ class Grammar(NodeVisitor):
             start = NonTerminal(start)
         return NonTerminalNode(start).fuzz(self, max_nodes=max_nodes)[0]
 
-    def update(self, grammar: "Grammar" | Dict[NonTerminal, Node]):
+    def update(self, grammar: "Grammar" | Dict[NonTerminal, Node], prime=True):
         if isinstance(grammar, Grammar):
             generators = grammar.generators
             local_variables = grammar._local_variables
@@ -752,7 +752,8 @@ class Grammar(NodeVisitor):
         self._parser = Grammar.Parser(self.rules)
         self._local_variables.update(local_variables)
         self._global_variables.update(global_variables)
-        self.prime()
+        if prime:
+            self.prime()
 
     def parse(self, word: str, start: str | NonTerminal = "<start>"):
         return self._parser.parse(word, start)

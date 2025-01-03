@@ -178,8 +178,17 @@ def check_constraints_existence_children(
     return True
 
 
+
+FILES_TO_PARSE: List[IO] = []
+
+def include(filename: str):
+    """Include a file in the current context"""
+    global FILES_TO_PARSE
+    FILES_TO_PARSE.append(open(filename, 'r'))
+
 class FandangoSpec:
     GLOBALS = predicates.__dict__
+    GLOBALS.update({'include': include})
     LOCALS = None  # Must be None to ensure top-level imports
 
     def __init__(self, tree: Any, fan_contents: str,
@@ -345,16 +354,21 @@ def parse(fan_files: List[IO],
     grammar = deepcopy(STDLIB_GRAMMAR)
     constraints: List[str] = STDLIB_CONSTRAINTS.copy()
     if given_grammar:
-        grammar.update(given_grammar)
+        grammar.update(given_grammar, prime=False)
 
-    for file in fan_files:
+    global FILES_TO_PARSE
+    FILES_TO_PARSE = fan_files
+    while FILES_TO_PARSE:
+        file = FILES_TO_PARSE.pop(0)
         fan_content = file.read()
         new_grammar, new_constraints = \
             parse_content(fan_content, filename=file.name)
-        for symbol in new_grammar.rules.keys():
-            if symbol in IGNORED_SYMBOLS:
-                IGNORED_SYMBOLS.remove(symbol)
-        grammar.update(new_grammar)
+        if file not in fan_files:
+            # Included file; do not complain about unused symbols
+            for symbol in new_grammar.rules.keys():
+                if symbol in IGNORED_SYMBOLS:
+                    IGNORED_SYMBOLS.remove(symbol)
+        grammar.update(new_grammar, prime=False)
         constraints += new_constraints
 
     for constraint in constraints:
