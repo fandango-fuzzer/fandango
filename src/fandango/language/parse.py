@@ -384,7 +384,7 @@ def parse(fan_files: List[IO],
         # Do not complain about unused symbols in the standard library
         USED_SYMBOLS.add(symbol)
 
-    LOGGER.debug("Given grammars:" + str(given_grammars))
+    # LOGGER.debug("Given grammars:", str(given_grammars))
 
     grammars = [deepcopy(STDLIB_GRAMMAR)]
     parsed_constraints = STDLIB_CONSTRAINTS.copy()
@@ -407,12 +407,14 @@ def parse(fan_files: List[IO],
             for symbol in new_grammar.rules.keys():
                 USED_SYMBOLS.add(symbol)
 
-    LOGGER.debug("Processing grammars")
+    LOGGER.debug(f"Processing {len(grammars)} grammars")
     grammar = grammars[0]
     for g in grammars[1:]:
+        LOGGER.debug(f"Grammar: {g.rules.keys()}")
+
         for symbol in g.rules.keys():
             if symbol in grammar.rules:
-                LOGGER.debug(f"Redefining {symbol}")
+                LOGGER.info(f"Redefining {symbol}")
         grammar.update(g, prime=False)
 
     LOGGER.debug("Processing constraints")
