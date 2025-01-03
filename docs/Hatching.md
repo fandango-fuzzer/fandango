@@ -16,6 +16,3 @@ kernelspec:
 ```{error}
 This chapter is still in construction.
 ```
-
-
-% The next section talks about [hatching specs](sec:hatching).

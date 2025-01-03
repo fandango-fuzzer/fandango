@@ -29,3 +29,4 @@ parts:
     - file: Reference
     - file: Installing
     - file: Stdlib
+    - file: Including

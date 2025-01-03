@@ -108,8 +108,17 @@ We can do the same for the last name, too; and then this is the full Fandango sp
 ```
 
 :::{note}
-Any functions you use in a generator (or in a constraint, for that matter) need to be imported.
+The [Fandango `include()` function](sec:including) _includes_ the Fandango definitions of the given file.
+This way, we need not repeat the definitions from `persons.fan` and only focus on the differences.
+:::
+
+:::{note}
+Python code (from Python files) that you use in a generator (or in a constraint, for that matter) needs to be imported.
 Use the Python `import` features to do that.
+:::
+
+:::{attention}
+`include(FILE)` is for Fandango files, `import MODULE` is for Python modules.
 :::
 
 This is what the output of the above spec looks like:

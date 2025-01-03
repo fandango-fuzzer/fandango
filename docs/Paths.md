@@ -139,10 +139,10 @@ Tree('<start>',
   Tree('<person_name>',
     Tree('<first_name>',
       Tree('<name>',
-        Tree('<uppercase_letter>',
+        Tree('<ascii_uppercase_letter>',
           Tree('"E"')
         ),
-        Tree('<lowercase_letter>',
+        Tree('<ascii_lowercase_letter>',
           Tree('"x"')
         )
       )
@@ -150,16 +150,16 @@ Tree('<start>',
     Tree('" "'),
     Tree('<last_name>',
       Tree('<name>',
-        Tree('<uppercase_letter>',
+        Tree('<ascii_uppercase_letter>',
           Tree('"P"')
         ),
-        Tree('<lowercase_letter>',
+        Tree('<ascii_lowercase_letter>',
           Tree('"l"')
         ),
-        Tree('<lowercase_letter>',
+        Tree('<ascii_lowercase_letter>',
           Tree('"t"')
         ),
-        Tree('<lowercase_letter>',
+        Tree('<ascii_lowercase_letter>',
           Tree('"z"')
         )
       )
@@ -308,27 +308,27 @@ Let us take a look at some rules in our `persons.fan` example:
 ```python
 <first_name> ::= <name>;
 <last_name> ::= <name>;
-<name> ::= <uppercase_letter><lowercase_letter>+;
-<uppercase_letter> ::= "A" | "B" | "C" | ... | "Z";
+<name> ::= <ascii_uppercase_letter><ascii_lowercase_letter>+;
+<ascii_uppercase_letter> ::= "A" | "B" | "C" | ... | "Z";
 ```
 
-To refer to all `<uppercase_letter>` element as descendant of a `<first_name>` element, you thus write `<first_name>..<uppercase_letter>`.
+To refer to all `<ascii_uppercase_letter>` element as descendant of a `<first_name>` element, you thus write `<first_name>..<ascii_uppercase_letter>`.
 
 Hence, to make all uppercase letters `X`, but only as part of a first name, you may write
 
 ```shell
-$ fandango fuzz -f persons.fan -n 10 -c '<first_name>..<uppercase_letter> == "X"'
+$ fandango fuzz -f persons.fan -n 10 -c '<first_name>..<ascii_uppercase_letter> == "X"'
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c '<first_name>..<uppercase_letter> == "X"'
+!fandango fuzz -f persons.fan -n 10 -c '<first_name>..<ascii_uppercase_letter> == "X"'
 ```
 
 ### Chains
 
 You can freely combine `[]`, `.`, and `..` into _chains_ that select subtrees.
-What would the expression `<start>[0].<last_name>..<lowercase_letter>` refer to, for instance?
+What would the expression `<start>[0].<last_name>..<ascii_lowercase_letter>` refer to, for instance?
 
 :::{admonition} Solution
 :class: tip, dropdown
@@ -336,18 +336,18 @@ This is easy:
 
 * `<start>[0]` is the first element of start, hence a `<person_name>`.
 * `.<last_name>` refers to the child of type `<last_name>`
-* `..<lowercase_letter>` refers to all descendants of type `<lowercase_letter>`
+* `..<ascii_lowercase_letter>` refers to all descendants of type `<ascii_lowercase_letter>`
 :::
 
 Let's use this in a constraint:
 
 ```shell
-$ fandango fuzz -f persons.fan -n 10 -c '<start>[0].<last_name>..<lowercase_letter> == "x"'
+$ fandango fuzz -f persons.fan -n 10 -c '<start>[0].<last_name>..<ascii_lowercase_letter> == "x"'
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c '<start>[0].<last_name>..<lowercase_letter> == "x"'
+!fandango fuzz -f persons.fan -n 10 -c '<start>[0].<last_name>..<ascii_lowercase_letter> == "x"'
 ```
 
 ## Quantifiers
@@ -433,39 +433,39 @@ all(CONSTRAINT for ELEM in *SCOPE)
 Hence, the expression
 
 ```python
-all(c == "a" for c in *<first_name>..<lowercase_letter>)
+all(c == "a" for c in *<first_name>..<ascii_lowercase_letter>)
 ```
 
-ensures that _all_ sub-elements `<lowercase_letter>` in `<first_name>` have the value "a".
+ensures that _all_ sub-elements `<ascii_lowercase_letter>` in `<first_name>` have the value "a".
 
 Again, let us decompose this expression:
 
-* The expression `for c in *<first_name>..<lowercase_letter>` lets Python iterate over all `<lowercase_letter>` objects within `<first_name>`...
+* The expression `for c in *<first_name>..<ascii_lowercase_letter>` lets Python iterate over all `<ascii_lowercase_letter>` objects within `<first_name>`...
 * ... and evaluate `c == "A"` for each of them, resulting in a collection of Boolean values.
 * The Python function `all(list)` returns `True` if all elements in `list` are True.
 
 So, what we get is universal quantification:
 
 ```shell
-$ fandango fuzz -f persons.fan -n 10 -c 'all(c == "a" for c in *<first_name>..<lowercase_letter>)'
+$ fandango fuzz -f persons.fan -n 10 -c 'all(c == "a" for c in *<first_name>..<ascii_lowercase_letter>)'
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c '<first_name>..<lowercase_letter> == "a"'
+!fandango fuzz -f persons.fan -n 10 -c '<first_name>..<ascii_lowercase_letter> == "a"'
 ```
 
 By default, all symbols are universally quantified within `<start>`, so a dedicated universal quantifier is only needed if you want to _limit the scope_ to some sub-element.
-This is what we do here with `<first_name>..<lowercase_letter>`, limiting the scope to `<first_name>`.
+This is what we do here with `<first_name>..<ascii_lowercase_letter>`, limiting the scope to `<first_name>`.
 
 Given the default universal quantification, you can actually achieve the same effect as above without `all()` and without a `*`. How?
 
 :::{admonition} Solution
 :class: tip, dropdown
-You can access all `<lowercase_letter>` elements within `<first_name>` directly:
+You can access all `<ascii_lowercase_letter>` elements within `<first_name>` directly:
 
 ```shell
-$ fandango fuzz -f persons.fan -n 10 -c '<first_name>..<lowercase_letter> == "a"'
+$ fandango fuzz -f persons.fan -n 10 -c '<first_name>..<ascii_lowercase_letter> == "a"'
 ```
 
 :::

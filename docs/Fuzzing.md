@@ -58,6 +58,8 @@ Future Fandango versions will have shortcuts for specifying character ranges.
 !cat persons.fan
 ```
 
+The symbols `<ascii_uppercase_letter>`, `<ascii_lowercase_letter>`, and `<digits>` are predefined in the [](sec:stdlib); they are defined exactly as would be expected.
+
 Create or download a file [`persons.fan`](persons.fan) and run Fandango on it:
 
 ```shell

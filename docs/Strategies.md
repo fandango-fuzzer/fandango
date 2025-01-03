@@ -56,7 +56,7 @@ The `+`, `*`, and `?` suffixes are actually equivalent to `{1,}`, `{0,}`, and `{
 If, for instance, we want the above names to be 100 characters long, we can set up a new rule for `<name>`
 
 ```
-<name> ::= <uppercase_letter><lowercase_letter>{99};
+<name> ::= <ascii_uppercase_letter><ascii_lowercase_letter>{99};
 ```
 
 and the lowercase letters will be repeated 99 times.
