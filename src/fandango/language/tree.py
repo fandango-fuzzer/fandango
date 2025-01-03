@@ -33,7 +33,7 @@ class DerivationTree:
     def set_all_read_only(self, read_only: bool):
         self.read_only = read_only
         for child in self._children:
-            child.set_read_only(read_only)
+            child.set_all_read_only(read_only)
 
     def find_role_msgs(self) -> List[Tuple[str, "DerivationTree"]]:
         if not isinstance(self.symbol, NonTerminal):
@@ -42,7 +42,8 @@ class DerivationTree:
             return [(self.role, self)]
         subtrees = []
         for child in self._children:
-            subtrees.extend(child.find_roles())
+            subtrees.extend(child.find_role_msgs())
+        return subtrees
 
     def set_children(self, children: List["DerivationTree"]):
         self._children = children

@@ -133,6 +133,7 @@ class Fandango:
             )
 
             st_time = time.time()
+            self.population = []
             self.population = self.generate_random_initial_population(mode)
             LOGGER.info(
                 f"Initial population generated in {time.time() - st_time:.2f} seconds"
@@ -152,14 +153,15 @@ class Fandango:
         io_instance: FandangoIO = global_env['FandangoIO'].instance()
 
         finished = False
-        prev_role_msgs = 0
+        prev_nr_role_msgs = 0
         prev_choice = ""
         while not finished:
             results = self.evolve()
             choice: DerivationTree = random.choice(results)
 
             role_msgs = choice.find_role_msgs()
-            fuzzing_ended = len(role_msgs) <= prev_role_msgs
+            nr_role_msgs = len(role_msgs)
+            fuzzing_ended = nr_role_msgs <= prev_nr_role_msgs
 
             new_msg_role = None
             new_msg = None
@@ -168,27 +170,28 @@ class Fandango:
             role_io = io_instance.roles
 
             str_history = str(choice)
-            if new_msg_role in role_io.keys():
-                if role_io[new_msg_role].is_fandango() and new_msg is not None:
+            if new_msg_role in role_io.keys() and new_msg is not None:
+                if role_io[new_msg_role].is_fandango():
                     io_instance._data['transmit'][new_msg_role] = new_msg
-                    role_msgs += 1
+                else:
+                    nr_role_msgs -= 1
 
             exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
             for role, item in io_instance._data['receive']:
                 str_history += item
-                role_msgs += 1
+                nr_role_msgs += 1
             io_instance._data['receive'].clear()
 
-            if role_msgs <= prev_role_msgs:
+            if nr_role_msgs <= prev_nr_role_msgs:
                 # Finished
                 return [choice]
 
             prev_choice = choice
-            prev_role_msgs = role_msgs
+            prev_nr_role_msgs = nr_role_msgs
 
             new_population = []
             for tree_option in self.grammar.parse_incomplete(str_history, self.start_symbol):
-                tree_option.set_read_only(True)
+                tree_option.set_all_read_only(True)
                 new_population.append(tree_option)
                 if len(new_population) >= self.population_size:
                     break
