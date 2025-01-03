@@ -1,29 +1,41 @@
-from typing import final
+from typing import Callable
 
 
 class IoParty(object):
-
 
     def __init__(self, is_fandango: bool):
         self.class_name = type(self).__name__.lower()
         self._is_fandango = is_fandango
         FandangoIO.instance().roles[self.class_name] = self
 
+    """
+    :return: True, if the party is substituted by fandango.
+    """
     def is_fandango(self):
         return self._is_fandango
 
-    def on_fandango_msg(self, message: str):
+    """
+    Called when fandango wants to send a message as this party.
+    
+    :message: The message to send.
+    :response_setter: If the recipient of the message answers during the function call, this method can be called to set the response.
+        First parameter of response_setter if the role of the other party. The second is the message, that it answered with.
+    """
+    def on_transmit_msg(self, message: str, response_setter: Callable[[str, str], None]):
         pass
 
-    @final
-    def set_response(self, message: str) -> None:
-        FandangoIO.instance().set_remote_response(self.class_name, message)
+    """
+    Call if a message has been received from this party.
+    """
+    def receive_msg(self, message: str) -> None:
+        FandangoIO.instance().set_receive(self.class_name, message)
+
 
 class FandangoIO:
     __instance = None
 
     @classmethod
-    def instance(cls):
+    def instance(cls) -> "FandangoIO":
         if cls.__instance is None:
             FandangoIO()
         return cls.__instance
@@ -33,18 +45,18 @@ class FandangoIO:
             raise Exception("Singleton already created!")
         self._data = dict(
             {
-                "local_response": dict[str, str](),
-                "remote_response": dict[str, str](),
+                "transmit": dict[str, str](),
+                "receive": list[(str, str)](),
             }
         )
         FandangoIO.__instance = self
-        self.roles = dict[str, "IoParty"]()
+        self.roles = dict[str, IoParty]()
 
     def run_com_loop(self):
-        for role, msg in self._data["local_response"].items():
-            if role in IoParty.roles.keys():
-                IoParty.roles[role].on_fandango_msg(msg)
-        self._data["local_response"].clear()
+        for role, msg in self._data["transmit"].items():
+            if role in self.roles.keys():
+                self.roles[role].on_transmit_msg(msg, self.set_receive)
+        self._data["transmit"].clear()
 
-    def set_remote_response(self, role: str, message: str) -> None:
-        self._data["remote_response"][role] = message
+    def set_receive(self, role: str, message: str) -> None:
+        self._data["receive"].append((role, message))
