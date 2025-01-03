@@ -51,6 +51,12 @@ def edits1(word):
    inserts    = [a + c + b     for a, b in splits for c in alphabet]
    return set(deletes + transposes + replaces + inserts)
 
+def edits(word, n):
+    if n == 1:
+        return edits1(word)
+    else:
+        return set(e2 for e1 in edits(word, n - 1) for e2 in edits1(e1))
+
 def edit_distance(s1, s2):
     # https://stackoverflow.com/questions/2460177/edit-distance-in-python
     if len(s1) > len(s2):
@@ -68,10 +74,11 @@ def edit_distance(s1, s2):
     return distances[-1]
 
 def closest_match(word, candidates):
-    # Try spelling mistakes
-    for alternate_spelling in edits1(word):
-        if alternate_spelling in candidates:
-            return alternate_spelling
+    # Try up to three spelling mistakes
+    for distance in range(1, 3):
+        for alternate_spelling in edits(word, distance):
+            if alternate_spelling in candidates:
+                return alternate_spelling
 
     # Try prefixes and suffixes
     for candidate in candidates:
