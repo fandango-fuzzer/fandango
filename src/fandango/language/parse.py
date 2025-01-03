@@ -14,9 +14,9 @@ import dill as pickle
 from xdg_base_dirs import xdg_cache_home
 import cachedir_tag
 from copy import deepcopy
+from pathlib import Path
 
 from fandango.constraints import predicates
-from fandango.constraints.base import Constraint
 from fandango.language.convert import (
     FandangoSplitter,
     GrammarProcessor,
@@ -178,21 +178,40 @@ def check_constraints_existence_children(
     return True
 
 
-
+CURRENT_FILENAME: str = "<undefined>"
 FILES_TO_PARSE: List[IO] = []
 
-def include(filename: str):
+def include(file_to_be_included: str):
     """Include a file in the current context"""
     global FILES_TO_PARSE
-    FILES_TO_PARSE.append(open(filename, 'r'))
+    global CURRENT_FILENAME
+    LOGGER.debug(f"{CURRENT_FILENAME}: including {file_to_be_included}")
+
+    path = os.path.dirname(CURRENT_FILENAME)
+    if not path:
+        path = "."  # For strings and standard input
+    if os.environ.get("FANDANGO_PATH"):
+        path += ":" + os.environ["FANDANGO_PATH"]
+    for dir in path.split(":"):
+        try:
+            full_file_name = Path(dir) / file_to_be_included
+            full_file = open(full_file_name, 'r')
+        except FileNotFoundError:
+            continue
+        LOGGER.debug(f"{CURRENT_FILENAME}: found {full_file_name}")
+        FILES_TO_PARSE.append(full_file)
+        return
+
+    raise FileNotFoundError(f"{CURRENT_FILENAME}: {repr(file_to_be_included)} not found in {repr(path)}")
 
 class FandangoSpec:
+    """Helper class to pickle and unpickle parsed Fandango specifications"""
     GLOBALS = predicates.__dict__
     GLOBALS.update({'include': include})
     LOCALS = None  # Must be None to ensure top-level imports
 
     def __init__(self, tree: Any, fan_contents: str,
-                 lazy: bool = False, filename: str = "<input>",):
+                 lazy: bool = False, filename: str = "<input>"):
         self.version = importlib.metadata.version("fandango")
         self.fan_contents = fan_contents
         self.global_vars = self.GLOBALS.copy()
@@ -208,7 +227,7 @@ class FandangoSpec:
         self.code_text = ast.unparse(code_tree)
 
         LOGGER.debug(f"{filename}: running code")
-        self.run_code()
+        self.run_code(filename=filename)
 
         LOGGER.debug(f"{filename}: extracting grammar")
         grammar_processor = GrammarProcessor(
@@ -227,7 +246,10 @@ class FandangoSpec:
         self.constraints: List[str] = \
             constraint_processor.get_constraints(splitter.constraints)
 
-    def run_code(self):
+    def run_code(self, filename: str="<input>"):
+        global CURRENT_FILENAME
+        CURRENT_FILENAME = filename
+
         exec(self.code_text, self.global_vars, self.local_vars)
 
 
@@ -246,6 +268,7 @@ def parse_content(
     :param lazy: If True, the constraints are evaluated lazily
     :return: A tuple of the grammar and constraints
     """
+    spec: Optional[FandangoSpec] = None
     from_cache = False
 
     CACHE_DIR = xdg_cache_home() / "fandango"
@@ -262,7 +285,7 @@ def parse_content(
             try:
                 with open(pickle_file, "rb") as fp:
                     LOGGER.info(f"{filename}: loading cached spec from {pickle_file}")
-                    spec: FandangoSpec = pickle.load(fp)
+                    spec = pickle.load(fp)
                     LOGGER.debug(f"Cached spec version: {spec.version}")
                     if spec.fan_contents != fan_content:
                         e = ValueError("Hash collision")
@@ -272,18 +295,19 @@ def parse_content(
             except Exception as e:
                 LOGGER.debug(type(e).__name__ + ":" + str(e))
 
-    if from_cache:
+    if spec:
         LOGGER.debug(f"{filename}: running code")
         try:
-            spec.run_code()
+            spec.run_code(filename=filename)
         except Exception as e:
             print_exception(e)
 
             # In case the error has anything to do with caching, play it safe
-            del spec
+            LOGGER.debug(f"Cached spec failed; removing {pickle_file}")
+            spec = None
             os.remove(pickle_file)
 
-    if not from_cache:
+    if not spec:
         LOGGER.debug(f"{filename}: setting up .fan parser and lexer")
         input_stream = InputStream(fan_content)
         error_listener = MyErrorListener(filename)
@@ -299,7 +323,9 @@ def parse_content(
         tree = parser.fandango()
 
         LOGGER.debug(f"{filename}: splitting content")
-        spec = FandangoSpec(tree, fan_content, lazy)
+        spec = FandangoSpec(tree, fan_content, lazy, filename=filename)
+
+    assert spec is not None
 
     if use_cache and not from_cache:
         try:
@@ -360,6 +386,7 @@ def parse(fan_files: List[IO],
     FILES_TO_PARSE = fan_files
     while FILES_TO_PARSE:
         file = FILES_TO_PARSE.pop(0)
+        LOGGER.debug(f"Reading {file.name}")
         fan_content = file.read()
         new_grammar, new_constraints = \
             parse_content(fan_content, filename=file.name)
