@@ -59,11 +59,15 @@ python-dateutil==2.9.0.post0
     #   faker
     #   fandango (pyproject.toml)
     #   matplotlib
+rapidfuzz==3.11.0
+    # via thefuzz
 scipy==1.14.1
     # via fandango (pyproject.toml)
 six==1.16.0
     # via python-dateutil
 tccbox==2024.7.1
+    # via fandango (pyproject.toml)
+thefuzz==0.22.1
     # via fandango (pyproject.toml)
 typing-extensions==4.12.2
     # via faker
