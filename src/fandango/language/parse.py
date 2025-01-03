@@ -1,8 +1,8 @@
 import ast
 import re
 import os
-import sys
 import importlib.metadata
+import string
 
 from typing import Tuple, List, Set, Any, IO, Optional
 from fandango.logger import LOGGER, print_exception
@@ -41,6 +41,16 @@ class MyErrorListener(ErrorListener):
         raise SyntaxError(f'{repr(self.filename)}, line {line}, column {column}: {msg}')
 
 
+# from https://norvig.com/spell-correct.html
+def edits1(word):
+   alphabet = string.ascii_letters + string.digits + '_'
+   splits     = [(word[:i], word[i:]) for i in range(len(word) + 1)]
+   deletes    = [a + b[1:] for a, b in splits if b]
+   transposes = [a + b[1] + b[0] + b[2:] for a, b in splits if len(b)>1]
+   replaces   = [a + c + b[1:] for a, b in splits for c in alphabet if b]
+   inserts    = [a + c + b     for a, b in splits for c in alphabet]
+   return set(deletes + transposes + replaces + inserts)
+
 def edit_distance(s1, s2):
     # https://stackoverflow.com/questions/2460177/edit-distance-in-python
     if len(s1) > len(s2):
@@ -57,17 +67,36 @@ def edit_distance(s1, s2):
         distances = distances_
     return distances[-1]
 
-def closest_match(s, candidates):
-    return min(candidates, key=lambda x: edit_distance(s, x))
+def closest_match(word, candidates):
+    # Try spelling mistakes
+    for alternate_spelling in edits1(word):
+        if alternate_spelling in candidates:
+            return alternate_spelling
 
-def check_grammar_consistency(grammar, used_symbols=None, 
+    # Try prefixes and suffixes
+    for candidate in candidates:
+        c = re.sub(r'[^a-zA-Z0-9_]', '', candidate)
+        w = re.sub(r'[^a-zA-Z0-9_]', '', word)
+        if c.startswith(w) or c.endswith(w):
+            return candidate
+
+    # Try case mismatches
+    for candidate in candidates:
+        if candidate.lower() == word.lower():
+            return candidate
+
+    # Try smallest edit distance
+    return min(candidates, key=lambda x: edit_distance(word, x))
+
+
+def check_grammar_consistency(grammar, given_used_symbols=set(),
                               start_symbol="<start>"):
     if not grammar:
         return
 
     LOGGER.debug("Checking grammar")
 
-    used_symbols = used_symbols or set()
+    used_symbols = set()
     undefined_symbols = set()
     defined_symbols = set()
 
@@ -90,12 +119,14 @@ def check_grammar_consistency(grammar, used_symbols=None,
             undefined_symbols.add(symbol)
 
     for symbol in defined_symbols:
-        if symbol not in used_symbols and str(symbol) != start_symbol:
+        if (symbol not in used_symbols
+            and symbol not in given_used_symbols
+            and str(symbol) != start_symbol):
             LOGGER.info(f"Symbol {symbol} defined, but not used")
 
     if undefined_symbols:
         first_undefined_symbol = undefined_symbols.pop()
-        closest = closest_match(first_undefined_symbol, defined_symbols)
+        closest = closest_match(first_undefined_symbol, used_symbols)
         error = ValueError(f"Undefined symbol {first_undefined_symbol} in grammar. Did you mean {closest}?")
         raise error
 
@@ -435,16 +466,16 @@ def parse(fan_files: List[IO],
         _, new_constraints = parse_content(constraint + ";", constraint)
         parsed_constraints += new_constraints
 
-    finalize(grammar, parsed_constraints, used_symbols=USED_SYMBOLS)
+    finalize(grammar, parsed_constraints, given_used_symbols=USED_SYMBOLS)
     return grammar, parsed_constraints
 
 
-def finalize(grammar, constraints, used_symbols=set()):
+def finalize(grammar, constraints, given_used_symbols=set()):
     """Run final checks after parsing of all grammars is done"""
     LOGGER.debug("Finalizing contents")
 
     if grammar and len(grammar.rules) > 0:
-        check_grammar_consistency(grammar, used_symbols)
+        check_grammar_consistency(grammar, given_used_symbols)
 
     if grammar and constraints:
         check_constraints_existence(grammar, constraints)
