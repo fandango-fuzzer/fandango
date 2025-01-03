@@ -184,14 +184,15 @@ def check_constraints_existence_children(
 
 
 CURRENT_FILENAME: str = "<undefined>"
-FILES_TO_PARSE: List[IO] = []
+FILES_TO_PARSE: List[Tuple[IO, int]] = []
 INCLUDES: List[str] = []
+INCLUDE_DEPTH: int = 0
 
 def include(file_to_be_included: str):
     """Include a file in the current context"""
     global FILES_TO_PARSE
     global CURRENT_FILENAME
-    LOGGER.debug(f"{CURRENT_FILENAME}: including {file_to_be_included}")
+    global INCLUDE_DEPTH
 
     path = os.path.dirname(CURRENT_FILENAME)
     if not path:
@@ -215,8 +216,10 @@ def include(file_to_be_included: str):
             full_file = open(full_file_name, 'r')
         except FileNotFoundError:
             continue
-        LOGGER.debug(f"{CURRENT_FILENAME}: found {full_file_name}")
-        FILES_TO_PARSE.append(full_file)
+        LOGGER.debug(f"{CURRENT_FILENAME}: including {full_file_name}")
+
+        INCLUDE_DEPTH += 1
+        FILES_TO_PARSE.append((full_file, INCLUDE_DEPTH))
         return
 
     raise FileNotFoundError(f"{CURRENT_FILENAME}: {repr(file_to_be_included)} not found in {':'.join(str(dir) for dir in dirs)}")
@@ -413,31 +416,49 @@ def parse(fan_files: List[IO],
     grammars += given_grammars
 
     LOGGER.debug("Reading files")
+    more_grammars = []
     global FILES_TO_PARSE
-    FILES_TO_PARSE = fan_files
+    FILES_TO_PARSE = [(file, 0) for file in fan_files]
+
+    global INCLUDE_DEPTH
+    INCLUDE_DEPTH = 0
+
     while FILES_TO_PARSE:
-        file = FILES_TO_PARSE.pop(0)
-        LOGGER.debug(f"Reading {file.name}")
+        (file, depth) = FILES_TO_PARSE.pop(0)
+        LOGGER.debug(f"Reading {file.name} (depth = {depth})")
         fan_contents = file.read()
         new_grammar, new_constraints = \
             parse_content(fan_contents, filename=file.name)
-        grammars.append(new_grammar)
         parsed_constraints += new_constraints
 
-        if file not in fan_files:
-            # Included file; do not complain about unused symbols
+        if depth == 0:
+            # Given file: process in order
+            more_grammars.append(new_grammar)
+        else:
+            # Included file: process _before_ current grammar
+            more_grammars = [new_grammar] + more_grammars
+            # Do not complain about unused symbols in included files
             for symbol in new_grammar.rules.keys():
                 USED_SYMBOLS.add(symbol)
 
+        if INCLUDE_DEPTH > 0:
+            INCLUDE_DEPTH -= 1
+
+    grammars += more_grammars
+
     LOGGER.debug(f"Processing {len(grammars)} grammars")
     grammar = grammars[0]
+    LOGGER.debug(f"Grammar #1: {grammar.rules.keys()}")
+    n = 2
     for g in grammars[1:]:
-        LOGGER.debug(f"Grammar: {g.rules.keys()}")
+        LOGGER.debug(f"Grammar #{n}: {g.rules.keys()}")
+        # LOGGER.debug(f"Grammar: {g}")
 
         for symbol in g.rules.keys():
             if symbol in grammar.rules:
                 LOGGER.info(f"Redefining {symbol}")
         grammar.update(g, prime=False)
+        n += 1
 
     LOGGER.debug("Processing constraints")
     for constraint in constraints:
