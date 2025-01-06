@@ -235,23 +235,23 @@ class DerivationTree:
                 ],
             )
 
-    def get_non_terminal_symbols(self) -> Set[NonTerminal]:
+    def get_non_terminal_symbols(self, exclude_read_only = True) -> Set[NonTerminal]:
         """
         Retrieve all non-terminal symbols present in the derivation tree.
         """
         symbols = set()
-        if self.symbol.is_non_terminal:
+        if self.symbol.is_non_terminal and not (exclude_read_only and self.read_only):
             symbols.add(self.symbol)
         for child in self._children:
-            symbols.update(child.get_non_terminal_symbols())
+            symbols.update(child.get_non_terminal_symbols(exclude_read_only))
         return symbols
 
-    def find_all_nodes(self, symbol: NonTerminal) -> List["DerivationTree"]:
+    def find_all_nodes(self, symbol: NonTerminal, exclude_read_only = True) -> List["DerivationTree"]:
         """
         Find all nodes in the derivation tree with the given non-terminal symbol.
         """
         nodes = []
-        if self.symbol == symbol:
+        if self.symbol == symbol and not (exclude_read_only and self.read_only):
             nodes.append(self)
         for child in self._children:
             nodes.extend(child.find_all_nodes(symbol))

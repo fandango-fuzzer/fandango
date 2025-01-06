@@ -359,6 +359,8 @@ class Fandango:
                     )
                     if suggested_tree is None:
                         continue
+                    if failing_tree.tree.read_only:
+                        continue
                     individual = individual.replace(failing_tree.tree, suggested_tree)
                     self.fixes_made += 1
         return individual
@@ -483,14 +485,17 @@ class Fandango:
         for failing_tree in failing_trees:
             selection.append(failing_tree.tree)
 
-        if len(selection) == 0:
-            return individual
-        else:
+        while len(selection) != 0:
             node_to_mutate = random.choice(selection)
+            if node_to_mutate.read_only:
+                selection.extend(node_to_mutate.children)
+                selection.remove(node_to_mutate)
+                continue
             if node_to_mutate.symbol.is_non_terminal:
                 new_subtree = self.grammar.fuzz(node_to_mutate.symbol)
                 individual = individual.replace(node_to_mutate, new_subtree)
                 self.mutations_made += 1
+            return individual
         return individual
 
 
