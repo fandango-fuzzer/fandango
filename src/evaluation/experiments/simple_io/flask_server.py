@@ -15,15 +15,18 @@ def hello():
     global nr_high
     if 'nr' not in json:
         nr_low = random.randint(1, 100)
-        nr_high = nr_low + random.randint(1, 10)
+        nr_high = nr_low + random.randint(2, 10)
         json = {
             'nr_low': nr_low,
             'nr_high': nr_high
         }
+        print(f"Generated challenge: {json}")
     else:
         print(json)
+        valid = nr_low < int(json['nr']) < nr_high
+        print(f"Received {valid} solution: {json['nr']}")
         json = {
-            "result": nr_low < int(json['nr']) < nr_high
+            "result": valid
         }
     return json
 

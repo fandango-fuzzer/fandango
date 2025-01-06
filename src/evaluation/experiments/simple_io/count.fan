@@ -7,7 +7,7 @@
 <validate> ::= '{"result":true}';
 <number_high> ::= <number>;
 <number_low> ::= <number>;
-<number> ::= <digit_start> <digit_tail>+;
+<number> ::= <digit_start> <digit_tail>*;
 <digit_start> ::= '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' ;
 <digit_tail> ::= '0' | <digit_start>;
 
