@@ -138,7 +138,7 @@ def check_constraints_existence_children(
         return indirect_child[f"<{parent}>"][f"<{symbol}>"]
 
     grammar_symbols = grammar.rules[NonTerminal(f"<{parent}>")]
-    grammar_matches = re.findall(r'(?<!")<([^>]*)>(?!.*")', str(grammar_symbols))
+    grammar_matches = re.findall(r'(?<!")<([^>]*)>(?!".*)', str(grammar_symbols))
 
     if symbol in grammar_matches:
         indirect_child[f"<{parent}>"][f"<{symbol}>"] = True

@@ -87,10 +87,14 @@ class Fandango:
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.tournament_size = max(2, int(population_size * tournament_size))
+        self.param_tournament_size = tournament_size
         self.max_generations = max_generations
         self.elitism_rate = elitism_rate
         self.destruction_rate = destruction_rate
         self.start_symbol = start_symbol
+        self.mode = mode
+        self.logger_level = logger_level
+        self.random_seed = random_seed
 
         self.fitness_cache = {}
 
@@ -156,6 +160,11 @@ class Fandango:
         prev_nr_role_msgs = 0
         str_history = ""
         while not finished:
+            self.__init__(self.grammar, self.constraints, self.population_size, self.desired_solutions,
+                            self.population, self.max_generations, self.elitism_rate, self.crossover_rate,
+                            self.param_tournament_size, self.mutation_rate, self.destruction_rate, self.logger_level,
+                            self.warnings_are_errors, self.best_effort, self.random_seed, self.mode, self.start_symbol)
+
             results = self.evolve()
             choice: DerivationTree = random.choice(results)
             role_msgs = choice.find_role_msgs()
@@ -174,7 +183,7 @@ class Fandango:
 
                 if new_msg_role in role_io.keys():
                     if role_io[new_msg_role].is_fandango():
-                        io_instance._data['transmit'][new_msg_role] = new_msg
+                        io_instance._data['transmit'][new_msg_role] = str(new_msg)
                         str_history += str(new_msg)
                     else:
                         nr_role_msgs -= 1
@@ -185,7 +194,7 @@ class Fandango:
                     nr_role_msgs += 1
                 io_instance._data['receive'].clear()
 
-            if nr_role_msgs <= prev_nr_role_msgs and len(self.grammar.parse(str_history, self.start_symbol)) != 0:
+            if nr_role_msgs <= prev_nr_role_msgs and self.grammar.parse(str_history, self.start_symbol) is not None:
                 # Finished
                 return [choice]
 
