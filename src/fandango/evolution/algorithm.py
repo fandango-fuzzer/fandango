@@ -154,39 +154,41 @@ class Fandango:
 
         finished = False
         prev_nr_role_msgs = 0
-        prev_choice = ""
+        str_history = ""
         while not finished:
             results = self.evolve()
             choice: DerivationTree = random.choice(results)
-
             role_msgs = choice.find_role_msgs()
             nr_role_msgs = len(role_msgs)
-            fuzzing_ended = nr_role_msgs <= prev_nr_role_msgs
+            new_msg_generated = nr_role_msgs > prev_nr_role_msgs
 
-            new_msg_role = None
-            new_msg = None
-            if not fuzzing_ended:
+            if len(io_instance._data['receive']) != 0:
+                for role, msg in io_instance._data['receive']:
+                    str_history += str(msg)
+                    nr_role_msgs += 1
+                io_instance._data['receive'].clear()
+
+            elif new_msg_generated:
                 new_msg_role, new_msg = role_msgs[-1]
-            role_io = io_instance.roles
+                role_io = io_instance.roles
 
-            str_history = str(choice)
-            if new_msg_role in role_io.keys() and new_msg is not None:
-                if role_io[new_msg_role].is_fandango():
-                    io_instance._data['transmit'][new_msg_role] = new_msg
-                else:
-                    nr_role_msgs -= 1
+                if new_msg_role in role_io.keys():
+                    if role_io[new_msg_role].is_fandango():
+                        io_instance._data['transmit'][new_msg_role] = new_msg
+                        str_history += str(new_msg)
+                    else:
+                        nr_role_msgs -= 1
 
-            exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
-            for role, item in io_instance._data['receive']:
-                str_history += item
-                nr_role_msgs += 1
-            io_instance._data['receive'].clear()
+                exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
+                for role, msg in io_instance._data['receive']:
+                    str_history += str(msg)
+                    nr_role_msgs += 1
+                io_instance._data['receive'].clear()
 
-            if nr_role_msgs <= prev_nr_role_msgs:
+            if nr_role_msgs <= prev_nr_role_msgs and len(self.grammar.parse(str_history, self.start_symbol)) != 0:
                 # Finished
                 return [choice]
 
-            prev_choice = choice
             prev_nr_role_msgs = nr_role_msgs
 
             new_population = []
