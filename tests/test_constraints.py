@@ -411,7 +411,7 @@ class ConstraintTest(unittest.TestCase):
 <number> ::= <digit> | <digit><number>;
 <digit> ::= "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "0";
 """ 
-        constraint = "int(<start>[0].<digit>) == 0"
+        constraint = "int(<start>[0].<digit>) == 0;"
         grammar, constraint = parse(grammar + constraint)
         constraint = constraint[0]
 

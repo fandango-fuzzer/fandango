@@ -118,11 +118,13 @@ def check_constraints_existence(grammar, constraints):
                 error.add_note(f"Possible symbols: {defined_symbols_str}")
                 raise error
 
-            parent = constraint_matches_children[0]
+            #parent = constraint_matches_children[0]
             for i in range(len(constraint_matches_children) - 1):
+                parent = constraint_matches_children[i]
+                LOGGER.debug(f"Parent: {parent}")
                 parent_sym = parent[0]
                 if parent[1] == "":
-                    symbol = constraint_matches[i + 1][0]
+                    symbol = constraint_matches[i + 1]
                     indirect = f"<{parent_sym}>..<{symbol}>" in str(value)
                     if not check_constraints_existence_children(
                                         grammar, parent_sym, symbol, indirect, indirect_child
@@ -132,7 +134,7 @@ def check_constraints_existence(grammar, constraints):
                 else:
                     indirect = f"<{parent_sym}>{parent[1]}..<{constraint_matches[i+1][0]}>" in str(value)
                     if not check_constraint_existence_access(
-                                        grammar, parent_sym, parent[1][1:-1], indirect, constraint_matches[i+1][0]
+                                        grammar, parent_sym, int(parent[1][1:-1]), indirect, constraint_matches[i+1], indirect_child
                                     ):
                                         msg = f"Constraint {constraint}: <{parent_sym}> has no child <{symbol}>"
                                         raise ValueError(msg) 
@@ -140,7 +142,8 @@ def check_constraints_existence(grammar, constraints):
                   
                 
                 
-def check_constraint_existence_access(grammar, parent, id, recurse, next):
+def check_constraint_existence_access(grammar, parent, id, recurse, next, indirect_child):
+    LOGGER.debug(f"In Access with {parent}, {id}, {next}")
     rules = grammar.rules[NonTerminal(f"<{parent}>")]
     if isinstance(rules, Alternative):
         child = None
@@ -154,11 +157,11 @@ def check_constraint_existence_access(grammar, parent, id, recurse, next):
         if child is None:
             raise IndexError(f"Nonterminal <{parent}> has no {id}-th children")
     else:
-        nonterminals = re.findall(r"<([^>]*)>", str(rule))
+        nonterminals = re.findall(r"<([^>]*)>", str(rules))
         if len(nonterminals) < id:
             raise IndexError(f"Nonterminal <{parent}> has no {id}-th children")
         child = nonterminals[id]
-        return check_constraints_existence_children(grammar, child, next, recurse)
+        return check_constraints_existence_children(grammar, child, next, recurse, indirect_child)
     return False
             
 
