@@ -96,11 +96,10 @@ def check_constraints_existence(grammar, constraints):
         constraint_symbols = constraint.get_symbols()
 
         for value in constraint_symbols:
-            LOGGER.debug(f"Constraint {constraint}: Checking {value}")
+            #LOGGER.debug(f"Constraint {constraint}: Checking {value}")
 
             constraint_matches = re.findall(r"<([^>]*)>", str(value))  # was <(.*?)> then <([^>]*)>
             constraint_matches_children = re.findall(r"<([^>]*)>(\[.\])*", str(value))
-            LOGGER.debug(f"Found following constraint matches: {str(constraint_matches_children)}")
             
             missing = [
                 match for match in constraint_matches if match not in grammar_matches
@@ -118,10 +117,8 @@ def check_constraints_existence(grammar, constraints):
                 error.add_note(f"Possible symbols: {defined_symbols_str}")
                 raise error
 
-            #parent = constraint_matches_children[0]
             for i in range(len(constraint_matches_children) - 1):
                 parent = constraint_matches_children[i]
-                LOGGER.debug(f"Parent: {parent}")
                 parent_sym = parent[0]
                 if parent[1] == "":
                     symbol = constraint_matches[i + 1]
@@ -143,7 +140,6 @@ def check_constraints_existence(grammar, constraints):
                 
                 
 def check_constraint_existence_access(grammar, parent, id, recurse, next, indirect_child):
-    LOGGER.debug(f"In Access with {parent}, {id}, {next}")
     rules = grammar.rules[NonTerminal(f"<{parent}>")]
     if isinstance(rules, Alternative):
         child = None
@@ -169,8 +165,6 @@ def check_constraint_existence_access(grammar, parent, id, recurse, next, indire
 def check_constraints_existence_children(
     grammar, parent, symbol, recurse, indirect_child
 ):
-    LOGGER.debug(f"Checking {parent}, {symbol}")
-
     if indirect_child[f"<{parent}>"][f"<{symbol}>"] is not None:
         return indirect_child[f"<{parent}>"][f"<{symbol}>"]
 
