@@ -14,14 +14,15 @@ class DerivationTree:
         symbol: Symbol,
         children: Optional[List["DerivationTree"]] = None,
         parent: Optional["DerivationTree"] = None,
-        role: str = None
+        role: str = None,
+        read_only: bool = False
     ):
         self.symbol = symbol
         self._children = []
         self._size = 1
         self.set_children(children or [])
         self._parent = parent
-        self.read_only = False
+        self.read_only = read_only
         self.role = role
 
     def __len__(self):
@@ -96,7 +97,7 @@ class DerivationTree:
         """
         Computes a hash of the derivation tree based on its structure and symbols.
         """
-        return hash((self.symbol, self.role, tuple(hash(child) for child in self._children)))
+        return hash((self.symbol, self.role, self.read_only, tuple(hash(child) for child in self._children)))
 
     def __tree__(self):
         return self.symbol, [child.__tree__() for child in self._children]
@@ -194,7 +195,7 @@ class DerivationTree:
 
     def __eq__(self, other):
         if isinstance(other, DerivationTree):
-            return self.__tree__() == other.__tree__()
+            return hash(self) == hash(other)
         return str(self) == other
 
     def __le__(self, other):
@@ -233,6 +234,8 @@ class DerivationTree:
                     child.replace(tree_to_replace, new_subtree)
                     for child in self._children
                 ],
+                role=self.role,
+                read_only=self.read_only
             )
 
     def get_non_terminal_symbols(self, exclude_read_only = True) -> Set[NonTerminal]:

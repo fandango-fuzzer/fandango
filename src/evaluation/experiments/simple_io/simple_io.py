@@ -11,7 +11,6 @@ def main():
         grammar=grammar,
         constraints=constraints,
         population_size=100,
-        max_generations=10,
         mode=FuzzingMode.IO
     )
 
