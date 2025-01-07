@@ -159,7 +159,7 @@ class Fandango:
 
         finished = False
         prev_nr_role_msgs = 0
-        str_history = ""
+        history = []
         while not finished:
             self.solution.clear()
             self.fitness_cache.clear()
@@ -178,7 +178,7 @@ class Fandango:
 
             if len(io_instance._data['receive']) != 0:
                 for role, msg in io_instance._data['receive']:
-                    str_history += str(msg)
+                    history.append((role, str(msg)))
                     nr_role_msgs += 1
                 io_instance._data['receive'].clear()
 
@@ -189,16 +189,19 @@ class Fandango:
                 if new_msg_role in role_io.keys():
                     if role_io[new_msg_role].is_fandango():
                         io_instance._data['transmit'][new_msg_role] = str(new_msg)
-                        str_history += str(new_msg)
+                        history.append((new_msg_role, str(new_msg)))
                     else:
                         nr_role_msgs -= 1
 
                 exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
                 for role, msg in io_instance._data['receive']:
-                    str_history += str(msg)
+                    history.append((role, str(msg)))
                     nr_role_msgs += 1
                 io_instance._data['receive'].clear()
 
+            str_history = ""
+            for _, msg in history:
+                str_history += msg
             if nr_role_msgs <= prev_nr_role_msgs and self.grammar.parse(str_history, self.start_symbol) is not None:
                 # Finished
                 return [choice]
