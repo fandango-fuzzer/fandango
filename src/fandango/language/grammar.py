@@ -364,11 +364,13 @@ class NonTerminalNode(Node):
         if self.symbol in grammar.generators:
             return [grammar.generate(self.symbol)]
 
+        read_only = False
         if continue_tree is not None:
             if len(continue_tree) != 1:
                 raise GrammarKeyError("Expected continue_tree with size 1 for NonTerminalNode!")
             if self.symbol.symbol != continue_tree[0].symbol.symbol:
                 raise GrammarKeyError("Symbol mismatch!")
+            read_only = continue_tree[0].read_only
             continue_tree = continue_tree[0].children
 
         context.on_enter_non_terminal(self)
@@ -378,7 +380,7 @@ class NonTerminalNode(Node):
         children = grammar[self.symbol].fuzz(grammar, max_nodes - 1, mode,
                                              continue_tree, context)
         context.subtree_read_only = old_read_only
-        tree = DerivationTree(self.symbol, children, role=self.role)
+        tree = DerivationTree(self.symbol, children, role=self.role, read_only=read_only)
         context.on_leave_non_terminal(tree)
         return [tree]
 

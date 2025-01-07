@@ -97,6 +97,7 @@ class Fandango:
         self.random_seed = random_seed
 
         self.fitness_cache = {}
+        self.continue_trees = []
 
         self.fixes_made = 0
         self.checks_made = 0
@@ -160,12 +161,16 @@ class Fandango:
         prev_nr_role_msgs = 0
         str_history = ""
         while not finished:
-            self.__init__(self.grammar, self.constraints, self.population_size, self.desired_solutions,
-                            self.population, self.max_generations, self.elitism_rate, self.crossover_rate,
-                            self.param_tournament_size, self.mutation_rate, self.destruction_rate, self.logger_level,
-                            self.warnings_are_errors, self.best_effort, self.random_seed, self.mode, self.start_symbol)
+            self.solution.clear()
+            self.fitness_cache.clear()
+            self.evaluation = self.evaluate_population()
+            self.fitness = (
+                    sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+            )
 
             results = self.evolve()
+            if len(results) == 0:
+                raise RuntimeError(f"Couldn't generate next packet in {self.max_generations} generations!")
             choice: DerivationTree = random.choice(results)
             role_msgs = choice.find_role_msgs()
             nr_role_msgs = len(role_msgs)
@@ -209,11 +214,11 @@ class Fandango:
             if len(new_population) == 0:
                 raise RuntimeError("Failed to append remote response to generated history matching grammar!")
 
-            self.population = new_population
+            self.population = list(new_population)
+            self.continue_trees = list(new_population)
             while len(self.population) < self.population_size:
                 self.population.append(random.choice(new_population))
             self.population = self.generate_random_initial_population(FuzzingMode.IO)
-            self.solution.clear()
 
         return []
 
@@ -280,7 +285,11 @@ class Fandango:
 
             # Add new individuals
             while len(new_population) < self.population_size:
-                new_population.append(self.grammar.fuzz(start=self.start_symbol))
+                continue_tree = None
+                if self.mode == FuzzingMode.IO and len(self.continue_trees):
+                    continue_tree = copy.deepcopy(random.choice(self.continue_trees))
+                new_population.append(self.grammar.fuzz(start=self.start_symbol, continue_tree=continue_tree,
+                                                        mode=self.mode))
 
             # Fix individuals
             fixed_population = list()

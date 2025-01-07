@@ -15,7 +15,7 @@ def hello():
     global nr_high
     if 'nr' not in json:
         nr_low = random.randint(1, 100)
-        nr_high = nr_low + random.randint(2, 10)
+        nr_high = nr_low + random.randint(2, 2)
         json = {
             'nr_low': nr_low,
             'nr_high': nr_high
