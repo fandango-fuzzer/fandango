@@ -4,10 +4,9 @@ import enum
 import logging
 import random
 import time
-from typing import List, Set, Tuple
+from typing import List, Tuple
 
 import deprecation
-from pygments.lexers.csound import newline
 
 from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
@@ -151,7 +150,7 @@ class Fandango:
         )
 
 
-    def evolve_io(self) -> List[DerivationTree]:
+    def _evolve_io(self) -> List[DerivationTree]:
         global_env, local_env = self.grammar.get_python_env()
         if 'FandangoIO' not in global_env.keys():
             exec("FandangoIO.instance()")
@@ -168,7 +167,7 @@ class Fandango:
                     sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
 
-            results = self.evolve()
+            results = self._evolve_single()
             if len(results) == 0:
                 raise RuntimeError(f"Couldn't generate next packet in {self.max_generations} generations!")
             choice: DerivationTree = random.choice(results)
@@ -225,8 +224,15 @@ class Fandango:
 
         return []
 
-
     def evolve(self) -> List[DerivationTree]:
+        if self.mode == FuzzingMode.COMPLETE:
+            return self._evolve_single()
+        elif self.mode == FuzzingMode.IO:
+            return self._evolve_io()
+        else:
+            raise RuntimeError(f"Invalid mode: {self.mode}")
+
+    def _evolve_single(self) -> List[DerivationTree]:
         """
         Run the genetic algorithm to evolve the population over multiple generations.
 
