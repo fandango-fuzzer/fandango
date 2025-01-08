@@ -120,7 +120,7 @@ class DerivationTree:
             return memo[id(self)]
 
         # Create a new instance without copying the parent
-        copied = DerivationTree(self.symbol, [], role=self.role)
+        copied = DerivationTree(self.symbol, [], role=self.role, read_only=self.read_only)
         memo[id(self)] = copied
 
         # Deepcopy the children
