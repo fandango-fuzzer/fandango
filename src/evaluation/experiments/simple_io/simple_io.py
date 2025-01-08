@@ -19,7 +19,7 @@ def main():
     # parsed = grammar.parse_incomplete("testAAA", "<start>")
 
     # Evolve solutions
-    solutions = fandango.evolve_io()
+    solutions = fandango.evolve()
 
     # Output solutions
     for solution in solutions:
