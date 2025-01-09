@@ -376,6 +376,8 @@ class NonTerminalNode(Node):
                 raise GrammarKeyError("Expected continue_tree with size 1 for NonTerminalNode!")
             if self.symbol.symbol != continue_tree[0].symbol.symbol:
                 raise GrammarKeyError("Symbol mismatch!")
+            if self.role != continue_tree[0].role:
+                raise GrammarKeyError("Role mismatch!")
             read_only = continue_tree[0].read_only
             continue_tree = continue_tree[0].children
 
@@ -950,17 +952,20 @@ class Grammar(NodeVisitor):
             )
         return tree
 
-    def assign_roles(self, tree: DerivationTree, roles: list[RoledMessage]):
+    def assign_roles(self, tree: DerivationTree, roles: list[RoledMessage], parent_symbol=NonTerminal("<start>")):
+        return self._assign_roles(tree, list(roles), parent_symbol)
+
+    def _assign_roles(self, tree: DerivationTree, roles: list[RoledMessage], parent_symbol):
         if len(roles) == 0:
-            return False
+            return True
         first = roles[0]
         current_str = str(tree)
         if not current_str.startswith(str(first.msg)):
             return False
         if current_str == str(first.msg):
-            if tree._parent is not None and tree._parent.symbol in self.rules:
+            if parent_symbol in self.rules:
                 nodes = []
-                rule = self.rules[tree._parent.symbol]
+                rule = self.rules[parent_symbol]
                 nodes.append(rule)
                 nodes.extend(rule.children())
                 nodes = list(filter(lambda x: isinstance(x, NonTerminalNode), nodes))
@@ -968,10 +973,12 @@ class Grammar(NodeVisitor):
                     if tree.symbol == node.symbol and first.role == node.role:
                         tree.role = first.role
                         roles.remove(first)
-                        return True
+                        return len(roles) == 0
 
         for child in tree.children:
-            self.assign_roles(child, roles)
+            if self._assign_roles(child, roles, tree.symbol):
+                return True
+        return len(roles) == 0
 
     def fuzz(
         self, start: str | NonTerminal = "<start>", max_nodes: int = 50, mode: FuzzingMode = FuzzingMode.COMPLETE,
