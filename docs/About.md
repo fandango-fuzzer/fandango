@@ -28,7 +28,7 @@ Fandango supports multiple modes of operation:
 Fandango comes as a portable Python program and can easily be run on a large variety of platforms.
 
 Under the hood, Fandango uses sophisticated _evolutionary algorithms_ to produce inputs,
-It starts with a population of random inputs, and evolving these through mutations and cross-over until they fulfill the given constraints.
+it starts with a population of random inputs, and evolving these through mutations and cross-over until they fulfill the given constraints.
 
 
 ## Acknowledgments
