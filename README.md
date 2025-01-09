@@ -6,8 +6,7 @@ FANDANGO is a language-based fuzzer that leverages formal input specifications (
 
 - [Introduction](#introduction)
 - [Features](#features)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
+- [Documentation](#documentation)
 - [Evaluation](#evaluation)
 - [Contributing](#contributing)
 - [License](#license)
