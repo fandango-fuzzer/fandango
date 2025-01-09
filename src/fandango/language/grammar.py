@@ -22,6 +22,12 @@ class NodeType(enum.Enum):
     TERMINAL = 'terminal'
     CHAR_SET = 'char_set'
 
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return self.value
+
 class FuzzingMode(enum.Enum):
     COMPLETE = 0
     IO = 1
