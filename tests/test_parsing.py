@@ -350,10 +350,42 @@ class TestIncompleteParsing(unittest.TestCase):
             DerivationTree(
                 NonTerminal("<ab>"),
                 [
-                    DerivationTree(Terminal("a")),
                     DerivationTree(
-                        NonTerminal("<ab>"), [DerivationTree(Terminal("a"))]
-                    ),
+                        NonTerminal(f"<_{NodeType.ALTERNATIVE}:1>"),
+                        [
+                            DerivationTree(
+                                NonTerminal(f"<_{NodeType.CONCATENATION}:0>"),
+                                [
+                                    DerivationTree(
+                                        Terminal("a")
+                                    ),
+                                    DerivationTree(
+                                        NonTerminal(f"<_{NodeType.ALTERNATIVE}:0>"),
+                                        [
+                                            DerivationTree(
+                                                NonTerminal("<ab>"),
+                                                [
+                                                    DerivationTree(
+                                                        NonTerminal(f"<_{NodeType.ALTERNATIVE}:1>"),
+                                                        [
+                                                            DerivationTree(
+                                                                NonTerminal(f"<_{NodeType.CONCATENATION}:0>"),
+                                                                [
+                                                                    DerivationTree(
+                                                                        Terminal("a")
+                                                                    )
+                                                                ]
+                                                            )
+                                                        ]
+                                                    )
+                                                ]
+                                            )
+                                        ]
+                                    )
+                                ]
+                            )
+                        ]
+                    )
                 ],
             ),
         )
