@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - dev   # Run tests on pushes to the dev branch
+      - main  # Run tests on pushes to the main branch
   pull_request:
     branches:
       - main  # Run tests on pull requests targeting the main branch

@@ -1,9 +1,8 @@
 name: Publish to PyPI
 
 on:
-  push:
-    branches:
-      - main  # Trigger the workflow when changes are pushed to the main branch
+  release:
+    types: [published]  # Trigger the workflow when a release is published
 
 jobs:
   build:
