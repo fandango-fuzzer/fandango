@@ -10,12 +10,12 @@ class DerivationTree:
     """
 
     def __init__(
-        self,
-        symbol: Symbol,
-        children: Optional[List["DerivationTree"]] = None,
-        parent: Optional["DerivationTree"] = None,
-        role: str = None,
-        read_only: bool = False
+            self,
+            symbol: Symbol,
+            children: Optional[List["DerivationTree"]] = None,
+            parent: Optional["DerivationTree"] = None,
+            role: str = None,
+            read_only: bool = False
     ):
         self.symbol = symbol
         self._children = []
@@ -30,6 +30,31 @@ class DerivationTree:
 
     def size(self):
         return self._size
+
+    def _collapse(self):
+        reduced = []
+        for child in self._children:
+            reduced.extend(child._collapse())
+
+        if isinstance(self.symbol, NonTerminal):
+            if self.symbol.is_implicit:
+                return reduced
+
+        return [DerivationTree(
+                    self.symbol,
+                    children=reduced,
+                    read_only=self.read_only,
+                    role=self.role
+                )]
+
+    """
+    Removes all nodes from a DerivationTree that have been generated using implicit rules.
+    """
+    def collapse(self):
+        if isinstance(self.symbol, NonTerminal):
+            if self.symbol.is_implicit:
+                raise RuntimeError("Can't collapse a tree with an implicit root node")
+        return self._collapse()[0]
 
     def set_all_read_only(self, read_only: bool):
         self.read_only = read_only
@@ -81,7 +106,7 @@ class DerivationTree:
         return result
 
     def __getitem__(
-        self, item, as_list=False
+            self, item, as_list=False
     ) -> Union["DerivationTree", List["DerivationTree"]]:
         if isinstance(item, list) and len(item) == 1:
             item = item[0]
@@ -238,7 +263,7 @@ class DerivationTree:
                 read_only=self.read_only
             )
 
-    def get_non_terminal_symbols(self, exclude_read_only = True) -> Set[NonTerminal]:
+    def get_non_terminal_symbols(self, exclude_read_only=True) -> Set[NonTerminal]:
         """
         Retrieve all non-terminal symbols present in the derivation tree.
         """
@@ -249,7 +274,7 @@ class DerivationTree:
             symbols.update(child.get_non_terminal_symbols(exclude_read_only))
         return symbols
 
-    def find_all_nodes(self, symbol: NonTerminal, exclude_read_only = True) -> List["DerivationTree"]:
+    def find_all_nodes(self, symbol: NonTerminal, exclude_read_only=True) -> List["DerivationTree"]:
         """
         Find all nodes in the derivation tree with the given non-terminal symbol.
         """
@@ -288,7 +313,6 @@ class DerivationTree:
         Catch-all: All other attributes and methods apply to the string representation
         """
         if name in str.__dict__:
-
             def fn(*args, **kwargs):
                 return str.__dict__[name](str(self), *args, **kwargs)
 
