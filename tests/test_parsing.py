@@ -1,6 +1,6 @@
 import unittest
 
-from fandango.language.grammar import ParseState
+from fandango.language.grammar import ParseState, NodeType
 from fandango.language.parse import parse
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
@@ -29,7 +29,7 @@ class ParserTests(unittest.TestCase):
         cls.grammar, _ = parse(cls.FANDANGO_GRAMMAR)
 
     def test_rules(self):
-        self.assertEqual(len(self.grammar._parser._rules), 4)
+        self.assertEqual(len(self.grammar._parser._rules), 9)
         self.assertEqual(len(self.grammar._parser._implicit_rules), 1)
         self.assertEqual(
             {(NonTerminal("<number>"),)},
@@ -38,15 +38,55 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(
             {
                 (
-                    NonTerminal("<non_zero>"),
-                    NonTerminal("<*0*>"),
-                ),
-                (Terminal("0"),),
+                    NonTerminal(f"<_{NodeType.ALTERNATIVE}:0>"),
+                )
             },
             self.grammar._parser._rules[NonTerminal("<number>")],
         )
         self.assertEqual(
             {
+                (
+                    NonTerminal(f"<_{NodeType.ALTERNATIVE}:1>"),
+                )
+            },
+            self.grammar._parser._rules[NonTerminal("<non_zero>")],
+        )
+        self.assertEqual(
+            {
+                (
+                    NonTerminal(f"<_{NodeType.ALTERNATIVE}:2>"),
+                )
+            },
+            self.grammar._parser._rules[NonTerminal("<digit>")],
+        )
+        self.assertEqual(
+            {
+                (
+                    NonTerminal("<*0*>"),
+                )
+            },
+            self.grammar._parser._rules[NonTerminal(f"<_{NodeType.STAR}:0>")],
+        )
+        self.assertEqual(
+            {
+                (
+                    NonTerminal("<non_zero>"),
+                    NonTerminal(f"<_{NodeType.STAR}:0>")
+                )
+            },
+            self.grammar._parser._rules[NonTerminal(f"<_{NodeType.CONCATENATION}:0>")],
+        )
+        self.assertEqual(
+            {
+                (Terminal("0"),),
+                (
+                    NonTerminal(f"<_{NodeType.CONCATENATION}:0>"),
+                )
+            },
+            self.grammar._parser._rules[NonTerminal(f"<_{NodeType.ALTERNATIVE}:0>")],
+        )
+        self.assertEqual(
+            {
                 (Terminal("1"),),
                 (Terminal("2"),),
                 (Terminal("3"),),
@@ -57,7 +97,7 @@ class ParserTests(unittest.TestCase):
                 (Terminal("8"),),
                 (Terminal("9"),),
             },
-            self.grammar._parser._rules[NonTerminal("<non_zero>")],
+            self.grammar._parser._rules[NonTerminal(f"<_{NodeType.ALTERNATIVE}:1>")],
         )
         self.assertEqual(
             {
@@ -72,17 +112,7 @@ class ParserTests(unittest.TestCase):
                 (Terminal("8"),),
                 (Terminal("9"),),
             },
-            self.grammar._parser._rules[NonTerminal("<digit>")],
-        )
-        self.assertEqual(
-            {
-                (),
-                (
-                    NonTerminal("<digit>"),
-                    NonTerminal("<*0*>"),
-                ),
-            },
-            self.grammar._parser._implicit_rules[NonTerminal("<*0*>")],
+            self.grammar._parser._rules[NonTerminal(f"<_{NodeType.ALTERNATIVE}:2>")],
         )
 
     def test_parse_table(self):

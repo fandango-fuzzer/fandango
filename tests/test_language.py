@@ -13,7 +13,7 @@ from fandango.language.convert import (
     SearchProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import Alternative, Grammar
+from fandango.language.grammar import Alternative, Grammar, NonTerminalNode, NodeType, Concatenation
 from fandango.language.parse import parse
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
@@ -68,10 +68,17 @@ def test_indents():
     splitter.visit(tree)
     processor = GrammarProcessor()
     grammar = processor.get_grammar(splitter.productions)
-    assert len(grammar.rules) == 1
-    rule = list(grammar.rules.values())[0]
-    assert isinstance(rule, Alternative)
-    assert len(rule.alternatives) == 2
+    assert len(grammar.rules) == 3
+    assert NonTerminal('<a>') in grammar.rules
+    assert isinstance(grammar.rules[NonTerminal('<a>')], NonTerminalNode)
+
+    assert NonTerminal(f"<_{NodeType.CONCATENATION}:0>") in grammar.rules
+    assert isinstance(grammar.rules[NonTerminal(f"<_{NodeType.CONCATENATION}:0>")], Concatenation)
+
+    alternative_rule_nt = NonTerminal(f"<_{NodeType.ALTERNATIVE}:0>")
+    assert alternative_rule_nt in grammar.rules
+    assert isinstance(grammar.rules[alternative_rule_nt], Alternative)
+    assert len(grammar.rules[alternative_rule_nt].alternatives) == 2
 
 
 @pytest.mark.parametrize(
@@ -289,7 +296,7 @@ f(<number>) % 2 == 0;
     )
     grammar, constraints = parse(fan)
     assert isinstance(grammar, Grammar)
-    assert len(grammar.rules) == 4
+    assert len(grammar.rules) == 9
     assert "<start>" in grammar
     assert "<number>" in grammar
     assert "<non_zero>" in grammar
