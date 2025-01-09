@@ -8,28 +8,28 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
-
+    
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.x'
-
+    
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install setuptools wheel twine
-
+    
     - name: Build package
       run: |
-        python setup.py sdist bdist_wheel  # Creates distribution files
-
+        python -m build  # This will use pyproject.toml to build the package
+    
     - name: Publish package to PyPI
       run: |
         twine upload dist/*  # Uploads the package to PyPI
       env:
         TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}  # Use the token you added as a secret
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}  # Use the secret PyPI token
