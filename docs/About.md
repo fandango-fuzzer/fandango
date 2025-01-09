@@ -13,7 +13,7 @@ kernelspec:
 (sec:about)=
 # About Fandango
 
-This is the docs.
+This the docs.
 
 Given a specification of the program's input language, Fandango quickly generates myriads of valid sample inputs for testing.
 
