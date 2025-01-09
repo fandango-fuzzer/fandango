@@ -14,6 +14,7 @@ from fandango.language.grammar import DerivationTree, FuzzingMode, FuzzingContex
 from fandango.language.grammar import Grammar
 from fandango.language.io import FandangoIO
 from fandango.language.symbol import NonTerminal
+from fandango.language.tree import RoledMessage
 from fandango.logger import LOGGER
 from fandango.logger import LOGGER, visualize_evaluation, clear_visualization
 
@@ -182,25 +183,25 @@ class Fandango:
                 io_instance._data['receive'].clear()
 
             elif new_msg_generated:
-                new_msg_role, new_msg = role_msgs[-1]
+                current_msg = role_msgs[-1]
                 role_io = io_instance.roles
 
-                if new_msg_role in role_io.keys():
-                    if role_io[new_msg_role].is_fandango():
-                        io_instance._data['transmit'][new_msg_role] = str(new_msg)
-                        history.append((new_msg_role, str(new_msg)))
+                if current_msg.role in role_io.keys():
+                    if role_io[current_msg.role].is_fandango():
+                        io_instance._data['transmit'][current_msg.role] = current_msg.msg
+                        history.append(RoledMessage(current_msg.role, current_msg.msg))
                     else:
                         nr_role_msgs -= 1
 
                 exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
                 for role, msg in io_instance._data['receive']:
-                    history.append((role, str(msg)))
+                    history.append(RoledMessage(role, str(msg)))
                     nr_role_msgs += 1
                 io_instance._data['receive'].clear()
 
             str_history = ""
-            for _, msg in history:
-                str_history += msg
+            for r_msg in history:
+                str_history += r_msg.msg
             if nr_role_msgs <= prev_nr_role_msgs and self.grammar.parse(str_history, self.start_symbol) is not None:
                 # Finished
                 return [choice]
