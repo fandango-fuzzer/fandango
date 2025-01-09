@@ -6,7 +6,6 @@ name: Python Tests  # Workflow name, visible in the Actions tab
 on:
   push:
     branches:
-      - main  # Run tests on pushes to the main branch
       - dev   # Run tests on pushes to the dev branch
   pull_request:
     branches:
