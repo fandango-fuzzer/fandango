@@ -6,7 +6,7 @@ from copy import deepcopy
 from typing import Dict, List, Optional, Tuple, Set, Any, Union, Iterator, overload
 
 from fandango.language.symbol import NonTerminal, Terminal, Symbol
-from fandango.language.tree import DerivationTree
+from fandango.language.tree import DerivationTree, RoledMessage
 
 MAX_REPETITIONS = 5
 
@@ -949,6 +949,29 @@ class Grammar(NodeVisitor):
                 f"Failed to parse generated string: {string} for {symbol} with generator {self.generators[symbol]}"
             )
         return tree
+
+    def assign_roles(self, tree: DerivationTree, roles: list[RoledMessage]):
+        if len(roles) == 0:
+            return False
+        first = roles[0]
+        current_str = str(tree)
+        if not current_str.startswith(str(first.msg)):
+            return False
+        if current_str == str(first.msg):
+            if tree._parent is not None and tree._parent.symbol in self.rules:
+                nodes = []
+                rule = self.rules[tree._parent.symbol]
+                nodes.append(rule)
+                nodes.extend(rule.children())
+                nodes = list(filter(lambda x: isinstance(x, NonTerminalNode), nodes))
+                for node in nodes:
+                    if tree.symbol == node.symbol and first.role == node.role:
+                        tree.role = first.role
+                        roles.remove(first)
+                        return True
+
+        for child in tree.children:
+            self.assign_roles(child, roles)
 
     def fuzz(
         self, start: str | NonTerminal = "<start>", max_nodes: int = 50, mode: FuzzingMode = FuzzingMode.COMPLETE,

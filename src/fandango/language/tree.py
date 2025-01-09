@@ -3,6 +3,16 @@ from typing import Optional, List, Any, Union, Set, Tuple
 
 from fandango.language.symbol import Symbol, NonTerminal, Terminal
 
+class RoledMessage:
+    def __init__(self, role: str, msg: str):
+        self.msg = msg
+        self.role = role
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return f'({self.role}): {self.msg}'
 
 class DerivationTree:
     """
@@ -61,11 +71,11 @@ class DerivationTree:
         for child in self._children:
             child.set_all_read_only(read_only)
 
-    def find_role_msgs(self) -> List[Tuple[str, "DerivationTree"]]:
+    def find_role_msgs(self) -> List[RoledMessage]:
         if not isinstance(self.symbol, NonTerminal):
             return []
         if self.role is not None:
-            return [(self.role, self)]
+            return [RoledMessage(self.role, str(self))]
         subtrees = []
         for child in self._children:
             subtrees.extend(child.find_role_msgs())
