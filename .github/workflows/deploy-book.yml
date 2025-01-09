@@ -23,7 +23,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt-get update
+        apt-get update
         apt-get install antlr4
         pip install -r requirements.txt
         pip install jupyter-book pyppeteer ghp-import black
