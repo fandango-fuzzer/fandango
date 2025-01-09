@@ -148,16 +148,49 @@ class TestComplexParsing(unittest.TestCase):
                 NonTerminal("<ab>"),
                 [
                     DerivationTree(
-                        NonTerminal("<ab>"),
+                        NonTerminal(f"<_{NodeType.ALTERNATIVE}:0>"),
                         [
                             DerivationTree(
-                                NonTerminal("<ab>"),
-                                [DerivationTree(Terminal(""))],
-                            ),
-                            DerivationTree(Terminal("b")),
-                        ],
-                    ),
-                    DerivationTree(Terminal("b")),
+                                NonTerminal(f"<_{NodeType.CONCATENATION}:1>"),
+                                [
+                                    DerivationTree(
+                                        NonTerminal("<ab>"),
+                                        [
+                                            DerivationTree(
+                                                NonTerminal(f"<_{NodeType.ALTERNATIVE}:0>"),
+                                                [
+                                                    DerivationTree(
+                                                        NonTerminal(f"<_{NodeType.CONCATENATION}:1>"),
+                                                        [
+                                                            DerivationTree(
+                                                                NonTerminal("<ab>"),
+                                                                [
+                                                                    DerivationTree(
+                                                                        NonTerminal(f"<_{NodeType.ALTERNATIVE}:0>"),
+                                                                        [
+                                                                            DerivationTree(
+                                                                                Terminal("")
+                                                                            )
+                                                                        ]
+                                                                    )
+                                                                ]
+                                                            ),
+                                                            DerivationTree(
+                                                                Terminal("b")
+                                                            )
+                                                        ]
+                                                    )
+                                                ]
+                                            )
+                                        ]
+                                    ),
+                                    DerivationTree(
+                                        Terminal("b"),
+                                    )
+                                ]
+                            )
+                        ]
+                    )
                 ],
             ),
         )
@@ -168,8 +201,32 @@ class TestComplexParsing(unittest.TestCase):
             DerivationTree(
                 NonTerminal("<ab>"),
                 [
-                    DerivationTree(NonTerminal("<ab>"), [DerivationTree(Terminal(""))]),
-                    DerivationTree(Terminal("b")),
+                    DerivationTree(
+                        NonTerminal(f"<_{NodeType.ALTERNATIVE}:0>"),
+                        [
+                            DerivationTree(
+                                NonTerminal(f"<_{NodeType.CONCATENATION}:1>"),
+                                [
+                                    DerivationTree(
+                                        NonTerminal("<ab>"),
+                                        [
+                                            DerivationTree(
+                                                NonTerminal(f"<_{NodeType.ALTERNATIVE}:0>"),
+                                                [
+                                                    DerivationTree(
+                                                        Terminal("")
+                                                    )
+                                                ]
+                                            )
+                                        ]
+                                    ),
+                                    DerivationTree(
+                                        Terminal("b")
+                                    )
+                                ]
+                            )
+                        ]
+                    )
                 ],
             ),
         )
@@ -181,15 +238,49 @@ class TestComplexParsing(unittest.TestCase):
                 NonTerminal("<ab>"),
                 [
                     DerivationTree(
-                        NonTerminal("<ab>"),
+                        NonTerminal(f"<_{NodeType.ALTERNATIVE}:0>"),
                         [
-                            DerivationTree(Terminal("a")),
                             DerivationTree(
-                                NonTerminal("<ab>"), [DerivationTree(Terminal(""))]
-                            ),
-                        ],
-                    ),
-                    DerivationTree(Terminal("b")),
+                                NonTerminal(f"<_{NodeType.CONCATENATION}:1>"),
+                                [
+                                    DerivationTree(
+                                        NonTerminal("<ab>"),
+                                        [
+                                            DerivationTree(
+                                                NonTerminal(f"<_{NodeType.ALTERNATIVE}:0>"),
+                                                [
+                                                    DerivationTree(
+                                                        NonTerminal(f"<_{NodeType.CONCATENATION}:0>"),
+                                                        [
+                                                            DerivationTree(
+                                                                Terminal("a")
+                                                            ),
+                                                            DerivationTree(
+                                                                NonTerminal("<ab>"),
+                                                                [
+                                                                    DerivationTree(
+                                                                        NonTerminal(f"<_{NodeType.ALTERNATIVE}:0>"),
+                                                                        [
+                                                                            DerivationTree(
+                                                                                Terminal("")
+                                                                            )
+                                                                        ]
+                                                                    )
+                                                                ]
+                                                            )
+                                                        ]
+                                                    )
+                                                ]
+                                            )
+                                        ]
+                                    ),
+                                    DerivationTree(
+                                        Terminal("b")
+                                    )
+                                ]
+                            )
+                        ]
+                    )
                 ],
             ),
         )
@@ -200,8 +291,32 @@ class TestComplexParsing(unittest.TestCase):
             DerivationTree(
                 NonTerminal("<ab>"),
                 [
-                    DerivationTree(Terminal("a")),
-                    DerivationTree(NonTerminal("<ab>"), [DerivationTree(Terminal(""))]),
+                    DerivationTree(
+                        NonTerminal(f"<_{NodeType.ALTERNATIVE}:0>"),
+                        [
+                            DerivationTree(
+                                NonTerminal(f"<_{NodeType.CONCATENATION}:0>"),
+                                [
+                                    DerivationTree(
+                                        Terminal("a")
+                                    ),
+                                    DerivationTree(
+                                        NonTerminal("<ab>"),
+                                        [
+                                            DerivationTree(
+                                                NonTerminal(f"<_{NodeType.ALTERNATIVE}:0>"),
+                                                [
+                                                    DerivationTree(
+                                                        Terminal("")
+                                                    )
+                                                ]
+                                            )
+                                        ]
+                                    )
+                                ]
+                            )
+                        ]
+                    )
                 ],
             ),
         )
