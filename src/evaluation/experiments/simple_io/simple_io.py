@@ -5,7 +5,7 @@ from fandango.language.parse import parse_file
 
 def main():
     # Parse grammar and constraints
-    grammar, constraints = parse_file("count.fan")
+    grammar, constraints = parse_file("simple_io.fan")
     # Initialize FANDANGO with desired parameters
     fandango = Fandango(
         grammar=grammar,
@@ -13,10 +13,6 @@ def main():
         population_size=100,
         mode=FuzzingMode.IO
     )
-
-    #parsed = grammar.parse_incomplete("header2resp_headerresp_body", "<start>")
-    #parsed = grammar.parse("testrequest", "<start>")
-    # parsed = grammar.parse_incomplete("testAAA", "<start>")
 
     # Evolve solutions
     solutions = fandango.evolve()
