@@ -211,7 +211,8 @@ class Fandango:
             new_population = []
             for tree_option in self.grammar.parse_incomplete(str_history, self.start_symbol):
                 tree_option.set_all_read_only(True)
-                new_population.append(tree_option)
+                if self.grammar.assign_roles(tree_option, history):
+                    new_population.append(tree_option)
                 if len(new_population) >= self.population_size:
                     break
             if len(new_population) == 0:
