@@ -13,13 +13,13 @@ authors = [
     { name = "Marius Smytzek", email = "marius.smytzek@cispa.de" },
     { name = "Andreas Zeller", email = "andreas.zeller@cispa.de" },
 ]
-description = "Fandango is a fuzzing framework for genetically solving constraints of inputs to generate better test cases that satisfy semantic and syntactical constraints."
+description = "Fandango produces myriads of high-quality random inputs to test programs, giving users unprecedented control over format and shape of the inputs."
 readme = "README.md"
 license = { file = "COPYING" }
 requires-python = ">=3.10"
 classifiers = [
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: European Union Public Licence 1.2 (EUPL 1.2)",
     "Programming Language :: Python :: 3.11",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering",
@@ -44,7 +44,7 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/fandango-fuzzer/fandango"
+"Homepage" = "https://fandango-fuzzer.github.io/fandango/Intro"
 "Bug Tracker" = "https://github.com/fandango-fuzzer/fandango/issues"
 
 [project.scripts]
