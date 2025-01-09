@@ -13,6 +13,8 @@ kernelspec:
 (sec:about)=
 # About Fandango
 
+This is a simple test for the docs.
+
 Given a specification of the program's input language, Fandango quickly generates myriads of valid sample inputs for testing.
 
 The specification language combines a _grammar_ with _constraints_ written in Python, so it is extremely expressive and flexible.
