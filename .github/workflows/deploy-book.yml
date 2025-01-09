@@ -7,13 +7,15 @@ on:
     paths:
     - docs/**
 
+permissions:
+  pages: write
+  id-token: write
+
 # This job installs dependencies, builds the book, and pushes it to `gh-pages`
 jobs:
   deploy-book:
     runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
+
     steps:
     - name: Checkout the repository
       uses: actions/checkout@v3
