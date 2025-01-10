@@ -3,15 +3,15 @@ name: Deploy Docs to GitHub Pages
 on:
   push:
     branches:
-    - main
+      - main
     paths:
-    - docs/**
+      - docs/**
+  workflow_dispatch: # Enables manual execution from the Actions tab
 
 permissions:
   pages: write
   id-token: write
 
-# This job installs dependencies, builds the book, and pushes it to `gh-pages`
 jobs:
   deploy-book:
     runs-on: ubuntu-latest
@@ -29,13 +29,9 @@ jobs:
     - name: Install dependencies
       run: |
         pip install jupyter-book pyppeteer ghp-import black fandango-fuzzer
-        
 
     # (optional) Cache your executed notebooks between runs
-    # if you have config:
-    # execute:
-    #   execute_notebooks: cache
-    - name: cache executed notebooks
+    - name: Cache executed notebooks
       uses: actions/cache@v3
       with:
         path: docs/_build/.jupyter_cache
