@@ -30,12 +30,12 @@ jobs:
       run: |
         pip install jupyter-book pyppeteer ghp-import black fandango-fuzzer
 
-    # (optional) Cache your executed notebooks between runs
-    - name: Cache executed notebooks
-      uses: actions/cache@v3
-      with:
-        path: docs/_build/.jupyter_cache
-        key: jupyter-book-cache-${{ hashFiles('requirements.txt') }}
+    # # (optional) Cache your executed notebooks between runs
+    # - name: Cache executed notebooks
+    #   uses: actions/cache@v3
+    #   with:
+    #     path: docs/_build/.jupyter_cache
+    #     key: jupyter-book-cache-${{ hashFiles('requirements.txt') }}
 
     # Remove the cache
     - name: Remove cache
