@@ -28,7 +28,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install jupyter-book pyppeteer ghp-import black
+        pip install jupyter-book pyppeteer ghp-import black fandango-fuzzer
         
 
     # (optional) Cache your executed notebooks between runs
