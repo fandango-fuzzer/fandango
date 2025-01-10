@@ -37,6 +37,11 @@ jobs:
         path: docs/_build/.jupyter_cache
         key: jupyter-book-cache-${{ hashFiles('requirements.txt') }}
 
+    # Remove the cache
+    - name: Remove cache
+      run: |
+        rm -rf docs/_build/
+
     # Build the book
     - name: Build the book
       run: |
