@@ -52,7 +52,7 @@ def get_parser(in_command_line=True):
         main_parser.add_argument(
             "--version",
             action="version",
-            version="Fandango " + importlib.metadata.version("fandango-fuzzer"),
+            version="Fandango " + importlib.metadata.version("fandango"),
             help="show version number",
         )
 
@@ -674,7 +674,7 @@ def copyright_command(args):
 
 
 def version_command(args):
-    version = importlib.metadata.version("fandango-fuzzer")
+    version = importlib.metadata.version("fandango")
     if sys.stdout.isatty():
         version_line = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango{styles.color.close} {version}"
     else:
