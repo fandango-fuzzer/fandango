@@ -1,7 +1,7 @@
-<start>              ::= <credit_card_number>;
-<credit_card_number> ::= <number> <check_digit>;
-<number>             ::= <digit>{15};  # for 16-digit numbers
-<check_digit>        ::= <digit>;
+<start>              ::= <credit_card_number>
+<credit_card_number> ::= <number> <check_digit>
+<number>             ::= <digit>{15}  # for 16-digit numbers
+<check_digit>        ::= <digit>
 
 def credit_card_check_digit(number: str) -> str:
     """Create a check digit for the credit card number `number`."""
@@ -33,4 +33,4 @@ def credit_card_check_digit(number: str) -> str:
     check_digit = (10 - (tot % 10)) % 10
     return str(check_digit)
 
-<check_digit> == credit_card_check_digit(str(<number>));
+where <check_digit> == credit_card_check_digit(str(<number>))

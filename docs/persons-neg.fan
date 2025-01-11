@@ -1,3 +1,3 @@
 include('persons.fan')
 
-<age> ::= "-"? <digit>+;
+<age> ::= "-"? <digit>+
