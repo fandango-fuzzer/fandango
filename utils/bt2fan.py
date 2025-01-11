@@ -180,6 +180,8 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
 
         if name == 'RequiresVersion':
             return ""
+        if name == 'Warning':
+            return ""
 
         self.not_handled.append(f"{name}()")
         return ""
