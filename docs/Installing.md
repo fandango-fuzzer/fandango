@@ -36,6 +36,7 @@ which should give you a list of options:
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango --help
+assert _exit_code == 0
 ```
 
 % If this did not work, try

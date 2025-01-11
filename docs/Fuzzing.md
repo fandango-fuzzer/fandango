@@ -28,13 +28,13 @@ John Smith,45
 This makes the overall format of our input look like this:
 
 ```
-<start> ::= <person_name> "," <age>;
+<start> ::= <person_name> "," <age>
 ```
 
 with `<age>` again being a sequence of digits, and a `<person>`'s name being defined as
 
 ```
-<person_name> ::= <first_name> " " <last_name>;
+<person_name> ::= <first_name> " " <last_name>
 ```
 
 where both first and last name would be a sequence of letters - first, an uppercase letter, and then a sequence of lowercase letters.
@@ -71,6 +71,7 @@ Your output will look like this:
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10
+assert _exit_code == 0
 ```
 
 Such random names are a typical result of _fuzzing_ – that is, testing with randomly generated values.
