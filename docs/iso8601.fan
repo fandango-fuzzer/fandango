@@ -33,6 +33,7 @@ import dateutil  # See https://dateutil.readthedocs.io
 <iso8601fraction> ::= <digit>+
 
 <iso8601timezone> ::= 'Z' | '+' <iso8601hour> (':'? <iso8601minute>)? | '-' <iso8601hour> (':'? <iso8601minute>)?
+where is_valid_iso8601datetime(str(<iso8601datetime>))
 
 def is_valid_iso8601datetime(iso8601datetime: str) -> bool:
     """Return True iff `iso8601datetime` is valid."""
@@ -41,5 +42,3 @@ def is_valid_iso8601datetime(iso8601datetime: str) -> bool:
         return True
     except ValueError:
         return False
-
-where is_valid_iso8601datetime(str(<iso8601datetime>))
