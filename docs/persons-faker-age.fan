@@ -4,4 +4,4 @@ import random
 
 include('persons-faker.fan')
 
-<age> ::= <digit>+ := str(random.randint(25, 35));
+<age> ::= <digit>+ := str(random.randint(25, 35))

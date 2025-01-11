@@ -1,5 +1,5 @@
-<start> ::= <name> ',' <age>;
-<name> ::= 'Pepe' | 'Andreas';
-<age> ::= <digit>+;
+<start> ::= <name> ',' <age>
+<name> ::= 'Pepe' | 'Andreas'
+<age> ::= <digit>+
 
-int(<age>) > 20;
+where int(<age>) > 20
