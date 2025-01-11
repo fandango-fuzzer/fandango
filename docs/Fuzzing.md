@@ -158,3 +158,39 @@ $ fandango fuzz -f persons.fan -n 10 --input-method=stdin cat -n
 ```
 
 The `cat` program is then invoked repeatedly, each time passing a new Fandango-generated input as its standard input.
+
+
+## Executable `.fan` files
+
+On a Unix system, you can turn a `.fan` file into an _executable file_ by placing a line
+
+```
+#!/usr/bin/env fandango fuzz -f
+```
+
+at the top.
+If you set its "executable" flag with `chmod +x FILE`, you can then directly execute the `.fan` file as a command as if it were prefixed by `fandango fuzz -f`.
+
+As an example, let us create a file [`fuzz-persons.fan`](fuzz-persons.fan):
+
+```shell
+$ (echo '#!/usr/bin/env fandango fuzz -f'; cat persons.fan) > fuzz-persons.fan
+$ chmod +x fuzz-persons.fan
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+! (echo '#!/usr/bin/env fandango fuzz -f'; cat persons.fan) > fuzz-persons.fan
+! chmod +x fuzz-persons.fan
+```
+
+You can now invoke the file, even with extra arguments:
+
+```shell
+$ ./fuzz-persons.fan -n 1
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+! ./fuzz-persons.fan -n 1
+```
