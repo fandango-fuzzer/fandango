@@ -54,6 +54,13 @@ So the line we add reads
 where int(<age>) < 50
 ```
 
+and the full `persons.fan` file reads
+
+```{code-cell}
+:tags: ["remove-input"]
+!cat persons.fan; echo 'where int(<age>) < 50'
+```
+
 If we do this and run Fandango, we obtain a new set of inputs:
 
 ```shell
