@@ -72,7 +72,9 @@ class GrammarProcessor(FandangoParserVisitor):
         self.global_variables = global_variables
         self.searches = SearchProcessor(Grammar.dummy())
 
-    def get_grammar(self, productions: List[FandangoParser.ProductionContext], prime=True):
+    def get_grammar(
+        self, productions: List[FandangoParser.ProductionContext], prime=True
+    ):
         grammar = Grammar(
             local_variables=self.local_variables, global_variables=self.global_variables
         )
@@ -80,6 +82,7 @@ class GrammarProcessor(FandangoParserVisitor):
             symbol = NonTerminal(production.NONTERMINAL().getText())
             grammar[symbol] = self.visit(production.alternative())
             if production.expression():
+                # Handle generator expressions
                 expr, searches, _ = self.searches.visit(production.expression())
                 if searches:
                     raise UnsupportedOperation(
@@ -89,8 +92,10 @@ class GrammarProcessor(FandangoParserVisitor):
 
                 if not production.EXPR_ASSIGN():
                     LOGGER.warning(
-                        "Using '=' and '::' for generators is deprecated. Use ':=' instead."
+                        f"{symbol}: Using '=' and '::' for generators is deprecated. Use ':=' instead."
                     )
+            if production.SEMI_COLON():
+                LOGGER.info(f"{symbol}: A final ';' is not required in grammar rules.")
 
         grammar.update_parser()
         if prime:
@@ -152,7 +157,7 @@ class GrammarProcessor(FandangoParserVisitor):
             return TerminalNode(Terminal.from_symbol(ctx.STRING().getText()))
         elif ctx.NUMBER():
             number = ctx.NUMBER().getText()
-            if number not in ['0', '1']:
+            if number not in ["0", "1"]:
                 raise UnsupportedOperation(f"Unsupported bit spec: {number}")
             return TerminalNode(Terminal.from_number(number))
         elif ctx.char_set():
@@ -191,6 +196,14 @@ class ConstraintProcessor(FandangoParserVisitor):
         #    )
 
     def visitConstraint(self, ctx: FandangoParser.ConstraintContext):
+        LOGGER.debug(f"Visiting constraint: {ctx.getText()}")
+        if not ctx.WHERE():
+            LOGGER.warning(
+                f"{ctx.getText()}: Constraints should be prefixed with 'where'."
+            )
+        if ctx.WHERE() and ctx.SEMI_COLON():
+            LOGGER.info(f"{ctx.getText()}: A final ';' is not required with 'where'.")
+
         if ctx.implies():
             return self.visit(ctx.implies())
         elif ctx.FITNESS():

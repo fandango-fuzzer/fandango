@@ -15,6 +15,7 @@ stdlib = """# Standard library for Fandango
 # We define each element using all alternatives to avoid biasing the grammar.
 """
 
+
 def make_def(symbol: str, chars: str, force_binary=False) -> str:
     expansions = []
     for c in chars:
@@ -25,15 +26,23 @@ def make_def(symbol: str, chars: str, force_binary=False) -> str:
             expansions.append(f"b'\\x{ord(c):02x}'")
     return make_rule(symbol, expansions)
 
+
 def make_rule(symbol: str, expansions: list[str]) -> str:
-    return (f"<_{symbol}> ::= " + " | ".join(expansions) + ";\n" +
-            f"<{symbol}> ::= <_{symbol}>;\n\n")
+    return (
+        f"<_{symbol}> ::= "
+        + " | ".join(expansions)
+        + "\n"
+        + f"<{symbol}> ::= <_{symbol}>\n\n"
+    )
+
 
 def make_header(title: str) -> str:
     return f"\n# {title}\n"
 
+
 def make_comment(comment: str) -> str:
     return f"# {comment}\n"
+
 
 stdlib += make_header("Printable characters")
 printable = make_def("printable", string.printable)
@@ -50,20 +59,58 @@ printable += make_def("alphanum_", string.ascii_letters + string.digits + "_")
 stdlib += printable
 
 stdlib += make_header("ASCII characters")
-ascii_char = make_def("ascii_char", "".join(chr(c) for c in range(0, 128)), force_binary=False)
+ascii_char = make_def(
+    "ascii_char", "".join(chr(c) for c in range(0, 128)), force_binary=False
+)
 stdlib += ascii_char
 
 stdlib += make_header("ASCII control characters")
-ASCII_CONTROL = ['NUL', 'SOH', 'STX', 'ETX', 'EOT', 'ENQ', 'ACK', 'BEL', 'BS', 'HT', 'LF', 'VT', 'FF', 'CR', 'SO', 'SI', 'DLE', 'DC1', 'DC2', 'DC3', 'DC4', 'NAK', 'SYN', 'ETB', 'CAN', 'EM', 'SUB', 'ESC', 'FS', 'GS', 'RS', 'US', 'SP']
+ASCII_CONTROL = [
+    "NUL",
+    "SOH",
+    "STX",
+    "ETX",
+    "EOT",
+    "ENQ",
+    "ACK",
+    "BEL",
+    "BS",
+    "HT",
+    "LF",
+    "VT",
+    "FF",
+    "CR",
+    "SO",
+    "SI",
+    "DLE",
+    "DC1",
+    "DC2",
+    "DC3",
+    "DC4",
+    "NAK",
+    "SYN",
+    "ETB",
+    "CAN",
+    "EM",
+    "SUB",
+    "ESC",
+    "FS",
+    "GS",
+    "RS",
+    "US",
+    "SP",
+]
 ascii_control = ""
 for i in range(len(ASCII_CONTROL)):
     ascii_control += make_def(ASCII_CONTROL[i], chr(i), force_binary=True)
-ascii_control += make_def('DEL', chr(127), force_binary=True)
-ascii_control += make_rule('ascii_control', (f"<{symbol}>" for symbol in ASCII_CONTROL + ['DEL']))
+ascii_control += make_def("DEL", chr(127), force_binary=True)
+ascii_control += make_rule(
+    "ascii_control", (f"<{symbol}>" for symbol in ASCII_CONTROL + ["DEL"])
+)
 stdlib += ascii_control
 
 stdlib += make_header("Bits")
-bits = make_rule("bit", ['0', '1'])
+bits = make_rule("bit", ["0", "1"])
 stdlib += bits
 
 stdlib += make_header("Bytes")
@@ -72,31 +119,41 @@ stdlib += bytes
 
 
 stdlib += make_header("UTF-8 characters, read and processed as bytes")
-def make_utf8_rule(symbol: str, chars: list[int], suffix: str = "") -> str:
-    return make_rule(symbol,
-                     ["(" + " | ".join(f"b'\\x{c:02x}'" for c in chars) + ")" + suffix])
 
-utf8 = make_def("utf8_char1", "".join(chr(c) for c in range(0, 128)), force_binary=False)
-utf8 += make_def("utf8_continuation_byte",
-                   "".join(chr(c) for c in range(0x80, 0xC0)), force_binary=True)
-utf8 += make_utf8_rule("utf8_char2", range(0xC2, 0xE0),
-                         " <utf8_continuation_byte>")
-utf8 += make_utf8_rule("utf8_char3", range(0xE0, 0xF0),
-                         " <utf8_continuation_byte>{2}")
-utf8 += make_utf8_rule("utf8_char4", range(0xF0, 0xF6),
-                         " <utf8_continuation_byte>{3}")
-utf8 += make_rule("utf8_char", ["<utf8_char1>", "<utf8_char2>", "<utf8_char3>", "<utf8_char4>"])  # UTF-8 character
+
+def make_utf8_rule(symbol: str, chars: list[int], suffix: str = "") -> str:
+    return make_rule(
+        symbol, ["(" + " | ".join(f"b'\\x{c:02x}'" for c in chars) + ")" + suffix]
+    )
+
+
+utf8 = make_def(
+    "utf8_char1", "".join(chr(c) for c in range(0, 128)), force_binary=False
+)
+utf8 += make_def(
+    "utf8_continuation_byte",
+    "".join(chr(c) for c in range(0x80, 0xC0)),
+    force_binary=True,
+)
+utf8 += make_utf8_rule("utf8_char2", range(0xC2, 0xE0), " <utf8_continuation_byte>")
+utf8 += make_utf8_rule("utf8_char3", range(0xE0, 0xF0), " <utf8_continuation_byte>{2}")
+utf8 += make_utf8_rule("utf8_char4", range(0xF0, 0xF6), " <utf8_continuation_byte>{3}")
+utf8 += make_rule(
+    "utf8_char", ["<utf8_char1>", "<utf8_char2>", "<utf8_char3>", "<utf8_char4>"]
+)  # UTF-8 character
 stdlib += utf8
 
 
 stdlib += make_header("Numbers")
-stdlib += make_comment("This only specifies the length; interpretation is up to the user")
-numbers = make_rule("int8", ['<byte>'])
-numbers += make_rule("int16", ['<byte><byte>'])
-numbers += make_rule("int32", ['<byte>{4}'])
-numbers += make_rule("int64", ['<byte>{8}'])
-numbers += make_rule("float32", ['<byte>{4}'])
-numbers += make_rule("float64", ['<byte>{8}'])
+stdlib += make_comment(
+    "This only specifies the length; interpretation is up to the user"
+)
+numbers = make_rule("int8", ["<byte>"])
+numbers += make_rule("int16", ["<byte><byte>"])
+numbers += make_rule("int32", ["<byte>{4}"])
+numbers += make_rule("int64", ["<byte>{8}"])
+numbers += make_rule("float32", ["<byte>{4}"])
+numbers += make_rule("float64", ["<byte>{8}"])
 stdlib += numbers
 
 # These should go into a separate file
@@ -110,4 +167,4 @@ dancer = make_rule("fandango_dancer", ["'💃'"])
 stdlib += dancer
 
 if __name__ == "__main__":
-    print(stdlib)   # Output the standard library
+    print(stdlib)  # Output the standard library

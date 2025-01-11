@@ -413,24 +413,36 @@ def exit_command(args):
 
 def parse_files_from_args(args, given_grammars=[]):
     """Parse .fan files as given in args"""
-    return parse(args.fan_files, [],
-                 given_grammars=given_grammars,
-                 includes=args.includes,
-                 start_symbol=args.start_symbol)
+    return parse(
+        args.fan_files,
+        [],
+        given_grammars=given_grammars,
+        includes=args.includes,
+        start_symbol=args.start_symbol,
+    )
+
 
 def parse_constraints_from_args(args, given_grammars=[]):
     """Parse .fan constraints as given in args"""
-    return parse([], args.constraints,
-                 given_grammars=given_grammars,
-                 includes=args.includes,
-                 start_symbol=args.start_symbol)
+    return parse(
+        [],
+        args.constraints,
+        given_grammars=given_grammars,
+        includes=args.includes,
+        start_symbol=args.start_symbol,
+    )
+
 
 def parse_contents_from_args(args, given_grammars=[]):
     """Parse .fan content as given in args"""
-    return parse(args.fan_files, args.constraints,
-                 given_grammars=given_grammars,
-                 includes=args.includes,
-                 start_symbol=args.start_symbol)
+    return parse(
+        args.fan_files,
+        args.constraints,
+        given_grammars=given_grammars,
+        includes=args.includes,
+        start_symbol=args.start_symbol,
+    )
+
 
 def make_fandango_settings(args, initial_settings={}):
     """Create keyword settings for Fandango() constructor"""
@@ -526,8 +538,9 @@ def set_command(args):
             raise ValueError("Open a `.fan` file first ('set -f FILE.fan')")
 
         LOGGER.info("Parsing Fandango constraints")
-        _, constraints = parse_constraints_from_args(args,
-                                                     given_grammars=[default_grammar])
+        _, constraints = parse_constraints_from_args(
+            args, given_grammars=[default_grammar]
+        )
         DEFAULT_CONSTRAINTS = constraints
 
     settings = make_fandango_settings(args)
@@ -544,11 +557,11 @@ def set_command(args):
                 print(grammar.get_repr_for_rule(symbol))
         if constraints:
             for constraint in constraints:
-                print(str(constraint) + ";")
+                print("where " + str(constraint))
 
     if no_args or (DEFAULT_CONSTRAINTS and sys.stdin.isatty()):
         for constraint in DEFAULT_CONSTRAINTS:
-            print(str(constraint) + ";  # set by user")
+            print("where " + str(constraint) + "  # set by user")
     if no_args or (DEFAULT_SETTINGS and sys.stdin.isatty()):
         for setting in DEFAULT_SETTINGS:
             print(

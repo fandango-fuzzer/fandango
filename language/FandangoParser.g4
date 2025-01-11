@@ -18,9 +18,10 @@ statement
 // grammar part
 
 production
-    : NONTERMINAL '::=' alternative (':=' expression)? ';'
-    | NONTERMINAL '::=' alternative ('=' expression)? ';'   // deprecated
-    | NONTERMINAL '::=' alternative (':' ':' expression)? ';'; // deprecated
+    : NONTERMINAL '::=' alternative (':=' expression)? (';' | NEWLINE)
+    | NONTERMINAL '::=' alternative ('=' expression)? (';' | NEWLINE)   // deprecated
+    | NONTERMINAL '::=' alternative (':' ':' expression)? (';' | NEWLINE)  // deprecated
+    ;
 
 alternative: concatenation ('|' concatenation)*;
 
@@ -59,8 +60,10 @@ char_set
 
 // constraint part
 constraint
-    : implies ';'
-    | 'fitness' expr ';'
+    : WHERE implies ';'?
+    | WHERE 'fitness' expr ';'?
+    | implies ';' // deprecated
+    | 'fitness' expr ';' // deprecated
     ;
 
 implies:
