@@ -187,17 +187,20 @@ class DerivationTree:
         stream.seek(0)
         return stream.read()
 
-    def to_tree(self, indent=0) -> str:
+    def to_tree(self, indent=0, start_indent=0) -> str:
         """
         Pretty-print the derivation tree (for visualization).
         """
-        s = "  " * indent + "Tree(" + repr(self.symbol.symbol)
-        has_children = False
-        for child in self._children:
-            s += ",\n" + child.to_tree(indent + 1)
-            has_children = True
-        if has_children:
-            s += "\n" + "  " * indent
+        s = "  " * start_indent + "Tree(" + repr(self.symbol.symbol)
+        if len(self._children) == 1:
+            s += ", " + self._children[0].to_tree(indent, start_indent=0)
+        else:
+            has_children = False
+            for child in self._children:
+                s += ",\n" + child.to_tree(indent + 1, start_indent=indent + 1)
+                has_children = True
+            if has_children:
+                s += "\n" + "  " * indent
         s += ")"
         return s
 
