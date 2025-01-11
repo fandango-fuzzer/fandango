@@ -18,7 +18,7 @@ def print_exception(e: Exception):
         print(type(e).__name__ + ":", e, file=sys.stderr)
     if "DerivationTree" in str(e):
         print(
-            "Convert <symbol> to the expected type, say 'str(<symbol>)', 'int(<symbol>)', or 'float(<symbol>)'"
+            "Convert <symbol> to the expected type, say 'str(<symbol>)', 'int(<symbol>)', or 'float(<symbol>)'", file=sys.stderr
         )
 
 
@@ -32,13 +32,20 @@ def use_visualization():
     if COLUMNS is not None and COLUMNS < 0:
         return False  # No terminal
 
-    if not sys.stderr.isatty():
-        COLUMNS = -1
-        return False  # No terminal
-
     if LOGGER.isEnabledFor(logging.INFO):
+        # Don't want to interfere with logging
         COLUMNS = -1
-        return False  # Don't want to interfere with logging
+        return False
+
+    if "JPY_PARENT_PID" in os.environ:
+        # We're within Jupyter Notebook
+        COLUMNS = -1
+        return False
+
+    if not sys.stderr.isatty():
+        # Output is not a terminal
+        COLUMNS = -1
+        return False
 
     if COLUMNS is None:
         try:
