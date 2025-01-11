@@ -309,7 +309,7 @@ def get_parser(in_command_line=True):
 
     if not in_command_line:
         # Reset
-        set_parser = commands.add_parser(
+        reset_parser = commands.add_parser(
             "reset",
             help="reset defaults",
         )
@@ -330,7 +330,7 @@ def get_parser(in_command_line=True):
 
     if not in_command_line:
         # Exit
-        set_parser = commands.add_parser(
+        exit_parser = commands.add_parser(
             "exit",
             help="exit Fandango",
         )
