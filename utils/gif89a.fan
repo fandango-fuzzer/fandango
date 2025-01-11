@@ -22,3 +22,5 @@ where <SizeOfGlobalColorTable> == chr(4)
 # Make sure we have at least one data sub block
 <DATASUBBLOCKS> ::= (<DataSubBlock>)+ <BlockTerminator_1>
 
+# Force a particular size for the global color table; the above constraint does not cut it
+<rgb> ::= <RGB>{16}
