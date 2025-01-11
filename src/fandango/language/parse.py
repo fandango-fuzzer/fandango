@@ -185,7 +185,7 @@ class FandangoSpec:
 
 def parse_content(
     fan_contents: str,
-    /,
+    *,
     filename: str = "<input>",
     use_cache: bool = True,
     lazy: bool = False,
@@ -292,9 +292,9 @@ STDLIB_CONSTRAINTS: Optional[List[str]] = None
 def parse(
     fan_files: List[IO],
     constraints: List[str],
-    /,
-    use_stdlib: bool = True,
+    *,
     use_cache: bool = True,
+    use_stdlib: bool = True,
     lazy: bool = False,
     given_grammars: List[Grammar] = [],
     start_symbol: Optional[str] = None,
@@ -304,8 +304,8 @@ def parse(
     Parse .fan content, handling multiple files, standard library, and includes.
     :param fan_files: List of (open) .fan files
     :param constraints: List of constraints (as strings)
-    :param use_stdlib: If True (default), use the standard library
     :param use_cache: If True (default), cache parsing results
+    :param use_stdlib: If True (default), use the standard library
     :param lazy: If True, the constraints are evaluated lazily
     :param given_grammars: Grammars to use in addition to the standard library
     :param start_symbol: The grammar start symbol (default: "<start>")
@@ -319,18 +319,19 @@ def parse(
         start_symbol = "<start>"
 
     global STDLIB_SYMBOLS, STDLIB_GRAMMAR, STDLIB_CONSTRAINTS
-    if STDLIB_GRAMMAR is None:
+    if use_stdlib and STDLIB_GRAMMAR is None:
         LOGGER.debug("Reading standard library")
-        STDLIB_GRAMMAR, STDLIB_CONSTRAINTS = parse_content(stdlib, "<stdlib>")
-
-    assert STDLIB_GRAMMAR is not None
-    assert STDLIB_CONSTRAINTS is not None
+        STDLIB_GRAMMAR, STDLIB_CONSTRAINTS = parse_content(
+            stdlib, filename="<stdlib>", use_cache=use_cache
+        )
 
     global USED_SYMBOLS
     USED_SYMBOLS = set()
-    for symbol in STDLIB_GRAMMAR.rules.keys():
-        # Do not complain about unused symbols in the standard library
-        USED_SYMBOLS.add(str(symbol))
+    if use_stdlib:
+        assert STDLIB_GRAMMAR is not None
+        for symbol in STDLIB_GRAMMAR.rules.keys():
+            # Do not complain about unused symbols in the standard library
+            USED_SYMBOLS.add(str(symbol))
 
     global INCLUDES
     INCLUDES = includes
@@ -338,8 +339,10 @@ def parse(
     # LOGGER.debug("Given grammars:", str(given_grammars))
 
     grammars = []
-    parsed_constraints = []
+    parsed_constraints: List[str] = []
     if use_stdlib:
+        assert STDLIB_GRAMMAR is not None
+        assert STDLIB_CONSTRAINTS is not None
         grammars = [deepcopy(STDLIB_GRAMMAR)]
         parsed_constraints = STDLIB_CONSTRAINTS.copy()
 
@@ -361,6 +364,7 @@ def parse(
             fan_contents, filename=file.name, use_cache=use_cache, lazy=lazy
         )
         parsed_constraints += new_constraints
+        assert new_grammar is not None
 
         if depth == 0:
             # Given file: process in order
@@ -370,7 +374,7 @@ def parse(
             more_grammars = [new_grammar] + more_grammars
             # Do not complain about unused symbols in included files
             for symbol in new_grammar.rules.keys():
-                USED_SYMBOLS.add(symbol)
+                USED_SYMBOLS.add(str(symbol))
 
         if INCLUDE_DEPTH > 0:
             INCLUDE_DEPTH -= 1

@@ -206,6 +206,20 @@ def get_parser(in_command_line=True):
         help="define an additional constraint CONSTRAINT. Can be given multiple times.",
     )
     file_parser.add_argument(
+        "--no-cache",
+        default=True,
+        dest="use_cache",
+        action="store_false",
+        help="do not cache parsed Fandango files.",
+    )
+    file_parser.add_argument(
+        "--no-stdlib",
+        default=True,
+        dest="use_stdlib",
+        action="store_false",
+        help="do not use standard library when parsing Fandango files.",
+    )
+    file_parser.add_argument(
         "-s",
         "--separator",
         type=str,
@@ -418,6 +432,8 @@ def parse_files_from_args(args, given_grammars=[]):
         [],
         given_grammars=given_grammars,
         includes=args.includes,
+        use_cache=args.use_cache,
+        use_stdlib=args.use_stdlib,
         start_symbol=args.start_symbol,
     )
 
@@ -429,6 +445,8 @@ def parse_constraints_from_args(args, given_grammars=[]):
         args.constraints,
         given_grammars=given_grammars,
         includes=args.includes,
+        use_cache=args.use_cache,
+        use_stdlib=args.use_stdlib,
         start_symbol=args.start_symbol,
     )
 
@@ -440,6 +458,8 @@ def parse_contents_from_args(args, given_grammars=[]):
         args.constraints,
         given_grammars=given_grammars,
         includes=args.includes,
+        use_cache=args.use_cache,
+        use_stdlib=args.use_stdlib,
         start_symbol=args.start_symbol,
     )
 
@@ -1014,6 +1034,13 @@ def main(*argv: str, stdout=sys.stdout, stderr=sys.stderr):
 
     return last_status
 
+
+def fandango(cmd: str, stdout=sys.stdout, stderr=sys.stderr):
+    # Entry point for tutorial
+    try:
+        main(*shlex.split(cmd, comments=True), stdout=stdout, stderr=stderr)
+    except SystemExit as e:
+        pass  # Do not exit
 
 if __name__ == "__main__":
     sys.exit(main())
