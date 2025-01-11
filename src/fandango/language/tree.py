@@ -142,7 +142,7 @@ class DerivationTree:
                 self._write_to_stream(elem_stream)
                 elem_stream.seek(0)
                 elem = elem_stream.read()
-                bits = ''.join(format(ord(c), '08b') for c in elem)
+                bits = "".join(format(ord(c), "08b") for c in elem)
             stream.write(bits)
         else:
             raise ValueError("Invalid symbol type")
@@ -177,8 +177,9 @@ class DerivationTree:
             bitstream = self.to_bits()
 
             # Decode again
-            return ''.join(chr(int(bitstream[i:i + 8], 2))
-                           for i in range(0, len(bitstream), 8))
+            return "".join(
+                chr(int(bitstream[i : i + 8], 2)) for i in range(0, len(bitstream), 8)
+            )
 
         # Write directly, without conversion
         stream = StringIO()
@@ -353,4 +354,3 @@ class DerivationTree:
             return fn
 
         raise AttributeError(f"{self.symbol} has no attribute {repr(name)}")
-

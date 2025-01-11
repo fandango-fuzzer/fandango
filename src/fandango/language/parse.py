@@ -35,18 +35,22 @@ from antlr4.error.ErrorListener import ErrorListener
 
 ### Error Handling
 
+
 class MyErrorListener(ErrorListener):
     """This is invoked from ANTLR when a syntax error is encountered"""
+
     def __init__(self, filename=None):
         self.filename = filename
         super().__init__()
+
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise SyntaxError(f'{repr(self.filename)}, line {line}, column {column}: {msg}')
+        raise SyntaxError(f"{repr(self.filename)}, line {line}, column {column}: {msg}")
+
 
 def closest_match(word, candidates):
     """
-        `word` raises a syntax error;
-        return alternate suggestion for `word` from `candidates`
+    `word` raises a syntax error;
+    return alternate suggestion for `word` from `candidates`
     """
     return thefuzz_process.extractOne(word, candidates)[0]
 
@@ -70,10 +74,11 @@ FILES_TO_PARSE: List[Tuple[IO, int]] = []
 # The current include depth
 INCLUDE_DEPTH: int = 0
 
+
 def include(file_to_be_included: str):
     """
-        Include FILE_TO_BE_INCLUDED in the current context.
-        This function is invoked from .fan files.
+    Include FILE_TO_BE_INCLUDED in the current context.
+    This function is invoked from .fan files.
     """
     global FILES_TO_PARSE
     global CURRENT_FILENAME
@@ -88,17 +93,19 @@ def include(file_to_be_included: str):
         path += ":" + os.environ["FANDANGO_PATH"]
     dirs = [Path(dir) for dir in path.split(":")]
 
-    if platform.system() == 'Darwin':
+    if platform.system() == "Darwin":
         dirs += [Path.home() / "Library" / "Fandango"]  # ~/Library/Fandango
         dirs += [Path("/Library/Fandango")]  # /Library/Fandango
 
     dirs += [xdg_data_home() / "fandango"]  # sth like ~/.local/share/fandango
-    dirs += [dir / "fandango" for dir in xdg_data_dirs()]  # sth like /usr/local/share/fandango
+    dirs += [
+        dir / "fandango" for dir in xdg_data_dirs()
+    ]  # sth like /usr/local/share/fandango
 
     for dir in dirs:
         try:
             full_file_name = dir / file_to_be_included
-            full_file = open(full_file_name, 'r')
+            full_file = open(full_file_name, "r")
         except FileNotFoundError:
             continue
         LOGGER.debug(f"{CURRENT_FILENAME}: including {full_file_name}")
@@ -107,23 +114,32 @@ def include(file_to_be_included: str):
         FILES_TO_PARSE.append((full_file, INCLUDE_DEPTH))
         return
 
-    raise FileNotFoundError(f"{CURRENT_FILENAME}: {repr(file_to_be_included)} not found in {':'.join(str(dir) for dir in dirs)}")
+    raise FileNotFoundError(
+        f"{CURRENT_FILENAME}: {repr(file_to_be_included)} not found in {':'.join(str(dir) for dir in dirs)}"
+    )
 
 
 ### Parsing
 
+
 class FandangoSpec:
     """
-        Helper class to pickle and unpickle parsed Fandango specifications.
-        This is necessary because the ANTLR4 parse trees cannot be pickled,
-        so we pickle the code text, grammar, and constraints instead.
+    Helper class to pickle and unpickle parsed Fandango specifications.
+    This is necessary because the ANTLR4 parse trees cannot be pickled,
+    so we pickle the code text, grammar, and constraints instead.
     """
+
     GLOBALS = predicates.__dict__
-    GLOBALS.update({'include': include})
+    GLOBALS.update({"include": include})
     LOCALS = None  # Must be None to ensure top-level imports
 
-    def __init__(self, tree: Any, fan_contents: str,
-                 lazy: bool = False, filename: str = "<input>"):
+    def __init__(
+        self,
+        tree: Any,
+        fan_contents: str,
+        lazy: bool = False,
+        filename: str = "<input>",
+    ):
         self.version = importlib.metadata.version("fandango")
         self.fan_contents = fan_contents
         self.global_vars = self.GLOBALS.copy()
@@ -145,8 +161,9 @@ class FandangoSpec:
         grammar_processor = GrammarProcessor(
             local_variables=self.local_vars, global_variables=self.global_vars
         )
-        self.grammar: Grammar = \
-            grammar_processor.get_grammar(splitter.productions, prime=False)
+        self.grammar: Grammar = grammar_processor.get_grammar(
+            splitter.productions, prime=False
+        )
 
         LOGGER.debug(f"{filename}: extracting constraints")
         constraint_processor = ConstraintProcessor(
@@ -155,10 +172,11 @@ class FandangoSpec:
             global_variables=self.global_vars,
             lazy=self.lazy,
         )
-        self.constraints: List[str] = \
-            constraint_processor.get_constraints(splitter.constraints)
+        self.constraints: List[str] = constraint_processor.get_constraints(
+            splitter.constraints
+        )
 
-    def run_code(self, filename: str="<input>"):
+    def run_code(self, filename: str = "<input>"):
         global CURRENT_FILENAME
         CURRENT_FILENAME = filename
 
@@ -185,14 +203,14 @@ def parse_content(
     from_cache = False
 
     CACHE_DIR = xdg_cache_home() / "fandango"
-    if platform.system() == 'Darwin':
+    if platform.system() == "Darwin":
         cache_path = Path.home() / "Library" / "Caches"
         if os.path.exists(cache_path):
             CACHE_DIR = cache_path / "Fandango"
 
     if use_cache:
         if not os.path.exists(CACHE_DIR):
-            os.makedirs(CACHE_DIR, mode = 0o700)
+            os.makedirs(CACHE_DIR, mode=0o700)
             cachedir_tag.tag(CACHE_DIR, application="Fandango")
 
         hash = hashlib.sha256(fan_contents.encode()).hexdigest()
@@ -206,7 +224,9 @@ def parse_content(
                     assert spec is not None
                     LOGGER.debug(f"Cached spec version: {spec.version}")
                     if spec.fan_contents != fan_contents:
-                        e = ValueError("Hash collision (If you get this, you'll be real famous)")
+                        e = ValueError(
+                            "Hash collision (If you get this, you'll be real famous)"
+                        )
                         raise e
 
                     from_cache = True
@@ -268,15 +288,18 @@ USED_SYMBOLS: Set[str] = set()
 STDLIB_GRAMMAR: Optional[Grammar] = None
 STDLIB_CONSTRAINTS: Optional[List[str]] = None
 
-def parse(fan_files: List[IO],
-          constraints: List[str],
-          /,
-          use_stdlib: bool = True,
-          use_cache: bool = True,
-          lazy: bool = False,
-          given_grammars: List[Grammar] = [],
-          start_symbol: Optional[str] = None,
-          includes: List[str] = []) -> Tuple[Optional[Grammar], List[str]]:
+
+def parse(
+    fan_files: List[IO],
+    constraints: List[str],
+    /,
+    use_stdlib: bool = True,
+    use_cache: bool = True,
+    lazy: bool = False,
+    given_grammars: List[Grammar] = [],
+    start_symbol: Optional[str] = None,
+    includes: List[str] = [],
+) -> Tuple[Optional[Grammar], List[str]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
     :param fan_files: List of (open) .fan files
@@ -334,9 +357,9 @@ def parse(fan_files: List[IO],
         (file, depth) = FILES_TO_PARSE.pop(0)
         LOGGER.debug(f"Reading {file.name} (depth = {depth})")
         fan_contents = file.read()
-        new_grammar, new_constraints = \
-            parse_content(fan_contents, filename=file.name,
-                          use_cache=use_cache, lazy=lazy)
+        new_grammar, new_constraints = parse_content(
+            fan_contents, filename=file.name, use_cache=use_cache, lazy=lazy
+        )
         parsed_constraints += new_constraints
 
         if depth == 0:
@@ -373,15 +396,16 @@ def parse(fan_files: List[IO],
     LOGGER.debug("Processing constraints")
     for constraint in constraints or []:
         LOGGER.debug(f"Constraint {constraint}")
-        _, new_constraints = parse_content(constraint + ";",
-                                           filename=constraint,
-                                           use_cache=use_cache, lazy=lazy)
+        _, new_constraints = parse_content(
+            "where " + constraint, filename=constraint, use_cache=use_cache, lazy=lazy
+        )
         parsed_constraints += new_constraints
 
     LOGGER.debug("Checking and finalizing content")
     if grammar and len(grammar.rules) > 0:
-        check_grammar_consistency(grammar, given_used_symbols=USED_SYMBOLS,
-                                  start_symbol=start_symbol)
+        check_grammar_consistency(
+            grammar, given_used_symbols=USED_SYMBOLS, start_symbol=start_symbol
+        )
 
     if grammar and parsed_constraints:
         check_constraints_existence(grammar, parsed_constraints)
@@ -395,8 +419,10 @@ def parse(fan_files: List[IO],
 
 ### Consistency Checks
 
-def check_grammar_consistency(grammar, /, given_used_symbols=set(),
-                              start_symbol='<start>'):
+
+def check_grammar_consistency(
+    grammar, /, given_used_symbols=set(), start_symbol="<start>"
+):
     if not grammar:
         return
 
@@ -411,7 +437,9 @@ def check_grammar_consistency(grammar, /, given_used_symbols=set(),
 
     if start_symbol not in defined_symbols:
         closest = closest_match(start_symbol, defined_symbols)
-        raise NameError(f"Start symbol {start_symbol} not defined in grammar. Did you mean {closest}?")
+        raise NameError(
+            f"Start symbol {start_symbol} not defined in grammar. Did you mean {closest}?"
+        )
 
     def collect_used_symbols(tree):
         if tree.node_type == NodeType.NON_TERMINAL:
@@ -429,15 +457,19 @@ def check_grammar_consistency(grammar, /, given_used_symbols=set(),
             undefined_symbols.add(symbol)
 
     for symbol in defined_symbols:
-        if (symbol not in used_symbols
+        if (
+            symbol not in used_symbols
             and symbol not in given_used_symbols
-            and symbol != start_symbol):
+            and symbol != start_symbol
+        ):
             LOGGER.info(f"Symbol {symbol} defined, but not used")
 
     if undefined_symbols:
         first_undefined_symbol = undefined_symbols.pop()
         closest = closest_match(first_undefined_symbol, used_symbols)
-        error = NameError(f"Undefined symbol {first_undefined_symbol} in grammar. Did you mean {closest}?")
+        error = NameError(
+            f"Undefined symbol {first_undefined_symbol} in grammar. Did you mean {closest}?"
+        )
         raise error
 
 

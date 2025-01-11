@@ -6,6 +6,7 @@ if "." in __name__:
 else:
     from FandangoParser import FandangoParser
 
+
 # This class defines a complete listener for a parse tree produced by FandangoParser.
 class FandangoParserListener(ParseTreeListener):
 

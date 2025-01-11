@@ -61,8 +61,8 @@ class Terminal(Symbol):
                 return eval(symbol)
             elif len(symbol) >= 3:
                 if symbol[0] == "b" and (
-                    symbol[1] == symbol[-1] == "'" or
-                    symbol[1] == symbol[-1] == '"'):
+                    symbol[1] == symbol[-1] == "'" or symbol[1] == symbol[-1] == '"'
+                ):
                     return eval(symbol)
         return eval(symbol)  # also handles bits "0" and "1"
 
@@ -78,7 +78,7 @@ class Terminal(Symbol):
         if isinstance(self.symbol, int) or isinstance(word, int):
             return self.check_all(word)
         if isinstance(self.symbol, bytes):
-            return word.startswith(self.symbol.decode('iso-8859-1'))
+            return word.startswith(self.symbol.decode("iso-8859-1"))
         return word.startswith(self.symbol)
 
     def check_all(self, word: str | int) -> bool:
