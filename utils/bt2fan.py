@@ -2,6 +2,9 @@
 
 import string
 import re
+import argparse
+import sys
+
 from enum import Enum
 from py010parser import parse_file, parse_string, c_ast
 
@@ -432,8 +435,14 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
             return iffalse
         return ""
 
-ast = parse_file("gif.bt", cpp_args="-xc++")  # cpp arg is needed on a Mac
-
-visitor = BT2FandangoVisitor()
-visitor.visit(ast)
-print(visitor.spec())
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Convert a binary template to a Fandango specification"
+    )
+    parser.add_argument('filename', nargs='+', help='.bt binary template file')
+    args = parser.parse_args(sys.argv[1:])
+    for filename in args.filename:
+        ast = parse_file(filename, cpp_args="-xc++")
+        visitor = BT2FandangoVisitor()
+        visitor.visit(ast)
+        print(visitor.spec())
