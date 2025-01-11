@@ -38,7 +38,7 @@ And this is what we get:
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f digits.fan -n 10
+!fandango fuzz -f digits.fan -n 10    
 assert _exit_code == 0
 ```
 
