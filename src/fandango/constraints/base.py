@@ -199,7 +199,7 @@ class ComparisonConstraint(Constraint):
             except Exception as e:
                 e.add_note("Evaluation failed: " + self.left)
                 print_exception(e)
-                sys.exit("Evaluation failed: " + self.left)
+                continue
 
             try:
                 right = eval(self.right, self.global_variables, local_variables)
