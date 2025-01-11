@@ -7,6 +7,7 @@
 
 from pygments.lexers.python import PythonLexer
 from pygments.token import *
+from pygments.lexer import words
 
 class FanLexer(PythonLexer):
     """Special lexer code for .fan files"""
@@ -16,9 +17,13 @@ class FanLexer(PythonLexer):
     mimetypes = ['text/x-fan']
     
     tokens = PythonLexer.tokens
+    # We use Name.Tag for symbols, as in HTML/XML markup
     tokens['root'] = [
-            (r'<[a-zA-Z_][a-zA-Z0-9_]*>', Name.Variable.Magic)
+            (r'<[a-zA-Z_][a-zA-Z0-9_]*>', Name.Tag)
         ] + tokens['root']
+    tokens['keywords'] = [
+        ('where', Keyword)
+        ] + tokens['keywords']
 
 if __name__ == '__main__':
     import os, sys
