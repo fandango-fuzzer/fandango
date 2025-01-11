@@ -470,9 +470,8 @@ def check_grammar_consistency(
 
     if undefined_symbols:
         first_undefined_symbol = undefined_symbols.pop()
-        closest = closest_match(first_undefined_symbol, used_symbols)
         error = NameError(
-            f"Undefined symbol {first_undefined_symbol} in grammar. Did you mean {closest}?"
+            f"Undefined symbol {first_undefined_symbol} in grammar"
         )
         raise error
 
