@@ -32,7 +32,7 @@ kiwisolver==1.4.7
     # via matplotlib
 matplotlib==3.9.2
     # via fandango (pyproject.toml)
-numpy==2.1.2
+numpy==2.2.1
     # via
     #   contourpy
     #   deap
