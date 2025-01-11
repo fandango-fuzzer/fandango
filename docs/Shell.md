@@ -60,6 +60,7 @@ and you will get the same results:
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10
+assert _exit_code == 0
 ```
 
 There is an important advantage though: You can set (and edit) a _common environment_ for all commands.
@@ -117,12 +118,12 @@ Here is an example:
 ```
 (fandango) set -N 10
 (fandango) set
-<start> ::= <person_name> ',' <age>;
-<person_name> ::= <first_name> ' ' <last_name>;
-<first_name> ::= <name>;
-<last_name> ::= <name>;
-<name> ::= <ascii_uppercase_letter> <ascii_lowercase_letter>+;
-<age> ::= <digit>+;
+<start> ::= <person_name> ',' <age>
+<person_name> ::= <first_name> ' ' <last_name>
+<first_name> ::= <name>
+<last_name> ::= <name>
+<name> ::= <ascii_uppercase_letter> <ascii_lowercase_letter>+
+<age> ::= <digit>+
 --max-generations=10
 ```
 

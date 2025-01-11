@@ -236,6 +236,7 @@ $ fandango fuzz -f persons.fan -n 10 -c '<first_name>[0].endswith("x")'
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10 -c '<first_name>[0].endswith("x")'
+assert _exit_code == 0
 ```
 
 :::{note}
@@ -274,6 +275,7 @@ $ fandango fuzz -f persons.fan -n 10 -c '<first_name>.<name>.endswith("x")'
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10 -c '<first_name>.<name>.endswith("x")'
+assert _exit_code == 0
 ```
 
 % TODO: Is that so? -- AZ
@@ -306,10 +308,10 @@ A simpler way to think about `<foo>..<bar>` may be "All `<bar>`s that occur with
 Let us take a look at some rules in our `persons.fan` example:
 
 ```python
-<first_name> ::= <name>;
-<last_name> ::= <name>;
-<name> ::= <ascii_uppercase_letter><ascii_lowercase_letter>+;
-<ascii_uppercase_letter> ::= "A" | "B" | "C" | ... | "Z";
+<first_name> ::= <name>
+<last_name> ::= <name>
+<name> ::= <ascii_uppercase_letter><ascii_lowercase_letter>+
+<ascii_uppercase_letter> ::= "A" | "B" | "C" | ... | "Z"
 ```
 
 To refer to all `<ascii_uppercase_letter>` element as descendant of a `<first_name>` element, you thus write `<first_name>..<ascii_uppercase_letter>`.
@@ -323,6 +325,7 @@ $ fandango fuzz -f persons.fan -n 10 -c '<first_name>..<ascii_uppercase_letter> 
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10 -c '<first_name>..<ascii_uppercase_letter> == "X"'
+assert _exit_code == 0
 ```
 
 ### Chains
@@ -348,6 +351,7 @@ $ fandango fuzz -f persons.fan -n 10 -c '<start>[0].<last_name>..<ascii_lowercas
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10 -c '<start>[0].<last_name>..<ascii_lowercase_letter> == "x"'
+assert _exit_code == 0
 ```
 
 ## Quantifiers
@@ -417,6 +421,7 @@ $ fandango fuzz -f persons.fan -n 10 -c 'any(n.startswith("A") for n in *<name>)
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10 -c 'exists <name> in <start>: <name>.startswith("A")'
+assert _exit_code == 0
 ```
 
 ### Universal Quantification
@@ -453,6 +458,7 @@ $ fandango fuzz -f persons.fan -n 10 -c 'all(c == "a" for c in *<first_name>..<a
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10 -c '<first_name>..<ascii_lowercase_letter> == "a"'
+assert _exit_code == 0
 ```
 
 By default, all symbols are universally quantified within `<start>`, so a dedicated universal quantifier is only needed if you want to _limit the scope_ to some sub-element.
@@ -498,6 +504,7 @@ $ fandango fuzz -f persons.fan -n 10 -c 'int(<age>) > 30 -> <first_name>.startsw
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10 -c 'int(<age>) > 30 -> <first_name>.startswith("A")'
+assert _exit_code == 0
 ```
 
 Note how Fandango "solves" the problem by mostly producing only persons whose age is _below_ the threshold.
@@ -510,6 +517,7 @@ $ fandango fuzz -f persons-faker-gauss.fan -n 10 -c 'int(<age>) > 30 -> <first_n
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons-faker-gauss.fan -n 10 -c 'int(<age>) > 30 -> <first_name>.startswith("A")'
+assert _exit_code == 0
 ```
 
 While the implication is indeed resolved, note that the Gaussian distribution no longer holds.

@@ -36,6 +36,7 @@ Entering `fandango --help` should result in an output like this:
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango --help
+assert _exit_code == 0
 ```
 
 If this did not work, try out an alternate option; see [](sec:installing).

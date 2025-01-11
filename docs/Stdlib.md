@@ -22,7 +22,7 @@ Each symbol is defined as
 If you'd like to narrow the definition of, say, punctuation characters, you can redefine `<punctuation>` to your liking:
 
 ```
-<punctuation> ::= '!' | '?' | ',' | '.' | ';' | ':';
+<punctuation> ::= '!' | '?' | ',' | '.' | ';' | ':'
 ```
 
 The original definition of `<_punctuation>`, however, must not be changed, as other definitions may depend on it.

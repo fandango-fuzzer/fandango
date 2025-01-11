@@ -35,7 +35,7 @@ In Fandango, bits can be represented in Fandango using the special values `0` (f
 Hence, you can define a `<bit>` value as
 
 ```python
-<bit> ::= 0 | 1;
+<bit> ::= 0 | 1
 ```
 
 With this, the above `format_flag` byte would be specified as
@@ -55,6 +55,7 @@ $ fandango fuzz --format=bits -f bits.fan -n 1 --start-symbol='<format_flag>'
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz --format=bits -f bits.fan -n 1 --start-symbol='<format_flag>'
+assert _exit_code == 0
 ```
 
 ```{note}
@@ -71,6 +72,7 @@ $ fandango fuzz --format=bits -f bits.fan -n 10 -c '<italic> == "\x01" and <bold
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz --format=bits -f bits.fan -n 10 -c '<italic> == "\x01" and <bold> == "\x00"'
+assert _exit_code == 0
 ```
 
 This alternative, using `chr()` to generate a single byte out of the specified integer might be more readable:
@@ -82,6 +84,7 @@ $ fandango fuzz --format=bits -f bits.fan -n 1 -c '<italic> == chr(1) and <bold>
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz --format=bits -f bits.fan -n 1 -c '<italic> == chr(1) and <bold> == chr(0)'
+assert _exit_code == 0
 ```
 
 We can also easily set the value of the entire `format_flag` field using a constraint:
@@ -93,6 +96,7 @@ $ fandango fuzz --format=bits -f bits.fan -n 1 -c '<format_flag> == chr(0b111100
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz --format=bits -f bits.fan -n 1 -c '<format_flag> == chr(0b11110000)'
+assert _exit_code == 0
 ```
 
 Since Fandango strictly follows a "left-to-right" order - that is, the order in which bits and bytes are specified in the grammar, the most significant bit is stored first.
@@ -112,6 +116,7 @@ $ fandango fuzz --format=bits -f bits.fan -n 1 -c 'ord(str(<brightness>)) > 10'
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz --format=bits -f bits.fan -n 10 -c 'ord(str(<brightness>)) > 10'
+assert _exit_code == 0
 ```
 
 Note how the last four bits (the `<brightness>` field) always represent a number greater than ten.
@@ -136,14 +141,14 @@ However, the overall length of the field must be a multiple of eight to have it 
 For such _padding_, define the field as
 
 ```
-<field> ::= <bits> <padding>;
-<padding> ::= 0*;
+<field> ::= <bits> <padding>
+<padding> ::= 0*
 ```
 
 combined with a constraint
 
 ```
-len(<field>) % 8 == 0;
+where len(<field>) % 8 == 0
 ```
 
 Note that applied on derivation trees, `len()` always returns the number of child elements, not the string length; here, we use this to access the number of elements in `<field>`.
