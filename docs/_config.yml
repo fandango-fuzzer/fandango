@@ -15,5 +15,25 @@ execute:
   execute_notebooks: cache
   stderr_output: warn
 
+parse:
+  myst_enable_extensions:
+    # - amsmath
+    - colon_fence
+    # - deflist
+    - dollarmath
+    # - html_admonition
+    # - html_image
+    - linkify
+    - replacements
+    - smartquotes
+    - substitution
+    - tasklist
+
 html:
   announcement: '<p>💃 Fandango is currently in development - see our <a href="https://github.com/fandango-fuzzer/fandango/issues"  style="color:white;">list of bugs and incomplete features</a>. Expect a first stable release in March 2025.</p>'
+  use_issues_button: true
+  use_repository_button: true
+  baseurl: "https://fandango-fuzzer.github.io/fandango/"
+
+repository:
+  url: "https://github.com/fandango-fuzzer/fandango"
