@@ -15,3 +15,5 @@ execute:
   execute_notebooks: cache
   stderr_output: warn
 
+html:
+  announcement: '<p>Fandango is currently in development - see our <a href="https://github.com/fandango-fuzzer/fandango/issues"  style="color:white;">list of bugs and incomplete features</a>. Expect a first stable release in March 2025.</p>'
