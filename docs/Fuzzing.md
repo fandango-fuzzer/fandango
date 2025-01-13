@@ -44,10 +44,6 @@ The full definition looks like this:
 In Fandango specs, symbol names are formed as identifiers in Python - that is, they consist of letters, underscores, and digits.
 :::
 
-:::{margin}
-In Fandango specs, every grammar rule must end with a semicolon.
-:::
-
 % TODO
 :::{margin}
 Future Fandango versions will have shortcuts for specifying character ranges.
