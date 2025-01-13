@@ -1042,5 +1042,6 @@ def fandango(cmd: str, stdout=sys.stdout, stderr=sys.stderr):
     except SystemExit as e:
         pass  # Do not exit
 
+
 if __name__ == "__main__":
     sys.exit(main())

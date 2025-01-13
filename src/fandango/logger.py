@@ -18,7 +18,8 @@ def print_exception(e: Exception):
         print(type(e).__name__ + ":", e, file=sys.stderr)
     if "DerivationTree" in str(e):
         print(
-            "Convert <symbol> to the expected type, say 'str(<symbol>)', 'int(<symbol>)', or 'float(<symbol>)'", file=sys.stderr
+            "Convert <symbol> to the expected type, say 'str(<symbol>)', 'int(<symbol>)', or 'float(<symbol>)'",
+            file=sys.stderr,
         )
 
 
