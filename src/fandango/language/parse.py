@@ -470,9 +470,7 @@ def check_grammar_consistency(
 
     if undefined_symbols:
         first_undefined_symbol = undefined_symbols.pop()
-        error = NameError(
-            f"Undefined symbol {first_undefined_symbol} in grammar"
-        )
+        error = NameError(f"Undefined symbol {first_undefined_symbol} in grammar")
         raise error
 
 
