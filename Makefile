@@ -29,11 +29,11 @@ requirements.txt:	pyproject.toml
 UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 # Mac
-SYSTEM_DEV_TOOLS = antlr pdftk graphviz
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz
 SYSTEM_DEV_INSTALL = brew install
 else
 # Linux
-SYSTEM_DEV_TOOLS = antlr pdftk graphviz
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz
 SYSTEM_DEV_INSTALL = apt-get install
 endif
 
