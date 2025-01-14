@@ -7,9 +7,6 @@ from fandango.language.tree import DerivationTree
 
 
 class ParserTests(unittest.TestCase):
-    FANDANGO_GRAMMAR = """
-
-    """
 
     @classmethod
     def setUpClass(cls):
@@ -158,18 +155,11 @@ class TestComplexParsing(unittest.TestCase):
 
 
 class TestIncompleteParsing(unittest.TestCase):
-    GRAMMAR = """
-    <start> ::= <ab>;
-    <ab> ::= 
-          "a" (<ab> | "b") 
-        | <ab> "b"
-        | "c"
-        ;
-    """
 
     @classmethod
     def setUpClass(cls):
-        cls.grammar, _ = parse(cls.GRAMMAR)
+        cls.file = open("tests/resources/incomplete.fan", "r")
+        cls.grammar, _ = parse(cls.file, use_stdlib=False)
 
     def _test(self, example, tree):
         parsed = False
