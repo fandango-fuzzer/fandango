@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 from typing import Tuple
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-from fandango.language.parse import parse_file
+from fandango.language.parse import parse
 
 
 def is_syntactically_valid_xml(xml_string):
@@ -11,7 +11,7 @@ def is_syntactically_valid_xml(xml_string):
         # Try to parse the XML string
         ET.fromstring(xml_string)
         return True
-    except ET.ParseError as e:
+    except ET.ParseError:
         # If parsing fails, it's not a valid XML
         return False
 
@@ -19,7 +19,8 @@ def is_syntactically_valid_xml(xml_string):
 def evaluate_xml(
     seconds=60,
 ) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
-    grammar, constraints = parse_file("xml_evaluation/xml.fan")
+    file = open("xml_evaluation/xml.fan", "r")
+    grammar, constraints = parse(file, use_stdlib=False)
     solutions = []
 
     time_in_an_hour = time.time() + seconds

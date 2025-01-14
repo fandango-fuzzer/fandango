@@ -39,17 +39,28 @@ Essentially, you write a Boolean expression, using grammar symbols (in `<...>`) 
 As an example, consider this Fandango constraint:
 
 ```
-int(<age>) < 50;
+int(<age>) < 50
 ```
 
 This constraint takes the `<age>` element from the input and converts it into an integer (all symbols are strings in the first place).
 Inputs are produced only if the resulting value is less than 50.
 
-:::{note}
-Like grammar rules, constraints in a `.fan` file must end in `;`.
-:::
 
 We can add such constraints to any .fan file, say the [`persons.fan`](persons.fan) file from the previous section.
+Constraints are preceded by a keyword `where`.
+So the line we add reads
+
+```
+where int(<age>) < 50
+```
+
+and the full `persons.fan` file reads
+
+```{code-cell}
+:tags: ["remove-input"]
+!cat persons.fan; echo 'where int(<age>) < 50'
+```
+
 If we do this and run Fandango, we obtain a new set of inputs:
 
 ```shell
@@ -59,6 +70,7 @@ $ fandango fuzz -f persons.fan -n 10
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10 -c 'int(<age>) < 50'
+assert _exit_code == 0
 ```
 
 We see that all persons produced now indeed have an age of less than 50.
@@ -73,7 +85,7 @@ Be sure, though, to leave spaces around `<` and `>` operators to avoid confusion
 :::
 
 ```
-25 <= int(<age>) and int(<age>) <= 45;
+25 <= int(<age>) and int(<age>) <= 45
 ```
 
 and we obtain these inputs:
@@ -81,6 +93,7 @@ and we obtain these inputs:
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10 -c '25 <= int(<age>) and int(<age>) <= 45'
+assert _exit_code == 0
 ```
 
 Start with [`persons.fan`](persons.fan) and add a constraint such that we generate people whose age is a multiple of 7, as in
@@ -88,6 +101,7 @@ Start with [`persons.fan`](persons.fan) and add a constraint such that we genera
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10 -c 'int(<age>) % 7 == 0'
+assert _exit_code == 0
 ```
 (Hint: The modulo operator in Python is `%`).
 
@@ -95,7 +109,7 @@ Start with [`persons.fan`](persons.fan) and add a constraint such that we genera
 :class: tip, dropdown
 This is not too hard. Simply add
 ```
-int(<age>) % 7 == 0;
+where int(<age>) % 7 == 0
 ```
 as a constraint.
 :::
@@ -106,7 +120,7 @@ as a constraint.
 Whenever Fandango evaluates a constraint, such as
 
 ```
-int(<age>) > 20;
+int(<age>) > 20
 ```
 
 the type of `<age>` is actually not a string, but a `DerivationTree` object - [a tree representing the structure of the output.](sec:paths).
@@ -188,6 +202,7 @@ $ fandango -v fuzz -f persons.fan -n 10 -c 'int(<age>) % 7 == 0'
 ```{code-cell}
 :tags: ["remove-input", "scroll-output"]
 !fandango -v fuzz -f persons.fan -n 10 -c 'int(<age>) % 7 == 0'
+assert _exit_code == 0
 ```
 
 ```{note}
@@ -212,6 +227,7 @@ $ fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50
 ```{code-cell}
 :tags: ["remove-input", "scroll-output"]
 !fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50
+assert _exit_code == 0
 ```
 
 As you see, Fandango produces a population of zero.

@@ -18,9 +18,10 @@ statement
 // grammar part
 
 production
-    : NONTERMINAL '::=' alternative (':=' expression)? ';'
-    | NONTERMINAL '::=' alternative ('=' expression)? ';'   // deprecated
-    | NONTERMINAL '::=' alternative (':' ':' expression)? ';'; // deprecated
+    : NONTERMINAL '::=' alternative (':=' expression)? (';' | NEWLINE | EOF)
+    | NONTERMINAL '::=' alternative ('=' expression)? (';' | NEWLINE | EOF)   // deprecated
+    | NONTERMINAL '::=' alternative (':' ':' expression)? (';' | NEWLINE | EOF)  // deprecated
+    ;
 
 alternative: concatenation ('|' concatenation)*;
 
@@ -46,6 +47,7 @@ symbol
     : NEWLINE*
         ( NONTERMINAL
         | STRING
+        | NUMBER  // for 0 and 1 bits
         | OPEN_PAREN alternative CLOSE_PAREN
         | char_set
         )
@@ -58,8 +60,10 @@ char_set
 
 // constraint part
 constraint
-    : implies ';'
-    | 'fitness' expr ';'
+    : WHERE implies (';' | NEWLINE | EOF)
+    | WHERE 'fitness' expr (';' | NEWLINE | EOF)
+    | implies ';' // deprecated
+    | 'fitness' expr ';' // deprecated
     ;
 
 implies:

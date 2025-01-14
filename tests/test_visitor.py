@@ -73,7 +73,8 @@ class LoggingVisitor(ConstraintVisitor):
 class TestConstraintVisitor(unittest.TestCase):
 
     def get_constraint(self, constraint):
-        _, constraints = parse(constraint)
+        file = open("tests/resources/constraints.fan", "r")
+        _, constraints = parse(file, constraints=[constraint], use_stdlib=False)
         self.assertEqual(1, len(constraints))
         return constraints[0]
 
