@@ -23,7 +23,7 @@ The straightforward solution would be to simply extend our grammar with more nat
 In order to obtain more natural first and last names in our [ongoing names/age example](sec:fuzzing), for instance, we could simply extend the [`persons.fan`](persons.fan) rule
 
 ```
-<first_name> ::= <name>;
+<first_name> ::= <name>
 ```
 
 to
@@ -33,19 +33,19 @@ These are the given names on [Pablo Picasso](https://en.wikipedia.org/wiki/Pablo
 :::
 
 ```
-<first_name> ::= <name> | "Alice" | "Bob" | "Eve" | "Pablo Diego José Francisco de Paula Juan Nepomuceno Cipriano de la Santísima Trinidad";
+<first_name> ::= <name> | "Alice" | "Bob" | "Eve" | "Pablo Diego José Francisco de Paula Juan Nepomuceno Cipriano de la Santísima Trinidad"
 ```
 
 and extend the rule
 
 ```
-<last_name> ::= <name>;
+<last_name> ::= <name>
 ```
 
 to, say,
 
 ```
-<last_name> ::= <name> | "Doe" | "Smith" | "Ruiz Picasso";
+<last_name> ::= <name> | "Doe" | "Smith" | "Ruiz Picasso"
 ```
 
 then we can have Fandango create names such as
@@ -53,6 +53,7 @@ then we can have Fandango create names such as
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons-nat.fan -n 10
+assert _exit_code == 0
 ```
 
 Note that we still get a few "random" names; this comes as specified by our rules.
@@ -91,7 +92,7 @@ A generator applies to _all_ alternatives, not just the last one.
 :::
 
 ```
-<first_name> ::= <name> := fake.first_name();
+<first_name> ::= <name> := fake.first_name()
 ```
 
 :::{margin}
@@ -108,8 +109,17 @@ We can do the same for the last name, too; and then this is the full Fandango sp
 ```
 
 :::{note}
-Any functions you use in a generator (or in a constraint, for that matter) need to be imported.
+The [Fandango `include()` function](sec:including) _includes_ the Fandango definitions of the given file.
+This way, we need not repeat the definitions from `persons.fan` and only focus on the differences.
+:::
+
+:::{note}
+Python code (from Python files) that you use in a generator (or in a constraint, for that matter) needs to be imported.
 Use the Python `import` features to do that.
+:::
+
+:::{attention}
+`include(FILE)` is for Fandango files, `import MODULE` is for Python modules.
 :::
 
 This is what the output of the above spec looks like:
@@ -118,6 +128,7 @@ This is what the output of the above spec looks like:
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons-faker.fan -n 10
+assert _exit_code == 0
 ```
 
 You see that all first and last names now stem from the Faker library.
@@ -151,6 +162,7 @@ The resulting [Fandango spec file](persons-faker-age.fan) produces the desired r
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons-faker-age.fan -n 10
+assert _exit_code == 0
 ```
 
 We can also create a Gaussian (normal) distribution this way:
@@ -167,6 +179,7 @@ These are the ages we get this way:
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons-faker-gauss.fan -n 10
+assert _exit_code == 0
 ```
 
 In {ref}`sec:distributions`, we will introduce more ways to obtain specific distributions.
@@ -182,8 +195,8 @@ In testing, you want to have a good balance between _common_ and _uncommon_ inpu
 We can easily achieve such a mix by adding rules such as
 
 ```
-<first_name> ::= <name> | <natural_name>;
-<natural_name> ::= <name> := fake.first_name();
+<first_name> ::= <name> | <natural_name>
+<natural_name> ::= <name> := fake.first_name()
 ```
 
 With this, both random names (`<name>`) and natural names (`<natural_name>`) will have a chance of 50% to be produced:
@@ -191,6 +204,7 @@ With this, both random names (`<name>`) and natural names (`<natural_name>`) wil
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons-faker50.fan -n 10
+assert _exit_code == 0
 ```
 
 (sec:generators-and-constraints)=
@@ -223,6 +237,7 @@ and we get
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons-faker.fan -c '<last_name>.startswith("S")' -n 10
+assert _exit_code == 0
 ```
 
 
@@ -234,7 +249,7 @@ One might assume that instead of a generator, one could also use a _constraint_ 
 
 % TODO: Shouldn't this also assign the value directly?
 ```
-<first_name> == fake.first_name();
+<first_name> == fake.first_name()
 ```
 
 :::{margin}
@@ -245,6 +260,7 @@ Unfortunately, this does not work.
 % ```{code-cell}
 % :tags: ["remove-input"]
 % !fandango fuzz -f persons-faker.fan -c '<first_name> == fake.first_name()' -n 10
+% assert _exit_code == 0
 % ```
 The reason is that the faker returns _a different value_ every time it is invoked, making it hard for Fandango to solve the constraint.
 Remember that Fandango solves constraints by applying mutations to a population, getting closer to the target with each iteration.
@@ -260,6 +276,7 @@ This would work:
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons-faker.fan -c 'str(<last_name>).startswith("S")' -c 'int(<age>) >= 25 and int(<age>) <= 35' -n 10
+assert _exit_code == 0
 ```
 
 But while the values will fit the constraint, they will not be randomly distributed.

@@ -47,7 +47,7 @@ The function `credit_card_check_digit()` gets all numbers of a credit card (exce
 ```{code-cell}
 :tags: ["remove-input"]
 # show code
-!grep -v ';' credit_card.fan
+!grep -v '::=' credit_card.fan | grep -v '^where'
 ```
 
 % ```{code-cell}
@@ -61,12 +61,12 @@ The function `credit_card_check_digit()` gets all numbers of a credit card (exce
 %     assert check_digit == num[-1], f"got check digit {check_digit} for {num}, expected {num[-1]}"
 % ```
 
-We can easily make use of `credit_card_check_digit()` in the constraint that ties `<check_digit>` and `<number>`:
+We can easily make use of `credit_card_check_digit()` in a constraint that ties `<check_digit>` and `<number>`:
 
 ```{code-cell}
 :tags: ["remove-input"]
 # show constraints
-!grep ';$' credit_card.fan | grep -v '::='
+!grep '^where' credit_card.fan
 ```
 
 All of this can go into a single `.fan` file: [`credit_card.fan`](credit_card.fan) joins the above grammar, the `credit_card_check_digit()` definition, and the above constraint into a single file.
@@ -84,6 +84,7 @@ $ fandango fuzz -f credit_card.fan -n 10
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f credit_card.fan -n 10
+assert _exit_code == 0
 ```
 
 And we can also use it to _parse_ and _check_ numbers.
@@ -105,9 +106,24 @@ In Python, it is likely that someone has already implemented the specific checks
 * [The `binascii` module](https://docs.python.org/3/library/binascii.html) offers CRC checks.
 * [The `zlib` module](https://docs.python.org/3/library/zlib.html) provides CRC32 and ADLER32 checks used in zip files.
 
+
+## Characters and Bytes
+
+The second set of features one frequently encounters in binary formats is, well, _bytes_.
+By default, Fandango operates on strings of _characters_ in UTF-8 encoding.
+This clashes with a byte interpretation as soon as the produced string contains a UTF-8 prefix byte, such as `\xc2` or `\xe0`, which mark the beginning of a two- and three-byte UTF-8 sequence, respectively.
+To ensure bytes will be interpreted as bytes (and as bytes only), place a `b` (binary) prefix in front of them.
+Hence, `b'\xc2'` will always be interpreted as a single byte, whereas `💃` will be interpreted as a single character (despite occupying multiple bytes).
+
+```{tip}
+Fandango provides a `<byte>` symbol by default, which expands into all bytes 0..255.
+```
+
+
+
 ## Length Encodings
 
-The second set of features one frequently encounters in binary formats is _length encodings_ - that is, a particular field holds a value that represents the length of one or more fields that follow.
+The third set of features one frequently encounters in binary formats is _length encodings_ - that is, a particular field holds a value that represents the length of one or more fields that follow.
 Here is a simple grammar that expresses this characteristic: A `<field>` has a two-byte length, followed by the actual content (of length `<length>`).
 
 % This is how I got the `<byte>` definition in `binary.fan` -- AZ
@@ -125,12 +141,11 @@ for i in range(0, 256):
 
 ```{code-cell}
 :tags: ["remove-input"]
-# show grammar except '<byte>'
-!grep '::=' binary.fan | grep -v '^<byte>'
+!cat binary.fan
 ```
 
 The relationship between `<length>` and `<content>` can again be expressed using a constraint.
-We assume that `<length>` comes as a two-byte (16-bit) unsigned integer with _little-endian_ encoding - that is, the low byte comes first, and the high byte follows.
+Let us assume that `<length>` comes as a two-byte (16-bit) unsigned integer with _little-endian_ encoding - that is, the low byte comes first, and the high byte follows.
 The value 258 (hexadecimal `0x0102`) would thus be represented as the two bytes `\x02` and `\x01`.
 
 We can define a function `uint16()` that takes an integer and converts it to a two-byte string according to these rules:
@@ -142,7 +157,7 @@ In Python, `//` is used for integer division.
 ```{code-cell}
 :tags: ["remove-input"]
 # show code
-!grep -v ';' binary.fan
+!grep -v '::=' binary.fan | grep -v '^where'
 ```
 
 Using `uint16()`, we can now define how the value of `<length>` is related to the length of `<content>`:
@@ -150,7 +165,7 @@ Using `uint16()`, we can now define how the value of `<length>` is related to th
 ```{code-cell}
 :tags: ["remove-input"]
 # show constraints
-!grep ';$' binary.fan | grep -v '::='
+!grep '^where' binary.fan
 ```
 
 :::{tip}
@@ -181,7 +196,7 @@ Using `struct`, we can redefine `uint16()` as
 ```{code-cell}
 :tags: ["remove-input"]
 # show code
-!grep -v ';' binary-pack.fan
+!grep -v '::=' binary-pack.fan | grep -v '^where'
 ```
 
 and obtain the same result:
@@ -189,9 +204,10 @@ and obtain the same result:
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -n 1 -f binary-pack.fan | od -c
+assert _exit_code == 0
 ```
 
-Note that return value of `struct.pack()` has the type `bytes` (byte string), which is different from the `str` Unicode strings that Fandango uses:
+Note that the return value of `struct.pack()` has the type `bytes` (byte string), which is different from the `str` Unicode strings that Fandango uses:
 
 ```{code-cell}
 :tags: ["remove-input"]
@@ -240,27 +256,18 @@ Some parts of a binary file may be _compressed_ to save space.
 Here's a sketch on how to achieve this:
 
 ```python
-<chunk> ::= <header> <compressed_content> <trailer>;
-<compressed_content> ::= <byte>*;
-<content> ::= <byte>*;
+<chunk> ::= <header> <compressed_content> <trailer>
+<compressed_content> ::= <byte>*
+<content> ::= <byte>*
 
-<compressed_content> == compress(<content>);    # for producing
-<content> == uncompress(<compressed_content>);  # for parsing
+where <compressed_content> == compress(<content>)    # for producing
+where <content> == uncompress(<compressed_content>)  # for parsing
 ```
 
 or, using generators:
 
 ```python
-<chunk> ::= <header> <compressed_content> <trailer>;
-<compressed_content> ::= <byte>* | <foo> | <bar> := compress(<content>);
-<content> ::= <byte>* = uncompress(<compressed_content>);
+<chunk> ::= <header> <compressed_content> <trailer>
+<compressed_content> ::= <byte>* | <foo> | <bar> := compress(<content>)
+<content> ::= <byte>* = uncompress(<compressed_content>)
 ```
-
-
-## Case Study: The GIF Format
-
-:::{error}
-To be added later.
-:::
-
-The [GIF format](https://www.fileformat.info/format/gif/egff.htm) is widely used to encode image sequences.
