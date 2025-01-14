@@ -1,4 +1,4 @@
-name: GitHub Pages
+name: GitHub Pages Deployment
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
   workflow_dispatch: # Enables manual execution from the Actions tab
 
 permissions:
-  pages: write
+  contents: write # Needed for pushing to the other repository
   id-token: write
 
 jobs:
@@ -42,13 +42,26 @@ jobs:
       run: |
         jupyter-book build docs
 
-    # Upload the book's HTML as an artifact
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v2
-      with:
-        path: "docs/_build/html"
+    # Push built HTML to fandango-fuzzer.github.io repository
+    - name: Deploy to fandango-fuzzer.github.io
+      env:
+        TARGET_REPO: fandango-fuzzer/fandango-fuzzer.github.io
+        TARGET_BRANCH: main
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # Clone the target repository
+        git clone --depth 1 https://github.com/${{ env.TARGET_REPO }} target-repo
+        cd target-repo
+        
+        # Remove all existing files
+        git rm -rf . || true
 
-    # Deploy the book's HTML to GitHub Pages
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v2
+        # Copy new HTML files
+        cp -r ../docs/_build/html/* .
+
+        # Commit and push changes
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add .
+        git commit -m "Update GitHub Pages site"
+        git push origin ${{ env.TARGET_BRANCH }}
