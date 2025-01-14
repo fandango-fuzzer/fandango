@@ -29,7 +29,9 @@ jobs:
     - name: Install dependencies
       run: |
         pip install "docutils<0.21" "sphinx==6.2.1"
-        pip install jupyter-book fandango-fuzzer pyppeteer ghp-import black
+        pip install jupyter-book fandango-fuzzer
+        pip install "docutils<0.21" "sphinx==6.2.1"
+
       
 
     - name: Locate Fandango and add to PATH
