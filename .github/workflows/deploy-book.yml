@@ -26,14 +26,10 @@ jobs:
       with:
         python-version: 3.13
 
-    # Install Fandango
-    - name: Install Fandango
-      run: |
-        pip install -e .
-
     - name: Install dependencies
       run: |
-        pip install jupyter-book
+        pip install -e .
+        pip install jupyter-book pyppeteer ghp-import black graphviz
 
     - name: Locate Fandango and add to PATH
       run: |
