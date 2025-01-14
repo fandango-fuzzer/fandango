@@ -157,10 +157,9 @@ class Fandango:
             exec("FandangoIO.instance()")
         io_instance: FandangoIO = global_env['FandangoIO'].instance()
 
-        finished = False
-        prev_nr_role_msgs = 0
+        prev_tree = DerivationTree(NonTerminal(self.start_symbol))
         history = []
-        while not finished:
+        while True:
             self.solution.clear()
             self.fitness_cache.clear()
             self.evaluation = self.evaluate_population()
@@ -172,41 +171,39 @@ class Fandango:
             if len(results) == 0:
                 raise RuntimeError(f"Couldn't generate next packet in {self.max_generations} generations!")
             choice: DerivationTree = random.choice(results)
-            role_msgs = choice.find_role_msgs()
-            nr_role_msgs = len(role_msgs)
-            new_msg_generated = nr_role_msgs > prev_nr_role_msgs
+            new_messages = choice.find_role_msgs()[len(prev_tree.find_role_msgs()):]
 
-            if len(io_instance._data['receive']) != 0:
-                for role, msg in io_instance._data['receive']:
-                    history.append((role, str(msg)))
-                    nr_role_msgs += 1
-                io_instance._data['receive'].clear()
+            if io_instance.received_msg():
+                new_messages = []
+                for role, msg in io_instance.get_received_msgs():
+                    new_messages.append(RoledMessage(role, msg))
+                io_instance.clear_received_msgs()
 
-            elif new_msg_generated:
-                current_msg = role_msgs[-1]
-                role_io = io_instance.roles
+            elif len(new_messages) > 0:
+                if len(new_messages) > 1:
+                    new_messages = [new_messages[0]]
+                current_msg = new_messages[0]
 
-                if current_msg.role in role_io.keys():
-                    if role_io[current_msg.role].is_fandango():
-                        io_instance._data['transmit'][current_msg.role] = current_msg.msg
-                        history.append(RoledMessage(current_msg.role, current_msg.msg))
+                if current_msg.role in io_instance.roles.keys():
+                    if io_instance.roles[current_msg.role].is_fandango():
+                        io_instance.set_transmit(current_msg.role, current_msg.msg)
                     else:
-                        nr_role_msgs -= 1
+                        new_messages = []
 
                 exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
-                for role, msg in io_instance._data['receive']:
-                    history.append(RoledMessage(role, str(msg)))
-                    nr_role_msgs += 1
-                io_instance._data['receive'].clear()
+                for role, msg in io_instance.get_received_msgs():
+                    new_messages.append(RoledMessage(role, str(msg)))
+                io_instance.clear_received_msgs()
 
             str_history = ""
+            history = prev_tree.find_role_msgs()
+            history.extend(new_messages)
             for r_msg in history:
                 str_history += r_msg.msg
-            if nr_role_msgs <= prev_nr_role_msgs and self.grammar.parse(str_history, self.start_symbol) is not None:
+
+            if len(new_messages) == 0 and self.grammar.parse(str_history, self.start_symbol) is not None:
                 # Finished
                 return [choice]
-
-            prev_nr_role_msgs = nr_role_msgs
 
             new_population = []
             for tree_option in self.grammar.parse_incomplete(str_history, self.start_symbol):
@@ -218,13 +215,14 @@ class Fandango:
             if len(new_population) == 0:
                 raise RuntimeError("Failed to append remote response to generated history matching grammar!")
 
+            prev_tree = copy.deepcopy(random.choice(new_population))
+
             self.population = list(new_population)
             self.continue_trees = list(new_population)
             while len(self.population) < self.population_size:
                 self.population.append(random.choice(new_population))
             self.population = self.generate_random_initial_population(FuzzingMode.IO)
 
-        return []
 
     def evolve(self) -> List[DerivationTree]:
         if self.mode == FuzzingMode.COMPLETE:
