@@ -10,7 +10,7 @@ class ConstraintTest(unittest.TestCase):
 
 
     def get_constraint(self, constraint):
-        file = open("resources/constraints.fan", "r")
+        file = open("tests/resources/constraints.fan", "r")
         _, constraints = parse(file, constraints=[constraint], use_stdlib=False)
         self.assertEqual(1, len(constraints))
         return constraints[0]
@@ -350,7 +350,7 @@ int(<number>) > 10000;
 int(<number>) < 100000;
 """
 
-        file = open("resources/complex_constraints.fan", "r")
+        file = open("tests/resources/complex_constraints.fan", "r")
         _, constraints = parse(file, constraints=[constraint], use_stdlib=False)
         self.assertEqual(3, len(constraints))
 
