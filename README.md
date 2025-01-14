@@ -54,7 +54,7 @@ Here, you'll find the following sections:
        - [Statistical Distributions](https://fandango-fuzzer.github.io/fandango/Distributions.html)
        - [Coverage-Guided Fuzzing](https://fandango-fuzzer.github.io/fandango/Whitebox.html)
        - [Hatching Specs](https://fandango-fuzzer.github.io/fandango/Hatching.html)
-    - [Fandango Reference](https://fandango-fuzzer.github.io/fandango/Reference.html)
+   - [Fandango Reference](https://fandango-fuzzer.github.io/fandango/Reference.html)
 
 ---
 
