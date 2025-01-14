@@ -1,4 +1,4 @@
-name: GitHub Pages Deployment
+name: GitHub Pages
 
 on:
   push:
@@ -6,62 +6,66 @@ on:
       - main
     paths:
       - docs/**
-  workflow_dispatch: # Enables manual execution from the Actions tab
+  workflow_dispatch: # Allows manual triggering from the Actions tab
 
 permissions:
-  contents: write # Needed for pushing to the other repository
+  pages: write
   id-token: write
 
 jobs:
-  deploy-book:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout the repository
+    # Step 1: Checkout the source repository
+    - name: Checkout the source repository
       uses: actions/checkout@v3
 
-    # Install dependencies
+    # Step 2: Set up Python
     - name: Set up Python 3.13
       uses: actions/setup-python@v4
       with:
         python-version: 3.13
 
+    # Step 3: Install dependencies
     - name: Install dependencies
       run: |
         pip install -e .
         pip install jupyter-book pyppeteer ghp-import black
 
+    # Step 4: Locate Fandango and add to PATH
     - name: Locate Fandango and add to PATH
       run: |
-        which fandango 
+        which fandango
         echo "/opt/hostedtoolcache/Python/3.13.1/x64/bin/fandango" >> $GITHUB_PATH
         fandango --help
 
-    # Build the book
+    # Step 5: Build the documentation
     - name: Build the book
       run: |
         jupyter-book build docs
 
-    # Push built HTML to fandango-fuzzer.github.io repository
-    - name: Deploy to fandango-fuzzer.github.io
-      env:
-        TARGET_REPO: fandango-fuzzer/fandango-fuzzer.github.io
-        TARGET_BRANCH: main
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # Step 6: Clone the target repository
+    - name: Clone the target repository
       run: |
-        # Clone the target repository
-        git clone --depth 1 https://github.com/${{ env.TARGET_REPO }} target-repo
+        git clone https://github.com/fandango-fuzzer/fandango-fuzzer.github.io.git target-repo
         cd target-repo
-        
-        # Remove all existing files
-        git rm -rf . || true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-        # Copy new HTML files
-        cp -r ../docs/_build/html/* .
+    # Step 7: Copy the built HTML files to the target repository
+    - name: Copy built files to the target repository
+      run: |
+        cp -r docs/_build/html/* target-repo/
 
-        # Commit and push changes
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
+    # Step 8: Commit and push changes to the target repository
+    - name: Deploy to GitHub Pages
+      run: |
+        cd target-repo
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
         git add .
-        git commit -m "Update GitHub Pages site"
-        git push origin ${{ env.TARGET_BRANCH }}
+        git commit -m "Update GitHub Pages site" || echo "No changes to commit"
+        git push origin main
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
