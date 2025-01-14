@@ -155,3 +155,40 @@ class TestComplexParsing(unittest.TestCase):
                 ],
             ),
         )
+
+
+class TestIncompleteParsing(unittest.TestCase):
+    GRAMMAR = """
+    <start> ::= <ab>;
+    <ab> ::= 
+          "a" (<ab> | "b") 
+        | <ab> "b"
+        | "c"
+        ;
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.grammar, _ = parse(cls.GRAMMAR)
+
+    def _test(self, example, tree):
+        parsed = False
+        for actual_tree in self.grammar.parse_incomplete(example, "<ab>"):
+            self.assertEqual(tree, actual_tree)
+            parsed = True
+            break
+        self.assertTrue(parsed)
+
+    def test_a(self):
+        self._test(
+            "aa",
+            DerivationTree(
+                NonTerminal("<ab>"),
+                [
+                    DerivationTree(Terminal("a")),
+                    DerivationTree(
+                        NonTerminal("<ab>"), [DerivationTree(Terminal("a"))]
+                    ),
+                ],
+            ),
+        )

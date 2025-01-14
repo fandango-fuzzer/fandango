@@ -6,13 +6,7 @@ FANDANGO is a language-based fuzzer that leverages formal input specifications (
 
 - [Introduction](#introduction)
 - [Features](#features)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Usage](#usage)
-  - [Defining Grammars](#defining-grammars)
-  - [Defining Constraints](#defining-constraints)
-  - [Running FANDANGO](#running-fandango)
-- [Examples](#examples)
+- [Documentation](#documentation)
 - [Evaluation](#evaluation)
 - [Contributing](#contributing)
 - [License](#license)
@@ -37,209 +31,39 @@ With FANDANGO, testers gain unprecedented flexibility in shaping test inputs and
 
 ---
 
-## Installation
+## Documentation
 
-FANDANGO requires [Python 3.11](https://www.python.org/downloads/release/python-3118/). After installing Python, it is recommended to use FANDANGO from a _python virtual environment_, so there is no version issues between libraries. After creating a new environment, change your directory to the root of the repository, and install the requirements:
+For the complete FANDANGO documentation, including tutorials, references, and advanced usage guides, visit the [FANDANGO Docs](https://fandango-fuzzer.github.io/fandango/Intro.html).
 
-```bash
-pip install -r requirements.txt &&
-pip install -e .
-```
+Here, you'll find the following sections:
 
-In order to see if your installation is correct, run the FANDANGO tests with:
-```bash
-pytest
-```
-
----
-
-If all tests pass, you are ready to use FANDANGO!
-
-## Quick Start
-
-Here's a minimal example to get started with FANDANGO:
-
-1. **Define a Grammar**: Create a file `grammar.fan` containing your grammar rules.
-
-   ```ebnf
-   <start> ::= <number> ;
-   <number> ::= <digit><number> | <digit> ;
-   <digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
-   ```
-
-2. **Define Constraints**: Specify constraints using Python code.
-
-   ```python
-   <start> ::= <number> ;
-   <number> ::= <digit><number> | <digit> ;
-   <digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
-   
-   int(<number>) % 2 == 0;
-   ```
-
-3. **Run FANDANGO**:
-
-   ```python
-   from fandango.evolution.algorithm import Fandango
-   from fandango.language.parse import parse_file
-
-   # Parse grammar and constraints
-   grammar, constraints = parse_file('grammar.fan')
-
-   # Initialize FANDANGO
-   fandango = Fandango(grammar, constraints, verbose=True)
-
-   # Evolve solutions
-   solutions = fandango.evolve()
-
-   # Print solutions
-   for solution in solutions:
-       print(str(solution))
-   ```
-
----
-
-## Usage
-
-### Defining Grammars
-
-FANDANGO uses grammars defined in Extended Backus-Naur Form (EBNF). Here's an example of a grammar file `pixels.fan`:
-
-```ebnf
-<start> ::= <img> ;
-<img> ::= <width> <height> <pixels> ;
-<width> ::= <uint16> ;
-<height> ::= <uint16> ;
-<pixels> ::= <rgb>* ;
-<uint16> ::= <byte> <byte> ;
-<rgb> ::= <byte> <byte> <byte> ;
-<byte> ::= <bit> <bit> <bit> <bit> <bit> <bit> <bit> <bit> ;
-<bit> ::= "0" | "1" ;
-```
-
-### Defining Constraints
-
-Constraints are Python expressions that evaluate over non-terminal rules. They reference grammar elements enclosed in angle brackets.
-
-Example constraints:
-
-```python
-int(<pixels>) == int(<width>) * int(<height>) * 3;
-```
-
-Constraints can use any Python code and libraries, allowing for complex conditions.
-
-### Running FANDANGO
-
-Use the `FANDANGO` class to run the genetic algorithm:
-
-```python
-from fandango.evolution.algorithm import Fandango
-from fandango.language.parse import parse_file
-
-# Parse grammar and constraints
-grammar, constraints = parse_file('pixels.fan')
-
-# Initialize FANDANGO with desired parameters
-fandango = Fandango(
-    grammar=grammar,
-    constraints=constraints,
-    population_size=100,
-    max_generations=500,
-    verbose=True
-)
-
-# Evolve solutions
-solutions = fandango.evolve()
-
-# Output solutions
-for solution in solutions:
-    print(str(solution))
-```
-
----
-
-## Examples
-
-### Example 1: Hash Constraint
-
-Suppose you want to generate inputs where a string and its SHA-256 hash are included:
-
-**Grammar**:
-
-```ebnf
-<start> ::= <data_record> ;
-<data_record> ::= <string> ' = ' <hash> ;
-<string> ::= <char>* ;
-<char> ::= "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" ;
-<hash> ::= <hex_digit>* ;
-<hex_digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "a" | "b" | "c" | "d" | "e" | "f" ;
-```
-
-**Constraint**:
-
-```python
-import hashlib
-str(<hash>) == hashlib.sha256(str(<string>).encode('utf-8')).hexdigest();
-```
-
-**Running FANDANGO**:
-
-```python
-from fandango.evolution.algorithm import Fandango
-from fandango.language.parse import parse_file
-
-grammar, constraints = parse_file('hash_example.fan')
-
-fandango = Fandango(grammar, constraints, verbose=True)
-solutions = fandango.evolve()
-
-for solution in solutions:
-    print(str(solution))
-```
-
-### Example 2: CSV File Generation
-
-Generate CSV files with specific constraints:
-
-**Grammar**:
-
-```ebnf
-<start> ::= <csv_file> ;
-<csv_file> ::= <csv_header> <csv_records> ;
-<csv_header> ::= <csv_record> ;
-<csv_records> ::= <csv_record> <csv_records> | "" ;
-<csv_record> ::= <csv_string_list> "\n" ;
-<csv_string_list> ::= <raw_field> | <raw_field> ";" <csv_string_list> ;
-<raw_field> ::= <simple_field> | <quoted_field> ;
-<simple_field> ::= <spaces> <simple_characters> <spaces> ;
-<simple_characters> ::= <simple_character> <simple_characters> | <simple_character> ;
-<simple_character> ::= "!" | "#" | "$" | "%" | "&" | "'" | "(" | ")" | "*" | "+" | "-" | "." | "/" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | ":" | "<" | "=" | ">" | "?" | "@" | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "[" | "\\" | "]" | "^" | "_" | "`" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" | "{" | "|" | "}" | "~" ;
-<quoted_field> ::= '"' <escaped_field> '"' ;
-<escaped_field> ::= <escaped_characters> ;
-<escaped_characters> ::= <escaped_character> <escaped_characters> | "" ;
-<escaped_character> ::= "!" | "#" | "$" | "%" | "&" | "'" | "(" | ")" | "*" | "+" | "-" | "." | "/" | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | ":" | ";" | "<" | "=" | ">" | "?" | "@" | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "[" | "\\" | "]" | "^" | "_" | "`" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" | "{" | "|" | "}" | "~" | " " | "\t" | "\r" |"\n" ;
-<spaces> ::= "" | " " <spaces> ;
-```
-
-**Constraint**:
-
-```python
-forall <records> in <csv_records>:
-    len(str(<records>.<csv_record>)) > 100
-;
-```
-
-#### Need more examples? Check the [evaluation directory](https://github.com/fandango-fuzzer/fandango/tree/main/src/evaluation/evaluation) for more use cases! You will find grammars and constraints for well-known file formats such as XML, CSV, C. In addition, you will find more examples in the [experiments directory](https://github.com/fandango-fuzzer/fandango/tree/main/src/evaluation/experiments), where we have tried to produce statistical distributions, hashes and dynamic library invocation!
+   - [Fuzzing with Fandango](https://fandango-fuzzer.github.io/fandango/Intro.html)
+       - [About Fandango](https://fandango-fuzzer.github.io/fandango/About.html)
+       - [Fandango Tutorial](https://fandango-fuzzer.github.io/fandango/Tutorial.html)
+       - [Installing Fandango](https://fandango-fuzzer.github.io/fandango/Installing.html)
+       - [A First Fandango Spec](https://fandango-fuzzer.github.io/fandango/FirstSpec.html)
+       - [Invoking Fandango](https://fandango-fuzzer.github.io/fandango/Invoking.html)
+       - [Fuzzing with Fandango](https://fandango-fuzzer.github.io/fandango/Fuzzing.html)
+       - [Some Fuzzing Strategies](https://fandango-fuzzer.github.io/fandango/Strategies.html)
+       - [Shaping Inputs with Constraints](https://fandango-fuzzer.github.io/fandango/Constraints.html)
+       - [The Fandango Shell](https://fandango-fuzzer.github.io/fandango/Shell.html)
+       - [Data Generators and Fakers](https://fandango-fuzzer.github.io/fandango/Generators.html)
+       - [Complex Input Structures](https://fandango-fuzzer.github.io/fandango/Recursive.html)
+       - [Accessing Input Elements](https://fandango-fuzzer.github.io/fandango/Paths.html)
+       - [Generating Binary Inputs](https://fandango-fuzzer.github.io/fandango/Binary.html)
+       - [Statistical Distributions](https://fandango-fuzzer.github.io/fandango/Distributions.html)
+       - [Coverage-Guided Fuzzing](https://fandango-fuzzer.github.io/fandango/Whitebox.html)
+       - [Hatching Specs](https://fandango-fuzzer.github.io/fandango/Hatching.html)
+    - [Fandango Reference](https://fandango-fuzzer.github.io/fandango/Reference.html)
 
 ---
 
 ## Evaluation
 
-FANDANGO has been submitted to ISSTA 2025, and it is currently under review. As stated in the submitted paper, FANDANGO has been evaluated against [ISLa](https://github.com/rindPHI/isla/tree/ESEC_FSE_22), a state-of-the-art language-based fuzzer. The results show that FANDANGO is faster and more scalable than ISLa, while maintaining the same level of precision.
+FANDANGO has been submitted to ISSTA 2025. FANDANGO has been evaluated against [ISLa](https://github.com/rindPHI/isla/tree/ESEC_FSE_22), a state-of-the-art language-based fuzzer. The results show that FANDANGO is faster and more scalable than ISLa, while maintaining the same level of precision.
 
 To reproduce the evaluation results from ISLa, please refer to [their replication package](https://dl.acm.org/do/10.1145/3554336/full/), published in FSE 2022.
-To reproduce the evaluation results from FANDANGO, execute: (from the root directory)
+To reproduce the evaluation results from FANDANGO, please download a development copy of the repository from [the official GitHub Repository](https://github.com/fandango-fuzzer/fandango), execute: (from the root directory)
 
 ```bash
 cd src/evaluation/evaluation &&
@@ -270,4 +94,4 @@ Please ensure all tests pass and adhere to the coding style guidelines.
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0. See the [LICENSE](https://github.com/fandango-fuzzer/fandango/blob/main/LICENSE.md) file for details.
+This project is licensed under the European Union Public Licence V. 1.2. See the [LICENSE](https://github.com/fandango-fuzzer/fandango/blob/main/LICENSE.md) file for details.

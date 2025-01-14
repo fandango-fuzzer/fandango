@@ -8,7 +8,7 @@ def evaluate_voltage():
     print(grammar)
     print(constraints)
 
-    fandango = Fandango(grammar, constraints, verbose=False, desired_solutions=100)
+    fandango = Fandango(grammar, constraints)
     fandango.evolve()
 
     print(fandango.solution)
