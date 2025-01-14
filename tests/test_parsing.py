@@ -8,25 +8,13 @@ from fandango.language.tree import DerivationTree
 
 class ParserTests(unittest.TestCase):
     FANDANGO_GRAMMAR = """
-        <start> ::= <number>;
-        <number> ::= <non_zero><digit>* | "0";
-        <non_zero> ::= 
-                      "1" 
-                    | "2" 
-                    | "3"
-                    | "4" 
-                    | "5" 
-                    | "6" 
-                    | "7" 
-                    | "8" 
-                    | "9"
-                    ;
-        <digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+
     """
 
     @classmethod
     def setUpClass(cls):
-        cls.grammar, _ = parse(cls.FANDANGO_GRAMMAR)
+        cls.file = open("tests/resources/fandango.fan")
+        cls.grammar, _ = parse(cls.file, use_stdlib=False)
 
     def test_rules(self):
         self.assertEqual(len(self.grammar._parser._rules), 4)
@@ -94,18 +82,10 @@ class ParserTests(unittest.TestCase):
 
 
 class TestComplexParsing(unittest.TestCase):
-    GRAMMAR = """
-    <start> ::= <ab>;
-    <ab> ::= 
-          "a" <ab> 
-        | <ab> "b"
-        | ""
-        ;
-    """
-
     @classmethod
     def setUpClass(cls):
-        cls.grammar, _ = parse(cls.GRAMMAR)
+        cls.file = open("tests/resources/constraints.fan", "r")
+        cls.grammar, _ = parse(cls.file, use_stdlib=False)
 
     def _test(self, example, tree):
         actual_tree = self.grammar.parse(example, "<ab>")
