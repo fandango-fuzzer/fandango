@@ -28,13 +28,8 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install docutils==0.20.1 sphinx==7.4.7
-        pip install jupyter-book pyppeteer ghp-import black
-
-    # Install Fandango
-    - name: Install Fandango
-      run: |
         pip install -e .
+        pip install jupyter-book pyppeteer ghp-import black graphviz
 
     - name: Locate Fandango and add to PATH
       run: |
