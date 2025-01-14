@@ -35,6 +35,7 @@ html:
   use_issues_button: true
   use_repository_button: true
   baseurl: "/"
+  use_relative_urls: true
 
 repository:
   url: "https://github.com/fandango-fuzzer/fandango"
