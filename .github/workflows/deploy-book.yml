@@ -21,10 +21,10 @@ jobs:
       uses: actions/checkout@v3
 
     # Install dependencies
-    - name: Set up Python 3.11
+    - name: Set up Python 3.13
       uses: actions/setup-python@v4
       with:
-        python-version: 3.11
+        python-version: 3.13
 
     - name: Install dependencies
       run: |
@@ -41,7 +41,7 @@ jobs:
     - name: Locate Fandango and add to PATH
       run: |
         which fandango 
-        echo "/opt/hostedtoolcache/Python/3.12.8/x64/bin/fandango" >> $GITHUB_PATH
+        echo "/opt/hostedtoolcache/Python/3.13.*/x64/bin/fandango" >> $GITHUB_PATH
         fandango --help
 
 
