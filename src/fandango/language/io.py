@@ -28,7 +28,7 @@ class IoParty(object):
     Call if a message has been received from this party.
     """
     def receive_msg(self, message: str) -> None:
-        FandangoIO.instance().set_receive(self.class_name, message)
+        FandangoIO.instance().add_receive(self.class_name, message)
 
 
 class FandangoIO:
@@ -55,8 +55,20 @@ class FandangoIO:
     def run_com_loop(self):
         for role, msg in self._data["transmit"].items():
             if role in self.roles.keys():
-                self.roles[role].on_transmit_msg(msg, self.set_receive)
+                self.roles[role].on_transmit_msg(msg, self.add_receive)
         self._data["transmit"].clear()
 
-    def set_receive(self, role: str, message: str) -> None:
+    def add_receive(self, role: str, message: str) -> None:
         self._data["receive"].append((role, message))
+
+    def received_msg(self):
+        return len(self._data['receive']) != 0
+
+    def get_received_msgs(self):
+        return self._data['receive']
+
+    def clear_received_msgs(self):
+        self._data['receive'].clear()
+
+    def set_transmit(self, role: str, message: str) -> None:
+        self._data["transmit"][role] = message
