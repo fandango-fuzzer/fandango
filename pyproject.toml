@@ -28,19 +28,21 @@ classifiers = [
 dependencies = [
     "antlr4-python3-runtime>=4.13",
     "matplotlib>=3.9.2",
-    "numpy>=2.1.0",
+    "numpy>=2.2.1",  # Avoid conflict with pandas
     "deap>=1.4.1",
     "scipy>=1.14.1",
     "ordered-set>=4.0.2",
     "pytest>=8.3.3",
     "Faker>=30.4.0",
-    "docutils",
+    "docutils>=0.20.1",  # Jupyter-book needs docutils<=0.20
     "tccbox==2024.7.1",
     "deprecation>=2.1.0",
     "ansi_styles>=0.2.2",
     "cachedir_tag>=0.0.3",
     "xdg-base-dirs>=6.0.2",
-    "dill>=0.3.7"
+    "dill>=0.3.7",
+    "python-dateutil>=2.9.0.post0",
+    "thefuzz>=0.22"
 ]
 
 [project.urls]

@@ -29,11 +29,11 @@ requirements.txt:	pyproject.toml
 UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 # Mac
-SYSTEM_DEV_TOOLS = antlr pdftk graphviz
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz
 SYSTEM_DEV_INSTALL = brew install
 else
 # Linux
-SYSTEM_DEV_TOOLS = antlr pdftk graphviz
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz
 SYSTEM_DEV_INSTALL = apt-get install
 endif
 
@@ -86,6 +86,9 @@ osascript -e 'tell application "Safari" to set URL of document of window 1 to UR
 # Command to open the PDF (on a Mac)
 VIEW_PDF = open $(PDF_TARGET)
 
+# Command to check docs for failed assertions
+CHECK_DOCS = grep -l AssertionError $(DOCS)/_build/html/*.html; if [ $$? == 0 ]; then false; else true; fi
+
 
 # Targets.
 html: $(HTML_MARKER)
@@ -95,6 +98,7 @@ pdf: $(PDF_TARGET)
 # Re-create the book in HTML
 $(HTML_MARKER): $(DOCS_SOURCES) $(ALL_HTML_MARKER)
 	$(JB) build $(DOCS)
+	@$(CHECK_DOCS)
 	echo 'Success' > $@
 	-$(REFRESH_HTML)
 	@echo Output written to $(HTML_INDEX)
@@ -102,12 +106,13 @@ $(HTML_MARKER): $(DOCS_SOURCES) $(ALL_HTML_MARKER)
 # If we change _toc.yml or _config.yml, all docs need to be rebuilt
 $(ALL_HTML_MARKER): $(DOCS)/_toc.yml $(DOCS)/_config.yml
 	$(JB) build --all $(DOCS)
+	@$(CHECK_DOCS)
 	echo 'Success' > $@
+
 
 # Same as above, but also clear the cache
 clear-cache:
-	$(RM) -fr $(DOCS)/_build/.jupyter_cache
-	$(RM) $(ALL_HTML_MARKER)
+	$(RM) -fr $(DOCS)/_build/
 
 rebuild-docs: clear-cache $(ALL_HTML_MARKER)
 
