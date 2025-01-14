@@ -38,7 +38,8 @@ And this is what we get:
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f digits.fan -n 10
+!fandango fuzz -f digits.fan -n 10    
+assert _exit_code == 0
 ```
 
 Success! We have created 10 random sequences of digits.
@@ -66,6 +67,7 @@ $ fandango fuzz --help
 ```{code-cell}
 :tags: ["remove-input", "scroll-output"]
 !fandango fuzz --help
+assert _exit_code == 0
 ```
 
 Some of these options are very useful, such as `-o` and `-d`, which redirect the inputs generated towards individual files.

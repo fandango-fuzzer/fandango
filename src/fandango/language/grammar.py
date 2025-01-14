@@ -86,7 +86,7 @@ class Alternative(Node):
         return len(self.alternatives)
 
     def __repr__(self):
-        return "(" + "|".join(map(repr, self.alternatives)) + ")"
+        return "(" + " | ".join(map(repr, self.alternatives)) + ")"
 
     def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterator["Node"]:
         yield from self.alternatives
@@ -160,6 +160,8 @@ class Repetition(Node):
         return trees
 
     def __repr__(self):
+        if self.min == self.max:
+            return f"{self.node}{{{self.min}}}"
         return f"{self.node}{{{self.min},{self.max}}}"
 
     def descendents(self, rules: Dict[NonTerminal, "Node"] | None) -> Iterator["Node"]:
@@ -790,16 +792,30 @@ class Grammar(NodeVisitor):
             start = NonTerminal(start)
         return NonTerminalNode(start).fuzz(self, max_nodes=max_nodes)[0]
 
-    def update(self, grammar: "Grammar" | Dict[NonTerminal, Node]):
+    def update(self, grammar: "Grammar" | Dict[NonTerminal, Node], prime=True):
         if isinstance(grammar, Grammar):
             generators = grammar.generators
-            grammar = grammar.rules
+            local_variables = grammar._local_variables
+            global_variables = grammar._global_variables
+            rules = grammar.rules
         else:
-            generators = {}
-        self.rules.update(grammar)
+            rules = grammar
+            generators = local_variables = global_variables = {}
+
+        self.rules.update(rules)
         self.generators.update(generators)
+
+        for symbol in rules.keys():
+            # We're updating from a grammar with a rule, but no generator,
+            # so we should remove the generator if it exists
+            if symbol not in generators and symbol in self.generators:
+                del self.generators[symbol]
+
         self._parser = Grammar.Parser(self.rules)
-        self.prime()
+        self._local_variables.update(local_variables)
+        self._global_variables.update(global_variables)
+        if prime:
+            self.prime()
 
     def parse(
         self,
@@ -844,7 +860,7 @@ class Grammar(NodeVisitor):
     def __repr__(self):
         return "\n".join(
             [
-                f"{key} ::= {value}{' = ' + self.generators[key] if key in self.generators else ''};"
+                f"{key} ::= {value}{' := ' + self.generators[key] if key in self.generators else ''};"
                 for key, value in self.rules.items()
             ]
         )
@@ -854,7 +870,7 @@ class Grammar(NodeVisitor):
             symbol = NonTerminal(symbol)
         return (
             f"{symbol} ::= {self.rules[symbol]}"
-            f"{' :: ' + self.generators[symbol] if symbol in self.generators else ''};"
+            f"{' := ' + self.generators[symbol] if symbol in self.generators else ''};"
         )
 
     def __str__(self):

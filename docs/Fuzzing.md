@@ -28,13 +28,13 @@ John Smith,45
 This makes the overall format of our input look like this:
 
 ```
-<start> ::= <person_name> "," <age>;
+<start> ::= <person_name> "," <age>
 ```
 
 with `<age>` again being a sequence of digits, and a `<person>`'s name being defined as
 
 ```
-<person_name> ::= <first_name> " " <last_name>;
+<person_name> ::= <first_name> " " <last_name>
 ```
 
 where both first and last name would be a sequence of letters - first, an uppercase letter, and then a sequence of lowercase letters.
@@ -42,10 +42,6 @@ The full definition looks like this:
 
 :::{margin}
 In Fandango specs, symbol names are formed as identifiers in Python - that is, they consist of letters, underscores, and digits.
-:::
-
-:::{margin}
-In Fandango specs, every grammar rule must end with a semicolon.
 :::
 
 % TODO
@@ -58,6 +54,8 @@ Future Fandango versions will have shortcuts for specifying character ranges.
 !cat persons.fan
 ```
 
+The symbols `<ascii_uppercase_letter>`, `<ascii_lowercase_letter>`, and `<digits>` are predefined in the [](sec:stdlib); they are defined exactly as would be expected.
+
 Create or download a file [`persons.fan`](persons.fan) and run Fandango on it:
 
 ```shell
@@ -69,6 +67,7 @@ Your output will look like this:
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10
+assert _exit_code == 0
 ```
 
 Such random names are a typical result of _fuzzing_ – that is, testing with randomly generated values.
@@ -155,3 +154,39 @@ $ fandango fuzz -f persons.fan -n 10 --input-method=stdin cat -n
 ```
 
 The `cat` program is then invoked repeatedly, each time passing a new Fandango-generated input as its standard input.
+
+
+## Executable `.fan` files
+
+On a Unix system, you can turn a `.fan` file into an _executable file_ by placing a line
+
+```
+#!/usr/bin/env fandango fuzz -f
+```
+
+at the top.
+If you set its "executable" flag with `chmod +x FILE`, you can then directly execute the `.fan` file as a command as if it were prefixed by `fandango fuzz -f`.
+
+As an example, let us create a file [`fuzz-persons.fan`](fuzz-persons.fan):
+
+```shell
+$ (echo '#!/usr/bin/env fandango fuzz -f'; cat persons.fan) > fuzz-persons.fan
+$ chmod +x fuzz-persons.fan
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+! (echo '#!/usr/bin/env fandango fuzz -f'; cat persons.fan) > fuzz-persons.fan
+! chmod +x fuzz-persons.fan
+```
+
+You can now invoke the file, even with extra arguments:
+
+```shell
+$ ./fuzz-persons.fan -n 1
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+! ./fuzz-persons.fan -n 1
+```
