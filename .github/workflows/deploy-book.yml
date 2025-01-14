@@ -28,7 +28,9 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install fandango-fuzzer jupyter-book pyppeteer ghp-import black 
+        pip install fandango-fuzzer jupyter-book pyppeteer ghp-import black
+        # Pin compatible versions of sphinx and docutils
+        pip install sphinx==6.2.1 docutils<0.21
 
     # Add Python binary directory to PATH
     - name: Add fandango to PATH
@@ -38,7 +40,7 @@ jobs:
     - name: Debug Installation
       run: |
         fandango --version || echo "Fandango is not in PATH"
-      
+
     # Build the book
     - name: Build the book
       run: |
