@@ -30,6 +30,10 @@ jobs:
       run: |
         pip install fandango-fuzzer jupyter-book pyppeteer ghp-import black
 
+    - name: Locate Fandango
+      run: |
+        which fandango || echo "Fandango not found in PATH"
+
     # Build the book
     - name: Build the book
       run: |
