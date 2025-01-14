@@ -158,7 +158,7 @@ class Fandango:
         io_instance: FandangoIO = global_env['FandangoIO'].instance()
 
         prev_tree = DerivationTree(NonTerminal(self.start_symbol))
-        history = []
+        self.desired_solutions = 1
         while True:
             self.solution.clear()
             self.fitness_cache.clear()
