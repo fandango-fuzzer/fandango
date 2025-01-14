@@ -1,0 +1,35 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]  # Trigger the workflow when a release is published
+  workflow_dispatch: # Enables manual execution from the Actions tab
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install setuptools wheel twine build
+    
+    - name: Build package
+      run: |
+        python -m build  # This will use pyproject.toml to build the package
+    
+    - name: Publish package to PyPI
+      run: |
+        twine upload dist/*  # Uploads the package to PyPI
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}  # Use the secret PyPI token

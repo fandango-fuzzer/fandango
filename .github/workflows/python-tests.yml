@@ -6,11 +6,12 @@ name: Python Tests  # Workflow name, visible in the Actions tab
 on:
   push:
     branches:
-      - main  # Run tests on pushes to the main branch
       - dev   # Run tests on pushes to the dev branch
+      - main  # Run tests on pushes to the main branch
   pull_request:
     branches:
       - main  # Run tests on pull requests targeting the main branch
+  workflow_dispatch: # Enables manual execution from the Actions tab
 
 jobs:
   test:
@@ -36,7 +37,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip  # Path to cache
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}  # Unique cache key based on the OS, Python version, and requirements file hash
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('Makefile') }}  # Unique cache key based on the OS, Python version, and Makefile hash
           restore-keys: |
             ${{ runner.os }}-pip-${{ matrix.python-version }}-
 
@@ -46,12 +47,11 @@ jobs:
           sudo apt-get update && sudo apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config
           pip install pygraphviz
 
-      # Step 5: Install Python dependencies (FANDANGO and additional libraries)
-      - name: Install FANDANGO dependencies
+      # Step 5: Install Python dependencies using make and run tests
+      - name: Install dependencies with Makefile and run tests
         run: |
           python -m pip install --upgrade pip  # Upgrade pip to the latest version
-          pip install -e .  # Install the project in editable mode
-          pip install -r requirements.txt  # Install all dependencies listed in requirements.txt
+          make test  # Install dependencies using the Makefile
 
       # Step 6: Cache installed packages for system dependencies
       - name: Cache pygraphviz dependencies
@@ -61,7 +61,3 @@ jobs:
           key: pygraphviz-${{ runner.os }}-python3.11
           restore-keys: |
             pygraphviz-${{ runner.os }}-
-
-      # Step 7: Run the test suite using pytest
-      - name: Run tests
-        run: pytest  # Execute tests with pytest

@@ -8,7 +8,7 @@ def evaluate_hash():
     print(grammar)
     print(constraints)
 
-    fandango = Fandango(grammar, constraints, verbose=True)
+    fandango = Fandango(grammar, constraints)
     fandango.evolve()
 
     print(fandango.solution)

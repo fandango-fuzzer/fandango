@@ -5,6 +5,7 @@ import enum
 class SymbolType(enum.Enum):
     TERMINAL = "Terminal"
     NON_TERMINAL = "NonTerminal"
+    IMPLICIT = "Implicit"
 
 
 class Symbol(abc.ABC):
@@ -25,6 +26,10 @@ class Symbol(abc.ABC):
     @property
     def is_non_terminal(self):
         return self.type == SymbolType.NON_TERMINAL
+
+    @property
+    def is_implicit(self):
+        return self.type == SymbolType.IMPLICIT
 
     @abc.abstractmethod
     def __hash__(self):
@@ -95,3 +100,14 @@ class Terminal(Symbol):
 
     def __hash__(self):
         return hash((self.symbol, self.type))
+
+
+class Implicit(Symbol):
+    def __init__(self, symbol: str):
+        super().__init__(symbol, SymbolType.IMPLICIT)
+
+    def __hash__(self):
+        return hash((self.symbol, self.type))
+
+    def __eq__(self, other):
+        return isinstance(other, Implicit) and self.symbol == other.symbol

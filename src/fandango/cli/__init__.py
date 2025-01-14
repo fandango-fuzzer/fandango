@@ -21,9 +21,11 @@ from pathlib import Path
 from ansi_styles import ansiStyles as styles
 from enum import Enum
 
-from fandango.language.parse import parse
+from ansi_styles import ansiStyles as styles
 from antlr4.error.Errors import ParseCancellationException
+
 from fandango.evolution.algorithm import Fandango
+from fandango.language.parse import parse
 from fandango.logger import LOGGER, print_exception
 
 
@@ -54,7 +56,7 @@ def get_parser(in_command_line=True):
         main_parser.add_argument(
             "--version",
             action="version",
-            version="Fandango " + importlib.metadata.version("fandango"),
+            version="Fandango " + importlib.metadata.version("fandango-fuzzer"),
             help="show version number",
         )
 
@@ -653,7 +655,7 @@ def fuzz_command(args):
         LOGGER.debug(f"Storing population in {args.directory} directory")
         try:
             os.mkdir(args.directory)
-        except FileExistsError as e:
+        except FileExistsError:
             pass
 
         counter = 1
@@ -667,7 +669,7 @@ def fuzz_command(args):
         output_on_stdout = False
 
     if args.output:
-        LOGGER.debug(f"Storing population in file")
+        LOGGER.debug("Storing population in file")
         for individual in population:
             args.output.write(output(individual))
             args.output.write(args.separator)
@@ -701,7 +703,7 @@ def fuzz_command(args):
 
     if output_on_stdout:
         # Default
-        LOGGER.debug(f"Printing population on stdout")
+        LOGGER.debug("Printing population on stdout")
         for individual in population:
             print(output(individual), end=args.separator)
 
@@ -717,7 +719,7 @@ def copyright_command(args):
 
 
 def version_command(args):
-    version = importlib.metadata.version("fandango")
+    version = importlib.metadata.version("fandango-fuzzer")
     if sys.stdout.isatty():
         version_line = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango{styles.color.close} {version}"
     else:
