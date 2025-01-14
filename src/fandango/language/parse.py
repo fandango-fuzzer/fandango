@@ -133,7 +133,7 @@ class FandangoSpec:
         lazy: bool = False,
         filename: str = "<input>",
     ):
-        self.version = importlib.metadata.version("fandango")
+        self.version = importlib.metadata.version("fandango-fuzzer")
         self.fan_contents = fan_contents
         self.global_vars = self.GLOBALS.copy()
         self.local_vars = self.LOCALS
