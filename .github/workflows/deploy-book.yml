@@ -48,20 +48,19 @@ jobs:
     # Step 6: Clone the target repository
     - name: Clone the target repository
       run: |
-        git clone https://github.com/fandango-fuzzer/fandango-fuzzer.github.io.git target-repo
-        cd target-repo
+        git clone https://github.com/fandango-fuzzer/fandango-fuzzer.github.io.git gh-pages
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     # Step 7: Copy the built HTML files to the target repository
     - name: Copy built files to the target repository
       run: |
-        cp -r docs/_build/html/* target-repo/
+        cp -r docs/_build/html/* gh-pages/
 
     # Step 8: Commit and push changes to the target repository
     - name: Deploy to GitHub Pages
       run: |
-        cd target-repo
+        cd gh-pages
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git add .
