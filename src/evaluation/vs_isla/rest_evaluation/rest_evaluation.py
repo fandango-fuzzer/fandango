@@ -34,7 +34,7 @@ def evaluate_rest(
     seconds=60,
 ) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
     file = open("rest_evaluation/rest.fan", "r")
-    grammar, constraints = parse(file)
+    grammar, constraints = parse(file, use_stdlib=False)
     solutions = []
 
     time_in_an_hour = time.time() + seconds

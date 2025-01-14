@@ -85,7 +85,7 @@ def evaluate_scriptsizec(
     seconds=60,
 ) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
     file = open("scriptsizec_evaluation/scriptsizec.fan", "r")
-    grammar, constraints = parse(file)
+    grammar, constraints = parse(file, use_stdlib=False)
     solutions = []
 
     time_in_an_hour = time.time() + seconds
