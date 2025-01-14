@@ -4,7 +4,7 @@ import time
 from typing import Tuple
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-from fandango.language.parse import parse_file
+from fandango.language.parse import parse
 
 
 def is_syntactically_valid_tar(tree: str):
@@ -25,7 +25,8 @@ def is_syntactically_valid_tar(tree: str):
 def evaluate_tar(
     seconds=60,
 ) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
-    grammar, constraints = parse_file("tar_evaluation/tar.fan")
+    file = open("tar_evaluation/tar.fan", "r")
+    grammar, constraints = parse(file)
     solutions = []
 
     time_in_an_hour = time.time() + seconds

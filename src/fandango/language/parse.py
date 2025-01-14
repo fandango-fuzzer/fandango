@@ -1,37 +1,33 @@
 import ast
-import re
-import os
-import importlib.metadata
-import platform
-
-from thefuzz import process as thefuzz_process
-
-from typing import Tuple, List, Set, Any, IO, Optional
-from fandango.logger import LOGGER, print_exception
-
-from antlr4 import InputStream, CommonTokenStream
-
 import hashlib
-import dill as pickle
-from xdg_base_dirs import xdg_cache_home, xdg_data_home, xdg_data_dirs
-import cachedir_tag
+import importlib.metadata
+import os
+import platform
+import re
 from copy import deepcopy
 from pathlib import Path
+from typing import IO, Any, List, Optional, Set, Tuple
+
+import cachedir_tag
+import dill as pickle
+from antlr4 import CommonTokenStream, InputStream
+from antlr4.error.ErrorListener import ErrorListener
+from thefuzz import process as thefuzz_process
+from xdg_base_dirs import xdg_cache_home, xdg_data_dirs, xdg_data_home
 
 from fandango.constraints import predicates
 from fandango.language.convert import (
+    ConstraintProcessor,
     FandangoSplitter,
     GrammarProcessor,
-    ConstraintProcessor,
     PythonProcessor,
 )
 from fandango.language.grammar import Grammar, NodeType
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
-from fandango.language.symbol import NonTerminal
 from fandango.language.stdlib import stdlib
-
-from antlr4.error.ErrorListener import ErrorListener
+from fandango.language.symbol import NonTerminal
+from fandango.logger import LOGGER, print_exception
 
 ### Error Handling
 
@@ -290,8 +286,8 @@ STDLIB_CONSTRAINTS: Optional[List[str]] = None
 
 
 def parse(
-    fan_files: List[IO],
-    constraints: List[str],
+    fan_files: str | IO | List[IO],
+    constraints: List[str] = None,
     *,
     use_cache: bool = True,
     use_stdlib: bool = True,
@@ -302,8 +298,8 @@ def parse(
 ) -> Tuple[Optional[Grammar], List[str]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
-    :param fan_files: List of (open) .fan files
-    :param constraints: List of constraints (as strings)
+    :param fan_files: One (open) .fan file, or a list of these
+    :param constraints: List of constraints (as strings); default: []
     :param use_cache: If True (default), cache parsing results
     :param use_stdlib: If True (default), use the standard library
     :param lazy: If True, the constraints are evaluated lazily
@@ -312,8 +308,15 @@ def parse(
     :param includes: A list of directories to search for include files
     :return: A tuple of the grammar and constraints
     """
+
+    if not isinstance(fan_files, list):
+        fan_files = [fan_files]
+
     if not fan_files and not constraints:
         return None, []
+
+    if constraints is None:
+        constraints = []
 
     if start_symbol is None:
         start_symbol = "<start>"
@@ -335,8 +338,6 @@ def parse(
 
     global INCLUDES
     INCLUDES = includes
-
-    # LOGGER.debug("Given grammars:", str(given_grammars))
 
     grammars = []
     parsed_constraints: List[str] = []

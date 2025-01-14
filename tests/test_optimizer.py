@@ -5,7 +5,7 @@ from typing import List
 
 from fandango.constraints.fitness import FailingTree
 from fandango.evolution.algorithm import Fandango
-from fandango.language.parse import parse_file
+from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
 
 
@@ -13,9 +13,9 @@ class GeneticTest(unittest.TestCase):
     def setUp(self):
         # Define a simple grammar for testing
         try:
-            grammar_int, constraints_int = parse_file("tests/resources/example_number.fan")
+            grammar_int, constraints_int = parse("tests/resources/example_number.fan")
         except FileNotFoundError:
-            grammar_int, constraints_int = parse_file("resources/example_number.fan")
+            grammar_int, constraints_int = parse("resources/example_number.fan")
 
         random.seed(25)  # Set random seed
 
