@@ -20,7 +20,6 @@ jobs:
     - name: Checkout the repository
       uses: actions/checkout@v3
 
-
     # Install Fandango
     - name: Install Fandango
       run: |
@@ -35,7 +34,6 @@ jobs:
     - name: Install dependencies
       run: |
         pip install jupyter-book pyppeteer ghp-import black
-
 
     - name: Locate Fandango and add to PATH
       run: |
