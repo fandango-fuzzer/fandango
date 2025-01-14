@@ -3,11 +3,11 @@ import hashlib
 import importlib.metadata
 import os
 import re
-from typing import Tuple, List, Any
+from typing import Any, List, Tuple
 
 import cachedir_tag
 import dill as pickle
-from antlr4 import InputStream, CommonTokenStream
+from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4.error.Errors import ParseCancellationException
 from xdg_base_dirs import xdg_cache_home
@@ -15,9 +15,9 @@ from xdg_base_dirs import xdg_cache_home
 from fandango.constraints import predicates
 from fandango.constraints.base import Constraint
 from fandango.language.convert import (
+    ConstraintProcessor,
     FandangoSplitter,
     GrammarProcessor,
-    ConstraintProcessor,
     PythonProcessor,
 )
 from fandango.language.grammar import Grammar, NodeType
@@ -164,7 +164,7 @@ class FandangoSpec:
         fan_contents: str,
         lazy: bool = False,
     ):
-        self.version = importlib.metadata.version("fandango")
+        self.version = importlib.metadata.version("fandango-fuzzer")
         self.fan_contents = fan_contents
         self.global_vars = self.GLOBALS.copy()
         self.local_vars = self.LOCALS
