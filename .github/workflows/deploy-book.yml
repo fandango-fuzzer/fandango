@@ -33,7 +33,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install jupyter-book pyppeteer ghp-import black
+        pip install jupyter-book
 
     - name: Locate Fandango and add to PATH
       run: |
