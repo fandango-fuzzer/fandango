@@ -1,4 +1,4 @@
-name: GitHub Pages
+name: Publish GitHub Pages
 
 on:
   push:
@@ -9,8 +9,7 @@ on:
   workflow_dispatch: # Allows manual triggering from the Actions tab
 
 permissions:
-  pages: write
-  id-token: write
+  contents: write
 
 jobs:
   deploy:
@@ -49,8 +48,6 @@ jobs:
     - name: Clone the target repository
       run: |
         git clone https://github.com/fandango-fuzzer/fandango-fuzzer.github.io.git gh-pages
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     # Step 7: Copy the built HTML files to the target repository
     - name: Copy built files to the target repository
@@ -58,14 +55,11 @@ jobs:
         cp -r docs/_build/html/* gh-pages/
 
     # Step 8: Commit and push changes to the target repository
-    # Step 8: Commit and push changes to the target repository
     - name: Deploy to GitHub Pages
       run: |
         cd gh-pages
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "${{ secrets.CI_COMMIT_AUTHOR }}"
+        git config --global user.email "${{ secrets.CI_COMMIT_EMAIL }}"
         git add .
         git commit -m "Update GitHub Pages site" || echo "No changes to commit"
-        git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/fandango-fuzzer/fandango-fuzzer.github.io.git main
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        git push https://x-access-token:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/fandango-fuzzer/fandango-fuzzer.github.io.git main
