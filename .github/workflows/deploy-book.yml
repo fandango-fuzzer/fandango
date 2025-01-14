@@ -28,6 +28,7 @@ jobs:
 
     - name: Install dependencies
       run: |
+        pip install "sphinx==6.2.1" "docutils<0.21" 
         pip install jupyter-book pyppeteer ghp-import black
 
     - name: Locate Fandango
