@@ -23,22 +23,6 @@ from fandango.language.symbol import NonTerminal
 from fandango.constraints import predicates
 
 
-FANDANGO_GRAMMAR = """
-    <start> ::= <number>;
-    <number> ::= <non_zero><digit>* | "0";
-    <non_zero> ::= 
-                  "1" 
-                | "2" 
-                | "3"
-                | "4" 
-                | "5" 
-                | "6" 
-                | "7" 
-                | "8" 
-                | "9"
-                ;
-    <digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
-"""
 FUZZINGBOOK_GRAMMAR = {
     "<start>": ["<number>"],
     "<number>": ["<non_zero><digits>", "0"],
@@ -277,17 +261,9 @@ def test_conversion_statement(stmt, value, is_global):
 
 
 def test_parsing():
-    fan = (
-        FANDANGO_GRAMMAR
-        + """
+    file = open("tests/resources/fandango.fan", "r")
 
-def f(x):
-    return int(x)            
-
-f(<number>) % 2 == 0;        
-"""
-    )
-    grammar, constraints = parse(fan)
+    grammar, constraints = parse(file, use_stdlib=False)
     assert isinstance(grammar, Grammar)
     assert len(grammar.rules) == 4
     assert "<start>" in grammar

@@ -12,10 +12,11 @@ from fandango.language.tree import DerivationTree
 class GeneticTest(unittest.TestCase):
     def setUp(self):
         # Define a simple grammar for testing
+        file = open("tests/resources/example_number.fan", "r")
         try:
-            grammar_int, constraints_int = parse("tests/resources/example_number.fan")
+            grammar_int, constraints_int = parse(file, use_stdlib=False)
         except FileNotFoundError:
-            grammar_int, constraints_int = parse("resources/example_number.fan")
+            grammar_int, constraints_int = parse(file, use_stdlib=False)
 
         random.seed(25)  # Set random seed
 
