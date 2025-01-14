@@ -37,11 +37,18 @@ jobs:
     #     path: docs/_build/.jupyter_cache
     #     key: jupyter-book-cache-${{ hashFiles('requirements.txt') }}
 
-    # Remove the cache
-    - name: Remove cache
-      run: |
-        rm -rf docs/_build/
 
+    - name: Debug Python Environment
+      run: |
+        python --version
+        pip list
+        echo $PATH
+      
+    - name: Locate Fandango
+      run: |
+        which fandango || echo "Fandango not found in PATH"
+      
+  
     # Build the book
     - name: Build the book
       run: |
