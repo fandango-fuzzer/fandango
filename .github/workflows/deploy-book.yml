@@ -28,7 +28,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install fandango-fuzzer jupyter-book pyppeteer ghp-import black
+        pip install jupyter-book pyppeteer ghp-import black
 
     - name: Locate Fandango
       run: |
