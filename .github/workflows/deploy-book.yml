@@ -28,18 +28,17 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install fandango-fuzzer jupyter-book pyppeteer ghp-import black
-        # Pin compatible versions of sphinx and docutils
         pip install sphinx==6.2.1 docutils<0.21
+        pip install fandango-fuzzer jupyter-book pyppeteer ghp-import black
+
+    - name: List Installed Packages
+      run: pip list
+      
 
     # Add Python binary directory to PATH
     - name: Add fandango to PATH
       run: |
         echo "/opt/hostedtoolcache/Python/3.11.*/x64/bin" >> $GITHUB_PATH
-
-    - name: Debug Installation
-      run: |
-        fandango --version || echo "Fandango is not in PATH"
 
     # Build the book
     - name: Build the book
