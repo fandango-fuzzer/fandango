@@ -328,7 +328,7 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
 
     def visit_Return(self, node: c_ast.Return) -> str:
         # We assume an early return, i.e. return -1
-        self.add_constraint("not " + self.cond())
+        self.add_constraint(f"not ({self.cond()})")
         return ""
 
     def visit_IdentifierType(self, node: c_ast.IdentifierType) -> str:
