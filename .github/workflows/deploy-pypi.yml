@@ -3,6 +3,7 @@ name: Publish to PyPI
 on:
   release:
     types: [published]  # Trigger the workflow when a release is published
+  workflow_dispatch: # Enables manual execution from the Actions tab
 
 jobs:
   build:

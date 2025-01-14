@@ -3,15 +3,15 @@ name: Deploy Docs to GitHub Pages
 on:
   push:
     branches:
-    - main
+      - main
     paths:
-    - docs/**
+      - docs/**
+  workflow_dispatch: # Enables manual execution from the Actions tab
 
 permissions:
   pages: write
   id-token: write
 
-# This job installs dependencies, builds the book, and pushes it to `gh-pages`
 jobs:
   deploy-book:
     runs-on: ubuntu-latest
@@ -21,25 +21,30 @@ jobs:
       uses: actions/checkout@v3
 
     # Install dependencies
-    - name: Set up Python 3.12
+    - name: Set up Python 3.13
       uses: actions/setup-python@v4
       with:
-        python-version: 3.12
+        python-version: 3.13
 
     - name: Install dependencies
       run: |
+        pip install docutils==0.20.1 sphinx==7.4.7
         pip install jupyter-book pyppeteer ghp-import black
-        
 
-    # (optional) Cache your executed notebooks between runs
-    # if you have config:
-    # execute:
-    #   execute_notebooks: cache
-    - name: cache executed notebooks
-      uses: actions/cache@v3
-      with:
-        path: docs/_build/.jupyter_cache
-        key: jupyter-book-cache-${{ hashFiles('requirements.txt') }}
+    # Install Fandango
+    - name: Install Fandango
+      run: |
+        pip install -e .
+
+      
+
+    - name: Locate Fandango and add to PATH
+      run: |
+        which fandango 
+        echo "/opt/hostedtoolcache/Python/3.13.*/x64/bin/fandango" >> $GITHUB_PATH
+        fandango --help
+
+
 
     # Build the book
     - name: Build the book
