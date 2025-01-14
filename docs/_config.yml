@@ -14,7 +14,7 @@ latex:
 execute:
   execute_notebooks: cache
   stderr_output: warn
-  timeout: 600
+  timeout: 300
 
 parse:
   myst_enable_extensions:
