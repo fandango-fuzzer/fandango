@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Tuple
 
 
 class IoParty(object):
@@ -43,32 +43,32 @@ class FandangoIO:
     def __init__(self):
         if FandangoIO.__instance is not None:
             raise Exception("Singleton already created!")
-        self._data = dict(
-            {
-                "transmit": dict[str, str](),
-                "receive": list[(str, str)](),
-            }
-        )
+        self.transmit: Tuple[str, str]|None = None
+        self.receive = list[(str, str)]()
         FandangoIO.__instance = self
         self.roles = dict[str, IoParty]()
 
     def run_com_loop(self):
-        for role, msg in self._data["transmit"].items():
+        if self.transmit is not None:
+            role, msg = self.transmit
             if role in self.roles.keys():
                 self.roles[role].on_transmit_msg(msg, self.add_receive)
-        self._data["transmit"].clear()
+        self.clear_transmit_msgs()
+
+    def clear_transmit_msgs(self):
+        self.transmit = None
 
     def add_receive(self, role: str, message: str) -> None:
-        self._data["receive"].append((role, message))
+        self.receive.append((role, message))
 
     def received_msg(self):
-        return len(self._data['receive']) != 0
+        return len(self.receive) != 0
 
     def get_received_msgs(self):
-        return self._data['receive']
+        return self.receive
 
     def clear_received_msgs(self):
-        self._data['receive'].clear()
+        self.receive.clear()
 
     def set_transmit(self, role: str, message: str) -> None:
-        self._data["transmit"][role] = message
+        self.transmit = (role, message)
