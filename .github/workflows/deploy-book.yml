@@ -36,15 +36,11 @@ jobs:
       run: |
         pip install -e .
 
-      
-
     - name: Locate Fandango and add to PATH
       run: |
         which fandango 
-        echo "/opt/hostedtoolcache/Python/3.13.*/x64/bin/fandango" >> $GITHUB_PATH
+        echo "/opt/hostedtoolcache/Python/3.13.1/x64/bin/fandango" >> $GITHUB_PATH
         fandango --help
-
-
 
     # Build the book
     - name: Build the book
