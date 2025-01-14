@@ -21,34 +21,24 @@ jobs:
       uses: actions/checkout@v3
 
     # Install dependencies
-    - name: Set up Python 3.12
+    - name: Set up Python 3.11
       uses: actions/setup-python@v4
       with:
-        python-version: 3.12
+        python-version: 3.11
 
     - name: Install dependencies
       run: |
-        pip install jupyter-book pyppeteer ghp-import black fandango-fuzzer
+        pip install fandango-fuzzer jupyter-book pyppeteer ghp-import black 
 
-    # # (optional) Cache your executed notebooks between runs
-    # - name: Cache executed notebooks
-    #   uses: actions/cache@v3
-    #   with:
-    #     path: docs/_build/.jupyter_cache
-    #     key: jupyter-book-cache-${{ hashFiles('requirements.txt') }}
-
-
-    - name: Debug Python Environment
+    # Add Python binary directory to PATH
+    - name: Add fandango to PATH
       run: |
-        python --version
-        pip list
-        echo $PATH
-      
-    - name: Locate Fandango
+        echo "/opt/hostedtoolcache/Python/3.11.*/x64/bin" >> $GITHUB_PATH
+
+    - name: Debug Installation
       run: |
-        which fandango || echo "Fandango not found in PATH"
+        fandango --version || echo "Fandango is not in PATH"
       
-  
     # Build the book
     - name: Build the book
       run: |
