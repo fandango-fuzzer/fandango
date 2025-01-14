@@ -28,7 +28,13 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install jupyter-book fandango-fuzzer 
+        pip install docutils==0.20.1 sphinx==7.4.7
+        pip install jupyter-book pyppeteer ghp-import black
+
+    # Install Fandango
+    - name: Install Fandango
+      run: |
+        pip install -e .
 
       
 
@@ -36,6 +42,7 @@ jobs:
       run: |
         which fandango 
         echo "/opt/hostedtoolcache/Python/3.12.8/x64/bin/fandango" >> $GITHUB_PATH
+        fandango --help
 
 
 
