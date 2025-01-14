@@ -38,7 +38,7 @@ And this is what we get:
 
 ```{code-cell}
 :tags: ["remove-input"]
-!which fandango
+!fandango fuzz -f digits.fan -n 10
 ```
 
 Success! We have created 10 random sequences of digits.
