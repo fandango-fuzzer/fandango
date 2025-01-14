@@ -28,7 +28,6 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install "sphinx==6.2.1" "docutils<0.21"
         pip install fandango-fuzzer jupyter-book pyppeteer ghp-import black
 
     # Build the book
