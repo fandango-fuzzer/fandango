@@ -38,7 +38,7 @@ But when _parsing_ inputs, any ambiguities lead to interpretation and performanc
 :::
 
 ```
-<expr> ::= <term> " + " <expr>;
+<expr> ::= <term> " + " <expr>
 ```
 
 which indicates that the right-hand side of the addition `+` operator can be _another expression_.
@@ -47,9 +47,9 @@ This is an example of a _recursive_ grammar rule - a rule where an expansion ref
 Let us add a definition for `<term>`, too, defining it as a number:
 
 ```
-<term> ::= <number>;
-<number>  ::= <digit>+;
-<digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+<term> ::= <number>
+<number>  ::= <digit>+
+<digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
 ```
 
 What is it that `<expr>` can now expand into?
@@ -71,10 +71,10 @@ At this time, Fandango does not detect infinite recursions; it keeps running unt
 In order to avoid infinite recursion, we need to provide a _non-recursive alternative_, as in:
 
 ```
-<expr> ::= <term> " + " <expr> | <term>;
+<expr> ::= <term> " + " <expr> | <term>
 ```
 
-With this rule, we can now store the above definitions in a `.fan` file [additions.fan](additions.fan) and get Fandango running;
+With this rule, we can now store the above definitions in a `.fan` file [additions.fan](additions.fan) and get Fandango running:
 
 ```
 $ fandango fuzz -f additions.fan -n 10
@@ -83,6 +83,7 @@ $ fandango fuzz -f additions.fan -n 10
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f additions.fan -n 10
+assert _exit_code == 0
 ```
 
 We see that the above rules yield nice (recursive) chains of additions.
@@ -97,7 +98,7 @@ For each recursion in the grammar, there must be a non-recursive alternative.
 In our definition of `<number>`, above, we used the `+` operator to state that an element should be repeated:
 
 ```
-<number> ::= <digit>+;
+<number> ::= <digit>+
 ```
 
 Instead of using the `+` operator, though, we can also use a recursive rule.
@@ -106,7 +107,7 @@ How would one do that?
 :::{margin}
 We could also write
 ```
-<number> ::= <number> <digit> | <digit>;
+<number> ::= <number> <digit> | <digit>
 ```
 However, if the recursive element is the _last_ in a rule, this allows for more efficient parsing.
 We prefer such _tail recursion_ whenever we can.
@@ -116,7 +117,7 @@ We prefer such _tail recursion_ whenever we can.
 :class: tip, dropdown
 Here's an equivalent `<number>` definition that comes without `+`:
 ```
-<number> ::= <digit> <number> | <digit>;
+<number> ::= <digit> <number> | <digit>
 ```
 :::
 
@@ -148,6 +149,7 @@ $ fandango fuzz -f expr.fan -n 10
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f expr.fan -n 10
+assert _exit_code == 0
 ```
 
 We see that the resulting expressions can become quite complex.
@@ -170,14 +172,14 @@ Try this out for yourself by extending the above grammar.
 :class: tip, dropdown
 To get rid of numbers starting with `0`, we can introduce a `<lead_digit>`:
 ```
-<int> ::= <digit> | <lead_digit> <digits>;
-<lead_digit> ::= "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+<int> ::= <digit> | <lead_digit> <digits>
+<lead_digit> ::= "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
 ```
 Note that the option of having a single `0` as an `<int>` is still there, as a `<digit>` can expand into any digit.
 
 To include floating-point numbers, we can add a `<float>` element:
 ```
-<float> ::= <int> "." <digits>;
+<float> ::= <int> "." <digits>
 ```
 Feel free to further extend this - say, with an optional exponent, or by making the `<int>` optional (`.001`).
 :::
@@ -191,6 +193,7 @@ $ fandango fuzz -f expr-float.fan -n 10
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f expr-float.fan -n 10
+assert _exit_code == 0
 ```
 
 With extra constraints, we can now have Fandango produce only expressions that satisfy further properties – say, evaluate to a value above 1000 in Python:
@@ -202,6 +205,7 @@ $ fandango fuzz -f expr-float.fan -n 10 -c 'eval(str(<start>)) > 1000'
 ```{code-cell}
 :tags: ["remove-input", "remove-stderr"]
 !fandango fuzz -f expr-float.fan -n 10 -c 'eval(str(<start>)) > 1000' 2> /dev/null
+assert _exit_code == 0
 ```
 
 Note that some of these expressions raise divisions by zero errors:

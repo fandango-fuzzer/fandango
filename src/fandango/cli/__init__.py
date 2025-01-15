@@ -14,8 +14,12 @@ import sys
 import tempfile
 import textwrap
 import zipfile
-from io import StringIO, UnsupportedOperation
+
+from io import StringIO
+from io import UnsupportedOperation
 from pathlib import Path
+from ansi_styles import ansiStyles as styles
+from enum import Enum
 
 from ansi_styles import ansiStyles as styles
 from antlr4.error.Errors import ParseCancellationException
@@ -204,11 +208,35 @@ def get_parser(in_command_line=True):
         help="define an additional constraint CONSTRAINT. Can be given multiple times.",
     )
     file_parser.add_argument(
+        "--no-cache",
+        default=True,
+        dest="use_cache",
+        action="store_false",
+        help="do not cache parsed Fandango files.",
+    )
+    file_parser.add_argument(
+        "--no-stdlib",
+        default=True,
+        dest="use_stdlib",
+        action="store_false",
+        help="do not use standard library when parsing Fandango files.",
+    )
+    file_parser.add_argument(
         "-s",
         "--separator",
         type=str,
         default="\n",
         help="output SEPARATOR between individual inputs. (default: newline)",
+    )
+    file_parser.add_argument(
+        "-I",
+        "--include-dir",
+        type=str,
+        dest="includes",
+        metavar="DIR",
+        default=None,
+        action="append",
+        help="specify a directory DIR to search for included Fandango files",
     )
 
     # Commands
@@ -234,6 +262,12 @@ def get_parser(in_command_line=True):
         dest="directory",
         default=None,
         help="create individual output files in DIRECTORY",
+    )
+    fuzz_parser.add_argument(
+        "--format",
+        choices=["string", "bits", "tree"],
+        default="string",
+        help="produce output(s) as string (default), as a bit string, or as derivation tree",
     )
 
     command_group = fuzz_parser.add_argument_group("command invocation settings")
@@ -277,7 +311,7 @@ def get_parser(in_command_line=True):
 
     if not in_command_line:
         # Reset
-        set_parser = commands.add_parser(
+        reset_parser = commands.add_parser(
             "reset",
             help="reset defaults",
         )
@@ -298,7 +332,7 @@ def get_parser(in_command_line=True):
 
     if not in_command_line:
         # Exit
-        set_parser = commands.add_parser(
+        exit_parser = commands.add_parser(
             "exit",
             help="exit Fandango",
         )
@@ -393,31 +427,43 @@ def exit_command(args):
     pass
 
 
-def merged_fan_contents(args) -> str:
-    """Merge all given files and constraints into one; return content"""
-    fan_contents = ""
-    if args.fan_files:
-        for file in args.fan_files:
-            fan_contents += file.read() + "\n"
-    if args.constraints:
-        for constraint in args.constraints:
-            fan_contents += "\n" + constraint + ";\n"
-    return fan_contents
+def parse_files_from_args(args, given_grammars=[]):
+    """Parse .fan files as given in args"""
+    return parse(
+        args.fan_files,
+        [],
+        given_grammars=given_grammars,
+        includes=args.includes,
+        use_cache=args.use_cache,
+        use_stdlib=args.use_stdlib,
+        start_symbol=args.start_symbol,
+    )
 
 
-def parse_fan(fan_contents):
-    return parse(fan_contents, given_grammar=DEFAULT_FAN_CONTENT[0])
+def parse_constraints_from_args(args, given_grammars=[]):
+    """Parse .fan constraints as given in args"""
+    return parse(
+        [],
+        args.constraints,
+        given_grammars=given_grammars,
+        includes=args.includes,
+        use_cache=args.use_cache,
+        use_stdlib=args.use_stdlib,
+        start_symbol=args.start_symbol,
+    )
 
 
-def parse_fan_contents(args):
+def parse_contents_from_args(args, given_grammars=[]):
     """Parse .fan content as given in args"""
-    LOGGER.debug("Reading .fan files")
-    fan_contents = merged_fan_contents(args)
-    if not fan_contents:
-        return None, None
-
-    grammar, constraints = parse_fan(fan_contents)
-    return grammar, constraints
+    return parse(
+        args.fan_files,
+        args.constraints,
+        given_grammars=given_grammars,
+        includes=args.includes,
+        use_cache=args.use_cache,
+        use_stdlib=args.use_stdlib,
+        start_symbol=args.start_symbol,
+    )
 
 
 def make_fandango_settings(args, initial_settings={}):
@@ -502,24 +548,21 @@ def set_command(args):
     global DEFAULT_SETTINGS
 
     if args.fan_files:
+        DEFAULT_FAN_CONTENT = None, None
+        DEFAULT_CONSTRAINTS = []
         LOGGER.info("Parsing Fandango content")
-        fan_contents = ""
-        for file in args.fan_files:
-            fan_contents += file.read() + "\n"
-        grammar, constraints = parse_fan(fan_contents)
+        grammar, constraints = parse_contents_from_args(args)
         DEFAULT_FAN_CONTENT = (grammar, constraints)
         DEFAULT_CONSTRAINTS = []  # Don't leave these over
-
-    if args.constraints:
+    elif args.constraints:
         default_grammar = DEFAULT_FAN_CONTENT[0]
         if not default_grammar:
             raise ValueError("Open a `.fan` file first ('set -f FILE.fan')")
 
         LOGGER.info("Parsing Fandango constraints")
-        fan_contents = ""
-        for constraint in args.constraints:
-            fan_contents += "\n" + constraint + ";\n"
-        _, constraints = parse_fan(fan_contents)
+        _, constraints = parse_constraints_from_args(
+            args, given_grammars=[default_grammar]
+        )
         DEFAULT_CONSTRAINTS = constraints
 
     settings = make_fandango_settings(args)
@@ -532,14 +575,15 @@ def set_command(args):
         # Report current settings
         grammar, constraints = DEFAULT_FAN_CONTENT
         if grammar:
-            print(grammar)
+            for symbol in grammar.rules:
+                print(grammar.get_repr_for_rule(symbol))
         if constraints:
             for constraint in constraints:
-                print(str(constraint) + ";")
+                print("where " + str(constraint))
 
     if no_args or (DEFAULT_CONSTRAINTS and sys.stdin.isatty()):
         for constraint in DEFAULT_CONSTRAINTS:
-            print(str(constraint) + ";  # set by user")
+            print("where " + str(constraint) + "  # set by user")
     if no_args or (DEFAULT_SETTINGS and sys.stdin.isatty()):
         for setting in DEFAULT_SETTINGS:
             print(
@@ -573,7 +617,7 @@ def fuzz_command(args):
     LOGGER.info("---------- Parsing FANDANGO content ----------")
     if args.fan_files:
         # Override given default content (if any)
-        grammar, constraints = parse_fan_contents(args)
+        grammar, constraints = parse_contents_from_args(args)
     else:
         grammar = DEFAULT_FAN_CONTENT[0]
         constraints = DEFAULT_FAN_CONTENT[1]
@@ -587,14 +631,6 @@ def fuzz_command(args):
     if DEFAULT_CONSTRAINTS:
         constraints += DEFAULT_CONSTRAINTS
 
-    if args.constraints:
-        # Add given constraints
-        fan_contents = ""
-        for constraint in args.constraints:
-            fan_contents += "\n" + constraint + ";\n"
-        _, extra_constraints = parse_fan(fan_contents)
-        constraints += extra_constraints
-
     settings = make_fandango_settings(args, DEFAULT_SETTINGS)
     LOGGER.debug(f"Settings: {settings}")
 
@@ -605,6 +641,15 @@ def fuzz_command(args):
     population = fandango.evolve()
 
     output_on_stdout = True
+
+    def output(tree) -> str:
+        if args.format == "string":
+            return tree.to_string()
+        elif args.format == "tree":
+            return tree.to_tree()
+        elif args.format == "bits":
+            return tree.to_bits()
+        raise NotImplementedError("Unsupported output format")
 
     if args.directory:
         LOGGER.debug(f"Storing population in {args.directory} directory")
@@ -618,7 +663,7 @@ def fuzz_command(args):
             basename = f"fandango-{counter:04d}{args.filename_extension}"
             filename = os.path.join(args.directory, basename)
             with open(filename, "w") as fd:
-                fd.write(str(individual))
+                fd.write(output(individual))
             counter += 1
 
         output_on_stdout = False
@@ -626,7 +671,7 @@ def fuzz_command(args):
     if args.output:
         LOGGER.debug("Storing population in file")
         for individual in population:
-            args.output.write(str(individual))
+            args.output.write(output(individual))
             args.output.write(args.separator)
 
         args.output.close()
@@ -642,7 +687,7 @@ def fuzz_command(args):
                 with tempfile.NamedTemporaryFile(
                     mode="w", prefix=prefix, suffix=suffix
                 ) as fd:
-                    fd.write(str(individual))
+                    fd.write(output(individual))
                     fd.flush()
                     cmd = base_cmd + [fd.name]
                     LOGGER.debug(f"Running {cmd}")
@@ -650,7 +695,7 @@ def fuzz_command(args):
             elif args.input_method == "stdin":
                 cmd = base_cmd
                 LOGGER.debug(f"Running {cmd} with individual as stdin")
-                subprocess.run(cmd, input=str(individual), text=True)
+                subprocess.run(cmd, input=output(individual), text=True)
             else:
                 raise ValueError("Unsupported input method")
 
@@ -660,7 +705,7 @@ def fuzz_command(args):
         # Default
         LOGGER.debug("Printing population on stdout")
         for individual in population:
-            print(individual, end=args.separator)
+            print(output(individual), end=args.separator)
 
 
 def nop_command(args):
@@ -935,10 +980,9 @@ def shell_command(args):
 def run(command, args):
     try:
         command(args)
-    except ParseCancellationException as e:
-        # ANTLR already prints out the error message
+
+    except SyntaxError as e:
         print_exception(e)
-        print("Syntax error", file=sys.stderr)
         return 1
 
     except ValueError as e:
@@ -956,7 +1000,7 @@ def run(command, args):
     return 0
 
 
-def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
+def main(*argv: str, stdout=sys.stdout, stderr=sys.stderr):
     if "-O" in sys.argv:
         sys.argv.remove("-O")
         os.execl(sys.executable, sys.executable, "-O", *sys.argv)
@@ -967,7 +1011,7 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
         sys.stderr = stderr
 
     parser = get_parser(in_command_line=True)
-    args = parser.parse_args(args or sys.argv[1:])
+    args = parser.parse_args(argv or sys.argv[1:])
 
     LOGGER.setLevel(logging.WARNING)  # Default
 
@@ -981,7 +1025,7 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
         LOGGER.setLevel(logging.DEBUG)  # Even more info
 
     if args.command in COMMANDS:
-        LOGGER.info(args.command)
+        # LOGGER.info(args.command)
         command = COMMANDS[args.command]
         last_status = run(command, args)
     elif args.command is None or args.command == "shell":
@@ -991,6 +1035,14 @@ def main(*args: str, stdout=sys.stdout, stderr=sys.stderr):
         last_status = 2
 
     return last_status
+
+
+def fandango(cmd: str, stdout=sys.stdout, stderr=sys.stderr):
+    # Entry point for tutorial
+    try:
+        main(*shlex.split(cmd, comments=True), stdout=stdout, stderr=stderr)
+    except SystemExit as e:
+        pass  # Do not exit
 
 
 if __name__ == "__main__":

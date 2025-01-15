@@ -23,6 +23,7 @@ $ fandango fuzz -f persons.fan -n 10
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10
+assert _exit_code == 0
 ```
 
 Despite clearly looking non-natural to humans, the strings we generated so far are unlikely to trigger errors in a program, because programs typically treat all letters equally.
@@ -56,7 +57,7 @@ The `+`, `*`, and `?` suffixes are actually equivalent to `{1,}`, `{0,}`, and `{
 If, for instance, we want the above names to be 100 characters long, we can set up a new rule for `<name>`
 
 ```
-<name> ::= <uppercase_letter><lowercase_letter>{99};
+<name> ::= <ascii_uppercase_letter><ascii_lowercase_letter>{99}
 ```
 
 and the lowercase letters will be repeated 99 times.
@@ -66,6 +67,7 @@ This is the effect of this rule:
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons100.fan -n 10
+assert _exit_code == 0
 ```
 
 We see that the names are now much longer.
@@ -95,6 +97,7 @@ Try it yourself and modify [`persons.fan`](persons.fan) such that it can also pr
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons-neg.fan -n 10
+assert _exit_code == 0
 ```
 
 Did you succeed? Compare your answer against the solution below.
@@ -103,11 +106,11 @@ Did you succeed? Compare your answer against the solution below.
 :class: tip, dropdown
 You can, for instance, change the `<age>` rule such that it introduces an alternative for negative numbers:
 ```
-<age> ::= <digit>+ | "-" <digit>+;
+<age> ::= <digit>+ | "-" <digit>+
 ```
 Another way to do it is to use the `?` modifier, which indicates an optional symbol:
 ```
-<age> ::= "-"? <digit>+;
+<age> ::= "-"? <digit>+
 ```
 :::
 
