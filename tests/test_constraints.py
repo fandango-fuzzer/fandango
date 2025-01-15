@@ -343,6 +343,64 @@ class ConstraintTest(unittest.TestCase):
         )
         self.assertTrue(constraint.check(example))
 
+    def test_direct_children(self):
+        constraint = self.get_constraint("str(<start>.<ab>) == 'a';")
+        counter_example = DerivationTree(
+            NonTerminal("<start>"),
+            [
+                DerivationTree(
+                    NonTerminal("<ab>"),
+                    [
+                        DerivationTree(
+                            Terminal("b"),
+                            []
+                        )
+                    ]
+                )
+            ]
+        )
+
+        self.assertFalse(constraint.check(counter_example))
+        example = DerivationTree(
+            NonTerminal("<start>"),
+            [
+                DerivationTree(
+                    NonTerminal("<ab>"),
+                    [
+                        DerivationTree(
+                            Terminal("a"),
+                            []
+                        )
+                    ]
+                )
+            ]
+        )
+        self.assertTrue(constraint.check(example))
+
+    def test_indirect_children(self):
+        file = open("tests/resources/indirect_children.fan", "r")
+        grammar, constraint = parse(file, use_stdlib=False)
+        
+        self.assertEqual(1, len(constraint))
+        constraint = constraint[0]
+        
+        counter_example = grammar.parse("19")
+        self.assertFalse(constraint.check(counter_example))
+
+        example = grammar.parse("11")
+        self.assertTrue(constraint.check(example))
+
+    def test_accessing_children(self):
+        file = open("tests/resources/children.fan", "r")
+        grammar, constraint = parse(file, use_stdlib=False)
+        constraint = constraint[0]
+
+        counter_example = grammar.parse("11")
+        self.assertFalse(constraint.check(counter_example))
+
+        example = grammar.parse("01")
+        self.assertTrue(constraint.check(example))
+
     def test_complex_constraint(self):
         constraint = """
 int(<number>) % 2 == 0;
