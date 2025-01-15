@@ -219,14 +219,16 @@ class ConstraintProcessor(FandangoParserVisitor):
             raise ValueError(f"Unknown constraint: {ctx.getText()}")
 
     def visitImplies(self, ctx: FandangoParser.ImpliesContext):
-        e = UnsupportedOperation(
-            f"{ctx.getText()}: Implication is deprecated"
-        )
-        operants = ctx.getText().split("->")
-        e.add_note(
-            f"Instead use: not({operants[0]}) or {operants[1]}"
-        )
-        raise e
+        if ctx.ARROW():
+            e = UnsupportedOperation(
+                f"{ctx.getText()}: Implication is deprecated"
+            )
+            operants = ctx.getText().split("->")
+            e.add_note(
+                f"Instead use: not({operants[0]}) or {operants[1]}"
+            )
+            raise e
+        return self.visit(ctx.quantifier())
 
     def visitQuantifier(self, ctx: FandangoParser.QuantifierContext):
         if ctx.formula_disjunction():
