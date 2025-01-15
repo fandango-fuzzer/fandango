@@ -8,12 +8,12 @@ from typing import Tuple
 from tccbox import tcc_bin_path
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-from fandango.language.parse import parse_file
+from fandango.language.parse import parse
 
 
 def declare_variables(c_code):
-    import re
     import random
+    import re
 
     # Regular expressions to find variable usage and check for declarations
     var_usage_pattern = r"\b([a-zA-Z])\b"  # Matches single-letter variables
@@ -84,7 +84,8 @@ def is_valid_tinyc_code(c_code: str) -> bool:
 def evaluate_scriptsizec(
     seconds=60,
 ) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
-    grammar, constraints = parse_file("scriptsizec_evaluation/scriptsizec.fan")
+    file = open("scriptsizec_evaluation/scriptsizec.fan", "r")
+    grammar, constraints = parse(file, use_stdlib=False)
     solutions = []
 
     time_in_an_hour = time.time() + seconds

@@ -13,7 +13,7 @@ kernelspec:
 (sec:about)=
 # About Fandango
 
-Given a specification of the program's input language, Fandango quickly generates myriads of valid sample inputs for testing.
+Given the specification of a program's input language, Fandango quickly generates myriads of valid sample inputs for testing.
 
 The specification language combines a _grammar_ with _constraints_ written in Python, so it is extremely expressive and flexible.
 Most notably, you can define your own _testing goals_ in Fandango.
@@ -28,7 +28,7 @@ Fandango supports multiple modes of operation:
 Fandango comes as a portable Python program and can easily be run on a large variety of platforms.
 
 Under the hood, Fandango uses sophisticated _evolutionary algorithms_ to produce inputs,
-It starts with a population of random inputs, and evolving these through mutations and cross-over until they fulfill the given constraints.
+it starts with a population of random inputs, and evolving these through mutations and cross-over until they fulfill the given constraints.
 
 
 ## Acknowledgments
