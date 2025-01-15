@@ -69,7 +69,7 @@ constraint
 implies:
     NEWLINE*
     (
-        quantifier ARROW implies
+        quantifier ARROW implies // deprecated
         | quantifier
     )
     NEWLINE*

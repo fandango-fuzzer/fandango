@@ -211,57 +211,6 @@ class ConstraintTest(unittest.TestCase):
         )
         self.assertFalse(constraint.check(counter_example))
 
-    def test_implication_constraint(self):
-        constraint = self.get_constraint("|<ab>| > 2 -> 'a' not in str(<ab>);")
-        example = DerivationTree(
-            NonTerminal("<ab>"),
-            [
-                DerivationTree(
-                    NonTerminal("<ab>"),
-                    [
-                        DerivationTree(
-                            NonTerminal("<ab>"), [DerivationTree(Terminal(""))]
-                        ),
-                        DerivationTree(Terminal("b")),
-                    ],
-                ),
-                DerivationTree(Terminal("b")),
-            ],
-        )
-        self.assertTrue(constraint.check(example))
-        counter_example = DerivationTree(
-            NonTerminal("<ab>"),
-            [
-                DerivationTree(
-                    NonTerminal("<ab>"),
-                    [
-                        DerivationTree(Terminal("a")),
-                        DerivationTree(
-                            NonTerminal("<ab>"), [DerivationTree(Terminal(""))]
-                        ),
-                    ],
-                ),
-                DerivationTree(Terminal("b")),
-            ],
-        )
-        self.assertFalse(constraint.check(counter_example))
-        example = DerivationTree(
-            NonTerminal("<ab>"),
-            [
-                DerivationTree(NonTerminal("<ab>"), [DerivationTree(Terminal(""))]),
-                DerivationTree(Terminal("b")),
-            ],
-        )
-        self.assertTrue(constraint.check(example))
-        example = DerivationTree(
-            NonTerminal("<ab>"),
-            [
-                DerivationTree(Terminal("a")),
-                DerivationTree(NonTerminal("<ab>"), [DerivationTree(Terminal(""))]),
-            ],
-        )
-        self.assertTrue(constraint.check(example))
-
     def test_forall_constraint(self):
         constraint = self.get_constraint("forall <x> in <ab>: 'a' not in str(<x>);")
         example = DerivationTree(
