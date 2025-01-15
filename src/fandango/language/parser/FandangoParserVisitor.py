@@ -10,6 +10,7 @@ else:
 
 
 class FandangoParserVisitor(ParseTreeVisitor):
+
     # Visit a parse tree produced by FandangoParser#fandango.
     def visitFandango(self, ctx: FandangoParser.FandangoContext):
         return self.visitChildren(ctx)

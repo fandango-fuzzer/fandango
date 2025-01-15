@@ -29,6 +29,7 @@ from fandango.language.stdlib import stdlib
 from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER, print_exception
 
+
 class MyErrorListener(ErrorListener):
     """This is invoked from ANTLR when a syntax error is encountered"""
 
@@ -272,6 +273,7 @@ def parse_content(
 
     LOGGER.debug(f"{filename}: parsing complete")
     return spec.grammar, spec.constraints
+
 
 # Save the set of symbols used in the standard library and imported grammars
 USED_SYMBOLS: Set[str] = set()

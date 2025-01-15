@@ -4,6 +4,7 @@ from typing import Optional, List, Any, Union, Set, Tuple
 from fandango.language.symbol import Symbol, NonTerminal, Terminal
 from io import StringIO
 
+
 class RoledMessage:
     def __init__(self, role: str, msg: str):
         self.msg = msg
@@ -13,7 +14,8 @@ class RoledMessage:
         return self.__str__()
 
     def __str__(self):
-        return f'({self.role}): {self.msg}'
+        return f"({self.role}): {self.msg}"
+
 
 class DerivationTree:
     """
@@ -21,12 +23,12 @@ class DerivationTree:
     """
 
     def __init__(
-            self,
-            symbol: Symbol,
-            children: Optional[List["DerivationTree"]] = None,
-            parent: Optional["DerivationTree"] = None,
-            role: str = None,
-            read_only: bool = False
+        self,
+        symbol: Symbol,
+        children: Optional[List["DerivationTree"]] = None,
+        parent: Optional["DerivationTree"] = None,
+        role: str = None,
+        read_only: bool = False,
     ):
         self.symbol = symbol
         self._children = []
@@ -51,16 +53,16 @@ class DerivationTree:
             if self.symbol.is_implicit:
                 return reduced
 
-        return [DerivationTree(
-                    self.symbol,
-                    children=reduced,
-                    read_only=self.read_only,
-                    role=self.role
-                )]
+        return [
+            DerivationTree(
+                self.symbol, children=reduced, read_only=self.read_only, role=self.role
+            )
+        ]
 
     """
     Removes all nodes from a DerivationTree that have been generated using implicit rules.
     """
+
     def collapse(self):
         if isinstance(self.symbol, NonTerminal):
             if self.symbol.is_implicit:
@@ -117,7 +119,7 @@ class DerivationTree:
         return result
 
     def __getitem__(
-            self, item, as_list=False
+        self, item, as_list=False
     ) -> Union["DerivationTree", List["DerivationTree"]]:
         if isinstance(item, list) and len(item) == 1:
             item = item[0]
@@ -133,7 +135,14 @@ class DerivationTree:
         """
         Computes a hash of the derivation tree based on its structure and symbols.
         """
-        return hash((self.symbol, self.role, self.read_only, tuple(hash(child) for child in self._children)))
+        return hash(
+            (
+                self.symbol,
+                self.role,
+                self.read_only,
+                tuple(hash(child) for child in self._children),
+            )
+        )
 
     def __tree__(self):
         return self.symbol, [child.__tree__() for child in self._children]
@@ -156,7 +165,9 @@ class DerivationTree:
             return memo[id(self)]
 
         # Create a new instance without copying the parent
-        copied = DerivationTree(self.symbol, [], role=self.role, read_only=self.read_only)
+        copied = DerivationTree(
+            self.symbol, [], role=self.role, read_only=self.read_only
+        )
         memo[id(self)] = copied
 
         # Deepcopy the children
@@ -360,7 +371,7 @@ class DerivationTree:
                     for child in self._children
                 ],
                 role=self.role,
-                read_only=self.read_only
+                read_only=self.read_only,
             )
 
     def get_non_terminal_symbols(self, exclude_read_only=True) -> Set[NonTerminal]:
@@ -374,7 +385,9 @@ class DerivationTree:
             symbols.update(child.get_non_terminal_symbols(exclude_read_only))
         return symbols
 
-    def find_all_nodes(self, symbol: NonTerminal, exclude_read_only=True) -> List["DerivationTree"]:
+    def find_all_nodes(
+        self, symbol: NonTerminal, exclude_read_only=True
+    ) -> List["DerivationTree"]:
         """
         Find all nodes in the derivation tree with the given non-terminal symbol.
         """
@@ -413,6 +426,7 @@ class DerivationTree:
         Catch-all: All other attributes and methods apply to the string representation
         """
         if name in str.__dict__:
+
             def fn(*args, **kwargs):
                 return str.__dict__[name](str(self), *args, **kwargs)
 

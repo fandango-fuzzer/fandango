@@ -11,6 +11,7 @@ class IoParty(object):
     """
     :return: True, if the party is substituted by fandango.
     """
+
     def is_fandango(self):
         return self._is_fandango
 
@@ -21,12 +22,16 @@ class IoParty(object):
     :response_setter: If the recipient of the message answers during the function call, this method can be called to set the response.
         First parameter of response_setter if the role of the other party. The second is the message, that it answered with.
     """
-    def on_transmit_msg(self, message: str, response_setter: Callable[[str, str], None]):
+
+    def on_transmit_msg(
+        self, message: str, response_setter: Callable[[str, str], None]
+    ):
         pass
 
     """
     Call if a message has been received from this party.
     """
+
     def receive_msg(self, message: str) -> None:
         FandangoIO.instance().add_receive(self.class_name, message)
 
@@ -43,7 +48,7 @@ class FandangoIO:
     def __init__(self):
         if FandangoIO.__instance is not None:
             raise Exception("Singleton already created!")
-        self.transmit: Tuple[str, str]|None = None
+        self.transmit: Tuple[str, str] | None = None
         self.receive = list[(str, str)]()
         FandangoIO.__instance = self
         self.roles = dict[str, IoParty]()
