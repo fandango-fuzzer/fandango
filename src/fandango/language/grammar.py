@@ -918,11 +918,13 @@ class Grammar(NodeVisitor):
     def __init__(
         self,
         rules: Optional[Dict[NonTerminal, Node]] = None,
+        fuzzing_mode: Optional[FuzzingMode] = None,
         local_variables: Optional[Dict[str, Any]] = None,
         global_variables: Optional[Dict[str, Any]] = None,
     ):
         self.rules = rules or {}
         self.generators = {}
+        self.fuzzing_mode = FuzzingMode.COMPLETE
         self._parser = Grammar.Parser(self.rules)
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
@@ -981,7 +983,7 @@ class Grammar(NodeVisitor):
         return len(roles) == 0
 
     def fuzz(
-        self, start: str | NonTerminal = "<start>", max_nodes: int = 50, mode: FuzzingMode = FuzzingMode.COMPLETE,
+        self, start: str | NonTerminal = "<start>", max_nodes: int = 50, mode: FuzzingMode = None,
             continue_tree: DerivationTree = None, context: FuzzingContext = None
     ) -> DerivationTree:
         if context is None:
@@ -990,6 +992,8 @@ class Grammar(NodeVisitor):
             start = NonTerminal(start)
         if continue_tree is not None:
             continue_tree = [continue_tree]
+        if mode is None:
+            mode = self.fuzzing_mode
         return NonTerminalNode(start).fuzz(self, max_nodes=max_nodes, mode=mode,
                                            continue_tree=continue_tree, context=context)[0]
 
@@ -997,9 +1001,12 @@ class Grammar(NodeVisitor):
         if isinstance(grammar, Grammar):
             generators = grammar.generators
             grammar = grammar.rules
+            fuzzing_mode = grammar.fuzzing_mode
         else:
             generators = {}
+            fuzzing_mode = FuzzingMode.COMPLETE
         self.rules.update(grammar)
+        self.fuzzing_mode = fuzzing_mode
         self.generators.update(generators)
         self._parser = Grammar.Parser(self.rules)
         self.prime()
