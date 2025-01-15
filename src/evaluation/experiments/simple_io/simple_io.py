@@ -7,11 +7,7 @@ def main():
     # Parse grammar and constraints
     grammar, constraints = parse_file("simple_io.fan")
     # Initialize FANDANGO with desired parameters
-    fandango = Fandango(
-        grammar=grammar,
-        constraints=constraints,
-        population_size=100
-    )
+    fandango = Fandango(grammar=grammar, constraints=constraints, population_size=100)
 
     # Evolve solutions
     solutions = fandango.evolve()
@@ -23,4 +19,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

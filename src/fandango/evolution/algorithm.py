@@ -148,12 +148,11 @@ class Fandango:
             sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
 
-
     def _evolve_io(self) -> List[DerivationTree]:
         global_env, local_env = self.grammar.get_python_env()
-        if 'FandangoIO' not in global_env.keys():
+        if "FandangoIO" not in global_env.keys():
             exec("FandangoIO.instance()")
-        io_instance: FandangoIO = global_env['FandangoIO'].instance()
+        io_instance: FandangoIO = global_env["FandangoIO"].instance()
 
         prev_tree = DerivationTree(NonTerminal(self.start_symbol))
         self.desired_solutions = 1
@@ -162,14 +161,16 @@ class Fandango:
             self.fitness_cache.clear()
             self.evaluation = self.evaluate_population()
             self.fitness = (
-                    sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+                sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
 
             results = self._evolve_single()
             if len(results) == 0:
-                raise RuntimeError(f"Couldn't generate next packet in {self.max_generations} generations!")
+                raise RuntimeError(
+                    f"Couldn't generate next packet in {self.max_generations} generations!"
+                )
             choice: DerivationTree = random.choice(results)
-            new_messages = choice.find_role_msgs()[len(prev_tree.find_role_msgs()):]
+            new_messages = choice.find_role_msgs()[len(prev_tree.find_role_msgs()) :]
 
             if io_instance.received_msg():
                 new_messages = []
@@ -199,19 +200,26 @@ class Fandango:
             for r_msg in history:
                 str_history += r_msg.msg
 
-            if len(new_messages) == 0 and self.grammar.parse(str_history, self.start_symbol) is not None:
+            if (
+                len(new_messages) == 0
+                and self.grammar.parse(str_history, self.start_symbol) is not None
+            ):
                 # Finished
                 return [choice]
 
             new_population = []
-            for tree_option in self.grammar.parse_incomplete(str_history, self.start_symbol):
+            for tree_option in self.grammar.parse_incomplete(
+                str_history, self.start_symbol
+            ):
                 tree_option.set_all_read_only(True)
                 if self.grammar.assign_roles(tree_option, history):
                     new_population.append(tree_option)
                 if len(new_population) >= self.population_size:
                     break
             if len(new_population) == 0:
-                raise RuntimeError("Failed to append remote response to generated history matching grammar!")
+                raise RuntimeError(
+                    "Failed to append remote response to generated history matching grammar!"
+                )
 
             prev_tree = copy.deepcopy(random.choice(new_population))
 
@@ -220,7 +228,6 @@ class Fandango:
             while len(self.population) < self.population_size:
                 self.population.append(random.choice(new_population))
             self.population = self.generate_random_initial_population()
-
 
     def evolve(self) -> List[DerivationTree]:
         if self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
@@ -293,9 +300,15 @@ class Fandango:
             # Add new individuals
             while len(new_population) < self.population_size:
                 continue_tree = None
-                if self.grammar.fuzzing_mode == FuzzingMode.IO and len(self.continue_trees):
+                if self.grammar.fuzzing_mode == FuzzingMode.IO and len(
+                    self.continue_trees
+                ):
                     continue_tree = copy.deepcopy(random.choice(self.continue_trees))
-                new_population.append(self.grammar.fuzz(start=self.start_symbol, continue_tree=continue_tree))
+                new_population.append(
+                    self.grammar.fuzz(
+                        start=self.start_symbol, continue_tree=continue_tree
+                    )
+                )
 
             # Fix individuals
             fixed_population = list()
@@ -354,11 +367,13 @@ class Fandango:
         """
         if self.grammar.fuzzing_mode == FuzzingMode.IO and len(self.population) != 0:
             population = [
-                self.grammar.fuzz(self.start_symbol, continue_tree=entry) for entry in self.population
+                self.grammar.fuzz(self.start_symbol, continue_tree=entry)
+                for entry in self.population
             ]
         else:
             population = [
-                self.grammar.fuzz(self.start_symbol) for _ in range(self.population_size)
+                self.grammar.fuzz(self.start_symbol)
+                for _ in range(self.population_size)
             ]
 
         # Fix individuals
@@ -516,7 +531,9 @@ class Fandango:
                 selection.remove(node_to_mutate)
                 continue
             if node_to_mutate.symbol.is_non_terminal:
-                new_subtree = self.grammar.fuzz(node_to_mutate.symbol, mode=FuzzingMode.COMPLETE)
+                new_subtree = self.grammar.fuzz(
+                    node_to_mutate.symbol, mode=FuzzingMode.COMPLETE
+                )
                 individual = individual.replace(node_to_mutate, new_subtree)
                 self.mutations_made += 1
             return individual

@@ -25,7 +25,10 @@ from fandango.language.grammar import (
     TerminalNode,
     Plus,
     Option,
-    Repetition, Node, NodeType, FuzzingMode,
+    Repetition,
+    Node,
+    NodeType,
+    FuzzingMode,
 )
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.parser.FandangoParserVisitor import FandangoParserVisitor
@@ -129,7 +132,9 @@ class GrammarProcessor(FandangoParserVisitor):
         nodes = [self.visit(child) for child in ctx.operator()]
         if len(nodes) == 1:
             return nodes[0]
-        non_terminal = NonTerminal(f"<_{NodeType.CONCATENATION}:{self.concatenationCount}>")
+        non_terminal = NonTerminal(
+            f"<_{NodeType.CONCATENATION}:{self.concatenationCount}>"
+        )
         self.concatenationCount += 1
         self.additionalRules[non_terminal] = Concatenation(nodes)
         return NonTerminalNode(non_terminal)
@@ -206,10 +211,12 @@ class GrammarProcessor(FandangoParserVisitor):
 
     def visitNonterminal_right(self, ctx: FandangoParser.Nonterminal_rightContext):
         if ctx.NAME(1) is None:
-            return NonTerminalNode(NonTerminal('<' + ctx.NAME(0).getText() + '>'))
+            return NonTerminalNode(NonTerminal("<" + ctx.NAME(0).getText() + ">"))
         else:
             self.seenRoles.add(ctx.NAME(0).getText())
-            return NonTerminalNode(NonTerminal('<' + ctx.NAME(1).getText() + '>'), ctx.NAME(0).getText())
+            return NonTerminalNode(
+                NonTerminal("<" + ctx.NAME(1).getText() + ">"), ctx.NAME(0).getText()
+            )
 
 
 class ConstraintProcessor(FandangoParserVisitor):
