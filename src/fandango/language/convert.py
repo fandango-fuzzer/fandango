@@ -25,7 +25,7 @@ from fandango.language.grammar import (
     TerminalNode,
     Plus,
     Option,
-    Repetition, Node, NodeType,
+    Repetition, Node, NodeType, FuzzingMode,
 )
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.parser.FandangoParserVisitor import FandangoParserVisitor
@@ -77,6 +77,7 @@ class GrammarProcessor(FandangoParserVisitor):
         self.starCount = 0
         self.plusCount = 0
         self.optionCount = 0
+        self.seenRoles = set[str]()
         self.additionalRules = dict[NonTerminal, Node]()
 
     def get_grammar(self, productions: List[FandangoParser.ProductionContext]):
@@ -101,6 +102,10 @@ class GrammarProcessor(FandangoParserVisitor):
                     )
 
         grammar.rules.update(self.additionalRules)
+        if len(self.seenRoles) == 0:
+            grammar.fuzzing_mode = FuzzingMode.COMPLETE
+        else:
+            grammar.fuzzing_mode = FuzzingMode.IO
         grammar.update_parser()
         grammar.prime()
         return grammar
@@ -192,6 +197,7 @@ class GrammarProcessor(FandangoParserVisitor):
         if ctx.NAME(1) is None:
             return NonTerminalNode(NonTerminal('<' + ctx.NAME(0).getText() + '>'))
         else:
+            self.seenRoles.add(ctx.NAME(0).getText())
             return NonTerminalNode(NonTerminal('<' + ctx.NAME(1).getText() + '>'), ctx.NAME(0).getText())
 
 

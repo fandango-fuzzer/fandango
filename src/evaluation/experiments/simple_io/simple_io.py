@@ -10,8 +10,7 @@ def main():
     fandango = Fandango(
         grammar=grammar,
         constraints=constraints,
-        population_size=100,
-        mode=FuzzingMode.IO
+        population_size=100
     )
 
     # Evolve solutions

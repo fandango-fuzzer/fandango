@@ -46,7 +46,6 @@ class Fandango:
         warnings_are_errors: bool = False,
         best_effort: bool = False,
         random_seed: int = None,
-        mode: FuzzingMode = FuzzingMode.COMPLETE,
         start_symbol="<start>",
     ):
         """
@@ -92,7 +91,6 @@ class Fandango:
         self.elitism_rate = elitism_rate
         self.destruction_rate = destruction_rate
         self.start_symbol = start_symbol
-        self.mode = mode
         self.logger_level = logger_level
         self.random_seed = random_seed
 
@@ -139,7 +137,7 @@ class Fandango:
 
             st_time = time.time()
             self.population = []
-            self.population = self.generate_random_initial_population(mode)
+            self.population = self.generate_random_initial_population()
             LOGGER.info(
                 f"Initial population generated in {time.time() - st_time:.2f} seconds"
             )
@@ -221,16 +219,16 @@ class Fandango:
             self.continue_trees = list(new_population)
             while len(self.population) < self.population_size:
                 self.population.append(random.choice(new_population))
-            self.population = self.generate_random_initial_population(FuzzingMode.IO)
+            self.population = self.generate_random_initial_population()
 
 
     def evolve(self) -> List[DerivationTree]:
-        if self.mode == FuzzingMode.COMPLETE:
+        if self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
             return self._evolve_single()
-        elif self.mode == FuzzingMode.IO:
+        elif self.grammar.fuzzing_mode == FuzzingMode.IO:
             return self._evolve_io()
         else:
-            raise RuntimeError(f"Invalid mode: {self.mode}")
+            raise RuntimeError(f"Invalid mode: {self.self.grammar.fuzzing_mode}")
 
     def _evolve_single(self) -> List[DerivationTree]:
         """
@@ -295,10 +293,9 @@ class Fandango:
             # Add new individuals
             while len(new_population) < self.population_size:
                 continue_tree = None
-                if self.mode == FuzzingMode.IO and len(self.continue_trees):
+                if self.grammar.fuzzing_mode == FuzzingMode.IO and len(self.continue_trees):
                     continue_tree = copy.deepcopy(random.choice(self.continue_trees))
-                new_population.append(self.grammar.fuzz(start=self.start_symbol, continue_tree=continue_tree,
-                                                        mode=self.mode))
+                new_population.append(self.grammar.fuzz(start=self.start_symbol, continue_tree=continue_tree))
 
             # Fix individuals
             fixed_population = list()
@@ -349,19 +346,19 @@ class Fandango:
 
         return self.solution
 
-    def generate_random_initial_population(self, mode: FuzzingMode = FuzzingMode.COMPLETE) -> List[DerivationTree]:
+    def generate_random_initial_population(self) -> List[DerivationTree]:
         """
         Generate the initial population of individuals.
 
         :return: A set of individuals.
         """
-        if mode == FuzzingMode.IO and len(self.population) != 0:
+        if self.grammar.fuzzing_mode == FuzzingMode.IO and len(self.population) != 0:
             population = [
-                self.grammar.fuzz(self.start_symbol, mode=mode, continue_tree=entry) for entry in self.population
+                self.grammar.fuzz(self.start_symbol, continue_tree=entry) for entry in self.population
             ]
         else:
             population = [
-                self.grammar.fuzz(self.start_symbol, mode=mode) for _ in range(self.population_size)
+                self.grammar.fuzz(self.start_symbol) for _ in range(self.population_size)
             ]
 
         # Fix individuals
@@ -519,7 +516,7 @@ class Fandango:
                 selection.remove(node_to_mutate)
                 continue
             if node_to_mutate.symbol.is_non_terminal:
-                new_subtree = self.grammar.fuzz(node_to_mutate.symbol)
+                new_subtree = self.grammar.fuzz(node_to_mutate.symbol, mode=FuzzingMode.COMPLETE)
                 individual = individual.replace(node_to_mutate, new_subtree)
                 self.mutations_made += 1
             return individual
