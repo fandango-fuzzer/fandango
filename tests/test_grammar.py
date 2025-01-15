@@ -38,50 +38,38 @@ class ConstraintTest(unittest.TestCase):
         for path in GRAMMAR.traverse_derivation(tree):
             print(path)
 
-    def get_solutions(self, grammar):
-        grammar, constraints = parse(grammar)
+    def get_solutions(self, grammar, constraints):
         fandango = Fandango(grammar=grammar, constraints=constraints, desired_solutions=10)
         return fandango.evolve()
 
     def test_generators(self):
-        GRAMMAR = """
-<start> ::= <foo>* := test();
-<foo> ::= "a" | "b" | "c" | "r";
-
-def test():
-    return "bar"
-"""
+        file = open("tests/resources/bar.fan", "r")
+        GRAMMAR, constraints = parse(file, use_stdlib=False)
         expected = ["bar" for _ in range(10)]
-        actual = self.get_solutions(GRAMMAR)
+        actual = self.get_solutions(GRAMMAR, constraints)
 
         self.assertEqual(expected, actual)
 
     def test_repetitions(self):
-        GRAMMAR = """
-<start> ::= <a>{3};
-<a> ::= "a";
-"""
+        file = open("tests/resources/repetitions.fan", "r")
+        GRAMMAR, c = parse(file, use_stdlib=False)
         expected = ["aaa" for _ in range(10)]
-        actual = self.get_solutions(GRAMMAR)
+        actual = self.get_solutions(GRAMMAR, c)
 
         self.assertEqual(expected, actual)
 
     def test_repetitions_slice(self):
-        GRAMMAR = """
-<start> ::= <a>{3, 10};
-<a> ::= "a";
-"""
-        solutions = self.get_solutions(GRAMMAR)
+        file = open("tests/resources/slicing.fan", "r")
+        GRAMMAR, c = parse(file, use_stdlib=False)
+        solutions = self.get_solutions(GRAMMAR, c)
         for solution in solutions:
             self.assertGreaterEqual(len(str(solution)), 3)
             self.assertLessEqual(len(str(solution)), 10)
     
     def test_repetition_min(self):
-        GRAMMAR = """
-<start> ::= <a>{3, };
-<a> ::= "a";
-"""
-        solutions = self.get_solutions(GRAMMAR)
+        file = open("tests/resources/min_reps.fan", "r")
+        GRAMMAR, c = parse(file, use_stdlib=False)
+        solutions = self.get_solutions(GRAMMAR, c)
         for solution in solutions:
             self.assertGreaterEqual(len(str(solution)), 3)
 
