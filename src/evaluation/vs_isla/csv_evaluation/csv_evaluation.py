@@ -4,8 +4,7 @@ from io import StringIO
 from typing import Tuple
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-from fandango.language.parse import parse_file
-from fandango.logger import LOGGER
+from fandango.language.parse import parse
 
 
 def is_syntactically_valid_csv(csv_string):
@@ -22,7 +21,7 @@ def is_syntactically_valid_csv(csv_string):
 
         # If no errors, it's a valid CSV syntactically
         return True
-    except csv.Error as e:
+    except csv.Error:
         # If there's a CSV parsing error, it's not valid
         return False
 
@@ -30,7 +29,8 @@ def is_syntactically_valid_csv(csv_string):
 def evaluate_csv(
     seconds=60,
 ) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
-    grammar, constraints = parse_file("csv_evaluation/csv.fan")
+    file = open("csv_evaluation/csv.fan", "r")
+    grammar, constraints = parse(file, use_stdlib=False)
     solutions = []
 
     time_in_an_hour = time.time() + seconds

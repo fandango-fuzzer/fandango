@@ -57,6 +57,7 @@ TRY        : 'try' {self.python_start()};
 TYPE       : 'type';
 UNDERSCORE : '_';
 WHILE      : 'while' {self.python_start()};
+WHERE      : 'where';
 WITH       : 'with' {self.python_start()};
 YIELD      : 'yield';
 FORALL     : 'forall';
