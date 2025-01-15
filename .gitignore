@@ -24,6 +24,7 @@ var/
 wheels/
 share/python-wheels/
 *.egg-info/
+.fandango_cache
 .installed.cfg
 *.egg
 MANIFEST
@@ -170,3 +171,5 @@ language/gen/*
 gen
 gen/*
 *.o
+utils/lextab.py
+utils/yacctab.py

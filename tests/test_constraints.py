@@ -7,17 +7,11 @@ from fandango.language.parse import parse
 
 
 class ConstraintTest(unittest.TestCase):
-    GRAMMAR = """
-<start> ::= <ab>;
-<ab> ::= 
-      "a" <ab> 
-    | <ab> "b"
-    | ""
-    ;
-"""
+
 
     def get_constraint(self, constraint):
-        _, constraints = parse(self.GRAMMAR + constraint)
+        file = open("tests/resources/constraints.fan", "r")
+        _, constraints = parse(file, constraints=[constraint], use_stdlib=False)
         self.assertEqual(1, len(constraints))
         return constraints[0]
 
@@ -422,18 +416,14 @@ class ConstraintTest(unittest.TestCase):
         self.assertTrue(constraint.check(example))
 
     def test_complex_constraint(self):
-        grammar = """
-<start> ::= <number>;
-<number> ::= <digit> | <digit><number>;
-<digit> ::= "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "0";
-"""
         constraint = """
 int(<number>) % 2 == 0;
 int(<number>) > 10000;
 int(<number>) < 100000;
 """
 
-        _, constraints = parse(grammar + constraint)
+        file = open("tests/resources/complex_constraints.fan", "r")
+        _, constraints = parse(file, constraints=[constraint], use_stdlib=False)
         self.assertEqual(3, len(constraints))
 
         def get_tree(x):

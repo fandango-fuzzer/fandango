@@ -52,37 +52,3 @@ forall <decl1> in <declaration>:
     forall <decl2> in <declaration>:
         (str(<decl1>.<id>) == str(<decl2>.<id>) -> <decl1> == <decl2>)
 ;
-
-# --------------------------------------------------------------------
-
-
-
-def declare_variables(c_code):
-    import re
-    import random
-
-    # Regular expressions to find variable usage and check for declarations
-    var_usage_pattern = r'\b([a-zA-Z])\b'  # Matches single-letter variables
-    declaration_pattern = r'\bint\s+([a-zA-Z])\b'  # Matches declared single-letter variables
-
-    # Find all single-letter variable uses in the code
-    var_usage = set(re.findall(var_usage_pattern, c_code))
-
-    # Find all declared single-letter variables
-    declared_vars = set(re.findall(declaration_pattern, c_code))
-
-    # Identify undeclared single-letter variables
-    undeclared_vars = var_usage - declared_vars - {'while', 'if', 'for', 'return', 'main'}
-
-    # Generate declarations for undeclared variables
-    declarations = ""
-    for var in undeclared_vars:
-        value = random.randint(1,100000)  # Random integer placeholder value
-        declarations += f"    int {var} = {value};\n"
-
-    # Insert the declarations at the start of the main function
-    modified_code = re.sub(r'(\bint main\(\) {)', r'\1\n' + declarations, c_code, count=1)
-
-    return modified_code
-
-str(<start>) == declare_variables(str(<start>));

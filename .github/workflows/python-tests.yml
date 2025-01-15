@@ -1,16 +1,17 @@
 # GitHub Actions Workflow: Python Tests with Caching
 # This workflow automates running tests on Python code using pytest and speeds up the process using caching.
 
-name: Python Tests  # Workflow name, visible in the Actions tab
+name: Tests
 
 on:
   push:
     branches:
-      - main  # Run tests on pushes to the main branch
       - dev   # Run tests on pushes to the dev branch
+      - main  # Run tests on pushes to the main branch
   pull_request:
     branches:
       - main  # Run tests on pull requests targeting the main branch
+  workflow_dispatch: # Enables manual execution from the Actions tab
 
 jobs:
   test:
@@ -46,11 +47,11 @@ jobs:
           sudo apt-get update && sudo apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config
           pip install pygraphviz
 
-      # Step 5: Install Python dependencies using make
-      - name: Install dependencies with Makefile
+      # Step 5: Install Python dependencies using make and run tests
+      - name: Install dependencies with Makefile and run tests
         run: |
           python -m pip install --upgrade pip  # Upgrade pip to the latest version
-          make install  # Install dependencies using the Makefile
+          make test  # Install dependencies using the Makefile
 
       # Step 6: Cache installed packages for system dependencies
       - name: Cache pygraphviz dependencies
@@ -60,7 +61,3 @@ jobs:
           key: pygraphviz-${{ runner.os }}-python3.11
           restore-keys: |
             pygraphviz-${{ runner.os }}-
-
-      # Step 7: Run the test suite using pytest
-      - name: Run tests
-        run: pytest  # Execute tests with pytest
