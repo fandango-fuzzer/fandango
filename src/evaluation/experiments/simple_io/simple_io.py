@@ -1,11 +1,12 @@
 from fandango.evolution.algorithm import Fandango
 from fandango.language.grammar import FuzzingMode
-from fandango.language.parse import parse_file
+from fandango.language.parse import parse
 
 
 def main():
     # Parse grammar and constraints
-    grammar, constraints = parse_file("simple_io.fan")
+    with open("simple_io.fan") as f:
+        grammar, constraints = parse(f, use_stdlib=False)
     # Initialize FANDANGO with desired parameters
     fandango = Fandango(grammar=grammar, constraints=constraints, population_size=100)
 
