@@ -23,7 +23,7 @@ from fandango.language.convert import (
     GrammarProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import Grammar, NodeType, NonTerminalFinder
+from fandango.language.grammar import Grammar, NodeType, NonTerminalFinder, RoleAssigner
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.stdlib import stdlib
@@ -414,6 +414,8 @@ def parse(
     if grammar and parsed_constraints:
         check_constraints_existence(grammar, parsed_constraints)
 
+    assign_implicit_role(grammar, 'TEST')
+
     # We invoke this at the very end, now that all data is there
     grammar.prime()
 
@@ -566,3 +568,20 @@ def check_constraints_existence_children(
             )
     indirect_child[f"<{parent}>"][f"<{symbol}>"] = is_child
     return is_child
+
+def assign_implicit_role(grammar, implicit_role: str):
+    seen_non_terminals = set()
+    seen_non_terminals.add(NonTerminal('<start>'))
+
+    processed_non_terminals = set()
+    unprocessed_non_terminals = seen_non_terminals.difference(processed_non_terminals)
+
+    while len(unprocessed_non_terminals) > 0:
+        current_symbol = unprocessed_non_terminals.pop()
+
+        assigner = RoleAssigner(implicit_role, grammar, processed_non_terminals)
+        assigner.run(grammar.rules[current_symbol])
+
+        processed_non_terminals.add(current_symbol)
+        seen_non_terminals = seen_non_terminals.union(assigner.seen_non_terminals)
+        unprocessed_non_terminals = seen_non_terminals.difference(processed_non_terminals)
