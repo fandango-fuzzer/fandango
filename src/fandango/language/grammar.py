@@ -728,34 +728,10 @@ class Disambiguator(NodeVisitor):
     ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
         return {(Terminal(c),): [(node, TerminalNode(Terminal(c)))] for c in node.chars}
 
-
-class RoleAssigner(NodeVisitor):
-
-    def __init__(self, implicite_role: str, grammar: "Grammar"):
-        self.grammar = grammar
-        self.seen_non_terminals = set()
-        self.implicite_role = implicite_role
-        self.require_assigning = False
-
-    def visit(self, node: Node):
-        if len(node.tree_roles(self.grammar)) > 0:
-            self.require_assigning = True
-        node.accept(self)
-
-    def visitNonTerminalNode(self, node: NonTerminalNode):
-        if not isinstance(node.symbol, NonTerminal):
-            # This shouldn't happen
-            return
-        if node.symbol.is_implicit:
-            self.visit(self.grammar.rules[node.symbol])
-            return
-        self.seen_non_terminals.add(node.symbol)
-        if len(node.tree_roles(self.grammar)) != 0:
-            return
-        if self.require_assigning:
-            node.role = self.implicite_role
-
 class NonTerminalFinder(NodeVisitor):
+
+    def __init__(self, grammar: "Grammar"):
+        self.grammar = grammar
 
     def default_result(self):
         return []
@@ -765,7 +741,38 @@ class NonTerminalFinder(NodeVisitor):
         return aggregate
 
     def visitNonTerminalNode(self, node: NonTerminalNode):
+        if node.symbol.is_implicit:
+            return self.visit(self.grammar.rules[node.symbol]) + [node]
         return [node]
+
+
+class RoleAssigner():
+
+    def __init__(self, implicite_role: str, grammar: "Grammar", processed_non_terminals: set[str]):
+        self.grammar = grammar
+        self.seen_non_terminals = set()
+        self.processed_non_terminals = set(processed_non_terminals)
+        self.implicite_role = implicite_role
+
+    def run(self, node: Node):
+        non_terminals: list[NonTerminalNode] = NonTerminalFinder(self.grammar).visit(node)
+        unprocessed_non_terminals = set(non_terminals).difference(self.processed_non_terminals)
+        if node in unprocessed_non_terminals:
+            unprocessed_non_terminals.remove(node)
+        child_roles = set()
+
+        for c_node in unprocessed_non_terminals:
+            child_roles = child_roles.union(c_node.tree_roles(self.grammar))
+
+        if len(child_roles) == 0:
+            return
+        for c_node in unprocessed_non_terminals:
+            if c_node.symbol.is_implicit:
+                continue
+            self.seen_non_terminals.add(c_node.symbol)
+            if len(c_node.tree_roles(self.grammar)) != 0:
+                continue
+            c_node.role = self.implicite_role
 
 class ParseState:
     def __init__(
