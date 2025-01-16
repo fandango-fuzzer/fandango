@@ -469,11 +469,14 @@ class NonTerminalNode(Node):
                     "Expected continue_tree with size 1 for NonTerminalNode!"
                 )
             if self.symbol.symbol != continue_tree[0].symbol.symbol:
-                raise GrammarKeyError("Symbol mismatch!")
-            if self.role != continue_tree[0].role:
-                raise GrammarKeyError("Role mismatch!")
+                raise GrammarKeyError(f"Symbol mismatch! Expected: {self.symbol.symbol}, "
+                                      f"Received: {continue_tree[0].symbol.symbol}")
+            if not context.in_role() and self.role != continue_tree[0].role:
+                raise GrammarKeyError(f"Role mismatch! Expected: {self.role}, "
+                                      f"Received: {continue_tree[0].role}")
             read_only = continue_tree[0].read_only
             continue_tree = continue_tree[0].children
+        assign_role = None if context.in_role() else self.role
 
         context.on_enter_non_terminal(self)
         old_read_only = context.subtree_read_only
@@ -484,7 +487,7 @@ class NonTerminalNode(Node):
         )
         context.subtree_read_only = old_read_only
         tree = DerivationTree(
-            self.symbol, children, role=self.role, read_only=read_only
+            self.symbol, children, role=assign_role, read_only=read_only
         )
         context.on_leave_non_terminal(tree)
         return [tree]
