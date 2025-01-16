@@ -16,13 +16,14 @@ from thefuzz import process as thefuzz_process
 from xdg_base_dirs import xdg_cache_home, xdg_data_dirs, xdg_data_home
 
 from fandango.constraints import predicates
+from fandango.constraints.base import Constraint
 from fandango.language.convert import (
     ConstraintProcessor,
     FandangoSplitter,
     GrammarProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import Grammar, NodeType
+from fandango.language.grammar import Grammar, NodeType, NonTerminalFinder
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.stdlib import stdlib
@@ -293,7 +294,7 @@ def parse(
     given_grammars: List[Grammar] = [],
     start_symbol: Optional[str] = None,
     includes: List[str] = [],
-) -> Tuple[Optional[Grammar], List[str]]:
+) -> Tuple[Optional[Grammar], List[Constraint]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
     :param fan_files: One (open) .fan file, or a list of these
@@ -549,14 +550,16 @@ def check_constraints_existence_children(
     #
     # Simpler version; may overfit (e.g. matches <...> in strings),
     # but that should not hurt us -- AZ
-    grammar_matches = re.findall(r"<([^>]*)>", str(grammar_symbols))
+    finder = NonTerminalFinder()
+    non_terminals = finder.visit(grammar_symbols)
+    non_terminals = [str(nt.symbol)[1:-1] for nt in non_terminals]
 
-    if symbol in grammar_matches:
+    if symbol in non_terminals:
         indirect_child[f"<{parent}>"][f"<{symbol}>"] = True
         return True
 
     is_child = False
-    for match in grammar_matches:
+    for match in non_terminals:
         if recurse or match.startswith("_"):
             is_child = is_child or check_constraints_existence_children(
                 grammar, match, symbol, recurse, indirect_child

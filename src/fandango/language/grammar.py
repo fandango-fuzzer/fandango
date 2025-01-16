@@ -1,4 +1,5 @@
 import abc
+import copy
 import enum
 import random
 import typing
@@ -124,6 +125,27 @@ class Node(abc.ABC):
     @abc.abstractmethod
     def accept(self, visitor: "NodeVisitor"):
         raise NotImplementedError("accept method not implemented")
+
+    def tree_roles(self, grammar: "Grammar"):
+        return self._tree_roles(grammar, set())
+
+    def _tree_roles(self, grammar: "Grammar", seen_nonterminals: set[NonTerminal]):
+        roles = set()
+        for child in self.children():
+            roles = roles.union(child._tree_roles(grammar, seen_nonterminals))
+        return roles
+
+    def _process_context_in(self, context_stack: list[FuzzingContext] | None):
+        if context_stack is None:
+            context_stack = [FuzzingContext]
+        parent_context = context_stack[-1]
+        local_context = copy.deepcopy(parent_context)
+        context_stack.append(local_context)
+        return local_context, parent_context, context_stack
+
+    def _process_context_out(self, context_stack: list[FuzzingContext]):
+        context_stack.pop()
+
 
     def children(self):
         return []
@@ -471,13 +493,27 @@ class NonTerminalNode(Node):
         return visitor.visitNonTerminalNode(self)
 
     def __repr__(self):
-        return self.symbol.__repr__()
+        if self.role is not None:
+            return f"<{self.role}:{self.symbol.__repr__()[1:-1]}>"
+        else:
+            return self.symbol.__repr__()
 
     def __eq__(self, other):
         return isinstance(other, NonTerminalNode) and self.symbol == other.symbol
 
     def __hash__(self):
         return hash(self.symbol)
+
+    def _tree_roles(self, grammar: "Grammar", seen_nonterminals: set[NonTerminal]):
+        roles = set()
+        if self.role is not None:
+            roles.add(self.role)
+        if self.symbol not in seen_nonterminals:
+            seen_nonterminals.add(self.symbol)
+            for role in grammar[self.symbol]._tree_roles(grammar, seen_nonterminals):
+                roles.add(role)
+        return roles
+
 
     def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterator["Node"]:
         yield rules[self.symbol]
@@ -689,6 +725,44 @@ class Disambiguator(NodeVisitor):
     ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
         return {(Terminal(c),): [(node, TerminalNode(Terminal(c)))] for c in node.chars}
 
+
+class RoleAssigner(NodeVisitor):
+
+    def __init__(self, implicite_role: str, grammar: "Grammar"):
+        self.grammar = grammar
+        self.seen_non_terminals = set()
+        self.implicite_role = implicite_role
+        self.require_assigning = False
+
+    def visit(self, node: Node):
+        if len(node.tree_roles(self.grammar)) > 0:
+            self.require_assigning = True
+        node.accept(self)
+
+    def visitNonTerminalNode(self, node: NonTerminalNode):
+        if not isinstance(node.symbol, NonTerminal):
+            # This shouldn't happen
+            return
+        if node.symbol.is_implicit:
+            self.visit(self.grammar.rules[node.symbol])
+            return
+        self.seen_non_terminals.add(node.symbol)
+        if len(node.tree_roles(self.grammar)) != 0:
+            return
+        if self.require_assigning:
+            node.role = self.implicite_role
+
+class NonTerminalFinder(NodeVisitor):
+
+    def default_result(self):
+        return []
+
+    def aggregate_results(self, aggregate, result):
+        aggregate.extend(result)
+        return aggregate
+
+    def visitNonTerminalNode(self, node: NonTerminalNode):
+        return [node]
 
 class ParseState:
     def __init__(
