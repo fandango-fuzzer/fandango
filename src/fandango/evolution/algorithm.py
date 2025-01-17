@@ -7,12 +7,13 @@ import time
 from typing import List, Tuple
 
 import deprecation
+from soupsieve.util import lower
 
 from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
 from fandango.language.grammar import DerivationTree, FuzzingMode, FuzzingContext
 from fandango.language.grammar import Grammar
-from fandango.language.io import FandangoIO
+from fandango.language.io import FandangoIO, IoParty
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import RoledMessage
 from fandango.logger import LOGGER
@@ -150,9 +151,8 @@ class Fandango:
 
     def _evolve_io(self) -> List[DerivationTree]:
         global_env, local_env = self.grammar.get_python_env()
-        if "FandangoIO" not in global_env.keys():
-            exec("FandangoIO.instance()")
         io_instance: FandangoIO = global_env["FandangoIO"].instance()
+
 
         prev_tree = DerivationTree(NonTerminal(self.start_symbol))
         self.desired_solutions = 1

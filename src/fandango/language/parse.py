@@ -23,7 +23,8 @@ from fandango.language.convert import (
     GrammarProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import Grammar, NodeType, NonTerminalFinder, RoleAssigner
+from fandango.language.grammar import Grammar, NodeType, NonTerminalFinder, RoleAssigner, FuzzingMode
+from fandango.language.io import FandangoIO, IoParty
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.stdlib import stdlib
@@ -415,6 +416,23 @@ def parse(
         check_constraints_existence(grammar, parsed_constraints)
 
     assign_implicit_role(grammar, 'TEST')
+
+    global_env, local_env = grammar.get_python_env()
+    if grammar.fuzzing_mode == FuzzingMode.IO:
+        if "FandangoIO" not in global_env.keys():
+            exec("FandangoIO.instance()", global_env, local_env)
+        io_instance: FandangoIO = global_env["FandangoIO"].instance()
+        grammar_roles = grammar.roles()
+        agent_names = set()
+        for key in global_env.keys():
+            if key in grammar_roles:
+                the_type = global_env[key]
+                if not isinstance(the_type, type):
+                    continue
+                if IoParty in the_type.__mro__:
+                    agent_names.add(key)
+        for agent in agent_names:
+            exec(f"{agent}()", global_env, local_env)
 
     # We invoke this at the very end, now that all data is there
     grammar.prime()
