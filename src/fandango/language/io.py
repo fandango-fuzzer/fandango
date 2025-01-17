@@ -4,7 +4,7 @@ from typing import Callable, Tuple
 class IoParty(object):
 
     def __init__(self, is_fandango: bool):
-        self.class_name = type(self).__name__.lower()
+        self.class_name = type(self).__name__
         self._is_fandango = is_fandango
         FandangoIO.instance().roles[self.class_name] = self
 

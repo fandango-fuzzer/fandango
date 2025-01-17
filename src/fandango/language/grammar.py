@@ -1257,6 +1257,14 @@ class Grammar(NodeVisitor):
             ]
         )
 
+    def roles(self):
+        found_roles = set()
+        for nt, rule in self.rules.items():
+            if nt.is_implicit:
+                continue
+            found_roles = found_roles.union(rule.tree_roles(self))
+        return found_roles
+
     def get_repr_for_rule(self, symbol: str | NonTerminal):
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
