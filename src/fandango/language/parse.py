@@ -433,6 +433,9 @@ def parse(
                     agent_names.add(key)
         for agent in agent_names:
             exec(f"{agent}()", global_env, local_env)
+            grammar_roles.remove(agent)
+        for name in grammar_roles:
+            LOGGER.warn(f"No class has been specified for role: {name}")
 
     # We invoke this at the very end, now that all data is there
     grammar.prime()
