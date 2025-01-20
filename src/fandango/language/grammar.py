@@ -745,6 +745,125 @@ class NonTerminalFinder(NodeVisitor):
             return self.visit(self.grammar.rules[node.symbol]) + [node]
         return [node]
 
+class NextRoleFinder(NodeVisitor):
+
+    def __init__(self, grammar: "Grammar", tree: DerivationTree):
+        self.grammar = grammar
+        self.tree = tree
+        self.current_tree: list[list[DerivationTree] | None] = []
+        self.current_path: list[str] = []
+        # dict consists of roles -> NonTerminals -> Path to take to produce NonTerminal
+        self.role_options = dict[str, dict[NonTerminalNode, list[Tuple[str, ...]]]]()
+
+    def add_option(self, node: NonTerminalNode):
+        role = node.role
+        if role not in self.role_options.keys():
+            self.role_options[role] = dict()
+        role_dict = self.role_options[role]
+        if node not in role_dict.keys():
+            role_dict[node] = []
+        paths = role_dict[node]
+        paths.append(tuple(self.current_path))
+
+    def find(self):
+        self.current_tree = [[self.tree.children[0]]]
+        self.visit(self.grammar.rules[self.tree.symbol])
+
+    def visitNonTerminalNode(self, node: NonTerminalNode):
+        tree = self.current_tree[-1]
+        if tree is not None:
+            if tree[0].symbol != node.symbol:
+                raise GrammarKeyError("Symbol mismatch")
+
+        if node.role is not None:
+            if tree is None:
+                self.add_option(node)
+                return False
+            else:
+                return True
+        self.current_tree.append(None if tree is None else tree[0].children)
+        self.current_path.append(node.symbol)
+        try:
+            result = self.visit(self.grammar.rules[node.symbol])
+        finally:
+            self.current_path.pop()
+            self.current_tree.pop()
+        return result
+
+
+    def visitConcatenation(self, node: Concatenation):
+        tree = self.current_tree[-1]
+        child_idx = 0 if tree is None else (len(tree) - 1)
+        continue_exploring = True
+        if tree is not None:
+            self.current_tree.append([tree[child_idx]])
+            try:
+                continue_exploring = self.visit(node.nodes[child_idx])
+                child_idx += 1
+            finally:
+                self.current_tree.pop()
+        while continue_exploring and child_idx < len(node.children()):
+            next_child = node.children()[child_idx]
+            self.current_tree.append(None)
+            continue_exploring = self.visit(next_child)
+            self.current_tree.pop()
+        return continue_exploring
+
+
+    def visitAlternative(self, node: Alternative):
+        tree = self.current_tree[-1]
+        continue_exploring = True
+
+        if tree is not None:
+            self.current_tree.append([tree[0].children])
+            found = False
+            for alt in node.alternatives:
+                try:
+                    continue_exploring = self.visit(alt)
+                    found = True
+                    break
+                except GrammarKeyError as e:
+                    pass
+            self.current_tree.pop()
+            if not found:
+                raise GrammarKeyError("Alternative mismatch")
+            return continue_exploring
+        else:
+            self.current_tree.append(None)
+            for alt in node.alternatives:
+                continue_exploring |= not self.visit(alt)
+            self.current_tree.pop()
+            return continue_exploring
+
+
+    def visitRepetition(self, node: Repetition):
+        tree = self.current_tree[-1]
+        continue_exploring = True
+        tree_len = 0
+        if tree is not None:
+            tree_len = len(tree)
+            self.current_tree.append([tree[-1]])
+            continue_exploring = self.visit(node.node)
+            self.current_tree.pop()
+
+        if continue_exploring and tree_len < node.min:
+            self.current_tree.append(None)
+            continue_exploring = self.visit(node.node)
+            self.current_tree.pop()
+            if continue_exploring:
+                return continue_exploring
+        return continue_exploring
+
+    def visitStar(self, node: Star):
+        return self.visitRepetition(node)
+
+    def visitPlus(self, node: Plus):
+        return self.visitRepetition(node)
+
+    def visitOption(self, node: Option):
+        return self.visitRepetition(node)
+
+
 
 class RoleAssigner():
 
@@ -757,7 +876,7 @@ class RoleAssigner():
     def run(self, node: Node):
         non_terminals: list[NonTerminalNode] = NonTerminalFinder(self.grammar).visit(node)
         unprocessed_non_terminals = set(non_terminals).difference(self.processed_non_terminals)
-        if node in unprocessed_non_terminals:
+        if node in unprocessed_non_terminals and not isinstance(node, NonTerminalNode):
             unprocessed_non_terminals.remove(node)
         child_roles = set()
 
