@@ -819,7 +819,7 @@ class NextRoleFinder(NodeVisitor):
         continue_exploring = True
 
         if tree is not None:
-            self.current_tree.append([tree[0].children])
+            self.current_tree.append([tree[0]])
             found = False
             for alt in node.alternatives:
                 try:
