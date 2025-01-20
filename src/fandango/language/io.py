@@ -23,7 +23,7 @@ class IoParty(object):
         First parameter of response_setter if the role of the other party. The second is the message, that it answered with.
     """
 
-    def on_transmit_msg(
+    def on_send(
         self, message: str, response_setter: Callable[[str, str], None]
     ):
         pass
