@@ -807,6 +807,7 @@ class NextRoleFinder(NodeVisitor):
             self.current_tree.append(None)
             continue_exploring = self.visit(next_child)
             self.current_tree.pop()
+            child_idx += 1
         return continue_exploring
 
 
