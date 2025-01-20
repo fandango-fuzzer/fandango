@@ -388,6 +388,9 @@ class Repetition(Node):
             return f"{self.node}{{{self.min}}}"
         return f"{self.node}{{{self.min},{self.max}}}"
 
+    def children(self):
+        return [self.node]
+
     def descendents(self, rules: Dict[NonTerminal, "Node"] | None) -> Iterator["Node"]:
         base = []
         if self.min == 0:
@@ -847,12 +850,14 @@ class NextRoleFinder(NodeVisitor):
             continue_exploring = self.visit(node.node)
             self.current_tree.pop()
 
-        if continue_exploring and tree_len < node.min:
+        if continue_exploring and tree_len < node.max:
             self.current_tree.append(None)
             continue_exploring = self.visit(node.node)
             self.current_tree.pop()
             if continue_exploring:
                 return continue_exploring
+        if tree_len >= node.min:
+            return True
         return continue_exploring
 
     def visitStar(self, node: Star):
@@ -876,7 +881,10 @@ class RoleAssigner():
 
     def run(self, node: Node):
         non_terminals: list[NonTerminalNode] = NonTerminalFinder(self.grammar).visit(node)
-        unprocessed_non_terminals = set(non_terminals).difference(self.processed_non_terminals)
+        unprocessed_non_terminals = []
+        for nt in non_terminals:
+            if nt not in self.processed_non_terminals:
+                unprocessed_non_terminals.append(nt)
         if node in unprocessed_non_terminals and not isinstance(node, NonTerminalNode):
             unprocessed_non_terminals.remove(node)
         child_roles = set()
