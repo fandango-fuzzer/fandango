@@ -161,16 +161,40 @@ class Fandango:
             self.fitness = (
                 sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
-            packet_options = dict()
+            packet_options = None
             for pop in self.population:
                 forecaster = PacketForecaster(self.grammar, pop)
-                packet_options_tree = forecaster.find()
-                packet_options = forecaster.merge(packet_options, packet_options_tree)
+                if packet_options is None:
+                    packet_options = forecaster.find()
+                else:
+                    packet_options_new = forecaster.find()
+                    packet_options = packet_options.merge(packet_options_new)
 
             #Todo: For now select a random role and packet.
-            selected_role = random.choice(list(packet_options.keys()))
-            if selected_role not in io_instance.roles.keys():
+            selected_role = random.choice(list(packet_options.getRoles()))
+            if io_instance.roles[selected_role].is_fandango():
+                #fuzz myself
+                symbol = random.choice(list(packet_options[selected_role].keys()))
+                selected_packet_option = packet_options[selected_role][symbol]
+                new_packet = selected_packet_option.node.fuzz(self.grammar)[0]
+
+                mounting_path = random.choice(list(selected_packet_option.paths))
+                tree: list[DerivationTree] = [mounting_path.tree]
+                path: tuple[NonTerminal] = mounting_path.path
+                for nt in path:
+                    if len(tree) == 0 or tree[-1].symbol != nt:
+                        tree.append(DerivationTree(nt))
+                    tree = tree[-1].children
+                tree.append(new_packet)
+
+
+
+
+
+            else:
                 pass
+                # wait
+
 
 
 
