@@ -308,7 +308,7 @@ class NonTerminalNode(Node):
             in_role = self.role
 
         children = grammar[self.symbol].fuzz(
-            grammar, max_nodes - 1, mode, continue_tree, context
+            grammar, max_nodes - 1, in_role
         )
 
         tree = DerivationTree(
@@ -555,52 +555,74 @@ class NonTerminalFinder(NodeVisitor):
         return [node]
 
 class PacketForecaster(NodeVisitor):
-    #class ForcastingResult:
-    #    def __init__(self, result: dict[str, dict[NonTerminalNode, list[Tuple[str, ...]]]]):
-    #        self.result = result
 
-    #    def getRoles(self):
-    #        return self.result.keys()
+    class MountingPath:
+        def __init__(self, tree: DerivationTree, path: Tuple[str, ...]):
+            self.tree = tree
+            self.path = path
 
-    #    def __getitem__(self, item):
-    #        return self.result[item]
+        def __hash__(self):
+            return hash((hash(self.tree), hash(self.path)))
 
-    #    def merge(self):
+        def __eq__(self, other):
+            return hash(self) == hash(other)
 
-    def merge(self, role_options_1 = dict[str, dict[NonTerminalNode, set[Tuple[str, ...]]]],
-              role_options_2 = dict[str, dict[NonTerminalNode, set[Tuple[str, ...]]]]):
-        merged = dict(role_options_1)
-        for role in role_options_2.keys():
-            if role not in merged.keys():
-                merged[role] = dict()
-            merged_role_nts = merged[role]
-            for role_nts in role_options_2[role]:
-                if role_nts not in merged_role_nts.keys():
-                    merged_role_nts[role_nts] = set()
-                merged_paths = merged_role_nts[role_nts]
-                merged_role_nts[role_nts] = merged_paths.union(merged_role_nts[role_nts])
-        return merged
+        def __repr__(self):
+            return repr(self.path)
+
+    class ForcastingPacket:
+        def __init__(self, node: NonTerminalNode):
+            self.node = node
+            self.paths = set[PacketForecaster.MountingPath]()
+
+        def add_path(self, path: "PacketForecaster.MountingPath"):
+            self.paths.add(path)
+
+    class ForcastingResult:
+        def __init__(self):
+            # dict[roleName, dict[packetName, PacketForecaster.ForcastingPacket]]
+            self.roles_to_packets = dict[str, dict[NonTerminal, PacketForecaster.ForcastingPacket]]()
+
+        def getRoles(self) -> set[str]:
+            return set(self.roles_to_packets.keys())
+
+        def __getitem__(self, item: str):
+            return self.roles_to_packets[item]
+
+        def add_packet(self, role: str, packet: "PacketForecaster.ForcastingPacket"):
+            if role not in self.roles_to_packets.keys():
+                self.roles_to_packets[role] = dict()
+            packet_name_to_packet = self.roles_to_packets[role]
+            if packet.node.symbol not in packet_name_to_packet.keys():
+                packet_name_to_packet[packet.node.symbol] = packet
+            existing_packet = packet_name_to_packet[packet.node.symbol]
+            for path in packet.paths:
+                existing_packet.add_path(path)
+
+        def merge(self, other: "PacketForecaster.ForcastingResult"):
+            c_new = copy.deepcopy(self)
+            c_other = copy.deepcopy(other)
+            for role, fp in c_other.roles_to_packets.items():
+                for packet in fp.values():
+                    c_new.add_packet(role, packet)
+            return c_new
 
     def __init__(self, grammar: "Grammar", tree: DerivationTree|None = None):
         self.grammar = grammar
         self.tree = tree
         self.current_tree: list[list[DerivationTree] | None] = []
         self.current_path: list[str] = []
-        # dict consists of roles -> NonTerminals -> Path to take to produce NonTerminal
-        self.role_options = dict[str, dict[NonTerminalNode, set[Tuple[str, ...]]]]()
+        self.result = PacketForecaster.ForcastingResult()
+
 
     def add_option(self, node: NonTerminalNode):
-        role = node.role
-        if role not in self.role_options.keys():
-            self.role_options[role] = dict()
-        role_dict = self.role_options[role]
-        if node not in role_dict.keys():
-            role_dict[node] = set()
-        paths = role_dict[node]
-        paths.add(tuple(self.current_path))
+        mounting_path = PacketForecaster.MountingPath(self.tree, tuple(self.current_path))
+        f_packet = PacketForecaster.ForcastingPacket(node)
+        f_packet.add_path(mounting_path)
+        self.result.add_packet(node.role, f_packet)
 
     def find(self):
-        self.role_options = dict()
+        self.result = PacketForecaster.ForcastingResult()
         if self.tree is not None:
             self.current_path.append(self.tree.symbol)
             if len(self.tree.children) == 0:
@@ -614,7 +636,7 @@ class PacketForecaster(NodeVisitor):
         self.visit(self.grammar.rules[self.current_path[-1]])
         self.current_tree.pop()
         self.current_path.pop()
-        return self.role_options
+        return self.result
 
     def visitNonTerminalNode(self, node: NonTerminalNode):
         tree = self.current_tree[-1]
