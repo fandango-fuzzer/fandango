@@ -7,16 +7,14 @@ import time
 from typing import List, Tuple
 
 import deprecation
-from soupsieve.util import lower
 
 from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
-from fandango.language.grammar import DerivationTree, FuzzingMode, FuzzingContext
+from fandango.language.grammar import DerivationTree, FuzzingMode, PacketForecaster
 from fandango.language.grammar import Grammar
-from fandango.language.io import FandangoIO, IoParty
+from fandango.language.io import FandangoIO
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import RoledMessage
-from fandango.logger import LOGGER
 from fandango.logger import LOGGER, visualize_evaluation, clear_visualization
 
 
@@ -163,8 +161,22 @@ class Fandango:
             self.fitness = (
                 sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
+            packet_options = dict()
+            for pop in self.population:
+                forecaster = PacketForecaster(self.grammar, pop)
+                packet_options_tree = forecaster.find()
+                packet_options = forecaster.merge(packet_options, packet_options_tree)
+
+            #Todo: For now select a random role and packet.
+            selected_role = random.choice(list(packet_options.keys()))
+            if selected_role not in io_instance.roles.keys():
+                pass
+
+
 
             results = self._evolve_single()
+            finder = NextRoleFinder(self.grammar, results[0])
+            finder.find()
             if len(results) == 0:
                 raise RuntimeError(
                     f"Couldn't generate next packet in {self.max_generations} generations!"
@@ -235,7 +247,7 @@ class Fandango:
         elif self.grammar.fuzzing_mode == FuzzingMode.IO:
             return self._evolve_io()
         else:
-            raise RuntimeError(f"Invalid mode: {self.self.grammar.fuzzing_mode}")
+            raise RuntimeError(f"Invalid mode: {self.grammar.fuzzing_mode}")
 
     def _evolve_single(self) -> List[DerivationTree]:
         """
@@ -299,14 +311,14 @@ class Fandango:
 
             # Add new individuals
             while len(new_population) < self.population_size:
-                continue_tree = None
+                # Todo add new generation strategy
                 if self.grammar.fuzzing_mode == FuzzingMode.IO and len(
                     self.continue_trees
                 ):
                     continue_tree = copy.deepcopy(random.choice(self.continue_trees))
                 new_population.append(
                     self.grammar.fuzz(
-                        start=self.start_symbol, continue_tree=continue_tree
+                        start=self.start_symbol
                     )
                 )
 
@@ -365,10 +377,10 @@ class Fandango:
 
         :return: A set of individuals.
         """
-        if self.grammar.fuzzing_mode == FuzzingMode.IO and len(self.population) != 0:
+        if self.grammar.fuzzing_mode == FuzzingMode.IO:
             population = [
-                self.grammar.fuzz(self.start_symbol, continue_tree=entry)
-                for entry in self.population
+                DerivationTree(NonTerminal(self.start_symbol))
+                for _ in range(self.population_size)
             ]
         else:
             population = [
