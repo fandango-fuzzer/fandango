@@ -179,7 +179,7 @@ class Fandango:
                 new_packet = selected_packet_option.node.fuzz(self.grammar)[0]
 
                 mounting_path = random.choice(list(selected_packet_option.paths))
-                tree: list[DerivationTree] = mounting_path.tree
+                tree: DerivationTree = mounting_path.tree
                 current = [tree]
                 path: tuple[NonTerminal] = mounting_path.path
                 for nt in path:
