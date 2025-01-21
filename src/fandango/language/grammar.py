@@ -750,7 +750,7 @@ class NonTerminalFinder(NodeVisitor):
 
 class NextRoleFinder(NodeVisitor):
 
-    def __init__(self, grammar: "Grammar", tree: DerivationTree):
+    def __init__(self, grammar: "Grammar", tree: DerivationTree|None = None):
         self.grammar = grammar
         self.tree = tree
         self.current_tree: list[list[DerivationTree] | None] = []
@@ -769,8 +769,16 @@ class NextRoleFinder(NodeVisitor):
         paths.append(tuple(self.current_path))
 
     def find(self):
-        self.current_tree = [[self.tree.children[0]]]
-        self.visit(self.grammar.rules[self.tree.symbol])
+        if self.tree is not None:
+            self.current_path.append(self.tree.symbol)
+            self.current_tree = [[self.tree.children[0]]]
+        else:
+            self.current_path.append(NonTerminal("<start>"))
+            self.current_tree = [None]
+
+        self.visit(self.grammar.rules[self.current_path[-1]])
+        self.current_tree.pop()
+        self.current_path.pop()
 
     def visitNonTerminalNode(self, node: NonTerminalNode):
         tree = self.current_tree[-1]
