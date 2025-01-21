@@ -1,7 +1,7 @@
 from typing import Callable, Tuple
 
 
-class IoParty(object):
+class FandangoAgent(object):
 
     def __init__(self, is_fandango: bool):
         self.class_name = type(self).__name__
@@ -35,6 +35,14 @@ class IoParty(object):
     def receive_msg(self, message: str) -> None:
         FandangoIO.instance().add_receive(self.class_name, message)
 
+class STDOUT(FandangoAgent):
+
+    def __init__(self):
+        super().__init__(True)
+
+    def on_send(self, message: str, response_setter: Callable[[str, str], None]):
+        print(message)
+
 
 class FandangoIO:
     __instance = None
@@ -51,7 +59,7 @@ class FandangoIO:
         self.transmit: Tuple[str, str] | None = None
         self.receive = list[(str, str)]()
         FandangoIO.__instance = self
-        self.roles = dict[str, IoParty]()
+        self.roles = dict[str, FandangoAgent]()
 
     def run_com_loop(self):
         if self.transmit is not None:

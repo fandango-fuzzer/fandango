@@ -23,8 +23,8 @@ from fandango.language.convert import (
     GrammarProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import Grammar, NodeType, NonTerminalFinder, RoleAssigner, FuzzingMode
-from fandango.language.io import FandangoIO, IoParty
+from fandango.language.grammar import Grammar, NodeType, NonTerminalFinder, RoleAssigner, FuzzingMode, NonTerminalNode
+from fandango.language.io import FandangoIO, FandangoAgent
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.stdlib import stdlib
@@ -415,7 +415,7 @@ def parse(
     if grammar and parsed_constraints:
         check_constraints_existence(grammar, parsed_constraints)
 
-    assign_implicit_role(grammar, 'TEST')
+    assign_implicit_role(grammar, 'STDOUT')
 
     global_env, local_env = grammar.get_python_env()
     if grammar.fuzzing_mode == FuzzingMode.IO:
@@ -429,13 +429,22 @@ def parse(
                 the_type = global_env[key]
                 if not isinstance(the_type, type):
                     continue
-                if IoParty in the_type.__mro__:
+                if FandangoAgent in the_type.__mro__:
                     agent_names.add(key)
         for agent in agent_names:
             exec(f"{agent}()", global_env, local_env)
             grammar_roles.remove(agent)
+        for symbol in grammar.rules.keys():
+            if symbol.is_implicit:
+                continue
+            non_terminals: list[NonTerminalNode] = NonTerminalFinder(grammar).visit(grammar.rules[symbol])
+            for nt in non_terminals:
+                if nt.role is None:
+                    continue
+                if nt.role in grammar_roles:
+                    nt.role = "STDOUT"
         for name in grammar_roles:
-            LOGGER.warn(f"No class has been specified for role: {name}")
+            LOGGER.warn(f"No class has been specified for role: {name}! Role gets mapped to STDOUT!")
 
     # We invoke this at the very end, now that all data is there
     grammar.prime()
