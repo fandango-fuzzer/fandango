@@ -299,20 +299,18 @@ class NonTerminalNode(Node):
         if self.symbol in grammar.generators:
             return [grammar.generate(self.symbol)]
 
-        read_only = False
-        assign_role = None if in_role else self.role
         if in_role is None:
-            assign_role = None
-        else:
             assign_role = self.role
             in_role = self.role
+        else:
+            assign_role = None
 
         children = grammar[self.symbol].fuzz(
             grammar, max_nodes - 1, in_role
         )
 
         tree = DerivationTree(
-            self.symbol, children, role=in_role, read_only=assign_role
+            self.symbol, children, role=in_role, read_only=False
         )
         return [tree]
 
