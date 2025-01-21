@@ -579,6 +579,7 @@ class PacketForecaster(NodeVisitor):
                     merged_role_nts[role_nts] = set()
                 merged_paths = merged_role_nts[role_nts]
                 merged_role_nts[role_nts] = merged_paths.union(merged_role_nts[role_nts])
+        return merged
 
     def __init__(self, grammar: "Grammar", tree: DerivationTree|None = None):
         self.grammar = grammar
@@ -602,7 +603,10 @@ class PacketForecaster(NodeVisitor):
         self.role_options = dict()
         if self.tree is not None:
             self.current_path.append(self.tree.symbol)
-            self.current_tree = [[self.tree.children[0]]]
+            if len(self.tree.children) == 0:
+                self.current_tree = [None]
+            else:
+                self.current_tree = [[self.tree.children[0]]]
         else:
             self.current_path.append(NonTerminal("<start>"))
             self.current_tree = [None]

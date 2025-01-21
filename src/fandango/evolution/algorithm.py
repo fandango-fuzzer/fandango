@@ -175,8 +175,6 @@ class Fandango:
 
 
             results = self._evolve_single()
-            finder = NextRoleFinder(self.grammar, results[0])
-            finder.find()
             if len(results) == 0:
                 raise RuntimeError(
                     f"Couldn't generate next packet in {self.max_generations} generations!"
