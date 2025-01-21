@@ -578,10 +578,27 @@ class PacketForecaster(NodeVisitor):
         def add_path(self, path: "PacketForecaster.MountingPath"):
             self.paths.add(path)
 
+    class ForcastingNonTerminals:
+        def __init__(self):
+            self.nt_to_packet = dict[NonTerminal, PacketForecaster.ForcastingPacket]()
+
+        def getNonTerminals(self) -> set[NonTerminal]:
+            return set(self.nt_to_packet.keys())
+
+        def __getitem__(self, item: NonTerminal):
+            return self.nt_to_packet[item]
+
+        def add_packet(self, packet: "PacketForecaster.ForcastingPacket"):
+            if packet.node.symbol in self.nt_to_packet.keys():
+                for path in packet.paths:
+                    self.nt_to_packet[packet.node.symbol].add_path(path)
+            else:
+                self.nt_to_packet[packet.node.symbol] = packet
+
     class ForcastingResult:
         def __init__(self):
             # dict[roleName, dict[packetName, PacketForecaster.ForcastingPacket]]
-            self.roles_to_packets = dict[str, dict[NonTerminal, PacketForecaster.ForcastingPacket]]()
+            self.roles_to_packets = dict[str, PacketForecaster.ForcastingNonTerminals]()
 
         def getRoles(self) -> set[str]:
             return set(self.roles_to_packets.keys())
@@ -591,20 +608,15 @@ class PacketForecaster(NodeVisitor):
 
         def add_packet(self, role: str, packet: "PacketForecaster.ForcastingPacket"):
             if role not in self.roles_to_packets.keys():
-                self.roles_to_packets[role] = dict()
-            packet_name_to_packet = self.roles_to_packets[role]
-            if packet.node.symbol not in packet_name_to_packet.keys():
-                packet_name_to_packet[packet.node.symbol] = packet
-            existing_packet = packet_name_to_packet[packet.node.symbol]
-            for path in packet.paths:
-                existing_packet.add_path(path)
+                self.roles_to_packets[role] = PacketForecaster.ForcastingNonTerminals()
+            self.roles_to_packets[role].add_packet(packet)
 
         def merge(self, other: "PacketForecaster.ForcastingResult"):
             c_new = copy.deepcopy(self)
             c_other = copy.deepcopy(other)
-            for role, fp in c_other.roles_to_packets.items():
-                for packet in fp.values():
-                    c_new.add_packet(role, packet)
+            for role, fnt in c_other.roles_to_packets.items():
+                for fp in fnt.nt_to_packet.values():
+                    c_new.add_packet(role, fp)
             return c_new
 
     def __init__(self, grammar: "Grammar", tree: DerivationTree|None = None):
