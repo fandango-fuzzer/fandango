@@ -175,18 +175,21 @@ class Fandango:
             if io_instance.roles[selected_role].is_fandango():
                 #fuzz myself
                 symbol = random.choice(list(packet_options[selected_role].getNonTerminals()))
+                new_population = []
                 selected_packet_option = packet_options[selected_role][symbol]
-                new_packet = selected_packet_option.node.fuzz(self.grammar)[0]
+                while len(new_population) < self.population_size:
+                    new_packet = selected_packet_option.node.fuzz(self.grammar)[0]
 
-                mounting_path = random.choice(list(selected_packet_option.paths))
-                tree: DerivationTree = mounting_path.tree
-                current = [tree]
-                path: tuple[NonTerminal] = mounting_path.path
-                for nt in path:
-                    if len(current) == 0 or current[-1].symbol != nt:
-                        current.append(DerivationTree(nt))
-                    current = current[-1].children
-                current.append(new_packet)
+                    mounting_path = random.choice(list(selected_packet_option.paths))
+                    tree: DerivationTree = copy.deepcopy(mounting_path.tree)
+                    current = [tree]
+                    path: tuple[NonTerminal] = mounting_path.path
+                    for nt in path:
+                        if len(current) == 0 or current[-1].symbol != nt:
+                            current.append(DerivationTree(nt, read_only=True))
+                        current = current[-1].children
+                    current.append(new_packet)
+                    new_population.append(tree)
 
 
 
