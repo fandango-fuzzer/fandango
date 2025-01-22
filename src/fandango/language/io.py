@@ -41,7 +41,7 @@ class STDOUT(FandangoAgent):
         super().__init__(True)
 
     def on_send(self, message: str, response_setter: Callable[[str, str], None]):
-        print(message)
+        print(f"({self.class_name}): {message}")
 
 
 class FandangoIO:
@@ -65,7 +65,7 @@ class FandangoIO:
         if self.transmit is not None:
             role, msg = self.transmit
             if role in self.roles.keys():
-                self.roles[role].on_transmit_msg(msg, self.add_receive)
+                self.roles[role].on_send(msg, self.add_receive)
         self.clear_transmit_msgs()
 
     def clear_transmit_msgs(self):

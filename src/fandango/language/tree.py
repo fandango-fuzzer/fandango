@@ -84,6 +84,16 @@ class DerivationTree:
             subtrees.extend(child.find_role_msgs())
         return subtrees
 
+    def append(self, hookin_path: tuple[NonTerminal, ...], tree: "DerivationTree"):
+        if len(hookin_path) == 0:
+            self.children.append(tree)
+            return
+        if len(self.children) == 0 or self.children[-1].symbol != hookin_path[0]:
+            self.children.append(DerivationTree(hookin_path[0]))
+        self.children[-1].append(hookin_path[1:], tree)
+
+
+
     def set_children(self, children: List["DerivationTree"]):
         self._children = children
         self._size = 1 + sum(child.size() for child in self._children)
