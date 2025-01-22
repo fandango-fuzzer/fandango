@@ -555,7 +555,7 @@ class NonTerminalFinder(NodeVisitor):
 class PacketForecaster(NodeVisitor):
 
     class MountingPath:
-        def __init__(self, tree: DerivationTree, path: Tuple[str, ...]):
+        def __init__(self, tree: DerivationTree, path: Tuple[NonTerminal, ...]):
             self.tree = tree
             self.path = path
 
@@ -571,7 +571,7 @@ class PacketForecaster(NodeVisitor):
     class ForcastingPacket:
         def __init__(self, node: NonTerminalNode):
             self.node = node
-            self.paths = set[PacketForecaster.MountingPath]()
+            self.paths: set[PacketForecaster.MountingPath] = set()
 
         def add_path(self, path: "PacketForecaster.MountingPath"):
             self.paths.add(path)
@@ -621,7 +621,7 @@ class PacketForecaster(NodeVisitor):
         self.grammar = grammar
         self.tree = tree
         self.current_tree: list[list[DerivationTree] | None] = []
-        self.current_path: list[str] = []
+        self.current_path: list[NonTerminal] = []
         self.result = PacketForecaster.ForcastingResult()
 
 

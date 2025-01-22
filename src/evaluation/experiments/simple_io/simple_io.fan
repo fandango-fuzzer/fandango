@@ -1,4 +1,4 @@
-<start> ::= <client:request><server:challenge><client:resolve><server:validate>;
+<start> ::= <Client:request><Server:challenge><Client:resolve><Server:validate>;
 <request> ::= '{}';
 <challenge> ::= '{"nr_high":' <number_high>',"nr_low":' <number_low>'}';
 <resolve> ::= '{"nr":' <number> '}';
@@ -15,13 +15,16 @@ int(<challenge>.<number_low>) < int(<resolve>.<number>);
 import requests
 import json
 
-class Client(IoParty):
+class Client(FandangoAgent):
 
         def __init__(self):
             super().__init__(True)
 
-        def on_transmit_msg(self, message: str, response_setter: Callable[[str, str], None]):
+        def on_send(self, message: str, response_setter: Callable[[str, str], None]):
             x = requests.post("http://127.0.0.1:5000/api/hello", json = json.loads(message))
-            response_setter("server", x.text.strip())
+            response_setter("Server", x.text.strip())
 
-Client()
+class Server(FandangoAgent):
+
+        def __init__(self):
+            super().__init__(False)

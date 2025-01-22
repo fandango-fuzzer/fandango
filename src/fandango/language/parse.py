@@ -582,7 +582,7 @@ def check_constraints_existence_children(
     #
     # Simpler version; may overfit (e.g. matches <...> in strings),
     # but that should not hurt us -- AZ
-    finder = NonTerminalFinder()
+    finder = NonTerminalFinder(grammar)
     non_terminals = finder.visit(grammar_symbols)
     non_terminals = [str(nt.symbol)[1:-1] for nt in non_terminals]
 

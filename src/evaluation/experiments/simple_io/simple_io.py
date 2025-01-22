@@ -6,7 +6,7 @@ from fandango.language.parse import parse
 
 def main():
     # Parse grammar and constraints
-    with open("simple_io_2.fan") as f:
+    with open("simple_io.fan") as f:
         grammar, constraints = parse(f, use_stdlib=False)
     # Initialize FANDANGO with desired parameters
 
