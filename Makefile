@@ -170,3 +170,6 @@ test tests:
 install:
 	$(PIP) install -e .
 
+uninstall:
+	$(PIP) uninstall fandango-fuzzer -y
+
