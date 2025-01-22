@@ -28,4 +28,4 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${{ secrets.DOCKER_REPO }}:${{ github.ref_name }}
+        tags: ${{ secrets.DOCKER_REPO }}:latest
