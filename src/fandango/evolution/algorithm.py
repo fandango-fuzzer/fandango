@@ -163,7 +163,6 @@ class Fandango:
         else:
             raise NotImplementedError(f"Unknown FuzzingMode: {self.grammar.fuzzing_mode}")
 
-
     def _evolve_io(self) -> List[DerivationTree]:
         global_env, local_env = self.grammar.get_python_env()
         io_instance: FandangoIO = global_env["FandangoIO"].instance()
@@ -188,10 +187,10 @@ class Fandango:
             self.solution.clear()
             self.fitness_cache.clear()
             if io_instance.roles[selected_role].is_fandango() and not io_instance.received_msg():
-                #fuzz myself
-                symbol = random.choice(list(role_options[selected_role].getNonTerminals()))
+                non_terminal_options = role_options[selected_role]
+                symbol = random.choice(list(non_terminal_options.getNonTerminals()))
                 new_population = []
-                self.io_next_packet = role_options[selected_role][symbol]
+                self.io_next_packet = non_terminal_options[symbol]
                 while len(new_population) < self.population_size:
                     new_population.append(self._generate_population_entry())
 
@@ -213,45 +212,8 @@ class Fandango:
             else:
                 while not io_instance.received_msg():
                     time.sleep(0.25)
-                remote_msgs = io_instance.get_received_msgs()
+                forecast, packet_tree = self._parse_next_remote_packet(role_options, io_instance)
 
-                is_msg_complete = False
-                complete_msg = ""
-                msg_role = None
-                parsed_trees = dict[PacketForecaster.ForcastingPacket, DerivationTree]()
-                while not is_msg_complete:
-                    parsed_trees = dict[PacketForecaster.ForcastingPacket, DerivationTree]()
-                    fragment_idx = []
-                    for idx, (role, msg_fragment) in enumerate(remote_msgs):
-                        if msg_role is None:
-                            msg_role = role
-                        elif msg_role != role:
-                            continue
-                        complete_msg += msg_fragment
-                        fragment_idx.append(idx)
-
-                        non_terminal_options = role_options[msg_role]
-                        for non_terminal in non_terminal_options.getNonTerminals():
-                            packet_option = non_terminal_options[non_terminal]
-                            try:
-                                parsed_trees[packet_option] = next(
-                                    self.grammar.parse_incomplete(complete_msg, packet_option.node.symbol))
-                            except StopIteration:
-                                continue
-
-                        if len(parsed_trees.keys()) == 0:
-                            raise RuntimeError(
-                                f"Couldn't match remote message to any packet matching grammar: {complete_msg}")
-                        for fp, tree in dict(parsed_trees).items():
-                            if len(self.grammar.parse(complete_msg, fp.node.symbol)) == 0:
-                                del parsed_trees[fp]
-                        if len(parsed_trees.keys()) != 0:
-                            # We parsed a packet
-                            is_msg_complete = True
-                            for idx in fragment_idx:
-                                del remote_msgs[idx]
-                forecast, packet_tree = list(parsed_trees.items())[0]
-                packet_tree.role = msg_role
                 prefix_data = next(iter(forecast.paths))
                 next_tree = prefix_data.tree
                 hookin_path = prefix_data.path
@@ -408,6 +370,47 @@ class Fandango:
                 return self.population[: self.desired_solutions]
 
         return self.solution
+
+    def _parse_next_remote_packet(self, forecast: PacketForecaster.ForcastingResult, io_instance: FandangoIO):
+        is_msg_complete = False
+        complete_msg = ""
+        msg_role = None
+        parsed_trees = dict[PacketForecaster.ForcastingPacket, DerivationTree]()
+        while not is_msg_complete:
+            parsed_trees = dict[PacketForecaster.ForcastingPacket, DerivationTree]()
+            fragment_idx = []
+            remote_msgs = io_instance.get_received_msgs()
+            for idx, (role, msg_fragment) in enumerate(remote_msgs):
+                if msg_role is None:
+                    msg_role = role
+                elif msg_role != role:
+                    continue
+                complete_msg += msg_fragment
+                fragment_idx.append(idx)
+
+                non_terminal_options = forecast[msg_role]
+                for non_terminal in non_terminal_options.getNonTerminals():
+                    packet_option = non_terminal_options[non_terminal]
+                    try:
+                        parsed_trees[packet_option] = next(
+                            self.grammar.parse_incomplete(complete_msg, packet_option.node.symbol))
+                    except StopIteration:
+                        continue
+
+                if len(parsed_trees.keys()) == 0:
+                    raise RuntimeError(
+                        f"Couldn't match remote message to any packet matching grammar: {complete_msg}")
+                for fp, tree in dict(parsed_trees).items():
+                    if len(self.grammar.parse(complete_msg, fp.node.symbol)) == 0:
+                        del parsed_trees[fp]
+                if len(parsed_trees.keys()) != 0:
+                    # We parsed a packet
+                    is_msg_complete = True
+                    for idx in fragment_idx:
+                        del remote_msgs[idx]
+        forecast, packet_tree = list(parsed_trees.items())[0]
+        packet_tree.role = msg_role
+        return forecast, packet_tree
 
     def generate_random_initial_population(self) -> List[DerivationTree]:
         """
