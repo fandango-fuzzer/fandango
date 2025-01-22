@@ -95,6 +95,7 @@ class Fandango:
 
         self.fitness_cache = {}
         self.continue_trees = []
+        self.io_next_packet = None
 
         self.fixes_made = 0
         self.checks_made = 0
@@ -147,6 +148,29 @@ class Fandango:
             sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
 
+    def _generate_population_entry(self):
+        if self.grammar.fuzzing_mode == FuzzingMode.IO:
+            if self.io_next_packet is None:
+                return DerivationTree(NonTerminal(self.start_symbol))
+
+            new_packet = self.io_next_packet.node.fuzz(self.grammar)[0]
+
+            mounting_path = random.choice(list(self.io_next_packet.paths))
+            tree: DerivationTree = copy.deepcopy(mounting_path.tree)
+            current = [tree]
+            path: tuple[NonTerminal] = mounting_path.path
+            for nt in path:
+                if len(current) == 0 or current[-1].symbol != nt:
+                    current.append(DerivationTree(nt, read_only=True))
+                current = current[-1].children
+            current.append(new_packet)
+            return tree
+        elif self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
+            return self.grammar.fuzz(self.start_symbol)
+        else:
+            raise NotImplementedError(f"Unknown FuzzingMode: {self.grammar.fuzzing_mode}")
+
+
     def _evolve_io(self) -> List[DerivationTree]:
         global_env, local_env = self.grammar.get_python_env()
         io_instance: FandangoIO = global_env["FandangoIO"].instance()
@@ -172,34 +196,58 @@ class Fandango:
 
             #Todo: For now select a random role and packet.
             selected_role = random.choice(list(packet_options.getRoles()))
-            if io_instance.roles[selected_role].is_fandango():
+            next_tree = None
+            if io_instance.roles[selected_role].is_fandango() and not io_instance.received_msg():
                 #fuzz myself
                 symbol = random.choice(list(packet_options[selected_role].getNonTerminals()))
                 new_population = []
-                selected_packet_option = packet_options[selected_role][symbol]
+                self.io_next_packet = packet_options[selected_role][symbol]
                 while len(new_population) < self.population_size:
-                    new_packet = selected_packet_option.node.fuzz(self.grammar)[0]
-
-                    mounting_path = random.choice(list(selected_packet_option.paths))
-                    tree: DerivationTree = copy.deepcopy(mounting_path.tree)
-                    current = [tree]
-                    path: tuple[NonTerminal] = mounting_path.path
-                    for nt in path:
-                        if len(current) == 0 or current[-1].symbol != nt:
-                            current.append(DerivationTree(nt, read_only=True))
-                        current = current[-1].children
-                    current.append(new_packet)
-                    new_population.append(tree)
-
-
-
-
-
+                    new_population.append(self._generate_population_entry())
+                self.population = new_population
+                evolve_result = self._evolve_single()
+                if len(evolve_result) == 0:
+                    raise RuntimeError(f"Couldn't find solution with packet: {self.io_next_packet.node.symbol}")
+                next_tree = evolve_result[0]
+                if io_instance.received_msg():
+                    # Abort if we received a message during fuzzing
+                    continue
+                io_instance.set_transmit(selected_role, str(next_tree.find_role_msgs()[-1]))
+                io_instance.run_com_loop()
             else:
-                pass
-                # wait
+                while True:
+                    while not io_instance.received_msg():
+                        time.sleep(0.25)
+                    remote_msgs = io_instance.get_received_msgs()
 
+                    is_msg_complete = False
+                    complete_msg = ""
+                    msg_role = None
+                    parsed_trees = dict[NonTerminal, DerivationTree]()
+                    while not is_msg_complete:
+                        for role, msg in remote_msgs:
+                            if msg_role is None:
+                                msg_role = role
+                            elif msg_role != role:
+                                # Todo
+                                raise RuntimeError("Received fragmented remote message!")
+                            complete_msg += msg
+                        if msg_role not in packet_options.getRoles():
+                            raise RuntimeError("Remote sent packet, but wasn't allowed to according to grammar!")
 
+                        parsed_trees = dict[NonTerminal, DerivationTree]()
+                        for packet_type in packet_options[msg_role]:
+                            try:
+                                parsed_trees[packet_type.node.symbol] = next(self.grammar.parse_incomplete(complete_msg, packet_type.node.symbol))
+                            except StopIteration:
+                                continue
+                        if len(parsed_trees.keys()) == 0:
+                            raise RuntimeError(f"Couldn't match remote message to any packet matching grammar: {complete_msg}")
+                        for nt, tree in dict(parsed_trees).items():
+                            if len(self.grammar.parse(complete_msg, nt)) == 0:
+                                del parsed_trees[nt]
+                        if len(parsed_trees) > 0:
+                            is_msg_complete = True
 
 
             results = self._evolve_single()
@@ -337,16 +385,7 @@ class Fandango:
 
             # Add new individuals
             while len(new_population) < self.population_size:
-                # Todo add new generation strategy
-                if self.grammar.fuzzing_mode == FuzzingMode.IO and len(
-                    self.continue_trees
-                ):
-                    continue_tree = copy.deepcopy(random.choice(self.continue_trees))
-                new_population.append(
-                    self.grammar.fuzz(
-                        start=self.start_symbol
-                    )
-                )
+                new_population.append(self._generate_population_entry())
 
             # Fix individuals
             fixed_population = list()
@@ -403,16 +442,10 @@ class Fandango:
 
         :return: A set of individuals.
         """
-        if self.grammar.fuzzing_mode == FuzzingMode.IO:
-            population = [
-                DerivationTree(NonTerminal(self.start_symbol))
-                for _ in range(self.population_size)
-            ]
-        else:
-            population = [
-                self.grammar.fuzz(self.start_symbol)
-                for _ in range(self.population_size)
-            ]
+        population = [
+            self._generate_population_entry()
+            for _ in range(self.population_size)
+        ]
 
         # Fix individuals
         fixed_population = list()
