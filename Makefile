@@ -161,7 +161,7 @@ clean-docs:
 
 ## Test
 test tests:
-	$(PIP) install -e .
+	$(PIP) install -e ".[test]"
 	$(PYTEST)
 
 
