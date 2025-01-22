@@ -4,7 +4,7 @@
 [![GitHub Pages](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-book.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-book.yml)
 [![CodeQL](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql)
 [![PyPI](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-pypi.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-pypi.yml)
-
+[![Socket Badge](https://socket.dev/api/badge/pypi/package/fandango-fuzzer/0.1.0?artifact_id=tar-gz)](https://socket.dev/pypi/package/fandango-fuzzer/overview/0.1.0/tar-gz)
 
 FANDANGO is a language-based fuzzer that leverages formal input specifications (grammars) combined with constraints to generate diverse sets of valid inputs for programs under test. Unlike traditional symbolic constraint solvers, FANDANGO uses a search-based approach to systematically evolve a population of inputs through syntactically valid mutations until semantic input constraints are satisfied.
 
