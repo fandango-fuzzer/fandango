@@ -431,6 +431,8 @@ def parse(
         io_instance: FandangoIO = global_env["FandangoIO"].instance()
         grammar_roles = grammar.roles()
         agent_names = set()
+
+        # Initialize FandangoAgent instances
         for key in global_env.keys():
             if key in grammar_roles:
                 the_type = global_env[key]
@@ -438,6 +440,7 @@ def parse(
                     continue
                 if FandangoAgent in the_type.__mro__:
                     agent_names.add(key)
+        # Call constructor
         for agent in agent_names:
             exec(f"{agent}()", global_env, local_env)
             grammar_roles.remove(agent)
@@ -447,6 +450,8 @@ def parse(
             non_terminals: list[NonTerminalNode] = NonTerminalFinder(grammar).visit(
                 grammar.rules[symbol]
             )
+            # At this point grammar_roles only contains role names that have no FandangoAgent defined.
+            # These roles get set to STDOUT
             for nt in non_terminals:
                 if nt.role is None:
                     continue
