@@ -210,12 +210,26 @@ class GrammarProcessor(FandangoParserVisitor):
             raise ValueError(f"Unknown symbol: {ctx.getText()}")
 
     def visitNonterminal_right(self, ctx: FandangoParser.Nonterminal_rightContext):
+        ctx.COLON(0)
+        ctx.NAME(1)
         if ctx.NAME(1) is None:
             return NonTerminalNode(NonTerminal("<" + ctx.NAME(0).getText() + ">"))
-        else:
+        elif ctx.NAME(2) is None:
+            # idx 0 = role
             self.seenRoles.add(ctx.NAME(0).getText())
             return NonTerminalNode(
-                NonTerminal("<" + ctx.NAME(1).getText() + ">"), ctx.NAME(0).getText()
+                NonTerminal("<" + ctx.NAME(1).getText() + ">"),
+                ctx.NAME(0).getText(),
+                None,
+            )
+        else:
+            # idx 0 = role; idx 1 = receiver
+            self.seenRoles.add(ctx.NAME(0).getText())
+            self.seenRoles.add(ctx.NAME(1).getText())
+            return NonTerminalNode(
+                NonTerminal("<" + ctx.NAME(2).getText() + ">"),
+                ctx.NAME(0).getText(),
+                ctx.NAME(1).getText(),
             )
 
 

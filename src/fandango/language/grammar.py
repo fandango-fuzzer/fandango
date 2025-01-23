@@ -47,10 +47,7 @@ class Node(abc.ABC):
         self.distance_to_completion = distance_to_completion
 
     def fuzz(
-        self,
-        grammar: "Grammar",
-        max_nodes: int = 100,
-        in_role: str = None
+        self, grammar: "Grammar", max_nodes: int = 100, in_role: str = None
     ) -> List[DerivationTree]:
         return []
 
@@ -92,10 +89,7 @@ class Alternative(Node):
         self.alternatives = alternatives
 
     def fuzz(
-        self,
-        grammar: "Grammar",
-        max_nodes: int = 100,
-        in_role: str = None
+        self, grammar: "Grammar", max_nodes: int = 100, in_role: str = None
     ) -> List[DerivationTree]:
         if self.distance_to_completion >= max_nodes:
             min_ = min(self.alternatives, key=lambda x: x.distance_to_completion)
@@ -106,11 +100,7 @@ class Alternative(Node):
                     if a.distance_to_completion <= min_.distance_to_completion
                 ]
             ).fuzz(grammar, 0, in_role)
-        return random.choice(self.alternatives).fuzz(
-            grammar,
-            max_nodes - 1,
-            in_role
-        )
+        return random.choice(self.alternatives).fuzz(grammar, max_nodes - 1, in_role)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitAlternative(self)
@@ -137,24 +127,14 @@ class Concatenation(Node):
         self.nodes = nodes
 
     def fuzz(
-        self,
-        grammar: "Grammar",
-        max_nodes: int = 100,
-        in_role: str = None
+        self, grammar: "Grammar", max_nodes: int = 100, in_role: str = None
     ) -> List[DerivationTree]:
         trees = []
         for idx, node in enumerate(self.nodes):
             if node.distance_to_completion >= max_nodes:
-                tree = node.fuzz(
-                    grammar, 0,
-                    in_role
-                )
+                tree = node.fuzz(grammar, 0, in_role)
             else:
-                tree = node.fuzz(
-                    grammar,
-                    max_nodes - 1,
-                    in_role
-                )
+                tree = node.fuzz(grammar, max_nodes - 1, in_role)
             trees.extend(tree)
             max_nodes -= sum(t.size() for t in tree)
         return trees
@@ -198,10 +178,7 @@ class Repetition(Node):
         return visitor.visitRepetition(self)
 
     def fuzz(
-        self,
-        grammar: "Grammar",
-        max_nodes: int = 100,
-        in_role: str = None
+        self, grammar: "Grammar", max_nodes: int = 100, in_role: str = None
     ) -> List[DerivationTree]:
         repetitions = random.randint(self.min, self.max)
         trees = []
@@ -209,15 +186,9 @@ class Repetition(Node):
             if self.node.distance_to_completion >= max_nodes:
                 if rep > self.min:
                     break
-                tree = self.node.fuzz(
-                    grammar, 0, in_role
-                )
+                tree = self.node.fuzz(grammar, 0, in_role)
             else:
-                tree = self.node.fuzz(
-                    grammar,
-                    max_nodes - 1,
-                    in_role
-                )
+                tree = self.node.fuzz(grammar, max_nodes - 1, in_role)
             trees.extend(tree)
             max_nodes -= sum(t.size() for t in tree)
         return trees
@@ -282,16 +253,14 @@ class Option(Repetition):
 
 
 class NonTerminalNode(Node):
-    def __init__(self, symbol: NonTerminal, role: str = None):
+    def __init__(self, symbol: NonTerminal, role: str = None, recipient: str = None):
         super().__init__(NodeType.NON_TERMINAL)
         self.symbol = symbol
         self.role = role
+        self.recipient = recipient
 
     def fuzz(
-        self,
-        grammar: "Grammar",
-        max_nodes: int = 100,
-        in_role: str = None
+        self, grammar: "Grammar", max_nodes: int = 100, in_role: str = None
     ) -> List[DerivationTree]:
         if self.symbol not in grammar:
             raise ValueError(f"Symbol {self.symbol} not found in grammar")
@@ -299,27 +268,28 @@ class NonTerminalNode(Node):
         if self.symbol in grammar.generators:
             return [grammar.generate(self.symbol)]
 
+        assign_role = None
+        assign_recipient = None
         if in_role is None:
             assign_role = self.role
+            assign_recipient = self.recipient
             in_role = self.role
-        else:
-            assign_role = None
 
-        children = grammar[self.symbol].fuzz(
-            grammar, max_nodes - 1, in_role
-        )
+        children = grammar[self.symbol].fuzz(grammar, max_nodes - 1, in_role)
 
-        tree = DerivationTree(
-            self.symbol, children, role=in_role, read_only=False
-        )
+        tree = DerivationTree(self.symbol, children, role=assign_role, recipient=assign_recipient, read_only=False)
         return [tree]
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitNonTerminalNode(self)
 
     def __repr__(self):
+
         if self.role is not None:
-            return f"<{self.role}:{self.symbol.__repr__()[1:-1]}>"
+            if self.receiver is None:
+                return f"<{self.role}:{self.symbol.__repr__()[1:-1]}>"
+            else:
+                return f"<{self.role}:{self.receiver}:{self.symbol.__repr__()[1:-1]}>"
         else:
             return self.symbol.__repr__()
 
@@ -339,7 +309,6 @@ class NonTerminalNode(Node):
                 roles.add(role)
         return roles
 
-
     def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterator["Node"]:
         yield rules[self.symbol]
 
@@ -350,10 +319,7 @@ class TerminalNode(Node):
         self.symbol = symbol
 
     def fuzz(
-        self,
-        grammar: "Grammar",
-        max_nodes: int = 100,
-        in_role: str = None
+        self, grammar: "Grammar", max_nodes: int = 100, in_role: str = None
     ) -> List[DerivationTree]:
 
         return [DerivationTree(self.symbol)]
@@ -377,10 +343,7 @@ class CharSet(Node):
         self.chars = chars
 
     def fuzz(
-        self,
-        grammar: "Grammar",
-        max_nodes: int = 100,
-        in_role: str = None
+        self, grammar: "Grammar", max_nodes: int = 100, in_role: str = None
     ) -> List[DerivationTree]:
         raise NotImplementedError("CharSet fuzzing not implemented")
 
@@ -439,6 +402,7 @@ class NodeVisitor(abc.ABC):
     # noinspection PyUnusedLocal
     def visitCharSet(self, node: CharSet):
         return self.default_result()
+
 
 class Disambiguator(NodeVisitor):
     def __init__(self):
@@ -535,6 +499,7 @@ class Disambiguator(NodeVisitor):
     ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
         return {(Terminal(c),): [(node, TerminalNode(Terminal(c)))] for c in node.chars}
 
+
 class NonTerminalFinder(NodeVisitor):
 
     def __init__(self, grammar: "Grammar"):
@@ -551,6 +516,7 @@ class NonTerminalFinder(NodeVisitor):
         if node.symbol.is_implicit:
             return self.visit(self.grammar.rules[node.symbol]) + [node]
         return [node]
+
 
 class PacketForecaster(NodeVisitor):
 
@@ -617,16 +583,17 @@ class PacketForecaster(NodeVisitor):
                     c_new.add_packet(role, fp)
             return c_new
 
-    def __init__(self, grammar: "Grammar", tree: DerivationTree|None = None):
+    def __init__(self, grammar: "Grammar", tree: DerivationTree | None = None):
         self.grammar = grammar
         self.tree = tree
         self.current_tree: list[list[DerivationTree] | None] = []
         self.current_path: list[NonTerminal] = []
         self.result = PacketForecaster.ForcastingResult()
 
-
     def add_option(self, node: NonTerminalNode):
-        mounting_path = PacketForecaster.MountingPath(self.tree, tuple(self.current_path))
+        mounting_path = PacketForecaster.MountingPath(
+            self.tree, tuple(self.current_path)
+        )
         f_packet = PacketForecaster.ForcastingPacket(node)
         f_packet.add_path(mounting_path)
         self.result.add_packet(node.role, f_packet)
@@ -669,7 +636,6 @@ class PacketForecaster(NodeVisitor):
             self.current_tree.pop()
         return result
 
-
     def visitConcatenation(self, node: Concatenation):
         tree = self.current_tree[-1]
         child_idx = 0 if tree is None else (len(tree) - 1)
@@ -688,7 +654,6 @@ class PacketForecaster(NodeVisitor):
             self.current_tree.pop()
             child_idx += 1
         return continue_exploring
-
 
     def visitAlternative(self, node: Alternative):
         tree = self.current_tree[-1]
@@ -714,7 +679,6 @@ class PacketForecaster(NodeVisitor):
                 continue_exploring |= not self.visit(alt)
             self.current_tree.pop()
             return continue_exploring
-
 
     def visitRepetition(self, node: Repetition):
         tree = self.current_tree[-1]
@@ -745,16 +709,21 @@ class PacketForecaster(NodeVisitor):
     def visitOption(self, node: Option):
         return self.visitRepetition(node)
 
-class RoleAssigner():
 
-    def __init__(self, implicite_role: str, grammar: "Grammar", processed_non_terminals: set[str]):
+class RoleAssigner:
+
+    def __init__(
+        self, implicite_role: str, grammar: "Grammar", processed_non_terminals: set[str]
+    ):
         self.grammar = grammar
         self.seen_non_terminals = set()
         self.processed_non_terminals = set(processed_non_terminals)
         self.implicite_role = implicite_role
 
     def run(self, node: Node):
-        non_terminals: list[NonTerminalNode] = NonTerminalFinder(self.grammar).visit(node)
+        non_terminals: list[NonTerminalNode] = NonTerminalFinder(self.grammar).visit(
+            node
+        )
         unprocessed_non_terminals = []
         for nt in non_terminals:
             if nt not in self.processed_non_terminals:
@@ -1165,15 +1134,13 @@ class Grammar(NodeVisitor):
         start: str | NonTerminal = "<start>",
         max_nodes: int = 50,
         mode: FuzzingMode = None,
-        in_role: str = None
+        in_role: str = None,
     ) -> DerivationTree:
         if isinstance(start, str):
             start = NonTerminal(start)
-        return NonTerminalNode(start).fuzz(
-            self,
-            max_nodes=max_nodes,
-            in_role = in_role
-        )[0]
+        return NonTerminalNode(start).fuzz(self, max_nodes=max_nodes, in_role=in_role)[
+            0
+        ]
 
     def update(self, grammar: "Grammar" | Dict[NonTerminal, Node], prime=True):
         if isinstance(grammar, Grammar):

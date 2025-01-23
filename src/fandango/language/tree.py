@@ -28,6 +28,7 @@ class DerivationTree:
         children: Optional[List["DerivationTree"]] = None,
         parent: Optional["DerivationTree"] = None,
         role: str = None,
+        recipient: str = None,
         read_only: bool = False,
     ):
         self.symbol = symbol
@@ -37,6 +38,7 @@ class DerivationTree:
         self._parent = parent
         self.read_only = read_only
         self.role = role
+        self.recipient = recipient
 
     def __len__(self):
         return len(self._children)
@@ -55,7 +57,7 @@ class DerivationTree:
 
         return [
             DerivationTree(
-                self.symbol, children=reduced, read_only=self.read_only, role=self.role
+                self.symbol, children=reduced, read_only=self.read_only, recipient=self.recipient, role=self.role
             )
         ]
 
@@ -91,8 +93,6 @@ class DerivationTree:
         if len(self.children) == 0 or self.children[-1].symbol != hookin_path[0]:
             self.children.append(DerivationTree(hookin_path[0]))
         self.children[-1].append(hookin_path[1:], tree)
-
-
 
     def set_children(self, children: List["DerivationTree"]):
         self._children = children
@@ -176,7 +176,7 @@ class DerivationTree:
 
         # Create a new instance without copying the parent
         copied = DerivationTree(
-            self.symbol, [], role=self.role, read_only=self.read_only
+            self.symbol, [], role=self.role, recipient=self.recipient, read_only=self.read_only
         )
         memo[id(self)] = copied
 
@@ -381,6 +381,7 @@ class DerivationTree:
                     for child in self._children
                 ],
                 role=self.role,
+                recipient=self.recipient,
                 read_only=self.read_only,
             )
 

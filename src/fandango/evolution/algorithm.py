@@ -161,7 +161,9 @@ class Fandango:
         elif self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
             return self.grammar.fuzz(self.start_symbol)
         else:
-            raise NotImplementedError(f"Unknown FuzzingMode: {self.grammar.fuzzing_mode}")
+            raise NotImplementedError(
+                f"Unknown FuzzingMode: {self.grammar.fuzzing_mode}"
+            )
 
     def _evolve_io(self) -> List[DerivationTree]:
         global_env, local_env = self.grammar.get_python_env()
@@ -186,7 +188,10 @@ class Fandango:
             selected_role = random.choice(list(role_options.getRoles()))
             self.solution.clear()
             self.fitness_cache.clear()
-            if io_instance.roles[selected_role].is_fandango() and not io_instance.received_msg():
+            if (
+                io_instance.roles[selected_role].is_fandango()
+                and not io_instance.received_msg()
+            ):
                 non_terminal_options = role_options[selected_role]
                 symbol = random.choice(list(non_terminal_options.getNonTerminals()))
                 new_population = []
@@ -197,22 +202,29 @@ class Fandango:
                 self.population = new_population
                 self.evaluation = self.evaluate_population()
                 self.fitness = (
-                        sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+                    sum(fitness for _, fitness, _ in self.evaluation)
+                    / self.population_size
                 )
 
                 evolve_result = self._evolve_single()
                 if len(evolve_result) == 0:
-                    raise RuntimeError(f"Couldn't find solution with packet: {self.io_next_packet.node.symbol}")
+                    raise RuntimeError(
+                        f"Couldn't find solution with packet: {self.io_next_packet.node.symbol}"
+                    )
                 next_tree = evolve_result[0]
                 if io_instance.received_msg():
                     # Abort if we received a message during fuzzing
                     continue
-                io_instance.set_transmit(selected_role, str(next_tree.find_role_msgs()[-1].msg))
+                io_instance.set_transmit(
+                    selected_role, str(next_tree.find_role_msgs()[-1].msg)
+                )
                 io_instance.run_com_loop()
             else:
                 while not io_instance.received_msg():
                     time.sleep(0.25)
-                forecast, packet_tree = self._parse_next_remote_packet(role_options, io_instance)
+                forecast, packet_tree = self._parse_next_remote_packet(
+                    role_options, io_instance
+                )
 
                 prefix_data = next(iter(forecast.paths))
                 next_tree = prefix_data.tree
@@ -223,7 +235,6 @@ class Fandango:
                 if fitness < 0.99:
                     raise RuntimeError("Remote response doesn't match constraints!")
                 self.solution.clear()
-
 
             str_history = ""
             history = next_tree.find_role_msgs()
@@ -248,7 +259,6 @@ class Fandango:
             self.solution = list(new_population)
             while len(self.population) < self.population_size:
                 self.population.append(random.choice(new_population))
-
 
     def evolve(self) -> List[DerivationTree]:
         if self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
@@ -371,7 +381,9 @@ class Fandango:
 
         return self.solution
 
-    def _parse_next_remote_packet(self, forecast: PacketForecaster.ForcastingResult, io_instance: FandangoIO):
+    def _parse_next_remote_packet(
+        self, forecast: PacketForecaster.ForcastingResult, io_instance: FandangoIO
+    ):
         is_msg_complete = False
         complete_msg = ""
         msg_role = None
@@ -393,13 +405,17 @@ class Fandango:
                     packet_option = non_terminal_options[non_terminal]
                     try:
                         parsed_trees[packet_option] = next(
-                            self.grammar.parse_incomplete(complete_msg, packet_option.node.symbol))
+                            self.grammar.parse_incomplete(
+                                complete_msg, packet_option.node.symbol
+                            )
+                        )
                     except StopIteration:
                         continue
 
                 if len(parsed_trees.keys()) == 0:
                     raise RuntimeError(
-                        f"Couldn't match remote message to any packet matching grammar: {complete_msg}")
+                        f"Couldn't match remote message to any packet matching grammar: {complete_msg}"
+                    )
                 for fp, tree in dict(parsed_trees).items():
                     if len(self.grammar.parse(complete_msg, fp.node.symbol)) == 0:
                         del parsed_trees[fp]
@@ -419,8 +435,7 @@ class Fandango:
         :return: A set of individuals.
         """
         population = [
-            self._generate_population_entry()
-            for _ in range(self.population_size)
+            self._generate_population_entry() for _ in range(self.population_size)
         ]
 
         # Fix individuals

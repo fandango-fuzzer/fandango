@@ -55,7 +55,7 @@ symbol
     ;
 
 nonterminal_right
-    : '<' (NAME ':')? NAME '>'
+    : '<' ((NAME ':')? NAME ':')? NAME '>'
     ;
 
 nonterminal
