@@ -746,6 +746,34 @@ class RoleAssigner:
             c_node.role = self.implicite_role
 
 
+class GrammarTruncator(NodeVisitor):
+    #Todo
+    def __init__(self, grammar: "Grammar"):
+        self.grammar = grammar
+        self.for_removal = set()
+        self.keep_roles = set[str]()
+
+    def visitRepetition(self, node: Repetition):
+        pass
+
+    def visitConcatenation(self, node: Concatenation):
+        pass
+
+    def is_truncatable(self, node: Node) -> bool:
+        truncatable = True
+        if isinstance(node, NonTerminalNode):
+            if node.recipient in self.keep_roles:
+                truncatable = False
+            if node.role in self.keep_roles:
+                truncatable = False
+            return truncatable
+        if isinstance(node, TerminalNode):
+            return False
+        if len(node.children()) == 0:
+            return truncatable
+
+
+
 class ParseState:
     def __init__(
         self,
