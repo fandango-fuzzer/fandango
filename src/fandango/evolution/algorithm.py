@@ -198,6 +198,7 @@ class Fandango:
                 self.io_next_packet = non_terminal_options[symbol]
                 while len(new_population) < self.population_size:
                     new_population.append(self._generate_population_entry())
+                packet_node = self.io_next_packet.node
 
                 self.population = new_population
                 self.evaluation = self.evaluate_population()
@@ -209,16 +210,15 @@ class Fandango:
                 evolve_result = self._evolve_single()
                 if len(evolve_result) == 0:
                     raise RuntimeError(
-                        f"Couldn't find solution with packet: {self.io_next_packet.node.symbol}"
+                        f"Couldn't find solution with packet: {packet_node.symbol}"
                     )
                 next_tree = evolve_result[0]
                 if io_instance.received_msg():
                     # Abort if we received a message during fuzzing
                     continue
-                io_instance.set_transmit(
-                    selected_role, str(next_tree.find_role_msgs()[-1].msg)
-                )
-                io_instance.run_com_loop()
+                send_msg = next_tree.find_role_msgs()[-1].msg
+                io_instance.set_transmit(packet_node.role, packet_node.recipient, send_msg)
+                exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
             else:
                 while not io_instance.received_msg():
                     time.sleep(0.25)

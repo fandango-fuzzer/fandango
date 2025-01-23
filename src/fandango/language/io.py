@@ -23,7 +23,7 @@ class FandangoAgent(object):
         First parameter of response_setter if the role of the other party. The second is the message, that it answered with.
     """
 
-    def on_send(self, message: str, response_setter: Callable[[str, str], None]):
+    def on_send(self, message: str, recipient: str, response_setter: Callable[[str, str], None]):
         pass
 
     """
@@ -39,7 +39,7 @@ class STDOUT(FandangoAgent):
     def __init__(self):
         super().__init__(True)
 
-    def on_send(self, message: str, response_setter: Callable[[str, str], None]):
+    def on_send(self, message: str, recipient: str, response_setter: Callable[[str, str], None]):
         print(f"({self.class_name}): {message}")
 
 
@@ -55,16 +55,16 @@ class FandangoIO:
     def __init__(self):
         if FandangoIO.__instance is not None:
             raise Exception("Singleton already created!")
-        self.transmit: Tuple[str, str] | None = None
-        self.receive = list[(str, str)]()
         FandangoIO.__instance = self
+        self.transmit: Tuple[str, str, str] | None = None
+        self.receive = list[(str, str)]()
         self.roles = dict[str, FandangoAgent]()
 
     def run_com_loop(self):
         if self.transmit is not None:
-            role, msg = self.transmit
+            role, recipient, msg = self.transmit
             if role in self.roles.keys():
-                self.roles[role].on_send(msg, self.add_receive)
+                self.roles[role].on_send(msg, recipient, self.add_receive)
         self.clear_transmit_msgs()
 
     def clear_transmit_msgs(self):
@@ -82,5 +82,5 @@ class FandangoIO:
     def clear_received_msgs(self):
         self.receive.clear()
 
-    def set_transmit(self, role: str, message: str) -> None:
-        self.transmit = (role, message)
+    def set_transmit(self, role: str, recipient: str, message: str) -> None:
+        self.transmit = (role, recipient, message)

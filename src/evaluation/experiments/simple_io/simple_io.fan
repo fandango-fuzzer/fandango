@@ -20,7 +20,7 @@ class Client(FandangoAgent):
         def __init__(self):
             super().__init__(True)
 
-        def on_send(self, message: str, response_setter: Callable[[str, str], None]):
+        def on_send(self, message: str, recipient: str, response_setter: Callable[[str, str], None]):
             x = requests.post("http://127.0.0.1:5000/api/hello", json = json.loads(message))
             response_setter("Server", x.text.strip())
 
