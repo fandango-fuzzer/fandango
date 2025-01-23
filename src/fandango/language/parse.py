@@ -23,7 +23,14 @@ from fandango.language.convert import (
     GrammarProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import Grammar, NodeType, NonTerminalFinder, RoleAssigner, FuzzingMode, NonTerminalNode
+from fandango.language.grammar import (
+    Grammar,
+    NodeType,
+    NonTerminalFinder,
+    RoleAssigner,
+    FuzzingMode,
+    NonTerminalNode,
+)
 from fandango.language.io import FandangoIO, FandangoAgent
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
@@ -415,7 +422,7 @@ def parse(
     if grammar and parsed_constraints:
         check_constraints_existence(grammar, parsed_constraints)
 
-    assign_implicit_role(grammar, 'STDOUT')
+    assign_implicit_role(grammar, "STDOUT")
 
     global_env, local_env = grammar.get_python_env()
     if grammar.fuzzing_mode == FuzzingMode.IO:
@@ -437,14 +444,18 @@ def parse(
         for symbol in grammar.rules.keys():
             if symbol.is_implicit:
                 continue
-            non_terminals: list[NonTerminalNode] = NonTerminalFinder(grammar).visit(grammar.rules[symbol])
+            non_terminals: list[NonTerminalNode] = NonTerminalFinder(grammar).visit(
+                grammar.rules[symbol]
+            )
             for nt in non_terminals:
                 if nt.role is None:
                     continue
                 if nt.role in grammar_roles:
                     nt.role = "STDOUT"
         for name in grammar_roles:
-            LOGGER.warn(f"No class has been specified for role: {name}! Role gets mapped to STDOUT!")
+            LOGGER.warn(
+                f"No class has been specified for role: {name}! Role gets mapped to STDOUT!"
+            )
 
     # We invoke this at the very end, now that all data is there
     grammar.prime()
@@ -599,9 +610,10 @@ def check_constraints_existence_children(
     indirect_child[f"<{parent}>"][f"<{symbol}>"] = is_child
     return is_child
 
+
 def assign_implicit_role(grammar, implicit_role: str):
     seen_non_terminals = set()
-    seen_non_terminals.add(NonTerminal('<start>'))
+    seen_non_terminals.add(NonTerminal("<start>"))
 
     processed_non_terminals = set()
     unprocessed_non_terminals = seen_non_terminals.difference(processed_non_terminals)
@@ -614,4 +626,6 @@ def assign_implicit_role(grammar, implicit_role: str):
 
         processed_non_terminals.add(current_symbol)
         seen_non_terminals = seen_non_terminals.union(assigner.seen_non_terminals)
-        unprocessed_non_terminals = seen_non_terminals.difference(processed_non_terminals)
+        unprocessed_non_terminals = seen_non_terminals.difference(
+            processed_non_terminals
+        )

@@ -23,9 +23,7 @@ class FandangoAgent(object):
         First parameter of response_setter if the role of the other party. The second is the message, that it answered with.
     """
 
-    def on_send(
-        self, message: str, response_setter: Callable[[str, str], None]
-    ):
+    def on_send(self, message: str, response_setter: Callable[[str, str], None]):
         pass
 
     """
@@ -34,6 +32,7 @@ class FandangoAgent(object):
 
     def receive_msg(self, message: str) -> None:
         FandangoIO.instance().add_receive(self.class_name, message)
+
 
 class STDOUT(FandangoAgent):
 
