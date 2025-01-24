@@ -87,3 +87,12 @@ def is_after(
     Check if the tree is after the after_tree and before the before_tree.
     """
     return is_before(tree, before_tree, after_tree)
+
+
+def is_inside(tree: DerivationTree, inside_tree: DerivationTree):
+    """
+    Check if the tree is inside the inside_tree.
+    """
+    if inside_tree.find_all_nodes(tree.symbol):
+        return True
+    return False
