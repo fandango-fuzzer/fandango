@@ -286,10 +286,10 @@ class NonTerminalNode(Node):
     def __repr__(self):
 
         if self.role is not None:
-            if self.receiver is None:
+            if self.recipient is None:
                 return f"<{self.role}:{self.symbol.__repr__()[1:-1]}>"
             else:
-                return f"<{self.role}:{self.receiver}:{self.symbol.__repr__()[1:-1]}>"
+                return f"<{self.role}:{self.recipient}:{self.symbol.__repr__()[1:-1]}>"
         else:
             return self.symbol.__repr__()
 
@@ -747,30 +747,55 @@ class RoleAssigner:
 
 
 class GrammarTruncator(NodeVisitor):
-    #Todo
-    def __init__(self, grammar: "Grammar"):
+    def __init__(self, grammar: "Grammar", keep_roles: set[str]):
         self.grammar = grammar
-        self.for_removal = set()
-        self.keep_roles = set[str]()
+        self.keep_roles = keep_roles
+
+    def visitStar(self, node: Star):
+        return self.visitRepetition(node)
+
+    def visitPlus(self, node: Plus):
+        return self.visitRepetition(node)
+
+    def visitOption(self, node: Option):
+        return self.visitRepetition(node)
+
+    def visitAlternative(self, node: Alternative):
+        for child in list(node.children()):
+            if self.visit(child):
+                node.alternatives.remove(child)
+        if len(node.alternatives) == 0:
+            return True
+        return False
 
     def visitRepetition(self, node: Repetition):
-        pass
+        for child in list(node.children()):
+            if self.visit(child):
+                return True
+        return False
 
     def visitConcatenation(self, node: Concatenation):
-        pass
+        for child in list(node.children()):
+            if self.visit(child):
+                node.nodes.remove(child)
+        if len(node.nodes) == 0:
+            return True
+        return False
 
-    def is_truncatable(self, node: Node) -> bool:
-        truncatable = True
-        if isinstance(node, NonTerminalNode):
-            if node.recipient in self.keep_roles:
-                truncatable = False
-            if node.role in self.keep_roles:
-                truncatable = False
-            return truncatable
-        if isinstance(node, TerminalNode):
+    def visitNonTerminalNode(self, node: NonTerminalNode):
+        if node.symbol.is_implicit:
+            return self.visit(self.grammar[node.symbol])
+        if node.role is None and node.recipient is None:
             return False
-        if len(node.children()) == 0:
-            return truncatable
+        truncatable = True
+        if node.role is not None and node.role in self.keep_roles:
+            truncatable = False
+        if node.recipient is not None and node.recipient in self.keep_roles:
+            truncatable = False
+        return truncatable
+
+    def visitTerminalNode(self, node: TerminalNode):
+        return False
 
 
 

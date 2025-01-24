@@ -29,7 +29,7 @@ from fandango.language.grammar import (
     NonTerminalFinder,
     RoleAssigner,
     FuzzingMode,
-    NonTerminalNode,
+    NonTerminalNode, GrammarTruncator,
 )
 from fandango.language.io import FandangoIO, FandangoAgent
 from fandango.language.parser.FandangoLexer import FandangoLexer
@@ -461,6 +461,18 @@ def parse(
             LOGGER.warn(
                 f"No class has been specified for role: {name}! Role gets mapped to STDOUT!"
             )
+
+        # Todo collect receiver roles
+        keep_roles = grammar.roles()
+        io_instance.roles.keys()
+        for existing_role in list(keep_roles):
+            if not io_instance.roles[existing_role].is_fandango():
+                keep_roles.remove(existing_role)
+
+        for nt in grammar.rules.keys():
+            truncator = GrammarTruncator(grammar, keep_roles)
+            # Todo: change starting symbol
+            truncator.visit(grammar.rules[nt])
 
     # We invoke this at the very end, now that all data is there
     grammar.prime()
