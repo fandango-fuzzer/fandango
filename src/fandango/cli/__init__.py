@@ -238,6 +238,28 @@ def get_parser(in_command_line=True):
         action="append",
         help="specify a directory DIR to search for included Fandango files",
     )
+    file_parser.add_argument(
+        "--format",
+        choices=["string", "bits", "tree", "grammar"],
+        default="string",
+        help="produce output(s) as string (default), as a bit string, as a derivation tree, or as a grammar",
+    )
+    file_parser.add_argument(
+        "-o",
+        "--output",
+        type=argparse.FileType("w"),
+        dest="output",
+        default=None,
+        help="write output to OUTPUT (default: stdout)",
+    )
+    file_parser.add_argument(
+        "-d",
+        "--directory",
+        type=str,
+        dest="directory",
+        default=None,
+        help="create individual output files in DIRECTORY",
+    )
 
     # Commands
 
@@ -246,28 +268,6 @@ def get_parser(in_command_line=True):
         "fuzz",
         help="produce outputs from .fan files and test programs",
         parents=[file_parser, settings_parser],
-    )
-    fuzz_parser.add_argument(
-        "-o",
-        "--output",
-        type=argparse.FileType("w"),
-        dest="output",
-        default=None,
-        help="write output to OUTPUT (default: stdout)",
-    )
-    fuzz_parser.add_argument(
-        "-d",
-        "--directory",
-        type=str,
-        dest="directory",
-        default=None,
-        help="create individual output files in DIRECTORY",
-    )
-    fuzz_parser.add_argument(
-        "--format",
-        choices=["string", "bits", "tree", "grammar"],
-        default="string",
-        help="produce output(s) as string (default), as a bit string, as a derivation tree, or as a grammar",
     )
 
     command_group = fuzz_parser.add_argument_group("command invocation settings")
@@ -299,6 +299,20 @@ def get_parser(in_command_line=True):
         type=str,
         nargs=argparse.REMAINDER,
         help="The arguments of the command",
+    )
+
+    # Parse
+    parse_parser = commands.add_parser(
+        "parse",
+        help="parse input file(s) according to .fan spec",
+        parents=[file_parser, settings_parser],
+    )
+    parse_parser.add_argument(
+        "input_files",
+        metavar="files",
+        type=argparse.FileType("r"),
+        nargs='*',
+        help="Files to be parsed",
     )
 
     if not in_command_line:
@@ -610,6 +624,76 @@ def cd_command(args):
     if sys.stdin.isatty():
         print(os.getcwd())
 
+def output(tree, args) -> str:
+    if args.format == "string":
+        return tree.to_string()
+    elif args.format == "tree":
+        return tree.to_tree()
+    elif args.format == "bits":
+        return tree.to_bits()
+    elif args.format == "grammar":
+        return tree.to_grammar()
+    raise NotImplementedError("Unsupported output format")
+
+def output_population(population, args):
+    output_on_stdout = True
+
+    if args.directory:
+        LOGGER.debug(f"Storing population in {args.directory} directory")
+        try:
+            os.mkdir(args.directory)
+        except FileExistsError:
+            pass
+
+        counter = 1
+        for individual in population:
+            basename = f"fandango-{counter:04d}{args.filename_extension}"
+            filename = os.path.join(args.directory, basename)
+            with open(filename, "w") as fd:
+                fd.write(output(individual, args))
+            counter += 1
+
+        output_on_stdout = False
+
+    if args.output:
+        LOGGER.debug("Storing population in file")
+        for individual in population:
+            args.output.write(output(individual, args))
+            args.output.write(args.separator)
+
+        args.output.close()
+        output_on_stdout = False
+
+    if 'test_command' in args and args.test_command:
+        LOGGER.info(f"Running {args.test_command}")
+        base_cmd = [args.test_command] + args.test_args
+        for individual in population:
+            if args.input_method == "filename":
+                prefix = "fandango-"
+                suffix = args.filename_extension
+                with tempfile.NamedTemporaryFile(
+                    mode="w", prefix=prefix, suffix=suffix
+                ) as fd:
+                    fd.write(output(individual, args))
+                    fd.flush()
+                    cmd = base_cmd + [fd.name]
+                    LOGGER.debug(f"Running {cmd}")
+                    subprocess.run(cmd, text=True)
+            elif args.input_method == "stdin":
+                cmd = base_cmd
+                LOGGER.debug(f"Running {cmd} with individual as stdin")
+                subprocess.run(cmd, input=output(individual, args), text=True)
+            else:
+                raise ValueError("Unsupported input method")
+
+        output_on_stdout = False
+
+    if output_on_stdout:
+        # Default
+        LOGGER.debug("Printing population on stdout")
+        for individual in population:
+            print(output(individual, args), end=args.separator)
+
 
 def fuzz_command(args):
     """Invoke the fuzzer"""
@@ -639,75 +723,46 @@ def fuzz_command(args):
 
     LOGGER.debug("Evolving population")
     population = fandango.evolve()
+    output_population(population, args)
 
-    output_on_stdout = True
 
-    def output(tree) -> str:
-        if args.format == "string":
-            return tree.to_string()
-        elif args.format == "tree":
-            return tree.to_tree()
-        elif args.format == "bits":
-            return tree.to_bits()
-        elif args.format == "grammar":
-            return tree.to_grammar()
-        raise NotImplementedError("Unsupported output format")
+def parse_command(args):
+    """Invoke the parser"""
+    if args.fan_files:
+        # Override given default content (if any)
+        grammar, constraints = parse_contents_from_args(args)
+    else:
+        grammar = DEFAULT_FAN_CONTENT[0]
+        constraints = DEFAULT_FAN_CONTENT[1]
 
-    if args.directory:
-        LOGGER.debug(f"Storing population in {args.directory} directory")
-        try:
-            os.mkdir(args.directory)
-        except FileExistsError:
-            pass
+    if grammar is None:
+        raise ValueError("Use '-f FILE.fan' to open a Fandango spec")
 
-        counter = 1
-        for individual in population:
-            basename = f"fandango-{counter:04d}{args.filename_extension}"
-            filename = os.path.join(args.directory, basename)
-            with open(filename, "w") as fd:
-                fd.write(output(individual))
-            counter += 1
+    # Avoid messing with default constraints
+    constraints = constraints.copy()
 
-        output_on_stdout = False
+    if DEFAULT_CONSTRAINTS:
+        constraints += DEFAULT_CONSTRAINTS
 
-    if args.output:
-        LOGGER.debug("Storing population in file")
-        for individual in population:
-            args.output.write(output(individual))
-            args.output.write(args.separator)
+    settings = make_fandango_settings(args, DEFAULT_SETTINGS)
+    LOGGER.debug(f"Settings: {settings}")
 
-        args.output.close()
-        output_on_stdout = False
+    if not args.input_files:
+        args.input_files = [sys.stdin]
 
-    if args.test_command:
-        LOGGER.info(f"Running {args.test_command}")
-        base_cmd = [args.test_command] + args.test_args
-        for individual in population:
-            if args.input_method == "filename":
-                prefix = "fandango-"
-                suffix = args.filename_extension
-                with tempfile.NamedTemporaryFile(
-                    mode="w", prefix=prefix, suffix=suffix
-                ) as fd:
-                    fd.write(output(individual))
-                    fd.flush()
-                    cmd = base_cmd + [fd.name]
-                    LOGGER.debug(f"Running {cmd}")
-                    subprocess.run(cmd, text=True)
-            elif args.input_method == "stdin":
-                cmd = base_cmd
-                LOGGER.debug(f"Running {cmd} with individual as stdin")
-                subprocess.run(cmd, input=output(individual), text=True)
-            else:
-                raise ValueError("Unsupported input method")
+    population = []
+    for input_file in args.input_files:
+        LOGGER.info(f"Parsing {input_file.name!r}")
+        individual = input_file.read()
+        start_symbol = settings["start_symbol"] if "start_symbol" in settings else "<start>"
+        tree = grammar.parse(individual, start=start_symbol)
+        if tree is None:
+            raise ValueError(f"Failed parsing {input_file.name!r}")
 
-        output_on_stdout = False
+        population.append(tree)
 
-    if output_on_stdout:
-        # Default
-        LOGGER.debug("Printing population on stdout")
-        for individual in population:
-            print(output(individual), end=args.separator)
+    output_population(population, args)
+
 
 
 def nop_command(args):
@@ -733,6 +788,7 @@ COMMANDS = {
     "set": set_command,
     "reset": reset_command,
     "fuzz": fuzz_command,
+    "parse": parse_command,
     "cd": cd_command,
     "help": help_command,
     "copyright": copyright_command,
