@@ -239,12 +239,6 @@ def get_parser(in_command_line=True):
         help="specify a directory DIR to search for included Fandango files",
     )
     file_parser.add_argument(
-        "--format",
-        choices=["string", "bits", "tree", "grammar"],
-        default="string",
-        help="produce output(s) as string (default), as a bit string, as a derivation tree, or as a grammar",
-    )
-    file_parser.add_argument(
         "-o",
         "--output",
         type=argparse.FileType("w"),
@@ -260,6 +254,13 @@ def get_parser(in_command_line=True):
         default=None,
         help="create individual output files in DIRECTORY",
     )
+    file_parser.add_argument(
+        "-x",
+        "--filename-extension",
+        type=str,
+        default=".txt",
+        help="extension of generated file names (default: '.txt')",
+    )
 
     # Commands
 
@@ -269,6 +270,12 @@ def get_parser(in_command_line=True):
         help="produce outputs from .fan files and test programs",
         parents=[file_parser, settings_parser],
     )
+    fuzz_parser.add_argument(
+        "--format",
+        choices=["string", "bits", "tree", "grammar", "none"],
+        default="string",
+        help="produce output(s) as string (default), as a bit string, as a derivation tree, as a grammar, or none",
+    )
 
     command_group = fuzz_parser.add_argument_group("command invocation settings")
 
@@ -276,29 +283,21 @@ def get_parser(in_command_line=True):
         "--input-method",
         choices=["stdin", "filename"],
         default="filename",
-        help="When invoking COMMAND, choose whether Fandango input will be passed as standard input (`stdin`) or as last argument on the command line (`filename`) (default)",
+        help="when invoking COMMAND, choose whether Fandango input will be passed as standard input (`stdin`) or as last argument on the command line (`filename`) (default)",
     )
-    command_group.add_argument(
-        "-x",
-        "--filename-extension",
-        type=str,
-        default=".txt",
-        help="Extension of generated file names (default: '.txt')",
-    )
-
     command_group.add_argument(
         "test_command",
         metavar="command",
         type=str,
         nargs="?",
-        help="Command to be invoked with a Fandango input",
+        help="command to be invoked with a Fandango input",
     )
     command_group.add_argument(
         "test_args",
         metavar="args",
         type=str,
         nargs=argparse.REMAINDER,
-        help="The arguments of the command",
+        help="the arguments of the command",
     )
 
     # Parse
@@ -312,7 +311,13 @@ def get_parser(in_command_line=True):
         metavar="files",
         type=argparse.FileType("r"),
         nargs='*',
-        help="Files to be parsed",
+        help="files to be parsed",
+    )
+    parse_parser.add_argument(
+        "--format",
+        choices=["string", "bits", "tree", "grammar", "none"],
+        default="none",
+        help="produce output(s) as string, as a bit string, as a derivation tree, as a grammar, or none (default)",
     )
 
     if not in_command_line:
@@ -633,10 +638,15 @@ def output(tree, args) -> str:
         return tree.to_bits()
     elif args.format == "grammar":
         return tree.to_grammar()
+    elif args.format == "none":
+        return ""
     raise NotImplementedError("Unsupported output format")
 
 def output_population(population, args):
     output_on_stdout = True
+
+    if args.format == 'none':
+        return
 
     if args.directory:
         LOGGER.debug(f"Storing population in {args.directory} directory")
@@ -750,8 +760,7 @@ def parse_command(args):
     if not args.input_files:
         args.input_files = [sys.stdin]
 
-    population = []
-    for input_file in args.input_files:
+    def parse_file(input_file):
         LOGGER.info(f"Parsing {input_file.name!r}")
         individual = input_file.read()
         if "start_symbol" in settings:
@@ -762,12 +771,31 @@ def parse_command(args):
         # FIXME: We should have better error reporting when parsing fails
         tree = grammar.parse(individual, start=start_symbol)
         if tree is None:
-            raise ValueError(f"Failed parsing {input_file.name!r}")
+            raise SyntaxError(f"{input_file.name}: failed to parse")
 
-        # FIXME: Validate the constraints
-        population.append(tree)
+        for constraint in constraints:
+            fitness = constraint.fitness(tree).fitness()
+            if fitness == 0:
+                raise ValueError(f"{input_file.name}: constraint {constraint} not satisfied")
 
-    output_population(population, args)
+        return tree
+
+    population = []
+    errors = 0
+
+    for input_file in args.input_files:
+        try:
+            tree = parse_file(input_file)
+            population.append(tree)
+        except Exception as e:
+            print_exception(e)
+            errors += 1
+
+    if population:
+        output_population(population, args)
+
+    if errors:
+        raise ValueError(f"{errors} error(s) during parsing")
 
 
 def nop_command(args):
