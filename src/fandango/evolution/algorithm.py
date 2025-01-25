@@ -118,7 +118,7 @@ class Fandango:
                     self.population.append(individual)
                 else:
                     raise TypeError(
-                        f"Inital individuals must be DerivationTree or String"
+                        f"Initial individuals must be DerivationTree or String"
                     )
             for i in range(self.population_size - len(self.population)):
                 self.population.append(self.mutate(self.population[i]))
