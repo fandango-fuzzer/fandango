@@ -85,7 +85,7 @@ def get_parser(in_command_line=True):
         # required=True,
     )
 
-    # Shared Settings
+    # Algorithm Settings
     settings_parser = argparse.ArgumentParser(add_help=False)
     settings_group = settings_parser.add_argument_group("algorithm settings")
 
@@ -727,7 +727,7 @@ def fuzz_command(args):
 
 
 def parse_command(args):
-    """Invoke the parser"""
+    """Parse given files"""
     if args.fan_files:
         # Override given default content (if any)
         grammar, constraints = parse_contents_from_args(args)
@@ -754,15 +754,20 @@ def parse_command(args):
     for input_file in args.input_files:
         LOGGER.info(f"Parsing {input_file.name!r}")
         individual = input_file.read()
-        start_symbol = settings["start_symbol"] if "start_symbol" in settings else "<start>"
+        if "start_symbol" in settings:
+            start_symbol = settings["start_symbol"]
+        else:
+            start_symbol = "<start>"
+
+        # FIXME: We should have better error reporting when parsing fails
         tree = grammar.parse(individual, start=start_symbol)
         if tree is None:
             raise ValueError(f"Failed parsing {input_file.name!r}")
 
+        # FIXME: Validate the constraints
         population.append(tree)
 
     output_population(population, args)
-
 
 
 def nop_command(args):
