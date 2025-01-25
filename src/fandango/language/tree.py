@@ -204,6 +204,23 @@ class DerivationTree:
         s += ")"
         return s
 
+    def to_grammar(self, indent=0, start_indent=0) -> str:
+        """
+        Output the derivation tree as (specialized) grammar
+        """
+        s = "  " * start_indent + f"{self.symbol.symbol} ::="
+        for child in self._children:
+            if child.symbol.is_non_terminal:
+                s += f" {child.symbol.symbol}"
+            else:
+                s += " " + repr(child.symbol.symbol)
+
+        for child in self._children:
+            if child.symbol.is_non_terminal:
+                s += '\n' + child.to_grammar(indent + 1,
+                                             start_indent=indent + 1)
+        return s
+
     def __repr__(self):
         return self.to_string()
 
