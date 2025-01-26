@@ -178,8 +178,11 @@ $(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
 install:
 	$(PIP) install -e .
 
+# We separate _installing_ from _running_ tests
+# so we can run 'make tests' quickly (see above)
+# without having to reinstall things
 install-test install-tests:
-    pip install pytest
+	$(PIP) install pytest
 	$(PIP) install -e ".[test]"
 
 uninstall:
