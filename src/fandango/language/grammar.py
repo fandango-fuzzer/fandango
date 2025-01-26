@@ -643,6 +643,13 @@ class Grammar(NodeVisitor):
         def scan_bit(self, state: ParseState,
                  word: str, table: List[Set[ParseState] | Column],
                  k: int, w: int, bit_count: int):
+            """
+                Scan a bit from the input `word`.
+                `table` is the parse table (may be modified by this function).
+                `table[k]` is the current column.
+                `word[w]` is the current byte.
+                `bit_count` is the current bit position (7-0).
+            """
             # LOGGER.debug(f"Trying {state} at {word[w:]!r}"
             #              + (f", bit {bit_count}" if bit_count >= 0 else ""))
 
@@ -651,28 +658,39 @@ class Grammar(NodeVisitor):
 
             # Get the highest bit
             bit = (ord(word[w]) >> bit_count) & 1
-            LOGGER.debug(f"Bit {bit_count} has a value of {bit}")
+            # LOGGER.debug(f"Bit {bit_count} has a value of {bit}")
 
             # LOGGER.debug(f"Found bit {bit_count}: {bit}")
             # LOGGER.debug(f"Compare against bit {state.dot!r}")
             if not state.dot.check(bit):
-                LOGGER.debug(f"Bit match failed")
-                return 0  # There may be more bits to come
+                # LOGGER.debug(f"Bit match failed")
+                return
 
             # Found a match
-            LOGGER.debug(f"Scanned bit {bit_count} ({bit}) {state} {word[w:]!r}")
+            # LOGGER.debug(f"Scanned bit {bit_count} ({bit}) {state} {word[w:]!r}")
             next_state = state.next()
             next_state.children.append(DerivationTree(state.dot))
 
             # Insert a new table entry with next state
+            # This is necessary, as our initial table holds one entry
+            # per input byte, yet needs to be expanded to hold the bits, too.
             table.insert(k + 1, Column())
             table[k + 1].add(next_state)
 
+            # Save the maximum position reached, so we can report errors
             self._max_position = max(self._max_position, w)
 
         def scan_byte(self, state: ParseState,
                       word: str, table: List[Set[ParseState] | Column],
                       k: int, w: int):
+            """
+                Scan a byte from the input `word`.
+                `state` is the current parse state.
+                `table` is the parse table.
+                `table[k]` is the current column.
+                `word[w]` is the current byte.
+            """
+
             # LOGGER.debug(f"Trying {state} at {word[w:]!r}"
             #              + (f", bit {bit_count}" if bit_count >= 0 else ""))
 
@@ -680,7 +698,7 @@ class Grammar(NodeVisitor):
 
             if state.dot.check(word[w:]):
                 # Found a match
-                LOGGER.debug(f"Scanned {state} {word[w:]!r}")
+                # LOGGER.debug(f"Scanned {state} {word[w:]!r}")
                 next_state = state.next()
                 next_state.children.append(DerivationTree(state.dot))
                 table[k + len(state.dot)].add(next_state)
@@ -711,13 +729,16 @@ class Grammar(NodeVisitor):
                         else:
                             s.children.extend(state.children)
 
+        # Commented this out, as
+        # (a) it is not adapted to bits yet, and (b) not used -- AZ
+        #
         # def parse_table(self, word, start: str | NonTerminal = "<start>"):
         #     if isinstance(start, str):
         #         start = NonTerminal(start)
         #     table = [Column() for _ in range(len(word) + 1)]
         #     table[0].add(ParseState(NonTerminal("<*start*>"), 0, (start,)))
         #     self._max_position = -1
-
+        #
         #     for k in range(len(word) + 1):
         #         for state in table[k]:
         #             if state.finished():
@@ -727,7 +748,7 @@ class Grammar(NodeVisitor):
         #                     self.predict(state, table, k)
         #                 else:
         #                     # No bit parsing support yet
-        #                     self.scan(state, word, table, k, k, -1)
+        #                     self.scan_byte(state, word, table, k, k)
         #     return table
 
         def parse_forest(
@@ -736,22 +757,33 @@ class Grammar(NodeVisitor):
             start: str | NonTerminal = "<start>",
             allow_incomplete: bool = False,
         ):
+            """
+                Parse a forest of input trees from `word`.
+                `start` is the start symbol (default: `<start>`).
+                if `allow_incomplete` is True, the function will return trees even if the input ends prematurely.
+            """
+
             if isinstance(start, str):
                 start = NonTerminal(start)
+
+            # Initialize the table
             table: list[set[ParseState] | Column] = [Column() for _ in range(len(word) + 1)]
             implicit_start = NonTerminal("<*start*>")
             table[0].add(ParseState(implicit_start, 0, (start,)))
+
+            # Save the maximum scan position, so we can report errors
             self._max_position = -1
 
-            k = 0
-            w = 0
-            bit_count = -1
+            k = 0  # Index into the current table. Due to bits parsing, this may differ from the input position w.
+            w = 0  # Index into the input word
+            bit_count = -1  # If > 0, indicates the next bit to be scanned (7-0)
+
             while k < len(table) and w <= len(word):
                 advance = 0
                 for state in table[k]:
-                    LOGGER.debug(f"Processing {state} at {word[w:]!r}")
+                    # LOGGER.debug(f"Processing {state} at {word[w:]!r}")
                     if w >= len(word):
-                        LOGGER.debug(f"End of input")
+                        # LOGGER.debug(f"End of input")
                         if allow_incomplete:
                             if state.nonterminal == implicit_start:
                                 self._incomplete.update(state.children)
@@ -759,19 +791,19 @@ class Grammar(NodeVisitor):
                             self.complete(state, table, k)
 
                     if state.finished():
-                        LOGGER.debug(f"Finished {state}")
+                        # LOGGER.debug(f"Finished {state}")
                         if (state.nonterminal == implicit_start
                             and w >= len(word)):
                             for child in state.children:
-                                LOGGER.debug(f"Yielding {child}")
                                 yield child
+
                         self.complete(state, table, k)
                     elif not state.is_incomplete:
                         if state.next_symbol_is_nonterminal():
-                            LOGGER.debug(f"Predicting")
+                            # LOGGER.debug(f"Predicting")
                             self.predict(state, table, k)
                         else:
-                            LOGGER.debug(f"Scanning")
+                            # LOGGER.debug(f"Scanning")
                             if isinstance(state.dot.symbol, int):
                                 # Scan a bit
                                 if bit_count < 0:
@@ -780,14 +812,14 @@ class Grammar(NodeVisitor):
                                               k, w, bit_count)
                                 adv = 1
                             else:
+                                # Scan a byte
                                 if bit_count >= 0:
                                     raise NotImplementedError("Can only parse sequences of 8 bits")
-                                # Scan a byte
                                 self.scan_byte(state, word, table, k, w)
                                 adv = 8
                             advance = max(advance, adv)
 
-                LOGGER.debug(f"Advancing by {advance} bits")
+                # LOGGER.debug(f"Advancing by {advance} bits")
                 if advance == 1:
                     # Advance by one bit
                     bit_count -= 1
@@ -795,7 +827,7 @@ class Grammar(NodeVisitor):
                     # Advance by one byte
                     w += 1
 
-                LOGGER.debug(f"w = {w}, bit_count = {bit_count}")
+                # LOGGER.debug(f"w = {w}, bit_count = {bit_count}")
 
                 k += 1
 
