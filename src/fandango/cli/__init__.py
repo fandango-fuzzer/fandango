@@ -768,10 +768,13 @@ def parse_command(args):
         else:
             start_symbol = "<start>"
 
-        # FIXME: We should have better error reporting when parsing fails
         tree = grammar.parse(individual, start=start_symbol)
         if tree is None:
-            raise SyntaxError(f"{input_file.name}: failed to parse")
+            error_pos = grammar.max_position() + 1
+            if error_pos < len(individual):
+                raise SyntaxError(f"{input_file.name}:{error_pos}: syntax error at {individual[error_pos]!r}")
+            else:
+                raise SyntaxError(f"{input_file.name}:{error_pos}: syntax error at end of file")
 
         for constraint in constraints:
             fitness = constraint.fitness(tree).fitness()
