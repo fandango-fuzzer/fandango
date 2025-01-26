@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple, Set, Any, Union, Iterator
 
 from fandango.language.symbol import NonTerminal, Terminal, Symbol, Implicit
 from fandango.language.tree import DerivationTree
+from fandango.logger import LOGGER, print_exception
 
 MAX_REPETITIONS = 5
 
@@ -473,11 +474,11 @@ class ParseState:
             f"({self.nonterminal} -> "
             + "".join(
                 [
-                    f"{'*' if i == self._dot else ''}{s.symbol}"
+                    f"{'•' if i == self._dot else ''}{s.symbol}"
                     for i, s in enumerate(self.symbols)
                 ]
             )
-            + ("*" if self.finished() else "")
+            + ("•" if self.finished() else "")
             + f", {self.position})"
         )
 
@@ -544,6 +545,7 @@ class Grammar(NodeVisitor):
             self._process()
             self._cache: Dict[Tuple[str, NonTerminal], DerivationTree] = {}
             self._incomplete = set()
+            self._max_position = 0
 
         def _process(self):
             for nonterminal in self.grammar_rules:
@@ -636,12 +638,14 @@ class Grammar(NodeVisitor):
                     }
                 )
 
-        @staticmethod
-        def scan(state: ParseState, word: str, table: List[Set[ParseState]], k: int):
+        def scan(self, state: ParseState, 
+                 word: str, table: List[Set[ParseState]], k: int):
             if state.dot.check(word[k:]):
+                LOGGER.debug(f"Scanned {state} {word[k:]!r}")
                 s = state.next()
                 s.children.append(DerivationTree(state.dot))
                 table[k + len(state.dot)].add(s)
+                self._max_position = max(self._max_position, k)
 
         def complete(
             self,
@@ -673,6 +677,8 @@ class Grammar(NodeVisitor):
                 start = NonTerminal(start)
             table = [Column() for _ in range(len(word) + 1)]
             table[0].add(ParseState(NonTerminal("<*start*>"), 0, (start,)))
+            self._max_position = 0
+
             for k in range(len(word) + 1):
                 for state in table[k]:
                     if state.finished():
@@ -695,6 +701,8 @@ class Grammar(NodeVisitor):
             table = [Column() for _ in range(len(word) + 1)]
             implicit_start = NonTerminal("<*start*>")
             table[0].add(ParseState(implicit_start, 0, (start,)))
+            self._max_position = 0
+
             for k in range(len(word) + 1):
                 s = 0
                 for state in table[k]:
@@ -723,7 +731,7 @@ class Grammar(NodeVisitor):
         def parse(
             self,
             word: str,
-            start: str | NonTerminal = "<start>",
+            start: str | NonTerminal = "<start>"
         ):
             if isinstance(start, str):
                 start = NonTerminal(start)
@@ -731,13 +739,16 @@ class Grammar(NodeVisitor):
                 return deepcopy(self._cache[(word, start)])
             for tree in self.parse_forest(word, start):
                 self._cache[(word, start)] = tree
+                # FIXME: It is weird that we return the first tree
+                # and not all of them -- AZ
                 return tree
+
             return None
 
         def parse_incomplete(
             self,
             word: str,
-            start: str | NonTerminal = "<start>",
+            start: str | NonTerminal = "<start>"
         ):
             if isinstance(start, str):
                 start = NonTerminal(start)
@@ -747,6 +758,10 @@ class Grammar(NodeVisitor):
                 yield tree
             for tree in self._incomplete:
                 yield tree
+
+        def max_position(self):
+            """Return the maximum position reached during parsing."""
+            return self._max_position
 
     def __init__(
         self,
@@ -830,6 +845,10 @@ class Grammar(NodeVisitor):
         start: str | NonTerminal = "<start>",
     ):
         return self._parser.parse_incomplete(word, start)
+
+    def max_position(self):
+        """Return the maximum position reached during last parsing."""
+        return self._parser.max_position()
 
     def __contains__(self, item: str | NonTerminal):
         if isinstance(item, str):
