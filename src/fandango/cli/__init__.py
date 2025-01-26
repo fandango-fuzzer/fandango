@@ -309,9 +309,16 @@ def get_parser(in_command_line=True):
     parse_parser.add_argument(
         "input_files",
         metavar="files",
-        type=argparse.FileType("r"),
+        type=str,
         nargs='*',
         help="files to be parsed",
+    )
+    parse_parser.add_argument(
+        "-b",
+        "--binary",
+        action="store_true",
+        default=False,
+        help="open files in binary mode",
     )
     parse_parser.add_argument(
         "--format",
@@ -758,7 +765,7 @@ def parse_command(args):
     LOGGER.debug(f"Settings: {settings}")
 
     if not args.input_files:
-        args.input_files = [sys.stdin]
+        args.input_files = ['-']
 
     def parse_file(input_file):
         LOGGER.info(f"Parsing {input_file.name!r}")
@@ -787,8 +794,13 @@ def parse_command(args):
     errors = 0
 
     for input_file in args.input_files:
+        if input_file == "-":
+            file = sys.stdin.buffer if args.binary else sys.stdin
+        else:
+            file = open(input_file, "rb") if args.binary else open(input_file, "r")
+
         try:
-            tree = parse_file(input_file)
+            tree = parse_file(file)
             population.append(tree)
         except Exception as e:
             print_exception(e)
