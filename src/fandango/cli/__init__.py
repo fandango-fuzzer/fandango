@@ -743,6 +743,29 @@ def fuzz_command(args):
     output_population(population, args)
 
 
+
+def report_syntax_error(filename: str, position: int, individual: str | bytes,
+                        *, binary: bool = False) -> str:
+    """Return position in individual in user-friendly format"""
+    if position >= len(individual):
+        return f"{filename!r}: missing input at end of file"
+
+    mismatch = repr(individual[position])
+    if binary:
+        return f"{filename!r}, position {position}: mismatched input 0x{mismatch}"
+
+    lines = individual.split("\n")
+    line = 1
+    column = 1
+    for i in range(position):
+        if individual[i] == "\n":
+            line += 1
+            column = 1
+        else:
+            column += 1
+    return f"{filename!r}, line {line}, column {column}: mismatched input {mismatch}"
+
+
 def parse_command(args):
     """Parse given files"""
     if args.fan_files:
@@ -778,10 +801,9 @@ def parse_command(args):
         tree = grammar.parse(individual, start=start_symbol)
         if tree is None:
             error_pos = grammar.max_position() + 1
-            if error_pos < len(individual):
-                raise SyntaxError(f"{input_file.name}:{error_pos}: syntax error at {individual[error_pos]!r}")
-            else:
-                raise SyntaxError(f"{input_file.name}:{error_pos}: syntax error at end of file")
+            raise SyntaxError(report_syntax_error(input_file.name,
+                                                  error_pos, individual,
+                                                  binary=args.binary))
 
         for constraint in constraints:
             fitness = constraint.fitness(tree).fitness()
