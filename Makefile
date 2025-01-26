@@ -179,6 +179,7 @@ install:
 	$(PIP) install -e .
 
 install-test install-tests:
+    pip install pytest
 	$(PIP) install -e ".[test]"
 
 uninstall:
