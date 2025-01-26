@@ -217,8 +217,7 @@ class DerivationTree:
 
         for child in self._children:
             if child.symbol.is_non_terminal:
-                s += '\n' + child.to_grammar(indent + 1,
-                                             start_indent=indent + 1)
+                s += "\n" + child.to_grammar(indent + 1, start_indent=indent + 1)
         return s
 
     def __repr__(self):
