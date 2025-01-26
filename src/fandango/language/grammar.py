@@ -479,7 +479,8 @@ class ParseState:
                 ]
             )
             + ("•" if self.finished() else "")
-            + f", {self.position})"
+            + f", position {self.position}"
+            + ")"
         )
 
     def next(self, position: Optional[int] = None):
@@ -622,7 +623,8 @@ class Grammar(NodeVisitor):
         def visitTerminalNode(self, node: TerminalNode):
             return [[node.symbol]]
 
-        def predict(self, state: ParseState, table: List[Set[ParseState]], k: int):
+        def predict(self, state: ParseState,
+                    table: List[Set[ParseState] | Column], k: int):
             if state.dot in self._rules:
                 table[k].update(
                     {
@@ -638,19 +640,68 @@ class Grammar(NodeVisitor):
                     }
                 )
 
-        def scan(self, state: ParseState, 
-                 word: str, table: List[Set[ParseState]], k: int):
-            if state.dot.check(word[k:]):
-                LOGGER.debug(f"Scanned {state} {word[k:]!r}")
-                s = state.next()
-                s.children.append(DerivationTree(state.dot))
-                table[k + len(state.dot)].add(s)
-                self._max_position = max(self._max_position, k)
+        def scan(self, state: ParseState,
+                 word: str, table: List[Set[ParseState] | Column],
+                 k: int, w: int, bit_count: int) -> int:
+            # LOGGER.debug(f"Trying {state} at {word[w:]!r}"
+            #              + (f", bit {bit_count}" if bit_count >= 0 else ""))
+
+            if isinstance(state.dot.symbol, int):
+                # Bit input
+
+                if bit_count < 0:
+                    bit_count = 7
+
+                # Get the highest bit
+                bit = (ord(word[w]) >> bit_count) & 1
+                LOGGER.debug(f"Bit {bit_count} has a value of {bit}")
+
+                # LOGGER.debug(f"Found bit {bit_count}: {bit}")
+                # LOGGER.debug(f"Compare against bit {state.dot!r}")
+                if not state.dot.check(bit):
+                    LOGGER.debug(f"Bit match failed")
+                    return 0  # There may be more bits to come
+
+                # Found a match
+                LOGGER.debug(f"Scanned bit {bit_count} ({bit}) {state} {word[w:]!r}")
+                next_state = state.next()
+                next_state.children.append(DerivationTree(state.dot))
+
+                # Insert a new table entry with next state
+                table.insert(k + 1, Column())
+                table[k + 1].add(next_state)
+
+                self._max_position = max(self._max_position, w)
+
+                if bit_count > 0:
+                    # Advance by one bit
+                    return 1
+                else:
+                    # We're done: advance by one byte the next time
+                    return 8
+
+            # Byte input
+            if bit_count >= 0:
+                raise NotImplementedError("Can only parse sequences of 8 bits")
+
+            if state.dot.check(word[w:]):
+                # Found a match
+                LOGGER.debug(f"Scanned {state} {word[w:]!r}")
+                next_state = state.next()
+                next_state.children.append(DerivationTree(state.dot))
+                table[k + len(state.dot)].add(next_state)
+                self._max_position = max(self._max_position, w)
+
+                # Advance by eight bits
+                return 8
+
+            # Do not advance
+            return 0
 
         def complete(
             self,
             state: ParseState,
-            table: List[Set[ParseState]],
+            table: List[Set[ParseState] | Column],
             k: int,
             use_implicit: bool = False,
         ):
@@ -672,23 +723,24 @@ class Grammar(NodeVisitor):
                         else:
                             s.children.extend(state.children)
 
-        def parse_table(self, word, start: str | NonTerminal = "<start>"):
-            if isinstance(start, str):
-                start = NonTerminal(start)
-            table = [Column() for _ in range(len(word) + 1)]
-            table[0].add(ParseState(NonTerminal("<*start*>"), 0, (start,)))
-            self._max_position = -1
+        # def parse_table(self, word, start: str | NonTerminal = "<start>"):
+        #     if isinstance(start, str):
+        #         start = NonTerminal(start)
+        #     table = [Column() for _ in range(len(word) + 1)]
+        #     table[0].add(ParseState(NonTerminal("<*start*>"), 0, (start,)))
+        #     self._max_position = -1
 
-            for k in range(len(word) + 1):
-                for state in table[k]:
-                    if state.finished():
-                        self.complete(state, table, k)
-                    else:
-                        if state.next_symbol_is_nonterminal():
-                            self.predict(state, table, k)
-                        else:
-                            self.scan(state, word, table, k)
-            return table
+        #     for k in range(len(word) + 1):
+        #         for state in table[k]:
+        #             if state.finished():
+        #                 self.complete(state, table, k)
+        #             else:
+        #                 if state.next_symbol_is_nonterminal():
+        #                     self.predict(state, table, k)
+        #                 else:
+        #                     # No bit parsing support yet
+        #                     self.scan(state, word, table, k, k, -1)
+        #     return table
 
         def parse_forest(
             self,
@@ -698,35 +750,52 @@ class Grammar(NodeVisitor):
         ):
             if isinstance(start, str):
                 start = NonTerminal(start)
-            table = [Column() for _ in range(len(word) + 1)]
+            table: list[set[ParseState] | Column] = [Column() for _ in range(len(word) + 1)]
             implicit_start = NonTerminal("<*start*>")
             table[0].add(ParseState(implicit_start, 0, (start,)))
             self._max_position = -1
 
-            for k in range(len(word) + 1):
-                s = 0
+            k = 0
+            w = 0
+            bit_count = -1
+            while k < len(table) and w <= len(word):
+                advance = 0
                 for state in table[k]:
-                    s += 1
-                    if k == len(word):
+                    LOGGER.debug(f"Processing {state} at {word[w:]!r}, k = {k}")
+                    if w >= len(word):
+                        LOGGER.debug(f"End of input")
                         if allow_incomplete:
                             if state.nonterminal == implicit_start:
                                 self._incomplete.update(state.children)
                             state.is_incomplete = True
-                            self.complete(
-                                state,
-                                table,
-                                k,
-                            )
+                            self.complete(state, table, k)
+
                     if state.finished():
-                        if state.nonterminal == implicit_start and k == len(word):
+                        LOGGER.debug(f"Finished")
+                        if state.nonterminal == implicit_start and w >= len(word):
                             for child in state.children:
                                 yield child
                         self.complete(state, table, k)
                     elif not state.is_incomplete:
                         if state.next_symbol_is_nonterminal():
+                            LOGGER.debug(f"Predicting")
                             self.predict(state, table, k)
                         else:
-                            self.scan(state, word, table, k)
+                            LOGGER.debug(f"Scanning")
+                            adv = self.scan(state, word, table,
+                                            k, w, bit_count)
+                            advance = max(advance, adv)
+
+                if advance == 8:
+                    # Advance by one byte
+                    w = w + 1
+                elif advance == 1:
+                    # Advance by one bit
+                    if bit_count < 0:
+                        bit_count = 7
+                    else:
+                        bit_count -= 1
+                k += 1
 
         def parse(
             self,
