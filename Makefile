@@ -174,7 +174,13 @@ $(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
 	echo 'Success' > $@
 
 ## Installation
-.PHONY: install
+.PHONY: install install-test install-tests
 install:
 	$(PIP) install -e .
+
+install-test install-tests:
+	$(PIP) install -e ".[test]"
+
+uninstall:
+	$(PIP) uninstall fandango-fuzzer -y
 

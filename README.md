@@ -4,7 +4,8 @@
 [![GitHub Pages](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-book.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-book.yml)
 [![CodeQL](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql)
 [![PyPI](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-pypi.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-pypi.yml)
-
+[![Docker Image](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-docker.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-docker.yml)
+[![Socket Badge](https://socket.dev/api/badge/pypi/package/fandango-fuzzer/0.1.0?artifact_id=tar-gz)](https://socket.dev/pypi/package/fandango-fuzzer/overview/0.1.0/tar-gz)
 
 FANDANGO is a language-based fuzzer that leverages formal input specifications (grammars) combined with constraints to generate diverse sets of valid inputs for programs under test. Unlike traditional symbolic constraint solvers, FANDANGO uses a search-based approach to systematically evolve a population of inputs through syntactically valid mutations until semantic input constraints are satisfied.
 
@@ -39,28 +40,38 @@ With FANDANGO, testers gain unprecedented flexibility in shaping test inputs and
 
 ## Documentation
 
-For the complete FANDANGO documentation, including tutorials, references, and advanced usage guides, visit the [FANDANGO Docs](https://fandango-fuzzer.github.io/fandango/Intro.html).
+For the complete FANDANGO documentation, including tutorials, references, and advanced usage guides, visit the [FANDANGO docs](https://fandango-fuzzer.github.io/Intro.html).
 
 Here, you'll find the following sections:
 
-   - [Fuzzing with Fandango](https://fandango-fuzzer.github.io/fandango/Intro.html)
-       - [About Fandango](https://fandango-fuzzer.github.io/fandango/About.html)
-       - [Fandango Tutorial](https://fandango-fuzzer.github.io/fandango/Tutorial.html)
-       - [Installing Fandango](https://fandango-fuzzer.github.io/fandango/Installing.html)
-       - [A First Fandango Spec](https://fandango-fuzzer.github.io/fandango/FirstSpec.html)
-       - [Invoking Fandango](https://fandango-fuzzer.github.io/fandango/Invoking.html)
-       - [Fuzzing with Fandango](https://fandango-fuzzer.github.io/fandango/Fuzzing.html)
-       - [Some Fuzzing Strategies](https://fandango-fuzzer.github.io/fandango/Strategies.html)
-       - [Shaping Inputs with Constraints](https://fandango-fuzzer.github.io/fandango/Constraints.html)
-       - [The Fandango Shell](https://fandango-fuzzer.github.io/fandango/Shell.html)
-       - [Data Generators and Fakers](https://fandango-fuzzer.github.io/fandango/Generators.html)
-       - [Complex Input Structures](https://fandango-fuzzer.github.io/fandango/Recursive.html)
-       - [Accessing Input Elements](https://fandango-fuzzer.github.io/fandango/Paths.html)
-       - [Generating Binary Inputs](https://fandango-fuzzer.github.io/fandango/Binary.html)
-       - [Statistical Distributions](https://fandango-fuzzer.github.io/fandango/Distributions.html)
-       - [Coverage-Guided Fuzzing](https://fandango-fuzzer.github.io/fandango/Whitebox.html)
-       - [Hatching Specs](https://fandango-fuzzer.github.io/fandango/Hatching.html)
-   - [Fandango Reference](https://fandango-fuzzer.github.io/fandango/Reference.html)
+#### Fuzzing with Fandango
+   - [Fuzzing with Fandango](https://fandango-fuzzer.github.io/Intro.html)
+#### About Fandango
+   - [About Fandango](https://fandango-fuzzer.github.io/About.html)
+#### Fandango Tutorial
+  - [Fandango Tutorial](https://fandango-fuzzer.github.io/Tutorial.html)
+  - [Installing Fandango](https://fandango-fuzzer.github.io/Installing.html)
+  - [A First Fandango Spec](https://fandango-fuzzer.github.io/FirstSpec.html)
+  - [Invoking Fandango](https://fandango-fuzzer.github.io/Invoking.html)
+  - [Fuzzing with Fandango](https://fandango-fuzzer.github.io/Fuzzing.html)
+  - [Some Fuzzing Strategies](https://fandango-fuzzer.github.io/Strategies.html)
+  - [Shaping Inputs with Constraints](https://fandango-fuzzer.github.io/Constraints.html)
+  - [The Fandango Shell](https://fandango-fuzzer.github.io/Shell.html)
+  - [Data Generators and Fakers](https://fandango-fuzzer.github.io/Generators.html)
+  - [Complex Input Structures](https://fandango-fuzzer.github.io/Recursive.html)
+  - [Accessing Input Elements](https://fandango-fuzzer.github.io/Paths.html)
+  - [Case Study: ISO 8601 Date + Time](https://fandango-fuzzer.github.io/ISO8601.html)
+  - [Generating Binary Inputs](https://fandango-fuzzer.github.io/Binary.html)
+  - [Bits and Bit Fields](https://fandango-fuzzer.github.io/Bits.html)
+  - [Case Study: The GIF Format](https://fandango-fuzzer.github.io/Gif.html)
+  - [Statistical Distributions](https://fandango-fuzzer.github.io/Distributions.html)
+  - [Coverage-Guided Fuzzing](https://fandango-fuzzer.github.io/Whitebox.html)
+  - [Hatching Specs](https://fandango-fuzzer.github.io/Hatching.html)
+#### Fandango Reference
+  - [Fandango Reference](https://fandango-fuzzer.github.io/Reference.html)
+  - [Installing Fandango](https://fandango-fuzzer.github.io/Installing.html)
+  - [Fandango Standard Library](https://fandango-fuzzer.github.io/Stdlib.html)
+  - [Fandango Spec Locations](https://fandango-fuzzer.github.io/Including.html)
 
 ---
 
