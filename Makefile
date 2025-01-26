@@ -14,16 +14,16 @@ PAGELABELS = $(PYTHON) -m pagelabels
 
 
 # Default targets
-web: requirements.txt parser html
+web: parser html
 all: web pdf
 
 .PHONY: web all parser install dev-tools docs html latex pdf
 
 
-## Requirements
+## Requirements (no longer used)
 
-requirements.txt:	pyproject.toml
-	pip-compile $<
+# requirements.txt:	pyproject.toml
+# 	pip-compile $<
 
 # Install tools for development
 UNAME := $(shell uname)
