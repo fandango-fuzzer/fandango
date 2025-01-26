@@ -818,11 +818,11 @@ def parse_command(args):
             raise SyntaxError(report_syntax_error(input_file.name,
                                                   error_pos, individual,
                                                   binary=args.binary))
-        if not args.prefix:
-            for constraint in constraints:
-                fitness = constraint.fitness(tree).fitness()
-                if fitness == 0:
-                    raise ValueError(f"{input_file.name}: constraint {constraint} not satisfied")
+
+        for constraint in constraints:
+            fitness = constraint.fitness(tree).fitness()
+            if fitness == 0:
+                raise ValueError(f"{input_file.name!r}: constraint {constraint} not satisfied")
 
         return tree
 
