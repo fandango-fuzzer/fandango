@@ -220,13 +220,9 @@ class ConstraintProcessor(FandangoParserVisitor):
 
     def visitImplies(self, ctx: FandangoParser.ImpliesContext):
         if ctx.ARROW():
-            e = UnsupportedOperation(
-                f"{ctx.getText()}: Implication is deprecated"
-            )
+            e = UnsupportedOperation(f"{ctx.getText()}: Implication is deprecated")
             operants = ctx.getText().split("->")
-            e.add_note(
-                f"Instead use: not({operants[0]}) or {operants[1]}"
-            )
+            e.add_note(f"Instead use: not({operants[0]}) or {operants[1]}")
             raise e
         return self.visit(ctx.quantifier())
 
