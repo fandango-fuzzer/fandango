@@ -315,7 +315,7 @@ def get_parser(in_command_line=True):
         "input_files",
         metavar="files",
         type=str,
-        nargs='*',
+        nargs="*",
         help="files to be parsed. Use '-' for stdin",
     )
     parse_parser.add_argument(
@@ -507,6 +507,7 @@ def parse_contents_from_args(args, given_grammars=[]):
 
 def make_fandango_settings(args, initial_settings={}):
     """Create keyword settings for Fandango() constructor"""
+
     def copy(settings, name, args_name=None):
         if args_name is None:
             args_name = name
@@ -525,7 +526,7 @@ def make_fandango_settings(args, initial_settings={}):
     copy(settings, "best_effort")
     copy(settings, "random_seed")
 
-    if hasattr(args, 'start_symbol') and args.start_symbol is not None:
+    if hasattr(args, "start_symbol") and args.start_symbol is not None:
         if args.start_symbol.startswith("<"):
             start_symbol = args.start_symbol
         else:
@@ -541,8 +542,7 @@ def make_fandango_settings(args, initial_settings={}):
     elif args.verbose and args.verbose > 1:
         LOGGER.setLevel(logging.DEBUG)  # Even more info
 
-    if (hasattr(args, 'initial_population') 
-        and args.initial_population is not None):
+    if hasattr(args, "initial_population") and args.initial_population is not None:
         settings["initial_population"] = extract_initial_population(
             args.initial_population
         )
@@ -647,6 +647,7 @@ def cd_command(args):
     if sys.stdin.isatty():
         print(os.getcwd())
 
+
 def output(tree, args) -> str:
     if args.format == "string":
         return tree.to_string()
@@ -660,8 +661,9 @@ def output(tree, args) -> str:
         return ""
     raise NotImplementedError("Unsupported output format")
 
+
 def output_population(population, args, *, output_on_stdout=True):
-    if args.format == 'none':
+    if args.format == "none":
         return
 
     if args.directory:
@@ -690,7 +692,7 @@ def output_population(population, args, *, output_on_stdout=True):
         args.output.close()
         output_on_stdout = False
 
-    if 'test_command' in args and args.test_command:
+    if "test_command" in args and args.test_command:
         LOGGER.info(f"Running {args.test_command}")
         base_cmd = [args.test_command] + args.test_args
         for individual in population:
@@ -752,9 +754,9 @@ def fuzz_command(args):
     output_population(population, args, output_on_stdout=True)
 
 
-
-def report_syntax_error(filename: str, position: int, individual: str | bytes,
-                        *, binary: bool = False) -> str:
+def report_syntax_error(
+    filename: str, position: int, individual: str | bytes, *, binary: bool = False
+) -> str:
     """Return position in individual in user-friendly format"""
     if position >= len(individual):
         return f"{filename!r}: missing input at end of file"
@@ -797,7 +799,7 @@ def parse_command(args):
     LOGGER.debug(f"Settings: {settings}")
 
     if not args.input_files:
-        args.input_files = ['-']
+        args.input_files = ["-"]
 
     def parse_file(input_file):
         LOGGER.info(f"Parsing {input_file.name!r}")
@@ -818,14 +820,18 @@ def parse_command(args):
 
         if tree is None:
             error_pos = grammar.max_position() + 1
-            raise SyntaxError(report_syntax_error(input_file.name,
-                                                  error_pos, individual,
-                                                  binary=args.binary))
+            raise SyntaxError(
+                report_syntax_error(
+                    input_file.name, error_pos, individual, binary=args.binary
+                )
+            )
 
         for constraint in constraints:
             fitness = constraint.fitness(tree).fitness()
             if fitness == 0:
-                raise ValueError(f"{input_file.name!r}: constraint {constraint} not satisfied")
+                raise ValueError(
+                    f"{input_file.name!r}: constraint {constraint} not satisfied"
+                )
 
         return tree
 
