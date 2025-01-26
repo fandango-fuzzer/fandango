@@ -623,8 +623,9 @@ class Grammar(NodeVisitor):
         def visitTerminalNode(self, node: TerminalNode):
             return [[node.symbol]]
 
-        def predict(self, state: ParseState,
-                    table: List[Set[ParseState] | Column], k: int):
+        def predict(
+            self, state: ParseState, table: List[Set[ParseState] | Column], k: int
+        ):
             if state.dot in self._rules:
                 table[k].update(
                     {
@@ -640,15 +641,21 @@ class Grammar(NodeVisitor):
                     }
                 )
 
-        def scan_bit(self, state: ParseState,
-                 word: str, table: List[Set[ParseState] | Column],
-                 k: int, w: int, bit_count: int):
+        def scan_bit(
+            self,
+            state: ParseState,
+            word: str,
+            table: List[Set[ParseState] | Column],
+            k: int,
+            w: int,
+            bit_count: int,
+        ):
             """
-                Scan a bit from the input `word`.
-                `table` is the parse table (may be modified by this function).
-                `table[k]` is the current column.
-                `word[w]` is the current byte.
-                `bit_count` is the current bit position (7-0).
+            Scan a bit from the input `word`.
+            `table` is the parse table (may be modified by this function).
+            `table[k]` is the current column.
+            `word[w]` is the current byte.
+            `bit_count` is the current bit position (7-0).
             """
             # LOGGER.debug(f"Trying {state} at {word[w:]!r}"
             #              + (f", bit {bit_count}" if bit_count >= 0 else ""))
@@ -680,15 +687,20 @@ class Grammar(NodeVisitor):
             # Save the maximum position reached, so we can report errors
             self._max_position = max(self._max_position, w)
 
-        def scan_byte(self, state: ParseState,
-                      word: str, table: List[Set[ParseState] | Column],
-                      k: int, w: int):
+        def scan_byte(
+            self,
+            state: ParseState,
+            word: str,
+            table: List[Set[ParseState] | Column],
+            k: int,
+            w: int,
+        ):
             """
-                Scan a byte from the input `word`.
-                `state` is the current parse state.
-                `table` is the parse table.
-                `table[k]` is the current column.
-                `word[w]` is the current byte.
+            Scan a byte from the input `word`.
+            `state` is the current parse state.
+            `table` is the parse table.
+            `table[k]` is the current column.
+            `word[w]` is the current byte.
             """
 
             # LOGGER.debug(f"Trying {state} at {word[w:]!r}"
@@ -758,16 +770,18 @@ class Grammar(NodeVisitor):
             allow_incomplete: bool = False,
         ):
             """
-                Parse a forest of input trees from `word`.
-                `start` is the start symbol (default: `<start>`).
-                if `allow_incomplete` is True, the function will return trees even if the input ends prematurely.
+            Parse a forest of input trees from `word`.
+            `start` is the start symbol (default: `<start>`).
+            if `allow_incomplete` is True, the function will return trees even if the input ends prematurely.
             """
 
             if isinstance(start, str):
                 start = NonTerminal(start)
 
             # Initialize the table
-            table: list[set[ParseState] | Column] = [Column() for _ in range(len(word) + 1)]
+            table: list[set[ParseState] | Column] = [
+                Column() for _ in range(len(word) + 1)
+            ]
             implicit_start = NonTerminal("<*start*>")
             table[0].add(ParseState(implicit_start, 0, (start,)))
 
@@ -792,8 +806,7 @@ class Grammar(NodeVisitor):
 
                     if state.finished():
                         # LOGGER.debug(f"Finished {state}")
-                        if (state.nonterminal == implicit_start
-                            and w >= len(word)):
+                        if state.nonterminal == implicit_start and w >= len(word):
                             for child in state.children:
                                 yield child
 
@@ -807,14 +820,15 @@ class Grammar(NodeVisitor):
                             if isinstance(state.dot.symbol, int):
                                 # Scan a bit
                                 if bit_count < 0:
-                                   bit_count = 7
-                                self.scan_bit(state, word, table,
-                                              k, w, bit_count)
+                                    bit_count = 7
+                                self.scan_bit(state, word, table, k, w, bit_count)
                                 adv = 1
                             else:
                                 # Scan a byte
                                 if bit_count >= 0:
-                                    raise NotImplementedError("Can only parse sequences of 8 bits")
+                                    raise NotImplementedError(
+                                        "Can only parse sequences of 8 bits"
+                                    )
                                 self.scan_byte(state, word, table, k, w)
                                 adv = 8
                             advance = max(advance, adv)
@@ -831,11 +845,7 @@ class Grammar(NodeVisitor):
 
                 k += 1
 
-        def parse(
-            self,
-            word: str,
-            start: str | NonTerminal = "<start>"
-        ):
+        def parse(self, word: str, start: str | NonTerminal = "<start>"):
             if isinstance(start, str):
                 start = NonTerminal(start)
             if (word, start) in self._cache:
@@ -848,11 +858,7 @@ class Grammar(NodeVisitor):
 
             return None
 
-        def parse_incomplete(
-            self,
-            word: str,
-            start: str | NonTerminal = "<start>"
-        ):
+        def parse_incomplete(self, word: str, start: str | NonTerminal = "<start>"):
             if isinstance(start, str):
                 start = NonTerminal(start)
             self._incomplete = set()
