@@ -86,50 +86,50 @@ def get_parser(in_command_line=True):
     )
 
     # Algorithm Settings
-    settings_parser = argparse.ArgumentParser(add_help=False)
-    settings_group = settings_parser.add_argument_group("algorithm settings")
+    algorithm_parser = argparse.ArgumentParser(add_help=False)
+    algorithm_group = algorithm_parser.add_argument_group("algorithm settings")
 
-    settings_group.add_argument(
+    algorithm_group.add_argument(
         "-N",
         "--max-generations",
         type=int,
         help="the maximum number of generations to run the algorithm",
         default=None,
     )
-    settings_group.add_argument(
+    algorithm_group.add_argument(
         "--population-size", type=int, help="the size of the population", default=None
     )
-    settings_group.add_argument(
+    algorithm_group.add_argument(
         "--elitism-rate",
         type=float,
         help="the rate of individuals preserved in the next generation",
         default=None,
     )
-    settings_group.add_argument(
+    algorithm_group.add_argument(
         "--crossover-rate",
         type=float,
         help="the rate of individuals that will undergo crossover",
         default=None,
     )
-    settings_group.add_argument(
+    algorithm_group.add_argument(
         "--mutation-rate",
         type=float,
         help="the rate of individuals that will undergo mutation",
         default=None,
     )
-    settings_group.add_argument(
+    algorithm_group.add_argument(
         "--random-seed",
         type=int,
         help="the random seed to use for the algorithm",
         default=None,
     )
-    settings_group.add_argument(
+    algorithm_group.add_argument(
         "--destruction-rate",
         type=float,
         help="the rate of individuals that will be randomly destroyed in every generation",
         default=None,
     )
-    settings_group.add_argument(
+    algorithm_group.add_argument(
         "-n",
         "--num-outputs",
         "--desired-solutions",
@@ -137,11 +137,30 @@ def get_parser(in_command_line=True):
         help="the number of outputs to produce (default: 100)",
         default=None,
     )
+    algorithm_group.add_argument(
+        "--best-effort",
+        dest="best_effort",
+        action="store_true",
+        help="produce a 'best effort' population (may not satisfy all constraints)",
+        default=None,
+    )
+    algorithm_group.add_argument(
+        "-i",
+        "--initial-population",
+        type=str,
+        help="directory or ZIP archive with initial population",
+        default=None,
+    )
+
+    # Shared Settings
+    settings_parser = argparse.ArgumentParser(add_help=False)
+    settings_group = settings_parser.add_argument_group("general settings")
+
     settings_group.add_argument(
         "-S",
         "--start-symbol",
         type=str,
-        help="the grammar start symbol (default: `start`)",
+        help="the grammar start symbol (default: `<start>`)",
         default=None,
     )
     settings_group.add_argument(
@@ -149,20 +168,6 @@ def get_parser(in_command_line=True):
         dest="warnings_are_errors",
         action="store_true",
         help="treat warnings as errors",
-        default=None,
-    )
-    settings_group.add_argument(
-        "--best-effort",
-        dest="best_effort",
-        action="store_true",
-        help="produce a 'best effort' population (may not satisfy all constraints)",
-        default=None,
-    )
-    settings_group.add_argument(
-        "-i",
-        "--initial-population",
-        type=str,
-        help="directory or ZIP archive with initial population",
         default=None,
     )
 
@@ -195,7 +200,7 @@ def get_parser(in_command_line=True):
         default=None,
         # required=True,
         action="append",
-        help="Fandango file (.fan, .py) to be processed. Can be given multiple times.",
+        help="Fandango file (.fan, .py) to be processed. Can be given multiple times. Use '-' for stdin",
     )
     file_parser.add_argument(
         "-c",
@@ -239,14 +244,6 @@ def get_parser(in_command_line=True):
         help="specify a directory DIR to search for included Fandango files",
     )
     file_parser.add_argument(
-        "-o",
-        "--output",
-        type=argparse.FileType("w"),
-        dest="output",
-        default=None,
-        help="write output to OUTPUT (default: stdout)",
-    )
-    file_parser.add_argument(
         "-d",
         "--directory",
         type=str,
@@ -261,6 +258,12 @@ def get_parser(in_command_line=True):
         default=".txt",
         help="extension of generated file names (default: '.txt')",
     )
+    file_parser.add_argument(
+        "--format",
+        choices=["string", "bits", "tree", "grammar", "none"],
+        default="string",
+        help="produce output(s) as string (default), as a bit string, as a derivation tree, as a grammar, or none",
+    )
 
     # Commands
 
@@ -268,13 +271,15 @@ def get_parser(in_command_line=True):
     fuzz_parser = commands.add_parser(
         "fuzz",
         help="produce outputs from .fan files and test programs",
-        parents=[file_parser, settings_parser],
+        parents=[file_parser, settings_parser, algorithm_parser],
     )
     fuzz_parser.add_argument(
-        "--format",
-        choices=["string", "bits", "tree", "grammar", "none"],
-        default="string",
-        help="produce output(s) as string (default), as a bit string, as a derivation tree, as a grammar, or none",
+        "-o",
+        "--output",
+        type=argparse.FileType("w"),
+        dest="output",
+        default=None,
+        help="write output to OUTPUT (default: stdout)",
     )
 
     command_group = fuzz_parser.add_argument_group("command invocation settings")
@@ -311,7 +316,7 @@ def get_parser(in_command_line=True):
         metavar="files",
         type=str,
         nargs='*',
-        help="files to be parsed",
+        help="files to be parsed. Use '-' for stdin",
     )
     parse_parser.add_argument(
         "-b",
@@ -327,10 +332,12 @@ def get_parser(in_command_line=True):
         help="parse a prefix only",
     )
     parse_parser.add_argument(
-        "--format",
-        choices=["string", "bits", "tree", "grammar", "none"],
-        default="none",
-        help="produce output(s) as string, as a bit string, as a derivation tree, as a grammar, or none (default)",
+        "-o",
+        "--output",
+        type=argparse.FileType("w"),
+        dest="output",
+        default=None,
+        help="write output to OUTPUT (default: none). Use '-' for stdout",
     )
 
     if not in_command_line:
@@ -338,7 +345,7 @@ def get_parser(in_command_line=True):
         set_parser = commands.add_parser(
             "set",
             help="set or print default arguments",
-            parents=[file_parser, settings_parser],
+            parents=[file_parser, settings_parser, algorithm_parser],
         )
 
     if not in_command_line:
@@ -500,28 +507,25 @@ def parse_contents_from_args(args, given_grammars=[]):
 
 def make_fandango_settings(args, initial_settings={}):
     """Create keyword settings for Fandango() constructor"""
+    def copy(settings, name, args_name=None):
+        if args_name is None:
+            args_name = name
+        if hasattr(args, name) and getattr(args, name) is not None:
+            settings[name] = getattr(args, name)
+
     settings = initial_settings.copy()
-    if args.population_size is not None:
-        settings["population_size"] = args.population_size
-    if args.num_outputs is not None:
-        settings["desired_solutions"] = args.num_outputs
-    if args.mutation_rate is not None:
-        settings["mutation_rate"] = args.mutation_rate
-    if args.crossover_rate is not None:
-        settings["crossover_rate"] = args.crossover_rate
-    if args.max_generations is not None:
-        settings["max_generations"] = args.max_generations
-    if args.elitism_rate is not None:
-        settings["elitism_rate"] = args.elitism_rate
-    if args.destruction_rate is not None:
-        settings["destruction_rate"] = args.destruction_rate
-    if args.warnings_are_errors is not None:
-        settings["warnings_are_errors"] = args.warnings_are_errors
-    if args.best_effort is not None:
-        settings["best_effort"] = args.best_effort
-    if args.random_seed is not None:
-        settings["random_seed"] = args.random_seed
-    if args.start_symbol is not None:
+    copy(settings, "population_size")
+    copy(settings, "desired_solutions", "num_outputs")
+    copy(settings, "mutation_rate")
+    copy(settings, "crossover_rate")
+    copy(settings, "max_generations")
+    copy(settings, "elitisim_rate")
+    copy(settings, "destruction_rate")
+    copy(settings, "warnings_are_errors")
+    copy(settings, "best_effort")
+    copy(settings, "random_seed")
+
+    if hasattr(args, 'start_symbol') and args.start_symbol is not None:
         if args.start_symbol.startswith("<"):
             start_symbol = args.start_symbol
         else:
@@ -537,7 +541,8 @@ def make_fandango_settings(args, initial_settings={}):
     elif args.verbose and args.verbose > 1:
         LOGGER.setLevel(logging.DEBUG)  # Even more info
 
-    if args.initial_population is not None:
+    if (hasattr(args, 'initial_population') 
+        and args.initial_population is not None):
         settings["initial_population"] = extract_initial_population(
             args.initial_population
         )
@@ -655,9 +660,7 @@ def output(tree, args) -> str:
         return ""
     raise NotImplementedError("Unsupported output format")
 
-def output_population(population, args):
-    output_on_stdout = True
-
+def output_population(population, args, *, output_on_stdout=True):
     if args.format == 'none':
         return
 
@@ -746,7 +749,7 @@ def fuzz_command(args):
 
     LOGGER.debug("Evolving population")
     population = fandango.evolve()
-    output_population(population, args)
+    output_population(population, args, output_on_stdout=True)
 
 
 
@@ -842,8 +845,8 @@ def parse_command(args):
             print_exception(e)
             errors += 1
 
-    if population:
-        output_population(population, args)
+    if population and args.output:
+        output_population(population, args, output_on_stdout=False)
 
     if errors:
         raise ValueError(f"{errors} error(s) during parsing")
