@@ -74,6 +74,9 @@ instance/
 # Sphinx documentation
 docs/_build/
 
+# Own test results
+tests/test-marker.txt
+
 # PyBuilder
 .pybuilder/
 target/
