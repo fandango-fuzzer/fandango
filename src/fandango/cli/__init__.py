@@ -321,6 +321,12 @@ def get_parser(in_command_line=True):
         help="open files in binary mode",
     )
     parse_parser.add_argument(
+        "--prefix",
+        action="store_true",
+        default=False,
+        help="parse a prefix only",
+    )
+    parse_parser.add_argument(
         "--format",
         choices=["string", "bits", "tree", "grammar", "none"],
         default="none",
@@ -798,17 +804,25 @@ def parse_command(args):
         else:
             start_symbol = "<start>"
 
-        tree = grammar.parse(individual, start=start_symbol)
+        if args.prefix:
+            tree_gen = grammar.parse_incomplete(individual, start=start_symbol)
+            try:
+                tree = next(tree_gen)
+            except StopIteration:
+                tree = None
+        else:
+            tree = grammar.parse(individual, start=start_symbol)
+
         if tree is None:
             error_pos = grammar.max_position() + 1
             raise SyntaxError(report_syntax_error(input_file.name,
                                                   error_pos, individual,
                                                   binary=args.binary))
-
-        for constraint in constraints:
-            fitness = constraint.fitness(tree).fitness()
-            if fitness == 0:
-                raise ValueError(f"{input_file.name}: constraint {constraint} not satisfied")
+        if not args.prefix:
+            for constraint in constraints:
+                fitness = constraint.fitness(tree).fitness()
+                if fitness == 0:
+                    raise ValueError(f"{input_file.name}: constraint {constraint} not satisfied")
 
         return tree
 
