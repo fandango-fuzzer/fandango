@@ -545,7 +545,7 @@ class Grammar(NodeVisitor):
             self._process()
             self._cache: Dict[Tuple[str, NonTerminal], DerivationTree] = {}
             self._incomplete = set()
-            self._max_position = 0
+            self._max_position = -1
 
         def _process(self):
             for nonterminal in self.grammar_rules:
@@ -677,7 +677,7 @@ class Grammar(NodeVisitor):
                 start = NonTerminal(start)
             table = [Column() for _ in range(len(word) + 1)]
             table[0].add(ParseState(NonTerminal("<*start*>"), 0, (start,)))
-            self._max_position = 0
+            self._max_position = -1
 
             for k in range(len(word) + 1):
                 for state in table[k]:
@@ -701,7 +701,7 @@ class Grammar(NodeVisitor):
             table = [Column() for _ in range(len(word) + 1)]
             implicit_start = NonTerminal("<*start*>")
             table[0].add(ParseState(implicit_start, 0, (start,)))
-            self._max_position = 0
+            self._max_position = -1
 
             for k in range(len(word) + 1):
                 s = 0
