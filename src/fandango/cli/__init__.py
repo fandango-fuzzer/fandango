@@ -795,6 +795,10 @@ def parse_file(fd, args, grammar, constraints, settings):
                 f"{fd.name!r}: constraint {constraint} not satisfied"
             )
 
+    if args.validate:
+        if tree.to_string() != individual:
+            raise ValueError(f"{fd.name!r}: parsed tree does not match original")
+
     return tree
 
 def fuzz_command(args):
@@ -832,6 +836,7 @@ def fuzz_command(args):
         LOGGER.debug("Validating population")
 
         # Ensure that every generated file can be parsed
+        # and returns the same string as the original
         temp_dir = tempfile.TemporaryDirectory(delete=False)
         args.directory = temp_dir.name
         args.format = "string"
@@ -864,7 +869,7 @@ def fuzz_command(args):
 
         # If everything went well, clean up;
         # otherwise preserve file for debugging
-        shutil.rmtree(temp_dir)
+        shutil.rmtree(temp_dir.name)
 
 def parse_command(args):
     """Parse given files"""
@@ -903,6 +908,7 @@ def parse_command(args):
             except Exception as e:
                 print_exception(e)
                 errors += 1
+                tree = None
 
     if population and args.output:
         output_population(population, args, output_on_stdout=False)
