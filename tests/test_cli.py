@@ -1,6 +1,7 @@
 import unittest
 import subprocess
 import os
+import shutil
 
 from fandango.cli import get_parser
 
@@ -67,7 +68,7 @@ class test_cli(unittest.TestCase):
                 actual = fd.read()
             self.assertEqual(expected[i], actual)
             os.remove(filename)
-        os.rmdir("tests/resources/test")
+        shutil.rmtree("tests/resources/test")
 
     def test_command_line_constraints(self):
         command_single = ["fandango", "fuzz", "-f", "tests/resources/digit.fan", "-n", "10", "--random-seed", "426912", "-c", "25 <= int(<start>) and int(<start>) <= 45"]
