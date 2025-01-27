@@ -14,6 +14,7 @@ import sys
 import tempfile
 import textwrap
 import zipfile
+import shutil
 
 from io import StringIO
 from io import UnsupportedOperation
@@ -837,14 +838,23 @@ def fuzz_command(args):
         output_population(population, args, output_on_stdout=False)
         generated_files = glob.glob(args.directory + "/*")
         generated_files.sort()
+        assert len(generated_files) == len(population)
 
         errors = 0
-        for generated_file in generated_files:
+        for i in range(len(generated_files)):
+            generated_file = generated_files[i]
+            individual = population[i]
+
             try:
                 with (open(generated_file, "rb") if args.binary
                       else open(generated_file, "r")) as fd:
                     tree = parse_file(fd, args,
                                       grammar, constraints, settings)
+
+                    if tree.to_string() != individual.to_string():
+                        raise ValueError(
+                            f"{generated_file!r}: parsed tree does not match original"
+                        )
             except Exception as e:
                 print_exception(e)
                 errors += 1
@@ -852,7 +862,9 @@ def fuzz_command(args):
         if errors:
             raise ValueError(f"{errors} error(s) during validation")
 
-        temp_dir.cleanup()
+        # If everything went well, clean up;
+        # otherwise preserve file for debugging
+        shutil.rmtree(temp_dir)
 
 def parse_command(args):
     """Parse given files"""
