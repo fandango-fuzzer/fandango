@@ -517,19 +517,19 @@ def parse_contents_from_args(args, given_grammars=[]):
 def make_fandango_settings(args, initial_settings={}):
     """Create keyword settings for Fandango() constructor"""
 
-    def copy(settings, name, args_name=None):
+    def copy(settings, name, *, args_name=None):
         if args_name is None:
             args_name = name
-        if hasattr(args, name) and getattr(args, name) is not None:
-            settings[name] = getattr(args, name)
+        if hasattr(args, args_name) and getattr(args, args_name) is not None:
+            settings[name] = getattr(args, args_name)
 
     settings = initial_settings.copy()
     copy(settings, "population_size")
-    copy(settings, "desired_solutions", "num_outputs")
+    copy(settings, "desired_solutions", args_name="num_outputs")
     copy(settings, "mutation_rate")
     copy(settings, "crossover_rate")
     copy(settings, "max_generations")
-    copy(settings, "elitisim_rate")
+    copy(settings, "elitism_rate")
     copy(settings, "destruction_rate")
     copy(settings, "warnings_are_errors")
     copy(settings, "best_effort")
