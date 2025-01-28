@@ -544,7 +544,7 @@ class Grammar(NodeVisitor):
             self._rules = {}
             self._implicit_rules = {}
             self._process()
-            self._cache: Dict[Tuple[str, NonTerminal], DerivationTree] = {}
+            self._cache: Dict[Tuple[str, NonTerminal], DerivationTree, bool] = {}
             self._incomplete = set()
             self._max_position = -1
 
@@ -772,10 +772,10 @@ class Grammar(NodeVisitor):
         #                     self.scan_byte(state, word, table, k, k)
         #     return table
 
-        def parse_forest(
+        def _parse_forest(
             self,
             word: str,
-            start: str | NonTerminal = "<start>",
+            start: str | NonTerminal = "<start>", *,
             allow_incomplete: bool = False,
         ):
             """
@@ -863,28 +863,51 @@ class Grammar(NodeVisitor):
 
                 k += 1
 
-        def parse(self, word: str, start: str | NonTerminal = "<start>"):
+        def parse_forest(self, word: str,
+                         start: str | NonTerminal = "<start>", *, allow_incomplete: bool = False):
+            """
+                Yield multiple parse alternatives, using a cache.
+            """
             if isinstance(start, str):
                 start = NonTerminal(start)
-            if (word, start) in self._cache:
-                return deepcopy(self._cache[(word, start)])
-            for tree in self.parse_forest(word, start):
-                self._cache[(word, start)] = tree
-                # FIXME: It is weird that we return the first tree
-                # and not all of them -- AZ
-                return tree
 
-            return None
+            cache_key = (word, start, allow_incomplete)
+            if cache_key in self._cache:
+                forest = self._cache[cache_key]
+                for tree in forest:
+                    yield deepcopy(tree)
+                return
 
-        def parse_incomplete(self, word: str, start: str | NonTerminal = "<start>"):
-            if isinstance(start, str):
-                start = NonTerminal(start)
             self._incomplete = set()
-            for tree in self.parse_forest(word, start, allow_incomplete=True):
-                self._cache[(word, start)] = tree
+            forest = []
+            for tree in self._parse_forest(word, start,
+                                           allow_incomplete=allow_incomplete):
+                forest.append(tree)
                 yield tree
-            for tree in self._incomplete:
-                yield tree
+
+            if allow_incomplete:
+                for tree in self._incomplete:
+                    forest.append(tree)
+                    yield tree
+
+            # Cache entire forest
+            self._cache[cache_key] = forest
+
+        def parse_incomplete(self, word: str,
+                             start: str | NonTerminal = "<start>"):
+            """
+                Yield multiple parse alternatives,
+                even for incomplete inputs
+            """
+            return self.parse_forest(word, start, allow_incomplete=True)
+
+        def parse(self, word: str, start: str | NonTerminal = "<start>"):
+            """
+                Return the first parse alternative,
+                or `None` if no parse is possible
+            """
+            tree_gen = self.parse_forest(word, start=start)
+            return next(tree_gen, None)
 
         def max_position(self):
             """Return the maximum position reached during parsing."""
@@ -965,6 +988,13 @@ class Grammar(NodeVisitor):
         start: str | NonTerminal = "<start>",
     ):
         return self._parser.parse(word, start)
+
+    def parse_forest(
+        self,
+        word: str,
+        start: str | NonTerminal = "<start>",
+    ):
+        return self._parser.parse_forest(word, start)
 
     def parse_incomplete(
         self,
