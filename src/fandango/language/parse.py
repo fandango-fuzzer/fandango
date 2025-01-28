@@ -463,7 +463,7 @@ def parse(
             )
 
         rir_detector = RoleInRoleDetector(grammar)
-        rir_detector.fail_on_nested_packet(start_symbol)
+        rir_detector.fail_on_nested_packet(NonTerminal(start_symbol))
 
         # Todo collect receiver roles
         keep_roles = grammar.roles()
@@ -478,6 +478,7 @@ def parse(
             truncator.visit(grammar.rules[nt])
 
     # We invoke this at the very end, now that all data is there
+    grammar.update(grammar)
     grammar.prime()
 
     LOGGER.debug("All contents parsed")
