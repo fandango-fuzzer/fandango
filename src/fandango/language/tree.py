@@ -194,9 +194,14 @@ class DerivationTree:
         Convert the derivation tree to a string.
         """
         if self.contains_bits() or self.contains_bytes():
-            LOGGER.warning("Derivation tree contains binary elements. Consider producing a binary output instead.")
+            LOGGER.warning("Converting a derivation tree with binary elements into a string")
 
-        return self.to_bytes(encoding="utf-8").decode("utf-8")
+        try:
+            return self.to_bytes(encoding="utf-8").decode("utf-8")
+        except UnicodeDecodeError:
+            # This can happen if we produce bytes that are interpreted as strings, say via str(tree)
+            # Decode into latin-1 to avoid errors
+            return self.to_bytes(encoding="utf-8").decode("latin-1")
 
     def to_bytes(self, encoding="utf-8") -> bytes:
         """
