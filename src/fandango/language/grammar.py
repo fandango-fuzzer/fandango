@@ -798,6 +798,33 @@ class GrammarTruncator(NodeVisitor):
         return False
 
 
+class RoleInRoleDetector(NodeVisitor):
+    def __init__(self, grammar: "Grammar"):
+        self.grammar = grammar
+        self.seen_nt = set()
+
+    def find_loops(self, start_symbol: NonTerminal):
+        self.current_nt = start_symbol
+        self.visit(self.grammar[start_symbol])
+
+    def visitNonTerminalNode(self, node: NonTerminalNode):
+        if node.symbol.is_implicit:
+            return self.visit(self.grammar[node.symbol])
+
+        if node.symbol not in self.seen_nt:
+            self.seen_nt.add(node.symbol)
+        else:
+            return
+
+        if node.role is not None:
+            tree_roles = self.grammar[node.symbol].tree_roles(self.grammar)
+            if len(tree_roles) != 0:
+                raise RuntimeError(f"Found illegal packet-definitions within packet-definition of non_terminal {node.symbol}: " + ", ".join(tree_roles))
+            return
+
+        self.visit(self.grammar[node.symbol])
+
+
 
 class ParseState:
     def __init__(
