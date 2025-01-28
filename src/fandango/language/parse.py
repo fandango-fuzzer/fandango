@@ -480,8 +480,8 @@ def assign_std_out_role(grammar: "Grammar", io_instance: FandangoIO):
             if nt.role is None:
                 continue
             if nt.role not in io_instance.roles.keys():
-                nt.role = "STDOUT"
                 remapped_roles.add(nt.role)
+                nt.role = "STDOUT"
     for name in remapped_roles:
         LOGGER.warn(
             f"No class has been specified for role: {name}! Role gets mapped to STDOUT!"
