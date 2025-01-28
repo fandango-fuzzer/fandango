@@ -112,8 +112,8 @@
     <TRAILER> ::= <GIFTrailer_1>
       <GIFTrailer_1> ::= b';'
 
-where len(<Data>) == ord(str(<Size_1>))
-where not (<GifHeader>.<Signature> != "GIF")
+# where len(<Data>) == ord(str(<Size_1>))
+# where not (<GifHeader>.<Signature> != "GIF")
 
 # FIXME: ReadRGB()
 # FIXME: ReadUByte()
