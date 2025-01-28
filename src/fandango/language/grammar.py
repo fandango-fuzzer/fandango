@@ -649,13 +649,14 @@ class Grammar(NodeVisitor):
             k: int,
             w: int,
             bit_count: int,
-        ):
+        ) -> bool:
             """
             Scan a bit from the input `word`.
             `table` is the parse table (may be modified by this function).
             `table[k]` is the current column.
             `word[w]` is the current byte.
             `bit_count` is the current bit position (7-0).
+            Return True if a bit was matched, False otherwise.
             """
             # LOGGER.debug(f"Trying {state} at {word[w:]!r}"
             #              + (f", bit {bit_count}" if bit_count >= 0 else ""))
@@ -672,10 +673,10 @@ class Grammar(NodeVisitor):
             # LOGGER.debug(f"Compare against bit {state.dot!r}")
             if not state.dot.check(bit):
                 # LOGGER.debug(f"Bit match failed")
-                return
+                return False
 
             # Found a match
-            LOGGER.debug(f"Scanned bit {bit_count} ({bit}) {state} {word[w:]!r}")
+            # LOGGER.debug(f"Scanned bit {bit_count} ({bit}) {state} {word[w:]!r}")
             next_state = state.next()
             next_state.children.append(DerivationTree(state.dot))
 
@@ -688,6 +689,8 @@ class Grammar(NodeVisitor):
             # Save the maximum position reached, so we can report errors
             self._max_position = max(self._max_position, w)
 
+            return True
+
         def scan_byte(
             self,
             state: ParseState,
@@ -695,13 +698,14 @@ class Grammar(NodeVisitor):
             table: List[Set[ParseState] | Column],
             k: int,
             w: int,
-        ):
+        ) -> bool:
             """
             Scan a byte from the input `word`.
             `state` is the current parse state.
             `table` is the parse table.
             `table[k]` is the current column.
             `word[w]` is the current byte.
+            Return True if a byte was matched, False otherwise.
             """
 
             # LOGGER.debug(f"Trying {state} at {word[w:]!r}"
@@ -709,13 +713,17 @@ class Grammar(NodeVisitor):
 
             assert not isinstance(state.dot.symbol, int)
 
-            if state.dot.check(word[w:]):
-                # Found a match
-                LOGGER.debug(f"Scanned byte {state} {word[w:]!r}")
-                next_state = state.next()
-                next_state.children.append(DerivationTree(state.dot))
-                table[k + len(state.dot)].add(next_state)
-                self._max_position = max(self._max_position, w)
+            if not state.dot.check(word[w:]):
+                # No match
+                return False
+
+            # Found a match
+            # LOGGER.debug(f"Scanned byte {state} {word[w:]!r}")
+            next_state = state.next()
+            next_state.children.append(DerivationTree(state.dot))
+            table[k + len(state.dot)].add(next_state)
+            self._max_position = max(self._max_position, w)
+            return True
 
         def complete(
             self,
@@ -796,7 +804,7 @@ class Grammar(NodeVisitor):
             while k < len(table) and w <= len(word):
                 advance = 0
                 for state in table[k]:
-                    LOGGER.debug(f"Processing {state} at {word[w:]!r}")
+                    # LOGGER.debug(f"Processing {state} at {word[w:]!r}")
                     if w >= len(word):
                         # LOGGER.debug(f"End of input")
                         if allow_incomplete:
@@ -822,18 +830,24 @@ class Grammar(NodeVisitor):
                                 # Scan a bit
                                 if bit_count < 0:
                                     bit_count = 7
-                                self.scan_bit(state, word, table, k, w, bit_count)
+                                match = self.scan_bit(state, word, table,
+                                                      k, w, bit_count)
                                 adv = 1
                             else:
                                 # Scan a byte
                                 if bit_count >= 0:
-                                    # This can happen if we _peeked_ at a bit,
-                                    # without actually parsing it.
-                                    # Or if we have a grammar with bits
+                                    # We are still expecting bits here:
+                                    #
+                                    # * we may have _peeked_ at a bit,
+                                    # without actually parsing it; or
+                                    # * we may have a grammar with bits
                                     # that do not come in multiples of 8.
+                                    #
+                                    # In either case, we need to skip back
+                                    # to scanning bytes here.
                                     LOGGER.debug("Mixed parsing of bits and bytes")
                                     bit_count = -1
-                                self.scan_byte(state, word, table, k, w)
+                                match = self.scan_byte(state, word, table, k, w)
                                 adv = 8
                             advance = max(advance, adv)
 
