@@ -504,4 +504,5 @@ if __name__ == "__main__":
             endianness=endianness,
             bitfield_order=bitfield_order)
         visitor.visit(ast)
+        print(f"# Automatically generated from {filename!r} by bt2fan. Do not edit.")
         print(visitor.spec())
