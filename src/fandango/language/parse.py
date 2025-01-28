@@ -463,7 +463,7 @@ def parse(
             )
 
         rir_detector = RoleInRoleDetector(grammar)
-        rir_detector.find_loops(start_symbol)
+        rir_detector.fail_on_nested_packet(start_symbol)
 
         # Todo collect receiver roles
         keep_roles = grammar.roles()

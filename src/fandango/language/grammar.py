@@ -803,7 +803,7 @@ class RoleInRoleDetector(NodeVisitor):
         self.grammar = grammar
         self.seen_nt = set()
 
-    def find_loops(self, start_symbol: NonTerminal):
+    def fail_on_nested_packet(self, start_symbol: NonTerminal):
         self.current_nt = start_symbol
         self.visit(self.grammar[start_symbol])
 
