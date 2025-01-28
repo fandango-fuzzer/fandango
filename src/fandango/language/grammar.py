@@ -1286,6 +1286,10 @@ class Grammar(NodeVisitor):
         )
 
     def contains_type(self, tp: type, *, start="<start>") -> bool:
+        """
+            Return true if the grammar can produce an element of type `tp` (say, `int` or `bytes`).
+            * `start`: a start symbol other than `<start>`.
+        """
         if isinstance(start, str):
             start = NonTerminal(start)
 
@@ -1306,7 +1310,22 @@ class Grammar(NodeVisitor):
         return node_matches(start_node)
 
     def contains_bits(self, *, start="<start>") -> bool:
+        """
+            Return true iff the grammar can produce a bit element (0 or 1).
+            * `start`: a start symbol other than `<start>`.
+        """
         return self.contains_type(int, start=start)
 
     def contains_bytes(self, *, start="<start>") -> bool:
+        """
+            Return true iff the grammar can produce a bytes element.
+            * `start`: a start symbol other than `<start>`.
+        """
         return self.contains_type(bytes, start=start)
+
+    def contains_strings(self, *, start="<start>") -> bool:
+        """
+            Return true iff the grammar can produce a (UTF-8) string element.
+            * `start`: a start symbol other than `<start>`.
+        """
+        return self.contains_type(str, start=start)
