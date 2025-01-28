@@ -45,7 +45,7 @@ class test_cli(unittest.TestCase):
 
     def test_output_to_file(self):
         command = ["fandango", "fuzz", "-f", "tests/resources/digit.fan", "-n", "10", "--random-seed", "426912", "-o", "tests/resources/test.txt", "-s", ";"]
-        expected = "35716;4;9768;30;5658;5;9;649;20;41;"
+        expected = "35716;4;9768;30;5658;5;9;649;20;41"
         out, err, code = self.run_command(command)
         self.assertEqual(0, code)
         self.assertEqual("", out)
@@ -81,8 +81,7 @@ class test_cli(unittest.TestCase):
 28
 30
 41
-29
-"""
+29"""
         out, err, code = self.run_command(command_single)
         self.assertEqual(0, code)
         self.assertEqual(expected, out)
