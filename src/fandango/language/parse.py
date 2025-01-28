@@ -29,7 +29,7 @@ from fandango.language.grammar import (
     NonTerminalFinder,
     RoleAssigner,
     FuzzingMode,
-    NonTerminalNode, GrammarTruncator,
+    NonTerminalNode, GrammarTruncator, RoleInRoleDetector,
 )
 from fandango.language.io import FandangoIO, FandangoAgent
 from fandango.language.parser.FandangoLexer import FandangoLexer
@@ -461,6 +461,9 @@ def parse(
             LOGGER.warn(
                 f"No class has been specified for role: {name}! Role gets mapped to STDOUT!"
             )
+
+        rir_detector = RoleInRoleDetector(grammar)
+        rir_detector.find_loops(start_symbol)
 
         # Todo collect receiver roles
         keep_roles = grammar.roles()
