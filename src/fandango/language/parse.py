@@ -488,8 +488,7 @@ def assign_std_out_role(grammar: "Grammar", io_instance: FandangoIO):
         )
 
 def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) -> None:
-    # Todo collect receiver roles
-    keep_roles = grammar.roles()
+    keep_roles = grammar.roles(True)
     io_instance.roles.keys()
     for existing_role in list(keep_roles):
         if not io_instance.roles[existing_role].is_fandango():
