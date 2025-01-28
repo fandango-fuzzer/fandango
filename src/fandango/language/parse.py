@@ -429,53 +429,15 @@ def parse(
         if "FandangoIO" not in global_env.keys():
             exec("FandangoIO.instance()", global_env, local_env)
         io_instance: FandangoIO = global_env["FandangoIO"].instance()
-        grammar_roles = grammar.roles()
-        agent_names = set()
 
-        # Initialize FandangoAgent instances
-        for key in global_env.keys():
-            if key in grammar_roles:
-                the_type = global_env[key]
-                if not isinstance(the_type, type):
-                    continue
-                if FandangoAgent in the_type.__mro__:
-                    agent_names.add(key)
-        # Call constructor
-        for agent in agent_names:
-            exec(f"{agent}()", global_env, local_env)
-            grammar_roles.remove(agent)
-        for symbol in grammar.rules.keys():
-            if symbol.is_implicit:
-                continue
-            non_terminals: list[NonTerminalNode] = NonTerminalFinder(grammar).visit(
-                grammar.rules[symbol]
-            )
-            # At this point grammar_roles only contains role names that have no FandangoAgent defined.
-            # These roles get set to STDOUT
-            for nt in non_terminals:
-                if nt.role is None:
-                    continue
-                if nt.role in grammar_roles:
-                    nt.role = "STDOUT"
-        for name in grammar_roles:
-            LOGGER.warn(
-                f"No class has been specified for role: {name}! Role gets mapped to STDOUT!"
-            )
+        init_fandango_agents(grammar, io_instance)
+        assign_std_out_role(grammar, io_instance)
 
+        # Detect illegally nested data packets.
         rir_detector = RoleInRoleDetector(grammar)
         rir_detector.fail_on_nested_packet(NonTerminal(start_symbol))
 
-        # Todo collect receiver roles
-        keep_roles = grammar.roles()
-        io_instance.roles.keys()
-        for existing_role in list(keep_roles):
-            if not io_instance.roles[existing_role].is_fandango():
-                keep_roles.remove(existing_role)
-
-        for nt in grammar.rules.keys():
-            truncator = GrammarTruncator(grammar, keep_roles)
-            # Todo: change starting symbol
-            truncator.visit(grammar.rules[nt])
+        truncate_non_visible_packets(grammar, io_instance)
 
     # We invoke this at the very end, now that all data is there
     grammar.update(grammar)
@@ -486,6 +448,58 @@ def parse(
 
 
 ### Consistency Checks
+
+def init_fandango_agents(grammar: "Grammar", io_instance: FandangoIO):
+    agent_names = set()
+    grammar_roles = grammar.roles()
+    global_env, local_env = grammar.get_python_env()
+
+    # Initialize FandangoAgent instances
+    for key in global_env.keys():
+        if key in grammar_roles:
+            the_type = global_env[key]
+            if not isinstance(the_type, type):
+                continue
+            if FandangoAgent in the_type.__mro__:
+                agent_names.add(key)
+    # Call constructor
+    for agent in agent_names:
+        exec(f"{agent}()", global_env, local_env)
+        grammar_roles.remove(agent)
+
+def assign_std_out_role(grammar: "Grammar", io_instance: FandangoIO):
+    remapped_roles = set()
+    for symbol in grammar.rules.keys():
+        if symbol.is_implicit:
+            continue
+        non_terminals: list[NonTerminalNode] = NonTerminalFinder(grammar).visit(
+            grammar.rules[symbol]
+        )
+        # At this point grammar_roles only contains role names that have no FandangoAgent defined.
+        # These roles get set to STDOUT
+        for nt in non_terminals:
+            if nt.role is None:
+                continue
+            if nt.role not in io_instance.roles.keys():
+                nt.role = "STDOUT"
+                remapped_roles.add(nt.role)
+    for name in remapped_roles:
+        LOGGER.warn(
+            f"No class has been specified for role: {name}! Role gets mapped to STDOUT!"
+        )
+
+def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) -> None:
+    # Todo collect receiver roles
+    keep_roles = grammar.roles()
+    io_instance.roles.keys()
+    for existing_role in list(keep_roles):
+        if not io_instance.roles[existing_role].is_fandango():
+            keep_roles.remove(existing_role)
+
+    for nt in grammar.rules.keys():
+        truncator = GrammarTruncator(grammar, keep_roles)
+        # Todo: change starting symbol
+        truncator.visit(grammar.rules[nt])
 
 
 def check_grammar_consistency(

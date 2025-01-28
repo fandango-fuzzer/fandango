@@ -24,7 +24,7 @@ class FandangoAgent(object):
     """
 
     def on_send(self, message: str, recipient: str, response_setter: Callable[[str, str], None]):
-        pass
+        print(f"({self.class_name}): {message}")
 
     """
     Call if a message has been received from this party.
@@ -38,9 +38,6 @@ class STDOUT(FandangoAgent):
 
     def __init__(self):
         super().__init__(True)
-
-    def on_send(self, message: str, recipient: str, response_setter: Callable[[str, str], None]):
-        print(f"({self.class_name}): {message}")
 
 
 class FandangoIO:
