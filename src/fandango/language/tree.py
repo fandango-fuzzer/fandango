@@ -154,9 +154,9 @@ class DerivationTree:
             raise ValueError("Invalid symbol type")
 
 
-    def contains_type(self, tp) -> bool:
+    def contains_type(self, tp: type) -> bool:
         """
-        Check if the derivation tree contains any symbols of type `tp`.
+            Return true if the derivation tree contains any terminal symbols of type `tp` (say, `int` or `bytes`).
         """
         if self.symbol.is_terminal and isinstance(self.symbol.symbol, tp):
             return True
@@ -168,16 +168,22 @@ class DerivationTree:
 
     def contains_bits(self) -> bool:
         """
-        Check if the derivation tree contains any bits.
+            Return true iff the derivation tree contains any bits (0 or 1).
         """
         return self.contains_type(int)
 
 
     def contains_bytes(self) -> bool:
         """
-        Check if the derivation tree contains any bytes.
+            Return true iff the derivation tree contains any byte strings.
         """
         return self.contains_type(bytes)
+
+    def contains_strings(self) -> bool:
+        """
+            Return true iff the derivation tree contains any (UTF-8) strings.
+        """
+        return self.contains_type(str)
 
 
     def to_bits(self, *, encoding="utf-8") -> str:
