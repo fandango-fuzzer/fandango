@@ -778,10 +778,9 @@ def parse_file(fd, args, grammar, constraints, settings):
     else:
         start_symbol = "<start>"
 
-    if hasattr(args, 'prefix') and args.prefix:
-        tree_gen = grammar.parse_incomplete(individual, start=start_symbol)
-    else:
-        tree_gen = grammar.parse_forest(individual, start=start_symbol)
+    allow_incomplete = hasattr(args, 'prefix') and args.prefix
+    tree_gen = grammar.parse_forest(individual, start=start_symbol,
+                                    allow_incomplete=allow_incomplete)
 
     alternative_counter = 1
     while tree := next(tree_gen, None):
