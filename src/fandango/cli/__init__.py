@@ -704,7 +704,7 @@ def open_file(filename, file_mode, *, mode='r'):
     return open(filename, mode)
 
 
-def output_population(population, args, /, file_mode=None, *,
+def output_population(population, args, file_mode=None, *,
                       output_on_stdout=True):
     assert file_mode == "binary" or file_mode == "text"
 
@@ -722,7 +722,7 @@ def output_population(population, args, /, file_mode=None, *,
         for individual in population:
             basename = f"fandango-{counter:04d}{args.filename_extension}"
             filename = os.path.join(args.directory, basename)
-            with open_file(filename, file_mode, mode=mode) as fd:
+            with open_file(filename, file_mode, mode='w') as fd:
                 fd.write(output(individual, args, file_mode))
             counter += 1
 
