@@ -695,9 +695,12 @@ def output_population(population, args, *, output_on_stdout=True):
 
     if args.output:
         LOGGER.debug("Storing population in file")
+        sep = False
         for individual in population:
+            if sep:
+                args.output.write(args.separator)
             args.output.write(output(individual, args))
-            args.output.write(args.separator)
+            sep = True
 
         args.output.close()
         output_on_stdout = False
@@ -730,8 +733,12 @@ def output_population(population, args, *, output_on_stdout=True):
     if output_on_stdout:
         # Default
         LOGGER.debug("Printing population on stdout")
+        sep = False
         for individual in population:
-            print(output(individual, args), end=args.separator)
+            if sep:
+                print(args.separator, end="")
+            print(output(individual, args), end="")
+            sep = True
 
 
 def report_syntax_error(
