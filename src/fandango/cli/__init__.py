@@ -780,13 +780,25 @@ def parse_file(fd, args, grammar, constraints, settings):
 
     if hasattr(args, 'prefix') and args.prefix:
         tree_gen = grammar.parse_incomplete(individual, start=start_symbol)
-        try:
-            tree = next(tree_gen)
-        except StopIteration:
-            tree = None
     else:
-        tree = grammar.parse(individual, start=start_symbol)
+        tree_gen = grammar.parse_forest(individual, start=start_symbol)
 
+    alternative_counter = 1
+    while tree := next(tree_gen, None):
+        LOGGER.debug(f"Trying parse alternative #{alternative_counter}")
+
+        for constraint in constraints:
+            fitness = constraint.fitness(tree).fitness()
+            if fitness >= 1:
+                # Found an alternative that satisfies all constraints
+                if args.validate:
+                    if tree.to_string() != individual:
+                        raise ValueError(f"{fd.name!r}: parsed tree does not match original")
+                return tree
+
+        alternative_counter += 1
+
+    # Tried all alternatives
     if tree is None:
         error_pos = grammar.max_position() + 1
         raise SyntaxError(
@@ -795,6 +807,7 @@ def parse_file(fd, args, grammar, constraints, settings):
             )
         )
 
+    # Work with the last tree
     for constraint in constraints:
         fitness = constraint.fitness(tree).fitness()
         if fitness == 0:
@@ -802,11 +815,6 @@ def parse_file(fd, args, grammar, constraints, settings):
                 f"{fd.name!r}: constraint {constraint} not satisfied"
             )
 
-    if args.validate:
-        if tree.to_string() != individual:
-            raise ValueError(f"{fd.name!r}: parsed tree does not match original")
-
-    return tree
 
 def fuzz_command(args):
     """Invoke the fuzzer"""
