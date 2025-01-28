@@ -993,8 +993,10 @@ class Grammar(NodeVisitor):
         self,
         word: str,
         start: str | NonTerminal = "<start>",
+        allow_incomplete: bool = False,
     ):
-        return self._parser.parse_forest(word, start)
+        return self._parser.parse_forest(word, start,
+                                         allow_incomplete=allow_incomplete)
 
     def parse_incomplete(
         self,
