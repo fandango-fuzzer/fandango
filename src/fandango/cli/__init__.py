@@ -521,6 +521,7 @@ def make_fandango_settings(args, initial_settings={}):
             args_name = name
         if hasattr(args, args_name) and getattr(args, args_name) is not None:
             settings[name] = getattr(args, args_name)
+            LOGGER.debug(f"Settings: {name} is {settings[name]}")
 
     settings = initial_settings.copy()
     copy(settings, "population_size")
@@ -874,11 +875,12 @@ def parse_file(fd, args, grammar, constraints, settings):
             )
 
 
-def get_file_mode(args, start_symbol, *, grammar=None, tree=None):
-    if args.file_mode != "auto":
+def get_file_mode(args, settings, *, grammar=None, tree=None):
+    if hasattr(args, "file_mode") and args.file_mode != "auto":
         return args.file_mode
 
     if grammar is not None:
+        start_symbol = settings.get("start_symbol", "<start>")
         if (grammar.contains_bits(start=start_symbol)
             or grammar.contains_bytes(start=start_symbol)):
             return "binary"
@@ -917,8 +919,7 @@ def fuzz_command(args):
     settings = make_fandango_settings(args, DEFAULT_SETTINGS)
     LOGGER.debug(f"Settings: {settings}")
 
-    start_symbol = settings.get("start_symbol", "<start>")
-    file_mode = get_file_mode(args, start_symbol, grammar=grammar)
+    file_mode = get_file_mode(args, settings, grammar=grammar)
     LOGGER.info(f"File mode: {file_mode}")
 
     LOGGER.debug("Starting Fandango")
@@ -987,8 +988,7 @@ def parse_command(args):
     settings = make_fandango_settings(args, DEFAULT_SETTINGS)
     LOGGER.debug(f"Settings: {settings}")
 
-    start_symbol = settings.get("start_symbol", "<start>")
-    file_mode = get_file_mode(args, start_symbol, grammar=grammar)
+    file_mode = get_file_mode(args, settings, grammar=grammar)
     LOGGER.info(f"File mode: {file_mode}")
 
     if not args.input_files:
@@ -1198,8 +1198,7 @@ def shell_command(args):
         _read_history()
         readline.set_completer_delims(" \t\n;")
         readline.set_completer(_complete)
-        readline.parse_and_bind("tab: complete")  # Linux
-        readline.parse_and_bind("bind '\t' rl_complete")  # Mac
+        readline.parse_and_bind("tab: complete")
 
         version_command([])
         print("Type a command, 'help', 'copyright', 'version', or 'exit'.")
