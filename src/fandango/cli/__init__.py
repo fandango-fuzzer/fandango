@@ -270,7 +270,7 @@ def get_parser(in_command_line=True):
         "--binary",
         action="store_true",
         default=False,
-        help="open files in binary mode",
+        help="open and write files in binary mode",
     )
     file_parser.add_argument(
         "--validate",
@@ -291,7 +291,7 @@ def get_parser(in_command_line=True):
     fuzz_parser.add_argument(
         "-o",
         "--output",
-        type=argparse.FileType("w"),
+        type=str,
         dest="output",
         default=None,
         help="write output to OUTPUT (default: stdout)",
@@ -343,7 +343,7 @@ def get_parser(in_command_line=True):
     parse_parser.add_argument(
         "-o",
         "--output",
-        type=argparse.FileType("w"),
+        type=str,
         dest="output",
         default=None,
         help="write output to OUTPUT (default: none). Use '-' for stdout",
@@ -657,18 +657,48 @@ def cd_command(args):
         print(os.getcwd())
 
 
-def output(tree, args) -> str:
+def output(tree, args) -> str | bytes:
     if args.format == "string":
-        return tree.to_string()
-    elif args.format == "tree":
-        return tree.to_tree()
-    elif args.format == "bits":
-        return tree.to_bits()
-    elif args.format == "grammar":
-        return tree.to_grammar()
-    elif args.format == "none":
-        return ""
+        if args.binary:
+            LOGGER.debug("Output as bytes")
+            return tree.to_bytes()
+        else:
+            LOGGER.debug("Output as string")
+            return tree.to_string()
+
+    def convert(s: str) -> str | bytes:
+        if args.binary:
+            return s.encode("utf-8")
+        else:
+            return s
+
+    LOGGER.debug(f"Output as {args.format}")
+
+    if args.format == "tree":
+        return convert(tree.to_tree())
+    if args.format == "bits":
+        return convert(tree.to_bits())
+    if args.format == "grammar":
+        return convert(tree.to_grammar())
+    if args.format == "none":
+        return convert("")
+
     raise NotImplementedError("Unsupported output format")
+
+
+def open_file(filename, args, *, mode='r'):
+    if args.binary:
+        mode += 'b'
+
+    LOGGER.debug(f"Opening {filename!r}; mode={mode!r}")
+
+    if filename == '-':
+        if 'b' in mode:
+            return sys.stdin.buffer if 'r' in mode else sys.stdout.buffer
+        else:
+            return sys.stdin if 'r' in mode else sys.stdout
+
+    return open(filename, mode)
 
 
 def output_population(population, args, *, output_on_stdout=True):
@@ -676,7 +706,7 @@ def output_population(population, args, *, output_on_stdout=True):
         return
 
     if args.directory:
-        LOGGER.debug(f"Storing population in {args.directory} directory")
+        LOGGER.debug(f"Storing population in directory {args.directory!r}")
         try:
             os.mkdir(args.directory)
         except FileExistsError:
@@ -686,23 +716,23 @@ def output_population(population, args, *, output_on_stdout=True):
         for individual in population:
             basename = f"fandango-{counter:04d}{args.filename_extension}"
             filename = os.path.join(args.directory, basename)
-            mode = "wb" if args.binary else "w"
-            with open(filename, mode=mode) as fd:
+            with open_file(filename, args, mode=mode) as fd:
                 fd.write(output(individual, args))
             counter += 1
 
         output_on_stdout = False
 
     if args.output:
-        LOGGER.debug("Storing population in file")
-        sep = False
-        for individual in population:
-            if sep:
-                args.output.write(args.separator)
-            args.output.write(output(individual, args))
-            sep = True
+        LOGGER.debug(f"Storing population in file {args.output!r}")
 
-        args.output.close()
+        with open_file(args.output, args, mode='w') as fd:
+            sep = False
+            for individual in population:
+                if sep:
+                    fd.write(args.separator)
+                fd.write(output(individual, args))
+                sep = True
+
         output_on_stdout = False
 
     if "test_command" in args and args.test_command:
@@ -783,19 +813,38 @@ def parse_file(fd, args, grammar, constraints, settings):
                                     allow_incomplete=allow_incomplete)
 
     alternative_counter = 1
+    passing_tree = None
     while tree := next(tree_gen, None):
         LOGGER.debug(f"Trying parse alternative #{alternative_counter}")
+        last_tree = tree
 
+        passed = True
         for constraint in constraints:
             fitness = constraint.fitness(tree).fitness()
-            if fitness >= 1:
-                # Found an alternative that satisfies all constraints
-                if args.validate:
-                    if tree.to_string() != individual:
-                        raise ValueError(f"{fd.name!r}: parsed tree does not match original")
-                return tree
+            if fitness == 0:
+                passed = False
+                break
 
+        if passed:
+            passing_tree = tree
+            break
+
+        # Try next parsing alternative
         alternative_counter += 1
+
+    if passing_tree:
+        # Found an alternative that satisfies all constraints
+
+        # Validate tree
+        if args.validate:
+            if (isinstance(individual, bytes)
+                and passing_tree.to_bytes() != individual):
+                raise ValueError(f"{fd.name!r}: parsed tree does not match original")
+            if (isinstance(individual, str)
+                and passing_tree.to_string() != individual):
+                raise ValueError(f"{fd.name!r}: parsed tree does not match original")
+
+        return passing_tree
 
     # Tried all alternatives
     if tree is None:
@@ -808,7 +857,7 @@ def parse_file(fd, args, grammar, constraints, settings):
 
     # Work with the last tree
     for constraint in constraints:
-        fitness = constraint.fitness(tree).fitness()
+        fitness = constraint.fitness(last_tree).fitness()
         if fitness == 0:
             raise ValueError(
                 f"{fd.name!r}: constraint {constraint} not satisfied"
@@ -913,11 +962,10 @@ def parse_command(args):
     errors = 0
 
     for input_file in args.input_files:
-        with ((sys.stdin.buffer if args.binary else sys.stdin) if input_file == '-'
-            else
-            (open(input_file, "rb") if args.binary else open(input_file, "r"))) as fd:
+        with open_file(input_file, args, mode='r') as fd:
             try:
-                tree = parse_file(fd, args, grammar, constraints, settings)
+                tree = parse_file(fd, args,
+                                  grammar, constraints, settings)
                 population.append(tree)
             except Exception as e:
                 print_exception(e)
