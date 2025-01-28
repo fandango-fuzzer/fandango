@@ -644,7 +644,7 @@ class Grammar(NodeVisitor):
         def scan_bit(
             self,
             state: ParseState,
-            word: str,
+            word: str | bytes,
             table: List[Set[ParseState] | Column],
             k: int,
             w: int,
@@ -663,8 +663,9 @@ class Grammar(NodeVisitor):
             assert isinstance(state.dot.symbol, int)
             assert 0 <= bit_count <= 7
 
-            # Get the highest bit
-            bit = (ord(word[w]) >> bit_count) & 1
+            # Get the highest bit. If `word` is bytes, word[w] is an integer.
+            byte = ord(word[w]) if isinstance(word, str) else word[w]
+            bit = (byte >> bit_count) & 1
             # LOGGER.debug(f"Bit {bit_count} has a value of {bit}")
 
             # LOGGER.debug(f"Found bit {bit_count}: {bit}")
@@ -674,7 +675,7 @@ class Grammar(NodeVisitor):
                 return
 
             # Found a match
-            # LOGGER.debug(f"Scanned bit {bit_count} ({bit}) {state} {word[w:]!r}")
+            LOGGER.debug(f"Scanned bit {bit_count} ({bit}) {state} {word[w:]!r}")
             next_state = state.next()
             next_state.children.append(DerivationTree(state.dot))
 
@@ -690,7 +691,7 @@ class Grammar(NodeVisitor):
         def scan_byte(
             self,
             state: ParseState,
-            word: str,
+            word: str | bytes,
             table: List[Set[ParseState] | Column],
             k: int,
             w: int,
@@ -710,7 +711,7 @@ class Grammar(NodeVisitor):
 
             if state.dot.check(word[w:]):
                 # Found a match
-                # LOGGER.debug(f"Scanned {state} {word[w:]!r}")
+                LOGGER.debug(f"Scanned byte {state} {word[w:]!r}")
                 next_state = state.next()
                 next_state.children.append(DerivationTree(state.dot))
                 table[k + len(state.dot)].add(next_state)
@@ -795,7 +796,7 @@ class Grammar(NodeVisitor):
             while k < len(table) and w <= len(word):
                 advance = 0
                 for state in table[k]:
-                    # LOGGER.debug(f"Processing {state} at {word[w:]!r}")
+                    LOGGER.debug(f"Processing {state} at {word[w:]!r}")
                     if w >= len(word):
                         # LOGGER.debug(f"End of input")
                         if allow_incomplete:
@@ -826,9 +827,12 @@ class Grammar(NodeVisitor):
                             else:
                                 # Scan a byte
                                 if bit_count >= 0:
-                                    raise NotImplementedError(
-                                        "Can only parse sequences of 8 bits"
-                                    )
+                                    # This can happen if we _peeked_ at a bit,
+                                    # without actually parsing it.
+                                    # Or if we have a grammar with bits
+                                    # that do not come in multiples of 8.
+                                    LOGGER.debug("Mixed parsing of bits and bytes")
+                                    bit_count = -1
                                 self.scan_byte(state, word, table, k, w)
                                 adv = 8
                             advance = max(advance, adv)
