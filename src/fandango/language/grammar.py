@@ -1284,3 +1284,29 @@ class Grammar(NodeVisitor):
             len(covered_k_paths),
             len(all_k_paths),
         )
+
+    def contains_type(self, tp: type, *, start="<start>") -> bool:
+        if isinstance(start, str):
+            start = NonTerminal(start)
+
+        # We start on the right hand side of the start symbol
+        start_node = self.rules[start]
+        seen = {start_node}
+
+        def node_matches(node):
+            if (isinstance(node, TerminalNode) and
+                isinstance(node.symbol.symbol, tp)):
+                return True
+            if any(node_matches(child) for child in node.children()):
+                return True
+            if isinstance(node, NonTerminalNode) and node not in seen:
+                seen.add(node)
+                return node_matches(self.rules[node.symbol])
+
+        return node_matches(start_node)
+
+    def contains_bits(self, *, start="<start>") -> bool:
+        return self.contains_type(int, start=start)
+
+    def contains_bytes(self, *, start="<start>") -> bool:
+        return self.contains_type(bytes, start=start)
