@@ -4,11 +4,16 @@ include('gif.fan')
 where <GifHeader>..<Signature> == "GIF"
 where <GifHeader>..<Version> == "89a"
 
-<rgb> ::= <RGB>*
 <char> ::= <byte>
-
 <unsigned_short> ::= <byte> <byte>
 <unsigned_char> ::= <byte>
+
+<rgb> ::= <RGB> <RGB>  # Have only two RGB entries
+
+# Refine UNDEFINEDDATA
+<UNDEFINEDDATA> ::= <ExtensionIntroducer_9> <Label> <DataSubBlocks_1>
+<ExtensionIntroducer_9> ::= b'\x21'
+<Label> ::= b'\f9'
 
 # where len(<GLOBALCOLORTABLE>.<rgb>) == 2 ** ord(str(<SizeOfGlobalColorTable>))
 # where len(<DATASUBBLOCK>.<Data>) == ord(str(<DATASUBBLOCK>.<Size_1>))
