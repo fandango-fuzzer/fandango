@@ -495,8 +495,9 @@ def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) ->
             keep_roles.remove(existing_role)
 
     for nt in grammar.rules.keys():
-        truncator = GrammarTruncator(grammar, keep_roles)
-        truncator.visit(grammar.rules[nt])
+        if nt.is_implicit:
+            continue
+        GrammarTruncator(grammar, keep_roles).visit(grammar.rules[nt])
 
 
 def check_grammar_consistency(
