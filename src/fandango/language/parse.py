@@ -430,7 +430,7 @@ def parse(
             exec("FandangoIO.instance()", global_env, local_env)
         io_instance: FandangoIO = global_env["FandangoIO"].instance()
 
-        init_fandango_agents(grammar, io_instance)
+        init_fandango_agents(grammar)
         assign_std_out_role(grammar, io_instance)
 
         # Detect illegally nested data packets.
@@ -449,9 +449,9 @@ def parse(
 
 ### Consistency Checks
 
-def init_fandango_agents(grammar: "Grammar", io_instance: FandangoIO):
+def init_fandango_agents(grammar: "Grammar"):
     agent_names = set()
-    grammar_roles = grammar.roles()
+    grammar_roles = grammar.roles(True)
     global_env, local_env = grammar.get_python_env()
 
     # Initialize FandangoAgent instances
@@ -475,8 +475,7 @@ def assign_std_out_role(grammar: "Grammar", io_instance: FandangoIO):
         non_terminals: list[NonTerminalNode] = NonTerminalFinder(grammar).visit(
             grammar.rules[symbol]
         )
-        # At this point grammar_roles only contains role names that have no FandangoAgent defined.
-        # These roles get set to STDOUT
+
         for nt in non_terminals:
             if nt.role is None:
                 continue
@@ -498,7 +497,6 @@ def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) ->
 
     for nt in grammar.rules.keys():
         truncator = GrammarTruncator(grammar, keep_roles)
-        # Todo: change starting symbol
         truncator.visit(grammar.rules[nt])
 
 

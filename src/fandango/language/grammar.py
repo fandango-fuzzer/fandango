@@ -55,13 +55,13 @@ class Node(abc.ABC):
     def accept(self, visitor: "NodeVisitor"):
         raise NotImplementedError("accept method not implemented")
 
-    def tree_roles(self, grammar: "Grammar"):
-        return self._tree_roles(grammar, set())
+    def tree_roles(self, grammar: "Grammar", include_recipients: bool = True):
+        return self._tree_roles(grammar, set(), include_recipients)
 
-    def _tree_roles(self, grammar: "Grammar", seen_nonterminals: set[NonTerminal]):
+    def _tree_roles(self, grammar: "Grammar", seen_nonterminals: set[NonTerminal], include_recipients: bool):
         roles = set()
         for child in self.children():
-            roles = roles.union(child._tree_roles(grammar, seen_nonterminals))
+            roles = roles.union(child._tree_roles(grammar, seen_nonterminals, include_recipients))
         return roles
 
     def children(self):
@@ -299,13 +299,15 @@ class NonTerminalNode(Node):
     def __hash__(self):
         return hash(self.symbol)
 
-    def _tree_roles(self, grammar: "Grammar", seen_nonterminals: set[NonTerminal]):
+    def _tree_roles(self, grammar: "Grammar", seen_nonterminals: set[NonTerminal], include_recipients: bool):
         roles = set()
         if self.role is not None:
             roles.add(self.role)
+            if self.recipient is not None and include_recipients:
+                roles.add(self.recipient)
         if self.symbol not in seen_nonterminals:
             seen_nonterminals.add(self.symbol)
-            for role in grammar[self.symbol]._tree_roles(grammar, seen_nonterminals):
+            for role in grammar[self.symbol]._tree_roles(grammar, seen_nonterminals, include_recipients):
                 roles.add(role)
         return roles
 
@@ -733,7 +735,7 @@ class RoleAssigner:
         child_roles = set()
 
         for c_node in unprocessed_non_terminals:
-            child_roles = child_roles.union(c_node.tree_roles(self.grammar))
+            child_roles = child_roles.union(c_node.tree_roles(self.grammar, False))
 
         if len(child_roles) == 0:
             return
@@ -741,7 +743,7 @@ class RoleAssigner:
             if c_node.symbol.is_implicit:
                 continue
             self.seen_non_terminals.add(c_node.symbol)
-            if len(c_node.tree_roles(self.grammar)) != 0:
+            if len(c_node.tree_roles(self.grammar, False)) != 0:
                 continue
             c_node.role = self.implicite_role
 
@@ -817,7 +819,7 @@ class RoleInRoleDetector(NodeVisitor):
             return
 
         if node.role is not None:
-            tree_roles = self.grammar[node.symbol].tree_roles(self.grammar)
+            tree_roles = self.grammar[node.symbol].tree_roles(self.grammar, False)
             if len(tree_roles) != 0:
                 raise RuntimeError(f"Found illegal packet-definitions within packet-definition of non_terminal {node.symbol}: " + ", ".join(tree_roles))
             return
@@ -1298,12 +1300,12 @@ class Grammar(NodeVisitor):
             ]
         )
 
-    def roles(self):
+    def roles(self, include_recipients: bool = True):
         found_roles = set()
         for nt, rule in self.rules.items():
             if nt.is_implicit:
                 continue
-            found_roles = found_roles.union(rule.tree_roles(self))
+            found_roles = found_roles.union(rule.tree_roles(self, include_recipients))
         return found_roles
 
     def get_repr_for_rule(self, symbol: str | NonTerminal):
