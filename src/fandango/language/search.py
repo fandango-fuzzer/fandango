@@ -1,3 +1,8 @@
+"""
+The search module provides classes to search for specific non-terminals in a derivation tree that matches the
+search criteria.
+"""
+
 import abc
 from typing import List, Optional, Dict, Tuple, Any
 
@@ -6,45 +11,101 @@ from fandango.language.tree import DerivationTree
 
 
 class Container(abc.ABC):
+    """
+    Abstract class for a container that holds a list of derivation trees.
+    It provides methods to get the list of trees and evaluate the container.
+    The evaluation of a container can be anything.
+    """
+
     @abc.abstractmethod
     def get_trees(self) -> List[DerivationTree]:
+        """
+        Get the list of derivation trees in the container.
+        :return List[DerivationTree]: The list of derivation trees.
+        """
         pass
 
     @abc.abstractmethod
-    def evaluate(self):
+    def evaluate(self) -> Any:
+        """
+        Evaluate the container.
+        :return Any: The evaluation of the container.
+        """
         pass
 
 
 class Tree(Container):
+    """
+    Container that holds a single derivation tree.
+    """
+
     def __init__(self, tree: DerivationTree):
+        """
+        Initialize the Tree container with the given derivation tree.
+        :param DerivationTree tree: The derivation tree.
+        """
         self.tree = tree
 
     def get_trees(self) -> List[DerivationTree]:
+        """
+        Get the list of derivation trees in the container.
+        :return List[DerivationTree]: The list of derivation trees.
+        """
         return [self.tree]
 
     def evaluate(self):
+        """
+        Evaluate the container. The evaluation of a Tree container is the tree itself.
+        :return DerivationTree: The derivation tree.
+        """
         return self.tree
 
 
 class Length(Container):
+    """
+    Container that holds a list of derivation trees and evaluates to the length of the list.
+    """
+
     def __init__(self, trees: List[DerivationTree]):
+        """
+        Initialize the Tree container with the given derivation trees.
+        :param List[DerivationTree] trees: The list of derivation trees.
+        """
         self.trees = trees
 
     def get_trees(self) -> List[DerivationTree]:
+        """
+        Get the list of derivation trees in the container.
+        :return List[DerivationTree]: The list of derivation trees.
+        """
         return self.trees
 
     def evaluate(self):
+        """
+        Evaluate the container. The evaluation of a Length container is the length of the list of trees.
+        :return int: The length of the list of trees.
+        """
         return len(self.trees)
 
 
 class NonTerminalSearch(abc.ABC):
+    """
+    Abstract class for a non-terminal search.
+    A non-terminal search is a search for specific non-terminals in a derivation tree.
+    """
+
     @abc.abstractmethod
     def find(
         self,
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[Container]:
-        pass
+        """
+        Find all the non-terminals in the derivation tree that match the search criteria.
+        :param DerivationTree tree: The derivation tree.
+        :param Optional[Dict[NonTerminal, List[DerivationTree]]] scope: The scope of non-terminals matching to trees.
+        :return List[Container]: The list of containers that hold the matching derivation trees.
+        """
 
     @abc.abstractmethod
     def find_direct(
@@ -52,13 +113,24 @@ class NonTerminalSearch(abc.ABC):
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[Container]:
-        pass
+        """
+        Find the direct-child non-terminals in the derivation tree that match the search criteria.
+        :param DerivationTree tree: The derivation tree.
+        :param Optional[Dict[NonTerminal, List[DerivationTree]]] scope: The scope of non-terminals matching to trees.
+        :return List[Container]: The list of containers that hold the matching derivation trees.
+        """
 
     def find_all(
         self,
         trees: List[DerivationTree],
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[List[Container]]:
+        """
+        Find all the non-terminals in the list of derivation trees that match the search criteria.
+        :param List[DerivationTree] trees: The list of derivation trees.
+        :param Optional[Dict[NonTerminal, List[DerivationTree]]] scope: The scope of non-terminals matching to trees.
+        :return List[List[Container]]: The list of lists of containers that hold the matching derivation trees.
+        """
         targets = []
         for tree in trees:
             targets.extend(self.find(tree, scope=scope))
@@ -73,11 +145,22 @@ class NonTerminalSearch(abc.ABC):
 
     @abc.abstractmethod
     def get_access_points(self) -> List[NonTerminal]:
-        pass
+        """
+        Get the access points of the non-terminal search, i.e., the non-terminal that are considered in this search.
+        :return List[NonTerminal]: The list of access points.
+        """
 
 
 class LengthSearch(NonTerminalSearch):
+    """
+    Non-terminal search that finds the length of the non-terminals that match the search criteria.
+    """
+
     def __init__(self, value: NonTerminalSearch):
+        """
+        Initialize the LengthSearch with the given non-terminal search.
+        :param NonTerminalSearch value: The non-terminal search.
+        """
         self.value = value
 
     def find(
@@ -122,7 +205,15 @@ class LengthSearch(NonTerminalSearch):
 
 
 class RuleSearch(NonTerminalSearch):
+    """
+    Non-terminal search that finds the non-terminals that match the specific rule.
+    """
+
     def __init__(self, symbol: NonTerminal):
+        """
+        Initialize the RuleSearch with the given non-terminal symbol.
+        :param NonTerminal symbol: The non-terminal symbol.
+        """
         self.symbol = symbol
 
     def find(
@@ -151,7 +242,17 @@ class RuleSearch(NonTerminalSearch):
 
 
 class AttributeSearch(NonTerminalSearch):
+    """
+    Non-terminal search that finds the non-terminals that first uses the base to find the non-terminals and then
+    uses the attribute to find the non-terminals in the derivation trees found by the base.
+    """
+
     def __init__(self, base: NonTerminalSearch, attribute: NonTerminalSearch):
+        """
+        Initialize the AttributeSearch with the given base and attribute non-terminal searches.
+        :param NonTerminalSearch base: The base non-terminal search.
+        :param NonTerminalSearch attribute: The attribute non-terminal search.
+        """
         self.base = base
         self.attribute = attribute
 
@@ -187,7 +288,16 @@ class AttributeSearch(NonTerminalSearch):
 
 
 class DescendantAttributeSearch(NonTerminalSearch):
+    """
+    Non-terminal search that finds the non-terminals that first uses the base to find the non-terminals and then
+    uses the attribute to find the non-terminals in the descendant derivation trees found by the base.
+    """
     def __init__(self, base: NonTerminalSearch, attribute: NonTerminalSearch):
+        """
+        Initialize the DescendantAttributeSearch with the given base and attribute non-terminal searches.
+        :param NonTerminalSearch base: The base non-terminal search.
+        :param NonTerminalSearch attribute: The attribute non-terminal search.
+        """
         self.base = base
         self.attribute = attribute
 
@@ -223,7 +333,15 @@ class DescendantAttributeSearch(NonTerminalSearch):
 
 
 class ItemSearch(NonTerminalSearch):
+    """
+    Non-terminal search that finds the non-terminals that get the items from the base non-terminal.
+    """
     def __init__(self, base: NonTerminalSearch, slices: Tuple[Any]):
+        """
+        Initialize the ItemSearch with the given base and slices.
+        :param NonTerminalSearch base: The base non-terminal
+        :param Tuple[Any] slices: The slices to get the items from the base non-terminal.
+        """
         self.base = base
         self.slices = slices
 
@@ -289,12 +407,21 @@ class ItemSearch(NonTerminalSearch):
 
 
 class SelectiveSearch(NonTerminalSearch):
+    """
+    Non-terminal search that finds the non-terminals that match the selective search criteria.
+    """
     def __init__(
         self,
         base: NonTerminalSearch,
         symbols: List[Tuple[NonTerminal, bool]],
         slices: List[Optional[Any]] = None,
     ):
+        """
+        Initialize the SelectiveSearch with the given base, symbols, and slices.
+        :param NonTerminalSearch base: The base non-terminal search.
+        :param List[Tuple[NonTerminal, bool]] symbols: The list of symbols and whether to find direct or all trees.
+        :param List[Optional[Any]] slices: The list of slices to get the items from the symbols.
+        """
         self.base = base
         self.symbols = symbols
         self.slices = slices or [None] * len(symbols)

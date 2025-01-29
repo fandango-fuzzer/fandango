@@ -1,6 +1,9 @@
+"""
+This module contains the base classes for constraints in the fandango library.
+"""
+
 import itertools
 from abc import ABC, abstractmethod
-import sys
 from copy import copy
 from typing import List, Dict, Any, Optional
 
@@ -19,6 +22,8 @@ from fandango.logger import print_exception
 
 
 class Value(GeneticBase):
+    """ """
+
     def __init__(self, expression: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.expression = expression
