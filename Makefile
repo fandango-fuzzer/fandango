@@ -160,8 +160,10 @@ clean-docs:
 
 
 ## Test
-test tests:
-	$(PIP) install -e ".[test]"
+install-test:
+	$(PIP) install -e .[test]
+
+test:
 	$(PYTEST)
 
 
