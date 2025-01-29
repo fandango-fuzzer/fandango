@@ -1299,16 +1299,22 @@ class Grammar(NodeVisitor):
 
         # We start on the right hand side of the start symbol
         start_node = self.rules[start]
-        seen = {start_node}
+        seen = set()
 
         def node_matches(node):
+            if node in seen:
+                return False
+            seen.add(node)
+
+            # LOGGER.debug(f"Checking if {node} is of type {tp}")
             if isinstance(node, TerminalNode) and isinstance(node.symbol.symbol, tp):
+                # LOGGER.debug("Yes!")
                 return True
             if any(node_matches(child) for child in node.children()):
                 return True
-            if isinstance(node, NonTerminalNode) and node not in seen:
-                seen.add(node)
+            if isinstance(node, NonTerminalNode):
                 return node_matches(self.rules[node.symbol])
+            return False
 
         return node_matches(start_node)
 
