@@ -835,6 +835,7 @@ def parse_file(fd, args, grammar, constraints, settings):
         passed = True
         for constraint in constraints:
             fitness = constraint.fitness(tree).fitness()
+            LOGGER.debug(f"Fitness: {fitness}")
             if fitness == 0:
                 passed = False
                 break
@@ -856,7 +857,7 @@ def parse_file(fd, args, grammar, constraints, settings):
         return passing_tree
 
     # Tried all alternatives
-    if tree is None:
+    if last_tree is None:
         error_pos = grammar.max_position() + 1
         raise SyntaxError(
             report_syntax_error(fd.name, error_pos, individual, binary=("b" in fd.mode))
