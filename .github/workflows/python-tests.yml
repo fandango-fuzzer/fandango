@@ -48,13 +48,18 @@ jobs:
           pip install pygraphviz
 
       # Step 5: Install Python dependencies using make and run tests
-      - name: Install dependencies with Makefile and run tests
+      - name: Install dependencies with Makefile
         run: |
           python -m pip install --upgrade pip  # Upgrade pip to the latest version
           make install-test  # Install dependencies using the Makefile
           make tests  # Run the tests
 
-      # Step 6: Cache installed packages for system dependencies
+      # Step 6: Run tests using pytest
+      - name: Run tests with pytest
+        run: |
+          make tests  # Run the tests
+
+      # Step 7: Cache installed packages for system dependencies
       - name: Cache pygraphviz dependencies
         uses: actions/cache@v3
         with:
