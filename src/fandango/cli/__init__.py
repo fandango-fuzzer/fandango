@@ -278,7 +278,6 @@ def get_parser(in_command_line=True):
         help="run internal consistency checks for debugging",
     )
 
-
     # Commands
 
     # Fuzz
@@ -295,7 +294,6 @@ def get_parser(in_command_line=True):
         default=None,
         help="write output to OUTPUT (default: stdout)",
     )
-
 
     command_group = fuzz_parser.add_argument_group("command invocation settings")
 
@@ -688,25 +686,24 @@ def output(tree, args, file_mode: str) -> str | bytes:
     raise NotImplementedError("Unsupported output format")
 
 
-def open_file(filename, file_mode, *, mode='r'):
+def open_file(filename, file_mode, *, mode="r"):
     assert file_mode == "binary" or file_mode == "text"
 
     if file_mode == "binary":
-        mode += 'b'
+        mode += "b"
 
     LOGGER.debug(f"Opening {filename!r}; mode={mode!r}")
 
-    if filename == '-':
-        if 'b' in mode:
-            return sys.stdin.buffer if 'r' in mode else sys.stdout.buffer
+    if filename == "-":
+        if "b" in mode:
+            return sys.stdin.buffer if "r" in mode else sys.stdout.buffer
         else:
-            return sys.stdin if 'r' in mode else sys.stdout
+            return sys.stdin if "r" in mode else sys.stdout
 
     return open(filename, mode)
 
 
-def output_population(population, args, file_mode=None, *,
-                      output_on_stdout=True):
+def output_population(population, args, file_mode=None, *, output_on_stdout=True):
     assert file_mode == "binary" or file_mode == "text"
 
     if args.format == "none":
@@ -723,7 +720,7 @@ def output_population(population, args, file_mode=None, *,
         for individual in population:
             basename = f"fandango-{counter:04d}{args.filename_extension}"
             filename = os.path.join(args.directory, basename)
-            with open_file(filename, file_mode, mode='w') as fd:
+            with open_file(filename, file_mode, mode="w") as fd:
                 fd.write(output(individual, args, file_mode))
             counter += 1
 
@@ -732,7 +729,7 @@ def output_population(population, args, file_mode=None, *,
     if args.output:
         LOGGER.debug(f"Storing population in file {args.output!r}")
 
-        with open_file(args.output, file_mode, mode='w') as fd:
+        with open_file(args.output, file_mode, mode="w") as fd:
             sep = False
             for individual in population:
                 if sep:
@@ -761,7 +758,9 @@ def output_population(population, args, file_mode=None, *,
             elif args.input_method == "stdin":
                 cmd = base_cmd
                 LOGGER.debug(f"Running {cmd} with individual as stdin")
-                subprocess.run(cmd, input=output(individual, args, file_mode), text=True)
+                subprocess.run(
+                    cmd, input=output(individual, args, file_mode), text=True
+                )
             else:
                 raise ValueError("Unsupported input method")
 
@@ -782,8 +781,8 @@ def report_syntax_error(
     filename: str, position: int, individual: str | bytes, *, binary: bool = False
 ) -> str:
     """
-        Return position and error message in `individual` 
-        in user-friendly format.
+    Return position and error message in `individual`
+    in user-friendly format.
     """
     if position >= len(individual):
         return f"{filename!r}: missing input at end of file"
@@ -805,17 +804,15 @@ def report_syntax_error(
 
 
 def validate(individual, tree, *, filename="<file>"):
-    if (isinstance(individual, bytes)
-        and tree.to_bytes() != individual):
+    if isinstance(individual, bytes) and tree.to_bytes() != individual:
         raise ValueError(f"{filename!r}: parsed tree does not match original")
-    if (isinstance(individual, str)
-        and tree.to_string() != individual):
+    if isinstance(individual, str) and tree.to_string() != individual:
         raise ValueError(f"{filename!r}: parsed tree does not match original")
 
 
 def parse_file(fd, args, grammar, constraints, settings):
     """
-        Parse a single file `fd` according to `args`, `grammar`, `constraints`, and `settings`, and return the parse tree.
+    Parse a single file `fd` according to `args`, `grammar`, `constraints`, and `settings`, and return the parse tree.
     """
     LOGGER.info(f"Parsing {fd.name!r}")
     individual = fd.read()
@@ -824,9 +821,10 @@ def parse_file(fd, args, grammar, constraints, settings):
     else:
         start_symbol = "<start>"
 
-    allow_incomplete = hasattr(args, 'prefix') and args.prefix
-    tree_gen = grammar.parse_forest(individual, start=start_symbol,
-                                    allow_incomplete=allow_incomplete)
+    allow_incomplete = hasattr(args, "prefix") and args.prefix
+    tree_gen = grammar.parse_forest(
+        individual, start=start_symbol, allow_incomplete=allow_incomplete
+    )
 
     alternative_counter = 1
     passing_tree = None
@@ -861,18 +859,14 @@ def parse_file(fd, args, grammar, constraints, settings):
     if tree is None:
         error_pos = grammar.max_position() + 1
         raise SyntaxError(
-            report_syntax_error(
-                fd.name, error_pos, individual, binary=('b' in fd.mode)
-            )
+            report_syntax_error(fd.name, error_pos, individual, binary=("b" in fd.mode))
         )
 
     # Work with the last tree
     for constraint in constraints:
         fitness = constraint.fitness(last_tree).fitness()
         if fitness == 0:
-            raise ValueError(
-                f"{fd.name!r}: constraint {constraint} not satisfied"
-            )
+            raise ValueError(f"{fd.name!r}: constraint {constraint} not satisfied")
 
 
 def get_file_mode(args, settings, *, grammar=None, tree=None):
@@ -881,8 +875,9 @@ def get_file_mode(args, settings, *, grammar=None, tree=None):
 
     if grammar is not None:
         start_symbol = settings.get("start_symbol", "<start>")
-        if (grammar.contains_bits(start=start_symbol)
-            or grammar.contains_bytes(start=start_symbol)):
+        if grammar.contains_bits(start=start_symbol) or grammar.contains_bytes(
+            start=start_symbol
+        ):
             return "binary"
         else:
             return "text"
@@ -928,8 +923,7 @@ def fuzz_command(args):
     LOGGER.debug("Evolving population")
     population = fandango.evolve()
 
-    output_population(population, args, file_mode=file_mode,
-                      output_on_stdout=True)
+    output_population(population, args, file_mode=file_mode, output_on_stdout=True)
 
     if args.validate:
         LOGGER.debug("Validating population")
@@ -939,8 +933,7 @@ def fuzz_command(args):
         temp_dir = tempfile.TemporaryDirectory(delete=False)
         args.directory = temp_dir.name
         args.format = "string"
-        output_population(population, args, file_mode=file_mode,
-                          output_on_stdout=False)
+        output_population(population, args, file_mode=file_mode, output_on_stdout=False)
         generated_files = glob.glob(args.directory + "/*")
         generated_files.sort()
         assert len(generated_files) == len(population)
@@ -952,8 +945,7 @@ def fuzz_command(args):
 
             try:
                 with open_file(generated_file, file_mode, mode="r") as fd:
-                    tree = parse_file(fd, args,
-                                      grammar, constraints, settings)
+                    tree = parse_file(fd, args, grammar, constraints, settings)
                     validate(individual, tree, filename=fd.n)
 
             except Exception as e:
@@ -966,6 +958,7 @@ def fuzz_command(args):
         # If everything went well, clean up;
         # otherwise preserve file for debugging
         shutil.rmtree(temp_dir.name)
+
 
 def parse_command(args):
     """Parse given files"""
@@ -998,10 +991,9 @@ def parse_command(args):
     errors = 0
 
     for input_file in args.input_files:
-        with open_file(input_file, file_mode, mode='r') as fd:
+        with open_file(input_file, file_mode, mode="r") as fd:
             try:
-                tree = parse_file(fd, args,
-                                  grammar, constraints, settings)
+                tree = parse_file(fd, args, grammar, constraints, settings)
                 population.append(tree)
             except Exception as e:
                 print_exception(e)
@@ -1009,8 +1001,7 @@ def parse_command(args):
                 tree = None
 
     if population and args.output:
-        output_population(population, args, file_mode=file_mode,
-                          output_on_stdout=False)
+        output_population(population, args, file_mode=file_mode, output_on_stdout=False)
 
     if errors:
         raise ValueError(f"{errors} error(s) during parsing")

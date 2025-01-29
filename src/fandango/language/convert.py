@@ -1,43 +1,41 @@
 import ast
-from fandango.logger import LOGGER
 from io import UnsupportedOperation
-from typing import List, Tuple, Dict, Optional, Any
+from typing import Any, Dict, List, Optional, Tuple
 
 from fandango.constraints.base import (
+    ComparisonConstraint,
     ConjunctionConstraint,
     DisjunctionConstraint,
-    ImplicationConstraint,
-    ExpressionConstraint,
-    ComparisonConstraint,
     ExistsConstraint,
+    ExpressionConstraint,
     ForallConstraint,
-    Constraint,
     Value,
 )
 from fandango.constraints.fitness import Comparison
 from fandango.language.grammar import (
-    Grammar,
     Alternative,
-    Concatenation,
-    Star,
-    NonTerminalNode,
     CharSet,
-    TerminalNode,
-    Plus,
+    Concatenation,
+    Grammar,
+    NonTerminalNode,
     Option,
+    Plus,
     Repetition,
+    Star,
+    TerminalNode,
 )
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.parser.FandangoParserVisitor import FandangoParserVisitor
 from fandango.language.search import (
     AttributeSearch,
-    RuleSearch,
-    LengthSearch,
     DescendantAttributeSearch,
     ItemSearch,
+    LengthSearch,
+    RuleSearch,
     SelectiveSearch,
 )
-from fandango.language.symbol import Terminal, NonTerminal
+from fandango.language.symbol import NonTerminal, Terminal
+from fandango.logger import LOGGER
 
 
 class FandangoSplitter(FandangoParserVisitor):
