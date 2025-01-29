@@ -828,6 +828,7 @@ def parse_file(fd, args, grammar, constraints, settings):
 
     alternative_counter = 1
     passing_tree = None
+    last_tree = None
     while tree := next(tree_gen, None):
         LOGGER.debug(f"Trying parse alternative #{alternative_counter}")
         last_tree = tree
