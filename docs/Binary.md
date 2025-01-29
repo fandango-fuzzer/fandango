@@ -87,12 +87,39 @@ $ fandango fuzz -f credit_card.fan -n 10
 assert _exit_code == 0
 ```
 
-And we can also use it to _parse_ and _check_ numbers.
+We can also use the grammar to _parse_ and _check_ numbers.
+This credit card number should be valid:
 
-% TODO
-:::{error}
-Parsing functionality is not yet available on the command line.
-:::
+```shell
+$ echo -n 4931633575526870 | fandango parse -f credit_card.fan
+$ echo $?  # print exit code
+0
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!echo -n 4931633575526870 | fandango parse -f credit_card.fan
+assert _exit_code == 0
+```
+
+Adding 1 to this number should make it _invalid_:
+
+```shell
+$ echo -n 4931633575526871 | fandango parse -f credit_card.fan
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!echo -n 4931633575526871 | fandango parse -f credit_card.fan
+assert _exit_code == 1
+```
+
+```shell
+$ echo $?  # print exit code
+1
+```
+
+
 
 :::{margin}
 You can also simply do an Internet search for a Python implementation of the respective algorithm.
@@ -110,14 +137,32 @@ In Python, it is likely that someone has already implemented the specific checks
 ## Characters and Bytes
 
 The second set of features one frequently encounters in binary formats is, well, _bytes_.
-By default, Fandango operates on strings of _characters_ in UTF-8 encoding.
+So far, we have seen Fandango operates on strings of Unicode _characters_, which use UTF-8 encoding.
 This clashes with a byte interpretation as soon as the produced string contains a UTF-8 prefix byte, such as `\xc2` or `\xe0`, which mark the beginning of a two- and three-byte UTF-8 sequence, respectively.
+
 To ensure bytes will be interpreted as bytes (and as bytes only), place a `b` (binary) prefix in front of them.
-Hence, `b'\xc2'` will always be interpreted as a single byte, whereas `💃` will be interpreted as a single character (despite occupying multiple bytes).
+This ensures that a byte `b'\xc2'` will always be interpreted as a single byte, whereas `💃` will be interpreted as a single character (despite occupying multiple bytes).
 
 ```{tip}
-Fandango provides a `<byte>` symbol by default, which expands into all bytes 0..255.
+Fandango provides a `<byte>` symbol by default, which expands into all bytes `b'\x00'..b'\xff'`.
 ```
+
+### Text Files and Binary Files
+
+By default, Fandango will read and write files in `text` mode, meaning that characters will be read in using UTF-8 encoding.
+However, if a grammar can produce bytes (or [bits](sec:bits)), the associated files will be read and written in `binary` mode, reading and writing _bytes_ instead of (encoded) characters.
+If your grammar contains bytes _and_ strings, then the strings will be written in UTF-8 encoding into the binary file.
+
+You can enforce a specific behavior using the Fandango `--file-mode` flag for the `fuzz` and `parse` commands:
+
+* `fuzz --file-mode=text` opens all files in `text` mode. Strings and bytes will be written in UTF-8 encoding.
+* `fuzz --file-mode=binary` opens all files in `binary` mode. Strings will be written in UTF-8 encoding; bytes will be written as is.
+
+The default is `fuzz --file=mode=auto` (default), which will use `binary` or `text` mode as described above.
+
+:::{tip}
+Avoid mixing non-ASCII strings with bits and bytes in a single grammar.
+:::
 
 
 
@@ -185,8 +230,8 @@ $ fandango fuzz -n 1 -f binary.fan | od -c
 ```
 
 The hexadecimal dump shows that the first two bytes encode the length of the string of digits that follows.
-The last character is a newline `\n` - this is produced by Fandango and not part of the grammar.
 The format is correct - we have successfully produced a length encoding.
+
 
 ## Converting Values to Binary Formats
 
@@ -222,7 +267,7 @@ pack('<H', 20)
 type(pack('<H', 20))
 ```
 
-In Python, comparisons of different types always return `False`":
+In Python, comparisons of different types always return `False`:
 
 ```{code-cell}
 # Left hand is byte string, right hand is Unicode string
@@ -232,7 +277,7 @@ b'\x14\x00' == '\x14\x00'
 Hence, a constraint that compares a Fandango symbol against a byte string _will always fail_.
 
 ```{warning}
-When comparing symbols against values, always be sure to convert the values to Unicode `str` strings first.
+When comparing symbols against values, always be sure to convert the values to the appropriate type first.
 ```
 
 ```{tip}
