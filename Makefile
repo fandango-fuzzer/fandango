@@ -12,18 +12,21 @@ PIP = pip
 SED = sed
 PAGELABELS = $(PYTHON) -m pagelabels
 
+# Sources
+SRC = src/fandango
+PYTHON_SOURCES = $(wildcard $(SRC)/*.py $(SRC)/*/*.py $(SRC)/*/*/*.py)
 
 # Default targets
-web: requirements.txt parser html
+web: parser html
 all: web pdf
 
 .PHONY: web all parser install dev-tools docs html latex pdf
 
 
-## Requirements
+## Requirements (no longer used)
 
-requirements.txt:	pyproject.toml
-	pip-compile $<
+# requirements.txt:	pyproject.toml
+# 	pip-compile $<
 
 # Install tools for development
 UNAME := $(shell uname)
@@ -91,7 +94,7 @@ CHECK_DOCS = grep -l AssertionError $(DOCS)/_build/html/*.html; if [ $$? == 0 ];
 
 
 # Targets.
-html: $(HTML_MARKER)
+docs html: $(HTML_MARKER)
 latex: $(LATEX_MARKER)
 pdf: $(PDF_TARGET)
 
@@ -103,8 +106,8 @@ $(HTML_MARKER): $(DOCS_SOURCES) $(ALL_HTML_MARKER)
 	-$(REFRESH_HTML)
 	@echo Output written to $(HTML_INDEX)
 
-# If we change _toc.yml or _config.yml, all docs need to be rebuilt
-$(ALL_HTML_MARKER): $(DOCS)/_toc.yml $(DOCS)/_config.yml
+# If we change Python sources, _toc.yml, or _config.yml, all docs need to be rebuilt
+$(ALL_HTML_MARKER): $(DOCS)/_toc.yml $(DOCS)/_config.yml $(PYTHON_SOURCES)
 	$(JB) build --all $(DOCS)
 	@$(CHECK_DOCS)
 	echo 'Success' > $@
@@ -159,16 +162,28 @@ clean-docs:
 	$(JB) clean $(DOCS)
 
 
-## Test
-test tests:
-	$(PIP) install -e ".[test]"
-	$(PYTEST)
+## Tests
+TESTS = tests
+TEST_SOURCES = $(wildcard $(TESTS)/*.py $(TESTS)/resources/*)
+TEST_MARKER = $(TESTS)/test-marker.txt
 
+.PHONY: test tests
+test tests: $(TEST_MARKER)
+$(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
+	$(PYTEST)
+	echo 'Success' > $@
 
 ## Installation
-
+.PHONY: install install-test install-tests
 install:
 	$(PIP) install -e .
+
+# We separate _installing_ from _running_ tests
+# so we can run 'make tests' quickly (see above)
+# without having to reinstall things
+install-test install-tests:
+	$(PIP) install pytest
+	$(PIP) install -e ".[test]"
 
 uninstall:
 	$(PIP) uninstall fandango-fuzzer -y

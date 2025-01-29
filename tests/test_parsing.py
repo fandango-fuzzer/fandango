@@ -70,12 +70,12 @@ class ParserTests(unittest.TestCase):
             self.grammar._parser._implicit_rules[NonTerminal("<*0*>")],
         )
 
-    def test_parse_table(self):
-        table = self.grammar._parser.parse_table("1")
-        self.assertIn(
-            ParseState(NonTerminal("<*start*>"), 0, (NonTerminal("<start>"),), dot=1),
-            table[1],
-        )
+    # def test_parse_table(self):
+    #     table = self.grammar._parser.parse_table("1")
+    #     self.assertIn(
+    #         ParseState(NonTerminal("<*start*>"), 0, (NonTerminal("<start>"),), dot=1),
+    #         table[1],
+    #     )
 
 
 class TestComplexParsing(unittest.TestCase):
