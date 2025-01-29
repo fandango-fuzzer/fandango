@@ -31,10 +31,15 @@ class Tree:
     def _visualize(self):
         name = f"node-{Tree.id_counter}"
         Tree.id_counter += 1
-        label = self.symbol
+        if isinstance(self.symbol, int):
+            label = str(self.symbol)
+        else:
+            label = self.symbol
 
         # https://graphviz.org/doc/info/colors.html
-        if self.symbol.startswith('<'):
+        if isinstance(self.symbol, int):
+            color = 'bisque4'
+        elif self.symbol.startswith('<'):
             color = 'firebrick'
         else:
             color = 'darkblue'
