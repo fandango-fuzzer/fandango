@@ -11222,6 +11222,7 @@ def serializedATN():
 
 
 class FandangoLexer(FandangoLexerBase):
+
     atn = ATNDeserializer().deserialize(serializedATN())
 
     decisionsToDFA = [DFA(ds, i) for i, ds in enumerate(atn.decisionToState)]
