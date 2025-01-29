@@ -1,29 +1,35 @@
 #!/usr/bin/env python
 
-import string
-import re
 import argparse
-import sys
 import platform
-
+import re
+import string
+import sys
 from enum import Enum
-from py010parser import parse_file, parse_string, c_ast
 from typing import Optional
+
+from py010parser import c_ast, parse_file
+
 
 class BitfieldOrder(Enum):
     LeftToRight = 0
     RightToLeft = 1
 
+
 class Endianness(Enum):
     LittleEndian = 0
     BigEndian = 1
 
+
 class BT2FandangoVisitor(c_ast.NodeVisitor):
-    def __init__(self, *,
-                 start_symbol: str = "<start>",
-                 use_regexes: bool = False,
-                 bitfield_order: BitfieldOrder = BitfieldOrder.LeftToRight,
-                 endianness: Endianness = Endianness.BigEndian):
+    def __init__(
+        self,
+        *,
+        start_symbol: str = "<start>",
+        use_regexes: bool = False,
+        bitfield_order: BitfieldOrder = BitfieldOrder.LeftToRight,
+        endianness: Endianness = Endianness.BigEndian,
+    ):
         self.bitfield_order: BitfieldOrder = bitfield_order
         self.endianness: Endianness = endianness
         self.start_symbol = start_symbol
@@ -51,7 +57,7 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
 
     def char(self, c):
         if c in string.printable:
-            return 'b' + repr(c)
+            return "b" + repr(c)
         return f"b'{self._char(c)}'"
 
     def not_char(self, c):
@@ -62,14 +68,14 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
         for i in range(256):
             if chr(i) != c:
                 chars.append(self.char(chr(i)))
-        return '(' + ' | '.join(chars) + ')' + "  # not " + self.char(c)
+        return "(" + " | ".join(chars) + ")" + "  # not " + self.char(c)
 
     def not_short(self, value):
         low_byte = self._char(chr(ord(value) % 256))
         high_byte = self._char(chr(ord(value) // 256))
         return f"(/[^{low_byte}]./ | /[{low_byte}][^{high_byte}]/)"
 
-    def spec(self, symbol: Optional[str] = None, indent = 0) -> str:
+    def spec(self, symbol: Optional[str] = None, indent=0) -> str:
         if symbol is None:
             symbol = self.start_symbol
         if indent == 0:
@@ -86,18 +92,18 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
 
         if indent == 0:
             if self.constraints:
-                s += '\n'
+                s += "\n"
             for constraint in self.constraints:
                 s += f"where {constraint}\n"
             if self.not_handled:
-                s += '\n'
+                s += "\n"
             for not_handled in self.not_handled:
                 s += f"# FIXME: {not_handled}\n"
         return s
 
     def visit(self, node):
         # print("Visiting", node.__class__.__name__)
-        method_name = 'visit_' + node.__class__.__name__
+        method_name = "visit_" + node.__class__.__name__
         visitor = getattr(self, method_name, self.generic_visit)
         return visitor(node)
 
@@ -111,7 +117,7 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
             name = f"<{base_name[1:-1]}_{i}>"
             i += 1
 
-        if name != base_name:   # record the rename
+        if name != base_name:  # record the rename
             self.renames[base_name] = name
 
         # print(f"Adding {name} ::= {members}")
@@ -164,23 +170,23 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
         name = self.visit(node.name)
         self.in_code = False
 
-        if name == 'BitfieldLeftToRight':
+        if name == "BitfieldLeftToRight":
             self.bitfield_order = BitfieldOrder.LeftToRight
             return ""
-        if name == 'BitfieldRightToLeft':
+        if name == "BitfieldRightToLeft":
             self.bitfield_order = BitfieldOrder.RightToLeft
             return ""
 
-        if name == 'LittleEndian':
+        if name == "LittleEndian":
             self.endianness = Endianness.LittleEndian
             return ""
-        if name == 'BigEndian':
+        if name == "BigEndian":
             self.endianness = Endianness.BigEndian
             return ""
 
-        if name == 'RequiresVersion':
+        if name == "RequiresVersion":
             return ""
-        if name == 'Warning':
+        if name == "Warning":
             return ""
 
         self.not_handled.append(f"{name}()")
@@ -222,7 +228,7 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
         members = []
         is_bitfield = True
         for _, child in node.children():
-            if hasattr(child, 'bitsize') and child.bitsize:
+            if hasattr(child, "bitsize") and child.bitsize:
                 bitsize = eval(self.visit(child.bitsize))
                 if bitsize > 0:
                     continue
@@ -276,7 +282,7 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
         if self.in_code:
             return node.name
 
-        if 'local' in node.quals:
+        if "local" in node.quals:
             # treat like an assignment
             if node.init:
                 init = self.visit(node.init)
@@ -352,8 +358,9 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
             return
 
         binary_op: c_ast.BinaryOp = cond
-        complement = (binary_op.op == '==' and not iftrue or
-                      binary_op.op == '!=' and iftrue)
+        complement = (
+            binary_op.op == "==" and not iftrue or binary_op.op == "!=" and iftrue
+        )
 
         left = binary_op.left
         right = binary_op.right
@@ -398,7 +405,7 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
             return
 
         name = func.name
-        if name == 'ReadUByte':
+        if name == "ReadUByte":
             if complement:
                 self.forced_complements += [self.not_char(value)]
             else:
@@ -406,7 +413,7 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
             if var:
                 self.forced_vars += [var]
 
-        elif name == 'ReadUShort':
+        elif name == "ReadUShort":
             if self.endianness == Endianness.BigEndian:
                 next_bytes = [chr(ord(value) // 256), chr(ord(value) % 256)]
             else:  # LittleEndian
@@ -418,8 +425,10 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
                 # Here's a simpler alternative, only checking for one byte
                 self.forced_complements += [self.not_char(next_bytes[0])]
             else:
-                self.forced_elems += [self.char(next_bytes[0]),
-                                      self.char(next_bytes[1])]
+                self.forced_elems += [
+                    self.char(next_bytes[0]),
+                    self.char(next_bytes[1]),
+                ]
 
     def visit_While(self, node: c_ast.While) -> str:
         if self.in_code:
@@ -475,20 +484,29 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Convert a binary template to a Fandango specification"
     )
-    parser.add_argument('--regexes', action='store_true', 
-                        dest='use_regexes', default=False, help='use regexes')
-    parser.add_argument('--endianness',
-                        choices=['little', 'big'], help='set endianness')
-    parser.add_argument('--bitfield-order',
-                        choices=['left-to-right', 'right-to-left'], help='set bitfield order')
-    parser.add_argument('filename', nargs='+', help='.bt binary template file')
+    parser.add_argument(
+        "--regexes",
+        action="store_true",
+        dest="use_regexes",
+        default=False,
+        help="use regexes",
+    )
+    parser.add_argument(
+        "--endianness", choices=["little", "big"], help="set endianness"
+    )
+    parser.add_argument(
+        "--bitfield-order",
+        choices=["left-to-right", "right-to-left"],
+        help="set bitfield order",
+    )
+    parser.add_argument("filename", nargs="+", help=".bt binary template file")
 
     args = parser.parse_args(sys.argv[1:])
-    if args.endianness == 'little':
+    if args.endianness == "little":
         endianness = Endianness.LittleEndian
     else:
         endianness = Endianness.BigEndian
-    if args.bitfield_order == 'left-to-right':
+    if args.bitfield_order == "left-to-right":
         bitfield_order = BitfieldOrder.LeftToRight
     else:
         bitfield_order = BitfieldOrder.RightToLeft
@@ -502,7 +520,8 @@ if __name__ == "__main__":
         visitor = BT2FandangoVisitor(
             use_regexes=args.use_regexes,
             endianness=endianness,
-            bitfield_order=bitfield_order)
+            bitfield_order=bitfield_order,
+        )
         visitor.visit(ast)
         print(f"# Automatically generated from {filename!r} by bt2fan. Do not edit.")
         print(visitor.spec())

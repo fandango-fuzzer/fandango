@@ -153,10 +153,9 @@ class DerivationTree:
         else:
             raise ValueError("Invalid symbol type")
 
-
     def contains_type(self, tp: type) -> bool:
         """
-            Return true if the derivation tree contains any terminal symbols of type `tp` (say, `int` or `bytes`).
+        Return true if the derivation tree contains any terminal symbols of type `tp` (say, `int` or `bytes`).
         """
         if self.symbol.is_terminal and isinstance(self.symbol.symbol, tp):
             return True
@@ -165,26 +164,23 @@ class DerivationTree:
                 return True
         return False  # No bits found
 
-
     def contains_bits(self) -> bool:
         """
-            Return true iff the derivation tree contains any bits (0 or 1).
+        Return true iff the derivation tree contains any bits (0 or 1).
         """
         return self.contains_type(int)
 
-
     def contains_bytes(self) -> bool:
         """
-            Return true iff the derivation tree contains any byte strings.
+        Return true iff the derivation tree contains any byte strings.
         """
         return self.contains_type(bytes)
 
     def contains_strings(self) -> bool:
         """
-            Return true iff the derivation tree contains any (UTF-8) strings.
+        Return true iff the derivation tree contains any (UTF-8) strings.
         """
         return self.contains_type(str)
-
 
     def to_bits(self, *, encoding="utf-8") -> str:
         """
@@ -200,7 +196,9 @@ class DerivationTree:
         Convert the derivation tree to a string.
         """
         if self.contains_bits() or self.contains_bytes():
-            LOGGER.warning("Converting a derivation tree with binary elements into a string")
+            LOGGER.warning(
+                "Converting a derivation tree with binary elements into a string"
+            )
 
         try:
             return self.to_bytes(encoding="utf-8").decode("utf-8")
@@ -219,8 +217,10 @@ class DerivationTree:
             bitstream = self.to_bits(encoding=encoding)
 
             # Decode into bytes, without further interpretation
-            s = b"".join(int(bitstream[i:i + 8], 2).to_bytes()
-                         for i in range(0, len(bitstream), 8))
+            s = b"".join(
+                int(bitstream[i : i + 8], 2).to_bytes()
+                for i in range(0, len(bitstream), 8)
+            )
             return s
 
         stream = BytesIO()

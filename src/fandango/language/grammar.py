@@ -3,11 +3,11 @@ import enum
 import random
 import typing
 from copy import deepcopy
-from typing import Dict, List, Optional, Tuple, Set, Any, Union, Iterator
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
 
-from fandango.language.symbol import NonTerminal, Terminal, Symbol, Implicit
+from fandango.language.symbol import Implicit, NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree
-from fandango.logger import LOGGER, print_exception
+from fandango.logger import LOGGER
 
 MAX_REPETITIONS = 5
 
@@ -354,7 +354,7 @@ class Disambiguator(NodeVisitor):
             ] = self.visit(child)
             for children in endpoints:
                 # prepend the alternative to all paths
-                if not children in child_endpoints:
+                if children not in child_endpoints:
                     child_endpoints[children] = []
                 # join observed paths (these are impossible to disambiguate)
                 child_endpoints[children].extend(
@@ -375,7 +375,7 @@ class Disambiguator(NodeVisitor):
             for children in endpoints:
                 for existing in child_endpoints:
                     concatenation = existing + children
-                    if not concatenation in next_endpoints:
+                    if concatenation not in next_endpoints:
                         next_endpoints[concatenation] = []
                     next_endpoints[concatenation].extend(child_endpoints[existing])
                     next_endpoints[concatenation].extend(endpoints[children])
@@ -775,7 +775,8 @@ class Grammar(NodeVisitor):
         def _parse_forest(
             self,
             word: str,
-            start: str | NonTerminal = "<start>", *,
+            start: str | NonTerminal = "<start>",
+            *,
             allow_incomplete: bool = False,
         ):
             """
@@ -830,8 +831,7 @@ class Grammar(NodeVisitor):
                                 # Scan a bit
                                 if bit_count < 0:
                                     bit_count = 7
-                                match = self.scan_bit(state, word, table,
-                                                      k, w, bit_count)
+                                self.scan_bit(state, word, table, k, w, bit_count)
                                 adv = 1
                             else:
                                 # Scan a byte
@@ -847,7 +847,7 @@ class Grammar(NodeVisitor):
                                     # to scanning bytes here.
                                     LOGGER.debug("Mixed parsing of bits and bytes")
                                     bit_count = -1
-                                match = self.scan_byte(state, word, table, k, w)
+                                self.scan_byte(state, word, table, k, w)
                                 adv = 8
                             advance = max(advance, adv)
 
@@ -863,10 +863,15 @@ class Grammar(NodeVisitor):
 
                 k += 1
 
-        def parse_forest(self, word: str,
-                         start: str | NonTerminal = "<start>", *, allow_incomplete: bool = False):
+        def parse_forest(
+            self,
+            word: str,
+            start: str | NonTerminal = "<start>",
+            *,
+            allow_incomplete: bool = False,
+        ):
             """
-                Yield multiple parse alternatives, using a cache.
+            Yield multiple parse alternatives, using a cache.
             """
             if isinstance(start, str):
                 start = NonTerminal(start)
@@ -880,8 +885,9 @@ class Grammar(NodeVisitor):
 
             self._incomplete = set()
             forest = []
-            for tree in self._parse_forest(word, start,
-                                           allow_incomplete=allow_incomplete):
+            for tree in self._parse_forest(
+                word, start, allow_incomplete=allow_incomplete
+            ):
                 forest.append(tree)
                 yield tree
 
@@ -893,18 +899,17 @@ class Grammar(NodeVisitor):
             # Cache entire forest
             self._cache[cache_key] = forest
 
-        def parse_incomplete(self, word: str,
-                             start: str | NonTerminal = "<start>"):
+        def parse_incomplete(self, word: str, start: str | NonTerminal = "<start>"):
             """
-                Yield multiple parse alternatives,
-                even for incomplete inputs
+            Yield multiple parse alternatives,
+            even for incomplete inputs
             """
             return self.parse_forest(word, start, allow_incomplete=True)
 
         def parse(self, word: str, start: str | NonTerminal = "<start>"):
             """
-                Return the first parse alternative,
-                or `None` if no parse is possible
+            Return the first parse alternative,
+            or `None` if no parse is possible
             """
             tree_gen = self.parse_forest(word, start=start)
             return next(tree_gen, None)
@@ -995,8 +1000,7 @@ class Grammar(NodeVisitor):
         start: str | NonTerminal = "<start>",
         allow_incomplete: bool = False,
     ):
-        return self._parser.parse_forest(word, start,
-                                         allow_incomplete=allow_incomplete)
+        return self._parser.parse_forest(word, start, allow_incomplete=allow_incomplete)
 
     def parse_incomplete(
         self,
@@ -1105,7 +1109,7 @@ class Grammar(NodeVisitor):
         """
 
         initial = set()
-        initial_work: [Node] = [NonTerminalNode(name) for name in self.rules.keys()]
+        initial_work: [Node] = [NonTerminalNode(name) for name in self.rules.keys()]  # type: ignore
         while initial_work:
             node = initial_work.pop(0)
             if node in initial:
@@ -1287,8 +1291,8 @@ class Grammar(NodeVisitor):
 
     def contains_type(self, tp: type, *, start="<start>") -> bool:
         """
-            Return true if the grammar can produce an element of type `tp` (say, `int` or `bytes`).
-            * `start`: a start symbol other than `<start>`.
+        Return true if the grammar can produce an element of type `tp` (say, `int` or `bytes`).
+        * `start`: a start symbol other than `<start>`.
         """
         if isinstance(start, str):
             start = NonTerminal(start)
@@ -1298,8 +1302,7 @@ class Grammar(NodeVisitor):
         seen = {start_node}
 
         def node_matches(node):
-            if (isinstance(node, TerminalNode) and
-                isinstance(node.symbol.symbol, tp)):
+            if isinstance(node, TerminalNode) and isinstance(node.symbol.symbol, tp):
                 return True
             if any(node_matches(child) for child in node.children()):
                 return True
@@ -1311,21 +1314,21 @@ class Grammar(NodeVisitor):
 
     def contains_bits(self, *, start="<start>") -> bool:
         """
-            Return true iff the grammar can produce a bit element (0 or 1).
-            * `start`: a start symbol other than `<start>`.
+        Return true iff the grammar can produce a bit element (0 or 1).
+        * `start`: a start symbol other than `<start>`.
         """
         return self.contains_type(int, start=start)
 
     def contains_bytes(self, *, start="<start>") -> bool:
         """
-            Return true iff the grammar can produce a bytes element.
-            * `start`: a start symbol other than `<start>`.
+        Return true iff the grammar can produce a bytes element.
+        * `start`: a start symbol other than `<start>`.
         """
         return self.contains_type(bytes, start=start)
 
     def contains_strings(self, *, start="<start>") -> bool:
         """
-            Return true iff the grammar can produce a (UTF-8) string element.
-            * `start`: a start symbol other than `<start>`.
+        Return true iff the grammar can produce a (UTF-8) string element.
+        * `start`: a start symbol other than `<start>`.
         """
         return self.contains_type(str, start=start)
