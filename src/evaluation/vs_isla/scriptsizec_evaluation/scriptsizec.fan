@@ -50,5 +50,5 @@ forall <use_id> in <statement>..<expr>..<id>:
 
 forall <decl1> in <declaration>:
     forall <decl2> in <declaration>:
-        (str(<decl1>.<id>) == str(<decl2>.<id>) -> <decl1> == <decl2>)
+        not(str(<decl1>.<id>)==str(<decl2>.<id>)) or <decl1>==<decl2>
 ;
