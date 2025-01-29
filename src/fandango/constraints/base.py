@@ -235,7 +235,10 @@ class ExpressionConstraint(Constraint):
         return representation
 
     def accept(self, visitor: "ConstraintVisitor"):
-        """Accepts a visitor to traverse the constraint structure."""
+        """
+        Accepts a visitor to traverse the constraint structure.
+        :param ConstraintVisitor visitor: The visitor to accept.
+        """
         visitor.visit_expression_constraint(self)
 
 
@@ -423,15 +426,28 @@ class ComparisonConstraint(Constraint):
             )
         return representation
 
-    def accept(self, visitor):
-        """Accepts a visitor to traverse the constraint structure."""
+    def accept(self, visitor: "ConstraintVisitor"):
+        """
+        Accepts a visitor to traverse the constraint structure.
+        :param ConstraintVisitor visitor: The visitor to accept.
+        """
         return visitor.visit_comparison_constraint(self)
 
 
 class ConjunctionConstraint(Constraint):
+    """
+    Represents a conjunction constraint that can be used for fitness evaluation.
+    """
+
     def __init__(
         self, constraints: List[Constraint], *args, lazy: bool = False, **kwargs
     ):
+        """
+        Initializes the conjunction constraint with the given constraints.
+        :param List[Constraint] constraints: The constraints to use.
+        :param args: Additional arguments.
+        :param bool lazy: If True, the conjunction is lazy evaluated.
+        """
         super().__init__(*args, **kwargs)
         self.constraints = constraints
         self.lazy = lazy
@@ -439,10 +455,18 @@ class ConjunctionConstraint(Constraint):
     def fitness(
         self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
+        """
+        Calculate the fitness of the tree based on the given conjunction.
+        :param DerivationTree tree: The tree to evaluate.
+        :param Optional[Dict[str, DerivationTree]] scope: The scope of the tree.
+        :return ConstraintFitness: The fitness of the tree.
+        """
         tree_hash = self.get_hash(tree, scope)
+        # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
         if self.lazy:
+            # If the conjunction is lazy, evaluate the constraints one by one and stop if one fails
             fitness_values = list()
             for constraint in self.constraints:
                 fitness = constraint.fitness(tree, scope)
@@ -450,9 +474,11 @@ class ConjunctionConstraint(Constraint):
                 if not fitness.success:
                     break
         else:
+            # If the conjunction is not lazy, evaluate all constraints at once
             fitness_values = [
                 constraint.fitness(tree, scope) for constraint in self.constraints
             ]
+        # Aggregate the fitness values
         solved = sum(fitness.solved for fitness in fitness_values)
         total = sum(fitness.total for fitness in fitness_values)
         overall = all(fitness.success for fitness in fitness_values)
@@ -465,7 +491,9 @@ class ConjunctionConstraint(Constraint):
             total += 1
             if overall:
                 solved += 1
+        # Create the fitness object
         fitness = ConstraintFitness(solved, total, overall, failing_trees=failing_trees)
+        # Cache the fitness
         self.cache[tree_hash] = fitness
         return fitness
 
@@ -473,7 +501,10 @@ class ConjunctionConstraint(Constraint):
         return "(" + " and ".join(repr(c) for c in self.constraints) + ")"
 
     def accept(self, visitor: "ConstraintVisitor"):
-        """Accepts a visitor to traverse the constraint structure."""
+        """
+        Accepts a visitor to traverse the constraint structure.
+        :param ConstraintVisitor visitor: The visitor to accept.
+        """
         visitor.visit_conjunction_constraint(self)
         if visitor.do_continue(self):
             for constraint in self.constraints:
@@ -481,9 +512,19 @@ class ConjunctionConstraint(Constraint):
 
 
 class DisjunctionConstraint(Constraint):
+    """
+    Represents a disjunction constraint that can be used for fitness evaluation.
+    """
+
     def __init__(
         self, constraints: List[Constraint], *args, lazy: bool = False, **kwargs
     ):
+        """
+        Initializes the disjunction constraint with the given constraints.
+        :param List[Constraint] constraints: The constraints to use.
+        :param args: Additional arguments.
+        :param bool lazy: If True, the disjunction is lazy evaluated.
+        """
         super().__init__(*args, **kwargs)
         self.constraints = constraints
         self.lazy = lazy
@@ -491,10 +532,18 @@ class DisjunctionConstraint(Constraint):
     def fitness(
         self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
+        """
+        Calculate the fitness of the tree based on the given disjunction.
+        :param DerivationTree tree: The tree to evaluate.
+        :param Optional[Dict[str, DerivationTree]] scope: The scope of the tree.
+        :return ConstraintFitness: The fitness of the tree.
+        """
         tree_hash = self.get_hash(tree, scope)
+        # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
         if self.lazy:
+            # If the disjunction is lazy, evaluate the constraints one by one and stop if one succeeds
             fitness_values = list()
             for constraint in self.constraints:
                 fitness = constraint.fitness(tree, scope)
@@ -502,9 +551,11 @@ class DisjunctionConstraint(Constraint):
                 if fitness.success:
                     break
         else:
+            # If the disjunction is not lazy, evaluate all constraints at once
             fitness_values = [
                 constraint.fitness(tree, scope) for constraint in self.constraints
             ]
+        # Aggregate the fitness values
         solved = sum(fitness.solved for fitness in fitness_values)
         total = sum(fitness.total for fitness in fitness_values)
         overall = any(fitness.success for fitness in fitness_values)
@@ -517,7 +568,9 @@ class DisjunctionConstraint(Constraint):
             total += 1
             if overall:
                 solved = total + 1
+        # Create the fitness object
         fitness = ConstraintFitness(solved, total, overall, failing_trees=failing_trees)
+        # Cache the fitness
         self.cache[tree_hash] = fitness
         return fitness
 
@@ -525,7 +578,10 @@ class DisjunctionConstraint(Constraint):
         return "(" + " or ".join(repr(c) for c in self.constraints) + ")"
 
     def accept(self, visitor: "ConstraintVisitor"):
-        """Accepts a visitor to traverse the constraint structure."""
+        """
+        Accepts a visitor to traverse the constraint structure.
+        :param ConstraintVisitor visitor: The visitor to accept.
+        """
         visitor.visit_disjunction_constraint(self)
         if visitor.do_continue(self):
             for constraint in self.constraints:
@@ -533,7 +589,16 @@ class DisjunctionConstraint(Constraint):
 
 
 class ImplicationConstraint(Constraint):
+    """
+    Represents an implication constraint that can be used for fitness evaluation.
+    """
+
     def __init__(self, antecedent: Constraint, consequent: Constraint, *args, **kwargs):
+        """
+        Initializes the implication constraint with the given antecedent and consequent.
+        :param Constraint antecedent: The antecedent of the implication.
+        :param Constraint consequent: The consequent of the implication.
+        """
         super().__init__(*args, **kwargs)
         self.antecedent = antecedent
         self.consequent = consequent
@@ -541,21 +606,32 @@ class ImplicationConstraint(Constraint):
     def fitness(
         self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
+        """
+        Calculate the fitness of the tree based on the given implication.
+        :param DerivationTree tree: The tree to evaluate.
+        :param Optional[Dict[str, DerivationTree]] scope: The scope of the tree.
+        :return ConstraintFitness: The fitness of the tree.
+        """
         tree_hash = self.get_hash(tree, scope)
+        # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
+        # Evaluate the antecedent
         antecedent_fitness = self.antecedent.fitness(tree, scope)
         if antecedent_fitness.success:
+            # If the antecedent is true, evaluate the consequent
             fitness = copy(self.consequent.fitness(tree, scope))
             if fitness.success:
                 fitness.solved += 1
             fitness.total += 1
         else:
+            # If the antecedent is false, the fitness is perfect
             fitness = ConstraintFitness(
                 1,
                 1,
                 True,
             )
+        # Cache the fitness
         self.cache[tree_hash] = fitness
         return fitness
 
@@ -563,7 +639,10 @@ class ImplicationConstraint(Constraint):
         return f"({repr(self.antecedent)} -> {repr(self.consequent)})"
 
     def accept(self, visitor: "ConstraintVisitor"):
-        """Accepts a visitor to traverse the constraint structure."""
+        """
+        Accepts a visitor to traverse the constraint structure.
+        :param ConstraintVisitor visitor: The visitor to accept.
+        """
         visitor.visit_implication_constraint(self)
         if visitor.do_continue(self):
             self.antecedent.accept(visitor)
@@ -571,15 +650,28 @@ class ImplicationConstraint(Constraint):
 
 
 class ExistsConstraint(Constraint):
+    """
+    Represents an exists constraint that can be used for fitness evaluation.
+    """
+
     def __init__(
         self,
         statement: Constraint,
         bound: NonTerminal,
         search: NonTerminalSearch,
-        *args,
         lazy: bool = False,
+        *args,
         **kwargs,
     ):
+        """
+        Initializes the exists constraint with the given statement, bound, and search.
+        :param Constraint statement: The statement to evaluate.
+        :param NonTerminal bound: The bound variable.
+        :param NonTerminalSearch search: The search to use.
+        :param bool lazy: If True, the exists constraint is lazy evaluated.
+        :param args: Additional arguments.
+        :param kwargs: Additional keyword arguments.
+        """
         super().__init__(*args, **kwargs)
         self.statement = statement
         self.bound = bound
@@ -591,17 +683,30 @@ class ExistsConstraint(Constraint):
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
     ) -> ConstraintFitness:
+        """
+        Calculate the fitness of the tree based on the given exists constraint.
+        :param DerivationTree tree: The tree to evaluate.
+        :param Optional[Dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
+        :return ConstraintFitness: The fitness of the tree.
+        """
         tree_hash = self.get_hash(tree, scope)
+        # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
         fitness_values = list()
         scope = scope or dict()
+        # Iterate over all containers found by the search
         for container in self.search.find(tree, scope=scope):
+            # Update the scope with the bound variable
             scope[self.bound] = container.evaluate()
+            # Evaluate the statement
             fitness = self.statement.fitness(tree, scope)
+            # Add the fitness to the list
             fitness_values.append(fitness)
+            # If the exists constraint is lazy and the statement is successful, stop
             if self.lazy and fitness.success:
                 break
+        # Aggregate the fitness values
         solved = sum(fitness.solved for fitness in fitness_values)
         total = sum(fitness.total for fitness in fitness_values)
         overall = any(fitness.success for fitness in fitness_values)
@@ -613,7 +718,9 @@ class ExistsConstraint(Constraint):
         total += 1
         if overall:
             solved = total + 1
+        # Create the fitness object
         fitness = ConstraintFitness(solved, total, overall, failing_trees=failing_trees)
+        # Cache the fitness
         self.cache[tree_hash] = fitness
         return fitness
 
@@ -621,22 +728,38 @@ class ExistsConstraint(Constraint):
         return f"(exists {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
 
     def accept(self, visitor: "ConstraintVisitor"):
-        """Accepts a visitor to traverse the constraint structure."""
+        """
+        Accepts a visitor to traverse the constraint structure.
+        :param ConstraintVisitor visitor: The visitor to accept.
+        """
         visitor.visit_exists_constraint(self)
         if visitor.do_continue(self):
             self.statement.accept(visitor)
 
 
 class ForallConstraint(Constraint):
+    """
+    Represents a forall constraint that can be used for fitness evaluation.
+    """
+
     def __init__(
         self,
         statement: Constraint,
         bound: NonTerminal,
         search: NonTerminalSearch,
-        *args,
         lazy: bool = False,
+        *args,
         **kwargs,
     ):
+        """
+        Initializes the forall constraint with the given statement, bound, and search.
+        :param Constraint statement: The statement to evaluate.
+        :param NonTerminal bound: The bound variable.
+        :param NonTerminalSearch search: The search to use.
+        :param bool lazy: If True, the forall constraint is lazy evaluated.
+        :param args: Additional arguments.
+        :param kwargs: Additional keyword arguments.
+        """
         super().__init__(*args, **kwargs)
         self.statement = statement
         self.bound = bound
@@ -648,17 +771,30 @@ class ForallConstraint(Constraint):
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
     ) -> ConstraintFitness:
+        """
+        Calculate the fitness of the tree based on the given forall constraint.
+        :param DerivationTree tree: The tree to evaluate.
+        :param Optional[Dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
+        :return ConstraintFitness: The fitness of the tree.
+        """
         tree_hash = self.get_hash(tree, scope)
+        # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
         fitness_values = list()
         scope = scope or dict()
+        # Iterate over all containers found by the search
         for container in self.search.find(tree, scope=scope):
+            # Update the scope with the bound variable
             scope[self.bound] = container.evaluate()
+            # Evaluate the statement
             fitness = self.statement.fitness(tree, scope)
+            # Add the fitness to the list
             fitness_values.append(fitness)
+            # If the forall constraint is lazy and the statement is not successful, stop
             if self.lazy and not fitness.success:
                 break
+        # Aggregate the fitness values
         solved = sum(fitness.solved for fitness in fitness_values)
         total = sum(fitness.total for fitness in fitness_values)
         overall = all(fitness.success for fitness in fitness_values)
@@ -670,7 +806,9 @@ class ForallConstraint(Constraint):
         total += 1
         if overall:
             solved = total + 1
+        # Create the fitness object
         fitness = ConstraintFitness(solved, total, overall, failing_trees=failing_trees)
+        # Cache the fitness
         self.cache[tree_hash] = fitness
         return fitness
 
@@ -678,7 +816,10 @@ class ForallConstraint(Constraint):
         return f"(forall {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
 
     def accept(self, visitor: "ConstraintVisitor"):
-        """Accepts a visitor to traverse the constraint structure."""
+        """
+        Accepts a visitor to traverse the constraint structure.
+        :param ConstraintVisitor visitor: The visitor to accept.
+        """
         visitor.visit_forall_constraint(self)
         if visitor.do_continue(self):
             self.statement.accept(visitor)
