@@ -22,9 +22,19 @@ from fandango.logger import print_exception
 
 
 class Value(GeneticBase):
-    """ """
+    """
+    Represents a value that can be used for fitness evaluation.
+    In contrast to a constraint, a value is not calculated based on the constraints solved by a tree,
+    but rather by a user-defined expression.
+    """
 
     def __init__(self, expression: str, *args, **kwargs):
+        """
+        Initializes the value with the given expression.
+        :param str expression: The expression to evaluate.
+        :param args: Additional arguments.
+        :param kwargs: Additional keyword arguments.
+        """
         super().__init__(*args, **kwargs)
         self.expression = expression
         self.cache: Dict[int, ValueFitness] = dict()
@@ -34,15 +44,25 @@ class Value(GeneticBase):
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
     ) -> ValueFitness:
+        """
+        Calculate the fitness of the tree based on the given expression.
+        :param DerivationTree tree: The tree to evaluate.
+        :param Optional[Dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
+        :return ValueFitness: The fitness of the tree.
+        """
         tree_hash = self.get_hash(tree, scope)
+        # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
+        # If the tree is None, the fitness is 0
         if tree is None:
             fitness = ValueFitness()
         else:
             trees = []
             values = []
+            # Iterate over all combinations of the tree and the scope
             for combination in self.combinations(tree, scope):
+                # Update the local variables to initialize the placeholders with the values of the combination
                 local_variables = self.local_variables.copy()
                 local_variables.update(
                     {name: container.evaluate() for name, container in combination}
@@ -52,6 +72,7 @@ class Value(GeneticBase):
                         if node not in trees:
                             trees.append(node)
                 try:
+                    # Evaluate the expression
                     values.append(
                         eval(self.expression, self.global_variables, local_variables)
                     )
@@ -59,10 +80,11 @@ class Value(GeneticBase):
                     e.add_note("Evaluation failed: " + self.expression)
                     print_exception(e)
                     values.append(0)
-
+            # Create the fitness object
             fitness = ValueFitness(
                 values, failing_trees=[FailingTree(t, self) for t in trees]
             )
+        # Cache the fitness
         self.cache[tree_hash] = fitness
         return fitness
 
@@ -76,12 +98,22 @@ class Value(GeneticBase):
 
 
 class Constraint(GeneticBase, ABC):
+    """
+    Abstract class to represents a constraint that can be used for fitness evaluation.
+    """
+
     def __init__(
         self,
         searches: Optional[Dict[str, NonTerminalSearch]] = None,
         local_variables: Optional[Dict[str, Any]] = None,
         global_variables: Optional[Dict[str, Any]] = None,
     ):
+        """
+        Initializes the constraint with the given searches, local variables, and global variables.
+        :param Optional[Dict[str, NonTerminalSearch]] searches: The searches to use.
+        :param Optional[Dict[str, Any]] local_variables: The local variables to use.
+        :param Optional[Dict[str, Any]] global_variables: The global variables to use.
+        """
         super().__init__(searches, local_variables, global_variables)
         self.cache: Dict[int, ConstraintFitness] = dict()
 
@@ -91,6 +123,9 @@ class Constraint(GeneticBase, ABC):
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
     ) -> ConstraintFitness:
+        """
+        Abstract method to calculate the fitness of the tree.
+        """
         raise NotImplementedError("Fitness function not implemented")
 
     @staticmethod
@@ -102,46 +137,71 @@ class Constraint(GeneticBase, ABC):
 
     @abstractmethod
     def accept(self, visitor):
-        """Accepts a visitor to traverse the constraint structure."""
+        """
+        Accepts a visitor to traverse the constraint structure.
+        """
         pass
 
     def get_symbols(self):
+        """
+        Get the placeholders of the constraint.
+        """
         return self.searches.values()
 
 
 class ExpressionConstraint(Constraint):
+    """
+    Represents a python expression constraint that can be used for fitness evaluation.
+    """
+
     def __init__(self, expression: str, *args, **kwargs):
+        """
+        Initializes the expression constraint with the given expression.
+        :param str expression: The expression to evaluate.
+        :param args: Additional arguments.
+        :param kwargs: Additional keyword arguments.
+        """
         super().__init__(*args, **kwargs)
         self.expression = expression
 
     def fitness(
         self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
+        """
+        Calculate the fitness of the tree based on whether the given expression evaluates to True.
+        :param DerivationTree tree: The tree to evaluate.
+        :param Optional[Dict[str, DerivationTree]] scope: The scope of the tree.
+        """
         tree_hash = self.get_hash(tree, scope)
+        # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
+        # Initialize the fitness values
         solved = 0
         total = 0
         failing_trees = []
+        # If the tree is None, the fitness is 0
         if tree is None:
             return ConstraintFitness(0, 0, False)
         has_combinations = False
+        # Iterate over all combinations of the tree and the scope
         for combination in self.combinations(tree, scope):
             has_combinations = True
+            # Update the local variables to initialize the placeholders with the values of the combination
             local_variables = self.local_variables.copy()
             local_variables.update(
                 {name: container.evaluate() for name, container in combination}
             )
             try:
-                if (
-                    eval(self.expression, self.global_variables, local_variables)
-                    is None
-                ):
+                result = eval(self.expression, self.global_variables, local_variables)
+                if result is None:
                     # fitness is perfect and return
+                    # TODO this should not be here. It breaks Python's None semantics
                     return ConstraintFitness(1, 1, True)
-                if eval(self.expression, self.global_variables, local_variables):
+                if result:
                     solved += 1
                 else:
+                    # If the expression evaluates to False, add the failing trees to the list
                     for _, container in combination:
                         for node in container.get_trees():
                             if node not in failing_trees:
@@ -151,15 +211,18 @@ class ExpressionConstraint(Constraint):
                 print_exception(e)
 
             total += 1
+        # If there are no combinations, the fitness is perfect
         if not has_combinations:
             solved += 1
             total += 1
+        # Create the fitness object
         fitness = ConstraintFitness(
             solved,
             total,
             solved == total,
             failing_trees=[FailingTree(t, self) for t in failing_trees],
         )
+        # Cache the fitness
         self.cache[tree_hash] = fitness
         return fitness
 
@@ -177,7 +240,19 @@ class ExpressionConstraint(Constraint):
 
 
 class ComparisonConstraint(Constraint):
+    """
+    Represents a comparison constraint that can be used for fitness evaluation.
+    """
+
     def __init__(self, operator: Comparison, left: str, right: str, *args, **kwargs):
+        """
+        Initializes the comparison constraint with the given operator, left side, and right side.
+        :param Comparison operator: The operator to use.
+        :param str left: The left side of the comparison.
+        :param str right: The right side of the comparison.
+        :param args: Additional arguments.
+        :param kwargs: Additional keyword arguments.
+        """
         super().__init__(*args, **kwargs)
         self.operator = operator
         self.left = left
@@ -187,26 +262,37 @@ class ComparisonConstraint(Constraint):
     def fitness(
         self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
+        """
+        Calculate the fitness of the tree based on the given comparison.
+        """
         tree_hash = self.get_hash(tree, scope)
+        # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
+        # Initialize the fitness values
         solved = 0
         total = 0
         failing_trees = []
         has_combinations = False
+        # If the tree is None, the fitness is 0
+        if tree is None:
+            return ConstraintFitness(0, 0, False)
+        # Iterate over all combinations of the tree and the scope
         for combination in self.combinations(tree, scope):
             has_combinations = True
+            # Update the local variables to initialize the placeholders with the values of the combination
             local_variables = self.local_variables.copy()
             local_variables.update(
                 {name: container.evaluate() for name, container in combination}
             )
+            # Evaluate the left and right side of the comparison
             try:
                 left = eval(self.left, self.global_variables, local_variables)
             except Exception as e:
                 e.add_note("Evaluation failed: " + self.left)
                 print_exception(e)
                 continue
-
+            # Evaluate the left and right side of the comparison
             try:
                 right = eval(self.right, self.global_variables, local_variables)
             except Exception as e:
@@ -215,8 +301,10 @@ class ComparisonConstraint(Constraint):
                 continue
 
             try:
+                # TODO: please remove this check. It breaks Python's functionality, e.g., for comparing floats and ints
+                # TODO: Just because the types are different doesn't mean they can't be compared
                 if self.types_checked is None:
-                    if not type(right) == type(left):
+                    if not type(left) == type(right):
                         raise TypeError(
                             f"In constraint {self}, left and right side of comparison don't evaluate to the same type"
                         )
@@ -225,13 +313,16 @@ class ComparisonConstraint(Constraint):
             except Exception as e:
                 self.types_checked = False
 
+            # Initialize the suggestions
             suggestions = []
             is_solved = False
             match self.operator:
                 case Comparison.EQUAL:
+                    # If the left and right side are equal, the constraint is solved
                     if left == right:
                         is_solved = True
                     else:
+                        # If the left and right side are not equal, add suggestions to the list
                         if not self.right.strip().startswith("len("):
                             suggestions.append(
                                 (Comparison.EQUAL, left, ComparisonSide.RIGHT)
@@ -241,9 +332,11 @@ class ComparisonConstraint(Constraint):
                                 (Comparison.EQUAL, right, ComparisonSide.LEFT)
                             )
                 case Comparison.NOT_EQUAL:
+                    # If the left and right side are not equal, the constraint is solved
                     if left != right:
                         is_solved = True
                     else:
+                        # If the left and right side are equal, add suggestions to the list
                         suggestions.append(
                             (Comparison.NOT_EQUAL, left, ComparisonSide.RIGHT)
                         )
@@ -251,9 +344,11 @@ class ComparisonConstraint(Constraint):
                             (Comparison.NOT_EQUAL, right, ComparisonSide.LEFT)
                         )
                 case Comparison.GREATER:
+                    # If the left side is greater than the right side, the constraint is solved
                     if left > right:
                         is_solved = True
                     else:
+                        # If the left side is not greater than the right side, add suggestions to the list
                         suggestions.append(
                             (Comparison.LESS, left, ComparisonSide.RIGHT)
                         )
@@ -261,9 +356,11 @@ class ComparisonConstraint(Constraint):
                             (Comparison.GREATER, right, ComparisonSide.LEFT)
                         )
                 case Comparison.GREATER_EQUAL:
+                    # If the left side is greater than or equal to the right side, the constraint is solved
                     if left >= right:
                         is_solved = True
                     else:
+                        # If the left side is not greater than or equal to the right side, add suggestions to the list
                         suggestions.append(
                             (Comparison.LESS_EQUAL, left, ComparisonSide.RIGHT)
                         )
@@ -271,9 +368,11 @@ class ComparisonConstraint(Constraint):
                             (Comparison.GREATER_EQUAL, right, ComparisonSide.LEFT)
                         )
                 case Comparison.LESS:
+                    # If the left side is less than the right side, the constraint is solved
                     if left < right:
                         is_solved = True
                     else:
+                        # If the left side is not less than the right side, add suggestions to the list
                         suggestions.append(
                             (Comparison.GREATER, left, ComparisonSide.RIGHT)
                         )
@@ -281,9 +380,11 @@ class ComparisonConstraint(Constraint):
                             (Comparison.LESS, right, ComparisonSide.LEFT)
                         )
                 case Comparison.LESS_EQUAL:
+                    # If the left side is less than or equal to the right side, the constraint is solved
                     if left <= right:
                         is_solved = True
                     else:
+                        # If the left side is not less than or equal to the right side, add suggestions to the list
                         suggestions.append(
                             (Comparison.GREATER_EQUAL, left, ComparisonSide.RIGHT)
                         )
@@ -293,6 +394,7 @@ class ComparisonConstraint(Constraint):
             if is_solved:
                 solved += 1
             else:
+                # If the comparison is not solved, add the failing trees to the list
                 for _, container in combination:
                     for node in container.get_trees():
                         ft = FailingTree(node, self, suggestions=suggestions)
@@ -305,9 +407,11 @@ class ComparisonConstraint(Constraint):
             solved += 1
             total += 1
 
+        # Create the fitness object
         fitness = ConstraintFitness(
             solved, total, solved == total, failing_trees=failing_trees
         )
+        # Cache the fitness
         self.cache[tree_hash] = fitness
         return fitness
 
@@ -596,6 +700,10 @@ class ConstraintVisitor:
         """If this returns False, this formula should not call the visit methods for
         its children."""
         return True
+
+    def visit(self, constraint: "Constraint"):
+        """Visits a constraint."""
+        return constraint.accept(self)
 
     def visit_expression_constraint(self, constraint: "ExpressionConstraint"):
         """Visits an expression constraint."""

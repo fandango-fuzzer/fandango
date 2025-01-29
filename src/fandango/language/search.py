@@ -292,6 +292,7 @@ class DescendantAttributeSearch(NonTerminalSearch):
     Non-terminal search that finds the non-terminals that first uses the base to find the non-terminals and then
     uses the attribute to find the non-terminals in the descendant derivation trees found by the base.
     """
+
     def __init__(self, base: NonTerminalSearch, attribute: NonTerminalSearch):
         """
         Initialize the DescendantAttributeSearch with the given base and attribute non-terminal searches.
@@ -336,6 +337,7 @@ class ItemSearch(NonTerminalSearch):
     """
     Non-terminal search that finds the non-terminals that get the items from the base non-terminal.
     """
+
     def __init__(self, base: NonTerminalSearch, slices: Tuple[Any]):
         """
         Initialize the ItemSearch with the given base and slices.
@@ -410,6 +412,7 @@ class SelectiveSearch(NonTerminalSearch):
     """
     Non-terminal search that finds the non-terminals that match the selective search criteria.
     """
+
     def __init__(
         self,
         base: NonTerminalSearch,
