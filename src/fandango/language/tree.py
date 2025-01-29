@@ -195,10 +195,11 @@ class DerivationTree:
         """
         Convert the derivation tree to a string.
         """
-        if self.contains_bits() or self.contains_bytes():
-            LOGGER.warning(
-                "Converting a derivation tree with binary elements into a string"
-            )
+        # Turn off warning for now; too many false alarms -- AZ
+        # if self.contains_bits() or self.contains_bytes():
+        #     LOGGER.warning(
+        #         "Converting a derivation tree with binary elements into a string"
+        #     )
 
         try:
             return self.to_bytes(encoding="utf-8").decode("utf-8")
