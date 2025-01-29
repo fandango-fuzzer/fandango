@@ -469,6 +469,7 @@ def init_fandango_agents(grammar: "Grammar"):
 
 def assign_std_out_role(grammar: "Grammar", io_instance: FandangoIO):
     remapped_roles = set()
+    unknown_recipients = set()
     for symbol in grammar.rules.keys():
         if symbol.is_implicit:
             continue
@@ -477,15 +478,20 @@ def assign_std_out_role(grammar: "Grammar", io_instance: FandangoIO):
         )
 
         for nt in non_terminals:
-            if nt.role is None:
-                continue
-            if nt.role not in io_instance.roles.keys():
-                remapped_roles.add(nt.role)
-                nt.role = "STDOUT"
+            if nt.role is not None:
+                if nt.role not in io_instance.roles.keys():
+                    remapped_roles.add(nt.role)
+                    nt.role = "STDOUT"
+            if nt.recipient is not None:
+                if nt.recipient not in io_instance.roles.keys():
+                    unknown_recipients.add(nt.recipient)
+
     for name in remapped_roles:
         LOGGER.warn(
             f"No class has been specified for role: {name}! Role gets mapped to STDOUT!"
         )
+    for name in unknown_recipients:
+        f"No class has been specified for recipient: {name}!"
 
 def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) -> None:
     keep_roles = grammar.roles(True)
