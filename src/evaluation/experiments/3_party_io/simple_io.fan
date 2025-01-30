@@ -12,11 +12,10 @@
 <digit_start> ::= '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' ;
 <digit_tail> ::= '0' | <digit_start>;
 
-int(<challenge_ab>.<number_high>) > int(<resolve>.<number>);
-int(<challenge_ab>.<number_low>) < int(<resolve>.<number>);
-int(<number_high>) > int(<number_low>);
-int(<number_mid>) > int(<number_low>);
-int(<number_high>) > int(<number_mid>);
+100 >= int(<number_high>);
+int(<number_high>) > (int(<number_low>) + 3);
+int(<number_mid>) > (int(<number_low>) + 1);
+int(<number_high>) > (int(<number_mid>) + 1);
 (int(<number_high>) > int(<resolve>.<number>) and int(<resolve>.<number>) > int(<number_mid>)) or (int(<number_mid>) > int(<resolve>.<number>) and int(<resolve>.<number>) > int(<number_low>));
 
 import requests
@@ -34,9 +33,9 @@ class Client(FandangoAgent):
 class ServerA(FandangoAgent):
 
         def __init__(self):
-            super().__init__(False)
+            super().__init__(True)
 
 class ServerB(FandangoAgent):
 
         def __init__(self):
-            super().__init__(False)
+            super().__init__(True)

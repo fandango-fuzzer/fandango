@@ -217,8 +217,9 @@ class Fandango:
                     # Abort if we received a message during fuzzing
                     continue
                 send_msg = next_tree.find_role_msgs()[-1].msg
-                io_instance.set_transmit(packet_node.role, packet_node.recipient, send_msg)
-                exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
+                if packet_node.recipient is None or not io_instance.roles[packet_node.recipient].is_fandango():
+                    io_instance.set_transmit(packet_node.role, packet_node.recipient, send_msg)
+                    exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
             else:
                 while not io_instance.received_msg():
                     time.sleep(0.25)
