@@ -79,5 +79,5 @@ class FandangoIO:
     def clear_received_msgs(self):
         self.receive.clear()
 
-    def set_transmit(self, role: str, recipient: str, message: str) -> None:
+    def set_transmit(self, role: str, recipient: str|None, message: str) -> None:
         self.transmit = (role, recipient, message)
