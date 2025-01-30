@@ -400,6 +400,8 @@ class Fandango:
                 complete_msg += msg_fragment
                 fragment_idx.append(idx)
 
+                if msg_role not in forecast.getRoles():
+                    raise RuntimeError(f"Unexpected sender sent message. Expected:", "|".join(forecast.getRoles()),f" Received: {msg_role}")
                 non_terminal_options = forecast[msg_role]
                 for non_terminal in non_terminal_options.getNonTerminals():
                     packet_option = non_terminal_options[non_terminal]
