@@ -14,6 +14,11 @@
 
 100 >= int(<number_high>);
 int(<number_high>) > (int(<number_low>) + 3);
+int(<challenge_ab>.<number_high>) == int(<challenge_ba>.<number_high>);
+int(<challenge_ab>.<number_high>) == int(<challenge_c>.<number_high>);
+int(<challenge_ab>.<number_low>) == int(<challenge_ba>.<number_low>);
+int(<challenge_ab>.<number_low>) == int(<challenge_c>.<number_low>);
+int(<challenge_ba>.<number_mid>) == int(<challenge_c>.<number_mid>);
 int(<number_mid>) > (int(<number_low>) + 1);
 int(<number_high>) > (int(<number_mid>) + 1);
 (int(<number_high>) > int(<resolve>.<number>) and int(<resolve>.<number>) > int(<number_mid>)) or (int(<number_mid>) > int(<resolve>.<number>) and int(<resolve>.<number>) > int(<number_low>));
