@@ -830,10 +830,7 @@ class Grammar(NodeVisitor):
                             self.predict(state, table, k)
                         else:
                             # LOGGER.debug(f"Scanning")
-                            if w >= len(word):
-                                # Reached end of input
-                                pass
-                            elif isinstance(state.dot.symbol, int):
+                            if isinstance(state.dot.symbol, int):
                                 # Scan a bit
                                 if bit_count < 0:
                                     bit_count = 7
