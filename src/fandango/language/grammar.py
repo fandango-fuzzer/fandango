@@ -805,7 +805,7 @@ class Grammar(NodeVisitor):
             while k < len(table) and w <= len(word):
                 advance = 0
                 for state in table[k]:
-                    LOGGER.debug(f"Processing {state} at position {hex(w)} ({w}) {word[w:]!r}")
+                    # LOGGER.debug(f"Processing {state} at position {hex(w)} ({w}) {word[w:]!r}")
                     if w >= len(word):
                         # LOGGER.debug(f"End of input")
                         if allow_incomplete:
