@@ -1,7 +1,7 @@
 <start> ::= <rgb> <endmarker>
-    <rgb> ::= <RGB>*  # FIXME: must be {size}
+    <rgb> ::= <RGB>*
     <RGB> ::= <R> <G> <B>
         <R> ::= <byte>
-        <G> ::= <byte>
+        <G> ::= <bit>{8}
         <B> ::= <byte>
-    <endmarker> ::= "1"
+    <endmarker> ::= <bit>{8} ";"
