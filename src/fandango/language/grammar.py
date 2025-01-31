@@ -661,9 +661,6 @@ class Grammar(NodeVisitor):
             `bit_count` is the current bit position (7-0).
             Return True if a bit was matched, False otherwise.
             """
-            # LOGGER.debug(f"Trying {state} at position {hex(w)} ({w}) {word[w:]!r}"
-            #              + (f", bit {bit_count}" if bit_count >= 0 else ""))
-
             assert isinstance(state.dot.symbol, int)
             assert 0 <= bit_count <= 7
 
@@ -671,18 +668,12 @@ class Grammar(NodeVisitor):
             byte = ord(word[w]) if isinstance(word, str) else word[w]
             bit = (byte >> bit_count) & 1
 
-            # LOGGER.debug(f"Found bit {bit_count}: {bit}")
-            # LOGGER.debug(f"Compare against bit {state.dot!r}")
             if not state.dot.check(bit):
-                # LOGGER.debug(f"Bit match failed")
                 return False
 
             # Found a match
-            # LOGGER.debug(f"Scanned bit {bit_count} ({bit}) {state} at position {hex(w)} ({w}) {word[w:]!r}")
             next_state = state.next()
             next_state.children.append(DerivationTree(state.dot))
-
-            # LOGGER.debug(f"Next state: {next_state}")
 
             # Insert a new table entry with next state
             # This is necessary, as our initial table holds one entry
@@ -712,8 +703,6 @@ class Grammar(NodeVisitor):
             Return True if a byte was matched, False otherwise.
             """
 
-            # LOGGER.debug(f"Trying {state} at position {hex(w)} ({w}) {word[w:]!r}")
-
             assert not isinstance(state.dot.symbol, int)
 
             if not state.dot.check(word[w:]):
@@ -721,7 +710,6 @@ class Grammar(NodeVisitor):
                 return False
 
             # Found a match
-            # LOGGER.debug(f"Scanned byte {state} at position {hex(w)} ({w}) {word[w:]!r}")
             next_state = state.next()
             next_state.children.append(DerivationTree(state.dot))
             table[k + len(state.dot)].add(next_state)
@@ -809,7 +797,6 @@ class Grammar(NodeVisitor):
                 scanned = False
                 for state in table[k]:
                     if w >= len(word):
-                        # LOGGER.debug(f"End of input")
                         if allow_incomplete:
                             if state.nonterminal == implicit_start:
                                 self._incomplete.update(state.children)
@@ -834,7 +821,7 @@ class Grammar(NodeVisitor):
                                     bit_count = 7
                                 match = self.scan_bit(state, word, table, k, w, bit_count)
                                 if match:
-                                    LOGGER.debug(f"Scanned bit {state} at position {hex(w)} ({w}) {word[w:]!r}")
+                                    # LOGGER.debug(f"Scanned bit {state} at position {hex(w)} ({w}) {word[w:]!r}")
                                     scanned = True
                             else:
                                 # Scan a byte
@@ -854,7 +841,7 @@ class Grammar(NodeVisitor):
 
                                 match = self.scan_byte(state, word, table, k, w)
                                 if match:
-                                    LOGGER.debug(f"Scanned byte {state} at position {hex(w)} ({w}) {word[w:]!r}")
+                                    # LOGGER.debug(f"Scanned byte {state} at position {hex(w)} ({w}) {word[w:]!r}")
                                     scanned = True
 
                 if scanned:
@@ -865,7 +852,6 @@ class Grammar(NodeVisitor):
                         # Advance to next byte
                         w += 1
 
-                # LOGGER.debug(f"w = {w}, bit_count = {bit_count}")
                 k += 1
 
         def parse_forest(
@@ -1311,9 +1297,7 @@ class Grammar(NodeVisitor):
                 return False
             seen.add(node)
 
-            # LOGGER.debug(f"Checking if {node} is of type {tp}")
             if isinstance(node, TerminalNode) and isinstance(node.symbol.symbol, tp):
-                # LOGGER.debug("Yes!")
                 return True
             if any(node_matches(child) for child in node.children()):
                 return True
