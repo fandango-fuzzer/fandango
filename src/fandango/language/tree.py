@@ -246,23 +246,47 @@ class DerivationTree:
         s += ")"
         return s
 
-    def to_grammar(self, indent=0, start_indent=0) -> str:
+    def to_grammar(self, include_position=True) -> str:
         """
         Output the derivation tree as (specialized) grammar
         """
-        assert isinstance(self.symbol.symbol, str)
+        bit_count = -1
+        byte_count = 0
 
-        s = "  " * start_indent + f"{self.symbol.symbol} ::="
-        for child in self._children:
-            if child.symbol.is_non_terminal:
-                s += f" {child.symbol.symbol}"
-            else:
-                s += " " + repr(child.symbol.symbol)
+        def _to_grammar(node, indent=0, start_indent=0) -> str:
+            """
+            Output the derivation tree as (specialized) grammar
+            """
+            assert isinstance(node.symbol.symbol, str)
+            nonlocal bit_count, byte_count, include_position
 
-        for child in self._children:
-            if child.symbol.is_non_terminal:
-                s += "\n" + child.to_grammar(indent + 1, start_indent=indent + 1)
-        return s
+            s = "  " * start_indent + f"{node.symbol.symbol} ::="
+            for child in node._children:
+                if child.symbol.is_non_terminal:
+                    s += f" {child.symbol.symbol}"
+                else:
+                    s += " " + repr(child.symbol.symbol)
+                    if include_position:
+                        s += f"  # Position {hex(byte_count)} ({byte_count})"
+                    if isinstance(child.symbol.symbol, int):
+                        if bit_count < 0:
+                            bit_count = 7
+                        if include_position:
+                            s += f", bit {bit_count}"
+
+                    if isinstance(child.symbol.symbol, int) and bit_count >= 0:
+                        # Advance by 1 bit
+                        bit_count -= 1
+                    if bit_count < 0:
+                        # Advance by bytes
+                        byte_count += 1
+
+            for child in node._children:
+                if child.symbol.is_non_terminal:
+                    s += "\n" + _to_grammar(child, indent + 1, start_indent=indent + 1)
+            return s
+
+        return _to_grammar(self)
 
     def __repr__(self):
         return self.to_string()
