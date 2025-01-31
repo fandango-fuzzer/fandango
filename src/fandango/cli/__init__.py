@@ -829,7 +829,7 @@ def parse_file(fd, args, grammar, constraints, settings):
     passing_tree = None
     last_tree = None
     while tree := next(tree_gen, None):
-        LOGGER.debug(f"Trying parse alternative #{alternative_counter}")
+        LOGGER.debug(f"Checking parse alternative #{alternative_counter}")
         last_tree = tree
 
         passed = True
@@ -863,7 +863,7 @@ def parse_file(fd, args, grammar, constraints, settings):
             report_syntax_error(fd.name, error_pos, individual, binary=("b" in fd.mode))
         )
 
-    # Work with the last tree
+    # Report error for the last tree
     for constraint in constraints:
         fitness = constraint.fitness(last_tree).fitness()
         if fitness == 0:

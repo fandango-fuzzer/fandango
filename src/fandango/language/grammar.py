@@ -479,7 +479,7 @@ class ParseState:
                 ]
             )
             + ("•" if self.finished() else "")
-            + f", position {self.position}"
+            + f", column {self.position}"
             + ")"
         )
 
@@ -658,7 +658,7 @@ class Grammar(NodeVisitor):
             `bit_count` is the current bit position (7-0).
             Return True if a bit was matched, False otherwise.
             """
-            # LOGGER.debug(f"Trying {state} at {word[w:]!r}"
+            # LOGGER.debug(f"Trying {state} at position {hex(w)} ({w}) {word[w:]!r}"
             #              + (f", bit {bit_count}" if bit_count >= 0 else ""))
 
             assert isinstance(state.dot.symbol, int)
@@ -676,7 +676,7 @@ class Grammar(NodeVisitor):
                 return False
 
             # Found a match
-            # LOGGER.debug(f"Scanned bit {bit_count} ({bit}) {state} {word[w:]!r}")
+            # LOGGER.debug(f"Scanned bit {bit_count} ({bit}) {state} at position {hex(w)} ({w}) {word[w:]!r}")
             next_state = state.next()
             next_state.children.append(DerivationTree(state.dot))
 
@@ -708,7 +708,7 @@ class Grammar(NodeVisitor):
             Return True if a byte was matched, False otherwise.
             """
 
-            # LOGGER.debug(f"Trying {state} at {word[w:]!r}"
+            # LOGGER.debug(f"Trying {state} at position {hex(w)} ({w}) {word[w:]!r}"
             #              + (f", bit {bit_count}" if bit_count >= 0 else ""))
 
             assert not isinstance(state.dot.symbol, int)
@@ -718,7 +718,7 @@ class Grammar(NodeVisitor):
                 return False
 
             # Found a match
-            # LOGGER.debug(f"Scanned byte {state} {word[w:]!r}")
+            # LOGGER.debug(f"Scanned byte {state} at position {hex(w)} ({w}) {word[w:]!r}")
             next_state = state.next()
             next_state.children.append(DerivationTree(state.dot))
             table[k + len(state.dot)].add(next_state)
@@ -805,7 +805,7 @@ class Grammar(NodeVisitor):
             while k < len(table) and w <= len(word):
                 advance = 0
                 for state in table[k]:
-                    # LOGGER.debug(f"Processing {state} at {word[w:]!r}")
+                    LOGGER.debug(f"Processing {state} at position {hex(w)} ({w}) {word[w:]!r}")
                     if w >= len(word):
                         # LOGGER.debug(f"End of input")
                         if allow_incomplete:
@@ -835,7 +835,7 @@ class Grammar(NodeVisitor):
                                 adv = 1
                             else:
                                 # Scan a byte
-                                if bit_count >= 0:
+                                if 0 <= bit_count < 7:
                                     # We are still expecting bits here:
                                     #
                                     # * we may have _peeked_ at a bit,
@@ -845,7 +845,7 @@ class Grammar(NodeVisitor):
                                     #
                                     # In either case, we need to skip back
                                     # to scanning bytes here.
-                                    LOGGER.debug(f"Position {hex(w)} ({w}): Mixed parsing of bits and bytes")
+                                    LOGGER.warning(f"Position {hex(w)} ({w}): Parsing a byte while expecting bit {bit_count}")
                                     bit_count = -1
                                 self.scan_byte(state, word, table, k, w)
                                 adv = 8
@@ -860,7 +860,6 @@ class Grammar(NodeVisitor):
                     w += 1
 
                 # LOGGER.debug(f"w = {w}, bit_count = {bit_count}")
-
                 k += 1
 
         def parse_forest(
