@@ -83,8 +83,7 @@ To reproduce the evaluation results from ISLa, please refer to [their replicatio
 To reproduce the evaluation results from FANDANGO, please download a development copy of the repository from [the official GitHub Repository](https://github.com/fandango-fuzzer/fandango), execute: (from the root directory)
 
 ```bash
-cd src/evaluation/evaluation &&
-python run_evaluation.py
+python -m evaluation.vs_isla.run_evaluation
 ```
 
 This script will execute FANDANGO on 5 subjects (CSV, reST, ScriptSizeC, TAR and XML). Each subject will be run for an hour, followed up by a computation on each grammar coverage (This process can take a while). The results will be printed in the terminal. Our evaluation showcases FANDANGO's search-based approach as a viable alternative to symbolic solvers, offering the following advantages:
