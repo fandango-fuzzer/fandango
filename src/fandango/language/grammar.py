@@ -809,7 +809,7 @@ class Grammar(NodeVisitor):
                 advance = 0
                 for state in table[k]:
                     adv = 0
-                    # LOGGER.debug(f"Processing {state} at position {hex(w)} ({w}), bit {bit_count} {word[w:]!r}")
+                    LOGGER.debug(f"Processing {state} at position {hex(w)} ({w}), bit {bit_count} {word[w:]!r}")
                     if w >= len(word):
                         # LOGGER.debug(f"End of input")
                         if allow_incomplete:
@@ -842,7 +842,7 @@ class Grammar(NodeVisitor):
                                 adv = 1
                             else:
                                 # Scan a byte
-                                if 0 <= bit_count < 7:
+                                if 0 < bit_count < 7:
                                     # We are still expecting bits here:
                                     #
                                     # * we may have _peeked_ at a bit,
@@ -852,7 +852,7 @@ class Grammar(NodeVisitor):
                                     #
                                     # In either case, we need to skip back
                                     # to scanning bytes here.
-                                    LOGGER.warning(f"Position {hex(w)} ({w}): Parsing a byte while expecting bit {bit_count}")
+                                    LOGGER.warning(f"Position {hex(w)} ({w}): Parsing a byte while expecting bit {bit_count}. Check if bits come in multiples of 8.")
                                     bit_count = -1
                                 self.scan_byte(state, word, table, k, w)
                                 adv = 8
