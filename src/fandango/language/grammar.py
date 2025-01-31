@@ -845,7 +845,7 @@ class Grammar(NodeVisitor):
                                     #
                                     # In either case, we need to skip back
                                     # to scanning bytes here.
-                                    LOGGER.debug("Mixed parsing of bits and bytes")
+                                    LOGGER.debug(f"Position {hex(w)} ({w}): Mixed parsing of bits and bytes")
                                     bit_count = -1
                                 self.scan_byte(state, word, table, k, w)
                                 adv = 8

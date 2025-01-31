@@ -789,9 +789,8 @@ def report_syntax_error(
 
     mismatch = repr(individual[position])
     if binary:
-        return f"{filename!r}, position {position}: mismatched input 0x{mismatch}"
+        return f"{filename!r}, position {hex(position)} ({position}): mismatched input 0x{mismatch}"
 
-    lines = individual.split("\n")
     line = 1
     column = 1
     for i in range(position):
