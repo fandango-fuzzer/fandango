@@ -678,7 +678,7 @@ class Grammar(NodeVisitor):
                 return False
 
             # Found a match
-            # LOGGER.debug(f"Scanned bit {bit_count} ({bit}) {state} at position {hex(w)} ({w}) {word[w:]!r}")
+            LOGGER.debug(f"Scanned bit {bit_count} ({bit}) {state} at position {hex(w)} ({w}) {word[w:]!r}")
             next_state = state.next()
             next_state.children.append(DerivationTree(state.dot))
 
@@ -721,7 +721,7 @@ class Grammar(NodeVisitor):
                 return False
 
             # Found a match
-            # LOGGER.debug(f"Scanned byte {state} at position {hex(w)} ({w}) {word[w:]!r}")
+            LOGGER.debug(f"Scanned byte {state} at position {hex(w)} ({w}) {word[w:]!r}")
             next_state = state.next()
             next_state.children.append(DerivationTree(state.dot))
             table[k + len(state.dot)].add(next_state)
@@ -806,9 +806,8 @@ class Grammar(NodeVisitor):
             bit_count = -1  # If > 0, indicates the next bit to be scanned (7-0)
 
             while k < len(table) and w <= len(word):
-                advance = 0
+                scanned = False
                 for state in table[k]:
-                    adv = 0
                     LOGGER.debug(f"Processing {state} at position {hex(w)} ({w}), bit {bit_count} {word[w:]!r}")
                     if w >= len(word):
                         # LOGGER.debug(f"End of input")
@@ -838,11 +837,10 @@ class Grammar(NodeVisitor):
                                 # Scan a bit
                                 if bit_count < 0:
                                     bit_count = 7
-                                self.scan_bit(state, word, table, k, w, bit_count)
-                                adv = 1
+                                scanned = self.scan_bit(state, word, table, k, w, bit_count) or scanned
                             else:
                                 # Scan a byte
-                                if 0 < bit_count < 7:
+                                if 0 <= bit_count <= 7:
                                     # We are still expecting bits here:
                                     #
                                     # * we may have _peeked_ at a bit,
@@ -854,18 +852,17 @@ class Grammar(NodeVisitor):
                                     # to scanning bytes here.
                                     LOGGER.warning(f"Position {hex(w)} ({w}): Parsing a byte while expecting bit {bit_count}. Check if bits come in multiples of 8.")
                                     bit_count = -1
-                                self.scan_byte(state, word, table, k, w)
-                                adv = 8
-                            advance = max(advance, adv)
-                # LOGGER.debug(f"Advancing by {advance} bits")
-                if advance == 1:
-                    # Advance by one bit
-                    bit_count -= 1
-                elif advance == 8 or bit_count < 0:
-                    # Advance by one byte
-                    w += 1
+                                scanned = self.scan_byte(state, word, table, k, w) or scanned
 
-                # LOGGER.debug(f"w = {w}, bit_count = {bit_count}")
+                if scanned:
+                    if bit_count >= 0:
+                        # Advance by one bit
+                        bit_count -= 1
+                    if bit_count < 0:
+                        # Advance to next byte
+                        w += 1
+
+                LOGGER.debug(f"w = {w}, bit_count = {bit_count}")
                 k += 1
 
         def parse_forest(
