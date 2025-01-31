@@ -129,7 +129,6 @@ class Concatenation(Node):
 
 
 class Repetition(Node):
-    # TODO: Shouldn't a children() method return [self.node]? -- AZ
     def __init__(self, node: Node, min_: int = 0, max_: int = MAX_REPETITIONS):
         super().__init__(NodeType.REPETITION)
         if min_ < 0:
@@ -178,6 +177,10 @@ class Repetition(Node):
                 for r in range(max(2, self.min), self.max + 1)
             ]
         )
+
+    def children(self):
+        return [self.node]
+
 
 
 class Star(Repetition):
@@ -1307,7 +1310,7 @@ class Grammar(NodeVisitor):
 
             # LOGGER.debug(f"Checking if {node} is of type {tp}")
             if isinstance(node, TerminalNode) and isinstance(node.symbol.symbol, tp):
-                # LOGGER.debug("Yes!")
+                #LOGGER.debug("Yes!")
                 return True
             if any(node_matches(child) for child in node.children()):
                 return True
