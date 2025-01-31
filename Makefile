@@ -6,7 +6,7 @@ MAKEFLAGS=--warn-undefined-variables
 # Programs
 PYTHON = python
 PYTEST = pytest
-ANTLR = antlr
+ANTLR = antlr4
 BLACK = black
 PIP = pip
 SED = sed
