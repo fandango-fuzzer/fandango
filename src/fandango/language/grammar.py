@@ -6,7 +6,7 @@ import typing
 from copy import deepcopy
 from typing import Dict, List, Optional, Tuple, Set, Any, Union, Iterator, overload
 
-from fandango.language.symbol import Implicit, NonTerminal, Terminal, Symbol
+from fandango.language.symbol import NonTerminal, Terminal, Symbol
 from fandango.language.tree import DerivationTree, RoledMessage
 from fandango.logger import LOGGER
 
@@ -1134,7 +1134,6 @@ class Grammar(NodeVisitor):
             self._max_position = max(self._max_position, w)
             return True
 
-        def complete(self, state: ParseState, table: List[Set[ParseState]], k: int):
         def complete(
             self,
             state: ParseState,
@@ -1154,7 +1153,7 @@ class Grammar(NodeVisitor):
                         if use_implicit and state.nonterminal in self._implicit_rules:
                             s.children.append(
                                 DerivationTree(
-                                    Implicit(state.nonterminal.symbol), state.children
+                                    NonTerminal(state.nonterminal.symbol), state.children
                                 )
                             )
                         else:

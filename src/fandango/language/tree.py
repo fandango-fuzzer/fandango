@@ -59,7 +59,11 @@ class DerivationTree:
 
         return [
             DerivationTree(
-                self.symbol, children=reduced, read_only=self.read_only, recipient=self.recipient, role=self.role
+                self.symbol,
+                children=reduced,
+                read_only=self.read_only,
+                recipient=self.recipient,
+                role=self.role,
             )
         ]
 
@@ -178,7 +182,11 @@ class DerivationTree:
 
         # Create a new instance without copying the parent
         copied = DerivationTree(
-            self.symbol, [], role=self.role, recipient=self.recipient, read_only=self.read_only
+            self.symbol,
+            [],
+            role=self.role,
+            recipient=self.recipient,
+            read_only=self.read_only,
         )
         memo[id(self)] = copied
 

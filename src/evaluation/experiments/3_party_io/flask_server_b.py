@@ -12,6 +12,7 @@ nr_high = 0
 nr_mid = 0
 url_party_c = "http://localhost:8081/api/hello"
 
+
 @app.route("/api/hello", methods=["POST"])
 def hello():
     json = request.get_json()
@@ -33,5 +34,6 @@ def hello():
         result |= nr_low < nr_mid < json["nr"] < nr_high
         return {"result": result}
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     app.run(debug=False, port=8080)

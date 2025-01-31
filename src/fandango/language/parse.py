@@ -29,7 +29,9 @@ from fandango.language.grammar import (
     NonTerminalFinder,
     RoleAssigner,
     FuzzingMode,
-    NonTerminalNode, GrammarTruncator, RoleNestingDetector,
+    NonTerminalNode,
+    GrammarTruncator,
+    RoleNestingDetector,
 )
 from fandango.language.io import FandangoIO, FandangoAgent
 from fandango.language.parser.FandangoLexer import FandangoLexer
@@ -449,6 +451,7 @@ def parse(
 
 ### Consistency Checks
 
+
 def init_fandango_agents(grammar: "Grammar"):
     agent_names = set()
     grammar_roles = grammar.roles(True)
@@ -466,6 +469,7 @@ def init_fandango_agents(grammar: "Grammar"):
     for agent in agent_names:
         exec(f"{agent}()", global_env, local_env)
         grammar_roles.remove(agent)
+
 
 def assign_std_out_role(grammar: "Grammar", io_instance: FandangoIO):
     remapped_roles = set()
@@ -492,6 +496,7 @@ def assign_std_out_role(grammar: "Grammar", io_instance: FandangoIO):
         )
     for name in unknown_recipients:
         f"No class has been specified for recipient: {name}!"
+
 
 def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) -> None:
     keep_roles = grammar.roles(True)

@@ -13,9 +13,12 @@ nr_high = 0
 def hello():
     return {
         "nr_low": request.json["nr_low"],
-        "nr_mid": random.randint(request.json["nr_low"] + 2, request.json["nr_high"] - 2),
-        "nr_high": request.json["nr_high"]
+        "nr_mid": random.randint(
+            request.json["nr_low"] + 2, request.json["nr_high"] - 2
+        ),
+        "nr_high": request.json["nr_high"],
     }
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     app.run(debug=False, port=8081)
