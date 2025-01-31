@@ -39,17 +39,17 @@ where <GifHeader>..<Version> == "89a"
 <GlobalColorTable> ::= <RGB> '\x00' '\x00' '\x00'  
 <LocalColorTable> ::= b'\x02' b'\x02' b'L'
 
-# <PixelAspectRatio> ::= b'\x00'
+<PixelAspectRatio> ::= b'\x00'
 
 
-# <GlobalColorTableFlag> ::= 1
-# <ColorResolution> ::= 0 0 0
+<GlobalColorTableFlag> ::= 1
+<ColorResolution> ::= 0 0 0
 
-# <BackgroundColorIndex> ::= b'\x01'
+<BackgroundColorIndex> ::= b'\x01'
 
 <BlockSize> ::= b'\x04'
 
-# <DelayTime> ::= b'\n' b'\x00'
+<DelayTime> ::= b'\n' b'\x00'
 
 <TransparentColorIndex> ::= b'\x01'
 <BlockTerminator_2> ::= b'\x00'
