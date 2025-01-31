@@ -800,10 +800,11 @@ class GrammarTruncator(NodeVisitor):
         return False
 
 
-class RoleInRoleDetector(NodeVisitor):
+class RoleNestingDetector(NodeVisitor):
     def __init__(self, grammar: "Grammar"):
         self.grammar = grammar
         self.seen_nt = set()
+        self.current_path = list()
 
     def fail_on_nested_packet(self, start_symbol: NonTerminal):
         self.current_nt = start_symbol
@@ -813,8 +814,13 @@ class RoleInRoleDetector(NodeVisitor):
         if node.symbol.is_implicit:
             return self.visit(self.grammar[node.symbol])
 
+        self.current_path.append(node.symbol)
         if node.symbol not in self.seen_nt:
             self.seen_nt.add(node.symbol)
+        elif node.role is not None and node.symbol in self.current_path:
+            str_path = [str(p) for p in self.current_path]
+            raise RuntimeError(
+                f"Found illegal packet-definitions within packet-definition of non_terminal {node.symbol}! DerivationPath: " + " -> ".join(str_path))
         else:
             return
 
@@ -825,6 +831,7 @@ class RoleInRoleDetector(NodeVisitor):
             return
 
         self.visit(self.grammar[node.symbol])
+        self.current_path.pop()
 
 
 
