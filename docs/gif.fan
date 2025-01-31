@@ -1,3 +1,4 @@
+# Automatically generated from 'gif.bt' by bt2fan. Do not edit.
 <start> ::= <GifHeader> <LogicalScreenDescriptor> <GlobalColorTable>? <Data_1> <Trailer>
   <GifHeader> ::= <GIFHEADER>
     <GIFHEADER> ::= <Signature> <Version>
@@ -112,14 +113,13 @@
       <GIFTrailer_1> ::= b';'
 
 # where len(<Data>) == ord(str(<Size_1>))
-# where <GifHeader>..<Signature> == "GIF"
+# where not (<GifHeader>.<Signature> != "GIF")
 
 # FIXME: ReadRGB()
 # FIXME: ReadUByte()
 # FIXME: size = 
 # FIXME: ReadUByte()
 # FIXME: size = 
-# FIXME: Warning()
 # FIXME: size = 1
 # FIXME: size = 2
 # FIXME: ReadUByte()
