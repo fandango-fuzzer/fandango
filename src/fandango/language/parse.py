@@ -29,7 +29,7 @@ from fandango.language.grammar import (
     NonTerminalFinder,
     RoleAssigner,
     FuzzingMode,
-    NonTerminalNode, GrammarTruncator, RoleInRoleDetector,
+    NonTerminalNode, GrammarTruncator, RoleNestingDetector,
 )
 from fandango.language.io import FandangoIO, FandangoAgent
 from fandango.language.parser.FandangoLexer import FandangoLexer
@@ -434,7 +434,7 @@ def parse(
         assign_std_out_role(grammar, io_instance)
 
         # Detect illegally nested data packets.
-        rir_detector = RoleInRoleDetector(grammar)
+        rir_detector = RoleNestingDetector(grammar)
         rir_detector.fail_on_nested_packet(NonTerminal(start_symbol))
 
         truncate_non_visible_packets(grammar, io_instance)
