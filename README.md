@@ -4,7 +4,8 @@
 [![GitHub Pages](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-book.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-book.yml)
 [![CodeQL](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql)
 [![PyPI](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-pypi.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-pypi.yml)
-
+[![Docker Image](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-docker.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-docker.yml)
+[![Socket Badge](https://socket.dev/api/badge/pypi/package/fandango-fuzzer/0.1.0?artifact_id=tar-gz)](https://socket.dev/pypi/package/fandango-fuzzer/overview/0.1.0/tar-gz)
 
 FANDANGO is a language-based fuzzer that leverages formal input specifications (grammars) combined with constraints to generate diverse sets of valid inputs for programs under test. Unlike traditional symbolic constraint solvers, FANDANGO uses a search-based approach to systematically evolve a population of inputs through syntactically valid mutations until semantic input constraints are satisfied.
 
@@ -82,8 +83,7 @@ To reproduce the evaluation results from ISLa, please refer to [their replicatio
 To reproduce the evaluation results from FANDANGO, please download a development copy of the repository from [the official GitHub Repository](https://github.com/fandango-fuzzer/fandango), execute: (from the root directory)
 
 ```bash
-cd src/evaluation/evaluation &&
-python run_evaluation.py
+python -m evaluation.vs_isla.run_evaluation
 ```
 
 This script will execute FANDANGO on 5 subjects (CSV, reST, ScriptSizeC, TAR and XML). Each subject will be run for an hour, followed up by a computation on each grammar coverage (This process can take a while). The results will be printed in the terminal. Our evaluation showcases FANDANGO's search-based approach as a viable alternative to symbolic solvers, offering the following advantages:

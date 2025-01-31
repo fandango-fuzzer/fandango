@@ -82,8 +82,12 @@ class Terminal(Symbol):
     def check(self, word: str | int) -> bool:
         if isinstance(self.symbol, int) or isinstance(word, int):
             return self.check_all(word)
-        if isinstance(self.symbol, bytes):
+
+        if isinstance(self.symbol, bytes) and isinstance(word, str):
             return word.startswith(self.symbol.decode("iso-8859-1"))
+        if isinstance(self.symbol, str) and isinstance(word, bytes):
+            return word.decode("iso-8859-1").startswith(self.symbol)
+
         return word.startswith(self.symbol)
 
     def check_all(self, word: str | int) -> bool:

@@ -25,7 +25,7 @@ def is_syntactically_valid_tar(tree: str):
 def evaluate_tar(
     seconds=60,
 ) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
-    file = open("tar_evaluation/tar.fan", "r")
+    file = open("evaluation/vs_isla/tar_evaluation/tar.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False)
     solutions = []
 

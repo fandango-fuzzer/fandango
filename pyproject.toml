@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fandango-fuzzer"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
     { name = "José Antonio Zamudio Amaya", email = "jose.zamudio@cispa.de" },
     { name = "Marius Smytzek", email = "marius.smytzek@cispa.de" },
@@ -15,8 +15,8 @@ authors = [
 ]
 description = "Fandango produces myriads of high-quality random inputs to test programs, giving users unprecedented control over format and shape of the inputs."
 readme = "README.md"
-license = { file = "COPYING" }
-requires-python = ">=3.10"
+license = { file = "LICENSE.md" }
+requires-python = ">=3.10,<4.0"
 classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: European Union Public Licence 1.2 (EUPL 1.2)",
@@ -26,23 +26,15 @@ classifiers = [
     "Topic :: Software Development :: Testing"
 ]
 dependencies = [
+    "pytest>=7.2.2",
     "antlr4-python3-runtime>=4.13",
-    "matplotlib>=3.9.2",
-    "numpy>=2.2.1",  # Avoid conflict with pandas
-    "deap>=1.4.1",
-    "scipy>=1.14.1",
-    "ordered-set>=4.0.2",
-    "pytest>=8.3.3",
-    "Faker>=30.4.0",
-    "docutils>=0.20.1",  # Jupyter-book needs docutils<=0.20
-    "tccbox==2024.7.1",
     "deprecation>=2.1.0",
     "ansi_styles>=0.2.2",
     "cachedir_tag>=0.0.3",
     "xdg-base-dirs>=6.0.2",
     "dill>=0.3.7",
-    "python-dateutil>=2.9.0.post0",
-    "thefuzz>=0.22"
+    "thefuzz>=0.22",
+    "py010parser>=0.1.18",
 ]
 
 [project.urls]
@@ -54,13 +46,30 @@ fandango = "fandango.cli:main"
 
 [project.optional-dependencies]
 test = [
-    "pytest>=7.2.2",
     "pytest-cov>=4.1.0",
     "pytest-html>=3.2.0",
     "pytest-rerunfailures>=11.1.2",
-    "parameterized>=0.8.1",
+    "parameterized>=0.8.1"
+]
+
+evaluation = [
+    "Faker>=30.4.0",
+    "docutils>=0.20.1",  # Jupyter-book needs docutils<=0.20
+    "tccbox",
+    "python-dateutil>=2.9.0.post0",
+    "deap>=1.4.1",
+    "scipy>=1.14.1",
+    "numpy>=2.2.1",  # Avoid conflict with pandas
+    "matplotlib>=3.9.2",
+    "ordered-set>=4.0.2"
 ]
 
 [tool.black]
 line-length = 88
 target-version = ['py311']
+
+[tool.poetry]
+packages = [
+    { include = "fandango", from = "src" },
+    { include = "evaluation", from = "evaluation" }
+]

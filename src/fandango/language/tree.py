@@ -2,7 +2,9 @@ import copy
 from typing import Optional, List, Any, Union, Set, Tuple
 
 from fandango.language.symbol import Symbol, NonTerminal, Terminal
-from io import StringIO
+from io import StringIO, BytesIO
+
+from fandango.logger import LOGGER, print_exception
 
 
 class RoledMessage:
@@ -192,27 +194,31 @@ class DerivationTree:
 
         return copied
 
-    def _write_to_stream(self, stream):
+    def _write_to_stream(self, stream: BytesIO, *, encoding="utf-8"):
         """
-        Write the derivation tree to a stream (e.g., a file or StringIO).
+        Write the derivation tree to a (byte) stream
+        (e.g., a file or BytesIO).
         """
         if self.symbol.is_non_terminal:
             for child in self._children:
                 child._write_to_stream(stream)
-        elif isinstance(self.symbol.symbol, str):
-            # Strings get written as is
-            stream.write(self.symbol.symbol)
         elif isinstance(self.symbol.symbol, bytes):
-            # Bytes get converted 1:1 to strings,
-            # without UTF-8 or other encoding
-            stream.write(self.symbol.symbol.decode("latin1"))
+            # Bytes get written as is
+            stream.write(self.symbol.symbol)
+        elif isinstance(self.symbol.symbol, str):
+            # Strings get encoded
+            stream.write(self.symbol.symbol.encode(encoding))
         else:
             raise ValueError("Invalid symbol type")
 
-    def _write_to_bitstream(self, stream):
+    def _write_to_bitstream(self, stream: StringIO, *, encoding="utf-8"):
+        """
+        Write the derivation tree to a bit stream of 0's and 1's
+        (e.g., a file or StringIO).
+        """
         if self.symbol.is_non_terminal:
             for child in self._children:
-                child._write_to_bitstream(stream)
+                child._write_to_bitstream(stream, encoding=encoding)
         elif self.symbol.is_terminal:
             symbol = self.symbol.symbol
             if isinstance(symbol, int):
@@ -220,33 +226,50 @@ class DerivationTree:
                 bits = str(symbol)
             else:
                 # Convert strings and bytes to bits
-                elem_stream = StringIO()
-                self._write_to_stream(elem_stream)
+                elem_stream = BytesIO()
+                self._write_to_stream(elem_stream, encoding=encoding)
                 elem_stream.seek(0)
                 elem = elem_stream.read()
-                bits = "".join(format(ord(c), "08b") for c in elem)
+                bits = "".join(format(i, "08b") for i in elem)
             stream.write(bits)
         else:
             raise ValueError("Invalid symbol type")
 
-    def has_bits(self) -> bool:
+    def contains_type(self, tp: type) -> bool:
         """
-        Check if the derivation tree contains any bits.
+        Return true if the derivation tree contains any terminal symbols of type `tp` (say, `int` or `bytes`).
         """
-        if self.symbol.is_terminal and isinstance(self.symbol.symbol, int):
+        if self.symbol.is_terminal and isinstance(self.symbol.symbol, tp):
             return True
         for child in self._children:
-            if child.has_bits():
+            if child.contains_bits():
                 return True
         return False  # No bits found
 
-    def to_bits(self) -> str:
+    def contains_bits(self) -> bool:
+        """
+        Return true iff the derivation tree contains any bits (0 or 1).
+        """
+        return self.contains_type(int)
+
+    def contains_bytes(self) -> bool:
+        """
+        Return true iff the derivation tree contains any byte strings.
+        """
+        return self.contains_type(bytes)
+
+    def contains_strings(self) -> bool:
+        """
+        Return true iff the derivation tree contains any (UTF-8) strings.
+        """
+        return self.contains_type(str)
+
+    def to_bits(self, *, encoding="utf-8") -> str:
         """
         Convert the derivation tree to a sequence of bits (0s and 1s).
         """
-
         stream = StringIO()
-        self._write_to_bitstream(stream)
+        self._write_to_bitstream(stream, encoding=encoding)
         stream.seek(0)
         return stream.read()
 
@@ -254,18 +277,36 @@ class DerivationTree:
         """
         Convert the derivation tree to a string.
         """
-        if self.has_bits():
-            # Encode as bit string
-            bitstream = self.to_bits()
-
-            # Decode again
-            return "".join(
-                chr(int(bitstream[i : i + 8], 2)) for i in range(0, len(bitstream), 8)
+        if self.contains_bits() or self.contains_bytes():
+            LOGGER.warning(
+                "Converting a derivation tree with binary elements into a string"
             )
 
-        # Write directly, without conversion
-        stream = StringIO()
-        self._write_to_stream(stream)
+        try:
+            return self.to_bytes(encoding="utf-8").decode("utf-8")
+        except UnicodeDecodeError:
+            # This can happen if we produce bytes that are interpreted as strings, say via str(tree)
+            # Decode into latin-1 to avoid errors
+            return self.to_bytes(encoding="utf-8").decode("latin-1")
+
+    def to_bytes(self, encoding="utf-8") -> bytes:
+        """
+        Convert the derivation tree to a string.
+        String elements are encoded according to `encoding`.
+        """
+        if self.contains_bits():
+            # Encode as bit string
+            bitstream = self.to_bits(encoding=encoding)
+
+            # Decode into bytes, without further interpretation
+            s = b"".join(
+                int(bitstream[i : i + 8], 2).to_bytes()
+                for i in range(0, len(bitstream), 8)
+            )
+            return s
+
+        stream = BytesIO()
+        self._write_to_stream(stream, encoding=encoding)
         stream.seek(0)
         return stream.read()
 
@@ -284,6 +325,24 @@ class DerivationTree:
             if has_children:
                 s += "\n" + "  " * indent
         s += ")"
+        return s
+
+    def to_grammar(self, indent=0, start_indent=0) -> str:
+        """
+        Output the derivation tree as (specialized) grammar
+        """
+        assert isinstance(self.symbol.symbol, str)
+
+        s = "  " * start_indent + f"{self.symbol.symbol} ::="
+        for child in self._children:
+            if child.symbol.is_non_terminal:
+                s += f" {child.symbol.symbol}"
+            else:
+                s += " " + repr(child.symbol.symbol)
+
+        for child in self._children:
+            if child.symbol.is_non_terminal:
+                s += "\n" + child.to_grammar(indent + 1, start_indent=indent + 1)
         return s
 
     def __repr__(self):
