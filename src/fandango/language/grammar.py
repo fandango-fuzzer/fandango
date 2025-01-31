@@ -805,7 +805,7 @@ class Grammar(NodeVisitor):
 
                     if state.finished():
                         if state.nonterminal == implicit_start and w >= len(word):
-                            LOGGER.debug(f"Found {len(state.children)} parse tree(s)")
+                            # LOGGER.debug(f"Found {len(state.children)} parse tree(s)")
                             for child in state.children:
                                 yield child
 
