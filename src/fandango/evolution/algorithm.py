@@ -217,8 +217,13 @@ class Fandango:
                     # Abort if we received a message during fuzzing
                     continue
                 send_msg = next_tree.find_role_msgs()[-1].msg
-                if packet_node.recipient is None or not io_instance.roles[packet_node.recipient].is_fandango():
-                    io_instance.set_transmit(packet_node.role, packet_node.recipient, send_msg)
+                if (
+                    packet_node.recipient is None
+                    or not io_instance.roles[packet_node.recipient].is_fandango()
+                ):
+                    io_instance.set_transmit(
+                        packet_node.role, packet_node.recipient, send_msg
+                    )
                     exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
             else:
                 while not io_instance.received_msg():
@@ -402,7 +407,11 @@ class Fandango:
                 fragment_idx.append(idx)
 
                 if msg_role not in forecast.getRoles():
-                    raise RuntimeError(f"Unexpected sender sent message. Expected:", "|".join(forecast.getRoles()),f" Received: {msg_role}")
+                    raise RuntimeError(
+                        f"Unexpected sender sent message. Expected:",
+                        "|".join(forecast.getRoles()),
+                        f" Received: {msg_role}",
+                    )
                 non_terminal_options = forecast[msg_role]
                 for non_terminal in non_terminal_options.getNonTerminals():
                     packet_option = non_terminal_options[non_terminal]

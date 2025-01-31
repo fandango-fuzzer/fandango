@@ -1,4 +1,4 @@
-<start> ::= <Client:request><Server:challenge><Client:resolve><Server:validate>;
+<start> ::= <Client:Server:request><Server:Client:challenge><Client:Server:resolve><Server:Client:validate>;
 <request> ::= '{}';
 <challenge> ::= '{"nr_high":' <number_high>',"nr_low":' <number_low>'}';
 <resolve> ::= '{"nr":' <number> '}';

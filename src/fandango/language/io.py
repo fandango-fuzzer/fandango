@@ -23,7 +23,9 @@ class FandangoAgent(object):
         First parameter of response_setter if the role of the other party. The second is the message, that it answered with.
     """
 
-    def on_send(self, message: str, recipient: str, response_setter: Callable[[str, str], None]):
+    def on_send(
+        self, message: str, recipient: str, response_setter: Callable[[str, str], None]
+    ):
         print(f"({self.class_name}): {message}")
 
     """
@@ -79,5 +81,5 @@ class FandangoIO:
     def clear_received_msgs(self):
         self.receive.clear()
 
-    def set_transmit(self, role: str, recipient: str|None, message: str) -> None:
+    def set_transmit(self, role: str, recipient: str | None, message: str) -> None:
         self.transmit = (role, recipient, message)
