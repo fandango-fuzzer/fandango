@@ -670,7 +670,6 @@ class Grammar(NodeVisitor):
             # Get the highest bit. If `word` is bytes, word[w] is an integer.
             byte = ord(word[w]) if isinstance(word, str) else word[w]
             bit = (byte >> bit_count) & 1
-            # LOGGER.debug(f"Bit {bit_count} has a value of {bit}")
 
             # LOGGER.debug(f"Found bit {bit_count}: {bit}")
             # LOGGER.debug(f"Compare against bit {state.dot!r}")
@@ -682,6 +681,8 @@ class Grammar(NodeVisitor):
             # LOGGER.debug(f"Scanned bit {bit_count} ({bit}) {state} at position {hex(w)} ({w}) {word[w:]!r}")
             next_state = state.next()
             next_state.children.append(DerivationTree(state.dot))
+
+            # LOGGER.debug(f"Next state: {next_state}")
 
             # Insert a new table entry with next state
             # This is necessary, as our initial table holds one entry
@@ -711,8 +712,7 @@ class Grammar(NodeVisitor):
             Return True if a byte was matched, False otherwise.
             """
 
-            # LOGGER.debug(f"Trying {state} at position {hex(w)} ({w}) {word[w:]!r}"
-            #              + (f", bit {bit_count}" if bit_count >= 0 else ""))
+            # LOGGER.debug(f"Trying {state} at position {hex(w)} ({w}) {word[w:]!r}")
 
             assert not isinstance(state.dot.symbol, int)
 
@@ -808,7 +808,8 @@ class Grammar(NodeVisitor):
             while k < len(table) and w <= len(word):
                 advance = 0
                 for state in table[k]:
-                    LOGGER.debug(f"Processing {state} at position {hex(w)} ({w}), bit {bit_count} {word[w:]!r}")
+                    adv = 0
+                    # LOGGER.debug(f"Processing {state} at position {hex(w)} ({w}), bit {bit_count} {word[w:]!r}")
                     if w >= len(word):
                         # LOGGER.debug(f"End of input")
                         if allow_incomplete:
@@ -856,12 +857,11 @@ class Grammar(NodeVisitor):
                                 self.scan_byte(state, word, table, k, w)
                                 adv = 8
                             advance = max(advance, adv)
-
                 # LOGGER.debug(f"Advancing by {advance} bits")
                 if advance == 1:
                     # Advance by one bit
                     bit_count -= 1
-                if advance == 8 or bit_count < 0:
+                elif advance == 8 or bit_count < 0:
                     # Advance by one byte
                     w += 1
 
