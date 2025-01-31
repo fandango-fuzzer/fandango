@@ -678,7 +678,7 @@ class Grammar(NodeVisitor):
                 return False
 
             # Found a match
-            LOGGER.debug(f"Scanned bit {bit_count} ({bit}) {state} at position {hex(w)} ({w}) {word[w:]!r}")
+            # LOGGER.debug(f"Scanned bit {bit_count} ({bit}) {state} at position {hex(w)} ({w}) {word[w:]!r}")
             next_state = state.next()
             next_state.children.append(DerivationTree(state.dot))
 
@@ -721,7 +721,7 @@ class Grammar(NodeVisitor):
                 return False
 
             # Found a match
-            LOGGER.debug(f"Scanned byte {state} at position {hex(w)} ({w}) {word[w:]!r}")
+            # LOGGER.debug(f"Scanned byte {state} at position {hex(w)} ({w}) {word[w:]!r}")
             next_state = state.next()
             next_state.children.append(DerivationTree(state.dot))
             table[k + len(state.dot)].add(next_state)
@@ -808,7 +808,6 @@ class Grammar(NodeVisitor):
             while k < len(table) and w <= len(word):
                 scanned = False
                 for state in table[k]:
-                    LOGGER.debug(f"Processing {state} at position {hex(w)} ({w}), bit {bit_count} {word[w:]!r}")
                     if w >= len(word):
                         # LOGGER.debug(f"End of input")
                         if allow_incomplete:
@@ -818,23 +817,25 @@ class Grammar(NodeVisitor):
                             self.complete(state, table, k)
 
                     if state.finished():
-                        # LOGGER.debug(f"Finished {state}")
                         if state.nonterminal == implicit_start and w >= len(word):
+                            LOGGER.debug(f"Found {len(state.children)} parse tree(s)")
                             for child in state.children:
                                 yield child
 
                         self.complete(state, table, k)
                     elif not state.is_incomplete:
                         if state.next_symbol_is_nonterminal():
-                            # LOGGER.debug(f"Predicting")
                             self.predict(state, table, k)
+                            # LOGGER.debug(f"Predicted {state} at position {hex(w)} ({w}) {word[w:]!r}")
                         else:
-                            # LOGGER.debug(f"Scanning")
                             if isinstance(state.dot.symbol, int):
                                 # Scan a bit
                                 if bit_count < 0:
                                     bit_count = 7
-                                scanned = self.scan_bit(state, word, table, k, w, bit_count) or scanned
+                                match = self.scan_bit(state, word, table, k, w, bit_count)
+                                if match:
+                                    LOGGER.debug(f"Scanned bit {state} at position {hex(w)} ({w}) {word[w:]!r}")
+                                    scanned = True
                             else:
                                 # Scan a byte
                                 if 0 <= bit_count <= 7:
@@ -847,9 +848,14 @@ class Grammar(NodeVisitor):
                                     #
                                     # In either case, we need to skip back
                                     # to scanning bytes here.
-                                    LOGGER.warning(f"Position {hex(w)} ({w}): Parsing a byte while expecting bit {bit_count}. Check if bits come in multiples of 8.")
+                                    # LOGGER.warning(f"Position {hex(w)} ({w}): Parsing a byte while expecting bit {bit_count}. Check if bits come in multiples of eight")
                                     bit_count = -1
-                                scanned = self.scan_byte(state, word, table, k, w) or scanned
+                                    pass
+
+                                match = self.scan_byte(state, word, table, k, w)
+                                if match:
+                                    LOGGER.debug(f"Scanned byte {state} at position {hex(w)} ({w}) {word[w:]!r}")
+                                    scanned = True
 
                 if scanned:
                     if bit_count >= 0:
@@ -859,7 +865,7 @@ class Grammar(NodeVisitor):
                         # Advance to next byte
                         w += 1
 
-                LOGGER.debug(f"w = {w}, bit_count = {bit_count}")
+                # LOGGER.debug(f"w = {w}, bit_count = {bit_count}")
                 k += 1
 
         def parse_forest(
@@ -1307,7 +1313,7 @@ class Grammar(NodeVisitor):
 
             # LOGGER.debug(f"Checking if {node} is of type {tp}")
             if isinstance(node, TerminalNode) and isinstance(node.symbol.symbol, tp):
-                #LOGGER.debug("Yes!")
+                # LOGGER.debug("Yes!")
                 return True
             if any(node_matches(child) for child in node.children()):
                 return True
