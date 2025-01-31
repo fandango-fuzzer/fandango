@@ -1,39 +1,35 @@
+import csv
 import time
 from io import StringIO
 from typing import Tuple
-
-from docutils.core import publish_doctree
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.parse import parse
 
 
-def is_syntactically_valid_rest(rst_string):
-    # StringIO to capture output messages (warnings, errors, etc.)
-    error_stream = StringIO()
-
+def is_syntactically_valid_csv(csv_string):
     try:
-        # Parse the reST string into a document tree, capturing system messages
-        doctree = publish_doctree(
-            rst_string, settings_overrides={"warning_stream": error_stream}
-        )
+        # Create a file-like object from the string
+        csv_file = StringIO(csv_string)
 
-        # Check if any errors or warnings were captured in the error stream
-        errors_warnings = error_stream.getvalue().strip()
+        # Create a CSV reader to parse the string
+        reader = csv.reader(csv_file)
 
-        if errors_warnings:
-            return False
+        # Iterate through the reader to trigger any parsing errors
+        for row in reader:
+            pass
 
+        # If no errors, it's a valid CSV syntactically
         return True
-
-    except:
+    except csv.Error:
+        # If there's a CSV parsing error, it's not valid
         return False
 
 
-def evaluate_rest(
+def evaluate_csv(
     seconds=60,
 ) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
-    file = open("rest_evaluation/rest.fan", "r")
+    file = open("evaluation/vs_isla/csv_evaluation/csv.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False)
     solutions = []
 
@@ -50,14 +46,14 @@ def evaluate_rest(
 
     valid = []
     for solution in solutions:
-        if is_syntactically_valid_rest(str(solution)):
+        if is_syntactically_valid_csv(str(solution)):
             valid.append(solution)
 
     set_mean_length = sum(len(str(x)) for x in valid) / len(valid)
     set_medium_length = sorted(len(str(x)) for x in valid)[len(valid) // 2]
     valid_percentage = len(valid) / len(solutions) * 100
     return (
-        "REST",
+        "CSV",
         len(solutions),
         len(valid),
         valid_percentage,

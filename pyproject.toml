@@ -71,5 +71,5 @@ target-version = ['py311']
 [tool.poetry]
 packages = [
     { include = "fandango", from = "src" },
-    { include = "evaluation", from = "src" }
+    { include = "evaluation", from = "evaluation" }
 ]
