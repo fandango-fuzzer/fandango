@@ -788,12 +788,12 @@ class GrammarTruncator(NodeVisitor):
     def visitNonTerminalNode(self, node: NonTerminalNode):
         if node.symbol.is_implicit:
             return self.visit(self.grammar[node.symbol])
-        if node.role is None and node.recipient is None:
+        if node.role is None or node.recipient is None:
             return False
         truncatable = True
-        if node.role is not None and node.role in self.keep_roles:
+        if node.role in self.keep_roles:
             truncatable = False
-        if node.recipient is not None and node.recipient in self.keep_roles:
+        if node.recipient in self.keep_roles:
             truncatable = False
         return truncatable
 
