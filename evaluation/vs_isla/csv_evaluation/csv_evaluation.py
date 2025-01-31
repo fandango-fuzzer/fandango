@@ -29,7 +29,7 @@ def is_syntactically_valid_csv(csv_string):
 def evaluate_csv(
     seconds=60,
 ) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
-    file = open("csv_evaluation/csv.fan", "r")
+    file = open("evaluation/vs_isla/csv_evaluation/csv.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False)
     solutions = []
 
