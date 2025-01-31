@@ -1,7 +1,7 @@
 <start> ::= <rgb> <endmarker>
     <rgb> ::= <RGB>*
     <RGB> ::= <R> <G> <B>
-        <R> ::= <byte>
+        <R> ::= <digit>
         <G> ::= <bit>{8}
-        <B> ::= <byte>
+        <B> ::= <digit>
     <endmarker> ::= <bit>{8} ";"
