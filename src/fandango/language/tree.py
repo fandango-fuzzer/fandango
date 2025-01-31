@@ -261,25 +261,37 @@ class DerivationTree:
             nonlocal bit_count, byte_count, include_position
 
             s = "  " * start_indent + f"{node.symbol.symbol} ::="
+            have_nonterminal = False
+
+            position = f"  # Position {hex(byte_count)} ({byte_count})"
+            max_bit_count = bit_count - 1
+
             for child in node._children:
                 if child.symbol.is_non_terminal:
                     s += f" {child.symbol.symbol}"
                 else:
                     s += " " + repr(child.symbol.symbol)
-                    if include_position:
-                        s += f"  # Position {hex(byte_count)} ({byte_count})"
+                    have_nonterminal = True
+
                     if isinstance(child.symbol.symbol, int):
                         if bit_count < 0:
                             bit_count = 7
-                        if include_position:
-                            s += f", bit {bit_count}"
+                            max_bit_count = 7
+                        else:
+                            bit_count -= 1
+                            if bit_count == 0:
+                                byte_count += 1
+                    else:
+                        byte_count += len(child.symbol.symbol)
+                        bit_count = -1
 
-                    if isinstance(child.symbol.symbol, int) and bit_count >= 0:
-                        # Advance by 1 bit
-                        bit_count -= 1
-                    if bit_count < 0:
-                        # Advance by bytes
-                        byte_count += 1
+            if include_position and have_nonterminal:
+                s += position
+                if bit_count >= 0:
+                    if max_bit_count != bit_count:
+                        s += f", bits {max_bit_count}-{bit_count}"
+                    else:
+                        s += f", bit {bit_count}"
 
             for child in node._children:
                 if child.symbol.is_non_terminal:
