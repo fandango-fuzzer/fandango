@@ -808,7 +808,7 @@ class Grammar(NodeVisitor):
             while k < len(table) and w <= len(word):
                 advance = 0
                 for state in table[k]:
-                    # LOGGER.debug(f"Processing {state} at position {hex(w)} ({w}) {word[w:]!r}")
+                    LOGGER.debug(f"Processing {state} at position {hex(w)} ({w}), bit {bit_count} {word[w:]!r}")
                     if w >= len(word):
                         # LOGGER.debug(f"End of input")
                         if allow_incomplete:
@@ -830,7 +830,10 @@ class Grammar(NodeVisitor):
                             self.predict(state, table, k)
                         else:
                             # LOGGER.debug(f"Scanning")
-                            if isinstance(state.dot.symbol, int):
+                            if w >= len(word):
+                                # Reached end of input
+                                pass
+                            elif isinstance(state.dot.symbol, int):
                                 # Scan a bit
                                 if bit_count < 0:
                                     bit_count = 7
