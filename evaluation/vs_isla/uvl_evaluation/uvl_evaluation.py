@@ -1,22 +1,21 @@
+import time
+from typing import Tuple
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.parse import parse
 
 
-def is_syntactically_valid_xml(xml_string):
+def is_syntactically_valid_uvl(xml_string):
     try:
-        # Try to parse the XML string
-        ET.fromstring(xml_string)
         return True
-    except ET.ParseError:
-        # If parsing fails, it's not a valid XML
-        return False
+    except Exception:
+        pass
 
 
-def evaluate_xml(
+def evaluate_uvl(
     seconds=60,
 ) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
-    file = open("evaluation/vs_isla/xml_evaluation/xml.fan", "r")
+    file = open("evaluation/vs_isla/uvl_evaluation/uvl.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False)
     solutions = []
 
@@ -33,14 +32,14 @@ def evaluate_xml(
 
     valid = []
     for solution in solutions:
-        if is_syntactically_valid_xml(str(solution)):
+        if is_syntactically_valid_uvl(str(solution)):
             valid.append(solution)
 
     set_mean_length = sum(len(str(x)) for x in valid) / len(valid)
     set_medium_length = sorted(len(str(x)) for x in valid)[len(valid) // 2]
     valid_percentage = len(valid) / len(solutions) * 100
     return (
-        "XML",
+        "UVL",
         len(solutions),
         len(valid),
         valid_percentage,
