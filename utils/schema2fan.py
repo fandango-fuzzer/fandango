@@ -8,8 +8,7 @@ from lxml import etree
 
 def fan(name):
     """Convert a name to a Fandango identifier."""
-    r = re.compile(r"^[a-zA-Z0-9_]")
-    return r.sub(name, "_")
+    return re.sub(r"[^a-zA-Z0-9_]", "_", name)
 
 
 # See https://lxml.de/validation.html#dtd-1 for information on DTD structure
@@ -25,11 +24,11 @@ class DTDConverter(object):
             s += self.convert_element(element)
         return s
 
-    def convert_element(self, element, indent=0) -> str:
+    def convert_element(self, element) -> str:
         s = f"\n\n# {element.name}\n"
-        s += f"<{fan(element.name)}> ::= '<{element.name}' (' '+ <{fan(element.name)}_attributes>)* '>'"
+        s += f"<{fan(element.name)}> ::= '<{element.name}' (' ' <{fan(element.name)}_attribute>)* ('/>' | '>' "
         s += self.convert_content(element.content)
-        s += f" '</{fan(element.name)}>'\n"
+        s += f" '</{fan(element.name)}>')\n"
         s += self.convert_attributes(element)
         return s
 
@@ -67,15 +66,15 @@ class DTDConverter(object):
         return s
 
     def convert_attributes(self, element) -> str:
-        s = f"<{fan(element.name)}_attributes> ::= "
-        s += " | ".join(self.convert_attribute(attribute) for attribute in element.iterattributes())
+        s = f"<{fan(element.name)}_attribute> ::= "
+        s += "\n    | ".join(self.convert_attribute(attribute) for attribute in element.iterattributes())
         return s
 
     def convert_attribute(self, attribute) -> str:
         s = f"'{fan(attribute.name)}='"
         match attribute.type:
             case "enumeration":
-                values = " (" + " | ".join(repr(value) for value in attribute.itervalues()) + ")"
+                values = " (" + " | ".join(repr(str(value)) for value in attribute.itervalues()) + ")"
                 s += values
             case _:
                 s += f" <{fan(attribute.type)}> "
@@ -88,15 +87,29 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "files",
+        "-i", "--id",
+        dest="ids",
+        action="append",
+        type=str,
+        help="schema ID (e.g. '-//W3C//DTD SVG 1.1//EN')"
+    )
+    parser.add_argument(
+        dest="files",
+        action="append",
         type=argparse.FileType('r'),
-        nargs="+",
         help="schema file"
     )
 
     args = parser.parse_args(sys.argv[1:])
 
-    for file in args.files:
-        converter = DTDConverter(etree.DTD(file))
+    for id in args.ids or []:
+        tree = etree.DTD(external_id=bytes(id, 'ascii'))
+        converter = DTDConverter(tree)
+        print(f"# Automatically generated from {id!r} by schema2fan. Do not edit.")
+        print(converter.convert())
+
+    for file in args.files or []:
+        tree = etree.DTD(file)
+        converter = DTDConverter(tree)
         print(f"# Automatically generated from {file.name!r} by schema2fan. Do not edit.")
         print(converter.convert())
