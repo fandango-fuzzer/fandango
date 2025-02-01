@@ -17,6 +17,10 @@ class DTDConverter(object):
     """Convert a DTD schema to a Fandango grammar."""
     def __init__(self, dtd):
         self.dtd = dtd
+        self.entities = {}
+        for entity in dtd.iterentities():
+            # print(f"name = {entity.name}, orig = {entity.orig}, content = {entity.content}")
+            self.entities[entity.name] = entity.content
 
     def convert(self, indent=0) -> str:
         s = ""
@@ -74,7 +78,7 @@ class DTDConverter(object):
         s = f"'{fan(attribute.name)}='"
         match attribute.type:
             case "enumeration":
-                values = " (" + " | ".join(repr(str(value)) for value in attribute.itervalues()) + ")"
+                values = " (" + " | ".join(repr(repr(value)) for value in attribute.itervalues()) + ")"
                 s += values
             case _:
                 s += f" <{fan(attribute.type)}> "
