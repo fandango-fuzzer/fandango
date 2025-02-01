@@ -5,7 +5,7 @@ from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.parse import parse
 
 
-def is_syntactically_valid_uvl(xml_string):
+def is_syntactically_valid_uvl(uvl_string):
     try:
         return True
     except Exception:
