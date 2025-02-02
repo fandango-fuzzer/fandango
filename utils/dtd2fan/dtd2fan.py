@@ -61,7 +61,7 @@ class DTDConverter(object):
         if values:
             s += f'\n\n# {element.name} attribute types'
         for value in values:
-            s += f"\n<{element.name}_{value}> ::= <{value}>"
+            s += f"\n<{fan(element.name)}_{value}> ::= <{value}>"
         return s
 
     def convert_content(self, content):
@@ -120,12 +120,12 @@ class DTDConverter(object):
 
         match attribute.type:
             case "enumeration":
-                values = " <ws> <q> (" + " | ".join(f"{value!r}" for value in attribute.itervalues()) + ") <q>"
+                values = " <q> (" + " | ".join(f"{value!r}" for value in attribute.itervalues()) + ") <q>"
                 s += values
             case _:
                 value = fan(attribute.name + '_value')
                 self.attribute_types[value] = f"<{attribute.type}>"
-                s += f" <{attribute.elemname}_{value}> "
+                s += f" <{fan(attribute.elemname)}_{value}> "
 
         s += f"  # {attribute.default}"
         if attribute.default_value:
