@@ -23,6 +23,8 @@ class DTDConverter(object):
             # print(f"name = {entity.name}, orig = {entity.orig}, content = {entity.content}")
             self.entities[entity.name] = entity.content
 
+        self.attribute_types = {}
+
     def header(self):
         s = f"""
 # This file contains a Fandango grammar for a DTD schema.
@@ -34,17 +36,32 @@ class DTDConverter(object):
         return s
 
     def convert(self) -> str:
+        self.attribute_types = {}
+
         s = self.header()
         for element in self.dtd.iterelements():
             s += self.convert_element(element)
+
+        types = list(self.attribute_types)
+        types.sort()
+        if types:
+            s += f'\n\n# Attribute types, to be further refined'
+        for tp in types:
+            s += f"\n<{tp}> ::= {self.attribute_types[tp]}"
+
         return s
 
     def convert_element(self, element) -> str:
-        s = f"\n\n# {element.name}\n"
+        s = f"\n\n# {element.name} ({element.type})\n"
         s += f"<{fan(element.name)}> ::= '<{element.name}' (<ws> <{fan(element.name)}_attribute>)* ('/>' | '>' "
         s += self.convert_content(element.content)
         s += f" '</{fan(element.name)}>')\n"
-        s += self.convert_attributes(element)
+        attrs, values = self.convert_attributes(element)
+        s += attrs
+        if values:
+            s += f'\n\n# {element.name} attribute types'
+        for value in values:
+            s += f"\n<{element.name}_{value}> ::= <{value}>"
         return s
 
     def convert_content(self, content):
@@ -80,23 +97,41 @@ class DTDConverter(object):
 
         return s
 
-    def convert_attributes(self, element) -> str:
+    def convert_attributes(self, element) -> tuple[str, list[str]]:
         s = f"<{fan(element.name)}_attribute> ::= "
-        s += "\n    | ".join(self.convert_attribute(attribute) for attribute in element.iterattributes())
-        return s
 
-    def convert_attribute(self, attribute) -> str:
+        attrs = []
+        values = []
+        for attribute in element.iterattributes():
+            attr, value = self.convert_attribute(attribute)
+            attrs.append(attr)
+            if value:
+                values.append(value)
+
+        s += "\n    | ".join(attrs)
+        return s, values
+
+    def convert_attribute(self, attribute) -> tuple[str, str | None]:
+        value = None
         s = f"'{fan(attribute.name)}='"
+        if attribute.default == "fixed":
+            s += f" <q> {attribute.default_value!r} <q>"
+            return s, None
+
         match attribute.type:
             case "enumeration":
                 values = " <ws> <q> (" + " | ".join(f"{value!r}" for value in attribute.itervalues()) + ") <q>"
                 s += values
             case _:
-                s += f" <{fan(attribute.type)}> "
+                value = fan(attribute.name + '_value')
+                self.attribute_types[value] = f"<{attribute.type}>"
+                s += f" <{attribute.elemname}_{value}> "
 
-        s += f"  # {attribute.default}, default = {repr(attribute.default_value)}"
+        s += f"  # {attribute.default}"
+        if attribute.default_value:
+            s += f"; default {attribute.default_value!r}"
 
-        return s
+        return s, value
 
 
 if __name__ == "__main__":
