@@ -16,9 +16,9 @@ class Symbol(abc.ABC):
         self.type = type_
         self._is_regex = False
 
-    def check(self, word: str) -> int:
-        """Return # of characters matched by `word`"""
-        return 0
+    def check(self, word: str) -> tuple[bool, int]:
+        """Return (True, # of characters matched by `word`), or (False, 0)"""
+        return False, 0
 
     def check_all(self, word: str) -> bool:
         """Return True if `word` matches"""
@@ -100,10 +100,10 @@ class Terminal(Symbol):
     def from_number(number: str) -> "Terminal":
         return Terminal(Terminal.clean(number))
 
-    def check(self, word: str | int) -> int:
-        """Return # characters matched by `word`"""
+    def check(self, word: str | int) -> tuple[bool, int]:
+        """Return (True, # characters matched by `word`), or (False, 0)"""
         if isinstance(self.symbol, int) or isinstance(word, int):
-            return 1 if self.check_all(word) else 0
+            return self.check_all(word), 1
 
         # LOGGER.debug(f"Checking {self.symbol!r} against {word!r}")
         symbol = self.symbol
@@ -122,14 +122,14 @@ class Terminal(Symbol):
             match = re.match(symbol, word)
             if match:
                 # LOGGER.debug(f"It's a match: {match.group(0)!r}")
-                return len(match.group(0))
+                return True, len(match.group(0))
         else:
             if word.startswith(symbol):
                 # LOGGER.debug(f"It's a match: {symbol!r}")
-                return len(symbol)
+                return True, len(symbol)
 
         # LOGGER.debug(f"No match")
-        return 0
+        return False, 0
 
 
     def check_all(self, word: str | int) -> bool:
