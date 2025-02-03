@@ -65,9 +65,3 @@ test = [
 [tool.black]
 line-length = 88
 target-version = ['py311']
-
-[tool.poetry]
-packages = [
-    { include = "fandango", from = "src" },
-    { include = "evaluation", from = "evaluation" }
-]
