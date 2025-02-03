@@ -465,14 +465,14 @@ class Fandango:
         evaluation = self.evaluate_individual(individual)
         failing_trees = evaluation[1]
         for failing_tree in failing_trees:
+            if failing_tree.tree.read_only:
+                continue
             for operator, value, side in failing_tree.suggestions:
-                if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
+                if operator == Comparison.EQUAL and side == ComparisonSide.RIGHT:
                     suggested_tree = self.grammar.parse(
                         str(value), failing_tree.tree.symbol
                     )
                     if suggested_tree is None:
-                        continue
-                    if failing_tree.tree.read_only:
                         continue
                     individual = individual.replace(failing_tree.tree, suggested_tree)
                     self.fixes_made += 1
