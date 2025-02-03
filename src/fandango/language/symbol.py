@@ -1,6 +1,7 @@
 import abc
 import enum
 import re
+from fandango.logger import LOGGER
 
 
 class SymbolType(enum.Enum):
@@ -15,10 +16,12 @@ class Symbol(abc.ABC):
         self.type = type_
         self._is_regex = False
 
-    def check(self, word: str) -> bool:
-        return False
+    def check(self, word: str) -> int:
+        """Return # of characters matched by `word`"""
+        return 0
 
     def check_all(self, word: str) -> bool:
+        """Return True if `word` matches"""
         return False
 
     @property
@@ -97,10 +100,12 @@ class Terminal(Symbol):
     def from_number(number: str) -> "Terminal":
         return Terminal(Terminal.clean(number))
 
-    def check(self, word: str | int) -> bool:
+    def check(self, word: str | int) -> int:
+        """Return # characters matched by `word`"""
         if isinstance(self.symbol, int) or isinstance(word, int):
-            return self.check_all(word)
+            return 1 if self.check_all(word) else 0
 
+        # LOGGER.debug(f"Checking {self.symbol!r} against {word!r}")
         symbol = self.symbol
 
         if isinstance(self.symbol, bytes) and isinstance(word, str):
@@ -114,9 +119,18 @@ class Terminal(Symbol):
         assert isinstance(word, str)
 
         if self.is_regex:
-            return re.match(symbol, word) is not None
+            match = re.match(symbol, word)
+            if match:
+                # LOGGER.debug(f"It's a match: {match.group(0)!r}")
+                return len(match.group(0))
         else:
-            return word.startswith(symbol)
+            if word.startswith(symbol):
+                # LOGGER.debug(f"It's a match: {symbol!r}")
+                return len(symbol)
+
+        # LOGGER.debug(f"No match")
+        return 0
+
 
     def check_all(self, word: str | int) -> bool:
         return word == self.symbol
