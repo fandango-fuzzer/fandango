@@ -38,7 +38,7 @@ class Client(FandangoAgent):
 class ServerA(FandangoAgent):
 
         def __init__(self):
-            super().__init__(False)
+            super().__init__(True)
 
         def on_send(self, message: str, recipient: str, response_setter: Callable[[str, str], None]):
             x = requests.post("http://127.0.0.1:8081/api/hello", json = json.loads(message))
@@ -47,4 +47,4 @@ class ServerA(FandangoAgent):
 class ServerB(FandangoAgent):
 
         def __init__(self):
-            super().__init__(False)
+            super().__init__(True)
