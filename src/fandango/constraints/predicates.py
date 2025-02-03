@@ -1,4 +1,5 @@
 from fandango.language.tree import DerivationTree
+import re
 
 actual_int = int
 actual_float = float
@@ -96,3 +97,18 @@ def is_inside(tree: DerivationTree, inside_tree: DerivationTree):
     if inside_tree.find_all_nodes(tree.symbol):
         return True
     return False
+
+
+def str_contains(tree: DerivationTree, str_: str):
+    """
+    Check if the tree contains a real substring.
+    If the string is the same as the tree, it returns False.
+    """
+    if not isinstance(str_, str):
+        return False
+
+    if str_ == str(tree):
+        return False
+
+    return str_ in str(tree)
+
