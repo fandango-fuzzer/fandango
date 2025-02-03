@@ -1357,7 +1357,7 @@ class Grammar(NodeVisitor):
             )
 
         if isinstance(string, tuple):
-            return DerivationTree.from_sub_tree(string)
+            return DerivationTree.from_tree(string)
         else:
             tree = self.parse(string, symbol)
         if tree is None:
