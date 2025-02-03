@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fandango-fuzzer"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
     { name = "José Antonio Zamudio Amaya", email = "jose.zamudio@cispa.de" },
     { name = "Marius Smytzek", email = "marius.smytzek@cispa.de" },
@@ -50,10 +50,7 @@ test = [
     "pytest-cov>=4.1.0",
     "pytest-html>=3.2.0",
     "pytest-rerunfailures>=11.1.2",
-    "parameterized>=0.8.1"
-]
-
-evaluation = [
+    "parameterized>=0.8.1",
     "Faker>=30.4.0",
     "docutils>=0.20.1",  # Jupyter-book needs docutils<=0.20
     "tccbox",
@@ -72,5 +69,5 @@ target-version = ['py311']
 [tool.poetry]
 packages = [
     { include = "fandango", from = "src" },
-    { include = "evaluation", from = "src" }
+    { include = "evaluation", from = "evaluation" }
 ]
