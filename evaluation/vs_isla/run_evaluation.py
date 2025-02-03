@@ -1,4 +1,5 @@
 import random
+import sys
 from typing import Tuple
 
 from evaluation.vs_isla.csv_evaluation.csv_evaluation import evaluate_csv
@@ -28,16 +29,29 @@ def better_print_results(
     print("")
 
 
-def run_evaluation(seconds: int = 3600, random_seed: int = 1):
+def run_evaluation(time: int = 3600):
+    seconds = 3600
+    random_seed = 1
+
+    if time is not None:
+        seconds = int(time)
+        print(f"Running evaluation with a time limit of {seconds} seconds.")
+    else:
+        print("Running evaluation with default settings (1 hour).")
+
     # Set the random seed
     random.seed(random_seed)
 
-    better_print_results(evaluate_csv(seconds))
-    better_print_results(evaluate_rest(seconds))
-    better_print_results(evaluate_scriptsizec(seconds))
-    better_print_results(evaluate_tar(seconds))
-    better_print_results(evaluate_xml(seconds))
+    try:
+        better_print_results(evaluate_csv(seconds))
+        better_print_results(evaluate_rest(seconds))
+        better_print_results(evaluate_scriptsizec(seconds))
+        better_print_results(evaluate_tar(seconds))
+        better_print_results(evaluate_xml(seconds))
+    except Exception as e:
+        raise e
 
 
 if __name__ == "__main__":
-    run_evaluation(1)
+    arg = sys.argv[1] if len(sys.argv) > 1 else None
+    run_evaluation(arg)
