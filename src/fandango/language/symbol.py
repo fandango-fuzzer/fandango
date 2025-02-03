@@ -136,6 +136,22 @@ class Terminal(Symbol):
         return word == self.symbol
 
     def __repr__(self):
+        if self.is_regex:
+            if isinstance(self.symbol, bytes):
+                symbol = repr(self.symbol)
+                symbol = symbol.replace(r'\\', '\\')
+                return "r" + symbol
+
+            if "'" not in self.symbol:
+                return "r'" + str(self.symbol) + "'"
+            if '"' not in self.symbol:
+                return 'r"' + str(self.symbol) + '"'
+
+            # Mixed quotes: escape single quotes
+            symbol = self.symbol.replace("'", r"\'")
+            return "r'" + str(symbol) + "'"
+
+        # Not a regex
         return repr(self.symbol)
 
     def __eq__(self, other):
