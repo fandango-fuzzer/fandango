@@ -796,13 +796,12 @@ class SearchProcessor(FandangoParserVisitor):
     def visitStrings(self, ctx: FandangoParser.StringsContext):
         if ctx.fstring():
             raise UnsupportedOperation(
-                f"Fstrings are currently not supported {ctx.getText()}"
+                f"{ctx.getText()!r}: f-strings are currently not supported"
             )
-        else:
-            string = ""
-            for child in ctx.string():
-                string += Terminal.clean(child.STRING().getText())
-            return ast.Constant(value=string), [], {}
+        string = ""
+        for child in ctx.string():
+            string += Terminal.clean(child.STRING().getText())
+        return ast.Constant(value=string), [], {}
 
     def visitTuple(self, ctx: FandangoParser.TupleContext):
         trees, searches, search_map = self.visitChildren(ctx)

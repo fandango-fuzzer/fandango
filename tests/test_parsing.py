@@ -11,7 +11,7 @@ class ParserTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.file = open("tests/resources/fandango.fan")
-        cls.grammar, _ = parse(cls.file, use_stdlib=False)
+        cls.grammar, _ = parse(cls.file, use_stdlib=False, use_cache=False)
 
     def test_rules(self):
         self.assertEqual(len(self.grammar._parser._rules), 4)
@@ -82,7 +82,7 @@ class TestComplexParsing(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.file = open("tests/resources/constraints.fan", "r")
-        cls.grammar, _ = parse(cls.file, use_stdlib=False)
+        cls.grammar, _ = parse(cls.file, use_stdlib=False, use_cache=False)
 
     def _test(self, example, tree):
         actual_tree = self.grammar.parse(example, "<ab>")
@@ -159,7 +159,7 @@ class TestIncompleteParsing(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.file = open("tests/resources/incomplete.fan", "r")
-        cls.grammar, _ = parse(cls.file, use_stdlib=False)
+        cls.grammar, _ = parse(cls.file, use_stdlib=False, use_cache=False)
 
     def _test(self, example, tree):
         parsed = False
