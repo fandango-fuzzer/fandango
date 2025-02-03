@@ -128,9 +128,60 @@ When implementing a format, be sure to follow its conventions regarding
 * _byte ordering_ (most or least significant byte first)
 ```
 
-```{error}
-Note that _parsing_ binary inputs (and hence mutating them) is not available yet.
+
+## Parsing Bits
+
+Fandango also supports [parsing](sec:parsing) inputs with bits.
+This is what happens if we send a byte `\xf0` (the upper four bits set) to the parser:
+
+```shell
+$ echo -n '\xf0' | fandango parse -f bits.fan -o - --format=bits
 ```
+
+```{code-cell}
+:tags: ["remove-input"]
+!echo -n '\xf0' | fandango parse -f bits.fan -o - --format=bits
+assert _exit_code == 0
+```
+
+We see that the input was properly parsed and decomposed into individual bits.
+
+This is the resulting parse tree:
+
+```{code-cell}
+:tags: ["remove-input"]
+from Tree import Tree
+tree = Tree('<start>', Tree('<format_flag>',
+  Tree('<italic>', Tree('<bit>', Tree(1))),
+  Tree('<bold>', Tree('<bit>', Tree(1))),
+  Tree('<underlined>', Tree('<bit>', Tree(1))),
+  Tree('<strikethrough>', Tree('<bit>', Tree(1))),
+  Tree('<brightness>',
+    Tree('<bit>', Tree(0)),
+    Tree('<bit>', Tree(0)),
+    Tree('<bit>', Tree(0)),
+    Tree('<bit>', Tree(0))
+  )
+))
+tree.visualize()
+```
+
+The `grammar` format shows us that the values are properly assigned:
+
+```shell
+$ echo -n '\xf0' | fandango parse -f bits.fan -o - --format=grammar
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!echo -n '\xf0' | fandango parse -f bits.fan -o - --format=grammar
+assert _exit_code == 0
+```
+
+:::{warning}
+To parse bits properly, they must come in multiples of eight.
+:::
+
 
 ## Bits and Padding
 

@@ -195,10 +195,11 @@ class DerivationTree:
         """
         Convert the derivation tree to a string.
         """
-        if self.contains_bits() or self.contains_bytes():
-            LOGGER.warning(
-                "Converting a derivation tree with binary elements into a string"
-            )
+        # Turn off warning for now; too many false alarms -- AZ
+        # if self.contains_bits() or self.contains_bytes():
+        #     LOGGER.warning(
+        #         "Converting a derivation tree with binary elements into a string"
+        #     )
 
         try:
             return self.to_bytes(encoding="utf-8").decode("utf-8")
@@ -245,23 +246,59 @@ class DerivationTree:
         s += ")"
         return s
 
-    def to_grammar(self, indent=0, start_indent=0) -> str:
+    def to_grammar(self, include_position=True) -> str:
         """
         Output the derivation tree as (specialized) grammar
         """
-        assert isinstance(self.symbol.symbol, str)
+        bit_count = -1
+        byte_count = 0
 
-        s = "  " * start_indent + f"{self.symbol.symbol} ::="
-        for child in self._children:
-            if child.symbol.is_non_terminal:
-                s += f" {child.symbol.symbol}"
-            else:
-                s += " " + repr(child.symbol.symbol)
+        def _to_grammar(node, indent=0, start_indent=0) -> str:
+            """
+            Output the derivation tree as (specialized) grammar
+            """
+            assert isinstance(node.symbol.symbol, str)
+            nonlocal bit_count, byte_count, include_position
 
-        for child in self._children:
-            if child.symbol.is_non_terminal:
-                s += "\n" + child.to_grammar(indent + 1, start_indent=indent + 1)
-        return s
+            s = "  " * start_indent + f"{node.symbol.symbol} ::="
+            have_nonterminal = False
+
+            position = f"  # Position {hex(byte_count)} ({byte_count})"
+            max_bit_count = bit_count - 1
+
+            for child in node._children:
+                if child.symbol.is_non_terminal:
+                    s += f" {child.symbol.symbol}"
+                else:
+                    s += " " + repr(child.symbol.symbol)
+                    have_nonterminal = True
+
+                    if isinstance(child.symbol.symbol, int):
+                        if bit_count < 0:
+                            bit_count = 7
+                            max_bit_count = 7
+                        else:
+                            bit_count -= 1
+                            if bit_count == 0:
+                                byte_count += 1
+                    else:
+                        byte_count += len(child.symbol.symbol)
+                        bit_count = -1
+
+            if include_position and have_nonterminal:
+                s += position
+                if bit_count >= 0:
+                    if max_bit_count != bit_count:
+                        s += f", bits {max_bit_count}-{bit_count}"
+                    else:
+                        s += f", bit {bit_count}"
+
+            for child in node._children:
+                if child.symbol.is_non_terminal:
+                    s += "\n" + _to_grammar(child, indent + 1, start_indent=indent + 1)
+            return s
+
+        return _to_grammar(self)
 
     def __repr__(self):
         return self.to_string()
