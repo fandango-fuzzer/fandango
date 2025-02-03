@@ -44,18 +44,41 @@ def make_comment(comment: str) -> str:
     return f"# {comment}\n"
 
 
+stdlib += make_header("Any character")
+any_char = make_rule("char", ["r'(.|\\n)'"])
+stdlib += any_char
+
+
 stdlib += make_header("Printable characters")
 printable = make_def("printable", string.printable)
 printable += make_def("whitespace", string.whitespace)
-printable += make_def("digit", string.digits)
-printable += make_def("hexdigit", string.hexdigits)
-printable += make_def("octdigit", string.octdigits)
-printable += make_def("ascii_letter", string.ascii_letters)
-printable += make_def("ascii_lowercase_letter", string.ascii_lowercase)
-printable += make_def("ascii_uppercase_letter", string.ascii_uppercase)
+
+# printable += make_def("digit", string.digits)
+printable += make_rule("digit", ["r'[0-9]'"])
+
+# printable += make_def("hexdigit", string.hexdigits)
+printable += make_rule("hexdigit", ["r'[0-9a-fA-F]'"])
+
+# printable += make_def("octdigit", string.octdigits)
+printable += make_rule("octdigit", ["r'[0-7]'"])
+
+# printable += make_def("ascii_letter", string.ascii_letters)
+printable += make_rule("ascii_letter", ["r'[a-zA-Z]'"])
+
+# printable += make_def("ascii_lowercase_letter", string.ascii_lowercase)
+printable += make_rule("ascii_lowercase_letter", ["r'[a-z]'"])
+
+# printable += make_def("ascii_uppercase_letter", string.ascii_uppercase)
+printable += make_rule("ascii_uppercase_letter", ["r'[A-Z]'"])
+
 printable += make_def("punctuation", string.punctuation)
-printable += make_def("alphanum", string.ascii_letters + string.digits)
-printable += make_def("alphanum_", string.ascii_letters + string.digits + "_")
+
+# printable += make_def("alphanum", string.ascii_letters + string.digits)
+printable += make_rule("alphanum", ["r'[a-zA-Z0-9]'"])
+
+# printable += make_def("alphanum_", string.ascii_letters + string.digits + "_")
+printable += make_rule("alphanum", ["r'[a-zA-Z0-9_]'"])
+
 stdlib += printable
 
 stdlib += make_header("ASCII characters")
