@@ -801,8 +801,8 @@ class Grammar(NodeVisitor):
             bit_count = -1  # If > 0, indicates the next bit to be scanned (7-0)
 
             while k < len(table) and w <= len(word):
-                scanned = False
-                match_length = 0
+                scanned = 0
+
                 for state in table[k]:
                     if w >= len(word):
                         if allow_incomplete:
@@ -832,8 +832,7 @@ class Grammar(NodeVisitor):
                                 )
                                 if match:
                                     # LOGGER.debug(f"Scanned bit {state} at position {hex(w)} ({w}) {word[w:]!r}")
-                                    scanned = True
-                                    match_length = 1
+                                    scanned = 1
                             else:
                                 # Scan a byte
                                 if 0 <= bit_count <= 7:
@@ -848,21 +847,20 @@ class Grammar(NodeVisitor):
                                     # to scanning bytes here.
                                     # LOGGER.warning(f"Position {hex(w)} ({w}): Parsing a byte while expecting bit {bit_count}. Check if bits come in multiples of eight")
                                     bit_count = -1
-                                    pass
 
                                 match, match_length = \
                                     self.scan_bytes(state, word, table, k, w)
                                 if match:
                                     # LOGGER.debug(f"Scanned {match_length} byte(s) {state} at position {hex(w)} ({w}) {word[w:]!r}")
-                                    scanned = True
+                                    scanned = max(scanned, match_length)
 
-                if scanned:
+                if scanned > 0:
                     if bit_count >= 0:
                         # Advance by one bit
                         bit_count -= 1
                     if bit_count < 0:
                         # Advance to next byte
-                        w += match_length
+                        w += scanned
 
                 k += 1
 
