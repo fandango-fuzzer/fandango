@@ -733,7 +733,11 @@ def output_population(population, args, file_mode=None, *, output_on_stdout=True
             sep = False
             for individual in population:
                 if sep:
-                    fd.write(args.separator)
+                    fd.write(
+                        args.separator.encode("utf-8")
+                        if file_mode == "binary"
+                        else args.separator
+                    )
                 fd.write(output(individual, args, file_mode))
                 sep = True
 
@@ -789,9 +793,8 @@ def report_syntax_error(
 
     mismatch = repr(individual[position])
     if binary:
-        return f"{filename!r}, position {position}: mismatched input 0x{mismatch}"
+        return f"{filename!r}, position {hex(position)} ({position}): mismatched input 0x{mismatch}"
 
-    lines = individual.split("\n")
     line = 1
     column = 1
     for i in range(position):
@@ -828,13 +831,15 @@ def parse_file(fd, args, grammar, constraints, settings):
 
     alternative_counter = 1
     passing_tree = None
+    last_tree = None
     while tree := next(tree_gen, None):
-        LOGGER.debug(f"Trying parse alternative #{alternative_counter}")
+        LOGGER.debug(f"Checking parse alternative #{alternative_counter}")
         last_tree = tree
 
         passed = True
         for constraint in constraints:
             fitness = constraint.fitness(tree).fitness()
+            LOGGER.debug(f"Fitness: {fitness}")
             if fitness == 0:
                 passed = False
                 break
@@ -856,13 +861,13 @@ def parse_file(fd, args, grammar, constraints, settings):
         return passing_tree
 
     # Tried all alternatives
-    if tree is None:
+    if last_tree is None:
         error_pos = grammar.max_position() + 1
         raise SyntaxError(
             report_syntax_error(fd.name, error_pos, individual, binary=("b" in fd.mode))
         )
 
-    # Work with the last tree
+    # Report error for the last tree
     for constraint in constraints:
         fitness = constraint.fitness(last_tree).fitness()
         if fitness == 0:
