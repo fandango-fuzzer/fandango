@@ -44,7 +44,7 @@ jobs:
       # Step 4: Install system-level dependencies required by the project
       - name: Install system dependencies
         run: |
-          sudo apt-get update && sudo apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config
+          sudo apt-get update && sudo apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config libarchive-tools
           pip install pygraphviz
 
       # Step 5: Install Python dependencies using make and run tests
