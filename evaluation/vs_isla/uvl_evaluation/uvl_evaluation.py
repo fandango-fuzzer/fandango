@@ -23,7 +23,10 @@ def evaluate_uvl(
 
     while time.time() < time_in_an_hour:
         fandango = Fandango(
-            grammar, constraints, desired_solutions=100, logger_level=LoggerLevel.ERROR
+            grammar,
+            constraints,
+            desired_solutions=100,
+            logger_level=LoggerLevel.INFO,
         )
         fandango.evolve()
         solutions.extend(fandango.solution)
@@ -47,3 +50,7 @@ def evaluate_uvl(
         set_mean_length,
         set_medium_length,
     )
+
+
+if __name__ == "__main__":
+    print(evaluate_uvl())
