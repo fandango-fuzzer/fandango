@@ -1,5 +1,6 @@
 import abc
 import enum
+import re
 
 
 class SymbolType(enum.Enum):
@@ -12,6 +13,7 @@ class Symbol(abc.ABC):
     def __init__(self, symbol: str | bytes, type_: SymbolType):
         self.symbol = symbol
         self.type = type_
+        self._is_regex = False
 
     def check(self, word: str) -> bool:
         return False
@@ -30,6 +32,13 @@ class Symbol(abc.ABC):
     @property
     def is_implicit(self):
         return self.type == SymbolType.IMPLICIT
+
+    @property
+    def is_regex(self):
+        try:
+            return self._is_regex
+        except AttributeError:
+            return False  # for cached grammars
 
     @abc.abstractmethod
     def __hash__(self):
@@ -60,7 +69,14 @@ class Terminal(Symbol):
         return len(self.symbol)
 
     @staticmethod
+    def string_prefix(symbol: str) -> str:
+        """Return the first letters ('f', 'b', 'r', ...) of a string literal"""
+        match = re.match(r"([a-zA-Z]+)", symbol)
+        return match.group(0) if match else ""
+
+    @staticmethod
     def clean(symbol: str) -> str | bytes | int:
+        # Not sure whether any of these are necessary, as we eval() anyway
         if len(symbol) >= 2:
             if symbol[0] == symbol[-1] == "'" or symbol[0] == symbol[-1] == '"':
                 return eval(symbol)
@@ -73,7 +89,9 @@ class Terminal(Symbol):
 
     @staticmethod
     def from_symbol(symbol: str) -> "Terminal":
-        return Terminal(Terminal.clean(symbol))
+        t = Terminal(Terminal.clean(symbol))
+        t._is_regex = "r" in Terminal.string_prefix(symbol)
+        return t
 
     @staticmethod
     def from_number(number: str) -> "Terminal":
@@ -83,12 +101,22 @@ class Terminal(Symbol):
         if isinstance(self.symbol, int) or isinstance(word, int):
             return self.check_all(word)
 
-        if isinstance(self.symbol, bytes) and isinstance(word, str):
-            return word.startswith(self.symbol.decode("iso-8859-1"))
-        if isinstance(self.symbol, str) and isinstance(word, bytes):
-            return word.decode("iso-8859-1").startswith(self.symbol)
+        symbol = self.symbol
 
-        return word.startswith(self.symbol)
+        if isinstance(self.symbol, bytes) and isinstance(word, str):
+            assert isinstance(symbol, bytes)
+            symbol = symbol.decode("iso-8859-1")
+        if isinstance(self.symbol, str) and isinstance(word, bytes):
+            assert isinstance(word, bytes)
+            word = word.decode("iso-8859-1")
+
+        assert isinstance(symbol, str)
+        assert isinstance(word, str)
+
+        if self.is_regex:
+            return re.match(symbol, word) is not None
+        else:
+            return word.startswith(symbol)
 
     def check_all(self, word: str | int) -> bool:
         return word == self.symbol
