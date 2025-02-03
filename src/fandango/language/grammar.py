@@ -2,6 +2,8 @@ import abc
 import enum
 import random
 import typing
+import exrex
+
 from copy import deepcopy
 from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
 
@@ -182,7 +184,6 @@ class Repetition(Node):
         return [self.node]
 
 
-
 class Star(Repetition):
     def __init__(self, node: Node):
         super().__init__(node, 0)
@@ -254,6 +255,10 @@ class TerminalNode(Node):
         self.symbol = symbol
 
     def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
+        if self.symbol.is_regex:
+            instance = exrex.getone(self.symbol.symbol)
+            return [DerivationTree(Terminal(instance))]
+
         return [DerivationTree(self.symbol)]
 
     def accept(self, visitor: "NodeVisitor"):
@@ -819,7 +824,9 @@ class Grammar(NodeVisitor):
                                 # Scan a bit
                                 if bit_count < 0:
                                     bit_count = 7
-                                match = self.scan_bit(state, word, table, k, w, bit_count)
+                                match = self.scan_bit(
+                                    state, word, table, k, w, bit_count
+                                )
                                 if match:
                                     # LOGGER.debug(f"Scanned bit {state} at position {hex(w)} ({w}) {word[w:]!r}")
                                     scanned = True
