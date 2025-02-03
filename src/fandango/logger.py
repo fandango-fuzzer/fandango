@@ -14,8 +14,8 @@ logging.basicConfig(
 
 def print_exception(e: Exception):
     LOGGER.info(traceback.format_exc().rstrip())
-    if not LOGGER.isEnabledFor(logging.INFO):
-        print(type(e).__name__ + ":", e, file=sys.stderr)
+    # if not LOGGER.isEnabledFor(logging.INFO):
+    #     print(type(e).__name__ + ":", e, file=sys.stderr)
     if "DerivationTree" in str(e):
         print(
             "Convert <symbol> to the expected type, say 'str(<symbol>)', 'int(<symbol>)', or 'float(<symbol>)'",
