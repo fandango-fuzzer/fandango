@@ -714,7 +714,9 @@ class Grammar(NodeVisitor):
             if match_length > 0:
                 # Found a match
                 next_state = state.next()
-                next_state.children.append(DerivationTree(state.dot))
+                next_state.children.append(
+                    DerivationTree(Terminal(word[w : w + match_length]))
+                )
                 table[k + match_length].add(next_state)
                 self._max_position = max(self._max_position, w)
 
