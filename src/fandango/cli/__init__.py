@@ -733,7 +733,11 @@ def output_population(population, args, file_mode=None, *, output_on_stdout=True
             sep = False
             for individual in population:
                 if sep:
-                    fd.write(args.separator.encode("utf-8") if file_mode == "binary" else args.separator)
+                    fd.write(
+                        args.separator.encode("utf-8")
+                        if file_mode == "binary"
+                        else args.separator
+                    )
                 fd.write(output(individual, args, file_mode))
                 sep = True
 
