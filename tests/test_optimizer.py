@@ -14,9 +14,9 @@ class GeneticTest(unittest.TestCase):
         # Define a simple grammar for testing
         file = open("tests/resources/example_number.fan", "r")
         try:
-            grammar_int, constraints_int = parse(file, use_stdlib=False)
+            grammar_int, constraints_int = parse(file, use_stdlib=False, use_cache=False)
         except FileNotFoundError:
-            grammar_int, constraints_int = parse(file, use_stdlib=False)
+            grammar_int, constraints_int = parse(file, use_stdlib=False, use_cache=False)
 
         random.seed(25)  # Set random seed
 
