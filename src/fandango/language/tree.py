@@ -23,12 +23,45 @@ class DerivationTree:
         self._size = 1
         self.set_children(children or [])
         self._parent = parent
+        self.hash_cache = None
 
     def __len__(self):
         return len(self._children)
 
     def size(self):
         return self._size
+
+    @property
+    def symbol(self) -> Symbol:
+        return self._symbol
+
+    @symbol.setter
+    def symbol(self, symbol):
+        self._symbol = symbol
+        self.invalidate_hash()
+
+    @property
+    def role(self):
+        return self._role
+
+    @role.setter
+    def role(self, role: str):
+        self._role = role
+        self.invalidate_hash()
+
+    @property
+    def recipient(self):
+        return self._recipient
+
+    @recipient.setter
+    def recipient(self, recipient: str):
+        self._recipient = recipient
+        self.invalidate_hash()
+
+    def invalidate_hash(self):
+        self.hash_cache = None
+        if self._parent is not None:
+            self._parent.invalidate_hash()
 
     def set_children(self, children: List["DerivationTree"]):
         self._children = children
@@ -74,7 +107,16 @@ class DerivationTree:
         """
         Computes a hash of the derivation tree based on its structure and symbols.
         """
-        return hash((self.symbol, tuple(hash(child) for child in self._children)))
+        if self.hash_cache is None:
+            self.hash_cache = hash(
+                (
+                    self.symbol,
+                    self.role,
+                    self.recipient,
+                    tuple(hash(child) for child in self._children),
+                )
+            )
+        return self.hash_cache
 
     def __tree__(self):
         return self.symbol, [child.__tree__() for child in self._children]
