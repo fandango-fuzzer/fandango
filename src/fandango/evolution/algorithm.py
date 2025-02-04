@@ -468,7 +468,11 @@ class Fandango:
             if failing_tree.tree.read_only:
                 continue
             for operator, value, side in failing_tree.suggestions:
-                if operator == Comparison.EQUAL and side == ComparisonSide.RIGHT:
+                if operator == Comparison.EQUAL:
+                    if self.grammar.fuzzing_mode == FuzzingMode.IO and side == ComparisonSide.LEFT:
+                        continue
+                    if self.grammar.fuzzing_mode != FuzzingMode.IO and side == ComparisonSide.RIGHT:
+                        continue
                     suggested_tree = self.grammar.parse(
                         str(value), failing_tree.tree.symbol
                     )
