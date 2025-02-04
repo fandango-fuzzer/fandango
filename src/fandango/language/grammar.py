@@ -322,7 +322,7 @@ class TerminalNode(Node):
         super().__init__(NodeType.TERMINAL, 0)
         self.symbol = symbol
 
-    def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
+    def fuzz(self, grammar: "Grammar", max_nodes: int = 100, in_role: str = None) -> List[DerivationTree]:
         if self.symbol.is_regex:
             instance = exrex.getone(self.symbol.symbol)
             return [DerivationTree(Terminal(instance))]
