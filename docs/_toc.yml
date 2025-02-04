@@ -15,6 +15,7 @@ parts:
     - file: Constraints
     - file: Shell
     - file: Generators
+    - file: Regexes
     - file: Recursive
     - file: Paths
     - file: ISO8601
