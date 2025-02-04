@@ -14,9 +14,13 @@ class GeneticTest(unittest.TestCase):
         # Define a simple grammar for testing
         file = open("tests/resources/example_number.fan", "r")
         try:
-            grammar_int, constraints_int = parse(file, use_stdlib=False, use_cache=False)
+            grammar_int, constraints_int = parse(
+                file, use_stdlib=False, use_cache=False
+            )
         except FileNotFoundError:
-            grammar_int, constraints_int = parse(file, use_stdlib=False, use_cache=False)
+            grammar_int, constraints_int = parse(
+                file, use_stdlib=False, use_cache=False
+            )
 
         random.seed(25)  # Set random seed
 
@@ -124,8 +128,12 @@ class GeneticTest(unittest.TestCase):
         children = self.fandango.crossover(parent1, parent2)
 
         # Perform mutation
-        mutant1 = self.fandango.mutate(children[0])
-        mutant2 = self.fandango.mutate(children[1])
+        mutant1 = self.fandango.mutation_method.mutate(
+            children[0], self.fandango.grammar, self.fandango.evaluate_individual
+        )
+        mutant2 = self.fandango.mutation_method.mutate(
+            children[1], self.fandango.grammar, self.fandango.evaluate_individual
+        )
 
         # Check that the mutated children are of the correct type
         for child in [mutant1, mutant2]:
