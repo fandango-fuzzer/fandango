@@ -81,6 +81,9 @@ For parsing inputs, Fandango uses the Python [`re`](https://docs.python.org/3/li
 for producing inputs, Fandango uses the Python [`exrex`](https://github.com/asciimoo/exrex) module for generating strings that match regular expressions.
 All the `re` and `exrex` capabilities and limitations thus extend to Fandango.
 
+
+### Repetition Limits
+
 Most notably, `exrex` imposes a _repetition limit_ of 20 on generated strings that in principle can have arbitrary length; a `+` or `*` operator will not expand to more than 20 repetitions.
 Thus, a grammar [`infinity.fan`](infinity.fan)
 
@@ -133,6 +136,11 @@ and
 ```
 respectively.
 :::
+
+### Regular Expressions over Bytes
+
+Regular expressions can also be formed over bytes.
+See [Bytes and Regular Expressions](sec:byte-regexes) for details.
 
 
 ## Regular Expressions vs. Grammars
