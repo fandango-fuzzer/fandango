@@ -7,7 +7,7 @@ import exrex
 from copy import deepcopy
 from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
 
-from fandango.language.symbol import Implicit, NonTerminal, Symbol, Terminal
+from fandango.language.symbol import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
@@ -742,7 +742,7 @@ class Grammar(NodeVisitor):
                         if use_implicit and state.nonterminal in self._implicit_rules:
                             s.children.append(
                                 DerivationTree(
-                                    Implicit(state.nonterminal.symbol), state.children
+                                    NonTerminal(state.nonterminal.symbol), state.children
                                 )
                             )
                         else:
