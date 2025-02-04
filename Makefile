@@ -187,4 +187,4 @@ uninstall:
 
 # python -m evaluation.vs_isla.run_evaluation
 evaluate:
-	$(PYTHON) -m evaluation.vs_isla.run_evaluation 10
+	$(PYTHON) -m evaluation.vs_isla.run_evaluation 1
