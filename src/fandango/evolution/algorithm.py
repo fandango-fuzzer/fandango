@@ -8,6 +8,7 @@ from typing import List, Tuple
 
 from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
+from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
 from fandango.language.grammar import DerivationTree, Grammar
 from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
 
@@ -32,6 +33,7 @@ class Fandango:
         max_generations: int = 500,
         expected_fitness: float = 1.0,
         elitism_rate: float = 0.1,
+        crossover_method: CrossoverOperator = SimpleSubtreeCrossover(),
         crossover_rate: float = 0.8,
         tournament_size: float = 0.1,
         mutation_rate: float = 0.2,
@@ -54,6 +56,7 @@ class Fandango:
         :param max_generations: The maximum number of generations to run the algorithm.
         :param expected_fitness: The fitness value that the algorithm should aim to achieve.
         :param elitism_rate: The rate of individuals that will be preserved in the next generation.
+        :param crossover_method: The crossover operator to use.
         :param crossover_rate: The rate of individuals that will undergo crossover.
         :param mutation_rate: The rate of individuals that will undergo mutation.
         :param tournament_size: The size of the tournament selection.
@@ -81,6 +84,8 @@ class Fandango:
         self.expected_fitness = expected_fitness
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
+        self.crossover_operator = crossover_method
+
         self.tournament_size = max(2, int(population_size * tournament_size))
         self.max_generations = max_generations
         self.elitism_rate = elitism_rate
@@ -175,7 +180,7 @@ class Fandango:
             while len(new_population) < self.population_size:
                 if random.random() < self.crossover_rate:
                     parent1, parent2 = self.tournament_selection()
-                    child1, child2 = self.crossover(parent1, parent2)
+                    child1, child2 = self.crossover_operator.crossover(parent1, parent2)
                     new_population.append(child1)
                     new_population.append(child2)
                     self.crossovers_made += 1
