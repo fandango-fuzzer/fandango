@@ -4,15 +4,12 @@ import enum
 import logging
 import random
 import time
-from typing import List, Set, Tuple
-
-import deprecation
+from typing import List, Tuple
 
 from fandango.constraints.base import Constraint
-from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
-from fandango.language.grammar import DerivationTree
-from fandango.language.grammar import Grammar
-from fandango.logger import LOGGER, visualize_evaluation, clear_visualization
+from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
+from fandango.language.grammar import DerivationTree, Grammar
+from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
 
 
 class LoggerLevel(enum.Enum):
@@ -75,7 +72,7 @@ class Fandango:
         if logger_level is not None:
             LOGGER.setLevel(logger_level.value)
 
-        LOGGER.info(f"---------- Initializing FANDANGO algorithm ---------- ")
+        LOGGER.info("---------- Initializing FANDANGO algorithm ---------- ")
         self.grammar = grammar
         self.constraints = constraints
         self.population_size = population_size
@@ -104,7 +101,7 @@ class Fandango:
         self.desired_solutions = desired_solutions
 
         if initial_population is not None:
-            LOGGER.info(f"Saving the provided initial population...")
+            LOGGER.info("Saving the provided initial population...")
             self.population = []
             for individual in initial_population:
                 if isinstance(individual, str):
@@ -118,7 +115,7 @@ class Fandango:
                     self.population.append(individual)
                 else:
                     raise TypeError(
-                        f"Initial individuals must be DerivationTree or String"
+                        "Initial individuals must be DerivationTree or String"
                     )
             for i in range(self.population_size - len(self.population)):
                 self.population.append(self.mutate(self.population[i]))
@@ -145,7 +142,7 @@ class Fandango:
 
         :return: The best solution found by the algorithm.
         """
-        LOGGER.info(f"---------- Starting evolution ----------")
+        LOGGER.info("---------- Starting evolution ----------")
 
         start_time = time.time()
 
@@ -221,19 +218,19 @@ class Fandango:
         clear_visualization()
         self.time_taken = time.time() - start_time
 
-        LOGGER.info(f"---------- Evolution finished ----------")
+        LOGGER.info("---------- Evolution finished ----------")
         LOGGER.info(f"Perfect solutions found: ({len(self.solution)})")
         LOGGER.info(f"Fitness of final population: {self.fitness:.2f}")
         LOGGER.info(f"Time taken: {self.time_taken:.2f} seconds")
 
-        LOGGER.debug(f"---------- FANDANGO statistics ----------")
+        LOGGER.debug("---------- FANDANGO statistics ----------")
         LOGGER.debug(f"Fixes made: {self.fixes_made}")
         LOGGER.debug(f"Fitness checks: {self.checks_made}")
         LOGGER.debug(f"Crossovers made: {self.crossovers_made}")
         LOGGER.debug(f"Mutations made: {self.mutations_made}")
 
         if self.fitness < 1.0:
-            LOGGER.error(f"Population did not converge to a perfect population")
+            LOGGER.error("Population did not converge to a perfect population")
             if self.warnings_are_errors:
                 raise RuntimeError("Failed to find a perfect solution")
             if self.best_effort:
@@ -418,10 +415,3 @@ class Fandango:
                 individual = individual.replace(node_to_mutate, new_subtree)
                 self.mutations_made += 1
         return individual
-
-
-# Backwards compatibility
-class FANDANGO(Fandango):
-    @deprecation.deprecated(details="Use `Fandango` instead")
-    def __init__(*args, **kwargs):
-        super().__init__(*args, **kwargs)
