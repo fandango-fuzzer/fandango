@@ -18,12 +18,12 @@ class DerivationTree:
         children: Optional[List["DerivationTree"]] = None,
         parent: Optional["DerivationTree"] = None,
     ):
+        self.hash_cache = None
         self.symbol = symbol
         self._children = []
         self._size = 1
-        self.set_children(children or [])
         self._parent = parent
-        self.hash_cache = None
+        self.set_children(children or [])
 
     def __len__(self):
         return len(self._children)
@@ -38,24 +38,6 @@ class DerivationTree:
     @symbol.setter
     def symbol(self, symbol):
         self._symbol = symbol
-        self.invalidate_hash()
-
-    @property
-    def role(self):
-        return self._role
-
-    @role.setter
-    def role(self, role: str):
-        self._role = role
-        self.invalidate_hash()
-
-    @property
-    def recipient(self):
-        return self._recipient
-
-    @recipient.setter
-    def recipient(self, recipient: str):
-        self._recipient = recipient
         self.invalidate_hash()
 
     def invalidate_hash(self):
@@ -111,8 +93,6 @@ class DerivationTree:
             self.hash_cache = hash(
                 (
                     self.symbol,
-                    self.role,
-                    self.recipient,
                     tuple(hash(child) for child in self._children),
                 )
             )
