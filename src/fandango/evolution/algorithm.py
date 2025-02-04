@@ -30,6 +30,7 @@ class Fandango:
         desired_solutions: int = 0,
         initial_population: List[DerivationTree | str] = None,
         max_generations: int = 500,
+        expected_fitness: float = 1.0,
         elitism_rate: float = 0.1,
         crossover_rate: float = 0.8,
         tournament_size: float = 0.1,
@@ -51,6 +52,7 @@ class Fandango:
         :param desired_solutions: The number of perfect solutions to find before stopping the algorithm.
         :param initial_population: A list of individuals to use as the initial population.
         :param max_generations: The maximum number of generations to run the algorithm.
+        :param expected_fitness: The fitness value that the algorithm should aim to achieve.
         :param elitism_rate: The rate of individuals that will be preserved in the next generation.
         :param crossover_rate: The rate of individuals that will undergo crossover.
         :param mutation_rate: The rate of individuals that will undergo mutation.
@@ -76,6 +78,7 @@ class Fandango:
         self.grammar = grammar
         self.constraints = constraints
         self.population_size = population_size
+        self.expected_fitness = expected_fitness
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.tournament_size = max(2, int(population_size * tournament_size))
@@ -155,7 +158,7 @@ class Fandango:
                 self.fitness = 1.0
                 self.solution = self.solution[: self.population_size]
                 break
-            if self.fitness >= 0.99:
+            if self.fitness >= self.expected_fitness:
                 self.fitness = 1.0
                 self.solution = self.population[: self.population_size]
                 break
@@ -229,7 +232,7 @@ class Fandango:
         LOGGER.debug(f"Crossovers made: {self.crossovers_made}")
         LOGGER.debug(f"Mutations made: {self.mutations_made}")
 
-        if self.fitness < 1.0:
+        if self.fitness < self.expected_fitness:
             LOGGER.error("Population did not converge to a perfect population")
             if self.warnings_are_errors:
                 raise RuntimeError("Failed to find a perfect solution")
@@ -289,19 +292,14 @@ class Fandango:
     def evaluate_individual(
         self, individual: DerivationTree
     ) -> Tuple[float, List[FailingTree]]:
-        """
-        Evaluate the fitness of an individual.
+        key = hash(individual)  # Use the custom hash instead of str(individual)
+        if key in self.fitness_cache:
+            if self.fitness_cache[key][0] >= self.expected_fitness:
+                self.solution.append(individual)
+            return self.fitness_cache[key]
 
-        :param individual: The individual to evaluate.
-        :return: The fitness of the individual and the list of failing trees.
-        """
         fitness = 0.0
         failing_trees = []
-
-        if str(individual) in self.fitness_cache:
-            if self.fitness_cache[str(individual)][0] >= 0.99:
-                self.solution.append(individual)
-            return self.fitness_cache[str(individual)]
 
         for constraint in self.constraints:
             result = constraint.fitness(individual)
@@ -312,16 +310,15 @@ class Fandango:
                 fitness += result.fitness()
             self.checks_made += 1
 
-        # Normalize fitness
         try:
             fitness /= len(self.constraints)
         except ZeroDivisionError:
             fitness = 1.0
 
-        if fitness >= 0.99:
+        if fitness >= self.expected_fitness:
             self.solution.append(individual)
 
-        self.fitness_cache[str(individual)] = [fitness, failing_trees]
+        self.fitness_cache[key] = [fitness, failing_trees]
         return fitness, failing_trees
 
     def evaluate_population(
