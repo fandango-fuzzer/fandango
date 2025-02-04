@@ -19,10 +19,10 @@ class DerivationTree:
         parent: Optional["DerivationTree"] = None,
     ):
         self.hash_cache = None
+        self._parent = parent
         self.symbol = symbol
         self._children = []
         self._size = 1
-        self._parent = parent
         self.set_children(children or [])
 
     def __len__(self):
@@ -50,11 +50,13 @@ class DerivationTree:
         self._size = 1 + sum(child.size() for child in self._children)
         for child in self._children:
             child._parent = self
+        self.invalidate_hash()
 
     def add_child(self, child: "DerivationTree"):
         self._children.append(child)
         self._size += child.size()
         child._parent = self
+        self.invalidate_hash()
 
     def find_all_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
         trees = sum(
