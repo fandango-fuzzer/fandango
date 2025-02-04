@@ -44,7 +44,7 @@ class Fandango:
         warnings_are_errors: bool = False,
         best_effort: bool = False,
         random_seed: int = None,
-        start_symbol="<start>",
+        start_symbol: str = "<start>",
     ):
         """
         Initialize the FANDANGO genetic algorithm. The algorithm will evolve a population of individuals
