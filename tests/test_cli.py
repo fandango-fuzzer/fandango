@@ -1,3 +1,4 @@
+
 import unittest
 import subprocess
 import os
@@ -103,4 +104,12 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         self.assertEqual(expected, err)
 
 
-
+    def test_parse(self):
+        command = ["fandango", "parse", "-f",
+                   "tests/resources/rgb.fan",
+                   "tests/resources/rgb.txt"]
+        expected = ""
+        out, err, code = self.run_command(command)
+        self.assertEqual(0, code)
+        self.assertEqual("", out)
+        self.assertEqual(expected, err)
