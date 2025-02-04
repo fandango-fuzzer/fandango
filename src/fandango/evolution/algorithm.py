@@ -188,11 +188,15 @@ class Fandango:
             new_population = new_population[: self.population_size]
 
             # Mutation
+            mutated_population = []
             for individual in new_population:
                 if random.random() < self.mutation_rate:
-                    new_population.remove(individual)
-                    new_population.append(self.mutate(individual))
+                    mutated_individual = self.mutate(individual)
+                    mutated_population.append(mutated_individual)
                     self.mutations_made += 1
+                else:
+                    mutated_population.append(individual)
+            new_population = mutated_population
 
             # Destruction
             if self.destruction_rate > 0:
