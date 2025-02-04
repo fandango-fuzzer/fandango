@@ -138,7 +138,8 @@ respectively.
 ## Regular Expressions vs. Grammars
 
 :::{margin}
-If it weren't for some regular expression features such as _backreferences_ (check out what `(?P=name)` does), the context-free grammars would be a strict superset of regular expressions - anything that can be expressed in a regular expression can also be expressed in an equivalent grammar.
+In theory, context-free grammars are a strict _superset_ of regular expressions - any language that can be expressed in a regular expression can also be expressed in an equivalent grammar.
+Practical implementations of regular expressions break this hierarchy by introducing some features such as _backreferences_ (check out what `(?P=name)` does), which cannot be expressed in grammars.
 :::
 
 In many cases, a grammar can be replaced by a regular expression and vice versa.
@@ -151,7 +152,8 @@ Here are some points to help you decide.
 * If your underlying language separates lexical and syntactical processing, use
     - _regular expressions_ for specifying _lexical_ parts such as tokens and fragments;
     - a _grammar_ for the _syntax_; and
-    - [constraints](Constraints.md) for _semantic_ properties.
+    - [constraints](Constraints.md) for any semantic properties.
+* Prefer grammars and constraints over overly complex regular expressions.
 
 
 :::{warning}
