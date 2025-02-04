@@ -349,13 +349,11 @@ class Fandango:
         ]
 
     def tournament_selection(self) -> Tuple[DerivationTree, DerivationTree]:
-        """
-        Perform tournament selection to choose two parents for crossover.
-        """
         tournament = random.sample(self.evaluation, k=self.tournament_size)
         tournament.sort(key=lambda x: x[1], reverse=True)
         parent1 = tournament[0][0]
-        parent2 = tournament[1][0]
+        # Ensure parent2 is not the same as parent1
+        parent2 = tournament[1][0] if tournament[1][0] != parent1 else tournament[2][0]
         return parent1, parent2
 
     # noinspection PyMethodMayBeStatic
