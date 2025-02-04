@@ -9,6 +9,7 @@ from typing import List, Tuple
 from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
 from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
+from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.language.grammar import DerivationTree, Grammar
 from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
 
@@ -36,6 +37,7 @@ class Fandango:
         crossover_method: CrossoverOperator = SimpleSubtreeCrossover(),
         crossover_rate: float = 0.8,
         tournament_size: float = 0.1,
+        mutation_method: MutationOperator = SimpleMutation(),
         mutation_rate: float = 0.2,
         destruction_rate: float = 0.0,
         logger_level: LoggerLevel = None,
@@ -58,6 +60,7 @@ class Fandango:
         :param elitism_rate: The rate of individuals that will be preserved in the next generation.
         :param crossover_method: The crossover operator to use.
         :param crossover_rate: The rate of individuals that will undergo crossover.
+        :param mutation_method: The mutation operator to use.
         :param mutation_rate: The rate of individuals that will undergo mutation.
         :param tournament_size: The size of the tournament selection.
         :param destruction_rate: The rate of individuals that will be destroyed.
@@ -82,9 +85,12 @@ class Fandango:
         self.constraints = constraints
         self.population_size = population_size
         self.expected_fitness = expected_fitness
-        self.mutation_rate = mutation_rate
+
         self.crossover_rate = crossover_rate
         self.crossover_operator = crossover_method
+
+        self.mutation_method = mutation_method
+        self.mutation_rate = mutation_rate
 
         self.tournament_size = max(2, int(population_size * tournament_size))
         self.max_generations = max_generations
@@ -191,7 +197,9 @@ class Fandango:
             mutated_population = []
             for individual in new_population:
                 if random.random() < self.mutation_rate:
-                    mutated_individual = self.mutate(individual)
+                    mutated_individual = self.mutation_method.mutate(
+                        individual, self.grammar, self.evaluate_individual
+                    )
                     mutated_population.append(mutated_individual)
                     self.mutations_made += 1
                 else:
@@ -399,23 +407,3 @@ class Fandango:
         child2 = parent2.replace(node2, copy.deepcopy(node1))
 
         return child1, child2
-
-    def mutate(self, individual: DerivationTree) -> DerivationTree:
-        """
-        Perform mutation on an individual to generate a new individual based on the failing trees.
-        """
-        failing_trees = self.evaluate_individual(individual)[1]
-        selection = []
-
-        for failing_tree in failing_trees:
-            selection.append(failing_tree.tree)
-
-        if len(selection) == 0:
-            return individual
-        else:
-            node_to_mutate = random.choice(selection)
-            if node_to_mutate.symbol.is_non_terminal:
-                new_subtree = self.grammar.fuzz(node_to_mutate.symbol)
-                individual = individual.replace(node_to_mutate, new_subtree)
-                self.mutations_made += 1
-        return individual

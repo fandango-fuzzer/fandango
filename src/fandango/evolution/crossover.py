@@ -1,15 +1,17 @@
 import copy
 import random
+from abc import ABC, abstractmethod
 from typing import Tuple
 
 from fandango.language.tree import DerivationTree
 
 
-class CrossoverOperator:
+class CrossoverOperator(ABC):
+    @abstractmethod
     def crossover(
         self, parent1: DerivationTree, parent2: DerivationTree
     ) -> Tuple[DerivationTree, DerivationTree]:
-        raise NotImplementedError
+        pass
 
 
 class SimpleSubtreeCrossover(CrossoverOperator):
