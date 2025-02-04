@@ -1357,9 +1357,8 @@ class Grammar(NodeVisitor):
             )
 
         if isinstance(string, tuple):
-            return DerivationTree.from_tree(string)
-        else:
-            tree = self.parse(string, symbol)
+            string = str(DerivationTree.from_tree(string))
+        tree = self.parse(string, symbol)
         if tree is None:
             raise ValueError(
                 f"Failed to parse generated string: {string} for {symbol} with generator {self.generators[symbol]}"
