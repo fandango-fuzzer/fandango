@@ -330,17 +330,12 @@ class Fandango:
             # _extract_k_paths_from_tree should return a set of tuples representing k-paths.
             paths = self.grammar._extract_k_paths_from_tree(tree, k)
             ind_kpaths[idx] = paths
-            print(f"Individual {idx} k-paths: {paths}")
 
         # Build a frequency map for each k-path across the entire population.
         frequency: Dict[tuple, int] = {}
         for paths in ind_kpaths.values():
             for path in paths:
                 frequency[path] = frequency.get(path, 0) + 1
-
-        print("\nK-path frequency map:")
-        for path, freq in frequency.items():
-            print(f"{path}: {freq}")
 
         # Compute bonus for each individual: the average reciprocal frequency of its k-paths,
         # then multiplied by diversity_weight.
@@ -351,7 +346,6 @@ class Fandango:
             else:
                 bonus_score = 0.0
             bonus[idx] = bonus_score * self.diversity_weight
-            print(f"Individual {idx} bonus: {bonus[idx]} (raw bonus: {bonus_score})")
 
         return bonus
 
