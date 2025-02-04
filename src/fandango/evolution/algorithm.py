@@ -3,7 +3,7 @@ import enum
 import logging
 import random
 import time
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
@@ -44,6 +44,8 @@ class Fandango:
         best_effort: bool = False,
         random_seed: int = None,
         start_symbol: str = "<start>",
+        diversity_k: int = 5,
+        diversity_weight: float = 1.0,
     ):
         """
         Initialize the FANDANGO genetic algorithm. The algorithm will evolve a population of individuals
@@ -68,6 +70,8 @@ class Fandango:
         :param warnings_are_errors: If set, turns warnings into errors
         :param best_effort: If set, returns also solutions not satisfying all constraints
         :param random_seed: The random seed to use for reproducibility.
+        :param diversity_k: The k value for k-path coverage diversity bonus.
+        :param diversity_weight: The weight of the diversity bonus.
         """
         if tournament_size > 1:
             raise ValueError(
@@ -96,6 +100,9 @@ class Fandango:
         self.elitism_rate = elitism_rate
         self.destruction_rate = destruction_rate
         self.start_symbol = start_symbol
+
+        self.diversity_k = diversity_k
+        self.diversity_weight = diversity_weight
 
         self.fitness_cache = {}
 
@@ -305,6 +312,49 @@ class Fandango:
                     self.fixes_made += 1
         return individual
 
+    def compute_diversity_bonus(
+        self, individuals: List[DerivationTree]
+    ) -> Dict[int, float]:
+        """
+        Compute a diversity bonus for each individual based on the rarity of its k-paths.
+        This debug version prints the k-paths for each individual as well as their frequency.
+        The bonus for an individual is the (weighted) average of the reciprocal frequencies of
+        its k-paths in the whole population.
+        :param individuals: The list of derivation trees.
+        :return: A dictionary mapping each individual’s index in the population to its diversity bonus.
+        """
+        k = self.diversity_k
+        # For each individual, extract its set of k-paths using the grammar helper method.
+        ind_kpaths: Dict[int, set] = {}
+        for idx, tree in enumerate(individuals):
+            # _extract_k_paths_from_tree should return a set of tuples representing k-paths.
+            paths = self.grammar._extract_k_paths_from_tree(tree, k)
+            ind_kpaths[idx] = paths
+            print(f"Individual {idx} k-paths: {paths}")
+
+        # Build a frequency map for each k-path across the entire population.
+        frequency: Dict[tuple, int] = {}
+        for paths in ind_kpaths.values():
+            for path in paths:
+                frequency[path] = frequency.get(path, 0) + 1
+
+        print("\nK-path frequency map:")
+        for path, freq in frequency.items():
+            print(f"{path}: {freq}")
+
+        # Compute bonus for each individual: the average reciprocal frequency of its k-paths,
+        # then multiplied by diversity_weight.
+        bonus: Dict[int, float] = {}
+        for idx, paths in ind_kpaths.items():
+            if paths:
+                bonus_score = sum(1.0 / frequency[path] for path in paths) / len(paths)
+            else:
+                bonus_score = 0.0
+            bonus[idx] = bonus_score * self.diversity_weight
+            print(f"Individual {idx} bonus: {bonus[idx]} (raw bonus: {bonus_score})")
+
+        return bonus
+
     def evaluate_individual(
         self, individual: DerivationTree
     ) -> Tuple[float, List[FailingTree]]:
@@ -341,14 +391,25 @@ class Fandango:
         self,
     ) -> List[Tuple[DerivationTree, float, List[FailingTree]]]:
         """
-        Evaluate the fitness of each individual in the population.
-
+        Evaluate the fitness of each individual in the population and add a diversity bonus
+        based on k-path coverage.
         :return: A list of tuples, each containing an individual, its fitness, and the list of failing trees.
         """
         evaluation = []
         for individual in self.population:
             fitness, failing_trees = self.evaluate_individual(individual)
             evaluation.append((individual, fitness, failing_trees))
+
+        # --- Diversity Bonus based on k-path coverage ---
+        # If diversity is enabled (diversity_k > 0 and diversity_weight > 0)
+        if self.diversity_k > 0 and self.diversity_weight > 0:
+            bonus_map = self.compute_diversity_bonus(self.population)
+            new_evaluation = []
+            for idx, (ind, fitness, failing_trees) in enumerate(evaluation):
+                new_fitness = fitness + bonus_map.get(idx, 0.0)
+                new_evaluation.append((ind, new_fitness, failing_trees))
+            evaluation = new_evaluation
+
         return evaluation
 
     def select_elites(self) -> List[DerivationTree]:

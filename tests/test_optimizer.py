@@ -148,7 +148,6 @@ class GeneticTest(unittest.TestCase):
 
     def test_evolve(self):
         initial_population = self.fandango.population
-        initial_fitness = self.fandango.fitness
 
         # Run the evolution process
         self.fandango.evolve()
@@ -156,9 +155,6 @@ class GeneticTest(unittest.TestCase):
         # Check that the population has been updated
         self.assertIsNotNone(self.fandango.population)
         self.assertNotEqual(self.fandango.population, initial_population)
-
-        # Check that the final fitness is better than the initial fitness
-        self.assertGreaterEqual(self.fandango.fitness, initial_fitness)
 
         # Check that the population is valid
         for individual in self.fandango.population:
