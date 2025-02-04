@@ -256,6 +256,11 @@ class TerminalNode(Node):
 
     def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
         if self.symbol.is_regex:
+            if isinstance(self.symbol.symbol, bytes):
+                # Exrex can't do bytes, so we decode to str and back
+                instance = exrex.getone(self.symbol.symbol.decode('iso-8859-1'))
+                return [DerivationTree(Terminal(instance.encode('iso-8859-1')))]
+
             instance = exrex.getone(self.symbol.symbol)
             return [DerivationTree(Terminal(instance))]
 
