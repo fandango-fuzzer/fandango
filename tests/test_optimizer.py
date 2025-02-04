@@ -108,7 +108,7 @@ class GeneticTest(unittest.TestCase):
         parent1, parent2 = self.fandango.tournament_selection()
 
         # Perform crossover
-        children = self.fandango.crossover(parent1, parent2)
+        children = self.fandango.crossover_operator.crossover(parent1, parent2)
 
         # Check that the children are of the correct type
         for child in children:
@@ -125,7 +125,7 @@ class GeneticTest(unittest.TestCase):
         # Select the parents
         parent1, parent2 = self.fandango.tournament_selection()
 
-        children = self.fandango.crossover(parent1, parent2)
+        children = self.fandango.crossover_operator.crossover(parent1, parent2)
 
         # Perform mutation
         mutant1 = self.fandango.mutation_method.mutate(

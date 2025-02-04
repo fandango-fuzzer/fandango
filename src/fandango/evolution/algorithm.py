@@ -1,5 +1,4 @@
 # evolution/algorithm.py
-import copy
 import enum
 import logging
 import random
@@ -369,41 +368,11 @@ class Fandango:
         tournament = random.sample(self.evaluation, k=self.tournament_size)
         tournament.sort(key=lambda x: x[1], reverse=True)
         parent1 = tournament[0][0]
-        # Ensure parent2 is not the same as parent1
-        parent2 = tournament[1][0] if tournament[1][0] != parent1 else tournament[2][0]
+        # If there are only 2 individuals in the tournament:
+        if len(tournament) == 2:
+            parent2 = tournament[1][0] if tournament[1][0] != parent1 else parent1
+        else:
+            parent2 = (
+                tournament[1][0] if tournament[1][0] != parent1 else tournament[2][0]
+            )
         return parent1, parent2
-
-    # noinspection PyMethodMayBeStatic
-    def crossover(
-        self, parent1: DerivationTree, parent2: DerivationTree
-    ) -> Tuple[DerivationTree, DerivationTree]:
-        """
-        Perform crossover between two parents to generate two children by swapping subtrees rooted at a common
-        non-terminal symbol.
-        """
-        # Get all non-terminal symbols in parent1 and parent2
-        symbols1 = parent1.get_non_terminal_symbols()
-        symbols2 = parent2.get_non_terminal_symbols()
-
-        # Find common non-terminal symbols
-        common_symbols = symbols1.intersection(symbols2)
-
-        if not common_symbols:
-            return parent1, parent2
-
-        # Randomly select a common non-terminal symbol
-        symbol = random.choice(list(common_symbols))
-
-        # Find all nodes with that symbol in parent1 and parent2
-        nodes1 = parent1.find_all_nodes(symbol)
-        nodes2 = parent2.find_all_nodes(symbol)
-
-        # Randomly select one node from each parent
-        node1 = random.choice(nodes1)
-        node2 = random.choice(nodes2)
-
-        # Swap subtrees
-        child1 = parent1.replace(node1, copy.deepcopy(node2))
-        child2 = parent2.replace(node2, copy.deepcopy(node1))
-
-        return child1, child2
