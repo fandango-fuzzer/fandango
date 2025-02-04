@@ -33,14 +33,15 @@ class DerivationTree:
         recipient: str = None,
         read_only: bool = False,
     ):
-        self.symbol = symbol
+        self._symbol = symbol
         self._children = []
         self._size = 1
-        self.set_children(children or [])
         self._parent = parent
+        self.set_children(children or [])
         self.read_only = read_only
-        self.role = role
-        self.recipient = recipient
+        self._role = role
+        self._recipient = recipient
+        self.hash_cache = None
 
     def __len__(self):
         return len(self._children)
@@ -66,6 +67,33 @@ class DerivationTree:
                 role=self.role,
             )
         ]
+
+    @property
+    def symbol(self) -> Symbol:
+        return self._symbol
+
+    @symbol.setter
+    def symbol(self, symbol):
+        self._symbol = symbol
+        self.invalidate_hash()
+
+    @property
+    def role(self):
+        return self._role
+
+    @role.setter
+    def role(self, role: str):
+        self._role = role
+        self.invalidate_hash()
+
+    @property
+    def recipient(self):
+        return self._recipient
+
+    @recipient.setter
+    def recipient(self, recipient: str):
+        self._recipient = recipient
+        self.invalidate_hash()
 
     """
     Removes all nodes from a DerivationTree that have been generated using implicit rules.
@@ -94,10 +122,10 @@ class DerivationTree:
 
     def append(self, hookin_path: tuple[NonTerminal, ...], tree: "DerivationTree"):
         if len(hookin_path) == 0:
-            self.children.append(tree)
+            self.add_child(tree)
             return
         if len(self.children) == 0 or self.children[-1].symbol != hookin_path[0]:
-            self.children.append(DerivationTree(hookin_path[0]))
+            self.add_child(DerivationTree(hookin_path[0]))
         self.children[-1].append(hookin_path[1:], tree)
 
     def set_children(self, children: List["DerivationTree"]):
@@ -105,11 +133,13 @@ class DerivationTree:
         self._size = 1 + sum(child.size() for child in self._children)
         for child in self._children:
             child._parent = self
+        self.invalidate_hash()
 
     def add_child(self, child: "DerivationTree"):
         self._children.append(child)
         self._size += child.size()
         child._parent = self
+        self.invalidate_hash()
 
     def find_all_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
         trees = sum(
@@ -147,18 +177,25 @@ class DerivationTree:
     def __str__(self):
         return self.__repr__()
 
+    def invalidate_hash(self):
+        self.hash_cache = None
+        if self._parent is not None:
+            self._parent.invalidate_hash()
+
     def __hash__(self):
         """
         Computes a hash of the derivation tree based on its structure and symbols.
         """
-        return hash(
-            (
-                self.symbol,
-                self.role,
-                self.read_only,
-                tuple(hash(child) for child in self._children),
+        if self.hash_cache is None:
+            self.hash_cache = hash(
+                (
+                    self.symbol,
+                    self.role,
+                    self.recipient,
+                    tuple(hash(child) for child in self._children),
+                )
             )
-        )
+        return self.hash_cache
 
     def __tree__(self):
         return self.symbol, [child.__tree__() for child in self._children]
