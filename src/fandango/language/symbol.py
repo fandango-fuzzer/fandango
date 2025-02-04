@@ -31,10 +31,6 @@ class Symbol(abc.ABC):
         return self.type == SymbolType.NON_TERMINAL
 
     @property
-    def is_implicit(self):
-        return self.type == SymbolType.IMPLICIT
-
-    @property
     def is_regex(self):
         try:
             return self._is_regex
