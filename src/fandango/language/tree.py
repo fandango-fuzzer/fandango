@@ -263,7 +263,7 @@ class DerivationTree:
             s = "  " * start_indent + f"{node.symbol.symbol} ::="
             have_nonterminal = False
 
-            position = f"  # Position {hex(byte_count)} ({byte_count})"
+            position = f"  # Position {byte_count:#06x} ({byte_count})"
             max_bit_count = bit_count - 1
 
             for child in node._children:
