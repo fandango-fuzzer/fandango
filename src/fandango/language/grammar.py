@@ -731,6 +731,11 @@ class Grammar(NodeVisitor):
                 table[k + match_length].add(next_state)
                 self._max_position = max(self._max_position, w)
 
+                if not state.dot.is_regex:
+                    # We only advance by more than 1 if we have regexes.
+                    # Otherwise, we may skip alternatives.
+                    match_length = 1
+
             return match, match_length
 
         def complete(
@@ -757,28 +762,6 @@ class Grammar(NodeVisitor):
                             )
                         else:
                             s.children.extend(state.children)
-
-        # Commented this out, as
-        # (a) it is not adapted to bits yet, and (b) not used -- AZ
-        #
-        # def parse_table(self, word, start: str | NonTerminal = "<start>"):
-        #     if isinstance(start, str):
-        #         start = NonTerminal(start)
-        #     table = [Column() for _ in range(len(word) + 1)]
-        #     table[0].add(ParseState(NonTerminal("<*start*>"), 0, (start,)))
-        #     self._max_position = -1
-        #
-        #     for k in range(len(word) + 1):
-        #         for state in table[k]:
-        #             if state.finished():
-        #                 self.complete(state, table, k)
-        #             else:
-        #                 if state.next_symbol_is_nonterminal():
-        #                     self.predict(state, table, k)
-        #                 else:
-        #                     # No bit parsing support yet
-        #                     self.scan_byte(state, word, table, k, k)
-        #     return table
 
         def _parse_forest(
             self,
@@ -811,7 +794,7 @@ class Grammar(NodeVisitor):
             bit_count = -1  # If > 0, indicates the next bit to be scanned (7-0)
 
             while k < len(table) and w <= len(word):
-                scanned = 0
+                scanned = 1
 
                 for state in table[k]:
                     if w >= len(word):
@@ -841,7 +824,7 @@ class Grammar(NodeVisitor):
                                     state, word, table, k, w, bit_count
                                 )
                                 if match:
-                                    # LOGGER.debug(f"Scanned bit {state} at position {w:#06x} ({w}) {word[w:]!r}")
+                                    LOGGER.debug(f"Matched bit {state} at position {w:#06x} ({w}) {word[w:]!r}")
                                     scanned = 1
                             else:
                                 # Scan a byte
@@ -864,11 +847,11 @@ class Grammar(NodeVisitor):
                                 match, match_length = \
                                     self.scan_bytes(state, word, table, k, w)
                                 if match:
-                                    # LOGGER.debug(f"Scanned {match_length} byte(s) {state} at position {w:#06x} ({w}) {word[w:]!r}")
+                                    LOGGER.debug(f"Matched {match_length} byte(s) {state} at position {w:#06x} ({w}) {word[w:]!r}")
                                     scanned = max(scanned, match_length)
 
                 if scanned > 0:
-                    # LOGGER.debug(f"Scanned {scanned} byte(s) at position {w:#06x} ({w}); bit_count = {bit_count}")
+                    LOGGER.debug(f"Scanned {scanned} byte(s) at position {w:#06x} ({w}); bit_count = {bit_count}")
                     if bit_count >= 0:
                         # Advance by one bit
                         bit_count -= 1
