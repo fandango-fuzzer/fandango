@@ -77,7 +77,7 @@ class Value(GeneticBase):
                         eval(self.expression, self.global_variables, local_variables)
                     )
                 except Exception as e:
-                    e.add_note("Evaluation failed: " + self.expression)
+                    e.add_note(f"Evaluation failed: {self.expression}")
                     print_exception(e)
                     values.append(0)
             # Create the fitness object
@@ -95,6 +95,9 @@ class Value(GeneticBase):
                 identifier, repr(self.searches[identifier])
             )
         return f"fitness {representation}"
+
+    def __str__(self):
+        return self.expression
 
 
 class Constraint(GeneticBase, ABC):
@@ -231,6 +234,14 @@ class ExpressionConstraint(Constraint):
         for identifier in self.searches:
             representation = representation.replace(
                 identifier, repr(self.searches[identifier])
+            )
+        return representation
+
+    def __str__(self):
+        representation = self.expression
+        for identifier in self.searches:
+            representation = representation.replace(
+                identifier, str(self.searches[identifier])
             )
         return representation
 
@@ -426,6 +437,14 @@ class ComparisonConstraint(Constraint):
             )
         return representation
 
+    def __str__(self):
+        representation = f"{self.left!s} {self.operator.value} {self.right!s}"
+        for identifier in self.searches:
+            representation = representation.replace(
+                identifier, str(self.searches[identifier])
+            )
+        return representation
+
     def accept(self, visitor: "ConstraintVisitor"):
         """
         Accepts a visitor to traverse the constraint structure.
@@ -499,6 +518,9 @@ class ConjunctionConstraint(Constraint):
 
     def __repr__(self):
         return "(" + " and ".join(repr(c) for c in self.constraints) + ")"
+
+    def __str__(self):
+        return "(" + " and ".join(str(c) for c in self.constraints) + ")"
 
     def accept(self, visitor: "ConstraintVisitor"):
         """
@@ -577,6 +599,9 @@ class DisjunctionConstraint(Constraint):
     def __repr__(self):
         return "(" + " or ".join(repr(c) for c in self.constraints) + ")"
 
+    def __str__(self):
+        return "(" + " or ".join(str(c) for c in self.constraints) + ")"
+
     def accept(self, visitor: "ConstraintVisitor"):
         """
         Accepts a visitor to traverse the constraint structure.
@@ -637,6 +662,9 @@ class ImplicationConstraint(Constraint):
 
     def __repr__(self):
         return f"({repr(self.antecedent)} -> {repr(self.consequent)})"
+
+    def __str__(self):
+        return f"({str(self.antecedent)} -> {str(self.consequent)})"
 
     def accept(self, visitor: "ConstraintVisitor"):
         """
@@ -727,6 +755,9 @@ class ExistsConstraint(Constraint):
     def __repr__(self):
         return f"(exists {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
 
+    def __str__(self):
+        return f"(exists {str(self.bound)} in {str(self.search)}: {str(self.statement)})"
+
     def accept(self, visitor: "ConstraintVisitor"):
         """
         Accepts a visitor to traverse the constraint structure.
@@ -814,6 +845,9 @@ class ForallConstraint(Constraint):
 
     def __repr__(self):
         return f"(forall {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
+
+    def __str__(self):
+        return f"(forall {str(self.bound)} in {str(self.search)}: {str(self.statement)})"
 
     def accept(self, visitor: "ConstraintVisitor"):
         """

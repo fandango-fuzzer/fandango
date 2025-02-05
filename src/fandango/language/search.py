@@ -200,6 +200,9 @@ class LengthSearch(NonTerminalSearch):
     def __repr__(self):
         return f"|{repr(self.value)}|"
 
+    def __str__(self):
+        return f"|{str(self.value)}|"
+
     def get_access_points(self):
         return self.value.get_access_points()
 
@@ -236,6 +239,9 @@ class RuleSearch(NonTerminalSearch):
 
     def __repr__(self):
         return repr(self.symbol)
+
+    def __str__(self):
+        return str(self.symbol)
 
     def get_access_points(self):
         return [self.symbol]
@@ -283,6 +289,9 @@ class AttributeSearch(NonTerminalSearch):
     def __repr__(self):
         return f"{repr(self.base)}.{repr(self.attribute)}"
 
+    def __str__(self):
+        return f"{str(self.base)}.{str(self.attribute)}"
+
     def get_access_points(self):
         return self.attribute.get_access_points()
 
@@ -328,6 +337,9 @@ class DescendantAttributeSearch(NonTerminalSearch):
 
     def __repr__(self):
         return f"{repr(self.base)}..{repr(self.attribute)}"
+
+    def __str__(self):
+        return f"{str(self.base)}..{str(self.attribute)}"
 
     def get_access_points(self):
         return self.attribute.get_access_points()
@@ -403,6 +415,24 @@ class ItemSearch(NonTerminalSearch):
             else:
                 slice_reprs.append(repr(slice_))
         return f"{repr(self.base)}[{', '.join(slice_reprs)}]"
+
+    def __str__(self):
+        slice_strs = []
+        for slice_ in self.slices:
+            if isinstance(slice_, slice):
+                slice_str = ""
+                if slice_.start is not None:
+                    slice_str += str(slice_.start)
+                slice_str += ":"
+                if slice_.stop is not None:
+                    slice_str += str(slice_.stop)
+                if slice_.step is not None:
+                    slice_str += ":" + str(slice_.step)
+                slice_strs.append(slice_str)
+            else:
+                slice_strs.append(str(slice_))
+        return f"{str(self.base)}[{', '.join(slice_strs)}]"
+
 
     def get_access_points(self):
         return self.base.get_access_points()
@@ -481,6 +511,25 @@ class SelectiveSearch(NonTerminalSearch):
                     slice_reprs += repr(items)
             slice_reprs.append(slice_repr)
         return f"{repr(self.base)}{{{', '.join(slice_reprs)}}}"
+
+    def __str__(self):
+        slice_strs = []
+        for symbol, is_direct, items in zip(*self.symbols, self.slices):
+            slice_str = f"{'' if is_direct else '*'}{str(symbol)}"
+            if items is not None:
+                slice_str += ": "
+                if isinstance(items, slice):
+                    if items.start is not None:
+                        slice_str += str(items.start)
+                    slice_str += ":"
+                    if items.stop is not None:
+                        slice_str += str(items.stop)
+                    if items.step is not None:
+                        slice_str += ":" + str(items.step)
+                else:
+                    slice_strs += str(items)
+            slice_strs.append(slice_str)
+        return f"{str(self.base)}{{{', '.join(slice_strs)}}}"
 
     def get_access_points(self):
         return [symbol for symbol, _ in self.symbols]
