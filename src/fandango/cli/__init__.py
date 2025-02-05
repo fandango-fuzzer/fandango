@@ -952,7 +952,7 @@ def fuzz_command(args):
             try:
                 with open_file(generated_file, file_mode, mode="r") as fd:
                     tree = parse_file(fd, args, grammar, constraints, settings)
-                    validate(individual, tree, filename=fd.n)
+                    validate(individual, tree, filename=fd.name)
 
             except Exception as e:
                 print_exception(e)
