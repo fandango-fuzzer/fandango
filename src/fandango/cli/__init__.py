@@ -261,9 +261,9 @@ def get_parser(in_command_line=True):
     )
     file_parser.add_argument(
         "--format",
-        choices=["string", "bits", "tree", "grammar", "none"],
+        choices=["string", "bits", "tree", "repr", "grammar", "none"],
         default="string",
-        help="produce output(s) as string (default), as a bit string, as a derivation tree, as a grammar, or none",
+        help="produce output(s) as string (default), as a bit string, as a derivation tree, in internal representation, as a grammar, or none",
     )
     file_parser.add_argument(
         "--file-mode",
@@ -676,6 +676,8 @@ def output(tree, args, file_mode: str) -> str | bytes:
 
     if args.format == "tree":
         return convert(tree.to_tree())
+    if args.format == "repr":
+        return convert(tree.to_repr())
     if args.format == "bits":
         return convert(tree.to_bits())
     if args.format == "grammar":
