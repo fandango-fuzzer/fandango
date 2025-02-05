@@ -791,9 +791,10 @@ def report_syntax_error(
     if position >= len(individual):
         return f"{filename!r}: missing input at end of file"
 
-    mismatch = repr(individual[position])
+    mismatch = individual[position]
     if binary:
-        return f"{filename!r}, position {hex(position)} ({position}): mismatched input 0x{mismatch}"
+        assert isinstance(mismatch, int)
+        return f"{filename!r}, position {hex(position)} ({position}): mismatched input {mismatch.to_bytes()!r}"
 
     line = 1
     column = 1
@@ -803,7 +804,7 @@ def report_syntax_error(
             column = 1
         else:
             column += 1
-    return f"{filename!r}, line {line}, column {column}: mismatched input {mismatch}"
+    return f"{filename!r}, line {line}, column {column}: mismatched input {mismatch!r}"
 
 
 def validate(individual, tree, *, filename="<file>"):
