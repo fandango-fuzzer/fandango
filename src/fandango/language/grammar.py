@@ -682,9 +682,11 @@ class Grammar(NodeVisitor):
                 return False
 
             # Found a match
+            # LOGGER.debug(f"Found bit {bit}")
             next_state = state.next()
-            next_state.children.append(DerivationTree(state.dot))
-
+            tree = DerivationTree(Terminal(bit))
+            next_state.children.append(tree)
+            # LOGGER.debug(f"Added tree {tree.to_string()!r} to state {next_state!r}")
             # Insert a new table entry with next state
             # This is necessary, as our initial table holds one entry
             # per input byte, yet needs to be expanded to hold the bits, too.
