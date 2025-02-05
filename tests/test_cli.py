@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 import unittest
+import shlex
 
 from fandango.cli import get_parser
 
@@ -18,7 +19,7 @@ class test_cli(unittest.TestCase):
         return out.decode(), err.decode(), proc.returncode
 
     def test_help(self):
-        command = ["fandango", "--help"]
+        command = shlex.split("fandango --help")
         out, err, code = self.run_command(command)
         parser = get_parser(True)
         self.assertEqual(0, code)
@@ -26,16 +27,7 @@ class test_cli(unittest.TestCase):
         self.assertEqual(err, "")
 
     def test_fuzz_basic(self):
-        command = [
-            "fandango",
-            "fuzz",
-            "-f",
-            "tests/resources/digit.fan",
-            "-n",
-            "10",
-            "--random-seed",
-            "426912",
-        ]
+        command = shlex.split("fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912")
         expected = """35716
 4
 9768
@@ -52,20 +44,7 @@ class test_cli(unittest.TestCase):
         self.assertEqual("", err)
 
     def test_output_to_file(self):
-        command = [
-            "fandango",
-            "fuzz",
-            "-f",
-            "tests/resources/digit.fan",
-            "-n",
-            "10",
-            "--random-seed",
-            "426912",
-            "-o",
-            "tests/resources/test.txt",
-            "-s",
-            ";",
-        ]
+        command = shlex.split("fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 -o tests/resources/test.txt -s ;")
         expected = "35716;4;9768;30;5658;5;9;649;20;41"
         out, err, code = self.run_command(command)
         self.assertEqual(0, code)
@@ -77,18 +56,7 @@ class test_cli(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_output_multiple_files(self):
-        command = [
-            "fandango",
-            "fuzz",
-            "-f",
-            "tests/resources/digit.fan",
-            "-n",
-            "10",
-            "--random-seed",
-            "426912",
-            "-d",
-            "tests/resources/test",
-        ]
+        command = shlex.split("fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 -d tests/resources/test")
         expected = ["35716", "4", "9768", "30", "5658", "5", "9", "649", "20", "41"]
         (
             out,
@@ -107,18 +75,7 @@ class test_cli(unittest.TestCase):
         shutil.rmtree("tests/resources/test")
 
     def test_unsat(self):
-        command = [
-            "fandango",
-            "fuzz",
-            "-f",
-            "tests/resources/digit.fan",
-            "-n",
-            "10",
-            "--random-seed",
-            "426912",
-            "-c",
-            "False",
-        ]
+        command = shlex.split("fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 -c False")
         expected = """fandango:ERROR: Population did not converge to a perfect population
 fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
 """
@@ -128,13 +85,7 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         self.assertEqual(expected, err)
 
     def test_parse(self):
-        command = [
-            "fandango",
-            "parse",
-            "-f",
-            "tests/resources/rgb.fan",
-            "tests/resources/rgb.txt",
-        ]
+        command = shlex.split("fandango parse -f tests/resources/rgb.fan tests/resources/rgb.txt")
         expected = ""
         out, err, code = self.run_command(command)
         self.assertEqual(0, code)
