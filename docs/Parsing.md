@@ -93,7 +93,7 @@ assert _exit_code == 0
 
 We see that input and output are identical (as should always be with parsing and unparsing).
 
-:::{info}
+:::{tip}
 As it comes to producing and storing outputs, the `parse` command has the same options as the `fuzz` command.
 :::
 
