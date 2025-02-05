@@ -61,10 +61,17 @@ class Node(abc.ABC):
     def tree_roles(self, grammar: "Grammar", include_recipients: bool = True):
         return self._tree_roles(grammar, set(), include_recipients)
 
-    def _tree_roles(self, grammar: "Grammar", seen_nonterminals: set[NonTerminal], include_recipients: bool):
+    def _tree_roles(
+        self,
+        grammar: "Grammar",
+        seen_nonterminals: set[NonTerminal],
+        include_recipients: bool,
+    ):
         roles = set()
         for child in self.children():
-            roles = roles.union(child._tree_roles(grammar, seen_nonterminals, include_recipients))
+            roles = roles.union(
+                child._tree_roles(grammar, seen_nonterminals, include_recipients)
+            )
         return roles
 
     def children(self):
@@ -279,7 +286,13 @@ class NonTerminalNode(Node):
 
         children = grammar[self.symbol].fuzz(grammar, max_nodes - 1, in_role)
 
-        tree = DerivationTree(self.symbol, children, role=assign_role, recipient=assign_recipient, read_only=False)
+        tree = DerivationTree(
+            self.symbol,
+            children,
+            role=assign_role,
+            recipient=assign_recipient,
+            read_only=False,
+        )
         return [tree]
 
     def accept(self, visitor: "NodeVisitor"):
@@ -301,7 +314,12 @@ class NonTerminalNode(Node):
     def __hash__(self):
         return hash(self.symbol)
 
-    def _tree_roles(self, grammar: "Grammar", seen_nonterminals: set[NonTerminal], include_recipients: bool):
+    def _tree_roles(
+        self,
+        grammar: "Grammar",
+        seen_nonterminals: set[NonTerminal],
+        include_recipients: bool,
+    ):
         roles = set()
         if self.role is not None:
             roles.add(self.role)
@@ -309,7 +327,9 @@ class NonTerminalNode(Node):
                 roles.add(self.recipient)
         if self.symbol not in seen_nonterminals:
             seen_nonterminals.add(self.symbol)
-            for role in grammar[self.symbol]._tree_roles(grammar, seen_nonterminals, include_recipients):
+            for role in grammar[self.symbol]._tree_roles(
+                grammar, seen_nonterminals, include_recipients
+            ):
                 roles.add(role)
         return roles
 
@@ -322,7 +342,9 @@ class TerminalNode(Node):
         super().__init__(NodeType.TERMINAL, 0)
         self.symbol = symbol
 
-    def fuzz(self, grammar: "Grammar", max_nodes: int = 100, in_role: str = None) -> List[DerivationTree]:
+    def fuzz(
+        self, grammar: "Grammar", max_nodes: int = 100, in_role: str = None
+    ) -> List[DerivationTree]:
         if self.symbol.is_regex:
             instance = exrex.getone(self.symbol.symbol)
             return [DerivationTree(Terminal(instance))]
@@ -823,19 +845,23 @@ class RoleNestingDetector(NodeVisitor):
         elif node.role is not None and node.symbol in self.current_path:
             str_path = [str(p) for p in self.current_path]
             raise RuntimeError(
-                f"Found illegal packet-definitions within packet-definition of non_terminal {node.symbol}! DerivationPath: " + " -> ".join(str_path))
+                f"Found illegal packet-definitions within packet-definition of non_terminal {node.symbol}! DerivationPath: "
+                + " -> ".join(str_path)
+            )
         else:
             return
 
         if node.role is not None:
             tree_roles = self.grammar[node.symbol].tree_roles(self.grammar, False)
             if len(tree_roles) != 0:
-                raise RuntimeError(f"Found illegal packet-definitions within packet-definition of non_terminal {node.symbol}: " + ", ".join(tree_roles))
+                raise RuntimeError(
+                    f"Found illegal packet-definitions within packet-definition of non_terminal {node.symbol}: "
+                    + ", ".join(tree_roles)
+                )
             return
 
         self.visit(self.grammar[node.symbol])
         self.current_path.pop()
-
 
 
 class ParseState:
@@ -1145,7 +1171,8 @@ class Grammar(NodeVisitor):
                         if use_implicit and state.nonterminal in self._implicit_rules:
                             s.children.append(
                                 DerivationTree(
-                                    NonTerminal(state.nonterminal.symbol), state.children
+                                    NonTerminal(state.nonterminal.symbol),
+                                    state.children,
                                 )
                             )
                         else:
@@ -1251,8 +1278,9 @@ class Grammar(NodeVisitor):
                                     # LOGGER.warning(f"Position {hex(w)} ({w}): Parsing a byte while expecting bit {bit_count}. Check if bits come in multiples of eight")
                                     bit_count = -1
 
-                                match, match_length = \
-                                    self.scan_bytes(state, word, table, k, w)
+                                match, match_length = self.scan_bytes(
+                                    state, word, table, k, w
+                                )
                                 if match:
                                     # LOGGER.debug(f"Scanned {match_length} byte(s) {state} at position {hex(w)} ({w}) {word[w:]!r}")
                                     scanned = max(scanned, match_length)
