@@ -351,13 +351,63 @@ class Fandango:
             )
         return parent1, parent2
 
+    def update_parameters(
+        self, generation: int, prev_best_fitness: float, current_best_fitness: float
+    ):
+        """
+        Adapt mutation and crossover rates based on the progress in fitness and population diversity.
+        """
+        # Compute diversity metric (using the diversity bonus as a proxy)
+        diversity_map = self.compute_diversity_bonus(self.population)
+        avg_diversity = (
+            sum(diversity_map.values()) / len(diversity_map) if diversity_map else 0
+        )
+
+        # Example thresholds (you might need to tune these):
+        fitness_improvement_threshold = (
+            0.01  # minimal improvement to be considered significant
+        )
+        diversity_low_threshold = (
+            0.1  # if average diversity bonus is too low, population might be converging
+        )
+
+        # Adaptive Mutation: Increase if little improvement or low diversity, decrease otherwise
+        if (
+            current_best_fitness - prev_best_fitness
+        ) < fitness_improvement_threshold or avg_diversity < diversity_low_threshold:
+            # Increase mutation rate (but cap it at 1.0)
+            new_mutation_rate = min(1.0, self.mutation_rate * 1.1)
+            LOGGER.info(
+                f"Generation {generation}: Increasing mutation rate from {self.mutation_rate:.2f} to {new_mutation_rate:.2f}"
+            )
+            self.mutation_rate = new_mutation_rate
+        else:
+            # Decrease mutation rate slightly if progress is good
+            new_mutation_rate = max(0.01, self.mutation_rate * 0.95)
+            LOGGER.info(
+                f"Generation {generation}: Decreasing mutation rate from {self.mutation_rate:.2f} to {new_mutation_rate:.2f}"
+            )
+            self.mutation_rate = new_mutation_rate
+
+        # Adaptive Crossover: Optionally, adjust based on diversity
+        if avg_diversity < diversity_low_threshold:
+            new_crossover_rate = min(1.0, self.crossover_rate * 1.05)
+            LOGGER.info(
+                f"Generation {generation}: Increasing crossover rate from {self.crossover_rate:.2f} to {new_crossover_rate:.2f}"
+            )
+            self.crossover_rate = new_crossover_rate
+        else:
+            new_crossover_rate = max(0.1, self.crossover_rate * 0.98)
+            LOGGER.info(
+                f"Generation {generation}: Decreasing crossover rate from {self.crossover_rate:.2f} to {new_crossover_rate:.2f}"
+            )
+            self.crossover_rate = new_crossover_rate
+
     def evolve(self) -> List[DerivationTree]:
-        """
-        Run the genetic algorithm to evolve the population over multiple generations.
-        :return: The list of perfect solutions found by the algorithm.
-        """
         LOGGER.info("---------- Starting evolution ----------")
         start_time = time.time()
+
+        prev_best_fitness = 0.0
 
         for generation in range(1, self.max_generations + 1):
             if 0 < self.desired_solutions <= len(self.solution):
@@ -423,7 +473,6 @@ class Fandango:
                 unique_hashes = {hash(ind) for ind in new_population}
 
             # --- Ensure Uniqueness & Fill Population ---
-            # First, remove any accidental duplicates:
             unique_temp = {}
             for ind in new_population:
                 unique_temp[hash(ind)] = ind
@@ -447,16 +496,17 @@ class Fandango:
                 while len(new_population) < self.population_size:
                     new_population.append(self.grammar.fuzz(self.start_symbol))
 
-            # --- Fix individuals ---
-            fixed_population = []
-            for individual in new_population:
-                fixed_population.append(self.fix_individual(individual))
-
+            fixed_population = [self.fix_individual(ind) for ind in new_population]
             self.population = fixed_population[: self.population_size]
             self.evaluation = self.evaluate_population()
             self.fitness = (
                 sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
+
+            # Retrieve the best fitness of this generation for adaptive tuning
+            current_best_fitness = max(fitness for _, fitness, _ in self.evaluation)
+            self.update_parameters(generation, prev_best_fitness, current_best_fitness)
+            prev_best_fitness = current_best_fitness
 
             visualize_evaluation(generation, self.max_generations, self.evaluation)
 
