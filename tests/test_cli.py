@@ -86,8 +86,21 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
 
     def test_parse(self):
         command = shlex.split("fandango parse -f tests/resources/rgb.fan tests/resources/rgb.txt")
-        expected = ""
         out, err, code = self.run_command(command)
         self.assertEqual(0, code)
         self.assertEqual("", out)
-        self.assertEqual(expected, err)
+        self.assertEqual("", err)
+
+    def test_binfinity(self):
+        command = shlex.split("fandango fuzz -f docs/binfinity.fan -n 1 --format=none --validate --random-seed 426912")
+        out, err, code = self.run_command(command)
+        self.assertEqual("", err)
+        self.assertEqual("", out)
+        self.assertEqual(0, code)
+
+    def test_infinity(self):
+        command = shlex.split("fandango fuzz -f docs/infinity.fan -n 1 --format=none --validate --random-seed 426912")
+        out, err, code = self.run_command(command)
+        self.assertEqual("", err)
+        self.assertEqual("", out)
+        self.assertEqual(0, code)
