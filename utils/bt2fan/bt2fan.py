@@ -62,8 +62,7 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
 
     def not_char(self, c):
         if self.use_regexes:
-            # Fandango does not support regexes yet
-            return f"r'[^{self._char(c)}]'"
+            return f"br'[^{self._char(c)}]'"
         chars = []
         for i in range(256):
             if chr(i) != c:
@@ -485,11 +484,11 @@ if __name__ == "__main__":
         description="Convert a binary template to a Fandango specification"
     )
     parser.add_argument(
-        "--regexes",
-        action="store_true",
+        "--no-regexes",
+        action="store_false",
         dest="use_regexes",
-        default=False,
-        help="use regexes",
+        default=True,
+        help="do not use regexes",
     )
     parser.add_argument(
         "--endianness", choices=["little", "big"], help="set endianness"
