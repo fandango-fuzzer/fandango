@@ -487,7 +487,7 @@ class ParseState:
             f"({self.nonterminal} -> "
             + "".join(
                 [
-                    f"{'•' if i == self._dot else ''}{s.symbol}"
+                    f"{'•' if i == self._dot else ''}{s!r}"
                     for i, s in enumerate(self.symbols)
                 ]
             )
@@ -853,6 +853,7 @@ class Grammar(NodeVisitor):
                                     # LOGGER.warning(f"Position {hex(w)} ({w}): Parsing a byte while expecting bit {bit_count}. Check if bits come in multiples of eight")
                                     bit_count = -1
 
+                                # LOGGER.debug(f"Checking byte(s) {state} at position {hex(w)} ({w}) {word[w:]!r}")
                                 match, match_length = \
                                     self.scan_bytes(state, word, table, k, w)
                                 if match:
