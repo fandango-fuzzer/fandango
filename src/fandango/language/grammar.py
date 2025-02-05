@@ -718,10 +718,10 @@ class Grammar(NodeVisitor):
             match, match_length = state.dot.check(word[w:])
             if match:
                 # Found a match
-                # LOGGER.debug(f"Matched {state.dot!r} at position {hex(w)} ({w}) (len = {match_length}) {word[w:w+match_length]!r}")
+                # LOGGER.debug(f"Matched {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w+match_length]!r}")
                 next_state = state.next()
                 next_state.children.append(
-                    DerivationTree(Terminal(word[w : w + match_length]))
+                    DerivationTree(Terminal(word[w:w+match_length]))
                 )
                 table[k + match_length].add(next_state)
                 self._max_position = max(self._max_position, w)
@@ -826,7 +826,7 @@ class Grammar(NodeVisitor):
                     elif not state.is_incomplete:
                         if state.next_symbol_is_nonterminal():
                             self.predict(state, table, k)
-                            # LOGGER.debug(f"Predicted {state} at position {hex(w)} ({w}) {word[w:]!r}")
+                            # LOGGER.debug(f"Predicted {state} at position {w:#06x} ({w}) {word[w:]!r}")
                         else:
                             if isinstance(state.dot.symbol, int):
                                 # Scan a bit
@@ -836,7 +836,7 @@ class Grammar(NodeVisitor):
                                     state, word, table, k, w, bit_count
                                 )
                                 if match:
-                                    # LOGGER.debug(f"Scanned bit {state} at position {hex(w)} ({w}) {word[w:]!r}")
+                                    # LOGGER.debug(f"Scanned bit {state} at position {w:#06x} ({w}) {word[w:]!r}")
                                     scanned = 1
                             else:
                                 # Scan a byte
@@ -850,14 +850,14 @@ class Grammar(NodeVisitor):
                                     #
                                     # In either case, we need to skip back
                                     # to scanning bytes here.
-                                    # LOGGER.warning(f"Position {hex(w)} ({w}): Parsing a byte while expecting bit {bit_count}. Check if bits come in multiples of eight")
+                                    # LOGGER.warning(f"Position {w:#06x} ({w}): Parsing a byte while expecting bit {bit_count}. Check if bits come in multiples of eight")
                                     bit_count = -1
 
-                                # LOGGER.debug(f"Checking byte(s) {state} at position {hex(w)} ({w}) {word[w:]!r}")
+                                # LOGGER.debug(f"Checking byte(s) {state} at position {w:#06x} ({w}) {word[w:]!r}")
                                 match, match_length = \
                                     self.scan_bytes(state, word, table, k, w)
                                 if match:
-                                    # LOGGER.debug(f"Scanned {match_length} byte(s) {state} at position {hex(w)} ({w}) {word[w:]!r}")
+                                    # LOGGER.debug(f"Scanned {match_length} byte(s) {state} at position {w:#06x} ({w}) {word[w:]!r}")
                                     scanned = max(scanned, match_length)
 
                 if scanned > 0:

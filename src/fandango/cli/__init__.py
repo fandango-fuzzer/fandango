@@ -794,7 +794,7 @@ def report_syntax_error(
     mismatch = individual[position]
     if binary:
         assert isinstance(mismatch, int)
-        return f"{filename!r}, position {hex(position)} ({position}): mismatched input {mismatch.to_bytes()!r}"
+        return f"{filename!r}, position {position:#06x} ({position}): mismatched input {mismatch.to_bytes()!r}"
 
     line = 1
     column = 1
