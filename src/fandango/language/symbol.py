@@ -42,6 +42,9 @@ class Symbol(abc.ABC):
     def __hash__(self):
         return NotImplemented
 
+    def to_repr(self):
+        return "Symbol(" + repr(self.symbol) + ")"
+
 
 class NonTerminal(Symbol):
     def __init__(self, symbol: str):
@@ -56,6 +59,9 @@ class NonTerminal(Symbol):
 
     def __hash__(self):
         return hash((self.symbol, self.type))
+
+    def to_repr(self):
+        return "NonTerminal(" + repr(self.symbol) + ")"
 
 
 class Terminal(Symbol):
@@ -158,3 +164,6 @@ class Terminal(Symbol):
 
     def __hash__(self):
         return hash((self.symbol, self.type))
+
+    def to_repr(self):
+        return "Terminal(" + repr(self.symbol) + ")"
