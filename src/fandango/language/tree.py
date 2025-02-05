@@ -270,6 +270,23 @@ class DerivationTree:
         s += ")"
         return s
 
+    def to_repr(self, indent=0, start_indent=0) -> str:
+        """
+        Output the derivation tree in internal representation.
+        """
+        s = "  " * start_indent + "DerivationTree(" + self.symbol.to_repr()
+        if len(self._children) == 1:
+            s += ", [" + self._children[0].to_repr(indent, start_indent=0) + "])"
+        elif len(self._children) >= 1:
+            s += ",\n" + "  " * indent + "  [\n"
+            for child in self._children:
+                s += child.to_repr(indent + 2, start_indent=indent + 2)
+                s += ",\n"
+            s += "  " * indent + "  ]\n" + "  " * indent + ")"
+        else:
+            s += ")"
+        return s
+
     def to_grammar(self, include_position=True) -> str:
         """
         Output the derivation tree as (specialized) grammar
@@ -287,7 +304,7 @@ class DerivationTree:
             s = "  " * start_indent + f"{node.symbol.symbol} ::="
             have_nonterminal = False
 
-            position = f"  # Position {hex(byte_count)} ({byte_count})"
+            position = f"  # Position {byte_count:#06x} ({byte_count})"
             max_bit_count = bit_count - 1
 
             for child in node._children:

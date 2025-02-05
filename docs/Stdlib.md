@@ -37,6 +37,15 @@ Symbols starting with an underscore must _not_ be redefined.
 from fandango.language import stdlib
 ```
 
+## Characters
+
+A `<char>` represents any Unicode character, including newline.
+
+```{code-cell}
+:tags: ["remove-input"]
+print(stdlib.any_char)
+```
+
 ## Printable Characters
 
 These symbols mimic the [string constants from the Python `string` module](https://docs.python.org/3/library/string.html).
@@ -87,17 +96,6 @@ During parsing and production, it will always be interpreted as a single byte.
 :tags: ["remove-input"]
 print(stdlib.bytes)
 ```
-
-
-## Characters
-
-A `<char>` is any Unicode character.
-
-```{error}
-`<char>` is currently not defined.
-Use `<ascii_char>`, `<byte>`, or `<utf8_char>` instead.
-```
-% We need charset or regex specs for this: <char> ::= /./ | '\n'
 
 
 ## UTF-8 characters

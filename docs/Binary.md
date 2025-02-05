@@ -83,7 +83,7 @@ $ fandango fuzz -f credit_card.fan -n 10
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f credit_card.fan -n 10
+!fandango fuzz -f credit_card.fan -n 10 --validate
 assert _exit_code == 0
 ```
 
@@ -164,6 +164,31 @@ The default is `fuzz --file=mode=auto` (default), which will use `binary` or `te
 Avoid mixing non-ASCII strings with bits and bytes in a single grammar.
 :::
 
+(sec:byte-regexes)=
+### Bytes and Regular Expressions
+
+Fandango also supports [regular expressions](Regexes.md) over bytes.
+To obtain a regular expression over a byte string, use both `r` and `b` prefixes.
+This is especially useful for character classes.
+
+Here is an example: [`binfinity.fan`](binfinity.fan) produces strings of five bytes _outside_ the range `\x80-\xff`:
+
+```{code-cell}
+:tags: ["remove-input"]
+!cat binfinity.fan
+```
+
+This is what we get:
+
+```shell
+$ fandango fuzz -f binfinity.fan -n 10
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f binfinity.fan -n 10 --validate
+assert _exit_code == 0
+```
 
 
 ## Length Encodings
@@ -221,12 +246,12 @@ Again, all of this goes into a single `.fan` file: [`binary.fan`](binary.fan) ho
 Let us produce a single output using `binary.fan` and view its (binary) contents, using `od -c`:
 
 ```shell
-$ fandango fuzz -n 1 -f binary.fan | od -c
+$ fandango fuzz -n 1 -f binary.fan -o - | od -c
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-! fandango fuzz -n 1 -f binary.fan | od -c
+! fandango fuzz -n 1 -f binary.fan -o - | od -c
 ```
 
 The hexadecimal dump shows that the first two bytes encode the length of the string of digits that follows.
@@ -248,7 +273,7 @@ and obtain the same result:
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -n 1 -f binary-pack.fan | od -c
+!fandango fuzz -n 1 -f binary-pack.fan -o - --validate | od -c
 assert _exit_code == 0
 ```
 

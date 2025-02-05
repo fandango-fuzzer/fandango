@@ -261,9 +261,9 @@ def get_parser(in_command_line=True):
     )
     file_parser.add_argument(
         "--format",
-        choices=["string", "bits", "tree", "grammar", "none"],
+        choices=["string", "bits", "tree", "repr", "grammar", "none"],
         default="string",
-        help="produce output(s) as string (default), as a bit string, as a derivation tree, as a grammar, or none",
+        help="produce output(s) as string (default), as a bit string, as a derivation tree, in internal representation, as a grammar, or none",
     )
     file_parser.add_argument(
         "--file-mode",
@@ -676,6 +676,8 @@ def output(tree, args, file_mode: str) -> str | bytes:
 
     if args.format == "tree":
         return convert(tree.to_tree())
+    if args.format == "repr":
+        return convert(tree.to_repr())
     if args.format == "bits":
         return convert(tree.to_bits())
     if args.format == "grammar":
@@ -791,9 +793,10 @@ def report_syntax_error(
     if position >= len(individual):
         return f"{filename!r}: missing input at end of file"
 
-    mismatch = repr(individual[position])
+    mismatch = individual[position]
     if binary:
-        return f"{filename!r}, position {hex(position)} ({position}): mismatched input 0x{mismatch}"
+        assert isinstance(mismatch, int)
+        return f"{filename!r}, position {position:#06x} ({position}): mismatched input {mismatch.to_bytes()!r}"
 
     line = 1
     column = 1
@@ -803,7 +806,7 @@ def report_syntax_error(
             column = 1
         else:
             column += 1
-    return f"{filename!r}, line {line}, column {column}: mismatched input {mismatch}"
+    return f"{filename!r}, line {line}, column {column}: mismatched input {mismatch!r}"
 
 
 def validate(individual, tree, *, filename="<file>"):
@@ -951,7 +954,7 @@ def fuzz_command(args):
             try:
                 with open_file(generated_file, file_mode, mode="r") as fd:
                     tree = parse_file(fd, args, grammar, constraints, settings)
-                    validate(individual, tree, filename=fd.n)
+                    validate(individual, tree, filename=fd.name)
 
             except Exception as e:
                 print_exception(e)

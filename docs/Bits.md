@@ -54,7 +54,7 @@ $ fandango fuzz --format=bits -f bits.fan -n 1 --start-symbol='<format_flag>'
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz --format=bits -f bits.fan -n 1 --start-symbol='<format_flag>'
+!fandango fuzz --format=bits -f bits.fan -n 1 --start-symbol='<format_flag>' --validate
 assert _exit_code == 0
 ```
 
@@ -71,7 +71,7 @@ $ fandango fuzz --format=bits -f bits.fan -n 10 -c '<italic> == "\x01" and <bold
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz --format=bits -f bits.fan -n 10 -c '<italic> == "\x01" and <bold> == "\x00"'
+!fandango fuzz --format=bits -f bits.fan -n 10 -c '<italic> == "\x01" and <bold> == "\x00"' --validate
 assert _exit_code == 0
 ```
 
@@ -83,7 +83,7 @@ $ fandango fuzz --format=bits -f bits.fan -n 1 -c '<italic> == chr(1) and <bold>
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz --format=bits -f bits.fan -n 1 -c '<italic> == chr(1) and <bold> == chr(0)'
+!fandango fuzz --format=bits -f bits.fan -n 1 -c '<italic> == chr(1) and <bold> == chr(0)' --validate
 assert _exit_code == 0
 ```
 
@@ -95,7 +95,7 @@ $ fandango fuzz --format=bits -f bits.fan -n 1 -c '<format_flag> == chr(0b111100
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz --format=bits -f bits.fan -n 1 -c '<format_flag> == chr(0b11110000)'
+!fandango fuzz --format=bits -f bits.fan -n 1 -c '<format_flag> == chr(0b11110000)' --validate
 assert _exit_code == 0
 ```
 
@@ -115,7 +115,7 @@ $ fandango fuzz --format=bits -f bits.fan -n 1 -c 'ord(str(<brightness>)) > 10'
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz --format=bits -f bits.fan -n 10 -c 'ord(str(<brightness>)) > 10'
+!fandango fuzz --format=bits -f bits.fan -n 10 -c 'ord(str(<brightness>)) > 10' --validate
 assert _exit_code == 0
 ```
 

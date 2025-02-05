@@ -22,7 +22,7 @@ $ fandango fuzz -f persons.fan -n 10
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10
+!fandango fuzz -f persons.fan -n 10 --validate
 assert _exit_code == 0
 ```
 
@@ -66,7 +66,7 @@ This is the effect of this rule:
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons100.fan -n 10
+!fandango fuzz -f persons100.fan -n 10 --validate
 assert _exit_code == 0
 ```
 
@@ -96,7 +96,7 @@ Try it yourself and modify [`persons.fan`](persons.fan) such that it can also pr
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons-neg.fan -n 10
+!fandango fuzz -f persons-neg.fan -n 10 --validate
 assert _exit_code == 0
 ```
 
