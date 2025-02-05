@@ -165,13 +165,10 @@ clean-docs:
 ## Tests
 TESTS = tests
 TEST_SOURCES = $(wildcard $(TESTS)/*.py $(TESTS)/resources/*)
-TEST_MARKER = $(TESTS)/test-marker.txt
 
 .PHONY: test tests
-test tests: $(TEST_MARKER)
-$(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
-	$(PYTEST)
-	echo 'Success' > $@
+test tests:
+	$(PYTEST) 
 
 ## Installation
 .PHONY: install install-test install-tests
@@ -188,3 +185,6 @@ install-test install-tests:
 uninstall:
 	$(PIP) uninstall fandango-fuzzer -y
 
+# python -m evaluation.vs_isla.run_evaluation
+evaluate evaluation:
+	$(PYTHON) -m evaluation.vs_isla.run_evaluation 1

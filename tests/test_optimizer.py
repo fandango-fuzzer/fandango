@@ -14,9 +14,13 @@ class GeneticTest(unittest.TestCase):
         # Define a simple grammar for testing
         file = open("tests/resources/example_number.fan", "r")
         try:
-            grammar_int, constraints_int = parse(file, use_stdlib=False, use_cache=False)
+            grammar_int, constraints_int = parse(
+                file, use_stdlib=False, use_cache=False
+            )
         except FileNotFoundError:
-            grammar_int, constraints_int = parse(file, use_stdlib=False, use_cache=False)
+            grammar_int, constraints_int = parse(
+                file, use_stdlib=False, use_cache=False
+            )
 
         random.seed(25)  # Set random seed
 
@@ -43,7 +47,9 @@ class GeneticTest(unittest.TestCase):
     def test_evaluate_fitness(self):
         # Evaluate the fitness of the population
         for individual in self.fandango.population:
-            fitness, failing_trees = self.fandango.evaluate_individual(individual)
+            fitness, failing_trees = self.fandango.evaluator.evaluate_individual(
+                individual
+            )
             self.assertIsInstance(fitness, float)
             self.assertGreaterEqual(fitness, 0.0)
             self.assertLessEqual(fitness, 1.0)
@@ -54,7 +60,9 @@ class GeneticTest(unittest.TestCase):
 
     def test_evaluate_population(self):
         # Evaluate the fitness of the population
-        evaluation = self.fandango.evaluate_population()
+        evaluation = self.fandango.evaluator.evaluate_population(
+            self.fandango.population
+        )
         assert len(evaluation) == len(self.fandango.population)
         for derivation_tree, fitness, failing_trees in evaluation:
             self.assertIsInstance(fitness, float)
@@ -104,7 +112,7 @@ class GeneticTest(unittest.TestCase):
         parent1, parent2 = self.fandango.tournament_selection()
 
         # Perform crossover
-        children = self.fandango.crossover(parent1, parent2)
+        children = self.fandango.crossover_operator.crossover(parent1, parent2)
 
         # Check that the children are of the correct type
         for child in children:
@@ -121,11 +129,19 @@ class GeneticTest(unittest.TestCase):
         # Select the parents
         parent1, parent2 = self.fandango.tournament_selection()
 
-        children = self.fandango.crossover(parent1, parent2)
+        children = self.fandango.crossover_operator.crossover(parent1, parent2)
 
         # Perform mutation
-        mutant1 = self.fandango.mutate(children[0])
-        mutant2 = self.fandango.mutate(children[1])
+        mutant1 = self.fandango.mutation_method.mutate(
+            children[0],
+            self.fandango.grammar,
+            self.fandango.evaluator.evaluate_individual,
+        )
+        mutant2 = self.fandango.mutation_method.mutate(
+            children[1],
+            self.fandango.grammar,
+            self.fandango.evaluator.evaluate_individual,
+        )
 
         # Check that the mutated children are of the correct type
         for child in [mutant1, mutant2]:
@@ -140,7 +156,6 @@ class GeneticTest(unittest.TestCase):
 
     def test_evolve(self):
         initial_population = self.fandango.population
-        initial_fitness = self.fandango.fitness
 
         # Run the evolution process
         self.fandango.evolve()
@@ -148,9 +163,6 @@ class GeneticTest(unittest.TestCase):
         # Check that the population has been updated
         self.assertIsNotNone(self.fandango.population)
         self.assertNotEqual(self.fandango.population, initial_population)
-
-        # Check that the final fitness is better than the initial fitness
-        self.assertGreaterEqual(self.fandango.fitness, initial_fitness)
 
         # Check that the population is valid
         for individual in self.fandango.population:

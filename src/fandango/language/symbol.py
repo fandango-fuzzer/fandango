@@ -7,7 +7,6 @@ from fandango.logger import LOGGER
 class SymbolType(enum.Enum):
     TERMINAL = "Terminal"
     NON_TERMINAL = "NonTerminal"
-    IMPLICIT = "Implicit"
 
 
 class Symbol(abc.ABC):
@@ -33,10 +32,6 @@ class Symbol(abc.ABC):
         return self.type == SymbolType.NON_TERMINAL
 
     @property
-    def is_implicit(self):
-        return self.type == SymbolType.IMPLICIT
-
-    @property
     def is_regex(self):
         try:
             return self._is_regex
@@ -51,6 +46,7 @@ class Symbol(abc.ABC):
 class NonTerminal(Symbol):
     def __init__(self, symbol: str):
         super().__init__(symbol, SymbolType.NON_TERMINAL)
+        self.is_implicit = symbol.startswith("<_")
 
     def __repr__(self):
         return self.symbol
@@ -162,14 +158,3 @@ class Terminal(Symbol):
 
     def __hash__(self):
         return hash((self.symbol, self.type))
-
-
-class Implicit(Symbol):
-    def __init__(self, symbol: str):
-        super().__init__(symbol, SymbolType.IMPLICIT)
-
-    def __hash__(self):
-        return hash((self.symbol, self.type))
-
-    def __eq__(self, other):
-        return isinstance(other, Implicit) and self.symbol == other.symbol
