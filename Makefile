@@ -186,5 +186,5 @@ uninstall:
 	$(PIP) uninstall fandango-fuzzer -y
 
 # python -m evaluation.vs_isla.run_evaluation
-evaluate:
+evaluate evaluation:
 	$(PYTHON) -m evaluation.vs_isla.run_evaluation 1
