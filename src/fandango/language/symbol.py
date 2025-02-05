@@ -143,8 +143,8 @@ class Terminal(Symbol):
             if '"' not in self.symbol:
                 return 'r"' + str(self.symbol) + '"'
 
-            # Mixed quotes: escape single quotes
-            symbol = self.symbol.replace("'", r"\'")
+            # Mixed quotes: encode single quotes
+            symbol = self.symbol.replace("'", r"\x27")
             return "r'" + str(symbol) + "'"
 
         # Not a regex
