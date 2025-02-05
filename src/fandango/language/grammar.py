@@ -723,12 +723,13 @@ class Grammar(NodeVisitor):
             match, match_length = state.dot.check(word[w:])
             if match:
                 # Found a match
-                LOGGER.debug(f"Matched {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w+match_length]!r}")
+                # LOGGER.debug(f"Matched {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w+match_length]!r}")
                 next_state = state.next()
                 next_state.children.append(
                     DerivationTree(Terminal(word[w:w+match_length]))
                 )
                 table[k + match_length].add(next_state)
+                # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
                 self._max_position = max(self._max_position, w)
 
                 if not state.dot.is_regex:
@@ -793,9 +794,10 @@ class Grammar(NodeVisitor):
             w = 0  # Index into the input word
             bit_count = -1  # If > 0, indicates the next bit to be scanned (7-0)
 
-            while k < len(table) and w <= len(word):
+            while k < len(table) or w <= len(word):
                 scanned = 1
 
+                # LOGGER.debug(f"Processing {len(table[k])} states at column {k}")
                 for state in table[k]:
                     if w >= len(word):
                         if allow_incomplete:
@@ -847,11 +849,11 @@ class Grammar(NodeVisitor):
                                 match, match_length = \
                                     self.scan_bytes(state, word, table, k, w)
                                 if match:
-                                    LOGGER.debug(f"Matched {match_length} byte(s) {state} at position {w:#06x} ({w}) {word[w:]!r}")
+                                    # LOGGER.debug(f"Matched {match_length} byte(s) {state} at position {w:#06x} ({w}) {word[w:]!r}")
                                     scanned = max(scanned, match_length)
 
                 if scanned > 0:
-                    LOGGER.debug(f"Scanned {scanned} byte(s) at position {w:#06x} ({w}); bit_count = {bit_count}")
+                    # LOGGER.debug(f"Scanned {scanned} byte(s) at position {w:#06x} ({w}); bit_count = {bit_count}")
                     if bit_count >= 0:
                         # Advance by one bit
                         bit_count -= 1
