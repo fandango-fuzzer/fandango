@@ -66,7 +66,7 @@ Your output will look like this:
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10
+!fandango fuzz -f persons.fan -n 10 --validate
 assert _exit_code == 0
 ```
 
