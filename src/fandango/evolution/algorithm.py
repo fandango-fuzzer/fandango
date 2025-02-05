@@ -172,11 +172,11 @@ class Fandango:
 
                     if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
                         suggested_tree = self.grammar.parse(
-                            str(value), failing_tree.tree.symbol
+                            value, failing_tree.tree.symbol
                         )
                         if suggested_tree is None:
                             LOGGER.warning(
-                                f"Suggested fix for {failing_tree.tree.symbol} returned None."
+                                f"Could not parse {value!r} into {failing_tree.tree.symbol}"
                             )
                             continue
                         individual = individual.replace(
