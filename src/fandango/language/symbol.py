@@ -43,7 +43,7 @@ class Symbol(abc.ABC):
         return NotImplemented
 
     def __str__(self):
-        return self.symbol
+        return str(self.symbol)
 
     def __repr__(self):
         return "Symbol(" + repr(self.symbol) + ")"
