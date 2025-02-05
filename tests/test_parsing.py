@@ -212,12 +212,12 @@ class TestEmptyParsing(unittest.TestCase):
         self._test(
             "123456",
             DerivationTree(
-                NonTerminal("<start>"),
+                NonTerminal('<start>'),
                 [
-                    DerivationTree(Terminal("12345")),
-                    DerivationTree(NonTerminal("<digit>"),
-                            [DerivationTree(Terminal("6"))]
-                    ),
-                ],
-            ),
+                    DerivationTree(Terminal('12345')),
+                    DerivationTree(Terminal('')),
+                    DerivationTree(NonTerminal('<digit>'),
+                                    [DerivationTree(Terminal('6'))]),
+                ]
+            )
         )
