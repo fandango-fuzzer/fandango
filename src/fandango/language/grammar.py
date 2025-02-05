@@ -487,7 +487,7 @@ class ParseState:
             f"({self.nonterminal} -> "
             + "".join(
                 [
-                    f"{'•' if i == self._dot else ''}{s!r}"
+                    f"{'•' if i == self._dot else ''}{s!s}"
                     for i, s in enumerate(self.symbols)
                 ]
             )
@@ -723,7 +723,7 @@ class Grammar(NodeVisitor):
             match, match_length = state.dot.check(word[w:])
             if match:
                 # Found a match
-                # LOGGER.debug(f"Matched {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w+match_length]!r}")
+                LOGGER.debug(f"Matched {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w+match_length]!r}")
                 next_state = state.next()
                 next_state.children.append(
                     DerivationTree(Terminal(word[w:w+match_length]))
