@@ -42,6 +42,9 @@ class Symbol(abc.ABC):
     def __hash__(self):
         return NotImplemented
 
+    def to_repr(self):
+        return "Symbol(" + repr(self.symbol) + ")"
+
 
 class NonTerminal(Symbol):
     def __init__(self, symbol: str):
@@ -56,6 +59,9 @@ class NonTerminal(Symbol):
 
     def __hash__(self):
         return hash((self.symbol, self.type))
+
+    def to_repr(self):
+        return "NonTerminal(" + repr(self.symbol) + ")"
 
 
 class Terminal(Symbol):
@@ -104,15 +110,15 @@ class Terminal(Symbol):
         # LOGGER.debug(f"Checking {self.symbol!r} against {word!r}")
         symbol = self.symbol
 
-        if isinstance(self.symbol, bytes) and isinstance(word, str):
+        if isinstance(symbol, bytes) and isinstance(word, str):
             assert isinstance(symbol, bytes)
             symbol = symbol.decode("iso-8859-1")
-        if isinstance(self.symbol, str) and isinstance(word, bytes):
+        if isinstance(symbol, str) and isinstance(word, bytes):
             assert isinstance(word, bytes)
             word = word.decode("iso-8859-1")
 
-        assert isinstance(symbol, str)
-        assert isinstance(word, str)
+        assert ((isinstance(symbol, str) and isinstance(word, str))
+                or (isinstance(symbol, bytes) and isinstance(word, bytes)))
 
         if self.is_regex:
             match = re.match(symbol, word)
@@ -143,8 +149,8 @@ class Terminal(Symbol):
             if '"' not in self.symbol:
                 return 'r"' + str(self.symbol) + '"'
 
-            # Mixed quotes: escape single quotes
-            symbol = self.symbol.replace("'", r"\'")
+            # Mixed quotes: encode single quotes
+            symbol = self.symbol.replace("'", r"\x27")
             return "r'" + str(symbol) + "'"
 
         # Not a regex
@@ -158,3 +164,6 @@ class Terminal(Symbol):
 
     def __hash__(self):
         return hash((self.symbol, self.type))
+
+    def to_repr(self):
+        return "Terminal(" + repr(self.symbol) + ")"

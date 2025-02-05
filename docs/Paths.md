@@ -235,7 +235,7 @@ $ fandango fuzz -f persons.fan -n 10 -c '<first_name>[0].endswith("x")'
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c '<first_name>[0].endswith("x")'
+!fandango fuzz -f persons.fan -n 10 -c '<first_name>[0].endswith("x")' --validate
 assert _exit_code == 0
 ```
 
@@ -274,7 +274,7 @@ $ fandango fuzz -f persons.fan -n 10 -c '<first_name>.<name>.endswith("x")'
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c '<first_name>.<name>.endswith("x")'
+!fandango fuzz -f persons.fan -n 10 -c '<first_name>.<name>.endswith("x")' --validate
 assert _exit_code == 0
 ```
 
@@ -324,7 +324,7 @@ $ fandango fuzz -f persons.fan -n 10 -c '<first_name>..<ascii_uppercase_letter> 
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c '<first_name>..<ascii_uppercase_letter> == "X"'
+!fandango fuzz -f persons.fan -n 10 -c '<first_name>..<ascii_uppercase_letter> == "X"' --validate
 assert _exit_code == 0
 ```
 
@@ -350,7 +350,7 @@ $ fandango fuzz -f persons.fan -n 10 -c '<start>[0].<last_name>..<ascii_lowercas
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c '<start>[0].<last_name>..<ascii_lowercase_letter> == "x"'
+!fandango fuzz -f persons.fan -n 10 -c '<start>[0].<last_name>..<ascii_lowercase_letter> == "x"' --validate
 assert _exit_code == 0
 ```
 
@@ -420,7 +420,7 @@ $ fandango fuzz -f persons.fan -n 10 -c 'any(n.startswith("A") for n in *<name>)
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c 'exists <name> in <start>: <name>.startswith("A")'
+!fandango fuzz -f persons.fan -n 10 -c 'exists <name> in <start>: <name>.startswith("A")' --validate
 assert _exit_code == 0
 ```
 
@@ -457,7 +457,7 @@ $ fandango fuzz -f persons.fan -n 10 -c 'all(c == "a" for c in *<first_name>..<a
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c '<first_name>..<ascii_lowercase_letter> == "a"'
+!fandango fuzz -f persons.fan -n 10 -c '<first_name>..<ascii_lowercase_letter> == "a"' --validate
 assert _exit_code == 0
 ```
 
@@ -503,7 +503,7 @@ $ fandango fuzz -f persons.fan -n 10 -c 'int(<age>) > 30 -> <first_name>.startsw
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c 'int(<age>) > 30 -> <first_name>.startswith("A")'
+!fandango fuzz -f persons.fan -n 10 -c 'int(<age>) > 30 -> <first_name>.startswith("A")' --validate
 assert _exit_code == 0
 ```
 
@@ -516,7 +516,7 @@ $ fandango fuzz -f persons-faker-gauss.fan -n 10 -c 'int(<age>) > 30 -> <first_n
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons-faker-gauss.fan -n 10 -c 'int(<age>) > 30 -> <first_name>.startswith("A")'
+!fandango fuzz -f persons-faker-gauss.fan -n 10 -c 'int(<age>) > 30 -> <first_name>.startswith("A")' --validate
 assert _exit_code == 0
 ```
 
