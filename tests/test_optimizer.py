@@ -47,7 +47,9 @@ class GeneticTest(unittest.TestCase):
     def test_evaluate_fitness(self):
         # Evaluate the fitness of the population
         for individual in self.fandango.population:
-            fitness, failing_trees = self.fandango.evaluate_individual(individual)
+            fitness, failing_trees = self.fandango.evaluator.evaluate_individual(
+                individual
+            )
             self.assertIsInstance(fitness, float)
             self.assertGreaterEqual(fitness, 0.0)
             self.assertLessEqual(fitness, 1.0)
@@ -58,7 +60,9 @@ class GeneticTest(unittest.TestCase):
 
     def test_evaluate_population(self):
         # Evaluate the fitness of the population
-        evaluation = self.fandango.evaluate_population()
+        evaluation = self.fandango.evaluator.evaluate_population(
+            self.fandango.population
+        )
         assert len(evaluation) == len(self.fandango.population)
         for derivation_tree, fitness, failing_trees in evaluation:
             self.assertIsInstance(fitness, float)
@@ -129,10 +133,14 @@ class GeneticTest(unittest.TestCase):
 
         # Perform mutation
         mutant1 = self.fandango.mutation_method.mutate(
-            children[0], self.fandango.grammar, self.fandango.evaluate_individual
+            children[0],
+            self.fandango.grammar,
+            self.fandango.evaluator.evaluate_individual,
         )
         mutant2 = self.fandango.mutation_method.mutate(
-            children[1], self.fandango.grammar, self.fandango.evaluate_individual
+            children[1],
+            self.fandango.grammar,
+            self.fandango.evaluator.evaluate_individual,
         )
 
         # Check that the mutated children are of the correct type
