@@ -137,7 +137,7 @@ bits = make_rule("bit", ["0", "1"])
 stdlib += bits
 
 stdlib += make_header("Bytes")
-bytes = make_def("byte", "".join(chr(c) for c in range(0, 256)), force_binary=True)
+bytes = make_rule("byte", [r"rb'[\x00-\xff]'"])
 stdlib += bytes
 
 
