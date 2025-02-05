@@ -841,6 +841,8 @@ class Grammar(NodeVisitor):
                             else:
                                 # Scan a byte
                                 if 0 <= bit_count <= 7:
+                                    # LOGGER.warning(f"Position {w:#06x} ({w}): Parsing a byte while expecting bit {bit_count}. Check if bits come in multiples of eight")
+
                                     # We are still expecting bits here:
                                     #
                                     # * we may have _peeked_ at a bit,
@@ -850,8 +852,8 @@ class Grammar(NodeVisitor):
                                     #
                                     # In either case, we need to skip back
                                     # to scanning bytes here.
-                                    # LOGGER.warning(f"Position {w:#06x} ({w}): Parsing a byte while expecting bit {bit_count}. Check if bits come in multiples of eight")
                                     bit_count = -1
+                                    scanned = 1
 
                                 # LOGGER.debug(f"Checking byte(s) {state} at position {w:#06x} ({w}) {word[w:]!r}")
                                 match, match_length = \
@@ -861,6 +863,7 @@ class Grammar(NodeVisitor):
                                     scanned = max(scanned, match_length)
 
                 if scanned > 0:
+                    # LOGGER.debug(f"Scanned {scanned} byte(s) at position {w:#06x} ({w}); bit_count = {bit_count}")
                     if bit_count >= 0:
                         # Advance by one bit
                         bit_count -= 1
