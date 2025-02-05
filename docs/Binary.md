@@ -83,7 +83,7 @@ $ fandango fuzz -f credit_card.fan -n 10
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f credit_card.fan -n 10
+!fandango fuzz -f credit_card.fan -n 10 --validate
 assert _exit_code == 0
 ```
 
@@ -186,7 +186,7 @@ $ fandango fuzz -f binfinity.fan -n 10
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f binfinity.fan -n 10
+!fandango fuzz -f binfinity.fan -n 10 --validate
 assert _exit_code == 0
 ```
 
@@ -273,7 +273,7 @@ and obtain the same result:
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -n 1 -f binary-pack.fan -o - | od -c
+!fandango fuzz -n 1 -f binary-pack.fan -o - --validate | od -c
 assert _exit_code == 0
 ```
 
