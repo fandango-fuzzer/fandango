@@ -74,6 +74,21 @@ The expression `r'\\d'` would actually match a backslash, followed by a `d` char
 Be aware of the specific syntax of `r`-strings as it comes to backslashes.
 :::
 
+One consequence of backslashes being interpreted literally is that you cannot escape quote characters in a regular expression.
+This causes a problem if you need two kinds of quotes (`"` and `'`) in the same regular expression – say, a rule that checks for forbidden characters.
+
+However, encodings of the form `\xNN` are also interpreted by regular expressions.
+Hence, if you need quotes, you can use
+
+* `\x22` instead of `"`
+* `\x27` instead of `'`
+
+Here is an example:
+
+```
+<forbidden_characters> ::= r'[\x22\x27;]'
+```
+
 
 ## Fine Points about Regular Expressions
 
