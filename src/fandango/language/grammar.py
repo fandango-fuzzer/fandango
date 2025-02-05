@@ -674,6 +674,9 @@ class Grammar(NodeVisitor):
             assert isinstance(state.dot.symbol, int)
             assert 0 <= bit_count <= 7
 
+            if w >= len(word):
+                return False
+
             # Get the highest bit. If `word` is bytes, word[w] is an integer.
             byte = ord(word[w]) if isinstance(word, str) else word[w]
             bit = (byte >> bit_count) & 1
