@@ -182,3 +182,42 @@ class TestIncompleteParsing(unittest.TestCase):
                 ],
             ),
         )
+
+
+class TestEmptyParsing(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.file = open("tests/resources/empty.fan", "r")
+        cls.grammar, _ = parse(cls.file, use_stdlib=False, use_cache=False)
+
+    def _test(self, example, tree):
+        actual_tree = self.grammar.parse(example)
+        self.assertEqual(tree, actual_tree)
+
+    def test_a(self):
+        self._test(
+            "1234",
+            DerivationTree(
+                NonTerminal("<start>"),
+                [
+                    DerivationTree(Terminal("123")),
+                    DerivationTree(NonTerminal("<digit>"),
+                            [DerivationTree(Terminal("4"))]
+                    ),
+                ],
+            ),
+        )
+
+    def test_b(self):
+        self._test(
+            "123456",
+            DerivationTree(
+                NonTerminal("<start>"),
+                [
+                    DerivationTree(Terminal("12345")),
+                    DerivationTree(NonTerminal("<digit>"),
+                            [DerivationTree(Terminal("6"))]
+                    ),
+                ],
+            ),
+        )
