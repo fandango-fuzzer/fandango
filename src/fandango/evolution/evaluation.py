@@ -1,3 +1,4 @@
+import concurrent.futures
 from typing import Dict, List, Tuple
 
 from fandango.constraints.base import Constraint
@@ -103,4 +104,24 @@ class Evaluator:
                 new_fitness = fitness + bonus_map.get(idx, 0.0)
                 new_evaluation.append((ind, new_fitness, failing_trees))
             evaluation = new_evaluation
+        return evaluation
+
+    def evaluate_population_parallel(
+        self, population: List[DerivationTree], num_workers: int = 4
+    ) -> List[Tuple[DerivationTree, float, List]]:
+        evaluation = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+            future_to_individual = {
+                executor.submit(self.evaluate_individual, ind): ind
+                for ind in population
+            }
+            for future in concurrent.futures.as_completed(future_to_individual):
+                ind = future_to_individual[future]
+                try:
+                    # evaluate_individual returns a 2-tuple: (fitness, failing_trees)
+                    fitness, failing_trees = future.result()
+                    # Pack the individual with its evaluation so that we have a 3-tuple.
+                    evaluation.append((ind, fitness, failing_trees))
+                except Exception as e:
+                    LOGGER.error(f"Error during parallel evaluation: {e}")
         return evaluation

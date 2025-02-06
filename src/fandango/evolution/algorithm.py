@@ -297,7 +297,9 @@ class Fandango:
 
             fixed_population = [self.fix_individual(ind) for ind in new_population]
             self.population = fixed_population[: self.population_size]
-            self.evaluation = self.evaluator.evaluate_population(self.population)
+            self.evaluation = self.evaluator.evaluate_population_parallel(
+                self.population, num_workers=4
+            )
             self.fitness = (
                 sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
