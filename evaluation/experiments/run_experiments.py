@@ -15,14 +15,11 @@ def run_experiments():
     # Set the random seed
     random.seed(random_seed)
 
-    try:
-        evaluate_faker()
-        evaluate_hash()
-        evaluate_pixels()
-        evaluate_transactions()
-        evaluate_voltage()
-    except Exception as e:
-        raise e
+    evaluate_faker()
+    evaluate_hash()
+    evaluate_pixels()
+    evaluate_transactions()
+    evaluate_voltage()
 
 
 if __name__ == "__main__":
