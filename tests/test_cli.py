@@ -101,7 +101,9 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         self.assertEqual(0, code)
 
     def test_infinity(self):
-        command = shlex.split("fandango fuzz -f docs/infinity.fan -n 1 --format=none --validate --random-seed 426912")
+        # docs/infinity.fan can only generate a limited number of individuals,
+        # so we decrease the population size
+        command = shlex.split("fandango fuzz -f docs/infinity.fan -n 1 --format=none --validate --random-seed 426912 --population-size 10")
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
