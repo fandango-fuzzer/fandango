@@ -1,3 +1,5 @@
+#!/usr/bin/env pytest
+
 import unittest
 import shlex
 import subprocess

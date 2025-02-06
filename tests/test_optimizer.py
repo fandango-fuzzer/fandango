@@ -1,4 +1,5 @@
-# test_optimizer.py
+#!/usr/bin/env pytest
+
 import random
 import unittest
 from typing import List
