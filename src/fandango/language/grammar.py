@@ -487,7 +487,7 @@ class ParseState:
             f"({self.nonterminal} -> "
             + "".join(
                 [
-                    f"{'•' if i == self._dot else ''}{s!r}"
+                    f"{'•' if i == self._dot else ''}{s!s}"
                     for i, s in enumerate(self.symbols)
                 ]
             )
@@ -708,7 +708,45 @@ class Grammar(NodeVisitor):
             table: List[Set[ParseState] | Column],
             k: int,
             w: int,
-        ) -> tuple[bool, int]:
+        ) -> bool:
+            """
+            Scan a byte from the input `word`.
+            `state` is the current parse state.
+            `table` is the parse table.
+            `table[k]` is the current column.
+            `word[w]` is the current byte.
+            Return True if a byte was matched, False otherwise.
+            """
+
+            assert not isinstance(state.dot.symbol, int)
+            assert not state.dot.is_regex
+
+            # LOGGER.debug(f"Checking byte(s) {state.dot!r} at position {w:#06x} ({w}) {word[w:]!r}")
+
+            match, match_length = state.dot.check(word[w:])
+            if not match:
+                return False
+
+            # Found a match
+            # LOGGER.debug(f"Matched byte(s) {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w + match_length]!r}")
+            next_state = state.next()
+            next_state.children.append(
+                DerivationTree(Terminal(word[w:w + match_length]))
+            )
+            table[k + match_length].add(next_state)
+            # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
+            self._max_position = max(self._max_position, w + match_length)
+
+            return True
+
+        def scan_regex(
+            self,
+            state: ParseState,
+            word: str | bytes,
+            table: List[Set[ParseState] | Column],
+            k: int,
+            w: int,
+        ) -> bool:
             """
             Scan a byte from the input `word`.
             `state` is the current parse state.
@@ -719,24 +757,24 @@ class Grammar(NodeVisitor):
             """
 
             assert not isinstance(state.dot.symbol, int)
+            assert state.dot.is_regex
+
+            # LOGGER.debug(f"Checking regex {state.dot!r} at position {w:#06x} ({w}) {word[w:]!r}")
 
             match, match_length = state.dot.check(word[w:])
-            if match:
-                # Found a match
-                # LOGGER.debug(f"Matched {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w+match_length]!r}")
-                next_state = state.next()
-                next_state.children.append(
-                    DerivationTree(Terminal(word[w:w+match_length]))
-                )
-                table[k + match_length].add(next_state)
-                self._max_position = max(self._max_position, w)
+            if not match:
+                return False
 
-                if not state.dot.is_regex:
-                    # We only advance by more than 1 if we have regexes.
-                    # Otherwise, we may skip alternatives.
-                    match_length = 1
-
-            return match, match_length
+            # Found a match
+            # LOGGER.debug(f"Matched regex {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w+match_length]!r}")
+            next_state = state.next()
+            next_state.children.append(
+                DerivationTree(Terminal(word[w:w+match_length]))
+            )
+            table[k + match_length].add(next_state)
+            # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
+            self._max_position = max(self._max_position, w + match_length)
+            return True
 
         def complete(
             self,
@@ -793,9 +831,8 @@ class Grammar(NodeVisitor):
             w = 0  # Index into the input word
             bit_count = -1  # If > 0, indicates the next bit to be scanned (7-0)
 
-            while k < len(table) and w <= len(word):
-                scanned = 1
-
+            while k < len(table):
+                # LOGGER.debug(f"Processing {len(table[k])} states at column {k}")
                 for state in table[k]:
                     if w >= len(word):
                         if allow_incomplete:
@@ -805,10 +842,12 @@ class Grammar(NodeVisitor):
                             self.complete(state, table, k)
 
                     if state.finished():
-                        if state.nonterminal == implicit_start and w >= len(word):
-                            # LOGGER.debug(f"Found {len(state.children)} parse tree(s)")
-                            for child in state.children:
-                                yield child
+                        # LOGGER.debug(f"Finished")
+                        if state.nonterminal == implicit_start:
+                            if w >= len(word):
+                                # LOGGER.debug(f"Found {len(state.children)} parse tree(s)")
+                                for child in state.children:
+                                    yield child
 
                         self.complete(state, table, k)
                     elif not state.is_incomplete:
@@ -824,10 +863,10 @@ class Grammar(NodeVisitor):
                                     state, word, table, k, w, bit_count
                                 )
                                 if match:
-                                    LOGGER.debug(f"Matched bit {state} at position {w:#06x} ({w}) {word[w:]!r}")
-                                    scanned = 1
+                                    # LOGGER.debug(f"Matched bit {state} at position {w:#06x} ({w}) {word[w:]!r}")
+                                    pass
                             else:
-                                # Scan a byte
+                                # Scan a regex or a byte
                                 if 0 <= bit_count <= 7:
                                     # LOGGER.warning(f"Position {w:#06x} ({w}): Parsing a byte while expecting bit {bit_count}. Check if bits come in multiples of eight")
 
@@ -841,23 +880,22 @@ class Grammar(NodeVisitor):
                                     # In either case, we need to skip back
                                     # to scanning bytes here.
                                     bit_count = -1
-                                    scanned = 1
 
                                 # LOGGER.debug(f"Checking byte(s) {state} at position {w:#06x} ({w}) {word[w:]!r}")
-                                match, match_length = \
-                                    self.scan_bytes(state, word, table, k, w)
-                                if match:
-                                    LOGGER.debug(f"Matched {match_length} byte(s) {state} at position {w:#06x} ({w}) {word[w:]!r}")
-                                    scanned = max(scanned, match_length)
+                                if state.dot.is_regex:
+                                    match = self.scan_regex(state, word,
+                                                            table, k, w)
+                                else:
+                                    match = self.scan_bytes(state, word,
+                                                            table, k, w)
 
-                if scanned > 0:
-                    LOGGER.debug(f"Scanned {scanned} byte(s) at position {w:#06x} ({w}); bit_count = {bit_count}")
-                    if bit_count >= 0:
-                        # Advance by one bit
-                        bit_count -= 1
-                    if bit_count < 0:
-                        # Advance to next byte
-                        w += scanned
+                # LOGGER.debug(f"Scanned {scanned} byte(s) at position {w:#06x} ({w}); bit_count = {bit_count}")
+                if bit_count >= 0:
+                    # Advance by one bit
+                    bit_count -= 1
+                if bit_count < 0:
+                    # Advance to next byte
+                    w += 1
 
                 k += 1
 

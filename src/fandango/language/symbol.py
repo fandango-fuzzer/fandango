@@ -42,7 +42,10 @@ class Symbol(abc.ABC):
     def __hash__(self):
         return NotImplemented
 
-    def to_repr(self):
+    def __str__(self):
+        return str(self.symbol)
+
+    def __repr__(self):
         return "Symbol(" + repr(self.symbol) + ")"
 
 
@@ -51,16 +54,13 @@ class NonTerminal(Symbol):
         super().__init__(symbol, SymbolType.NON_TERMINAL)
         self.is_implicit = symbol.startswith("<_")
 
-    def __repr__(self):
-        return self.symbol
-
     def __eq__(self, other):
         return isinstance(other, NonTerminal) and self.symbol == other.symbol
 
     def __hash__(self):
         return hash((self.symbol, self.type))
 
-    def to_repr(self):
+    def __repr__(self):
         return "NonTerminal(" + repr(self.symbol) + ")"
 
 
@@ -137,7 +137,7 @@ class Terminal(Symbol):
     def check_all(self, word: str | int) -> bool:
         return word == self.symbol
 
-    def __repr__(self):
+    def _repr(self):
         if self.is_regex:
             if isinstance(self.symbol, bytes):
                 symbol = repr(self.symbol)
@@ -159,11 +159,8 @@ class Terminal(Symbol):
     def __eq__(self, other):
         return isinstance(other, Terminal) and self.symbol == other.symbol
 
-    def __str__(self):
-        return self.symbol
-
     def __hash__(self):
         return hash((self.symbol, self.type))
 
-    def to_repr(self):
-        return "Terminal(" + repr(self.symbol) + ")"
+    def __repr__(self):
+        return "Terminal(" + self._repr() + ")"
