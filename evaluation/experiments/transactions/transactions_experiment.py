@@ -2,12 +2,10 @@ from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse
 
 
-def evaluate_hash():
-    file = open("evaluation/experiments/hash/hash.fan", "r")
+def evaluate_transactions():
+    # Load the fandango file
+    file = open("evaluation/experiments/transactions/transactions.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False)
-
-    print(grammar)
-    print(constraints)
 
     fandango = Fandango(grammar, constraints)
     fandango.evolve()
@@ -16,4 +14,4 @@ def evaluate_hash():
 
 
 if __name__ == "__main__":
-    evaluate_hash()
+    evaluate_transactions()

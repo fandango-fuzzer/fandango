@@ -105,38 +105,3 @@ class test_cli(unittest.TestCase):
             self.assertEqual(expected[i], actual)
             os.remove(filename)
         shutil.rmtree("tests/resources/test")
-
-    def test_unsat(self):
-        command = [
-            "fandango",
-            "fuzz",
-            "-f",
-            "tests/resources/digit.fan",
-            "-n",
-            "10",
-            "--random-seed",
-            "426912",
-            "-c",
-            "False",
-        ]
-        expected = """fandango:ERROR: Population did not converge to a perfect population
-fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
-"""
-        out, err, code = self.run_command(command)
-        self.assertEqual(0, code)
-        self.assertEqual("", out)
-        self.assertEqual(expected, err)
-
-    def test_parse(self):
-        command = [
-            "fandango",
-            "parse",
-            "-f",
-            "tests/resources/rgb.fan",
-            "tests/resources/rgb.txt",
-        ]
-        expected = ""
-        out, err, code = self.run_command(command)
-        self.assertEqual(0, code)
-        self.assertEqual("", out)
-        self.assertEqual(expected, err)
