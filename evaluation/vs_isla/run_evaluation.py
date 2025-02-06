@@ -46,14 +46,11 @@ def run_evaluation(time: int = 3600):
     # Set the random seed
     random.seed(random_seed)
 
-    try:
-        better_print_results(evaluate_csv(seconds))
-        better_print_results(evaluate_rest(seconds))
-        better_print_results(evaluate_scriptsizec(seconds))
-        better_print_results(evaluate_tar(seconds))
-        better_print_results(evaluate_xml(seconds))
-    except Exception as e:
-        raise e
+    better_print_results(evaluate_csv(seconds))
+    better_print_results(evaluate_rest(seconds))
+    better_print_results(evaluate_scriptsizec(seconds))
+    better_print_results(evaluate_tar(seconds))
+    better_print_results(evaluate_xml(seconds))
 
 
 if __name__ == "__main__":
