@@ -1,5 +1,6 @@
 from typing import Callable, List, Set
 
+from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
 from fandango.language.grammar import DerivationTree, Grammar
 from fandango.logger import LOGGER
 
@@ -75,3 +76,19 @@ class PopulationManager:
                 current_population.append(self.grammar.fuzz(self.start_symbol))
 
         return current_population
+
+    def fix_individual(
+        self, individual: DerivationTree, failing_trees: List[FailingTree]
+    ) -> DerivationTree:
+        fixes_made = 0
+        for failing_tree in failing_trees:
+            for operator, value, side in failing_tree.suggestions:
+                if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
+                    suggested_tree = self.grammar.parse(
+                        str(value), start=failing_tree.tree.symbol.symbol
+                    )
+                    if suggested_tree is None:
+                        continue
+                    individual = individual.replace(failing_tree.tree, suggested_tree)
+                    fixes_made += 1
+        return individual, fixes_made
