@@ -2,6 +2,9 @@ import random
 import sys
 from typing import Tuple
 
+import logging
+from fandango.logger import LOGGER
+
 from evaluation.vs_isla.csv_evaluation.csv_evaluation import evaluate_csv
 from evaluation.vs_isla.rest_evaluation.rest_evaluation import evaluate_rest
 from evaluation.vs_isla.scriptsizec_evaluation.scriptsizec_evaluation import (
@@ -10,6 +13,7 @@ from evaluation.vs_isla.scriptsizec_evaluation.scriptsizec_evaluation import (
 from evaluation.vs_isla.tar_evaluation.tar_evaluation import evaluate_tar
 from evaluation.vs_isla.xml_evaluation.xml_evaluation import evaluate_xml
 
+LOGGER.setLevel(logging.WARNING)  # Default
 
 # Return the evaluation results as a tuple of values (subject, total, valid, percentage, diversity, mean_length, median)
 def better_print_results(
@@ -42,14 +46,11 @@ def run_evaluation(time: int = 3600):
     # Set the random seed
     random.seed(random_seed)
 
-    try:
-        better_print_results(evaluate_csv(seconds))
-        better_print_results(evaluate_rest(seconds))
-        better_print_results(evaluate_scriptsizec(seconds))
-        better_print_results(evaluate_tar(seconds))
-        better_print_results(evaluate_xml(seconds))
-    except Exception as e:
-        raise e
+    better_print_results(evaluate_csv(seconds))
+    better_print_results(evaluate_rest(seconds))
+    better_print_results(evaluate_scriptsizec(seconds))
+    better_print_results(evaluate_tar(seconds))
+    better_print_results(evaluate_xml(seconds))
 
 
 if __name__ == "__main__":

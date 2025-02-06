@@ -6,10 +6,15 @@ def evaluate_faker():
     file = open("evaluation/experiments/faker/faker.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False)
 
+    print(grammar)
+    for constraint in constraints:
+        print(constraint)
+
     fandango = Fandango(grammar, constraints)
     fandango.evolve()
 
-    print(fandango.solution)
+    for solution in fandango.solution:
+        print(solution)
 
 
 if __name__ == "__main__":

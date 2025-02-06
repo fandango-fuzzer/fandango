@@ -1,3 +1,5 @@
+#!/usr/bin/env pytest
+
 import random
 import unittest
 

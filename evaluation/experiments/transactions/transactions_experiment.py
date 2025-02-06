@@ -7,10 +7,15 @@ def evaluate_transactions():
     file = open("evaluation/experiments/transactions/transactions.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False)
 
+    print(grammar)
+    for constraint in constraints:
+        print(constraint)
+
     fandango = Fandango(grammar, constraints)
     fandango.evolve()
 
-    print(fandango.solution)
+    for solution in fandango.solution:
+        print(solution)
 
 
 if __name__ == "__main__":
