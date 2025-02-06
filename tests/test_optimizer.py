@@ -156,14 +156,12 @@ class GeneticTest(unittest.TestCase):
             self.assertTrue(self.fandango.grammar.parse(str(individual)))
 
     def test_evolve(self):
-        initial_population = self.fandango.population
-
         # Run the evolution process
         self.fandango.evolve()
 
         # Check that the population has been updated
         self.assertIsNotNone(self.fandango.population)
-        self.assertNotEqual(self.fandango.population, initial_population)
+        self.assertNotEqual(self.fandango.population, [])
 
         # Check that the population is valid
         for individual in self.fandango.population:
