@@ -188,3 +188,6 @@ uninstall:
 # python -m evaluation.vs_isla.run_evaluation
 evaluate evaluation:
 	$(PYTHON) -m evaluation.vs_isla.run_evaluation 1
+
+experiment experiments:
+	$(PYTHON) -m evaluation.experiments.run_experiments
