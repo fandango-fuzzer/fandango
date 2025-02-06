@@ -1,5 +1,6 @@
 from typing import Callable, List, Set
 
+from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
 from fandango.language.grammar import DerivationTree, Grammar
 from fandango.logger import LOGGER
 
@@ -39,11 +40,8 @@ class PopulationManager:
         max_attempts = self.population_size * 10  # safeguard against infinite loops
 
         while len(unique_population) < self.population_size and attempts < max_attempts:
-            try:
-                candidate = fix_func(self.grammar.fuzz(self.start_symbol))
-                self.add_unique_individual(unique_population, candidate, unique_hashes)
-            except Exception as e:
-                LOGGER.error(f"Error during initial population generation: {e}")
+            candidate = fix_func(self.grammar.fuzz(self.start_symbol))
+            self.add_unique_individual(unique_population, candidate, unique_hashes)
             attempts += 1
 
         if len(unique_population) < self.population_size:
@@ -64,13 +62,10 @@ class PopulationManager:
         while (
             len(current_population) < self.population_size and attempts < max_attempts
         ):
-            try:
-                candidate = fix_func(self.grammar.fuzz(self.start_symbol))
-                if hash(candidate) not in unique_hashes:
-                    unique_hashes.add(hash(candidate))
-                    current_population.append(candidate)
-            except Exception as e:
-                LOGGER.error(f"Error during population refill: {e}")
+            candidate = fix_func(self.grammar.fuzz(self.start_symbol))
+            if hash(candidate) not in unique_hashes:
+                unique_hashes.add(hash(candidate))
+                current_population.append(candidate)
             attempts += 1
 
         if len(current_population) < self.population_size:
@@ -78,9 +73,22 @@ class PopulationManager:
                 "Could not generate full unique new population, filling remaining slots with duplicates."
             )
             while len(current_population) < self.population_size:
-                try:
-                    current_population.append(self.grammar.fuzz(self.start_symbol))
-                except Exception as e:
-                    LOGGER.error(f"Error during fallback population filling: {e}")
-                    break
+                current_population.append(self.grammar.fuzz(self.start_symbol))
+
         return current_population
+
+    def fix_individual(
+        self, individual: DerivationTree, failing_trees: List[FailingTree]
+    ) -> DerivationTree:
+        fixes_made = 0
+        for failing_tree in failing_trees:
+            for operator, value, side in failing_tree.suggestions:
+                if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
+                    suggested_tree = self.grammar.parse(
+                        str(value), start=failing_tree.tree.symbol.symbol
+                    )
+                    if suggested_tree is None:
+                        continue
+                    individual = individual.replace(failing_tree.tree, suggested_tree)
+                    fixes_made += 1
+        return individual, fixes_made

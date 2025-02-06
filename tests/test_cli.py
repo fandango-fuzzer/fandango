@@ -1,4 +1,7 @@
+#!/usr/bin/env pytest
+
 import os
+import shlex
 import shutil
 import subprocess
 import unittest
@@ -18,7 +21,7 @@ class test_cli(unittest.TestCase):
         return out.decode(), err.decode(), proc.returncode
 
     def test_help(self):
-        command = ["fandango", "--help"]
+        command = shlex.split("fandango --help")
         out, err, code = self.run_command(command)
         parser = get_parser(True)
         self.assertEqual(0, code)
@@ -26,16 +29,9 @@ class test_cli(unittest.TestCase):
         self.assertEqual(err, "")
 
     def test_fuzz_basic(self):
-        command = [
-            "fandango",
-            "fuzz",
-            "-f",
-            "tests/resources/digit.fan",
-            "-n",
-            "10",
-            "--random-seed",
-            "426912",
-        ]
+        command = shlex.split(
+            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912"
+        )
         expected = """35716
 4
 9768
@@ -52,20 +48,9 @@ class test_cli(unittest.TestCase):
         self.assertEqual("", err)
 
     def test_output_to_file(self):
-        command = [
-            "fandango",
-            "fuzz",
-            "-f",
-            "tests/resources/digit.fan",
-            "-n",
-            "10",
-            "--random-seed",
-            "426912",
-            "-o",
-            "tests/resources/test.txt",
-            "-s",
-            ";",
-        ]
+        command = shlex.split(
+            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 -o tests/resources/test.txt -s ;"
+        )
         expected = "35716;4;9768;30;5658;5;9;649;20;41"
         out, err, code = self.run_command(command)
         self.assertEqual(0, code)
@@ -77,18 +62,9 @@ class test_cli(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_output_multiple_files(self):
-        command = [
-            "fandango",
-            "fuzz",
-            "-f",
-            "tests/resources/digit.fan",
-            "-n",
-            "10",
-            "--random-seed",
-            "426912",
-            "-d",
-            "tests/resources/test",
-        ]
+        command = shlex.split(
+            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 -d tests/resources/test"
+        )
         expected = ["35716", "4", "9768", "30", "5658", "5", "9", "649", "20", "41"]
         (
             out,
@@ -105,3 +81,44 @@ class test_cli(unittest.TestCase):
             self.assertEqual(expected[i], actual)
             os.remove(filename)
         shutil.rmtree("tests/resources/test")
+
+    def test_unsat(self):
+        command = shlex.split(
+            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 -c False"
+        )
+        expected = """fandango:ERROR: Population did not converge to a perfect population
+fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
+"""
+        out, err, code = self.run_command(command)
+        self.assertEqual(0, code)
+        self.assertEqual("", out)
+        self.assertEqual(expected, err)
+
+    def test_parse(self):
+        command = shlex.split(
+            "fandango parse -f tests/resources/rgb.fan tests/resources/rgb.txt"
+        )
+        out, err, code = self.run_command(command)
+        self.assertEqual(0, code)
+        self.assertEqual("", out)
+        self.assertEqual("", err)
+
+    def test_binfinity(self):
+        command = shlex.split(
+            "fandango fuzz -f docs/binfinity.fan -n 1 --format=none --validate --random-seed 426912"
+        )
+        out, err, code = self.run_command(command)
+        self.assertEqual("", err)
+        self.assertEqual("", out)
+        self.assertEqual(0, code)
+
+    def test_infinity(self):
+        # docs/infinity.fan can only generate a limited number of individuals,
+        # so we decrease the population size
+        command = shlex.split(
+            "fandango fuzz -f docs/infinity.fan -n 1 --format=none --validate --random-seed 426912 --population-size 10"
+        )
+        out, err, code = self.run_command(command)
+        self.assertEqual("", err)
+        self.assertEqual("", out)
+        self.assertEqual(0, code)

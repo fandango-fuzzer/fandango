@@ -6,13 +6,11 @@ def evaluate_voltage():
     file = open("evaluation/experiments/voltage/voltage.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False)
 
-    print(grammar)
-    print(constraints)
-
     fandango = Fandango(grammar, constraints)
     fandango.evolve()
 
-    print(fandango.solution)
+    for solution in fandango.solution:
+        print(solution)
 
 
 if __name__ == "__main__":

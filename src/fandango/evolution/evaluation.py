@@ -1,4 +1,5 @@
 import concurrent.futures
+import random
 from typing import Dict, List, Tuple
 
 from fandango.constraints.base import Constraint
@@ -125,3 +126,30 @@ class Evaluator:
                 except Exception as e:
                     LOGGER.error(f"Error during parallel evaluation: {e}")
         return evaluation
+
+    def select_elites(
+        self,
+        evaluation: List[Tuple[DerivationTree, float, List]],
+        elitism_rate: float,
+        population_size: int,
+    ) -> List[DerivationTree]:
+        return [
+            x[0]
+            for x in sorted(evaluation, key=lambda x: x[1], reverse=True)[
+                : int(elitism_rate * population_size)
+            ]
+        ]
+
+    def tournament_selection(
+        self, evaluation: List[Tuple[DerivationTree, float, List]], tournament_size: int
+    ) -> Tuple[DerivationTree, DerivationTree]:
+        tournament = random.sample(evaluation, k=tournament_size)
+        tournament.sort(key=lambda x: x[1], reverse=True)
+        parent1 = tournament[0][0]
+        if len(tournament) == 2:
+            parent2 = tournament[1][0] if tournament[1][0] != parent1 else parent1
+        else:
+            parent2 = (
+                tournament[1][0] if tournament[1][0] != parent1 else tournament[2][0]
+            )
+        return parent1, parent2
