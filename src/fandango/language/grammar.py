@@ -839,9 +839,10 @@ class Grammar(NodeVisitor):
             `start` is the start symbol (default: `<start>`).
             if `allow_incomplete` is True, the function will return trees even if the input ends prematurely.
             """
-
             if isinstance(start, str):
                 start = NonTerminal(start)
+
+            # LOGGER.debug(f"Parsing {word} into {start!s}")
 
             # Initialize the table
             table: list[set[ParseState] | Column] = [
