@@ -38,7 +38,7 @@ class MyErrorListener(ErrorListener):
         super().__init__()
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise SyntaxError(f"{repr(self.filename)}, line {line}, column {column}: {msg}")
+        raise SyntaxError(f"{self.filename!r}, line {line}, column {column}: {msg}")
 
 
 def closest_match(word, candidates):
@@ -109,7 +109,7 @@ def include(file_to_be_included: str):
         return
 
     raise FileNotFoundError(
-        f"{CURRENT_FILENAME}: {repr(file_to_be_included)} not found in {':'.join(str(dir) for dir in dirs)}"
+        f"{CURRENT_FILENAME}: {file_to_be_included!r} not found in {':'.join(str(dir) for dir in dirs)}"
     )
 
 
@@ -441,7 +441,7 @@ def check_grammar_consistency(
     if start_symbol not in defined_symbols:
         closest = closest_match(start_symbol, defined_symbols)
         raise NameError(
-            f"Start symbol {start_symbol} not defined in grammar. Did you mean {closest}?"
+            f"Start symbol {start_symbol!s} not defined in grammar. Did you mean {closest!s}?"
         )
 
     def collect_used_symbols(tree):
@@ -465,11 +465,11 @@ def check_grammar_consistency(
             and symbol not in given_used_symbols
             and symbol != start_symbol
         ):
-            LOGGER.info(f"Symbol {symbol} defined, but not used")
+            LOGGER.info(f"Symbol {symbol!s} defined, but not used")
 
     if undefined_symbols:
         first_undefined_symbol = undefined_symbols.pop()
-        error = NameError(f"Undefined symbol {first_undefined_symbol} in grammar")
+        error = NameError(f"Undefined symbol {first_undefined_symbol!s} in grammar")
         raise error
 
 
@@ -506,16 +506,16 @@ def check_constraints_existence(grammar, constraints):
                 closest = closest_match(first_missing_symbol, defined_symbols)
 
             if len(missing) > 1:
-                missing_symbols = ", ".join(["<" + symbol + ">" for symbol in missing])
+                missing_symbols = ", ".join(["<" + str(symbol) + ">" for symbol in missing])
                 error = NameError(
-                    f"{constraint}: undefined symbols {missing_symbols}. Did you mean {closest}?"
+                    f"{constraint}: undefined symbols {missing_symbols}. Did you mean {closest!s}?"
                 )
                 raise error
 
             if len(missing) == 1:
                 missing_symbol = missing[0]
                 error = NameError(
-                    f"{constraint}: undefined symbol <{missing_symbol}>. Did you mean {closest}?"
+                    f"{constraint}: undefined symbol <{missing_symbol!s}>. Did you mean {closest!s}?"
                 )
                 raise error
 
@@ -525,11 +525,11 @@ def check_constraints_existence(grammar, constraints):
                 # This handles <parent>[...].<symbol> as <parent>..<symbol>.
                 # We could also interpret the actual [...] contents here,
                 # but slices and chains could make this hard -- AZ
-                recurse = f"<{parent}>[" in str(value) or f"..<{symbol}>" in str(value)
+                recurse = f"<{parent!s}>[" in str(value) or f"..<{symbol!s}>" in str(value)
                 if not check_constraints_existence_children(
                     grammar, parent, symbol, recurse, indirect_child
                 ):
-                    msg = f"{constraint}: <{parent}> has no child <{symbol}>"
+                    msg = f"{constraint!s}: <{parent!s}> has no child <{symbol!s}>"
                     raise ValueError(msg)
 
 

@@ -85,7 +85,7 @@ class DerivationTree:
         return items
 
     def __str__(self):
-        return self.__repr__()
+        return self.to_string()
 
     def __hash__(self):
         """
@@ -274,7 +274,7 @@ class DerivationTree:
         """
         Output the derivation tree in internal representation.
         """
-        s = "  " * start_indent + "DerivationTree(" + self.symbol.to_repr()
+        s = "  " * start_indent + "DerivationTree(" + repr(self.symbol)
         if len(self._children) == 1:
             s += ", [" + self._children[0].to_repr(indent, start_indent=0) + "])"
         elif len(self._children) >= 1:
@@ -342,7 +342,7 @@ class DerivationTree:
         return _to_grammar(self)
 
     def __repr__(self):
-        return self.to_string()
+        return self.to_repr()
 
     def __contains__(self, other: Union["DerivationTree", Any]) -> bool:
         if isinstance(other, DerivationTree):
@@ -354,39 +354,39 @@ class DerivationTree:
 
     def to_int(self, *args, **kwargs):
         try:
-            return int(self.__repr__(), *args, **kwargs)
+            return int(self.__str__(), *args, **kwargs)
         except ValueError:
             return None
 
     def to_float(self):
         try:
-            return float(self.__repr__())
+            return float(self.__str__())
         except ValueError:
             return None
 
     def to_complex(self, *args, **kwargs):
         try:
-            return complex(self.__repr__(), *args, **kwargs)
+            return complex(self.__str__(), *args, **kwargs)
         except ValueError:
             return None
 
     def is_int(self, *args, **kwargs):
         try:
-            int(self.__repr__(), *args, **kwargs)
+            int(self.__str__(), *args, **kwargs)
         except ValueError:
             return False
         return True
 
     def is_float(self):
         try:
-            float(self.__repr__())
+            float(self.__str__())
         except ValueError:
             return False
         return True
 
     def is_complex(self, *args, **kwargs):
         try:
-            complex(self.__repr__(), *args, **kwargs)
+            complex(self.__str__(), *args, **kwargs)
         except ValueError:
             return False
         return True
@@ -493,4 +493,4 @@ class DerivationTree:
 
             return fn
 
-        raise AttributeError(f"{self.symbol} has no attribute {repr(name)}")
+        raise AttributeError(f"{self.symbol} has no attribute {name!r}")

@@ -1,4 +1,5 @@
-# test_optimizer.py
+#!/usr/bin/env pytest
+
 import random
 import unittest
 from typing import List
@@ -90,7 +91,9 @@ class GeneticTest(unittest.TestCase):
 
     def test_selection(self):
         # Select the parents
-        parent1, parent2 = self.fandango.tournament_selection()
+        parent1, parent2 = self.fandango.evaluator.tournament_selection(
+            self.fandango.evaluation, self.fandango.tournament_size
+        )
 
         # Check that the parents are in the population
         self.assertIn(parent1, self.fandango.population)
@@ -109,7 +112,9 @@ class GeneticTest(unittest.TestCase):
 
     def test_crossover(self):
         # Select the parents
-        parent1, parent2 = self.fandango.tournament_selection()
+        parent1, parent2 = self.fandango.evaluator.tournament_selection(
+            self.fandango.evaluation, self.fandango.tournament_size
+        )
 
         # Perform crossover
         children = self.fandango.crossover_operator.crossover(parent1, parent2)
@@ -127,7 +132,9 @@ class GeneticTest(unittest.TestCase):
 
     def test_mutation(self):
         # Select the parents
-        parent1, parent2 = self.fandango.tournament_selection()
+        parent1, parent2 = self.fandango.evaluator.tournament_selection(
+            self.fandango.evaluation, self.fandango.tournament_size
+        )
 
         children = self.fandango.crossover_operator.crossover(parent1, parent2)
 
