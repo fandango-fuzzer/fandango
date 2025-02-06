@@ -860,7 +860,12 @@ class Grammar(NodeVisitor):
             while k < len(table):
                 # LOGGER.debug(f"Processing {len(table[k])} states at column {k}")
                 for state in table[k]:
-                    if w >= len(word):
+                    # True iff We have processed all characters
+                    # (or some bits of the last character)
+                    at_end = (w >= len(word)
+                              or (bit_count > 0 and w == len(word) - 1))
+
+                    if at_end:
                         if allow_incomplete:
                             if state.nonterminal == implicit_start:
                                 self._incomplete.update(state.children)
@@ -870,7 +875,7 @@ class Grammar(NodeVisitor):
                     if state.finished():
                         # LOGGER.debug(f"Finished")
                         if state.nonterminal == implicit_start:
-                            if w >= len(word):
+                            if at_end:
                                 # LOGGER.debug(f"Found {len(state.children)} parse tree(s)")
                                 for child in state.children:
                                     yield child
