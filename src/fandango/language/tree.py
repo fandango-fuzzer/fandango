@@ -274,7 +274,7 @@ class DerivationTree:
         """
         Output the derivation tree in internal representation.
         """
-        s = "  " * start_indent + "DerivationTree(" + self.symbol.to_repr()
+        s = "  " * start_indent + "DerivationTree(" + repr(self.symbol)
         if len(self._children) == 1:
             s += ", [" + self._children[0].to_repr(indent, start_indent=0) + "])"
         elif len(self._children) >= 1:
