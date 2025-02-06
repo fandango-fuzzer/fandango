@@ -91,6 +91,9 @@ class Alternative(Node):
     def __repr__(self):
         return "(" + " | ".join(map(repr, self.alternatives)) + ")"
 
+    def __str__(self):
+        return "(" + " | ".join(map(str, self.alternatives)) + ")"
+
     def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterator["Node"]:
         yield from self.alternatives
 
@@ -125,6 +128,9 @@ class Concatenation(Node):
 
     def __repr__(self):
         return " ".join(map(repr, self.nodes))
+
+    def __str__(self):
+        return " ".join(map(str, self.nodes))
 
     def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterator["Node"]:
         yield from self.nodes
@@ -166,6 +172,11 @@ class Repetition(Node):
             return f"{self.node}{{{self.min}}}"
         return f"{self.node}{{{self.min},{self.max}}}"
 
+    def __str__(self):
+        if self.min == self.max:
+            return f"{self.node!s}{{{self.min}}}"
+        return f"{self.node!s}{{{self.min},{self.max}}}"
+
     def descendents(self, rules: Dict[NonTerminal, "Node"] | None) -> Iterator["Node"]:
         base = []
         if self.min == 0:
@@ -194,6 +205,9 @@ class Star(Repetition):
     def __repr__(self):
         return f"{self.node}*"
 
+    def __str__(self):
+        return f"{self.node!s}*"
+
 
 class Plus(Repetition):
     def __init__(self, node: Node):
@@ -205,6 +219,9 @@ class Plus(Repetition):
     def __repr__(self):
         return f"{self.node}+"
 
+    def __str__(self):
+        return f"{self.node!s}+"
+
 
 class Option(Repetition):
     def __init__(self, node: Node):
@@ -215,6 +232,9 @@ class Option(Repetition):
 
     def __repr__(self):
         return f"{self.node}?"
+
+    def __str__(self):
+        return f"{self.node!s}?"
 
     def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterator["Node"]:
         yield from (self.node, TerminalNode(Terminal("")))
@@ -238,6 +258,9 @@ class NonTerminalNode(Node):
 
     def __repr__(self):
         return self.symbol.__repr__()
+
+    def __str__(self):
+        return self.symbol._repr()
 
     def __eq__(self, other):
         return isinstance(other, NonTerminalNode) and self.symbol == other.symbol
@@ -271,6 +294,9 @@ class TerminalNode(Node):
 
     def __repr__(self):
         return self.symbol.__repr__()
+
+    def __str__(self):
+        return self.symbol.__str__()
 
     def __eq__(self, other):
         return isinstance(other, TerminalNode) and self.symbol == other.symbol
@@ -1080,7 +1106,7 @@ class Grammar(NodeVisitor):
     def __repr__(self):
         return "\n".join(
             [
-                f"{key} ::= {value}{' := ' + self.generators[key] if key in self.generators else ''}"
+                f"{key} ::= {str(value)}{' := ' + self.generators[key] if key in self.generators else ''}"
                 for key, value in self.rules.items()
             ]
         )
@@ -1093,8 +1119,6 @@ class Grammar(NodeVisitor):
             f"{' := ' + self.generators[symbol] if symbol in self.generators else ''}"
         )
 
-    def __str__(self):
-        return self.__repr__()
 
     @staticmethod
     def dummy():
