@@ -6,13 +6,11 @@ def evaluate_hash():
     file = open("evaluation/experiments/hash/hash.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False)
 
-    print(grammar)
-    print(constraints)
-
     fandango = Fandango(grammar, constraints)
     fandango.evolve()
 
-    print(fandango.solution)
+    for solution in fandango.solution:
+        print(solution)
 
 
 if __name__ == "__main__":

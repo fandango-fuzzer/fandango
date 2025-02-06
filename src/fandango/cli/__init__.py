@@ -775,11 +775,12 @@ def output_population(population, args, file_mode=None, *, output_on_stdout=True
     if output_on_stdout:
         # Default
         LOGGER.debug("Printing population on stdout")
-        sep = False
         for individual in population:
-            if sep:
-                print(args.separator, end="")
-            print(output(individual, args, file_mode), end="")
+            out = output(individual, args, file_mode)
+            if not isinstance(out, str):
+                out = out.decode("iso8859-1")
+            print(out, end="")
+            print(args.separator, end="")
             sep = True
 
 

@@ -3,7 +3,7 @@ import enum
 import logging
 import random
 import time
-from typing import List, Tuple, Union
+from typing import List, Union
 
 from fandango.constraints.base import Constraint
 from fandango.evolution.adaptation import AdaptiveTuner
@@ -94,42 +94,31 @@ class Fandango:
             unique_population = []
             unique_hashes = set()
             for individual in initial_population:
-                try:
-                    if isinstance(individual, str):
-                        tree = self.grammar.parse(individual)
-                        if not tree:
-                            raise ValueError(
-                                f"Failed to parse initial individual: {individual}"
-                            )
-                    elif isinstance(individual, DerivationTree):
-                        tree = individual
-                    else:
-                        raise TypeError(
-                            "Initial individuals must be DerivationTree or String"
+                if isinstance(individual, str):
+                    tree = self.grammar.parse(individual)
+                    if not tree:
+                        raise ValueError(
+                            f"Failed to parse initial individual: {individual}"
                         )
-                    h = hash(tree)
-                    if h not in unique_hashes:
-                        unique_hashes.add(h)
-                        unique_population.append(tree)
-                except Exception as e:
-                    LOGGER.error(
-                        f"Error processing initial individual: {individual} - {e}"
+                elif isinstance(individual, DerivationTree):
+                    tree = individual
+                else:
+                    raise TypeError(
+                        "Initial individuals must be DerivationTree or String"
                     )
-                    if self.warnings_are_errors:
-                        raise
+                h = hash(tree)
+                if h not in unique_hashes:
+                    unique_hashes.add(h)
+                    unique_population.append(tree)
+
             attempts = 0
             max_attempts = (population_size - len(unique_population)) * 10
             while len(unique_population) < population_size and attempts < max_attempts:
-                try:
-                    candidate = self.fix_individual(
-                        self.grammar.fuzz(self.start_symbol)
-                    )
-                    h = hash(candidate)
-                    if h not in unique_hashes:
-                        unique_hashes.add(h)
-                        unique_population.append(candidate)
-                except Exception as e:
-                    LOGGER.error(f"Error generating/fixing candidate during init: {e}")
+                candidate = self.fix_individual(self.grammar.fuzz(self.start_symbol))
+                h = hash(candidate)
+                if h not in unique_hashes:
+                    unique_hashes.add(h)
+                    unique_population.append(candidate)
                 attempts += 1
             if len(unique_population) < population_size:
                 LOGGER.warning(
@@ -164,48 +153,20 @@ class Fandango:
         self.desired_solutions = desired_solutions
 
     def fix_individual(self, individual: DerivationTree) -> DerivationTree:
-        try:
-            fitness_val, failing_trees = self.evaluator.evaluate_individual(individual)
-            for failing_tree in failing_trees:
-                for operator, value, side in failing_tree.suggestions:
-                    from fandango.constraints.fitness import Comparison, ComparisonSide
+        _, failing_trees = self.evaluator.evaluate_individual(individual)
+        for failing_tree in failing_trees:
+            for operator, value, side in failing_tree.suggestions:
+                from fandango.constraints.fitness import Comparison, ComparisonSide
 
-                    if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
-                        suggested_tree = self.grammar.parse(
-                            str(value), failing_tree.tree.symbol
-                        )
-                        if suggested_tree is None:
-                            LOGGER.warning(
-                                f"Suggested fix for {failing_tree.tree.symbol} returned None."
-                            )
-                            continue
-                        individual = individual.replace(
-                            failing_tree.tree, suggested_tree
-                        )
-                        self.fixes_made += 1
-        except Exception as e:
-            LOGGER.error(f"Error in fix_individual: {e}")
-            if self.warnings_are_errors:
-                raise
+                if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
+                    suggested_tree = self.grammar.parse(
+                        str(value), start=failing_tree.tree.symbol.symbol
+                    )
+                    if suggested_tree is None:
+                        continue
+                    individual = individual.replace(failing_tree.tree, suggested_tree)
+                    self.fixes_made += 1
         return individual
-
-    def tournament_selection(self) -> Tuple[DerivationTree, DerivationTree]:
-        try:
-            tournament = random.sample(self.evaluation, k=self.tournament_size)
-            tournament.sort(key=lambda x: x[1], reverse=True)
-            parent1 = tournament[0][0]
-            if len(tournament) == 2:
-                parent2 = tournament[1][0] if tournament[1][0] != parent1 else parent1
-            else:
-                parent2 = (
-                    tournament[1][0]
-                    if tournament[1][0] != parent1
-                    else tournament[2][0]
-                )
-            return parent1, parent2
-        except Exception as e:
-            LOGGER.error(f"Error during tournament selection: {e}")
-            raise
 
     def evolve(self) -> List[DerivationTree]:
         LOGGER.info("---------- Starting evolution ----------")
@@ -231,13 +192,17 @@ class Fandango:
             )
 
             # Selection & Crossover
-            new_population = self.select_elites()
+            new_population = self.evaluator.select_elites(
+                self.evaluation, self.elitism_rate, self.population_size
+            )
             unique_hashes = {hash(ind) for ind in new_population}
 
             while len(new_population) < self.population_size:
                 if random.random() < self.adaptive_tuner.crossover_rate:
                     try:
-                        parent1, parent2 = self.tournament_selection()
+                        parent1, parent2 = self.evaluator.tournament_selection(
+                            self.evaluation, self.tournament_size
+                        )
                         child1, child2 = self.crossover_operator.crossover(
                             parent1, parent2
                         )
