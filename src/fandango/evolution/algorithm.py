@@ -160,9 +160,12 @@ class Fandango:
 
                 if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
                     suggested_tree = self.grammar.parse(
-                        str(value), start=failing_tree.tree.symbol.symbol
-                    )
+                            str(value), start=failing_tree.tree.symbol.symbol
+                        )
                     if suggested_tree is None:
+                        LOGGER.warning(
+                            f"Could not parse {failing_tree.tree.symbol} ::= {str(value)!r}"
+                        )
                         continue
                     individual = individual.replace(failing_tree.tree, suggested_tree)
                     self.fixes_made += 1
