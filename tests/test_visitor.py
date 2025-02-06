@@ -1,3 +1,5 @@
+#!/usr/bin/env pytest
+
 import unittest
 from collections import defaultdict
 import logging
