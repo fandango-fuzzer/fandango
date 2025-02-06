@@ -901,7 +901,7 @@ class Grammar(NodeVisitor):
 
         def parse_forest(
             self,
-            word: str,
+            word: str | bytes,
             start: str | NonTerminal = "<start>",
             *,
             allow_incomplete: bool = False,
@@ -909,8 +909,10 @@ class Grammar(NodeVisitor):
             """
             Yield multiple parse alternatives, using a cache.
             """
+            assert isinstance(word, str) or isinstance(word, bytes)
             if isinstance(start, str):
                 start = NonTerminal(start)
+            assert isinstance(start, NonTerminal)
 
             cache_key = (word, start, allow_incomplete)
             if cache_key in self._cache:
@@ -1025,14 +1027,14 @@ class Grammar(NodeVisitor):
 
     def parse(
         self,
-        word: str,
+        word: str | bytes,
         start: str | NonTerminal = "<start>",
     ):
         return self._parser.parse(word, start)
 
     def parse_forest(
         self,
-        word: str,
+        word: str | bytes,
         start: str | NonTerminal = "<start>",
         allow_incomplete: bool = False,
     ):
