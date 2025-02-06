@@ -721,19 +721,21 @@ class Grammar(NodeVisitor):
             assert not isinstance(state.dot.symbol, int)
             assert not state.dot.is_regex
 
+            LOGGER.debug(f"Checking byte(s) {state.dot!r} at position {w:#06x} ({w}) {word[w:]!r}")
+
             match, match_length = state.dot.check(word[w:])
             if not match:
                 return False
 
             # Found a match
-            # LOGGER.debug(f"Matched byte {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w + match_length]!r}")
+            # LOGGER.debug(f"Matched byte(s) {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w + match_length]!r}")
             next_state = state.next()
             next_state.children.append(
                 DerivationTree(Terminal(word[w:w + match_length]))
             )
             table[k + match_length].add(next_state)
             # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
-            self._max_position = max(self._max_position, w)
+            self._max_position = max(self._max_position, w + match_length)
 
             return match
 
@@ -757,6 +759,8 @@ class Grammar(NodeVisitor):
             assert not isinstance(state.dot.symbol, int)
             assert state.dot.is_regex
 
+            LOGGER.debug(f"Checking regex {state.dot!r} at position {w:#06x} ({w}) {word[w:]!r}")
+
             match, match_length = state.dot.check(word[w:])
             if not match:
                 return False, 0
@@ -770,7 +774,7 @@ class Grammar(NodeVisitor):
             table[k + match_length].add(next_state)
             # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
             self._max_position = max(self._max_position, w + match_length)
-            return match, match_length
+            return match, 1  # match_length
 
         def complete(
             self,
@@ -840,10 +844,12 @@ class Grammar(NodeVisitor):
                             self.complete(state, table, k)
 
                     if state.finished():
-                        if state.nonterminal == implicit_start and w >= len(word):
-                            # LOGGER.debug(f"Found {len(state.children)} parse tree(s)")
-                            for child in state.children:
-                                yield child
+                        LOGGER.debug(f"Finished")
+                        if state.nonterminal == implicit_start:
+                            if w >= len(word):
+                                # LOGGER.debug(f"Found {len(state.children)} parse tree(s)")
+                                for child in state.children:
+                                    yield child
 
                         self.complete(state, table, k)
                     elif not state.is_incomplete:
