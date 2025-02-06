@@ -1,3 +1,5 @@
+#!/usr/bin/env pytest
+
 import unittest
 
 from evaluation.vs_isla.run_evaluation import run_evaluation
