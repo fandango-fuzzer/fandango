@@ -32,7 +32,7 @@ def binary_to_string(binary):
     return "".join(chr(int(binary[i : i + 8], 2)) for i in range(0, len(binary), 8))
 
 
-if __name__ == "__main__":
+def evaluate_whitebox():
     xml_file = open("evaluation/experiments/whitebox/xml.fan", "r")
     xml_grammar, xml_constraints = parse(xml_file, use_stdlib=False)
     xml_files = Fandango(xml_grammar, xml_constraints).evolve()  # Generate XML files
@@ -58,3 +58,7 @@ if __name__ == "__main__":
         print(
             binary_to_string(str(solution))
         )  # Convert the binary files to strings and print them
+
+
+if __name__ == "__main__":
+    evaluate_whitebox()

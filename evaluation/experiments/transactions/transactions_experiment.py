@@ -2,7 +2,7 @@ from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse
 
 
-def main():
+def evaluate_transactions():
     # Load the fandango file
     file = open("evaluation/experiments/transactions/transactions.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False)
@@ -14,4 +14,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    evaluate_transactions()
