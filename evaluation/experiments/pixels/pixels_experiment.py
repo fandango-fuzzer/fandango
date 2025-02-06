@@ -6,6 +6,10 @@ def evaluate_pixels():
     file = open("evaluation/experiments/pixels/pixels.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False)
 
+    print(grammar)
+    for constraint in constraints:
+        print(constraint)
+
     fandango = Fandango(grammar, constraints, max_generations=100)
     fandango.evolve()
 
