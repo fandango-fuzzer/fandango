@@ -1,4 +1,6 @@
 import unittest
+import shlex
+import subprocess
 
 from fandango.language.grammar import ParseState
 from fandango.language.parse import parse
@@ -221,3 +223,34 @@ class TestEmptyParsing(unittest.TestCase):
                 ]
             )
         )
+
+class TestCLIParsing(unittest.TestCase):
+    def run_command(self, command):
+        proc = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        out, err = proc.communicate()
+        return out.decode(), err.decode(), proc.returncode
+
+class TestRegexParsing(TestCLIParsing):
+    def test_infinity_abc(self):
+        command = shlex.split("fandango parse -f docs/infinity.fan --validate tests/resources/abc.txt")
+        out, err, code = self.run_command(command)
+        self.assertEqual("", err)
+        self.assertEqual("", out)
+        self.assertEqual(0, code)
+
+    def test_infinity_abcabc(self):
+        command = shlex.split("fandango parse -f docs/infinity.fan --validate tests/resources/abcabc.txt")
+        out, err, code = self.run_command(command)
+        self.assertEqual("", err)
+        self.assertEqual("", out)
+        self.assertEqual(0, code)
+
+    def test_infinity_abcd(self):
+        # This should be rejected by the grammar
+        command = shlex.split("fandango parse -f docs/infinity.fan tests/resources/abcd.txt")
+        out, err, code = self.run_command(command)
+        self.assertEqual(1, code)
