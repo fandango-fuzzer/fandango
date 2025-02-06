@@ -1,7 +1,7 @@
 import warnings
 
 from fandango.evolution.algorithm import Fandango
-from fandango.language.parse import parse_file
+from fandango.language.parse import parse
 
 warnings.filterwarnings("ignore")
 
@@ -33,16 +33,16 @@ def binary_to_string(binary):
 
 
 if __name__ == "__main__":
-    xml_grammar, xml_constraints = parse_file(
-        "xml.fan"
-    )  # Load the XML grammar and constraints
+    xml_file = open("evaluation/experiments/whitebox/xml.fan", "r")
+    xml_grammar, xml_constraints = parse(xml_file, use_stdlib=False)
     xml_files = Fandango(xml_grammar, xml_constraints).evolve()  # Generate XML files
     xml_binaries = [
         tree_to_binary(xml) for xml in xml_files
     ]  # Convert XML files to binary
 
-    bytes_grammar, bytes_constraints = parse_file(
-        "bytes.fan"
+    bytes_file = open("evaluation/experiments/whitebox/bytes.fan", "r")
+    bytes_grammar, bytes_constraints = parse(
+        bytes_file, use_stdlib=False
     )  # Load the bytes grammar and constraints
     xml_binary_trees = [
         bytes_grammar.parse(xml_binary) for xml_binary in xml_binaries

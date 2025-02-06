@@ -1,9 +1,10 @@
 from fandango.evolution.algorithm import Fandango
-from fandango.language.parse import parse_file
+from fandango.language.parse import parse
 
 
 def evaluate_hash():
-    grammar, constraints = parse_file("hash.fan")
+    file = open("evaluation/experiments/hash/hash.fan", "r")
+    grammar, constraints = parse(file, use_stdlib=False)
 
     print(grammar)
     print(constraints)

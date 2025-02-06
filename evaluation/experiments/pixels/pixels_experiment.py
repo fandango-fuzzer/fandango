@@ -1,9 +1,10 @@
 from fandango.evolution.algorithm import Fandango
-from fandango.language.parse import parse_file
+from fandango.language.parse import parse
 
 
 def evaluate_pixels():
-    grammar, constraints = parse_file("pixels.fan")
+    file = open("evaluation/experiments/pixels/pixels.fan", "r")
+    grammar, constraints = parse(file, use_stdlib=False)
 
     fandango = Fandango(grammar, constraints)
     fandango.evolve()
