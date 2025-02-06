@@ -42,6 +42,9 @@ class Symbol(abc.ABC):
     def __hash__(self):
         return NotImplemented
 
+    def _repr(self):
+        return str(self.symbol)
+
     def __str__(self):
         return str(self.symbol)
 
@@ -164,3 +167,6 @@ class Terminal(Symbol):
 
     def __repr__(self):
         return "Terminal(" + self._repr() + ")"
+
+    def __str__(self):
+        return self._repr()
