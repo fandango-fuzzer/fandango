@@ -5,13 +5,16 @@ import random
 import time
 from typing import List, Union
 
+from copy import deepcopy
 from fandango.constraints.base import Constraint
 from fandango.evolution.adaptation import AdaptiveTuner
 from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
 from fandango.evolution.evaluation import Evaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import PopulationManager
-from fandango.language.grammar import DerivationTree, Grammar
+from fandango.language.io import FandangoIO
+from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode, PacketForecaster
+from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
 
 
@@ -177,7 +180,7 @@ class Fandango:
             new_packet = self.io_next_packet.node.fuzz(self.grammar)[0]
 
             mounting_path = random.choice(list(self.io_next_packet.paths))
-            tree: DerivationTree = copy.deepcopy(mounting_path.tree)
+            tree: DerivationTree = deepcopy(mounting_path.tree)
             tree.append(mounting_path.path[1:], new_packet)
             return tree
         elif self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
