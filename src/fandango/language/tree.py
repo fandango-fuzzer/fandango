@@ -524,22 +524,22 @@ class DerivationTree:
 
     def __le__(self, other):
         if isinstance(other, DerivationTree):
-            return str(self) <= str(other)
+            return self.value() <= other.value()
         return self.value() <= other
 
     def __lt__(self, other):
         if isinstance(other, DerivationTree):
-            return str(self) < str(other)
+            return self.value() < other.value()
         return self.value() < other
 
     def __ge__(self, other):
         if isinstance(other, DerivationTree):
-            return str(self) >= str(other)
+            return self.value() >= other.value()
         return self.value() >= other
 
     def __gt__(self, other):
         if isinstance(other, DerivationTree):
-            return str(self) > str(other)
+            return self.value() > other.value()
         return self.value() > other
 
     def __ne__(self, other):
@@ -625,7 +625,7 @@ class DerivationTree:
     def __contains__(self, other: Union["DerivationTree", Any]) -> bool:
         if isinstance(other, DerivationTree):
             return other in self._children
-        return other in str(self)
+        return other in self.value()
 
     def __iter__(self):
         return iter(self._children)
@@ -636,11 +636,12 @@ class DerivationTree:
         """
         Catch-all: All other attributes and methods apply to the representation of the respective type (str, bytes, int).
         """
-        tp = type(self.value())
+        value = self.value()
+        tp = type(value)
         if name in tp.__dict__:
 
             def fn(*args, **kwargs):
-                return tp.__dict__[name](str(self), *args, **kwargs)
+                return tp.__dict__[name](value, *args, **kwargs)
 
             return fn
 
