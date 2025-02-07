@@ -79,8 +79,6 @@ class Fandango:
         self.population_manager = PopulationManager(
             grammar, start_symbol, population_size, warnings_are_errors
         )
-        if self.grammar.fuzzing_mode == FuzzingMode.IO:
-            diversity_weight = 0
         self.evaluator = Evaluator(
             grammar,
             constraints,
