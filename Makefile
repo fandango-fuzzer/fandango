@@ -164,11 +164,54 @@ clean-docs:
 
 ## Tests
 TESTS = tests
-TEST_SOURCES = $(wildcard $(TESTS)/*.py $(TESTS)/resources/*)
+TEST_SOURCES = $(wildcard $(TESTS)/*.py $(TESTS)/resources/* $(TESTS)/docs/*.fan)
+TEST_MARKER = $(TESTS)/test-marker.txt
 
-.PHONY: test tests
+.PHONY: test tests run-tests
 test tests:
-	$(PYTEST) 
+	$(PYTEST)
+
+run-tests: $(TEST_MARKER)
+$(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
+	$(PYTEST)
+	echo 'Success' > $@
+
+## Evaluation
+EVALUATION = evaluation
+EVALUATION_SOURCES = $(wildcard $(EVALUATION)/*.py $(EVALUATION)/*/*.py $(EVALUATION)/*/*/*.py $(EVALUATION)/*/*/*.fan $(EVALUATION)/*/*/*.txt)
+EVALUATION_MARKER = $(EVALUATION)/test-evaluation.txt
+EVALUATION_COMMAND = $(PYTHON) -m evaluation.vs_isla.run_evaluation 1
+
+
+# python -m evaluation.vs_isla.run_evaluation
+.PHONY: evaluation evaluate
+evaluation evaluate:
+	$(EVALUATION_COMMAND)
+
+run-evaluation: $(EVALUATION_MARKER)
+$(EVALUATION_MARKER): $(PYTHON_SOURCES) $(EVALUATION_SOURCES)
+	$(EVALUATION_COMMAND)
+	echo 'Success' > $@
+
+## Experiments
+EXPERIMENTS = $(EVALUATION)/experiments
+EXPERIMENTS_SOURCES = $(wildcard $(EXPERIMENTS)/*/*.py $(EXPERIMENTS)/*/*.fan)
+EXPERIMENTS_MARKER = $(EXPERIMENTS)/test-experiments.txt
+EXPERIMENTS_COMMAND = $(PYTHON) -m evaluation.experiments.run_experiments
+
+.PHONY: experiment experiments
+experiment experiments:
+	$(EXPERIMENTS_COMMAND)
+
+run-experiments: $(EXPERIMENTS_MARKER)
+$(EXPERIMENTS_MARKER): $(PYTHON_SOURCES) $(EXPERIMENTS_SOURCES)
+	$(EXPERIMENTS_COMMAND)
+	echo 'Success' > $@
+
+## All
+.PHONY: run-all
+run-all: $(TEST_MARKER) $(EVALUATION_MARKER) $(EXPERIMENTS_MARKER)
+	@echo 'All tests passed.'
 
 ## Installation
 .PHONY: install install-test install-tests
@@ -185,10 +228,3 @@ install-test install-tests:
 uninstall:
 	$(PIP) uninstall fandango-fuzzer -y
 
-# python -m evaluation.vs_isla.run_evaluation
-.PHONY: evaluation evaluate experiment experiments
-evaluate evaluation:
-	$(PYTHON) -m evaluation.vs_isla.run_evaluation 1
-
-experiment experiments:
-	$(PYTHON) -m evaluation.experiments.run_experiments
