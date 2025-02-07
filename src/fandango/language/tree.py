@@ -346,39 +346,39 @@ class DerivationTree:
 
     def to_int(self, *args, **kwargs):
         try:
-            return int(self.__str__(), *args, **kwargs)
+            return int(self.value(), *args, **kwargs)
         except ValueError:
             return None
 
     def to_float(self):
         try:
-            return float(self.__str__())
+            return float(self.value())
         except ValueError:
             return None
 
     def to_complex(self, *args, **kwargs):
         try:
-            return complex(self.__str__(), *args, **kwargs)
+            return complex(self.value(), *args, **kwargs)
         except ValueError:
             return None
 
     def is_int(self, *args, **kwargs):
         try:
-            int(self.__str__(), *args, **kwargs)
+            int(self.value(), *args, **kwargs)
         except ValueError:
             return False
         return True
 
     def is_float(self):
         try:
-            float(self.__str__())
+            float(self.value())
         except ValueError:
             return False
         return True
 
     def is_complex(self, *args, **kwargs):
         try:
-            complex(self.__str__(), *args, **kwargs)
+            complex(self.value(), *args, **kwargs)
         except ValueError:
             return False
         return True
