@@ -82,7 +82,7 @@ $ fandango fuzz -f additions.fan -n 10
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f additions.fan -n 10
+!fandango fuzz -f additions.fan -n 10 --validate
 assert _exit_code == 0
 ```
 
@@ -148,7 +148,7 @@ $ fandango fuzz -f expr.fan -n 10
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f expr.fan -n 10
+!fandango fuzz -f expr.fan -n 10 --validate
 assert _exit_code == 0
 ```
 
@@ -192,7 +192,7 @@ $ fandango fuzz -f expr-float.fan -n 10
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f expr-float.fan -n 10
+!fandango fuzz -f expr-float.fan -n 10 --validate
 assert _exit_code == 0
 ```
 
@@ -204,7 +204,7 @@ $ fandango fuzz -f expr-float.fan -n 10 -c 'eval(str(<start>)) > 1000'
 
 ```{code-cell}
 :tags: ["remove-input", "remove-stderr"]
-!fandango fuzz -f expr-float.fan -n 10 -c 'eval(str(<start>)) > 1000' 2> /dev/null
+!fandango fuzz -f expr-float.fan -n 10 -c 'eval(str(<start>)) > 1000' --validate 2> /dev/null
 assert _exit_code == 0
 ```
 

@@ -36,7 +36,7 @@ where <GifHeader>..<Version> == "89a"
 <SizeOfLocalColorTable> ::= 0 0 0
 <SizeOfGlobalColorTable> ::= 0 0 0
 
-<GlobalColorTable> ::= <RGB> '\x00' '\x00' '\x00'  
+<GlobalColorTable> ::= <RGB> b'\x00' b'\x00' b'\x00'
 <LocalColorTable> ::= b'\x02' b'\x02' b'L'
 
 <PixelAspectRatio> ::= b'\x00'

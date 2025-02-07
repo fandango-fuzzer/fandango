@@ -69,7 +69,7 @@ $ fandango fuzz -f persons.fan -n 10
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c 'int(<age>) < 50'
+!fandango fuzz -f persons.fan -n 10 -c 'int(<age>) < 50' --validate
 assert _exit_code == 0
 ```
 
@@ -92,7 +92,7 @@ and we obtain these inputs:
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c '25 <= int(<age>) and int(<age>) <= 45'
+!fandango fuzz -f persons.fan -n 10 -c '25 <= int(<age>) and int(<age>) <= 45' --validate
 assert _exit_code == 0
 ```
 
@@ -100,7 +100,7 @@ Start with [`persons.fan`](persons.fan) and add a constraint such that we genera
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c 'int(<age>) % 7 == 0'
+!fandango fuzz -f persons.fan -n 10 -c 'int(<age>) % 7 == 0' --validate
 assert _exit_code == 0
 ```
 (Hint: The modulo operator in Python is `%`).
@@ -201,7 +201,7 @@ $ fandango -v fuzz -f persons.fan -n 10 -c 'int(<age>) % 7 == 0'
 
 ```{code-cell}
 :tags: ["remove-input", "scroll-output"]
-!fandango -v fuzz -f persons.fan -n 10 -c 'int(<age>) % 7 == 0'
+!fandango -v fuzz -f persons.fan -n 10 -c 'int(<age>) % 7 == 0' --validate
 assert _exit_code == 0
 ```
 
@@ -226,7 +226,7 @@ $ fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50
 
 ```{code-cell}
 :tags: ["remove-input", "scroll-output"]
-!fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50
+!fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50 --validate
 assert _exit_code == 0
 ```
 
