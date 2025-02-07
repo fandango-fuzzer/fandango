@@ -447,19 +447,25 @@ class DerivationTree:
             return -1
 
     ## General purpose converters
-    def value(self) -> int | str | bytes | None:
+    def _value(self) -> tuple[int | str | bytes | None, int]:
         """
             Convert the derivation tree into a standard Python value.
+            Returns the value and the number of bits used.
         """
         if self.symbol.is_terminal:
-            return self.symbol.symbol
+            if isinstance(self.symbol.symbol, int):
+                return self.symbol.symbol, 1
+            else:
+                return self.symbol.symbol, 0
 
+        bits = 0
         aggregate = None
         for child in self._children:
-            value = child.value()
+            value, child_bits = child._value()
 
             if aggregate is None:
                 aggregate = value
+                bits = child_bits
 
             elif isinstance(aggregate, str):
                 if isinstance(value, str):
@@ -468,6 +474,7 @@ class DerivationTree:
                     aggregate = aggregate.encode("utf-8") + value
                 elif isinstance(value, int):
                     aggregate = aggregate + chr(value)
+                    bits = 0
                 else:
                     raise ValueError(f"Cannot compute {aggregate!r} + {value!r}")
 
@@ -478,27 +485,35 @@ class DerivationTree:
                     aggregate += value
                 elif isinstance(value, int):
                     aggregate = aggregate + value.to_bytes()
+                    bits = 0
                 else:
                     raise ValueError(f"Cannot compute {aggregate!r} + {value!r}")
 
             elif isinstance(aggregate, int):
                 if isinstance(value, str):
                     aggregate = aggregate.to_bytes() + value.encode("utf-8")
+                    bits = 0
                 elif isinstance(value, bytes):
                     aggregate = aggregate.to_bytes() + value
+                    bits = 0
                 elif isinstance(value, int):
-                    aggregate = (aggregate << 1) + value
+                    aggregate = (aggregate << child_bits) + value
+                    bits += child_bits
                 else:
                     raise ValueError(f"Cannot compute {aggregate!r} + {value!r}")
 
-        # LOGGER.debug(f"val(): {' '.join(repr(child.value()) for child in self._children)} = {aggregate!r}")
+        # LOGGER.debug(f"value(): {' '.join(repr(child.value()) for child in self._children)} = {aggregate!r} ({bits} bits)")
 
+        return aggregate, bits
+
+    def value(self) -> int | str | bytes:
+        aggregate, bits = self._value()
         return aggregate
 
     def to_value(self) -> str:
         value = self.value()
         if isinstance(value, int):
-            return "0b" + format(value, "b")
+            return "0b" + format(value, "b") + f" ({value})"
         return repr(self.value())
 
     ## Comparison operations
