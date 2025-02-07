@@ -500,7 +500,7 @@ def check_grammar_types(
             return True
         return tp1 == tp2
 
-    def get_type(tree, rule_symbol) -> tuple[Optional[str], int, int]:
+    def get_type(tree, rule_symbol) -> tuple[Optional[str], int, int, int]:
         # LOGGER.debug(f"Checking type of {tree!s} in {rule_symbol!s} ({tree.node_type!s})")
         nonlocal symbol_types, grammar
 
@@ -508,45 +508,51 @@ def check_grammar_types(
             tp = type(tree.symbol.symbol).__name__
             # LOGGER.debug(f"Type of {tree.symbol.symbol!r} is {tp!r}")
             bits = 1 if isinstance(tree.symbol.symbol, int) else 0
-            return tp, bits, bits
+            return tp, bits, bits, 0
 
         elif (tree.node_type == NodeType.REPETITION
               or tree.node_type == NodeType.STAR
               or tree.node_type == NodeType.PLUS
               or tree.node_type == NodeType.OPTION):
-            tp, min_bits, max_bits = get_type(tree.node, rule_symbol)
-            if min_bits > 0 and tree.min == 0:
-                raise ValueError(f"{rule_symbol!s}: Bits cannot be optional") 
+            tp, min_bits, max_bits, step = get_type(tree.node, rule_symbol)
+            # if min_bits % 8 != 0 and tree.min == 0:
+            #     raise ValueError(f"{rule_symbol!s}: Bits cannot be optional")
 
-            return tp, tree.min * min_bits, tree.max * max_bits
+            step = min(min_bits, max_bits)
+            return tp, tree.min * min_bits, tree.max * max_bits, step
 
         elif tree.node_type == NodeType.NON_TERMINAL:
             if tree.symbol in symbol_types:
                 return symbol_types[tree.symbol]
 
-            symbol_types[tree.symbol] = (None, 0, 0)
+            symbol_types[tree.symbol] = (None, 0, 0, 0)
             symbol_tree = grammar.rules[tree.symbol]
-            tp, min_bits, max_bits = get_type(symbol_tree, str(tree.symbol))
-            symbol_types[tree.symbol] = tp, min_bits, max_bits
+            tp, min_bits, max_bits, step = \
+                get_type(symbol_tree, str(tree.symbol))
+            symbol_types[tree.symbol] = tp, min_bits, max_bits, step
             # LOGGER.debug(f"Type of {tree.symbol!s} is {tp!r} with {min_bits}..{max_bits} bits")
-            return tp, min_bits, max_bits
+            return tp, min_bits, max_bits, step
 
         elif (tree.node_type == NodeType.CONCATENATION
               or tree.node_type == NodeType.ALTERNATIVE):
             common_tp = None
             tp_child = None
-            min_bits = max_bits = None
+            min_bits = max_bits = step = None
             for child in tree.children():
-                tp, min_child_bits, max_child_bits = get_type(child, rule_symbol)
-                if min_bits is None or max_bits is None:
+                tp, min_child_bits, max_child_bits, child_step = \
+                    get_type(child, rule_symbol)
+                if min_bits is None:
                     min_bits = min_child_bits
                     max_bits = max_child_bits
+                    step = child_step
                 elif tree.node_type == NodeType.CONCATENATION:
                     min_bits += min_child_bits
                     max_bits += max_child_bits
+                    step += child_step
                 else:  # NodeType.ALTERNATIVE
                     min_bits = min(min_bits, min_child_bits)
                     max_bits = max(max_bits, max_child_bits)
+                    step += min(step, child_step)
                 if tp is None:
                     continue
                 if common_tp is None:
@@ -561,13 +567,17 @@ def check_grammar_types(
                     common_tp = tp
 
             # LOGGER.debug(f"Type of {rule_symbol!s} is {common_tp!r} with {min_bits}..{max_bits} bits")
-            return common_tp, min_bits, max_bits
+            return common_tp, min_bits, max_bits, step
 
         raise ValueError("Unknown node type")
 
     start_tree = grammar.rules[NonTerminal(start_symbol)]
-    _, min_start_bits, max_start_bits = get_type(start_tree, str(start_symbol))
-    if any(bits % 8 != 0 for bits in range(min_start_bits, max_start_bits + 1)):
+    _, min_start_bits, max_start_bits, start_step = \
+        get_type(start_tree, str(start_symbol))
+    if start_step > 0 and any(bits % 8 != 0
+                              for bits in range(min_start_bits,
+                                                max_start_bits + 1,
+                                                start_step)):
         if min_start_bits != max_start_bits:
             LOGGER.warning(f"{start_symbol!s}: Number of bits ({min_start_bits}..{max_start_bits}) may not be a multiple of eight")
         else:
