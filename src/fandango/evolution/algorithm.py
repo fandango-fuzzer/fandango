@@ -74,12 +74,13 @@ class Fandango:
         self.max_generations = max_generations
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
-        self.io_next_packet = None
 
         # Instantiate managers
         self.population_manager = PopulationManager(
             grammar, start_symbol, population_size, warnings_are_errors
         )
+        if self.grammar.fuzzing_mode == FuzzingMode.IO:
+            diversity_weight = 0
         self.evaluator = Evaluator(
             grammar,
             constraints,
@@ -159,36 +160,30 @@ class Fandango:
     def fix_individual(self, individual: DerivationTree) -> DerivationTree:
         _, failing_trees = self.evaluator.evaluate_individual(individual)
         for failing_tree in failing_trees:
+            if failing_tree.tree.read_only:
+                continue
             for operator, value, side in failing_tree.suggestions:
                 from fandango.constraints.fitness import Comparison, ComparisonSide
 
-                if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
+                if operator == Comparison.EQUAL:
+                    if (
+                            self.grammar.fuzzing_mode == FuzzingMode.IO
+                            and side == ComparisonSide.LEFT
+                    ):
+                        continue
+                    if (
+                            self.grammar.fuzzing_mode != FuzzingMode.IO
+                            and side == ComparisonSide.RIGHT
+                    ):
+                        continue
                     suggested_tree = self.grammar.parse(
-                        str(value), start=failing_tree.tree.symbol.symbol
+                        str(value), failing_tree.tree.symbol
                     )
                     if suggested_tree is None:
                         continue
                     individual = individual.replace(failing_tree.tree, suggested_tree)
                     self.fixes_made += 1
         return individual
-
-    def _generate_population_entry(self):
-        if self.grammar.fuzzing_mode == FuzzingMode.IO:
-            if self.io_next_packet is None:
-                return DerivationTree(NonTerminal(self.start_symbol))
-
-            new_packet = self.io_next_packet.node.fuzz(self.grammar)[0]
-
-            mounting_path = random.choice(list(self.io_next_packet.paths))
-            tree: DerivationTree = deepcopy(mounting_path.tree)
-            tree.append(mounting_path.path[1:], new_packet)
-            return tree
-        elif self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
-            return self.grammar.fuzz(self.start_symbol)
-        else:
-            raise NotImplementedError(
-                f"Unknown FuzzingMode: {self.grammar.fuzzing_mode}"
-            )
 
     def _evolve_io(self) -> List[DerivationTree]:
         global_env, local_env = self.grammar.get_python_env()
@@ -211,25 +206,23 @@ class Fandango:
                 return self.solution[0]
 
             selected_role = random.choice(list(role_options.getRoles()))
+            self.evaluator.reset()
             self.solution.clear()
-            self.fitness_cache.clear()
+            self.solution_set.clear()
             if (
                 io_instance.roles[selected_role].is_fandango()
                 and not io_instance.received_msg()
             ):
                 non_terminal_options = role_options[selected_role]
                 symbol = random.choice(list(non_terminal_options.getNonTerminals()))
-                new_population = []
-                self.io_next_packet = non_terminal_options[symbol]
-                while len(new_population) < self.population_size:
-                    new_population.append(self._generate_population_entry())
-                packet_node = self.io_next_packet.node
+                self.population_manager.io_next_packet = non_terminal_options[symbol]
+                new_population = self.population_manager.generate_random_initial_population(self.fix_individual)
+                packet_node = self.population_manager.io_next_packet.node
 
                 self.population = new_population
-                self.evaluation = self.evaluate_population()
+                self.evaluation = self.evaluator.evaluate_population(self.population)
                 self.fitness = (
-                    sum(fitness for _, fitness, _ in self.evaluation)
-                    / self.population_size
+                        sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
                 )
 
                 evolve_result = self._evolve_single()
@@ -262,7 +255,7 @@ class Fandango:
                 hookin_path = prefix_data.path
                 next_tree.append(hookin_path[1:], packet_tree)
                 next_tree.set_all_read_only(True)
-                fitness, _ = self.evaluate_individual(next_tree)
+                fitness, _ = self.evaluator.evaluate_individual(next_tree)
                 if fitness < 0.99:
                     raise RuntimeError("Remote response doesn't match constraints!")
                 self.solution.clear()
@@ -287,7 +280,8 @@ class Fandango:
                 )
 
             self.population = list(new_population)
-            self.solution = list(new_population)
+            self.solution.clear()
+            self.solution.extend(new_population)
             while len(self.population) < self.population_size:
                 self.population.append(random.choice(new_population))
 
@@ -307,15 +301,21 @@ class Fandango:
         for generation in range(1, self.max_generations + 1):
             if 0 < self.desired_solutions <= len(self.solution):
                 self.fitness = 1.0
-                self.solution = self.solution[: self.desired_solutions]
+                temp_solution = self.solution[: self.desired_solutions]
+                self.solution.clear()
+                self.solution.extend(temp_solution)
                 break
             if len(self.solution) >= self.population_size:
                 self.fitness = 1.0
-                self.solution = self.solution[: self.population_size]
+                temp_solution = self.solution[: self.population_size]
+                self.solution.clear()
+                self.solution.extend(temp_solution)
                 break
             if self.fitness >= self.expected_fitness:
                 self.fitness = 1.0
-                self.solution = self.population[: self.population_size]
+                temp_solution = self.population[: self.population_size]
+                self.solution.clear()
+                self.solution.extend(temp_solution)
                 break
 
             LOGGER.info(

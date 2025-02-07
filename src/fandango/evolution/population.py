@@ -1,7 +1,10 @@
+import copy
+import random
 from typing import Callable, List, Set
 
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
-from fandango.language.grammar import DerivationTree, Grammar
+from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode
+from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER
 
 
@@ -17,6 +20,25 @@ class PopulationManager:
         self.start_symbol = start_symbol
         self.population_size = population_size
         self.warnings_are_errors = warnings_are_errors
+        self.io_next_packet = None
+
+    def _generate_population_entry(self):
+        if self.grammar.fuzzing_mode == FuzzingMode.IO:
+            if self.io_next_packet is None:
+                return DerivationTree(NonTerminal(self.start_symbol))
+
+            new_packet = self.io_next_packet.node.fuzz(self.grammar)[0]
+
+            mounting_path = random.choice(list(self.io_next_packet.paths))
+            tree: DerivationTree = copy.deepcopy(mounting_path.tree)
+            tree.append(mounting_path.path[1:], new_packet)
+            return tree
+        elif self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
+            return self.grammar.fuzz(self.start_symbol)
+        else:
+            raise NotImplementedError(
+                f"Unknown FuzzingMode: {self.grammar.fuzzing_mode}"
+            )
 
     def add_unique_individual(
         self,
@@ -40,7 +62,7 @@ class PopulationManager:
         max_attempts = self.population_size * 10  # safeguard against infinite loops
 
         while len(unique_population) < self.population_size and attempts < max_attempts:
-            candidate = fix_func(self.grammar.fuzz(self.start_symbol))
+            candidate = fix_func(self._generate_population_entry())
             self.add_unique_individual(unique_population, candidate, unique_hashes)
             attempts += 1
 
@@ -62,7 +84,7 @@ class PopulationManager:
         while (
             len(current_population) < self.population_size and attempts < max_attempts
         ):
-            candidate = fix_func(self.grammar.fuzz(self.start_symbol))
+            candidate = fix_func(self._generate_population_entry())
             if hash(candidate) not in unique_hashes:
                 unique_hashes.add(hash(candidate))
                 current_population.append(candidate)
@@ -73,7 +95,7 @@ class PopulationManager:
                 "Could not generate full unique new population, filling remaining slots with duplicates."
             )
             while len(current_population) < self.population_size:
-                current_population.append(self.grammar.fuzz(self.start_symbol))
+                current_population.append(self._generate_population_entry())
 
         return current_population
 
@@ -82,10 +104,22 @@ class PopulationManager:
     ) -> DerivationTree:
         fixes_made = 0
         for failing_tree in failing_trees:
+            if failing_tree.tree.read_only:
+                continue
             for operator, value, side in failing_tree.suggestions:
-                if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
+                if operator == Comparison.EQUAL:
+                    if (
+                            self.grammar.fuzzing_mode == FuzzingMode.IO
+                            and side == ComparisonSide.LEFT
+                    ):
+                        continue
+                    if (
+                            self.grammar.fuzzing_mode != FuzzingMode.IO
+                            and side == ComparisonSide.RIGHT
+                    ):
+                        continue
                     suggested_tree = self.grammar.parse(
-                        str(value), start=failing_tree.tree.symbol.symbol
+                        str(value), failing_tree.tree.symbol
                     )
                     if suggested_tree is None:
                         continue

@@ -539,7 +539,7 @@ class DerivationTree:
         """
         Replace the subtree rooted at the given node with the new subtree.
         """
-        if self == tree_to_replace:
+        if self == tree_to_replace and not self.read_only:
             return new_subtree
         else:
             return DerivationTree(
