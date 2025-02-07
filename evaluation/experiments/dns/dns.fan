@@ -32,7 +32,7 @@ def gen_q_name():
 
 
 <question> ::= <q_name> 0{8} <q_type> <q_class>
-<q_name> ::= <q_name_entry> :: gen_q_name()
+<q_name> ::= <q_name_entry> := gen_q_name()
 <q_name_entry> ::= <bit>+
 <name_length> ::= <bit>{8}
 <name> ::= <bit>+
