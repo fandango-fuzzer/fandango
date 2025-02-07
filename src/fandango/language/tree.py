@@ -506,7 +506,7 @@ class DerivationTree:
 
         return aggregate, bits
 
-    def value(self) -> int | str | bytes:
+    def value(self) -> int | str | bytes | None:
         aggregate, bits = self._value()
         return aggregate
 
@@ -549,6 +549,78 @@ class DerivationTree:
     def __bool__(self):
         return bool(self.value())
 
+    ## Arithmetic operators
+    def __add__(self, other):
+        return self.value() + other
+    def __sub__(self, other):
+        return self.value() - other
+    def __mul__(self, other):
+        return self.value() * other
+    def __matmul__(self, other):
+        return self.value() @ other
+    def __truediv__(self, other):
+        return self.value() / other
+    def __floordiv__(self, other):
+        return self.value() // other
+    def __mod__(self, other):
+        return self.value() % other
+    def __divmod__(self, other):
+        return divmod(self.value(), other)
+    def __pow__(self, other, modulo=None):
+        return pow(self.value(), other, modulo)
+
+    def __radd__(self, other):
+        return other + self.value()
+    def __rsub__(self, other):
+        return other - self.value()
+    def __rmul__(self, other):
+        return other * self.value()
+    def __rmatmul__(self, other):
+        return other @ self.value()
+    def __rtruediv__(self, other):
+        return other / self.value()
+    def __rfloordiv__(self, other):
+        return other // self.value()
+    def __rmod__(self, other):
+        return other % self.value()
+    def __rdivmod__(self, other):
+        return divmod(other, self.value())
+    def __rpow__(self, other, modulo=None):
+        return pow(other, self.value(), modulo)
+
+    ## Bit operators
+    def __lshift__(self, other):
+        return self.value() << other
+    def __rshift__(self, other):
+        return self.value() >> other
+    def __and__(self, other):
+        return self.value() & other
+    def __xor__(self, other):
+        return self.value() ^ other
+    def __or__(self, other):
+        return self.value() | other
+
+    def __rlshift__(self, other):
+        return other << self.value()
+    def __rrshift__(self, other):
+        return other >> self.value()
+    def __rand__(self, other):
+        return other & self.value()
+    def __rxor__(self, other):
+        return other ^ self.value()
+    def __ror__(self, other):
+        return other | self.value()
+
+    # Unary operators
+    def __neg__(self):
+        return -self.value()
+    def __pos__(self):
+        return +self.value()
+    def __abs__(self):
+        return abs(self.value())
+    def __invert__(self):
+        return ~self.value()
+
     ## Iterators
     def __contains__(self, other: Union["DerivationTree", Any]) -> bool:
         if isinstance(other, DerivationTree):
@@ -562,12 +634,13 @@ class DerivationTree:
     ## Everything else
     def __getattr__(self, name):
         """
-        Catch-all: All other attributes and methods apply to the string representation
+        Catch-all: All other attributes and methods apply to the representation of the respective type (str, bytes, int).
         """
-        if name in str.__dict__:
+        tp = type(self.value())
+        if name in tp.__dict__:
 
             def fn(*args, **kwargs):
-                return str.__dict__[name](str(self), *args, **kwargs)
+                return tp.__dict__[name](str(self), *args, **kwargs)
 
             return fn
 
