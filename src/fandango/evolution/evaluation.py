@@ -29,6 +29,12 @@ class Evaluator:
         self.solution_set = set()
         self.checks_made = 0
 
+    def reset(self):
+        self.solution.clear()
+        self.fitness_cache.clear()
+        self.solution_set.clear()
+        self.checks_made = 0
+
     def compute_diversity_bonus(
         self, individuals: List[DerivationTree]
     ) -> Dict[int, float]:

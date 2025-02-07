@@ -633,8 +633,8 @@ class PacketForecaster(NodeVisitor):
             self.roles_to_packets[role].add_packet(packet)
 
         def merge(self, other: "PacketForecaster.ForcastingResult"):
-            c_new = copy.deepcopy(self)
-            c_other = copy.deepcopy(other)
+            c_new = deepcopy(self)
+            c_other = deepcopy(other)
             for role, fnt in c_other.roles_to_packets.items():
                 for fp in fnt.nt_to_packet.values():
                     c_new.add_packet(role, fp)
