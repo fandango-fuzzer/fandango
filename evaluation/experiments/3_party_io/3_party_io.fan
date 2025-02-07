@@ -47,4 +47,4 @@ class ServerA(FandangoAgent):
 class ServerB(FandangoAgent):
 
         def __init__(self):
-            super().__init__(True)
+            super().__init__(False)

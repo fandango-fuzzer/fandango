@@ -294,7 +294,9 @@ class NonTerminalNode(Node):
             raise ValueError(f"Symbol {self.symbol} not found in grammar")
 
         if self.symbol in grammar.generators:
-            return [grammar.generate(self.symbol)]
+            generated = grammar.generate(self.symbol)
+            generated.set_all_read_only(True)
+            return [generated]
 
         assign_role = None
         assign_recipient = None
