@@ -5,6 +5,7 @@
 <pixels> ::= <rgb>*
 <uint16> ::= <byte> <byte>
 <rgb> ::= <byte> <byte> <byte>
+<byte> ::= br"[\x00-\xff]"
 
 def uint16(tree):
     b = tree.to_bytes()
