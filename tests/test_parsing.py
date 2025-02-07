@@ -1,4 +1,8 @@
+#!/usr/bin/env pytest
+
 import unittest
+import shlex
+import subprocess
 
 from fandango.language.grammar import ParseState, NodeType
 from fandango.language.parse import parse
@@ -359,3 +363,89 @@ class TestIncompleteParsing(unittest.TestCase):
                 ],
             ),
         )
+
+
+class TestEmptyParsing(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.file = open("tests/resources/empty.fan", "r")
+        cls.grammar, _ = parse(cls.file, use_stdlib=False, use_cache=False)
+
+    def _test(self, example, tree):
+        actual_tree = self.grammar.parse(example)
+        self.assertEqual(tree, actual_tree)
+
+    def test_a(self):
+        self._test(
+            "1234",
+            DerivationTree(
+                NonTerminal("<start>"),
+                [
+                    DerivationTree(Terminal("123")),
+                    DerivationTree(NonTerminal("<digit>"),
+                            [DerivationTree(Terminal("4"))]
+                    ),
+                ],
+            ),
+        )
+
+    def test_b(self):
+        self._test(
+            "123456",
+            DerivationTree(
+                NonTerminal('<start>'),
+                [
+                    DerivationTree(Terminal('12345')),
+                    DerivationTree(Terminal('')),
+                    DerivationTree(NonTerminal('<digit>'),
+                                    [DerivationTree(Terminal('6'))]),
+                ]
+            )
+        )
+
+class TestCLIParsing(unittest.TestCase):
+    def run_command(self, command):
+        proc = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        out, err = proc.communicate()
+        return out.decode(), err.decode(), proc.returncode
+
+class TestRegexParsing(TestCLIParsing):
+    def test_infinity_abc(self):
+        command = shlex.split("fandango parse -f docs/infinity.fan --validate tests/resources/abc.txt --validate")
+        out, err, code = self.run_command(command)
+        self.assertEqual("", err)
+        self.assertEqual("", out)
+        self.assertEqual(0, code)
+
+    def test_infinity_abcabc(self):
+        command = shlex.split("fandango parse -f docs/infinity.fan --validate tests/resources/abcabc.txt --validate")
+        out, err, code = self.run_command(command)
+        self.assertEqual("", err)
+        self.assertEqual("", out)
+        self.assertEqual(0, code)
+
+    def test_infinity_abcd(self):
+        # This should be rejected by the grammar
+        command = shlex.split("fandango parse -f docs/infinity.fan tests/resources/abcd.txt --validate")
+        out, err, code = self.run_command(command)
+        self.assertEqual(1, code)
+
+class TestBitParsing(TestCLIParsing):
+    def test_bits_a(self):
+        command = shlex.split("fandango parse -f docs/bits.fan tests/resources/a.txt --validate")
+        out, err, code = self.run_command(command)
+        self.assertEqual("", err)
+        self.assertEqual("", out)
+        self.assertEqual(0, code)
+
+class TestGIFParsing(TestCLIParsing):
+    def test_gif(self):
+        command = shlex.split("fandango parse -f docs/gif89a.fan docs/tinytrans.gif --validate")
+        out, err, code = self.run_command(command)
+        self.assertEqual("", err)
+        self.assertEqual("", out)
+        self.assertEqual(0, code)

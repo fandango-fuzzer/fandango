@@ -24,5 +24,6 @@ We start with a very short GIF to keep things simple ([source](http://probablypr
 We can parse this file using Fandango:
 
 ```{code-cell}
-!fandango parse -f gif89a.fan tinytrans.gif -o - --format=grammar
+!fandango parse -f gif89a.fan tinytrans.gif -o - --format=grammar --validate
+assert _exit_code == 0
 ```

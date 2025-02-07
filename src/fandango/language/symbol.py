@@ -1,6 +1,7 @@
 import abc
 import enum
 import re
+from fandango.logger import LOGGER
 
 
 class SymbolType(enum.Enum):
@@ -41,20 +42,29 @@ class Symbol(abc.ABC):
     def __hash__(self):
         return NotImplemented
 
+    def _repr(self):
+        return str(self.symbol)
+
+    def __str__(self):
+        return str(self.symbol)
+
+    def __repr__(self):
+        return "Symbol(" + repr(self.symbol) + ")"
+
 
 class NonTerminal(Symbol):
     def __init__(self, symbol: str):
         super().__init__(symbol, SymbolType.NON_TERMINAL)
         self.is_implicit = symbol.startswith("<_")
 
-    def __repr__(self):
-        return self.symbol
-
     def __eq__(self, other):
         return isinstance(other, NonTerminal) and self.symbol == other.symbol
 
     def __hash__(self):
         return hash((self.symbol, self.type))
+
+    def __repr__(self):
+        return "NonTerminal(" + repr(self.symbol) + ")"
 
 
 class Terminal(Symbol):
@@ -103,15 +113,15 @@ class Terminal(Symbol):
         # LOGGER.debug(f"Checking {self.symbol!r} against {word!r}")
         symbol = self.symbol
 
-        if isinstance(self.symbol, bytes) and isinstance(word, str):
+        if isinstance(symbol, bytes) and isinstance(word, str):
             assert isinstance(symbol, bytes)
             symbol = symbol.decode("iso-8859-1")
-        if isinstance(self.symbol, str) and isinstance(word, bytes):
+        if isinstance(symbol, str) and isinstance(word, bytes):
             assert isinstance(word, bytes)
             word = word.decode("iso-8859-1")
 
-        assert isinstance(symbol, str)
-        assert isinstance(word, str)
+        assert ((isinstance(symbol, str) and isinstance(word, str))
+                or (isinstance(symbol, bytes) and isinstance(word, bytes)))
 
         if self.is_regex:
             match = re.match(symbol, word)
@@ -129,7 +139,7 @@ class Terminal(Symbol):
     def check_all(self, word: str | int) -> bool:
         return word == self.symbol
 
-    def __repr__(self):
+    def _repr(self):
         if self.is_regex:
             if isinstance(self.symbol, bytes):
                 symbol = repr(self.symbol)
@@ -141,8 +151,8 @@ class Terminal(Symbol):
             if '"' not in self.symbol:
                 return 'r"' + str(self.symbol) + '"'
 
-            # Mixed quotes: escape single quotes
-            symbol = self.symbol.replace("'", r"\'")
+            # Mixed quotes: encode single quotes
+            symbol = self.symbol.replace("'", r"\x27")
             return "r'" + str(symbol) + "'"
 
         # Not a regex
@@ -151,8 +161,11 @@ class Terminal(Symbol):
     def __eq__(self, other):
         return isinstance(other, Terminal) and self.symbol == other.symbol
 
-    def __str__(self):
-        return self.symbol
-
     def __hash__(self):
         return hash((self.symbol, self.type))
+
+    def __repr__(self):
+        return "Terminal(" + self._repr() + ")"
+
+    def __str__(self):
+        return self._repr()

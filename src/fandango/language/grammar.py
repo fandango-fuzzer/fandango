@@ -1,5 +1,4 @@
 import abc
-import copy
 import enum
 import random
 import typing
@@ -8,7 +7,7 @@ import exrex
 from copy import deepcopy
 from typing import Dict, List, Optional, Tuple, Set, Any, Union, Iterator, overload
 
-from fandango.language.symbol import NonTerminal, Terminal, Symbol
+from fandango.language.symbol import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree, RoledMessage
 from fandango.logger import LOGGER
 
@@ -127,6 +126,9 @@ class Alternative(Node):
     def __repr__(self):
         return "(" + " | ".join(map(repr, self.alternatives)) + ")"
 
+    def __str__(self):
+        return "(" + " | ".join(map(str, self.alternatives)) + ")"
+
     def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterator["Node"]:
         yield from self.alternatives
 
@@ -163,6 +165,9 @@ class Concatenation(Node):
 
     def __repr__(self):
         return " ".join(map(repr, self.nodes))
+
+    def __str__(self):
+        return " ".join(map(str, self.nodes))
 
     def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterator["Node"]:
         yield from self.nodes
@@ -207,8 +212,10 @@ class Repetition(Node):
             return f"{self.node}{{{self.min}}}"
         return f"{self.node}{{{self.min},{self.max}}}"
 
-    def children(self):
-        return [self.node]
+    def __str__(self):
+        if self.min == self.max:
+            return f"{self.node!s}{{{self.min}}}"
+        return f"{self.node!s}{{{self.min},{self.max}}}"
 
     def descendents(self, rules: Dict[NonTerminal, "Node"] | None) -> Iterator["Node"]:
         base = []
@@ -224,6 +231,9 @@ class Repetition(Node):
             ]
         )
 
+    def children(self):
+        return [self.node]
+
 
 class Star(Repetition):
     def __init__(self, node: Node):
@@ -234,6 +244,9 @@ class Star(Repetition):
 
     def __repr__(self):
         return f"{self.node}*"
+
+    def __str__(self):
+        return f"{self.node!s}*"
 
 
 class Plus(Repetition):
@@ -246,6 +259,9 @@ class Plus(Repetition):
     def __repr__(self):
         return f"{self.node}+"
 
+    def __str__(self):
+        return f"{self.node!s}+"
+
 
 class Option(Repetition):
     def __init__(self, node: Node):
@@ -256,6 +272,9 @@ class Option(Repetition):
 
     def __repr__(self):
         return f"{self.node}?"
+
+    def __str__(self):
+        return f"{self.node!s}?"
 
     def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterator["Node"]:
         yield from (self.node, TerminalNode(Terminal("")))
@@ -308,6 +327,9 @@ class NonTerminalNode(Node):
         else:
             return self.symbol.__repr__()
 
+    def __str__(self):
+        return self.symbol._repr()
+
     def __eq__(self, other):
         return isinstance(other, NonTerminalNode) and self.symbol == other.symbol
 
@@ -346,6 +368,11 @@ class TerminalNode(Node):
         self, grammar: "Grammar", max_nodes: int = 100, in_role: str = None
     ) -> List[DerivationTree]:
         if self.symbol.is_regex:
+            if isinstance(self.symbol.symbol, bytes):
+                # Exrex can't do bytes, so we decode to str and back
+                instance = exrex.getone(self.symbol.symbol.decode('iso-8859-1'))
+                return [DerivationTree(Terminal(instance.encode('iso-8859-1')))]
+
             instance = exrex.getone(self.symbol.symbol)
             return [DerivationTree(Terminal(instance))]
 
@@ -356,6 +383,9 @@ class TerminalNode(Node):
 
     def __repr__(self):
         return self.symbol.__repr__()
+
+    def __str__(self):
+        return self.symbol.__str__()
 
     def __eq__(self, other):
         return isinstance(other, TerminalNode) and self.symbol == other.symbol
@@ -911,7 +941,7 @@ class ParseState:
             f"({self.nonterminal} -> "
             + "".join(
                 [
-                    f"{'•' if i == self._dot else ''}{s.symbol}"
+                    f"{'•' if i == self._dot else ''}{s!s}"
                     for i, s in enumerate(self.symbols)
                 ]
             )
@@ -1098,6 +1128,9 @@ class Grammar(NodeVisitor):
             assert isinstance(state.dot.symbol, int)
             assert 0 <= bit_count <= 7
 
+            if w >= len(word):
+                return False
+
             # Get the highest bit. If `word` is bytes, word[w] is an integer.
             byte = ord(word[w]) if isinstance(word, str) else word[w]
             bit = (byte >> bit_count) & 1
@@ -1106,9 +1139,11 @@ class Grammar(NodeVisitor):
                 return False
 
             # Found a match
+            # LOGGER.debug(f"Found bit {bit}")
             next_state = state.next()
-            next_state.children.append(DerivationTree(state.dot))
-
+            tree = DerivationTree(Terminal(bit))
+            next_state.children.append(tree)
+            # LOGGER.debug(f"Added tree {tree.to_string()!r} to state {next_state!r}")
             # Insert a new table entry with next state
             # This is necessary, as our initial table holds one entry
             # per input byte, yet needs to be expanded to hold the bits, too.
@@ -1127,7 +1162,45 @@ class Grammar(NodeVisitor):
             table: List[Set[ParseState] | Column],
             k: int,
             w: int,
-        ) -> tuple[bool, int]:
+        ) -> bool:
+            """
+            Scan a byte from the input `word`.
+            `state` is the current parse state.
+            `table` is the parse table.
+            `table[k]` is the current column.
+            `word[w]` is the current byte.
+            Return True if a byte was matched, False otherwise.
+            """
+
+            assert not isinstance(state.dot.symbol, int)
+            assert not state.dot.is_regex
+
+            # LOGGER.debug(f"Checking byte(s) {state.dot!r} at position {w:#06x} ({w}) {word[w:]!r}")
+
+            match, match_length = state.dot.check(word[w:])
+            if not match:
+                return False
+
+            # Found a match
+            # LOGGER.debug(f"Matched byte(s) {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w + match_length]!r}")
+            next_state = state.next()
+            next_state.children.append(
+                DerivationTree(Terminal(word[w:w + match_length]))
+            )
+            table[k + match_length].add(next_state)
+            # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
+            self._max_position = max(self._max_position, w + match_length)
+
+            return True
+
+        def scan_regex(
+            self,
+            state: ParseState,
+            word: str | bytes,
+            table: List[Set[ParseState] | Column],
+            k: int,
+            w: int,
+        ) -> bool:
             """
             Scan a byte from the input `word`.
             `state` is the current parse state.
@@ -1138,19 +1211,24 @@ class Grammar(NodeVisitor):
             """
 
             assert not isinstance(state.dot.symbol, int)
+            assert state.dot.is_regex
+
+            # LOGGER.debug(f"Checking regex {state.dot!r} at position {w:#06x} ({w}) {word[w:]!r}")
 
             match, match_length = state.dot.check(word[w:])
-            if match:
-                # Found a match
-                # LOGGER.debug(f"Matched {state.dot!r} at position {hex(w)} ({w}) (len = {match_length}) {word[w:w+match_length]!r}")
-                next_state = state.next()
-                next_state.children.append(
-                    DerivationTree(Terminal(word[w : w + match_length]))
-                )
-                table[k + match_length].add(next_state)
-                self._max_position = max(self._max_position, w)
+            if not match:
+                return False
 
-            return match, match_length
+            # Found a match
+            # LOGGER.debug(f"Matched regex {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w+match_length]!r}")
+            next_state = state.next()
+            next_state.children.append(
+                DerivationTree(Terminal(word[w:w+match_length]))
+            )
+            table[k + match_length].add(next_state)
+            # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
+            self._max_position = max(self._max_position, w + match_length)
+            return True
 
         def complete(
             self,
@@ -1171,34 +1249,11 @@ class Grammar(NodeVisitor):
                         if use_implicit and state.nonterminal in self._implicit_rules:
                             s.children.append(
                                 DerivationTree(
-                                    NonTerminal(state.nonterminal.symbol),
-                                    state.children,
+                                    NonTerminal(state.nonterminal.symbol), state.children
                                 )
                             )
                         else:
                             s.children.extend(state.children)
-
-        # Commented this out, as
-        # (a) it is not adapted to bits yet, and (b) not used -- AZ
-        #
-        # def parse_table(self, word, start: str | NonTerminal = "<start>"):
-        #     if isinstance(start, str):
-        #         start = NonTerminal(start)
-        #     table = [Column() for _ in range(len(word) + 1)]
-        #     table[0].add(ParseState(NonTerminal("<*start*>"), 0, (start,)))
-        #     self._max_position = -1
-        #
-        #     for k in range(len(word) + 1):
-        #         for state in table[k]:
-        #             if state.finished():
-        #                 self.complete(state, table, k)
-        #             else:
-        #                 if state.next_symbol_is_nonterminal():
-        #                     self.predict(state, table, k)
-        #                 else:
-        #                     # No bit parsing support yet
-        #                     self.scan_byte(state, word, table, k, k)
-        #     return table
 
         def _parse_forest(
             self,
@@ -1212,9 +1267,10 @@ class Grammar(NodeVisitor):
             `start` is the start symbol (default: `<start>`).
             if `allow_incomplete` is True, the function will return trees even if the input ends prematurely.
             """
-
             if isinstance(start, str):
                 start = NonTerminal(start)
+
+            # LOGGER.debug(f"Parsing {word} into {start!s}")
 
             # Initialize the table
             table: list[set[ParseState] | Column] = [
@@ -1230,11 +1286,15 @@ class Grammar(NodeVisitor):
             w = 0  # Index into the input word
             bit_count = -1  # If > 0, indicates the next bit to be scanned (7-0)
 
-            while k < len(table) and w <= len(word):
-                scanned = 0
-
+            while k < len(table):
+                # LOGGER.debug(f"Processing {len(table[k])} states at column {k}")
                 for state in table[k]:
-                    if w >= len(word):
+                    # True iff We have processed all characters
+                    # (or some bits of the last character)
+                    at_end = (w >= len(word)
+                              or (bit_count > 0 and w == len(word) - 1))
+
+                    if at_end:
                         if allow_incomplete:
                             if state.nonterminal == implicit_start:
                                 self._incomplete.update(state.children)
@@ -1242,16 +1302,18 @@ class Grammar(NodeVisitor):
                             self.complete(state, table, k)
 
                     if state.finished():
-                        if state.nonterminal == implicit_start and w >= len(word):
-                            # LOGGER.debug(f"Found {len(state.children)} parse tree(s)")
-                            for child in state.children:
-                                yield child
+                        # LOGGER.debug(f"Finished")
+                        if state.nonterminal == implicit_start:
+                            if at_end:
+                                # LOGGER.debug(f"Found {len(state.children)} parse tree(s)")
+                                for child in state.children:
+                                    yield child
 
                         self.complete(state, table, k)
                     elif not state.is_incomplete:
                         if state.next_symbol_is_nonterminal():
                             self.predict(state, table, k)
-                            # LOGGER.debug(f"Predicted {state} at position {hex(w)} ({w}) {word[w:]!r}")
+                            # LOGGER.debug(f"Predicted {state} at position {w:#06x} ({w}) {word[w:]!r}")
                         else:
                             if isinstance(state.dot.symbol, int):
                                 # Scan a bit
@@ -1261,11 +1323,13 @@ class Grammar(NodeVisitor):
                                     state, word, table, k, w, bit_count
                                 )
                                 if match:
-                                    # LOGGER.debug(f"Scanned bit {state} at position {hex(w)} ({w}) {word[w:]!r}")
-                                    scanned = 1
+                                    # LOGGER.debug(f"Matched bit {state} at position {w:#06x} ({w}) {word[w:]!r}")
+                                    pass
                             else:
-                                # Scan a byte
+                                # Scan a regex or a byte
                                 if 0 <= bit_count <= 7:
+                                    # LOGGER.warning(f"Position {w:#06x} ({w}): Parsing a byte while expecting bit {bit_count}. Check if bits come in multiples of eight")
+
                                     # We are still expecting bits here:
                                     #
                                     # * we may have _peeked_ at a bit,
@@ -1275,29 +1339,29 @@ class Grammar(NodeVisitor):
                                     #
                                     # In either case, we need to skip back
                                     # to scanning bytes here.
-                                    # LOGGER.warning(f"Position {hex(w)} ({w}): Parsing a byte while expecting bit {bit_count}. Check if bits come in multiples of eight")
                                     bit_count = -1
 
-                                match, match_length = self.scan_bytes(
-                                    state, word, table, k, w
-                                )
-                                if match:
-                                    # LOGGER.debug(f"Scanned {match_length} byte(s) {state} at position {hex(w)} ({w}) {word[w:]!r}")
-                                    scanned = max(scanned, match_length)
+                                # LOGGER.debug(f"Checking byte(s) {state} at position {w:#06x} ({w}) {word[w:]!r}")
+                                if state.dot.is_regex:
+                                    match = self.scan_regex(state, word,
+                                                            table, k, w)
+                                else:
+                                    match = self.scan_bytes(state, word,
+                                                            table, k, w)
 
-                if scanned > 0:
-                    if bit_count >= 0:
-                        # Advance by one bit
-                        bit_count -= 1
-                    if bit_count < 0:
-                        # Advance to next byte
-                        w += scanned
+                # LOGGER.debug(f"Scanned {scanned} byte(s) at position {w:#06x} ({w}); bit_count = {bit_count}")
+                if bit_count >= 0:
+                    # Advance by one bit
+                    bit_count -= 1
+                if bit_count < 0:
+                    # Advance to next byte
+                    w += 1
 
                 k += 1
 
         def parse_forest(
             self,
-            word: str,
+            word: str | bytes,
             start: str | NonTerminal = "<start>",
             *,
             allow_incomplete: bool = False,
@@ -1305,8 +1369,10 @@ class Grammar(NodeVisitor):
             """
             Yield multiple parse alternatives, using a cache.
             """
+            assert isinstance(word, str) or isinstance(word, bytes)
             if isinstance(start, str):
                 start = NonTerminal(start)
+            assert isinstance(start, NonTerminal)
 
             cache_key = (word, start, allow_incomplete)
             if cache_key in self._cache:
@@ -1466,14 +1532,14 @@ class Grammar(NodeVisitor):
 
     def parse(
         self,
-        word: str,
+        word: str | bytes,
         start: str | NonTerminal = "<start>",
     ):
         return self._parser.parse(word, start)
 
     def parse_forest(
         self,
-        word: str,
+        word: str | bytes,
         start: str | NonTerminal = "<start>",
         allow_incomplete: bool = False,
     ):
@@ -1519,7 +1585,7 @@ class Grammar(NodeVisitor):
     def __repr__(self):
         return "\n".join(
             [
-                f"{key} ::= {value}{' := ' + self.generators[key] if key in self.generators else ''}"
+                f"{key} ::= {str(value)}{' := ' + self.generators[key] if key in self.generators else ''}"
                 for key, value in self.rules.items()
             ]
         )
@@ -1540,8 +1606,6 @@ class Grammar(NodeVisitor):
             f"{' := ' + self.generators[symbol] if symbol in self.generators else ''}"
         )
 
-    def __str__(self):
-        return self.__repr__()
 
     @staticmethod
     def dummy():

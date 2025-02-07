@@ -90,7 +90,7 @@ osascript -e 'tell application "Safari" to set URL of document of window 1 to UR
 VIEW_PDF = open $(PDF_TARGET)
 
 # Command to check docs for failed assertions
-CHECK_DOCS = grep -l AssertionError $(DOCS)/_build/html/*.html; if [ $$? == 0 ]; then false; else true; fi
+CHECK_DOCS = grep -l AssertionError $(DOCS)/_build/html/*.html; if [ $$? == 0 ]; then echo 'Check the above files for failed assertions'; false; else true; fi
 
 
 # Targets.
@@ -165,13 +165,10 @@ clean-docs:
 ## Tests
 TESTS = tests
 TEST_SOURCES = $(wildcard $(TESTS)/*.py $(TESTS)/resources/*)
-TEST_MARKER = $(TESTS)/test-marker.txt
 
 .PHONY: test tests
-test tests: $(TEST_MARKER)
-$(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
-	$(PYTEST)
-	echo 'Success' > $@
+test tests:
+	$(PYTEST) 
 
 ## Installation
 .PHONY: install install-test install-tests
@@ -188,3 +185,10 @@ install-test install-tests:
 uninstall:
 	$(PIP) uninstall fandango-fuzzer -y
 
+# python -m evaluation.vs_isla.run_evaluation
+.PHONY: evaluation evaluate experiment experiments
+evaluate evaluation:
+	$(PYTHON) -m evaluation.vs_isla.run_evaluation 1
+
+experiment experiments:
+	$(PYTHON) -m evaluation.experiments.run_experiments
