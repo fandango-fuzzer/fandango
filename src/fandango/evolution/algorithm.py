@@ -155,6 +155,8 @@ class Fandango:
     def fix_individual(self, individual: DerivationTree) -> DerivationTree:
         _, failing_trees = self.evaluator.evaluate_individual(individual)
         for failing_tree in failing_trees:
+            if failing_tree.tree.read_only:
+                continue
             for operator, value, side in failing_tree.suggestions:
                 from fandango.constraints.fitness import Comparison, ComparisonSide
 
