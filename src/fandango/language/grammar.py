@@ -1419,13 +1419,13 @@ class Grammar(NodeVisitor):
     def __init__(
         self,
         rules: Optional[Dict[NonTerminal, Node]] = None,
-        fuzzing_mode: Optional[FuzzingMode] = None,
+        fuzzing_mode: Optional[FuzzingMode] = FuzzingMode.COMPLETE,
         local_variables: Optional[Dict[str, Any]] = None,
         global_variables: Optional[Dict[str, Any]] = None,
     ):
         self.rules = rules or {}
         self.generators = {}
-        self.fuzzing_mode = FuzzingMode.COMPLETE
+        self.fuzzing_mode = fuzzing_mode
         self._parser = Grammar.Parser(self.rules)
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}

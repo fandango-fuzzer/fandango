@@ -381,10 +381,18 @@ class TestEmptyParsing(unittest.TestCase):
             DerivationTree(
                 NonTerminal("<start>"),
                 [
-                    DerivationTree(Terminal("123")),
-                    DerivationTree(NonTerminal("<digit>"),
-                            [DerivationTree(Terminal("4"))]
-                    ),
+                    DerivationTree(
+                        NonTerminal("<_alternative:0>"),
+                        [
+                            DerivationTree(
+                                NonTerminal("<_concatenation:0>"),
+                                [
+                                    DerivationTree(Terminal("123")),
+                                    DerivationTree(NonTerminal("<digit>"),
+                                                   [DerivationTree(Terminal("4"))]
+                                                   )
+                                ])
+                        ]),
                 ],
             ),
         )
@@ -395,13 +403,24 @@ class TestEmptyParsing(unittest.TestCase):
             DerivationTree(
                 NonTerminal('<start>'),
                 [
-                    DerivationTree(Terminal('12345')),
-                    DerivationTree(Terminal('')),
-                    DerivationTree(NonTerminal('<digit>'),
-                                    [DerivationTree(Terminal('6'))]),
+                    DerivationTree(
+                        NonTerminal("<_alternative:0>"),
+                        [
+                            DerivationTree(
+                                NonTerminal("<_concatenation:1>"),
+                                [
+                                    DerivationTree(Terminal('12345')),
+                                    DerivationTree(Terminal('')),
+                                    DerivationTree(NonTerminal('<digit>'),
+                                                   [DerivationTree(Terminal('6'))]),
+                                ]
+                            ),
+                        ]
+                    )
                 ]
             )
         )
+
 
 class TestCLIParsing(unittest.TestCase):
     def run_command(self, command):
@@ -412,6 +431,7 @@ class TestCLIParsing(unittest.TestCase):
         )
         out, err = proc.communicate()
         return out.decode(), err.decode(), proc.returncode
+
 
 class TestRegexParsing(TestCLIParsing):
     def test_infinity_abc(self):
@@ -434,6 +454,7 @@ class TestRegexParsing(TestCLIParsing):
         out, err, code = self.run_command(command)
         self.assertEqual(1, code)
 
+
 class TestBitParsing(TestCLIParsing):
     def test_bits_a(self):
         command = shlex.split("fandango parse -f docs/bits.fan tests/resources/a.txt --validate")
@@ -441,6 +462,7 @@ class TestBitParsing(TestCLIParsing):
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
+
 
 class TestGIFParsing(TestCLIParsing):
     def test_gif(self):
