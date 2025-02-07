@@ -19,9 +19,9 @@ class DerivationTree:
         parent: Optional["DerivationTree"] = None,
     ):
         self.hash_cache = None
-        self._parent = parent
-        self.symbol = symbol
-        self._children = []
+        self._parent: Optional["DerivationTree"] = parent
+        self.symbol: Symbol = symbol
+        self._children: list["DerivationTree"] = []
         self._size = 1
         self.set_children(children or [])
 
@@ -219,12 +219,6 @@ class DerivationTree:
         """
         Convert the derivation tree to a string.
         """
-        # Turn off warning for now; too many false alarms -- AZ
-        # if self.contains_bits() or self.contains_bytes():
-        #     LOGGER.warning(
-        #         "Converting a derivation tree with binary elements into a string"
-        #     )
-
         try:
             return self.to_bytes(encoding="utf-8").decode("utf-8")
         except UnicodeDecodeError:
@@ -287,7 +281,7 @@ class DerivationTree:
             s += ")"
         return s
 
-    def to_grammar(self, include_position=True) -> str:
+    def to_grammar(self, include_position=True, include_value=True) -> str:
         """
         Output the derivation tree as (specialized) grammar
         """
@@ -299,10 +293,10 @@ class DerivationTree:
             Output the derivation tree as (specialized) grammar
             """
             assert isinstance(node.symbol.symbol, str)
-            nonlocal bit_count, byte_count, include_position
+            nonlocal bit_count, byte_count, include_position, include_value
 
             s = "  " * start_indent + f"{node.symbol.symbol} ::="
-            have_nonterminal = False
+            terminal_symbols = 0
 
             position = f"  # Position {byte_count:#06x} ({byte_count})"
             max_bit_count = bit_count - 1
@@ -312,7 +306,7 @@ class DerivationTree:
                     s += f" {child.symbol.symbol}"
                 else:
                     s += " " + repr(child.symbol.symbol)
-                    have_nonterminal = True
+                    terminal_symbols += 1
 
                     if isinstance(child.symbol.symbol, int):
                         if bit_count < 0:
@@ -326,13 +320,19 @@ class DerivationTree:
                         byte_count += len(child.symbol.symbol)
                         bit_count = -1
 
-            if include_position and have_nonterminal:
+            have_position = False
+            if include_position and terminal_symbols > 0:
+                have_position = True
                 s += position
                 if bit_count >= 0:
                     if max_bit_count != bit_count:
                         s += f", bits {max_bit_count}-{bit_count}"
                     else:
                         s += f", bit {bit_count}"
+
+            if include_value and len(node._children) >= 2:
+                s += "  # " if not have_position else "; "
+                s += node.to_value()
 
             for child in node._children:
                 if child.symbol.is_non_terminal:
@@ -343,14 +343,6 @@ class DerivationTree:
 
     def __repr__(self):
         return self.to_repr()
-
-    def __contains__(self, other: Union["DerivationTree", Any]) -> bool:
-        if isinstance(other, DerivationTree):
-            return other in self._children
-        return other in str(self)
-
-    def __iter__(self):
-        return iter(self._children)
 
     def to_int(self, *args, **kwargs):
         try:
@@ -393,34 +385,6 @@ class DerivationTree:
 
     def is_num(self):
         return self.is_float()
-
-    def __eq__(self, other):
-        if isinstance(other, DerivationTree):
-            return self.__tree__() == other.__tree__()
-        return str(self) == other
-
-    def __le__(self, other):
-        if isinstance(other, DerivationTree):
-            return str(self) <= str(other)
-        return str(self) <= other
-
-    def __lt__(self, other):
-        if isinstance(other, DerivationTree):
-            return str(self) < str(other)
-        return str(self) < other
-
-    def __ge__(self, other):
-        if isinstance(other, DerivationTree):
-            return str(self) >= str(other)
-        return str(self) >= other
-
-    def __gt__(self, other):
-        if isinstance(other, DerivationTree):
-            return str(self) > str(other)
-        return str(self) > other
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
 
     def replace(self, tree_to_replace, new_subtree):
         """
@@ -482,6 +446,105 @@ class DerivationTree:
         except ValueError:
             return -1
 
+    ## General purpose converters
+    def value(self) -> int | str | bytes | None:
+        """
+            Convert the derivation tree into a standard Python value.
+        """
+        if self.symbol.is_terminal:
+            return self.symbol.symbol
+
+        aggregate = None
+        for child in self._children:
+            value = child.value()
+
+            if aggregate is None:
+                aggregate = value
+
+            elif isinstance(aggregate, str):
+                if isinstance(value, str):
+                    aggregate += value
+                elif isinstance(value, bytes):
+                    aggregate = aggregate.encode("utf-8") + value
+                elif isinstance(value, int):
+                    aggregate = aggregate + chr(value)
+                else:
+                    raise ValueError(f"Cannot compute {aggregate!r} + {value!r}")
+
+            elif isinstance(aggregate, bytes):
+                if isinstance(value, str):
+                    aggregate += value.encode("utf-8")
+                elif isinstance(value, bytes):
+                    aggregate += value
+                elif isinstance(value, int):
+                    aggregate = aggregate + value.to_bytes()
+                else:
+                    raise ValueError(f"Cannot compute {aggregate!r} + {value!r}")
+
+            elif isinstance(aggregate, int):
+                if isinstance(value, str):
+                    aggregate = aggregate.to_bytes() + value.encode("utf-8")
+                elif isinstance(value, bytes):
+                    aggregate = aggregate.to_bytes() + value
+                elif isinstance(value, int):
+                    aggregate = (aggregate << 1) + value
+                else:
+                    raise ValueError(f"Cannot compute {aggregate!r} + {value!r}")
+
+        # LOGGER.debug(f"val(): {' '.join(repr(child.value()) for child in self._children)} = {aggregate!r}")
+
+        return aggregate
+
+    def to_value(self) -> str:
+        value = self.value()
+        if isinstance(value, int):
+            return "0b" + format(value, "b")
+        return repr(self.value())
+
+    ## Comparison operations
+    def __eq__(self, other):
+        if isinstance(other, DerivationTree):
+            return self.__tree__() == other.__tree__()
+        return self.value() == other
+
+    def __le__(self, other):
+        if isinstance(other, DerivationTree):
+            return str(self) <= str(other)
+        return self.value() <= other
+
+    def __lt__(self, other):
+        if isinstance(other, DerivationTree):
+            return str(self) < str(other)
+        return self.value() < other
+
+    def __ge__(self, other):
+        if isinstance(other, DerivationTree):
+            return str(self) >= str(other)
+        return self.value() >= other
+
+    def __gt__(self, other):
+        if isinstance(other, DerivationTree):
+            return str(self) > str(other)
+        return self.value() > other
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    ## Boolean operations
+    def __bool__(self):
+        return bool(self.value())
+
+    ## Iterators
+    def __contains__(self, other: Union["DerivationTree", Any]) -> bool:
+        if isinstance(other, DerivationTree):
+            return other in self._children
+        return other in str(self)
+
+    def __iter__(self):
+        return iter(self._children)
+
+
+    ## Everything else
     def __getattr__(self, name):
         """
         Catch-all: All other attributes and methods apply to the string representation
