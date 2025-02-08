@@ -85,14 +85,14 @@ class Terminal(Symbol):
     @staticmethod
     def clean(symbol: str) -> str | bytes | int:
         # Not sure whether any of these are necessary, as we eval() anyway
-        if len(symbol) >= 2:
-            if symbol[0] == symbol[-1] == "'" or symbol[0] == symbol[-1] == '"':
-                return eval(symbol)
-            elif len(symbol) >= 3:
-                if symbol[0] == "b" and (
-                    symbol[1] == symbol[-1] == "'" or symbol[1] == symbol[-1] == '"'
-                ):
-                    return eval(symbol)
+        # if len(symbol) >= 2:
+        #     if symbol[0] == symbol[-1] == "'" or symbol[0] == symbol[-1] == '"':
+        #         return eval(symbol)
+        #     elif len(symbol) >= 3:
+        #         if symbol[0] == "b" and (
+        #             symbol[1] == symbol[-1] == "'" or symbol[1] == symbol[-1] == '"'
+        #         ):
+        #             return eval(symbol)
         return eval(symbol)  # also handles bits "0" and "1"
 
     @staticmethod
