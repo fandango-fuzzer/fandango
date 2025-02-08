@@ -933,7 +933,7 @@ class Grammar(NodeVisitor):
 
         def parse_forest(
             self,
-            word: str | bytes | int | DerivationTree,
+            word: str | bytes | DerivationTree,
             start: str | NonTerminal = "<start>",
             *,
             allow_incomplete: bool = False,
@@ -942,7 +942,7 @@ class Grammar(NodeVisitor):
             Yield multiple parse alternatives, using a cache.
             """
             if isinstance(word, DerivationTree):
-                word = word.value()
+                word = word.value()  # type: ignore
             if isinstance(word, int):
                 word = str(word)
             assert isinstance(word, str) or isinstance(word, bytes)
