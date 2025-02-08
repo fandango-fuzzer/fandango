@@ -18,7 +18,7 @@ from fandango.constraints.fitness import (
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
-from fandango.logger import print_exception
+from fandango.logger import print_exception, LOGGER
 
 
 class Value(GeneticBase):
@@ -73,9 +73,10 @@ class Value(GeneticBase):
                             trees.append(node)
                 try:
                     # Evaluate the expression
-                    values.append(
-                        eval(self.expression, self.global_variables, local_variables)
-                    )
+                    result = self.eval(self.expression,
+                                       self.global_variables,
+                                       local_variables)
+                    values.append(result)
                 except Exception as e:
                     e.add_note(f"Evaluation failed: {self.expression}")
                     print_exception(e)
@@ -151,6 +152,25 @@ class Constraint(GeneticBase, ABC):
         """
         return self.searches.values()
 
+    def eval(self, expression: str, global_variables, local_variables):
+        """
+        Evaluate the tree in the context of local and global variables.
+        """
+        # LOGGER.debug(f"Evaluating {expression}")
+        # for name, value in local_variables.items():
+        #     if isinstance(value, DerivationTree):
+        #         value = value.value()
+        #     LOGGER.debug(f"    {name} = {value!r}")
+
+        result = eval(expression, global_variables, local_variables)
+
+        # res = result
+        # if isinstance(res, DerivationTree):
+        #     res = res.value()
+        # LOGGER.debug(f"Result = {res!r}")
+
+        return result
+
 
 class ExpressionConstraint(Constraint):
     """
@@ -196,7 +216,7 @@ class ExpressionConstraint(Constraint):
                 {name: container.evaluate() for name, container in combination}
             )
             try:
-                result = eval(self.expression, self.global_variables, local_variables)
+                result = self.eval(self.expression, self.global_variables, local_variables)
                 if result is None:
                     # fitness is perfect and return
                     # TODO this should not be here. It breaks Python's None semantics
@@ -301,14 +321,14 @@ class ComparisonConstraint(Constraint):
             )
             # Evaluate the left and right side of the comparison
             try:
-                left = eval(self.left, self.global_variables, local_variables)
+                left = self.eval(self.left, self.global_variables, local_variables)
             except Exception as e:
                 e.add_note("Evaluation failed: " + self.left)
                 print_exception(e)
                 continue
             # Evaluate the left and right side of the comparison
             try:
-                right = eval(self.right, self.global_variables, local_variables)
+                right = self.eval(self.right, self.global_variables, local_variables)
             except Exception as e:
                 e.add_note("Evaluation failed: " + self.right)
                 print_exception(e)
