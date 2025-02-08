@@ -158,9 +158,11 @@ class Fandango:
             for operator, value, side in failing_tree.suggestions:
                 from fandango.constraints.fitness import Comparison, ComparisonSide
 
+                # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
+
                 if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
                     suggested_tree = self.grammar.parse(
-                        str(value), start=failing_tree.tree.symbol.symbol
+                        value, start=failing_tree.tree.symbol.symbol
                     )
                     if suggested_tree is None:
                         continue

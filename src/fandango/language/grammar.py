@@ -933,7 +933,7 @@ class Grammar(NodeVisitor):
 
         def parse_forest(
             self,
-            word: str | bytes,
+            word: str | bytes | int | DerivationTree,
             start: str | NonTerminal = "<start>",
             *,
             allow_incomplete: bool = False,
@@ -941,7 +941,12 @@ class Grammar(NodeVisitor):
             """
             Yield multiple parse alternatives, using a cache.
             """
+            if isinstance(word, DerivationTree):
+                word = word.value()
+            if isinstance(word, int):
+                word = str(word)
             assert isinstance(word, str) or isinstance(word, bytes)
+
             if isinstance(start, str):
                 start = NonTerminal(start)
             assert isinstance(start, NonTerminal)
@@ -969,14 +974,18 @@ class Grammar(NodeVisitor):
             # Cache entire forest
             self._cache[cache_key] = forest
 
-        def parse_incomplete(self, word: str, start: str | NonTerminal = "<start>"):
+        def parse_incomplete(self,
+                             word: str | bytes | DerivationTree,
+                             start: str | NonTerminal = "<start>"):
             """
             Yield multiple parse alternatives,
             even for incomplete inputs
             """
             return self.parse_forest(word, start, allow_incomplete=True)
 
-        def parse(self, word: str, start: str | NonTerminal = "<start>"):
+        def parse(self,
+                  word: str | bytes | DerivationTree,
+                  start: str | NonTerminal = "<start>"):
             """
             Return the first parse alternative,
             or `None` if no parse is possible
@@ -1059,14 +1068,14 @@ class Grammar(NodeVisitor):
 
     def parse(
         self,
-        word: str | bytes,
+        word: str | bytes | DerivationTree,
         start: str | NonTerminal = "<start>",
     ):
         return self._parser.parse(word, start)
 
     def parse_forest(
         self,
-        word: str | bytes,
+        word: str | bytes | DerivationTree,
         start: str | NonTerminal = "<start>",
         allow_incomplete: bool = False,
     ):
@@ -1074,7 +1083,7 @@ class Grammar(NodeVisitor):
 
     def parse_incomplete(
         self,
-        word: str,
+        word: str | bytes | DerivationTree,
         start: str | NonTerminal = "<start>",
     ):
         return self._parser.parse_incomplete(word, start)
