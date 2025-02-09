@@ -92,3 +92,12 @@ class test_slices(unittest.TestCase):
         self.assertEqual("", out)
         self.assertEqual(0, code)
 
+    def test_slice_paren(self):
+        command = shlex.split(
+            """fandango fuzz -f tests/resources/twodigits.fan -n 1 -c '(<start>)[0] == "6"' --format=none --validate --random-seed 426912 --population-size 10"""
+        )
+        out, err, code = self.run_command(command)
+        self.assertEqual("", err)
+        self.assertEqual("", out)
+        self.assertEqual(0, code)
+
