@@ -218,8 +218,8 @@ class ExpressionConstraint(Constraint):
             try:
                 result = self.eval(self.expression, self.global_variables, local_variables)
                 if result is None:
-                    # fitness is perfect and return
-                    # TODO this should not be here. It breaks Python's None semantics
+                    # This is there to accomodate "constraints" that simply call `print()` (or otherwise produce no value)
+                    # We treat these as "perfect fitness" because they are not actually constraints
                     return ConstraintFitness(1, 1, True)
                 if result:
                     solved += 1
