@@ -1283,6 +1283,8 @@ def shell_command(args):
                 last_status = run(command, args)
         except SystemExit:
             pass
+        except KeyboardInterrupt:
+            pass
 
     return last_status
 
