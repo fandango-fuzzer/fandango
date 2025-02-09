@@ -334,7 +334,7 @@ class ComparisonConstraint(Constraint):
                 print_exception(e)
                 continue
 
-            if not self.types_checked:
+            if not hasattr(self, 'types_checked') or not self.types_checked:
                 self.check_type_compatibility(left, right)
                 self.types_checked = True
 
