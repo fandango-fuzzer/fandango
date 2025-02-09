@@ -8,6 +8,7 @@ from typing import List, Optional, Dict, Tuple, Any
 
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
+from fandango.logger import LOGGER
 
 
 class Container(abc.ABC):
@@ -60,6 +61,12 @@ class Tree(Container):
         """
         return self.tree
 
+    def __repr__(self):
+        return 'Tree(' + repr(self.tree.value()) + ')'
+
+    def __str__(self):
+        return str(self.tree)
+
 
 class Length(Container):
     """
@@ -86,6 +93,12 @@ class Length(Container):
         :return int: The length of the list of trees.
         """
         return len(self.trees)
+
+    def __repr__(self):
+        return 'Length([' + ", ".join(repr(tree.value()) for tree in self.trees) + '])'
+
+    def __str__(self):
+        return repr(self)
 
 
 class NonTerminalSearch(abc.ABC):
@@ -168,7 +181,7 @@ class LengthSearch(NonTerminalSearch):
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[Container]:
-        return [
+        ret = [
             Length(
                 sum(
                     [
@@ -179,13 +192,16 @@ class LengthSearch(NonTerminalSearch):
                 )
             )
         ]
+        # LOGGER.debug(f"LengthSearch({self}).find({tree.value()!r}) = {ret}")
+        return ret
+
 
     def find_direct(
         self,
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[Container]:
-        return [
+        ret = [
             Length(
                 sum(
                     [
@@ -196,6 +212,8 @@ class LengthSearch(NonTerminalSearch):
                 )
             )
         ]
+        # LOGGER.debug(f"LengthSearch({self}).find_direct({tree.value()!r}) = {ret}")
+        return ret
 
     def __repr__(self):
         return f"|{repr(self.value)}|"
@@ -225,8 +243,13 @@ class RuleSearch(NonTerminalSearch):
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[Container]:
         if scope and self.symbol in scope:
-            return [Tree(scope[self.symbol])]
-        return list(map(Tree, tree.find_all_trees(self.symbol)))
+            ret = [Tree(scope[self.symbol])]
+        else:
+            ret = list(map(Tree, tree.find_all_trees(self.symbol)))
+
+        # LOGGER.debug(f"RuleSearch({self}).find({tree.value()!r}) = {ret}")
+        return ret
+
 
     def find_direct(
         self,
@@ -234,8 +257,12 @@ class RuleSearch(NonTerminalSearch):
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[Container]:
         if scope and self.symbol in scope:
-            return [Tree(scope[self.symbol])]
-        return list(map(Tree, tree.find_direct_trees(self.symbol)))
+            ret = [Tree(scope[self.symbol])]
+        else:
+            ret = list(map(Tree, tree.find_direct_trees(self.symbol)))
+
+        # LOGGER.debug(f"RuleSearch({self}).find_direct({tree.value()!r}) = {ret}")
+        return ret
 
     def __repr__(self):
         return repr(self.symbol)
@@ -272,6 +299,7 @@ class AttributeSearch(NonTerminalSearch):
         for base in bases:
             for t in base.get_trees():
                 targets.extend(self.attribute.find_direct(t, scope=scope))
+        # LOGGER.debug(f"AttributeSearch({self}).find({tree.value()!r}) = {targets}")
         return targets
 
     def find_direct(
@@ -284,6 +312,7 @@ class AttributeSearch(NonTerminalSearch):
         for base in bases:
             for t in base.get_trees():
                 targets.extend(self.attribute.find_direct(t, scope=scope))
+        # LOGGER.debug(f"AttributeSearch({self}).find_direct({tree.value()!r}) = {targets}")
         return targets
 
     def __repr__(self):
@@ -321,6 +350,8 @@ class DescendantAttributeSearch(NonTerminalSearch):
         for base in bases:
             for t in base.get_trees():
                 targets.extend(self.attribute.find(t, scope=scope))
+
+        # LOGGER.debug(f"DescendantAttributeSearch({self}).find({tree.value()!r}) = {targets}")
         return targets
 
     def find_direct(
@@ -333,6 +364,8 @@ class DescendantAttributeSearch(NonTerminalSearch):
         for base in bases:
             for t in base.get_trees():
                 targets.extend(self.attribute.find(t, scope=scope))
+
+        # LOGGER.debug(f"DescendantAttributeSearch({self}).find_direct({tree.value()!r}) = {targets}")
         return targets
 
     def __repr__(self):
@@ -365,7 +398,7 @@ class ItemSearch(NonTerminalSearch):
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[Container]:
         bases = self.base.find(tree, scope=scope)
-        return list(
+        ret = list(
             map(
                 Tree,
                 sum(
@@ -379,13 +412,16 @@ class ItemSearch(NonTerminalSearch):
             )
         )
 
+        # LOGGER.debug(f"ItemSearch({self}).find({tree.value()!r}) = {ret}")
+        return ret
+
     def find_direct(
         self,
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[Container]:
         bases = self.base.find_direct(tree, scope=scope)
-        return list(
+        ret = list(
             map(
                 Tree,
                 sum(
@@ -398,6 +434,8 @@ class ItemSearch(NonTerminalSearch):
                 ),
             )
         )
+        # LOGGER.debug(f"ItemSearch({self}).find_direct({tree.value()!r}) = {ret}")
+        return ret
 
     def __repr__(self):
         slice_reprs = []
@@ -479,19 +517,24 @@ class SelectiveSearch(NonTerminalSearch):
             result.extend(sum(children, []))
         return list(map(Tree, result))
 
+
     def find(
         self,
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[Container]:
-        return self._find(self.base.find(tree, scope=scope))
+        ret = self._find(self.base.find(tree, scope=scope))
+        # LOGGER.debug(f"SelectiveSearch({self}).find({tree.value()!r}) = {ret}")
+        return ret
 
     def find_direct(
         self,
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[Container]:
-        return self._find(self.base.find_direct(tree, scope=scope))
+        ret = self._find(self.base.find_direct(tree, scope=scope))
+        # LOGGER.debug(f"SelectiveSearch({self}).find_direct({tree.value()!r}) = {ret}")
+        return ret
 
     def __repr__(self):
         slice_reprs = []
