@@ -291,7 +291,7 @@ class ComparisonConstraint(Constraint):
         self.operator = operator
         self.left = left
         self.right = right
-        self.types_checked = None
+        self.types_checked = False
 
     def fitness(
         self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
@@ -326,7 +326,7 @@ class ComparisonConstraint(Constraint):
                 e.add_note("Evaluation failed: " + self.left)
                 print_exception(e)
                 continue
-            # Evaluate the left and right side of the comparison
+
             try:
                 right = self.eval(self.right, self.global_variables, local_variables)
             except Exception as e:
@@ -334,18 +334,9 @@ class ComparisonConstraint(Constraint):
                 print_exception(e)
                 continue
 
-            try:
-                # TODO: please remove this check. It breaks Python's functionality, e.g., for comparing floats and ints
-                # TODO: Just because the types are different doesn't mean they can't be compared
-                if self.types_checked is None:
-                    if not type(left) == type(right):
-                        raise TypeError(
-                            f"In constraint {self}, left and right side of comparison don't evaluate to the same type"
-                        )
-                    else:
-                        self.types_checked = True
-            except Exception as e:
-                self.types_checked = False
+            if not self.types_checked:
+                self.check_type_compatibility(left, right)
+                self.types_checked = True
 
             # Initialize the suggestions
             suggestions = []
@@ -448,6 +439,25 @@ class ComparisonConstraint(Constraint):
         # Cache the fitness
         self.cache[tree_hash] = fitness
         return fitness
+
+    def check_type_compatibility(self, left: Any, right: Any):
+        """
+            Check the types of `left` and `right` are compatible in a comparison
+        """
+        if isinstance(left, DerivationTree):
+            left = left.value()
+        if isinstance(right, DerivationTree):
+            right = right.value()
+
+        if type(left) == type(right):
+            return
+        if (isinstance(left, (bool, int, float))
+            and isinstance(right, (bool, int, float))):
+            return
+
+        LOGGER.warning(f"{self}: Cannot compare {type(left).__name__!r} and {type(right).__name__!r}")
+        return
+
 
     def __repr__(self):
         representation = f"{self.left} {self.operator.value} {self.right}"
