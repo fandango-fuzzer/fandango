@@ -62,7 +62,7 @@ class Tree(Container):
         return self.tree
 
     def __repr__(self):
-        return 'Tree(' + repr(self.tree.value()) + ')'
+        return "Tree(" + repr(self.tree.value()) + ")"
 
     def __str__(self):
         return str(self.tree)
@@ -95,7 +95,7 @@ class Length(Container):
         return len(self.trees)
 
     def __repr__(self):
-        return 'Length([' + ", ".join(repr(tree.value()) for tree in self.trees) + '])'
+        return "Length([" + ", ".join(repr(tree.value()) for tree in self.trees) + "])"
 
     def __str__(self):
         return repr(self)
@@ -195,7 +195,6 @@ class LengthSearch(NonTerminalSearch):
         # LOGGER.debug(f"LengthSearch({self}).find({tree.value()!r}) = {ret}")
         return ret
 
-
     def find_direct(
         self,
         tree: DerivationTree,
@@ -249,7 +248,6 @@ class RuleSearch(NonTerminalSearch):
 
         # LOGGER.debug(f"RuleSearch({self}).find({tree.value()!r}) = {ret}")
         return ret
-
 
     def find_direct(
         self,
@@ -471,7 +469,6 @@ class ItemSearch(NonTerminalSearch):
                 slice_strs.append(str(slice_))
         return f"{str(self.base)}[{', '.join(slice_strs)}]"
 
-
     def get_access_points(self):
         return self.base.get_access_points()
 
@@ -516,7 +513,6 @@ class SelectiveSearch(NonTerminalSearch):
                     children[index] = values if isinstance(values, list) else [values]
             result.extend(sum(children, []))
         return list(map(Tree, result))
-
 
     def find(
         self,

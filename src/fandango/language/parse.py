@@ -422,10 +422,13 @@ def parse(
 
 ### Consistency Checks
 
+
 def check_grammar_consistency(
     grammar, *, given_used_symbols=set(), start_symbol="<start>"
 ):
-    check_grammar_definitions(grammar, given_used_symbols=given_used_symbols, start_symbol=start_symbol)
+    check_grammar_definitions(
+        grammar, given_used_symbols=given_used_symbols, start_symbol=start_symbol
+    )
     check_grammar_types(grammar, start_symbol=start_symbol)
 
 
@@ -453,10 +456,12 @@ def check_grammar_definitions(
     def collect_used_symbols(tree):
         if tree.node_type == NodeType.NON_TERMINAL:
             used_symbols.add(str(tree.symbol))
-        elif (tree.node_type == NodeType.REPETITION
-              or tree.node_type == NodeType.STAR
-              or tree.node_type == NodeType.PLUS
-              or tree.node_type == NodeType.OPTION):
+        elif (
+            tree.node_type == NodeType.REPETITION
+            or tree.node_type == NodeType.STAR
+            or tree.node_type == NodeType.PLUS
+            or tree.node_type == NodeType.OPTION
+        ):
             collect_used_symbols(tree.node)
 
         for child in tree.children():
@@ -481,13 +486,13 @@ def check_grammar_definitions(
         first_undefined_symbol = undefined_symbols.pop()
         error = NameError(f"Undefined symbol {first_undefined_symbol!s} in grammar")
         if undefined_symbols:
-            error.add_note(f"Other undefined symbols: {", ".join(str(symbol) for symbol in undefined_symbols)}")
+            error.add_note(
+                f"Other undefined symbols: {", ".join(str(symbol) for symbol in undefined_symbols)}"
+            )
         raise error
 
 
-def check_grammar_types(
-    grammar, *, start_symbol="<start>"
-):
+def check_grammar_types(grammar, *, start_symbol="<start>"):
     if not grammar:
         return
 
@@ -510,10 +515,12 @@ def check_grammar_types(
             bits = 1 if isinstance(tree.symbol.symbol, int) else 0
             return tp, bits, bits, 0
 
-        elif (tree.node_type == NodeType.REPETITION
-              or tree.node_type == NodeType.STAR
-              or tree.node_type == NodeType.PLUS
-              or tree.node_type == NodeType.OPTION):
+        elif (
+            tree.node_type == NodeType.REPETITION
+            or tree.node_type == NodeType.STAR
+            or tree.node_type == NodeType.PLUS
+            or tree.node_type == NodeType.OPTION
+        ):
             tp, min_bits, max_bits, step = get_type(tree.node, rule_symbol)
             # if min_bits % 8 != 0 and tree.min == 0:
             #     raise ValueError(f"{rule_symbol!s}: Bits cannot be optional")
@@ -527,20 +534,22 @@ def check_grammar_types(
 
             symbol_types[tree.symbol] = (None, 0, 0, 0)
             symbol_tree = grammar.rules[tree.symbol]
-            tp, min_bits, max_bits, step = \
-                get_type(symbol_tree, str(tree.symbol))
+            tp, min_bits, max_bits, step = get_type(symbol_tree, str(tree.symbol))
             symbol_types[tree.symbol] = tp, min_bits, max_bits, step
             # LOGGER.debug(f"Type of {tree.symbol!s} is {tp!r} with {min_bits}..{max_bits} bits")
             return tp, min_bits, max_bits, step
 
-        elif (tree.node_type == NodeType.CONCATENATION
-              or tree.node_type == NodeType.ALTERNATIVE):
+        elif (
+            tree.node_type == NodeType.CONCATENATION
+            or tree.node_type == NodeType.ALTERNATIVE
+        ):
             common_tp = None
             tp_child = None
             min_bits = max_bits = step = None
             for child in tree.children():
-                tp, min_child_bits, max_child_bits, child_step = \
-                    get_type(child, rule_symbol)
+                tp, min_child_bits, max_child_bits, child_step = get_type(
+                    child, rule_symbol
+                )
                 if min_bits is None:
                     min_bits = min_child_bits
                     max_bits = max_child_bits
@@ -561,9 +570,13 @@ def check_grammar_types(
                     continue
                 if not compatible(tp, common_tp):
                     if tree.node_type == NodeType.CONCATENATION:
-                        LOGGER.warning(f"{rule_symbol!s}: Concatenating {common_tp!r} ({tp_child!s}) and {tp!r} ({child!s})")
+                        LOGGER.warning(
+                            f"{rule_symbol!s}: Concatenating {common_tp!r} ({tp_child!s}) and {tp!r} ({child!s})"
+                        )
                     else:
-                        LOGGER.warning(f"{rule_symbol!s}: Type can be {common_tp!r} ({tp_child!s}) or {tp!r} ({child!s})")
+                        LOGGER.warning(
+                            f"{rule_symbol!s}: Type can be {common_tp!r} ({tp_child!s}) or {tp!r} ({child!s})"
+                        )
                     common_tp = tp
 
             # LOGGER.debug(f"Type of {rule_symbol!s} is {common_tp!r} with {min_bits}..{max_bits} bits")
@@ -572,18 +585,20 @@ def check_grammar_types(
         raise ValueError("Unknown node type")
 
     start_tree = grammar.rules[NonTerminal(start_symbol)]
-    _, min_start_bits, max_start_bits, start_step = \
-        get_type(start_tree, str(start_symbol))
-    if start_step > 0 and any(bits % 8 != 0
-                              for bits in range(min_start_bits,
-                                                max_start_bits + 1,
-                                                start_step)):
+    _, min_start_bits, max_start_bits, start_step = get_type(
+        start_tree, str(start_symbol)
+    )
+    if start_step > 0 and any(
+        bits % 8 != 0 for bits in range(min_start_bits, max_start_bits + 1, start_step)
+    ):
         if min_start_bits != max_start_bits:
-            LOGGER.warning(f"{start_symbol!s}: Number of bits ({min_start_bits}..{max_start_bits}) may not be a multiple of eight")
+            LOGGER.warning(
+                f"{start_symbol!s}: Number of bits ({min_start_bits}..{max_start_bits}) may not be a multiple of eight"
+            )
         else:
-            LOGGER.warning(f"{start_symbol!s}: Number of bits ({min_start_bits}) is not a multiple of eight")
-
-
+            LOGGER.warning(
+                f"{start_symbol!s}: Number of bits ({min_start_bits}) is not a multiple of eight"
+            )
 
 
 def check_constraints_existence(grammar, constraints):
@@ -619,7 +634,9 @@ def check_constraints_existence(grammar, constraints):
                 closest = closest_match(first_missing_symbol, defined_symbols)
 
             if len(missing) > 1:
-                missing_symbols = ", ".join(["<" + str(symbol) + ">" for symbol in missing])
+                missing_symbols = ", ".join(
+                    ["<" + str(symbol) + ">" for symbol in missing]
+                )
                 error = NameError(
                     f"{constraint}: undefined symbols {missing_symbols}. Did you mean {closest!s}?"
                 )
@@ -638,7 +655,9 @@ def check_constraints_existence(grammar, constraints):
                 # This handles <parent>[...].<symbol> as <parent>..<symbol>.
                 # We could also interpret the actual [...] contents here,
                 # but slices and chains could make this hard -- AZ
-                recurse = f"<{parent!s}>[" in str(value) or f"..<{symbol!s}>" in str(value)
+                recurse = f"<{parent!s}>[" in str(value) or f"..<{symbol!s}>" in str(
+                    value
+                )
                 if not check_constraints_existence_children(
                     grammar, parent, symbol, recurse, indirect_child
                 ):

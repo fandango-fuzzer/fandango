@@ -160,9 +160,11 @@ class Fandango:
 
                 # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
 
-                if (operator == Comparison.EQUAL
+                if (
+                    operator == Comparison.EQUAL
                     and side == ComparisonSide.LEFT
-                    and isinstance(value, (str, bytes, DerivationTree))):
+                    and isinstance(value, (str, bytes, DerivationTree))
+                ):
                     suggested_tree = self.grammar.parse(
                         value, start=failing_tree.tree.symbol.symbol
                     )

@@ -73,9 +73,9 @@ class Value(GeneticBase):
                             trees.append(node)
                 try:
                     # Evaluate the expression
-                    result = self.eval(self.expression,
-                                       self.global_variables,
-                                       local_variables)
+                    result = self.eval(
+                        self.expression, self.global_variables, local_variables
+                    )
                     values.append(result)
                 except Exception as e:
                     e.add_note(f"Evaluation failed: {self.expression}")
@@ -216,7 +216,9 @@ class ExpressionConstraint(Constraint):
                 {name: container.evaluate() for name, container in combination}
             )
             try:
-                result = self.eval(self.expression, self.global_variables, local_variables)
+                result = self.eval(
+                    self.expression, self.global_variables, local_variables
+                )
                 # Commented this out for now, as `None` is a valid result
                 # of functions such as `re.match()` -- AZ
                 # if result is None:
@@ -334,7 +336,7 @@ class ComparisonConstraint(Constraint):
                 print_exception(e)
                 continue
 
-            if not hasattr(self, 'types_checked') or not self.types_checked:
+            if not hasattr(self, "types_checked") or not self.types_checked:
                 self.check_type_compatibility(left, right)
                 self.types_checked = True
 
@@ -442,7 +444,7 @@ class ComparisonConstraint(Constraint):
 
     def check_type_compatibility(self, left: Any, right: Any):
         """
-            Check the types of `left` and `right` are compatible in a comparison
+        Check the types of `left` and `right` are compatible in a comparison
         """
         if isinstance(left, DerivationTree):
             left = left.value()
@@ -451,13 +453,15 @@ class ComparisonConstraint(Constraint):
 
         if type(left) == type(right):
             return
-        if (isinstance(left, (bool, int, float))
-            and isinstance(right, (bool, int, float))):
+        if isinstance(left, (bool, int, float)) and isinstance(
+            right, (bool, int, float)
+        ):
             return
 
-        LOGGER.warning(f"{self}: {self.operator.value!r}: Cannot compare {type(left).__name__!r} and {type(right).__name__!r}")
+        LOGGER.warning(
+            f"{self}: {self.operator.value!r}: Cannot compare {type(left).__name__!r} and {type(right).__name__!r}"
+        )
         return
-
 
     def __repr__(self):
         representation = f"{self.left} {self.operator.value} {self.right}"
@@ -786,7 +790,9 @@ class ExistsConstraint(Constraint):
         return f"(exists {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
 
     def __str__(self):
-        return f"(exists {str(self.bound)} in {str(self.search)}: {str(self.statement)})"
+        return (
+            f"(exists {str(self.bound)} in {str(self.search)}: {str(self.statement)})"
+        )
 
     def accept(self, visitor: "ConstraintVisitor"):
         """
@@ -877,7 +883,9 @@ class ForallConstraint(Constraint):
         return f"(forall {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
 
     def __str__(self):
-        return f"(forall {str(self.bound)} in {str(self.search)}: {str(self.statement)})"
+        return (
+            f"(forall {str(self.bound)} in {str(self.search)}: {str(self.statement)})"
+        )
 
     def accept(self, visitor: "ConstraintVisitor"):
         """
