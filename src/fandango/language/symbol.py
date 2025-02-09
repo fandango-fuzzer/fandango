@@ -120,8 +120,9 @@ class Terminal(Symbol):
             assert isinstance(word, bytes)
             word = word.decode("iso-8859-1")
 
-        assert ((isinstance(symbol, str) and isinstance(word, str))
-                or (isinstance(symbol, bytes) and isinstance(word, bytes)))
+        assert (isinstance(symbol, str) and isinstance(word, str)) or (
+            isinstance(symbol, bytes) and isinstance(word, bytes)
+        )
 
         if self.is_regex:
             match = re.match(symbol, word)
@@ -136,7 +137,6 @@ class Terminal(Symbol):
         # LOGGER.debug(f"No match")
         return False, 0
 
-
     def check_all(self, word: str | int) -> bool:
         return word == self.symbol
 
@@ -144,7 +144,7 @@ class Terminal(Symbol):
         if self.is_regex:
             if isinstance(self.symbol, bytes):
                 symbol = repr(self.symbol)
-                symbol = symbol.replace(r'\\', '\\')
+                symbol = symbol.replace(r"\\", "\\")
                 return "r" + symbol
 
             if "'" not in self.symbol:

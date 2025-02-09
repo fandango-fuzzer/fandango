@@ -449,8 +449,8 @@ class DerivationTree:
     ## General purpose converters
     def _value(self) -> tuple[int | str | bytes | None, int]:
         """
-            Convert the derivation tree into a standard Python value.
-            Returns the value and the number of bits used.
+        Convert the derivation tree into a standard Python value.
+        Returns the value and the number of bits used.
         """
         if self.symbol.is_terminal:
             if isinstance(self.symbol.symbol, int):
@@ -552,72 +552,99 @@ class DerivationTree:
     ## Arithmetic operators
     def __add__(self, other):
         return self.value() + other
+
     def __sub__(self, other):
         return self.value() - other
+
     def __mul__(self, other):
         return self.value() * other
+
     def __matmul__(self, other):
         return self.value() @ other
+
     def __truediv__(self, other):
         return self.value() / other
+
     def __floordiv__(self, other):
         return self.value() // other
+
     def __mod__(self, other):
         return self.value() % other
+
     def __divmod__(self, other):
         return divmod(self.value(), other)
+
     def __pow__(self, other, modulo=None):
         return pow(self.value(), other, modulo)
 
     def __radd__(self, other):
         return other + self.value()
+
     def __rsub__(self, other):
         return other - self.value()
+
     def __rmul__(self, other):
         return other * self.value()
+
     def __rmatmul__(self, other):
         return other @ self.value()
+
     def __rtruediv__(self, other):
         return other / self.value()
+
     def __rfloordiv__(self, other):
         return other // self.value()
+
     def __rmod__(self, other):
         return other % self.value()
+
     def __rdivmod__(self, other):
         return divmod(other, self.value())
+
     def __rpow__(self, other, modulo=None):
         return pow(other, self.value(), modulo)
 
     ## Bit operators
     def __lshift__(self, other):
         return self.value() << other
+
     def __rshift__(self, other):
         return self.value() >> other
+
     def __and__(self, other):
         return self.value() & other
+
     def __xor__(self, other):
         return self.value() ^ other
+
     def __or__(self, other):
         return self.value() | other
 
     def __rlshift__(self, other):
         return other << self.value()
+
     def __rrshift__(self, other):
         return other >> self.value()
+
     def __rand__(self, other):
         return other & self.value()
+
     def __rxor__(self, other):
         return other ^ self.value()
+
     def __ror__(self, other):
         return other | self.value()
 
     # Unary operators
     def __neg__(self):
         return -self.value()
+
     def __pos__(self):
         return +self.value()
+
     def __abs__(self):
         return abs(self.value())
+
     def __invert__(self):
         return ~self.value()
 
@@ -629,7 +656,6 @@ class DerivationTree:
 
     def __iter__(self):
         return iter(self._children)
-
 
     ## Everything else
     def __getattr__(self, name):

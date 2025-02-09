@@ -281,8 +281,8 @@ class TerminalNode(Node):
         if self.symbol.is_regex:
             if isinstance(self.symbol.symbol, bytes):
                 # Exrex can't do bytes, so we decode to str and back
-                instance = exrex.getone(self.symbol.symbol.decode('iso-8859-1'))
-                return [DerivationTree(Terminal(instance.encode('iso-8859-1')))]
+                instance = exrex.getone(self.symbol.symbol.decode("iso-8859-1"))
+                return [DerivationTree(Terminal(instance.encode("iso-8859-1")))]
 
             instance = exrex.getone(self.symbol.symbol)
             return [DerivationTree(Terminal(instance))]
@@ -757,7 +757,7 @@ class Grammar(NodeVisitor):
             # LOGGER.debug(f"Matched byte(s) {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w + match_length]!r}")
             next_state = state.next()
             next_state.children.append(
-                DerivationTree(Terminal(word[w:w + match_length]))
+                DerivationTree(Terminal(word[w : w + match_length]))
             )
             table[k + match_length].add(next_state)
             # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
@@ -795,7 +795,7 @@ class Grammar(NodeVisitor):
             # LOGGER.debug(f"Matched regex {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w+match_length]!r}")
             next_state = state.next()
             next_state.children.append(
-                DerivationTree(Terminal(word[w:w+match_length]))
+                DerivationTree(Terminal(word[w : w + match_length]))
             )
             table[k + match_length].add(next_state)
             # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
@@ -821,7 +821,8 @@ class Grammar(NodeVisitor):
                         if use_implicit and state.nonterminal in self._implicit_rules:
                             s.children.append(
                                 DerivationTree(
-                                    NonTerminal(state.nonterminal.symbol), state.children
+                                    NonTerminal(state.nonterminal.symbol),
+                                    state.children,
                                 )
                             )
                         else:
@@ -863,8 +864,7 @@ class Grammar(NodeVisitor):
                 for state in table[k]:
                     # True iff We have processed all characters
                     # (or some bits of the last character)
-                    at_end = (w >= len(word)
-                              or (bit_count > 0 and w == len(word) - 1))
+                    at_end = w >= len(word) or (bit_count > 0 and w == len(word) - 1)
 
                     if at_end:
                         if allow_incomplete:
@@ -915,11 +915,9 @@ class Grammar(NodeVisitor):
 
                                 # LOGGER.debug(f"Checking byte(s) {state} at position {w:#06x} ({w}) {word[w:]!r}")
                                 if state.dot.is_regex:
-                                    match = self.scan_regex(state, word,
-                                                            table, k, w)
+                                    match = self.scan_regex(state, word, table, k, w)
                                 else:
-                                    match = self.scan_bytes(state, word,
-                                                            table, k, w)
+                                    match = self.scan_bytes(state, word, table, k, w)
 
                 # LOGGER.debug(f"Scanned {scanned} byte(s) at position {w:#06x} ({w}); bit_count = {bit_count}")
                 if bit_count >= 0:
@@ -974,18 +972,22 @@ class Grammar(NodeVisitor):
             # Cache entire forest
             self._cache[cache_key] = forest
 
-        def parse_incomplete(self,
-                             word: str | bytes | DerivationTree,
-                             start: str | NonTerminal = "<start>"):
+        def parse_incomplete(
+            self,
+            word: str | bytes | DerivationTree,
+            start: str | NonTerminal = "<start>",
+        ):
             """
             Yield multiple parse alternatives,
             even for incomplete inputs
             """
             return self.parse_forest(word, start, allow_incomplete=True)
 
-        def parse(self,
-                  word: str | bytes | DerivationTree,
-                  start: str | NonTerminal = "<start>"):
+        def parse(
+            self,
+            word: str | bytes | DerivationTree,
+            start: str | NonTerminal = "<start>",
+        ):
             """
             Return the first parse alternative,
             or `None` if no parse is possible
@@ -1133,7 +1135,6 @@ class Grammar(NodeVisitor):
             f"{symbol} ::= {self.rules[symbol]}"
             f"{' := ' + self.generators[symbol] if symbol in self.generators else ''}"
         )
-
 
     @staticmethod
     def dummy():
