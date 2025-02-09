@@ -455,7 +455,7 @@ class ComparisonConstraint(Constraint):
             and isinstance(right, (bool, int, float))):
             return
 
-        LOGGER.warning(f"{self}: Cannot compare {type(left).__name__!r} and {type(right).__name__!r}")
+        LOGGER.warning(f"{self}: {self.operator.value!r}: Cannot compare {type(left).__name__!r} and {type(right).__name__!r}")
         return
 
 
