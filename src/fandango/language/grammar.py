@@ -296,6 +296,7 @@ class NonTerminalNode(Node):
         if self.symbol in grammar.generators:
             generated = grammar.generate(self.symbol)
             generated.set_all_read_only(True)
+            generated.read_only = False
             return [generated]
 
         assign_role = None
