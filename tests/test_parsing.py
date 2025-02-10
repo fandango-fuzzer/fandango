@@ -274,9 +274,10 @@ class TestGIFParsing(TestCLIParsing):
         self.assertEqual(0, code)
 
 class TestEntryParsing(TestCLIParsing):
-    def test_entry(self):
-        command = shlex.split("fandango parse -f tests/resources/entry.fan tests/resources/a.txt --validate")
+    def test_bitstream(self):
+        command = shlex.split("fandango parse -f tests/resources/bitstream.fan tests/resources/abcd.txt --validate")
         out, err, code = self.run_command(command)
-        self.assertEqual("", err)
+        # Warns that the number of bits (1..5) may not be a multiple of eight, # which is correct
+        # self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
