@@ -19,9 +19,9 @@ class DerivationTree:
         parent: Optional["DerivationTree"] = None,
     ):
         self.hash_cache = None
-        self._parent = parent
-        self.symbol = symbol
-        self._children = []
+        self._parent: Optional["DerivationTree"] = parent
+        self.symbol: Symbol = symbol
+        self._children: list["DerivationTree"] = []
         self._size = 1
         self.set_children(children or [])
 
@@ -219,12 +219,6 @@ class DerivationTree:
         """
         Convert the derivation tree to a string.
         """
-        # Turn off warning for now; too many false alarms -- AZ
-        # if self.contains_bits() or self.contains_bytes():
-        #     LOGGER.warning(
-        #         "Converting a derivation tree with binary elements into a string"
-        #     )
-
         try:
             return self.to_bytes(encoding="utf-8").decode("utf-8")
         except UnicodeDecodeError:
@@ -287,7 +281,7 @@ class DerivationTree:
             s += ")"
         return s
 
-    def to_grammar(self, include_position=True) -> str:
+    def to_grammar(self, include_position=True, include_value=True) -> str:
         """
         Output the derivation tree as (specialized) grammar
         """
@@ -299,10 +293,10 @@ class DerivationTree:
             Output the derivation tree as (specialized) grammar
             """
             assert isinstance(node.symbol.symbol, str)
-            nonlocal bit_count, byte_count, include_position
+            nonlocal bit_count, byte_count, include_position, include_value
 
             s = "  " * start_indent + f"{node.symbol.symbol} ::="
-            have_nonterminal = False
+            terminal_symbols = 0
 
             position = f"  # Position {byte_count:#06x} ({byte_count})"
             max_bit_count = bit_count - 1
@@ -312,7 +306,7 @@ class DerivationTree:
                     s += f" {child.symbol.symbol}"
                 else:
                     s += " " + repr(child.symbol.symbol)
-                    have_nonterminal = True
+                    terminal_symbols += 1
 
                     if isinstance(child.symbol.symbol, int):
                         if bit_count < 0:
@@ -326,13 +320,19 @@ class DerivationTree:
                         byte_count += len(child.symbol.symbol)
                         bit_count = -1
 
-            if include_position and have_nonterminal:
+            have_position = False
+            if include_position and terminal_symbols > 0:
+                have_position = True
                 s += position
                 if bit_count >= 0:
                     if max_bit_count != bit_count:
                         s += f", bits {max_bit_count}-{bit_count}"
                     else:
                         s += f", bit {bit_count}"
+
+            if include_value and len(node._children) >= 2:
+                s += "  # " if not have_position else "; "
+                s += node.to_value()
 
             for child in node._children:
                 if child.symbol.is_non_terminal:
@@ -344,83 +344,47 @@ class DerivationTree:
     def __repr__(self):
         return self.to_repr()
 
-    def __contains__(self, other: Union["DerivationTree", Any]) -> bool:
-        if isinstance(other, DerivationTree):
-            return other in self._children
-        return other in str(self)
-
-    def __iter__(self):
-        return iter(self._children)
-
     def to_int(self, *args, **kwargs):
         try:
-            return int(self.__str__(), *args, **kwargs)
+            return int(self.value(), *args, **kwargs)
         except ValueError:
             return None
 
     def to_float(self):
         try:
-            return float(self.__str__())
+            return float(self.value())
         except ValueError:
             return None
 
     def to_complex(self, *args, **kwargs):
         try:
-            return complex(self.__str__(), *args, **kwargs)
+            return complex(self.value(), *args, **kwargs)
         except ValueError:
             return None
 
     def is_int(self, *args, **kwargs):
         try:
-            int(self.__str__(), *args, **kwargs)
+            int(self.value(), *args, **kwargs)
         except ValueError:
             return False
         return True
 
     def is_float(self):
         try:
-            float(self.__str__())
+            float(self.value())
         except ValueError:
             return False
         return True
 
     def is_complex(self, *args, **kwargs):
         try:
-            complex(self.__str__(), *args, **kwargs)
+            complex(self.value(), *args, **kwargs)
         except ValueError:
             return False
         return True
 
     def is_num(self):
         return self.is_float()
-
-    def __eq__(self, other):
-        if isinstance(other, DerivationTree):
-            return self.__tree__() == other.__tree__()
-        return str(self) == other
-
-    def __le__(self, other):
-        if isinstance(other, DerivationTree):
-            return str(self) <= str(other)
-        return str(self) <= other
-
-    def __lt__(self, other):
-        if isinstance(other, DerivationTree):
-            return str(self) < str(other)
-        return str(self) < other
-
-    def __ge__(self, other):
-        if isinstance(other, DerivationTree):
-            return str(self) >= str(other)
-        return str(self) >= other
-
-    def __gt__(self, other):
-        if isinstance(other, DerivationTree):
-            return str(self) > str(other)
-        return str(self) > other
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
 
     def replace(self, tree_to_replace, new_subtree):
         """
@@ -482,14 +446,228 @@ class DerivationTree:
         except ValueError:
             return -1
 
+    ## General purpose converters
+    def _value(self) -> tuple[int | str | bytes | None, int]:
+        """
+        Convert the derivation tree into a standard Python value.
+        Returns the value and the number of bits used.
+        """
+        if self.symbol.is_terminal:
+            if isinstance(self.symbol.symbol, int):
+                return self.symbol.symbol, 1
+            else:
+                return self.symbol.symbol, 0
+
+        bits = 0
+        aggregate = None
+        for child in self._children:
+            value, child_bits = child._value()
+
+            if aggregate is None:
+                aggregate = value
+                bits = child_bits
+
+            elif isinstance(aggregate, str):
+                if isinstance(value, str):
+                    aggregate += value
+                elif isinstance(value, bytes):
+                    aggregate = aggregate.encode("utf-8") + value
+                elif isinstance(value, int):
+                    aggregate = aggregate + chr(value)
+                    bits = 0
+                else:
+                    raise ValueError(f"Cannot compute {aggregate!r} + {value!r}")
+
+            elif isinstance(aggregate, bytes):
+                if isinstance(value, str):
+                    aggregate += value.encode("utf-8")
+                elif isinstance(value, bytes):
+                    aggregate += value
+                elif isinstance(value, int):
+                    aggregate = aggregate + value.to_bytes()
+                    bits = 0
+                else:
+                    raise ValueError(f"Cannot compute {aggregate!r} + {value!r}")
+
+            elif isinstance(aggregate, int):
+                if isinstance(value, str):
+                    aggregate = aggregate.to_bytes() + value.encode("utf-8")
+                    bits = 0
+                elif isinstance(value, bytes):
+                    aggregate = aggregate.to_bytes() + value
+                    bits = 0
+                elif isinstance(value, int):
+                    aggregate = (aggregate << child_bits) + value
+                    bits += child_bits
+                else:
+                    raise ValueError(f"Cannot compute {aggregate!r} + {value!r}")
+
+        # LOGGER.debug(f"value(): {' '.join(repr(child.value()) for child in self._children)} = {aggregate!r} ({bits} bits)")
+
+        return aggregate, bits
+
+    def value(self) -> int | str | bytes | None:
+        aggregate, bits = self._value()
+        return aggregate
+
+    def to_value(self) -> str:
+        value = self.value()
+        if isinstance(value, int):
+            return "0b" + format(value, "b") + f" ({value})"
+        return repr(self.value())
+
+    ## Comparison operations
+    def __eq__(self, other):
+        if isinstance(other, DerivationTree):
+            return self.__tree__() == other.__tree__()
+        return self.value() == other
+
+    def __le__(self, other):
+        if isinstance(other, DerivationTree):
+            return self.value() <= other.value()
+        return self.value() <= other
+
+    def __lt__(self, other):
+        if isinstance(other, DerivationTree):
+            return self.value() < other.value()
+        return self.value() < other
+
+    def __ge__(self, other):
+        if isinstance(other, DerivationTree):
+            return self.value() >= other.value()
+        return self.value() >= other
+
+    def __gt__(self, other):
+        if isinstance(other, DerivationTree):
+            return self.value() > other.value()
+        return self.value() > other
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    ## Boolean operations
+    def __bool__(self):
+        return bool(self.value())
+
+    ## Arithmetic operators
+    def __add__(self, other):
+        return self.value() + other
+
+    def __sub__(self, other):
+        return self.value() - other
+
+    def __mul__(self, other):
+        return self.value() * other
+
+    def __matmul__(self, other):
+        return self.value() @ other
+
+    def __truediv__(self, other):
+        return self.value() / other
+
+    def __floordiv__(self, other):
+        return self.value() // other
+
+    def __mod__(self, other):
+        return self.value() % other
+
+    def __divmod__(self, other):
+        return divmod(self.value(), other)
+
+    def __pow__(self, other, modulo=None):
+        return pow(self.value(), other, modulo)
+
+    def __radd__(self, other):
+        return other + self.value()
+
+    def __rsub__(self, other):
+        return other - self.value()
+
+    def __rmul__(self, other):
+        return other * self.value()
+
+    def __rmatmul__(self, other):
+        return other @ self.value()
+
+    def __rtruediv__(self, other):
+        return other / self.value()
+
+    def __rfloordiv__(self, other):
+        return other // self.value()
+
+    def __rmod__(self, other):
+        return other % self.value()
+
+    def __rdivmod__(self, other):
+        return divmod(other, self.value())
+
+    def __rpow__(self, other, modulo=None):
+        return pow(other, self.value(), modulo)
+
+    ## Bit operators
+    def __lshift__(self, other):
+        return self.value() << other
+
+    def __rshift__(self, other):
+        return self.value() >> other
+
+    def __and__(self, other):
+        return self.value() & other
+
+    def __xor__(self, other):
+        return self.value() ^ other
+
+    def __or__(self, other):
+        return self.value() | other
+
+    def __rlshift__(self, other):
+        return other << self.value()
+
+    def __rrshift__(self, other):
+        return other >> self.value()
+
+    def __rand__(self, other):
+        return other & self.value()
+
+    def __rxor__(self, other):
+        return other ^ self.value()
+
+    def __ror__(self, other):
+        return other | self.value()
+
+    # Unary operators
+    def __neg__(self):
+        return -self.value()
+
+    def __pos__(self):
+        return +self.value()
+
+    def __abs__(self):
+        return abs(self.value())
+
+    def __invert__(self):
+        return ~self.value()
+
+    ## Iterators
+    def __contains__(self, other: Union["DerivationTree", Any]) -> bool:
+        if isinstance(other, DerivationTree):
+            return other in self._children
+        return other in self.value()
+
+    def __iter__(self):
+        return iter(self._children)
+
+    ## Everything else
     def __getattr__(self, name):
         """
-        Catch-all: All other attributes and methods apply to the string representation
+        Catch-all: All other attributes and methods apply to the representation of the respective type (str, bytes, int).
         """
-        if name in str.__dict__:
+        value = self.value()
+        tp = type(value)
+        if name in tp.__dict__:
 
             def fn(*args, **kwargs):
-                return str.__dict__[name](str(self), *args, **kwargs)
+                return tp.__dict__[name](value, *args, **kwargs)
 
             return fn
 
