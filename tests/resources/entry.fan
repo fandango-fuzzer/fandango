@@ -1,2 +1,2 @@
-<start> ::= <bit>{8}
+<start> ::= <bit>+
 <bit> ::= 0 | 1
