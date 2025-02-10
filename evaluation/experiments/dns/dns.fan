@@ -11,7 +11,7 @@ def gen_q_name():
     return result
 
 
-<start> ::= <dns_req> <dns_resp>
+<start> ::= <Client:dns_req> <Server:dns_resp>
 <dns_req> ::= <header_req> <question>
 <dns_resp> ::= <header_resp> <answer>
 #                       qr      opcode       aa tc rd  ra z ad cd rcode   qdcount  ancount nscount arcount
@@ -54,3 +54,20 @@ where <dns_req>.<question>.<q_name> == <dns_resp>.<answer>.<q_name>
 <a_rd_length> ::= 0 1 0 0  # Equals 4
 <a_rdata> ::= <ip_address>
 <ip_address> ::= <byte>{4}
+
+import socket
+class Client(FandangoAgent):
+        def __init__(self):
+            super().__init__(True)
+
+        def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.sendto(message, ("liggesmeyer.net", 53))
+            response, nothing = sock.recvfrom(1024)
+
+            response_setter("Server", response)
+
+class Server(FandangoAgent):
+
+        def __init__(self):
+            super().__init__(False)
