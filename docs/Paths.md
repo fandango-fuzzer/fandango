@@ -191,6 +191,40 @@ Ex Pltz,18
 And this is the string Fandango produces.
 However, viewing the Fandango results as derivation trees allows us to access _elements_ of the Fandango-produced strings and to express _constraints_ on them.
 
+
+### Diagnosing Derivation Trees
+
+To examine the derivation trees that Fandango produces, use the [`--format=grammar` output format](sec:formats).
+This produces the output in a grammar-like format, where children are indented under their respective parents.
+As an example, here is how to print a derivation tree from `persons.fan`:
+
+```shell
+$ fandango fuzz -f persons.fan -n 1 --format=grammar
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons.fan -n 1 --format=grammar --random-seed 4712 
+assert _exit_code == 0
+```
+
+We see how the produced derivation tree consists of a `<start>` symbol, whose `<first_name>` and `<last_name>` children expand into `<name>` and letters; the `<age>` symbol expands into `<digit>` symbols.
+
+The comments (after `#`) show the individual positions into the input, as well as the values of compound symbols.
+
+What is the full string represented by the above derivation tree?
+
+:::{admonition} Solution
+:class: tip, dropdown
+It's `'Pl Seov,5150'`, as you can find on the right-hand side of the first line.
+:::
+
+:::{tip}
+The `--format=grammar` option is great for debugging, especially [binary formats](sec:binary).
+:::
+
+
+
 ## Specifying Paths
 
 One effect of Fandango producing derivation trees rather than "just" strings is that we can define special _operators_ that allow us to access _subtrees_ (or sub-elements) of the produced strings - and express constraints on them.
