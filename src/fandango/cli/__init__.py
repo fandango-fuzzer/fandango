@@ -946,7 +946,6 @@ def fuzz_command(args):
         except TypeError:
             # Python 3.11 does not know the `delete` argument
             temp_dir = tempfile.TemporaryDirectory()
-
         args.directory = temp_dir.name
         args.format = "string"
         output_population(population, args, file_mode=file_mode, output_on_stdout=False)

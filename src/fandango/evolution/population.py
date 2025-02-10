@@ -82,6 +82,8 @@ class PopulationManager:
     ) -> DerivationTree:
         fixes_made = 0
         for failing_tree in failing_trees:
+            if failing_tree.tree.read_only:
+                continue
             for operator, value, side in failing_tree.suggestions:
                 if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
                     # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
