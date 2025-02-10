@@ -273,7 +273,7 @@ class TestGIFParsing(TestCLIParsing):
         self.assertEqual("", out)
         self.assertEqual(0, code)
 
-class TestEntryParsing(TestCLIParsing):
+class TestBitstreamParsing(TestCLIParsing):
     def test_bitstream(self):
         command = shlex.split("fandango parse -f tests/resources/bitstream.fan tests/resources/abcd.txt --validate")
         out, err, code = self.run_command(command)
@@ -281,3 +281,18 @@ class TestEntryParsing(TestCLIParsing):
         # self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
+
+    def test_bitstream_a(self):
+        command = shlex.split("fandango parse -f tests/resources/bitstream-a.fan tests/resources/a.txt --validate")
+        out, err, code = self.run_command(command)
+        self.assertEqual("", err)
+        self.assertEqual("", out)
+        self.assertEqual(0, code)
+
+    def test_bitstream_b(self):
+        command = shlex.split("fandango parse -f tests/resources/bitstream-a.fan tests/resources/b.txt --validate")
+        out, err, code = self.run_command(command)
+        # This should fail
+        self.assertNotEqual("", err)
+        self.assertEqual("", out)
+        self.assertEqual(1, code)
