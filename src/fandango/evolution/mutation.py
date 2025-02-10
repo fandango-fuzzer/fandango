@@ -42,6 +42,7 @@ class SimpleMutation(MutationOperator):
 
         # Collect the failing subtrees
         failing_subtrees = [ft.tree for ft in failing_trees]
+        failing_subtrees = list(filter(lambda x: not x.read_only, failing_subtrees))
 
         # If there is nothing to mutate, return the individual as is.
         if not failing_subtrees:
