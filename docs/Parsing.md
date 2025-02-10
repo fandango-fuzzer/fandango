@@ -117,7 +117,7 @@ The `--validate` option can also be passed to the `fuzz` command; here, it ensur
 If you find that `--validate` fails, please report this as a Fandango bug.
 :::
 
-
+(sec:formats)=
 ## Alternate Output Formats
 
 In order to debug grammars, Fandango provides a number of _alternate_ formats in which to output the parsed tree, controlled by the `--format` flag.
@@ -177,8 +177,9 @@ tree.visualize()
 
 ### Grammar
 
-The option `--format=grammar` outputs the parsed tree as a (highly specialized) grammar.
-This is useful for creating and refining a grammar from a sample file.
+The option `--format=grammar` outputs the parsed tree as a (highly specialized) grammar, in which
+children are indented under their respective parents.
+This is useful for debugging, but also for creating a grammar from a sample file and then generalizing it.
 
 ```shell
 $ echo -n '2025-01-27' | fandango parse -f iso8601.fan -o - --format=grammar
