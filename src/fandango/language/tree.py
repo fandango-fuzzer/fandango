@@ -317,7 +317,7 @@ class DerivationTree:
                     terminal_symbols += 1
 
                     if isinstance(child.symbol.symbol, int):
-                        if bit_count < 0:
+                        if bit_count <= 0:
                             bit_count = 7
                             max_bit_count = 7
                         else:
@@ -327,6 +327,8 @@ class DerivationTree:
                     else:
                         byte_count += len(child.symbol.symbol)
                         bit_count = -1
+
+                # s += f" (bit_count={bit_count}, byte_count={byte_count})"
 
             have_position = False
             if include_position and terminal_symbols > 0:
