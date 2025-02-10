@@ -249,9 +249,70 @@ While symbols act as strings in many contexts, this is where they differ.
 To access the first _character_ of a symbol `<foo>`, you need to explicitly convert it to a string first, as in `str(<foo>)[0]`.
 :::
 
+### Slices
+
+:::{margin}
+The Fandango slices maintain the property that `<name>[n:m]` = `<name>[n]` + `<name>[n + 1]` + ... + `<name>[m - 1]`, which holds for all sequences in Python.
+:::
+
+
+Fandango also allows you to use Python _slice_ syntax to access _multiple children at once_.
+`<name>[n:m]` returns a new (unnamed) root which has `<name>[n]`, `<name>[n + 1]`, ..., `<name>[m - 1]` as children.
+This is useful, for instance, if you want to compare several children against a string:
+
+```shell
+$ fandango fuzz -f persons-faker.fan -n 10 -c '<name>[0:2] == "Ch"'
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons-faker.fan -n 10 -c '<name>[0:2] == "Ch"' --validate
+assert _exit_code == 0
+```
+
+Would one also be able to use `<start>[0:2] == "Ch"` to obtain inputs that all start with `"Ch"`?
+
+:::{admonition} Solution
+:class: tip, dropdown
+No, this would not work.
+Remember that in derivation trees, indexes refer to _children_, not characters.
+So, according to the rule
+
+```
+<start> ::= <person_name> "," <age>
+```
+
+`<start>[0]` is a `<person_name>`, `<start>[1]` is a `","`, and `<start>[2]` is an `<age>`.
+Hence, `<start>[0:2]` refers to `<start>` itself, which cannot be `"Ch"`.
+:::
+
+Indeed, to have the _string_ start with `"Ch"`, you (again) need to convert `<start>` into a string first, and then access its individual characters:
+
+```shell
+$ fandango fuzz -f persons-faker.fan -n 10 -c 'str(<start>)[0:2] == "Ch"'
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons-faker.fan -n 10 -c 'str(<start>)[0:2] == "Ch"' --validate
+assert _exit_code == 0
+```
+
+:::{margin}
+The Fandango slices maintain the property that `<name>[i:]` + `<name>[:i]` = `<name>`
+:::
+
+Fandango supports the full Python slice semantics:
+
+* An omitted first index defaults to zero, so `<foo>[:2]` returns the first two children.
+* An omitted second index defaults to the size of the string being sliced, so `<foo>[2:]` returns all children starting with `<foo>[2]`.
+* Both the first and the second index can be negative again.
+
+
+
 ### Selecting Children
 
-Referring to children by _number_, as in `<foo>[0]` can be a bit cumbersome.
+Referring to children by _number_, as in `<foo>[0]`, can be a bit cumbersome.
 This is why in Fandango, you can also refer to elements by _name_.
 
 :::{margin}
@@ -282,6 +343,8 @@ assert _exit_code == 0
 :::{note}
 You can only access _nonterminal_ children this way; `<person_name>." "` (the space in the `<person_name>`) gives an error.
 :::
+
+
 
 ### Selecting Descendants
 
