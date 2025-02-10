@@ -1,8 +1,8 @@
 
 include('gif.fan')
 
-where <GifHeader>..<Signature> == "GIF"
-where <GifHeader>..<Version> == "89a"
+where <GifHeader>..<Signature> == b"GIF"
+where <GifHeader>..<Version> == b"89a"
 
 <char> ::= <byte>
 <unsigned_short> ::= <byte> <byte>
