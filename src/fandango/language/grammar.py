@@ -249,7 +249,11 @@ class NonTerminalNode(Node):
         if self.symbol not in grammar:
             raise ValueError(f"Symbol {self.symbol} not found in grammar")
         if self.symbol in grammar.generators:
-            return [grammar.generate(self.symbol)]
+            generated = grammar.generate(self.symbol)
+            # Prevent children from being overwritten without executing generator
+            generated.set_all_read_only(True)
+            generated.read_only = False
+            return [generated]
         children = grammar[self.symbol].fuzz(grammar, max_nodes - 1)
         return [DerivationTree(self.symbol, children)]
 
