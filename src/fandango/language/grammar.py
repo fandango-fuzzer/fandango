@@ -859,16 +859,22 @@ class Grammar(NodeVisitor):
             # Save the maximum scan position, so we can report errors
             self._max_position = -1
 
-            k = 0  # Index into the current table. Due to bits parsing, this may differ from the input position w.
-            w = 0  # Index into the input word
-            bit_count = -1  # If > 0, indicates the next bit to be scanned (7-0)
+            # Index into the input word
+            w = 0
+
+            # Index into the current table.
+            # Due to bits parsing, this may differ from the input position w.
+            k = 0
+
+            # If >= 0, indicates the next bit to be scanned (7-0)
+            bit_count = -1
 
             while k < len(table):
                 # LOGGER.debug(f"Processing {len(table[k])} states at column {k}")
                 for state in table[k]:
-                    # True iff We have processed all characters
+                    # True iff we have processed all characters
                     # (or some bits of the last character)
-                    at_end = w >= len(word) or (bit_count > 0 and w == len(word) - 1)
+                    at_end = w >= len(word) # or (bit_count > 0 and w == len(word) - 1)
 
                     if at_end:
                         if allow_incomplete:
@@ -913,7 +919,7 @@ class Grammar(NodeVisitor):
                                     # * we may have a grammar with bits
                                     # that do not come in multiples of 8.
                                     #
-                                    # In either case, we need to skip back
+                                    # In either case, we need to get back
                                     # to scanning bytes here.
                                     bit_count = -1
 
@@ -923,7 +929,7 @@ class Grammar(NodeVisitor):
                                 else:
                                     match = self.scan_bytes(state, word, table, k, w)
 
-                # LOGGER.debug(f"Scanned {scanned} byte(s) at position {w:#06x} ({w}); bit_count = {bit_count}")
+                # LOGGER.debug(f"Scanned byte at position {w:#06x} ({w}); bit_count = {bit_count}")
                 if bit_count >= 0:
                     # Advance by one bit
                     bit_count -= 1
