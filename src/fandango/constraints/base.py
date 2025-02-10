@@ -337,8 +337,7 @@ class ComparisonConstraint(Constraint):
                 continue
 
             if not hasattr(self, "types_checked") or not self.types_checked:
-                self.check_type_compatibility(left, right)
-                self.types_checked = True
+                self.types_checked = self.check_type_compatibility(left, right)
 
             # Initialize the suggestions
             suggestions = []
@@ -442,26 +441,31 @@ class ComparisonConstraint(Constraint):
         self.cache[tree_hash] = fitness
         return fitness
 
-    def check_type_compatibility(self, left: Any, right: Any):
+    def check_type_compatibility(self, left: Any, right: Any) -> bool:
         """
-        Check the types of `left` and `right` are compatible in a comparison
+        Check the types of `left` and `right` are compatible in a comparison.
+        Return True iff check was actually performed
         """
         if isinstance(left, DerivationTree):
             left = left.value()
         if isinstance(right, DerivationTree):
             right = right.value()
 
+        if left is None or right is None:
+            # Cannot check - value does not exist
+            return False
+
         if type(left) == type(right):
-            return
+            return True
         if isinstance(left, (bool, int, float)) and isinstance(
             right, (bool, int, float)
         ):
-            return
+            return True
 
         LOGGER.warning(
             f"{self}: {self.operator.value!r}: Cannot compare {type(left).__name__!r} and {type(right).__name__!r}"
         )
-        return
+        return True
 
     def __repr__(self):
         representation = f"{self.left} {self.operator.value} {self.right}"
