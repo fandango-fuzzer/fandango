@@ -233,6 +233,10 @@ class Fandango:
                     # Abort if we received a message during fuzzing
                     continue
                 send_msg = next_tree.find_role_msgs()[-1].msg
+                if send_msg.contains_bytes():
+                    send_msg = send_msg.to_bytes()
+                else:
+                    send_msg = send_msg.to_string()
                 if (
                     packet_node.recipient is None
                     or not io_instance.roles[packet_node.recipient].is_fandango()
@@ -261,7 +265,7 @@ class Fandango:
             str_history = ""
             history = next_tree.find_role_msgs()
             for r_msg in history:
-                str_history += r_msg.msg
+                str_history += str(r_msg.msg)
 
             new_population = []
             for tree_option in self.grammar.parse_incomplete(

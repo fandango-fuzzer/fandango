@@ -8,7 +8,7 @@ from fandango.logger import LOGGER, print_exception
 
 
 class RoledMessage:
-    def __init__(self, role: str, msg: str):
+    def __init__(self, role: str, msg: "DerivationTree"):
         self.msg = msg
         self.role = role
 
@@ -16,7 +16,7 @@ class RoledMessage:
         return self.__str__()
 
     def __str__(self):
-        return f"({self.role}): {self.msg}"
+        return f"({self.role}): {str(self.msg)}"
 
 
 class DerivationTree:
@@ -119,7 +119,7 @@ class DerivationTree:
         if not isinstance(self.symbol, NonTerminal):
             return []
         if self.role is not None:
-            return [RoledMessage(self.role, str(self))]
+            return [RoledMessage(self.role, self)]
         subtrees = []
         for child in self._children:
             subtrees.extend(child.find_role_msgs())
