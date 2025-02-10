@@ -798,9 +798,14 @@ class SearchProcessor(FandangoParserVisitor):
             raise UnsupportedOperation(
                 f"{ctx.getText()!r}: f-strings are currently not supported"
             )
-        string = ""
+        string = None
         for child in ctx.string():
-            string += Terminal.clean(child.STRING().getText())
+            text = Terminal.clean(child.STRING().getText())
+            if string is None:
+                string = text
+            else:
+                string += text
+
         return ast.Constant(value=string), [], {}
 
     def visitTuple(self, ctx: FandangoParser.TupleContext):
