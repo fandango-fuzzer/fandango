@@ -4,6 +4,9 @@ parts:
   - caption: About Fandango
     chapters:
     - file: About
+    - file: ReleaseNotes
+    - file: FAQ
+    - file: Contributing
   - caption: Fandango Tutorial
     chapters:
     - file: Tutorial
