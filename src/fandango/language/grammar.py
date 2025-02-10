@@ -711,7 +711,10 @@ class Grammar(NodeVisitor):
             byte = ord(word[w]) if isinstance(word, str) else word[w]
             bit = (byte >> bit_count) & 1
 
-            if not state.dot.check(bit):
+            # LOGGER.debug(f"Checking {state.dot} against {bit}")
+            match, match_length = state.dot.check(bit)
+            if not match:
+                # LOGGER.debug(f"No match")
                 return False
 
             # Found a match
