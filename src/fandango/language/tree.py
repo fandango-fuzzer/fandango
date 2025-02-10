@@ -1,7 +1,7 @@
 import copy
 from typing import Optional, List, Any, Union, Set, Tuple
 
-from fandango.language.symbol import Symbol, NonTerminal, Terminal
+from fandango.language.symbol import Symbol, NonTerminal, Terminal, Slice
 from io import StringIO, BytesIO
 
 from fandango.logger import LOGGER, print_exception
@@ -82,14 +82,15 @@ class DerivationTree:
         return [child for child in self._children if child.symbol == symbol]
 
     def __getitem__(
-        self, item, as_list=False
-    ) -> Union["DerivationTree", List["DerivationTree"]]:
+        self, item
+    ) -> "DerivationTree":
         if isinstance(item, list) and len(item) == 1:
             item = item[0]
         items = self._children.__getitem__(item)
-        if as_list and not isinstance(items, list):
-            items = [items]
-        return items
+        if isinstance(items, list):
+            return SliceTree(items)
+        else:
+            return items
 
     def __str__(self):
         return self.to_string()
@@ -682,3 +683,12 @@ class DerivationTree:
             return fn
 
         raise AttributeError(f"{self.symbol} has no attribute {name!r}")
+
+
+class SliceTree(DerivationTree):
+    def __init__(
+        self,
+        children: List["DerivationTree"],
+        read_only: bool = False
+    ):
+        super().__init__(Slice(), children, read_only=read_only)

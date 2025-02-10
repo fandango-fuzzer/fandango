@@ -7,6 +7,7 @@ from fandango.logger import LOGGER
 class SymbolType(enum.Enum):
     TERMINAL = "Terminal"
     NON_TERMINAL = "NonTerminal"
+    SLICE = "Slice"
 
 
 class Symbol(abc.ABC):
@@ -30,6 +31,10 @@ class Symbol(abc.ABC):
     @property
     def is_non_terminal(self):
         return self.type == SymbolType.NON_TERMINAL
+
+    @property
+    def is_slice(self):
+        return self.type == SymbolType.SLICE
 
     @property
     def is_regex(self):
@@ -170,3 +175,12 @@ class Terminal(Symbol):
 
     def __str__(self):
         return self._repr()
+
+
+class Slice(Symbol):
+
+    def __init__(self):
+        super().__init__("", SymbolType.SLICE)
+
+    def __hash__(self):
+        return hash(self.type)

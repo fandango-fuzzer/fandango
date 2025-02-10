@@ -381,7 +381,7 @@ class ItemSearch(NonTerminalSearch):
     Non-terminal search that finds the non-terminals that get the items from the base non-terminal.
     """
 
-    def __init__(self, base: NonTerminalSearch, slices: Tuple[Any]):
+    def __init__(self, base: NonTerminalSearch, slices: Tuple[Any] | slice | int):
         """
         Initialize the ItemSearch with the given base and slices.
         :param NonTerminalSearch base: The base non-terminal
@@ -390,50 +390,32 @@ class ItemSearch(NonTerminalSearch):
         self.base = base
         self.slices = slices
 
+    def _find(self, bases: List[Container]):
+        return list(
+            map(
+                Tree,
+                [
+                    t.__getitem__(self.slices)
+                    for base in bases
+                    for t in base.get_trees()
+                ],
+            )
+        )
+
+
     def find(
         self,
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[Container]:
-        bases = self.base.find(tree, scope=scope)
-        ret = list(
-            map(
-                Tree,
-                sum(
-                    [
-                        t.__getitem__(self.slices, as_list=True)
-                        for base in bases
-                        for t in base.get_trees()
-                    ],
-                    [],
-                ),
-            )
-        )
-
-        # LOGGER.debug(f"ItemSearch({self}).find({tree.value()!r}) = {ret}")
-        return ret
+        return self._find(self.base.find(tree, scope=scope))
 
     def find_direct(
         self,
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
     ) -> List[Container]:
-        bases = self.base.find_direct(tree, scope=scope)
-        ret = list(
-            map(
-                Tree,
-                sum(
-                    [
-                        t.__getitem__(self.slices, as_list=True)
-                        for base in bases
-                        for t in base.get_trees()
-                    ],
-                    [],
-                ),
-            )
-        )
-        # LOGGER.debug(f"ItemSearch({self}).find_direct({tree.value()!r}) = {ret}")
-        return ret
+        return self._find(self.base.find_direct(tree, scope=scope))
 
     def __repr__(self):
         slice_reprs = []
