@@ -296,3 +296,13 @@ class TestBitstreamParsing(TestCLIParsing):
         self.assertNotEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(1, code)
+
+    def test_rgb(self):
+        command = shlex.split(
+            "fandango parse -f tests/resources/rgb.fan tests/resources/rgb.txt  --validate"
+        )
+        out, err, code = self.run_command(command)
+        self.assertEqual(0, code)
+        self.assertEqual("", out)
+        self.assertEqual("", err)
+
