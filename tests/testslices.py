@@ -1,17 +1,16 @@
 #!/usr/bin/env pytest
 
-import os
 import shlex
-import shutil
 import subprocess
 import unittest
+from pathlib import Path
 
-from fandango.cli import get_parser
 
+class TestSlices(unittest.TestCase):
+    TEST_DIR = Path(__file__).parent / "resources"
 
-class test_slices(unittest.TestCase):
-
-    def run_command(self, command):
+    @staticmethod
+    def run_command(command):
         proc = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
@@ -22,7 +21,7 @@ class test_slices(unittest.TestCase):
 
     def test_startswith(self):
         command = shlex.split(
-            """fandango fuzz -f tests/resources/twodigits.fan -n 1 -c '<start>.startswith("6")' --format=none --validate --random-seed 426912 --population-size 10"""
+            f"""fandango fuzz -f {self.TEST_DIR / "twodigits.fan"} -n 1 -c '<start>.startswith("6")' --format=none --validate --random-seed 426912 --population-size 10"""
         )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
@@ -31,7 +30,7 @@ class test_slices(unittest.TestCase):
 
     def test_slice_0(self):
         command = shlex.split(
-            """fandango fuzz -f tests/resources/twodigits.fan -n 1 -c '<start>[0] == "6"' --format=none --validate --random-seed 426912 --population-size 10"""
+            f"""fandango fuzz -f {self.TEST_DIR / "twodigits.fan"} -n 1 -c '<start>[0] == "6"' --format=none --validate --random-seed 426912 --population-size 10"""
         )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
@@ -40,7 +39,7 @@ class test_slices(unittest.TestCase):
 
     def test_slice_0plus(self):
         command = shlex.split(
-            """fandango fuzz -f tests/resources/twodigits.fan -n 1 -c '<start>[0:][0] == "6"' --format=none --validate --random-seed 426912 --population-size 10"""
+            f"""fandango fuzz -f {self.TEST_DIR / "twodigits.fan"} -n 1 -c '<start>[0:][0] == "6"' --format=none --validate --random-seed 426912 --population-size 10"""
         )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
@@ -49,7 +48,7 @@ class test_slices(unittest.TestCase):
 
     def test_slice_1plus(self):
         command = shlex.split(
-            """fandango fuzz -f tests/resources/twodigits.fan -n 1 -c '<start>[1:][0] == "6"' --format=none --validate --random-seed 426912 --population-size 10"""
+            f"""fandango fuzz -f {self.TEST_DIR / "twodigits.fan"} -n 1 -c '<start>[1:][0] == "6"' --format=none --validate --random-seed 426912 --population-size 10"""
         )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
@@ -58,7 +57,7 @@ class test_slices(unittest.TestCase):
 
     def test_slice_str0plus1(self):
         command = shlex.split(
-            """fandango fuzz -f tests/resources/twodigits.fan -n 1 -c 'str(<start>)[0:1] == "6"' --format=none --validate --random-seed 426912 --population-size 10"""
+            f"""fandango fuzz -f {self.TEST_DIR / "twodigits.fan"} -n 1 -c 'str(<start>)[0:1] == "6"' --format=none --validate --random-seed 426912 --population-size 10"""
         )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
@@ -67,7 +66,7 @@ class test_slices(unittest.TestCase):
 
     def test_slice_plus1(self):
         command = shlex.split(
-            """fandango fuzz -f tests/resources/twodigits.fan -n 1 -c '<start>[:1][0] == "6"' --format=none --validate --random-seed 426912 --population-size 10"""
+            f"""fandango fuzz -f {self.TEST_DIR / "twodigits.fan"} -n 1 -c '<start>[:1][0] == "6"' --format=none --validate --random-seed 426912 --population-size 10"""
         )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
@@ -76,7 +75,7 @@ class test_slices(unittest.TestCase):
 
     def test_slice_plus(self):
         command = shlex.split(
-            """fandango fuzz -f tests/resources/twodigits.fan -n 1 -c '<start>[:][0] == "6"' --format=none --validate --random-seed 426912 --population-size 10"""
+            f"""fandango fuzz -f {self.TEST_DIR / "twodigits.fan"} -n 1 -c '<start>[:][0] == "6"' --format=none --validate --random-seed 426912 --population-size 10"""
         )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
@@ -85,7 +84,7 @@ class test_slices(unittest.TestCase):
 
     def test_slice_str0(self):
         command = shlex.split(
-            """fandango fuzz -f tests/resources/twodigits.fan -n 1 -c 'str(<start>)[0] == "6"' --format=none --validate --random-seed 426912 --population-size 10"""
+            f"""fandango fuzz -f {self.TEST_DIR / "twodigits.fan"} -n 1 -c 'str(<start>)[0] == "6"' --format=none --validate --random-seed 426912 --population-size 10"""
         )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
@@ -94,7 +93,7 @@ class test_slices(unittest.TestCase):
 
     def test_slice_paren(self):
         command = shlex.split(
-            """fandango fuzz -f tests/resources/twodigits.fan -n 1 -c '(<start>)[0] == "6"' --format=none --validate --random-seed 426912 --population-size 10"""
+            f"""fandango fuzz -f {self.TEST_DIR / "twodigits.fan"} -n 1 -c '(<start>)[0] == "6"' --format=none --validate --random-seed 426912 --population-size 10"""
         )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
