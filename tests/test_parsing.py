@@ -275,7 +275,7 @@ class TestGIFParsing(TestCLIParsing):
 
 class TestEntryParsing(TestCLIParsing):
     def test_entry(self):
-        command = shlex.split("fandango parse -f tests/resources/entry.fan tests/resources/test.txt --validate")
+        command = shlex.split("fandango parse -f tests/resources/entry.fan tests/resources/abcd.txt --validate")
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
