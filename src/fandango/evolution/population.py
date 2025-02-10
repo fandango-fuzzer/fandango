@@ -86,8 +86,9 @@ class PopulationManager:
                 continue
             for operator, value, side in failing_tree.suggestions:
                 if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
+                    # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
                     suggested_tree = self.grammar.parse(
-                        str(value), start=failing_tree.tree.symbol.symbol
+                        value, start=failing_tree.tree.symbol.symbol
                     )
                     if suggested_tree is None:
                         continue
