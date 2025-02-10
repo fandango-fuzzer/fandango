@@ -1,13 +1,9 @@
 #!/usr/bin/env pytest
 
-import os
 import shlex
-import shutil
 import subprocess
 import unittest
 from pathlib import Path
-
-from fandango.cli import get_parser
 
 
 class TestSlices(unittest.TestCase):
