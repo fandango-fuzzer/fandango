@@ -1,5 +1,5 @@
 <start> ::= <rgb> <end>
-    <rgb> ::= <RGB>*
+    <rgb> ::= <RGB>+
     <RGB> ::= <R> <G> <B>
         <R> ::= b'r'
         <G> ::= <g7> <g6> <g5> <g4> <g3> <g2> <g1> <g0>
