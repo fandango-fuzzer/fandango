@@ -17,11 +17,13 @@ class DerivationTree:
         symbol: Symbol,
         children: Optional[List["DerivationTree"]] = None,
         parent: Optional["DerivationTree"] = None,
+        read_only: bool = False
     ):
         self.hash_cache = None
         self._parent: Optional["DerivationTree"] = parent
         self.symbol: Symbol = symbol
         self._children: list["DerivationTree"] = []
+        self.read_only = read_only
         self._size = 1
         self.set_children(children or [])
 
@@ -44,6 +46,11 @@ class DerivationTree:
         self.hash_cache = None
         if self._parent is not None:
             self._parent.invalidate_hash()
+
+    def set_all_read_only(self, read_only: bool):
+        self.read_only = read_only
+        for child in self._children:
+            child.set_all_read_only(read_only)
 
     def set_children(self, children: List["DerivationTree"]):
         self._children = children
@@ -121,7 +128,7 @@ class DerivationTree:
             return memo[id(self)]
 
         # Create a new instance without copying the parent
-        copied = DerivationTree(self.symbol, [])
+        copied = DerivationTree(self.symbol, [], read_only=self.read_only)
         memo[id(self)] = copied
 
         # Deepcopy the children
@@ -390,7 +397,7 @@ class DerivationTree:
         """
         Replace the subtree rooted at the given node with the new subtree.
         """
-        if self == tree_to_replace:
+        if self == tree_to_replace and not self.read_only:
             return new_subtree
         else:
             return DerivationTree(
@@ -399,25 +406,28 @@ class DerivationTree:
                     child.replace(tree_to_replace, new_subtree)
                     for child in self._children
                 ],
+                read_only=self.read_only,
             )
 
-    def get_non_terminal_symbols(self) -> Set[NonTerminal]:
+    def get_non_terminal_symbols(self, exclude_read_only=True) -> Set[NonTerminal]:
         """
         Retrieve all non-terminal symbols present in the derivation tree.
         """
         symbols = set()
-        if self.symbol.is_non_terminal:
+        if self.symbol.is_non_terminal and not (exclude_read_only and self.read_only):
             symbols.add(self.symbol)
         for child in self._children:
-            symbols.update(child.get_non_terminal_symbols())
+            symbols.update(child.get_non_terminal_symbols(exclude_read_only))
         return symbols
 
-    def find_all_nodes(self, symbol: NonTerminal) -> List["DerivationTree"]:
+    def find_all_nodes(
+        self, symbol: NonTerminal, exclude_read_only=True
+    ) -> List["DerivationTree"]:
         """
         Find all nodes in the derivation tree with the given non-terminal symbol.
         """
         nodes = []
-        if self.symbol == symbol:
+        if self.symbol == symbol and not (exclude_read_only and self.read_only):
             nodes.append(self)
         for child in self._children:
             nodes.extend(child.find_all_nodes(symbol))
