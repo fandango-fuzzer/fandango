@@ -7,6 +7,7 @@ from fandango.logger import LOGGER
 class SymbolType(enum.Enum):
     TERMINAL = "Terminal"
     NON_TERMINAL = "NonTerminal"
+    SLICE = "Slice"
 
 
 class Symbol(abc.ABC):
@@ -30,6 +31,10 @@ class Symbol(abc.ABC):
     @property
     def is_non_terminal(self):
         return self.type == SymbolType.NON_TERMINAL
+
+    @property
+    def is_slice(self):
+        return self.type == SymbolType.SLICE
 
     @property
     def is_regex(self):
@@ -85,14 +90,14 @@ class Terminal(Symbol):
     @staticmethod
     def clean(symbol: str) -> str | bytes | int:
         # Not sure whether any of these are necessary, as we eval() anyway
-        if len(symbol) >= 2:
-            if symbol[0] == symbol[-1] == "'" or symbol[0] == symbol[-1] == '"':
-                return eval(symbol)
-            elif len(symbol) >= 3:
-                if symbol[0] == "b" and (
-                    symbol[1] == symbol[-1] == "'" or symbol[1] == symbol[-1] == '"'
-                ):
-                    return eval(symbol)
+        # if len(symbol) >= 2:
+        #     if symbol[0] == symbol[-1] == "'" or symbol[0] == symbol[-1] == '"':
+        #         return eval(symbol)
+        #     elif len(symbol) >= 3:
+        #         if symbol[0] == "b" and (
+        #             symbol[1] == symbol[-1] == "'" or symbol[1] == symbol[-1] == '"'
+        #         ):
+        #             return eval(symbol)
         return eval(symbol)  # also handles bits "0" and "1"
 
     @staticmethod
@@ -120,8 +125,9 @@ class Terminal(Symbol):
             assert isinstance(word, bytes)
             word = word.decode("iso-8859-1")
 
-        assert ((isinstance(symbol, str) and isinstance(word, str))
-                or (isinstance(symbol, bytes) and isinstance(word, bytes)))
+        assert (isinstance(symbol, str) and isinstance(word, str)) or (
+            isinstance(symbol, bytes) and isinstance(word, bytes)
+        )
 
         if self.is_regex:
             match = re.match(symbol, word)
@@ -169,3 +175,12 @@ class Terminal(Symbol):
 
     def __str__(self):
         return self._repr()
+
+
+class Slice(Symbol):
+
+    def __init__(self):
+        super().__init__("", SymbolType.SLICE)
+
+    def __hash__(self):
+        return hash(self.type)

@@ -864,15 +864,12 @@ class SearchProcessor(FandangoParserVisitor):
             )
         string = None
         for child in ctx.string():
-            sub_str = Terminal.clean(child.STRING().getText())
+            text = Terminal.clean(child.STRING().getText())
             if string is None:
-                if isinstance(sub_str, str):
-                    string = ""
-                elif isinstance(sub_str, bytes):
-                    string = b''
-                else:
-                    raise ValueError("Unknown string type: ", type(sub_str))
-            string += sub_str
+                string = text
+            else:
+                string += text
+
         return ast.Constant(value=string), [], {}
 
     def visitTuple(self, ctx: FandangoParser.TupleContext):

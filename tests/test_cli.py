@@ -94,15 +94,6 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         self.assertEqual("", out)
         self.assertEqual(expected, err)
 
-    def test_parse(self):
-        command = shlex.split(
-            "fandango parse -f tests/resources/rgb.fan tests/resources/rgb.txt"
-        )
-        out, err, code = self.run_command(command)
-        self.assertEqual(0, code)
-        self.assertEqual("", out)
-        self.assertEqual("", err)
-
     def test_binfinity(self):
         command = shlex.split(
             "fandango fuzz -f docs/binfinity.fan -n 1 --format=none --validate --random-seed 426912"

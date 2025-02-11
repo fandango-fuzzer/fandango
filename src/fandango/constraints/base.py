@@ -18,7 +18,7 @@ from fandango.constraints.fitness import (
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
-from fandango.logger import print_exception
+from fandango.logger import print_exception, LOGGER
 
 
 class Value(GeneticBase):
@@ -73,9 +73,10 @@ class Value(GeneticBase):
                             trees.append(node)
                 try:
                     # Evaluate the expression
-                    values.append(
-                        eval(self.expression, self.global_variables, local_variables)
+                    result = self.eval(
+                        self.expression, self.global_variables, local_variables
                     )
+                    values.append(result)
                 except Exception as e:
                     e.add_note(f"Evaluation failed: {self.expression}")
                     print_exception(e)
@@ -151,6 +152,25 @@ class Constraint(GeneticBase, ABC):
         """
         return self.searches.values()
 
+    def eval(self, expression: str, global_variables, local_variables):
+        """
+        Evaluate the tree in the context of local and global variables.
+        """
+        # LOGGER.debug(f"Evaluating {expression}")
+        # for name, value in local_variables.items():
+        #     if isinstance(value, DerivationTree):
+        #         value = value.value()
+        #     LOGGER.debug(f"    {name} = {value!r}")
+
+        result = eval(expression, global_variables, local_variables)
+
+        # res = result
+        # if isinstance(res, DerivationTree):
+        #     res = res.value()
+        # LOGGER.debug(f"Result = {res!r}")
+
+        return result
+
 
 class ExpressionConstraint(Constraint):
     """
@@ -196,11 +216,13 @@ class ExpressionConstraint(Constraint):
                 {name: container.evaluate() for name, container in combination}
             )
             try:
-                result = eval(self.expression, self.global_variables, local_variables)
-                if result is None:
-                    # fitness is perfect and return
-                    # TODO this should not be here. It breaks Python's None semantics
-                    return ConstraintFitness(1, 1, True)
+                result = self.eval(
+                    self.expression, self.global_variables, local_variables
+                )
+                # Commented this out for now, as `None` is a valid result
+                # of functions such as `re.match()` -- AZ
+                # if result is None:
+                #     return ConstraintFitness(1, 1, True)
                 if result:
                     solved += 1
                 else:
@@ -271,7 +293,7 @@ class ComparisonConstraint(Constraint):
         self.operator = operator
         self.left = left
         self.right = right
-        self.types_checked = None
+        self.types_checked = False
 
     def fitness(
         self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
@@ -301,31 +323,21 @@ class ComparisonConstraint(Constraint):
             )
             # Evaluate the left and right side of the comparison
             try:
-                left = eval(self.left, self.global_variables, local_variables)
+                left = self.eval(self.left, self.global_variables, local_variables)
             except Exception as e:
                 e.add_note("Evaluation failed: " + self.left)
                 print_exception(e)
                 continue
-            # Evaluate the left and right side of the comparison
+
             try:
-                right = eval(self.right, self.global_variables, local_variables)
+                right = self.eval(self.right, self.global_variables, local_variables)
             except Exception as e:
                 e.add_note("Evaluation failed: " + self.right)
                 print_exception(e)
                 continue
 
-            try:
-                # TODO: please remove this check. It breaks Python's functionality, e.g., for comparing floats and ints
-                # TODO: Just because the types are different doesn't mean they can't be compared
-                if self.types_checked is None:
-                    if not type(left) == type(right):
-                        raise TypeError(
-                            f"In constraint {self}, left and right side of comparison don't evaluate to the same type"
-                        )
-                    else:
-                        self.types_checked = True
-            except Exception as e:
-                self.types_checked = False
+            if not hasattr(self, "types_checked") or not self.types_checked:
+                self.types_checked = self.check_type_compatibility(left, right)
 
             # Initialize the suggestions
             suggestions = []
@@ -428,6 +440,32 @@ class ComparisonConstraint(Constraint):
         # Cache the fitness
         self.cache[tree_hash] = fitness
         return fitness
+
+    def check_type_compatibility(self, left: Any, right: Any) -> bool:
+        """
+        Check the types of `left` and `right` are compatible in a comparison.
+        Return True iff check was actually performed
+        """
+        if isinstance(left, DerivationTree):
+            left = left.value()
+        if isinstance(right, DerivationTree):
+            right = right.value()
+
+        if left is None or right is None:
+            # Cannot check - value does not exist
+            return False
+
+        if type(left) == type(right):
+            return True
+        if isinstance(left, (bool, int, float)) and isinstance(
+            right, (bool, int, float)
+        ):
+            return True
+
+        LOGGER.warning(
+            f"{self}: {self.operator.value!r}: Cannot compare {type(left).__name__!r} and {type(right).__name__!r}"
+        )
+        return True
 
     def __repr__(self):
         representation = f"{self.left} {self.operator.value} {self.right}"
@@ -756,7 +794,9 @@ class ExistsConstraint(Constraint):
         return f"(exists {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
 
     def __str__(self):
-        return f"(exists {str(self.bound)} in {str(self.search)}: {str(self.statement)})"
+        return (
+            f"(exists {str(self.bound)} in {str(self.search)}: {str(self.statement)})"
+        )
 
     def accept(self, visitor: "ConstraintVisitor"):
         """
@@ -847,7 +887,9 @@ class ForallConstraint(Constraint):
         return f"(forall {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
 
     def __str__(self):
-        return f"(forall {str(self.bound)} in {str(self.search)}: {str(self.statement)})"
+        return (
+            f"(forall {str(self.bound)} in {str(self.search)}: {str(self.statement)})"
+        )
 
     def accept(self, visitor: "ConstraintVisitor"):
         """

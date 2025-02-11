@@ -51,8 +51,12 @@ stdlib += any_char
 
 stdlib += make_header("Printable characters")
 # printable = make_def("printable", string.printable)
-printable = make_rule("printable",
-                       ["r'[0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\\x22#$%&\\x27()*+,-./:;<=>?@[\\]^_`{|}~ \\t\\n\\r\\x0b\\x0c]'"])
+printable = make_rule(
+    "printable",
+    [
+        "r'[0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\\x22#$%&\\x27()*+,-./:;<=>?@[\\]^_`{|}~ \\t\\n\\r\\x0b\\x0c]'"
+    ],
+)
 
 # printable += make_def("whitespace", string.whitespace)
 printable += make_rule("whitespace", [r"r'[ \t\n\r\x0b\x0c]'"])
@@ -76,8 +80,9 @@ printable += make_rule("ascii_lowercase_letter", ["r'[a-z]'"])
 printable += make_rule("ascii_uppercase_letter", ["r'[A-Z]'"])
 
 # printable += make_def("punctuation", string.punctuation)
-printable += make_rule("punctuation",
-                      ["r'[!\\x22#$%&\\x27()*+,-./:;<=>?@[\\]^_`{|}~]'"])
+printable += make_rule(
+    "punctuation", ["r'[!\\x22#$%&\\x27()*+,-./:;<=>?@[\\]^_`{|}~]'"]
+)
 
 # printable += make_def("alphanum", string.ascii_letters + string.digits)
 printable += make_rule("alphanum", ["r'[a-zA-Z0-9]'"])
@@ -148,15 +153,14 @@ stdlib += bytes
 stdlib += make_header("UTF-8 characters, read and processed as bytes")
 
 
-
 utf8 = make_rule("utf8_char1", [r"rb'[\x00-\x7f]'"])
 utf8 += make_rule("utf8_continuation_byte", [r"rb'[\x80-\xbf]'"])
 utf8 += make_rule("utf8_char2", [r"rb'[\xc2-\xdf]' <utf8_continuation_byte>"])
 utf8 += make_rule("utf8_char3", [r"rb'[\xe0-\xef]' <utf8_continuation_byte>{2}"])
 utf8 += make_rule("utf8_char4", [r"rb'[\xf0-\xf5]' <utf8_continuation_byte>{3}"])
-utf8 += make_rule("utf8_char",
-                  ["<utf8_char1>", "<utf8_char2>",
-                   "<utf8_char3>", "<utf8_char4>"])  # UTF-8 character
+utf8 += make_rule(
+    "utf8_char", ["<utf8_char1>", "<utf8_char2>", "<utf8_char3>", "<utf8_char4>"]
+)  # UTF-8 character
 stdlib += utf8
 
 

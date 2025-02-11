@@ -163,7 +163,8 @@ class Fandango:
             for operator, value, side in failing_tree.suggestions:
                 from fandango.constraints.fitness import Comparison, ComparisonSide
 
-                if operator == Comparison.EQUAL:
+                # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
+                if operator == Comparison.EQUAL and isinstance(value, (str, bytes, DerivationTree)):
                     if (
                             self.grammar.fuzzing_mode == FuzzingMode.IO
                             and side == ComparisonSide.LEFT
@@ -175,7 +176,7 @@ class Fandango:
                     ):
                         continue
                     suggested_tree = self.grammar.parse(
-                        str(value), failing_tree.tree.symbol
+                        value, start=failing_tree.tree.symbol.symbol
                     )
                     if suggested_tree is None:
                         continue
