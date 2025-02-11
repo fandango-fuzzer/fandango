@@ -169,9 +169,7 @@ class DerivationTree:
                     result.extend(child.find_direct_trees(symbol))
         return result
 
-    def __getitem__(
-        self, item
-    ) -> "DerivationTree":
+    def __getitem__(self, item) -> "DerivationTree":
         if isinstance(item, list) and len(item) == 1:
             item = item[0]
         items = self._children.__getitem__(item)
@@ -796,9 +794,5 @@ class DerivationTree:
 
 
 class SliceTree(DerivationTree):
-    def __init__(
-        self,
-        children: List["DerivationTree"],
-        read_only: bool = False
-    ):
+    def __init__(self, children: List["DerivationTree"], read_only: bool = False):
         super().__init__(Slice(), children, read_only=read_only)

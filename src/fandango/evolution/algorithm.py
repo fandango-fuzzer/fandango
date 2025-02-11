@@ -13,7 +13,12 @@ from fandango.evolution.evaluation import Evaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import PopulationManager
 from fandango.language.io import FandangoIO
-from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode, PacketForecaster
+from fandango.language.grammar import (
+    DerivationTree,
+    Grammar,
+    FuzzingMode,
+    PacketForecaster,
+)
 from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
 
@@ -164,15 +169,17 @@ class Fandango:
                 from fandango.constraints.fitness import Comparison, ComparisonSide
 
                 # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
-                if operator == Comparison.EQUAL and isinstance(value, (str, bytes, DerivationTree)):
+                if operator == Comparison.EQUAL and isinstance(
+                    value, (str, bytes, DerivationTree)
+                ):
                     if (
-                            self.grammar.fuzzing_mode == FuzzingMode.IO
-                            and side == ComparisonSide.LEFT
+                        self.grammar.fuzzing_mode == FuzzingMode.IO
+                        and side == ComparisonSide.LEFT
                     ):
                         continue
                     if (
-                            self.grammar.fuzzing_mode != FuzzingMode.IO
-                            and side == ComparisonSide.RIGHT
+                        self.grammar.fuzzing_mode != FuzzingMode.IO
+                        and side == ComparisonSide.RIGHT
                     ):
                         continue
                     suggested_tree = self.grammar.parse(
@@ -215,13 +222,18 @@ class Fandango:
                 non_terminal_options = role_options[selected_role]
                 symbol = random.choice(list(non_terminal_options.getNonTerminals()))
                 self.population_manager.io_next_packet = non_terminal_options[symbol]
-                new_population = self.population_manager.generate_random_initial_population(self.fix_individual)
+                new_population = (
+                    self.population_manager.generate_random_initial_population(
+                        self.fix_individual
+                    )
+                )
                 packet_node = self.population_manager.io_next_packet.node
 
                 self.population = new_population
                 self.evaluation = self.evaluator.evaluate_population(self.population)
                 self.fitness = (
-                        sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
+                    sum(fitness for _, fitness, _ in self.evaluation)
+                    / self.population_size
                 )
 
                 evolve_result = self._evolve_single()
