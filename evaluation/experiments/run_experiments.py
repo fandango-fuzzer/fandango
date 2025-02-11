@@ -2,7 +2,6 @@ import random
 
 from evaluation.experiments.faker.faker_experiment import evaluate_faker
 from evaluation.experiments.hash.hash_experiment import evaluate_hash
-from evaluation.experiments.pixels.pixels_experiment import evaluate_pixels
 from evaluation.experiments.transactions.transactions_experiment import (
     evaluate_transactions,
 )
@@ -17,7 +16,6 @@ def run_experiments():
 
     evaluate_faker()
     evaluate_hash()
-    evaluate_pixels()
     evaluate_transactions()
     evaluate_voltage()
 
