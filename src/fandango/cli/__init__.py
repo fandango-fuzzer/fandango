@@ -261,9 +261,9 @@ def get_parser(in_command_line=True):
     )
     file_parser.add_argument(
         "--format",
-        choices=["string", "bits", "tree", "repr", "grammar", "none"],
+        choices=["string", "bits", "tree", "grammar", "value", "repr", "none"],
         default="string",
-        help="produce output(s) as string (default), as a bit string, as a derivation tree, in internal representation, as a grammar, or none",
+        help="produce output(s) as string (default), as a bit string, as a derivation tree, as a grammar, as a Python value, in internal representation, or none",
     )
     file_parser.add_argument(
         "--file-mode",
@@ -682,6 +682,8 @@ def output(tree, args, file_mode: str) -> str | bytes:
         return convert(tree.to_bits())
     if args.format == "grammar":
         return convert(tree.to_grammar())
+    if args.format == "value":
+        return convert(tree.to_value())
     if args.format == "none":
         return convert("")
 
@@ -939,7 +941,11 @@ def fuzz_command(args):
 
         # Ensure that every generated file can be parsed
         # and returns the same string as the original
-        temp_dir = tempfile.TemporaryDirectory()
+        try:
+            temp_dir = tempfile.TemporaryDirectory(delete=False)
+        except TypeError:
+            # Python 3.11 does not know the `delete` argument
+            temp_dir = tempfile.TemporaryDirectory()
         args.directory = temp_dir.name
         args.format = "string"
         output_population(population, args, file_mode=file_mode, output_on_stdout=False)
@@ -1280,6 +1286,8 @@ def shell_command(args):
                 command = COMMANDS[args.command]
                 last_status = run(command, args)
         except SystemExit:
+            pass
+        except KeyboardInterrupt:
             pass
 
     return last_status
