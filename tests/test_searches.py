@@ -1,3 +1,5 @@
+#!/usr/bin/env pytest
+
 import unittest
 
 from fandango.language.search import (
@@ -154,11 +156,11 @@ class TestSearches(unittest.TestCase):
     def test_item_search_complex(self):
         search = AttributeSearch(
             ItemSearch(RuleSearch(NonTerminal("<a>")), slice(0, 1)),
-            ItemSearch(RuleSearch(NonTerminal("<c>")), 0),
+            RuleSearch(NonTerminal("<b>")),
         )
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
         self.assertEqual(1, len(trees))
-        self.assertIn(self._0, trees)
+        self.assertIn(self._B1, trees)
 
     def test_selective_search(self):
         search = SelectiveSearch(

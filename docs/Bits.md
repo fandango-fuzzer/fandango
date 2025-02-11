@@ -54,7 +54,7 @@ $ fandango fuzz --format=bits -f bits.fan -n 1 --start-symbol='<format_flag>'
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz --format=bits -f bits.fan -n 1 --start-symbol='<format_flag>'
+!fandango fuzz --format=bits -f bits.fan -n 1 --start-symbol='<format_flag>' --validate
 assert _exit_code == 0
 ```
 
@@ -62,64 +62,52 @@ assert _exit_code == 0
 The combination of `--format=bits` and `--start-symbol` is particularly useful to debug bit fields.
 ```
 
-Internally, Fandango treats the individual flags as if they were strings - that is, `"\x00"` for zero bits and `"\x01"` for nonzero bits.
-Hence, we can also apply _constraints_ to the individual flags:
+Internally, Fandango treats individual flags as integers, too.
+Hence, we can also apply _constraints_ to the individual flags.
+For instance, we can profit from the fact that Python treats `0` as False and `1` as True:
 
 ```shell
-$ fandango fuzz --format=bits -f bits.fan -n 10 -c '<italic> == "\x01" and <bold> == "\x00"'
+$ fandango fuzz --format=bits -f bits.fan -n 10 -c '<italic> and <bold>'
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz --format=bits -f bits.fan -n 10 -c '<italic> == "\x01" and <bold> == "\x00"'
+!fandango fuzz --format=bits -f bits.fan -n 10 -c '<italic> and <bold>' --validate
 assert _exit_code == 0
 ```
 
-This alternative, using `chr()` to generate a single byte out of the specified integer might be more readable:
+Fandango strictly follows a "left-to-right" order - that is, the order in which bits and bytes are specified in the grammar, the most significant bit is stored first.
+
+Hence, we can also easily set the value of the entire `brightness` field using a constraint:
 
 ```shell
-$ fandango fuzz --format=bits -f bits.fan -n 1 -c '<italic> == chr(1) and <bold> == chr(0)'
+$ fandango fuzz --format=bits -f bits.fan -n 1 -c '<brightness> == 0b1111'
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz --format=bits -f bits.fan -n 1 -c '<italic> == chr(1) and <bold> == chr(0)'
+!fandango fuzz --format=bits -f bits.fan -n 1 -c '<brightness> == 0b1111' --validate
 assert _exit_code == 0
 ```
-
-We can also easily set the value of the entire `format_flag` field using a constraint:
-
-```shell
-$ fandango fuzz --format=bits -f bits.fan -n 1 -c '<format_flag> == chr(0b11110000)'
-```
-
-```{code-cell}
-:tags: ["remove-input"]
-!fandango fuzz --format=bits -f bits.fan -n 1 -c '<format_flag> == chr(0b11110000)'
-assert _exit_code == 0
-```
-
-Since Fandango strictly follows a "left-to-right" order - that is, the order in which bits and bytes are specified in the grammar, the most significant bit is stored first.
-Thus, the order of bits in the `chr()` argument is identical to the order of bits in the produced output.
 
 ```{note}
 Fandango always strictly follows a "left-to-right" order - that is, the order in which bits and bytes are specified in the grammar.
 ```
 
-To convert a bit into a numerical value, applying the Python `ord()` function comes in handy.
-Note that its argument (the symbol) must be converted into a string first:
+Of course, we can also give the number in decimal format:
 
 ```shell
-$ fandango fuzz --format=bits -f bits.fan -n 1 -c 'ord(str(<brightness>)) > 10'
+$ fandango fuzz --format=bits -f bits.fan -n 1 -c '<brightness> == 15'
 ```
 
+% TODO: This does not work with <format_flag> :-(
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz --format=bits -f bits.fan -n 10 -c 'ord(str(<brightness>)) > 10'
+!fandango fuzz --format=bits -f bits.fan -n 10 -c '<brightness> == 15' --validate --population-size=20
 assert _exit_code == 0
 ```
 
-Note how the last four bits (the `<brightness>` field) always represent a number greater than ten.
+Note how the last four bits (the `<brightness>` field) are always set to `1111` - the number 15.
 
 ```{warning}
 When implementing a format, be sure to follow its conventions regarding
@@ -128,9 +116,60 @@ When implementing a format, be sure to follow its conventions regarding
 * _byte ordering_ (most or least significant byte first)
 ```
 
-```{error}
-Note that _parsing_ binary inputs (and hence mutating them) is not available yet.
+
+## Parsing Bits
+
+Fandango also supports [parsing](sec:parsing) inputs with bits.
+This is what happens if we send a byte `\xf0` (the upper four bits set) to the parser:
+
+```shell
+$ echo -n '\xf0' | fandango parse -f bits.fan -o - --format=bits
 ```
+
+```{code-cell}
+:tags: ["remove-input"]
+!echo -n '\xf0' | fandango parse -f bits.fan -o - --format=bits --validate
+assert _exit_code == 0
+```
+
+We see that the input was properly parsed and decomposed into individual bits.
+
+This is the resulting parse tree:
+
+```{code-cell}
+:tags: ["remove-input"]
+from Tree import Tree
+tree = Tree('<start>', Tree('<format_flag>',
+  Tree('<italic>', Tree('<bit>', Tree(1))),
+  Tree('<bold>', Tree('<bit>', Tree(1))),
+  Tree('<underlined>', Tree('<bit>', Tree(1))),
+  Tree('<strikethrough>', Tree('<bit>', Tree(1))),
+  Tree('<brightness>',
+    Tree('<bit>', Tree(0)),
+    Tree('<bit>', Tree(0)),
+    Tree('<bit>', Tree(0)),
+    Tree('<bit>', Tree(0))
+  )
+))
+tree.visualize()
+```
+
+The `grammar` format shows us that the values are properly assigned:
+
+```shell
+$ echo -n '\xf0' | fandango parse -f bits.fan -o - --format=grammar
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!echo -n '\xf0' | fandango parse -f bits.fan -o - --format=grammar --validate
+assert _exit_code == 0
+```
+
+:::{warning}
+To parse bits properly, they must come in multiples of eight.
+:::
+
 
 ## Bits and Padding
 

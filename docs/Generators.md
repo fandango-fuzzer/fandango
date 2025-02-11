@@ -52,7 +52,7 @@ then we can have Fandango create names such as
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons-nat.fan -n 10
+!fandango fuzz -f persons-nat.fan -n 10 --validate
 assert _exit_code == 0
 ```
 
@@ -127,7 +127,7 @@ This is what the output of the above spec looks like:
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons-faker.fan -n 10
+!fandango fuzz -f persons-faker.fan -n 10 --validate
 assert _exit_code == 0
 ```
 
@@ -161,7 +161,7 @@ The resulting [Fandango spec file](persons-faker-age.fan) produces the desired r
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons-faker-age.fan -n 10
+!fandango fuzz -f persons-faker-age.fan -n 10 --validate
 assert _exit_code == 0
 ```
 
@@ -178,7 +178,7 @@ These are the ages we get this way:
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons-faker-gauss.fan -n 10
+!fandango fuzz -f persons-faker-gauss.fan -n 10 --validate
 assert _exit_code == 0
 ```
 
@@ -203,7 +203,7 @@ With this, both random names (`<name>`) and natural names (`<natural_name>`) wil
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons-faker50.fan -n 10
+!fandango fuzz -f persons-faker50.fan -n 10 --validate
 assert _exit_code == 0
 ```
 
@@ -236,7 +236,7 @@ and we get
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons-faker.fan -c '<last_name>.startswith("S")' -n 10
+!fandango fuzz -f persons-faker.fan -c '<last_name>.startswith("S")' -n 10 --validate
 assert _exit_code == 0
 ```
 
@@ -259,7 +259,7 @@ In case this should work, this is only through some internal Fandango optimizati
 Unfortunately, this does not work.
 % ```{code-cell}
 % :tags: ["remove-input"]
-% !fandango fuzz -f persons-faker.fan -c '<first_name> == fake.first_name()' -n 10
+% !fandango fuzz -f persons-faker.fan -c '<first_name> == fake.first_name()' -n 10 --validate
 % assert _exit_code == 0
 % ```
 The reason is that the faker returns _a different value_ every time it is invoked, making it hard for Fandango to solve the constraint.
@@ -275,7 +275,7 @@ $ fandango fuzz -f persons-faker.fan -c 'str(<last_name>).startswith("S")' -c 'i
 This would work:
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons-faker.fan -c 'str(<last_name>).startswith("S")' -c 'int(<age>) >= 25 and int(<age>) <= 35' -n 10
+!fandango fuzz -f persons-faker.fan -c 'str(<last_name>).startswith("S")' -c 'int(<age>) >= 25 and int(<age>) <= 35' -n 10 --validate
 assert _exit_code == 0
 ```
 

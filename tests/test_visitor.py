@@ -1,3 +1,5 @@
+#!/usr/bin/env pytest
+
 import unittest
 from collections import defaultdict
 import logging
@@ -74,7 +76,7 @@ class TestConstraintVisitor(unittest.TestCase):
 
     def get_constraint(self, constraint):
         file = open("tests/resources/constraints.fan", "r")
-        _, constraints = parse(file, constraints=[constraint], use_stdlib=False)
+        _, constraints = parse(file, constraints=[constraint], use_stdlib=False, use_cache=False)
         self.assertEqual(1, len(constraints))
         return constraints[0]
 

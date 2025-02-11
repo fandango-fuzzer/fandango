@@ -44,24 +44,56 @@ def make_comment(comment: str) -> str:
     return f"# {comment}\n"
 
 
+stdlib += make_header("Any character")
+any_char = make_rule("char", ["r'(.|\\n)'"])
+stdlib += any_char
+
+
 stdlib += make_header("Printable characters")
-printable = make_def("printable", string.printable)
-printable += make_def("whitespace", string.whitespace)
-printable += make_def("digit", string.digits)
-printable += make_def("hexdigit", string.hexdigits)
-printable += make_def("octdigit", string.octdigits)
-printable += make_def("ascii_letter", string.ascii_letters)
-printable += make_def("ascii_lowercase_letter", string.ascii_lowercase)
-printable += make_def("ascii_uppercase_letter", string.ascii_uppercase)
-printable += make_def("punctuation", string.punctuation)
-printable += make_def("alphanum", string.ascii_letters + string.digits)
-printable += make_def("alphanum_", string.ascii_letters + string.digits + "_")
+# printable = make_def("printable", string.printable)
+printable = make_rule(
+    "printable",
+    [
+        "r'[0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\\x22#$%&\\x27()*+,-./:;<=>?@[\\]^_`{|}~ \\t\\n\\r\\x0b\\x0c]'"
+    ],
+)
+
+# printable += make_def("whitespace", string.whitespace)
+printable += make_rule("whitespace", [r"r'[ \t\n\r\x0b\x0c]'"])
+
+# printable += make_def("digit", string.digits)
+printable += make_rule("digit", ["r'[0-9]'"])
+
+# printable += make_def("hexdigit", string.hexdigits)
+printable += make_rule("hexdigit", ["r'[0-9a-fA-F]'"])
+
+# printable += make_def("octdigit", string.octdigits)
+printable += make_rule("octdigit", ["r'[0-7]'"])
+
+# printable += make_def("ascii_letter", string.ascii_letters)
+printable += make_rule("ascii_letter", ["r'[a-zA-Z]'"])
+
+# printable += make_def("ascii_lowercase_letter", string.ascii_lowercase)
+printable += make_rule("ascii_lowercase_letter", ["r'[a-z]'"])
+
+# printable += make_def("ascii_uppercase_letter", string.ascii_uppercase)
+printable += make_rule("ascii_uppercase_letter", ["r'[A-Z]'"])
+
+# printable += make_def("punctuation", string.punctuation)
+printable += make_rule(
+    "punctuation", ["r'[!\\x22#$%&\\x27()*+,-./:;<=>?@[\\]^_`{|}~]'"]
+)
+
+# printable += make_def("alphanum", string.ascii_letters + string.digits)
+printable += make_rule("alphanum", ["r'[a-zA-Z0-9]'"])
+
+# printable += make_def("alphanum_", string.ascii_letters + string.digits + "_")
+printable += make_rule("alphanum", ["r'[a-zA-Z0-9_]'"])
+
 stdlib += printable
 
 stdlib += make_header("ASCII characters")
-ascii_char = make_def(
-    "ascii_char", "".join(chr(c) for c in range(0, 128)), force_binary=False
-)
+ascii_char = make_rule("ascii_char", ["rb'[\\x00-\\x7f]'"])
 stdlib += ascii_char
 
 stdlib += make_header("ASCII control characters")
@@ -114,30 +146,18 @@ bits = make_rule("bit", ["0", "1"])
 stdlib += bits
 
 stdlib += make_header("Bytes")
-bytes = make_def("byte", "".join(chr(c) for c in range(0, 256)), force_binary=True)
+bytes = make_rule("byte", [r"rb'[\x00-\xff]'"])
 stdlib += bytes
 
 
 stdlib += make_header("UTF-8 characters, read and processed as bytes")
 
 
-def make_utf8_rule(symbol: str, chars: list[int], suffix: str = "") -> str:
-    return make_rule(
-        symbol, ["(" + " | ".join(f"b'\\x{c:02x}'" for c in chars) + ")" + suffix]
-    )
-
-
-utf8 = make_def(
-    "utf8_char1", "".join(chr(c) for c in range(0, 128)), force_binary=False
-)
-utf8 += make_def(
-    "utf8_continuation_byte",
-    "".join(chr(c) for c in range(0x80, 0xC0)),
-    force_binary=True,
-)
-utf8 += make_utf8_rule("utf8_char2", range(0xC2, 0xE0), " <utf8_continuation_byte>")
-utf8 += make_utf8_rule("utf8_char3", range(0xE0, 0xF0), " <utf8_continuation_byte>{2}")
-utf8 += make_utf8_rule("utf8_char4", range(0xF0, 0xF6), " <utf8_continuation_byte>{3}")
+utf8 = make_rule("utf8_char1", [r"rb'[\x00-\x7f]'"])
+utf8 += make_rule("utf8_continuation_byte", [r"rb'[\x80-\xbf]'"])
+utf8 += make_rule("utf8_char2", [r"rb'[\xc2-\xdf]' <utf8_continuation_byte>"])
+utf8 += make_rule("utf8_char3", [r"rb'[\xe0-\xef]' <utf8_continuation_byte>{2}"])
+utf8 += make_rule("utf8_char4", [r"rb'[\xf0-\xf5]' <utf8_continuation_byte>{3}"])
 utf8 += make_rule(
     "utf8_char", ["<utf8_char1>", "<utf8_char2>", "<utf8_char3>", "<utf8_char4>"]
 )  # UTF-8 character
@@ -162,7 +182,7 @@ stdlib += numbers
 # stdlib += make_rule("uuid", ["<hexdigit>{8} '-' <hexdigit>{4} '-' <hexdigit>{4}'-' <hexdigit>{4} '-' <hexdigit>{12}"])
 
 stdlib += make_header("Fandango dancer")
-stdlib += make_comment("We use this to test UTF-8 compatibility")
+stdlib += make_comment("We use this to test Unicode compatibility")
 dancer = make_rule("fandango_dancer", ["'💃'"])
 stdlib += dancer
 

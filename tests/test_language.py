@@ -1,3 +1,5 @@
+#!/usr/bin/env pytest
+
 import ast
 import os
 
@@ -263,7 +265,7 @@ def test_conversion_statement(stmt, value, is_global):
 def test_parsing():
     file = open("tests/resources/fandango.fan", "r")
 
-    grammar, constraints = parse(file, use_stdlib=False)
+    grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
     assert isinstance(grammar, Grammar)
     assert len(grammar.rules) == 4
     assert "<start>" in grammar

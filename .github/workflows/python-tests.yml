@@ -7,7 +7,6 @@ on:
   push:
     branches:
       - dev   # Run tests on pushes to the dev branch
-      - main  # Run tests on pushes to the main branch
   pull_request:
     branches:
       - main  # Run tests on pull requests targeting the main branch
@@ -44,16 +43,21 @@ jobs:
       # Step 4: Install system-level dependencies required by the project
       - name: Install system dependencies
         run: |
-          sudo apt-get update && sudo apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config
+          sudo apt-get update && sudo apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config libarchive-tools
           pip install pygraphviz
 
-      # Step 5: Install Python dependencies using make and run tests
-      - name: Install dependencies with Makefile and run tests
+      # Step 5: Install Python dependencies using make
+      - name: Install dependencies with Makefile
         run: |
           python -m pip install --upgrade pip  # Upgrade pip to the latest version
-          make test  # Install dependencies using the Makefile
+          make install-test  # Install dependencies using the Makefile
 
-      # Step 6: Cache installed packages for system dependencies
+      # Step 6: Run tests using pytest
+      - name: Run tests with pytest
+        run: |
+          make tests  # Run the tests
+
+      # Step 7: Cache installed packages for system dependencies
       - name: Cache pygraphviz dependencies
         uses: actions/cache@v3
         with:

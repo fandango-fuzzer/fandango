@@ -12,18 +12,21 @@ PIP = pip
 SED = sed
 PAGELABELS = $(PYTHON) -m pagelabels
 
+# Sources
+SRC = src/fandango
+PYTHON_SOURCES = $(wildcard $(SRC)/*.py $(SRC)/*/*.py $(SRC)/*/*/*.py)
 
 # Default targets
-web: requirements.txt parser html
+web: parser html
 all: web pdf
 
 .PHONY: web all parser install dev-tools docs html latex pdf
 
 
-## Requirements
+## Requirements (no longer used)
 
-requirements.txt:	pyproject.toml
-	pip-compile $<
+# requirements.txt:	pyproject.toml
+# 	pip-compile $<
 
 # Install tools for development
 UNAME := $(shell uname)
@@ -87,11 +90,11 @@ osascript -e 'tell application "Safari" to set URL of document of window 1 to UR
 VIEW_PDF = open $(PDF_TARGET)
 
 # Command to check docs for failed assertions
-CHECK_DOCS = grep -l AssertionError $(DOCS)/_build/html/*.html; if [ $$? == 0 ]; then false; else true; fi
+CHECK_DOCS = grep -l AssertionError $(DOCS)/_build/html/*.html; if [ $$? == 0 ]; then echo 'Check the above files for failed assertions'; false; else true; fi
 
 
 # Targets.
-html: $(HTML_MARKER)
+docs html: $(HTML_MARKER)
 latex: $(LATEX_MARKER)
 pdf: $(PDF_TARGET)
 
@@ -103,8 +106,8 @@ $(HTML_MARKER): $(DOCS_SOURCES) $(ALL_HTML_MARKER)
 	-$(REFRESH_HTML)
 	@echo Output written to $(HTML_INDEX)
 
-# If we change _toc.yml or _config.yml, all docs need to be rebuilt
-$(ALL_HTML_MARKER): $(DOCS)/_toc.yml $(DOCS)/_config.yml
+# If we change Python sources, _toc.yml, or _config.yml, all docs need to be rebuilt
+$(ALL_HTML_MARKER): $(DOCS)/_toc.yml $(DOCS)/_config.yml $(PYTHON_SOURCES)
 	$(JB) build --all $(DOCS)
 	@$(CHECK_DOCS)
 	echo 'Success' > $@
@@ -159,14 +162,60 @@ clean-docs:
 	$(JB) clean $(DOCS)
 
 
-## Test
-test tests:
-	$(PIP) install -e .
-	$(PYTEST)
+## Tests
+TESTS = tests
+TEST_SOURCES = $(wildcard $(TESTS)/*.py $(TESTS)/resources/* $(TESTS)/docs/*.fan)
+TEST_MARKER = $(TESTS)/test-marker.txt
 
+.PHONY: test tests run-tests
+test tests $(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
+	$(PYTEST)
+	echo 'Success' > $(TEST_MARKER)
+
+run-tests: $(TEST_MARKER)
+
+## Evaluation
+EVALUATION = evaluation
+EVALUATION_SOURCES = $(wildcard $(EVALUATION)/*.py $(EVALUATION)/*/*.py $(EVALUATION)/*/*/*.py $(EVALUATION)/*/*/*.fan $(EVALUATION)/*/*/*.txt)
+EVALUATION_MARKER = $(EVALUATION)/test-evaluation.txt
+
+# python -m evaluation.vs_isla.run_evaluation
+.PHONY: evaluation evaluate
+evaluation evaluate $(EVALUATION_MARKER): $(PYTHON_SOURCES) $(EVALUATION_SOURCES)
+	$(PYTHON) -m evaluation.vs_isla.run_evaluation 1
+	echo 'Success' > $(EVALUATION_MARKER)
+
+run-evaluation: $(EVALUATION_MARKER)
+
+## Experiments
+EXPERIMENTS = $(EVALUATION)/experiments
+EXPERIMENTS_SOURCES = $(wildcard $(EXPERIMENTS)/*/*.py $(EXPERIMENTS)/*/*.fan)
+EXPERIMENTS_MARKER = $(EXPERIMENTS)/test-experiments.txt
+
+.PHONY: experiment experiments
+experiment experiments $(EXPERIMENTS_MARKER): $(PYTHON_SOURCES) $(EXPERIMENTS_SOURCES)
+	$(PYTHON) -m evaluation.experiments.run_experiments
+	echo 'Success' > $(EXPERIMENTS_MARKER)
+
+run-experiments: $(EXPERIMENTS_MARKER)
+
+## All
+.PHONY: run-all
+run-all: $(TEST_MARKER) $(EVALUATION_MARKER) $(EXPERIMENTS_MARKER)
+	@echo 'All tests passed.'
 
 ## Installation
-
+.PHONY: install install-test install-tests
 install:
 	$(PIP) install -e .
+
+# We separate _installing_ from _running_ tests
+# so we can run 'make tests' quickly (see above)
+# without having to reinstall things
+install-test install-tests:
+	$(PIP) install pytest
+	$(PIP) install -e ".[test]"
+
+uninstall:
+	$(PIP) uninstall fandango-fuzzer -y
 
