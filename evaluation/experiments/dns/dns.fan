@@ -7,7 +7,6 @@ def gen_q_name():
     for part in domain_parts:
         result += len(part).to_bytes(1, 'big')
         result += part.encode('iso8859-1')
-    result += b'a' #Todo Workaround of byte parsing bug. Remove when resolved.
     return result
 
 
@@ -38,14 +37,17 @@ where <dns_req>.<question>.<q_name> == <dns_resp>.<answer>.<q_name>
 <h_rcode_other> ::= (1 <bit>{3, 3}) | (0 1 1 <bit>)
 <bit> ::= 0 | 1
 <byte> ::= <bit>{8}
+<non_zero_byte> ::= (<bit>{7} 1) | (<bit>{6} 1 <bit>) | (<bit>{5} 1 <bit>{2}) | (<bit>{4} 1 <bit>{3}) | (<bit>{3} 1 <bit>{4}) | (<bit>{2} 1 <bit>{5}) | (<bit> 1 <bit>{6}) | (1 <bit>{7})
 
 
 
 <question> ::= <q_name> 0{8} <q_type> <q_class>
-<q_name> ::= <byte>+ := gen_q_name()
+<q_name> ::= <non_zero_byte>+ := gen_q_name()
 <q_name_entry> ::= <byte>+
 <q_type> ::= 0{15} 1
 <q_class> ::= 0{15} 1
+#<string_name> ::= <byte> <alphabet> (<byte> <alphabet>)+
+#<alphabet> ::= 'a'|'b'|'c'|'d'|'e'|'f'|'g'|'h'|'i'|'j'|'k'|'l'|'m'|'n'|'o'|'p'|'q'|'r'|'s'|'t'|'u'|'v'|'w'|'x'|'y'|'z'
 
 <answer> ::= <q_name> <a_type> <a_class> <a_ttl> <a_rd_length> <a_rdata>
 <a_type> ::= 0 0 0 1 # Equals type A (Host address)
