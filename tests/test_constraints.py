@@ -1,3 +1,5 @@
+#!/usr/bin/env pytest
+
 import unittest
 
 
@@ -11,7 +13,7 @@ class ConstraintTest(unittest.TestCase):
 
     def get_constraint(self, constraint):
         file = open("tests/resources/constraints.fan", "r")
-        _, constraints = parse(file, constraints=[constraint], use_stdlib=False)
+        _, constraints = parse(file, constraints=[constraint], use_stdlib=False, use_cache=False)
         self.assertEqual(1, len(constraints))
         return constraints[0]
 
@@ -328,7 +330,7 @@ class ConstraintTest(unittest.TestCase):
 
     def test_indirect_children(self):
         file = open("tests/resources/indirect_children.fan", "r")
-        grammar, constraint = parse(file, use_stdlib=False)
+        grammar, constraint = parse(file, use_stdlib=False, use_cache=False)
         
         self.assertEqual(1, len(constraint))
         constraint = constraint[0]
@@ -341,7 +343,7 @@ class ConstraintTest(unittest.TestCase):
 
     def test_accessing_children(self):
         file = open("tests/resources/children.fan", "r")
-        grammar, constraint = parse(file, use_stdlib=False)
+        grammar, constraint = parse(file, use_stdlib=False, use_cache=False)
         constraint = constraint[0]
 
         counter_example = grammar.parse("11")
@@ -358,7 +360,7 @@ int(<number>) < 100000;
 """
 
         file = open("tests/resources/complex_constraints.fan", "r")
-        _, constraints = parse(file, constraints=[constraint], use_stdlib=False)
+        _, constraints = parse(file, constraints=[constraint], use_stdlib=False, use_cache=False)
         self.assertEqual(3, len(constraints))
 
         def get_tree(x):

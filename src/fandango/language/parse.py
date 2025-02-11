@@ -29,6 +29,7 @@ from fandango.language.stdlib import stdlib
 from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER, print_exception
 
+
 class MyErrorListener(ErrorListener):
     """This is invoked from ANTLR when a syntax error is encountered"""
 
@@ -37,7 +38,7 @@ class MyErrorListener(ErrorListener):
         super().__init__()
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise SyntaxError(f"{repr(self.filename)}, line {line}, column {column}: {msg}")
+        raise SyntaxError(f"{self.filename!r}, line {line}, column {column}: {msg}")
 
 
 def closest_match(word, candidates):
@@ -108,7 +109,7 @@ def include(file_to_be_included: str):
         return
 
     raise FileNotFoundError(
-        f"{CURRENT_FILENAME}: {repr(file_to_be_included)} not found in {':'.join(str(dir) for dir in dirs)}"
+        f"{CURRENT_FILENAME}: {file_to_be_included!r} not found in {':'.join(str(dir) for dir in dirs)}"
     )
 
 
@@ -273,6 +274,7 @@ def parse_content(
     LOGGER.debug(f"{filename}: parsing complete")
     return spec.grammar, spec.constraints
 
+
 # Save the set of symbols used in the standard library and imported grammars
 USED_SYMBOLS: Set[str] = set()
 
@@ -422,7 +424,16 @@ def parse(
 
 
 def check_grammar_consistency(
-    grammar, /, given_used_symbols=set(), start_symbol="<start>"
+    grammar, *, given_used_symbols=set(), start_symbol="<start>"
+):
+    check_grammar_definitions(
+        grammar, given_used_symbols=given_used_symbols, start_symbol=start_symbol
+    )
+    check_grammar_types(grammar, start_symbol=start_symbol)
+
+
+def check_grammar_definitions(
+    grammar, *, given_used_symbols=set(), start_symbol="<start>"
 ):
     if not grammar:
         return
@@ -439,14 +450,20 @@ def check_grammar_consistency(
     if start_symbol not in defined_symbols:
         closest = closest_match(start_symbol, defined_symbols)
         raise NameError(
-            f"Start symbol {start_symbol} not defined in grammar. Did you mean {closest}?"
+            f"Start symbol {start_symbol!s} not defined in grammar. Did you mean {closest!s}?"
         )
 
     def collect_used_symbols(tree):
         if tree.node_type == NodeType.NON_TERMINAL:
             used_symbols.add(str(tree.symbol))
-        if tree.node_type == NodeType.REPETITION:
+        elif (
+            tree.node_type == NodeType.REPETITION
+            or tree.node_type == NodeType.STAR
+            or tree.node_type == NodeType.PLUS
+            or tree.node_type == NodeType.OPTION
+        ):
             collect_used_symbols(tree.node)
+
         for child in tree.children():
             collect_used_symbols(child)
 
@@ -463,12 +480,125 @@ def check_grammar_consistency(
             and symbol not in given_used_symbols
             and symbol != start_symbol
         ):
-            LOGGER.info(f"Symbol {symbol} defined, but not used")
+            LOGGER.info(f"Symbol {symbol!s} defined, but not used")
 
     if undefined_symbols:
         first_undefined_symbol = undefined_symbols.pop()
-        error = NameError(f"Undefined symbol {first_undefined_symbol} in grammar")
+        error = NameError(f"Undefined symbol {first_undefined_symbol!s} in grammar")
+        if undefined_symbols:
+            error.add_note(
+                f"Other undefined symbols: {', '.join(str(symbol) for symbol in undefined_symbols)}"
+            )
         raise error
+
+
+def check_grammar_types(grammar, *, start_symbol="<start>"):
+    if not grammar:
+        return
+
+    LOGGER.debug("Checking types")
+
+    symbol_types = {}
+
+    def compatible(tp1, tp2):
+        if tp1 in ["int", "bytes"] and tp2 in ["int", "bytes"]:
+            return True
+        return tp1 == tp2
+
+    def get_type(tree, rule_symbol) -> tuple[Optional[str], int, int, int]:
+        # LOGGER.debug(f"Checking type of {tree!s} in {rule_symbol!s} ({tree.node_type!s})")
+        nonlocal symbol_types, grammar
+
+        if tree.node_type == NodeType.TERMINAL:
+            tp = type(tree.symbol.symbol).__name__
+            # LOGGER.debug(f"Type of {tree.symbol.symbol!r} is {tp!r}")
+            bits = 1 if isinstance(tree.symbol.symbol, int) else 0
+            return tp, bits, bits, 0
+
+        elif (
+            tree.node_type == NodeType.REPETITION
+            or tree.node_type == NodeType.STAR
+            or tree.node_type == NodeType.PLUS
+            or tree.node_type == NodeType.OPTION
+        ):
+            tp, min_bits, max_bits, step = get_type(tree.node, rule_symbol)
+            # if min_bits % 8 != 0 and tree.min == 0:
+            #     raise ValueError(f"{rule_symbol!s}: Bits cannot be optional")
+
+            step = min(min_bits, max_bits)
+            return tp, tree.min * min_bits, tree.max * max_bits, step
+
+        elif tree.node_type == NodeType.NON_TERMINAL:
+            if tree.symbol in symbol_types:
+                return symbol_types[tree.symbol]
+
+            symbol_types[tree.symbol] = (None, 0, 0, 0)
+            symbol_tree = grammar.rules[tree.symbol]
+            tp, min_bits, max_bits, step = get_type(symbol_tree, str(tree.symbol))
+            symbol_types[tree.symbol] = tp, min_bits, max_bits, step
+            # LOGGER.debug(f"Type of {tree.symbol!s} is {tp!r} with {min_bits}..{max_bits} bits")
+            return tp, min_bits, max_bits, step
+
+        elif (
+            tree.node_type == NodeType.CONCATENATION
+            or tree.node_type == NodeType.ALTERNATIVE
+        ):
+            common_tp = None
+            tp_child = None
+            min_bits = max_bits = step = None
+            for child in tree.children():
+                tp, min_child_bits, max_child_bits, child_step = get_type(
+                    child, rule_symbol
+                )
+                if min_bits is None:
+                    min_bits = min_child_bits
+                    max_bits = max_child_bits
+                    step = child_step
+                elif tree.node_type == NodeType.CONCATENATION:
+                    min_bits += min_child_bits
+                    max_bits += max_child_bits
+                    step += child_step
+                else:  # NodeType.ALTERNATIVE
+                    min_bits = min(min_bits, min_child_bits)
+                    max_bits = max(max_bits, max_child_bits)
+                    step += min(step, child_step)
+                if tp is None:
+                    continue
+                if common_tp is None:
+                    common_tp = tp
+                    tp_child = child
+                    continue
+                if not compatible(tp, common_tp):
+                    if tree.node_type == NodeType.CONCATENATION:
+                        LOGGER.warning(
+                            f"{rule_symbol!s}: Concatenating {common_tp!r} ({tp_child!s}) and {tp!r} ({child!s})"
+                        )
+                    else:
+                        LOGGER.warning(
+                            f"{rule_symbol!s}: Type can be {common_tp!r} ({tp_child!s}) or {tp!r} ({child!s})"
+                        )
+                    common_tp = tp
+
+            # LOGGER.debug(f"Type of {rule_symbol!s} is {common_tp!r} with {min_bits}..{max_bits} bits")
+            return common_tp, min_bits, max_bits, step
+
+        raise ValueError("Unknown node type")
+
+    start_tree = grammar.rules[NonTerminal(start_symbol)]
+    _, min_start_bits, max_start_bits, start_step = get_type(
+        start_tree, str(start_symbol)
+    )
+    if start_step > 0 and any(
+        bits % 8 != 0 for bits in range(min_start_bits, max_start_bits + 1, start_step)
+    ):
+        if min_start_bits != max_start_bits:
+            LOGGER.warning(
+                f"{start_symbol!s}: Number of bits ({min_start_bits}..{max_start_bits}) may not be a multiple of eight"
+            )
+        else:
+            LOGGER.warning(
+                f"{start_symbol!s}: Number of bits ({min_start_bits}) is not a multiple of eight"
+            )
 
 
 def check_constraints_existence(grammar, constraints):
@@ -504,16 +634,18 @@ def check_constraints_existence(grammar, constraints):
                 closest = closest_match(first_missing_symbol, defined_symbols)
 
             if len(missing) > 1:
-                missing_symbols = ", ".join(["<" + symbol + ">" for symbol in missing])
+                missing_symbols = ", ".join(
+                    ["<" + str(symbol) + ">" for symbol in missing]
+                )
                 error = NameError(
-                    f"{constraint}: undefined symbols {missing_symbols}. Did you mean {closest}?"
+                    f"{constraint}: undefined symbols {missing_symbols}. Did you mean {closest!s}?"
                 )
                 raise error
 
             if len(missing) == 1:
                 missing_symbol = missing[0]
                 error = NameError(
-                    f"{constraint}: undefined symbol <{missing_symbol}>. Did you mean {closest}?"
+                    f"{constraint}: undefined symbol <{missing_symbol!s}>. Did you mean {closest!s}?"
                 )
                 raise error
 
@@ -523,11 +655,13 @@ def check_constraints_existence(grammar, constraints):
                 # This handles <parent>[...].<symbol> as <parent>..<symbol>.
                 # We could also interpret the actual [...] contents here,
                 # but slices and chains could make this hard -- AZ
-                recurse = f"<{parent}>[" in str(value) or f"..<{symbol}>" in str(value)
+                recurse = f"<{parent!s}>[" in str(value) or f"..<{symbol!s}>" in str(
+                    value
+                )
                 if not check_constraints_existence_children(
                     grammar, parent, symbol, recurse, indirect_child
                 ):
-                    msg = f"{constraint}: <{parent}> has no child <{symbol}>"
+                    msg = f"{constraint!s}: <{parent!s}> has no child <{symbol!s}>"
                     raise ValueError(msg)
 
 

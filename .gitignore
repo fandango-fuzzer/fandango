@@ -173,3 +173,8 @@ gen/*
 *.o
 utils/lextab.py
 utils/yacctab.py
+
+# Test result markers
+tests/test-marker.txt
+evaluation/test-evaluation.txt
+evaluation/experiments/test-experiments.txt

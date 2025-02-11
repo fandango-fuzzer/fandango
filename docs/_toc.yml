@@ -15,9 +15,11 @@ parts:
     - file: Constraints
     - file: Shell
     - file: Generators
+    - file: Regexes
     - file: Recursive
     - file: Paths
     - file: ISO8601
+    - file: Parsing
     - file: Binary
     - file: Bits
     - file: Gif
