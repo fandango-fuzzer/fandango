@@ -676,12 +676,12 @@ def check_constraints_existence_children(
     grammar_symbols = grammar.rules[NonTerminal(f"<{parent}>")]
 
     # Original code; fails on <a> "b" <c> -- AZ
-    # grammar_matches = re.findall(r'(?<!")<([^>]*)>(?!.*")',
-    #                              str(grammar_symbols))
+    grammar_matches = re.findall(r'(?<!"|\')<([^>]*)>(?!.*"|\')',
+                                  str(grammar_symbols))
     #
     # Simpler version; may overfit (e.g. matches <...> in strings),
     # but that should not hurt us -- AZ
-    grammar_matches = re.findall(r"<([^>]*)>", str(grammar_symbols))
+    # grammar_matches = re.findall(r"<([^>]*)>", str(grammar_symbols))
 
     if symbol not in grammar_matches:
         if recurse:
