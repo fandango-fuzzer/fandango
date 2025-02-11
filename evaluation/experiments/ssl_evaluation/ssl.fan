@@ -1,3 +1,7 @@
+# THIS GRAMMAR FILE WAS PRODUCED ENTIRELY BY Tim Scheckenbach
+# IT IS BASED ON THE X.509 DER ENCODING STANDARD
+# THE GRAMMAR IS NOT COMPLETE AND MIGHT CONTAIN ERRORS
+
 # Basic Structure
 <start> ::= <sequence_tag><sequence_length><cert_value> 
 <cert_value> ::= <certificate><signature><bit_string_signature> 

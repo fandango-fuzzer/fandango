@@ -9,22 +9,24 @@ from fandango.language.parse import parse
 def is_syntactically_valid_ssl(ssl_string: str) -> bool:
     """
     Check whether the given byte sequence (DER-encoded SSL data)
-    is syntactically valid according to 'openssl asn1parse'.
+    is syntactically valid according to 'openssl asn1parse -in SSL_INPUT -inform DER'.
 
     :param ssl_bytes: The SSL data in DER form as bytes.
     :return: True if asn1parse succeeds, False otherwise.
     """
     try:
         process = subprocess.Popen(
-            ["openssl", "asn1parse", "-inform", "DER"],
-            stdin=subprocess.PIPE,
+            ["openssl", "asn1parse", "-in", ssl_string.encode(), "-inform", "DER"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        stdout, stderr = process.communicate(input=ssl_string.encode())
+        stdout, stderr = process.communicate()
+
+        # Return True only if the exit code is 0 (successful parse)
         return process.returncode == 0
     except Exception:
-        # In case something goes wrong with the subprocess itself
+        print("Error while running openssl asn1parse")
+        # If something goes wrong (e.g., openssl not found), consider it invalid
         return False
 
 
