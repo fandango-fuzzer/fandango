@@ -1304,7 +1304,7 @@ class Grammar(NodeVisitor):
                 for state in table[k]:
                     # True iff we have processed all characters
                     # (or some bits of the last character)
-                    at_end = w >= len(word) # or (bit_count > 0 and w == len(word) - 1)
+                    at_end = w >= len(word)  # or (bit_count > 0 and w == len(word) - 1)
 
                     if at_end:
                         if allow_incomplete:
@@ -1463,7 +1463,11 @@ class Grammar(NodeVisitor):
 
     def generate(self, symbol: str | NonTerminal = "<start>") -> DerivationTree:
         string = self.generate_string(symbol)
-        if not (isinstance(string, str) or isinstance(string, tuple) or isinstance(string, bytes)):
+        if not (
+            isinstance(string, str)
+            or isinstance(string, tuple)
+            or isinstance(string, bytes)
+        ):
             raise TypeError(
                 f"Generator {self.generators[symbol]} must return string, tuple or bytes"
             )
