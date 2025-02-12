@@ -258,12 +258,68 @@ class TestRegexParsing(TestCLIParsing):
         self.assertEqual(1, code)
 
 class TestBitParsing(TestCLIParsing):
+
+    def _test(self, example, tree, grammar):
+        parsed = False
+        for actual_tree in grammar.parse_incomplete(example, "<start>"):
+            if tree is None:
+                self.fail("Expected None")
+            self.assertEqual(tree, actual_tree)
+            parsed = True
+            break
+        if tree is None:
+            self.assertTrue(True)
+            return
+        self.assertTrue(parsed)
+
     def test_bits_a(self):
         command = shlex.split("fandango parse -f docs/bits.fan tests/resources/a.txt --validate")
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
+
+    def test_alternative_bits(self):
+        file = open("tests/resources/byte_alternative.fan", "r")
+        grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+        self._test(
+            b'\x00',
+            None,
+            grammar
+        )
+        self._test(
+            b'\x01',
+            DerivationTree(
+                NonTerminal("<start>"),
+                [
+                    *[DerivationTree(
+                        NonTerminal("<bit>"),
+                        [DerivationTree(Terminal(0))]
+                    ) for _ in range(7)],
+                    DerivationTree(Terminal(1)),
+                ],
+            ),
+            grammar
+        )
+        self._test(
+            b'\x02',
+            DerivationTree(
+                NonTerminal("<start>"),
+                [
+                    *[DerivationTree(
+                        NonTerminal("<bit>"),
+                        [DerivationTree(Terminal(0))]
+                    ) for _ in range(6)],
+                    DerivationTree(Terminal(1)),
+                    DerivationTree(
+                        NonTerminal("<bit>"),
+                        [DerivationTree(Terminal(0))]
+                    )
+                ],
+            ),
+            grammar
+        )
+
 
 class TestGIFParsing(TestCLIParsing):
     def test_gif(self):

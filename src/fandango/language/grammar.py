@@ -692,6 +692,7 @@ class Grammar(NodeVisitor):
             k: int,
             w: int,
             bit_count: int,
+            nr_bits_scanned: int,
         ) -> bool:
             """
             Scan a bit from the input `word`.
@@ -726,7 +727,10 @@ class Grammar(NodeVisitor):
             # Insert a new table entry with next state
             # This is necessary, as our initial table holds one entry
             # per input byte, yet needs to be expanded to hold the bits, too.
-            table.insert(k + 1, Column())
+            if len(table) <= len(word) + 1 + nr_bits_scanned:
+                table.insert(
+                    k + 1, Column()
+                )  # Todo We add a new col for each bit that we read per rule. So we add the same col multiple times
             table[k + 1].add(next_state)
 
             # Save the maximum position reached, so we can report errors
@@ -871,13 +875,14 @@ class Grammar(NodeVisitor):
 
             # If >= 0, indicates the next bit to be scanned (7-0)
             bit_count = -1
+            nr_bits_scanned = 0
 
             while k < len(table):
                 # LOGGER.debug(f"Processing {len(table[k])} states at column {k}")
                 for state in table[k]:
                     # True iff we have processed all characters
                     # (or some bits of the last character)
-                    at_end = w >= len(word) # or (bit_count > 0 and w == len(word) - 1)
+                    at_end = w >= len(word)  # or (bit_count > 0 and w == len(word) - 1)
 
                     if at_end:
                         if allow_incomplete:
@@ -905,7 +910,7 @@ class Grammar(NodeVisitor):
                                 if bit_count < 0:
                                     bit_count = 7
                                 match = self.scan_bit(
-                                    state, word, table, k, w, bit_count
+                                    state, word, table, k, w, bit_count, nr_bits_scanned
                                 )
                                 if match:
                                     # LOGGER.debug(f"Matched bit {state} at position {w:#06x} ({w}) {word[w:]!r}")
@@ -936,6 +941,7 @@ class Grammar(NodeVisitor):
                 if bit_count >= 0:
                     # Advance by one bit
                     bit_count -= 1
+                    nr_bits_scanned += 1
                 if bit_count < 0:
                     # Advance to next byte
                     w += 1
