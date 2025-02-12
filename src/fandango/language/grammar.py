@@ -727,10 +727,13 @@ class Grammar(NodeVisitor):
             # Insert a new table entry with next state
             # This is necessary, as our initial table holds one entry
             # per input byte, yet needs to be expanded to hold the bits, too.
+
+            # Add a new table row if the bit isn't already represented
+            # by a row in the parsing table
             if len(table) <= len(word) + 1 + nr_bits_scanned:
                 table.insert(
                     k + 1, Column()
-                )  # Todo We add a new col for each bit that we read per rule. So we add the same col multiple times
+                )
             table[k + 1].add(next_state)
 
             # Save the maximum position reached, so we can report errors
