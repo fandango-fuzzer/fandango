@@ -7,7 +7,8 @@ __pycache__/
 
 # C extensions
 *.so
-
+fuzzed_*.der
+private_*.pem
 # Distribution / packaging
 .Python
 build/
