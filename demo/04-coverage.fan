@@ -3,7 +3,11 @@
 <element> ::= <open_tag> <html> <close_tag> | <self_closing_tag>
 where <open_tag>.<tag_name> == <close_tag>.<tag_name>
 
-<open_tag> ::= r'\x3c' <tag_name> r'\x3e'
+<open_tag> ::= r'\x3c' <tag_name> <attributes> r'\x3e'
+<attributes> ::= <attribute>*
+<attribute> ::= ' ' <attribute_name> '=' '"' <attribute_value> '"'
+<attribute_name> ::= 'id' | 'class' | 'style'
+<attribute_value> ::= r'[A-Za-z][aeiou][a-z]+'
 <close_tag> ::= r'\x3c/' <tag_name> r'\x3e'
 <self_closing_tag> ::= r'\x3c' <tag_name> r'/\x3e'
 <tag_name> ::= 'html' | 'head' | 'body' | 'title' | 'p' | 'h1' | 'h2' | 'h3'
@@ -45,4 +49,4 @@ def remove_html_markup(s):
 
     return out
 
-where coverage(remove_html_markup, str(<start>)) >= 10
+where coverage(remove_html_markup, str(<start>)) >= 10  # 11, 12

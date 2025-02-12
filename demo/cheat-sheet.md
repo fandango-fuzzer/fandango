@@ -3,8 +3,7 @@
 ## Fuzzing Demo
 
 ```
-import random; ''.join([chr(random.randint(32, 179)) 
-...    for i in range(100)])
+import random; ''.join([chr(random.randint(32, 179)) for i in range(100)])
 ```
 
 ## Miller Demo (`01-miller.fan`)
@@ -12,6 +11,11 @@ import random; ''.join([chr(random.randint(32, 179))
 ```
 <start> ::= <byte>{20}
 ```
+
+```shell
+$ fandango fuzz -f 01-miller.fan -n 1 | ...
+```
+
 
 ## Expression Demo (`02-expressions.fan`)
 
@@ -22,6 +26,11 @@ import random; ''.join([chr(random.randint(32, 179))
 <factor> ::= '+' <factor> | '-' <factor>| '(' <expr> ')' | <int> | <int> '.' <digit>+
 <int>    ::= r'[0-9]' | r'[1-9]' <digit>+
 ```
+
+```shell
+$ fandango fuzz -f 02-expressions.fan -c 'len(str(<start>)) == 10 and eval(str(<start>)) > 10'
+```
+
 
 ## Balance Demo (`03-transactions.fan`)
 
@@ -77,10 +86,15 @@ where int(<sender>.<end_balance>.<end_bal>) > int(<am>)
 
 ```
 
-##
+### Example
+```shell
+$ fandango fuzz -f 03-transactions.fan
+```
+
 ```
 <name_str> ::= "'; DROP TABLE CREDITORS; --"
 ```
+
 
 ## HTML Demo (`04-coverage.fan`)
 
@@ -90,7 +104,11 @@ where int(<sender>.<end_balance>.<end_bal>) > int(<am>)
 <element> ::= <open_tag> <html> <close_tag> | <self_closing_tag>
 where <open_tag>.<tag_name> == <close_tag>.<tag_name>
 
-<open_tag> ::= r'\x3c' <tag_name> r'\x3e'
+<open_tag> ::= r'\x3c' <tag_name> <attributes> r'\x3e'
+<attributes> ::= <attribute>*
+<attribute> ::= ' ' <attribute_name> '=' '"' <attribute_value> '"'
+<attribute_name> ::= 'id' | 'class' | 'style'
+<attribute_value> ::= r'[A-Za-z][aeiou][a-z]+'
 <close_tag> ::= r'\x3c/' <tag_name> r'\x3e'
 <self_closing_tag> ::= r'\x3c' <tag_name> r'/\x3e'
 <tag_name> ::= 'html' | 'head' | 'body' | 'title' | 'p' | 'h1' | 'h2' | 'h3'
@@ -133,6 +151,9 @@ def remove_html_markup(s):
 
     return out
 
-where coverage(remove_html_markup, str(<start>)) >= 10
+where coverage(remove_html_markup, str(<start>)) >= 10  # 11, 12
 ```
 
+```shell
+$ fandango fuzz -f 04-coverage.fan
+```
