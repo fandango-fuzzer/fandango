@@ -17,7 +17,7 @@ class DerivationTree:
         symbol: Symbol,
         children: Optional[List["DerivationTree"]] = None,
         parent: Optional["DerivationTree"] = None,
-        read_only: bool = False
+        read_only: bool = False,
     ):
         self.hash_cache = None
         self._parent: Optional["DerivationTree"] = parent
@@ -81,9 +81,7 @@ class DerivationTree:
     def find_direct_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
         return [child for child in self._children if child.symbol == symbol]
 
-    def __getitem__(
-        self, item
-    ) -> "DerivationTree":
+    def __getitem__(self, item) -> "DerivationTree":
         if isinstance(item, list) and len(item) == 1:
             item = item[0]
         items = self._children.__getitem__(item)
@@ -688,9 +686,5 @@ class DerivationTree:
 
 
 class SliceTree(DerivationTree):
-    def __init__(
-        self,
-        children: List["DerivationTree"],
-        read_only: bool = False
-    ):
+    def __init__(self, children: List["DerivationTree"], read_only: bool = False):
         super().__init__(Slice(), children, read_only=read_only)
