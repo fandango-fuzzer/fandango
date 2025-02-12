@@ -6,13 +6,28 @@ from fandango.language.grammar import DerivationTree
 from fandango.language.parse import parse
 from fandango.language.symbol import NonTerminal, Terminal
 
+import subprocess
+import shlex
 
 def is_syntactically_valid_ssl(tree):
-    return True
+    with open(
+        "tmp.der", "wb"
+    ) as fd:
+        fd.write(tree.to_bytes("latin1"))
+    
+    command = shlex.split("openssl verify -CAfile tmp.der tmp.der")
+
+    proc = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    proc.communicate()
+    return proc.returncode == 0
 
 
 def evaluate_ssl():
-    with open("evaluation/experiments/ssl/ssl.fan", "r") as fd:
+    with open("evaluation/experiments/ssl/certificates/ssl.fan", "r") as fd:
         grammar, constraints = parse(fd)
     fandango = Fandango(
         grammar,
@@ -26,14 +41,13 @@ def evaluate_ssl():
     sol = fandango.solution
     i = 0
     for c in sol:
-        cert = insert_key(i, c, None)
+        cert = insert_key(i, c)
         cert = fixlength(cert)
         tbs = find_tbs(cert)
-        algo = get_sig(cert)
         issuer = get_issuer(cert)
         cert = insert_issuer(cert, issuer)
         cert = fixlength(cert)
-        sig = sign_certificate_chain(tbs, algo, i)
+        sig = sign_certificate_chain(tbs, i)
         cert = insert_sig(cert, sig)
         cert = fixlength(cert)
         if is_syntactically_valid_ssl(cert):
@@ -68,29 +82,15 @@ def get_issuer(tree):
     return None
 
 
-def sign_certificate_chain(tbs, type, i):
-    pem_file = f"evaluation/experiments/ssl/certificates/private_{i}.pem"
-    key_file = f"evaluation/experiments/ssl/certificates/private_{i}.key"
-    key_file = pem_file
-    # cmd = ["openssl", "rsa", "-outform", "der", "-in", pem_file, "-out", key_file]
-    # subprocess.run(cmd)
-    if type == "<sha256_signature>":
-        # print(f"Signing RSA with file {key_file}")
-        with open(key_file, "rb") as fd:
-            key = serialization.load_pem_private_key(fd.read(), password=None)
-        tbs = bytes(str(tbs), "latin1")
-        sig = key.sign(tbs, padding.PKCS1v15(), hashes.SHA256())
-        sig = b"\x00" + sig
-        return sig.decode("latin1")
-    elif type == "<ecdsa_signature>":
-        with open(key_file, "rb") as fd:
-            key = serialization.load_pem_private_key(fd.read(), password=None)
-        tbs = bytes(str(tbs), "latin1")
-        sig = key.sign(tbs, ec.ECDSA(hashes.SHA256()))
-        sig = b"\x00" + sig
-        return sig.decode("latin1")
-    else:
-        exit(1)
+def sign_certificate_chain(tbs, i):
+    key_file = f"evaluation/experiments/ssl/certificates/private_{i}.pem"
+    with open(key_file, "rb") as fd:
+        key = serialization.load_pem_private_key(fd.read(), password=None)
+    tbs = bytes(str(tbs), "latin1")
+    sig = key.sign(tbs, padding.PKCS1v15(), hashes.SHA256())
+    sig = b"\x00" + sig
+    return sig.decode("latin1")
+
 
 
 def ins_key(children, tree):
@@ -106,7 +106,7 @@ def ins_key(children, tree):
     return tree
 
 
-def insert_key(i, tree, grammar):
+def insert_key(i, tree):
 
     privkey = rsa.generate_private_key(
         public_exponent=65537,
@@ -186,13 +186,11 @@ def new_length_tree(length):
             ],
         )
 
-    # print(f"We need long-length with length {length}")
     values = []
     while length:
         values.append(length & 0xFF)
         length >>= 8
     values.reverse()
-    # assert len(values) <= 127
 
     children = [
         DerivationTree(
@@ -213,37 +211,6 @@ def new_length_tree(length):
         NonTerminal("<length>"),
         [DerivationTree(NonTerminal("<long_length>"), children)],
     )
-
-
-def sign_certificate(tbscertificate, type):
-    if type == "<sha256_signature>":
-        with open("evaluation/experiments/ssl/certificates/ca_rsa.key", "rb") as fd:
-            key = serialization.load_pem_private_key(fd.read(), password=None)
-        tbs = bytes(str(tbscertificate), "latin1")
-        sig = key.sign(tbs, padding.PKCS1v15(), hashes.SHA256())
-        sig = b"\x00" + sig
-        return sig.decode("latin1")
-    elif type == "<ecdsa_signature>":
-        with open("evaluation/experiments/ssl/ca_ec.key", "rb") as fd:
-            key = serialization.load_pem_private_key(fd.read(), password=None)
-        tbs = bytes(str(tbscertificate), "latin1")
-        sig = key.sign(tbs, ec.ECDSA(hashes.SHA256()))
-        sig = b"\x00" + sig
-        return sig.decode("latin1")
-    else:
-        exit(1)
-
-
-def get_sig(tree):
-    if tree.symbol.symbol == "<signature>":
-        return tree._children[0].symbol.symbol
-    else:
-        for c in tree._children:
-            tmp = get_sig(c)
-            if tmp is not None:
-                return tmp
-    return None
-
 
 def find_tbs(tree):
     if tree.symbol.symbol == "<certificate>":
