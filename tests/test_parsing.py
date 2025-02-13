@@ -491,11 +491,33 @@ class TestBitParsing(TestCLIParsing):
             DerivationTree(
                 NonTerminal("<start>"),
                 [
-                    *[DerivationTree(
-                        NonTerminal("<bit>"),
-                        [DerivationTree(Terminal(0))]
-                    ) for _ in range(7)],
-                    DerivationTree(Terminal(1)),
+                    DerivationTree(
+                        NonTerminal("<_alternative:0>"),
+                        [
+                            DerivationTree(
+                                NonTerminal("<_concatenation:0>"),
+                                [
+                                    DerivationTree(
+                                        NonTerminal("<_repetition:0>"),
+                                        [
+                                            DerivationTree(
+                                                NonTerminal("<bit>"),
+                                                [
+                                                    DerivationTree(
+                                                        NonTerminal("<_alternative:1>"),
+                                                        [
+                                                            DerivationTree(Terminal(0))
+                                                        ]
+                                                    )
+                                                ]
+                                            ) for _ in range(7)
+                                        ]
+                                    ),
+                                    DerivationTree(Terminal(1)),
+                                ]
+                            )
+                        ]
+                    )
                 ],
             ),
             grammar
@@ -505,14 +527,43 @@ class TestBitParsing(TestCLIParsing):
             DerivationTree(
                 NonTerminal("<start>"),
                 [
-                    *[DerivationTree(
-                        NonTerminal("<bit>"),
-                        [DerivationTree(Terminal(0))]
-                    ) for _ in range(6)],
-                    DerivationTree(Terminal(1)),
                     DerivationTree(
-                        NonTerminal("<bit>"),
-                        [DerivationTree(Terminal(0))]
+                        NonTerminal("<_alternative:0>"),
+                        [
+                            DerivationTree(
+                                NonTerminal("<_concatenation:1>"),
+                                [
+                                    DerivationTree(
+                                        NonTerminal("<_repetition:1>"),
+                                        [
+                                            DerivationTree(
+                                                NonTerminal("<bit>"),
+                                                [
+                                                    DerivationTree(
+                                                        NonTerminal("<_alternative:1>"),
+                                                        [
+                                                            DerivationTree(Terminal(0))
+                                                        ]
+                                                    )
+                                                ]
+                                            ) for _ in range(6)
+                                        ]
+                                    ),
+                                    DerivationTree(Terminal(1)),
+                                    DerivationTree(
+                                        NonTerminal("<bit>"),
+                                        [
+                                            DerivationTree(
+                                                NonTerminal("<_alternative:1>"),
+                                                [
+                                                    DerivationTree(Terminal(0))
+                                                ]
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            )
+                        ]
                     )
                 ],
             ),
