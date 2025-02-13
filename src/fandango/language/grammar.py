@@ -1119,6 +1119,7 @@ class Grammar(NodeVisitor):
             k: int,
             w: int,
             bit_count: int,
+            nr_bits_scanned: int,
         ) -> bool:
             """
             Scan a bit from the input `word`.
@@ -1153,7 +1154,13 @@ class Grammar(NodeVisitor):
             # Insert a new table entry with next state
             # This is necessary, as our initial table holds one entry
             # per input byte, yet needs to be expanded to hold the bits, too.
-            table.insert(k + 1, Column())
+
+            # Add a new table row if the bit isn't already represented
+            # by a row in the parsing table
+            if len(table) <= len(word) + 1 + nr_bits_scanned:
+                table.insert(
+                    k + 1, Column()
+                )
             table[k + 1].add(next_state)
 
             # Save the maximum position reached, so we can report errors
@@ -1298,6 +1305,7 @@ class Grammar(NodeVisitor):
 
             # If >= 0, indicates the next bit to be scanned (7-0)
             bit_count = -1
+            nr_bits_scanned = 0
 
             while k < len(table):
                 # LOGGER.debug(f"Processing {len(table[k])} states at column {k}")
@@ -1332,7 +1340,7 @@ class Grammar(NodeVisitor):
                                 if bit_count < 0:
                                     bit_count = 7
                                 match = self.scan_bit(
-                                    state, word, table, k, w, bit_count
+                                    state, word, table, k, w, bit_count, nr_bits_scanned
                                 )
                                 if match:
                                     # LOGGER.debug(f"Matched bit {state} at position {w:#06x} ({w}) {word[w:]!r}")
@@ -1363,6 +1371,7 @@ class Grammar(NodeVisitor):
                 if bit_count >= 0:
                     # Advance by one bit
                     bit_count -= 1
+                    nr_bits_scanned += 1
                 if bit_count < 0:
                     # Advance to next byte
                     w += 1

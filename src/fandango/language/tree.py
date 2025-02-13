@@ -34,12 +34,12 @@ class DerivationTree:
         read_only: bool = False,
     ):
         self.hash_cache = None
-        self._parent = parent
-        self.symbol = symbol
+        self._parent: Optional["DerivationTree"] = parent
+        self.symbol: Symbol = symbol
         self.role = role
         self.recipient = recipient
+        self._children: list["DerivationTree"] = []
         self.read_only = read_only
-        self._children = []
         self._size = 1
         self.set_children(children or [])
 
