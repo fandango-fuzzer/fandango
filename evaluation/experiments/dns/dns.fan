@@ -3,7 +3,8 @@ fake = Faker()
 
 def gen_q_name():
     result = b''
-    domain_parts = fake.domain_name().split('.')
+    #domain_parts = fake.domain_name().split('.')
+    domain_parts = "fandango.io".split('.')
     for part in domain_parts:
         result += len(part).to_bytes(1, 'big')
         result += part.encode('iso8859-1')
@@ -12,14 +13,26 @@ def gen_q_name():
 
 <start> ::= <Client:dns_req> <Server:dns_resp>
 <dns_req> ::= <header_req> <question>
-<dns_resp> ::= <header_resp> <answer>
-#                       qr      opcode       aa tc rd  ra z ad cd rcode   qdcount  ancount nscount arcount
+<dns_resp> ::= <header_resp> <question> <answer>
+#                       qr      opcode       aa tc rd  ra  z      rcode   qdcount  ancount nscount arcount
 <header_req> ::= <h_id> 0 <h_opcode_standard> 1 0 <h_rd> 0 0 0 0 <h_rcode_none> 0{15} 1 0{16} 0{16} 0{16}
-<header_resp> ::= <h_id> 1 <h_opcode_standard> 1 0 <h_rd> 0 0 0 0 <h_rcode_none> 0{16} 0{15} 1 0{16} 0{16}
+<header_resp> ::= <h_id> 1 <h_opcode_standard> <bit> 0 <h_rd> <bit> 0 0 0 <h_rcode_none> 0{15} 1 0{15} 1 0{16} 0{16}
+
+# aa=1 if server has authority over domain
 
 where <dns_req>.<header_req>.<h_rd> == <dns_resp>.<header_resp>.<h_rd>
 where <dns_req>.<header_req>.<h_id> == <dns_resp>.<header_resp>.<h_id>
 where <dns_req>.<question>.<q_name> == <dns_resp>.<answer>.<q_name>
+where <dns_req>.<question> == <dns_resp>.<answer>
+
+
+where forall <n1> in <dns_resp>..<q_name_entry>..<q_name_written>:
+    get_index_within(<n1>, <dns_resp>) == 0
+
+where forall <n1> in <dns_resp>..<q_name_entry>..<offset_qname>:
+    get_index_within(<n1>, <dns_resp>) != 0
+
+
 
 
 <h_id> ::= <byte><byte>
@@ -40,10 +53,10 @@ where <dns_req>.<question>.<q_name> == <dns_resp>.<answer>.<q_name>
 <non_zero_byte> ::= (<bit>{7} 1) | (<bit>{6} 1 <bit>) | (<bit>{5} 1 <bit>{2}) | (<bit>{4} 1 <bit>{3}) | (<bit>{3} 1 <bit>{4}) | (<bit>{2} 1 <bit>{5}) | (<bit> 1 <bit>{6}) | (1 <bit>{7})
 
 
-
+<q_name> ::= <q_name_written> | <offset_qname>
+<offset_qname> ::= 1 1 <bit>{14}
 <question> ::= <q_name> 0{8} <q_type> <q_class>
-<q_name> ::= <non_zero_byte>+ := gen_q_name()
-<q_name_entry> ::= <byte>+
+<q_name_written> ::= <non_zero_byte>+ := gen_q_name()
 <q_type> ::= 0{15} 1
 <q_class> ::= 0{15} 1
 #<string_name> ::= <byte> <alphabet> (<byte> <alphabet>)+

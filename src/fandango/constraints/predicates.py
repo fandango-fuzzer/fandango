@@ -88,3 +88,16 @@ def is_after(
     Check if the tree is after the after_tree and before the before_tree.
     """
     return is_before(tree, before_tree, after_tree)
+
+def get_index_within(tree: DerivationTree, scope: DerivationTree):
+    idx = 0
+    for val in scope.flatten():
+        if val == tree:
+            return idx
+        if val.symbol == tree.symbol:
+            idx += 1
+    return -1
+
+def get_type(tree: DerivationTree):
+    return tree.symbol.symbol
+

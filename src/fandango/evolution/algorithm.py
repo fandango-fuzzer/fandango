@@ -466,7 +466,7 @@ class Fandango:
         self, forecast: PacketForecaster.ForcastingResult, io_instance: FandangoIO
     ):
         is_msg_complete = False
-        complete_msg = ""
+        complete_msg = None
         msg_role = None
         parsed_trees = dict[PacketForecaster.ForcastingPacket, DerivationTree]()
         while not is_msg_complete:
@@ -478,7 +478,10 @@ class Fandango:
                     msg_role = role
                 elif msg_role != role:
                     continue
-                complete_msg += msg_fragment
+                if complete_msg is None:
+                    complete_msg = msg_fragment
+                else:
+                    complete_msg += msg_fragment
                 fragment_idx.append(idx)
 
                 if msg_role not in forecast.getRoles():
