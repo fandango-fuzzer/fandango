@@ -23,8 +23,8 @@ def gen_q_name():
 
 where <dns_req>.<header_req>.<h_rd> == <dns_resp>.<header_resp>.<h_rd>
 where <dns_req>.<header_req>.<h_id> == <dns_resp>.<header_resp>.<h_id>
-where <dns_req>.<question>.<q_name> == <dns_resp>.<answer>.<q_name>
-where <dns_req>.<question> == <dns_resp>.<answer>
+where <dns_req>.<question>.<q_name>.<q_name_written_complete> == <dns_resp>.<answer>.<q_name>.<q_name_written_complete>
+where <dns_req>.<question> == <dns_resp>.<question>
 where unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_qd_count>))[0] == len((<dns_resp>).find_direct_trees(NonTerminal("<question>"))) # count nr of questions
 where (unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_an_count>))[0] + unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_ns_count>))[0] + unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_ar_count>))[0]) == len((<dns_resp>).find_direct_trees(NonTerminal("<answer>"))) # count nr of answers
 <resp_qd_count> ::= 0{15} 1
@@ -33,12 +33,16 @@ where (unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_an_count>))[0] + unpack
 <resp_ar_count> ::= 0{15} <bit>
 
 where forall <req> in <dns_req>:
-    forall <n1> in <req>..<q_name_written>:
-        get_index_within(<n1>, <req>, ['<offset_qname>', '<q_name_written>']) == 0
+    forall <n1> in <req>..<q_name_written_complete>:
+        get_index_within(<n1>, <req>, ['<q_name_written_complete>', '<q_name_written_partly>', '<q_name_written_pointer>']) == 0
 
 where forall <req> in <dns_req>:
-    forall <n2> in <req>..<offset_qname>:
-        get_index_within(<n2>, <req>, ['<offset_qname>', '<q_name_written>']) != 0
+    forall <n2> in <req>..<q_name_written_pointer>:
+        get_index_within(<n2>, <req>, ['<q_name_written_complete>', '<q_name_written_partly>', '<q_name_written_pointer>']) != 0
+
+where forall <req> in <dns_req>:
+    forall <n3> in <req>..<q_name_written_partly>:
+        get_index_within(<n3>, <req>, ['<q_name_written_complete>', '<q_name_written_partly>', '<q_name_written_pointer>']) != 0
 
 
 
@@ -62,8 +66,11 @@ where forall <req> in <dns_req>:
 
 
 <question> ::= <q_name> <rr_type> <rr_class>
-<q_name> ::= (<q_name_written> 0{8}) | <offset_qname>
+<q_name> ::= <q_name_written_complete> | <q_name_written_partly> | <q_name_written_pointer>
 <offset_qname> ::= 1 1 <bit>{14}
+<q_name_written_complete> ::= <q_name_written> 0{8}
+<q_name_written_partly> ::= <q_name_written> <offset_qname>
+<q_name_written_pointer> ::= <offset_qname>
 <q_name_written> ::= <label_len_octet> <non_zero_byte>+ := gen_q_name()
 <rr_type> ::= 0{15} 1 # Equals type A (Host address)
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
