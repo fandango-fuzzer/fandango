@@ -360,7 +360,7 @@ This requires that `<bar>` occurs in the grammar rule defining `<foo>`:
 <foo> ::= ...some expansion that has <bar>...
 ```
 
-To refer to the `<name>` element as a direct child of a `<first_name>` element, you thus write `<name>.<first_name>`.
+To refer to the `<name>` element as a direct child of a `<first_name>` element, you thus write `<first_name>.<name>`.
 This allows you to express the earlier constraint in a possibly more readable form:
 
 ```shell
@@ -543,7 +543,7 @@ ensures that _all_ sub-elements `<ascii_lowercase_letter>` in `<first_name>` hav
 Again, let us decompose this expression:
 
 * The expression `for c in *<first_name>..<ascii_lowercase_letter>` lets Python iterate over all `<ascii_lowercase_letter>` objects within `<first_name>`...
-* ... and evaluate `c == "A"` for each of them, resulting in a collection of Boolean values.
+* ... and evaluate `c == "a"` for each of them, resulting in a collection of Boolean values.
 * The Python function `all(list)` returns `True` if all elements in `list` are True.
 
 So, what we get is universal quantification:
