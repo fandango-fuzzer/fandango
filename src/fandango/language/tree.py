@@ -181,6 +181,9 @@ class DerivationTree:
     def __str__(self):
         return self.to_string()
 
+    def __bytes__(self):
+        return self.to_bytes()
+
     def invalidate_hash(self):
         self.hash_cache = None
         if self._parent is not None:

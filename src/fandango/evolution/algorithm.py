@@ -270,7 +270,7 @@ class Fandango:
                 hookin_path = prefix_data.path
                 next_tree.append(hookin_path[1:], packet_tree)
                 next_tree.set_all_read_only(True)
-                fitness, _ = self.evaluator.evaluate_individual(next_tree)
+                fitness, eval_report = self.evaluator.evaluate_individual(next_tree)
                 if fitness < 0.99:
                     raise RuntimeError("Remote response doesn't match constraints!")
                 self.solution.clear()
