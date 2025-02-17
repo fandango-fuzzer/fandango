@@ -1,3 +1,4 @@
+from struct import unpack
 from faker import Faker
 fake = Faker()
 
@@ -14,24 +15,30 @@ def gen_q_name():
 <start> ::= <Client:dns_req> <Server:dns_resp>
 <dns_req> ::= <header_req> <question>
 <dns_resp> ::= <header_resp> <question> <answer>
+
 #                       qr      opcode       aa tc rd  ra  z      rcode   qdcount  ancount nscount arcount
 <header_req> ::= <h_id> 0 <h_opcode_standard> 1 0 <h_rd> 0 0 0 0 <h_rcode_none> 0{15} 1 0{16} 0{16} 0{16}
-<header_resp> ::= <h_id> 1 <h_opcode_standard> <bit> 0 <h_rd> <bit> 0 0 0 <h_rcode_none> 0{15} 1 0{15} 1 0{16} 0{16}
-
+<header_resp> ::= <h_id> 1 <h_opcode_standard> <bit> 0 <h_rd> <bit> 0 0 0 <h_rcode_none> <resp_qd_count> <resp_an_count> <resp_ns_count> <resp_ar_count>
 # aa=1 if server has authority over domain
 
 where <dns_req>.<header_req>.<h_rd> == <dns_resp>.<header_resp>.<h_rd>
 where <dns_req>.<header_req>.<h_id> == <dns_resp>.<header_resp>.<h_id>
 where <dns_req>.<question>.<q_name> == <dns_resp>.<answer>.<q_name>
 where <dns_req>.<question> == <dns_resp>.<answer>
+where unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_qd_count>))[0] == len((<dns_resp>).find_direct_trees("<question>")) # count nr of questions
+where (unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_an_count>))[0] + unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_ns_count>))[0] + unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_ar_count>))[0]) == len((<dns_resp>).find_direct_trees("<answer>")) # count nr of answers
+<resp_qd_count> ::= 0{15} 1
+<resp_an_count> ::= 0{15} 1
+<resp_ns_count> ::= 0{15} <bit>
+<resp_ar_count> ::= 0{15} <bit>
 
+where forall <req> in <dns_req>:
+    forall <n1> in <req>..<q_name_written>:
+        get_index_within(<n1>, <req>, ['<offset_qname>', '<q_name_written>']) == 0
 
-where forall <n1> in <dns_resp>..<q_name_entry>..<q_name_written>:
-    get_index_within(<n1>, <dns_resp>) == 0
-
-where forall <n1> in <dns_resp>..<q_name_entry>..<offset_qname>:
-    get_index_within(<n1>, <dns_resp>) != 0
-
+where forall <req> in <dns_req>:
+    forall <n2> in <req>..<offset_qname>:
+        get_index_within(<n2>, <req>, ['<offset_qname>', '<q_name_written>']) != 0
 
 
 
@@ -51,22 +58,21 @@ where forall <n1> in <dns_resp>..<q_name_entry>..<offset_qname>:
 <bit> ::= 0 | 1
 <byte> ::= <bit>{8}
 <non_zero_byte> ::= (<bit>{7} 1) | (<bit>{6} 1 <bit>) | (<bit>{5} 1 <bit>{2}) | (<bit>{4} 1 <bit>{3}) | (<bit>{3} 1 <bit>{4}) | (<bit>{2} 1 <bit>{5}) | (<bit> 1 <bit>{6}) | (1 <bit>{7})
+<label_len_octet> ::= (<bit>{7} 1) | (<bit>{6} 1 <bit>) | (<bit>{5} 1 <bit>{2}) | (<bit>{4} 1 <bit>{3}) | (<bit>{3} 1 <bit>{4}) | (<bit>{2} 1 <bit>{5}) # Max label length = 63
 
 
-<q_name> ::= <q_name_written> | <offset_qname>
+<question> ::= <q_name> <rr_type> <rr_class>
+<q_name> ::= (<q_name_written> 0{8}) | <offset_qname>
 <offset_qname> ::= 1 1 <bit>{14}
-<question> ::= <q_name> 0{8} <q_type> <q_class>
-<q_name_written> ::= <non_zero_byte>+ := gen_q_name()
-<q_type> ::= 0{15} 1
-<q_class> ::= 0{15} 1
+<q_name_written> ::= <label_len_octet> <non_zero_byte>+ := gen_q_name()
+<rr_type> ::= 0{15} 1 # Equals type A (Host address)
+<rr_class> ::= 0{15} 1 # Equals class IN (Internet)
 #<string_name> ::= <byte> <alphabet> (<byte> <alphabet>)+
 #<alphabet> ::= 'a'|'b'|'c'|'d'|'e'|'f'|'g'|'h'|'i'|'j'|'k'|'l'|'m'|'n'|'o'|'p'|'q'|'r'|'s'|'t'|'u'|'v'|'w'|'x'|'y'|'z'
 
-<answer> ::= <q_name> <a_type> <a_class> <a_ttl> <a_rd_length> <a_rdata>
-<a_type> ::= 0 0 0 1 # Equals type A (Host address)
-<a_class> ::= 0 0 0 1 # Equals class IN (Internet)
-<a_ttl> ::= <byte>{2}
-<a_rd_length> ::= 0 1 0 0  # Equals 4
+<answer> ::= <q_name> <rr_type> <rr_class> <a_ttl> <a_rd_length> <a_rdata>
+<a_ttl> ::= <byte>{4}
+<a_rd_length> ::= 0{13} 1 0{2}  # Equals 4
 <a_rdata> ::= <ip_address>
 <ip_address> ::= <byte>{4}
 
