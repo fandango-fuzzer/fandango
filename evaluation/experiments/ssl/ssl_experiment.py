@@ -12,7 +12,7 @@ from fandango.language.symbol import NonTerminal, Terminal
 
 
 def is_syntactically_valid_ssl(tree):
-    with open("tmp.der", "wb") as fd:
+    with open("evaluation/experiments/ssl/certificates/tmp.der", "wb") as fd:
         fd.write(tree.to_bytes("latin1"))
 
     command = shlex.split("openssl verify -CAfile tmp.der tmp.der")
@@ -39,6 +39,7 @@ def evaluate_ssl():
         population_size=100,
     )
     fandango.evolve()
+    end_time = time.time()
     sol = fandango.solution
     i = 0
     for c in sol:
@@ -57,7 +58,7 @@ def evaluate_ssl():
             ) as fd:
                 fd.write(bytes(str(cert), "latin1"))
             i += 1
-    print(f"Generated {i} valid SSL certificates in {time.time() - start_time} seconds")
+    print(f"Generated {i} valid SSL certificates in {end_time - start_time} seconds")
 
 
 def insert_issuer(tree, issuer):

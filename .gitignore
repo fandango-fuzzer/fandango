@@ -179,3 +179,6 @@ utils/yacctab.py
 tests/test-marker.txt
 evaluation/test-evaluation.txt
 evaluation/experiments/test-experiments.txt
+
+tmp.der
+fuzzed_*.gif
