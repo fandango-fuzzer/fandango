@@ -15,6 +15,7 @@ import tempfile
 import textwrap
 import zipfile
 import shutil
+import textwrap
 
 from io import StringIO
 from io import UnsupportedOperation
@@ -30,20 +31,23 @@ from fandango.language.parse import parse
 from fandango.logger import LOGGER, print_exception
 
 
+# FIXME: This should come from importlib.metadata - if only I knew how
+HOMEPAGE = 'https://fandango-fuzzer.github.io/'
+
 def get_parser(in_command_line=True):
     # Main parser
     if in_command_line:
         prog = "fandango"
-        epilog = """\
+        epilog = textwrap.dedent("""\
             Use `%(prog)s help` to get a list of commands.
-            Use `%(prog)s help COMMAND` to learn more about COMMAND."""
+            Use `%(prog)s help COMMAND` to learn more about COMMAND.""")
     else:
         prog = ""
-        epilog = """
+        epilog = textwrap.dedent("""\
             Use `help` to get a list of commands.
             Use `help COMMAND` to learn more about COMMAND.
-            Use TAB to complete commands.
-            """
+            Use TAB to complete commands.""")
+    epilog += f"\nSee {HOMEPAGE} for more information."
 
     main_parser = argparse.ArgumentParser(
         prog=prog,
