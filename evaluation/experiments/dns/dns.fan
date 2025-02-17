@@ -14,7 +14,7 @@ def gen_q_name():
 
 <start> ::= <Client:dns_req> <Server:dns_resp>
 <dns_req> ::= <header_req> <question>
-<dns_resp> ::= <header_resp> <question> <answer>
+<dns_resp> ::= <header_resp> <question> <answer>+
 
 #                       qr      opcode       aa tc rd  ra  z      rcode   qdcount  ancount nscount arcount
 <header_req> ::= <h_id> 0 <h_opcode_standard> 1 0 <h_rd> 0 0 0 0 <h_rcode_none> 0{15} 1 0{16} 0{16} 0{16}
@@ -25,8 +25,8 @@ where <dns_req>.<header_req>.<h_rd> == <dns_resp>.<header_resp>.<h_rd>
 where <dns_req>.<header_req>.<h_id> == <dns_resp>.<header_resp>.<h_id>
 where <dns_req>.<question>.<q_name> == <dns_resp>.<answer>.<q_name>
 where <dns_req>.<question> == <dns_resp>.<answer>
-where unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_qd_count>))[0] == len((<dns_resp>).find_direct_trees("<question>")) # count nr of questions
-where (unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_an_count>))[0] + unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_ns_count>))[0] + unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_ar_count>))[0]) == len((<dns_resp>).find_direct_trees("<answer>")) # count nr of answers
+where unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_qd_count>))[0] == len((<dns_resp>).find_direct_trees(NonTerminal("<question>"))) # count nr of questions
+where (unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_an_count>))[0] + unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_ns_count>))[0] + unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_ar_count>))[0]) == len((<dns_resp>).find_direct_trees(NonTerminal("<answer>"))) # count nr of answers
 <resp_qd_count> ::= 0{15} 1
 <resp_an_count> ::= 0{15} 1
 <resp_ns_count> ::= 0{15} <bit>
