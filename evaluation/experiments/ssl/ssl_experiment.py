@@ -1,34 +1,35 @@
+import shlex
+import subprocess
+import time
+
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.grammar import DerivationTree
 from fandango.language.parse import parse
 from fandango.language.symbol import NonTerminal, Terminal
 
-import subprocess
-import shlex
 
 def is_syntactically_valid_ssl(tree):
-    with open(
-        "tmp.der", "wb"
-    ) as fd:
+    with open("tmp.der", "wb") as fd:
         fd.write(tree.to_bytes("latin1"))
-    
+
     command = shlex.split("openssl verify -CAfile tmp.der tmp.der")
 
     proc = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
     proc.communicate()
     return proc.returncode == 0
 
 
 def evaluate_ssl():
-    with open("evaluation/experiments/ssl/certificates/ssl.fan", "r") as fd:
+    with open("evaluation/experiments/ssl/ssl.fan", "r") as fd:
         grammar, constraints = parse(fd)
+    start_time = time.time()
     fandango = Fandango(
         grammar,
         constraints,
@@ -56,6 +57,7 @@ def evaluate_ssl():
             ) as fd:
                 fd.write(bytes(str(cert), "latin1"))
             i += 1
+    print(f"Generated {i} valid SSL certificates in {time.time() - start_time} seconds")
 
 
 def insert_issuer(tree, issuer):
@@ -90,7 +92,6 @@ def sign_certificate_chain(tbs, i):
     sig = key.sign(tbs, padding.PKCS1v15(), hashes.SHA256())
     sig = b"\x00" + sig
     return sig.decode("latin1")
-
 
 
 def ins_key(children, tree):
@@ -211,6 +212,7 @@ def new_length_tree(length):
         NonTerminal("<length>"),
         [DerivationTree(NonTerminal("<long_length>"), children)],
     )
+
 
 def find_tbs(tree):
     if tree.symbol.symbol == "<certificate>":
