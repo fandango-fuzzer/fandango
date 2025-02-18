@@ -11,31 +11,35 @@ include('svg.fan')
 (<desc> | <title> | <metadata> | <animate> | <set> | <animateMotion> | <animateColor> | <animateTransform> | <svg> | <g> | <defs> | <symbol> | <use> | <switch> | <image> | <style> | <path> | <rect> | <circle> | <line> | <ellipse> | <polyline> | <polygon> | <text> | <altGlyphDef> | <marker> | <color_profile> | <linearGradient> | <radialGradient> | <pattern> | <clipPath> | <mask> | <filter> | <cursor> | <a> | <view> | <script> | <font> | <font_face> | <foreignObject>){10} '</svg>')
 
 # Standard data types
-<cdata> ::= <int> | <string>
-<int> ::= <q> (r'[1-9]' <digit>* | '0') <q>
+<cdata> ::= <qint> | <string>
+<qnat> ::= <q> <nat> <q>
+<nat> ::= r'[1-9]' <digit>* | '0'
+<qint> ::= <q> <int> <q>
+<int> ::= r'[1-9]' <digit>* | '-' r'[1-9]' <digit>* | '0'
 <string> ::= '"' <char>* '"' | "'" <char>* "'"
 <char> ::= r'[0-9a-zA-Z_-]+'
 <id> ::= <q> <ascii_letter> (<ascii_letter> | <digit> | '_')* <q>
 <nmtoken> ::= <id>
 <pcdata> ::= <cdata>
 <url> ::= <q> 'https://cispa.de' <q>
-<percentage> ::= <q> ("0" | r"[1-9][0-9]?" | "100") <q>
+<qpercentage> ::= <q> <percentage> <q>
+<percentage> ::= ("0" | r"[1-9][0-9]?" | "100")
 
 # SVG-specific data types
-<Coordinate_datatype> ::= <int> := "'100'"
-<Length_datatype> ::= <int>
+<Coordinate_datatype> ::= <qint> := "'100'"
+<Length_datatype> ::= <qnat>
 <FontFamilyValue_datatype> ::= <string> := '"sans-serif"'
-<FontSizeValue_datatype> ::= <int> := "'12'"
-<FontSizeAdjustValue_datatype> ::= <int> := "'0'"
-<GlyphOrientationHorizontalValue_datatype> ::= <int> := "'0'"
-<GlyphOrientationVerticalValue_datatype> ::= <int> := "'0'"
-<Number_datatype> ::= <int>
-<NumberOptionalNumber_datatype> ::= <int>
-<OpacityValue_datatype> ::= <percentage> := "'100'"
-<PathData_datatype> ::= <string>
+<FontSizeValue_datatype> ::= <qnat> := "'12'"
+<FontSizeAdjustValue_datatype> ::= <qnat> := "'0'"
+<GlyphOrientationHorizontalValue_datatype> ::= <qint> := "'0'"
+<GlyphOrientationVerticalValue_datatype> ::= <qint> := "'0'"
+<Number_datatype> ::= <qint>
+<NumberOptionalNumber_datatype> ::= <qint>
+<OpacityValue_datatype> ::= <qpercentage> := "'100'"
+<PathData_datatype> ::= <q> (<int> <ws>)+ <q>
 <Text_datatype> ::= <string>
 <Script_datatype> ::= <string>
-<SVGColor_datatype> ::= <string>
+<SVGColor_datatype> ::= <q> '#' (<hexdigit>{3} | <hexdigit>{6}) <q>
 
 # Mappings of attributes to data types
 <accent_height_value> ::= <Number_datatype>
@@ -243,7 +247,7 @@ include('svg.fan')
 <vert_adv_y_value> ::= <Number_datatype>
 <vert_origin_x_value> ::= <Number_datatype>
 <vert_origin_y_value> ::= <Number_datatype>
-<viewBox_value> ::= <cdata>
+<viewBox_value> ::= <q> <int> <ws> <int> <ws> <int> <ws> <int> <q>
 <viewTarget_value> ::= <cdata>
 <width_value> ::= <Number_datatype>
 <widths_value> ::= <cdata>
