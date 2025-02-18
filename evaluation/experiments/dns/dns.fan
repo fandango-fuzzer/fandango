@@ -65,23 +65,29 @@ where forall <req> in <dns_req>:
 <label_len_octet> ::= (<bit>{7} 1) | (<bit>{6} 1 <bit>) | (<bit>{5} 1 <bit>{2}) | (<bit>{4} 1 <bit>{3}) | (<bit>{3} 1 <bit>{4}) | (<bit>{2} 1 <bit>{5}) # Max label length = 63
 
 
-<question> ::= <q_name> <rr_type> <rr_class>
+<question> ::= <q_name> <q_type> <rr_class>
 <q_name> ::= <q_name_written_complete> | <q_name_written_partly> | <q_name_written_pointer>
 <offset_qname> ::= 1 1 <bit>{14}
 <q_name_written_complete> ::= <q_name_written> 0{8}
 <q_name_written_partly> ::= <q_name_written> <offset_qname>
 <q_name_written_pointer> ::= <offset_qname>
 <q_name_written> ::= <label_len_octet> <non_zero_byte>+ := gen_q_name()
-<rr_type> ::= 0{15} 1 # Equals type A (Host address)
+<q_type> ::= 0{15} 1 # Equals type A (Host address)
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
-#<string_name> ::= <byte> <alphabet> (<byte> <alphabet>)+
-#<alphabet> ::= 'a'|'b'|'c'|'d'|'e'|'f'|'g'|'h'|'i'|'j'|'k'|'l'|'m'|'n'|'o'|'p'|'q'|'r'|'s'|'t'|'u'|'v'|'w'|'x'|'y'|'z'
 
-<answer> ::= <q_name> <rr_type> <rr_class> <a_ttl> <a_rd_length> <a_rdata>
+
+<answer> ::= <q_name> <a_type> <rr_class> <a_ttl> <a_rd_length> <a_rdata>
+<a_type> ::= <type_a> | <type_ns>
 <a_ttl> ::= <byte>{4}
-<a_rd_length> ::= 0{13} 1 0{2}  # Equals 4
-<a_rdata> ::= <ip_address>
+<a_rd_length> ::= <byte>{2}
+<a_rdata> ::= <byte>* #<ip_address>
 <ip_address> ::= <byte>{4}
+where unpack('>H', bytes(<a_rd_length>))[0] == (len(<a_rdata>) / 8)
+
+
+<type_a> ::= 0{15} 1
+<type_ns> ::= 0{14} 1 0
+
 
 import socket
 class Client(FandangoAgent):

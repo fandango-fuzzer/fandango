@@ -198,7 +198,7 @@ class Fandango:
         self.desired_solutions = 1
         while True:
             role_options = None
-            for pop in self.population:
+            for pop in set(self.population):
                 forecaster = PacketForecaster(self.grammar, pop)
                 if role_options is None:
                     role_options = forecaster.find()
@@ -242,6 +242,7 @@ class Fandango:
                         f"Couldn't find solution with packet: {packet_node.symbol}"
                     )
                 next_tree = evolve_result[0]
+                self.evaluation = self.evaluator.evaluate_population(self.population)
                 if io_instance.received_msg():
                     # Abort if we received a message during fuzzing
                     continue
@@ -275,17 +276,23 @@ class Fandango:
                     raise RuntimeError("Remote response doesn't match constraints!")
                 self.solution.clear()
 
-            str_history = ""
-            history = next_tree.find_role_msgs()
-            for r_msg in history:
-                str_history += str(r_msg.msg)
+            if next_tree.contains_bits():
+                history = b''
+            else:
+                history = ""
+            past_r_msgs = next_tree.find_role_msgs()
+            for r_msg in past_r_msgs:
+                if isinstance(history, bytes):
+                    history = r_msg.msg.to_bytes()
+                else:
+                    history += r_msg.msg.to_string()
 
             new_population = []
             for tree_option in self.grammar.parse_incomplete(
-                str_history, self.start_symbol
+                history, self.start_symbol
             ):
                 tree_option.set_all_read_only(True)
-                if self.grammar.assign_roles(tree_option, history):
+                if self.grammar.assign_roles(tree_option, past_r_msgs):
                     new_population.append(tree_option)
                 if len(new_population) >= self.population_size:
                     break
