@@ -11,7 +11,6 @@ include('svg.fan')
 (<desc> | <title> | <metadata> | <animate> | <set> | <animateMotion> | <animateColor> | <animateTransform> | <svg> | <g> | <defs> | <symbol> | <use> | <switch> | <image> | <style> | <path> | <rect> | <circle> | <line> | <ellipse> | <polyline> | <polygon> | <text> | <altGlyphDef> | <marker> | <color_profile> | <linearGradient> | <radialGradient> | <pattern> | <clipPath> | <mask> | <filter> | <cursor> | <a> | <view> | <script> | <font> | <font_face> | <foreignObject>){10} '</svg>')
 
 # Standard data types
-<start> ::= <svg>
 <cdata> ::= <int> | <string>
 <int> ::= <q> (r'[1-9]' <digit>* | '0') <q>
 <string> ::= '"' <char>* '"' | "'" <char>* "'"
