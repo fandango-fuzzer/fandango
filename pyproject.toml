@@ -60,7 +60,8 @@ test = [
     "scipy>=1.14.1",
     "numpy>=2.2.1",  # Avoid conflict with pandas
     "matplotlib>=3.9.2",
-    "ordered-set>=4.0.2"
+    "ordered-set>=4.0.2",
+    "cryptography>=44.0.1"
 ]
 
 [tool.black]
