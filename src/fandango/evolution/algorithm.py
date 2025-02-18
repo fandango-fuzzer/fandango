@@ -514,8 +514,12 @@ class Fandango:
                         f"Couldn't match remote message to any packet matching grammar: {complete_msg}"
                     )
                 for fp, tree in dict(parsed_trees).items():
-                    if len(self.grammar.parse(complete_msg, fp.node.symbol)) == 0:
+                    full_parse = self.grammar.parse(complete_msg, fp.node.symbol)
+                    if full_parse is None:
                         del parsed_trees[fp]
+                    else:
+                        parsed_trees[fp] = full_parse
+
                 if len(parsed_trees.keys()) != 0:
                     # We parsed a packet
                     is_msg_complete = True
