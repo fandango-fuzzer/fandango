@@ -103,7 +103,7 @@ class DTDConverter(object):
 
         return s
 
-    def convert_attributes(self, element) -> tuple[str, list[str], list[str]]:
+    def convert_attributes(self, element) -> tuple[str, list[str], list["Attribute"]]:
         s = f"<{fan(element.name)}_attribute> ::= "
 
         attrs = []
