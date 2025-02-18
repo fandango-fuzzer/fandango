@@ -9,7 +9,7 @@ def main():
     with open("dns.fan") as f:
         grammar, constraints = parse(f, use_stdlib=False)
 
-    fandango = Fandango(grammar=grammar, constraints=constraints, population_size=100)
+    fandango = Fandango(grammar=grammar, constraints=constraints, population_size=10)
     from faker import Faker
     fake = Faker()
     fake.domain_name()
