@@ -22,7 +22,7 @@ from fandango.language.convert import (
     GrammarProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import Grammar, NodeType
+from fandango.language.grammar import Grammar, NodeType, MAX_REPETITIONS
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.stdlib import stdlib
@@ -525,8 +525,18 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
             # if min_bits % 8 != 0 and tree.min == 0:
             #     raise ValueError(f"{rule_symbol!s}: Bits cannot be optional")
 
+            # Todo Non optimal solution
+            try:
+                rep_min = tree.min(grammar, None)
+            except ValueError:
+                rep_min = 0
+            try:
+                rep_max = tree.max(grammar, None)
+            except ValueError:
+                rep_max = MAX_REPETITIONS
+
             step = min(min_bits, max_bits)
-            return tp, tree.min * min_bits, tree.max * max_bits, step
+            return tp, rep_min * min_bits, rep_max * max_bits, step
 
         elif tree.node_type == NodeType.NON_TERMINAL:
             if tree.symbol in symbol_types:
