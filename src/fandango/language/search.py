@@ -402,7 +402,6 @@ class ItemSearch(NonTerminalSearch):
             )
         )
 
-
     def find(
         self,
         tree: DerivationTree,

@@ -137,7 +137,10 @@ class GrammarProcessor(FandangoParserVisitor):
                     if child.getText() == ",":
                         bounds_index += 1
                     else:
-                        bounds[bounds_index] = int(child.getText())
+                        if child.getText().isdigit():
+                            bounds[bounds_index] = int(child.getText())
+                        else:
+                            bounds[bounds_index] = self.visitExpr(child)
             min_, max_ = bounds
             if min_ is None and max_ is None:
                 return Repetition(node)
@@ -146,7 +149,10 @@ class GrammarProcessor(FandangoParserVisitor):
             elif max_ is None:
                 return Repetition(node, min_=min_)
             return Repetition(node, min_, max_)
-        reps = int(ctx.NUMBER(0).getText())
+        if len(ctx.NUMBER()) == 0:
+            reps = self.visitExpr(ctx.expr(0))
+        else:
+            reps = int(ctx.NUMBER(0).getText())
         return Repetition(node, reps, reps)
 
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
