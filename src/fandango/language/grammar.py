@@ -33,8 +33,8 @@ class Node(abc.ABC):
         self.node_type = node_type
         self.distance_to_completion = distance_to_completion
 
-    def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
-        return []
+    def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
+        return
 
     @abc.abstractmethod
     def accept(self, visitor: "NodeVisitor"):
@@ -64,17 +64,18 @@ class Alternative(Node):
         super().__init__(NodeType.ALTERNATIVE)
         self.alternatives = alternatives
 
-    def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
+    def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
         if self.distance_to_completion >= max_nodes:
             min_ = min(self.alternatives, key=lambda x: x.distance_to_completion)
-            return random.choice(
+            random.choice(
                 [
                     a
                     for a in self.alternatives
                     if a.distance_to_completion <= min_.distance_to_completion
                 ]
-            ).fuzz(grammar, 0)
-        return random.choice(self.alternatives).fuzz(grammar, max_nodes - 1)
+            ).fuzz(parent, grammar, 0)
+            return
+        random.choice(self.alternatives).fuzz(parent, grammar, max_nodes - 1)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitAlternative(self)
@@ -103,16 +104,15 @@ class Concatenation(Node):
         super().__init__(NodeType.CONCATENATION)
         self.nodes = nodes
 
-    def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
-        trees = []
+    def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
+        prev_parent_size = parent.size()
         for node in self.nodes:
             if node.distance_to_completion >= max_nodes:
-                tree = node.fuzz(grammar, 0)
+                node.fuzz(parent, grammar, 0)
             else:
-                tree = node.fuzz(grammar, max_nodes - 1)
-            trees.extend(tree)
-            max_nodes -= sum(t.size() for t in tree)
-        return trees
+                node.fuzz(parent, grammar, max_nodes - 1)
+            max_nodes -= parent.size() - prev_parent_size
+            prev_parent_size = parent.size()
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitConcatenation(self)
@@ -137,35 +137,67 @@ class Concatenation(Node):
 
 
 class Repetition(Node):
-    def __init__(self, node: Node, min_: int = 0, max_: int = MAX_REPETITIONS):
+    def __init__(self, node: Node, min_ = ("0", [], {}), max_ = (f"{MAX_REPETITIONS}", [], {})):
         super().__init__(NodeType.REPETITION)
-        if min_ < 0:
-            raise ValueError(
-                f"Minimum repetitions {min_} must be greater than or equal to 0"
-            )
-        if max_ <= 0 or max_ < min_:
-            raise ValueError(
-                f"Maximum repetitions {max_} must be greater than 0 or greater than min {min_}"
-            )
+        #min_expr, min_nt, min_search = min_
+        #max_expr, max_nt, max_search = max_
+
+        #if min_ < 0:
+        #    raise ValueError(
+        #        f"Minimum repetitions {min_} must be greater than or equal to 0"
+        #    )
+        #if max_ <= 0 or max_ < min_:
+        #    raise ValueError(
+        #        f"Maximum repetitions {max_} must be greater than 0 or greater than min {min_}"
+        #    )
         self.node = node
-        self.min = min_
-        self.max = max_
+        self.expr_data_min = min_
+        self.expr_data_max = max_
+
+    def _compute_reps_bound(self, grammar: "Grammar", tree: "DerivationTree", expr_data):
+        expr, _, searches = expr_data
+        local_cpy = grammar._local_variables.copy()
+
+        if len(searches) == 0:
+            return eval(expr, grammar._global_variables, local_cpy)
+        if tree is None:
+            raise ValueError("tree required if searches present!")
+
+        nodes = []
+        for name, search in searches.items():
+            nodes.extend(
+                [(name, container) for container in search.find(tree.get_root())]
+            )
+        local_cpy.update(
+            {name: container.evaluate() for name, container in nodes}
+        )
+        return eval(expr, grammar._global_variables, local_cpy)
+
+
+    def min(self, grammar: "Grammar", tree: "DerivationTree"):
+        return self._compute_reps_bound(grammar, tree, self.expr_data_min)
+
+    def max(self, grammar: "Grammar", tree: "DerivationTree"):
+        return self._compute_reps_bound(grammar, tree, self.expr_data_max)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitRepetition(self)
 
-    def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
-        trees = []
-        for rep in range(random.randint(self.min, self.max)):
+    def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
+        prev_parent_size = parent.size()
+
+        current_min = self.min(grammar, parent.get_root())
+        current_max = self.max(grammar, parent.get_root())
+
+        for rep in range(random.randint(current_min, current_max)):
             if self.node.distance_to_completion >= max_nodes:
-                if rep > self.min:
+                if rep > current_min:
                     break
-                tree = self.node.fuzz(grammar, 0)
+                self.node.fuzz(parent, grammar, 0)
             else:
-                tree = self.node.fuzz(grammar, max_nodes - 1)
-            trees.extend(tree)
-            max_nodes -= sum(t.size() for t in tree)
-        return trees
+                self.node.fuzz(parent, grammar, max_nodes - 1)
+            max_nodes -= parent.size() - prev_parent_size
+            prev_parent_size = parent.size()
 
     def __repr__(self):
         if self.min == self.max:
@@ -197,7 +229,7 @@ class Repetition(Node):
 
 class Star(Repetition):
     def __init__(self, node: Node):
-        super().__init__(node, 0)
+        super().__init__(node, ("0", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitStar(self)
@@ -211,7 +243,7 @@ class Star(Repetition):
 
 class Plus(Repetition):
     def __init__(self, node: Node):
-        super().__init__(node, 1)
+        super().__init__(node, ("1", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitPlus(self)
@@ -225,7 +257,7 @@ class Plus(Repetition):
 
 class Option(Repetition):
     def __init__(self, node: Node):
-        super().__init__(node, 0, 1)
+        super().__init__(node, ("0", [], {}), ("1", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitOption(self)
@@ -245,7 +277,7 @@ class NonTerminalNode(Node):
         super().__init__(NodeType.NON_TERMINAL)
         self.symbol = symbol
 
-    def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
+    def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
         if self.symbol not in grammar:
             raise ValueError(f"Symbol {self.symbol} not found in grammar")
         if self.symbol in grammar.generators:
@@ -253,9 +285,12 @@ class NonTerminalNode(Node):
             # Prevent children from being overwritten without executing generator
             generated.set_all_read_only(True)
             generated.read_only = False
-            return [generated]
-        children = grammar[self.symbol].fuzz(grammar, max_nodes - 1)
-        return [DerivationTree(self.symbol, children)]
+            parent.add_child(generated)
+            return
+
+        current_tree = DerivationTree(self.symbol)
+        parent.add_child(current_tree)
+        grammar[self.symbol].fuzz(current_tree, grammar, max_nodes - 1)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitNonTerminalNode(self)
@@ -281,17 +316,18 @@ class TerminalNode(Node):
         super().__init__(NodeType.TERMINAL, 0)
         self.symbol = symbol
 
-    def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
+    def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
         if self.symbol.is_regex:
             if isinstance(self.symbol.symbol, bytes):
                 # Exrex can't do bytes, so we decode to str and back
                 instance = exrex.getone(self.symbol.symbol.decode("iso-8859-1"))
-                return [DerivationTree(Terminal(instance.encode("iso-8859-1")))]
+                parent.add_child(DerivationTree(Terminal(instance.encode("iso-8859-1"))))
+                return
 
             instance = exrex.getone(self.symbol.symbol)
-            return [DerivationTree(Terminal(instance))]
-
-        return [DerivationTree(self.symbol)]
+            parent.add_child(DerivationTree(Terminal(instance)))
+            return
+        parent.add_child(DerivationTree(self.symbol))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitTerminalNode(self)
@@ -628,6 +664,8 @@ class Grammar(NodeVisitor):
             return result
 
         def visitRepetition(self, node: Repetition):
+            return self.default_result()
+            # Todo
             alternatives = self.visit(node.node)
             nt = self.set_implicit_rule(alternatives)
             prev = None
@@ -1061,7 +1099,9 @@ class Grammar(NodeVisitor):
     ) -> DerivationTree:
         if isinstance(start, str):
             start = NonTerminal(start)
-        return NonTerminalNode(start).fuzz(self, max_nodes=max_nodes)[0]
+        root = DerivationTree(start)
+        NonTerminalNode(start).fuzz(root, self, max_nodes=max_nodes)
+        return root.children[0]
 
     def update(self, grammar: "Grammar" | Dict[NonTerminal, Node], prime=True):
         if isinstance(grammar, Grammar):
@@ -1280,8 +1320,13 @@ class Grammar(NodeVisitor):
                 if node.node.distance_to_completion == float("inf"):
                     nodes.append(node)
                 else:
+                    # Todo Not optimal
+                    try:
+                        min_rep = node.min(self, None)
+                    except ValueError:
+                        min_rep = 0
                     node.distance_to_completion = (
-                        node.node.distance_to_completion * node.min + 1
+                        node.node.distance_to_completion * min_rep + 1
                     )
             else:
                 raise ValueError(f"Unknown node type {node.node_type}")
