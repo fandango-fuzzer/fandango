@@ -82,7 +82,7 @@ where forall <req> in <dns_req>:
 <a_rd_length> ::= <byte>{2}
 <a_rdata> ::= <byte>* #<ip_address>
 <ip_address> ::= <byte>{4}
-where unpack('>H', bytes(<a_rd_length>))[0] == (len(<a_rdata>) / 8)
+where unpack('>H', bytes(<a_rd_length>))[0] == len(<a_rdata>)
 
 
 <type_a> ::= 0{15} 1

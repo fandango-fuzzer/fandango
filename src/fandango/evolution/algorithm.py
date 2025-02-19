@@ -276,31 +276,31 @@ class Fandango:
                     raise RuntimeError("Remote response doesn't match constraints!")
                 self.solution.clear()
 
-            if next_tree.contains_bits():
-                history = b''
-            else:
-                history = ""
-            past_r_msgs = next_tree.find_role_msgs()
-            for r_msg in past_r_msgs:
-                if isinstance(history, bytes):
-                    history = r_msg.msg.to_bytes()
-                else:
-                    history += r_msg.msg.to_string()
+            #if next_tree.contains_bits():
+            #    history = b''
+            #else:
+            #    history = ""
+            #past_r_msgs = next_tree.find_role_msgs()
+            #for r_msg in past_r_msgs:
+            #    if isinstance(history, bytes):
+            #        history += r_msg.msg.to_bytes()
+            #    else:
+            #        history += r_msg.msg.to_string()
 
-            new_population = []
-            for tree_option in self.grammar.parse_incomplete(
-                history, self.start_symbol
-            ):
-                tree_option.set_all_read_only(True)
-                if self.grammar.assign_roles(tree_option, past_r_msgs):
-                    new_population.append(tree_option)
-                if len(new_population) >= self.population_size:
-                    break
-            if len(new_population) == 0:
-                raise RuntimeError(
-                    "Failed to append remote response to generated history matching grammar!"
-                )
-
+            #new_population = []
+            #for tree_option in self.grammar.parse_incomplete(
+            #    history, self.start_symbol
+            #):
+            #    tree_option.set_all_read_only(True)
+            #    if self.grammar.assign_roles(tree_option, past_r_msgs):
+            #        new_population.append(tree_option)
+            #    if len(new_population) >= self.population_size:
+            #        break
+            #if len(new_population) == 0:
+            #    raise RuntimeError(
+            #        "Failed to append remote response to generated history matching grammar!"
+            #    )
+            new_population = [next_tree]
             self.population = list(new_population)
             self.solution.clear()
             self.solution.extend(new_population)
@@ -472,62 +472,67 @@ class Fandango:
     def _parse_next_remote_packet(
         self, forecast: PacketForecaster.ForcastingResult, io_instance: FandangoIO
     ):
-        is_msg_complete = False
+        if len(io_instance.get_received_msgs()) == 0:
+            return None, None
+
+        remote_msgs = io_instance.get_received_msgs()
+
         complete_msg = None
-        msg_role = None
-        parsed_trees = dict[PacketForecaster.ForcastingPacket, DerivationTree]()
+        used_fragments_idx = []
+
+        msg_role, _ = remote_msgs[0]
+
+        if msg_role not in forecast.getRoles():
+            raise RuntimeError(
+                f"Unexpected sender sent message. Expected:",
+                "|".join(forecast.getRoles()),
+                f" Received: {msg_role}",
+            )
+        forecasted_nonterminals = forecast[msg_role]
+        nts_with_role = set(forecasted_nonterminals.getNonTerminals())
+
+        is_msg_complete = False
+        next_fragment_idx = 0
+
         while not is_msg_complete:
-            parsed_trees = dict[PacketForecaster.ForcastingPacket, DerivationTree]()
-            fragment_idx = []
-            remote_msgs = io_instance.get_received_msgs()
-            for idx, (role, msg_fragment) in enumerate(remote_msgs):
-                if msg_role is None:
-                    msg_role = role
-                elif msg_role != role:
+            for idx, (role, msg_fragment) in enumerate(remote_msgs, next_fragment_idx):
+                next_fragment_idx = idx + 1
+
+                if msg_role != role:
                     continue
                 if complete_msg is None:
                     complete_msg = msg_fragment
                 else:
                     complete_msg += msg_fragment
-                fragment_idx.append(idx)
+                used_fragments_idx.append(idx)
 
-                if msg_role not in forecast.getRoles():
-                    raise RuntimeError(
-                        f"Unexpected sender sent message. Expected:",
-                        "|".join(forecast.getRoles()),
-                        f" Received: {msg_role}",
-                    )
-                non_terminal_options = forecast[msg_role]
-                for non_terminal in non_terminal_options.getNonTerminals():
-                    packet_option = non_terminal_options[non_terminal]
-                    try:
-                        parsed_trees[packet_option] = next(
-                            self.grammar.parse_incomplete(
-                                complete_msg, packet_option.node.symbol
-                            )
-                        )
-                    except StopIteration:
-                        continue
+                parsed_packet_tree = None
+                packet_option = None
+                for non_terminal in set(nts_with_role):
+                    packet_option = forecasted_nonterminals[non_terminal]
+                    parsed_packet_tree = self.grammar.parse(complete_msg, packet_option.node.symbol)
+                    parsed_packet_tree.role = packet_option.node.role
+                    parsed_packet_tree.recipient = packet_option.node.recipient
+                    if parsed_packet_tree is None:
+                        try:
+                            next(self.grammar.parse_incomplete(complete_msg, packet_option.node.symbol))
+                        except StopIteration:
+                            nts_with_role.remove(non_terminal)
+                    else:
+                        break
 
-                if len(parsed_trees.keys()) == 0:
+                # Check if there are still NonTerminals that can be parsed with received prefix
+                if len(nts_with_role) == 0:
                     raise RuntimeError(
                         f"Couldn't match remote message to any packet matching grammar: {complete_msg}"
                     )
-                for fp, tree in dict(parsed_trees).items():
-                    full_parse = self.grammar.parse(complete_msg, fp.node.symbol)
-                    if full_parse is None:
-                        del parsed_trees[fp]
-                    else:
-                        parsed_trees[fp] = full_parse
-
-                if len(parsed_trees.keys()) != 0:
-                    # We parsed a packet
-                    is_msg_complete = True
-                    for idx in fragment_idx:
+                if parsed_packet_tree is not None:
+                    for idx in used_fragments_idx:
                         del remote_msgs[idx]
-        forecast, packet_tree = list(parsed_trees.items())[0]
-        packet_tree.role = msg_role
-        return forecast, packet_tree
+                    return packet_option, parsed_packet_tree
+
+            if not is_msg_complete:
+                time.sleep(0.25)
 
     def select_elites(self) -> List[DerivationTree]:
         return [
