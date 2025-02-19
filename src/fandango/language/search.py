@@ -59,7 +59,7 @@ class Tree(Container):
         Evaluate the container. The evaluation of a Tree container is the tree itself.
         :return DerivationTree: The derivation tree.
         """
-        return self.tree
+        return self.tree.collapse()
 
     def __repr__(self):
         return "Tree(" + repr(self.tree.value()) + ")"

@@ -19,7 +19,10 @@ def main():
 
     # Output solutions
     for solution in solutions:
-        print(str(solution))
+        if solution.contains_bytes():
+            print(bytes(solution))
+        else:
+            print(str(solution))
 
 
 if __name__ == "__main__":
