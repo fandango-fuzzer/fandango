@@ -1,30 +1,45 @@
 include('svg.fan')
 
+# Add standard blurb at top
+<start> ::= ('<?xml version="1.0" standalone="no"?>'
+'<!DOCTYPE svg>' <svg>)
+
+<svg> ::= ('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
+' width=' <svg_width_value>
+' height=' <svg_height_value>
+' baseProfile="full" viewBox=' <svg_viewBox_value> '>'
+(<desc> | <title> | <metadata> | <animate> | <set> | <animateMotion> | <animateColor> | <animateTransform> | <svg> | <g> | <defs> | <symbol> | <use> | <switch> | <image> | <style> | <path> | <rect> | <circle> | <line> | <ellipse> | <polyline> | <polygon> | <text> | <altGlyphDef> | <marker> | <color_profile> | <linearGradient> | <radialGradient> | <pattern> | <clipPath> | <mask> | <filter> | <cursor> | <a> | <view> | <script> | <font> | <font_face> | <foreignObject>){10} '</svg>')
+
 # Standard data types
-<start> ::= <svg>
-<cdata> ::= <digit>+ | <string>
+<cdata> ::= <qint> | <string>
+<qnat> ::= <q> <nat> <q>
+<nat> ::= r'[1-9]' <digit>* | '0'
+<qint> ::= <q> <int> <q>
+<int> ::= r'[1-9]' <digit>* | '-' r'[1-9]' <digit>* | '0'
 <string> ::= '"' <char>* '"' | "'" <char>* "'"
-<char> ::= <printable>
-<id> ::= <ascii_letter> (<ascii_letter> | <digit> | '_')*
+<char> ::= r'[0-9a-zA-Z_-]+'
+<id> ::= <q> <ascii_letter> (<ascii_letter> | <digit> | '_')* <q>
 <nmtoken> ::= <id>
 <pcdata> ::= <cdata>
+<url> ::= <q> 'https://cispa.de' <q>
+<qpercentage> ::= <q> <percentage> <q>
+<percentage> ::= ("0" | r"[1-9][0-9]?" | "100")
 
 # SVG-specific data types
-<Coordinate_datatype> ::= <digit>+ := "100"
-<Length_datatype> ::= <digit>+
+<Coordinate_datatype> ::= <qint> := "'100'"
+<Length_datatype> ::= <qnat>
 <FontFamilyValue_datatype> ::= <string> := '"sans-serif"'
-<FontSizeValue_datatype> ::= <digit>+ := "12"
-<FontSizeAdjustValue_datatype> ::= <digit>+ := "0"
-<GlyphOrientationHorizontalValue_datatype> ::= <digit>+ := "0"
-<GlyphOrientationVerticalValue_datatype> ::= <digit>+ := "0"
-<Number_datatype> ::= <digit>+
-<NumberOptionalNumber_datatype> ::= <digit>+
-<OpacityValue_datatype> ::= <digit>{2}
-<PathData_datatype> ::= <string>
+<FontSizeValue_datatype> ::= <qnat> := "'12'"
+<FontSizeAdjustValue_datatype> ::= <qnat> := "'0'"
+<GlyphOrientationHorizontalValue_datatype> ::= <qint> := "'0'"
+<GlyphOrientationVerticalValue_datatype> ::= <qint> := "'0'"
+<Number_datatype> ::= <qint>
+<NumberOptionalNumber_datatype> ::= <qint>
+<OpacityValue_datatype> ::= <qpercentage> := "'100'"
+<PathData_datatype> ::= <q> (<int> <ws>)+ <q>
 <Text_datatype> ::= <string>
 <Script_datatype> ::= <string>
-<SVGColor_datatype> ::= <string>
-
+<SVGColor_datatype> ::= <q> '#' (<hexdigit>{3} | <hexdigit>{6}) <q>
 
 # Mappings of attributes to data types
 <accent_height_value> ::= <Number_datatype>
@@ -97,11 +112,11 @@ include('svg.fan')
 <glyph_orientation_vertical_value> ::= <GlyphOrientationVerticalValue_datatype>
 <gradientTransform_value> ::= <cdata>
 <hanging_value> ::= <Number_datatype>
-<height_value> ::= <cdata>
+<height_value> ::= <Number_datatype>
 <horiz_adv_x_value> ::= <Number_datatype>
 <horiz_origin_x_value> ::= <Number_datatype>
 <horiz_origin_y_value> ::= <Number_datatype>
-<href_value> ::= <cdata>
+<href_value> ::= <url>
 <id_value> ::= <id>
 <ideographic_value> ::= <Number_datatype>
 <in2_value> ::= <cdata>
@@ -203,7 +218,7 @@ include('svg.fan')
 <stroke_miterlimit_value> ::= <cdata>
 <stroke_opacity_value> ::= <OpacityValue_datatype>
 <stroke_value> ::= <cdata>
-<stroke_width_value> ::= <cdata>
+<stroke_width_value> ::= <Number_datatype>
 <style_value> ::= <cdata>
 <surfaceScale_value> ::= <Number_datatype>
 <systemLanguage_value> ::= <cdata>
@@ -232,9 +247,9 @@ include('svg.fan')
 <vert_adv_y_value> ::= <Number_datatype>
 <vert_origin_x_value> ::= <Number_datatype>
 <vert_origin_y_value> ::= <Number_datatype>
-<viewBox_value> ::= <cdata>
+<viewBox_value> ::= <q> <int> <ws> <int> <ws> <int> <ws> <int> <q>
 <viewTarget_value> ::= <cdata>
-<width_value> ::= <cdata>
+<width_value> ::= <Number_datatype>
 <widths_value> ::= <cdata>
 <word_spacing_value> ::= <cdata>
 <x1_value> ::= <Coordinate_datatype>

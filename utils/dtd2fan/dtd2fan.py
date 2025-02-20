@@ -32,7 +32,7 @@ class DTDConverter(object):
 #
 <ws> ::= <whitespace>+ := ' '  # whitespace sequence
 <q> ::= ('"' | "'")? := '"'    # optional quote
-        """
+"""
         return s
 
     def convert(self) -> str:
@@ -52,12 +52,18 @@ class DTDConverter(object):
         return s
 
     def convert_element(self, element) -> str:
+        attrs, values, required_attributes = self.convert_attributes(element)
+
         s = f"\n\n# {element.name} ({element.type})\n"
         s += f"<{fan(element.name)}> ::= '<{element.name}' (<ws> <{fan(element.name)}_attribute>)* ('/>' | '>' "
         s += self.convert_content(element.content)
         s += f" '</{fan(element.name)}>')\n"
-        attrs, values = self.convert_attributes(element)
         s += attrs
+
+        if required_attributes:
+            s += f'\nwhere ('
+            s += '\n   and '.join(f"{fan(attribute.name) + '='!r} in <{fan(element.name)}>.descendant_values()" for attribute in required_attributes)
+            s += ')  # required'
         if values:
             s += f'\n\n# {element.name} attribute types'
         for value in values:
@@ -97,26 +103,29 @@ class DTDConverter(object):
 
         return s
 
-    def convert_attributes(self, element) -> tuple[str, list[str]]:
+    def convert_attributes(self, element) -> tuple[str, list[str], list["Attribute"]]:
         s = f"<{fan(element.name)}_attribute> ::= "
 
         attrs = []
         values = []
+        required_attributes = []
         for attribute in element.iterattributes():
-            attr, value = self.convert_attribute(attribute)
+            attr, value, required = self.convert_attribute(attribute)
             attrs.append(attr)
             if value:
                 values.append(value)
+            if required:
+                required_attributes.append(attribute)
 
         s += "\n    | ".join(attrs)
-        return s, values
+        return s, values, required_attributes
 
-    def convert_attribute(self, attribute) -> tuple[str, str | None]:
+    def convert_attribute(self, attribute) -> tuple[str, str | None, bool]:
         value = None
         s = f"'{fan(attribute.name)}='"
         if attribute.default == "fixed":
             s += f" <q> {attribute.default_value!r} <q>"
-            return s, None
+            return s, None, []
 
         match attribute.type:
             case "enumeration":
@@ -127,11 +136,12 @@ class DTDConverter(object):
                 self.attribute_types[value] = f"<{attribute.type}>"
                 s += f" <{fan(attribute.elemname)}_{value}> "
 
+        required = (attribute.default == "required")
         s += f"  # {attribute.default}"
         if attribute.default_value:
             s += f"; default {attribute.default_value!r}"
 
-        return s, value
+        return s, value, required
 
 
 if __name__ == "__main__":
