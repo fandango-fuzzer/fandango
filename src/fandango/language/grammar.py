@@ -639,7 +639,7 @@ class Grammar(NodeVisitor):
             self._incomplete = set()
             self._max_position = -1
 
-        def _process(self, tree: DerivationTree | None = None):
+        def _process(self):
             self._rules.clear()
             self._implicit_rules.clear()
             self._context_rules.clear()
@@ -769,9 +769,12 @@ class Grammar(NodeVisitor):
 
         def predict_ctx_rule(self, state: ParseState, table: List[Set[ParseState] | Column], k: int, node: Node, nt_rule):
             if not isinstance(node, Repetition):
-                raise ValueError("node needs to be a Repetition")
+                raise ValueError("Node needs to be a Repetition")
             tree = self.construct_incomplete_tree(state, table)
-            [[context_nt]] = self.visitRepetition(node, nt_rule, tree)
+            try:
+                [[context_nt]] = self.visitRepetition(node, nt_rule, tree)
+            except ValueError:
+                return
             new_symbols = []
             for symbol in state.symbols:
                 if symbol == state.dot:
@@ -964,6 +967,7 @@ class Grammar(NodeVisitor):
                 Column() for _ in range(len(word) + 1)
             ]
             implicit_start = NonTerminal("<*start*>")
+            self._process()
             table[0].add(ParseState(implicit_start, 0, (start,)))
 
             # Save the maximum scan position, so we can report errors
