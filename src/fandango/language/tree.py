@@ -438,6 +438,12 @@ class DerivationTree:
     def children(self):
         return self._children
 
+    def children_values(self):
+        """
+        Return values of all direct children
+        """
+        return [node.value() for node in self.children()]
+
     def flatten(self):
         """
         Flatten the derivation tree into a list of symbols.
@@ -446,6 +452,20 @@ class DerivationTree:
         for child in self._children:
             flat.extend(child.flatten())
         return flat
+
+    def descendants(self):
+        """
+        Return all descendants of the current node
+        """
+        return self.flatten()[1:]
+
+    def descendant_values(self):
+        """
+        Return all descendants of the current node
+        """
+        values = [node.value() for node in self.descendants()]
+        # LOGGER.debug(f"descendant_values(): {values}")
+        return values
 
     def get_index(self, target):
         """
