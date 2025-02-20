@@ -154,6 +154,16 @@ class Repetition(Node):
         self.expr_data_min = min_
         self.expr_data_max = max_
 
+    def get_access_points(self):
+        _, _, searches_min = self.expr_data_min
+        _, _, searches_max = self.expr_data_max
+        non_terminals = set[NonTerminal]()
+        for search_list in [searches_min, searches_max]:
+            for search in search_list.values():
+                for nt in search.get_access_points():
+                    non_terminals.add(nt)
+        return non_terminals
+
     def _compute_reps_bound(self, grammar: "Grammar", tree: "DerivationTree", expr_data):
         expr, _, searches = expr_data
         local_cpy = grammar._local_variables.copy()
@@ -174,10 +184,10 @@ class Repetition(Node):
         return eval(expr, grammar._global_variables, local_cpy)
 
 
-    def min(self, grammar: "Grammar", tree: "DerivationTree"):
+    def min(self, grammar: "Grammar", tree: "DerivationTree" = None):
         return self._compute_reps_bound(grammar, tree, self.expr_data_min)
 
-    def max(self, grammar: "Grammar", tree: "DerivationTree"):
+    def max(self, grammar: "Grammar", tree: "DerivationTree" = None):
         return self._compute_reps_bound(grammar, tree, self.expr_data_max)
 
     def accept(self, visitor: "NodeVisitor"):
@@ -617,17 +627,22 @@ class Grammar(NodeVisitor):
     class Parser(NodeVisitor):
         def __init__(
             self,
-            rules: Dict[NonTerminal, Node],
+            grammar: "Grammar",
         ):
-            self.grammar_rules = rules
+            self.grammar_rules: Dict[NonTerminal, Node] = grammar.rules
+            self.grammar = grammar
             self._rules = {}
             self._implicit_rules = {}
+            self._context_rules: dict[NonTerminal, Node] = dict()
             self._process()
             self._cache: Dict[Tuple[str, NonTerminal], DerivationTree, bool] = {}
             self._incomplete = set()
             self._max_position = -1
 
-        def _process(self):
+        def _process(self, tree: DerivationTree | None = None):
+            self._rules.clear()
+            self._implicit_rules.clear()
+            self._context_rules.clear()
             for nonterminal in self.grammar_rules:
                 self._rules[nonterminal] = {
                     tuple(a) for a in self.visit(self.grammar_rules[nonterminal])
@@ -637,12 +652,14 @@ class Grammar(NodeVisitor):
                     tuple(a) for a in self._implicit_rules[nonterminal]
                 }
 
-        def get_new_name(self):
-            return NonTerminal(f"<*{len(self._implicit_rules)}*>")
-
-        def set_implicit_rule(self, rule: List[List[Node]]) -> NonTerminalNode:
-            nonterminal = self.get_new_name()
+        def set_implicit_rule(self, rule: List[List[NonTerminal]]) -> NonTerminal:
+            nonterminal = NonTerminal(f"<*{len(self._implicit_rules)}*>")
             self._implicit_rules[nonterminal] = rule
+            return nonterminal
+
+        def set_context_rule(self, node: Node, non_terminal: NonTerminal) -> NonTerminal:
+            nonterminal = NonTerminal(f"<*ctx_{len(self._context_rules)}*>")
+            self._context_rules[nonterminal] = (node, non_terminal)
             return nonterminal
 
         def default_result(self):
@@ -663,20 +680,26 @@ class Grammar(NodeVisitor):
                 result = new_result
             return result
 
-        def visitRepetition(self, node: Repetition):
-            return self.default_result()
-            # Todo
-            alternatives = self.visit(node.node)
-            nt = self.set_implicit_rule(alternatives)
+        def visitRepetition(self, node: Repetition, nt = None, tree: DerivationTree = None):
+            if nt is None:
+                alternatives = self.visit(node.node)
+                nt = self.set_implicit_rule(alternatives)
+
+                if len(node.get_access_points()) != 0:
+                    i_nt = self.set_context_rule(node, nt)
+                    return [[i_nt]]
+
             prev = None
-            for rep in range(node.min, node.max):
+            node_min = node.min(self.grammar, tree)
+            node_max = node.max(self.grammar, tree)
+            for rep in range(node_min, node_max):
                 alts = [[nt]]
                 if prev is not None:
                     alts.append([nt, prev])
                 prev = self.set_implicit_rule(alts)
-            alts = [node.min * [nt]]
+            alts = [node_min * [nt]]
             if prev is not None:
-                alts.append(node.min * [nt] + [prev])
+                alts.append(node_min * [nt] + [prev])
             min_nt = self.set_implicit_rule(alts)
             return [[min_nt]]
 
@@ -721,6 +744,47 @@ class Grammar(NodeVisitor):
                         for rule in self._implicit_rules[state.dot]
                     }
                 )
+            elif state.dot in self._context_rules:
+                node, nt = self._context_rules[state.dot]
+                self.predict_ctx_rule(state, table, k, node, nt)
+
+        def construct_incomplete_tree(self, state: ParseState, table:List[Set[ParseState] | Column]) -> DerivationTree:
+            current_tree = DerivationTree(state.nonterminal, state.children)
+            current_state = state
+            found_next_state = True
+            while found_next_state:
+                found_next_state = False
+                for table_state in table[current_state.position].states:
+                    if table_state.dot == current_state.nonterminal:
+                        current_state = table_state
+                        found_next_state = True
+                        break
+                if str(current_tree.symbol).startswith("<*"):
+                    current_tree = DerivationTree(current_state.nonterminal, [*current_state.children, *current_tree.children])
+                else:
+                    current_tree = DerivationTree(current_state.nonterminal, [*current_state.children, current_tree])
+
+            return current_tree.children[0]
+
+
+        def predict_ctx_rule(self, state: ParseState, table: List[Set[ParseState] | Column], k: int, node: Node, nt_rule):
+            if not isinstance(node, Repetition):
+                raise ValueError("node needs to be a Repetition")
+            tree = self.construct_incomplete_tree(state, table)
+            [[context_nt]] = self.visitRepetition(node, nt_rule, tree)
+            new_symbols = []
+            for symbol in state.symbols:
+                if symbol == state.dot:
+                    new_symbols.append(context_nt)
+                else:
+                    new_symbols.append(symbol)
+            state.symbols = tuple(new_symbols)
+            for nonterminal in self._implicit_rules:
+                self._implicit_rules[nonterminal] = {
+                    tuple(a) for a in self._implicit_rules[nonterminal]
+                }
+            self.predict(state, table, k)
+
 
         def scan_bit(
             self,
@@ -1065,7 +1129,7 @@ class Grammar(NodeVisitor):
     ):
         self.rules = rules or {}
         self.generators = {}
-        self._parser = Grammar.Parser(self.rules)
+        self._parser = Grammar.Parser(self)
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
         self._visited = set()
@@ -1122,7 +1186,7 @@ class Grammar(NodeVisitor):
             if symbol not in generators and symbol in self.generators:
                 del self.generators[symbol]
 
-        self._parser = Grammar.Parser(self.rules)
+        self._parser = Grammar.Parser(self)
         self._local_variables.update(local_variables)
         self._global_variables.update(global_variables)
         if prime:
@@ -1216,7 +1280,7 @@ class Grammar(NodeVisitor):
         return self.generators.get(symbol, None)
 
     def update_parser(self):
-        self._parser = Grammar.Parser(self.rules)
+        self._parser = Grammar.Parser(self)
 
     def compute_kpath_coverage(
         self, derivation_trees: List[DerivationTree], k: int
