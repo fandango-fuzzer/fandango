@@ -49,6 +49,9 @@ class DerivationTree:
     def size(self):
         return self._size
 
+    def __bytes__(self):
+        return self.to_bytes()
+
     @property
     def symbol(self) -> Symbol:
         return self._symbol
@@ -109,6 +112,11 @@ class DerivationTree:
             if self.symbol.is_implicit:
                 raise RuntimeError("Can't collapse a tree with an implicit root node")
         return self._collapse()[0]
+
+    def get_root(self):
+        if self._parent is None:
+            return self
+        return self._parent.get_root()
 
     def set_all_read_only(self, read_only: bool):
         self.read_only = read_only
@@ -180,9 +188,6 @@ class DerivationTree:
 
     def __str__(self):
         return self.to_string()
-
-    def __bytes__(self):
-        return self.to_bytes()
 
     def invalidate_hash(self):
         self.hash_cache = None
