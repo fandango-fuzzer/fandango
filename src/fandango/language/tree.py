@@ -66,25 +66,6 @@ class DerivationTree:
         if self._parent is not None:
             self._parent.invalidate_hash()
 
-    def _collapse(self):
-        reduced = []
-        for child in self._children:
-            reduced.extend(child._collapse())
-
-        if isinstance(self.symbol, NonTerminal):
-            if self.symbol.is_implicit:
-                return reduced
-
-        return [
-            DerivationTree(
-                self.symbol,
-                children=reduced,
-                read_only=self.read_only,
-                recipient=self.recipient,
-                role=self.role,
-            )
-        ]
-
     @property
     def role(self):
         return self._role
@@ -102,16 +83,6 @@ class DerivationTree:
     def recipient(self, recipient: str):
         self._recipient = recipient
         self.invalidate_hash()
-
-    """
-    Removes all nodes from a DerivationTree that have been generated using implicit rules.
-    """
-
-    def collapse(self):
-        if isinstance(self.symbol, NonTerminal):
-            if self.symbol.is_implicit:
-                raise RuntimeError("Can't collapse a tree with an implicit root node")
-        return self._collapse()[0]
 
     def get_root(self):
         if self._parent is None:
@@ -172,9 +143,6 @@ class DerivationTree:
         for child in self._children:
             if child.symbol == symbol:
                 result.append(child)
-            if isinstance(child.symbol, NonTerminal):
-                if child.symbol.is_implicit:
-                    result.extend(child.find_direct_trees(symbol))
         return result
 
     def __getitem__(self, item) -> "DerivationTree":
