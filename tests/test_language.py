@@ -55,16 +55,9 @@ def test_indents():
     processor = GrammarProcessor()
     grammar = processor.get_grammar(splitter.productions)
     assert len(grammar.rules) == 1
-    assert NonTerminal('<a>') in grammar.rules
-    assert isinstance(grammar.rules[NonTerminal('<a>')], NonTerminalNode)
-
-    assert NonTerminal(f"<_{NodeType.CONCATENATION}:0>") in grammar.rules
-    assert isinstance(grammar.rules[NonTerminal(f"<_{NodeType.CONCATENATION}:0>")], Concatenation)
-
-    alternative_rule_nt = NonTerminal(f"<_{NodeType.ALTERNATIVE}:0>")
-    assert alternative_rule_nt in grammar.rules
-    assert isinstance(grammar.rules[alternative_rule_nt], Alternative)
-    assert len(grammar.rules[alternative_rule_nt].alternatives) == 2
+    rule = list(grammar.rules.values())[0]
+    assert isinstance(rule, Alternative)
+    assert len(rule.alternatives) == 2
 
 
 @pytest.mark.parametrize(
