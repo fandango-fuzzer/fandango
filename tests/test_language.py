@@ -54,7 +54,7 @@ def test_indents():
     splitter.visit(tree)
     processor = GrammarProcessor()
     grammar = processor.get_grammar(splitter.productions)
-    assert len(grammar.rules) == 3
+    assert len(grammar.rules) == 1
     assert NonTerminal('<a>') in grammar.rules
     assert isinstance(grammar.rules[NonTerminal('<a>')], NonTerminalNode)
 
@@ -274,7 +274,7 @@ def test_parsing():
 
     grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
     assert isinstance(grammar, Grammar)
-    assert len(grammar.rules) == 9
+    assert len(grammar.rules) == 4
     assert "<start>" in grammar
     assert "<number>" in grammar
     assert "<non_zero>" in grammar

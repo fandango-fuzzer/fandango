@@ -646,8 +646,6 @@ class NonTerminalFinder(NodeVisitor):
         return aggregate
 
     def visitNonTerminalNode(self, node: NonTerminalNode):
-        if node.symbol.is_implicit:
-            return self.visit(self.grammar.rules[node.symbol]) + [node]
         return [node]
 
 
@@ -871,8 +869,6 @@ class RoleAssigner:
         if len(child_roles) == 0:
             return
         for c_node in unprocessed_non_terminals:
-            if c_node.symbol.is_implicit:
-                continue
             self.seen_non_terminals.add(c_node.symbol)
             if len(c_node.tree_roles(self.grammar, False)) != 0:
                 continue
@@ -916,8 +912,6 @@ class GrammarTruncator(NodeVisitor):
         return False
 
     def visitNonTerminalNode(self, node: NonTerminalNode):
-        if node.symbol.is_implicit:
-            return self.visit(self.grammar[node.symbol])
         if node.role is None or node.recipient is None:
             return False
         truncatable = True
@@ -942,9 +936,6 @@ class RoleNestingDetector(NodeVisitor):
         self.visit(self.grammar[start_symbol])
 
     def visitNonTerminalNode(self, node: NonTerminalNode):
-        if node.symbol.is_implicit:
-            return self.visit(self.grammar[node.symbol])
-
         self.current_path.append(node.symbol)
         if node.symbol not in self.seen_nt:
             self.seen_nt.add(node.symbol)
@@ -1117,9 +1108,7 @@ class Grammar(NodeVisitor):
             return nonterminal
 
         def set_rule(self, nonterminal: NonTerminal, rule: List[List[NonTerminal]]):
-            self._rules[nonterminal] = {
-                tuple(a) for a in rule
-            }
+            self._rules[nonterminal] = {tuple(a) for a in rule}
 
         def set_context_rule(
             self, node: Node, non_terminal: NonTerminal
@@ -1137,7 +1126,9 @@ class Grammar(NodeVisitor):
 
         def visitAlternative(self, node: Alternative):
             result = self.visitChildren(node)
-            intermediate_nt = NonTerminal(f"<__{NodeType.ALTERNATIVE}:{self.alternative_count}>")
+            intermediate_nt = NonTerminal(
+                f"<__{NodeType.ALTERNATIVE}:{self.alternative_count}>"
+            )
             self.set_rule(intermediate_nt, result)
             self.alternative_count += 1
             return [[intermediate_nt]]
@@ -1151,7 +1142,9 @@ class Grammar(NodeVisitor):
                     for a in to_add:
                         new_result.append(r + a)
                 result = new_result
-            intermediate_nt = NonTerminal(f"<__{NodeType.CONCATENATION}:{self.concatenation_count}>")
+            intermediate_nt = NonTerminal(
+                f"<__{NodeType.CONCATENATION}:{self.concatenation_count}>"
+            )
             self.set_rule(intermediate_nt, result)
             self.concatenation_count += 1
             return [[intermediate_nt]]
@@ -1179,7 +1172,9 @@ class Grammar(NodeVisitor):
             if prev is not None:
                 alts.append(node_min * [nt] + [prev])
             min_nt = self.set_implicit_rule(alts)
-            intermediate_nt = NonTerminal(f"<__{NodeType.REPETITION}:{self.repetition_count}>")
+            intermediate_nt = NonTerminal(
+                f"<__{NodeType.REPETITION}:{self.repetition_count}>"
+            )
             self.set_rule(intermediate_nt, [[min_nt]])
             self.repetition_count += 1
             return [[intermediate_nt]]
@@ -1223,7 +1218,9 @@ class Grammar(NodeVisitor):
         def collapse(self, tree: DerivationTree):
             if isinstance(tree.symbol, NonTerminal):
                 if tree.symbol.symbol.startswith("<__"):
-                    raise RuntimeError("Can't collapse a tree with an implicit root node")
+                    raise RuntimeError(
+                        "Can't collapse a tree with an implicit root node"
+                    )
             return self._collapse(tree)[0]
 
         def _collapse(self, tree: DerivationTree):
@@ -1837,8 +1834,6 @@ class Grammar(NodeVisitor):
     def roles(self, include_recipients: bool = True):
         found_roles = set()
         for nt, rule in self.rules.items():
-            if nt.is_implicit:
-                continue
             found_roles = found_roles.union(rule.tree_roles(self, include_recipients))
         return found_roles
 

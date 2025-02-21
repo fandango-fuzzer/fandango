@@ -476,8 +476,6 @@ def assign_std_out_role(grammar: "Grammar", io_instance: FandangoIO):
     remapped_roles = set()
     unknown_recipients = set()
     for symbol in grammar.rules.keys():
-        if symbol.is_implicit:
-            continue
         non_terminals: list[NonTerminalNode] = NonTerminalFinder(grammar).visit(
             grammar.rules[symbol]
         )
@@ -507,8 +505,6 @@ def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) ->
             keep_roles.remove(existing_role)
 
     for nt in grammar.rules.keys():
-        if nt.is_implicit:
-            continue
         GrammarTruncator(grammar, keep_roles).visit(grammar.rules[nt])
 
 
