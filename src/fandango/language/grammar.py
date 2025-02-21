@@ -1088,6 +1088,12 @@ class Grammar(NodeVisitor):
             self._rules = {}
             self._implicit_rules = {}
             self._context_rules: dict[NonTerminal, Node] = dict()
+            self.alternative_count = 0
+            self.concatenation_count = 0
+            self.repetition_count = 0
+            self.star_count = 0
+            self.plus_count = 0
+            self.option_count = 0
             self._process()
             self._cache: Dict[Tuple[str, NonTerminal], DerivationTree, bool] = {}
             self._incomplete = set()
@@ -1098,9 +1104,8 @@ class Grammar(NodeVisitor):
             self._implicit_rules.clear()
             self._context_rules.clear()
             for nonterminal in self.grammar_rules:
-                self._rules[nonterminal] = {
-                    tuple(a) for a in self.visit(self.grammar_rules[nonterminal])
-                }
+                self.set_rule(nonterminal, self.visit(self.grammar_rules[nonterminal]))
+
             for nonterminal in self._implicit_rules:
                 self._implicit_rules[nonterminal] = {
                     tuple(a) for a in self._implicit_rules[nonterminal]
@@ -1110,6 +1115,11 @@ class Grammar(NodeVisitor):
             nonterminal = NonTerminal(f"<*{len(self._implicit_rules)}*>")
             self._implicit_rules[nonterminal] = rule
             return nonterminal
+
+        def set_rule(self, nonterminal: NonTerminal, rule: List[List[NonTerminal]]):
+            self._rules[nonterminal] = {
+                tuple(a) for a in rule
+            }
 
         def set_context_rule(
             self, node: Node, non_terminal: NonTerminal
@@ -1125,6 +1135,13 @@ class Grammar(NodeVisitor):
             aggregate.extend(result)
             return aggregate
 
+        def visitAlternative(self, node: Alternative):
+            result = self.visitChildren(node)
+            intermediate_nt = NonTerminal(f"<__{NodeType.ALTERNATIVE}:{self.alternative_count}>")
+            self.set_rule(intermediate_nt, result)
+            self.alternative_count += 1
+            return [[intermediate_nt]]
+
         def visitConcatenation(self, node: Concatenation):
             result = [[]]
             for child in node.children():
@@ -1134,7 +1151,10 @@ class Grammar(NodeVisitor):
                     for a in to_add:
                         new_result.append(r + a)
                 result = new_result
-            return result
+            intermediate_nt = NonTerminal(f"<__{NodeType.CONCATENATION}:{self.concatenation_count}>")
+            self.set_rule(intermediate_nt, result)
+            self.concatenation_count += 1
+            return [[intermediate_nt]]
 
         def visitRepetition(
             self, node: Repetition, nt=None, tree: DerivationTree = None
@@ -1159,14 +1179,21 @@ class Grammar(NodeVisitor):
             if prev is not None:
                 alts.append(node_min * [nt] + [prev])
             min_nt = self.set_implicit_rule(alts)
-            return [[min_nt]]
+            intermediate_nt = NonTerminal(f"<__{NodeType.REPETITION}:{self.repetition_count}>")
+            self.set_rule(intermediate_nt, [[min_nt]])
+            self.repetition_count += 1
+            return [[intermediate_nt]]
 
         def visitStar(self, node: Star):
             alternatives = [[]]
             nt = self.set_implicit_rule(alternatives)
             for r in self.visit(node.node):
                 alternatives.append(r + [nt])
-            return [[nt]]
+            result = [[nt]]
+            intermediate_nt = NonTerminal(f"<__{NodeType.STAR}:{self.star_count}>")
+            self.set_rule(intermediate_nt, result)
+            self.star_count += 1
+            return [[intermediate_nt]]
 
         def visitPlus(self, node: Plus):
             alternatives = []
@@ -1174,16 +1201,49 @@ class Grammar(NodeVisitor):
             for r in self.visit(node.node):
                 alternatives.append(r)
                 alternatives.append(r + [nt])
-            return [[nt]]
+            result = [[nt]]
+            intermediate_nt = NonTerminal(f"<__{NodeType.PLUS}:{self.plus_count}>")
+            self.set_rule(intermediate_nt, result)
+            self.plus_count += 1
+            return [[intermediate_nt]]
 
         def visitOption(self, node: Option):
-            return [[Terminal("")]] + self.visit(node.node)
+            result = [[Terminal("")]] + self.visit(node.node)
+            intermediate_nt = NonTerminal(f"<__{NodeType.OPTION}:{self.option_count}>")
+            self.set_rule(intermediate_nt, result)
+            self.option_count += 1
+            return [[intermediate_nt]]
 
         def visitNonTerminalNode(self, node: NonTerminalNode):
             return [[node.symbol]]
 
         def visitTerminalNode(self, node: TerminalNode):
             return [[node.symbol]]
+
+        def collapse(self, tree: DerivationTree):
+            if isinstance(tree.symbol, NonTerminal):
+                if tree.symbol.symbol.startswith("<__"):
+                    raise RuntimeError("Can't collapse a tree with an implicit root node")
+            return self._collapse(tree)[0]
+
+        def _collapse(self, tree: DerivationTree):
+            reduced = []
+            for child in tree.children:
+                reduced.extend(self._collapse(child))
+
+            if isinstance(tree.symbol, NonTerminal):
+                if tree.symbol.symbol.startswith("<__"):
+                    return reduced
+
+            return [
+                DerivationTree(
+                    tree.symbol,
+                    children=reduced,
+                    read_only=tree.read_only,
+                    recipient=tree.recipient,
+                    role=tree.role,
+                )
+            ]
 
         def predict(
             self, state: ParseState, table: List[Set[ParseState] | Column], k: int
@@ -1550,7 +1610,7 @@ class Grammar(NodeVisitor):
             if cache_key in self._cache:
                 forest = self._cache[cache_key]
                 for tree in forest:
-                    yield deepcopy(tree)
+                    yield self.collapse(deepcopy(tree))
                 return
 
             self._incomplete = set()
@@ -1559,12 +1619,12 @@ class Grammar(NodeVisitor):
                 word, start, allow_incomplete=allow_incomplete
             ):
                 forest.append(tree)
-                yield tree
+                yield self.collapse(tree)
 
             if allow_incomplete:
                 for tree in self._incomplete:
                     forest.append(tree)
-                    yield tree
+                    yield self.collapse(tree)
 
             # Cache entire forest
             self._cache[cache_key] = forest

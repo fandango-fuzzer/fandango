@@ -60,7 +60,6 @@ class Symbol(abc.ABC):
 class NonTerminal(Symbol):
     def __init__(self, symbol: str):
         super().__init__(symbol, SymbolType.NON_TERMINAL)
-        self.is_implicit = symbol.startswith("<_")
 
     def __eq__(self, other):
         return isinstance(other, NonTerminal) and self.symbol == other.symbol
