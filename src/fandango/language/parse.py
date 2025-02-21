@@ -32,7 +32,7 @@ from fandango.language.grammar import (
     NonTerminalNode,
     GrammarTruncator,
     RoleNestingDetector,
-    MAX_REPETITIONS
+    MAX_REPETITIONS,
 )
 from fandango.language.io import FandangoIO, FandangoAgent
 from fandango.language.parser.FandangoLexer import FandangoLexer

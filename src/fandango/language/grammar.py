@@ -48,7 +48,13 @@ class Node(abc.ABC):
         self.node_type = node_type
         self.distance_to_completion = distance_to_completion
 
-    def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100, in_role: str = None):
+    def fuzz(
+        self,
+        parent: "DerivationTree",
+        grammar: "Grammar",
+        max_nodes: int = 100,
+        in_role: str = None,
+    ):
         return
 
     @abc.abstractmethod
@@ -95,7 +101,13 @@ class Alternative(Node):
         super().__init__(NodeType.ALTERNATIVE)
         self.alternatives = alternatives
 
-    def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100, in_role: str = None):
+    def fuzz(
+        self,
+        parent: "DerivationTree",
+        grammar: "Grammar",
+        max_nodes: int = 100,
+        in_role: str = None,
+    ):
         if self.distance_to_completion >= max_nodes:
             min_ = min(self.alternatives, key=lambda x: x.distance_to_completion)
             random.choice(
@@ -135,7 +147,13 @@ class Concatenation(Node):
         super().__init__(NodeType.CONCATENATION)
         self.nodes = nodes
 
-    def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100, in_role: str = None):
+    def fuzz(
+        self,
+        parent: "DerivationTree",
+        grammar: "Grammar",
+        max_nodes: int = 100,
+        in_role: str = None,
+    ):
         prev_parent_size = parent.size()
         for node in self.nodes:
             if node.distance_to_completion >= max_nodes:
@@ -168,16 +186,18 @@ class Concatenation(Node):
 
 
 class Repetition(Node):
-    def __init__(self, node: Node, min_ = ("0", [], {}), max_ = (f"{MAX_REPETITIONS}", [], {})):
+    def __init__(
+        self, node: Node, min_=("0", [], {}), max_=(f"{MAX_REPETITIONS}", [], {})
+    ):
         super().__init__(NodeType.REPETITION)
-        #min_expr, min_nt, min_search = min_
-        #max_expr, max_nt, max_search = max_
+        # min_expr, min_nt, min_search = min_
+        # max_expr, max_nt, max_search = max_
 
-        #if min_ < 0:
+        # if min_ < 0:
         #    raise ValueError(
         #        f"Minimum repetitions {min_} must be greater than or equal to 0"
         #    )
-        #if max_ <= 0 or max_ < min_:
+        # if max_ <= 0 or max_ < min_:
         #    raise ValueError(
         #        f"Maximum repetitions {max_} must be greater than 0 or greater than min {min_}"
         #    )
@@ -195,7 +215,9 @@ class Repetition(Node):
                     non_terminals.add(nt)
         return non_terminals
 
-    def _compute_reps_bound(self, grammar: "Grammar", tree: "DerivationTree", expr_data):
+    def _compute_reps_bound(
+        self, grammar: "Grammar", tree: "DerivationTree", expr_data
+    ):
         expr, _, searches = expr_data
         local_cpy = grammar._local_variables.copy()
 
@@ -209,11 +231,8 @@ class Repetition(Node):
             nodes.extend(
                 [(name, container) for container in search.find(tree.get_root())]
             )
-        local_cpy.update(
-            {name: container.evaluate() for name, container in nodes}
-        )
+        local_cpy.update({name: container.evaluate() for name, container in nodes})
         return eval(expr, grammar._global_variables, local_cpy)
-
 
     def min(self, grammar: "Grammar", tree: "DerivationTree" = None):
         return self._compute_reps_bound(grammar, tree, self.expr_data_min)
@@ -224,7 +243,13 @@ class Repetition(Node):
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitRepetition(self)
 
-    def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100, in_role: str = None):
+    def fuzz(
+        self,
+        parent: "DerivationTree",
+        grammar: "Grammar",
+        max_nodes: int = 100,
+        in_role: str = None,
+    ):
         prev_parent_size = parent.size()
 
         current_min = self.min(grammar, parent.get_root())
@@ -321,7 +346,11 @@ class NonTerminalNode(Node):
         self.recipient = recipient
 
     def fuzz(
-        self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100, in_role: str = None
+        self,
+        parent: "DerivationTree",
+        grammar: "Grammar",
+        max_nodes: int = 100,
+        in_role: str = None,
     ) -> List[DerivationTree]:
         if self.symbol not in grammar:
             raise ValueError(f"Symbol {self.symbol} not found in grammar")
@@ -345,7 +374,7 @@ class NonTerminalNode(Node):
             [],
             role=assign_role,
             recipient=assign_recipient,
-            read_only=False
+            read_only=False,
         )
         parent.add_child(current_tree)
         grammar[self.symbol].fuzz(current_tree, grammar, max_nodes - 1, in_role)
@@ -401,13 +430,19 @@ class TerminalNode(Node):
         self.symbol = symbol
 
     def fuzz(
-        self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100, in_role: str = None
+        self,
+        parent: "DerivationTree",
+        grammar: "Grammar",
+        max_nodes: int = 100,
+        in_role: str = None,
     ) -> List[DerivationTree]:
         if self.symbol.is_regex:
             if isinstance(self.symbol.symbol, bytes):
                 # Exrex can't do bytes, so we decode to str and back
                 instance = exrex.getone(self.symbol.symbol.decode("iso-8859-1"))
-                parent.add_child(DerivationTree(Terminal(instance.encode("iso-8859-1"))))
+                parent.add_child(
+                    DerivationTree(Terminal(instance.encode("iso-8859-1")))
+                )
                 return
 
             instance = exrex.getone(self.symbol.symbol)
@@ -437,7 +472,11 @@ class CharSet(Node):
         self.chars = chars
 
     def fuzz(
-        self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100, in_role: str = None
+        self,
+        parent: "DerivationTree",
+        grammar: "Grammar",
+        max_nodes: int = 100,
+        in_role: str = None,
     ) -> List[DerivationTree]:
         raise NotImplementedError("CharSet fuzzing not implemented")
 
@@ -1072,7 +1111,9 @@ class Grammar(NodeVisitor):
             self._implicit_rules[nonterminal] = rule
             return nonterminal
 
-        def set_context_rule(self, node: Node, non_terminal: NonTerminal) -> NonTerminal:
+        def set_context_rule(
+            self, node: Node, non_terminal: NonTerminal
+        ) -> NonTerminal:
             nonterminal = NonTerminal(f"<*ctx_{len(self._context_rules)}*>")
             self._context_rules[nonterminal] = (node, non_terminal)
             return nonterminal
@@ -1095,7 +1136,9 @@ class Grammar(NodeVisitor):
                 result = new_result
             return result
 
-        def visitRepetition(self, node: Repetition, nt = None, tree: DerivationTree = None):
+        def visitRepetition(
+            self, node: Repetition, nt=None, tree: DerivationTree = None
+        ):
             if nt is None:
                 alternatives = self.visit(node.node)
                 nt = self.set_implicit_rule(alternatives)
@@ -1163,7 +1206,9 @@ class Grammar(NodeVisitor):
                 node, nt = self._context_rules[state.dot]
                 self.predict_ctx_rule(state, table, k, node, nt)
 
-        def construct_incomplete_tree(self, state: ParseState, table:List[Set[ParseState] | Column]) -> DerivationTree:
+        def construct_incomplete_tree(
+            self, state: ParseState, table: List[Set[ParseState] | Column]
+        ) -> DerivationTree:
             current_tree = DerivationTree(state.nonterminal, state.children)
             current_state = state
             found_next_state = True
@@ -1175,14 +1220,26 @@ class Grammar(NodeVisitor):
                         found_next_state = True
                         break
                 if str(current_tree.symbol).startswith("<*"):
-                    current_tree = DerivationTree(current_state.nonterminal, [*current_state.children, *current_tree.children])
+                    current_tree = DerivationTree(
+                        current_state.nonterminal,
+                        [*current_state.children, *current_tree.children],
+                    )
                 else:
-                    current_tree = DerivationTree(current_state.nonterminal, [*current_state.children, current_tree])
+                    current_tree = DerivationTree(
+                        current_state.nonterminal,
+                        [*current_state.children, current_tree],
+                    )
 
             return current_tree.children[0]
 
-
-        def predict_ctx_rule(self, state: ParseState, table: List[Set[ParseState] | Column], k: int, node: Node, nt_rule):
+        def predict_ctx_rule(
+            self,
+            state: ParseState,
+            table: List[Set[ParseState] | Column],
+            k: int,
+            node: Node,
+            nt_rule,
+        ):
             if not isinstance(node, Repetition):
                 raise ValueError("Node needs to be a Repetition")
             tree = self.construct_incomplete_tree(state, table)
@@ -1202,7 +1259,6 @@ class Grammar(NodeVisitor):
                     tuple(a) for a in self._implicit_rules[nonterminal]
                 }
             self.predict(state, table, k)
-
 
         def scan_bit(
             self,

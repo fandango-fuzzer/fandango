@@ -27,7 +27,9 @@ class PopulationManager:
             if self.io_next_packet is None:
                 return DerivationTree(NonTerminal(self.start_symbol))
 
-            new_packet = self.io_next_packet.node.fuzz(self.grammar, max_nodes=999999)[0]
+            new_packet = self.io_next_packet.node.fuzz(self.grammar, max_nodes=999999)[
+                0
+            ]
 
             mounting_path = random.choice(list(self.io_next_packet.paths))
             tree: DerivationTree = copy.deepcopy(mounting_path.tree)

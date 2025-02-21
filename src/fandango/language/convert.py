@@ -174,7 +174,10 @@ class GrammarProcessor(FandangoParserVisitor):
                         bounds_index += 1
                     else:
                         bounds[bounds_index] = self.searches.visit(child)
-                        bounds[bounds_index] = (ast.unparse(bounds[bounds_index][0]), *bounds[bounds_index][1:])
+                        bounds[bounds_index] = (
+                            ast.unparse(bounds[bounds_index][0]),
+                            *bounds[bounds_index][1:],
+                        )
 
             min_, max_ = bounds
             if min_ is None and max_ is None:
