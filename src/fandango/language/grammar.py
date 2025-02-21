@@ -1479,6 +1479,7 @@ class Grammar(NodeVisitor):
             start: str | NonTerminal = "<start>",
             *,
             allow_incomplete: bool = False,
+            include_controlflow: bool = False,
         ):
             """
             Parse a forest of input trees from `word`.
@@ -1589,6 +1590,7 @@ class Grammar(NodeVisitor):
             start: str | NonTerminal = "<start>",
             *,
             allow_incomplete: bool = False,
+            include_controlflow: bool = False,
         ):
             """
             Yield multiple parse alternatives, using a cache.
@@ -1607,21 +1609,31 @@ class Grammar(NodeVisitor):
             if cache_key in self._cache:
                 forest = self._cache[cache_key]
                 for tree in forest:
-                    yield self.collapse(deepcopy(tree))
+                    tree = deepcopy(tree)
+                    if include_controlflow:
+                        yield tree
+                    else:
+                        yield self.collapse(tree)
                 return
 
             self._incomplete = set()
             forest = []
             for tree in self._parse_forest(
-                word, start, allow_incomplete=allow_incomplete
+                word, start, allow_incomplete=allow_incomplete, include_controlflow=include_controlflow
             ):
                 forest.append(tree)
-                yield self.collapse(tree)
+                if include_controlflow:
+                    yield tree
+                else:
+                    yield self.collapse(tree)
 
             if allow_incomplete:
                 for tree in self._incomplete:
                     forest.append(tree)
-                    yield self.collapse(tree)
+                    if include_controlflow:
+                        yield tree
+                    else:
+                        yield self.collapse(tree)
 
             # Cache entire forest
             self._cache[cache_key] = forest
@@ -1641,12 +1653,13 @@ class Grammar(NodeVisitor):
             self,
             word: str | bytes | DerivationTree,
             start: str | NonTerminal = "<start>",
+            include_controlflow: bool = False
         ):
             """
             Return the first parse alternative,
             or `None` if no parse is possible
             """
-            tree_gen = self.parse_forest(word, start=start)
+            tree_gen = self.parse_forest(word, start=start, include_controlflow=include_controlflow)
             return next(tree_gen, None)
 
         def max_position(self):
