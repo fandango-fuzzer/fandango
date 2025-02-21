@@ -590,6 +590,9 @@ class DerivationTree:
         for child in self._children:
             value, child_bits = child._value()
 
+            if value is None:
+                continue
+
             if aggregate is None:
                 aggregate = value
                 bits = child_bits

@@ -90,7 +90,10 @@ def is_after(
     """
     return is_before(tree, before_tree, after_tree)
 
-def get_index_within(tree: DerivationTree, scope: DerivationTree, index_counter_symbols: list[str]):
+
+def get_index_within(
+    tree: DerivationTree, scope: DerivationTree, index_counter_symbols: list[str]
+):
     idx = 0
     index_counter_nts = [NonTerminal(symbol) for symbol in index_counter_symbols]
     for val in scope.flatten():
@@ -100,6 +103,6 @@ def get_index_within(tree: DerivationTree, scope: DerivationTree, index_counter_
             idx += 1
     return -1
 
+
 def get_type(tree: DerivationTree):
     return tree.symbol.symbol
-

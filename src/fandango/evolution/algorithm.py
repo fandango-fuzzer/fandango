@@ -276,27 +276,27 @@ class Fandango:
                     raise RuntimeError("Remote response doesn't match constraints!")
                 self.solution.clear()
 
-            #if next_tree.contains_bits():
+            # if next_tree.contains_bits():
             #    history = b''
-            #else:
+            # else:
             #    history = ""
-            #past_r_msgs = next_tree.find_role_msgs()
-            #for r_msg in past_r_msgs:
+            # past_r_msgs = next_tree.find_role_msgs()
+            # for r_msg in past_r_msgs:
             #    if isinstance(history, bytes):
             #        history += r_msg.msg.to_bytes()
             #    else:
             #        history += r_msg.msg.to_string()
 
-            #new_population = []
-            #for tree_option in self.grammar.parse_incomplete(
+            # new_population = []
+            # for tree_option in self.grammar.parse_incomplete(
             #    history, self.start_symbol
-            #):
+            # ):
             #    tree_option.set_all_read_only(True)
             #    if self.grammar.assign_roles(tree_option, past_r_msgs):
             #        new_population.append(tree_option)
             #    if len(new_population) >= self.population_size:
             #        break
-            #if len(new_population) == 0:
+            # if len(new_population) == 0:
             #    raise RuntimeError(
             #        "Failed to append remote response to generated history matching grammar!"
             #    )
@@ -510,12 +510,18 @@ class Fandango:
                 packet_option = None
                 for non_terminal in set(nts_with_role):
                     packet_option = forecasted_nonterminals[non_terminal]
-                    parsed_packet_tree = self.grammar.parse(complete_msg, packet_option.node.symbol)
+                    parsed_packet_tree = self.grammar.parse(
+                        complete_msg, packet_option.node.symbol
+                    )
                     parsed_packet_tree.role = packet_option.node.role
                     parsed_packet_tree.recipient = packet_option.node.recipient
                     if parsed_packet_tree is None:
                         try:
-                            next(self.grammar.parse_incomplete(complete_msg, packet_option.node.symbol))
+                            next(
+                                self.grammar.parse_incomplete(
+                                    complete_msg, packet_option.node.symbol
+                                )
+                            )
                         except StopIteration:
                             nts_with_role.remove(non_terminal)
                     else:
