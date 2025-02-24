@@ -92,7 +92,7 @@ where unpack('>H', bytes(<a_rd_length>))[0] == len(<a_rdata>)
 import socket
 class Client(FandangoAgent):
         def __init__(self):
-            super().__init__(True)
+            super().__init__(False)
 
         def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
