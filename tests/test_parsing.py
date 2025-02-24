@@ -190,7 +190,7 @@ class TestIncompleteParsing(unittest.TestCase):
 
     def _test(self, example, tree):
         parsed = False
-        for actual_tree in self.grammar.parse_incomplete(example, "<ab>"):
+        for actual_tree in self.grammar.parse_multiple(example, "<ab>"):
             self.assertEqual(tree, actual_tree)
             parsed = True
             break
@@ -282,7 +282,7 @@ class TestBitParsing(TestCLIParsing):
 
     def _test(self, example, tree, grammar):
         parsed = False
-        for actual_tree in grammar.parse_incomplete(example, "<start>"):
+        for actual_tree in grammar.parse_multiple(example, "<start>"):
             if tree is None:
                 self.fail("Expected None")
             self.assertEqual(tree, actual_tree)

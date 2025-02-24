@@ -536,7 +536,7 @@ class Fandango:
                     if parsed_packet_tree is None:
                         try:
                             next(
-                                self.grammar.parse_incomplete(
+                                self.grammar.parse_multiple(
                                     complete_msg, packet_option.node.symbol
                                 )
                             )
