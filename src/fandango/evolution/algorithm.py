@@ -20,6 +20,7 @@ from fandango.language.grammar import (
     PacketForecaster,
 )
 from fandango.language.symbol import NonTerminal
+from fandango.language.tree import RoledMessage
 from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
 
 
@@ -194,9 +195,26 @@ class Fandango:
     def _evolve_io(self) -> List[DerivationTree]:
         global_env, local_env = self.grammar.get_python_env()
         io_instance: FandangoIO = global_env["FandangoIO"].instance()
+        history_tree: DerivationTree = random.choice(self.population)
 
         self.desired_solutions = 1
         while True:
+            self.population.clear()
+            if history_tree.contains_bits():
+               history_str = b''
+            else:
+               history_str = ""
+            past_r_msgs = history_tree.find_role_msgs()
+            for r_msg in past_r_msgs:
+               if isinstance(history_str, bytes):
+                   history_str += r_msg.msg.to_bytes()
+               else:
+                   history_str += r_msg.msg.to_string()
+
+            forecasting_trees  = set[DerivationTree]()
+            self.grammar.parse(history_str, self.start_symbol, include_controlflow=True)
+
+
             role_options = None
             for pop in set(self.population):
                 forecaster = PacketForecaster(self.grammar, pop)

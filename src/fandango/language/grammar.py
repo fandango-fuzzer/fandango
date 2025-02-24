@@ -1642,12 +1642,13 @@ class Grammar(NodeVisitor):
             self,
             word: str | bytes | DerivationTree,
             start: str | NonTerminal = "<start>",
+            include_controlflow: bool = False,
         ):
             """
             Yield multiple parse alternatives,
             even for incomplete inputs
             """
-            return self.parse_forest(word, start, allow_incomplete=True)
+            return self.parse_forest(word, start, allow_incomplete=True, include_controlflow=include_controlflow)
 
         def parse(
             self,
@@ -1747,7 +1748,6 @@ class Grammar(NodeVisitor):
         self,
         start: str | NonTerminal = "<start>",
         max_nodes: int = 50,
-        mode: FuzzingMode = None,
         in_role: str = None,
     ) -> DerivationTree:
         if isinstance(start, str):
@@ -1788,8 +1788,9 @@ class Grammar(NodeVisitor):
         self,
         word: str | bytes | DerivationTree,
         start: str | NonTerminal = "<start>",
+        include_controlflow: bool = False,
     ):
-        return self._parser.parse(word, start)
+        return self._parser.parse(word, start, include_controlflow=include_controlflow)
 
     def parse_forest(
         self,
@@ -1803,8 +1804,9 @@ class Grammar(NodeVisitor):
         self,
         word: str | bytes | DerivationTree,
         start: str | NonTerminal = "<start>",
+        include_controlflow: bool = False,
     ):
-        return self._parser.parse_incomplete(word, start)
+        return self._parser.parse_incomplete(word, start, include_controlflow=include_controlflow)
 
     def max_position(self):
         """Return the maximum position reached during last parsing."""
