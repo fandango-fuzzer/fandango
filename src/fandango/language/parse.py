@@ -618,7 +618,9 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
             try:
                 rep_max = tree.max(grammar, None)
             except ValueError:
-                rep_max = MAX_REPETITIONS
+                # Add 7 to rep_min if value can't be computed.
+                # This covers all cases in which a repetition might not be dividable by 8
+                rep_max = rep_min + 7
 
             step = min(min_bits, max_bits)
             return tp, rep_min * min_bits, rep_max * max_bits, step
