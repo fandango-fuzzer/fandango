@@ -11,6 +11,7 @@
 
 where int(<challenge>.<number_high>) > int(<resolve>.<number>)
 where int(<challenge>.<number_low>) < int(<resolve>.<number>)
+where int(<challenge>.<number_low>) < int(<challenge>.<number_high>) + 1
 
 import requests
 import json
@@ -27,4 +28,4 @@ class Client(FandangoAgent):
 class Server(FandangoAgent):
 
         def __init__(self):
-            super().__init__(False)
+            super().__init__(True)
