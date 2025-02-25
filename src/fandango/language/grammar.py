@@ -733,19 +733,35 @@ class PacketForecaster(NodeVisitor):
     def find(self):
         self.result = PacketForecaster.ForcastingResult()
         if self.tree is not None:
-            self.current_path.append(self.tree.symbol)
+            self.current_path.append((self.tree.symbol, False))
             if len(self.tree.children) == 0:
                 self.current_tree = [None]
             else:
                 self.current_tree = [[self.tree.children[0]]]
         else:
-            self.current_path.append(NonTerminal("<start>"))
+            self.current_path.append((NonTerminal("<start>"), True))
             self.current_tree = [None]
 
-        self.visit(self.grammar.rules[self.current_path[-1]])
+        self.visit(self.grammar.rules[self.current_path[-1][0]])
         self.current_tree.pop()
         self.current_path.pop()
         return self.result
+
+    def on_enter_controlflow(self, expected_nt_prefix: str):
+        tree = self.current_tree[-1]
+        cf_nt = (NonTerminal(expected_nt_prefix), True)
+        if tree is not None:
+            if len(tree) != 1:
+                raise GrammarKeyError("Expected len(tree) == 1 for controlflow entries!")
+            if not str(tree[0].symbol).startswith(expected_nt_prefix):
+                raise GrammarKeyError("Symbol mismatch!")
+            cf_nt = (NonTerminal(str(tree[0].symbol)), False)
+        self.current_tree.append(None if tree is None else tree[0].children)
+        self.current_path.append(cf_nt)
+
+    def on_leave_controlflow(self):
+        self.current_tree.pop()
+        self.current_path.pop()
 
     def visitNonTerminalNode(self, node: NonTerminalNode):
         tree = self.current_tree[-1]
@@ -760,7 +776,7 @@ class PacketForecaster(NodeVisitor):
             else:
                 return True
         self.current_tree.append(None if tree is None else tree[0].children)
-        self.current_path.append(node.symbol)
+        self.current_path.append((node.symbol, tree is None))
         try:
             result = self.visit(self.grammar.rules[node.symbol])
         finally:
@@ -769,6 +785,7 @@ class PacketForecaster(NodeVisitor):
         return result
 
     def visitConcatenation(self, node: Concatenation):
+        self.on_enter_controlflow(f"<__{NodeType.CONCATENATION}:")
         tree = self.current_tree[-1]
         child_idx = 0 if tree is None else (len(tree) - 1)
         continue_exploring = True
@@ -785,9 +802,11 @@ class PacketForecaster(NodeVisitor):
             continue_exploring = self.visit(next_child)
             self.current_tree.pop()
             child_idx += 1
+        self.on_leave_controlflow()
         return continue_exploring
 
     def visitAlternative(self, node: Alternative):
+        self.on_enter_controlflow(f"<__{NodeType.ALTERNATIVE}:")
         tree = self.current_tree[-1]
         continue_exploring = True
 
@@ -802,6 +821,7 @@ class PacketForecaster(NodeVisitor):
                 except GrammarKeyError as e:
                     pass
             self.current_tree.pop()
+            self.on_leave_controlflow()
             if not found:
                 raise GrammarKeyError("Alternative mismatch")
             return continue_exploring
@@ -810,9 +830,16 @@ class PacketForecaster(NodeVisitor):
             for alt in node.alternatives:
                 continue_exploring |= not self.visit(alt)
             self.current_tree.pop()
+            self.on_leave_controlflow()
             return continue_exploring
 
     def visitRepetition(self, node: Repetition):
+        self.on_enter_controlflow(f"<__{NodeType.REPETITION}:")
+        self.visitRepetitionType(node)
+        self.on_leave_controlflow()
+
+
+    def visitRepetitionType(self, node: Repetition):
         tree = self.current_tree[-1]
         continue_exploring = True
         tree_len = 0
@@ -834,13 +861,19 @@ class PacketForecaster(NodeVisitor):
         return continue_exploring
 
     def visitStar(self, node: Star):
-        return self.visitRepetition(node)
+        self.on_enter_controlflow(f"<__{NodeType.STAR}:")
+        self.visitRepetitionType(node)
+        self.on_leave_controlflow()
 
     def visitPlus(self, node: Plus):
-        return self.visitRepetition(node)
+        self.on_enter_controlflow(f"<__{NodeType.PLUS}:")
+        self.visitRepetitionType(node)
+        self.on_leave_controlflow()
 
     def visitOption(self, node: Option):
-        return self.visitRepetition(node)
+        self.on_enter_controlflow(f"<__{NodeType.OPTION}:")
+        self.visitRepetitionType(node)
+        self.on_leave_controlflow()
 
 
 class RoleAssigner:
@@ -1743,6 +1776,9 @@ class Grammar(NodeVisitor):
                 f"Failed to parse generated string: {string} for {symbol} with generator {self.generators[symbol]}"
             )
         return tree
+
+    def collapse(self, tree: DerivationTree) -> DerivationTree:
+        return self._parser.collapse(tree)
 
     def assign_roles(
         self,
