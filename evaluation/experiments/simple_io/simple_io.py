@@ -10,6 +10,8 @@ def main():
         grammar, constraints = parse(f, use_stdlib=False)
     # Initialize FANDANGO with desired parameters
 
+    # tree = grammar.parse("{}{\"nr_high\":10,\"nr_low\":5}", mode=Grammar.Parser.ParsingMode.INCOMPLETE_ROLE)
+
     fandango = Fandango(grammar=grammar, constraints=constraints, population_size=100)
 
     # Evolve solutions
