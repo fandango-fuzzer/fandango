@@ -4,7 +4,7 @@ import unittest
 import shlex
 import subprocess
 
-from fandango.language.grammar import ParseState, NodeType
+from fandango.language.grammar import ParseState, NodeType, Grammar
 from fandango.language.parse import parse
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
@@ -21,13 +21,13 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(len(self.grammar._parser._rules), 9)
         self.assertEqual(len(self.grammar._parser._implicit_rules), 1)
         self.assertEqual(
-            {(NonTerminal("<number>"),)},
+            {((NonTerminal("<number>"), frozenset()),)},
             self.grammar._parser._rules[NonTerminal("<start>")],
         )
         self.assertEqual(
             {
                 (
-                    NonTerminal(f"<__{NodeType.ALTERNATIVE}:0>"),
+                    (NonTerminal(f"<__{NodeType.ALTERNATIVE}:0>"), frozenset()),
                 )
             },
             self.grammar._parser._rules[NonTerminal("<number>")],
@@ -35,7 +35,7 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(
             {
                 (
-                    NonTerminal(f"<__{NodeType.ALTERNATIVE}:1>"),
+                    (NonTerminal(f"<__{NodeType.ALTERNATIVE}:1>"), frozenset()),
                 )
             },
             self.grammar._parser._rules[NonTerminal("<non_zero>")],
@@ -43,7 +43,7 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(
             {
                 (
-                    NonTerminal(f"<__{NodeType.ALTERNATIVE}:2>"),
+                    (NonTerminal(f"<__{NodeType.ALTERNATIVE}:2>"), frozenset()),
                 )
             },
             self.grammar._parser._rules[NonTerminal("<digit>")],
@@ -51,7 +51,7 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(
             {
                 (
-                    NonTerminal("<*0*>"),
+                    (NonTerminal("<*0*>"), frozenset()),
                 )
             },
             self.grammar._parser._rules[NonTerminal(f"<__{NodeType.STAR}:0>")],
@@ -59,47 +59,47 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(
             {
                 (
-                    NonTerminal("<non_zero>"),
-                    NonTerminal(f"<__{NodeType.STAR}:0>")
+                    (NonTerminal("<non_zero>"), frozenset()),
+                     (NonTerminal(f"<__{NodeType.STAR}:0>"), frozenset())
                 )
             },
             self.grammar._parser._rules[NonTerminal(f"<__{NodeType.CONCATENATION}:0>")],
         )
         self.assertEqual(
             {
-                (Terminal("0"),),
+                ((Terminal("0"), frozenset()),),
                 (
-                    NonTerminal(f"<__{NodeType.CONCATENATION}:0>"),
+                    (NonTerminal(f"<__{NodeType.CONCATENATION}:0>"), frozenset()),
                 )
             },
             self.grammar._parser._rules[NonTerminal(f"<__{NodeType.ALTERNATIVE}:0>")],
         )
         self.assertEqual(
             {
-                (Terminal("1"),),
-                (Terminal("2"),),
-                (Terminal("3"),),
-                (Terminal("4"),),
-                (Terminal("5"),),
-                (Terminal("6"),),
-                (Terminal("7"),),
-                (Terminal("8"),),
-                (Terminal("9"),),
+                ((Terminal("1"), frozenset()),),
+                ((Terminal("2"), frozenset()),),
+                ((Terminal("3"), frozenset()),),
+                ((Terminal("4"), frozenset()),),
+                ((Terminal("5"), frozenset()),),
+                ((Terminal("6"), frozenset()),),
+                ((Terminal("7"), frozenset()),),
+                ((Terminal("8"), frozenset()),),
+                ((Terminal("9"), frozenset()),),
             },
             self.grammar._parser._rules[NonTerminal(f"<__{NodeType.ALTERNATIVE}:1>")],
         )
         self.assertEqual(
             {
-                (Terminal("0"),),
-                (Terminal("1"),),
-                (Terminal("2"),),
-                (Terminal("3"),),
-                (Terminal("4"),),
-                (Terminal("5"),),
-                (Terminal("6"),),
-                (Terminal("7"),),
-                (Terminal("8"),),
-                (Terminal("9"),),
+                ((Terminal("0"), frozenset()),),
+                ((Terminal("1"), frozenset()),),
+                ((Terminal("2"), frozenset()),),
+                ((Terminal("3"), frozenset()),),
+                ((Terminal("4"), frozenset()),),
+                ((Terminal("5"), frozenset()),),
+                ((Terminal("6"), frozenset()),),
+                ((Terminal("7"), frozenset()),),
+                ((Terminal("8"), frozenset()),),
+                ((Terminal("9"), frozenset()),),
             },
             self.grammar._parser._rules[NonTerminal(f"<__{NodeType.ALTERNATIVE}:2>")],
         )
@@ -190,7 +190,7 @@ class TestIncompleteParsing(unittest.TestCase):
 
     def _test(self, example, tree):
         parsed = False
-        for actual_tree in self.grammar.parse_multiple(example, "<ab>"):
+        for actual_tree in self.grammar.parse_multiple(example, "<ab>", mode=Grammar.Parser.ParsingMode.INCOMPLETE):
             self.assertEqual(tree, actual_tree)
             parsed = True
             break
