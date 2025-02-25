@@ -1,4 +1,5 @@
 # fandango/evolution/algorithm.py
+import copy
 import enum
 import logging
 import random
@@ -200,29 +201,16 @@ class Fandango:
         self.desired_solutions = 1
         while True:
             self.population.clear()
-            if history_tree.contains_bits():
-               history_str = b''
-            else:
-               history_str = ""
-            past_r_msgs = history_tree.find_role_msgs()
-            for r_msg in past_r_msgs:
-               if isinstance(history_str, bytes):
-                   history_str += r_msg.msg.to_bytes()
-               else:
-                   history_str += r_msg.msg.to_string()
+            self.evaluator.reset()
+            self.solution.clear()
+            self.solution_set.clear()
 
-            forecasting_trees  = set[DerivationTree]()
-            self.grammar.parse(history_str, self.start_symbol, include_controlflow=True)
+            collapsed = self.grammar.collapse(history_tree)
+            while len(self.population) < self.population_size:
+                self.population.append(copy.deepcopy(collapsed))
 
-
-            role_options = None
-            for pop in set(self.population):
-                forecaster = PacketForecaster(self.grammar, pop)
-                if role_options is None:
-                    role_options = forecaster.find()
-                else:
-                    packet_options_new = forecaster.find()
-                    role_options = role_options.merge(packet_options_new)
+            forecaster = PacketForecaster(self.grammar, history_tree)
+            role_options = forecaster.find()
 
             if len(role_options.getRoles()) == 0:
                 if len(self.solution) == 0:
@@ -230,16 +218,14 @@ class Fandango:
                 return self.solution[0]
 
             selected_role = random.choice(list(role_options.getRoles()))
-            self.evaluator.reset()
-            self.solution.clear()
-            self.solution_set.clear()
             if (
-                io_instance.roles[selected_role].is_fandango()
-                and not io_instance.received_msg()
+                    io_instance.roles[selected_role].is_fandango()
+                    and not io_instance.received_msg()
             ):
                 non_terminal_options = role_options[selected_role]
                 symbol = random.choice(list(non_terminal_options.getNonTerminals()))
-                self.population_manager.io_next_packet = non_terminal_options[symbol]
+                selected_option = non_terminal_options[symbol]
+                self.population_manager.io_next_packet = selected_option
                 new_population = (
                     self.population_manager.generate_random_initial_population(
                         self.fix_individual
@@ -250,8 +236,8 @@ class Fandango:
                 self.population = new_population
                 self.evaluation = self.evaluator.evaluate_population(self.population)
                 self.fitness = (
-                    sum(fitness for _, fitness, _ in self.evaluation)
-                    / self.population_size
+                        sum(fitness for _, fitness, _ in self.evaluation)
+                        / self.population_size
                 )
 
                 evolve_result = self._evolve_single()
@@ -264,19 +250,28 @@ class Fandango:
                 if io_instance.received_msg():
                     # Abort if we received a message during fuzzing
                     continue
-                send_msg = next_tree.find_role_msgs()[-1].msg
+                new_packet = next_tree.find_role_msgs()[-1]
+                send_msg = new_packet.msg
                 if send_msg.contains_bytes():
                     send_msg = send_msg.to_bytes()
                 else:
                     send_msg = send_msg.to_string()
                 if (
-                    packet_node.recipient is None
-                    or not io_instance.roles[packet_node.recipient].is_fandango()
+                        packet_node.recipient is None
+                        or not io_instance.roles[packet_node.recipient].is_fandango()
                 ):
                     io_instance.set_transmit(
                         packet_node.role, packet_node.recipient, send_msg
                     )
                     exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
+                cf_packet = self.grammar.parse(send_msg,
+                                               selected_option.node.symbol,
+                                               mode=Grammar.Parser.ParsingMode.COMPLETE,
+                                               include_controlflow=True)
+                hookin_option = selected_option.paths.pop()
+                history_tree = hookin_option.tree
+                history_tree.append(hookin_option.path[1:], cf_packet)
+                next_tree.set_all_read_only(True)
             else:
                 while not io_instance.received_msg():
                     time.sleep(0.25)
@@ -284,46 +279,15 @@ class Fandango:
                     role_options, io_instance
                 )
 
-                prefix_data = next(iter(forecast.paths))
-                next_tree = prefix_data.tree
-                hookin_path = prefix_data.path
-                next_tree.append(hookin_path[1:], packet_tree)
-                next_tree.set_all_read_only(True)
-                fitness, eval_report = self.evaluator.evaluate_individual(next_tree)
+                hookin_option = forecast.paths.pop
+                history_tree = hookin_option.tree
+                history_tree.append(hookin_option.path[1:], packet_tree)
+                history_tree.set_all_read_only(True)
+                fitness, eval_report = self.evaluator.evaluate_individual(history_tree)
                 if fitness < 0.99:
                     raise RuntimeError("Remote response doesn't match constraints!")
                 self.solution.clear()
 
-            # if next_tree.contains_bits():
-            #    history = b''
-            # else:
-            #    history = ""
-            # past_r_msgs = next_tree.find_role_msgs()
-            # for r_msg in past_r_msgs:
-            #    if isinstance(history, bytes):
-            #        history += r_msg.msg.to_bytes()
-            #    else:
-            #        history += r_msg.msg.to_string()
-
-            # new_population = []
-            # for tree_option in self.grammar.parse_incomplete(
-            #    history, self.start_symbol
-            # ):
-            #    tree_option.set_all_read_only(True)
-            #    if self.grammar.assign_roles(tree_option, past_r_msgs):
-            #        new_population.append(tree_option)
-            #    if len(new_population) >= self.population_size:
-            #        break
-            # if len(new_population) == 0:
-            #    raise RuntimeError(
-            #        "Failed to append remote response to generated history matching grammar!"
-            #    )
-            new_population = [next_tree]
-            self.population = list(new_population)
-            self.solution.clear()
-            self.solution.extend(new_population)
-            while len(self.population) < self.population_size:
-                self.population.append(random.choice(new_population))
 
     def evolve(self) -> List[DerivationTree]:
         if self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
@@ -529,21 +493,16 @@ class Fandango:
                 for non_terminal in set(nts_with_role):
                     packet_option = forecasted_nonterminals[non_terminal]
                     parsed_packet_tree = self.grammar.parse(
-                        complete_msg, packet_option.node.symbol
+                        complete_msg, packet_option.node.symbol, include_controlflow=True
                     )
                     parsed_packet_tree.role = packet_option.node.role
                     parsed_packet_tree.recipient = packet_option.node.recipient
-                    if parsed_packet_tree is None:
-                        try:
-                            next(
-                                self.grammar.parse_multiple(
-                                    complete_msg, packet_option.node.symbol
-                                )
-                            )
-                        except StopIteration:
-                            nts_with_role.remove(non_terminal)
-                    else:
+                    if parsed_packet_tree is not None:
                         break
+                    incomplete_tree = self.grammar.parse(complete_msg, packet_option.node.symbol,
+                                                         mode=Grammar.Parser.ParsingMode.INCOMPLETE)
+                    if incomplete_tree is None:
+                        nts_with_role.remove(non_terminal)
 
                 # Check if there are still NonTerminals that can be parsed with received prefix
                 if len(nts_with_role) == 0:
