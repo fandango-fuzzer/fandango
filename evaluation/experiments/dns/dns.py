@@ -1,3 +1,5 @@
+import time
+
 from fandango.evolution.algorithm import Fandango
 from fandango.language.grammar import *
 from fandango.language.symbol import *
@@ -9,13 +11,16 @@ def main():
     with open("dns.fan") as f:
         grammar, constraints = parse(f, use_stdlib=False)
 
+    time_start = time.time()
     fandango = Fandango(grammar=grammar, constraints=constraints, population_size=10)
     from faker import Faker
     fake = Faker()
     fake.domain_name()
 
     # Evolve solutions
+
     solutions = fandango.evolve()
+    print(time.time() - time_start)
 
     # Output solutions
     for solution in solutions:
