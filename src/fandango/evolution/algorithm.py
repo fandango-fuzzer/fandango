@@ -210,7 +210,7 @@ class Fandango:
             if len(role_options.getRoles()) == 0:
                 if len(history_tree.find_role_msgs()) == 0:
                     raise RuntimeError("Couldn't forecast next packet!")
-                return [history_tree]
+                return [self.grammar.collapse(history_tree)]
 
             selected_role = random.choice(list(role_options.getRoles()))
             if (
