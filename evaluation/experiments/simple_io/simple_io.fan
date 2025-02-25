@@ -28,4 +28,4 @@ class Client(FandangoAgent):
 class Server(FandangoAgent):
 
         def __init__(self):
-            super().__init__(True)
+            super().__init__(False)
