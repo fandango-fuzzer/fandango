@@ -1148,6 +1148,12 @@ class Grammar(NodeVisitor):
             self._rules.clear()
             self._implicit_rules.clear()
             self._context_rules.clear()
+            self.alternative_count = 0
+            self.concatenation_count = 0
+            self.repetition_count = 0
+            self.star_count = 0
+            self.plus_count = 0
+            self.option_count = 0
             for nonterminal in self.grammar_rules:
                 self.set_rule(nonterminal, self.visit(self.grammar_rules[nonterminal]))
 
@@ -1339,13 +1345,13 @@ class Grammar(NodeVisitor):
                     current_tree = DerivationTree(
                         current_state.nonterminal,
                         [*current_state.children, *current_tree.children],
-                        *current_state.dot_params,
+                        **dict(current_state.dot_params),
                     )
                 else:
                     current_tree = DerivationTree(
                         current_state.nonterminal,
                         [*current_state.children, current_tree],
-                        *current_state.dot_params,
+                        **dict(current_state.dot_params),
                     )
 
             return current_tree.children[0]
@@ -1366,11 +1372,11 @@ class Grammar(NodeVisitor):
             except ValueError:
                 return
             new_symbols = []
-            for symbol in state.symbols:
+            for symbol, dot_params in state.symbols:
                 if symbol == state.dot:
                     new_symbols.append(context_nt)
                 else:
-                    new_symbols.append(symbol)
+                    new_symbols.append((symbol, dot_params))
             state.symbols = tuple(new_symbols)
             for nonterminal in self._implicit_rules:
                 self._implicit_rules[nonterminal] = {

@@ -76,13 +76,12 @@ where forall <req> in <dns_req>:
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
 
 
-<answer> ::= <q_name> <a_type> <rr_class> <a_ttl> <a_rd_length> <a_rdata>
+<answer> ::= <q_name> <a_type> <rr_class> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
 <a_type> ::= <type_a> | <type_ns>
 <a_ttl> ::= <byte>{4}
 <a_rd_length> ::= <byte>{2}
 <a_rdata> ::= <byte>* #<ip_address>
 <ip_address> ::= <byte>{4}
-where unpack('>H', bytes(<a_rd_length>))[0] == len(<a_rdata>)
 
 
 <type_a> ::= 0{15} 1
@@ -92,7 +91,7 @@ where unpack('>H', bytes(<a_rd_length>))[0] == len(<a_rdata>)
 import socket
 class Client(FandangoAgent):
         def __init__(self):
-            super().__init__(False)
+            super().__init__(True)
 
         def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
