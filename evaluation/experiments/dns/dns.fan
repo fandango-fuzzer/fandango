@@ -80,8 +80,7 @@ where forall <req> in <dns_req>:
 <a_type> ::= <type_a> | <type_ns>
 <a_ttl> ::= <byte>{4}
 <a_rd_length> ::= <byte>{2}
-<a_rdata> ::= <byte>* #<ip_address>
-<ip_address> ::= <byte>{4}
+<a_rdata> ::= <byte>
 
 
 <type_a> ::= 0{15} 1
