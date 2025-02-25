@@ -61,6 +61,10 @@ class DerivationTree:
         self._symbol = symbol
         self.invalidate_hash()
 
+    @property
+    def parent(self) -> Optional["DerivationTree"]:
+        return self._parent
+
     def invalidate_hash(self):
         self.hash_cache = None
         if self._parent is not None:
@@ -104,12 +108,17 @@ class DerivationTree:
             subtrees.extend(child.find_role_msgs())
         return subtrees
 
-    def append(self, hookin_path: tuple[NonTerminal, ...], tree: "DerivationTree"):
+    def append(self, hookin_path: tuple[(NonTerminal, bool), ...], tree: "DerivationTree"):
         if len(hookin_path) == 0:
             self.add_child(tree)
             return
-        if len(self.children) == 0 or self.children[-1].symbol != hookin_path[0]:
-            self.add_child(DerivationTree(hookin_path[0]))
+        next_nt, add_new_node = hookin_path[0]
+        if add_new_node:
+            self.add_child(DerivationTree(next_nt))
+        elif (len(self.children) == 0 or
+              (not next_nt.symbol.startswith("<__") and str(self.children[-1].symbol) != next_nt.symbol) or
+              (next_nt.symbol.startswith("<__") and not str(self.children[-1].symbol).startswith(next_nt.symbol))):
+            raise ValueError("Invalid hookin_path!")
         self.children[-1].append(hookin_path[1:], tree)
 
     def set_children(self, children: List["DerivationTree"]):
@@ -144,6 +153,13 @@ class DerivationTree:
             if child.symbol == symbol:
                 result.append(child)
         return result
+
+    def __delitem__(self, item):
+        the_item = self._children.__getitem__(item)
+        the_item._parent = None
+        self._size -= the_item.size()
+        self._children.__delitem__(item)
+        self.invalidate_hash()
 
     def __getitem__(self, item) -> "DerivationTree":
         if isinstance(item, list) and len(item) == 1:

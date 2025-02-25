@@ -204,18 +204,13 @@ class Fandango:
             self.evaluator.reset()
             self.solution.clear()
             self.solution_set.clear()
-
-            collapsed = self.grammar.collapse(history_tree)
-            while len(self.population) < self.population_size:
-                self.population.append(copy.deepcopy(collapsed))
-
             forecaster = PacketForecaster(self.grammar, history_tree)
             role_options = forecaster.find()
 
             if len(role_options.getRoles()) == 0:
-                if len(self.solution) == 0:
+                if len(history_tree.find_role_msgs()) == 0:
                     raise RuntimeError("Couldn't forecast next packet!")
-                return self.solution[0]
+                return [history_tree]
 
             selected_role = random.choice(list(role_options.getRoles()))
             if (
@@ -268,7 +263,9 @@ class Fandango:
                                                selected_option.node.symbol,
                                                mode=Grammar.Parser.ParsingMode.COMPLETE,
                                                include_controlflow=True)
-                hookin_option = selected_option.paths.pop()
+                cf_packet.role = selected_option.node.role
+                cf_packet.recipient = packet_node.recipient
+                hookin_option = next(iter(selected_option.paths))
                 history_tree = hookin_option.tree
                 history_tree.append(hookin_option.path[1:], cf_packet)
                 next_tree.set_all_read_only(True)

@@ -653,9 +653,18 @@ class NonTerminalFinder(NodeVisitor):
 class PacketForecaster(NodeVisitor):
 
     class MountingPath:
-        def __init__(self, tree: DerivationTree, path: Tuple[NonTerminal, ...]):
+        def __init__(self, tree: DerivationTree, path: Tuple[Tuple[NonTerminal, bool], ...]):
             self.tree = tree
             self.path = path
+
+        @property
+        def collapsed_path(self):
+            new_path = []
+            for nt, new_node in self.path:
+                if nt.symbol.startswith("<__"):
+                    continue
+                new_path.append((nt, new_node))
+            return tuple(new_path)
 
         def __hash__(self):
             return hash((hash(self.tree), hash(self.path)))
@@ -719,7 +728,7 @@ class PacketForecaster(NodeVisitor):
         self.grammar = grammar
         self.tree = tree
         self.current_tree: list[list[DerivationTree] | None] = []
-        self.current_path: list[NonTerminal] = []
+        self.current_path: list[Tuple[NonTerminal, bool]] = []
         self.result = PacketForecaster.ForcastingResult()
 
     def add_option(self, node: NonTerminalNode):
