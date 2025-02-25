@@ -276,7 +276,7 @@ class Fandango:
                     role_options, io_instance
                 )
 
-                hookin_option = forecast.paths.pop
+                hookin_option = next(iter(forecast.paths))
                 history_tree = hookin_option.tree
                 history_tree.append(hookin_option.path[1:], packet_tree)
                 history_tree.set_all_read_only(True)
