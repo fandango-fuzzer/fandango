@@ -1270,10 +1270,11 @@ class Grammar(NodeVisitor):
             return [[(intermediate_nt, frozenset())]]
 
         def visitNonTerminalNode(self, node: NonTerminalNode):
-            params = {
-                "role": node.role,
-                "recipient": node.recipient
-            }
+            params = dict()
+            if node.role is not None:
+                params["role"] = node.role
+            if node.recipient is not None:
+                params["recipient"] = node.recipient
             params = frozenset(params.items())
             return [[(node.symbol, params)]]
 
