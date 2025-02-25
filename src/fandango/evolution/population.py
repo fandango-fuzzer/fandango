@@ -3,7 +3,7 @@ import random
 from typing import Callable, List, Set
 
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
-from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode
+from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode, PacketForecaster
 from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER
 
@@ -20,20 +20,22 @@ class PopulationManager:
         self.start_symbol = start_symbol
         self.population_size = population_size
         self.warnings_are_errors = warnings_are_errors
-        self.io_next_packet = None
+        self.io_next_packet: PacketForecaster.ForcastingPacket|None = None
 
     def _generate_population_entry(self):
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
             if self.io_next_packet is None:
                 return DerivationTree(NonTerminal(self.start_symbol))
 
-            new_packet = self.io_next_packet.node.fuzz(self.grammar, max_nodes=999999)[
-                0
-            ]
+            mounting_option = next(iter(self.io_next_packet.paths))
+            tree = self.grammar.collapse(mounting_option.tree)
+            dummy = DerivationTree(NonTerminal("<hookin>"))
+            tree.append(mounting_option.collapsed_path[1:], dummy)
 
-            mounting_path = random.choice(list(self.io_next_packet.paths))
-            tree: DerivationTree = copy.deepcopy(mounting_path.tree)
-            tree.append(mounting_path.path[1:], new_packet)
+            fuzz_point = dummy.parent
+            del fuzz_point[-1]
+            self.io_next_packet.node.fuzz(fuzz_point, self.grammar, max_nodes=999999)
+
             return tree
         elif self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
             return self.grammar.fuzz(self.start_symbol)
