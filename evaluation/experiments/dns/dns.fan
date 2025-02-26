@@ -32,15 +32,15 @@ where (unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_an_count>))[0] + unpack
 <resp_ns_count> ::= 0{15} <bit>
 <resp_ar_count> ::= 0{15} <bit>
 
-where forall <req> in <dns_req>:
+where forall <req> in <start>[:]:
     forall <n1> in <req>..<q_name_written_complete>:
         get_index_within(<n1>, <req>, ['<q_name_written_complete>', '<q_name_written_partly>', '<q_name_written_pointer>']) == 0
 
-where forall <req> in <dns_req>:
+where forall <req> in <start>[:]:
     forall <n2> in <req>..<q_name_written_pointer>:
         get_index_within(<n2>, <req>, ['<q_name_written_complete>', '<q_name_written_partly>', '<q_name_written_pointer>']) != 0
 
-where forall <req> in <dns_req>:
+where forall <req> in <start>[:]:
     forall <n3> in <req>..<q_name_written_partly>:
         get_index_within(<n3>, <req>, ['<q_name_written_complete>', '<q_name_written_partly>', '<q_name_written_pointer>']) != 0
 
