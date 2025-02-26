@@ -1045,7 +1045,6 @@ class Grammar(NodeVisitor):
             table: List[Set[ParseState] | Column],
             k: int,
             use_implicit: bool = False,
-            mode: ParsingMode = ParsingMode.INCOMPLETE,
         ):
             for s in list(table[state.position]):
                 if s.dot == state.nonterminal:
