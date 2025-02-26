@@ -11,10 +11,13 @@ def gen_q_name():
         result += part.encode('iso8859-1')
     return result
 
+def byte_to_int(byte_val):
+    return int(unpack('>H', bytes(byte_val))[0])
+
 
 <start> ::= <Client:dns_req> <Server:dns_resp>
 <dns_req> ::= <header_req> <question>
-<dns_resp> ::= <header_resp> <question> <answer>+
+<dns_resp> ::= <header_resp> <question>{byte_to_int(<resp_qd_count>)} <answer>{byte_to_int(<resp_an_count>)} <answer>{byte_to_int(<resp_ns_count>)} <answer>{byte_to_int(<resp_ar_count>)}
 
 #                       qr      opcode       aa tc rd  ra  z      rcode   qdcount  ancount nscount arcount
 <header_req> ::= <h_id> 0 <h_opcode_standard> 1 0 <h_rd> 0 0 0 0 <h_rcode_none> 0{15} 1 0{16} 0{16} 0{16}

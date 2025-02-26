@@ -492,9 +492,9 @@ class Fandango:
                     parsed_packet_tree = self.grammar.parse(
                         complete_msg, packet_option.node.symbol, include_controlflow=True
                     )
-                    parsed_packet_tree.role = packet_option.node.role
-                    parsed_packet_tree.recipient = packet_option.node.recipient
                     if parsed_packet_tree is not None:
+                        parsed_packet_tree.role = packet_option.node.role
+                        parsed_packet_tree.recipient = packet_option.node.recipient
                         break
                     incomplete_tree = self.grammar.parse(complete_msg, packet_option.node.symbol,
                                                          mode=Grammar.Parser.ParsingMode.INCOMPLETE)
