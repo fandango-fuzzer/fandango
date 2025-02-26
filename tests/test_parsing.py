@@ -217,6 +217,90 @@ class TestIncompleteParsing(unittest.TestCase):
             ),
         )
 
+class TestDynamicRepetitionParsing(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.file = open("tests/resources/dynamic_repetition.fan", "r")
+        cls.grammar, _ = parse(cls.file, use_stdlib=False, use_cache=False)
+
+    def _test(self, example, tree):
+        parsed = False
+        for actual_tree in self.grammar.parse_multiple(example, mode=Grammar.Parser.ParsingMode.COMPLETE):
+            self.assertEqual(tree, actual_tree)
+            parsed = True
+            break
+        self.assertTrue(parsed)
+
+    @classmethod
+    def gen_byte(self, val: int):
+        byte_arr = []
+        count = 0
+
+        bit = 1
+        while val >= bit:
+            count += 1
+            bit_val = 0
+            if val & bit:
+                bit_val = 1
+            byte_arr.insert(
+                0,
+                DerivationTree(NonTerminal('<bit>'),
+                               [DerivationTree(Terminal(bit_val))])
+            )
+            bit <<= 1
+
+        for _ in range(8 - count):
+            byte_arr.insert(0, DerivationTree(NonTerminal('<bit>'),
+                               [DerivationTree(Terminal(0))]))
+        return DerivationTree(NonTerminal('<byte>'), byte_arr)
+
+
+    def test_nested(self):
+        self._test(
+            b"\x00\x02\x00\x01\xFF\x00\x03\xFF\xFF\xFF\x00\x00",
+            DerivationTree(
+                NonTerminal('<start>'),
+                [
+                    DerivationTree(
+                        NonTerminal('<len>'),
+                        [
+                            self.gen_byte(0),
+                            self.gen_byte(2),
+                        ],
+                    ),
+                    DerivationTree(
+                        NonTerminal('<inner>'),
+                        [
+                            DerivationTree(
+                                NonTerminal('<len>'),
+                                [
+                                    self.gen_byte(0),
+                                    self.gen_byte(1),
+                                ],
+                            ),
+                            self.gen_byte(255)
+                        ],
+                    ),
+                    DerivationTree(
+                        NonTerminal('<inner>'),
+                        [
+                            DerivationTree(
+                                NonTerminal('<len>'),
+                                [
+                                    self.gen_byte(0),
+                                    self.gen_byte(3),
+                                ],
+                            ),
+                            self.gen_byte(255),
+                            self.gen_byte(255),
+                            self.gen_byte(255),
+                        ],
+                    ),
+                    self.gen_byte(0),
+                    self.gen_byte(0),
+                ],
+            ),
+        )
 
 class TestEmptyParsing(unittest.TestCase):
     @classmethod
