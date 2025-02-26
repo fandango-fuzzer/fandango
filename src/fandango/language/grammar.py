@@ -716,7 +716,7 @@ class Grammar(NodeVisitor):
             return [[(intermediate_nt, frozenset())]]
 
         def visitRepetition(
-            self, node: Repetition, nt=None, tree: DerivationTree = None
+            self, node: Repetition, nt: tuple[NonTerminal, frozenset] = None, tree: DerivationTree = None
         ):
             if nt is None:
                 alternatives = self.visit(node.node)
