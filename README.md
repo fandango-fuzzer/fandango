@@ -44,35 +44,7 @@ For the complete FANDANGO documentation, including tutorials, references, and ad
 
 Here, you'll find the following sections:
 
-#### Fuzzing with Fandango
-   - [Fuzzing with Fandango](https://fandango-fuzzer.github.io/Intro.html)
-#### About Fandango
-   - [About Fandango](https://fandango-fuzzer.github.io/About.html)
-#### Fandango Tutorial
-  - [Fandango Tutorial](https://fandango-fuzzer.github.io/Tutorial.html)
-  - [Installing Fandango](https://fandango-fuzzer.github.io/Installing.html)
-  - [A First Fandango Spec](https://fandango-fuzzer.github.io/FirstSpec.html)
-  - [Invoking Fandango](https://fandango-fuzzer.github.io/Invoking.html)
-  - [Fuzzing with Fandango](https://fandango-fuzzer.github.io/Fuzzing.html)
-  - [Some Fuzzing Strategies](https://fandango-fuzzer.github.io/Strategies.html)
-  - [Shaping Inputs with Constraints](https://fandango-fuzzer.github.io/Constraints.html)
-  - [The Fandango Shell](https://fandango-fuzzer.github.io/Shell.html)
-  - [Data Generators and Fakers](https://fandango-fuzzer.github.io/Generators.html)
-  - [Complex Input Structures](https://fandango-fuzzer.github.io/Recursive.html)
-  - [Accessing Input Elements](https://fandango-fuzzer.github.io/Paths.html)
-  - [Case Study: ISO 8601 Date + Time](https://fandango-fuzzer.github.io/ISO8601.html)
-  - [Generating Binary Inputs](https://fandango-fuzzer.github.io/Binary.html)
-  - [Bits and Bit Fields](https://fandango-fuzzer.github.io/Bits.html)
-  - [Case Study: The GIF Format](https://fandango-fuzzer.github.io/Gif.html)
-  - [Statistical Distributions](https://fandango-fuzzer.github.io/Distributions.html)
-  - [Coverage-Guided Fuzzing](https://fandango-fuzzer.github.io/Whitebox.html)
-  - [Hatching Specs](https://fandango-fuzzer.github.io/Hatching.html)
-#### Fandango Reference
-  - [Fandango Reference](https://fandango-fuzzer.github.io/Reference.html)
-  - [Installing Fandango](https://fandango-fuzzer.github.io/Installing.html)
-  - [Fandango Standard Library](https://fandango-fuzzer.github.io/Stdlib.html)
-  - [Fandango Spec Locations](https://fandango-fuzzer.github.io/Including.html)
-
+Links to the official documentation have been removed to ensure anonymity.
 ---
 
 ## Evaluation
@@ -82,7 +54,10 @@ FANDANGO has been submitted to ISSTA 2025. FANDANGO has been evaluated against [
 To reproduce the evaluation results from ISLa, please refer to [their replication package](https://dl.acm.org/do/10.1145/3554336/full/), published in FSE 2022.
 To reproduce the evaluation results from FANDANGO, please download a development copy of the repository from [the official GitHub Repository](https://github.com/fandango-fuzzer/fandango), execute: (from the root directory)
 
+
 ```bash
+sudo apt install libarchive # This is required for verifying TAR files
+make install-test
 python -m evaluation.vs_isla.run_evaluation
 ```
 

@@ -39,7 +39,7 @@ dependencies = [
 ]
 
 [project.urls]
-homepage = "https://fandango-fuzzer.github.io/"
+homepage = "ANONYMIZED"
 repository = "https://github.com/fandango-fuzzer/fandango/"
 "Bug Tracker" = "https://github.com/fandango-fuzzer/fandango/issues"
 
