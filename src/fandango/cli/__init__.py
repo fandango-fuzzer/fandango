@@ -1,5 +1,4 @@
 import argparse
-import ast
 import atexit
 import glob
 import importlib.metadata
@@ -19,13 +18,11 @@ import shutil
 from io import StringIO
 from io import UnsupportedOperation
 from pathlib import Path
-from ansi_styles import ansiStyles as styles
-from enum import Enum
 
 from ansi_styles import ansiStyles as styles
-from antlr4.error.Errors import ParseCancellationException
 
 from fandango.evolution.algorithm import Fandango
+from fandango.language.grammar import Grammar
 from fandango.language.parse import parse
 from fandango.logger import LOGGER, print_exception
 
@@ -831,8 +828,11 @@ def parse_file(fd, args, grammar, constraints, settings):
         start_symbol = "<start>"
 
     allow_incomplete = hasattr(args, "prefix") and args.prefix
+    parsing_mode = Grammar.Parser.ParsingMode.COMPLETE
+    if allow_incomplete:
+        parsing_mode = Grammar.Parser.ParsingMode.INCOMPLETE
     tree_gen = grammar.parse_forest(
-        individual, start=start_symbol, allow_incomplete=allow_incomplete
+        individual, start=start_symbol, mode=parsing_mode
     )
 
     alternative_counter = 1

@@ -15,15 +15,21 @@ MAX_REPETITIONS = 5
 
 
 class NodeType(enum.Enum):
-    ALTERNATIVE = 0
-    CONCATENATION = 1
-    REPETITION = 2
-    STAR = 3
-    PLUS = 4
-    OPTION = 5
-    NON_TERMINAL = 6
-    TERMINAL = 7
-    CHAR_SET = 8
+    ALTERNATIVE = "alternative"
+    CONCATENATION = "concatenation"
+    REPETITION = "repetition"
+    STAR = "star"
+    PLUS = "plus"
+    OPTION = "option"
+    NON_TERMINAL = "non_terminal"
+    TERMINAL = "terminal"
+    CHAR_SET = "char_set"
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return self.value
 
 
 class Node(abc.ABC):
@@ -137,16 +143,18 @@ class Concatenation(Node):
 
 
 class Repetition(Node):
-    def __init__(self, node: Node, min_ = ("0", [], {}), max_ = (f"{MAX_REPETITIONS}", [], {})):
+    def __init__(
+        self, node: Node, min_=("0", [], {}), max_=(f"{MAX_REPETITIONS}", [], {})
+    ):
         super().__init__(NodeType.REPETITION)
-        #min_expr, min_nt, min_search = min_
-        #max_expr, max_nt, max_search = max_
+        # min_expr, min_nt, min_search = min_
+        # max_expr, max_nt, max_search = max_
 
-        #if min_ < 0:
+        # if min_ < 0:
         #    raise ValueError(
         #        f"Minimum repetitions {min_} must be greater than or equal to 0"
         #    )
-        #if max_ <= 0 or max_ < min_:
+        # if max_ <= 0 or max_ < min_:
         #    raise ValueError(
         #        f"Maximum repetitions {max_} must be greater than 0 or greater than min {min_}"
         #    )
@@ -164,7 +172,9 @@ class Repetition(Node):
                     non_terminals.add(nt)
         return non_terminals
 
-    def _compute_reps_bound(self, grammar: "Grammar", tree: "DerivationTree", expr_data):
+    def _compute_rep_bound(
+        self, grammar: "Grammar", tree: "DerivationTree", expr_data
+    ):
         expr, _, searches = expr_data
         local_cpy = grammar._local_variables.copy()
 
@@ -178,17 +188,14 @@ class Repetition(Node):
             nodes.extend(
                 [(name, container) for container in search.find(tree.get_root())]
             )
-        local_cpy.update(
-            {name: container.evaluate() for name, container in nodes}
-        )
+        local_cpy.update({name: container.evaluate() for name, container in nodes})
         return eval(expr, grammar._global_variables, local_cpy)
 
-
     def min(self, grammar: "Grammar", tree: "DerivationTree" = None):
-        return self._compute_reps_bound(grammar, tree, self.expr_data_min)
+        return self._compute_rep_bound(grammar, tree, self.expr_data_min)
 
     def max(self, grammar: "Grammar", tree: "DerivationTree" = None):
-        return self._compute_reps_bound(grammar, tree, self.expr_data_max)
+        return self._compute_rep_bound(grammar, tree, self.expr_data_max)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitRepetition(self)
@@ -331,7 +338,9 @@ class TerminalNode(Node):
             if isinstance(self.symbol.symbol, bytes):
                 # Exrex can't do bytes, so we decode to str and back
                 instance = exrex.getone(self.symbol.symbol.decode("iso-8859-1"))
-                parent.add_child(DerivationTree(Terminal(instance.encode("iso-8859-1"))))
+                parent.add_child(
+                    DerivationTree(Terminal(instance.encode("iso-8859-1")))
+                )
                 return
 
             instance = exrex.getone(self.symbol.symbol)
@@ -521,7 +530,7 @@ class ParseState:
         self,
         nonterminal: NonTerminal,
         position: int,
-        symbols: Tuple[Symbol, ...],
+        symbols: Tuple[tuple[Symbol, frozenset[tuple[str, any]]], ...],
         dot: int = 0,
         children: Optional[List[DerivationTree]] = None,
         is_incomplete: bool = False,
@@ -535,16 +544,20 @@ class ParseState:
 
     @property
     def dot(self):
-        return self.symbols[self._dot] if self._dot < len(self.symbols) else None
+        return self.symbols[self._dot][0] if self._dot < len(self.symbols) else None
+
+    @property
+    def dot_params(self) -> frozenset[tuple[str, any]]:
+        return self.symbols[self._dot][1] if self._dot < len(self.symbols) else None
 
     def finished(self):
         return self._dot >= len(self.symbols) and not self.is_incomplete
 
     def next_symbol_is_nonterminal(self):
-        return self._dot < len(self.symbols) and self.symbols[self._dot].is_non_terminal
+        return self._dot < len(self.symbols) and self.symbols[self._dot][0].is_non_terminal
 
     def next_symbol_is_terminal(self):
-        return self._dot < len(self.symbols) and self.symbols[self._dot].is_terminal
+        return self._dot < len(self.symbols) and self.symbols[self._dot][0].is_terminal
 
     def __hash__(self):
         return hash((self.nonterminal, self.position, self.symbols, self._dot))
@@ -563,7 +576,7 @@ class ParseState:
             f"({self.nonterminal} -> "
             + "".join(
                 [
-                    f"{'•' if i == self._dot else ''}{s!s}"
+                    f"{'•' if i == self._dot else ''}{s[0]!s}"
                     for i, s in enumerate(self.symbols)
                 ]
             )
@@ -579,6 +592,7 @@ class ParseState:
             self.symbols,
             self._dot + 1,
             self.children[:],
+            self.is_incomplete
         )
 
 
@@ -638,7 +652,9 @@ class Grammar(NodeVisitor):
             self.grammar = grammar
             self._rules = {}
             self._implicit_rules = {}
-            self._context_rules: dict[NonTerminal, tuple[Node, tuple[NonTerminal, frozenset]]] = dict()
+            self._context_rules: dict[
+                NonTerminal, tuple[Node, tuple[NonTerminal, frozenset]]
+            ] = dict()
             self.alternative_count = 0
             self.concatenation_count = 0
             self.repetition_count = 0
@@ -668,12 +684,18 @@ class Grammar(NodeVisitor):
                     tuple(a) for a in self._implicit_rules[nonterminal]
                 }
 
-        def set_implicit_rule(self, rule: List[List[NonTerminal]]) -> tuple[NonTerminal, frozenset]:
+        def set_implicit_rule(
+            self, rule: List[List[NonTerminal]]
+        ) -> tuple[NonTerminal, frozenset]:
             nonterminal = NonTerminal(f"<*{len(self._implicit_rules)}*>")
             self._implicit_rules[nonterminal] = rule
             return (nonterminal, frozenset())
 
-        def set_rule(self, nonterminal: NonTerminal, rule: List[List[tuple[NonTerminal, frozenset]]]):
+        def set_rule(
+            self,
+            nonterminal: NonTerminal,
+            rule: List[List[tuple[NonTerminal, frozenset]]],
+        ):
             self._rules[nonterminal] = {tuple(a) for a in rule}
 
         def set_context_rule(
@@ -716,7 +738,10 @@ class Grammar(NodeVisitor):
             return [[(intermediate_nt, frozenset())]]
 
         def visitRepetition(
-            self, node: Repetition, nt: tuple[NonTerminal, frozenset] = None, tree: DerivationTree = None
+            self,
+            node: Repetition,
+            nt: tuple[NonTerminal, frozenset] = None,
+            tree: DerivationTree = None,
         ):
             if nt is None:
                 alternatives = self.visit(node.node)
@@ -1021,20 +1046,30 @@ class Grammar(NodeVisitor):
             table: List[Set[ParseState] | Column],
             k: int,
             use_implicit: bool = False,
-            mode: ParsingMode = ParsingMode.INCOMPLETE
+            mode: ParsingMode = ParsingMode.INCOMPLETE,
         ):
             for s in list(table[state.position]):
                 if s.dot == state.nonterminal:
                     dot_params = s.dot_params
-                    if state.is_incomplete and mode == Grammar.Parser.ParsingMode.INCOMPLETE_ROLE:
+                    if (
+                        state.is_incomplete
+                        and mode == Grammar.Parser.ParsingMode.INCOMPLETE_ROLE
+                    ):
                         # If we parse in INCOMPLETE_ROLE-mode, we want the state to be completed if we are within a role
-                        if any(filter(lambda x: x[0] == 'role' and x[1] is not None, dot_params)):
+                        if any(
+                            filter(
+                                lambda x: x[0] == "role" and x[1] is not None,
+                                dot_params,
+                            )
+                        ):
                             continue
                     s = s.next()
                     table[k].add(s)
                     if state.nonterminal in self._rules:
                         s.children.append(
-                            DerivationTree(state.nonterminal, state.children, **dict(dot_params))
+                            DerivationTree(
+                                state.nonterminal, state.children, **dict(dot_params)
+                            )
                         )
                     else:
                         if use_implicit and state.nonterminal in self._implicit_rules:
@@ -1200,16 +1235,17 @@ class Grammar(NodeVisitor):
 
             self._incomplete = set()
             forest = []
-            for tree in self._parse_forest(
-                word, start, mode=mode
-            ):
+            for tree in self._parse_forest(word, start, mode=mode):
                 forest.append(tree)
                 if include_controlflow:
                     yield tree
                 else:
                     yield self.collapse(tree)
 
-            if mode == Grammar.Parser.ParsingMode.INCOMPLETE or mode == Grammar.Parser.ParsingMode.INCOMPLETE_ROLE:
+            if (
+                mode == Grammar.Parser.ParsingMode.INCOMPLETE
+                or mode == Grammar.Parser.ParsingMode.INCOMPLETE_ROLE
+            ):
                 for tree in self._incomplete:
                     forest.append(tree)
                     if include_controlflow:
@@ -1231,7 +1267,9 @@ class Grammar(NodeVisitor):
             Yield multiple parse alternatives,
             even for incomplete inputs
             """
-            return self.parse_forest(word, start, mode=mode, include_controlflow=include_controlflow)
+            return self.parse_forest(
+                word, start, mode=mode, include_controlflow=include_controlflow
+            )
 
         def parse(
             self,
@@ -1244,7 +1282,9 @@ class Grammar(NodeVisitor):
             Return the first parse alternative,
             or `None` if no parse is possible
             """
-            tree_gen = self.parse_forest(word, start=start, mode=mode, include_controlflow=include_controlflow)
+            tree_gen = self.parse_forest(
+                word, start=start, mode=mode, include_controlflow=include_controlflow
+            )
             return next(tree_gen, None)
 
         def max_position(self):
@@ -1326,23 +1366,28 @@ class Grammar(NodeVisitor):
         self,
         word: str | bytes | DerivationTree,
         start: str | NonTerminal = "<start>",
+        mode: Parser.ParsingMode = Parser.ParsingMode.COMPLETE,
+        include_controlflow: bool = False,
     ):
-        return self._parser.parse(word, start)
+        return self._parser.parse(word, start, mode=mode, include_controlflow=include_controlflow)
 
     def parse_forest(
         self,
         word: str | bytes | DerivationTree,
         start: str | NonTerminal = "<start>",
-        allow_incomplete: bool = False,
+        mode: Parser.ParsingMode = Parser.ParsingMode.COMPLETE,
+        include_controlflow: bool = False,
     ):
-        return self._parser.parse_forest(word, start, allow_incomplete=allow_incomplete)
+        return self._parser.parse_forest(word, start, mode=mode, include_controlflow=include_controlflow)
 
-    def parse_incomplete(
+    def parse_multiple(
         self,
         word: str | bytes | DerivationTree,
         start: str | NonTerminal = "<start>",
+        mode: Parser.ParsingMode = Parser.ParsingMode.COMPLETE,
+        include_controlflow: bool = False,
     ):
-        return self._parser.parse_incomplete(word, start)
+        return self._parser.parse_multiple(word, start, mode=mode, include_controlflow=include_controlflow)
 
     def max_position(self):
         """Return the maximum position reached during last parsing."""
