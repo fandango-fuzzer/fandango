@@ -525,7 +525,6 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
             # if min_bits % 8 != 0 and tree.min == 0:
             #     raise ValueError(f"{rule_symbol!s}: Bits cannot be optional")
 
-            # Todo Non optimal solution
             try:
                 rep_min = tree.min(grammar, None)
             except ValueError:
@@ -533,7 +532,9 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
             try:
                 rep_max = tree.max(grammar, None)
             except ValueError:
-                rep_max = MAX_REPETITIONS
+                # Add 7 to min, such that there are 8 steps.
+                # If result is not dividable by 8 this will catch at least one case.
+                rep_max = rep_min + 7
 
             step = min(min_bits, max_bits)
             return tp, rep_min * min_bits, rep_max * max_bits, step
