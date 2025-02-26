@@ -642,7 +642,6 @@ class Grammar(NodeVisitor):
         class ParsingMode(enum.Enum):
             COMPLETE = 0
             INCOMPLETE = 1
-            INCOMPLETE_ROLE = 2
 
         def __init__(
             self,
@@ -1051,18 +1050,6 @@ class Grammar(NodeVisitor):
             for s in list(table[state.position]):
                 if s.dot == state.nonterminal:
                     dot_params = s.dot_params
-                    if (
-                        state.is_incomplete
-                        and mode == Grammar.Parser.ParsingMode.INCOMPLETE_ROLE
-                    ):
-                        # If we parse in INCOMPLETE_ROLE-mode, we want the state to be completed if we are within a role
-                        if any(
-                            filter(
-                                lambda x: x[0] == "role" and x[1] is not None,
-                                dot_params,
-                            )
-                        ):
-                            continue
                     s = s.next()
                     table[k].add(s)
                     if state.nonterminal in self._rules:
@@ -1135,14 +1122,6 @@ class Grammar(NodeVisitor):
                                 self._incomplete.update(state.children)
                             state.is_incomplete = True
                             self.complete(state, table, k)
-
-                        if mode == Grammar.Parser.ParsingMode.INCOMPLETE_ROLE:
-                            if not state.finished():
-                                state.is_incomplete = True
-
-                            if state.nonterminal == implicit_start:
-                                self._incomplete.update(state.children)
-                            self.complete(state, table, k, mode=mode)
 
                     if state.finished():
                         # LOGGER.debug(f"Finished")
@@ -1244,7 +1223,6 @@ class Grammar(NodeVisitor):
 
             if (
                 mode == Grammar.Parser.ParsingMode.INCOMPLETE
-                or mode == Grammar.Parser.ParsingMode.INCOMPLETE_ROLE
             ):
                 for tree in self._incomplete:
                     forest.append(tree)
