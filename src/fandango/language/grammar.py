@@ -1514,7 +1514,6 @@ class Grammar(NodeVisitor):
                 if node.node.distance_to_completion == float("inf"):
                     nodes.append(node)
                 else:
-                    # Todo Not optimal
                     try:
                         min_rep = node.min(self, None)
                     except ValueError:
