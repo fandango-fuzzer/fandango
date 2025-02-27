@@ -892,6 +892,7 @@ class Grammar(NodeVisitor):
             if not isinstance(node, Repetition):
                 raise ValueError("Node needs to be a Repetition")
             tree = self.construct_incomplete_tree(state, table)
+            tree = self.collapse(tree)
             try:
                 [[context_nt]] = self.visitRepetition(node, nt_rule, tree)
             except ValueError:
