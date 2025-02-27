@@ -172,8 +172,8 @@ language/gen/*
 gen
 gen/*
 *.o
-utils/lextab.py
-utils/yacctab.py
+utils/bt2fan/lextab.py
+utils/bt2fan/yacctab.py
 
 # Test result markers
 tests/test-marker.txt

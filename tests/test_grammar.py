@@ -52,6 +52,16 @@ class ConstraintTest(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    
+    def test_generators_with_grammar_elements(self):
+        file = open("tests/resources/grammar_primary.fan", "r")
+        GRAMMAR, c = parse(file, use_stdlib=True, use_cache=False)
+        expected = ["JOHN SMITH"]
+        actual = self.get_solutions(GRAMMAR, c)
+        
+        self.assertEqual(expected, actual)
+        self.assertIsNot(actual[0].find_all_nodes("<decompressed_name>"), [])
+
     def test_repetitions(self):
         file = open("tests/resources/repetitions.fan", "r")
         GRAMMAR, c = parse(file, use_stdlib=False, use_cache=False)
