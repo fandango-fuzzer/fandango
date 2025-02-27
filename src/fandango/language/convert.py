@@ -82,12 +82,8 @@ class GrammarProcessor(FandangoParserVisitor):
             grammar[symbol] = self.visit(production.alternative())
             if production.expression():
                 # Handle generator expressions
-                expr, searches, _ = self.searches.visit(production.expression())
-                if searches:
-                    raise UnsupportedOperation(
-                        "Searches in expressions are currently not supported"
-                    )
-                grammar.set_generator(symbol, ast.unparse(expr))
+                expr, _, searches_map = self.searches.visit(production.expression()) 
+                grammar.set_generator(symbol, ast.unparse(expr), searches_map)
 
                 if not production.EXPR_ASSIGN():
                     LOGGER.warning(
@@ -916,6 +912,39 @@ class SearchProcessor(FandangoParserVisitor):
             searches + gen_searches,
             {**search_map, **gen_search_map},
         )
+
+    def visitArguments(self, ctx: FandangoParser.ArgumentsContext):
+        return self.visit(ctx.args())
+    
+    def visitArgs(self, ctx: FandangoParser.ArgsContext):
+        if ctx.kwargs() and not ctx.arg():
+            return self.visit(ctx.kwargs())
+        
+        result = list(), list(), dict()
+        for arg in ctx.arg():
+            result = self.aggregateResult(result, self.visit(arg))
+        if ctx.kwargs():
+            result = self.aggregateResult(result, self.visit(ctx.kwargs()))
+        return result
+
+    def visitArg(self, ctx: FandangoParser.ArgContext):
+        if ctx.starred_expression():
+            return self.visit(ctx.starred_expression())
+        elif ctx.assignment_expression():
+            return self.visit(ctx.assignment_expression())
+        elif ctx.expression():
+            return self.visit(ctx.expression())
+
+    def visitKwargs(self, ctx: FandangoParser.KwargsContext):
+        result = list(), list(), dict()
+
+        for kwarg in ctx.kwarg_or_starred():
+            result = self.aggregateResult(result, self.visit(kwarg))
+        for kwarg in ctx.kwarg_or_double_starred():
+            result = self.aggregateResult(result, self.visit(kwarg))
+
+        return result
+        
 
     def visitFor_if_clauses(self, ctx: FandangoParser.For_if_clausesContext):
         result = list(), list(), dict()

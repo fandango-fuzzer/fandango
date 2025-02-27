@@ -14,6 +14,7 @@ import tempfile
 import textwrap
 import zipfile
 import shutil
+import textwrap
 
 from io import StringIO
 from io import UnsupportedOperation
@@ -27,20 +28,35 @@ from fandango.language.parse import parse
 from fandango.logger import LOGGER, print_exception
 
 
+DISTRIBUTION_NAME = 'fandango-fuzzer'
+
+def version():
+    """Return the Fandango version number"""
+    return importlib.metadata.version(DISTRIBUTION_NAME)
+
+
+def homepage():
+    """Return the Fandango homepage"""
+    for key, value in importlib.metadata.metadata(DISTRIBUTION_NAME).items():
+        if key == 'Project-URL' and value.startswith('homepage,'):
+            return value.split(',')[1].strip()
+    return "the Fandango homepage"
+
+
 def get_parser(in_command_line=True):
     # Main parser
     if in_command_line:
         prog = "fandango"
-        epilog = """\
+        epilog = textwrap.dedent("""\
             Use `%(prog)s help` to get a list of commands.
-            Use `%(prog)s help COMMAND` to learn more about COMMAND."""
+            Use `%(prog)s help COMMAND` to learn more about COMMAND.""")
     else:
         prog = ""
-        epilog = """
+        epilog = textwrap.dedent("""\
             Use `help` to get a list of commands.
             Use `help COMMAND` to learn more about COMMAND.
-            Use TAB to complete commands.
-            """
+            Use TAB to complete commands.""")
+    epilog += f"\nSee {homepage()} for more information."
 
     main_parser = argparse.ArgumentParser(
         prog=prog,
@@ -54,7 +70,7 @@ def get_parser(in_command_line=True):
         main_parser.add_argument(
             "--version",
             action="version",
-            version="Fandango " + importlib.metadata.version("fandango-fuzzer"),
+            version=f"Fandango {version()}",
             help="show version number",
         )
 
@@ -1033,11 +1049,10 @@ def copyright_command(args):
 
 
 def version_command(args):
-    version = importlib.metadata.version("fandango-fuzzer")
     if sys.stdout.isatty():
-        version_line = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango{styles.color.close} {version}"
+        version_line = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango{styles.color.close} {version()}"
     else:
-        version_line = f"Fandango {version}"
+        version_line = f"Fandango {version()}"
     print(version_line)
 
 

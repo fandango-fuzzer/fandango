@@ -363,6 +363,22 @@ class TerminalNode(Node):
     def __hash__(self):
         return hash(self.symbol)
 
+class LiteralGenerator:
+    def __init__(self, call: str, nonterminals: dict):
+        self.call = call
+        self.nonterminals = nonterminals
+
+    def __repr__(self):
+        return tuple.__repr__((self.call.__repr__(), self.nonterminals.__repr__()))
+
+    def __str__(self):
+        return tuple.__str__((self.call.__str__(), self.nonterminals.__str__()))
+
+    def __eq__(self, other):
+        return isinstance(other, LiteralGenerator) and self.call == other.call and self.nonterminals == other.nonterminals
+
+    def __hash__(self):
+        return hash(self.call) ^ hash(self.nonterminals)
 
 class CharSet(Node):
     def __init__(self, chars: str):
@@ -1276,7 +1292,7 @@ class Grammar(NodeVisitor):
         global_variables: Optional[Dict[str, Any]] = None,
     ):
         self.rules = rules or {}
-        self.generators = {}
+        self.generators: Dict[NonTerminal, LiteralGenerator] = {}
         self._parser = Grammar.Parser(self)
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
@@ -1285,8 +1301,15 @@ class Grammar(NodeVisitor):
     def generate_string(self, symbol: str | NonTerminal = "<start>") -> str | Tuple:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
+        if self.generators[symbol] is None:
+            raise ValueError(f"No generator for symbol {symbol}")
+        generator = self.generators[symbol]
+        if generator.nonterminals:
+            for id, nonterminal in generator.nonterminals.items():
+                self._local_variables[id] = self.fuzz(nonterminal.symbol).to_value().strip("'")
+            
         return eval(
-            self.generators[symbol], self._global_variables, self._local_variables
+            generator.call, self._global_variables, self._local_variables
         )
 
     def generate(self, symbol: str | NonTerminal = "<start>") -> DerivationTree:
@@ -1417,10 +1440,10 @@ class Grammar(NodeVisitor):
     def dummy():
         return Grammar({})
 
-    def set_generator(self, symbol: str | NonTerminal, param: str):
+    def set_generator(self, symbol: str | NonTerminal, param: str, searches_map: dict = {}):
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
-        self.generators[symbol] = param
+        self.generators[symbol] = LiteralGenerator(call=param, nonterminals=searches_map)
 
     def has_generator(self, symbol: str | NonTerminal):
         if isinstance(symbol, str):
