@@ -1,10 +1,12 @@
 from struct import unpack
 
-def byte_to_int(byte_val):
-    return int(unpack('>H', bytes(byte_val))[0])
+<start> ::= <len> '(' <inner>{min(int(<len>), 4)} ')'
+<len> ::= <number>
+<inner> ::= <len> <letter>{min(int(<len>), 4)}
+<letter> ::= r'[a-zA-Z]'
 
-<start> ::= <len> <inner>{byte_to_int(bytes(<len>))} <byte>+
-<len> ::= <byte>{2}
-<inner> ::= <len> <byte>{byte_to_int(bytes(<len>))}
-<byte> ::= <bit>{8}
-<bit> ::= 1 | 0
+<number> ::= <number_start> <number_tailing>*
+<number_start> ::= '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+<number_tailing> ::= '0' | <number_start>
+
+where 1 <= int(<len>) and int(<len>) <= 4
