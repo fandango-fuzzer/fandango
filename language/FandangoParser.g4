@@ -39,8 +39,8 @@ kleene: symbol STAR;
 plus  : symbol ADD;
 option: symbol QUESTION;
 repeat
-    : symbol OPEN_BRACE NUMBER CLOSE_BRACE
-    | symbol OPEN_BRACE NUMBER? COMMA NUMBER? CLOSE_BRACE
+    : symbol OPEN_BRACE (expression) CLOSE_BRACE
+    | symbol OPEN_BRACE (expression)? COMMA (expression)? CLOSE_BRACE
     ;
 
 symbol
