@@ -62,7 +62,7 @@ class Fandango:
         self.fixes_made = 0
         self.grammar = grammar
         self.constraints = constraints
-        self.population_size = population_size
+        self.population_size = max(population_size, desired_solutions)
         self.expected_fitness = expected_fitness
         self.elitism_rate = elitism_rate
         self.destruction_rate = destruction_rate
