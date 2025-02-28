@@ -17,12 +17,14 @@ class DerivationTree:
         symbol: Symbol,
         children: Optional[List["DerivationTree"]] = None,
         parent: Optional["DerivationTree"] = None,
+        generator_source: Optional["DerivationTree"] = None,
         read_only: bool = False,
     ):
         self.hash_cache = None
         self._parent: Optional["DerivationTree"] = parent
         self.symbol: Symbol = symbol
         self._children: list["DerivationTree"] = []
+        self._generator_source: Optional["DerivationTree"] = generator_source
         self.read_only = read_only
         self._size = 1
         self.set_children(children or [])
@@ -39,6 +41,10 @@ class DerivationTree:
     @property
     def symbol(self) -> Symbol:
         return self._symbol
+
+    @property
+    def parent(self) -> Optional["DerivationTree"]:
+        return self._parent
 
     @symbol.setter
     def symbol(self, symbol):
@@ -66,6 +72,17 @@ class DerivationTree:
         for child in self._children:
             child._parent = self
         self.invalidate_hash()
+
+    @property
+    def generator_param(self) -> Optional["DerivationTree"]:
+        return self._generator_source
+
+    @generator_param.setter
+    def generator_param(self, source: Optional["DerivationTree"]):
+        self._generator_source = source
+        if source is None:
+            return
+        source._parent = self
 
     def add_child(self, child: "DerivationTree"):
         self._children.append(child)
@@ -135,7 +152,8 @@ class DerivationTree:
             return memo[id(self)]
 
         # Create a new instance without copying the parent
-        copied = DerivationTree(self.symbol, [], read_only=self.read_only)
+        copied = DerivationTree(self.symbol, [], generator_source=self.generator_param,
+                                read_only=self.read_only)
         memo[id(self)] = copied
 
         # Deepcopy the children
@@ -415,6 +433,7 @@ class DerivationTree:
                     child.replace(tree_to_replace, new_subtree)
                     for child in self._children
                 ],
+                generator_source=self.generator_param,
                 read_only=self.read_only,
             )
 
