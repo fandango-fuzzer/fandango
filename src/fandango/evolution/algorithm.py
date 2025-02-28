@@ -67,7 +67,7 @@ class Fandango:
         self.elitism_rate = elitism_rate
         self.destruction_rate = destruction_rate
         self.start_symbol = start_symbol
-        self.tournament_size = max(2, int(population_size * tournament_size))
+        self.tournament_size = max(2, int(self.population_size * tournament_size))
         self.max_generations = max_generations
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
