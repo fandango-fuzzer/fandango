@@ -692,6 +692,9 @@ class DerivationTree:
     def __str__(self):
         return self.to_string()
 
+    def __bytes__(self):
+        return self.to_bytes()
+
 
     ## Iterators
     def __contains__(self, other: Union["DerivationTree", Any]) -> bool:
