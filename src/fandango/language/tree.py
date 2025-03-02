@@ -19,6 +19,9 @@ class DerivationTree:
         parent: Optional["DerivationTree"] = None,
         read_only: bool = False,
     ):
+        if not isinstance(symbol, Symbol):
+            raise TypeError(f"Expected Symbol, got {type(symbol)}")
+
         self.hash_cache = None
         self._parent: Optional["DerivationTree"] = parent
         self.symbol: Symbol = symbol
@@ -89,9 +92,6 @@ class DerivationTree:
             return SliceTree(items)
         else:
             return items
-
-    def __str__(self):
-        return self.to_string()
 
     def __hash__(self):
         """
@@ -678,6 +678,20 @@ class DerivationTree:
 
     def __invert__(self):
         return ~self.value()
+
+    # Converters
+    def __int__(self):
+        return int(self.value())
+
+    def __float__(self):
+        return float(self.value())
+
+    def __complex__(self):
+        return complex(self.value())
+
+    def __str__(self):
+        return self.to_string()
+
 
     ## Iterators
     def __contains__(self, other: Union["DerivationTree", Any]) -> bool:
