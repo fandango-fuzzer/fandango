@@ -59,16 +59,3 @@ def is_after(
     Check if the tree is after the after_tree and before the before_tree.
     """
     return is_before(tree, before_tree, after_tree)
-
-
-if __name__ == '__main__':
-    from fandango.language.symbol import Terminal
-
-    x = int(45)
-    assert x == 45
-
-    x = int.from_bytes(b'\x01')
-    assert x == 1
-
-    t = DerivationTree(Terminal('5'))
-    assert int(t) == 5

@@ -9,8 +9,6 @@ from fandango.language.parse import parse
 
 
 class ConstraintTest(unittest.TestCase):
-
-
     def get_constraint(self, constraint):
         file = open("tests/resources/constraints.fan", "r")
         _, constraints = parse(file, constraints=[constraint], use_stdlib=False, use_cache=False)
@@ -385,3 +383,19 @@ int(<number>) < 100000;
                 if not sat:
                     self.assertEqual(1, len(fitness.failing_trees))
                     self.assertEqual(tree, fitness.failing_trees[0].tree)
+
+
+class ConverterTest(unittest.TestCase):
+    def test_standards(self):
+        # Earlier Fandango versions overloaded int(); so check if it still works
+        self.assertEqual(int(45), 45)
+        self.assertEqual(int.from_bytes(b'\x01'), 1)
+
+    def test_converters(self):
+        tree = DerivationTree(Terminal('5'))
+        self.assertEqual(int(tree), 5)
+        self.assertEqual(float(tree), 5.0)
+        self.assertEqual(complex(tree), 5+0j)
+        self.assertEqual(bytes(tree), b'5')
+        self.assertEqual(str(tree), '5')
+        self.assertTrue(bool(tree))

@@ -285,3 +285,17 @@ def test_parsing():
     assert isinstance(constraint.searches[placeholder], RuleSearch)
     search: RuleSearch = constraint.searches[placeholder]
     assert NonTerminal("<number>") == search.symbol
+
+def test_converters():
+
+    x = int(45)
+    assert x == 45
+
+    x = int.from_bytes(b'\x01')
+    assert x == 1
+
+    t = DerivationTree(Terminal('5'))
+    assert int(t) == 5
+
+    t = DerivationTree(Terminal(b'\x05'))
+    assert bytes(t) == b'\x05'
