@@ -172,9 +172,7 @@ class Repetition(Node):
                     non_terminals.add(nt)
         return non_terminals
 
-    def _compute_rep_bound(
-        self, grammar: "Grammar", tree: "DerivationTree", expr_data
-    ):
+    def _compute_rep_bound(self, grammar: "Grammar", tree: "DerivationTree", expr_data):
         expr, _, searches = expr_data
         local_cpy = grammar._local_variables.copy()
 
@@ -554,7 +552,9 @@ class ParseState:
         return self._dot >= len(self.symbols) and not self.is_incomplete
 
     def next_symbol_is_nonterminal(self):
-        return self._dot < len(self.symbols) and self.symbols[self._dot][0].is_non_terminal
+        return (
+            self._dot < len(self.symbols) and self.symbols[self._dot][0].is_non_terminal
+        )
 
     def next_symbol_is_terminal(self):
         return self._dot < len(self.symbols) and self.symbols[self._dot][0].is_terminal
@@ -592,7 +592,7 @@ class ParseState:
             self.symbols,
             self._dot + 1,
             self.children[:],
-            self.is_incomplete
+            self.is_incomplete,
         )
 
 
@@ -1221,9 +1221,7 @@ class Grammar(NodeVisitor):
                 else:
                     yield self.collapse(tree)
 
-            if (
-                mode == Grammar.Parser.ParsingMode.INCOMPLETE
-            ):
+            if mode == Grammar.Parser.ParsingMode.INCOMPLETE:
                 for tree in self._incomplete:
                     forest.append(tree)
                     if include_controlflow:
@@ -1291,9 +1289,13 @@ class Grammar(NodeVisitor):
 
     def generate(self, symbol: str | NonTerminal = "<start>") -> DerivationTree:
         string = self.generate_string(symbol)
-        if not (isinstance(string, str) or isinstance(string, tuple)):
+        if not (isinstance(string, str) or
+                isinstance(string, bytes) or
+                isinstance(string, int) or
+                isinstance(string, tuple)
+                ):
             raise TypeError(
-                f"Generator {self.generators[symbol]} must return string or tuple"
+                f"Generator {self.generators[symbol]} must return string, bytes, int, or tuple"
             )
 
         if isinstance(string, tuple):
@@ -1347,7 +1349,9 @@ class Grammar(NodeVisitor):
         mode: Parser.ParsingMode = Parser.ParsingMode.COMPLETE,
         include_controlflow: bool = False,
     ):
-        return self._parser.parse(word, start, mode=mode, include_controlflow=include_controlflow)
+        return self._parser.parse(
+            word, start, mode=mode, include_controlflow=include_controlflow
+        )
 
     def parse_forest(
         self,
@@ -1356,7 +1360,9 @@ class Grammar(NodeVisitor):
         mode: Parser.ParsingMode = Parser.ParsingMode.COMPLETE,
         include_controlflow: bool = False,
     ):
-        return self._parser.parse_forest(word, start, mode=mode, include_controlflow=include_controlflow)
+        return self._parser.parse_forest(
+            word, start, mode=mode, include_controlflow=include_controlflow
+        )
 
     def parse_multiple(
         self,
@@ -1365,7 +1371,9 @@ class Grammar(NodeVisitor):
         mode: Parser.ParsingMode = Parser.ParsingMode.COMPLETE,
         include_controlflow: bool = False,
     ):
-        return self._parser.parse_multiple(word, start, mode=mode, include_controlflow=include_controlflow)
+        return self._parser.parse_multiple(
+            word, start, mode=mode, include_controlflow=include_controlflow
+        )
 
     def max_position(self):
         """Return the maximum position reached during last parsing."""
