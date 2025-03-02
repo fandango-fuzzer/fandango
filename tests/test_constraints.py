@@ -391,7 +391,7 @@ class ConverterTest(unittest.TestCase):
         self.assertEqual(int(45), 45)
         self.assertEqual(int.from_bytes(b'\x01'), 1)
 
-    def test_converters(self):
+    def test_string_converters(self):
         tree = DerivationTree(Terminal('5'))
         self.assertEqual(int(tree), 5)
         self.assertEqual(float(tree), 5.0)
@@ -399,3 +399,21 @@ class ConverterTest(unittest.TestCase):
         self.assertEqual(bytes(tree), b'5')
         self.assertEqual(str(tree), '5')
         self.assertTrue(bool(tree))
+        self.assertEqual(tree.value(), '5')
+
+    def test_byte_converters(self):
+        tree = DerivationTree(Terminal(b'\x05'))
+        self.assertEqual(bytes(tree), b'\x05')
+        self.assertEqual(str(tree), '\x05')
+        self.assertTrue(bool(tree))
+        self.assertEqual(tree.value(), b'\x05')
+
+    def test_bit_converters(self):
+        tree = DerivationTree(Terminal(1))
+        self.assertEqual(int(tree), 1)
+        self.assertEqual(float(tree), 1.0)
+        self.assertEqual(complex(tree), 1+0j)
+        self.assertEqual(bytes(tree), b'\x01')
+        self.assertEqual(str(tree), '\x01')
+        self.assertTrue(bool(tree))
+        self.assertEqual(tree.value(), 1)
