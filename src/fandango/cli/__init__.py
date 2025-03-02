@@ -831,9 +831,7 @@ def parse_file(fd, args, grammar, constraints, settings):
     parsing_mode = Grammar.Parser.ParsingMode.COMPLETE
     if allow_incomplete:
         parsing_mode = Grammar.Parser.ParsingMode.INCOMPLETE
-    tree_gen = grammar.parse_forest(
-        individual, start=start_symbol, mode=parsing_mode
-    )
+    tree_gen = grammar.parse_forest(individual, start=start_symbol, mode=parsing_mode)
 
     alternative_counter = 1
     passing_tree = None
