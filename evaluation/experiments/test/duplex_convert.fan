@@ -14,4 +14,4 @@ def un_convert(input):
 <byte> ::= <bit>{8}
 <bit> ::= 1 | 0
 
-where int(<start>.<number>) == int(<source>.<number>)
+where <start>.<number> == <source>.<number>
