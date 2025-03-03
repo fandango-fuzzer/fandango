@@ -856,7 +856,7 @@ class Grammar(NodeVisitor):
                 DerivationTree(
                     tree.symbol,
                     children=reduced,
-                    generator_source=tree.generator_param,
+                    generator_params=tree.generator_params,
                     read_only=tree.read_only,
                 )
             ]
@@ -1311,7 +1311,7 @@ class Grammar(NodeVisitor):
         self._global_variables = global_variables or {}
         self._visited = set()
 
-    def generate_string(self, parent: "DerivationTree", symbol: str | NonTerminal = "<start>") -> str | Tuple:
+    def generate_string(self, parent: "DerivationTree", symbol: str | NonTerminal = "<start>") -> tuple[list[DerivationTree], str]:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         if self.generators[symbol] is None:
@@ -1320,22 +1320,22 @@ class Grammar(NodeVisitor):
 
         local_variables = self._local_variables.copy()
         parent_cpy = deepcopy(parent)
-        parent_cpy.generator_param = None
+        parent_cpy.generator_params = []
 
         dummy_child = DerivationTree(symbol)
         parent_cpy.add_child(dummy_child)
-        generator_param = None
+        generator_params = []
         if generator.nonterminals:
             if len(generator.nonterminals) > 1:
                 raise ValueError(
                     f"Generators that depend on more than 1 symbol are not supported! Failing generator: {symbol}")
             id, nonterminal = next(iter(generator.nonterminals.items()))
-            parent_cpy.generator_param = DerivationTree(symbol)
             NonTerminalNode(nonterminal.symbol).fuzz(dummy_child, self)
             generator_param = dummy_child.children[-1]
             local_variables[id] = generator_param.to_value().strip("'")
+            generator_params.append(generator_param)
             
-        return generator_param, eval(
+        return generator_params, eval(
             generator.call, self._global_variables, local_variables
         )
 
@@ -1348,21 +1348,21 @@ class Grammar(NodeVisitor):
 
 
     def generate(self, parent: "DerivationTree", symbol: str | NonTerminal = "<start>") -> DerivationTree:
-        generator_source, string = self.generate_string(parent, symbol)
+        generator_params, string = self.generate_string(parent, symbol)
         if not (isinstance(string, str) or isinstance(string, tuple) or isinstance(string, bytes)):
             raise TypeError(
                 f"Generator {self.generators[symbol]} must return string or tuple"
             )
 
         if isinstance(string, tuple):
-            return generator_source, DerivationTree.from_tree(string)
+            tree = DerivationTree.from_tree(string)
         else:
             tree = self.parse(string, symbol)
         if tree is None:
             raise ValueError(
                 f"Failed to parse generated string: {string} for {symbol} with generator {self.generators[symbol]}"
             )
-        tree.generator_param = generator_source
+        tree.generator_params = generator_params
         return tree
 
     def fuzz(
