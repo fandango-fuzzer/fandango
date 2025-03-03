@@ -194,35 +194,21 @@ assert _exit_code == 0
 ## Length Encodings
 
 The third set of features one frequently encounters in binary formats is _length encodings_ - that is, a particular field holds a value that represents the length of one or more fields that follow.
-Here is a simple grammar that expresses this characteristic: A `<field>` has a two-byte length, followed by the actual content (of length `<length>`).
-
-% This is how I got the `<byte>` definition in `binary.fan` -- AZ
-
-```{code-cell}
-:tags: ["remove-input", "remove-output"]
-import string
-for i in range(0, 256):
-    c = chr(i)
-    if c in string.printable:
-        print(repr(c), end=" | ")
-    else:
-        print(f"'\\x{i:02x}'", end=" | ")
-```
+Here is a simple grammar that expresses this characteristic: A `<field>` has a two-byte length, followed by the actual (byte) content (of length `<length>`).
 
 ```{code-cell}
 :tags: ["remove-input"]
-!cat binary.fan
+!grep '::=' binary.fan
 ```
+
+### Encoding Lengths with Constraints
 
 The relationship between `<length>` and `<content>` can again be expressed using a constraint.
 Let us assume that `<length>` comes as a two-byte (16-bit) unsigned integer with _little-endian_ encoding - that is, the low byte comes first, and the high byte follows.
 The value 258 (hexadecimal `0x0102`) would thus be represented as the two bytes `\x02` and `\x01`.
 
-We can define a function `uint16()` that takes an integer and converts it to a two-byte string according to these rules:
-
-:::{margin}
-In Python, `//` is used for integer division.
-:::
+We can define a function `uint16()` that takes an integer and converts it to a two-byte string according to these rules.
+The Python method `N.to_bytes(LENGTH, ENDIANNESS)` converts the integer `N` into a bytes string of length `LENGTH`. `ENDIANNESS` is either `'big'` (default) or `'little'`.
 
 ```{code-cell}
 :tags: ["remove-input"]
@@ -246,16 +232,67 @@ Again, all of this goes into a single `.fan` file: [`binary.fan`](binary.fan) ho
 Let us produce a single output using `binary.fan` and view its (binary) contents, using `od -c`:
 
 ```shell
-$ fandango fuzz -n 1 -f binary.fan -o - | od -c
+$ fandango fuzz -n 1 -f binary.fan -o - | hexdump -C
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-! fandango fuzz -n 1 -f binary.fan -o - | od -c
+! fandango fuzz -n 1 -f binary.fan -o - | hexdump -C
 ```
 
 The hexadecimal dump shows that the first two bytes encode the length of the string of digits that follows.
 The format is correct - we have successfully produced a length encoding.
+
+
+### Encoding Lengths with Repetitions
+
+Another way to implement length constraints is by using _repetitions_.
+In Fandango, repetitions `{}` can also contain _expressions_, and like constraints, these can also refer to nonterminals that have already been parsed or produced.
+Hence, we can specify a rule
+
+```python
+<content> ::- <byte>{f(<length>)}
+```
+
+where `f()` is a function that computes the number of `<byte>` repetitions based on `<length>`.
+
+Let us define a variant [`binary-rep.fan`](binary-rep.fan) that makes use of this.
+Here, we specify that `<content>` consists of `N` bytes, where `N` is given as follows:
+
+:::{margin}
+We use a generator expression `:= VALUE` to prevent generated values from getting too large.
+:::
+
+```{code-cell}
+:tags: ["remove-input"]
+!grep '::=' binary-rep.fan
+```
+
+The method `<length>.value()` returns the bytes string value of the `<length>` element.
+The function `from_uint16()` is defined as follows:
+
+```{code-cell}
+:tags: ["remove-input"]
+# show code
+!grep -v '::=' binary-rep.fan | grep -v '^where'
+```
+
+With this, we can easily produce length-encoded inputs:
+
+
+```shell
+$ fandango fuzz -n 1 -f binary-rep.fan -o - | hexdump -C
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+! fandango fuzz -n 1 -f binary-rep.fan -o - | hexdump -C
+```
+
+:::{tip}
+When [parsing](sec:parsing) inputs, computed repetitions are much more efficient than constraints.
+:::
+
 
 
 ## Converting Values to Binary Formats
