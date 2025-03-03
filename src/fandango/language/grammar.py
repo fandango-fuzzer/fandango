@@ -793,7 +793,7 @@ class Grammar(NodeVisitor):
             return [[(intermediate_nt, frozenset())]]
 
         def visitOption(self, node: Option):
-            result = [[Terminal("")]] + self.visit(node.node)
+            result = [[(Terminal(""), frozenset())]] + self.visit(node.node)
             intermediate_nt = NonTerminal(f"<__{NodeType.OPTION}:{self.option_count}>")
             self.set_rule(intermediate_nt, result)
             self.option_count += 1
@@ -1184,7 +1184,6 @@ class Grammar(NodeVisitor):
             self,
             word: str | bytes | DerivationTree,
             start: str | NonTerminal = "<start>",
-            *,
             mode: ParsingMode = ParsingMode.COMPLETE,
             include_controlflow: bool = False,
         ):
