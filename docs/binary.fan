@@ -2,7 +2,7 @@
 <field>    ::= <length> <content>
 <length>   ::= <byte> <byte>
 where <length> == uint16(len(<content>))
-<content>  ::= <digit>+
+<content>  ::= <byte>+
 
-def uint16(n: int) -> str:
-    return chr(n % 256) + chr(n // 256)
+def uint16(n: int) -> bytes:
+    return n.to_bytes(2, 'big')
