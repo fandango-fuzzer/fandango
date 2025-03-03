@@ -450,13 +450,31 @@ class DerivationTree:
         if self == tree_to_replace and not self.read_only:
             return new_subtree
         else:
+            regen_params = False
+            regen_children = False
+            children = []
+            generator_params = []
+            for param in self._generator_params:
+                new_param = param.replace(tree_to_replace, new_subtree)
+                generator_params.append(new_param)
+                if new_param != param:
+                    regen_children = True
+            for child in self._children:
+                new_child = child.replace(tree_to_replace, new_subtree)
+                children.append(new_child)
+                if new_child != child:
+                    regen_params = True
+
+            if regen_children:
+                # Todo run generator
+                pass
+            elif regen_params:
+                pass
+
             return DerivationTree(
                 self.symbol,
-                [
-                    child.replace(tree_to_replace, new_subtree)
-                    for child in self._children
-                ],
-                generator_params=self.generator_params,
+                children,
+                generator_params=generator_params,
                 read_only=self.read_only,
             )
 
