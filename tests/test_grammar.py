@@ -65,8 +65,8 @@ class ConstraintTest(unittest.TestCase):
         GRAMMAR, c = parse(file, use_stdlib=False, use_cache=False)
         solutions = self.get_solutions(GRAMMAR, c)
         for solution in solutions:
-            self.assertGreaterEqual(len(str(solution)), 1)
-            self.assertLessEqual(len(str(solution)), 3)
+            self.assertGreaterEqual(len(str(solution)), 3)
+            self.assertLessEqual(len(str(solution)), 10)
 
     def test_repetition_min(self):
         file = open("tests/resources/min_reps.fan", "r")
