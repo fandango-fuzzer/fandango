@@ -17,8 +17,8 @@ SRC = src/fandango
 PYTHON_SOURCES = $(wildcard $(SRC)/*.py $(SRC)/*/*.py $(SRC)/*/*/*.py)
 
 # Default targets
-web: parser html
-all: web pdf
+web: package-info parser html
+all: package-info parser html web pdf
 
 .PHONY: web all parser install dev-tools docs html latex pdf
 
@@ -27,6 +27,15 @@ all: web pdf
 
 # requirements.txt:	pyproject.toml
 # 	pip-compile $<
+
+
+## Package info
+EGG_INFO = src/fandango_fuzzer.egg-info
+
+.PHONY: package-info
+package-info: $(EGG_INFO)/PKG-INFO
+$(EGG_INFO)/PKG-INFO: pyproject.toml
+	$(PIP) install -e .
 
 # Install tools for development
 UNAME := $(shell uname)

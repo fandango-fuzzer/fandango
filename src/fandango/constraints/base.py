@@ -545,9 +545,9 @@ class ConjunctionConstraint(Constraint):
             )
         )
         if len(self.constraints) > 1:
-            total += 1
             if overall:
                 solved += 1
+            total += 1
         # Create the fitness object
         fitness = ConstraintFitness(solved, total, overall, failing_trees=failing_trees)
         # Cache the fitness
@@ -625,9 +625,9 @@ class DisjunctionConstraint(Constraint):
             )
         )
         if len(self.constraints) > 1:
-            total += 1
             if overall:
                 solved = total + 1
+            total += 1
         # Create the fitness object
         fitness = ConstraintFitness(solved, total, overall, failing_trees=failing_trees)
         # Cache the fitness
@@ -684,9 +684,9 @@ class ImplicationConstraint(Constraint):
         if antecedent_fitness.success:
             # If the antecedent is true, evaluate the consequent
             fitness = copy(self.consequent.fitness(tree, scope))
+            fitness.total += 1
             if fitness.success:
                 fitness.solved += 1
-            fitness.total += 1
         else:
             # If the antecedent is false, the fitness is perfect
             fitness = ConstraintFitness(
@@ -781,9 +781,9 @@ class ExistsConstraint(Constraint):
                 fitness.failing_trees for fitness in fitness_values
             )
         )
-        total += 1
         if overall:
             solved = total + 1
+        total += 1
         # Create the fitness object
         fitness = ConstraintFitness(solved, total, overall, failing_trees=failing_trees)
         # Cache the fitness
@@ -874,9 +874,9 @@ class ForallConstraint(Constraint):
                 fitness.failing_trees for fitness in fitness_values
             )
         )
-        total += 1
         if overall:
             solved = total + 1
+        total += 1
         # Create the fitness object
         fitness = ConstraintFitness(solved, total, overall, failing_trees=failing_trees)
         # Cache the fitness
