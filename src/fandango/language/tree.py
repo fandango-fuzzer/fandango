@@ -17,14 +17,17 @@ class DerivationTree:
         symbol: Symbol,
         children: Optional[List["DerivationTree"]] = None,
         parent: Optional["DerivationTree"] = None,
-        generator_source: Optional["DerivationTree"] = None,
+        generator_params: list["DerivationTree"] = None,
         read_only: bool = False,
     ):
         self.hash_cache = None
         self._parent: Optional["DerivationTree"] = parent
         self.symbol: Symbol = symbol
         self._children: list["DerivationTree"] = []
-        self._generator_source: Optional["DerivationTree"] = generator_source
+        if generator_params is None:
+            self.generator_params = []
+        else:
+            self.generator_params = generator_params
         self.read_only = read_only
         self._size = 1
         self.set_children(children or [])
@@ -74,15 +77,17 @@ class DerivationTree:
         self.invalidate_hash()
 
     @property
-    def generator_param(self) -> Optional["DerivationTree"]:
-        return self._generator_source
+    def generator_params(self) -> list["DerivationTree"]:
+        return self._generator_params
 
-    @generator_param.setter
-    def generator_param(self, source: Optional["DerivationTree"]):
-        self._generator_source = source
+    @generator_params.setter
+    def generator_params(self, source: list["DerivationTree"]):
         if source is None:
-            return
-        source._parent = self
+            self._generator_params = []
+        else:
+            self._generator_params = source
+        for param in self._generator_params:
+            param._parent = self
 
     def add_child(self, child: "DerivationTree"):
         self._children.append(child)
@@ -94,7 +99,7 @@ class DerivationTree:
         trees = sum(
             [
                 child.find_all_trees(symbol)
-                for child in self._children
+                for child in [*self._children, *self._generator_params]
                 if child.symbol.is_non_terminal
             ],
             [],
@@ -103,8 +108,15 @@ class DerivationTree:
             trees.append(self)
         return trees
 
+    def is_generator_param(self):
+        if self._parent is None:
+            return False
+        if self in self._parent.generator_params:
+            return True
+        return self._parent.is_generator_param()
+
     def find_direct_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
-        return [child for child in self._children if child.symbol == symbol]
+        return [child for child in [*self._children, *self._generator_params] if child.symbol == symbol]
 
     def __getitem__(self, item) -> "DerivationTree":
         if isinstance(item, list) and len(item) == 1:
@@ -152,7 +164,7 @@ class DerivationTree:
             return memo[id(self)]
 
         # Create a new instance without copying the parent
-        copied = DerivationTree(self.symbol, [], generator_source=self.generator_param,
+        copied = DerivationTree(self.symbol, [], generator_params=self.generator_params,
                                 read_only=self.read_only)
         memo[id(self)] = copied
 
@@ -433,7 +445,7 @@ class DerivationTree:
                     child.replace(tree_to_replace, new_subtree)
                     for child in self._children
                 ],
-                generator_source=self.generator_param,
+                generator_params=self.generator_params,
                 read_only=self.read_only,
             )
 
