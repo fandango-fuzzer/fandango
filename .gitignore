@@ -7,7 +7,8 @@ __pycache__/
 
 # C extensions
 *.so
-
+fuzzed_*.der
+private_*.pem
 # Distribution / packaging
 .Python
 build/
@@ -171,10 +172,13 @@ language/gen/*
 gen
 gen/*
 *.o
-utils/lextab.py
-utils/yacctab.py
+utils/bt2fan/lextab.py
+utils/bt2fan/yacctab.py
 
 # Test result markers
 tests/test-marker.txt
 evaluation/test-evaluation.txt
 evaluation/experiments/test-experiments.txt
+
+tmp.der
+fuzzed_*.gif
