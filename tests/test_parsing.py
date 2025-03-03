@@ -4,7 +4,7 @@ import unittest
 import shlex
 import subprocess
 
-from fandango.language.grammar import ParseState
+from fandango.language.grammar import ParseState, Grammar, NodeType
 from fandango.language.parse import parse
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
@@ -18,60 +18,72 @@ class ParserTests(unittest.TestCase):
         cls.grammar, _ = parse(cls.file, use_stdlib=False, use_cache=False)
 
     def test_rules(self):
-        self.assertEqual(len(self.grammar._parser._rules), 4)
+        self.assertEqual(len(self.grammar._parser._rules), 9)
         self.assertEqual(len(self.grammar._parser._implicit_rules), 1)
         self.assertEqual(
-            {(NonTerminal("<number>"),)},
+            {((NonTerminal("<number>"), frozenset()),)},
             self.grammar._parser._rules[NonTerminal("<start>")],
         )
         self.assertEqual(
-            {
-                (
-                    NonTerminal("<non_zero>"),
-                    NonTerminal("<*0*>"),
-                ),
-                (Terminal("0"),),
-            },
+            {((NonTerminal(f"<__{NodeType.ALTERNATIVE}:0>"), frozenset()),)},
             self.grammar._parser._rules[NonTerminal("<number>")],
         )
         self.assertEqual(
-            {
-                (Terminal("1"),),
-                (Terminal("2"),),
-                (Terminal("3"),),
-                (Terminal("4"),),
-                (Terminal("5"),),
-                (Terminal("6"),),
-                (Terminal("7"),),
-                (Terminal("8"),),
-                (Terminal("9"),),
-            },
+            {((NonTerminal(f"<__{NodeType.ALTERNATIVE}:1>"), frozenset()),)},
             self.grammar._parser._rules[NonTerminal("<non_zero>")],
         )
         self.assertEqual(
-            {
-                (Terminal("0"),),
-                (Terminal("1"),),
-                (Terminal("2"),),
-                (Terminal("3"),),
-                (Terminal("4"),),
-                (Terminal("5"),),
-                (Terminal("6"),),
-                (Terminal("7"),),
-                (Terminal("8"),),
-                (Terminal("9"),),
-            },
+            {((NonTerminal(f"<__{NodeType.ALTERNATIVE}:2>"), frozenset()),)},
             self.grammar._parser._rules[NonTerminal("<digit>")],
         )
         self.assertEqual(
+            {((NonTerminal("<*0*>"), frozenset()),)},
+            self.grammar._parser._rules[NonTerminal(f"<__{NodeType.STAR}:0>")],
+        )
+        self.assertEqual(
             {
-                (),
                 (
-                    NonTerminal("<digit>"),
-                    NonTerminal("<*0*>"),
-                ),
+                    (NonTerminal("<non_zero>"), frozenset()),
+                    (NonTerminal(f"<__{NodeType.STAR}:0>"), frozenset()),
+                )
             },
-            self.grammar._parser._implicit_rules[NonTerminal("<*0*>")],
+            self.grammar._parser._rules[NonTerminal(f"<__{NodeType.CONCATENATION}:0>")],
+        )
+        self.assertEqual(
+            {
+                ((Terminal("0"), frozenset()),),
+                ((NonTerminal(f"<__{NodeType.CONCATENATION}:0>"), frozenset()),),
+            },
+            self.grammar._parser._rules[NonTerminal(f"<__{NodeType.ALTERNATIVE}:0>")],
+        )
+        self.assertEqual(
+            {
+                ((Terminal("1"), frozenset()),),
+                ((Terminal("2"), frozenset()),),
+                ((Terminal("3"), frozenset()),),
+                ((Terminal("4"), frozenset()),),
+                ((Terminal("5"), frozenset()),),
+                ((Terminal("6"), frozenset()),),
+                ((Terminal("7"), frozenset()),),
+                ((Terminal("8"), frozenset()),),
+                ((Terminal("9"), frozenset()),),
+            },
+            self.grammar._parser._rules[NonTerminal(f"<__{NodeType.ALTERNATIVE}:1>")],
+        )
+        self.assertEqual(
+            {
+                ((Terminal("0"), frozenset()),),
+                ((Terminal("1"), frozenset()),),
+                ((Terminal("2"), frozenset()),),
+                ((Terminal("3"), frozenset()),),
+                ((Terminal("4"), frozenset()),),
+                ((Terminal("5"), frozenset()),),
+                ((Terminal("6"), frozenset()),),
+                ((Terminal("7"), frozenset()),),
+                ((Terminal("8"), frozenset()),),
+                ((Terminal("9"), frozenset()),),
+            },
+            self.grammar._parser._rules[NonTerminal(f"<__{NodeType.ALTERNATIVE}:2>")],
         )
 
     # def test_parse_table(self):
@@ -167,7 +179,9 @@ class TestIncompleteParsing(unittest.TestCase):
 
     def _test(self, example, tree):
         parsed = False
-        for actual_tree in self.grammar.parse_incomplete(example, "<ab>"):
+        for actual_tree in self.grammar.parse_multiple(
+            example, "<ab>", mode=Grammar.Parser.ParsingMode.INCOMPLETE
+        ):
             self.assertEqual(tree, actual_tree)
             parsed = True
             break
@@ -183,6 +197,102 @@ class TestIncompleteParsing(unittest.TestCase):
                     DerivationTree(
                         NonTerminal("<ab>"), [DerivationTree(Terminal("a"))]
                     ),
+                ],
+            ),
+        )
+
+
+class TestDynamicRepetitionParsing(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.file = open("tests/resources/dynamic_repetition.fan", "r")
+        cls.grammar, _ = parse(cls.file, use_stdlib=False, use_cache=False)
+
+    def _test(self, example, tree):
+        parsed = False
+        for actual_tree in self.grammar.parse_multiple(
+            example, mode=Grammar.Parser.ParsingMode.COMPLETE
+        ):
+            self.assertEqual(tree, actual_tree)
+            parsed = True
+            break
+        self.assertTrue(parsed)
+
+    def test_nested(self):
+        self._test(
+            "2(3aaa2bb)",
+            DerivationTree(
+                NonTerminal("<start>"),
+                [
+                    DerivationTree(
+                        NonTerminal("<len>"),
+                        [
+                            DerivationTree(
+                                NonTerminal("<number>"),
+                                [
+                                    DerivationTree(
+                                        NonTerminal("<number_start>"),
+                                        [DerivationTree(Terminal("2"))],
+                                    )
+                                ],
+                            )
+                        ],
+                    ),
+                    DerivationTree(Terminal("(")),
+                    DerivationTree(
+                        NonTerminal("<inner>"),
+                        [
+                            DerivationTree(
+                                NonTerminal("<len>"),
+                                [
+                                    DerivationTree(
+                                        NonTerminal("<number>"),
+                                        [
+                                            DerivationTree(
+                                                NonTerminal("<number_start>"),
+                                                [DerivationTree(Terminal("3"))],
+                                            )
+                                        ],
+                                    )
+                                ],
+                            ),
+                            DerivationTree(
+                                NonTerminal("<letter>"), [DerivationTree(Terminal("a"))]
+                            ),
+                            DerivationTree(
+                                NonTerminal("<letter>"), [DerivationTree(Terminal("a"))]
+                            ),
+                            DerivationTree(
+                                NonTerminal("<letter>"), [DerivationTree(Terminal("a"))]
+                            ),
+                        ],
+                    ),
+                    DerivationTree(
+                        NonTerminal("<inner>"),
+                        [
+                            DerivationTree(
+                                NonTerminal("<len>"),
+                                [
+                                    DerivationTree(
+                                        NonTerminal("<number>"),
+                                        [
+                                            DerivationTree(
+                                                NonTerminal("<number_start>"),
+                                                [DerivationTree(Terminal("2"))],
+                                            )
+                                        ],
+                                    )
+                                ],
+                            ),
+                            DerivationTree(
+                                NonTerminal("<letter>"), [DerivationTree(Terminal("b"))]
+                            ),
+                            DerivationTree(
+                                NonTerminal("<letter>"), [DerivationTree(Terminal("b"))]
+                            ),
+                        ],
+                    ),
+                    DerivationTree(Terminal(")")),
                 ],
             ),
         )
@@ -205,8 +315,8 @@ class TestEmptyParsing(unittest.TestCase):
                 NonTerminal("<start>"),
                 [
                     DerivationTree(Terminal("123")),
-                    DerivationTree(NonTerminal("<digit>"),
-                            [DerivationTree(Terminal("4"))]
+                    DerivationTree(
+                        NonTerminal("<digit>"), [DerivationTree(Terminal("4"))]
                     ),
                 ],
             ),
@@ -216,15 +326,17 @@ class TestEmptyParsing(unittest.TestCase):
         self._test(
             "123456",
             DerivationTree(
-                NonTerminal('<start>'),
+                NonTerminal("<start>"),
                 [
-                    DerivationTree(Terminal('12345')),
-                    DerivationTree(Terminal('')),
-                    DerivationTree(NonTerminal('<digit>'),
-                                    [DerivationTree(Terminal('6'))]),
-                ]
-            )
+                    DerivationTree(Terminal("12345")),
+                    DerivationTree(Terminal("")),
+                    DerivationTree(
+                        NonTerminal("<digit>"), [DerivationTree(Terminal("6"))]
+                    ),
+                ],
+            ),
         )
+
 
 class TestCLIParsing(unittest.TestCase):
     def run_command(self, command):
@@ -236,16 +348,21 @@ class TestCLIParsing(unittest.TestCase):
         out, err = proc.communicate()
         return out.decode(), err.decode(), proc.returncode
 
+
 class TestRegexParsing(TestCLIParsing):
     def test_infinity_abc(self):
-        command = shlex.split("fandango parse -f docs/infinity.fan --validate tests/resources/abc.txt --validate")
+        command = shlex.split(
+            "fandango parse -f docs/infinity.fan --validate tests/resources/abc.txt --validate"
+        )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
 
     def test_infinity_abcabc(self):
-        command = shlex.split("fandango parse -f docs/infinity.fan --validate tests/resources/abcabc.txt --validate")
+        command = shlex.split(
+            "fandango parse -f docs/infinity.fan --validate tests/resources/abcabc.txt --validate"
+        )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
@@ -253,15 +370,18 @@ class TestRegexParsing(TestCLIParsing):
 
     def test_infinity_abcd(self):
         # This should be rejected by the grammar
-        command = shlex.split("fandango parse -f docs/infinity.fan tests/resources/abcd.txt --validate")
+        command = shlex.split(
+            "fandango parse -f docs/infinity.fan tests/resources/abcd.txt --validate"
+        )
         out, err, code = self.run_command(command)
         self.assertEqual(1, code)
+
 
 class TestBitParsing(TestCLIParsing):
 
     def _test(self, example, tree, grammar):
         parsed = False
-        for actual_tree in grammar.parse_incomplete(example, "<start>"):
+        for actual_tree in grammar.parse_multiple(example, "<start>"):
             if tree is None:
                 self.fail("Expected None")
             self.assertEqual(tree, actual_tree)
@@ -273,7 +393,9 @@ class TestBitParsing(TestCLIParsing):
         self.assertTrue(parsed)
 
     def test_bits_a(self):
-        command = shlex.split("fandango parse -f docs/bits.fan tests/resources/a.txt --validate")
+        command = shlex.split(
+            "fandango parse -f docs/bits.fan tests/resources/a.txt --validate"
+        )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
@@ -282,56 +404,58 @@ class TestBitParsing(TestCLIParsing):
     def test_alternative_bits(self):
         file = open("tests/resources/byte_alternative.fan", "r")
         grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+        self._test(b"\x00", None, grammar)
         self._test(
-            b'\x00',
-            None,
-            grammar
-        )
-        self._test(
-            b'\x01',
+            b"\x01",
             DerivationTree(
                 NonTerminal("<start>"),
                 [
-                    *[DerivationTree(
-                        NonTerminal("<bit>"),
-                        [DerivationTree(Terminal(0))]
-                    ) for _ in range(7)],
+                    *[
+                        DerivationTree(
+                            NonTerminal("<bit>"), [DerivationTree(Terminal(0))]
+                        )
+                        for _ in range(7)
+                    ],
                     DerivationTree(Terminal(1)),
                 ],
             ),
-            grammar
+            grammar,
         )
         self._test(
-            b'\x02',
+            b"\x02",
             DerivationTree(
                 NonTerminal("<start>"),
                 [
-                    *[DerivationTree(
-                        NonTerminal("<bit>"),
-                        [DerivationTree(Terminal(0))]
-                    ) for _ in range(6)],
+                    *[
+                        DerivationTree(
+                            NonTerminal("<bit>"), [DerivationTree(Terminal(0))]
+                        )
+                        for _ in range(6)
+                    ],
                     DerivationTree(Terminal(1)),
-                    DerivationTree(
-                        NonTerminal("<bit>"),
-                        [DerivationTree(Terminal(0))]
-                    )
+                    DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))]),
                 ],
             ),
-            grammar
+            grammar,
         )
 
 
 class TestGIFParsing(TestCLIParsing):
     def test_gif(self):
-        command = shlex.split("fandango parse -f docs/gif89a.fan docs/tinytrans.gif --validate")
+        command = shlex.split(
+            "fandango parse -f docs/gif89a.fan docs/tinytrans.gif --validate"
+        )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
 
+
 class TestBitstreamParsing(TestCLIParsing):
     def test_bitstream(self):
-        command = shlex.split("fandango parse -f tests/resources/bitstream.fan tests/resources/abcd.txt --validate")
+        command = shlex.split(
+            "fandango parse -f tests/resources/bitstream.fan tests/resources/abcd.txt --validate"
+        )
         out, err, code = self.run_command(command)
         # Warns that the number of bits (1..5) may not be a multiple of eight, # which is correct
         # self.assertEqual("", err)
@@ -339,14 +463,18 @@ class TestBitstreamParsing(TestCLIParsing):
         self.assertEqual(0, code)
 
     def test_bitstream_a(self):
-        command = shlex.split("fandango parse -f tests/resources/bitstream-a.fan tests/resources/a.txt --validate")
+        command = shlex.split(
+            "fandango parse -f tests/resources/bitstream-a.fan tests/resources/a.txt --validate"
+        )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
 
     def test_bitstream_b(self):
-        command = shlex.split("fandango parse -f tests/resources/bitstream-a.fan tests/resources/b.txt --validate")
+        command = shlex.split(
+            "fandango parse -f tests/resources/bitstream-a.fan tests/resources/b.txt --validate"
+        )
         out, err, code = self.run_command(command)
         # This should fail
         self.assertNotEqual("", err)
@@ -361,4 +489,3 @@ class TestBitstreamParsing(TestCLIParsing):
         self.assertEqual(0, code)
         self.assertEqual("", out)
         self.assertEqual("", err)
-
