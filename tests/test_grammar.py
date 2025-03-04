@@ -3,6 +3,8 @@
 import random
 import unittest
 
+from scipy.linalg import solve_lyapunov
+
 from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse
 
@@ -63,8 +65,8 @@ class ConstraintTest(unittest.TestCase):
         GRAMMAR, c = parse(file, use_stdlib=False, use_cache=False)
         solutions = self.get_solutions(GRAMMAR, c)
         for solution in solutions:
-            self.assertGreaterEqual(len(str(solution)), 1)
-            self.assertLessEqual(len(str(solution)), 3)
+            self.assertGreaterEqual(len(str(solution)), 3)
+            self.assertLessEqual(len(str(solution)), 10)
 
     def test_repetition_min(self):
         file = open("tests/resources/min_reps.fan", "r")
@@ -72,3 +74,14 @@ class ConstraintTest(unittest.TestCase):
         solutions = self.get_solutions(GRAMMAR, c)
         for solution in solutions:
             self.assertGreaterEqual(len(str(solution)), 1)
+
+    def test_repetition_computed(self):
+        file = open("tests/resources/dynamic_repetition.fan", "r")
+        GRAMMAR, c = parse(file, use_stdlib=False, use_cache=False)
+        solutions = self.get_solutions(GRAMMAR, c)
+        for solution in solutions:
+            len_outer = solution.children[0].to_int()
+            self.assertEqual(len_outer, len(solution.children) - 3)
+            for tree in solution.children[2:-2]:
+                len_inner = tree.children[0].to_int()
+                self.assertEqual(len_inner, len(tree.children) - 1)

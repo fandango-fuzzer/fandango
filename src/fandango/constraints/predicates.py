@@ -1,28 +1,5 @@
 from fandango.language.tree import DerivationTree
 
-actual_int = int
-actual_float = float
-actual_complex = complex
-
-
-def int(x, *args, **kwargs):
-    if isinstance(x, DerivationTree):
-        return x.to_int(*args, **kwargs)
-    return actual_int(x, *args, **kwargs)
-
-
-def float(x):
-    if isinstance(x, DerivationTree):
-        return x.to_float()
-    return actual_float(x)
-
-
-def complex(x, *args, **kwargs):
-    if isinstance(x, DerivationTree):
-        return x.to_complex(*args, **kwargs)
-    return complex(x, *args, **kwargs)
-
-
 def is_int(x):
     if isinstance(x, DerivationTree):
         return x.is_int()
@@ -32,7 +9,6 @@ def is_int(x):
         return False
     else:
         return True
-
 
 def is_float(x):
     if isinstance(x, DerivationTree):
@@ -44,7 +20,6 @@ def is_float(x):
     else:
         return True
 
-
 def is_num(x):
     if isinstance(x, DerivationTree):
         return x.is_num()
@@ -55,7 +30,6 @@ def is_num(x):
     else:
         return True
 
-
 def is_complex(x):
     if isinstance(x, DerivationTree):
         return x.is_complex()
@@ -65,7 +39,6 @@ def is_complex(x):
         return False
     else:
         return True
-
 
 def is_before(
     tree: DerivationTree, before_tree: DerivationTree, after_tree: DerivationTree
@@ -78,7 +51,6 @@ def is_before(
     if before_index < 0 or after_index < 0:
         return False
     return before_index < after_index
-
 
 def is_after(
     tree: DerivationTree, after_tree: DerivationTree, before_tree: DerivationTree

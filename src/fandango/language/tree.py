@@ -19,6 +19,9 @@ class DerivationTree:
         parent: Optional["DerivationTree"] = None,
         read_only: bool = False,
     ):
+        if not isinstance(symbol, Symbol):
+            raise TypeError(f"Expected Symbol, got {type(symbol)}")
+
         self.hash_cache = None
         self._parent: Optional["DerivationTree"] = parent
         self.symbol: Symbol = symbol
@@ -33,6 +36,9 @@ class DerivationTree:
     def size(self):
         return self._size
 
+    def __bytes__(self):
+        return self.to_bytes()
+
     @property
     def symbol(self) -> Symbol:
         return self._symbol
@@ -46,6 +52,11 @@ class DerivationTree:
         self.hash_cache = None
         if self._parent is not None:
             self._parent.invalidate_hash()
+
+    def get_root(self):
+        if self._parent is None:
+            return self
+        return self._parent.get_root()
 
     def set_all_read_only(self, read_only: bool):
         self.read_only = read_only
@@ -89,9 +100,6 @@ class DerivationTree:
             return SliceTree(items)
         else:
             return items
-
-    def __str__(self):
-        return self.to_string()
 
     def __hash__(self):
         """
@@ -212,6 +220,28 @@ class DerivationTree:
         """
         return self.contains_type(str)
 
+    def to_string(self) -> str:
+        """
+        Convert the derivation tree to a string.
+        """
+        val: Any = self.value()
+
+        if isinstance(val, int):
+            # This is a bit value; convert to bytes
+            val = int(val).to_bytes(val // 256 + 1)
+            assert isinstance(val, bytes)
+
+        if isinstance(val, bytes):
+            # This is a bytes string; convert to string
+            # Decoding into latin-1 keeps all bytes as is
+            val = val.decode("latin-1")
+            assert isinstance(val, str)
+
+        if isinstance(val, str):
+            return val
+
+        raise ValueError(f"Cannot convert {val!r} to string")
+
     def to_bits(self, *, encoding="utf-8") -> str:
         """
         Convert the derivation tree to a sequence of bits (0s and 1s).
@@ -220,17 +250,6 @@ class DerivationTree:
         self._write_to_bitstream(stream, encoding=encoding)
         stream.seek(0)
         return stream.read()
-
-    def to_string(self) -> str:
-        """
-        Convert the derivation tree to a string.
-        """
-        try:
-            return self.to_bytes(encoding="utf-8").decode("utf-8")
-        except UnicodeDecodeError:
-            # This can happen if we produce bytes that are interpreted as strings, say via str(tree)
-            # Decode into latin-1 to avoid errors
-            return self.to_bytes(encoding="utf-8").decode("latin-1")
 
     def to_bytes(self, encoding="utf-8") -> bytes:
         """
@@ -678,6 +697,23 @@ class DerivationTree:
 
     def __invert__(self):
         return ~self.value()
+
+    # Converters
+    def __int__(self):
+        return int(self.value())
+
+    def __float__(self):
+        return float(self.value())
+
+    def __complex__(self):
+        return complex(self.value())
+
+    def __str__(self):
+        return self.to_string()
+
+    def __bytes__(self):
+        return self.to_bytes()
+
 
     ## Iterators
     def __contains__(self, other: Union["DerivationTree", Any]) -> bool:

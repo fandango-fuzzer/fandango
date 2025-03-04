@@ -1,5 +1,4 @@
 import argparse
-import ast
 import atexit
 import glob
 import importlib.metadata
@@ -20,18 +19,17 @@ import textwrap
 from io import StringIO
 from io import UnsupportedOperation
 from pathlib import Path
-from ansi_styles import ansiStyles as styles
-from enum import Enum
 
 from ansi_styles import ansiStyles as styles
-from antlr4.error.Errors import ParseCancellationException
 
 from fandango.evolution.algorithm import Fandango
+from fandango.language.grammar import Grammar
 from fandango.language.parse import parse
 from fandango.logger import LOGGER, print_exception
 
 
-DISTRIBUTION_NAME = 'fandango-fuzzer'
+DISTRIBUTION_NAME = "fandango-fuzzer"
+
 
 def version():
     """Return the Fandango version number"""
@@ -41,8 +39,8 @@ def version():
 def homepage():
     """Return the Fandango homepage"""
     for key, value in importlib.metadata.metadata(DISTRIBUTION_NAME).items():
-        if key == 'Project-URL' and value.startswith('homepage,'):
-            return value.split(',')[1].strip()
+        if key == "Project-URL" and value.startswith("homepage,"):
+            return value.split(",")[1].strip()
     return "the Fandango homepage"
 
 
@@ -50,15 +48,19 @@ def get_parser(in_command_line=True):
     # Main parser
     if in_command_line:
         prog = "fandango"
-        epilog = textwrap.dedent("""\
+        epilog = textwrap.dedent(
+            """\
             Use `%(prog)s help` to get a list of commands.
-            Use `%(prog)s help COMMAND` to learn more about COMMAND.""")
+            Use `%(prog)s help COMMAND` to learn more about COMMAND."""
+        )
     else:
         prog = ""
-        epilog = textwrap.dedent("""\
+        epilog = textwrap.dedent(
+            """\
             Use `help` to get a list of commands.
             Use `help COMMAND` to learn more about COMMAND.
-            Use TAB to complete commands.""")
+            Use TAB to complete commands."""
+        )
     epilog += f"\nSee {homepage()} for more information."
 
     main_parser = argparse.ArgumentParser(
@@ -847,9 +849,10 @@ def parse_file(fd, args, grammar, constraints, settings):
         start_symbol = "<start>"
 
     allow_incomplete = hasattr(args, "prefix") and args.prefix
-    tree_gen = grammar.parse_forest(
-        individual, start=start_symbol, allow_incomplete=allow_incomplete
-    )
+    parsing_mode = Grammar.Parser.ParsingMode.COMPLETE
+    if allow_incomplete:
+        parsing_mode = Grammar.Parser.ParsingMode.INCOMPLETE
+    tree_gen = grammar.parse_forest(individual, start=start_symbol, mode=parsing_mode)
 
     alternative_counter = 1
     passing_tree = None
