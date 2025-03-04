@@ -877,7 +877,7 @@ class Grammar(NodeVisitor):
                 for state in table[k]:
                     # True iff we have processed all characters
                     # (or some bits of the last character)
-                    at_end = w >= len(word) # or (bit_count > 0 and w == len(word) - 1)
+                    at_end = w >= len(word)  # or (bit_count > 0 and w == len(word) - 1)
 
                     if at_end:
                         if allow_incomplete:
