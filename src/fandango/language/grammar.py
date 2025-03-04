@@ -11,7 +11,7 @@ from fandango.language.symbol import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
-MAX_REPETITIONS = 10
+MAX_REPETITIONS = 5
 
 
 class NodeType(enum.Enum):
