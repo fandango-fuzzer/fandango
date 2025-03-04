@@ -426,7 +426,7 @@ class ComparisonConstraint(Constraint):
                     for node in container.get_trees():
                         ft = FailingTree(node, self, suggestions=suggestions)
                         if ft not in failing_trees:
-                            failing_trees.append(ft) 
+                            failing_trees.append(ft)
 
         if not has_combinations:
             solved += 1
