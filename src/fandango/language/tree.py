@@ -443,7 +443,7 @@ class DerivationTree:
     def is_num(self):
         return self.is_float()
 
-    def replace(self, tree_to_replace, new_subtree):
+    def replace(self, grammar: "Grammar", tree_to_replace, new_subtree):
         """
         Replace the subtree rooted at the given node with the new subtree.
         """
@@ -455,28 +455,29 @@ class DerivationTree:
             children = []
             generator_params = []
             for param in self._generator_params:
-                new_param = param.replace(tree_to_replace, new_subtree)
+                new_param = param.replace(grammar, tree_to_replace, new_subtree)
                 generator_params.append(new_param)
                 if new_param != param:
                     regen_children = True
             for child in self._children:
-                new_child = child.replace(tree_to_replace, new_subtree)
+                new_child = child.replace(grammar, tree_to_replace, new_subtree)
                 children.append(new_child)
                 if new_child != child:
                     regen_params = True
 
-            if regen_children:
-                # Todo run generator
-                pass
-            elif regen_params:
-                pass
-
-            return DerivationTree(
+            new_tree = DerivationTree(
                 self.symbol,
                 children,
                 generator_params=generator_params,
                 read_only=self.read_only,
             )
+
+            if regen_children:
+                new_tree.set_children(grammar.derive_generator_output(new_tree))
+            elif regen_params:
+                new_tree.generator_params = grammar.derive_generator_params(new_tree)
+
+            return new_tree
 
     def get_non_terminal_symbols(self, exclude_read_only=True) -> Set[NonTerminal]:
         """

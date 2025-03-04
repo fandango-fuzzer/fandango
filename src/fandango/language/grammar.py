@@ -1308,6 +1308,59 @@ class Grammar(NodeVisitor):
         self._global_variables = global_variables or {}
         self._visited = set()
 
+    def get_source_tree(self, tree: "DerivationTree"):
+        if not isinstance(tree.symbol, NonTerminal) or tree.symbol not in self.generators :
+            return tree.children
+        source_generator = self.generators[tree.symbol]
+        source_nts = map(lambda x: x.get_access_points(), iter(source_generator.nonterminals.values()))
+        source_nts = [nt for source_list in source_nts for nt in source_list]
+
+        if len(source_nts) == 0:
+            return tree.children
+        if len(source_nts) > 1:
+            raise NotImplementedError("Back-converting generator with more then one parameter")
+
+        source_nt = source_nts[0]
+        if source_nt not in self.generators:
+            raise ValueError(f"Couldn't back-convert sub-tree generated for NonTerminal {tree.symbol}! No generator assigned to symbol: {source_nt}")
+
+        back_generator = self.generators[source_nt]
+        back_nts = map(lambda x: x.get_access_points(), iter(back_generator.nonterminals.values()))
+        back_nts = [nt for back_list in back_nts for nt in back_list]
+        if len(back_nts) != 1:
+            raise ValueError(f"Back-converting not possible with generator that uses more or less than 1 attribute! NonTerminal: {source_nt}")
+        back_nt = back_nts[0]
+        if back_nt != tree.symbol:
+            raise ValueError(f"Converter used for back-converting needs to use target NonTerminal used for converting. Got {back_nt}. Expected {tree.symbol}")
+        generator_args = dict()
+        if self.contains_bits():
+            generator_args[tree.symbol] = tree.to_bytes()
+        else:
+            generator_args[tree.symbol] = tree.to_string()
+        generated = self.generate_string(back_nt, args = generator_args)
+        generated_tree = self.parse(generated, back_nt)
+        return [*generated_tree, *tree.children]
+
+    def derive_generator_params(self, tree: "DerivationTree"):
+        pass
+
+    def derive_generator_output(self, tree: "DerivationTree"):
+        gen_symbol = tree.symbol
+        if not isinstance(gen_symbol, NonTerminal):
+            raise ValueError("Can't derive generator output. tree.symbol is not a NonTerminal!")
+        if tree.symbol not in self.generators:
+            raise ValueError("Can't derive generator output. tree.symbol not in generators!")
+        lit_generator = self.generators[gen_symbol]
+        requirements_copy = dict(lit_generator.nonterminals)
+        for key, val in requirements_copy.items():
+            arg_tree = next(filter(lambda x: x.symbol == val.symbol, tree.generator_params), None)
+            if arg_tree is None:
+                raise ValueError(f"Can't derive generator output. No argument given for parameter {val.symbol}!")
+            requirements_copy[key] = arg_tree
+        generated = self.generate(tree.symbol, requirements_copy)
+        return generated.children
+
+
     def generate_string(self, parent: "DerivationTree", symbol: str | NonTerminal = "<start>") -> tuple[list[DerivationTree], str]:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
