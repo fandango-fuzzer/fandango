@@ -11,7 +11,7 @@ kernelspec:
 ---
 
 (sec:derivation-tree)=
-# Derivation Trees and their Functions
+# Derivation Tree Reference
 
 ```{code-cell}
 :tags: ["remove-input", "remove-output"]
