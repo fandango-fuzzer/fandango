@@ -352,6 +352,17 @@ class ConstraintTest(unittest.TestCase):
         example = grammar.parse("01")
         self.assertTrue(constraint.check(example))
 
+    def test_eval_constraint(self):
+        file = open("tests/resources/eval.fan")
+        grammar, constraints = parse(file, use_stdlib=True, use_cache=False)
+        constraint = constraints[0]
+
+        counter_example = grammar.parse("+05 * 0 / 96 + 10")
+        self.assertFalse(constraint.check(counter_example))
+
+        example = grammar.parse("+5 * 0 / 96 + 10")
+        self.assertTrue(constraint.check(example))
+
     def test_complex_constraint(self):
         constraint = """
 int(<number>) % 2 == 0;
