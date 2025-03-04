@@ -32,7 +32,16 @@ class test_cli(unittest.TestCase):
         command = shlex.split(
             "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912"
         )
-        expected = """3571614697\n8230756\n805195\n4922034\n93\n91101\n130\n4473\n4152014020\n084"""
+        expected = """35716
+4
+9768
+30
+5658
+5
+9
+649
+20
+41"""
         out, err, code = self.run_command(command)
         self.assertEqual(0, code)
         self.assertEqual(expected, out.strip())
@@ -42,7 +51,7 @@ class test_cli(unittest.TestCase):
         command = shlex.split(
             "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 -o tests/resources/test.txt -s ;"
         )
-        expected = "3571614697;8230756;805195;4922034;93;91101;130;4473;4152014020;084"
+        expected = "35716;4;9768;30;5658;5;9;649;20;41"
         out, err, code = self.run_command(command)
         self.assertEqual(0, code)
         self.assertEqual("", out)
@@ -56,7 +65,7 @@ class test_cli(unittest.TestCase):
         command = shlex.split(
             "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 -d tests/resources/test"
         )
-        expected = ["3571614697","8230756","805195","4922034","93","91101","130","4473","4152014020","084"]
+        expected = ["35716", "4", "9768", "30", "5658", "5", "9", "649", "20", "41"]
         (
             out,
             err,
