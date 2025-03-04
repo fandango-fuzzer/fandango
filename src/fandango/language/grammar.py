@@ -2,6 +2,8 @@ import abc
 import enum
 import random
 import typing
+from collections import defaultdict
+
 import exrex
 
 from copy import deepcopy
@@ -1308,41 +1310,54 @@ class Grammar(NodeVisitor):
         self._global_variables = global_variables or {}
         self._visited = set()
 
-    def get_source_tree(self, tree: "DerivationTree"):
-        if not isinstance(tree.symbol, NonTerminal) or tree.symbol not in self.generators :
-            return tree.children
-        source_generator = self.generators[tree.symbol]
-        source_nts = map(lambda x: x.get_access_points(), iter(source_generator.nonterminals.values()))
-        source_nts = [nt for source_list in source_nts for nt in source_list]
+    @staticmethod
+    def _topological_sort(graph: dict[str, set[str]]):
+        indegree = defaultdict(int)
+        queue = []
 
-        if len(source_nts) == 0:
-            return tree.children
-        if len(source_nts) > 1:
-            raise NotImplementedError("Back-converting generator with more then one parameter")
+        for node in graph:
+            for neighbour in graph[node]:
+                indegree[neighbour] += 1
+        for node in graph:
+            if indegree[node] == 0:
+                queue.append(node)
 
-        source_nt = source_nts[0]
-        if source_nt not in self.generators:
-            raise ValueError(f"Couldn't back-convert sub-tree generated for NonTerminal {tree.symbol}! No generator assigned to symbol: {source_nt}")
+        topological_order = []
+        while queue:
+            node = queue.pop(0)
+            topological_order.append(node)
 
-        back_generator = self.generators[source_nt]
-        back_nts = map(lambda x: x.get_access_points(), iter(back_generator.nonterminals.values()))
-        back_nts = [nt for back_list in back_nts for nt in back_list]
-        if len(back_nts) != 1:
-            raise ValueError(f"Back-converting not possible with generator that uses more or less than 1 attribute! NonTerminal: {source_nt}")
-        back_nt = back_nts[0]
-        if back_nt != tree.symbol:
-            raise ValueError(f"Converter used for back-converting needs to use target NonTerminal used for converting. Got {back_nt}. Expected {tree.symbol}")
-        generator_args = dict()
-        if self.contains_bits():
-            generator_args[tree.symbol] = tree.to_bytes()
-        else:
-            generator_args[tree.symbol] = tree.to_string()
-        generated = self.generate_string(back_nt, args = generator_args)
-        generated_tree = self.parse(generated, back_nt)
-        return [*generated_tree, *tree.children]
+            for neighbour in graph[node]:
+                indegree[neighbour] -= 1
+
+                if indegree[neighbour] == 0:
+                    queue.append(neighbour)
+
+        if len(topological_order) != len(graph):
+            print("Cycle exists")
+        return topological_order
 
     def derive_generator_params(self, tree: "DerivationTree"):
-        pass
+        gen_symbol = tree.symbol
+        if not isinstance(gen_symbol, NonTerminal):
+            raise ValueError("Can't derive generator output. tree.symbol is not a NonTerminal!")
+        if tree.symbol not in self.generators:
+            raise ValueError("Can't derive generator output. tree.symbol not in generators!")
+        lit_generator = self.generators[gen_symbol]
+        dependent_generators = {}
+        for key, val in lit_generator.nonterminals.items():
+            if val.symbol not in self.generators:
+                raise ValueError(f"Can't derive generator parameters. No generator existing for {val.symbol}!")
+            generator = self.generators[val.symbol]
+            dependent_generators[val.symbol] = {gen_value.symbol for gen_value in generator.nonterminals.values()}
+        dependent_generators = self._topological_sort(dependent_generators)
+        args = dict()
+        args[tree.symbol] = tree
+        for symbol in dependent_generators:
+            generated_param = self.generate(symbol, args)
+            args[generated_param.symbol] = generated_param
+        return list(args.values())
+
 
     def derive_generator_output(self, tree: "DerivationTree"):
         gen_symbol = tree.symbol
