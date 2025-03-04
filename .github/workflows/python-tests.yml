@@ -10,6 +10,7 @@ on:
   pull_request:
     branches:
       - main  # Run tests on pull requests targeting the main branch
+      - dev   # Run tests on pull requests targeting the dev branch
   workflow_dispatch: # Enables manual execution from the Actions tab
 
 jobs:
