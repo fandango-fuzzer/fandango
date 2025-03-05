@@ -30,7 +30,7 @@ class test_cli(unittest.TestCase):
 
     def test_fuzz_basic(self):
         command = shlex.split(
-            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912"
+            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 --no-cache"
         )
         expected = """35716
 4
@@ -49,7 +49,7 @@ class test_cli(unittest.TestCase):
 
     def test_output_to_file(self):
         command = shlex.split(
-            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 -o tests/resources/test.txt -s ;"
+            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 -o tests/resources/test.txt -s ; --no-cache"
         )
         expected = "35716;4;9768;30;5658;5;9;649;20;41"
         out, err, code = self.run_command(command)
@@ -63,7 +63,7 @@ class test_cli(unittest.TestCase):
 
     def test_output_multiple_files(self):
         command = shlex.split(
-            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 -d tests/resources/test"
+            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 -d tests/resources/test --no-cache"
         )
         expected = ["35716", "4", "9768", "30", "5658", "5", "9", "649", "20", "41"]
         (
