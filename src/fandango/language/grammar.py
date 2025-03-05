@@ -1351,7 +1351,9 @@ class Grammar(NodeVisitor):
         if tree.symbol not in self.generators:
             raise ValueError("Can't derive generator output. tree.symbol not in generators!")
         lit_generator = self.generators[gen_symbol]
-        dependent_generators = {}
+        dependent_generators = {
+            gen_symbol: set()
+        }
         for key, val in lit_generator.nonterminals.items():
             if val.symbol not in self.generators:
                 raise ValueError(f"Can't derive generator parameters. No generator existing for {val.symbol}!")

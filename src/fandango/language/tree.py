@@ -448,6 +448,10 @@ class DerivationTree:
         Replace the subtree rooted at the given node with the new subtree.
         """
         if self == tree_to_replace and not self.read_only:
+            if len(self.generator_params) == 0:
+                new_subtree.generator_params = []
+            else:
+                new_subtree.generator_params = grammar.derive_generator_params(new_subtree)
             return new_subtree
         else:
             regen_params = False
