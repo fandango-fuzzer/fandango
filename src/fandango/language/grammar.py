@@ -1354,7 +1354,7 @@ class Grammar(NodeVisitor):
         args = dict()
         args[tree.symbol] = tree
         for symbol in dependent_generators:
-            generated_param = self.generate(symbol, args)
+            generated_param = self.generate(tree, symbol, args)
             args[generated_param.symbol] = generated_param
         return list(args.values())
 
@@ -1372,15 +1372,19 @@ class Grammar(NodeVisitor):
             if arg_tree is None:
                 raise ValueError(f"Can't derive generator output. No argument given for parameter {val.symbol}!")
             requirements_copy[key] = arg_tree
-        generated = self.generate(tree.symbol, requirements_copy)
+        generated = self.generate(tree.parent, tree.symbol, requirements_copy)
         return generated.children
 
 
-    def generate_string(self, parent: "DerivationTree", symbol: str | NonTerminal = "<start>") -> tuple[list[DerivationTree], str]:
+    def generate_string(self, parent: "DerivationTree", symbol: str | NonTerminal = "<start>", generator_params: list[DerivationTree] = None) -> tuple[list[DerivationTree], str]:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         if self.generators[symbol] is None:
             raise ValueError(f"No generator for symbol {symbol}")
+        if generator_params is None:
+            generator_params = dict()
+        else:
+            generator_params = {tree.symbol: tree for tree in generator_params}
         generator = self.generators[symbol]
 
         local_variables = self._local_variables.copy()
@@ -1389,18 +1393,16 @@ class Grammar(NodeVisitor):
 
         dummy_child = DerivationTree(symbol)
         parent_cpy.add_child(dummy_child)
-        generator_params = []
-        if generator.nonterminals:
-            if len(generator.nonterminals) > 1:
-                raise ValueError(
-                    f"Generators that depend on more than 1 symbol are not supported! Failing generator: {symbol}")
-            id, nonterminal = next(iter(generator.nonterminals.items()))
+        for id, nonterminal in generator.nonterminals.items():
+            if nonterminal.symbol in generator_params:
+                local_variables[id] = generator_params[nonterminal.symbol].to_value().strip("'")
+                continue
             NonTerminalNode(nonterminal.symbol).fuzz(dummy_child, self)
             generator_param = dummy_child.children[-1]
             local_variables[id] = generator_param.to_value().strip("'")
-            generator_params.append(generator_param)
+            generator_params[generator_param.symbol] = generator_param
 
-        return generator_params, eval(
+        return list(generator_params.values()), eval(
             generator.call, self._global_variables, local_variables
         )
 
@@ -1411,8 +1413,8 @@ class Grammar(NodeVisitor):
             return set()
         return set(map(lambda x: x.symbol, self.generators[symbol].nonterminals.values()))
 
-    def generate(self, symbol: str | NonTerminal = "<start>") -> DerivationTree:
-        generator_params, string = self.generate_string(symbol)
+    def generate(self, parent: DerivationTree, symbol: str | NonTerminal = "<start>", generator_params: Optional[list[DerivationTree]] = None) -> DerivationTree:
+        generator_params, string = self.generate_string(parent, symbol, generator_params)
         if not (isinstance(string, str) or
                 isinstance(string, bytes) or
                 isinstance(string, int) or
