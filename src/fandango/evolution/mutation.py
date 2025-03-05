@@ -54,7 +54,7 @@ class SimpleMutation(MutationOperator):
         # If the symbol of the node is non-terminal, fuzz a new subtree and perform the replacement.
         if node_to_mutate.symbol.is_non_terminal:
             new_subtree = grammar.fuzz(node_to_mutate.symbol)
-            mutated = individual.replace(node_to_mutate, new_subtree)
+            mutated = individual.replace(grammar, node_to_mutate, new_subtree)
             return mutated
 
         return individual
