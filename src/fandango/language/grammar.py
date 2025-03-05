@@ -1342,7 +1342,7 @@ class Grammar(NodeVisitor):
 
         if len(topological_order) != len(graph):
             print("Cycle exists")
-        return topological_order
+        return topological_order[::-1]
 
     def derive_generator_params(self, tree: "DerivationTree"):
         gen_symbol = tree.symbol
@@ -1360,12 +1360,13 @@ class Grammar(NodeVisitor):
             generator = self.generators[val.symbol]
             dependent_generators[val.symbol] = {gen_value.symbol for gen_value in generator.nonterminals.values()}
         dependent_generators = self._topological_sort(dependent_generators)
-        args = dict()
-        args[tree.symbol] = tree
+        dependent_generators.remove(gen_symbol)
+        args = [tree]
         for symbol in dependent_generators:
             generated_param = self.generate(symbol, args)
-            args[generated_param.symbol] = generated_param
-        return list(args.values())
+            args.append(generated_param)
+        args.pop(0)
+        return args
 
 
     def derive_generator_output(self, tree: "DerivationTree"):
@@ -1425,7 +1426,7 @@ class Grammar(NodeVisitor):
             raise ValueError(
                 f"Failed to parse generated string: {string} for {symbol} with generator {self.generators[symbol]}"
             )
-        tree.generator_params = generator_params
+        tree.generator_params = deepcopy(generator_params)
         return tree
 
     def fuzz(
