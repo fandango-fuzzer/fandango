@@ -475,7 +475,7 @@ class DerivationTree:
             if self.symbol in grammar.generators:
                 if regen_children:
                     new_tree.set_children(grammar.derive_generator_output(new_tree))
-                elif regen_params:
+                elif regen_params and len(self.generator_params) != 0:
                     new_tree.generator_params = grammar.derive_generator_params(new_tree)
 
             return new_tree
