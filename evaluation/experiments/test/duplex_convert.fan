@@ -4,7 +4,7 @@ def convert(input):
 def un_convert(input):
     return input[::-1]
 
-<start> ::= <rev_number> <number>
+<start> ::= <number> <rev_number>
 <rev_number> ::= <number_tail>{0, 2} <number_start> :: convert(<source_number>)
 <source_number> ::= <number> :: un_convert(<rev_number>)
 
@@ -14,4 +14,4 @@ def un_convert(input):
 <byte> ::= <bit>{8}
 <bit> ::= 1 | 0
 
-where <start>.<number> == <source_number>.<number>
+where <source_number>.<number> == <start>.<number>
