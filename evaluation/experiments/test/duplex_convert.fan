@@ -15,4 +15,4 @@ def un_convert(input):
 <bit> ::= 1 | 0
 
 #where <source_number>.<number> == <start>.<number>
-where <rev_number> == (<start>.<number>)[::-1]
+where str(<rev_number>) == str((<start>.<number>)[::-1])
