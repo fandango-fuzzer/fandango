@@ -2,14 +2,17 @@ import ast
 import hashlib
 import importlib.metadata
 import os
+import sys
 import platform
 import re
+
 from copy import deepcopy
 from pathlib import Path
 from typing import IO, Any, List, Optional, Set, Tuple
 
 import cachedir_tag
 import dill as pickle
+
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 from thefuzz import process as thefuzz_process
@@ -174,6 +177,18 @@ class FandangoSpec:
         global CURRENT_FILENAME
         CURRENT_FILENAME = filename
 
+        # Ensure the directory of the file is in the path
+        dirname = os.path.dirname(filename)
+        if dirname not in sys.path:
+            sys.path.append(dirname)
+
+        # Set up environment as if this were a top-level script
+        self.global_vars.update({
+            '__name__': '__main__',
+            '__file__': filename,
+            '__package__': None,
+            '__spec__': None,
+        })
         exec(self.code_text, self.global_vars, self.local_vars)
 
 
