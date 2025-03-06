@@ -1,6 +1,17 @@
 from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse
+from fandango.language.tree import DerivationTree
 
+
+def count_g_params(tree: DerivationTree):
+    count = 0
+    if len(tree.generator_params) > 0:
+        count += 1
+    for child in tree.children:
+        count += count_g_params(child)
+    for child in tree.generator_params:
+        count += count_g_params(child)
+    return count
 
 def run():
     # Load the fandango file
@@ -11,6 +22,7 @@ def run():
     fandango.evolve()
 
     for solution in fandango.solution:
+        print(count_g_params(solution))
         print(solution)
 
 
