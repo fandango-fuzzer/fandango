@@ -446,7 +446,11 @@ class DerivationTree:
     def replace(self, grammar: "Grammar", tree_to_replace, new_subtree):
         if tree_to_replace == new_subtree:
             return deepcopy(self)
-        return self._replace(grammar, tree_to_replace, new_subtree)
+        replaced = self._replace(grammar, tree_to_replace, new_subtree)
+        if replaced.symbol not in grammar.generators or self == replaced:
+            return replaced
+        replaced.generator_params = grammar.derive_generator_params(replaced)
+        return replaced
 
 
     def _replace(self, grammar: "Grammar", tree_to_replace, new_subtree):
