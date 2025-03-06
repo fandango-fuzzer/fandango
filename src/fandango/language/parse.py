@@ -8,6 +8,7 @@ import re
 
 from copy import deepcopy
 from pathlib import Path
+from io import StringIO
 from typing import IO, Any, List, Optional, Set, Tuple
 
 import cachedir_tag
@@ -372,6 +373,10 @@ def parse(
 
     while FILES_TO_PARSE:
         (file, depth) = FILES_TO_PARSE.pop(0)
+        if isinstance(file, str):
+            file = StringIO(file)
+            file.name = '<string>'
+
         LOGGER.debug(f"Reading {file.name} (depth = {depth})")
         fan_contents = file.read()
         new_grammar, new_constraints = parse_content(
