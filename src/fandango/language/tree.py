@@ -1,4 +1,5 @@
 import copy
+from copy import deepcopy
 from typing import Optional, List, Any, Union, Set, Tuple
 
 from fandango.language.symbol import Symbol, NonTerminal, Terminal, Slice
@@ -27,9 +28,8 @@ class DerivationTree:
         self._parent: Optional["DerivationTree"] = parent
         self.symbol: Symbol = symbol
         self._children: list["DerivationTree"] = []
-        if generator_params is None:
-            self.generator_params = []
-        else:
+        self._generator_params: list["DerivationTree"] = []
+        if generator_params is not None:
             self.generator_params = generator_params
         self.read_only = read_only
         self._size = 1
@@ -444,45 +444,45 @@ class DerivationTree:
         return self.is_float()
 
     def replace(self, grammar: "Grammar", tree_to_replace, new_subtree):
+        if tree_to_replace == new_subtree:
+            return deepcopy(self)
+        return self._replace(grammar, tree_to_replace, new_subtree)
+
+
+    def _replace(self, grammar: "Grammar", tree_to_replace, new_subtree):
         """
         Replace the subtree rooted at the given node with the new subtree.
         """
         if self == tree_to_replace and not self.read_only:
-            #if len(self.generator_params) == 0:
-            #    new_subtree.generator_params = []
-            #else:
-            #    new_subtree.generator_params = grammar.derive_generator_params(new_subtree)
-            return new_subtree
+            return deepcopy(new_subtree)
+
+        regen_children = False
+        new_children = []
+        generator_params = []
+        for param in self._generator_params:
+            new_param = param._replace(grammar, tree_to_replace, new_subtree)
+            generator_params.append(new_param)
+            if new_param != param:
+                regen_children = True
+        for child in self._children:
+            new_child = child._replace(grammar, tree_to_replace, new_subtree)
+            new_children.append((new_child != child, new_child))
+
+        new_tree = DerivationTree(
+            self.symbol,
+            [child for _, child in new_children],
+            generator_params=generator_params,
+            read_only=self.read_only,
+        )
+
+        if self.symbol in grammar.generators and regen_children:
+            new_tree.set_children(grammar.derive_generator_output(new_tree))
         else:
-            regen_params = False
-            regen_children = False
-            children = []
-            generator_params = []
-            for param in self._generator_params:
-                new_param = param.replace(grammar, tree_to_replace, new_subtree)
-                generator_params.append(new_param)
-                if new_param != param:
-                    regen_children = True
-            for child in self._children:
-                new_child = child.replace(grammar, tree_to_replace, new_subtree)
-                children.append(new_child)
-                if new_child != child:
-                    regen_params = True
+            for idx, (regen, _) in enumerate(new_children):
+                if regen and new_tree.children[idx].symbol in grammar.generators:
+                    new_tree.children[idx].generator_params = grammar.derive_generator_params(new_tree.children[idx])
 
-            new_tree = DerivationTree(
-                self.symbol,
-                children,
-                generator_params=generator_params,
-                read_only=self.read_only,
-            )
-
-            if self.symbol in grammar.generators:
-                if regen_children:
-                    new_tree.set_children(grammar.derive_generator_output(new_tree))
-                elif regen_params and len(self.generator_params) != 0:
-                    new_tree.generator_params = grammar.derive_generator_params(new_tree)
-
-            return new_tree
+        return new_tree
 
     def get_non_terminal_symbols(self, exclude_read_only=True) -> Set[NonTerminal]:
         """

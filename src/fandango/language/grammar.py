@@ -1344,19 +1344,46 @@ class Grammar(NodeVisitor):
             print("Cycle exists")
         return topological_order[::-1]
 
+    def truncate_generator_params(self, tree: DerivationTree, seen_symbols: set[Symbol]):
+        seen_symbols.add(tree.symbol)
+        new_children = []
+        for child in tree.children:
+            new_children.append(self.truncate_generator_params(child, seen_symbols))
+        new_params = []
+        for param in tree.generator_params:
+            if param.symbol in seen_symbols:
+                continue
+            new_params.append(self.truncate_generator_params(param, seen_symbols))
+        seen_symbols.remove(tree.symbol)
+        return DerivationTree(tree.symbol,
+                              new_children,
+                              generator_params=new_params,
+                              read_only=tree.read_only
+                              )
+
+
     def derive_generator_params(self, tree: "DerivationTree"):
         gen_symbol = tree.symbol
         if not isinstance(gen_symbol, NonTerminal):
             raise ValueError("Can't derive generator output. tree.symbol is not a NonTerminal!")
         if tree.symbol not in self.generators:
             raise ValueError("Can't derive generator output. tree.symbol not in generators!")
-        lit_generator = self.generators[gen_symbol]
+
+        dependencies = self.generator_dependencies(gen_symbol)
+        current = tree
+        path_symbols = set()
+        while current is not None:
+            path_symbols.add(current.symbol)
+            if current.symbol in dependencies:
+                return []
+            current = current.parent
+
         dependent_generators = {
             gen_symbol: set()
         }
-        for key, val in lit_generator.nonterminals.items():
+        for key, val in self.generators[gen_symbol].nonterminals.items():
             if val.symbol not in self.generators:
-                raise ValueError(f"Can't derive generator parameters. No generator existing for {val.symbol}!")
+                raise ValueError(f"Can't derive generator parameters. No generator existing for required symbol: {val.symbol}!")
             generator = self.generators[val.symbol]
             dependent_generators[val.symbol] = {gen_value.symbol for gen_value in generator.nonterminals.values()}
         dependent_generators = self._topological_sort(dependent_generators)
@@ -1364,18 +1391,13 @@ class Grammar(NodeVisitor):
         args = [tree]
         for symbol in dependent_generators:
             generated_param = self.generate(symbol, args)
-            args.append(generated_param)
+            args.append(self.truncate_generator_params(generated_param, path_symbols))
         args.pop(0)
         return args
 
 
     def derive_generator_output(self, tree: "DerivationTree"):
-        gen_symbol = tree.symbol
-        if not isinstance(gen_symbol, NonTerminal):
-            raise ValueError("Can't derive generator output. tree.symbol is not a NonTerminal!")
-        if tree.symbol not in self.generators:
-            raise ValueError("Can't derive generator output. tree.symbol not in generators!")
-        generated = self.generate(gen_symbol, tree.generator_params)
+        generated = self.generate(tree.symbol, tree.generator_params)
         return generated.children
 
 
