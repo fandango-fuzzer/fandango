@@ -308,7 +308,7 @@ def parse(
     lazy: bool = False,
     given_grammars: List[Grammar] = [],
     start_symbol: Optional[str] = None,
-    includes: List[str] = [],
+    includes: List[str] = None,
 ) -> Tuple[Optional[Grammar], List[str]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
@@ -319,7 +319,7 @@ def parse(
     :param lazy: If True, the constraints are evaluated lazily
     :param given_grammars: Grammars to use in addition to the standard library
     :param start_symbol: The grammar start symbol (default: "<start>")
-    :param includes: A list of directories to search for include files
+    :param includes: A list of directories to search for include files; default: []
     :return: A tuple of the grammar and constraints
     """
 
@@ -331,6 +331,9 @@ def parse(
 
     if constraints is None:
         constraints = []
+
+    if includes is None:
+        includes = []
 
     if start_symbol is None:
         start_symbol = "<start>"
