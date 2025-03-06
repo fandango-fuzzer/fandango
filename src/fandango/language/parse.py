@@ -312,7 +312,7 @@ def parse(
 ) -> Tuple[Optional[Grammar], List[str]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
-    :param fan_files: One (open) .fan file, or a list of these
+    :param fan_files: One (open) .fan file, one string, or a list of these
     :param constraints: List of constraints (as strings); default: []
     :param use_cache: If True (default), cache parsing results
     :param use_stdlib: If True (default), use the standard library
