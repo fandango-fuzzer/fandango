@@ -362,3 +362,11 @@ class TestBitstreamParsing(TestCLIParsing):
         self.assertEqual("", out)
         self.assertEqual("", err)
 
+    def test_local_import(self):
+        command = shlex.split(
+            "fandango fuzz -f tests/resources/import.fan --validate"
+        )
+        out, err, code = self.run_command(command)
+        self.assertEqual(0, code)
+        self.assertEqual("", out)
+        self.assertEqual("", err)
