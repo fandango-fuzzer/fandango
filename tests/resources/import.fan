@@ -1,3 +1,3 @@
-<start> ::= <digit>
+<start> ::= "import"
 
 from imported import secret
