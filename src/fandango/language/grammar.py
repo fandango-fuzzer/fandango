@@ -161,6 +161,8 @@ class Repetition(Node):
         self.node = node
         self.expr_data_min = min_
         self.expr_data_max = max_
+        self.static_min = None
+        self.static_max = None
 
     def get_access_points(self):
         _, _, searches_min = self.expr_data_min
@@ -177,7 +179,7 @@ class Repetition(Node):
         local_cpy = grammar._local_variables.copy()
 
         if len(searches) == 0:
-            return eval(expr, grammar._global_variables, local_cpy)
+            return eval(expr, grammar._global_variables, local_cpy), True
         if tree is None:
             raise ValueError("tree required if searches present!")
 
@@ -187,13 +189,25 @@ class Repetition(Node):
                 [(name, container) for container in search.find(tree.get_root())]
             )
         local_cpy.update({name: container.evaluate() for name, container in nodes})
-        return eval(expr, grammar._global_variables, local_cpy)
+        return eval(expr, grammar._global_variables, local_cpy), False
 
     def min(self, grammar: "Grammar", tree: "DerivationTree" = None):
-        return self._compute_rep_bound(grammar, tree, self.expr_data_min)
+        if self.static_min is None:
+            current_min, is_static = self._compute_rep_bound(grammar, tree, self.expr_data_min)
+            if is_static:
+                self.static_min = current_min
+            return current_min
+        else:
+            return self.static_min
 
     def max(self, grammar: "Grammar", tree: "DerivationTree" = None):
-        return self._compute_rep_bound(grammar, tree, self.expr_data_max)
+        if self.static_max is None:
+            current_max, is_static = self._compute_rep_bound(grammar, tree, self.expr_data_max)
+            if is_static:
+                self.static_max = current_max
+            return current_max
+        else:
+            return self.static_max
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitRepetition(self)
