@@ -5,7 +5,7 @@ import typing
 import exrex
 
 from copy import deepcopy
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union, Generator
 
 from fandango.language.symbol import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree
@@ -731,9 +731,7 @@ class Grammar(NodeVisitor):
             # Add a new table row if the bit isn't already represented
             # by a row in the parsing table
             if len(table) <= len(word) + 1 + nr_bits_scanned:
-                table.insert(
-                    k + 1, Column()
-                )
+                table.insert(k + 1, Column())
             table[k + 1].add(next_state)
 
             # Save the maximum position reached, so we can report errors
@@ -957,7 +955,7 @@ class Grammar(NodeVisitor):
             start: str | NonTerminal = "<start>",
             *,
             allow_incomplete: bool = False,
-        ):
+        ) -> Generator[DerivationTree, None, None]:
             """
             Yield multiple parse alternatives, using a cache.
             """
