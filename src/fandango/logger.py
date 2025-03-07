@@ -7,7 +7,7 @@ from ansi_styles import ansiStyles as styles
 
 LOGGER = logging.getLogger("fandango")
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.WARNING,
     format="%(name)s:%(levelname)s: %(message)s",
 )
 
