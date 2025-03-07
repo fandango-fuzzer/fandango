@@ -8106,9 +8106,9 @@ def serializedATN():
         0,
         537,
         538,
-        5,
-        4,
-        0,
+        3,
+        268,
+        134,
         0,
         538,
         539,
@@ -8136,9 +8136,9 @@ def serializedATN():
         0,
         542,
         544,
-        5,
-        4,
-        0,
+        3,
+        268,
+        134,
         0,
         543,
         542,
@@ -8166,9 +8166,9 @@ def serializedATN():
         0,
         546,
         548,
-        5,
-        4,
-        0,
+        3,
+        268,
+        134,
         0,
         547,
         546,
@@ -25623,14 +25623,14 @@ class FandangoParser(Parser):
         def OPEN_BRACE(self):
             return self.getToken(FandangoParser.OPEN_BRACE, 0)
 
-        def NUMBER(self, i: int = None):
-            if i is None:
-                return self.getTokens(FandangoParser.NUMBER)
-            else:
-                return self.getToken(FandangoParser.NUMBER, i)
-
         def CLOSE_BRACE(self):
             return self.getToken(FandangoParser.CLOSE_BRACE, 0)
+
+        def expression(self, i: int = None):
+            if i is None:
+                return self.getTypedRuleContexts(FandangoParser.ExpressionContext)
+            else:
+                return self.getTypedRuleContext(FandangoParser.ExpressionContext, i)
 
         def COMMA(self):
             return self.getToken(FandangoParser.COMMA, 0)
@@ -25667,8 +25667,9 @@ class FandangoParser(Parser):
                 self.symbol()
                 self.state = 536
                 self.match(FandangoParser.OPEN_BRACE)
+
                 self.state = 537
-                self.match(FandangoParser.NUMBER)
+                self.expression()
                 self.state = 538
                 self.match(FandangoParser.CLOSE_BRACE)
                 pass
@@ -25682,18 +25683,24 @@ class FandangoParser(Parser):
                 self.state = 543
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 4:
+                if (((_la) & ~0x3F) == 0 and ((1 << _la) & 4505888853336344) != 0) or (
+                    (((_la - 66)) & ~0x3F) == 0
+                    and ((1 << (_la - 66)) & 4503599633861125) != 0
+                ):
                     self.state = 542
-                    self.match(FandangoParser.NUMBER)
+                    self.expression()
 
                 self.state = 545
                 self.match(FandangoParser.COMMA)
                 self.state = 547
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la == 4:
+                if (((_la) & ~0x3F) == 0 and ((1 << _la) & 4505888853336344) != 0) or (
+                    (((_la - 66)) & ~0x3F) == 0
+                    and ((1 << (_la - 66)) & 4503599633861125) != 0
+                ):
                     self.state = 546
-                    self.match(FandangoParser.NUMBER)
+                    self.expression()
 
                 self.state = 549
                 self.match(FandangoParser.CLOSE_BRACE)

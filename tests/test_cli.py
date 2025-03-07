@@ -30,7 +30,7 @@ class test_cli(unittest.TestCase):
 
     def test_fuzz_basic(self):
         command = shlex.split(
-            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912"
+            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 --no-cache"
         )
         expected = """35716
 4
@@ -47,9 +47,43 @@ class test_cli(unittest.TestCase):
         self.assertEqual(expected, out.strip())
         self.assertEqual("", err)
 
+    def test_max_rep(self):
+        command = shlex.split("fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 --no-cache --max-repetitions 10")
+        out, err, code = self.run_command(command)
+        expected = """3571614697
+8230756
+805195
+4922034
+93
+91101
+130
+4473
+4152014020
+084"""
+        self.assertEqual(0, code)
+        self.assertEqual(expected, out.strip())
+        self.assertEqual("", err)
+
+    def test_max_rep_constraint(self):
+        command = shlex.split("fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 --no-cache -c 'len(str(<start>)) > 5' --max-repetitions 10")
+        out, err, code = self.run_command(command)
+        expected = """3571614697
+8230756
+805195
+4922034
+4152014020
+7380291522
+4271893135
+2612956
+2723411217
+7583942286"""
+        self.assertEqual(0, code)
+        self.assertEqual(expected, out.strip())
+        self.assertEqual("", err)
+
     def test_output_to_file(self):
         command = shlex.split(
-            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 -o tests/resources/test.txt -s ;"
+            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 -o tests/resources/test.txt -s ; --no-cache"
         )
         expected = "35716;4;9768;30;5658;5;9;649;20;41"
         out, err, code = self.run_command(command)
@@ -63,7 +97,7 @@ class test_cli(unittest.TestCase):
 
     def test_output_multiple_files(self):
         command = shlex.split(
-            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 -d tests/resources/test"
+            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 -d tests/resources/test --no-cache"
         )
         expected = ["35716", "4", "9768", "30", "5658", "5", "9", "649", "20", "41"]
         (
