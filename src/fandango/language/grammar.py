@@ -1412,7 +1412,7 @@ class Grammar(NodeVisitor):
         for id, nonterminal in generator.nonterminals.items():
             if nonterminal.symbol not in generator_params:
                 raise ValueError(f"Missing generator parameter: {nonterminal.symbol}")
-            local_variables[id] = generator_params[nonterminal.symbol].to_value().strip("'")
+            local_variables[id] = generator_params[nonterminal.symbol]
 
         return list(generator_params.values()), eval(
             generator.call, self._global_variables, local_variables
