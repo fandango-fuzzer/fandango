@@ -714,7 +714,6 @@ class DerivationTree:
     def __bytes__(self):
         return self.to_bytes()
 
-
     ## Iterators
     def __contains__(self, other: Union["DerivationTree", Any]) -> bool:
         if isinstance(other, DerivationTree):

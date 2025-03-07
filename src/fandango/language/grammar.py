@@ -243,8 +243,8 @@ class Repetition(Node):
 
 
 class Star(Repetition):
-    def __init__(self, node: Node):
-        super().__init__(node, ("0", [], {}))
+    def __init__(self, node: Node, max_repetitions: int = 5):
+        super().__init__(node, ("0", [], {}), (f"{max_repetitions}", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitStar(self)
@@ -257,8 +257,8 @@ class Star(Repetition):
 
 
 class Plus(Repetition):
-    def __init__(self, node: Node):
-        super().__init__(node, ("1", [], {}))
+    def __init__(self, node: Node, max_repetitions: int = 5):
+        super().__init__(node, ("1", [], {}), (f"{max_repetitions}", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitPlus(self)
@@ -1288,11 +1288,12 @@ class Grammar(NodeVisitor):
 
     def generate(self, symbol: str | NonTerminal = "<start>") -> DerivationTree:
         string = self.generate_string(symbol)
-        if not (isinstance(string, str) or
-                isinstance(string, bytes) or
-                isinstance(string, int) or
-                isinstance(string, tuple)
-                ):
+        if not (
+            isinstance(string, str)
+            or isinstance(string, bytes)
+            or isinstance(string, int)
+            or isinstance(string, tuple)
+        ):
             raise TypeError(
                 f"Generator {self.generators[symbol]} must return string, bytes, int, or tuple"
             )

@@ -295,6 +295,13 @@ def get_parser(in_command_line=True):
         action="store_true",
         help="run internal consistency checks for debugging",
     )
+    file_parser.add_argument(
+        "--max-repetitions",
+        dest="max_repetitions",
+        type=int,
+        help="the maximal number of repetitions if not specified otherwise by {N, M} in the grammar (default: 5)",
+        default=5,
+    )
 
     # Commands
 
@@ -526,6 +533,7 @@ def parse_contents_from_args(args, given_grammars=[]):
         use_cache=args.use_cache,
         use_stdlib=args.use_stdlib,
         start_symbol=args.start_symbol,
+        max_repetitions=args.max_repetitions,
     )
 
 
