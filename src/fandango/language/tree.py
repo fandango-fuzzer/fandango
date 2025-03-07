@@ -608,7 +608,7 @@ class DerivationTree:
     ## Comparison operations
     def __eq__(self, other):
         if isinstance(other, DerivationTree):
-            return self.__tree__() == other.__tree__()
+            return self.__hash__() == other.__hash__()
         return self.value() == other
 
     def __le__(self, other):
