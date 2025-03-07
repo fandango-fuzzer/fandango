@@ -2,14 +2,18 @@ import ast
 import hashlib
 import importlib.metadata
 import os
+import sys
 import platform
 import re
+
 from copy import deepcopy
 from pathlib import Path
+from io import StringIO
 from typing import IO, Any, List, Optional, Set, Tuple
 
 import cachedir_tag
 import dill as pickle
+
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 from thefuzz import process as thefuzz_process
@@ -175,6 +179,18 @@ class FandangoSpec:
         global CURRENT_FILENAME
         CURRENT_FILENAME = filename
 
+        # Ensure the directory of the file is in the path
+        dirname = os.path.dirname(filename)
+        if dirname not in sys.path:
+            sys.path.append(dirname)
+
+        # Set up environment as if this were a top-level script
+        self.global_vars.update({
+            '__name__': '__main__',
+            '__file__': filename,
+            '__package__': None,
+            '__spec__': None,
+        })
         exec(self.code_text, self.global_vars, self.local_vars)
 
 
@@ -299,14 +315,14 @@ def parse(
 ) -> Tuple[Optional[Grammar], List[str]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
-    :param fan_files: One (open) .fan file, or a list of these
+    :param fan_files: One (open) .fan file, one string, or a list of these
     :param constraints: List of constraints (as strings); default: []
     :param use_cache: If True (default), cache parsing results
     :param use_stdlib: If True (default), use the standard library
     :param lazy: If True, the constraints are evaluated lazily
     :param given_grammars: Grammars to use in addition to the standard library
     :param start_symbol: The grammar start symbol (default: "<start>")
-    :param includes: A list of directories to search for include files
+    :param includes: A list of directories to search for include files; default: []
     :param max_repetitions: The maximal number of repetitions
     :return: A tuple of the grammar and constraints
     """
@@ -319,6 +335,9 @@ def parse(
 
     if constraints is None:
         constraints = []
+
+    if includes is None:
+        includes = []
 
     if start_symbol is None:
         start_symbol = "<start>"
@@ -361,6 +380,10 @@ def parse(
 
     while FILES_TO_PARSE:
         (file, depth) = FILES_TO_PARSE.pop(0)
+        if isinstance(file, str):
+            file = StringIO(file)
+            file.name = '<string>'
+
         LOGGER.debug(f"Reading {file.name} (depth = {depth})")
         fan_contents = file.read()
         new_grammar, new_constraints = parse_content(
