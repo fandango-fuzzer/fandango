@@ -36,6 +36,9 @@ class DerivationTree:
     def size(self):
         return self._size
 
+    def __bytes__(self):
+        return self.to_bytes()
+
     @property
     def symbol(self) -> Symbol:
         return self._symbol
@@ -73,6 +76,11 @@ class DerivationTree:
         self.hash_cache = None
         if self._parent is not None:
             self._parent.invalidate_hash()
+
+    def get_root(self):
+        if self._parent is None:
+            return self
+        return self._parent.get_root()
 
     def set_all_read_only(self, read_only: bool):
         self.read_only = read_only
@@ -739,7 +747,6 @@ class DerivationTree:
 
     def __bytes__(self):
         return self.to_bytes()
-
 
     ## Iterators
     def __contains__(self, other: Union["DerivationTree", Any]) -> bool:

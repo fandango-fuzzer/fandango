@@ -26,7 +26,7 @@ from fandango.language.convert import (
     GrammarProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import Grammar, NodeType
+from fandango.language.grammar import Grammar, NodeType, MAX_REPETITIONS
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.stdlib import stdlib
@@ -137,6 +137,7 @@ class FandangoSpec:
         fan_contents: str,
         lazy: bool = False,
         filename: str = "<input>",
+        max_repetitions: int = 5,
     ):
         self.version = importlib.metadata.version("fandango-fuzzer")
         self.fan_contents = fan_contents
@@ -157,7 +158,9 @@ class FandangoSpec:
 
         LOGGER.debug(f"{filename}: extracting grammar")
         grammar_processor = GrammarProcessor(
-            local_variables=self.local_vars, global_variables=self.global_vars
+            local_variables=self.local_vars,
+            global_variables=self.global_vars,
+            max_repetitions=max_repetitions,
         )
         self.grammar: Grammar = grammar_processor.get_grammar(
             splitter.productions, prime=False
@@ -184,12 +187,14 @@ class FandangoSpec:
             sys.path.append(dirname)
 
         # Set up environment as if this were a top-level script
-        self.global_vars.update({
-            '__name__': '__main__',
-            '__file__': filename,
-            '__package__': None,
-            '__spec__': None,
-        })
+        self.global_vars.update(
+            {
+                "__name__": "__main__",
+                "__file__": filename,
+                "__package__": None,
+                "__spec__": None,
+            }
+        )
         exec(self.code_text, self.global_vars, self.local_vars)
 
 
@@ -199,6 +204,7 @@ def parse_content(
     filename: str = "<input>",
     use_cache: bool = True,
     lazy: bool = False,
+    max_repetitions: int = 5,
 ) -> Tuple[Grammar, List[str]]:
     """
     Parse given content into a grammar and constraints.
@@ -271,7 +277,9 @@ def parse_content(
         tree = parser.fandango()  # Invoke the ANTLR parser
 
         LOGGER.debug(f"{filename}: splitting content")
-        spec = FandangoSpec(tree, fan_contents, lazy, filename=filename)
+        spec = FandangoSpec(
+            tree, fan_contents, lazy, filename=filename, max_repetitions=max_repetitions
+        )
 
     assert spec is not None
 
@@ -308,7 +316,8 @@ def parse(
     lazy: bool = False,
     given_grammars: List[Grammar] = [],
     start_symbol: Optional[str] = None,
-    includes: List[str] = None,
+    includes: List[str] = [],
+    max_repetitions: int = 5,
 ) -> Tuple[Optional[Grammar], List[str]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
@@ -320,6 +329,7 @@ def parse(
     :param given_grammars: Grammars to use in addition to the standard library
     :param start_symbol: The grammar start symbol (default: "<start>")
     :param includes: A list of directories to search for include files; default: []
+    :param max_repetitions: The maximal number of repetitions
     :return: A tuple of the grammar and constraints
     """
 
@@ -342,7 +352,10 @@ def parse(
     if use_stdlib and STDLIB_GRAMMAR is None:
         LOGGER.debug("Reading standard library")
         STDLIB_GRAMMAR, STDLIB_CONSTRAINTS = parse_content(
-            stdlib, filename="<stdlib>", use_cache=use_cache
+            stdlib,
+            filename="<stdlib>",
+            use_cache=use_cache,
+            max_repetitions=max_repetitions,
         )
 
     global USED_SYMBOLS
@@ -378,12 +391,16 @@ def parse(
         (file, depth) = FILES_TO_PARSE.pop(0)
         if isinstance(file, str):
             file = StringIO(file)
-            file.name = '<string>'
+            file.name = "<string>"
 
         LOGGER.debug(f"Reading {file.name} (depth = {depth})")
         fan_contents = file.read()
         new_grammar, new_constraints = parse_content(
-            fan_contents, filename=file.name, use_cache=use_cache, lazy=lazy
+            fan_contents,
+            filename=file.name,
+            use_cache=use_cache,
+            lazy=lazy,
+            max_repetitions=max_repetitions,
         )
         parsed_constraints += new_constraints
         assert new_grammar is not None
@@ -548,8 +565,19 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
             # if min_bits % 8 != 0 and tree.min == 0:
             #     raise ValueError(f"{rule_symbol!s}: Bits cannot be optional")
 
+            try:
+                rep_min = tree.min(grammar, None)
+            except ValueError:
+                rep_min = 0
+            try:
+                rep_max = tree.max(grammar, None)
+            except ValueError:
+                # Add 7 to min, such that there are 8 steps.
+                # If result is not dividable by 8 this will catch at least one case.
+                rep_max = rep_min + 7
+
             step = min(min_bits, max_bits)
-            return tp, tree.min * min_bits, tree.max * max_bits, step
+            return tp, rep_min * min_bits, rep_max * max_bits, step
 
         elif tree.node_type == NodeType.NON_TERMINAL:
             if tree.symbol in symbol_types:
