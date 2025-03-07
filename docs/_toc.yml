@@ -34,4 +34,5 @@ parts:
     - file: Reference
     - file: Installing
     - file: Stdlib
+    - file: DerivationTree
     - file: Including

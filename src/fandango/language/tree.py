@@ -48,6 +48,30 @@ class DerivationTree:
         self._symbol = symbol
         self.invalidate_hash()
 
+    def is_terminal(self):
+        """
+        True is the node represents a terminal symbol.
+        """
+        return self.symbol.is_terminal
+
+    def is_nonterminal(self):
+        """
+        True is the node represents a nonterminal symbol.
+        """
+        return self.symbol.is_non_terminal
+
+    def is_regex(self):
+        """
+        True is the node represents a regex symbol.
+        """
+        return self.symbol.is_regex
+
+    def sym(self):
+        """
+        Return the symbol
+        """
+        return self.symbol.symbol
+
     def invalidate_hash(self):
         self.hash_cache = None
         if self._parent is not None:
@@ -454,8 +478,18 @@ class DerivationTree:
         return nodes
 
     @property
-    def children(self):
+    def children(self) -> Optional[List["DerivationTree"]]:
+        """
+        Return the children of the current node.
+        """
         return self._children
+
+    @property
+    def parent(self) -> Optional["DerivationTree"]:
+        """
+        Return the parent node of the current node.
+        """
+        return self._parent
 
     def children_values(self):
         """

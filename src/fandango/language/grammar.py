@@ -5,7 +5,7 @@ import typing
 import exrex
 
 from copy import deepcopy
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union, Generator
 
 from fandango.language.symbol import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree
@@ -1186,7 +1186,8 @@ class Grammar(NodeVisitor):
             start: str | NonTerminal = "<start>",
             mode: ParsingMode = ParsingMode.COMPLETE,
             include_controlflow: bool = False,
-        ):
+            allow_incomplete: bool = False,
+        ) -> Generator[DerivationTree, None, None]:
             """
             Yield multiple parse alternatives, using a cache.
             """
