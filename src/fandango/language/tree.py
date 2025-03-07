@@ -516,8 +516,8 @@ class DerivationTree:
             else:
                 new_tree.set_children(grammar.derive_generator_output(new_tree))
         else:
-            for idx, (regen, _) in enumerate(new_children):
-                if regen and new_tree.children[idx].symbol in grammar.generators:
+            for idx, (re_gen, _) in enumerate(new_children):
+                if re_gen and new_tree.children[idx].symbol in grammar.generators:
                     new_tree.children[idx].generator_params = grammar.derive_generator_params(new_tree.children[idx])
 
         return new_tree
