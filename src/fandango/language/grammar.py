@@ -300,14 +300,10 @@ class NonTerminalNode(Node):
         if self.symbol in grammar.generators:
             dependencies = grammar.generator_dependencies(self.symbol)
             use_generator = True
+            path = set(parent.get_path())
             for nt in dependencies:
-                tree = parent
-                while tree is not None:
-                    if nt == tree.symbol:
-                        use_generator = False
-                        break
-                    tree = tree.parent
-                if not use_generator:
+                if nt.symbol in path:
+                    use_generator = False
                     break
             if use_generator:
                 dummy_parent = DerivationTree(self.symbol)
