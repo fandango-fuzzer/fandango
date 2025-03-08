@@ -374,7 +374,11 @@ def parse(
     if use_stdlib:
         assert STDLIB_GRAMMAR is not None
         assert STDLIB_CONSTRAINTS is not None
-        grammars = [deepcopy(STDLIB_GRAMMAR)]
+        try:
+            grammars = [deepcopy(STDLIB_GRAMMAR)]
+        except TypeError:
+            # This can happen if we invoke parse() from a notebook
+            grammars = [STDLIB_GRAMMAR]
         parsed_constraints = STDLIB_CONSTRAINTS.copy()
 
     grammars += given_grammars
