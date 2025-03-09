@@ -44,6 +44,7 @@ from fandango.evolution.algorithm import Fandango as FandangoStrategy
 import fandango.language.tree
 from fandango.language.grammar import Grammar
 from fandango.logger import LOGGER
+import itertools
 
 DerivationTree = fandango.language.tree.DerivationTree
 
@@ -195,7 +196,8 @@ class Fandango(FandangoBase):
             word, mode=mode, start=self.start_symbol, **settings
         )
         try:
-            next(tree_generator)
+            peek = next(tree_generator)
+            tree_generator = itertools.chain([peek], tree_generator)
             have_tree = True
         except StopIteration:
             have_tree = False

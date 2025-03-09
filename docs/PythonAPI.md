@@ -46,6 +46,20 @@ def _patched_del(self):
 asyncio.base_events.BaseEventLoop.__del__ = _patched_del
 ```
 
+```{code-cell}
+:tags: ["remove-input", "remove-output"]
+# Redirect logging to stdout to avoid warnings about stderr output
+import logging
+import sys
+
+logging.basicConfig(
+    level=logging.WARNING,
+    stream=sys.stdout,
+    format="%(name)s:%(levelname)s: %(message)s",
+)
+```
+
+
 (sec:fandango-class)=
 ## The `Fandango` class
 
@@ -59,13 +73,11 @@ from fandango import Fandango
 The `Fandango` constructor allows reading in a `.fan` specification, either from an (open) file, a string, or a list of strings or files.
 
 ```python
-Fandango(fan_files: str | IO | List[IO],
-         constraints: List[str] = None,
-         *,
-         start_symbol: Optional[str] = None,
-         use_cache: bool = True,
-         use_stdlib: bool = True,
-         logging_level: Optional[int] = None)
+class Fandango(fan_files: str | IO | List[IO], constraints: List[str] = None, *,
+    start_symbol: Optional[str] = None,
+    use_cache: bool = True,
+    use_stdlib: bool = True,
+    logging_level: Optional[int] = None)
 ```
 
 Create a `Fandango` object.
@@ -78,9 +90,8 @@ This is either
 * `constraints`, if given, is a list of additional constraints (as strings).
 * `start_symbol` is the start symbol to use (default: `<start>`).
 * `use_cache` can be set to `False` to avoid loading the input from cache.
-* `use_stdlib` can be set to `False` to avoid loading the [standard library]
-(sec:stdlib).
-* `includes`: A list of directories to search for include files before the [Fandango spec locations](sec:including)
+* `use_stdlib` can be set to `False` to avoid loading the [standard library](sec:stdlib).
+* `includes`: A list of directories to search for include files before the [Fandango spec locations](sec:including).
 * `logging_level` controls the logging output. It can be set to any of the values in the [Python logging module](https://docs.python.org/3/library/logging.html), such as `logging.DEBUG` or `logging.INFO`. Default is `logging.WARNING`.
 
 `Fandango()` can raise a number of exceptions, including
@@ -97,19 +108,20 @@ The exception class `FandangoError` is the superclass of these exceptions.
 On a `Fandango` object, use the `fuzz()` method to produce outputs from the loaded specification.
 
 ```python
-fuzz(extra_constraints: Optional[List[str]] = None, **settings) -> List[DerivationTree])
+fuzz(extra_constraints: Optional[List[str]] = None, **settings)
+    -> List[DerivationTree])
 ```
 
 Create outputs from the specification, as a list of [derivation trees](sec:derivation-tree).
 
 * `extra_constraints`: if given, use this list of strings as additional constraints
 * `settings`: pass extra values to control the fuzzer algorithm. These include
-  - `population_size: int`: set the population size (default: 100)
-  - `desired_solutions: int`: set the number of desired solutions
-  - `initial_population: List[Union[DerivationTree, str]]`: set the initial population
-  - `max_generations: int`: set the maximum number of generations (default: 500)
-  - `warnings_are_errors: bool` can be set to True to raise an exception on warnings
-  - `best_effort: bool` can be set to True to return the population even if it does not satisfy the constraints
+  - `population_size: int`: set the population size (default: 100).
+  - `desired_solutions: int`: set the number of desired solutions.
+  - `initial_population: List[Union[DerivationTree, str]]`: set the initial population.
+  - `max_generations: int`: set the maximum number of generations (default: 500).
+  - `warnings_are_errors: bool` can be set to True to raise an exception on warnings.
+  - `best_effort: bool` can be set to True to return the population even if it does not satisfy the constraints.
 
 The `fuzz()` method returns a list of [`DerivationTree` objects](sec:derivation-tree). These are typically converted into Python data types (typically using `str()` or `bytes()`) to be used in standard Python functions.
 
@@ -128,7 +140,8 @@ The exception class `FandangoError` is the superclass of these exceptions.
 On a `Fandango` object, use the `parse()` method to parse an input using the loaded specification.
 
 ```python
-parse(word: str | bytes | DerivationTree, *, prefix: bool = False, **settings) -> Generator[DerivationTree, None, None]
+parse(word: str | bytes | DerivationTree, *, prefix: bool = False, **settings)
+    -> Generator[DerivationTree, None, None]
 ```
 
 Parse a word; return a generator for [derivation trees](sec:derivation-tree).
@@ -193,6 +206,7 @@ for tree in fan.fuzz(population_size=3):
     print(str(tree))
 ```
 
+
 ### Parsing an Input
 
 ```{code-cell}
@@ -203,8 +217,9 @@ spec = """
     where str(<start>) != 'd'
 """
 
-fan = Fandango(spec, logging_level=logging.WARNING)
+fan = Fandango(spec)
 word = 'abc'
+
 for tree in fan.parse(word):
     print(f"tree = {repr(str(tree))}")
     print(tree.to_grammar())
@@ -215,21 +230,23 @@ Use the [`DerivationTree` functions](sec:derivation-tree) to convert and travers
 
 ### Parsing an Incomplete Input
 
-This example illustrates how to parse a prefix (`'abc'`) for a grammar that expects a string ending with `d`:
-
+This example illustrates how to parse a prefix (`'ab'`) for the above grammar: 
 ```{code-cell}
 from fandango import Fandango
 
 spec = """
-    <start> ::= ('a' | 'b' | 'c')+ 'd'
+    <start> ::= ('a' | 'b' | 'c')+
+    where str(<start>) != 'd'
 """
 
-fan = Fandango(spec, logging_level=logging.WARNING)
-word = 'abc'
+fan = Fandango(spec)
+word = 'ab'
+
 for tree in fan.parse(word, prefix=True):
     print(f"tree = {repr(str(tree))}")
     print(tree.to_grammar())
 ```
+
 
 ### Handling Parsing Errors
 
@@ -240,6 +257,7 @@ from fandango import Fandango, FandangoParseError
 
 spec = """
     <start> ::= ('a' | 'b' | 'c')+
+    where str(<start>) != 'd'
 """
 
 fan = Fandango(spec)
