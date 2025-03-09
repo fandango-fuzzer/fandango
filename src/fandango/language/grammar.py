@@ -11,6 +11,9 @@ from fandango.language.symbol import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
+from fandango import FandangoValueError
+
+
 MAX_REPETITIONS = 5
 
 
@@ -179,7 +182,7 @@ class Repetition(Node):
         if len(searches) == 0:
             return eval(expr, grammar._global_variables, local_cpy)
         if tree is None:
-            raise ValueError("tree required if searches present!")
+            raise FandangoValueError("tree required if searches present!")
 
         nodes = []
         for name, search in searches.items():
@@ -810,7 +813,7 @@ class Grammar(NodeVisitor):
         def collapse(self, tree: DerivationTree):
             if isinstance(tree.symbol, NonTerminal):
                 if tree.symbol.symbol.startswith("<__"):
-                    raise RuntimeError(
+                    raise FandangoValueError(
                         "Can't collapse a tree with an implicit root node"
                     )
             return self._collapse(tree)[0]
@@ -890,7 +893,7 @@ class Grammar(NodeVisitor):
             nt_rule,
         ):
             if not isinstance(node, Repetition):
-                raise ValueError("Node needs to be a Repetition")
+                raise FandangoValueError("Node needs to be a Repetition")
             tree = self.construct_incomplete_tree(state, table)
             tree = self.collapse(tree)
             try:
@@ -1304,7 +1307,7 @@ class Grammar(NodeVisitor):
         else:
             tree = self.parse(string, symbol)
         if tree is None:
-            raise ValueError(
+            raise FandangoValueError(
                 f"Failed to parse generated string: {string} for {symbol} with generator {self.generators[symbol]}"
             )
         return tree
@@ -1522,7 +1525,7 @@ class Grammar(NodeVisitor):
                 continue
             elif node.node_type == NodeType.NON_TERMINAL:
                 if node.symbol not in self.rules:
-                    raise ValueError(f"Symbol {node.symbol} not found in grammar")
+                    raise FandangoValueError(f"Symbol {node.symbol} not found in grammar")
                 if self.rules[node.symbol].distance_to_completion == float("inf"):
                     nodes.append(node)
                 else:
@@ -1554,7 +1557,7 @@ class Grammar(NodeVisitor):
                         node.node.distance_to_completion * min_rep + 1
                     )
             else:
-                raise ValueError(f"Unknown node type {node.node_type}")
+                raise FandangoValueError(f"Unknown node type {node.node_type}")
 
     def default_result(self):
         return []
@@ -1649,7 +1652,7 @@ class Grammar(NodeVisitor):
 
         # Compute coverage
         if not all_k_paths:
-            raise ValueError("No k-paths found in the grammar")
+            raise FandangoValueError("No k-paths found in the grammar")
 
         return (
             len(covered_k_paths) / len(all_k_paths),
