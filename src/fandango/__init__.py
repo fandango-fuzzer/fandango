@@ -17,7 +17,8 @@ class FandangoParseError(FandangoError, SyntaxError):
     def __init__(self, position: int, *, message: str = None):
         if message is None:
             message = f"Parse error at position {position}"
-        super().__init__(message)
+        FandangoError.__init__(self, message)
+        SyntaxError.__init__(self, message)
         self.position = position
 
 class FandangoSyntaxError(FandangoError, SyntaxError):
