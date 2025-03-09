@@ -1,6 +1,38 @@
 #!/usr/bin/env python3
 
-__all__ = ["FandangoBase", "Fandango", "DerivationTree"]
+__all__ = ["FandangoError",
+           "FandangoParseError",
+           "FandangoSyntaxError",
+           "FandangoValueError",
+           "FandangoBase",
+           "Fandango",
+           "DerivationTree"]
+
+class FandangoError(ValueError):
+    """Generic Error"""
+    pass
+
+class FandangoParseError(FandangoError, SyntaxError):
+    """Error during parsing inputs"""
+    def __init__(self, position: int, *, message: str = None):
+        if message is None:
+            message = f"Parse error at position {position}"
+        super().__init__(message)
+        self.position = position
+
+class FandangoSyntaxError(FandangoError, SyntaxError):
+    """Error during parsing a Fandango spec"""
+    pass
+
+class FandangoValueError(FandangoError, ValueError):
+    """Error during evaluating a Fandango spec"""
+    pass
+
+class FandangoFailedError(FandangoError):
+    """Error during the Fandango algorithm"""
+    pass
+
+
 
 from abc import ABC, abstractmethod
 from typing import IO, List, Optional, Generator
@@ -10,6 +42,7 @@ import logging
 from fandango.language.parse import parse
 from fandango.evolution.algorithm import Fandango as FandangoStrategy
 import fandango.language.tree
+from fandango.language.grammar import Grammar
 from fandango.logger import LOGGER
 
 DerivationTree = fandango.language.tree.DerivationTree
@@ -40,11 +73,13 @@ class FandangoBase(ABC):
         :param start_symbol: The grammar start symbol (default: "<start>")
         :param includes: A list of directories to search for include files
         """
-        if logging_level is not None:
-            LOGGER.setLevel(logging_level)
         if start_symbol is None:
             start_symbol = "<start>"
         self._start_symbol = start_symbol
+
+        if logging_level is None:
+            logging_level = logging.WARNING
+        LOGGER.setLevel(logging_level)
 
         grammar, constraints = parse(
             fan_files,
@@ -104,11 +139,12 @@ class FandangoBase(ABC):
 
     @abstractmethod
     def parse(
-        self, individual: str, **settings
+        self, word: str | bytes | DerivationTree, *, prefix: bool = False, **settings
     ) -> Generator[DerivationTree, None, None]:
         """
         Parse a string according to spec.
-        :param individual: The string to parse
+        :param word: The string to parse
+        :param prefix: If True, allow incomplete parsing
         :param settings: Additional settings for the parse function
         :return: A generator of derivation trees
         """
@@ -141,17 +177,33 @@ class Fandango(FandangoBase):
         return population
 
     def parse(
-        self, individual: str, **settings
+        self, word: str | bytes | DerivationTree, *, prefix: bool = False, **settings
     ) -> Generator[DerivationTree, None, None]:
         """
         Parse a string according to spec.
-        :param individual: The string to parse
+        :param word: The string to parse
+        :param prefix: If True, allow incomplete parsing
         :param settings: Additional settings for the parse function
         :return: A generator of derivation trees
         """
+        if prefix:
+            mode = Grammar.Parser.ParsingMode.INCOMPLETE
+        else:
+            mode = Grammar.Parser.ParsingMode.COMPLETE
+
         tree_generator = self.grammar.parse_forest(
-            individual, start=self.start_symbol, **settings
+            word, mode=mode, start=self.start_symbol, **settings
         )
+        try:
+            next(tree_generator)
+            have_tree = True
+        except StopIteration:
+            have_tree = False
+
+        if not have_tree:
+            position = self.grammar.max_position() + 1
+            raise FandangoParseError(position)
+
         return tree_generator
 
 

@@ -6,6 +6,8 @@ from io import StringIO, BytesIO
 
 from fandango.logger import LOGGER, print_exception
 
+from fandango import FandangoValueError
+
 
 class DerivationTree:
     """
@@ -189,7 +191,7 @@ class DerivationTree:
             # Strings get encoded
             stream.write(self.symbol.symbol.encode(encoding))
         else:
-            raise ValueError("Invalid symbol type")
+            raise FandangoValueError("Invalid symbol type")
 
     def _write_to_bitstream(self, stream: StringIO, *, encoding="utf-8"):
         """
@@ -213,7 +215,7 @@ class DerivationTree:
                 bits = "".join(format(i, "08b") for i in elem)
             stream.write(bits)
         else:
-            raise ValueError("Invalid symbol type")
+            raise FandangoValueError("Invalid symbol type")
 
     def contains_type(self, tp: type) -> bool:
         """
@@ -264,7 +266,7 @@ class DerivationTree:
         if isinstance(val, str):
             return val
 
-        raise ValueError(f"Cannot convert {val!r} to string")
+        raise FandangoValueError(f"Cannot convert {val!r} to string")
 
     def to_bits(self, *, encoding="utf-8") -> str:
         """
@@ -560,7 +562,7 @@ class DerivationTree:
                     aggregate = aggregate + chr(value)
                     bits = 0
                 else:
-                    raise ValueError(f"Cannot compute {aggregate!r} + {value!r}")
+                    raise FandangoValueError(f"Cannot compute {aggregate!r} + {value!r}")
 
             elif isinstance(aggregate, bytes):
                 if isinstance(value, str):
@@ -571,7 +573,7 @@ class DerivationTree:
                     aggregate = aggregate + value.to_bytes()
                     bits = 0
                 else:
-                    raise ValueError(f"Cannot compute {aggregate!r} + {value!r}")
+                    raise FandangoValueError(f"Cannot compute {aggregate!r} + {value!r}")
 
             elif isinstance(aggregate, int):
                 if isinstance(value, str):
@@ -584,7 +586,7 @@ class DerivationTree:
                     aggregate = (aggregate << child_bits) + value
                     bits += child_bits
                 else:
-                    raise ValueError(f"Cannot compute {aggregate!r} + {value!r}")
+                    raise FandangoValueError(f"Cannot compute {aggregate!r} + {value!r}")
 
         # LOGGER.debug(f"value(): {' '.join(repr(child.value()) for child in self._children)} = {aggregate!r} ({bits} bits)")
 
