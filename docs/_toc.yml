@@ -35,4 +35,5 @@ parts:
     - file: Installing
     - file: Stdlib
     - file: DerivationTree
+    - file: PythonAPI
     - file: Including
