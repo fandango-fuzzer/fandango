@@ -94,6 +94,16 @@ This is either
 * `includes`: A list of directories to search for include files before the [Fandango spec locations](sec:including).
 * `logging_level` controls the logging output. It can be set to any of the values in the [Python logging module](https://docs.python.org/3/library/logging.html), such as `logging.DEBUG` or `logging.INFO`. Default is `logging.WARNING`.
 
+
+```{danger}
+Be aware that `.fan` files can contain Python code that is _executed when loaded_. This code can execute arbitrary commands and also can gain access to your API-calling code.
+```
+
+```{caution}
+Only load `.fan` files you trust.
+```
+
+
 `Fandango()` can raise a number of exceptions, including
 
 * `FandangoSyntaxError` if the `.fan` input has syntax errors. The exception attributes `line`, `column`, and `msg` hold the line, column, and error message.
