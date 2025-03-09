@@ -252,6 +252,9 @@ class DerivationTree:
         """
         val: Any = self.value()
 
+        if val is None:
+            return ""
+
         if isinstance(val, int):
             # This is a bit value; convert to bytes
             val = int(val).to_bytes(val // 256 + 1)
