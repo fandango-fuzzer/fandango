@@ -576,17 +576,17 @@ class DerivationTree:
                 elif isinstance(value, bytes):
                     aggregate += value
                 elif isinstance(value, int):
-                    aggregate = aggregate + value.to_bytes()
+                    aggregate = aggregate + bytes([value])
                     bits = 0
                 else:
                     raise FandangoValueError(f"Cannot compute {aggregate!r} + {value!r}")
 
             elif isinstance(aggregate, int):
                 if isinstance(value, str):
-                    aggregate = aggregate.to_bytes() + value.encode("utf-8")
+                    aggregate = bytes([aggregate]) + value.encode("utf-8")
                     bits = 0
                 elif isinstance(value, bytes):
-                    aggregate = aggregate.to_bytes() + value
+                    aggregate = bytes([aggregate]) + value
                     bits = 0
                 elif isinstance(value, int):
                     aggregate = (aggregate << child_bits) + value
