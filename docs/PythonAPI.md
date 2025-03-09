@@ -163,7 +163,7 @@ for tree in fan.parse(word):
 
 * `FandangoParseError` if parsing fails. The attribute `position` of the exception indicates the position in `word` at which the syntax error was detected.[^position]
 
-[^position]: Note that this may be slightly off the position of the actual error.
+[^position]: Note that due to parser lookahead, the position may be slightly off the position of the actual error.
 
 ```{note}
 At this point, the `parse()` method does not check whether constraints are satisfied.
@@ -209,6 +209,8 @@ for tree in fan.fuzz(population_size=3):
 
 ### Parsing an Input
 
+This example illustrates usage of the `parse()` method.
+
 ```{code-cell}
 from fandango import Fandango
 
@@ -230,12 +232,13 @@ Use the [`DerivationTree` functions](sec:derivation-tree) to convert and travers
 
 ### Parsing an Incomplete Input
 
-This example illustrates how to parse a prefix (`'ab'`) for the above grammar: 
+This example illustrates how to parse a prefix (`'ab'`) for a grammar that expects a final `d` letter.
+
 ```{code-cell}
 from fandango import Fandango
 
 spec = """
-    <start> ::= ('a' | 'b' | 'c')+
+    <start> ::= ('a' | 'b' | 'c')+ 'd'
     where str(<start>) != 'd'
 """
 
@@ -246,6 +249,24 @@ for tree in fan.parse(word, prefix=True):
     print(f"tree = {repr(str(tree))}")
     print(tree.to_grammar())
 ```
+
+Without `prefix=True`, parsing would fail:
+
+```{code-cell}
+:tags: ["raises-exception"]
+from fandango import Fandango
+
+spec = """
+    <start> ::= ('a' | 'b' | 'c')+ 'd'
+    where str(<start>) != 'd'
+"""
+
+fan = Fandango(spec)
+word = 'ab'
+
+fan.parse(word)
+```
+
 
 
 ### Handling Parsing Errors
