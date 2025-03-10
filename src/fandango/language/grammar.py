@@ -1403,12 +1403,11 @@ class Grammar(NodeVisitor):
         self._populate_generator_params(tree)
 
     def _populate_generator_params(self, tree: "DerivationTree"):
-        path = set(tree.get_path()[:-1])
-        if tree.symbol not in path and tree.symbol in self.generators:
+        if tree.symbol in self.generators:
             tree.generator_params = self.derive_generator_params(tree)
             return
         for child in tree.children:
-            self.populate_generator_params(child)
+            self._populate_generator_params(child)
 
     def _rec_remove_generator_params(self, tree: "DerivationTree"):
         tree.generator_params = []
