@@ -23,7 +23,7 @@ def run():
 
     for solution in fandango.solution:
         print(count_g_params(solution))
-        print(solution)
+        print(solution.to_bytes().decode())
 
 
 if __name__ == "__main__":

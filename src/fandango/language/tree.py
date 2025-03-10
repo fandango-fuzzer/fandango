@@ -507,7 +507,10 @@ class DerivationTree:
         Replace the subtree rooted at the given node with the new subtree.
         """
         if self == tree_to_replace and not self.read_only:
-            return deepcopy(new_subtree)
+            new_subtree = deepcopy(new_subtree)
+            new_subtree._parent = self.parent
+            grammar.populate_generator_params(new_subtree)
+            return new_subtree
 
         regen_children = False
         new_children = []
