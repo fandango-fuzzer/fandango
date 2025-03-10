@@ -519,6 +519,7 @@ class DerivationTree:
 
         if regen_children:
             is_generator_generated = False
+            # TODO check if this can be compared using current in current.parent.generator_params
             current = new_tree.parent
             while current is not None:
                 if current.symbol in grammar.generators:
