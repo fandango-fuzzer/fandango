@@ -140,13 +140,6 @@ class DerivationTree:
             trees.append(self)
         return trees
 
-    def is_generator_param(self):
-        if self._parent is None:
-            return False
-        if self in self._parent.generator_params:
-            return True
-        return self._parent.is_generator_param()
-
     def find_direct_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
         return [child for child in [*self._children, *self._generator_params] if child.symbol == symbol]
 
@@ -479,18 +472,6 @@ class DerivationTree:
             path.append(current.symbol)
             current = current.parent
         return path[::-1]
-
-    """
-        Returns a tuple that contains true, if the current DerivationTree is part of a generator parameter.
-        The second value of the tuple is the DerivationTree, that defines the root of that parameter. 
-    """
-    def is_param(self) -> tuple[bool, Optional["DerivationTree"]]:
-        current = self
-        while current.parent is not None:
-            if current in current.parent.generator_params:
-                return True, current
-            current = current.parent
-        return False, None
 
     def replace(self, grammar: "Grammar", tree_to_replace, new_subtree):
         if tree_to_replace == new_subtree:
