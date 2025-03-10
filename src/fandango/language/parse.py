@@ -33,6 +33,9 @@ from fandango.language.stdlib import stdlib
 from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER, print_exception
 
+from fandango import FandangoSyntaxError, FandangoValueError
+
+
 
 class MyErrorListener(ErrorListener):
     """This is invoked from ANTLR when a syntax error is encountered"""
@@ -42,8 +45,11 @@ class MyErrorListener(ErrorListener):
         super().__init__()
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise SyntaxError(f"{self.filename!r}, line {line}, column {column}: {msg}")
-
+        exc = FandangoSyntaxError(f"{self.filename!r}, line {line}, column {column}: {msg}")
+        exc.line = line
+        exc.column = column
+        exc.messsage = msg
+        raise exc
 
 def closest_match(word, candidates):
     """
@@ -240,7 +246,7 @@ def parse_content(
                     assert spec is not None
                     LOGGER.debug(f"Cached spec version: {spec.version}")
                     if spec.fan_contents != fan_contents:
-                        e = ValueError(
+                        e = FandangoValueError(
                             "Hash collision (If you get this, you'll be real famous)"
                         )
                         raise e
@@ -374,7 +380,11 @@ def parse(
     if use_stdlib:
         assert STDLIB_GRAMMAR is not None
         assert STDLIB_CONSTRAINTS is not None
-        grammars = [deepcopy(STDLIB_GRAMMAR)]
+        try:
+            grammars = [deepcopy(STDLIB_GRAMMAR)]
+        except TypeError:
+            # This can happen if we invoke parse() from a notebook
+            grammars = [STDLIB_GRAMMAR]
         parsed_constraints = STDLIB_CONSTRAINTS.copy()
 
     grammars += given_grammars
@@ -563,7 +573,7 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
         ):
             tp, min_bits, max_bits, step = get_type(tree.node, rule_symbol)
             # if min_bits % 8 != 0 and tree.min == 0:
-            #     raise ValueError(f"{rule_symbol!s}: Bits cannot be optional")
+            #     raise FandangoValueError(f"{rule_symbol!s}: Bits cannot be optional")
 
             try:
                 rep_min = tree.min(grammar, None)
@@ -633,7 +643,7 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
             # LOGGER.debug(f"Type of {rule_symbol!s} is {common_tp!r} with {min_bits}..{max_bits} bits")
             return common_tp, min_bits, max_bits, step
 
-        raise ValueError("Unknown node type")
+        raise FandangoValueError("Unknown node type")
 
     start_tree = grammar.rules[NonTerminal(start_symbol)]
     _, min_start_bits, max_start_bits, start_step = get_type(
@@ -713,7 +723,7 @@ def check_constraints_existence(grammar, constraints):
                     grammar, parent, symbol, recurse, indirect_child
                 ):
                     msg = f"{constraint!s}: <{parent!s}> has no child <{symbol!s}>"
-                    raise ValueError(msg)
+                    raise FandangoValueError(msg)
 
 
 def check_constraints_existence_children(
