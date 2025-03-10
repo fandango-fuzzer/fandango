@@ -7,7 +7,7 @@ from collections import defaultdict
 import exrex
 
 from copy import deepcopy
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union, Generator
 
 from fandango.language.symbol import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree
@@ -163,6 +163,8 @@ class Repetition(Node):
         self.node = node
         self.expr_data_min = min_
         self.expr_data_max = max_
+        self.static_min = None
+        self.static_max = None
 
     def get_access_points(self):
         _, _, searches_min = self.expr_data_min
@@ -179,7 +181,7 @@ class Repetition(Node):
         local_cpy = grammar._local_variables.copy()
 
         if len(searches) == 0:
-            return eval(expr, grammar._global_variables, local_cpy)
+            return eval(expr, grammar._global_variables, local_cpy), True
         if tree is None:
             raise ValueError("tree required if searches present!")
 
@@ -189,13 +191,25 @@ class Repetition(Node):
                 [(name, container) for container in search.find(tree.get_root())]
             )
         local_cpy.update({name: container.evaluate() for name, container in nodes})
-        return eval(expr, grammar._global_variables, local_cpy)
+        return eval(expr, grammar._global_variables, local_cpy), False
 
     def min(self, grammar: "Grammar", tree: "DerivationTree" = None):
-        return self._compute_rep_bound(grammar, tree, self.expr_data_min)
+        if self.static_min is None:
+            current_min, is_static = self._compute_rep_bound(grammar, tree, self.expr_data_min)
+            if is_static:
+                self.static_min = current_min
+            return current_min
+        else:
+            return self.static_min
 
     def max(self, grammar: "Grammar", tree: "DerivationTree" = None):
-        return self._compute_rep_bound(grammar, tree, self.expr_data_max)
+        if self.static_max is None:
+            current_max, is_static = self._compute_rep_bound(grammar, tree, self.expr_data_max)
+            if is_static:
+                self.static_max = current_max
+            return current_max
+        else:
+            return self.static_max
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitRepetition(self)
@@ -245,8 +259,8 @@ class Repetition(Node):
 
 
 class Star(Repetition):
-    def __init__(self, node: Node):
-        super().__init__(node, ("0", [], {}))
+    def __init__(self, node: Node, max_repetitions: int = 5):
+        super().__init__(node, ("0", [], {}), (f"{max_repetitions}", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitStar(self)
@@ -259,8 +273,8 @@ class Star(Repetition):
 
 
 class Plus(Repetition):
-    def __init__(self, node: Node):
-        super().__init__(node, ("1", [], {}))
+    def __init__(self, node: Node, max_repetitions: int = 5):
+        super().__init__(node, ("1", [], {}), (f"{max_repetitions}", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitPlus(self)
@@ -1220,7 +1234,8 @@ class Grammar(NodeVisitor):
             start: str | NonTerminal = "<start>",
             mode: ParsingMode = ParsingMode.COMPLETE,
             include_controlflow: bool = False,
-        ):
+            allow_incomplete: bool = False,
+        ) -> Generator[DerivationTree, None, None]:
             """
             Yield multiple parse alternatives, using a cache.
             """

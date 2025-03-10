@@ -57,6 +57,30 @@ class DerivationTree:
         self._symbol = symbol
         self.invalidate_hash()
 
+    def is_terminal(self):
+        """
+        True is the node represents a terminal symbol.
+        """
+        return self.symbol.is_terminal
+
+    def is_nonterminal(self):
+        """
+        True is the node represents a nonterminal symbol.
+        """
+        return self.symbol.is_non_terminal
+
+    def is_regex(self):
+        """
+        True is the node represents a regex symbol.
+        """
+        return self.symbol.is_regex
+
+    def sym(self):
+        """
+        Return the symbol
+        """
+        return self.symbol.symbol
+
     def invalidate_hash(self):
         self.hash_cache = None
         if self._parent is not None:
@@ -74,7 +98,7 @@ class DerivationTree:
 
     def set_children(self, children: List["DerivationTree"]):
         self._children = children
-        self._size = 1 + sum(child.size() for child in self._children)
+        self._update_size(1 + sum(child.size() for child in self._children))
         for child in self._children:
             child._parent = self
         self.invalidate_hash()
@@ -94,9 +118,14 @@ class DerivationTree:
 
     def add_child(self, child: "DerivationTree"):
         self._children.append(child)
-        self._size += child.size()
+        self._update_size(self.size() + child.size())
         child._parent = self
         self.invalidate_hash()
+
+    def _update_size(self, new_val: int):
+        if self._parent is not None:
+            self._parent._update_size(self.parent.size() + new_val - self._size)
+        self._size = new_val
 
     def find_all_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
         trees = sum(
@@ -547,8 +576,18 @@ class DerivationTree:
         return nodes
 
     @property
-    def children(self):
+    def children(self) -> Optional[List["DerivationTree"]]:
+        """
+        Return the children of the current node.
+        """
         return self._children
+
+    @property
+    def parent(self) -> Optional["DerivationTree"]:
+        """
+        Return the parent node of the current node.
+        """
+        return self._parent
 
     def children_values(self):
         """
@@ -662,7 +701,7 @@ class DerivationTree:
     ## Comparison operations
     def __eq__(self, other):
         if isinstance(other, DerivationTree):
-            return self.__tree__() == other.__tree__()
+            return self.__hash__() == other.__hash__()
         return self.value() == other
 
     def __le__(self, other):
@@ -806,7 +845,6 @@ class DerivationTree:
 
     def __bytes__(self):
         return self.to_bytes()
-
 
     ## Iterators
     def __contains__(self, other: Union["DerivationTree", Any]) -> bool:
