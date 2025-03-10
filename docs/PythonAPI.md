@@ -73,7 +73,8 @@ from fandango import Fandango
 The `Fandango` constructor allows reading in a `.fan` specification, either from an (open) file, a string, or a list of strings or files.
 
 ```python
-class Fandango(fan_files: str | IO | List[IO], constraints: List[str] = None, *,
+class Fandango(fan_files: str | IO | List[str | IO],
+    constraints: List[str] = None, *,
     start_symbol: Optional[str] = None,
     use_cache: bool = True,
     use_stdlib: bool = True,

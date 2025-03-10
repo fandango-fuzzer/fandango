@@ -314,7 +314,7 @@ STDLIB_CONSTRAINTS: Optional[List[str]] = None
 
 
 def parse(
-    fan_files: str | IO | List[IO],
+    fan_files: str | IO | List[str | IO],
     constraints: List[str] = None,
     *,
     use_cache: bool = True,
