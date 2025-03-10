@@ -316,16 +316,14 @@ class NonTerminalNode(Node):
             use_generator = True
             path = set(parent.get_path())
             for nt in dependencies:
-                if nt.symbol in path:
+                if nt in path:
                     use_generator = False
                     break
             if use_generator:
                 dummy_current_tree = DerivationTree(self.symbol)
                 parent.add_child(dummy_current_tree)
                 for nt in dependencies:
-                    dependency_parent = DerivationTree(nt)
-                    dummy_current_tree.add_child(dependency_parent)
-                    grammar[nt].fuzz(dependency_parent, grammar, max_nodes - 1)
+                    NonTerminalNode(nt).fuzz(dummy_current_tree, grammar, max_nodes - 1)
                 generated = grammar.generate(self.symbol, dummy_current_tree.children)
                 # Prevent children from being overwritten without executing generator
                 generated.set_all_read_only(True)
