@@ -6,7 +6,7 @@ import logging
 import os
 import os.path
 import re
-import readline
+import gnureadline as readline
 import shlex
 import subprocess
 import sys
