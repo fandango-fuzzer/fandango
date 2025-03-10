@@ -315,6 +315,7 @@ class ComparisonConstraint(Constraint):
             return ConstraintFitness(0, 0, False)
         # Iterate over all combinations of the tree and the scope
         for combination in self.combinations(tree, scope):
+            total += 1
             has_combinations = True
             # Update the local variables to initialize the placeholders with the values of the combination
             local_variables = self.local_variables.copy()
@@ -426,8 +427,6 @@ class ComparisonConstraint(Constraint):
                         ft = FailingTree(node, self, suggestions=suggestions)
                         if ft not in failing_trees:
                             failing_trees.append(ft)
-
-            total += 1
 
         if not has_combinations:
             solved += 1
