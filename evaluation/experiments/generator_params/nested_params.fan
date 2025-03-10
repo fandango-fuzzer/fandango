@@ -28,6 +28,6 @@ def bit_to_str_converter(input):
 
 
 #where <source_number>.<number> == <nr_palindrome>.<number>
-where <nr_palindrome>.<number> == <source_number>.<number>
-#where str((<nr_palindrome>.<number>)[::-1]) == str(<rev_number>)
+#where <nr_palindrome>.<number> == <source_number>.<number>
+where str((<nr_palindrome>.<number>)[::-1]) == str(<rev_number>)
 #where str(<rev_number>) == str((<nr_palindrome>.<number>)[::-1])

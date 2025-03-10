@@ -476,11 +476,7 @@ class DerivationTree:
     def replace(self, grammar: "Grammar", tree_to_replace, new_subtree):
         if tree_to_replace == new_subtree:
             return deepcopy(self)
-        replaced = self._replace(grammar, tree_to_replace, new_subtree)
-        if replaced.symbol not in grammar.generators or self == replaced:
-            return replaced
-        replaced.generator_params = grammar.derive_generator_params(replaced)
-        return replaced
+        return self._replace(grammar, tree_to_replace, new_subtree)
 
 
     def _replace(self, grammar: "Grammar", tree_to_replace, new_subtree):
@@ -494,6 +490,7 @@ class DerivationTree:
             return new_subtree
 
         regen_children = False
+        regen_params = False
         new_children = []
         generator_params = []
         for param in self._generator_params:
@@ -503,18 +500,24 @@ class DerivationTree:
                 regen_children = True
         for child in self._children:
             new_child = child._replace(grammar, tree_to_replace, new_subtree)
-            new_children.append((new_child != child, new_child))
+            new_children.append(new_child)
+            if new_child != child:
+                regen_params = True
 
         new_tree = DerivationTree(
             self.symbol,
-            [child for _, child in new_children],
+            new_children,
             parent=self.parent,
             generator_params=generator_params,
             read_only=self.read_only,
         )
 
         # Update children match generator parameters, if parameters updated
-        if new_tree.symbol in grammar.generators and regen_children:
+        if new_tree.symbol not in grammar.generators:
+            new_tree.generator_params = []
+            return new_tree
+
+        if regen_children:
             is_generator_generated = False
             current = new_tree.parent
             while current is not None:
@@ -528,10 +531,8 @@ class DerivationTree:
                 new_tree.generator_params = []
             else:
                 new_tree.set_children(grammar.derive_generator_output(new_tree))
-        else:
-            for idx, (re_gen, _) in enumerate(new_children):
-                if re_gen and new_tree.children[idx].symbol in grammar.generators:
-                    new_tree.children[idx].generator_params = grammar.derive_generator_params(new_tree.children[idx])
+        elif regen_params:
+            new_tree.generator_params = grammar.derive_generator_params(new_tree)
 
         return new_tree
 
