@@ -60,7 +60,7 @@ class FandangoBase(ABC):
 
     def __init__(
         self,
-        fan_files: str | IO | List[IO],
+        fan_files: str | IO | List[str | IO],
         constraints: List[str] = None,
         *,
         logging_level: Optional[int] = None,
