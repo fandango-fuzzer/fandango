@@ -523,7 +523,6 @@ class DerivationTree:
             current = self
             current_parent = self.parent
             while current_parent is not None:
-                # If my subtree belongs to a children section of lower level node.
                 if current in current_parent.generator_params:
                     break
                 elif current in current_parent.children and grammar.is_use_generator(current_parent):
