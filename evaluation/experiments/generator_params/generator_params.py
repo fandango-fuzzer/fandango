@@ -15,8 +15,8 @@ def count_g_params(tree: DerivationTree):
 
 def run():
     # Load the fandango file
-    file = open("nested_params.fan", "r")
-    #file = open("nested_params_complexer.fan", "r")
+    #file = open("nested_params.fan", "r")
+    file = open("nested_params_complexer.fan", "r")
     #file = open("generator_params.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
 
