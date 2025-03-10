@@ -520,7 +520,6 @@ class DerivationTree:
 
         if regen_children:
             is_generator_generated = False
-            # TODO check if there is a better way than using the length of current_parent.generator_params to determine if a generator has been used.
             current = self
             current_parent = self.parent
             while current_parent is not None:
