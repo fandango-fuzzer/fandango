@@ -311,26 +311,21 @@ class NonTerminalNode(Node):
     def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
         if self.symbol not in grammar:
             raise ValueError(f"Symbol {self.symbol} not found in grammar")
-        if self.symbol in grammar.generators:
+        dummy_current_tree = DerivationTree(self.symbol)
+        parent.add_child(dummy_current_tree)
+
+        if grammar.is_use_generator(dummy_current_tree):
             dependencies = grammar.generator_dependencies(self.symbol)
-            use_generator = True
-            path = set(parent.get_path())
             for nt in dependencies:
-                if nt in path:
-                    use_generator = False
-                    break
-            if use_generator:
-                dummy_current_tree = DerivationTree(self.symbol)
-                parent.add_child(dummy_current_tree)
-                for nt in dependencies:
-                    NonTerminalNode(nt).fuzz(dummy_current_tree, grammar, max_nodes - 1)
-                generated = grammar.generate(self.symbol, dummy_current_tree.children)
-                # Prevent children from being overwritten without executing generator
-                generated.set_all_read_only(True)
-                generated.read_only = False
-                parent.children.pop()
-                parent.add_child(generated)
-                return
+                NonTerminalNode(nt).fuzz(dummy_current_tree, grammar, max_nodes - 1)
+            generated = grammar.generate(self.symbol, dummy_current_tree.children)
+            # Prevent children from being overwritten without executing generator
+            generated.set_all_read_only(True)
+            generated.read_only = False
+            parent.children.pop()
+            parent.add_child(generated)
+            return
+        parent.set_children(parent.children[:-1])
 
         current_tree = DerivationTree(self.symbol)
         parent.add_child(current_tree)
@@ -1353,28 +1348,18 @@ class Grammar(NodeVisitor):
             print("Cycle exists")
         return topological_order[::-1]
 
-    def truncate_generator_params(self, tree: DerivationTree, seen_symbols: set[Symbol]):
-        seen_symbols.add(tree.symbol)
-        new_children = []
-        for child in tree.children:
-            new_children.append(self.truncate_generator_params(child, seen_symbols))
-        new_params = []
-        for param in tree.generator_params:
-            if param.symbol in seen_symbols:
-                continue
-            new_params.append(self.truncate_generator_params(param, seen_symbols))
-        seen_symbols.remove(tree.symbol)
-        return DerivationTree(tree.symbol,
-                              new_children,
-                              generator_params=new_params,
-                              read_only=tree.read_only
-                              )
-
-    def is_use_generator(self, parent_tree: "DerivationTree", symbol: NonTerminal):
+    def is_use_generator(self, tree: "DerivationTree"):
+        symbol = tree.symbol
+        if not isinstance(symbol, NonTerminal):
+            return False
         if symbol not in self.generators:
             return False
+        if tree is None:
+            path = set()
+        else:
+            path = tree.get_path()
         generator_dependencies = self.generator_dependencies(symbol)
-        intersection = set(parent_tree.get_path()).intersection(set(generator_dependencies))
+        intersection = set(path).intersection(set(generator_dependencies))
         return len(intersection) == 0
 
     def derive_generator_params(self, tree: "DerivationTree"):
@@ -1384,11 +1369,8 @@ class Grammar(NodeVisitor):
         if tree.symbol not in self.generators:
             raise ValueError("Can't derive generator output. tree.symbol not in generators!")
 
-        dependencies = self.generator_dependencies(gen_symbol)
-        path = set(tree.get_path())
-        for nt in dependencies:
-            if nt in path:
-                return []
+        if not self.is_use_generator(tree):
+            return []
 
         dependent_generators = {
             gen_symbol: set()

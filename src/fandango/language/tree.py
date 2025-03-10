@@ -527,11 +527,9 @@ class DerivationTree:
                 # If my subtree belongs to a children section of lower level node.
                 if current in current_parent.generator_params:
                     break
-                elif current_parent.symbol in grammar.generators and current in current_parent.children:
-                    gen_deps = grammar.generator_dependencies(current_parent.symbol)
-                    if len(set(current_parent.get_path()[:-1]).intersection(set(gen_deps))) == 0:
-                        is_generator_generated = True
-                        break
+                elif current in current_parent.children and grammar.is_use_generator(current_parent):
+                    is_generator_generated = True
+                    break
 
                 current = current_parent
                 current_parent = current_parent.parent
