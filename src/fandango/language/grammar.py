@@ -1379,13 +1379,10 @@ class Grammar(NodeVisitor):
             raise ValueError("Can't derive generator output. tree.symbol not in generators!")
 
         dependencies = self.generator_dependencies(gen_symbol)
-        current = tree
-        path_symbols = set()
-        while current is not None:
-            path_symbols.add(current.symbol)
-            if current.symbol in dependencies:
+        path = set(tree.get_path())
+        for nt in dependencies:
+            if nt in path:
                 return []
-            current = current.parent
 
         dependent_generators = {
             gen_symbol: set()
