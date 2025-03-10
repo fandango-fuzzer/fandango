@@ -432,10 +432,10 @@ def parse(
 
     LOGGER.debug(f"Processing {len(grammars)} grammars")
     grammar = grammars[0]
-    LOGGER.debug(f"Grammar #1: {grammar.rules.keys()}")
+    LOGGER.debug(f"Grammar #1: {[str(key) for key in grammar.rules.keys()]}")
     n = 2
     for g in grammars[1:]:
-        LOGGER.debug(f"Grammar #{n}: {g.rules.keys()}")
+        LOGGER.debug(f"Grammar #{n}: {[str(key) for key in g.rules.keys()]}")
         # LOGGER.debug(f"Grammar: {g}")
 
         for symbol in g.rules.keys():
@@ -444,7 +444,7 @@ def parse(
         grammar.update(g, prime=False)
         n += 1
 
-    LOGGER.debug(f"Final grammar: {grammar.rules.keys()}")
+    LOGGER.debug(f"Final grammar: {[str(key) for key in grammar.rules.keys()]}")
 
     LOGGER.debug("Processing constraints")
     for constraint in constraints or []:
