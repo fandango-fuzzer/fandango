@@ -15,9 +15,10 @@ from evaluation.vs_isla.xml_evaluation.xml_evaluation import evaluate_xml
 
 LOGGER.setLevel(logging.WARNING)  # Default
 
+
 # Return the evaluation results as a tuple of values (subject, total, valid, percentage, diversity, mean_length, median)
 def better_print_results(
-    results: Tuple[str, int, int, float, Tuple[float, int, int], float, float]
+    results: Tuple[str, int, int, float, Tuple[float, int, int], float, float],
 ):
     print("================================")
     print(f"{results[0]} Evaluation Results")

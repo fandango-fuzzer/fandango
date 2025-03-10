@@ -205,8 +205,8 @@ class TestEmptyParsing(unittest.TestCase):
                 NonTerminal("<start>"),
                 [
                     DerivationTree(Terminal("123")),
-                    DerivationTree(NonTerminal("<digit>"),
-                            [DerivationTree(Terminal("4"))]
+                    DerivationTree(
+                        NonTerminal("<digit>"), [DerivationTree(Terminal("4"))]
                     ),
                 ],
             ),
@@ -216,15 +216,17 @@ class TestEmptyParsing(unittest.TestCase):
         self._test(
             "123456",
             DerivationTree(
-                NonTerminal('<start>'),
+                NonTerminal("<start>"),
                 [
-                    DerivationTree(Terminal('12345')),
-                    DerivationTree(Terminal('')),
-                    DerivationTree(NonTerminal('<digit>'),
-                                    [DerivationTree(Terminal('6'))]),
-                ]
-            )
+                    DerivationTree(Terminal("12345")),
+                    DerivationTree(Terminal("")),
+                    DerivationTree(
+                        NonTerminal("<digit>"), [DerivationTree(Terminal("6"))]
+                    ),
+                ],
+            ),
         )
+
 
 class TestCLIParsing(unittest.TestCase):
     def run_command(self, command):
@@ -236,16 +238,21 @@ class TestCLIParsing(unittest.TestCase):
         out, err = proc.communicate()
         return out.decode(), err.decode(), proc.returncode
 
+
 class TestRegexParsing(TestCLIParsing):
     def test_infinity_abc(self):
-        command = shlex.split("fandango parse -f docs/infinity.fan --validate tests/resources/abc.txt --validate")
+        command = shlex.split(
+            "fandango parse -f docs/infinity.fan --validate tests/resources/abc.txt --validate"
+        )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
 
     def test_infinity_abcabc(self):
-        command = shlex.split("fandango parse -f docs/infinity.fan --validate tests/resources/abcabc.txt --validate")
+        command = shlex.split(
+            "fandango parse -f docs/infinity.fan --validate tests/resources/abcabc.txt --validate"
+        )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
@@ -253,29 +260,40 @@ class TestRegexParsing(TestCLIParsing):
 
     def test_infinity_abcd(self):
         # This should be rejected by the grammar
-        command = shlex.split("fandango parse -f docs/infinity.fan tests/resources/abcd.txt --validate")
+        command = shlex.split(
+            "fandango parse -f docs/infinity.fan tests/resources/abcd.txt --validate"
+        )
         out, err, code = self.run_command(command)
         self.assertEqual(1, code)
 
+
 class TestBitParsing(TestCLIParsing):
     def test_bits_a(self):
-        command = shlex.split("fandango parse -f docs/bits.fan tests/resources/a.txt --validate")
+        command = shlex.split(
+            "fandango parse -f docs/bits.fan tests/resources/a.txt --validate"
+        )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
+
 
 class TestGIFParsing(TestCLIParsing):
     def test_gif(self):
-        command = shlex.split("fandango parse -f docs/gif89a.fan docs/tinytrans.gif --validate")
+        command = shlex.split(
+            "fandango parse -f docs/gif89a.fan docs/tinytrans.gif --validate"
+        )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
 
+
 class TestBitstreamParsing(TestCLIParsing):
     def test_bitstream(self):
-        command = shlex.split("fandango parse -f tests/resources/bitstream.fan tests/resources/abcd.txt --validate")
+        command = shlex.split(
+            "fandango parse -f tests/resources/bitstream.fan tests/resources/abcd.txt --validate"
+        )
         out, err, code = self.run_command(command)
         # Warns that the number of bits (1..5) may not be a multiple of eight, # which is correct
         # self.assertEqual("", err)
@@ -283,14 +301,18 @@ class TestBitstreamParsing(TestCLIParsing):
         self.assertEqual(0, code)
 
     def test_bitstream_a(self):
-        command = shlex.split("fandango parse -f tests/resources/bitstream-a.fan tests/resources/a.txt --validate")
+        command = shlex.split(
+            "fandango parse -f tests/resources/bitstream-a.fan tests/resources/a.txt --validate"
+        )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
 
     def test_bitstream_b(self):
-        command = shlex.split("fandango parse -f tests/resources/bitstream-a.fan tests/resources/b.txt --validate")
+        command = shlex.split(
+            "fandango parse -f tests/resources/bitstream-a.fan tests/resources/b.txt --validate"
+        )
         out, err, code = self.run_command(command)
         # This should fail
         self.assertNotEqual("", err)
@@ -305,4 +327,3 @@ class TestBitstreamParsing(TestCLIParsing):
         self.assertEqual(0, code)
         self.assertEqual("", out)
         self.assertEqual("", err)
-

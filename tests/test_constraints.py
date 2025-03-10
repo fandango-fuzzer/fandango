@@ -10,10 +10,11 @@ from fandango.language.parse import parse
 
 class ConstraintTest(unittest.TestCase):
 
-
     def get_constraint(self, constraint):
         file = open("tests/resources/constraints.fan", "r")
-        _, constraints = parse(file, constraints=[constraint], use_stdlib=False, use_cache=False)
+        _, constraints = parse(
+            file, constraints=[constraint], use_stdlib=False, use_cache=False
+        )
         self.assertEqual(1, len(constraints))
         return constraints[0]
 
@@ -298,43 +299,23 @@ class ConstraintTest(unittest.TestCase):
         constraint = self.get_constraint("str(<start>.<ab>) == 'a';")
         counter_example = DerivationTree(
             NonTerminal("<start>"),
-            [
-                DerivationTree(
-                    NonTerminal("<ab>"),
-                    [
-                        DerivationTree(
-                            Terminal("b"),
-                            []
-                        )
-                    ]
-                )
-            ]
+            [DerivationTree(NonTerminal("<ab>"), [DerivationTree(Terminal("b"), [])])],
         )
 
         self.assertFalse(constraint.check(counter_example))
         example = DerivationTree(
             NonTerminal("<start>"),
-            [
-                DerivationTree(
-                    NonTerminal("<ab>"),
-                    [
-                        DerivationTree(
-                            Terminal("a"),
-                            []
-                        )
-                    ]
-                )
-            ]
+            [DerivationTree(NonTerminal("<ab>"), [DerivationTree(Terminal("a"), [])])],
         )
         self.assertTrue(constraint.check(example))
 
     def test_indirect_children(self):
         file = open("tests/resources/indirect_children.fan", "r")
         grammar, constraint = parse(file, use_stdlib=False, use_cache=False)
-        
+
         self.assertEqual(1, len(constraint))
         constraint = constraint[0]
-        
+
         counter_example = grammar.parse("19")
         self.assertFalse(constraint.check(counter_example))
 
@@ -360,7 +341,9 @@ int(<number>) < 100000;
 """
 
         file = open("tests/resources/complex_constraints.fan", "r")
-        _, constraints = parse(file, constraints=[constraint], use_stdlib=False, use_cache=False)
+        _, constraints = parse(
+            file, constraints=[constraint], use_stdlib=False, use_cache=False
+        )
         self.assertEqual(3, len(constraints))
 
         def get_tree(x):
