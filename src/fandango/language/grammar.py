@@ -1402,7 +1402,11 @@ class Grammar(NodeVisitor):
         args = [tree]
         for symbol in dependent_generators:
             generated_param = self.generate(symbol, args)
-            args.append(self.truncate_generator_params(generated_param, path_symbols))
+            generated_param.generator_params = []
+            generated_param._parent = tree
+            for child in generated_param.children:
+                self.populate_generator_params(child)
+            args.append(generated_param)
         args.pop(0)
         return args
 
@@ -1410,6 +1414,23 @@ class Grammar(NodeVisitor):
     def derive_generator_output(self, tree: "DerivationTree"):
         generated = self.generate(tree.symbol, tree.generator_params)
         return generated.children
+
+    def populate_generator_params(self, tree: "DerivationTree"):
+        self._rec_remove_generator_params(tree)
+        self._populate_generator_params(tree)
+
+    def _populate_generator_params(self, tree: "DerivationTree"):
+        path = set(tree.get_path()[:-1])
+        if tree.symbol not in path and tree.symbol in self.generators:
+            tree.generator_params = self.derive_generator_params(tree)
+            return
+        for child in tree.children:
+            self.populate_generator_params(child)
+
+    def _rec_remove_generator_params(self, tree: "DerivationTree"):
+        tree.generator_params = []
+        for child in tree.children:
+            self._rec_remove_generator_params(child)
 
 
     def generate_string(self, symbol: str | NonTerminal = "<start>", generator_params: list[DerivationTree] = None) -> tuple[list[DerivationTree], str]:
