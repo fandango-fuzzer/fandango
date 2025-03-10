@@ -320,13 +320,13 @@ class NonTerminalNode(Node):
                     use_generator = False
                     break
             if use_generator:
-                dummy_parent = DerivationTree(self.symbol)
-                parent.add_child(dummy_parent)
+                dummy_current_tree = DerivationTree(self.symbol)
+                parent.add_child(dummy_current_tree)
                 for nt in dependencies:
                     dependency_parent = DerivationTree(nt)
-                    dummy_parent.add_child(dependency_parent)
+                    dummy_current_tree.add_child(dependency_parent)
                     grammar[nt].fuzz(dependency_parent, grammar, max_nodes - 1)
-                generated = grammar.generate(self.symbol, dummy_parent.children)
+                generated = grammar.generate(self.symbol, dummy_current_tree.children)
                 # Prevent children from being overwritten without executing generator
                 generated.set_all_read_only(True)
                 generated.read_only = False
@@ -1469,7 +1469,9 @@ class Grammar(NodeVisitor):
             start = NonTerminal(start)
         root = DerivationTree(start)
         NonTerminalNode(start).fuzz(root, self, max_nodes=max_nodes)
-        return root.children[0]
+        root = root.children[0]
+        root._parent = None
+        return root
 
     def update(self, grammar: "Grammar" | Dict[NonTerminal, Node], prime=True):
         if isinstance(grammar, Grammar):

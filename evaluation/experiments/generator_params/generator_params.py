@@ -1,4 +1,4 @@
-from fandango.evolution.algorithm import Fandango
+from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
 
@@ -18,7 +18,7 @@ def run():
     file = open("nested_params.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
 
-    fandango = Fandango(grammar, constraints, max_generations=100, desired_solutions=10)
+    fandango = Fandango(grammar, constraints, max_generations=100, desired_solutions=10, logger_level=LoggerLevel.DEBUG)
     fandango.evolve()
 
     for solution in fandango.solution:
