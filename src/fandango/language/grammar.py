@@ -1370,6 +1370,12 @@ class Grammar(NodeVisitor):
                               read_only=tree.read_only
                               )
 
+    def is_use_generator(self, parent_tree: "DerivationTree", symbol: NonTerminal):
+        if symbol not in self.generators:
+            return False
+        generator_dependencies = self.generator_dependencies(symbol)
+        intersection = set(parent_tree.get_path()).intersection(set(generator_dependencies))
+        return len(intersection) == 0
 
     def derive_generator_params(self, tree: "DerivationTree"):
         gen_symbol = tree.symbol
