@@ -1431,6 +1431,11 @@ class Grammar(NodeVisitor):
             symbol = NonTerminal(symbol)
         self.generators[symbol] = param
 
+    def remove_generator(self, symbol: str | NonTerminal):
+        if isinstance(symbol, str):
+            symbol = NonTerminal(symbol)
+        self.generators.pop(symbol)
+
     def has_generator(self, symbol: str | NonTerminal):
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
