@@ -246,24 +246,24 @@ def parse_content(
                     assert spec is not None
                     LOGGER.debug(f"Cached spec version: {spec.version}")
                     if spec.fan_contents != fan_contents:
-                        e = FandangoValueError(
+                        error = FandangoValueError(
                             "Hash collision (If you get this, you'll be real famous)"
                         )
-                        raise e
+                        raise error
 
                     from_cache = True
-            except Exception as e:
-                LOGGER.debug(type(e).__name__ + ":" + str(e))
+            except Exception as exc:
+                LOGGER.debug(type(exc).__name__ + ":" + str(exc))
 
     if spec:
         LOGGER.debug(f"{filename}: running code")
         try:
             spec.run_code(filename=filename)
-        except Exception as e:
+        except Exception as exc:
             # In case the error has anything to do with caching, play it safe
             LOGGER.debug(f"Cached spec failed; removing {pickle_file}")
             os.remove(pickle_file)
-            raise e
+            raise exc
 
     if not spec:
         LOGGER.debug(f"{filename}: setting up .fan parser and lexer")
@@ -436,7 +436,6 @@ def parse(
     n = 2
     for g in grammars[1:]:
         LOGGER.debug(f"Grammar #{n}: {[str(key) for key in g.rules.keys()]}")
-        # LOGGER.debug(f"Grammar: {g}")
 
         for symbol in g.rules.keys():
             if symbol in grammar.rules:
@@ -499,7 +498,7 @@ def check_grammar_definitions(
 
     if start_symbol not in defined_symbols:
         closest = closest_match(start_symbol, defined_symbols)
-        raise NameError(
+        raise FandangoValueError(
             f"Start symbol {start_symbol!s} not defined in grammar. Did you mean {closest!s}?"
         )
 
@@ -530,11 +529,11 @@ def check_grammar_definitions(
             and symbol not in given_used_symbols
             and symbol != start_symbol
         ):
-            LOGGER.info(f"Symbol {symbol!s} defined, but not used")
+            LOGGER.warning(f"Symbol {symbol!s} defined, but not used")
 
     if undefined_symbols:
         first_undefined_symbol = undefined_symbols.pop()
-        error = NameError(f"Undefined symbol {first_undefined_symbol!s} in grammar")
+        error = FandangoValueError(f"Undefined symbol {first_undefined_symbol!s} in grammar")
         if undefined_symbols:
             error.add_note(
                 f"Other undefined symbols: {', '.join(str(symbol) for symbol in undefined_symbols)}"
@@ -698,14 +697,14 @@ def check_constraints_existence(grammar, constraints):
                 missing_symbols = ", ".join(
                     ["<" + str(symbol) + ">" for symbol in missing]
                 )
-                error = NameError(
+                error = FandangoValueError(
                     f"{constraint}: undefined symbols {missing_symbols}. Did you mean {closest!s}?"
                 )
                 raise error
 
             if len(missing) == 1:
                 missing_symbol = missing[0]
-                error = NameError(
+                error = FandangoValueError(
                     f"{constraint}: undefined symbol <{missing_symbol!s}>. Did you mean {closest!s}?"
                 )
                 raise error
