@@ -13,9 +13,9 @@ class Evaluator:
         self,
         grammar: Grammar,
         constraints: List[Constraint],
-        expected_fitness: float,
-        diversity_k: int,
-        diversity_weight: float,
+        expected_fitness: float = 1.0,
+        diversity_k: int = 3,
+        diversity_weight: float = 0.1,
         warnings_are_errors: bool = False,
     ):
         self.grammar = grammar
