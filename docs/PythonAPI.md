@@ -129,6 +129,10 @@ fuzz(extra_constraints: Optional[List[str]] = None, **settings)
 
 Create outputs from the specification, as a list of [derivation trees](sec:derivation-tree).
 
+```{margin}
+In the future, the set of available `settings` may change dependent on the chosen algorithm.
+```
+
 * `extra_constraints`: if given, use this list of strings as additional constraints
 * `settings`: pass extra values to control the fuzzer algorithm. These include
   - `population_size: int`: set the population size (default: 100).
