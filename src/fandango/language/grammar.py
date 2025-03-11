@@ -1400,7 +1400,7 @@ class Grammar(NodeVisitor):
         args = [tree]
         for symbol in dependent_generators:
             generated_param = self.generate(symbol, args)
-            generated_param.generator_params.remove(tree)
+            generated_param.generator_params = []
             generated_param._parent = tree
             for child in generated_param.children:
                 self.populate_generator_params(child)
