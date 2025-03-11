@@ -1378,14 +1378,13 @@ class Grammar(NodeVisitor):
         for key, val in self.generators[gen_symbol].nonterminals.items():
             if val.symbol not in self.generators:
                 raise ValueError(f"Can't derive generator parameters. No generator existing for required symbol: {val.symbol}!")
-            generator = self.generators[val.symbol]
-            dependent_generators[val.symbol] = {gen_value.symbol for gen_value in generator.nonterminals.values()}
+            dependent_generators[val.symbol] = self.generator_dependencies(val.symbol)
         dependent_generators = self._topological_sort(dependent_generators)
         dependent_generators.remove(gen_symbol)
         args = [tree]
         for symbol in dependent_generators:
             generated_param = self.generate(symbol, args)
-            generated_param.generator_params = []
+            generated_param.generator_params.remove(tree)
             generated_param._parent = tree
             for child in generated_param.children:
                 self.populate_generator_params(child)
