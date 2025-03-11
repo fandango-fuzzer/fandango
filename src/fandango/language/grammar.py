@@ -190,6 +190,8 @@ class Repetition(Node):
             nodes.extend(
                 [(name, container) for container in search.find(tree.get_root())]
             )
+        for _, container in nodes:
+            container.evaluate().set_all_read_only(True)
         local_cpy.update({name: container.evaluate() for name, container in nodes})
         return eval(expr, grammar._global_variables, local_cpy), False
 
