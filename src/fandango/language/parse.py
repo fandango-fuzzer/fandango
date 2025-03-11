@@ -421,7 +421,6 @@ def parse(
                 for nonterminal in generator.nonterminals.values():
                     USED_SYMBOLS.add(nonterminal.symbol.symbol)
 
-
         if INCLUDE_DEPTH > 0:
             INCLUDE_DEPTH -= 1
 

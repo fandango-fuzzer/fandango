@@ -195,7 +195,9 @@ class Repetition(Node):
 
     def min(self, grammar: "Grammar", tree: "DerivationTree" = None):
         if self.static_min is None:
-            current_min, is_static = self._compute_rep_bound(grammar, tree, self.expr_data_min)
+            current_min, is_static = self._compute_rep_bound(
+                grammar, tree, self.expr_data_min
+            )
             if is_static:
                 self.static_min = current_min
             return current_min
@@ -204,7 +206,9 @@ class Repetition(Node):
 
     def max(self, grammar: "Grammar", tree: "DerivationTree" = None):
         if self.static_max is None:
-            current_max, is_static = self._compute_rep_bound(grammar, tree, self.expr_data_max)
+            current_max, is_static = self._compute_rep_bound(
+                grammar, tree, self.expr_data_max
+            )
             if is_static:
                 self.static_max = current_max
             return current_max
@@ -385,6 +389,7 @@ class TerminalNode(Node):
     def __hash__(self):
         return hash(self.symbol)
 
+
 class LiteralGenerator:
     def __init__(self, call: str, nonterminals: dict):
         self.call = call
@@ -397,10 +402,15 @@ class LiteralGenerator:
         return tuple.__str__((self.call.__str__(), self.nonterminals.__str__()))
 
     def __eq__(self, other):
-        return isinstance(other, LiteralGenerator) and self.call == other.call and self.nonterminals == other.nonterminals
+        return (
+            isinstance(other, LiteralGenerator)
+            and self.call == other.call
+            and self.nonterminals == other.nonterminals
+        )
 
     def __hash__(self):
         return hash(self.call) ^ hash(self.nonterminals)
+
 
 class CharSet(Node):
     def __init__(self, chars: str):
@@ -1365,19 +1375,23 @@ class Grammar(NodeVisitor):
     def derive_generator_params(self, tree: "DerivationTree"):
         gen_symbol = tree.symbol
         if not isinstance(gen_symbol, NonTerminal):
-            raise ValueError("Can't derive generator output. tree.symbol is not a NonTerminal!")
+            raise ValueError(
+                "Can't derive generator output. tree.symbol is not a NonTerminal!"
+            )
         if tree.symbol not in self.generators:
-            raise ValueError("Can't derive generator output. tree.symbol not in generators!")
+            raise ValueError(
+                "Can't derive generator output. tree.symbol not in generators!"
+            )
 
         if not self.is_use_generator(tree):
             return []
 
-        dependent_generators = {
-            gen_symbol: set()
-        }
+        dependent_generators = {gen_symbol: set()}
         for key, val in self.generators[gen_symbol].nonterminals.items():
             if val.symbol not in self.generators:
-                raise ValueError(f"Can't derive generator parameters. No generator existing for required symbol: {val.symbol}!")
+                raise ValueError(
+                    f"Can't derive generator parameters. No generator existing for required symbol: {val.symbol}!"
+                )
             dependent_generators[val.symbol] = self.generator_dependencies(val.symbol)
         dependent_generators = self._topological_sort(dependent_generators)
         dependent_generators.remove(gen_symbol)
@@ -1391,7 +1405,6 @@ class Grammar(NodeVisitor):
             args.append(generated_param)
         args.pop(0)
         return args
-
 
     def derive_generator_output(self, tree: "DerivationTree"):
         generated = self.generate(tree.symbol, tree.generator_params)
@@ -1413,8 +1426,11 @@ class Grammar(NodeVisitor):
         for child in tree.children:
             self._rec_remove_generator_params(child)
 
-
-    def generate_string(self, symbol: str | NonTerminal = "<start>", generator_params: list[DerivationTree] = None) -> tuple[list[DerivationTree], str]:
+    def generate_string(
+        self,
+        symbol: str | NonTerminal = "<start>",
+        generator_params: list[DerivationTree] = None,
+    ) -> tuple[list[DerivationTree], str]:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         if self.generators[symbol] is None:
@@ -1440,15 +1456,22 @@ class Grammar(NodeVisitor):
             symbol = NonTerminal(symbol)
         if self.generators[symbol] is None:
             return set()
-        return set(map(lambda x: x.symbol, self.generators[symbol].nonterminals.values()))
+        return set(
+            map(lambda x: x.symbol, self.generators[symbol].nonterminals.values())
+        )
 
-    def generate(self, symbol: str | NonTerminal = "<start>", generator_params: Optional[list[DerivationTree]] = None) -> DerivationTree:
+    def generate(
+        self,
+        symbol: str | NonTerminal = "<start>",
+        generator_params: Optional[list[DerivationTree]] = None,
+    ) -> DerivationTree:
         generator_params, string = self.generate_string(symbol, generator_params)
-        if not (isinstance(string, str) or
-                isinstance(string, bytes) or
-                isinstance(string, int) or
-                isinstance(string, tuple)
-                ):
+        if not (
+            isinstance(string, str)
+            or isinstance(string, bytes)
+            or isinstance(string, int)
+            or isinstance(string, tuple)
+        ):
             raise TypeError(
                 f"Generator {self.generators[symbol]} must return string, bytes, int, or tuple"
             )
@@ -1583,10 +1606,14 @@ class Grammar(NodeVisitor):
     def dummy():
         return Grammar({})
 
-    def set_generator(self, symbol: str | NonTerminal, param: str, searches_map: dict = {}):
+    def set_generator(
+        self, symbol: str | NonTerminal, param: str, searches_map: dict = {}
+    ):
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
-        self.generators[symbol] = LiteralGenerator(call=param, nonterminals=searches_map)
+        self.generators[symbol] = LiteralGenerator(
+            call=param, nonterminals=searches_map
+        )
 
     def has_generator(self, symbol: str | NonTerminal):
         if isinstance(symbol, str):

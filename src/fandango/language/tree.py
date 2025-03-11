@@ -141,7 +141,11 @@ class DerivationTree:
         return trees
 
     def find_direct_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
-        return [child for child in [*self._children, *self._generator_params] if child.symbol == symbol]
+        return [
+            child
+            for child in [*self._children, *self._generator_params]
+            if child.symbol == symbol
+        ]
 
     def __getitem__(self, item) -> "DerivationTree":
         if isinstance(item, list) and len(item) == 1:
@@ -186,8 +190,12 @@ class DerivationTree:
             return memo[id(self)]
 
         # Create a new instance without copying the parent
-        copied = DerivationTree(self.symbol, [], generator_params=self.generator_params,
-                                read_only=self.read_only)
+        copied = DerivationTree(
+            self.symbol,
+            [],
+            generator_params=self.generator_params,
+            read_only=self.read_only,
+        )
         memo[id(self)] = copied
 
         # Deepcopy the children
@@ -518,7 +526,9 @@ class DerivationTree:
             while current_parent is not None:
                 if current in current_parent.generator_params:
                     break
-                elif current in current_parent.children and grammar.is_use_generator(current_parent):
+                elif current in current_parent.children and grammar.is_use_generator(
+                    current_parent
+                ):
                     self_is_generator_child = True
                     break
                 current = current_parent

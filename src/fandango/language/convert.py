@@ -84,7 +84,7 @@ class GrammarProcessor(FandangoParserVisitor):
             grammar[symbol] = self.visit(production.alternative())
             if production.expression():
                 # Handle generator expressions
-                expr, _, searches_map = self.searches.visit(production.expression()) 
+                expr, _, searches_map = self.searches.visit(production.expression())
                 grammar.set_generator(symbol, ast.unparse(expr), searches_map)
 
                 if not production.EXPR_ASSIGN():
@@ -919,11 +919,11 @@ class SearchProcessor(FandangoParserVisitor):
 
     def visitArguments(self, ctx: FandangoParser.ArgumentsContext):
         return self.visit(ctx.args())
-    
+
     def visitArgs(self, ctx: FandangoParser.ArgsContext):
         if ctx.kwargs() and not ctx.arg():
             return self.visit(ctx.kwargs())
-        
+
         result = list(), list(), dict()
         for arg in ctx.arg():
             result = self.aggregateResult(result, self.visit(arg))
@@ -948,7 +948,6 @@ class SearchProcessor(FandangoParserVisitor):
             result = self.aggregateResult(result, self.visit(kwarg))
 
         return result
-        
 
     def visitFor_if_clauses(self, ctx: FandangoParser.For_if_clausesContext):
         result = list(), list(), dict()
