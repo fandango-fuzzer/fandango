@@ -485,6 +485,7 @@ def parse(
         # Detect illegally nested data packets.
         rir_detector = RoleNestingDetector(grammar)
         rir_detector.fail_on_nested_packet(NonTerminal(start_symbol))
+        fail_on_role_in_generator(grammar)
 
         truncate_non_visible_packets(grammar, io_instance)
 
@@ -497,6 +498,39 @@ def parse(
 
 
 ### Consistency Checks
+
+def fail_on_role_in_generator(grammar):
+    for nt, node in grammar.rules.items():
+        if nt not in grammar.generators:
+            continue
+        found_node = is_role_reachable(grammar, node)
+        if found_node is not None:
+            raise ValueError(
+                f"{found_node} contains a role or recipient and is generated using the generator on {nt}. This is not allowed!")
+
+    for nt in grammar.generators.keys():
+        dependencies: set[NonTerminal] = grammar.generator_dependencies(nt)
+        for dep_nt in dependencies:
+            found_node = is_role_reachable(grammar, grammar[dep_nt])
+            if found_node is not None:
+                raise ValueError(
+                    f"{found_node} contains a role or recipient and is a parameter for the generator of {nt}. This is not allowed!")
+
+def is_role_reachable(grammar, node):
+    seen_nt_nodes = set()
+    nt_node_queue: set[NonTerminalNode] = NonTerminalFinder().visit(node)
+    while len(nt_node_queue) != 0:
+        current_node = nt_node_queue.pop()
+        if current_node.role is not None or current_node.recipient is not None:
+            return current_node
+
+        seen_nt_nodes.add(current_node)
+        next_nts: list[NonTerminalNode] = NonTerminalFinder().visit(grammar[current_node.symbol])
+        for next_nt in next_nts:
+            if next_nt not in seen_nt_nodes:
+                nt_node_queue.add(next_nt)
+    return None
+
 
 
 def init_fandango_agents(grammar: "Grammar"):
@@ -522,7 +556,7 @@ def assign_std_out_role(grammar: "Grammar", io_instance: FandangoIO):
     remapped_roles = set()
     unknown_recipients = set()
     for symbol in grammar.rules.keys():
-        non_terminals: list[NonTerminalNode] = NonTerminalFinder(grammar).visit(
+        non_terminals: list[NonTerminalNode] = NonTerminalFinder().visit(
             grammar.rules[symbol]
         )
 
@@ -823,7 +857,7 @@ def check_constraints_existence_children(
     #
     # Simpler version; may overfit (e.g. matches <...> in strings),
     # but that should not hurt us -- AZ
-    finder = NonTerminalFinder(grammar)
+    finder = NonTerminalFinder()
     non_terminals = finder.visit(grammar_symbols)
     non_terminals = [str(nt.symbol)[1:-1] for nt in non_terminals]
 

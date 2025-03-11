@@ -685,9 +685,6 @@ class Disambiguator(NodeVisitor):
 
 class NonTerminalFinder(NodeVisitor):
 
-    def __init__(self, grammar: "Grammar"):
-        self.grammar = grammar
-
     def default_result(self):
         return []
 
@@ -945,7 +942,7 @@ class RoleAssigner:
         self.implicite_role = implicite_role
 
     def run(self, node: Node):
-        non_terminals: list[NonTerminalNode] = NonTerminalFinder(self.grammar).visit(
+        non_terminals: list[NonTerminalNode] = NonTerminalFinder().visit(
             node
         )
         unprocessed_non_terminals = []
