@@ -1,5 +1,3 @@
-import copy
-import random
 from typing import Callable, List, Set
 
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
@@ -102,3 +100,24 @@ class PopulationManager:
                 current_population.append(self._generate_population_entry())
 
         return current_population
+
+    def fix_individual(
+        self, individual: DerivationTree, failing_trees: List[FailingTree]
+    ) -> DerivationTree:
+        fixes_made = 0
+        for failing_tree in failing_trees:
+            if failing_tree.tree.read_only:
+                continue
+            for operator, value, side in failing_tree.suggestions:
+                if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
+                    # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
+                    suggested_tree = self.grammar.parse(
+                        value, start=failing_tree.tree.symbol.symbol
+                    )
+                    if suggested_tree is None:
+                        continue
+                    individual = individual.replace(
+                        self.grammar, failing_tree.tree, suggested_tree
+                    )
+                    fixes_made += 1
+        return individual, fixes_made

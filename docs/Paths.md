@@ -191,6 +191,40 @@ Ex Pltz,18
 And this is the string Fandango produces.
 However, viewing the Fandango results as derivation trees allows us to access _elements_ of the Fandango-produced strings and to express _constraints_ on them.
 
+
+### Diagnosing Derivation Trees
+
+To examine the derivation trees that Fandango produces, use the [`--format=grammar` output format](sec:formats).
+This produces the output in a grammar-like format, where children are indented under their respective parents.
+As an example, here is how to print a derivation tree from `persons.fan`:
+
+```shell
+$ fandango fuzz -f persons.fan -n 1 --format=grammar
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons.fan -n 1 --format=grammar --random-seed 4712 
+assert _exit_code == 0
+```
+
+We see how the produced derivation tree consists of a `<start>` symbol, whose `<first_name>` and `<last_name>` children expand into `<name>` and letters; the `<age>` symbol expands into `<digit>` symbols.
+
+The comments (after `#`) show the individual positions into the input, as well as the values of compound symbols.
+
+What is the full string represented by the above derivation tree?
+
+:::{admonition} Solution
+:class: tip, dropdown
+It's `'Pl Seov,5150'`, as you can find on the right-hand side of the first line.
+:::
+
+:::{tip}
+The `--format=grammar` option is great for debugging, especially [binary formats](sec:binary).
+:::
+
+
+
 ## Specifying Paths
 
 One effect of Fandango producing derivation trees rather than "just" strings is that we can define special _operators_ that allow us to access _subtrees_ (or sub-elements) of the produced strings - and express constraints on them.
@@ -249,9 +283,70 @@ While symbols act as strings in many contexts, this is where they differ.
 To access the first _character_ of a symbol `<foo>`, you need to explicitly convert it to a string first, as in `str(<foo>)[0]`.
 :::
 
+### Slices
+
+:::{margin}
+The Fandango slices maintain the property that `<name>[n:m]` = `<name>[n]` + `<name>[n + 1]` + ... + `<name>[m - 1]`, which holds for all sequences in Python.
+:::
+
+
+Fandango also allows you to use Python _slice_ syntax to access _multiple children at once_.
+`<name>[n:m]` returns a new (unnamed) root which has `<name>[n]`, `<name>[n + 1]`, ..., `<name>[m - 1]` as children.
+This is useful, for instance, if you want to compare several children against a string:
+
+```shell
+$ fandango fuzz -f persons-faker.fan -n 10 -c '<name>[0:2] == "Ch"'
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons-faker.fan -n 10 -c '<name>[0:2] == "Ch"' --validate
+assert _exit_code == 0
+```
+
+Would one also be able to use `<start>[0:2] == "Ch"` to obtain inputs that all start with `"Ch"`?
+
+:::{admonition} Solution
+:class: tip, dropdown
+No, this would not work.
+Remember that in derivation trees, indexes refer to _children_, not characters.
+So, according to the rule
+
+```
+<start> ::= <person_name> "," <age>
+```
+
+`<start>[0]` is a `<person_name>`, `<start>[1]` is a `","`, and `<start>[2]` is an `<age>`.
+Hence, `<start>[0:2]` refers to `<start>` itself, which cannot be `"Ch"`.
+:::
+
+Indeed, to have the _string_ start with `"Ch"`, you (again) need to convert `<start>` into a string first, and then access its individual characters:
+
+```shell
+$ fandango fuzz -f persons-faker.fan -n 10 -c 'str(<start>)[0:2] == "Ch"'
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons-faker.fan -n 10 -c 'str(<start>)[0:2] == "Ch"' --validate
+assert _exit_code == 0
+```
+
+:::{margin}
+The Fandango slices maintain the property that `<name>[i:]` + `<name>[:i]` = `<name>`
+:::
+
+Fandango supports the full Python slice semantics:
+
+* An omitted first index defaults to zero, so `<foo>[:2]` returns the first two children.
+* An omitted second index defaults to the size of the string being sliced, so `<foo>[2:]` returns all children starting with `<foo>[2]`.
+* Both the first and the second index can be negative again.
+
+
+
 ### Selecting Children
 
-Referring to children by _number_, as in `<foo>[0]` can be a bit cumbersome.
+Referring to children by _number_, as in `<foo>[0]`, can be a bit cumbersome.
 This is why in Fandango, you can also refer to elements by _name_.
 
 :::{margin}
@@ -265,7 +360,7 @@ This requires that `<bar>` occurs in the grammar rule defining `<foo>`:
 <foo> ::= ...some expansion that has <bar>...
 ```
 
-To refer to the `<name>` element as a direct child of a `<first_name>` element, you thus write `<name>.<first_name>`.
+To refer to the `<name>` element as a direct child of a `<first_name>` element, you thus write `<first_name>.<name>`.
 This allows you to express the earlier constraint in a possibly more readable form:
 
 ```shell
@@ -282,6 +377,8 @@ assert _exit_code == 0
 :::{note}
 You can only access _nonterminal_ children this way; `<person_name>." "` (the space in the `<person_name>`) gives an error.
 :::
+
+
 
 ### Selecting Descendants
 
@@ -446,7 +543,7 @@ ensures that _all_ sub-elements `<ascii_lowercase_letter>` in `<first_name>` hav
 Again, let us decompose this expression:
 
 * The expression `for c in *<first_name>..<ascii_lowercase_letter>` lets Python iterate over all `<ascii_lowercase_letter>` objects within `<first_name>`...
-* ... and evaluate `c == "A"` for each of them, resulting in a collection of Boolean values.
+* ... and evaluate `c == "a"` for each of them, resulting in a collection of Boolean values.
 * The Python function `all(list)` returns `True` if all elements in `list` are True.
 
 So, what we get is universal quantification:
@@ -475,50 +572,3 @@ $ fandango fuzz -f persons.fan -n 10 -c '<first_name>..<ascii_lowercase_letter> 
 ```
 
 :::
-
-## Implications
-
-Finally, Fandango supports _implications_ - that is, constraints that only need to hold if some other constraint is met.
-The syntax is
-
-```python
-ANTECEDENT -> CONSEQUENCE
-```
-
-where `ANTECEDENT` and `CONSEQUENCE` are constraints.
-If `ANTECEDENT` is met, then `CONSEQUENCE` must also be met.
-
-Hence, the expression
-
-```python
-int(<age>) > 30 -> <first_name>.startswith("A")
-```
-
-ensures that if a person is aged more than 30, then their first name should start with an `"A"`.
-Let's try this:
-
-```shell
-$ fandango fuzz -f persons.fan -n 10 -c 'int(<age>) > 30 -> <first_name>.startswith("A")'
-```
-
-```{code-cell}
-:tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c 'int(<age>) > 30 -> <first_name>.startswith("A")' --validate
-assert _exit_code == 0
-```
-
-Note how Fandango "solves" the problem by mostly producing only persons whose age is _below_ the threshold.
-But if we have the age come from a Gaussian distribution, as discussed in {ref}`sec:generators`, we get
-
-```shell
-$ fandango fuzz -f persons-faker-gauss.fan -n 10 -c 'int(<age>) > 30 -> <first_name>.startswith("A")'
-```
-
-```{code-cell}
-:tags: ["remove-input"]
-!fandango fuzz -f persons-faker-gauss.fan -n 10 -c 'int(<age>) > 30 -> <first_name>.startswith("A")' --validate
-assert _exit_code == 0
-```
-
-While the implication is indeed resolved, note that the Gaussian distribution no longer holds.
-We will revisit this issue in {ref}`sec:distributions`, when we specify targets that must hold for the entire population.

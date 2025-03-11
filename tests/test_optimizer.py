@@ -117,7 +117,7 @@ class GeneticTest(unittest.TestCase):
         )
 
         # Perform crossover
-        children = self.fandango.crossover_operator.crossover(parent1, parent2)
+        children = self.fandango.crossover_operator.crossover(self.fandango.grammar, parent1, parent2)
 
         # Check that the children are of the correct type
         for child in children:
@@ -136,7 +136,7 @@ class GeneticTest(unittest.TestCase):
             self.fandango.evaluation, self.fandango.tournament_size
         )
 
-        children = self.fandango.crossover_operator.crossover(parent1, parent2)
+        children = self.fandango.crossover_operator.crossover(self.fandango.grammar, parent1, parent2)
 
         # Perform mutation
         mutant1 = self.fandango.mutation_method.mutate(

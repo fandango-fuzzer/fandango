@@ -17,8 +17,8 @@ SRC = src/fandango
 PYTHON_SOURCES = $(wildcard $(SRC)/*.py $(SRC)/*/*.py $(SRC)/*/*/*.py)
 
 # Default targets
-web: parser html
-all: web pdf
+web: package-info parser html
+all: package-info parser html web pdf
 
 .PHONY: web all parser install dev-tools docs html latex pdf
 
@@ -27,6 +27,15 @@ all: web pdf
 
 # requirements.txt:	pyproject.toml
 # 	pip-compile $<
+
+
+## Package info
+EGG_INFO = src/fandango_fuzzer.egg-info
+
+.PHONY: package-info
+package-info: $(EGG_INFO)/PKG-INFO
+$(EGG_INFO)/PKG-INFO: pyproject.toml
+	$(PIP) install -e .
 
 # Install tools for development
 UNAME := $(shell uname)
@@ -92,6 +101,8 @@ VIEW_PDF = open $(PDF_TARGET)
 # Command to check docs for failed assertions
 CHECK_DOCS = grep -l AssertionError $(DOCS)/_build/html/*.html; if [ $$? == 0 ]; then echo 'Check the above files for failed assertions'; false; else true; fi
 
+# Command to patch HTML output
+PATCH_HTML = cd $(DOCS); sh ./patch-html.sh
 
 # Targets.
 docs html: $(HTML_MARKER)
@@ -101,6 +112,7 @@ pdf: $(PDF_TARGET)
 # Re-create the book in HTML
 $(HTML_MARKER): $(DOCS_SOURCES) $(ALL_HTML_MARKER)
 	$(JB) build $(DOCS)
+	$(PATCH_HTML)
 	@$(CHECK_DOCS)
 	echo 'Success' > $@
 	-$(REFRESH_HTML)

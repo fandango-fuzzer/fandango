@@ -1,4 +1,5 @@
 import copy
+from copy import deepcopy
 from typing import Optional, List, Any, Union, Set, Tuple
 
 from fandango.language.symbol import Symbol, NonTerminal, Terminal, Slice
@@ -29,16 +30,23 @@ class DerivationTree:
         symbol: Symbol,
         children: Optional[List["DerivationTree"]] = None,
         parent: Optional["DerivationTree"] = None,
+        generator_params: list["DerivationTree"] = None,
         role: str = None,
         recipient: str = None,
         read_only: bool = False,
     ):
+        if not isinstance(symbol, Symbol):
+            raise TypeError(f"Expected Symbol, got {type(symbol)}")
+
         self.hash_cache = None
         self._parent: Optional["DerivationTree"] = parent
         self.symbol: Symbol = symbol
         self.role = role
         self.recipient = recipient
         self._children: list["DerivationTree"] = []
+        self._generator_params: list["DerivationTree"] = []
+        if generator_params is not None:
+            self.generator_params = generator_params
         self.read_only = read_only
         self._size = 1
         self.set_children(children or [])
@@ -61,9 +69,29 @@ class DerivationTree:
         self._symbol = symbol
         self.invalidate_hash()
 
-    @property
-    def parent(self) -> Optional["DerivationTree"]:
-        return self._parent
+    def is_terminal(self):
+        """
+        True is the node represents a terminal symbol.
+        """
+        return self.symbol.is_terminal
+
+    def is_nonterminal(self):
+        """
+        True is the node represents a nonterminal symbol.
+        """
+        return self.symbol.is_non_terminal
+
+    def is_regex(self):
+        """
+        True is the node represents a regex symbol.
+        """
+        return self.symbol.is_regex
+
+    def sym(self):
+        """
+        Return the symbol
+        """
+        return self.symbol.symbol
 
     def invalidate_hash(self):
         self.hash_cache = None
@@ -123,22 +151,40 @@ class DerivationTree:
 
     def set_children(self, children: List["DerivationTree"]):
         self._children = children
-        self._size = 1 + sum(child.size() for child in self._children)
+        self._update_size(1 + sum(child.size() for child in self._children))
         for child in self._children:
             child._parent = self
         self.invalidate_hash()
 
+    @property
+    def generator_params(self) -> list["DerivationTree"]:
+        return self._generator_params
+
+    @generator_params.setter
+    def generator_params(self, source: list["DerivationTree"]):
+        if source is None:
+            self._generator_params = []
+        else:
+            self._generator_params = source
+        for param in self._generator_params:
+            param._parent = self
+
     def add_child(self, child: "DerivationTree"):
         self._children.append(child)
-        self._size += child.size()
+        self._update_size(self.size() + child.size())
         child._parent = self
         self.invalidate_hash()
+
+    def _update_size(self, new_val: int):
+        if self._parent is not None:
+            self._parent._update_size(self.parent.size() + new_val - self._size)
+        self._size = new_val
 
     def find_all_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
         trees = sum(
             [
                 child.find_all_trees(symbol)
-                for child in self._children
+                for child in [*self._children, *self._generator_params]
                 if child.symbol.is_non_terminal
             ],
             [],
@@ -148,18 +194,11 @@ class DerivationTree:
         return trees
 
     def find_direct_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
-        result = []
-        for child in self._children:
-            if child.symbol == symbol:
-                result.append(child)
-        return result
-
-    def __delitem__(self, item):
-        the_item = self._children.__getitem__(item)
-        the_item._parent = None
-        self._size -= the_item.size()
-        self._children.__delitem__(item)
-        self.invalidate_hash()
+        return [
+            child
+            for child in [*self._children, *self._generator_params]
+            if child.symbol == symbol
+        ]
 
     def __getitem__(self, item) -> "DerivationTree":
         if isinstance(item, list) and len(item) == 1:
@@ -219,6 +258,7 @@ class DerivationTree:
             [],
             role=self.role,
             recipient=self.recipient,
+            generator_params=self.generator_params,
             read_only=self.read_only,
         )
         memo[id(self)] = copied
@@ -305,6 +345,28 @@ class DerivationTree:
         """
         return self.contains_type(str)
 
+    def to_string(self) -> str:
+        """
+        Convert the derivation tree to a string.
+        """
+        val: Any = self.value()
+
+        if isinstance(val, int):
+            # This is a bit value; convert to bytes
+            val = int(val).to_bytes(val // 256 + 1)
+            assert isinstance(val, bytes)
+
+        if isinstance(val, bytes):
+            # This is a bytes string; convert to string
+            # Decoding into latin-1 keeps all bytes as is
+            val = val.decode("latin-1")
+            assert isinstance(val, str)
+
+        if isinstance(val, str):
+            return val
+
+        raise ValueError(f"Cannot convert {val!r} to string")
+
     def to_bits(self, *, encoding="utf-8") -> str:
         """
         Convert the derivation tree to a sequence of bits (0s and 1s).
@@ -313,17 +375,6 @@ class DerivationTree:
         self._write_to_bitstream(stream, encoding=encoding)
         stream.seek(0)
         return stream.read()
-
-    def to_string(self) -> str:
-        """
-        Convert the derivation tree to a string.
-        """
-        try:
-            return self.to_bytes(encoding="utf-8").decode("utf-8")
-        except UnicodeDecodeError:
-            # This can happen if we produce bytes that are interpreted as strings, say via str(tree)
-            # Decode into latin-1 to avoid errors
-            return self.to_bytes(encoding="utf-8").decode("latin-1")
 
     def to_bytes(self, encoding="utf-8") -> bytes:
         """
@@ -492,23 +543,78 @@ class DerivationTree:
     def is_num(self):
         return self.is_float()
 
-    def replace(self, tree_to_replace, new_subtree):
+    def get_path(self):
+        current = self
+        path = list()
+        while current is not None:
+            path.append(current.symbol)
+            current = current.parent
+        return path[::-1]
+
+    def replace(self, grammar: "Grammar", tree_to_replace, new_subtree):
         """
         Replace the subtree rooted at the given node with the new subtree.
         """
         if self == tree_to_replace and not self.read_only:
+            new_subtree = deepcopy(new_subtree)
+            new_subtree._parent = self.parent
+            grammar.populate_generator_params(new_subtree)
             return new_subtree
-        else:
-            return DerivationTree(
-                self.symbol,
-                [
-                    child.replace(tree_to_replace, new_subtree)
-                    for child in self._children
-                ],
-                role=self.role,
-                recipient=self.recipient,
-                read_only=self.read_only,
-            )
+
+        regen_children = False
+        regen_params = False
+        new_children = []
+        generator_params = []
+        for param in self._generator_params:
+            new_param = param.replace(grammar, tree_to_replace, new_subtree)
+            generator_params.append(new_param)
+            if new_param != param:
+                regen_children = True
+        for child in self._children:
+            new_child = child.replace(grammar, tree_to_replace, new_subtree)
+            new_children.append(new_child)
+            if new_child != child:
+                regen_params = True
+
+        new_tree = DerivationTree(
+            self.symbol,
+            new_children,
+            parent=self.parent,
+            role=self.role,
+            recipient=self.recipient,
+            generator_params=generator_params,
+            read_only=self.read_only,
+        )
+
+        # Update children match generator parameters, if parameters updated
+        if new_tree.symbol not in grammar.generators:
+            new_tree.generator_params = []
+            return new_tree
+
+        if regen_children:
+            self_is_generator_child = False
+            current = self
+            current_parent = self.parent
+            while current_parent is not None:
+                if current in current_parent.generator_params:
+                    break
+                elif current in current_parent.children and grammar.is_use_generator(
+                    current_parent
+                ):
+                    self_is_generator_child = True
+                    break
+                current = current_parent
+                current_parent = current_parent.parent
+
+            # Trees generated by generators don't contain children generated with other generators.
+            if self_is_generator_child:
+                new_tree.generator_params = []
+            else:
+                new_tree.set_children(grammar.derive_generator_output(new_tree))
+        elif regen_params:
+            new_tree.generator_params = grammar.derive_generator_params(new_tree)
+
+        return new_tree
 
     def get_non_terminal_symbols(self, exclude_read_only=True) -> Set[NonTerminal]:
         """
@@ -535,8 +641,24 @@ class DerivationTree:
         return nodes
 
     @property
-    def children(self):
+    def children(self) -> Optional[List["DerivationTree"]]:
+        """
+        Return the children of the current node.
+        """
         return self._children
+
+    @property
+    def parent(self) -> Optional["DerivationTree"]:
+        """
+        Return the parent node of the current node.
+        """
+        return self._parent
+
+    def children_values(self):
+        """
+        Return values of all direct children
+        """
+        return [node.value() for node in self.children()]
 
     def flatten(self):
         """
@@ -546,6 +668,20 @@ class DerivationTree:
         for child in self._children:
             flat.extend(child.flatten())
         return flat
+
+    def descendants(self):
+        """
+        Return all descendants of the current node
+        """
+        return self.flatten()[1:]
+
+    def descendant_values(self):
+        """
+        Return all descendants of the current node
+        """
+        values = [node.value() for node in self.descendants()]
+        # LOGGER.debug(f"descendant_values(): {values}")
+        return values
 
     def get_index(self, target):
         """
@@ -633,7 +769,7 @@ class DerivationTree:
     ## Comparison operations
     def __eq__(self, other):
         if isinstance(other, DerivationTree):
-            return self.__tree__() == other.__tree__()
+            return self.__hash__() == other.__hash__()
         return self.value() == other
 
     def __le__(self, other):
@@ -761,6 +897,22 @@ class DerivationTree:
 
     def __invert__(self):
         return ~self.value()
+
+    # Converters
+    def __int__(self):
+        return int(self.value())
+
+    def __float__(self):
+        return float(self.value())
+
+    def __complex__(self):
+        return complex(self.value())
+
+    def __str__(self):
+        return self.to_string()
+
+    def __bytes__(self):
+        return self.to_bytes()
 
     ## Iterators
     def __contains__(self, other: Union["DerivationTree", Any]) -> bool:
