@@ -2,11 +2,12 @@ import abc
 import enum
 import random
 import typing
+from collections import defaultdict
 
 import exrex
 
 from copy import deepcopy
-from typing import Dict, List, Optional, Tuple, Set, Any, Union, Iterator, overload
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union, Generator
 
 from fandango.language.symbol import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree, RoledMessage
@@ -160,7 +161,7 @@ class Concatenation(Node):
             if node.distance_to_completion >= max_nodes:
                 node.fuzz(parent, grammar, 0, in_role)
             else:
-                node.fuzz(parent, grammar, max_nodes - 1)
+                node.fuzz(parent, grammar, max_nodes - 1, in_role)
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
 
@@ -205,6 +206,8 @@ class Repetition(Node):
         self.node = node
         self.expr_data_min = min_
         self.expr_data_max = max_
+        self.static_min = None
+        self.static_max = None
 
     def get_access_points(self):
         _, _, searches_min = self.expr_data_min
@@ -216,14 +219,12 @@ class Repetition(Node):
                     non_terminals.add(nt)
         return non_terminals
 
-    def _compute_reps_bound(
-        self, grammar: "Grammar", tree: "DerivationTree", expr_data
-    ):
+    def _compute_rep_bound(self, grammar: "Grammar", tree: "DerivationTree", expr_data):
         expr, _, searches = expr_data
         local_cpy = grammar._local_variables.copy()
 
         if len(searches) == 0:
-            return eval(expr, grammar._global_variables, local_cpy)
+            return eval(expr, grammar._global_variables, local_cpy), True
         if tree is None:
             raise ValueError("tree required if searches present!")
 
@@ -232,14 +233,32 @@ class Repetition(Node):
             nodes.extend(
                 [(name, container) for container in search.find(tree.get_root())]
             )
+        for _, container in nodes:
+            container.evaluate().set_all_read_only(True)
         local_cpy.update({name: container.evaluate() for name, container in nodes})
-        return eval(expr, grammar._global_variables, local_cpy)
+        return eval(expr, grammar._global_variables, local_cpy), False
 
     def min(self, grammar: "Grammar", tree: "DerivationTree" = None):
-        return self._compute_reps_bound(grammar, tree, self.expr_data_min)
+        if self.static_min is None:
+            current_min, is_static = self._compute_rep_bound(
+                grammar, tree, self.expr_data_min
+            )
+            if is_static:
+                self.static_min = current_min
+            return current_min
+        else:
+            return self.static_min
 
     def max(self, grammar: "Grammar", tree: "DerivationTree" = None):
-        return self._compute_reps_bound(grammar, tree, self.expr_data_max)
+        if self.static_max is None:
+            current_max, is_static = self._compute_rep_bound(
+                grammar, tree, self.expr_data_max
+            )
+            if is_static:
+                self.static_max = current_max
+            return current_max
+        else:
+            return self.static_max
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitRepetition(self)
@@ -295,8 +314,8 @@ class Repetition(Node):
 
 
 class Star(Repetition):
-    def __init__(self, node: Node):
-        super().__init__(node, ("0", [], {}))
+    def __init__(self, node: Node, max_repetitions: int = 5):
+        super().__init__(node, ("0", [], {}), (f"{max_repetitions}", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitStar(self)
@@ -309,8 +328,8 @@ class Star(Repetition):
 
 
 class Plus(Repetition):
-    def __init__(self, node: Node):
-        super().__init__(node, ("1", [], {}))
+    def __init__(self, node: Node, max_repetitions: int = 5):
+        super().__init__(node, ("1", [], {}), (f"{max_repetitions}", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitPlus(self)
@@ -355,13 +374,21 @@ class NonTerminalNode(Node):
     ) -> List[DerivationTree]:
         if self.symbol not in grammar:
             raise ValueError(f"Symbol {self.symbol} not found in grammar")
+        dummy_current_tree = DerivationTree(self.symbol)
+        parent.add_child(dummy_current_tree)
 
-        if self.symbol in grammar.generators:
-            generated = grammar.generate(self.symbol)
+        if grammar.is_use_generator(dummy_current_tree):
+            dependencies = grammar.generator_dependencies(self.symbol)
+            for nt in dependencies:
+                NonTerminalNode(nt).fuzz(dummy_current_tree, grammar, max_nodes - 1)
+            generated = grammar.generate(self.symbol, dummy_current_tree.children)
+            # Prevent children from being overwritten without executing generator
             generated.set_all_read_only(True)
             generated.read_only = False
+            parent.children.pop()
             parent.add_child(generated)
             return
+        parent.set_children(parent.children[:-1])
 
         assign_role = None
         assign_recipient = None
@@ -465,6 +492,28 @@ class TerminalNode(Node):
 
     def __hash__(self):
         return hash(self.symbol)
+
+
+class LiteralGenerator:
+    def __init__(self, call: str, nonterminals: dict):
+        self.call = call
+        self.nonterminals = nonterminals
+
+    def __repr__(self):
+        return tuple.__repr__((self.call.__repr__(), self.nonterminals.__repr__()))
+
+    def __str__(self):
+        return tuple.__str__((self.call.__str__(), self.nonterminals.__str__()))
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, LiteralGenerator)
+            and self.call == other.call
+            and self.nonterminals == other.nonterminals
+        )
+
+    def __hash__(self):
+        return hash(self.call) ^ hash(self.nonterminals)
 
 
 class CharSet(Node):
@@ -1034,7 +1083,9 @@ class ParseState:
         return self._dot >= len(self.symbols) and not self.is_incomplete
 
     def next_symbol_is_nonterminal(self):
-        return self._dot < len(self.symbols) and self.symbols[self._dot][0].is_non_terminal
+        return (
+            self._dot < len(self.symbols) and self.symbols[self._dot][0].is_non_terminal
+        )
 
     def next_symbol_is_terminal(self):
         return self._dot < len(self.symbols) and self.symbols[self._dot][0].is_terminal
@@ -1072,7 +1123,7 @@ class ParseState:
             self.symbols,
             self._dot + 1,
             self.children[:],
-            self.is_incomplete
+            self.is_incomplete,
         )
 
 
@@ -1122,7 +1173,6 @@ class Grammar(NodeVisitor):
         class ParsingMode(enum.Enum):
             COMPLETE = 0
             INCOMPLETE = 1
-            INCOMPLETE_ROLE = 2
 
         def __init__(
             self,
@@ -1132,7 +1182,9 @@ class Grammar(NodeVisitor):
             self.grammar = grammar
             self._rules = {}
             self._implicit_rules = {}
-            self._context_rules: dict[NonTerminal, Node] = dict()
+            self._context_rules: dict[
+                NonTerminal, tuple[Node, tuple[NonTerminal, frozenset]]
+            ] = dict()
             self.alternative_count = 0
             self.concatenation_count = 0
             self.repetition_count = 0
@@ -1162,16 +1214,22 @@ class Grammar(NodeVisitor):
                     tuple(a) for a in self._implicit_rules[nonterminal]
                 }
 
-        def set_implicit_rule(self, rule: List[List[NonTerminal]]) -> NonTerminal:
+        def set_implicit_rule(
+            self, rule: List[List[NonTerminal]]
+        ) -> tuple[NonTerminal, frozenset]:
             nonterminal = NonTerminal(f"<*{len(self._implicit_rules)}*>")
             self._implicit_rules[nonterminal] = rule
             return (nonterminal, frozenset())
 
-        def set_rule(self, nonterminal: NonTerminal, rule: List[List[NonTerminal]]):
+        def set_rule(
+            self,
+            nonterminal: NonTerminal,
+            rule: List[List[tuple[NonTerminal, frozenset]]],
+        ):
             self._rules[nonterminal] = {tuple(a) for a in rule}
 
         def set_context_rule(
-            self, node: Node, non_terminal: NonTerminal
+            self, node: Node, non_terminal: tuple[NonTerminal, frozenset]
         ) -> NonTerminal:
             nonterminal = NonTerminal(f"<*ctx_{len(self._context_rules)}*>")
             self._context_rules[nonterminal] = (node, non_terminal)
@@ -1210,7 +1268,10 @@ class Grammar(NodeVisitor):
             return [[(intermediate_nt, frozenset())]]
 
         def visitRepetition(
-            self, node: Repetition, nt=None, tree: DerivationTree = None
+            self,
+            node: Repetition,
+            nt: tuple[NonTerminal, frozenset] = None,
+            tree: DerivationTree = None,
         ):
             if nt is None:
                 alternatives = self.visit(node.node)
@@ -1263,7 +1324,7 @@ class Grammar(NodeVisitor):
             return [[(intermediate_nt, frozenset())]]
 
         def visitOption(self, node: Option):
-            result = [[Terminal("")]] + self.visit(node.node)
+            result = [[(Terminal(""), frozenset())]] + self.visit(node.node)
             intermediate_nt = NonTerminal(f"<__{NodeType.OPTION}:{self.option_count}>")
             self.set_rule(intermediate_nt, result)
             self.option_count += 1
@@ -1302,6 +1363,7 @@ class Grammar(NodeVisitor):
                 DerivationTree(
                     tree.symbol,
                     children=reduced,
+                    generator_params=tree.generator_params,
                     read_only=tree.read_only,
                     recipient=tree.recipient,
                     role=tree.role,
@@ -1368,6 +1430,7 @@ class Grammar(NodeVisitor):
             if not isinstance(node, Repetition):
                 raise ValueError("Node needs to be a Repetition")
             tree = self.construct_incomplete_tree(state, table)
+            tree = self.collapse(tree)
             try:
                 [[context_nt]] = self.visitRepetition(node, nt_rule, tree)
             except ValueError:
@@ -1521,20 +1584,17 @@ class Grammar(NodeVisitor):
             table: List[Set[ParseState] | Column],
             k: int,
             use_implicit: bool = False,
-            mode: ParsingMode = ParsingMode.INCOMPLETE
         ):
             for s in list(table[state.position]):
                 if s.dot == state.nonterminal:
                     dot_params = s.dot_params
-                    if state.is_incomplete and mode == Grammar.Parser.ParsingMode.INCOMPLETE_ROLE:
-                        # If we parse in INCOMPLETE_ROLE-mode, we want the state to be completed if we are within a role
-                        if any(filter(lambda x: x[0] == 'role' and x[1] is not None, dot_params)):
-                            continue
                     s = s.next()
                     table[k].add(s)
                     if state.nonterminal in self._rules:
                         s.children.append(
-                            DerivationTree(state.nonterminal, state.children, **dict(dot_params))
+                            DerivationTree(
+                                state.nonterminal, state.children, **dict(dot_params)
+                            )
                         )
                     else:
                         if use_implicit and state.nonterminal in self._implicit_rules:
@@ -1601,14 +1661,6 @@ class Grammar(NodeVisitor):
                             state.is_incomplete = True
                             self.complete(state, table, k)
 
-                        if mode == Grammar.Parser.ParsingMode.INCOMPLETE_ROLE:
-                            if not state.finished():
-                                state.is_incomplete = True
-
-                            if state.nonterminal == implicit_start:
-                                self._incomplete.update(state.children)
-                            self.complete(state, table, k, mode=mode)
-
                     if state.finished():
                         # LOGGER.debug(f"Finished")
                         if state.nonterminal == implicit_start:
@@ -1670,10 +1722,10 @@ class Grammar(NodeVisitor):
             self,
             word: str | bytes | DerivationTree,
             start: str | NonTerminal = "<start>",
-            *,
             mode: ParsingMode = ParsingMode.COMPLETE,
             include_controlflow: bool = False,
-        ):
+            allow_incomplete: bool = False,
+        ) -> Generator[DerivationTree, None, None]:
             """
             Yield multiple parse alternatives, using a cache.
             """
@@ -1700,16 +1752,14 @@ class Grammar(NodeVisitor):
 
             self._incomplete = set()
             forest = []
-            for tree in self._parse_forest(
-                word, start, mode=mode
-            ):
+            for tree in self._parse_forest(word, start, mode=mode):
                 forest.append(tree)
                 if include_controlflow:
                     yield tree
                 else:
                     yield self.collapse(tree)
 
-            if mode == Grammar.Parser.ParsingMode.INCOMPLETE or mode == Grammar.Parser.ParsingMode.INCOMPLETE_ROLE:
+            if mode == Grammar.Parser.ParsingMode.INCOMPLETE:
                 for tree in self._incomplete:
                     forest.append(tree)
                     if include_controlflow:
@@ -1731,7 +1781,9 @@ class Grammar(NodeVisitor):
             Yield multiple parse alternatives,
             even for incomplete inputs
             """
-            return self.parse_forest(word, start, mode=mode, include_controlflow=include_controlflow)
+            return self.parse_forest(
+                word, start, mode=mode, include_controlflow=include_controlflow
+            )
 
         def parse(
             self,
@@ -1744,7 +1796,9 @@ class Grammar(NodeVisitor):
             Return the first parse alternative,
             or `None` if no parse is possible
             """
-            tree_gen = self.parse_forest(word, start=start, mode=mode, include_controlflow=include_controlflow)
+            tree_gen = self.parse_forest(
+                word, start=start, mode=mode, include_controlflow=include_controlflow
+            )
             return next(tree_gen, None)
 
         def max_position(self):
@@ -1759,29 +1813,156 @@ class Grammar(NodeVisitor):
         global_variables: Optional[Dict[str, Any]] = None,
     ):
         self.rules = rules or {}
-        self.generators = {}
+        self.generators: Dict[NonTerminal, LiteralGenerator] = {}
         self._parser = Grammar.Parser(self)
         self.fuzzing_mode = fuzzing_mode
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
         self._visited = set()
 
-    def generate_string(self, symbol: str | NonTerminal = "<start>") -> str | Tuple:
+    @staticmethod
+    def _topological_sort(graph: dict[str, set[str]]):
+        indegree = defaultdict(int)
+        queue = []
+
+        for node in graph:
+            for neighbour in graph[node]:
+                indegree[neighbour] += 1
+        for node in graph:
+            if indegree[node] == 0:
+                queue.append(node)
+
+        topological_order = []
+        while queue:
+            node = queue.pop(0)
+            topological_order.append(node)
+
+            for neighbour in graph[node]:
+                indegree[neighbour] -= 1
+
+                if indegree[neighbour] == 0:
+                    queue.append(neighbour)
+
+        if len(topological_order) != len(graph):
+            print("Cycle exists")
+        return topological_order[::-1]
+
+    def is_use_generator(self, tree: "DerivationTree"):
+        symbol = tree.symbol
+        if not isinstance(symbol, NonTerminal):
+            return False
+        if symbol not in self.generators:
+            return False
+        if tree is None:
+            path = set()
+        else:
+            path = tree.get_path()
+        generator_dependencies = self.generator_dependencies(symbol)
+        intersection = set(path).intersection(set(generator_dependencies))
+        return len(intersection) == 0
+
+    def derive_generator_params(self, tree: "DerivationTree"):
+        gen_symbol = tree.symbol
+        if not isinstance(gen_symbol, NonTerminal):
+            raise ValueError(
+                "Can't derive generator output. tree.symbol is not a NonTerminal!"
+            )
+        if tree.symbol not in self.generators:
+            raise ValueError(
+                "Can't derive generator output. tree.symbol not in generators!"
+            )
+
+        if not self.is_use_generator(tree):
+            return []
+
+        dependent_generators = {gen_symbol: set()}
+        for key, val in self.generators[gen_symbol].nonterminals.items():
+            if val.symbol not in self.generators:
+                raise ValueError(
+                    f"Can't derive generator parameters. No generator existing for required symbol: {val.symbol}!"
+                )
+            dependent_generators[val.symbol] = self.generator_dependencies(val.symbol)
+        dependent_generators = self._topological_sort(dependent_generators)
+        dependent_generators.remove(gen_symbol)
+        args = [tree]
+        for symbol in dependent_generators:
+            generated_param = self.generate(symbol, args)
+            generated_param.generator_params.remove(tree)
+            generated_param._parent = tree
+            for child in generated_param.children:
+                self.populate_generator_params(child)
+            args.append(generated_param)
+        args.pop(0)
+        return args
+
+    def derive_generator_output(self, tree: "DerivationTree"):
+        generated = self.generate(tree.symbol, tree.generator_params)
+        return generated.children
+
+    def populate_generator_params(self, tree: "DerivationTree"):
+        self._rec_remove_generator_params(tree)
+        self._populate_generator_params(tree)
+
+    def _populate_generator_params(self, tree: "DerivationTree"):
+        if tree.symbol in self.generators:
+            tree.generator_params = self.derive_generator_params(tree)
+            return
+        for child in tree.children:
+            self._populate_generator_params(child)
+
+    def _rec_remove_generator_params(self, tree: "DerivationTree"):
+        tree.generator_params = []
+        for child in tree.children:
+            self._rec_remove_generator_params(child)
+
+    def generate_string(
+        self,
+        symbol: str | NonTerminal = "<start>",
+        generator_params: list[DerivationTree] = None,
+    ) -> tuple[list[DerivationTree], str]:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
-        return eval(
-            self.generators[symbol], self._global_variables, self._local_variables
+        if self.generators[symbol] is None:
+            raise ValueError(f"No generator for symbol {symbol}")
+        if generator_params is None:
+            generator_params = dict()
+        else:
+            generator_params = {tree.symbol: tree for tree in generator_params}
+        generator = self.generators[symbol]
+
+        local_variables = self._local_variables.copy()
+        for id, nonterminal in generator.nonterminals.items():
+            if nonterminal.symbol not in generator_params:
+                raise ValueError(f"Missing generator parameter: {nonterminal.symbol}")
+            local_variables[id] = generator_params[nonterminal.symbol]
+
+        return list(generator_params.values()), eval(
+            generator.call, self._global_variables, local_variables
         )
 
-    def generate(self, symbol: str | NonTerminal = "<start>") -> DerivationTree:
-        string = self.generate_string(symbol)
+    def generator_dependencies(self, symbol: str | NonTerminal = "<start>"):
+        if isinstance(symbol, str):
+            symbol = NonTerminal(symbol)
+        if self.generators[symbol] is None:
+            return set()
+        return set(
+            map(lambda x: x.symbol, self.generators[symbol].nonterminals.values())
+        )
+
+    def generate(
+        self,
+        symbol: str | NonTerminal = "<start>",
+        generator_params: Optional[list[DerivationTree]] = None,
+    ) -> DerivationTree:
+        generator_params, string = self.generate_string(symbol, generator_params)
         if not (
             isinstance(string, str)
-            or isinstance(string, tuple)
             or isinstance(string, bytes)
+            or isinstance(string, int)
+            or isinstance(string, tuple)
         ):
             raise TypeError(
-                f"Generator {self.generators[symbol]} must return string, tuple or bytes"
+                f"Generator {self.generators[symbol]} must return string, bytes, int, or tuple"
             )
 
         if isinstance(string, tuple):
@@ -1791,6 +1972,7 @@ class Grammar(NodeVisitor):
             raise ValueError(
                 f"Failed to parse generated string: {string} for {symbol} with generator {self.generators[symbol]}"
             )
+        tree.generator_params = deepcopy(generator_params)
         return tree
 
     def collapse(self, tree: DerivationTree) -> DerivationTree:
@@ -1840,8 +2022,10 @@ class Grammar(NodeVisitor):
         if isinstance(start, str):
             start = NonTerminal(start)
         root = DerivationTree(start)
-        NonTerminalNode(start).fuzz(root, self, max_nodes=max_nodes, in_role=in_role)
-        return root.children[0]
+        NonTerminalNode(start).fuzz(root, self, max_nodes=max_nodes)
+        root = root.children[0]
+        root._parent = None
+        return root
 
     def update(self, grammar: "Grammar" | Dict[NonTerminal, Node], prime=True):
         if isinstance(grammar, Grammar):
@@ -1878,7 +2062,9 @@ class Grammar(NodeVisitor):
         mode: Parser.ParsingMode = Parser.ParsingMode.COMPLETE,
         include_controlflow: bool = False,
     ):
-        return self._parser.parse(word, start, mode=mode, include_controlflow=include_controlflow)
+        return self._parser.parse(
+            word, start, mode=mode, include_controlflow=include_controlflow
+        )
 
     def parse_forest(
         self,
@@ -1887,7 +2073,9 @@ class Grammar(NodeVisitor):
         mode: Parser.ParsingMode = Parser.ParsingMode.COMPLETE,
         include_controlflow: bool = False,
     ):
-        return self._parser.parse_forest(word, start, mode=mode, include_controlflow=include_controlflow)
+        return self._parser.parse_forest(
+            word, start, mode=mode, include_controlflow=include_controlflow
+        )
 
     def parse_multiple(
         self,
@@ -1896,7 +2084,9 @@ class Grammar(NodeVisitor):
         mode: Parser.ParsingMode = Parser.ParsingMode.COMPLETE,
         include_controlflow: bool = False,
     ):
-        return self._parser.parse_multiple(word, start, mode=mode, include_controlflow=include_controlflow)
+        return self._parser.parse_multiple(
+            word, start, mode=mode, include_controlflow=include_controlflow
+        )
 
     def max_position(self):
         """Return the maximum position reached during last parsing."""
@@ -1954,10 +2144,14 @@ class Grammar(NodeVisitor):
     def dummy():
         return Grammar({})
 
-    def set_generator(self, symbol: str | NonTerminal, param: str):
+    def set_generator(
+        self, symbol: str | NonTerminal, param: str, searches_map: dict = {}
+    ):
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
-        self.generators[symbol] = param
+        self.generators[symbol] = LiteralGenerator(
+            call=param, nonterminals=searches_map
+        )
 
     def has_generator(self, symbol: str | NonTerminal):
         if isinstance(symbol, str):
@@ -2074,7 +2268,6 @@ class Grammar(NodeVisitor):
                 if node.node.distance_to_completion == float("inf"):
                     nodes.append(node)
                 else:
-                    # Todo Not optimal
                     try:
                         min_rep = node.min(self, None)
                     except ValueError:

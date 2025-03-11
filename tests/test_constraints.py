@@ -9,8 +9,6 @@ from fandango.language.parse import parse
 
 
 class ConstraintTest(unittest.TestCase):
-
-
     def get_constraint(self, constraint):
         file = open("tests/resources/constraints.fan", "r")
         _, constraints = parse(file, constraints=[constraint], use_stdlib=False, use_cache=False)
@@ -352,6 +350,17 @@ class ConstraintTest(unittest.TestCase):
         example = grammar.parse("01")
         self.assertTrue(constraint.check(example))
 
+    def test_eval_constraint(self):
+        file = open("tests/resources/eval.fan")
+        grammar, constraints = parse(file, use_stdlib=True, use_cache=False)
+        constraint = constraints[0]
+
+        counter_example = grammar.parse("+05 * 0 / 96 + 10")
+        self.assertFalse(constraint.check(counter_example))
+
+        example = grammar.parse("+5 * 0 / 96 + 10")
+        self.assertTrue(constraint.check(example))
+
     def test_complex_constraint(self):
         constraint = """
 int(<number>) % 2 == 0;
@@ -385,3 +394,37 @@ int(<number>) < 100000;
                 if not sat:
                     self.assertEqual(1, len(fitness.failing_trees))
                     self.assertEqual(tree, fitness.failing_trees[0].tree)
+
+
+class ConverterTest(unittest.TestCase):
+    def test_standards(self):
+        # Earlier Fandango versions overloaded int(); so check if it still works
+        self.assertEqual(int(45), 45)
+        self.assertEqual(int.from_bytes(b'\x01'), 1)
+
+    def test_string_converters(self):
+        tree = DerivationTree(Terminal('5'))
+        self.assertEqual(int(tree), 5)
+        self.assertEqual(float(tree), 5.0)
+        self.assertEqual(complex(tree), 5+0j)
+        self.assertEqual(bytes(tree), b'5')
+        self.assertEqual(str(tree), '5')
+        self.assertTrue(bool(tree))
+        self.assertEqual(tree.value(), '5')
+
+    def test_byte_converters(self):
+        tree = DerivationTree(Terminal(b'\x05'))
+        self.assertEqual(bytes(tree), b'\x05')
+        self.assertEqual(str(tree), '\x05')
+        self.assertTrue(bool(tree))
+        self.assertEqual(tree.value(), b'\x05')
+
+    def test_bit_converters(self):
+        tree = DerivationTree(Terminal(1))
+        self.assertEqual(int(tree), 1)
+        self.assertEqual(float(tree), 1.0)
+        self.assertEqual(complex(tree), 1+0j)
+        self.assertEqual(bytes(tree), b'\x01')
+        self.assertEqual(str(tree), '\x01')
+        self.assertTrue(bool(tree))
+        self.assertEqual(tree.value(), 1)

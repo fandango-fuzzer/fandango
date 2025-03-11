@@ -1,5 +1,4 @@
 import argparse
-import ast
 import atexit
 import glob
 import importlib.metadata
@@ -15,36 +14,53 @@ import tempfile
 import textwrap
 import zipfile
 import shutil
+import textwrap
 
 from io import StringIO
 from io import UnsupportedOperation
 from pathlib import Path
-from ansi_styles import ansiStyles as styles
-from enum import Enum
 
 from ansi_styles import ansiStyles as styles
-from antlr4.error.Errors import ParseCancellationException
 
 from fandango.evolution.algorithm import Fandango
-from fandango.language.grammar import Grammar
 from fandango.language.parse import parse
 from fandango.logger import LOGGER, print_exception
+
+
+DISTRIBUTION_NAME = "fandango-fuzzer"
+
+
+def version():
+    """Return the Fandango version number"""
+    return importlib.metadata.version(DISTRIBUTION_NAME)
+
+
+def homepage():
+    """Return the Fandango homepage"""
+    for key, value in importlib.metadata.metadata(DISTRIBUTION_NAME).items():
+        if key == "Project-URL" and value.startswith("homepage,"):
+            return value.split(",")[1].strip()
+    return "the Fandango homepage"
 
 
 def get_parser(in_command_line=True):
     # Main parser
     if in_command_line:
         prog = "fandango"
-        epilog = """\
+        epilog = textwrap.dedent(
+            """\
             Use `%(prog)s help` to get a list of commands.
             Use `%(prog)s help COMMAND` to learn more about COMMAND."""
+        )
     else:
         prog = ""
-        epilog = """
+        epilog = textwrap.dedent(
+            """\
             Use `help` to get a list of commands.
             Use `help COMMAND` to learn more about COMMAND.
-            Use TAB to complete commands.
-            """
+            Use TAB to complete commands."""
+        )
+    epilog += f"\nSee {homepage()} for more information."
 
     main_parser = argparse.ArgumentParser(
         prog=prog,
@@ -58,7 +74,7 @@ def get_parser(in_command_line=True):
         main_parser.add_argument(
             "--version",
             action="version",
-            version="Fandango " + importlib.metadata.version("fandango-fuzzer"),
+            version=f"Fandango {version()}",
             help="show version number",
         )
 
@@ -277,6 +293,13 @@ def get_parser(in_command_line=True):
         default=False,
         action="store_true",
         help="run internal consistency checks for debugging",
+    )
+    file_parser.add_argument(
+        "--max-repetitions",
+        dest="max_repetitions",
+        type=int,
+        help="the maximal number of repetitions if not specified otherwise by {N, M} in the grammar (default: 5)",
+        default=5,
     )
 
     # Commands
@@ -509,6 +532,7 @@ def parse_contents_from_args(args, given_grammars=[]):
         use_cache=args.use_cache,
         use_stdlib=args.use_stdlib,
         start_symbol=args.start_symbol,
+        max_repetitions=args.max_repetitions,
     )
 
 
@@ -835,9 +859,7 @@ def parse_file(fd, args, grammar, constraints, settings):
     parsing_mode = Grammar.Parser.ParsingMode.COMPLETE
     if allow_incomplete:
         parsing_mode = Grammar.Parser.ParsingMode.INCOMPLETE
-    tree_gen = grammar.parse_forest(
-        individual, start=start_symbol, mode=parsing_mode
-    )
+    tree_gen = grammar.parse_forest(individual, start=start_symbol, mode=parsing_mode)
 
     alternative_counter = 1
     passing_tree = None
@@ -1037,11 +1059,10 @@ def copyright_command(args):
 
 
 def version_command(args):
-    version = importlib.metadata.version("fandango-fuzzer")
     if sys.stdout.isatty():
-        version_line = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango{styles.color.close} {version}"
+        version_line = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango{styles.color.close} {version()}"
     else:
-        version_line = f"Fandango {version}"
+        version_line = f"Fandango {version()}"
     print(version_line)
 
 

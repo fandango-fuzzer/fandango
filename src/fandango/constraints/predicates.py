@@ -2,28 +2,6 @@ from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.language.io import *
 
-actual_int = int
-actual_float = float
-actual_complex = complex
-
-
-def int(x, *args, **kwargs):
-    if isinstance(x, DerivationTree):
-        return x.to_int(*args, **kwargs)
-    return actual_int(x, *args, **kwargs)
-
-
-def float(x):
-    if isinstance(x, DerivationTree):
-        return x.to_float()
-    return actual_float(x)
-
-
-def complex(x, *args, **kwargs):
-    if isinstance(x, DerivationTree):
-        return x.to_complex(*args, **kwargs)
-    return complex(x, *args, **kwargs)
-
 
 def is_int(x):
     if isinstance(x, DerivationTree):

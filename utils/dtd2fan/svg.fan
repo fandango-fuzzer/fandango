@@ -4,7 +4,7 @@
 #
 <ws> ::= <whitespace>+ := ' '  # whitespace sequence
 <q> ::= ('"' | "'")? := '"'    # optional quote
-        
+
 
 # svg (element)
 <svg> ::= '<svg' (<ws> <svg_attribute>)* ('/>' | '>' (<desc> | <title> | <metadata> | <animate> | <set> | <animateMotion> | <animateColor> | <animateTransform> | <svg> | <g> | <defs> | <symbol> | <use> | <switch> | <image> | <style> | <path> | <rect> | <circle> | <line> | <ellipse> | <polyline> | <polygon> | <text> | <altGlyphDef> | <marker> | <color_profile> | <linearGradient> | <radialGradient> | <pattern> | <clipPath> | <mask> | <filter> | <cursor> | <a> | <view> | <script> | <font> | <font_face> | <foreignObject>)* '</svg>')
@@ -728,6 +728,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <use_lang_value>   # implied
     | 'base=' <use_base_value>   # implied
+where ('href=' in <use>.descendant_values())  # required
 
 # use attribute types
 <use_transform_value> ::= <transform_value>
@@ -1027,6 +1028,9 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <image_lang_value>   # implied
     | 'base=' <image_base_value>   # implied
+where ('height=' in <image>.descendant_values()
+   and 'width=' in <image>.descendant_values()
+   and 'href=' in <image>.descendant_values())  # required
 
 # image attribute types
 <image_transform_value> ::= <transform_value>
@@ -1102,6 +1106,7 @@
     | 'lang=' <style_lang_value>   # implied
     | 'base=' <style_base_value>   # implied
     | 'id=' <style_id_value>   # implied
+where ('type=' in <style>.descendant_values())  # required
 
 # style attribute types
 <style_title_value> ::= <title_value>
@@ -1195,6 +1200,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <path_lang_value>   # implied
     | 'base=' <path_base_value>   # implied
+where ('d=' in <path>.descendant_values())  # required
 
 # path attribute types
 <path_id_value> ::= <id_value>
@@ -1342,6 +1348,8 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <rect_lang_value>   # implied
     | 'base=' <rect_base_value>   # implied
+where ('height=' in <rect>.descendant_values()
+   and 'width=' in <rect>.descendant_values())  # required
 
 # rect attribute types
 <rect_id_value> ::= <id_value>
@@ -1490,6 +1498,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <circle_lang_value>   # implied
     | 'base=' <circle_base_value>   # implied
+where ('r=' in <circle>.descendant_values())  # required
 
 # circle attribute types
 <circle_id_value> ::= <id_value>
@@ -1783,6 +1792,8 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <ellipse_lang_value>   # implied
     | 'base=' <ellipse_base_value>   # implied
+where ('ry=' in <ellipse>.descendant_values()
+   and 'rx=' in <ellipse>.descendant_values())  # required
 
 # ellipse attribute types
 <ellipse_id_value> ::= <id_value>
@@ -1927,6 +1938,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <polyline_lang_value>   # implied
     | 'base=' <polyline_base_value>   # implied
+where ('points=' in <polyline>.descendant_values())  # required
 
 # polyline attribute types
 <polyline_id_value> ::= <id_value>
@@ -2068,6 +2080,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <polygon_lang_value>   # implied
     | 'base=' <polygon_base_value>   # implied
+where ('points=' in <polygon>.descendant_values())  # required
 
 # polygon attribute types
 <polygon_id_value> ::= <id_value>
@@ -2524,6 +2537,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <tref_lang_value>   # implied
     | 'base=' <tref_base_value>   # implied
+where ('href=' in <tref>.descendant_values())  # required
 
 # tref attribute types
 <tref_textLength_value> ::= <textLength_value>
@@ -2684,6 +2698,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <textPath_lang_value>   # implied
     | 'base=' <textPath_base_value>   # implied
+where ('href=' in <textPath>.descendant_values())  # required
 
 # textPath attribute types
 <textPath_textLength_value> ::= <textLength_value>
@@ -3210,6 +3225,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <color_profile_lang_value>   # implied
     | 'base=' <color_profile_base_value>   # implied
+where ('name=' in <color_profile>.descendant_values())  # required
 
 # color-profile attribute types
 <color_profile_name_value> ::= <name_value>
@@ -3562,6 +3578,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <stop_lang_value>   # implied
     | 'base=' <stop_base_value>   # implied
+where ('offset=' in <stop>.descendant_values())  # required
 
 # stop attribute types
 <stop_id_value> ::= <id_value>
@@ -4208,6 +4225,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <feBlend_lang_value>   # implied
     | 'base=' <feBlend_base_value>   # implied
+where ('in2=' in <feBlend>.descendant_values())  # required
 
 # feBlend attribute types
 <feBlend_id_value> ::= <id_value>
@@ -4584,6 +4602,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <feComposite_lang_value>   # implied
     | 'base=' <feComposite_base_value>   # implied
+where ('in2=' in <feComposite>.descendant_values())  # required
 
 # feComposite attribute types
 <feComposite_id_value> ::= <id_value>
@@ -4720,6 +4739,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <feConvolveMatrix_lang_value>   # implied
     | 'base=' <feConvolveMatrix_base_value>   # implied
+where ('kernelMatrix=' in <feConvolveMatrix>.descendant_values())  # required
 
 # feConvolveMatrix attribute types
 <feConvolveMatrix_id_value> ::= <id_value>
@@ -4981,6 +5001,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <feDisplacementMap_lang_value>   # implied
     | 'base=' <feDisplacementMap_base_value>   # implied
+where ('in2=' in <feDisplacementMap>.descendant_values())  # required
 
 # feDisplacementMap attribute types
 <feDisplacementMap_id_value> ::= <id_value>
@@ -5358,6 +5379,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <feImage_lang_value>   # implied
     | 'base=' <feImage_base_value>   # implied
+where ('href=' in <feImage>.descendant_values())  # required
 
 # feImage attribute types
 <feImage_preserveAspectRatio_value> ::= <preserveAspectRatio_value>
@@ -6251,6 +6273,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <feFuncR_lang_value>   # implied
     | 'base=' <feFuncR_base_value>   # implied
+where ('type=' in <feFuncR>.descendant_values())  # required
 
 # feFuncR attribute types
 <feFuncR_id_value> ::= <id_value>
@@ -6276,6 +6299,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <feFuncG_lang_value>   # implied
     | 'base=' <feFuncG_base_value>   # implied
+where ('type=' in <feFuncG>.descendant_values())  # required
 
 # feFuncG attribute types
 <feFuncG_id_value> ::= <id_value>
@@ -6301,6 +6325,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <feFuncB_lang_value>   # implied
     | 'base=' <feFuncB_base_value>   # implied
+where ('type=' in <feFuncB>.descendant_values())  # required
 
 # feFuncB attribute types
 <feFuncB_id_value> ::= <id_value>
@@ -6326,6 +6351,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <feFuncA_lang_value>   # implied
     | 'base=' <feFuncA_base_value>   # implied
+where ('type=' in <feFuncA>.descendant_values())  # required
 
 # feFuncA attribute types
 <feFuncA_id_value> ::= <id_value>
@@ -6358,6 +6384,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <cursor_lang_value>   # implied
     | 'base=' <cursor_base_value>   # implied
+where ('href=' in <cursor>.descendant_values())  # required
 
 # cursor attribute types
 <cursor_y_value> ::= <y_value>
@@ -6464,6 +6491,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <a_lang_value>   # implied
     | 'base=' <a_base_value>   # implied
+where ('href=' in <a>.descendant_values())  # required
 
 # a attribute types
 <a_target_value> ::= <target_value>
@@ -6562,6 +6590,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <script_lang_value>   # implied
     | 'base=' <script_base_value>   # implied
+where ('type=' in <script>.descendant_values())  # required
 
 # script attribute types
 <script_type_value> ::= <type_value>
@@ -6615,6 +6644,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <animate_lang_value>   # implied
     | 'base=' <animate_base_value>   # implied
+where ('attributeName=' in <animate>.descendant_values())  # required
 
 # animate attribute types
 <animate_by_value> ::= <by_value>
@@ -6681,6 +6711,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <set_lang_value>   # implied
     | 'base=' <set_base_value>   # implied
+where ('attributeName=' in <set>.descendant_values())  # required
 
 # set attribute types
 <set_to_value> ::= <to_value>
@@ -6828,6 +6859,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <animateColor_lang_value>   # implied
     | 'base=' <animateColor_base_value>   # implied
+where ('attributeName=' in <animateColor>.descendant_values())  # required
 
 # animateColor attribute types
 <animateColor_by_value> ::= <by_value>
@@ -6903,6 +6935,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <animateTransform_lang_value>   # implied
     | 'base=' <animateTransform_base_value>   # implied
+where ('attributeName=' in <animateTransform>.descendant_values())  # required
 
 # animateTransform attribute types
 <animateTransform_by_value> ::= <by_value>
@@ -6950,6 +6983,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <mpath_lang_value>   # implied
     | 'base=' <mpath_base_value>   # implied
+where ('href=' in <mpath>.descendant_values())  # required
 
 # mpath attribute types
 <mpath_title_value> ::= <title_value>
@@ -7034,6 +7068,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <font_lang_value>   # implied
     | 'base=' <font_base_value>   # implied
+where ('horiz_adv_x=' in <font>.descendant_values())  # required
 
 # font attribute types
 <font_id_value> ::= <id_value>
@@ -7422,6 +7457,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <hkern_lang_value>   # implied
     | 'base=' <hkern_base_value>   # implied
+where ('k=' in <hkern>.descendant_values())  # required
 
 # hkern attribute types
 <hkern_id_value> ::= <id_value>
@@ -7444,6 +7480,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <vkern_lang_value>   # implied
     | 'base=' <vkern_base_value>   # implied
+where ('k=' in <vkern>.descendant_values())  # required
 
 # vkern attribute types
 <vkern_id_value> ::= <id_value>
@@ -7481,6 +7518,7 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <font_face_uri_lang_value>   # implied
     | 'base=' <font_face_uri_base_value>   # implied
+where ('href=' in <font_face_uri>.descendant_values())  # required
 
 # font-face-uri attribute types
 <font_face_uri_title_value> ::= <title_value>
@@ -7605,6 +7643,8 @@
     | 'space=' <q> ('default' | 'preserve') <q>  # implied
     | 'lang=' <foreignObject_lang_value>   # implied
     | 'base=' <foreignObject_base_value>   # implied
+where ('height=' in <foreignObject>.descendant_values()
+   and 'width=' in <foreignObject>.descendant_values())  # required
 
 # foreignObject attribute types
 <foreignObject_id_value> ::= <id_value>

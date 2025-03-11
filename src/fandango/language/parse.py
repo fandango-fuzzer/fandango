@@ -2,14 +2,18 @@ import ast
 import hashlib
 import importlib.metadata
 import os
+import sys
 import platform
 import re
+
 from copy import deepcopy
 from pathlib import Path
+from io import StringIO
 from typing import IO, Any, List, Optional, Set, Tuple
 
 import cachedir_tag
 import dill as pickle
+
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 from thefuzz import process as thefuzz_process
@@ -145,6 +149,7 @@ class FandangoSpec:
         fan_contents: str,
         lazy: bool = False,
         filename: str = "<input>",
+        max_repetitions: int = 5,
     ):
         self.version = importlib.metadata.version("fandango-fuzzer")
         self.fan_contents = fan_contents
@@ -165,7 +170,9 @@ class FandangoSpec:
 
         LOGGER.debug(f"{filename}: extracting grammar")
         grammar_processor = GrammarProcessor(
-            local_variables=self.local_vars, global_variables=self.global_vars
+            local_variables=self.local_vars,
+            global_variables=self.global_vars,
+            max_repetitions=max_repetitions,
         )
         self.grammar: Grammar = grammar_processor.get_grammar(
             splitter.productions, prime=False
@@ -186,6 +193,20 @@ class FandangoSpec:
         global CURRENT_FILENAME
         CURRENT_FILENAME = filename
 
+        # Ensure the directory of the file is in the path
+        dirname = os.path.dirname(filename)
+        if dirname not in sys.path:
+            sys.path.append(dirname)
+
+        # Set up environment as if this were a top-level script
+        self.global_vars.update(
+            {
+                "__name__": "__main__",
+                "__file__": filename,
+                "__package__": None,
+                "__spec__": None,
+            }
+        )
         exec(self.code_text, self.global_vars, self.local_vars)
 
 
@@ -195,6 +216,7 @@ def parse_content(
     filename: str = "<input>",
     use_cache: bool = True,
     lazy: bool = False,
+    max_repetitions: int = 5,
 ) -> Tuple[Grammar, List[str]]:
     """
     Parse given content into a grammar and constraints.
@@ -267,7 +289,9 @@ def parse_content(
         tree = parser.fandango()  # Invoke the ANTLR parser
 
         LOGGER.debug(f"{filename}: splitting content")
-        spec = FandangoSpec(tree, fan_contents, lazy, filename=filename)
+        spec = FandangoSpec(
+            tree, fan_contents, lazy, filename=filename, max_repetitions=max_repetitions
+        )
 
     assert spec is not None
 
@@ -305,17 +329,19 @@ def parse(
     given_grammars: List[Grammar] = [],
     start_symbol: Optional[str] = None,
     includes: List[str] = [],
+    max_repetitions: int = 5,
 ) -> Tuple[Optional[Grammar], List[Constraint]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
-    :param fan_files: One (open) .fan file, or a list of these
+    :param fan_files: One (open) .fan file, one string, or a list of these
     :param constraints: List of constraints (as strings); default: []
     :param use_cache: If True (default), cache parsing results
     :param use_stdlib: If True (default), use the standard library
     :param lazy: If True, the constraints are evaluated lazily
     :param given_grammars: Grammars to use in addition to the standard library
     :param start_symbol: The grammar start symbol (default: "<start>")
-    :param includes: A list of directories to search for include files
+    :param includes: A list of directories to search for include files; default: []
+    :param max_repetitions: The maximal number of repetitions
     :return: A tuple of the grammar and constraints
     """
 
@@ -328,6 +354,9 @@ def parse(
     if constraints is None:
         constraints = []
 
+    if includes is None:
+        includes = []
+
     if start_symbol is None:
         start_symbol = "<start>"
 
@@ -335,7 +364,10 @@ def parse(
     if use_stdlib and STDLIB_GRAMMAR is None:
         LOGGER.debug("Reading standard library")
         STDLIB_GRAMMAR, STDLIB_CONSTRAINTS = parse_content(
-            stdlib, filename="<stdlib>", use_cache=use_cache
+            stdlib,
+            filename="<stdlib>",
+            use_cache=use_cache,
+            max_repetitions=max_repetitions,
         )
 
     global USED_SYMBOLS
@@ -369,10 +401,18 @@ def parse(
 
     while FILES_TO_PARSE:
         (file, depth) = FILES_TO_PARSE.pop(0)
+        if isinstance(file, str):
+            file = StringIO(file)
+            file.name = "<string>"
+
         LOGGER.debug(f"Reading {file.name} (depth = {depth})")
         fan_contents = file.read()
         new_grammar, new_constraints = parse_content(
-            fan_contents, filename=file.name, use_cache=use_cache, lazy=lazy
+            fan_contents,
+            filename=file.name,
+            use_cache=use_cache,
+            lazy=lazy,
+            max_repetitions=max_repetitions,
         )
         parsed_constraints += new_constraints
         assert new_grammar is not None
@@ -380,12 +420,18 @@ def parse(
         if depth == 0:
             # Given file: process in order
             more_grammars.append(new_grammar)
+            for generator in new_grammar.generators.values():
+                for nonterminal in generator.nonterminals.values():
+                    USED_SYMBOLS.add(nonterminal.symbol.symbol)
         else:
             # Included file: process _before_ current grammar
             more_grammars = [new_grammar] + more_grammars
             # Do not complain about unused symbols in included files
             for symbol in new_grammar.rules.keys():
                 USED_SYMBOLS.add(str(symbol))
+            for generator in new_grammar.generators.values():
+                for nonterminal in generator.nonterminals.values():
+                    USED_SYMBOLS.add(nonterminal.symbol.symbol)
 
         if INCLUDE_DEPTH > 0:
             INCLUDE_DEPTH -= 1
@@ -610,7 +656,6 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
             # if min_bits % 8 != 0 and tree.min == 0:
             #     raise ValueError(f"{rule_symbol!s}: Bits cannot be optional")
 
-            # Todo Non optimal solution
             try:
                 rep_min = tree.min(grammar, None)
             except ValueError:
@@ -618,8 +663,8 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
             try:
                 rep_max = tree.max(grammar, None)
             except ValueError:
-                # Add 7 to rep_min if value can't be computed.
-                # This covers all cases in which a repetition might not be dividable by 8
+                # Add 7 to min, such that there are 8 steps.
+                # If result is not dividable by 8 this will catch at least one case.
                 rep_max = rep_min + 7
 
             step = min(min_bits, max_bits)

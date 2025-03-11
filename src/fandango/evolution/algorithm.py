@@ -72,12 +72,12 @@ class Fandango:
         self.fixes_made = 0
         self.grammar = grammar
         self.constraints = constraints
-        self.population_size = population_size
+        self.population_size = max(population_size, desired_solutions)
         self.expected_fitness = expected_fitness
         self.elitism_rate = elitism_rate
         self.destruction_rate = destruction_rate
         self.start_symbol = start_symbol
-        self.tournament_size = max(2, int(population_size * tournament_size))
+        self.tournament_size = max(2, int(self.population_size * tournament_size))
         self.max_generations = max_generations
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
@@ -189,7 +189,9 @@ class Fandango:
                     )
                     if suggested_tree is None:
                         continue
-                    individual = individual.replace(failing_tree.tree, suggested_tree)
+                    individual = individual.replace(
+                        self.grammar, failing_tree.tree, suggested_tree
+                    )
                     self.fixes_made += 1
         return individual
 
@@ -336,7 +338,7 @@ class Fandango:
                             self.evaluation, self.tournament_size
                         )
                         child1, child2 = self.crossover_operator.crossover(
-                            parent1, parent2
+                            self.grammar, parent1, parent2
                         )
                         self.population_manager.add_unique_individual(
                             new_population, child1, unique_hashes
