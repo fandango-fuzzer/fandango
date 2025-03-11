@@ -31,7 +31,7 @@ class PopulationManager:
             tree.append(mounting_option.collapsed_path[1:], dummy)
 
             fuzz_point = dummy.parent
-            del fuzz_point[-1]
+            fuzz_point.set_children(fuzz_point.children[:-1])
             self.io_next_packet.node.fuzz(fuzz_point, self.grammar, max_nodes=999999)
 
             return tree
