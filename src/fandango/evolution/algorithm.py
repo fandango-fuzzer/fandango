@@ -497,6 +497,10 @@ class Fandango:
                     if parsed_packet_tree is not None:
                         parsed_packet_tree.role = packet_option.node.role
                         parsed_packet_tree.recipient = packet_option.node.recipient
+                        # Derive generator packets. Note this is only apply this method without inserting the tree into the history,
+                        # because the grammar syntax guarantees, that we don't encounter a generator in our path to the root node after hookin.
+                        # TODO: Handle case in which received message matches grammar, but is in fact incomplete. Find a way to detect that when deriving parameters.
+                        self.grammar.populate_generator_params(parsed_packet_tree)
                         break
                     incomplete_tree = self.grammar.parse(complete_msg, packet_option.node.symbol,
                                                          mode=Grammar.Parser.ParsingMode.INCOMPLETE)
