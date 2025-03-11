@@ -92,6 +92,8 @@ class PopulationManager:
                     )
                     if suggested_tree is None:
                         continue
-                    individual = individual.replace(self.grammar, failing_tree.tree, suggested_tree)
+                    individual = individual.replace(
+                        self.grammar, failing_tree.tree, suggested_tree
+                    )
                     fixes_made += 1
         return individual, fixes_made
