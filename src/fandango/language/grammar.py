@@ -328,7 +328,7 @@ class NonTerminalNode(Node):
             # Prevent children from being overwritten without executing generator
             generated.set_all_read_only(True)
             generated.read_only = False
-            parent.children.pop()
+            parent.set_children(parent.children[:-1])
             parent.add_child(generated)
             return
         parent.set_children(parent.children[:-1])
