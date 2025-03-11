@@ -23,6 +23,7 @@ from pathlib import Path
 from ansi_styles import ansiStyles as styles
 
 from fandango.evolution.algorithm import Fandango
+from fandango.language.grammar import Grammar
 from fandango.language.parse import parse
 from fandango.logger import LOGGER, print_exception
 
