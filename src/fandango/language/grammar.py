@@ -42,6 +42,9 @@ class FuzzingMode(enum.Enum):
 class GrammarKeyError(KeyError):
     pass
 
+class GeneratorParserValueError(ValueError):
+    pass
+
 
 class Node(abc.ABC):
     def __init__(
@@ -1966,7 +1969,7 @@ class Grammar(NodeVisitor):
             string = str(DerivationTree.from_tree(string))
         tree = self.parse(string, symbol)
         if tree is None:
-            raise ValueError(
+            raise GeneratorParserValueError(
                 f"Failed to parse generated string: {string} for {symbol} with generator {self.generators[symbol]}"
             )
         tree.generator_params = deepcopy(generator_params)
