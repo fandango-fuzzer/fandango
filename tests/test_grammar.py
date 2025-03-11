@@ -69,6 +69,14 @@ class ConstraintTest(unittest.TestCase):
 
         for solution in self.get_solutions(grammar, c):
             self.assertEqual(self.count_g_params(solution), 4)
+            converted_inner = solution.children[0].generator_params[0]
+            self.assertEqual(self.count_g_params(converted_inner), 3)
+            dummy_inner_2 = converted_inner.children[0].generator_params[0]
+            self.assertEqual(self.count_g_params(dummy_inner_2), 2)
+            dummy_inner = dummy_inner_2.children[0].generator_params[0]
+            self.assertEqual(self.count_g_params(dummy_inner), 1)
+            source_nr = dummy_inner.children[0].children[1].generator_params[0]
+            self.assertEqual(self.count_g_params(source_nr), 0)
 
     def test_repetitions(self):
         file = open("tests/resources/repetitions.fan", "r")
