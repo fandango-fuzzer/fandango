@@ -182,7 +182,7 @@ class Repetition(Node):
         if len(searches) == 0:
             return eval(expr, grammar._global_variables, local_cpy)
         if tree is None:
-            raise FandangoValueError("tree required if searches present!")
+            raise FandangoValueError("tree required if symbols present")
 
         nodes = []
         for name, search in searches.items():

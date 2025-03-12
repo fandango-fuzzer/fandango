@@ -36,7 +36,7 @@ dependencies = [
     "thefuzz>=0.22",
     "py010parser>=0.1.18",
     "exrex>=0.12.0",
-    "gnureadline>=8.2.13 ; platform_system != 'Windows'"
+    "gnureadline>=8.2.13 ; platform_system != 'Windows'",
     "pyreadline>=2.1; platform_system == 'Windows'"
 ]
 
