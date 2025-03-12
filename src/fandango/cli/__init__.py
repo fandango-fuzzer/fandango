@@ -7,10 +7,26 @@ import os
 import os.path
 import re
 
-try:
-    import gnureadline as readline
-except ImportError:
-    import readline
+if not 'readline' in globals():
+    try:
+        # Linux and Mac
+        import gnureadline as readline
+    except Exception:
+        pass
+
+if not 'readline' in globals():
+    try:
+        # Windows
+        import pyreadline as readline
+    except Exception:
+        pass
+
+if not 'readline' in globals():
+    try:
+        # Hail Mary Pass
+        import readline
+    except Exception:
+        pass
 
 import shlex
 import subprocess
@@ -1212,6 +1228,9 @@ def shell_command(args):
     PROMPT = "(fandango)"
 
     def _read_history():
+        if not 'readline' in globals():
+            return
+
         histfile = os.path.join(os.path.expanduser("~"), ".fandango_history")
         try:
             readline.read_history_file(histfile)
@@ -1224,6 +1243,9 @@ def shell_command(args):
         atexit.register(readline.write_history_file, histfile)
 
     def _complete(text, state):
+        if not 'readline' in globals():
+            return
+
         global MATCHES
         if state == 0:  # first trigger
             buffer = readline.get_line_buffer()[: readline.get_endidx()]
@@ -1234,10 +1256,11 @@ def shell_command(args):
             return None
 
     if sys.stdin.isatty():
-        _read_history()
-        readline.set_completer_delims(" \t\n;")
-        readline.set_completer(_complete)
-        readline.parse_and_bind("tab: complete")
+        if 'readline' in globals():
+            _read_history()
+            readline.set_completer_delims(" \t\n;")
+            readline.set_completer(_complete)
+            readline.parse_and_bind("tab: complete")
 
         version_command([])
         print("Type a command, 'help', 'copyright', 'version', or 'exit'.")
