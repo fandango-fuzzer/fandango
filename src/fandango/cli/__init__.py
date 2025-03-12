@@ -6,7 +6,12 @@ import logging
 import os
 import os.path
 import re
-import gnureadline as readline
+
+try:
+    import gnureadline as readline
+except ImportError:
+    import readline
+
 import shlex
 import subprocess
 import sys
