@@ -9,21 +9,28 @@ import re
 
 if not 'readline' in globals():
     try:
-        # Linux and Mac
+        # Linux and Mac. This should do the trick.
         import gnureadline as readline
     except Exception:
         pass
 
 if not 'readline' in globals():
     try:
-        # Windows
+        # Windows. This should do the trick.
+        import pyreadline3 as readline
+    except Exception:
+        pass
+
+if not 'readline' in globals():
+    try:
+        # Another Windows alternative
         import pyreadline as readline
     except Exception:
         pass
 
 if not 'readline' in globals():
     try:
-        # Hail Mary Pass
+        # A Hail Mary Pass
         import readline
     except Exception:
         pass
