@@ -83,6 +83,8 @@ class GrammarProcessor(FandangoParserVisitor):
         for production in productions:
             symbol = NonTerminal(production.NONTERMINAL().getText())
             grammar[symbol] = self.visit(production.alternative())
+            if grammar.has_generator(symbol):
+                grammar.remove_generator(symbol)
             if production.expression():
                 # Handle generator expressions
                 expr, searches, _ = self.searches.visit(production.expression())
