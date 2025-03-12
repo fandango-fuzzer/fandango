@@ -807,8 +807,8 @@ def output_population(population, args, file_mode=None, *, output_on_stdout=True
 
                 def named_temp_file(*, mode, prefix, suffix):
                     try:
-                        # Windows needs delete_on_close=False, so the file
-                        # will be accessible by name
+                        # Windows needs delete_on_close=False, so the subprocess
+                        # can access the file by name
                         return tempfile.NamedTemporaryFile(
                             mode=mode, prefix=prefix, suffix=suffix,
                             delete_on_close=False)
