@@ -73,7 +73,8 @@ from fandango import Fandango
 The `Fandango` constructor allows reading in a `.fan` specification, either from an (open) file, a string, or a list of strings or files.
 
 ```python
-class Fandango(fan_files: str | IO | List[IO], constraints: List[str] = None, *,
+class Fandango(fan_files: str | IO | List[str | IO],
+    constraints: List[str] = None, *,
     start_symbol: Optional[str] = None,
     use_cache: bool = True,
     use_stdlib: bool = True,
@@ -94,9 +95,12 @@ This is either
 * `includes`: A list of directories to search for include files before the [Fandango spec locations](sec:including).
 * `logging_level` controls the logging output. It can be set to any of the values in the [Python logging module](https://docs.python.org/3/library/logging.html), such as `logging.DEBUG` or `logging.INFO`. Default is `logging.WARNING`.
 
-
 ```{danger}
-Be aware that `.fan` files can contain Python code that is _executed when loaded_. This code can execute arbitrary commands and also can gain access to your API-calling code.
+Be aware that `.fan` files can contain Python code that is _executed when loaded_. This code can execute arbitrary commands.
+```
+
+```{warning}
+Code in the `.fan` spec cannot access identifiers from the API-calling code or vice versa. However, as both are executed in the same Python interpreter, there is a risk that loaded `.fan` code may bypass these restrictions and gain access to the API-calling code.
 ```
 
 ```{caution}
@@ -112,6 +116,7 @@ Only load `.fan` files you trust.
 The exception class `FandangoError` is the superclass of these exceptions.
 
 
+
 (sec:fuzz-api)=
 ## The `fuzz()` method
 
@@ -123,6 +128,10 @@ fuzz(extra_constraints: Optional[List[str]] = None, **settings)
 ```
 
 Create outputs from the specification, as a list of [derivation trees](sec:derivation-tree).
+
+```{margin}
+In the future, the set of available `settings` may change dependent on the chosen algorithm.
+```
 
 * `extra_constraints`: if given, use this list of strings as additional constraints
 * `settings`: pass extra values to control the fuzzer algorithm. These include

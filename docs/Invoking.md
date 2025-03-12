@@ -48,7 +48,7 @@ Be aware that `.fan` files can contain Python code that is _executed when being 
 ```
 
 ```{caution}
-Only load `.fan` files you can trust.
+Only load `.fan` files you trust.
 ```
 
 ## More Commands and Options
