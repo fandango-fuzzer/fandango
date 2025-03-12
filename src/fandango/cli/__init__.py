@@ -804,7 +804,20 @@ def output_population(population, args, file_mode=None, *, output_on_stdout=True
                 prefix = "fandango-"
                 suffix = args.filename_extension
                 mode = "wb" if file_mode == "binary" else "w"
-                with tempfile.NamedTemporaryFile(
+
+                def named_temp_file(*, mode, prefix, suffix):
+                    try:
+                        # Windows needs delete_on_close=False, so the file
+                        # will be accessible by name
+                        return tempfile.NamedTemporaryFile(
+                            mode=mode, prefix=prefix, suffix=suffix,
+                            delete_on_close=False)
+                    except Exception:
+                        # Python 3.11 and earlier have no 'delete_on_close'
+                        return tempfile.NamedTemporaryFile(
+                            mode=mode, prefix=prefix, suffix=suffix)
+
+                with named_temp_file(
                     mode=mode, prefix=prefix, suffix=suffix
                 ) as fd:
                     fd.write(output(individual, args, file_mode))

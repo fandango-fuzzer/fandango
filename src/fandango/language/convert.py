@@ -90,7 +90,7 @@ class GrammarProcessor(FandangoParserVisitor):
                 expr, searches, _ = self.searches.visit(production.expression())
                 if searches:
                     raise UnsupportedOperation(
-                        "Searches in expressions are currently not supported"
+                        "Symbols in expressions are currently not supported"
                     )
                 grammar.set_generator(symbol, ast.unparse(expr))
 
