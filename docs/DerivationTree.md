@@ -101,6 +101,7 @@ The _type_ of the return value is
     * A _byte string_ (`bytes`) in all other cases, notably if
         - any of the descendants of `<SYMBOL>` is a byte string, or
         - the descendants of `<SYMBOL>` contain bits _and_ other elements.
+    * `None` if `<SYMBOL>` expands into zero elements
 
 
 ### Unicode Strings

@@ -23,15 +23,20 @@ class FandangoParseError(FandangoError, SyntaxError):
 
 class FandangoSyntaxError(FandangoError, SyntaxError):
     """Error during parsing a Fandango spec"""
-    pass
+    def __init__(self, message: str):
+        FandangoError.__init__(self, message)
+        SyntaxError.__init__(self, message)
 
 class FandangoValueError(FandangoError, ValueError):
     """Error during evaluating a Fandango spec"""
-    pass
+    def __init__(self, message: str):
+        FandangoError.__init__(self, message)
+        ValueError.__init__(self, message)
 
 class FandangoFailedError(FandangoError):
     """Error during the Fandango algorithm"""
-    pass
+    def __init__(self, message: str):
+        super().__init__(self, message)
 
 
 
@@ -55,7 +60,7 @@ class FandangoBase(ABC):
 
     def __init__(
         self,
-        fan_files: str | IO | List[IO],
+        fan_files: str | IO | List[str | IO],
         constraints: List[str] = None,
         *,
         logging_level: Optional[int] = None,

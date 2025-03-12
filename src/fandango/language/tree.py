@@ -252,6 +252,9 @@ class DerivationTree:
         """
         val: Any = self.value()
 
+        if val is None:
+            return ""
+
         if isinstance(val, int):
             # This is a bit value; convert to bytes
             val = int(val).to_bytes(val // 256 + 1)
@@ -549,6 +552,9 @@ class DerivationTree:
         for child in self._children:
             value, child_bits = child._value()
 
+            if value is None:
+                continue
+
             if aggregate is None:
                 aggregate = value
                 bits = child_bits
@@ -570,17 +576,17 @@ class DerivationTree:
                 elif isinstance(value, bytes):
                     aggregate += value
                 elif isinstance(value, int):
-                    aggregate = aggregate + value.to_bytes()
+                    aggregate = aggregate + bytes([value])
                     bits = 0
                 else:
                     raise FandangoValueError(f"Cannot compute {aggregate!r} + {value!r}")
 
             elif isinstance(aggregate, int):
                 if isinstance(value, str):
-                    aggregate = aggregate.to_bytes() + value.encode("utf-8")
+                    aggregate = bytes([aggregate]) + value.encode("utf-8")
                     bits = 0
                 elif isinstance(value, bytes):
-                    aggregate = aggregate.to_bytes() + value
+                    aggregate = bytes([aggregate]) + value
                     bits = 0
                 elif isinstance(value, int):
                     aggregate = (aggregate << child_bits) + value
