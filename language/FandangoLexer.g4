@@ -18,7 +18,6 @@ INTEGER: DECIMAL_INTEGER | OCT_INTEGER | HEX_INTEGER | BIN_INTEGER;
 
 PYTHON_START: '<py>' {self.python_start()};
 PYTHON_END  : '</py>' {self.python_end()};
-NONTERMINAL: '<' NAME '>';
 
 // python keywords
 AND        : 'and';

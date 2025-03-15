@@ -1,7 +1,8 @@
 from typing import Callable, List, Set
 
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
-from fandango.language.grammar import DerivationTree, Grammar
+from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode, PacketForecaster
+from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER
 
 
@@ -17,6 +18,29 @@ class PopulationManager:
         self.start_symbol = start_symbol
         self.population_size = population_size
         self.warnings_are_errors = warnings_are_errors
+        self.io_next_packet: PacketForecaster.ForcastingPacket|None = None
+
+    def _generate_population_entry(self):
+        if self.grammar.fuzzing_mode == FuzzingMode.IO:
+            if self.io_next_packet is None:
+                return DerivationTree(NonTerminal(self.start_symbol))
+
+            mounting_option = next(iter(self.io_next_packet.paths))
+            tree = self.grammar.collapse(mounting_option.tree)
+            dummy = DerivationTree(NonTerminal("<hookin>"))
+            tree.append(mounting_option.collapsed_path[1:], dummy)
+
+            fuzz_point = dummy.parent
+            fuzz_point.set_children(fuzz_point.children[:-1])
+            self.io_next_packet.node.fuzz(fuzz_point, self.grammar, max_nodes=999999)
+
+            return tree
+        elif self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
+            return self.grammar.fuzz(self.start_symbol)
+        else:
+            raise NotImplementedError(
+                f"Unknown FuzzingMode: {self.grammar.fuzzing_mode}"
+            )
 
     def add_unique_individual(
         self,
@@ -40,7 +64,7 @@ class PopulationManager:
         max_attempts = self.population_size * 10  # safeguard against infinite loops
 
         while len(unique_population) < self.population_size and attempts < max_attempts:
-            candidate = fix_func(self.grammar.fuzz(self.start_symbol))
+            candidate = fix_func(self._generate_population_entry())
             self.add_unique_individual(unique_population, candidate, unique_hashes)
             attempts += 1
 
@@ -62,7 +86,7 @@ class PopulationManager:
         while (
             len(current_population) < self.population_size and attempts < max_attempts
         ):
-            candidate = fix_func(self.grammar.fuzz(self.start_symbol))
+            candidate = fix_func(self._generate_population_entry())
             if hash(candidate) not in unique_hashes:
                 unique_hashes.add(hash(candidate))
                 current_population.append(candidate)
@@ -73,7 +97,7 @@ class PopulationManager:
                 "Could not generate full unique new population, filling remaining slots with duplicates."
             )
             while len(current_population) < self.population_size:
-                current_population.append(self.grammar.fuzz(self.start_symbol))
+                current_population.append(self._generate_population_entry())
 
         return current_population
 

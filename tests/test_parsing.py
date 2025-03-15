@@ -4,7 +4,7 @@ import unittest
 import shlex
 import subprocess
 
-from fandango.language.grammar import ParseState, Grammar, NodeType
+from fandango.language.grammar import ParseState, NodeType, Grammar
 from fandango.language.parse import parse
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
@@ -110,17 +110,13 @@ class TestComplexParsing(unittest.TestCase):
             DerivationTree(
                 NonTerminal("<ab>"),
                 [
-                    DerivationTree(
-                        NonTerminal("<ab>"),
-                        [
-                            DerivationTree(
-                                NonTerminal("<ab>"),
-                                [DerivationTree(Terminal(""))],
-                            ),
-                            DerivationTree(Terminal("b")),
-                        ],
-                    ),
-                    DerivationTree(Terminal("b")),
+                    DerivationTree(NonTerminal('<ab>'),
+                                   [
+                                       DerivationTree(NonTerminal('<ab>'), [DerivationTree(Terminal(''))]),
+                                       DerivationTree(Terminal('b')),
+                                   ]
+                                   ),
+                    DerivationTree(Terminal('b')),
                 ],
             ),
         )
@@ -131,8 +127,8 @@ class TestComplexParsing(unittest.TestCase):
             DerivationTree(
                 NonTerminal("<ab>"),
                 [
-                    DerivationTree(NonTerminal("<ab>"), [DerivationTree(Terminal(""))]),
-                    DerivationTree(Terminal("b")),
+                    DerivationTree(NonTerminal('<ab>'), [DerivationTree(Terminal(''))]),
+                    DerivationTree(Terminal('b')),
                 ],
             ),
         )
@@ -143,16 +139,13 @@ class TestComplexParsing(unittest.TestCase):
             DerivationTree(
                 NonTerminal("<ab>"),
                 [
-                    DerivationTree(
-                        NonTerminal("<ab>"),
-                        [
-                            DerivationTree(Terminal("a")),
-                            DerivationTree(
-                                NonTerminal("<ab>"), [DerivationTree(Terminal(""))]
-                            ),
-                        ],
-                    ),
-                    DerivationTree(Terminal("b")),
+                    DerivationTree(NonTerminal('<ab>'),
+                                   [
+                                       DerivationTree(Terminal('a')),
+                                       DerivationTree(NonTerminal('<ab>'), [DerivationTree(Terminal(''))]),
+                                   ]
+                                   ),
+                    DerivationTree(Terminal('b')),
                 ],
             ),
         )
@@ -163,8 +156,8 @@ class TestComplexParsing(unittest.TestCase):
             DerivationTree(
                 NonTerminal("<ab>"),
                 [
-                    DerivationTree(Terminal("a")),
-                    DerivationTree(NonTerminal("<ab>"), [DerivationTree(Terminal(""))]),
+                    DerivationTree(Terminal('a')),
+                    DerivationTree(NonTerminal('<ab>'), [DerivationTree(Terminal(''))]),
                 ],
             ),
         )
@@ -193,10 +186,8 @@ class TestIncompleteParsing(unittest.TestCase):
             DerivationTree(
                 NonTerminal("<ab>"),
                 [
-                    DerivationTree(Terminal("a")),
-                    DerivationTree(
-                        NonTerminal("<ab>"), [DerivationTree(Terminal("a"))]
-                    ),
+                    DerivationTree(Terminal('a')),
+                    DerivationTree(NonTerminal('<ab>'), [DerivationTree(Terminal('a'))]),
                 ],
             ),
         )
@@ -406,34 +397,35 @@ class TestBitParsing(TestCLIParsing):
         grammar, _ = parse(file, use_stdlib=False, use_cache=False)
         self._test(b"\x00", None, grammar)
         self._test(
-            b"\x01",
+            b'\x01',
             DerivationTree(
                 NonTerminal("<start>"),
                 [
-                    *[
-                        DerivationTree(
-                            NonTerminal("<bit>"), [DerivationTree(Terminal(0))]
-                        )
-                        for _ in range(7)
-                    ],
+                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
                     DerivationTree(Terminal(1)),
                 ],
             ),
             grammar,
         )
         self._test(
-            b"\x02",
+            b'\x02',
             DerivationTree(
                 NonTerminal("<start>"),
                 [
-                    *[
-                        DerivationTree(
-                            NonTerminal("<bit>"), [DerivationTree(Terminal(0))]
-                        )
-                        for _ in range(6)
-                    ],
+                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
                     DerivationTree(Terminal(1)),
-                    DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
                 ],
             ),
             grammar,

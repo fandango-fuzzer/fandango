@@ -8,6 +8,18 @@ from io import StringIO, BytesIO
 from fandango.logger import LOGGER, print_exception
 
 
+class RoledMessage:
+    def __init__(self, role: str, msg: "DerivationTree"):
+        self.msg = msg
+        self.role = role
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return f"({self.role}): {str(self.msg)}"
+
+
 class DerivationTree:
     """
     This class is used to represent a node in the derivation tree.
@@ -19,6 +31,8 @@ class DerivationTree:
         children: Optional[List["DerivationTree"]] = None,
         parent: Optional["DerivationTree"] = None,
         generator_params: list["DerivationTree"] = None,
+        role: str = None,
+        recipient: str = None,
         read_only: bool = False,
     ):
         if not isinstance(symbol, Symbol):
@@ -27,6 +41,8 @@ class DerivationTree:
         self.hash_cache = None
         self._parent: Optional["DerivationTree"] = parent
         self.symbol: Symbol = symbol
+        self.role = role
+        self.recipient = recipient
         self._children: list["DerivationTree"] = []
         self._generator_params: list["DerivationTree"] = []
         if generator_params is not None:
@@ -47,10 +63,6 @@ class DerivationTree:
     @property
     def symbol(self) -> Symbol:
         return self._symbol
-
-    @property
-    def parent(self) -> Optional["DerivationTree"]:
-        return self._parent
 
     @symbol.setter
     def symbol(self, symbol):
@@ -86,6 +98,24 @@ class DerivationTree:
         if self._parent is not None:
             self._parent.invalidate_hash()
 
+    @property
+    def role(self):
+        return self._role
+
+    @role.setter
+    def role(self, role: str):
+        self._role = role
+        self.invalidate_hash()
+
+    @property
+    def recipient(self):
+        return self._recipient
+
+    @recipient.setter
+    def recipient(self, recipient: str):
+        self._recipient = recipient
+        self.invalidate_hash()
+
     def get_root(self):
         if self._parent is None:
             return self
@@ -95,6 +125,29 @@ class DerivationTree:
         self.read_only = read_only
         for child in self._children:
             child.set_all_read_only(read_only)
+
+    def find_role_msgs(self) -> List[RoledMessage]:
+        if not isinstance(self.symbol, NonTerminal):
+            return []
+        if self.role is not None:
+            return [RoledMessage(self.role, self)]
+        subtrees = []
+        for child in self._children:
+            subtrees.extend(child.find_role_msgs())
+        return subtrees
+
+    def append(self, hookin_path: tuple[(NonTerminal, bool), ...], tree: "DerivationTree"):
+        if len(hookin_path) == 0:
+            self.add_child(tree)
+            return
+        next_nt, add_new_node = hookin_path[0]
+        if add_new_node:
+            self.add_child(DerivationTree(next_nt))
+        elif (len(self.children) == 0 or
+              (not next_nt.symbol.startswith("<__") and str(self.children[-1].symbol) != next_nt.symbol) or
+              (next_nt.symbol.startswith("<__") and not str(self.children[-1].symbol).startswith(next_nt.symbol))):
+            raise ValueError("Invalid hookin_path!")
+        self.children[-1].append(hookin_path[1:], tree)
 
     def set_children(self, children: List["DerivationTree"]):
         self._children = children
@@ -156,6 +209,14 @@ class DerivationTree:
         else:
             return items
 
+    def __str__(self):
+        return self.to_string()
+
+    def invalidate_hash(self):
+        self.hash_cache = None
+        if self._parent is not None:
+            self._parent.invalidate_hash()
+
     def __hash__(self):
         """
         Computes a hash of the derivation tree based on its structure and symbols.
@@ -164,6 +225,8 @@ class DerivationTree:
             self.hash_cache = hash(
                 (
                     self.symbol,
+                    self.role,
+                    self.recipient,
                     tuple(hash(child) for child in self._children),
                 )
             )
@@ -193,6 +256,8 @@ class DerivationTree:
         copied = DerivationTree(
             self.symbol,
             [],
+            role=self.role,
+            recipient=self.recipient,
             generator_params=self.generator_params,
             read_only=self.read_only,
         )
@@ -353,7 +418,12 @@ class DerivationTree:
         """
         Output the derivation tree in internal representation.
         """
-        s = "  " * start_indent + "DerivationTree(" + repr(self.symbol)
+        s = "  " * start_indent + "DerivationTree("
+        if self.role is not None:
+            s += self.role
+        if self.recipient is not None:
+            s += self.recipient
+        s += repr(self.symbol)
         if len(self._children) == 1:
             s += ", [" + self._children[0].to_repr(indent, start_indent=0) + "])"
         elif len(self._children) >= 1:
@@ -510,6 +580,8 @@ class DerivationTree:
             self.symbol,
             new_children,
             parent=self.parent,
+            role=self.role,
+            recipient=self.recipient,
             generator_params=generator_params,
             read_only=self.read_only,
         )
@@ -637,6 +709,9 @@ class DerivationTree:
         aggregate = None
         for child in self._children:
             value, child_bits = child._value()
+
+            if value is None:
+                continue
 
             if aggregate is None:
                 aggregate = value

@@ -11,7 +11,7 @@ from copy import deepcopy
 from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union, Generator
 
 from fandango.language.symbol import NonTerminal, Symbol, Terminal
-from fandango.language.tree import DerivationTree
+from fandango.language.tree import DerivationTree, RoledMessage
 from fandango.logger import LOGGER
 
 MAX_REPETITIONS = 5
@@ -35,6 +35,18 @@ class NodeType(enum.Enum):
         return self.value
 
 
+class FuzzingMode(enum.Enum):
+    COMPLETE = 0
+    IO = 1
+
+
+class GrammarKeyError(KeyError):
+    pass
+
+class GeneratorParserValueError(ValueError):
+    pass
+
+
 class Node(abc.ABC):
     def __init__(
         self, node_type: NodeType, distance_to_completion: float = float("inf")
@@ -42,12 +54,34 @@ class Node(abc.ABC):
         self.node_type = node_type
         self.distance_to_completion = distance_to_completion
 
-    def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
+    def fuzz(
+        self,
+        parent: "DerivationTree",
+        grammar: "Grammar",
+        max_nodes: int = 100,
+        in_role: str = None,
+    ):
         return
 
     @abc.abstractmethod
     def accept(self, visitor: "NodeVisitor"):
         raise NotImplementedError("accept method not implemented")
+
+    def tree_roles(self, grammar: "Grammar", include_recipients: bool = True):
+        return self._tree_roles(grammar, set(), include_recipients)
+
+    def _tree_roles(
+        self,
+        grammar: "Grammar",
+        seen_nonterminals: set[NonTerminal],
+        include_recipients: bool,
+    ):
+        roles = set()
+        for child in self.children():
+            roles = roles.union(
+                child._tree_roles(grammar, seen_nonterminals, include_recipients)
+            )
+        return roles
 
     def children(self):
         return []
@@ -73,7 +107,13 @@ class Alternative(Node):
         super().__init__(NodeType.ALTERNATIVE)
         self.alternatives = alternatives
 
-    def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
+    def fuzz(
+        self,
+        parent: "DerivationTree",
+        grammar: "Grammar",
+        max_nodes: int = 100,
+        in_role: str = None,
+    ):
         if self.distance_to_completion >= max_nodes:
             min_ = min(self.alternatives, key=lambda x: x.distance_to_completion)
             random.choice(
@@ -82,9 +122,9 @@ class Alternative(Node):
                     for a in self.alternatives
                     if a.distance_to_completion <= min_.distance_to_completion
                 ]
-            ).fuzz(parent, grammar, 0)
+            ).fuzz(parent, grammar, 0, in_role)
             return
-        random.choice(self.alternatives).fuzz(parent, grammar, max_nodes - 1)
+        random.choice(self.alternatives).fuzz(parent, grammar, max_nodes - 1, in_role)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitAlternative(self)
@@ -113,13 +153,19 @@ class Concatenation(Node):
         super().__init__(NodeType.CONCATENATION)
         self.nodes = nodes
 
-    def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
+    def fuzz(
+        self,
+        parent: "DerivationTree",
+        grammar: "Grammar",
+        max_nodes: int = 100,
+        in_role: str = None,
+    ):
         prev_parent_size = parent.size()
         for node in self.nodes:
             if node.distance_to_completion >= max_nodes:
-                node.fuzz(parent, grammar, 0)
+                node.fuzz(parent, grammar, 0, in_role)
             else:
-                node.fuzz(parent, grammar, max_nodes - 1)
+                node.fuzz(parent, grammar, max_nodes - 1, in_role)
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
 
@@ -221,7 +267,13 @@ class Repetition(Node):
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitRepetition(self)
 
-    def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
+    def fuzz(
+        self,
+        parent: "DerivationTree",
+        grammar: "Grammar",
+        max_nodes: int = 100,
+        in_role: str = None,
+    ):
         prev_parent_size = parent.size()
 
         current_min = self.min(grammar, parent.get_root())
@@ -231,9 +283,9 @@ class Repetition(Node):
             if self.node.distance_to_completion >= max_nodes:
                 if rep > current_min:
                     break
-                self.node.fuzz(parent, grammar, 0)
+                self.node.fuzz(parent, grammar, 0, in_role)
             else:
-                self.node.fuzz(parent, grammar, max_nodes - 1)
+                self.node.fuzz(parent, grammar, max_nodes - 1, in_role)
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
 
@@ -311,11 +363,19 @@ class Option(Repetition):
 
 
 class NonTerminalNode(Node):
-    def __init__(self, symbol: NonTerminal):
+    def __init__(self, symbol: NonTerminal, role: str = None, recipient: str = None):
         super().__init__(NodeType.NON_TERMINAL)
         self.symbol = symbol
+        self.role = role
+        self.recipient = recipient
 
-    def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
+    def fuzz(
+        self,
+        parent: "DerivationTree",
+        grammar: "Grammar",
+        max_nodes: int = 100,
+        in_role: str = None,
+    ) -> List[DerivationTree]:
         if self.symbol not in grammar:
             raise ValueError(f"Symbol {self.symbol} not found in grammar")
         dummy_current_tree = DerivationTree(self.symbol)
@@ -334,15 +394,35 @@ class NonTerminalNode(Node):
             return
         parent.set_children(parent.children[:-1])
 
-        current_tree = DerivationTree(self.symbol)
+        assign_role = None
+        assign_recipient = None
+        if in_role is None:
+            assign_role = self.role
+            assign_recipient = self.recipient
+            in_role = self.role
+
+        current_tree = DerivationTree(
+            self.symbol,
+            [],
+            role=assign_role,
+            recipient=assign_recipient,
+            read_only=False,
+        )
         parent.add_child(current_tree)
-        grammar[self.symbol].fuzz(current_tree, grammar, max_nodes - 1)
+        grammar[self.symbol].fuzz(current_tree, grammar, max_nodes - 1, in_role)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitNonTerminalNode(self)
 
     def __repr__(self):
-        return self.symbol.__repr__()
+
+        if self.role is not None:
+            if self.recipient is None:
+                return f"<{self.role}:{self.symbol.__repr__()[1:-1]}>"
+            else:
+                return f"<{self.role}:{self.recipient}:{self.symbol.__repr__()[1:-1]}>"
+        else:
+            return self.symbol.__repr__()
 
     def __str__(self):
         return self.symbol._repr()
@@ -353,6 +433,25 @@ class NonTerminalNode(Node):
     def __hash__(self):
         return hash(self.symbol)
 
+    def _tree_roles(
+        self,
+        grammar: "Grammar",
+        seen_nonterminals: set[NonTerminal],
+        include_recipients: bool,
+    ):
+        roles = set()
+        if self.role is not None:
+            roles.add(self.role)
+            if self.recipient is not None and include_recipients:
+                roles.add(self.recipient)
+        if self.symbol not in seen_nonterminals:
+            seen_nonterminals.add(self.symbol)
+            for role in grammar[self.symbol]._tree_roles(
+                grammar, seen_nonterminals, include_recipients
+            ):
+                roles.add(role)
+        return roles
+
     def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterator["Node"]:
         yield rules[self.symbol]
 
@@ -362,7 +461,13 @@ class TerminalNode(Node):
         super().__init__(NodeType.TERMINAL, 0)
         self.symbol = symbol
 
-    def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
+    def fuzz(
+        self,
+        parent: "DerivationTree",
+        grammar: "Grammar",
+        max_nodes: int = 100,
+        in_role: str = None,
+    ) -> List[DerivationTree]:
         if self.symbol.is_regex:
             if isinstance(self.symbol.symbol, bytes):
                 # Exrex can't do bytes, so we decode to str and back
@@ -420,7 +525,13 @@ class CharSet(Node):
         super().__init__(NodeType.CHAR_SET, 0)
         self.chars = chars
 
-    def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
+    def fuzz(
+        self,
+        parent: "DerivationTree",
+        grammar: "Grammar",
+        max_nodes: int = 100,
+        in_role: str = None,
+    ) -> List[DerivationTree]:
         raise NotImplementedError("CharSet fuzzing not implemented")
 
     def accept(self, visitor: "NodeVisitor"):
@@ -574,6 +685,374 @@ class Disambiguator(NodeVisitor):
         self, node: CharSet
     ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
         return {(Terminal(c),): [(node, TerminalNode(Terminal(c)))] for c in node.chars}
+
+
+class NonTerminalFinder(NodeVisitor):
+
+    def default_result(self):
+        return []
+
+    def aggregate_results(self, aggregate, result):
+        aggregate.extend(result)
+        return aggregate
+
+    def visitNonTerminalNode(self, node: NonTerminalNode):
+        return [node]
+
+
+class PacketForecaster(NodeVisitor):
+
+    class MountingPath:
+        def __init__(self, tree: DerivationTree, path: Tuple[Tuple[NonTerminal, bool], ...]):
+            self.tree = tree
+            self.path = path
+
+        @property
+        def collapsed_path(self):
+            new_path = []
+            for nt, new_node in self.path:
+                if nt.symbol.startswith("<__"):
+                    continue
+                new_path.append((nt, new_node))
+            return tuple(new_path)
+
+        def __hash__(self):
+            return hash((hash(self.tree), hash(self.path)))
+
+        def __eq__(self, other):
+            return hash(self) == hash(other)
+
+        def __repr__(self):
+            return repr(self.path)
+
+    class ForcastingPacket:
+        def __init__(self, node: NonTerminalNode):
+            self.node = node
+            self.paths: set[PacketForecaster.MountingPath] = set()
+
+        def add_path(self, path: "PacketForecaster.MountingPath"):
+            self.paths.add(path)
+
+    class ForcastingNonTerminals:
+        def __init__(self):
+            self.nt_to_packet = dict[NonTerminal, PacketForecaster.ForcastingPacket]()
+
+        def getNonTerminals(self) -> set[NonTerminal]:
+            return set(self.nt_to_packet.keys())
+
+        def __getitem__(self, item: NonTerminal):
+            return self.nt_to_packet[item]
+
+        def add_packet(self, packet: "PacketForecaster.ForcastingPacket"):
+            if packet.node.symbol in self.nt_to_packet.keys():
+                for path in packet.paths:
+                    self.nt_to_packet[packet.node.symbol].add_path(path)
+            else:
+                self.nt_to_packet[packet.node.symbol] = packet
+
+    class ForcastingResult:
+        def __init__(self):
+            # dict[roleName, dict[packetName, PacketForecaster.ForcastingPacket]]
+            self.roles_to_packets = dict[str, PacketForecaster.ForcastingNonTerminals]()
+
+        def getRoles(self) -> set[str]:
+            return set(self.roles_to_packets.keys())
+
+        def __getitem__(self, item: str):
+            return self.roles_to_packets[item]
+
+        def add_packet(self, role: str, packet: "PacketForecaster.ForcastingPacket"):
+            if role not in self.roles_to_packets.keys():
+                self.roles_to_packets[role] = PacketForecaster.ForcastingNonTerminals()
+            self.roles_to_packets[role].add_packet(packet)
+
+        def merge(self, other: "PacketForecaster.ForcastingResult"):
+            c_new = deepcopy(self)
+            c_other = deepcopy(other)
+            for role, fnt in c_other.roles_to_packets.items():
+                for fp in fnt.nt_to_packet.values():
+                    c_new.add_packet(role, fp)
+            return c_new
+
+    def __init__(self, grammar: "Grammar", tree: DerivationTree | None = None):
+        self.grammar = grammar
+        self.tree = tree
+        self.current_tree: list[list[DerivationTree] | None] = []
+        self.current_path: list[Tuple[NonTerminal, bool]] = []
+        self.result = PacketForecaster.ForcastingResult()
+
+    def add_option(self, node: NonTerminalNode):
+        mounting_path = PacketForecaster.MountingPath(
+            self.tree, tuple(self.current_path)
+        )
+        f_packet = PacketForecaster.ForcastingPacket(node)
+        f_packet.add_path(mounting_path)
+        self.result.add_packet(node.role, f_packet)
+
+    def find(self):
+        self.result = PacketForecaster.ForcastingResult()
+        if self.tree is not None:
+            self.current_path.append((self.tree.symbol, False))
+            if len(self.tree.children) == 0:
+                self.current_tree = [None]
+            else:
+                self.current_tree = [[self.tree.children[0]]]
+        else:
+            self.current_path.append((NonTerminal("<start>"), True))
+            self.current_tree = [None]
+
+        self.visit(self.grammar.rules[self.current_path[-1][0]])
+        self.current_tree.pop()
+        self.current_path.pop()
+        return self.result
+
+    def on_enter_controlflow(self, expected_nt_prefix: str):
+        tree = self.current_tree[-1]
+        cf_nt = (NonTerminal(expected_nt_prefix), True)
+        if tree is not None:
+            if len(tree) != 1:
+                raise GrammarKeyError("Expected len(tree) == 1 for controlflow entries!")
+            if not str(tree[0].symbol).startswith(expected_nt_prefix):
+                raise GrammarKeyError("Symbol mismatch!")
+            cf_nt = (NonTerminal(str(tree[0].symbol)), False)
+        self.current_tree.append(None if tree is None else tree[0].children)
+        self.current_path.append(cf_nt)
+
+    def on_leave_controlflow(self):
+        self.current_tree.pop()
+        self.current_path.pop()
+
+    def visitNonTerminalNode(self, node: NonTerminalNode):
+        tree = self.current_tree[-1]
+        if tree is not None:
+            if tree[0].symbol != node.symbol:
+                raise GrammarKeyError("Symbol mismatch")
+
+        if node.role is not None:
+            if tree is None:
+                self.add_option(node)
+                return False
+            else:
+                return True
+        self.current_tree.append(None if tree is None else tree[0].children)
+        self.current_path.append((node.symbol, tree is None))
+        try:
+            result = self.visit(self.grammar.rules[node.symbol])
+        finally:
+            self.current_path.pop()
+            self.current_tree.pop()
+        return result
+
+    def visitConcatenation(self, node: Concatenation):
+        self.on_enter_controlflow(f"<__{NodeType.CONCATENATION}:")
+        tree = self.current_tree[-1]
+        child_idx = 0 if tree is None else (len(tree) - 1)
+        continue_exploring = True
+        if tree is not None:
+            self.current_tree.append([tree[child_idx]])
+            try:
+                continue_exploring = self.visit(node.nodes[child_idx])
+                child_idx += 1
+            finally:
+                self.current_tree.pop()
+        while continue_exploring and child_idx < len(node.children()):
+            next_child = node.children()[child_idx]
+            self.current_tree.append(None)
+            continue_exploring = self.visit(next_child)
+            self.current_tree.pop()
+            child_idx += 1
+        self.on_leave_controlflow()
+        return continue_exploring
+
+    def visitAlternative(self, node: Alternative):
+        self.on_enter_controlflow(f"<__{NodeType.ALTERNATIVE}:")
+        tree = self.current_tree[-1]
+        continue_exploring = True
+
+        if tree is not None:
+            self.current_tree.append([tree[0]])
+            found = False
+            for alt in node.alternatives:
+                try:
+                    continue_exploring = self.visit(alt)
+                    found = True
+                    break
+                except GrammarKeyError as e:
+                    pass
+            self.current_tree.pop()
+            self.on_leave_controlflow()
+            if not found:
+                raise GrammarKeyError("Alternative mismatch")
+            return continue_exploring
+        else:
+            self.current_tree.append(None)
+            for alt in node.alternatives:
+                continue_exploring |= not self.visit(alt)
+            self.current_tree.pop()
+            self.on_leave_controlflow()
+            return continue_exploring
+
+    def visitRepetition(self, node: Repetition):
+        self.on_enter_controlflow(f"<__{NodeType.REPETITION}:")
+        self.visitRepetitionType(node)
+        self.on_leave_controlflow()
+
+
+    def visitRepetitionType(self, node: Repetition):
+        tree = self.current_tree[-1]
+        continue_exploring = True
+        tree_len = 0
+        if tree is not None:
+            tree_len = len(tree)
+            self.current_tree.append([tree[-1]])
+            continue_exploring = self.visit(node.node)
+            self.current_tree.pop()
+
+        rep_max = node.max(self.grammar, self.grammar.collapse(self.tree))
+        if continue_exploring and tree_len < rep_max:
+            self.current_tree.append(None)
+            continue_exploring = self.visit(node.node)
+            self.current_tree.pop()
+            if continue_exploring:
+                return continue_exploring
+        if tree_len >= node.min(self.grammar, self.grammar.collapse(self.tree)):
+            return True
+        return continue_exploring
+
+    def visitStar(self, node: Star):
+        self.on_enter_controlflow(f"<__{NodeType.STAR}:")
+        self.visitRepetitionType(node)
+        self.on_leave_controlflow()
+
+    def visitPlus(self, node: Plus):
+        self.on_enter_controlflow(f"<__{NodeType.PLUS}:")
+        self.visitRepetitionType(node)
+        self.on_leave_controlflow()
+
+    def visitOption(self, node: Option):
+        self.on_enter_controlflow(f"<__{NodeType.OPTION}:")
+        self.visitRepetitionType(node)
+        self.on_leave_controlflow()
+
+
+class RoleAssigner:
+
+    def __init__(
+        self, implicite_role: str, grammar: "Grammar", processed_non_terminals: set[str]
+    ):
+        self.grammar = grammar
+        self.seen_non_terminals = set()
+        self.processed_non_terminals = set(processed_non_terminals)
+        self.implicite_role = implicite_role
+
+    def run(self, node: Node):
+        non_terminals: list[NonTerminalNode] = NonTerminalFinder().visit(
+            node
+        )
+        unprocessed_non_terminals = []
+        for nt in non_terminals:
+            if nt not in self.processed_non_terminals:
+                unprocessed_non_terminals.append(nt)
+        if node in unprocessed_non_terminals and not isinstance(node, NonTerminalNode):
+            unprocessed_non_terminals.remove(node)
+        child_roles = set()
+
+        for c_node in unprocessed_non_terminals:
+            child_roles = child_roles.union(c_node.tree_roles(self.grammar, False))
+
+        if len(child_roles) == 0:
+            return
+        for c_node in unprocessed_non_terminals:
+            self.seen_non_terminals.add(c_node.symbol)
+            if len(c_node.tree_roles(self.grammar, False)) != 0:
+                continue
+            c_node.role = self.implicite_role
+
+
+class GrammarTruncator(NodeVisitor):
+    def __init__(self, grammar: "Grammar", keep_roles: set[str]):
+        self.grammar = grammar
+        self.keep_roles = keep_roles
+
+    def visitStar(self, node: Star):
+        return self.visitRepetition(node)
+
+    def visitPlus(self, node: Plus):
+        return self.visitRepetition(node)
+
+    def visitOption(self, node: Option):
+        return self.visitRepetition(node)
+
+    def visitAlternative(self, node: Alternative):
+        for child in list(node.children()):
+            if self.visit(child):
+                node.alternatives.remove(child)
+        if len(node.alternatives) == 0:
+            return True
+        return False
+
+    def visitRepetition(self, node: Repetition):
+        for child in list(node.children()):
+            if self.visit(child):
+                return True
+        return False
+
+    def visitConcatenation(self, node: Concatenation):
+        for child in list(node.children()):
+            if self.visit(child):
+                node.nodes.remove(child)
+        if len(node.nodes) == 0:
+            return True
+        return False
+
+    def visitNonTerminalNode(self, node: NonTerminalNode):
+        if node.role is None or node.recipient is None:
+            return False
+        truncatable = True
+        if node.role in self.keep_roles:
+            truncatable = False
+        if node.recipient in self.keep_roles:
+            truncatable = False
+        return truncatable
+
+    def visitTerminalNode(self, node: TerminalNode):
+        return False
+
+
+class RoleNestingDetector(NodeVisitor):
+    def __init__(self, grammar: "Grammar"):
+        self.grammar = grammar
+        self.seen_nt = set()
+        self.current_path = list()
+
+    def fail_on_nested_packet(self, start_symbol: NonTerminal):
+        self.current_nt = start_symbol
+        self.visit(self.grammar[start_symbol])
+
+    def visitNonTerminalNode(self, node: NonTerminalNode):
+        self.current_path.append(node.symbol)
+        if node.symbol not in self.seen_nt:
+            self.seen_nt.add(node.symbol)
+        elif node.role is not None and node.symbol in self.current_path:
+            str_path = [str(p) for p in self.current_path]
+            raise RuntimeError(
+                f"Found illegal packet-definitions within packet-definition of non_terminal {node.symbol}! DerivationPath: "
+                + " -> ".join(str_path)
+            )
+        else:
+            return
+
+        if node.role is not None:
+            tree_roles = self.grammar[node.symbol].tree_roles(self.grammar, False)
+            if len(tree_roles) != 0:
+                raise RuntimeError(
+                    f"Found illegal packet-definitions within packet-definition of non_terminal {node.symbol}: "
+                    + ", ".join(tree_roles)
+                )
+            return
+
+        self.visit(self.grammar[node.symbol])
+        self.current_path.pop()
 
 
 class ParseState:
@@ -861,6 +1340,10 @@ class Grammar(NodeVisitor):
 
         def visitNonTerminalNode(self, node: NonTerminalNode):
             params = dict()
+            if node.role is not None:
+                params["role"] = node.role
+            if node.recipient is not None:
+                params["recipient"] = node.recipient
             params = frozenset(params.items())
             return [[(node.symbol, params)]]
 
@@ -890,6 +1373,8 @@ class Grammar(NodeVisitor):
                     children=reduced,
                     generator_params=tree.generator_params,
                     read_only=tree.read_only,
+                    recipient=tree.recipient,
+                    role=tree.role,
                 )
             ]
 
@@ -1337,12 +1822,14 @@ class Grammar(NodeVisitor):
     def __init__(
         self,
         rules: Optional[Dict[NonTerminal, Node]] = None,
+        fuzzing_mode: Optional[FuzzingMode] = FuzzingMode.COMPLETE,
         local_variables: Optional[Dict[str, Any]] = None,
         global_variables: Optional[Dict[str, Any]] = None,
     ):
         self.rules = rules or {}
         self.generators: Dict[NonTerminal, LiteralGenerator] = {}
         self._parser = Grammar.Parser(self)
+        self.fuzzing_mode = fuzzing_mode
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
         self._visited = set()
@@ -1493,18 +1980,58 @@ class Grammar(NodeVisitor):
             )
 
         if isinstance(string, tuple):
-            tree = DerivationTree.from_tree(string)
-        else:
-            tree = self.parse(string, symbol)
+            string = str(DerivationTree.from_tree(string))
+        tree = self.parse(string, symbol)
         if tree is None:
-            raise ValueError(
+            raise GeneratorParserValueError(
                 f"Failed to parse generated string: {string} for {symbol} with generator {self.generators[symbol]}"
             )
         tree.generator_params = deepcopy(generator_params)
         return tree
 
+    def collapse(self, tree: DerivationTree) -> DerivationTree:
+        return self._parser.collapse(tree)
+
+    def assign_roles(
+        self,
+        tree: DerivationTree,
+        roles: list[RoledMessage],
+        parent_symbol=NonTerminal("<start>"),
+    ):
+        return self._assign_roles(tree, list(roles), parent_symbol)
+
+    def _assign_roles(
+        self, tree: DerivationTree, roles: list[RoledMessage], parent_symbol
+    ):
+        if len(roles) == 0:
+            return True
+        first = roles[0]
+        current_str = str(tree)
+        if not current_str.startswith(str(first.msg)):
+            return False
+        if current_str == str(first.msg):
+            if parent_symbol in self.rules:
+                nodes = []
+                rule = self.rules[parent_symbol]
+                nodes.append(rule)
+                nodes.extend(rule.children())
+                nodes = list(filter(lambda x: isinstance(x, NonTerminalNode), nodes))
+                for node in nodes:
+                    if tree.symbol == node.symbol and first.role == node.role:
+                        tree.role = first.role
+                        roles.remove(first)
+                        return len(roles) == 0
+
+        for child in tree.children:
+            if self._assign_roles(child, roles, tree.symbol):
+                return True
+        return len(roles) == 0
+
     def fuzz(
-        self, start: str | NonTerminal = "<start>", max_nodes: int = 50
+        self,
+        start: str | NonTerminal = "<start>",
+        max_nodes: int = 50,
+        in_role: str = None,
     ) -> DerivationTree:
         if isinstance(start, str):
             start = NonTerminal(start)
@@ -1520,11 +2047,14 @@ class Grammar(NodeVisitor):
             local_variables = grammar._local_variables
             global_variables = grammar._global_variables
             rules = grammar.rules
+            fuzzing_mode = grammar.fuzzing_mode
         else:
             rules = grammar
             generators = local_variables = global_variables = {}
+            fuzzing_mode = FuzzingMode.COMPLETE
 
         self.rules.update(rules)
+        self.fuzzing_mode = fuzzing_mode
         self.generators.update(generators)
 
         for symbol in rules.keys():
@@ -1609,6 +2139,12 @@ class Grammar(NodeVisitor):
                 for key, value in self.rules.items()
             ]
         )
+
+    def roles(self, include_recipients: bool = True):
+        found_roles = set()
+        for nt, rule in self.rules.items():
+            found_roles = found_roles.union(rule.tree_roles(self, include_recipients))
+        return found_roles
 
     def get_repr_for_rule(self, symbol: str | NonTerminal):
         if isinstance(symbol, str):
@@ -1856,6 +2392,9 @@ class Grammar(NodeVisitor):
             len(covered_k_paths),
             len(all_k_paths),
         )
+
+    def get_python_env(self):
+        return self._global_variables, self._local_variables
 
     def contains_type(self, tp: type, *, start="<start>") -> bool:
         """

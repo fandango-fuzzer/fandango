@@ -1,17 +1,27 @@
 # fandango/evolution/algorithm.py
+import copy
 import enum
 import logging
 import random
 import time
 from typing import List, Union
 
+from copy import deepcopy
 from fandango.constraints.base import Constraint
 from fandango.evolution.adaptation import AdaptiveTuner
 from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
 from fandango.evolution.evaluation import Evaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import PopulationManager
-from fandango.language.grammar import DerivationTree, Grammar
+from fandango.language.io import FandangoIO
+from fandango.language.grammar import (
+    DerivationTree,
+    Grammar,
+    FuzzingMode,
+    PacketForecaster, GeneratorParserValueError,
+)
+from fandango.language.symbol import NonTerminal
+from fandango.language.tree import RoledMessage
 from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
 
 
@@ -161,12 +171,19 @@ class Fandango:
                 from fandango.constraints.fitness import Comparison, ComparisonSide
 
                 # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
-
-                if (
-                    operator == Comparison.EQUAL
-                    and side == ComparisonSide.LEFT
-                    and isinstance(value, (str, bytes, DerivationTree))
+                if operator == Comparison.EQUAL and isinstance(
+                    value, (str, bytes, DerivationTree)
                 ):
+                    if (
+                        self.grammar.fuzzing_mode == FuzzingMode.IO
+                        and side == ComparisonSide.LEFT
+                    ):
+                        continue
+                    if (
+                        self.grammar.fuzzing_mode != FuzzingMode.IO
+                        and side == ComparisonSide.RIGHT
+                    ):
+                        continue
                     suggested_tree = self.grammar.parse(
                         value, start=failing_tree.tree.symbol.symbol
                     )
@@ -178,7 +195,108 @@ class Fandango:
                     self.fixes_made += 1
         return individual
 
+    def _evolve_io(self) -> List[DerivationTree]:
+        global_env, local_env = self.grammar.get_python_env()
+        io_instance: FandangoIO = global_env["FandangoIO"].instance()
+        history_tree: DerivationTree = random.choice(self.population)
+
+        self.desired_solutions = 1
+        while True:
+            self.population.clear()
+            self.evaluator.reset()
+            self.solution.clear()
+            self.solution_set.clear()
+            forecaster = PacketForecaster(self.grammar, history_tree)
+            role_options = forecaster.find()
+
+            if len(role_options.getRoles()) == 0:
+                if len(history_tree.find_role_msgs()) == 0:
+                    raise RuntimeError("Couldn't forecast next packet!")
+                return [self.grammar.collapse(history_tree)]
+
+            selected_role = random.choice(list(role_options.getRoles()))
+            if (
+                    io_instance.roles[selected_role].is_fandango()
+                    and not io_instance.received_msg()
+            ):
+                non_terminal_options = role_options[selected_role]
+                symbol = random.choice(list(non_terminal_options.getNonTerminals()))
+                selected_option = non_terminal_options[symbol]
+                self.population_manager.io_next_packet = selected_option
+                new_population = (
+                    self.population_manager.generate_random_initial_population(
+                        self.fix_individual
+                    )
+                )
+                packet_node = self.population_manager.io_next_packet.node
+
+                self.population = new_population
+                self.evaluation = self.evaluator.evaluate_population(self.population)
+                self.fitness = (
+                        sum(fitness for _, fitness, _ in self.evaluation)
+                        / self.population_size
+                )
+
+                evolve_result = self._evolve_single()
+                if len(evolve_result) == 0:
+                    raise RuntimeError(
+                        f"Couldn't find solution with packet: {packet_node.symbol}"
+                    )
+                next_tree = evolve_result[0]
+                self.evaluation = self.evaluator.evaluate_population(self.population)
+                if io_instance.received_msg():
+                    # Abort if we received a message during fuzzing
+                    continue
+                new_packet = next_tree.find_role_msgs()[-1]
+                send_msg = new_packet.msg
+                if send_msg.contains_bytes():
+                    send_msg = send_msg.to_bytes()
+                else:
+                    send_msg = send_msg.to_string()
+                if (
+                        packet_node.recipient is None
+                        or not io_instance.roles[packet_node.recipient].is_fandango()
+                ):
+                    io_instance.set_transmit(
+                        packet_node.role, packet_node.recipient, send_msg
+                    )
+                    exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
+                cf_packet = self.grammar.parse(send_msg,
+                                               selected_option.node.symbol,
+                                               mode=Grammar.Parser.ParsingMode.COMPLETE,
+                                               include_controlflow=True)
+                cf_packet.role = selected_option.node.role
+                cf_packet.recipient = packet_node.recipient
+                hookin_option = next(iter(selected_option.paths))
+                history_tree = hookin_option.tree
+                history_tree.append(hookin_option.path[1:], cf_packet)
+                next_tree.set_all_read_only(True)
+            else:
+                while not io_instance.received_msg():
+                    time.sleep(0.25)
+                forecast, packet_tree = self._parse_next_remote_packet(
+                    role_options, io_instance
+                )
+
+                hookin_option = next(iter(forecast.paths))
+                history_tree = hookin_option.tree
+                history_tree.append(hookin_option.path[1:], packet_tree)
+                history_tree.set_all_read_only(True)
+                fitness, eval_report = self.evaluator.evaluate_individual(history_tree)
+                if fitness < 0.99:
+                    raise RuntimeError("Remote response doesn't match constraints!")
+                self.solution.clear()
+
+
     def evolve(self) -> List[DerivationTree]:
+        if self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
+            return self._evolve_single()
+        elif self.grammar.fuzzing_mode == FuzzingMode.IO:
+            return self._evolve_io()
+        else:
+            raise RuntimeError(f"Invalid mode: {self.grammar.fuzzing_mode}")
+
+    def _evolve_single(self) -> List[DerivationTree]:
         LOGGER.info("---------- Starting evolution ----------")
         start_time = time.time()
         prev_best_fitness = 0.0
@@ -186,15 +304,21 @@ class Fandango:
         for generation in range(1, self.max_generations + 1):
             if 0 < self.desired_solutions <= len(self.solution):
                 self.fitness = 1.0
-                self.solution = self.solution[: self.desired_solutions]
+                temp_solution = self.solution[: self.desired_solutions]
+                self.solution.clear()
+                self.solution.extend(temp_solution)
                 break
             if len(self.solution) >= self.population_size:
                 self.fitness = 1.0
-                self.solution = self.solution[: self.population_size]
+                temp_solution = self.solution[: self.population_size]
+                self.solution.clear()
+                self.solution.extend(temp_solution)
                 break
             if self.fitness >= self.expected_fitness:
                 self.fitness = 1.0
-                self.solution = self.population[: self.population_size]
+                temp_solution = self.population[: self.population_size]
+                self.solution.clear()
+                self.solution.extend(temp_solution)
                 break
 
             LOGGER.info(
@@ -325,6 +449,78 @@ class Fandango:
                 return self.population[: self.desired_solutions]
 
         return self.solution
+
+    def _parse_next_remote_packet(
+        self, forecast: PacketForecaster.ForcastingResult, io_instance: FandangoIO
+    ):
+        if len(io_instance.get_received_msgs()) == 0:
+            return None, None
+
+        remote_msgs = io_instance.get_received_msgs()
+
+        complete_msg = None
+        used_fragments_idx = []
+
+        msg_role, _ = remote_msgs[0]
+
+        if msg_role not in forecast.getRoles():
+            raise RuntimeError(
+                f"Unexpected sender sent message. Expected:",
+                "|".join(forecast.getRoles()),
+                f" Received: {msg_role}",
+            )
+        forecasted_nonterminals = forecast[msg_role]
+        nts_with_role = set(forecasted_nonterminals.getNonTerminals())
+
+        is_msg_complete = False
+        next_fragment_idx = 0
+
+        while not is_msg_complete:
+            for idx, (role, msg_fragment) in enumerate(remote_msgs, next_fragment_idx):
+                next_fragment_idx = idx + 1
+
+                if msg_role != role:
+                    continue
+                if complete_msg is None:
+                    complete_msg = msg_fragment
+                else:
+                    complete_msg += msg_fragment
+                used_fragments_idx.append(idx)
+
+                parsed_packet_tree = None
+                packet_option = None
+                for non_terminal in set(nts_with_role):
+                    packet_option = forecasted_nonterminals[non_terminal]
+                    parsed_packet_tree = self.grammar.parse(
+                        complete_msg, packet_option.node.symbol, include_controlflow=True
+                    )
+                    if parsed_packet_tree is not None:
+                        parsed_packet_tree.role = packet_option.node.role
+                        parsed_packet_tree.recipient = packet_option.node.recipient
+                        # Derive generator packets. Note this is only apply this method without inserting the tree into the history,
+                        # because the grammar syntax guarantees, that we don't encounter a generator in our path to the root node after hookin.
+                        try:
+                            self.grammar.populate_generator_params(parsed_packet_tree)
+                            break
+                        except GeneratorParserValueError as e:
+                            parsed_packet_tree = None
+                    incomplete_tree = self.grammar.parse(complete_msg, packet_option.node.symbol,
+                                                         mode=Grammar.Parser.ParsingMode.INCOMPLETE)
+                    if incomplete_tree is None:
+                        nts_with_role.remove(non_terminal)
+
+                # Check if there are still NonTerminals that can be parsed with received prefix
+                if len(nts_with_role) == 0:
+                    raise RuntimeError(
+                        f"Couldn't match remote message to any packet matching grammar: {complete_msg}"
+                    )
+                if parsed_packet_tree is not None:
+                    for idx in used_fragments_idx:
+                        del remote_msgs[idx]
+                    return packet_option, parsed_packet_tree
+
+            if not is_msg_complete:
+                time.sleep(0.25)
 
     def select_elites(self) -> List[DerivationTree]:
         return [

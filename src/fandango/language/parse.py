@@ -20,13 +20,25 @@ from thefuzz import process as thefuzz_process
 from xdg_base_dirs import xdg_cache_home, xdg_data_dirs, xdg_data_home
 
 from fandango.constraints import predicates
+from fandango.constraints.base import Constraint
 from fandango.language.convert import (
     ConstraintProcessor,
     FandangoSplitter,
     GrammarProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import Grammar, NodeType, MAX_REPETITIONS
+from fandango.language.grammar import (
+    Grammar,
+    NodeType,
+    NonTerminalFinder,
+    RoleAssigner,
+    FuzzingMode,
+    NonTerminalNode,
+    GrammarTruncator,
+    RoleNestingDetector,
+    MAX_REPETITIONS,
+)
+from fandango.language.io import FandangoIO, FandangoAgent
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.stdlib import stdlib
@@ -318,7 +330,7 @@ def parse(
     start_symbol: Optional[str] = None,
     includes: List[str] = [],
     max_repetitions: int = 5,
-) -> Tuple[Optional[Grammar], List[str]]:
+) -> Tuple[Optional[Grammar], List[Constraint]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
     :param fan_files: One (open) .fan file, one string, or a list of these
@@ -459,7 +471,26 @@ def parse(
     if grammar and parsed_constraints:
         check_constraints_existence(grammar, parsed_constraints)
 
+    assign_implicit_role(grammar, "STDOUT")
+
+    global_env, local_env = grammar.get_python_env()
+    if grammar.fuzzing_mode == FuzzingMode.IO:
+        if "FandangoIO" not in global_env.keys():
+            exec("FandangoIO.instance()", global_env, local_env)
+        io_instance: FandangoIO = global_env["FandangoIO"].instance()
+
+        init_fandango_agents(grammar)
+        assign_std_out_role(grammar, io_instance)
+
+        # Detect illegally nested data packets.
+        rir_detector = RoleNestingDetector(grammar)
+        rir_detector.fail_on_nested_packet(NonTerminal(start_symbol))
+        fail_on_role_in_generator(grammar)
+
+        truncate_non_visible_packets(grammar, io_instance)
+
     # We invoke this at the very end, now that all data is there
+    grammar.update(grammar)
     grammar.prime()
 
     LOGGER.debug("All contents parsed")
@@ -467,6 +498,94 @@ def parse(
 
 
 ### Consistency Checks
+
+def fail_on_role_in_generator(grammar):
+    for nt, node in grammar.rules.items():
+        if nt not in grammar.generators:
+            continue
+        found_node = is_role_reachable(grammar, node)
+        if found_node is not None:
+            raise ValueError(
+                f"{found_node} contains a role or recipient and is generated using the generator on {nt}. This is not allowed!")
+
+    for nt in grammar.generators.keys():
+        dependencies: set[NonTerminal] = grammar.generator_dependencies(nt)
+        for dep_nt in dependencies:
+            found_node = is_role_reachable(grammar, grammar[dep_nt])
+            if found_node is not None:
+                raise ValueError(
+                    f"{found_node} contains a role or recipient and is a parameter for the generator of {nt}. This is not allowed!")
+
+def is_role_reachable(grammar, node):
+    seen_nt_nodes = set()
+    nt_node_queue: set[NonTerminalNode] = NonTerminalFinder().visit(node)
+    while len(nt_node_queue) != 0:
+        current_node = nt_node_queue.pop()
+        if current_node.role is not None or current_node.recipient is not None:
+            return current_node
+
+        seen_nt_nodes.add(current_node)
+        next_nts: list[NonTerminalNode] = NonTerminalFinder().visit(grammar[current_node.symbol])
+        for next_nt in next_nts:
+            if next_nt not in seen_nt_nodes:
+                nt_node_queue.add(next_nt)
+    return None
+
+
+
+def init_fandango_agents(grammar: "Grammar"):
+    agent_names = set()
+    grammar_roles = grammar.roles(True)
+    global_env, local_env = grammar.get_python_env()
+
+    # Initialize FandangoAgent instances
+    for key in global_env.keys():
+        if key in grammar_roles:
+            the_type = global_env[key]
+            if not isinstance(the_type, type):
+                continue
+            if FandangoAgent in the_type.__mro__:
+                agent_names.add(key)
+    # Call constructor
+    for agent in agent_names:
+        exec(f"{agent}()", global_env, local_env)
+        grammar_roles.remove(agent)
+
+
+def assign_std_out_role(grammar: "Grammar", io_instance: FandangoIO):
+    remapped_roles = set()
+    unknown_recipients = set()
+    for symbol in grammar.rules.keys():
+        non_terminals: list[NonTerminalNode] = NonTerminalFinder().visit(
+            grammar.rules[symbol]
+        )
+
+        for nt in non_terminals:
+            if nt.role is not None:
+                if nt.role not in io_instance.roles.keys():
+                    remapped_roles.add(nt.role)
+                    nt.role = "STDOUT"
+            if nt.recipient is not None:
+                if nt.recipient not in io_instance.roles.keys():
+                    unknown_recipients.add(nt.recipient)
+
+    for name in remapped_roles:
+        LOGGER.warn(
+            f"No class has been specified for role: {name}! Role gets mapped to STDOUT!"
+        )
+    for name in unknown_recipients:
+        f"No class has been specified for recipient: {name}!"
+
+
+def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) -> None:
+    keep_roles = grammar.roles(True)
+    io_instance.roles.keys()
+    for existing_role in list(keep_roles):
+        if not io_instance.roles[existing_role].is_fandango():
+            keep_roles.remove(existing_role)
+
+    for nt in grammar.rules.keys():
+        GrammarTruncator(grammar, keep_roles).visit(grammar.rules[nt])
 
 
 def check_grammar_consistency(
@@ -733,23 +852,44 @@ def check_constraints_existence_children(
     grammar_symbols = grammar.rules[NonTerminal(f"<{parent}>")]
 
     # Original code; fails on <a> "b" <c> -- AZ
-    grammar_matches = re.findall(r'(?<!"|\')<([^>]*)>(?!.*"|\')', str(grammar_symbols))
+    # grammar_matches = re.findall(r'(?<!")<([^>]*)>(?!".*)',
+    #                              str(grammar_symbols))
     #
     # Simpler version; may overfit (e.g. matches <...> in strings),
     # but that should not hurt us -- AZ
-    # grammar_matches = re.findall(r"<([^>]*)>", str(grammar_symbols))
+    finder = NonTerminalFinder()
+    non_terminals = finder.visit(grammar_symbols)
+    non_terminals = [str(nt.symbol)[1:-1] for nt in non_terminals]
 
-    if symbol not in grammar_matches:
-        if recurse:
-            is_child = False
-            for match in grammar_matches:
-                is_child = is_child or check_constraints_existence_children(
-                    grammar, match, symbol, recurse, indirect_child
-                )
-            indirect_child[f"<{parent}>"][f"<{symbol}>"] = is_child
-            return is_child
-        else:
-            return False
+    if symbol in non_terminals:
+        indirect_child[f"<{parent}>"][f"<{symbol}>"] = True
+        return True
 
-    indirect_child[f"<{parent}>"][f"<{symbol}>"] = True
-    return True
+    is_child = False
+    for match in non_terminals:
+        if recurse or match.startswith("_"):
+            is_child = is_child or check_constraints_existence_children(
+                grammar, match, symbol, recurse, indirect_child
+            )
+    indirect_child[f"<{parent}>"][f"<{symbol}>"] = is_child
+    return is_child
+
+
+def assign_implicit_role(grammar, implicit_role: str):
+    seen_non_terminals = set()
+    seen_non_terminals.add(NonTerminal("<start>"))
+
+    processed_non_terminals = set()
+    unprocessed_non_terminals = seen_non_terminals.difference(processed_non_terminals)
+
+    while len(unprocessed_non_terminals) > 0:
+        current_symbol = unprocessed_non_terminals.pop()
+
+        assigner = RoleAssigner(implicit_role, grammar, processed_non_terminals)
+        assigner.run(grammar.rules[current_symbol])
+
+        processed_non_terminals.add(current_symbol)
+        seen_non_terminals = seen_non_terminals.union(assigner.seen_non_terminals)
+        unprocessed_non_terminals = seen_non_terminals.difference(
+            processed_non_terminals
+        )
