@@ -602,6 +602,7 @@ class ParseState:
 class Column:
     def __init__(self, states: Optional[List[ParseState]] = None):
         self.states = states or []
+        self.dot_map = dict[NonTerminal, list[ParseState]]()
         self.unique = set(self.states)
 
     def __iter__(self):
@@ -625,10 +626,16 @@ class Column:
     def __contains__(self, item):
         return item in self.unique
 
+    def find_dot(self, nt: NonTerminal):
+        return self.dot_map.get(nt, [])
+
     def add(self, state: ParseState):
         if state not in self.unique:
             self.states.append(state)
             self.unique.add(state)
+            state_list = self.dot_map.get(state.dot, [])
+            state_list.append(state)
+            self.dot_map[state.dot] = state_list
             return True
         return False
 
@@ -1050,28 +1057,27 @@ class Grammar(NodeVisitor):
             k: int,
             use_implicit: bool = False,
         ):
-            for s in list(table[state.position]):
-                if s.dot == state.nonterminal:
-                    dot_params = s.dot_params
-                    s = s.next()
-                    table[k].add(s)
-                    if state.nonterminal in self._rules:
+            for s in table[state.position].find_dot(state.nonterminal):
+                dot_params = s.dot_params
+                s = s.next()
+                table[k].add(s)
+                if state.nonterminal in self._rules:
+                    s.children.append(
+                        DerivationTree(
+                            state.nonterminal, state.children, **dict(dot_params)
+                        )
+                    )
+                else:
+                    if use_implicit and state.nonterminal in self._implicit_rules:
                         s.children.append(
                             DerivationTree(
-                                state.nonterminal, state.children, **dict(dot_params)
+                                NonTerminal(state.nonterminal.symbol),
+                                state.children,
+                                **dict(s.dot_params),
                             )
                         )
                     else:
-                        if use_implicit and state.nonterminal in self._implicit_rules:
-                            s.children.append(
-                                DerivationTree(
-                                    NonTerminal(state.nonterminal.symbol),
-                                    state.children,
-                                    **dict(s.dot_params),
-                                )
-                            )
-                        else:
-                            s.children.extend(state.children)
+                        s.children.extend(state.children)
 
         def _parse_forest(
             self,
