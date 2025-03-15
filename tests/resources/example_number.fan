@@ -15,4 +15,4 @@
 def is_odd(x):
     return x % 2 != 0
 
-where is_odd(<number>)
+where is_odd(int(<number>))
