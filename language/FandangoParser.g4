@@ -49,7 +49,7 @@ symbol
         | STRING
         | NUMBER  // for 0 and 1 bits
         | OPEN_PAREN alternative CLOSE_PAREN
-        | char_set
+        | char_set // deprecated
         )
       NEWLINE*
     ;

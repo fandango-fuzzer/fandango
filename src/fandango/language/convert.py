@@ -173,7 +173,11 @@ class GrammarProcessor(FandangoParserVisitor):
                 raise UnsupportedOperation(f"Unsupported bit spec: {number}")
             return TerminalNode(Terminal.from_number(number))
         elif ctx.char_set():
-            return CharSet(ctx.char_set().getText())
+            text = ctx.char_set().getText()
+            LOGGER.warning(
+                f"{text}: Charset specs are deprecated. Use regular expressions (r'...') instead."
+            )
+            return CharSet(text)
         elif ctx.alternative():
             return self.visit(ctx.alternative())
         else:
@@ -231,10 +235,10 @@ class ConstraintProcessor(FandangoParserVisitor):
 
     def visitImplies(self, ctx: FandangoParser.ImpliesContext):
         if ctx.ARROW():
-            e = UnsupportedOperation(f"{ctx.getText()}: Implication is deprecated")
-            operants = ctx.getText().split("->")
-            e.add_note(f"Instead use: not({operants[0]}) or {operants[1]}")
-            raise e
+            operands = ctx.getText().split("->")
+            LOGGER.warning(
+                f"{ctx.getText()}: Implication is deprecated. Use `not({operands[0]}) or {operands[1]}` instead."
+            )
         return self.visit(ctx.quantifier())
 
     def visitQuantifier(self, ctx: FandangoParser.QuantifierContext):
