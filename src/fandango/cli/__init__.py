@@ -6,7 +6,7 @@ import logging
 import os
 import os.path
 import re
-import readline
+import gnureadline as readline
 import shlex
 import subprocess
 import sys
@@ -26,6 +26,8 @@ from fandango.evolution.algorithm import Fandango
 from fandango.language.grammar import Grammar
 from fandango.language.parse import parse
 from fandango.logger import LOGGER, print_exception
+
+from fandango import FandangoParseError, FandangoError
 
 
 DISTRIBUTION_NAME = "fandango-fuzzer"
@@ -627,7 +629,7 @@ def set_command(args):
     elif args.constraints:
         default_grammar = DEFAULT_FAN_CONTENT[0]
         if not default_grammar:
-            raise ValueError("Open a `.fan` file first ('set -f FILE.fan')")
+            raise FandangoError("Open a `.fan` file first ('set -f FILE.fan')")
 
         LOGGER.info("Parsing Fandango constraints")
         _, constraints = parse_constraints_from_args(
@@ -796,7 +798,7 @@ def output_population(population, args, file_mode=None, *, output_on_stdout=True
                     cmd, input=output(individual, args, file_mode), text=True
                 )
             else:
-                raise ValueError("Unsupported input method")
+                raise NotImplementedError("Unsupported input method")
 
         output_on_stdout = False
 
@@ -840,9 +842,9 @@ def report_syntax_error(
 
 def validate(individual, tree, *, filename="<file>"):
     if isinstance(individual, bytes) and tree.to_bytes() != individual:
-        raise ValueError(f"{filename!r}: parsed tree does not match original")
+        raise FandangoError(f"{filename!r}: parsed tree does not match original")
     if isinstance(individual, str) and tree.to_string() != individual:
-        raise ValueError(f"{filename!r}: parsed tree does not match original")
+        raise FandangoError(f"{filename!r}: parsed tree does not match original")
 
 
 def parse_file(fd, args, grammar, constraints, settings):
@@ -896,7 +898,7 @@ def parse_file(fd, args, grammar, constraints, settings):
     # Tried all alternatives
     if last_tree is None:
         error_pos = grammar.max_position() + 1
-        raise SyntaxError(
+        raise FandangoParseError(
             report_syntax_error(fd.name, error_pos, individual, binary=("b" in fd.mode))
         )
 
@@ -904,7 +906,7 @@ def parse_file(fd, args, grammar, constraints, settings):
     for constraint in constraints:
         fitness = constraint.fitness(last_tree).fitness()
         if fitness == 0:
-            raise ValueError(f"{fd.name!r}: constraint {constraint} not satisfied")
+            raise FandangoError(f"{fd.name!r}: constraint {constraint} not satisfied")
 
 
 def get_file_mode(args, settings, *, grammar=None, tree=None):
@@ -926,7 +928,7 @@ def get_file_mode(args, settings, *, grammar=None, tree=None):
         else:
             return "text"
 
-    raise ValueError("Cannot determine file mode")
+    raise FandangoError("Cannot determine file mode")
 
 
 def fuzz_command(args):
@@ -941,7 +943,7 @@ def fuzz_command(args):
         constraints = DEFAULT_FAN_CONTENT[1]
 
     if grammar is None:
-        raise ValueError("Use '-f FILE.fan' to open a Fandango spec")
+        raise FandangoError("Use '-f FILE.fan' to open a Fandango spec")
 
     # Avoid messing with default constraints
     constraints = constraints.copy()
@@ -995,7 +997,7 @@ def fuzz_command(args):
                 errors += 1
 
         if errors:
-            raise ValueError(f"{errors} error(s) during validation")
+            raise FandangoError(f"{errors} error(s) during validation")
 
         # If everything went well, clean up;
         # otherwise preserve file for debugging
@@ -1012,7 +1014,7 @@ def parse_command(args):
         constraints = DEFAULT_FAN_CONTENT[1]
 
     if grammar is None:
-        raise ValueError("Use '-f FILE.fan' to open a Fandango spec")
+        raise FandangoError("Use '-f FILE.fan' to open a Fandango spec")
 
     # Avoid messing with default constraints
     constraints = constraints.copy()
@@ -1046,7 +1048,7 @@ def parse_command(args):
         output_population(population, args, file_mode=file_mode, output_on_stdout=False)
 
     if errors:
-        raise ValueError(f"{errors} error(s) during parsing")
+        raise FandangoParseError(f"{errors} error(s) during parsing")
 
 
 def nop_command(args):
@@ -1258,7 +1260,7 @@ def shell_command(args):
             if sys.stdin.isatty():
                 os.system(command_line[1:])
             else:
-                raise ValueError(
+                raise FandangoError(
                     "Shell escape (`!`) is only available in interactive mode"
                 )
             continue
@@ -1272,7 +1274,7 @@ def shell_command(args):
                 except Exception as e:
                     print_exception(e)
             else:
-                raise ValueError(
+                raise FandangoError(
                     "Python escape (`/`) is only available in interactive mode"
                 )
             continue
@@ -1322,18 +1324,6 @@ def shell_command(args):
 def run(command, args):
     try:
         command(args)
-
-    except SyntaxError as e:
-        print_exception(e)
-        return 1
-
-    except ValueError as e:
-        print_exception(e)
-        return 1
-
-    except UnsupportedOperation as e:
-        print_exception(e)
-        return 1
 
     except Exception as e:
         print_exception(e)

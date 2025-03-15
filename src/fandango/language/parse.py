@@ -33,6 +33,9 @@ from fandango.language.stdlib import stdlib
 from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER, print_exception
 
+from fandango import FandangoSyntaxError, FandangoValueError
+
+
 
 class MyErrorListener(ErrorListener):
     """This is invoked from ANTLR when a syntax error is encountered"""
@@ -42,8 +45,11 @@ class MyErrorListener(ErrorListener):
         super().__init__()
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise SyntaxError(f"{self.filename!r}, line {line}, column {column}: {msg}")
-
+        exc = FandangoSyntaxError(f"{self.filename!r}, line {line}, column {column}: {msg}")
+        exc.line = line
+        exc.column = column
+        exc.messsage = msg
+        raise exc
 
 def closest_match(word, candidates):
     """
@@ -240,24 +246,24 @@ def parse_content(
                     assert spec is not None
                     LOGGER.debug(f"Cached spec version: {spec.version}")
                     if spec.fan_contents != fan_contents:
-                        e = ValueError(
+                        error = FandangoValueError(
                             "Hash collision (If you get this, you'll be real famous)"
                         )
-                        raise e
+                        raise error
 
                     from_cache = True
-            except Exception as e:
-                LOGGER.debug(type(e).__name__ + ":" + str(e))
+            except Exception as exc:
+                LOGGER.debug(type(exc).__name__ + ":" + str(exc))
 
     if spec:
         LOGGER.debug(f"{filename}: running code")
         try:
             spec.run_code(filename=filename)
-        except Exception as e:
+        except Exception as exc:
             # In case the error has anything to do with caching, play it safe
             LOGGER.debug(f"Cached spec failed; removing {pickle_file}")
             os.remove(pickle_file)
-            raise e
+            raise exc
 
     if not spec:
         LOGGER.debug(f"{filename}: setting up .fan parser and lexer")
@@ -308,7 +314,7 @@ STDLIB_CONSTRAINTS: Optional[List[str]] = None
 
 
 def parse(
-    fan_files: str | IO | List[IO],
+    fan_files: str | IO | List[str | IO],
     constraints: List[str] = None,
     *,
     use_cache: bool = True,
@@ -374,7 +380,11 @@ def parse(
     if use_stdlib:
         assert STDLIB_GRAMMAR is not None
         assert STDLIB_CONSTRAINTS is not None
-        grammars = [deepcopy(STDLIB_GRAMMAR)]
+        try:
+            grammars = [deepcopy(STDLIB_GRAMMAR)]
+        except TypeError:
+            # This can happen if we invoke parse() from a notebook
+            grammars = [STDLIB_GRAMMAR]
         parsed_constraints = STDLIB_CONSTRAINTS.copy()
 
     grammars += given_grammars
@@ -422,11 +432,10 @@ def parse(
 
     LOGGER.debug(f"Processing {len(grammars)} grammars")
     grammar = grammars[0]
-    LOGGER.debug(f"Grammar #1: {grammar.rules.keys()}")
+    LOGGER.debug(f"Grammar #1: {[str(key) for key in grammar.rules.keys()]}")
     n = 2
     for g in grammars[1:]:
-        LOGGER.debug(f"Grammar #{n}: {g.rules.keys()}")
-        # LOGGER.debug(f"Grammar: {g}")
+        LOGGER.debug(f"Grammar #{n}: {[str(key) for key in g.rules.keys()]}")
 
         for symbol in g.rules.keys():
             if symbol in grammar.rules:
@@ -434,7 +443,7 @@ def parse(
         grammar.update(g, prime=False)
         n += 1
 
-    LOGGER.debug(f"Final grammar: {grammar.rules.keys()}")
+    LOGGER.debug(f"Final grammar: {[str(key) for key in grammar.rules.keys()]}")
 
     LOGGER.debug("Processing constraints")
     for constraint in constraints or []:
@@ -489,7 +498,7 @@ def check_grammar_definitions(
 
     if start_symbol not in defined_symbols:
         closest = closest_match(start_symbol, defined_symbols)
-        raise NameError(
+        raise FandangoValueError(
             f"Start symbol {start_symbol!s} not defined in grammar. Did you mean {closest!s}?"
         )
 
@@ -520,11 +529,11 @@ def check_grammar_definitions(
             and symbol not in given_used_symbols
             and symbol != start_symbol
         ):
-            LOGGER.info(f"Symbol {symbol!s} defined, but not used")
+            LOGGER.warning(f"Symbol {symbol!s} defined, but not used")
 
     if undefined_symbols:
         first_undefined_symbol = undefined_symbols.pop()
-        error = NameError(f"Undefined symbol {first_undefined_symbol!s} in grammar")
+        error = FandangoValueError(f"Undefined symbol {first_undefined_symbol!s} in grammar")
         if undefined_symbols:
             error.add_note(
                 f"Other undefined symbols: {', '.join(str(symbol) for symbol in undefined_symbols)}"
@@ -563,7 +572,7 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
         ):
             tp, min_bits, max_bits, step = get_type(tree.node, rule_symbol)
             # if min_bits % 8 != 0 and tree.min == 0:
-            #     raise ValueError(f"{rule_symbol!s}: Bits cannot be optional")
+            #     raise FandangoValueError(f"{rule_symbol!s}: Bits cannot be optional")
 
             try:
                 rep_min = tree.min(grammar, None)
@@ -633,7 +642,7 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
             # LOGGER.debug(f"Type of {rule_symbol!s} is {common_tp!r} with {min_bits}..{max_bits} bits")
             return common_tp, min_bits, max_bits, step
 
-        raise ValueError("Unknown node type")
+        raise FandangoValueError("Unknown node type")
 
     start_tree = grammar.rules[NonTerminal(start_symbol)]
     _, min_start_bits, max_start_bits, start_step = get_type(
@@ -688,14 +697,14 @@ def check_constraints_existence(grammar, constraints):
                 missing_symbols = ", ".join(
                     ["<" + str(symbol) + ">" for symbol in missing]
                 )
-                error = NameError(
+                error = FandangoValueError(
                     f"{constraint}: undefined symbols {missing_symbols}. Did you mean {closest!s}?"
                 )
                 raise error
 
             if len(missing) == 1:
                 missing_symbol = missing[0]
-                error = NameError(
+                error = FandangoValueError(
                     f"{constraint}: undefined symbol <{missing_symbol!s}>. Did you mean {closest!s}?"
                 )
                 raise error
@@ -713,7 +722,7 @@ def check_constraints_existence(grammar, constraints):
                     grammar, parent, symbol, recurse, indirect_child
                 ):
                     msg = f"{constraint!s}: <{parent!s}> has no child <{symbol!s}>"
-                    raise ValueError(msg)
+                    raise FandangoValueError(msg)
 
 
 def check_constraints_existence_children(
