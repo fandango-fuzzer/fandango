@@ -617,11 +617,15 @@ class Column:
     def __getitem__(self, item):
         return self.states[item]
 
-    def __setitem__(self, key, value):
-        self.states[key] = value
-
-    def __delitem__(self, key):
-        del self.states[key]
+    def replace(self, old: ParseState, new: ParseState):
+        self.unique.remove(old)
+        self.unique.add(new)
+        i_old = self.states.index(old)
+        self.states.insert(i_old, new)
+        self.dot_map[old.dot].remove(old)
+        dot_list = self.dot_map.get(new.dot, [])
+        dot_list.append(new)
+        self.dot_map[new.dot] = dot_list
 
     def __contains__(self, item):
         return item in self.unique
@@ -913,6 +917,16 @@ class Grammar(NodeVisitor):
                     new_symbols.append(context_nt)
                 else:
                     new_symbols.append((symbol, dot_params))
+            new_state = ParseState(
+                state.nonterminal,
+                state.position,
+                tuple(new_symbols),
+                state._dot,
+                state.children,
+                state.is_incomplete
+            )
+            if state in table[k]:
+                table[k].replace(state, new_state)
             state.symbols = tuple(new_symbols)
             for nonterminal in self._implicit_rules:
                 self._implicit_rules[nonterminal] = {
