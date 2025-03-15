@@ -48,10 +48,19 @@ symbol
         ( NONTERMINAL
         | STRING
         | NUMBER  // for 0 and 1 bits
-        | OPEN_PAREN alternative CLOSE_PAREN
+        | generator_call
         | char_set // deprecated
+        | OPEN_PAREN alternative CLOSE_PAREN
         )
       NEWLINE*
+    ;
+
+generator_call
+    : NAME
+    | generator_call '.' NAME
+    | generator_call '[' slices ']'
+    | generator_call genexp
+    | generator_call '(' arguments? ')'
     ;
 
 char_set
