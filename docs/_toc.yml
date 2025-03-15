@@ -37,3 +37,4 @@ parts:
     - file: DerivationTree
     - file: PythonAPI
     - file: Including
+    - file: Syntax
