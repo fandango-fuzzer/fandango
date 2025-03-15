@@ -1,4 +1,5 @@
 import abc
+import copy
 import enum
 import random
 import typing
@@ -1134,8 +1135,7 @@ class Grammar(NodeVisitor):
             self,
             word: str,
             start: str | NonTerminal = "<start>",
-            mode: ParsingMode = ParsingMode.COMPLETE,
-            emit_parsing_state: bool = False
+            mode: ParsingMode = ParsingMode.COMPLETE
         ):
             """
             Parse a forest of input trees from `word`.
@@ -1189,7 +1189,7 @@ class Grammar(NodeVisitor):
                             if at_end:
                                 # LOGGER.debug(f"Found {len(state.children)} parse tree(s)")
                                 for child in state.children:
-                                    yield child, table
+                                    yield child, copy.deepcopy(table)
 
                         self.complete(state, table, k)
                     elif not state.is_incomplete:
@@ -1262,21 +1262,18 @@ class Grammar(NodeVisitor):
             assert isinstance(start, NonTerminal)
 
             cache_key = (word, start, mode)
-            if cache_key in self._cache:
+            if cache_key in self._cache and not emit_parsing_state:
                 forest = self._cache[cache_key]
-                for tree, table in forest:
+                for tree in forest:
                     tree = deepcopy(tree)
                     if not include_controlflow:
                         tree = self.collapse(tree)
-                    if emit_parsing_state:
-                        yield tree, table
-                    else:
                         yield tree
                 return
 
             self._incomplete = set()
             forest = []
-            for tree, table in self._parse_forest(word, start, mode=mode, emit_parsing_state=emit_parsing_state):
+            for tree, table in self._parse_forest(word, start, mode=mode):
                 forest.append(tree)
                 if not include_controlflow:
                     tree = self.collapse(tree)
