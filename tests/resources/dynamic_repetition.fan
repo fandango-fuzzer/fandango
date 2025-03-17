@@ -9,5 +9,3 @@ import random
 <number> ::= <number_start> <number_tailing>*
 <number_start> ::= '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 <number_tailing> ::= '0' | <number_start>
-
-where 1 <= int(<len>) and int(<len>) <= 4
