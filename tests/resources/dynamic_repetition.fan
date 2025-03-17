@@ -1,8 +1,9 @@
 from struct import unpack
+import random
 
-<start> ::= <len> '(' <inner>{min(int(<len>), 4)} ')'
-<len> ::= <number>
-<inner> ::= <len> <letter>{min(int(<len>), 4)}
+<start> ::= <len> '(' <inner>{int(<len>)} ')'
+<len> ::= <number> :: str(random.randrange(1, 4))
+<inner> ::= <len> <letter>{int(<len>)}
 <letter> ::= r'[a-zA-Z]'
 
 <number> ::= <number_start> <number_tailing>*
