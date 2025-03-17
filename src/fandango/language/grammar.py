@@ -192,6 +192,10 @@ class Repetition(Node):
                 [(name, container) for container in search.find(tree.get_root())]
             )
         local_cpy.update({name: container.evaluate() for name, container in nodes})
+        for name, _ in nodes:
+            if not isinstance(local_cpy[name], DerivationTree):
+                continue
+            local_cpy[name].set_all_read_only(True)
         return eval(expr, grammar._global_variables, local_cpy), False
 
     def min(self, grammar: "Grammar", tree: "DerivationTree" = None):
