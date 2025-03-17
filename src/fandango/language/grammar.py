@@ -200,7 +200,9 @@ class Repetition(Node):
 
     def min(self, grammar: "Grammar", tree: "DerivationTree" = None):
         if self.static_min is None:
-            current_min, is_static = self._compute_rep_bound(grammar, tree, self.expr_data_min)
+            current_min, is_static = self._compute_rep_bound(
+                grammar, tree, self.expr_data_min
+            )
             if is_static:
                 self.static_min = current_min
             return current_min
@@ -209,7 +211,9 @@ class Repetition(Node):
 
     def max(self, grammar: "Grammar", tree: "DerivationTree" = None):
         if self.static_max is None:
-            current_max, is_static = self._compute_rep_bound(grammar, tree, self.expr_data_max)
+            current_max, is_static = self._compute_rep_bound(
+                grammar, tree, self.expr_data_max
+            )
             if is_static:
                 self.static_max = current_max
             return current_max

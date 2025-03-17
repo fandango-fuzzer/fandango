@@ -103,9 +103,9 @@ class DerivationTree:
         self.invalidate_hash()
 
     def _update_size(self, new_val: int):
-         if self._parent is not None:
-             self._parent._update_size(self.parent.size() + new_val - self._size)
-         self._size = new_val
+        if self._parent is not None:
+            self._parent._update_size(self.parent.size() + new_val - self._size)
+        self._size = new_val
 
     def find_all_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
         trees = sum(
