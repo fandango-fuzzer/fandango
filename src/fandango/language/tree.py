@@ -91,16 +91,21 @@ class DerivationTree:
 
     def set_children(self, children: List["DerivationTree"]):
         self._children = children
-        self._size = 1 + sum(child.size() for child in self._children)
+        self._update_size(1 + sum(child.size() for child in self._children))
         for child in self._children:
             child._parent = self
         self.invalidate_hash()
 
     def add_child(self, child: "DerivationTree"):
         self._children.append(child)
-        self._size += child.size()
+        self._update_size(self.size() + child.size())
         child._parent = self
         self.invalidate_hash()
+
+    def _update_size(self, new_val: int):
+        if self._parent is not None:
+            self._parent._update_size(self.parent.size() + new_val - self._size)
+        self._size = new_val
 
     def find_all_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
         trees = sum(
@@ -617,7 +622,7 @@ class DerivationTree:
     ## Comparison operations
     def __eq__(self, other):
         if isinstance(other, DerivationTree):
-            return self.__tree__() == other.__tree__()
+            return self.__hash__() == other.__hash__()
         return self.value() == other
 
     def __le__(self, other):
