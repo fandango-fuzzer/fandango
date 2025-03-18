@@ -144,7 +144,7 @@ class Concatenation(Node):
 
 class Repetition(Node):
     def __init__(
-        self, node: Node, min_=("0", [], {}), max_=(f"{MAX_REPETITIONS}", [], {})
+        self, node: Node, min_=("0", [], {}), max_=None
     ):
         super().__init__(NodeType.REPETITION)
         # min_expr, min_nt, min_search = min_
@@ -163,8 +163,11 @@ class Repetition(Node):
         self.expr_data_max = max_
 
     def get_access_points(self):
+        if self.expr_data_max is None:
+            searches_max = {}
+        else:
+            _, _, searches_max = self.expr_data_max
         _, _, searches_min = self.expr_data_min
-        _, _, searches_max = self.expr_data_max
         non_terminals = set[NonTerminal]()
         for search_list in [searches_min, searches_max]:
             for search in search_list.values():
@@ -173,7 +176,11 @@ class Repetition(Node):
         return non_terminals
 
     def _compute_rep_bound(self, grammar: "Grammar", tree: "DerivationTree", expr_data):
-        expr, _, searches = expr_data
+        if expr_data is None:
+            expr = f"{MAX_REPETITIONS}"
+            searches = {}
+        else:
+            expr, _, searches = expr_data
         local_cpy = grammar._local_variables.copy()
 
         if len(searches) == 0:
@@ -335,13 +342,13 @@ class TerminalNode(Node):
         if self.symbol.is_regex:
             if isinstance(self.symbol.symbol, bytes):
                 # Exrex can't do bytes, so we decode to str and back
-                instance = exrex.getone(self.symbol.symbol.decode("iso-8859-1"))
+                instance = exrex.getone(self.symbol.symbol.decode("iso-8859-1"), limit = MAX_REPETITIONS)
                 parent.add_child(
                     DerivationTree(Terminal(instance.encode("iso-8859-1")))
                 )
                 return
 
-            instance = exrex.getone(self.symbol.symbol)
+            instance = exrex.getone(self.symbol.symbol, limit = MAX_REPETITIONS)
             parent.add_child(DerivationTree(Terminal(instance)))
             return
         parent.add_child(DerivationTree(self.symbol))
@@ -1709,3 +1716,10 @@ class Grammar(NodeVisitor):
         * `start`: a start symbol other than `<start>`.
         """
         return self.contains_type(str, start=start)
+    
+    def set_max_repetitions(self, max_rep:int):
+        global MAX_REPETITIONS
+        MAX_REPETITIONS = max_rep
+
+    def get_max_repetitions(self):
+        return MAX_REPETITIONS
