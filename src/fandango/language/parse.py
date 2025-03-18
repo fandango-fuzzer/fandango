@@ -137,7 +137,6 @@ class FandangoSpec:
         fan_contents: str,
         lazy: bool = False,
         filename: str = "<input>",
-        max_repetitions: int = 5,
     ):
         self.version = importlib.metadata.version("fandango-fuzzer")
         self.fan_contents = fan_contents
@@ -158,7 +157,7 @@ class FandangoSpec:
 
         LOGGER.debug(f"{filename}: extracting grammar")
         grammar_processor = GrammarProcessor(
-            local_variables=self.local_vars, global_variables=self.global_vars, max_repetitions=max_repetitions,
+            local_variables=self.local_vars, global_variables=self.global_vars
         )
         self.grammar: Grammar = grammar_processor.get_grammar(
             splitter.productions, prime=False
@@ -200,7 +199,6 @@ def parse_content(
     filename: str = "<input>",
     use_cache: bool = True,
     lazy: bool = False,
-    max_repetitions: int = 5,
 ) -> Tuple[Grammar, List[str]]:
     """
     Parse given content into a grammar and constraints.
@@ -273,7 +271,7 @@ def parse_content(
         tree = parser.fandango()  # Invoke the ANTLR parser
 
         LOGGER.debug(f"{filename}: splitting content")
-        spec = FandangoSpec(tree, fan_contents, lazy, filename=filename, max_repetitions=max_repetitions)
+        spec = FandangoSpec(tree, fan_contents, lazy, filename=filename)
 
     assert spec is not None
 
@@ -311,7 +309,6 @@ def parse(
     given_grammars: List[Grammar] = [],
     start_symbol: Optional[str] = None,
     includes: List[str] = [],
-    max_repetitions: int = 5,
 ) -> Tuple[Optional[Grammar], List[str]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
@@ -346,7 +343,7 @@ def parse(
     if use_stdlib and STDLIB_GRAMMAR is None:
         LOGGER.debug("Reading standard library")
         STDLIB_GRAMMAR, STDLIB_CONSTRAINTS = parse_content(
-            stdlib, filename="<stdlib>", use_cache=use_cache, max_repetitions=max_repetitions
+            stdlib, filename="<stdlib>", use_cache=use_cache
         )
 
     global USED_SYMBOLS
@@ -387,7 +384,7 @@ def parse(
         LOGGER.debug(f"Reading {file.name} (depth = {depth})")
         fan_contents = file.read()
         new_grammar, new_constraints = parse_content(
-            fan_contents, filename=file.name, use_cache=use_cache, lazy=lazy, max_repetitions=max_repetitions
+            fan_contents, filename=file.name, use_cache=use_cache, lazy=lazy
         )
         parsed_constraints += new_constraints
         assert new_grammar is not None
