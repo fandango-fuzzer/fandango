@@ -71,6 +71,7 @@ class Alternative(Node):
         self.alternatives = alternatives
 
     def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
+        # LOGGER.debug(f"max_nodes: {max_nodes}, distance:{self.distance_to_completion} at {self}")
         if self.distance_to_completion >= max_nodes:
             min_ = min(self.alternatives, key=lambda x: x.distance_to_completion)
             random.choice(
@@ -113,6 +114,7 @@ class Concatenation(Node):
     def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
         prev_parent_size = parent.size()
         for node in self.nodes:
+            LOGGER.debug(f"Symbol:{self}, Node:{node}, max_nodes:{max_nodes}, size:{prev_parent_size}, distance:{node.distance_to_completion}, parent_size:{parent.size()}, parenttype:{type(parent)}")
             if node.distance_to_completion >= max_nodes:
                 node.fuzz(parent, grammar, 0)
             else:
@@ -300,6 +302,7 @@ class NonTerminalNode(Node):
         self.symbol = symbol
 
     def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
+        #LOGGER.debug(f"Symbol:{self}, max_nodes:{max_nodes}")
         if self.symbol not in grammar:
             raise ValueError(f"Symbol {self.symbol} not found in grammar")
         if self.symbol in grammar.generators:
@@ -307,7 +310,8 @@ class NonTerminalNode(Node):
             # Prevent children from being overwritten without executing generator
             generated.set_all_read_only(True)
             generated.read_only = False
-            parent.add_child(generated)
+            #LOGGER.debug(f"Gen:{generated}, symbol:{generated.symbol}")
+            parent.add_child_generator(generated)
             return
 
         current_tree = DerivationTree(self.symbol)

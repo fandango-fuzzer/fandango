@@ -149,6 +149,18 @@ def get_parser(in_command_line=True):
         default=None,
     )
     algorithm_group.add_argument(
+        "--max-repetition-rate",
+        type=float,
+        help="rate at which the number of maximal repetitions should be increased",
+        default=None,
+    )
+    algorithm_group.add_argument(
+        "--max-repetitions",
+        type=int,
+        help="Maximal value, the number of repetitions can be increased to",
+        default=None,
+    )
+    algorithm_group.add_argument(
         "-n",
         "--num-outputs",
         "--desired-solutions",
@@ -550,6 +562,8 @@ def make_fandango_settings(args, initial_settings={}):
     copy(settings, "warnings_are_errors")
     copy(settings, "best_effort")
     copy(settings, "random_seed")
+    copy(settings, "max_repetition_rate")
+    copy(settings, "max_repetitions")
 
     if hasattr(args, "start_symbol") and args.start_symbol is not None:
         if args.start_symbol.startswith("<"):

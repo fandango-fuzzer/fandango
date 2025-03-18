@@ -99,6 +99,12 @@ class DerivationTree:
         self._size += child.size()
         child._parent = self
         self.invalidate_hash()
+    
+    def add_child_generator(self, child: "DerivationTree"):
+        self._children.append(child)
+        self._size += 1
+        child._parent = self
+        self.invalidate_hash()
 
     def find_all_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
         trees = sum(
