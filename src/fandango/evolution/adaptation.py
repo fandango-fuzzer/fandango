@@ -1,14 +1,15 @@
 from typing import List, Tuple
 
 from fandango.evolution.evaluation import Evaluator
-from fandango.language.grammar import DerivationTree
+from fandango.language.grammar import DerivationTree, Grammar
 from fandango.logger import LOGGER
 
 
 class AdaptiveTuner:
-    def __init__(self, initial_mutation_rate: float, initial_crossover_rate: float):
+    def __init__(self, initial_mutation_rate: float, initial_crossover_rate: float, max_repetitions: int):
         self.mutation_rate = initial_mutation_rate
         self.crossover_rate = initial_crossover_rate
+        self.max_repetitions = max_repetitions
 
     def update_parameters(
         self,
@@ -17,6 +18,7 @@ class AdaptiveTuner:
         current_best_fitness: float,
         population: List[DerivationTree],
         evaluator: Evaluator,
+        current_max_repetition: int,
     ) -> Tuple[float, float]:
         diversity_map = evaluator.compute_diversity_bonus(population)
         avg_diversity = (
@@ -58,7 +60,15 @@ class AdaptiveTuner:
             )
             self.crossover_rate = new_crossover_rate
 
-        return self.mutation_rate, self.crossover_rate
+        # Increasing MAX_REPETITION
+        if avg_diversity < diversity_low_threshold or (current_best_fitness - prev_best_fitness) < fitness_improvement_threshold:
+            new_max_repetition = current_max_repetition + 1
+            LOGGER.info(
+                f"Generation {generation}: Increasing MAX_REPETITION from {self.max_repetitions} to {new_max_repetition}"
+            )
+            self.max_repetitions = new_max_repetition
+
+        return self.mutation_rate, self.crossover_rate, self.max_repetitions
 
     def log_generation_statistics(
         self,
