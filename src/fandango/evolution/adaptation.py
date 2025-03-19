@@ -63,7 +63,6 @@ class AdaptiveTuner:
             self.crossover_rate = new_crossover_rate
 
         # Increasing MAX_REPETITION
-        LOGGER.info(f"Rate: {self.max_repetition_rate}, cur: {current_max_repetition}, Max_rep: {self.max_repetitions}")
         if avg_diversity < diversity_low_threshold or (current_best_fitness - prev_best_fitness) < fitness_improvement_threshold:
             new_max_repetition = current_max_repetition
             new_max_repetition += self.max_repetition_rate * new_max_repetition
