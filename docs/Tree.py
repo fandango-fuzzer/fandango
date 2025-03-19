@@ -6,6 +6,7 @@
 from graphviz import Digraph
 from IPython.display import display_svg, display_png
 
+
 class Tree:
     id_counter = 1
     dot = None
@@ -20,10 +21,10 @@ class Tree:
     def visualize(self, title="Derivation Tree"):
         """Display as PNG. (PNG works with HTML and PDF books, SVG does not)"""
         # https://graphviz.org/doc/info/lang.html
-        Tree.dot = Digraph(comment=title, format='png')
-        Tree.dot.attr('node', shape='none', fontname='courier-bold', fontsize='18pt')
-        Tree.dot.attr('graph', rankdir='TB', tooltip=title)
-        Tree.dot.attr('edge', penwidth='2pt')
+        Tree.dot = Digraph(comment=title, format="png")
+        Tree.dot.attr("node", shape="none", fontname="courier-bold", fontsize="18pt")
+        Tree.dot.attr("graph", rankdir="TB", tooltip=title)
+        Tree.dot.attr("edge", penwidth="2pt")
         Tree.id_counter = 1
         self._visualize()
         display_png(self.dot)
@@ -38,14 +39,14 @@ class Tree:
 
         # https://graphviz.org/doc/info/colors.html
         if isinstance(self.symbol, int):
-            color = 'bisque4'
-        elif self.symbol.startswith('<'):
-            color = 'firebrick'
+            color = "bisque4"
+        elif self.symbol.startswith("<"):
+            color = "firebrick"
         else:
-            color = 'darkblue'
+            color = "darkblue"
 
-        label = label.replace('<', '\\<')
-        label = label.replace('>', '\\>')
+        label = label.replace("<", "\\<")
+        label = label.replace(">", "\\>")
         Tree.dot.node(name, label, fontcolor=color)
 
         for child in self.children():

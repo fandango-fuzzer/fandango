@@ -6,6 +6,8 @@ from io import StringIO, BytesIO
 
 from fandango.logger import LOGGER, print_exception
 
+from fandango import FandangoValueError
+
 
 class DerivationTree:
     """
@@ -89,14 +91,14 @@ class DerivationTree:
 
     def set_children(self, children: List["DerivationTree"]):
         self._children = children
-        self._size = 1 + sum(child.size() for child in self._children)
+        self._update_size(1 + sum(child.size() for child in self._children))
         for child in self._children:
             child._parent = self
         self.invalidate_hash()
 
     def add_child(self, child: "DerivationTree"):
         self._children.append(child)
-        self._size += child.size()
+        self._update_size(self.size() + child.size())
         child._parent = self
         self.invalidate_hash()
     
@@ -105,6 +107,11 @@ class DerivationTree:
         self._size += 1
         child._parent = self
         self.invalidate_hash()
+
+    def _update_size(self, new_val: int):
+        if self._parent is not None:
+            self._parent._update_size(self.parent.size() + new_val - self._size)
+        self._size = new_val
 
     def find_all_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
         trees = sum(
@@ -169,14 +176,10 @@ class DerivationTree:
         memo[id(self)] = copied
 
         # Deepcopy the children
-        copied._children = [copy.deepcopy(child, memo) for child in self._children]
-
-        # Set parent pointers
-        for child in copied._children:
-            child._parent = copied
+        copied.set_children([copy.deepcopy(child, memo) for child in self._children])
 
         # Set the parent to None or update if necessary
-        copied._parent = None  # or copy.deepcopy(self.parent, memo) if parent is needed
+        copied._parent = copy.deepcopy(self.parent, memo)
 
         return copied
 
@@ -195,7 +198,7 @@ class DerivationTree:
             # Strings get encoded
             stream.write(self.symbol.symbol.encode(encoding))
         else:
-            raise ValueError("Invalid symbol type")
+            raise FandangoValueError("Invalid symbol type")
 
     def _write_to_bitstream(self, stream: StringIO, *, encoding="utf-8"):
         """
@@ -219,7 +222,7 @@ class DerivationTree:
                 bits = "".join(format(i, "08b") for i in elem)
             stream.write(bits)
         else:
-            raise ValueError("Invalid symbol type")
+            raise FandangoValueError("Invalid symbol type")
 
     def contains_type(self, tp: type) -> bool:
         """
@@ -256,6 +259,9 @@ class DerivationTree:
         """
         val: Any = self.value()
 
+        if val is None:
+            return ""
+
         if isinstance(val, int):
             # This is a bit value; convert to bytes
             val = int(val).to_bytes(val // 256 + 1)
@@ -270,7 +276,7 @@ class DerivationTree:
         if isinstance(val, str):
             return val
 
-        raise ValueError(f"Cannot convert {val!r} to string")
+        raise FandangoValueError(f"Cannot convert {val!r} to string")
 
     def to_bits(self, *, encoding="utf-8") -> str:
         """
@@ -443,6 +449,25 @@ class DerivationTree:
     def is_num(self):
         return self.is_float()
 
+    def split_end(self) -> "DerivationTree":
+        cpy = copy.deepcopy(self)
+        return cpy._split_end()
+
+    def root(self):
+        root = self
+        if root.parent is not None:
+            root = root.parent
+        return root
+
+    def _split_end(self):
+        if self.parent is not None:
+            me_idx = self.parent.children.index(self)
+            keep_children = self.parent.children[:(me_idx + 1)]
+            parent = self.parent._split_end()
+            parent.set_children(keep_children)
+            return self
+        return self
+
     def replace(self, tree_to_replace, new_subtree):
         """
         Replace the subtree rooted at the given node with the new subtree.
@@ -553,6 +578,9 @@ class DerivationTree:
         for child in self._children:
             value, child_bits = child._value()
 
+            if value is None:
+                continue
+
             if aggregate is None:
                 aggregate = value
                 bits = child_bits
@@ -566,7 +594,9 @@ class DerivationTree:
                     aggregate = aggregate + chr(value)
                     bits = 0
                 else:
-                    raise ValueError(f"Cannot compute {aggregate!r} + {value!r}")
+                    raise FandangoValueError(
+                        f"Cannot compute {aggregate!r} + {value!r}"
+                    )
 
             elif isinstance(aggregate, bytes):
                 if isinstance(value, str):
@@ -574,23 +604,27 @@ class DerivationTree:
                 elif isinstance(value, bytes):
                     aggregate += value
                 elif isinstance(value, int):
-                    aggregate = aggregate + value.to_bytes()
+                    aggregate = aggregate + bytes([value])
                     bits = 0
                 else:
-                    raise ValueError(f"Cannot compute {aggregate!r} + {value!r}")
+                    raise FandangoValueError(
+                        f"Cannot compute {aggregate!r} + {value!r}"
+                    )
 
             elif isinstance(aggregate, int):
                 if isinstance(value, str):
-                    aggregate = aggregate.to_bytes() + value.encode("utf-8")
+                    aggregate = bytes([aggregate]) + value.encode("utf-8")
                     bits = 0
                 elif isinstance(value, bytes):
-                    aggregate = aggregate.to_bytes() + value
+                    aggregate = bytes([aggregate]) + value
                     bits = 0
                 elif isinstance(value, int):
                     aggregate = (aggregate << child_bits) + value
                     bits += child_bits
                 else:
-                    raise ValueError(f"Cannot compute {aggregate!r} + {value!r}")
+                    raise FandangoValueError(
+                        f"Cannot compute {aggregate!r} + {value!r}"
+                    )
 
         # LOGGER.debug(f"value(): {' '.join(repr(child.value()) for child in self._children)} = {aggregate!r} ({bits} bits)")
 
@@ -609,7 +643,7 @@ class DerivationTree:
     ## Comparison operations
     def __eq__(self, other):
         if isinstance(other, DerivationTree):
-            return self.__tree__() == other.__tree__()
+            return self.__hash__() == other.__hash__()
         return self.value() == other
 
     def __le__(self, other):

@@ -11,6 +11,9 @@ from fandango.language.symbol import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
+from fandango import FandangoValueError
+
+
 MAX_REPETITIONS = 5
 
 
@@ -161,6 +164,8 @@ class Repetition(Node):
         self.node = node
         self.expr_data_min = min_
         self.expr_data_max = max_
+        self.static_min = None
+        self.static_max = None
 
     def get_access_points(self):
         if self.expr_data_max is None:
@@ -184,9 +189,9 @@ class Repetition(Node):
         local_cpy = grammar._local_variables.copy()
 
         if len(searches) == 0:
-            return eval(expr, grammar._global_variables, local_cpy)
+            return eval(expr, grammar._global_variables, local_cpy), True
         if tree is None:
-            raise ValueError("tree required if searches present!")
+            raise FandangoValueError("tree required if searches present!")
 
         nodes = []
         for name, search in searches.items():
@@ -194,13 +199,33 @@ class Repetition(Node):
                 [(name, container) for container in search.find(tree.get_root())]
             )
         local_cpy.update({name: container.evaluate() for name, container in nodes})
-        return eval(expr, grammar._global_variables, local_cpy)
+        for name, _ in nodes:
+            if not isinstance(local_cpy[name], DerivationTree):
+                continue
+            local_cpy[name].set_all_read_only(True)
+        return eval(expr, grammar._global_variables, local_cpy), False
 
     def min(self, grammar: "Grammar", tree: "DerivationTree" = None):
-        return self._compute_rep_bound(grammar, tree, self.expr_data_min)
+        if self.static_min is None:
+            current_min, is_static = self._compute_rep_bound(
+                grammar, tree, self.expr_data_min
+            )
+            if is_static:
+                self.static_min = current_min
+            return current_min
+        else:
+            return self.static_min
 
     def max(self, grammar: "Grammar", tree: "DerivationTree" = None):
-        return self._compute_rep_bound(grammar, tree, self.expr_data_max)
+        if self.static_max is None:
+            current_max, is_static = self._compute_rep_bound(
+                grammar, tree, self.expr_data_max
+            )
+            if is_static:
+                self.static_max = current_max
+            return current_max
+        else:
+            return self.static_max
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitRepetition(self)
@@ -817,7 +842,7 @@ class Grammar(NodeVisitor):
         def collapse(self, tree: DerivationTree):
             if isinstance(tree.symbol, NonTerminal):
                 if tree.symbol.symbol.startswith("<__"):
-                    raise RuntimeError(
+                    raise FandangoValueError(
                         "Can't collapse a tree with an implicit root node"
                     )
             return self._collapse(tree)[0]
@@ -897,7 +922,7 @@ class Grammar(NodeVisitor):
             nt_rule,
         ):
             if not isinstance(node, Repetition):
-                raise ValueError("Node needs to be a Repetition")
+                raise FandangoValueError("Node needs to be a Repetition")
             tree = self.construct_incomplete_tree(state, table)
             tree = self.collapse(tree)
             try:
@@ -1311,19 +1336,24 @@ class Grammar(NodeVisitor):
         else:
             tree = self.parse(string, symbol)
         if tree is None:
-            raise ValueError(
+            raise FandangoValueError(
                 f"Failed to parse generated string: {string} for {symbol} with generator {self.generators[symbol]}"
             )
         return tree
 
     def fuzz(
-        self, start: str | NonTerminal = "<start>", max_nodes: int = 50
+        self, start: str | NonTerminal = "<start>", max_nodes: int = 50,
+        prefix_node: Optional[DerivationTree] = None
     ) -> DerivationTree:
         if isinstance(start, str):
             start = NonTerminal(start)
-        root = DerivationTree(start)
+        if prefix_node is None:
+            root = DerivationTree(start)
+        else:
+            root = prefix_node
+        fuzzed_idx = len(root.children)
         NonTerminalNode(start).fuzz(root, self, max_nodes=max_nodes)
-        return root.children[0]
+        return root.children[fuzzed_idx]
 
     def update(self, grammar: "Grammar" | Dict[NonTerminal, Node], prime=True):
         if isinstance(grammar, Grammar):
@@ -1534,7 +1564,9 @@ class Grammar(NodeVisitor):
                 continue
             elif node.node_type == NodeType.NON_TERMINAL:
                 if node.symbol not in self.rules:
-                    raise ValueError(f"Symbol {node.symbol} not found in grammar")
+                    raise FandangoValueError(
+                        f"Symbol {node.symbol} not found in grammar"
+                    )
                 if self.rules[node.symbol].distance_to_completion == float("inf"):
                     nodes.append(node)
                 else:
@@ -1566,7 +1598,7 @@ class Grammar(NodeVisitor):
                         node.node.distance_to_completion * min_rep + 1
                     )
             else:
-                raise ValueError(f"Unknown node type {node.node_type}")
+                raise FandangoValueError(f"Unknown node type {node.node_type}")
 
     def default_result(self):
         return []
@@ -1661,7 +1693,7 @@ class Grammar(NodeVisitor):
 
         # Compute coverage
         if not all_k_paths:
-            raise ValueError("No k-paths found in the grammar")
+            raise FandangoValueError("No k-paths found in the grammar")
 
         return (
             len(covered_k_paths) / len(all_k_paths),
