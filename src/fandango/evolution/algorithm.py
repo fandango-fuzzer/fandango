@@ -341,6 +341,8 @@ class Fandango:
                 )
             if self.best_effort:
                 return self.population[: self.desired_solutions]
+            
+        LOGGER.debug(f"Root:{self.solution[0].symbol}, Children: {self.solution[0].children}")
 
         return self.solution
 

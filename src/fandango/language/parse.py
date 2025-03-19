@@ -145,6 +145,7 @@ class FandangoSpec:
         fan_contents: str,
         lazy: bool = False,
         filename: str = "<input>",
+        max_repetitions: int = 5,
     ):
         self.version = importlib.metadata.version("fandango-fuzzer")
         self.fan_contents = fan_contents
