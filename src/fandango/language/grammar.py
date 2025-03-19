@@ -146,9 +146,7 @@ class Concatenation(Node):
 
 
 class Repetition(Node):
-    def __init__(
-        self, node: Node, min_=("0", [], {}), max_=None
-    ):
+    def __init__(self, node: Node, min_=("0", [], {}), max_=None):
         super().__init__(NodeType.REPETITION)
         # min_expr, min_nt, min_search = min_
         # max_expr, max_nt, max_search = max_
@@ -367,13 +365,15 @@ class TerminalNode(Node):
         if self.symbol.is_regex:
             if isinstance(self.symbol.symbol, bytes):
                 # Exrex can't do bytes, so we decode to str and back
-                instance = exrex.getone(self.symbol.symbol.decode("iso-8859-1"), limit = MAX_REPETITIONS)
+                instance = exrex.getone(
+                    self.symbol.symbol.decode("iso-8859-1"), limit=MAX_REPETITIONS
+                )
                 parent.add_child(
                     DerivationTree(Terminal(instance.encode("iso-8859-1")))
                 )
                 return
 
-            instance = exrex.getone(self.symbol.symbol, limit = MAX_REPETITIONS)
+            instance = exrex.getone(self.symbol.symbol, limit=MAX_REPETITIONS)
             parent.add_child(DerivationTree(Terminal(instance)))
             return
         parent.add_child(DerivationTree(self.symbol))
@@ -1342,8 +1342,10 @@ class Grammar(NodeVisitor):
         return tree
 
     def fuzz(
-        self, start: str | NonTerminal = "<start>", max_nodes: int = 50,
-        prefix_node: Optional[DerivationTree] = None
+        self,
+        start: str | NonTerminal = "<start>",
+        max_nodes: int = 50,
+        prefix_node: Optional[DerivationTree] = None,
     ) -> DerivationTree:
         if isinstance(start, str):
             start = NonTerminal(start)
@@ -1748,8 +1750,8 @@ class Grammar(NodeVisitor):
         * `start`: a start symbol other than `<start>`.
         """
         return self.contains_type(str, start=start)
-    
-    def set_max_repetitions(self, max_rep:int):
+
+    def set_max_repetitions(self, max_rep: int):
         global MAX_REPETITIONS
         MAX_REPETITIONS = max_rep
 
