@@ -1331,13 +1331,18 @@ class Grammar(NodeVisitor):
         return tree
 
     def fuzz(
-        self, start: str | NonTerminal = "<start>", max_nodes: int = 50
+        self, start: str | NonTerminal = "<start>", max_nodes: int = 50,
+        prefix_node: Optional[DerivationTree] = None
     ) -> DerivationTree:
         if isinstance(start, str):
             start = NonTerminal(start)
-        root = DerivationTree(start)
+        if prefix_node is None:
+            root = DerivationTree(start)
+        else:
+            root = prefix_node
+        fuzzed_idx = len(root.children)
         NonTerminalNode(start).fuzz(root, self, max_nodes=max_nodes)
-        return root.children[0]
+        return root.children[fuzzed_idx]
 
     def update(self, grammar: "Grammar" | Dict[NonTerminal, Node], prime=True):
         if isinstance(grammar, Grammar):

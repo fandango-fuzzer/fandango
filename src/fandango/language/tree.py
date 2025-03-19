@@ -170,14 +170,10 @@ class DerivationTree:
         memo[id(self)] = copied
 
         # Deepcopy the children
-        copied._children = [copy.deepcopy(child, memo) for child in self._children]
-
-        # Set parent pointers
-        for child in copied._children:
-            child._parent = copied
+        copied.set_children([copy.deepcopy(child, memo) for child in self._children])
 
         # Set the parent to None or update if necessary
-        copied._parent = None  # or copy.deepcopy(self.parent, memo) if parent is needed
+        copied._parent = copy.deepcopy(self.parent, memo)
 
         return copied
 
@@ -446,6 +442,25 @@ class DerivationTree:
 
     def is_num(self):
         return self.is_float()
+
+    def split_end(self) -> "DerivationTree":
+        cpy = copy.deepcopy(self)
+        return cpy._split_end()
+
+    def root(self):
+        root = self
+        if root.parent is not None:
+            root = root.parent
+        return root
+
+    def _split_end(self):
+        if self.parent is not None:
+            me_idx = self.parent.children.index(self)
+            keep_children = self.parent.children[:(me_idx + 1)]
+            parent = self.parent._split_end()
+            parent.set_children(keep_children)
+            return self
+        return self
 
     def replace(self, tree_to_replace, new_subtree):
         """
