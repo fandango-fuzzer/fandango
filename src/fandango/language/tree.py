@@ -102,6 +102,12 @@ class DerivationTree:
         child._parent = self
         self.invalidate_hash()
 
+    def add_child_generator(self, child: "DerivationTree"):
+        self._children.append(child)
+        self._size += 1
+        child._parent = self
+        self.invalidate_hash()
+
     def _update_size(self, new_val: int):
         if self._parent is not None:
             self._parent._update_size(self.parent.size() + new_val - self._size)
@@ -456,7 +462,7 @@ class DerivationTree:
     def _split_end(self):
         if self.parent is not None:
             me_idx = self.parent.children.index(self)
-            keep_children = self.parent.children[:(me_idx + 1)]
+            keep_children = self.parent.children[: (me_idx + 1)]
             parent = self.parent._split_end()
             parent.set_children(keep_children)
             return self

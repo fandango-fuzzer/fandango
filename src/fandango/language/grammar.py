@@ -74,6 +74,7 @@ class Alternative(Node):
         self.alternatives = alternatives
 
     def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
+        # LOGGER.debug(f"max_nodes: {max_nodes}, distance:{self.distance_to_completion} at {self}")
         if self.distance_to_completion >= max_nodes:
             min_ = min(self.alternatives, key=lambda x: x.distance_to_completion)
             random.choice(
@@ -116,6 +117,7 @@ class Concatenation(Node):
     def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
         prev_parent_size = parent.size()
         for node in self.nodes:
+            LOGGER.debug(f"Symbol:{self}, Node:{node}, max_nodes:{max_nodes}, size:{prev_parent_size}, distance:{node.distance_to_completion}, parent_size:{parent.size()}, parenttype:{type(parent)}")
             if node.distance_to_completion >= max_nodes:
                 node.fuzz(parent, grammar, 0)
             else:
@@ -146,9 +148,7 @@ class Concatenation(Node):
 
 
 class Repetition(Node):
-    def __init__(
-        self, node: Node, min_=("0", [], {}), max_=(f"{MAX_REPETITIONS}", [], {})
-    ):
+    def __init__(self, node: Node, min_=("0", [], {}), max_=None):
         super().__init__(NodeType.REPETITION)
         # min_expr, min_nt, min_search = min_
         # max_expr, max_nt, max_search = max_
@@ -168,8 +168,11 @@ class Repetition(Node):
         self.static_max = None
 
     def get_access_points(self):
+        if self.expr_data_max is None:
+            searches_max = {}
+        else:
+            _, _, searches_max = self.expr_data_max
         _, _, searches_min = self.expr_data_min
-        _, _, searches_max = self.expr_data_max
         non_terminals = set[NonTerminal]()
         for search_list in [searches_min, searches_max]:
             for search in search_list.values():
@@ -178,7 +181,11 @@ class Repetition(Node):
         return non_terminals
 
     def _compute_rep_bound(self, grammar: "Grammar", tree: "DerivationTree", expr_data):
-        expr, _, searches = expr_data
+        if expr_data is None:
+            expr = f"{MAX_REPETITIONS}"
+            searches = {}
+        else:
+            expr, _, searches = expr_data
         local_cpy = grammar._local_variables.copy()
 
         if len(searches) == 0:
@@ -268,8 +275,8 @@ class Repetition(Node):
 
 
 class Star(Repetition):
-    def __init__(self, node: Node, max_repetitions: int = 5):
-        super().__init__(node, ("0", [], {}), (f"{max_repetitions}", [], {}))
+    def __init__(self, node: Node):
+        super().__init__(node, ("0", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitStar(self)
@@ -282,8 +289,8 @@ class Star(Repetition):
 
 
 class Plus(Repetition):
-    def __init__(self, node: Node, max_repetitions: int = 5):
-        super().__init__(node, ("1", [], {}), (f"{max_repetitions}", [], {}))
+    def __init__(self, node: Node):
+        super().__init__(node, ("1", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitPlus(self)
@@ -318,6 +325,7 @@ class NonTerminalNode(Node):
         self.symbol = symbol
 
     def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
+        #LOGGER.debug(f"Symbol:{self}, max_nodes:{max_nodes}")
         if self.symbol not in grammar:
             raise ValueError(f"Symbol {self.symbol} not found in grammar")
         if self.symbol in grammar.generators:
@@ -325,7 +333,8 @@ class NonTerminalNode(Node):
             # Prevent children from being overwritten without executing generator
             generated.set_all_read_only(True)
             generated.read_only = False
-            parent.add_child(generated)
+            #LOGGER.debug(f"Gen:{generated}, symbol:{generated.symbol}")
+            parent.add_child_generator(generated)
             return
 
         current_tree = DerivationTree(self.symbol)
@@ -360,13 +369,15 @@ class TerminalNode(Node):
         if self.symbol.is_regex:
             if isinstance(self.symbol.symbol, bytes):
                 # Exrex can't do bytes, so we decode to str and back
-                instance = exrex.getone(self.symbol.symbol.decode("iso-8859-1"))
+                instance = exrex.getone(
+                    self.symbol.symbol.decode("iso-8859-1"), limit=MAX_REPETITIONS
+                )
                 parent.add_child(
                     DerivationTree(Terminal(instance.encode("iso-8859-1")))
                 )
                 return
 
-            instance = exrex.getone(self.symbol.symbol)
+            instance = exrex.getone(self.symbol.symbol, limit=MAX_REPETITIONS)
             parent.add_child(DerivationTree(Terminal(instance)))
             return
         parent.add_child(DerivationTree(self.symbol))
@@ -1335,8 +1346,10 @@ class Grammar(NodeVisitor):
         return tree
 
     def fuzz(
-        self, start: str | NonTerminal = "<start>", max_nodes: int = 50,
-        prefix_node: Optional[DerivationTree] = None
+        self,
+        start: str | NonTerminal = "<start>",
+        max_nodes: int = 50,
+        prefix_node: Optional[DerivationTree] = None,
     ) -> DerivationTree:
         if isinstance(start, str):
             start = NonTerminal(start)
@@ -1741,3 +1754,10 @@ class Grammar(NodeVisitor):
         * `start`: a start symbol other than `<start>`.
         """
         return self.contains_type(str, start=start)
+
+    def set_max_repetitions(self, max_rep: int):
+        global MAX_REPETITIONS
+        MAX_REPETITIONS = max_rep
+
+    def get_max_repetitions(self):
+        return MAX_REPETITIONS
