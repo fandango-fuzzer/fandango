@@ -43,6 +43,14 @@ And this is what we get:
 
 Success! We have created 10 random sequences of digits.
 
+```{danger}
+Be aware that `.fan` files can contain Python code that is _executed when being loaded_. This code can execute arbitrary commands.
+```
+
+```{caution}
+Only load `.fan` files you trust.
+```
+
 ## More Commands and Options
 
 Besides `fandango fuzz`, Fandango supports more commands, and besides `-f` and `-n`, Fandango supports way more options.

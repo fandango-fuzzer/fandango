@@ -14,6 +14,8 @@ from fandango.evolution.population import PopulationManager
 from fandango.language.grammar import DerivationTree, Grammar
 from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
 
+from fandango import FandangoFailedError, FandangoParseError, FandangoValueError
+
 
 class LoggerLevel(enum.Enum):
     NOTSET = logging.NOTSET
@@ -49,10 +51,10 @@ class Fandango:
         diversity_k: int = 5,
         diversity_weight: float = 1.0,
         max_repetition_rate: float = 0.5,
-        max_repetitions: int = None
+        max_repetitions: int = None,
     ):
         if tournament_size > 1:
-            raise ValueError(
+            raise FandangoValueError(
                 f"Parameter tournament_size must be in range ]0, 1], but is {tournament_size}."
             )
         if random_seed is not None:
@@ -86,7 +88,13 @@ class Fandango:
             diversity_weight,
             warnings_are_errors,
         )
-        self.adaptive_tuner = AdaptiveTuner(mutation_rate, crossover_rate, grammar.get_max_repetitions(), max_repetition_rate, max_repetitions)
+        self.adaptive_tuner = AdaptiveTuner(
+            mutation_rate,
+            crossover_rate,
+            grammar.get_max_repetitions(),
+            max_repetition_rate,
+            max_repetitions,
+        )
         self.crossover_operator = crossover_method
         self.mutation_method = mutation_method
 
@@ -99,8 +107,10 @@ class Fandango:
                 if isinstance(individual, str):
                     tree = self.grammar.parse(individual)
                     if not tree:
-                        raise ValueError(
-                            f"Failed to parse initial individual: {individual}"
+                        position = self.grammar.max_position()
+                        raise FandangoParseError(
+                            position,
+                            message=f"Failed to parse initial individual{individual!r}",
                         )
                 elif isinstance(individual, DerivationTree):
                     tree = individual
@@ -287,11 +297,13 @@ class Fandango:
                 current_best_fitness,
                 self.population,
                 self.evaluator,
-                current_max_repetitions
+                current_max_repetitions,
             )
 
             if self.adaptive_tuner.cur_max_repetitions > current_max_repetitions:
-                self.grammar.set_max_repetitions(self.adaptive_tuner.cur_max_repetitions)
+                self.grammar.set_max_repetitions(
+                    self.adaptive_tuner.cur_max_repetitions
+                )
 
             prev_best_fitness = current_best_fitness
 
@@ -315,7 +327,7 @@ class Fandango:
         if self.fitness < self.expected_fitness:
             LOGGER.error("Population did not converge to a perfect population")
             if self.warnings_are_errors:
-                raise RuntimeError("Failed to find a perfect solution")
+                raise FandangoFailedError("Failed to find a perfect solution")
             if self.best_effort:
                 return self.population
 
@@ -324,11 +336,13 @@ class Fandango:
                 f"Only found {len(self.solution)} perfect solutions, instead of the required {self.desired_solutions}"
             )
             if self.warnings_are_errors:
-                raise RuntimeError(
+                raise FandangoFailedError(
                     "Failed to find the required number of perfect solutions"
                 )
             if self.best_effort:
                 return self.population[: self.desired_solutions]
+            
+        LOGGER.debug(f"Root:{self.solution[0].symbol}, Children: {self.solution[0].children}")
 
         return self.solution
 

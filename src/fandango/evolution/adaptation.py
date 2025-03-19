@@ -6,7 +6,14 @@ from fandango.logger import LOGGER
 
 
 class AdaptiveTuner:
-    def __init__(self, initial_mutation_rate: float, initial_crossover_rate: float, cur_max_repetitions: int, max_repetition_rate:float, max_repetitions: int):
+    def __init__(
+        self,
+        initial_mutation_rate: float,
+        initial_crossover_rate: float,
+        cur_max_repetitions: int,
+        max_repetition_rate: float,
+        max_repetitions: int,
+    ):
         self.mutation_rate = initial_mutation_rate
         self.crossover_rate = initial_crossover_rate
         self.cur_max_repetitions = cur_max_repetitions
@@ -63,13 +70,25 @@ class AdaptiveTuner:
             self.crossover_rate = new_crossover_rate
 
         # Increasing MAX_REPETITION
+<<<<<<< HEAD
+        if (
+            avg_diversity < diversity_low_threshold
+            or (current_best_fitness - prev_best_fitness)
+            < fitness_improvement_threshold
+        ):
+=======
+        LOGGER.info(f"Rate: {self.max_repetition_rate}, cur: {current_max_repetition}, Max_rep: {self.max_repetitions}")
         if avg_diversity < diversity_low_threshold or (current_best_fitness - prev_best_fitness) < fitness_improvement_threshold:
+>>>>>>> parent of e50dc01 (fix and tests for #372 and #375)
             new_max_repetition = current_max_repetition
             new_max_repetition += self.max_repetition_rate * new_max_repetition
             if new_max_repetition == current_max_repetition:
                 new_max_repetition += 1
             new_max_repetition = int(new_max_repetition)
-            if self.max_repetitions is None or new_max_repetition <= self.max_repetitions:
+            if (
+                self.max_repetitions is None
+                or new_max_repetition <= self.max_repetitions
+            ):
                 LOGGER.info(
                     f"Generation {generation}: Increasing MAX_REPETITION from {self.cur_max_repetitions} to {new_max_repetition}"
                 )
