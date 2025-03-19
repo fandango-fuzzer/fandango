@@ -176,7 +176,9 @@ class Fandango:
                     )
                     if suggested_tree is None:
                         continue
-                    individual = individual.replace(failing_tree.tree, suggested_tree)
+                    individual = individual.replace(
+                        self.grammar, failing_tree.tree, suggested_tree
+                    )
                     self.fixes_made += 1
         return individual
 
@@ -216,7 +218,7 @@ class Fandango:
                             self.evaluation, self.tournament_size
                         )
                         child1, child2 = self.crossover_operator.crossover(
-                            parent1, parent2
+                            self.grammar, parent1, parent2
                         )
                         self.population_manager.add_unique_individual(
                             new_population, child1, unique_hashes
