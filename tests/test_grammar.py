@@ -92,7 +92,7 @@ class ConstraintTest(unittest.TestCase):
         solutions = self.get_solutions(GRAMMAR, c)
         for solution in solutions:
             self.assertNotEqual(solution, "10")
-          
+
     def test_generator_chunk(self):
         file = open("tests/resources/generator_chunk.fan", "r")
         GRAMMAR, c = parse(file, use_stdlib=True, use_cache=False)
