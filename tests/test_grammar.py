@@ -82,7 +82,7 @@ class ConstraintTest(unittest.TestCase):
         for solution in solutions:
             len_outer = solution.children[0].to_int()
             self.assertEqual(len_outer, len(solution.children) - 3)
-            for tree in solution.children[2:-2]:
+            for tree in solution.children[2:-1]:
                 len_inner = tree.children[0].to_int()
                 self.assertEqual(len_inner, len(tree.children) - 1)
 
@@ -91,6 +91,7 @@ class ConstraintTest(unittest.TestCase):
         GRAMMAR, c = parse(file, use_stdlib=True, use_cache=False)
         solutions = self.get_solutions(GRAMMAR, c)
         for solution in solutions:
+<<<<<<< HEAD
             self.assertNotEqual(solution, "10")
 
     def test_generator_chunk(self):
@@ -105,3 +106,6 @@ class ConstraintTest(unittest.TestCase):
             if len(sol[1]) > 2:
                 return
         self.assertTrue(False)
+=======
+            self.assertNotEqual(solution, "10")
+>>>>>>> parent of e50dc01 (fix and tests for #372 and #375)
