@@ -20,6 +20,7 @@ class DerivationTree:
         children: Optional[List["DerivationTree"]] = None,
         parent: Optional["DerivationTree"] = None,
         read_only: bool = False,
+        child_size: Optional[int] = None,
     ):
         if not isinstance(symbol, Symbol):
             raise TypeError(f"Expected Symbol, got {type(symbol)}")
@@ -30,7 +31,7 @@ class DerivationTree:
         self._children: list["DerivationTree"] = []
         self.read_only = read_only
         self._size = 1
-        self.set_children(children or [])
+        self.set_children(children or [], child_size)
 
     def __len__(self):
         return len(self._children)
@@ -89,9 +90,12 @@ class DerivationTree:
         for child in self._children:
             child.set_all_read_only(read_only)
 
-    def set_children(self, children: List["DerivationTree"]):
+    def set_children(self, children: List["DerivationTree"], child_size: Optional[int] = None):
         self._children = children
-        self._update_size(1 + sum(child.size() for child in self._children))
+        if child_size is not None:
+            self._update_size(1 + child_size)
+        else:
+            self._update_size(1 + sum(child.size() for child in self._children))
         for child in self._children:
             child._parent = self
         self.invalidate_hash()
