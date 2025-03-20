@@ -870,19 +870,17 @@ class Grammar(NodeVisitor):
                     raise FandangoValueError(
                         "Can't collapse a tree with an implicit root node"
                     )
-            return self._collapse(tree)[0][0]
+            return self._collapse(tree)[0]
 
         def _collapse(self, tree: DerivationTree):
             reduced = []
-            size = 0
             for child in tree.children:
-                rec_reduced, rec_size = self._collapse(child)
+                rec_reduced = self._collapse(child)
                 reduced.extend(rec_reduced)
-                size += rec_size
 
             if isinstance(tree.symbol, NonTerminal):
                 if tree.symbol.symbol.startswith("<__"):
-                    return reduced, size
+                    return reduced
 
             return [
                 DerivationTree(
@@ -890,7 +888,7 @@ class Grammar(NodeVisitor):
                     children=reduced,
                     read_only=tree.read_only
                 )
-            ], size + 1
+            ]
 
         def predict(
             self, state: ParseState, table: List[Set[ParseState] | Column], k: int
