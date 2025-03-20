@@ -553,6 +553,7 @@ class ParseState:
         dot: int = 0,
         children: Optional[List[DerivationTree]] = None,
         is_incomplete: bool = False,
+        child_tree_size: int = 0
     ):
         self.nonterminal = nonterminal
         self.position = position
@@ -560,6 +561,19 @@ class ParseState:
         self._dot = dot
         self.children = children or []
         self.is_incomplete = is_incomplete
+        self.child_tree_size = child_tree_size
+
+    def extend(self, children: list[DerivationTree], children_size: Optional[int]) -> None:
+        self.children.extend(children)
+        if children_size is not None:
+            self.child_tree_size += children_size
+        else:
+            for c in children:
+                self.child_tree_size += c.size()
+
+    def append(self, child: DerivationTree) -> None:
+        self.children.append(child)
+        self.child_tree_size += child.size()
 
     @property
     def dot(self):
@@ -678,6 +692,23 @@ class Column:
 
 
 class Grammar(NodeVisitor):
+
+    class ParserDerivationTree(DerivationTree):
+
+        def __init__(self,
+                     symbol: Symbol,
+                     children: Optional[List["DerivationTree"]] = None,
+                     parent: Optional["DerivationTree"] = None,
+                     read_only: bool = False,
+                     ):
+            super().__init__(
+                symbol, children, parent, read_only, 0
+            )
+
+        def set_children(self, children: List["DerivationTree"], child_size: Optional[int] = None):
+            self._children = children
+            self.invalidate_hash()
+
     class Parser(NodeVisitor):
         class ParsingMode(enum.Enum):
             COMPLETE = 0
@@ -853,24 +884,28 @@ class Grammar(NodeVisitor):
                     raise FandangoValueError(
                         "Can't collapse a tree with an implicit root node"
                     )
-            return self._collapse(tree)[0]
+            return self._collapse(tree)[0][0]
 
         def _collapse(self, tree: DerivationTree):
             reduced = []
+            size = 0
             for child in tree.children:
-                reduced.extend(self._collapse(child))
+                rec_reduced, rec_size = self._collapse(child)
+                reduced.extend(rec_reduced)
+                size += rec_size
 
             if isinstance(tree.symbol, NonTerminal):
                 if tree.symbol.symbol.startswith("<__"):
-                    return reduced
+                    return reduced, size
 
             return [
                 DerivationTree(
                     tree.symbol,
                     children=reduced,
                     read_only=tree.read_only,
+                    child_size=size
                 )
-            ]
+            ], size + 1
 
         def predict(
             self, state: ParseState, table: List[Set[ParseState] | Column], k: int
@@ -896,7 +931,7 @@ class Grammar(NodeVisitor):
         def construct_incomplete_tree(
             self, state: ParseState, table: List[Set[ParseState] | Column]
         ) -> DerivationTree:
-            current_tree = DerivationTree(state.nonterminal, state.children)
+            current_tree = Grammar.ParserDerivationTree(state.nonterminal, state.children)
             current_state = state
             found_next_state = True
             while found_next_state:
@@ -907,13 +942,13 @@ class Grammar(NodeVisitor):
                         found_next_state = True
                         break
                 if str(current_tree.symbol).startswith("<*"):
-                    current_tree = DerivationTree(
+                    current_tree = Grammar.ParserDerivationTree(
                         current_state.nonterminal,
                         [*current_state.children, *current_tree.children],
                         **dict(current_state.dot_params),
                     )
                 else:
-                    current_tree = DerivationTree(
+                    current_tree = Grammar.ParserDerivationTree(
                         current_state.nonterminal,
                         [*current_state.children, current_tree],
                         **dict(current_state.dot_params),
@@ -949,7 +984,8 @@ class Grammar(NodeVisitor):
                 tuple(new_symbols),
                 state._dot,
                 state.children,
-                state.is_incomplete
+                state.is_incomplete,
+                state.child_tree_size
             )
             if state in table[k]:
                 table[k].replace(state, new_state)
@@ -997,8 +1033,8 @@ class Grammar(NodeVisitor):
             # Found a match
             # LOGGER.debug(f"Found bit {bit}")
             next_state = state.next()
-            tree = DerivationTree(Terminal(bit))
-            next_state.children.append(tree)
+            tree = Grammar.ParserDerivationTree(Terminal(bit))
+            next_state.append(tree)
             # LOGGER.debug(f"Added tree {tree.to_string()!r} to state {next_state!r}")
             # Insert a new table entry with next state
             # This is necessary, as our initial table holds one entry
@@ -1044,8 +1080,8 @@ class Grammar(NodeVisitor):
             # Found a match
             # LOGGER.debug(f"Matched byte(s) {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w + match_length]!r}")
             next_state = state.next()
-            next_state.children.append(
-                DerivationTree(Terminal(word[w : w + match_length]))
+            next_state.append(
+                Grammar.ParserDerivationTree(Terminal(word[w : w + match_length]))
             )
             table[k + match_length].add(next_state)
             # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
@@ -1082,13 +1118,26 @@ class Grammar(NodeVisitor):
             # Found a match
             # LOGGER.debug(f"Matched regex {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w+match_length]!r}")
             next_state = state.next()
-            next_state.children.append(
-                DerivationTree(Terminal(word[w : w + match_length]))
+            next_state.append(
+                Grammar.ParserDerivationTree(Terminal(word[w : w + match_length]))
             )
             table[k + match_length].add(next_state)
             # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
             self._max_position = max(self._max_position, w + match_length)
             return True
+
+        def _rec_to_derivation_tree(self, tree: list["Grammar.ParserDerivationTree"]):
+            ret = []
+            for child in tree:
+                children = self._rec_to_derivation_tree(child.children)
+                ret.append(DerivationTree(child.symbol, children,
+                               child.parent, child.read_only))
+            return ret
+
+        def to_derivation_tree(self, tree: "Grammar.ParserDerivationTree"):
+            children = self._rec_to_derivation_tree(tree.children)
+            return DerivationTree(tree.symbol, children,
+                           tree.parent, tree.read_only)
 
         def complete(
             self,
@@ -1102,22 +1151,22 @@ class Grammar(NodeVisitor):
                 s = s.next()
                 table[k].add(s)
                 if state.nonterminal in self._rules:
-                    s.children.append(
-                        DerivationTree(
+                    s.append(
+                        Grammar.ParserDerivationTree(
                             state.nonterminal, state.children, **dict(dot_params)
                         )
                     )
                 else:
                     if use_implicit and state.nonterminal in self._implicit_rules:
-                        s.children.append(
-                            DerivationTree(
+                        s.append(
+                            Grammar.ParserDerivationTree(
                                 NonTerminal(state.nonterminal.symbol),
                                 state.children,
                                 **dict(s.dot_params),
                             )
                         )
                     else:
-                        s.children.extend(state.children)
+                        s.extend(state.children, state.child_tree_size)
 
         def place_repetition_shortcut(self, table: List[Column], k: int):
             col = table[k]
@@ -1153,7 +1202,8 @@ class Grammar(NodeVisitor):
                         new_state.symbols,
                         new_state._dot,
                         [*origin_state.children, *plus_col_state.children],
-                        new_state.is_incomplete
+                        new_state.is_incomplete,
+                        origin_state.child_tree_size + plus_col_state.child_tree_size
                     )
                     origin_states = table[new_state.position].find_dot(new_state.dot)
                     if len(origin_states) != 1:
@@ -1310,6 +1360,7 @@ class Grammar(NodeVisitor):
             self._incomplete = set()
             forest = []
             for tree in self._parse_forest(word, start, mode=mode):
+                tree = self.to_derivation_tree(tree)
                 forest.append(tree)
                 if include_controlflow:
                     yield tree
