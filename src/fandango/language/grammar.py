@@ -1157,35 +1157,36 @@ class Grammar(NodeVisitor):
         def place_repetition_shortcut(self, table: List[Column], k: int):
             col = table[k]
             states = col.states
+            beginner_nts = ["<__plus:", "<__star:"]
 
-            plus_nts = set()
+            found_beginners = set()
             for state in states:
-                if state.nonterminal.symbol.startswith("<__plus:"):
-                    plus_nts.add(state.symbols[0][0])
+                if any(map(lambda b: state.nonterminal.symbol.startswith(b), beginner_nts)):
+                    found_beginners.add(state.symbols[0][0])
 
-            for plus_nt in plus_nts:
-                plus_col_state = None
+            for beginner in found_beginners:
+                current_col_state = None
                 for state in states:
-                    if state.nonterminal == plus_nt:
+                    if state.nonterminal == beginner:
                         if state.finished():
                             continue
-                        if len(state.symbols) == 2 and state.dot == plus_nt:
-                            plus_col_state = state
+                        if len(state.symbols) == 2 and state.dot == beginner:
+                            current_col_state = state
                             break
-                if plus_col_state is None:
+                if current_col_state is None:
                     continue
-                new_state = plus_col_state
-                origin_states = table[plus_col_state.position].find_dot(plus_col_state.dot)
+                new_state = current_col_state
+                origin_states = table[current_col_state.position].find_dot(current_col_state.dot)
                 if len(origin_states) != 1:
                     continue
                 origin_state = origin_states[0]
-                while not origin_state.nonterminal.symbol.startswith("<__plus:"):
+                while not any(map(lambda b: origin_state.nonterminal.symbol.startswith(b), beginner_nts)):
                     new_state = ParseState(
                         new_state.nonterminal,
                         origin_state.position,
                         new_state.symbols,
                         new_state._dot,
-                        [*origin_state.children, *plus_col_state.children],
+                        [*origin_state.children, *new_state.children],
                         new_state.is_incomplete
                     )
                     origin_states = table[new_state.position].find_dot(new_state.dot)
@@ -1194,7 +1195,7 @@ class Grammar(NodeVisitor):
                     origin_state = origin_states[0]
 
                 if new_state is not None:
-                    col.replace(plus_col_state, new_state)
+                    col.replace(current_col_state, new_state)
 
         def _parse_forest(
             self,
