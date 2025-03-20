@@ -1153,8 +1153,6 @@ class Grammar(NodeVisitor):
         def place_repetition_shortcut(self, table: List[Column], k: int):
             col = table[k]
             states = col.states
-            is_end_rep = False
-            is_inter_rep = False
 
             plus_nts = set()
             for state in states:
