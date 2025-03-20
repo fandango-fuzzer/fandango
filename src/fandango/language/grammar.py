@@ -635,10 +635,18 @@ class Column:
     def __getitem__(self, item):
         return self.states[item]
 
+    def remove(self, state: ParseState):
+        if state not in self.unique:
+            return False
+        self.unique.remove(state)
+        self.states.remove(state)
+        self.dot_map.get(state.dot, []).remove(state)
+
     def replace(self, old: ParseState, new: ParseState):
         self.unique.remove(old)
         self.unique.add(new)
         i_old = self.states.index(old)
+        del self.states[i_old]
         self.states.insert(i_old, new)
         self.dot_map[old.dot].remove(old)
         dot_list = self.dot_map.get(new.dot, [])
@@ -1111,6 +1119,50 @@ class Grammar(NodeVisitor):
                     else:
                         s.children.extend(state.children)
 
+        def place_repetition_shortcut(self, table: List[Column], k: int):
+            col = table[k]
+            states = col.states
+            is_end_rep = False
+            is_inter_rep = False
+
+            plus_nts = set()
+            for state in states:
+                if state.nonterminal.symbol.startswith("<__plus:"):
+                    plus_nts.add(state.symbols[0][0])
+
+            for plus_nt in plus_nts:
+                plus_col_state = None
+                for state in states:
+                    if state.nonterminal == plus_nt:
+                        if state.finished():
+                            continue
+                        if len(state.symbols) == 2 and state.dot == plus_nt:
+                            plus_col_state = state
+                            break
+                if plus_col_state is None:
+                    continue
+                new_state = plus_col_state
+                origin_states = table[plus_col_state.position].find_dot(plus_col_state.dot)
+                if len(origin_states) != 1:
+                    continue
+                origin_state = origin_states[0]
+                while not origin_state.nonterminal.symbol.startswith("<__plus:"):
+                    new_state = ParseState(
+                        new_state.nonterminal,
+                        origin_state.position,
+                        new_state.symbols,
+                        new_state._dot,
+                        [*origin_state.children, *plus_col_state.children],
+                        new_state.is_incomplete
+                    )
+                    origin_states = table[new_state.position].find_dot(new_state.dot)
+                    if len(origin_states) != 1:
+                        continue
+                    origin_state = origin_states[0]
+
+                if new_state is not None:
+                    col.replace(plus_col_state, new_state)
+
         def _parse_forest(
             self,
             word: str,
@@ -1218,6 +1270,8 @@ class Grammar(NodeVisitor):
                 if bit_count < 0:
                     # Advance to next byte
                     w += 1
+
+                self.place_repetition_shortcut(table, k)
 
                 k += 1
 
