@@ -39,6 +39,7 @@ from fandango.language.search import (
 )
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.logger import LOGGER
+from fandango import FandangoValueError
 
 
 class FandangoSplitter(FandangoParserVisitor):
@@ -87,6 +88,8 @@ class GrammarProcessor(FandangoParserVisitor):
         for production in productions:
             symbol = NonTerminal(production.nonterminal().getText())
             grammar[symbol] = self.visit(production.alternative())
+            if grammar.has_generator(symbol):
+                grammar.remove_generator(symbol)
             if production.expression():
                 # Handle generator expressions
                 expr, _, searches_map = self.searches.visit(production.expression())
@@ -182,7 +185,7 @@ class GrammarProcessor(FandangoParserVisitor):
         elif ctx.alternative():
             return self.visit(ctx.alternative())
         else:
-            raise ValueError(f"Unknown symbol: {ctx.getText()}")
+            raise FandangoValueError(f"Unknown symbol: {ctx.getText()}")
 
     def visitNonterminal_right(self, ctx: FandangoParser.Nonterminal_rightContext):
         ctx.COLON(0)
@@ -255,7 +258,7 @@ class ConstraintProcessor(FandangoParserVisitor):
                 global_variables=expression_constraint.global_variables,
             )
         else:
-            raise ValueError(f"Unknown constraint: {ctx.getText()}")
+            raise FandangoValueError(f"Unknown constraint: {ctx.getText()}")
 
     def visitImplies(self, ctx: FandangoParser.ImpliesContext):
         if ctx.ARROW():
@@ -291,9 +294,9 @@ class ConstraintProcessor(FandangoParserVisitor):
                     lazy=self.lazy,
                 )
             else:
-                raise ValueError(f"Unknown quantifier: {ctx.getText()}")
+                raise FandangoValueError(f"Unknown quantifier: {ctx.getText()}")
         else:
-            raise ValueError(f"Unknown quantifier: {ctx.getText()}")
+            raise FandangoValueError(f"Unknown quantifier: {ctx.getText()}")
 
     def visitFormula_disjunction(self, ctx: FandangoParser.Formula_disjunctionContext):
         constraints = [
@@ -329,7 +332,7 @@ class ConstraintProcessor(FandangoParserVisitor):
         elif ctx.formula_comparison():
             return self.visit(ctx.formula_comparison())
         else:
-            raise ValueError(f"Unknown formula atom: {ctx.getText()}")
+            raise FandangoValueError(f"Unknown formula atom: {ctx.getText()}")
 
     def visitExpr(self, ctx: FandangoParser.ExprContext):
         if ctx.selector_length():
@@ -347,7 +350,7 @@ class ConstraintProcessor(FandangoParserVisitor):
         elif ctx.inversion():
             expr, _, search_map = self.searches.visitInversion(ctx.inversion(0))
         else:
-            raise ValueError(f"Unknown expression: {ctx.getText()}")
+            raise FandangoValueError(f"Unknown expression: {ctx.getText()}")
         return ExpressionConstraint(
             ast.unparse(expr),
             searches=search_map,
@@ -453,7 +456,7 @@ class SearchProcessor(FandangoParserVisitor):
         elif ctx.selector():
             return self.get_attribute_searches(ctx.selector())
         else:
-            raise ValueError(f"Unknown base selection: {ctx.getText()}")
+            raise FandangoValueError(f"Unknown base selection: {ctx.getText()}")
 
     def transform_selection(self, ctx: FandangoParser.SelectionContext):
         base = self.visitBase_selection(ctx.base_selection())
@@ -719,7 +722,7 @@ class SearchProcessor(FandangoParserVisitor):
         elif ctx.atom():
             return self.visit(ctx.atom())
         else:
-            raise SyntaxError(f"Unsupported atom {ctx.getText()}")
+            raise FandangoValueError(f"Unsupported atom {ctx.getText()}")
 
     def _process_slices(self, slices, tree, searches, search_map):
         slice_trees, slice_searches, slice_search_map = self.visit(slices)
@@ -770,7 +773,7 @@ class SearchProcessor(FandangoParserVisitor):
         elif ctx.selector_length():
             return self.visit(ctx.selector_length())
         else:
-            raise SyntaxError(f"Unsupported atom {ctx.getText()}")
+            raise FandangoValueError(f"Unsupported atom {ctx.getText()}")
 
     def visitKwarg_or_starred(self, ctx: FandangoParser.Kwarg_or_starredContext):
         if ctx.ASSIGN():
@@ -1079,7 +1082,7 @@ class SearchProcessor(FandangoParserVisitor):
                 return self.visit(ctx.star_targets_list_seq())
             return ast.List(elts=[]), [], {}
         else:
-            raise ValueError(f"Unknown symbol: {ctx.getText()}")
+            raise FandangoValueError(f"Unknown symbol: {ctx.getText()}")
 
     def visitT_primary(self, ctx: FandangoParser.T_primaryContext):
         if ctx.DOT():
@@ -1348,7 +1351,7 @@ class PythonProcessor(FandangoParserVisitor):
         if expression:
             tree, searches, _ = self.search_processor.visit(expression)
             if searches:
-                raise ValueError(
+                raise FandangoValueError(
                     f"Nonterminals can only be used in grammars and constraints, not in regular Python code: {expression.getText()}"
                 )
             return tree
@@ -1366,7 +1369,7 @@ class PythonProcessor(FandangoParserVisitor):
         elif ctx.simple_stmts():
             return self.visitSimple_stmts(ctx.simple_stmts())
         else:
-            raise ValueError(f"Unknown symbol: {ctx.getText()}")
+            raise FandangoValueError(f"Unknown symbol: {ctx.getText()}")
 
     def visitSimple_stmt(self, ctx: FandangoParser.Simple_stmtContext):
         if ctx.assignment():
@@ -1398,7 +1401,7 @@ class PythonProcessor(FandangoParserVisitor):
         elif ctx.nonlocal_stmt():
             return self.visitNonlocal_stmt(ctx.nonlocal_stmt())
         else:
-            raise ValueError(f"Unknown symbol: {ctx.getText()}")
+            raise FandangoValueError(f"Unknown symbol: {ctx.getText()}")
 
     def visitAssignment(self, ctx: FandangoParser.AssignmentContext):
         if ctx.COLON():
@@ -1415,7 +1418,7 @@ class PythonProcessor(FandangoParserVisitor):
             elif ctx.single_subscript_attribute_target():
                 left = self.get_expression(ctx.single_subscript_attribute_target())
             else:
-                raise ValueError(
+                raise FandangoValueError(
                     f"Unsupported left hand side for assignment {ctx.getText()}"
                 )
             return ast.AnnAssign(
@@ -1431,7 +1434,7 @@ class PythonProcessor(FandangoParserVisitor):
             elif ctx.star_expressions():
                 value = self.get_expression(ctx.star_expressions())
             else:
-                raise ValueError(
+                raise FandangoValueError(
                     f"Unsupported right hand side for assignment {ctx.getText()}"
                 )
             if ctx.ASSIGN():
@@ -1470,7 +1473,7 @@ class PythonProcessor(FandangoParserVisitor):
             elif aug.IDIV_ASSIGN():
                 op = ast.FloorDiv()
             else:
-                raise ValueError(
+                raise FandangoValueError(
                     f"Unsupported operator for augmented assignment: {aug.getText()}"
                 )
             return ast.AugAssign(
@@ -1518,7 +1521,7 @@ class PythonProcessor(FandangoParserVisitor):
         elif ctx.import_from():
             return self.visitImport_from(ctx.import_from())
         else:
-            raise ValueError(f"Unknown symbol: {ctx.getText()}")
+            raise FandangoValueError(f"Unknown symbol: {ctx.getText()}")
 
     def visitImport_name(self, ctx: FandangoParser.Import_nameContext):
         return ast.Import(names=self.visitDotted_as_names(ctx.dotted_as_names()))
@@ -1577,7 +1580,7 @@ class PythonProcessor(FandangoParserVisitor):
         elif ctx.match_stmt():
             return self.visitMatch_stmt(ctx.match_stmt())
         else:
-            raise ValueError(f"Unknown symbol: {ctx.getText()}")
+            raise FandangoValueError(f"Unknown symbol: {ctx.getText()}")
 
     def visitClass_def(self, ctx: FandangoParser.Class_defContext):
         class_def = self.visitClass_def_raw(ctx.class_def_raw())
@@ -1597,7 +1600,7 @@ class PythonProcessor(FandangoParserVisitor):
                 ctx.arguments()
             )
             if base_searches:
-                raise ValueError(
+                raise FandangoValueError(
                     f"Nonterminals can only be used in grammars and constraints, not in regular Python code: {ctx.getText()}"
                 )
             for base in base_trees:
@@ -1649,7 +1652,7 @@ class PythonProcessor(FandangoParserVisitor):
         for expression in ctx.named_expression():
             tree, searches, _ = self.search_processor.visitNamed_expression(expression)
             if searches:
-                raise ValueError(
+                raise FandangoValueError(
                     f"Nonterminals can only be used in grammars and constraints, not in regular Python code: {ctx.getText()}"
                 )
             decorators.append(expression)
@@ -1661,7 +1664,7 @@ class PythonProcessor(FandangoParserVisitor):
         elif ctx.simple_stmts():
             return self.visitSimple_stmts(ctx.simple_stmts())
         else:
-            raise ValueError(f"Unknown symbol: {ctx.getText()}")
+            raise FandangoValueError(f"Unknown symbol: {ctx.getText()}")
 
     def visitParams(self, ctx: FandangoParser.ParamsContext):
         return self.get_expression(ctx.parameters())
