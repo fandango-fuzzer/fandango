@@ -24,6 +24,8 @@ from fandango.language.symbol import NonTerminal
 from fandango.language.tree import RoledMessage
 from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
 
+from fandango import FandangoFailedError, FandangoParseError, FandangoValueError
+
 
 class LoggerLevel(enum.Enum):
     NOTSET = logging.NOTSET
@@ -60,7 +62,7 @@ class Fandango:
         diversity_weight: float = 1.0,
     ):
         if tournament_size > 1:
-            raise ValueError(
+            raise FandangoValueError(
                 f"Parameter tournament_size must be in range ]0, 1], but is {tournament_size}."
             )
         if random_seed is not None:
@@ -107,8 +109,10 @@ class Fandango:
                 if isinstance(individual, str):
                     tree = self.grammar.parse(individual)
                     if not tree:
-                        raise ValueError(
-                            f"Failed to parse initial individual: {individual}"
+                        position = self.grammar.max_position()
+                        raise FandangoParseError(
+                            position,
+                            message=f"Failed to parse initial individual{individual!r}",
                         )
                 elif isinstance(individual, DerivationTree):
                     tree = individual
@@ -433,7 +437,7 @@ class Fandango:
         if self.fitness < self.expected_fitness:
             LOGGER.error("Population did not converge to a perfect population")
             if self.warnings_are_errors:
-                raise RuntimeError("Failed to find a perfect solution")
+                raise FandangoFailedError("Failed to find a perfect solution")
             if self.best_effort:
                 return self.population
 
@@ -442,7 +446,7 @@ class Fandango:
                 f"Only found {len(self.solution)} perfect solutions, instead of the required {self.desired_solutions}"
             )
             if self.warnings_are_errors:
-                raise RuntimeError(
+                raise FandangoFailedError(
                     "Failed to find the required number of perfect solutions"
                 )
             if self.best_effort:
