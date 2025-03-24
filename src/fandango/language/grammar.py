@@ -685,15 +685,14 @@ class Grammar(NodeVisitor):
 
     class ParserDerivationTree(DerivationTree):
 
-        def __init__(self,
-                     symbol: Symbol,
-                     children: Optional[List["DerivationTree"]] = None,
-                     parent: Optional["DerivationTree"] = None,
-                     read_only: bool = False,
-                     ):
-            super().__init__(
-                symbol, children, parent, read_only
-            )
+        def __init__(
+            self,
+            symbol: Symbol,
+            children: Optional[List["DerivationTree"]] = None,
+            parent: Optional["DerivationTree"] = None,
+            read_only: bool = False,
+        ):
+            super().__init__(symbol, children, parent, read_only)
 
         def set_children(self, children: List["DerivationTree"]):
             self._children = children
@@ -887,11 +886,7 @@ class Grammar(NodeVisitor):
                     return reduced
 
             return [
-                DerivationTree(
-                    tree.symbol,
-                    children=reduced,
-                    read_only=tree.read_only
-                )
+                DerivationTree(tree.symbol, children=reduced, read_only=tree.read_only)
             ]
 
         def predict(
@@ -918,7 +913,9 @@ class Grammar(NodeVisitor):
         def construct_incomplete_tree(
             self, state: ParseState, table: List[Set[ParseState] | Column]
         ) -> DerivationTree:
-            current_tree = Grammar.ParserDerivationTree(state.nonterminal, state.children)
+            current_tree = Grammar.ParserDerivationTree(
+                state.nonterminal, state.children
+            )
             current_state = state
             found_next_state = True
             while found_next_state:
@@ -971,7 +968,7 @@ class Grammar(NodeVisitor):
                 tuple(new_symbols),
                 state._dot,
                 state.children,
-                state.is_incomplete
+                state.is_incomplete,
             )
             if state in table[k]:
                 table[k].replace(state, new_state)
@@ -1116,14 +1113,16 @@ class Grammar(NodeVisitor):
             ret = []
             for child in tree:
                 children = self._rec_to_derivation_tree(child.children)
-                ret.append(DerivationTree(child.symbol, children,
-                               child.parent, child.read_only))
+                ret.append(
+                    DerivationTree(
+                        child.symbol, children, child.parent, child.read_only
+                    )
+                )
             return ret
 
         def to_derivation_tree(self, tree: "Grammar.ParserDerivationTree"):
             children = self._rec_to_derivation_tree(tree.children)
-            return DerivationTree(tree.symbol, children,
-                           tree.parent, tree.read_only)
+            return DerivationTree(tree.symbol, children, tree.parent, tree.read_only)
 
         def complete(
             self,
@@ -1161,7 +1160,9 @@ class Grammar(NodeVisitor):
 
             found_beginners = set()
             for state in states:
-                if any(map(lambda b: state.nonterminal.symbol.startswith(b), beginner_nts)):
+                if any(
+                    map(lambda b: state.nonterminal.symbol.startswith(b), beginner_nts)
+                ):
                     found_beginners.add(state.symbols[0][0])
 
             for beginner in found_beginners:
@@ -1176,18 +1177,25 @@ class Grammar(NodeVisitor):
                 if current_col_state is None:
                     continue
                 new_state = current_col_state
-                origin_states = table[current_col_state.position].find_dot(current_col_state.dot)
+                origin_states = table[current_col_state.position].find_dot(
+                    current_col_state.dot
+                )
                 if len(origin_states) != 1:
                     continue
                 origin_state = origin_states[0]
-                while not any(map(lambda b: origin_state.nonterminal.symbol.startswith(b), beginner_nts)):
+                while not any(
+                    map(
+                        lambda b: origin_state.nonterminal.symbol.startswith(b),
+                        beginner_nts,
+                    )
+                ):
                     new_state = ParseState(
                         new_state.nonterminal,
                         origin_state.position,
                         new_state.symbols,
                         new_state._dot,
                         [*origin_state.children, *new_state.children],
-                        new_state.is_incomplete
+                        new_state.is_incomplete,
                     )
                     origin_states = table[new_state.position].find_dot(new_state.dot)
                     if len(origin_states) != 1:
@@ -1440,8 +1448,10 @@ class Grammar(NodeVisitor):
         return tree
 
     def fuzz(
-        self, start: str | NonTerminal = "<start>", max_nodes: int = 50,
-        prefix_node: Optional[DerivationTree] = None
+        self,
+        start: str | NonTerminal = "<start>",
+        max_nodes: int = 50,
+        prefix_node: Optional[DerivationTree] = None,
     ) -> DerivationTree:
         if isinstance(start, str):
             start = NonTerminal(start)
