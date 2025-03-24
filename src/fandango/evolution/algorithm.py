@@ -18,8 +18,9 @@ from fandango.language.grammar import (
     DerivationTree,
     Grammar,
     FuzzingMode,
-    PacketForecaster, GeneratorParserValueError,
+    GeneratorParserValueError,
 )
+from fandango.language.packetforecaster import PacketForecaster
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import RoledMessage
 from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
@@ -210,8 +211,8 @@ class Fandango:
             self.evaluator.reset()
             self.solution.clear()
             self.solution_set.clear()
-            forecaster = PacketForecaster(self.grammar, history_tree)
-            role_options = forecaster.find()
+            forecaster = PacketForecaster(self.grammar)
+            role_options = forecaster.predict(history_tree)
 
             if len(role_options.getRoles()) == 0:
                 if len(history_tree.find_role_msgs()) == 0:

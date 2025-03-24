@@ -34,7 +34,7 @@ from fandango.language.grammar import (
     RoleAssigner,
     FuzzingMode,
     NonTerminalNode,
-    GrammarTruncator,
+    PacketTruncator,
     RoleNestingDetector,
     MAX_REPETITIONS,
 )
@@ -596,7 +596,7 @@ def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) ->
             keep_roles.remove(existing_role)
 
     for nt in grammar.rules.keys():
-        GrammarTruncator(grammar, keep_roles).visit(grammar.rules[nt])
+        PacketTruncator(grammar, keep_roles).visit(grammar.rules[nt])
 
 
 def check_grammar_consistency(
