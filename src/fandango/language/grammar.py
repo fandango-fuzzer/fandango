@@ -707,241 +707,6 @@ class NonTerminalFinder(NodeVisitor):
         return [node]
 
 
-class PacketForecaster(NodeVisitor):
-
-    class MountingPath:
-        def __init__(self, tree: DerivationTree, path: Tuple[Tuple[NonTerminal, bool], ...]):
-            self.tree = tree
-            self.path = path
-
-        @property
-        def collapsed_path(self):
-            new_path = []
-            for nt, new_node in self.path:
-                if nt.symbol.startswith("<__"):
-                    continue
-                new_path.append((nt, new_node))
-            return tuple(new_path)
-
-        def __hash__(self):
-            return hash((hash(self.tree), hash(self.path)))
-
-        def __eq__(self, other):
-            return hash(self) == hash(other)
-
-        def __repr__(self):
-            return repr(self.path)
-
-    class ForcastingPacket:
-        def __init__(self, node: NonTerminalNode):
-            self.node = node
-            self.paths: set[PacketForecaster.MountingPath] = set()
-
-        def add_path(self, path: "PacketForecaster.MountingPath"):
-            self.paths.add(path)
-
-    class ForcastingNonTerminals:
-        def __init__(self):
-            self.nt_to_packet = dict[NonTerminal, PacketForecaster.ForcastingPacket]()
-
-        def getNonTerminals(self) -> set[NonTerminal]:
-            return set(self.nt_to_packet.keys())
-
-        def __getitem__(self, item: NonTerminal):
-            return self.nt_to_packet[item]
-
-        def add_packet(self, packet: "PacketForecaster.ForcastingPacket"):
-            if packet.node.symbol in self.nt_to_packet.keys():
-                for path in packet.paths:
-                    self.nt_to_packet[packet.node.symbol].add_path(path)
-            else:
-                self.nt_to_packet[packet.node.symbol] = packet
-
-    class ForcastingResult:
-        def __init__(self):
-            # dict[roleName, dict[packetName, PacketForecaster.ForcastingPacket]]
-            self.roles_to_packets = dict[str, PacketForecaster.ForcastingNonTerminals]()
-
-        def getRoles(self) -> set[str]:
-            return set(self.roles_to_packets.keys())
-
-        def __getitem__(self, item: str):
-            return self.roles_to_packets[item]
-
-        def add_packet(self, role: str, packet: "PacketForecaster.ForcastingPacket"):
-            if role not in self.roles_to_packets.keys():
-                self.roles_to_packets[role] = PacketForecaster.ForcastingNonTerminals()
-            self.roles_to_packets[role].add_packet(packet)
-
-        def merge(self, other: "PacketForecaster.ForcastingResult"):
-            c_new = deepcopy(self)
-            c_other = deepcopy(other)
-            for role, fnt in c_other.roles_to_packets.items():
-                for fp in fnt.nt_to_packet.values():
-                    c_new.add_packet(role, fp)
-            return c_new
-
-    def __init__(self, grammar: "Grammar", tree: DerivationTree | None = None):
-        self.grammar = grammar
-        self.tree = tree
-        self.current_tree: list[list[DerivationTree] | None] = []
-        self.current_path: list[Tuple[NonTerminal, bool]] = []
-        self.result = PacketForecaster.ForcastingResult()
-
-    def add_option(self, node: NonTerminalNode):
-        mounting_path = PacketForecaster.MountingPath(
-            self.tree, tuple(self.current_path)
-        )
-        f_packet = PacketForecaster.ForcastingPacket(node)
-        f_packet.add_path(mounting_path)
-        self.result.add_packet(node.role, f_packet)
-
-    def find(self):
-        self.result = PacketForecaster.ForcastingResult()
-        if self.tree is not None:
-            self.current_path.append((self.tree.symbol, False))
-            if len(self.tree.children) == 0:
-                self.current_tree = [None]
-            else:
-                self.current_tree = [[self.tree.children[0]]]
-        else:
-            self.current_path.append((NonTerminal("<start>"), True))
-            self.current_tree = [None]
-
-        self.visit(self.grammar.rules[self.current_path[-1][0]])
-        self.current_tree.pop()
-        self.current_path.pop()
-        return self.result
-
-    def on_enter_controlflow(self, expected_nt_prefix: str):
-        tree = self.current_tree[-1]
-        cf_nt = (NonTerminal(expected_nt_prefix), True)
-        if tree is not None:
-            if len(tree) != 1:
-                raise GrammarKeyError("Expected len(tree) == 1 for controlflow entries!")
-            if not str(tree[0].symbol).startswith(expected_nt_prefix):
-                raise GrammarKeyError("Symbol mismatch!")
-            cf_nt = (NonTerminal(str(tree[0].symbol)), False)
-        self.current_tree.append(None if tree is None else tree[0].children)
-        self.current_path.append(cf_nt)
-
-    def on_leave_controlflow(self):
-        self.current_tree.pop()
-        self.current_path.pop()
-
-    def visitNonTerminalNode(self, node: NonTerminalNode):
-        tree = self.current_tree[-1]
-        if tree is not None:
-            if tree[0].symbol != node.symbol:
-                raise GrammarKeyError("Symbol mismatch")
-
-        if node.role is not None:
-            if tree is None:
-                self.add_option(node)
-                return False
-            else:
-                return True
-        self.current_tree.append(None if tree is None else tree[0].children)
-        self.current_path.append((node.symbol, tree is None))
-        try:
-            result = self.visit(self.grammar.rules[node.symbol])
-        finally:
-            self.current_path.pop()
-            self.current_tree.pop()
-        return result
-
-    def visitConcatenation(self, node: Concatenation):
-        self.on_enter_controlflow(f"<__{NodeType.CONCATENATION}:")
-        tree = self.current_tree[-1]
-        child_idx = 0 if tree is None else (len(tree) - 1)
-        continue_exploring = True
-        if tree is not None:
-            self.current_tree.append([tree[child_idx]])
-            try:
-                continue_exploring = self.visit(node.nodes[child_idx])
-                child_idx += 1
-            finally:
-                self.current_tree.pop()
-        while continue_exploring and child_idx < len(node.children()):
-            next_child = node.children()[child_idx]
-            self.current_tree.append(None)
-            continue_exploring = self.visit(next_child)
-            self.current_tree.pop()
-            child_idx += 1
-        self.on_leave_controlflow()
-        return continue_exploring
-
-    def visitAlternative(self, node: Alternative):
-        self.on_enter_controlflow(f"<__{NodeType.ALTERNATIVE}:")
-        tree = self.current_tree[-1]
-        continue_exploring = True
-
-        if tree is not None:
-            self.current_tree.append([tree[0]])
-            found = False
-            for alt in node.alternatives:
-                try:
-                    continue_exploring = self.visit(alt)
-                    found = True
-                    break
-                except GrammarKeyError as e:
-                    pass
-            self.current_tree.pop()
-            self.on_leave_controlflow()
-            if not found:
-                raise GrammarKeyError("Alternative mismatch")
-            return continue_exploring
-        else:
-            self.current_tree.append(None)
-            for alt in node.alternatives:
-                continue_exploring |= not self.visit(alt)
-            self.current_tree.pop()
-            self.on_leave_controlflow()
-            return continue_exploring
-
-    def visitRepetition(self, node: Repetition):
-        self.on_enter_controlflow(f"<__{NodeType.REPETITION}:")
-        self.visitRepetitionType(node)
-        self.on_leave_controlflow()
-
-
-    def visitRepetitionType(self, node: Repetition):
-        tree = self.current_tree[-1]
-        continue_exploring = True
-        tree_len = 0
-        if tree is not None:
-            tree_len = len(tree)
-            self.current_tree.append([tree[-1]])
-            continue_exploring = self.visit(node.node)
-            self.current_tree.pop()
-
-        rep_max = node.max(self.grammar, self.grammar.collapse(self.tree))
-        if continue_exploring and tree_len < rep_max:
-            self.current_tree.append(None)
-            continue_exploring = self.visit(node.node)
-            self.current_tree.pop()
-            if continue_exploring:
-                return continue_exploring
-        if tree_len >= node.min(self.grammar, self.grammar.collapse(self.tree)):
-            return True
-        return continue_exploring
-
-    def visitStar(self, node: Star):
-        self.on_enter_controlflow(f"<__{NodeType.STAR}:")
-        self.visitRepetitionType(node)
-        self.on_leave_controlflow()
-
-    def visitPlus(self, node: Plus):
-        self.on_enter_controlflow(f"<__{NodeType.PLUS}:")
-        self.visitRepetitionType(node)
-        self.on_leave_controlflow()
-
-    def visitOption(self, node: Option):
-        self.on_enter_controlflow(f"<__{NodeType.OPTION}:")
-        self.visitRepetitionType(node)
-        self.on_leave_controlflow()
-
-
 class RoleAssigner:
 
     def __init__(
@@ -1240,7 +1005,7 @@ class Grammar(NodeVisitor):
             self.option_count = 0
             self._process()
             self._cache: Dict[Tuple[str, NonTerminal], DerivationTree, bool] = {}
-            self._incomplete = dict()
+            self._incomplete = set()
             self._max_position = -1
 
         def _process(self):
@@ -1779,7 +1544,7 @@ class Grammar(NodeVisitor):
                             if at_end:
                                 # LOGGER.debug(f"Found {len(state.children)} parse tree(s)")
                                 for child in state.children:
-                                    yield child, copy.deepcopy(table)
+                                    yield child
 
                         self.complete(state, table, k)
                     elif not state.is_incomplete:
@@ -1824,11 +1589,8 @@ class Grammar(NodeVisitor):
 
                 if mode == Grammar.Parser.ParsingMode.INCOMPLETE and at_end:
                     for state in table[k]:
-                        table_cpy = copy.deepcopy(table)
                         if state.nonterminal == implicit_start:
-                            if len(state.children) != 0:
-                                for child in state.children:
-                                    self._incomplete[child] = table_cpy
+                            self._incomplete.update(state.children)
                         state.is_incomplete = True
                         self.complete(state, table, k)
 
@@ -1851,7 +1613,6 @@ class Grammar(NodeVisitor):
             start: str | NonTerminal = "<start>",
             mode: ParsingMode = ParsingMode.COMPLETE,
             include_controlflow: bool = False,
-            emit_parsing_state: bool = False,
         ) -> Generator[tuple[DerivationTree, any] | DerivationTree, None, None]:
             """
             Yield multiple parse alternatives, using a cache.
@@ -1867,7 +1628,7 @@ class Grammar(NodeVisitor):
             assert isinstance(start, NonTerminal)
 
             cache_key = (word, start, mode)
-            if cache_key in self._cache and not emit_parsing_state:
+            if cache_key in self._cache:
                 forest = self._cache[cache_key]
                 for tree in forest:
                     tree = deepcopy(tree)
@@ -1876,27 +1637,21 @@ class Grammar(NodeVisitor):
                         yield tree
                 return
 
-            self._incomplete = dict()
+            self._incomplete = set()
             forest = []
-            for tree, state in self._parse_forest(word, start, mode=mode):
+            for tree in self._parse_forest(word, start, mode=mode):
                 tree = self.to_derivation_tree(tree)
                 forest.append(tree)
                 if not include_controlflow:
                     tree = self.collapse(tree)
-                if emit_parsing_state:
-                    yield tree, state
-                else:
-                    yield tree
+                yield tree
 
             if mode == Grammar.Parser.ParsingMode.INCOMPLETE:
-                for tree, state in self._incomplete.items():
+                for tree in self._incomplete:
                     forest.append(tree)
                     if not include_controlflow:
                         tree = self.collapse(tree)
-                    if emit_parsing_state:
-                        yield tree, state
-                    else:
-                        yield tree
+                    yield tree
 
             # Cache entire forest
             self._cache[cache_key] = forest
@@ -1907,15 +1662,13 @@ class Grammar(NodeVisitor):
             start: str | NonTerminal = "<start>",
             mode: ParsingMode = ParsingMode.COMPLETE,
             include_controlflow: bool = False,
-            emit_parsing_state: bool = False
         ):
             """
             Yield multiple parse alternatives,
             even for incomplete inputs
             """
             return self.parse_forest(
-                word, start, mode=mode, include_controlflow=include_controlflow,
-                emit_parsing_state=emit_parsing_state
+                word, start, mode=mode, include_controlflow=include_controlflow
             )
 
         def parse(
@@ -1924,15 +1677,13 @@ class Grammar(NodeVisitor):
             start: str | NonTerminal = "<start>",
             mode: ParsingMode = ParsingMode.COMPLETE,
             include_controlflow: bool = False,
-            emit_parsing_state: bool = False,
         ):
             """
             Return the first parse alternative,
             or `None` if no parse is possible
             """
             tree_gen = self.parse_multiple(
-                word, start=start, mode=mode, include_controlflow=include_controlflow,
-                emit_parsing_state=emit_parsing_state
+                word, start=start, mode=mode, include_controlflow=include_controlflow
             )
             return next(tree_gen, None)
 
