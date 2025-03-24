@@ -473,7 +473,7 @@ class DerivationTree:
 
     def is_num(self):
         return self.is_float()
-      
+
     def split_end(self) -> "DerivationTree":
         cpy = copy.deepcopy(self)
         return cpy._split_end()
@@ -492,7 +492,7 @@ class DerivationTree:
             parent.set_children(keep_children)
             return self
         return self
-      
+
     def get_path(self):
         current = self
         path = list()
