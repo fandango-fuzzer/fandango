@@ -13,6 +13,9 @@ from fandango.language.symbol import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
+from fandango import FandangoValueError
+
+
 MAX_REPETITIONS = 5
 
 
@@ -183,7 +186,7 @@ class Repetition(Node):
         if len(searches) == 0:
             return eval(expr, grammar._global_variables, local_cpy), True
         if tree is None:
-            raise ValueError("tree required if searches present!")
+            raise FandangoValueError("tree required if searches present!")
 
         nodes = []
         for name, search in searches.items():
@@ -193,6 +196,10 @@ class Repetition(Node):
         for _, container in nodes:
             container.evaluate().set_all_read_only(True)
         local_cpy.update({name: container.evaluate() for name, container in nodes})
+        for name, _ in nodes:
+            if not isinstance(local_cpy[name], DerivationTree):
+                continue
+            local_cpy[name].set_all_read_only(True)
         return eval(expr, grammar._global_variables, local_cpy), False
 
     def min(self, grammar: "Grammar", tree: "DerivationTree" = None):
@@ -651,6 +658,7 @@ class ParseState:
 class Column:
     def __init__(self, states: Optional[List[ParseState]] = None):
         self.states = states or []
+        self.dot_map = dict[NonTerminal, list[ParseState]]()
         self.unique = set(self.states)
 
     def __iter__(self):
@@ -665,19 +673,37 @@ class Column:
     def __getitem__(self, item):
         return self.states[item]
 
-    def __setitem__(self, key, value):
-        self.states[key] = value
+    def remove(self, state: ParseState):
+        if state not in self.unique:
+            return False
+        self.unique.remove(state)
+        self.states.remove(state)
+        self.dot_map.get(state.dot, []).remove(state)
 
-    def __delitem__(self, key):
-        del self.states[key]
+    def replace(self, old: ParseState, new: ParseState):
+        self.unique.remove(old)
+        self.unique.add(new)
+        i_old = self.states.index(old)
+        del self.states[i_old]
+        self.states.insert(i_old, new)
+        self.dot_map[old.dot].remove(old)
+        dot_list = self.dot_map.get(new.dot, [])
+        dot_list.append(new)
+        self.dot_map[new.dot] = dot_list
 
     def __contains__(self, item):
         return item in self.unique
+
+    def find_dot(self, nt: NonTerminal):
+        return self.dot_map.get(nt, [])
 
     def add(self, state: ParseState):
         if state not in self.unique:
             self.states.append(state)
             self.unique.add(state)
+            state_list = self.dot_map.get(state.dot, [])
+            state_list.append(state)
+            self.dot_map[state.dot] = state_list
             return True
         return False
 
@@ -690,6 +716,22 @@ class Column:
 
 
 class Grammar(NodeVisitor):
+
+    class ParserDerivationTree(DerivationTree):
+
+        def __init__(
+            self,
+            symbol: Symbol,
+            children: Optional[List["DerivationTree"]] = None,
+            parent: Optional["DerivationTree"] = None,
+            read_only: bool = False,
+        ):
+            super().__init__(symbol, children, parent, read_only)
+
+        def set_children(self, children: List["DerivationTree"]):
+            self._children = children
+            self.invalidate_hash()
+
     class Parser(NodeVisitor):
         class ParsingMode(enum.Enum):
             COMPLETE = 0
@@ -862,7 +904,7 @@ class Grammar(NodeVisitor):
         def collapse(self, tree: DerivationTree):
             if isinstance(tree.symbol, NonTerminal):
                 if tree.symbol.symbol.startswith("<__"):
-                    raise RuntimeError(
+                    raise FandangoValueError(
                         "Can't collapse a tree with an implicit root node"
                     )
             return self._collapse(tree)[0]
@@ -870,7 +912,8 @@ class Grammar(NodeVisitor):
         def _collapse(self, tree: DerivationTree):
             reduced = []
             for child in tree.children:
-                reduced.extend(self._collapse(child))
+                rec_reduced = self._collapse(child)
+                reduced.extend(rec_reduced)
 
             if isinstance(tree.symbol, NonTerminal):
                 if tree.symbol.symbol.startswith("<__"):
@@ -909,7 +952,9 @@ class Grammar(NodeVisitor):
         def construct_incomplete_tree(
             self, state: ParseState, table: List[Set[ParseState] | Column]
         ) -> DerivationTree:
-            current_tree = DerivationTree(state.nonterminal, state.children)
+            current_tree = Grammar.ParserDerivationTree(
+                state.nonterminal, state.children
+            )
             current_state = state
             found_next_state = True
             while found_next_state:
@@ -920,13 +965,13 @@ class Grammar(NodeVisitor):
                         found_next_state = True
                         break
                 if str(current_tree.symbol).startswith("<*"):
-                    current_tree = DerivationTree(
+                    current_tree = Grammar.ParserDerivationTree(
                         current_state.nonterminal,
                         [*current_state.children, *current_tree.children],
                         **dict(current_state.dot_params),
                     )
                 else:
-                    current_tree = DerivationTree(
+                    current_tree = Grammar.ParserDerivationTree(
                         current_state.nonterminal,
                         [*current_state.children, current_tree],
                         **dict(current_state.dot_params),
@@ -943,7 +988,7 @@ class Grammar(NodeVisitor):
             nt_rule,
         ):
             if not isinstance(node, Repetition):
-                raise ValueError("Node needs to be a Repetition")
+                raise FandangoValueError("Node needs to be a Repetition")
             tree = self.construct_incomplete_tree(state, table)
             tree = self.collapse(tree)
             try:
@@ -956,6 +1001,16 @@ class Grammar(NodeVisitor):
                     new_symbols.append(context_nt)
                 else:
                     new_symbols.append((symbol, dot_params))
+            new_state = ParseState(
+                state.nonterminal,
+                state.position,
+                tuple(new_symbols),
+                state._dot,
+                state.children,
+                state.is_incomplete,
+            )
+            if state in table[k]:
+                table[k].replace(state, new_state)
             state.symbols = tuple(new_symbols)
             for nonterminal in self._implicit_rules:
                 self._implicit_rules[nonterminal] = {
@@ -1000,7 +1055,7 @@ class Grammar(NodeVisitor):
             # Found a match
             # LOGGER.debug(f"Found bit {bit}")
             next_state = state.next()
-            tree = DerivationTree(Terminal(bit))
+            tree = Grammar.ParserDerivationTree(Terminal(bit))
             next_state.children.append(tree)
             # LOGGER.debug(f"Added tree {tree.to_string()!r} to state {next_state!r}")
             # Insert a new table entry with next state
@@ -1048,7 +1103,7 @@ class Grammar(NodeVisitor):
             # LOGGER.debug(f"Matched byte(s) {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w + match_length]!r}")
             next_state = state.next()
             next_state.children.append(
-                DerivationTree(Terminal(word[w : w + match_length]))
+                Grammar.ParserDerivationTree(Terminal(word[w : w + match_length]))
             )
             table[k + match_length].add(next_state)
             # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
@@ -1086,12 +1141,27 @@ class Grammar(NodeVisitor):
             # LOGGER.debug(f"Matched regex {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w+match_length]!r}")
             next_state = state.next()
             next_state.children.append(
-                DerivationTree(Terminal(word[w : w + match_length]))
+                Grammar.ParserDerivationTree(Terminal(word[w : w + match_length]))
             )
             table[k + match_length].add(next_state)
             # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
             self._max_position = max(self._max_position, w + match_length)
             return True
+
+        def _rec_to_derivation_tree(self, tree: list["Grammar.ParserDerivationTree"]):
+            ret = []
+            for child in tree:
+                children = self._rec_to_derivation_tree(child.children)
+                ret.append(
+                    DerivationTree(
+                        child.symbol, children, child.parent, child.read_only
+                    )
+                )
+            return ret
+
+        def to_derivation_tree(self, tree: "Grammar.ParserDerivationTree"):
+            children = self._rec_to_derivation_tree(tree.children)
+            return DerivationTree(tree.symbol, children, tree.parent, tree.read_only)
 
         def complete(
             self,
@@ -1100,28 +1170,79 @@ class Grammar(NodeVisitor):
             k: int,
             use_implicit: bool = False,
         ):
-            for s in list(table[state.position]):
-                if s.dot == state.nonterminal:
-                    dot_params = s.dot_params
-                    s = s.next()
-                    table[k].add(s)
-                    if state.nonterminal in self._rules:
+            for s in table[state.position].find_dot(state.nonterminal):
+                dot_params = s.dot_params
+                s = s.next()
+                table[k].add(s)
+                if state.nonterminal in self._rules:
+                    s.children.append(
+                        Grammar.ParserDerivationTree(
+                            state.nonterminal, state.children, **dict(dot_params)
+                        )
+                    )
+                else:
+                    if use_implicit and state.nonterminal in self._implicit_rules:
                         s.children.append(
-                            DerivationTree(
-                                state.nonterminal, state.children, **dict(dot_params)
+                            Grammar.ParserDerivationTree(
+                                NonTerminal(state.nonterminal.symbol),
+                                state.children,
+                                **dict(s.dot_params),
                             )
                         )
                     else:
-                        if use_implicit and state.nonterminal in self._implicit_rules:
-                            s.children.append(
-                                DerivationTree(
-                                    NonTerminal(state.nonterminal.symbol),
-                                    state.children,
-                                    **dict(s.dot_params),
-                                )
-                            )
-                        else:
-                            s.children.extend(state.children)
+                        s.children.extend(state.children)
+
+        def place_repetition_shortcut(self, table: List[Column], k: int):
+            col = table[k]
+            states = col.states
+            beginner_nts = ["<__plus:", "<__star:"]
+
+            found_beginners = set()
+            for state in states:
+                if any(
+                    map(lambda b: state.nonterminal.symbol.startswith(b), beginner_nts)
+                ):
+                    found_beginners.add(state.symbols[0][0])
+
+            for beginner in found_beginners:
+                current_col_state = None
+                for state in states:
+                    if state.nonterminal == beginner:
+                        if state.finished():
+                            continue
+                        if len(state.symbols) == 2 and state.dot == beginner:
+                            current_col_state = state
+                            break
+                if current_col_state is None:
+                    continue
+                new_state = current_col_state
+                origin_states = table[current_col_state.position].find_dot(
+                    current_col_state.dot
+                )
+                if len(origin_states) != 1:
+                    continue
+                origin_state = origin_states[0]
+                while not any(
+                    map(
+                        lambda b: origin_state.nonterminal.symbol.startswith(b),
+                        beginner_nts,
+                    )
+                ):
+                    new_state = ParseState(
+                        new_state.nonterminal,
+                        origin_state.position,
+                        new_state.symbols,
+                        new_state._dot,
+                        [*origin_state.children, *new_state.children],
+                        new_state.is_incomplete,
+                    )
+                    origin_states = table[new_state.position].find_dot(new_state.dot)
+                    if len(origin_states) != 1:
+                        continue
+                    origin_state = origin_states[0]
+
+                if new_state is not None:
+                    col.replace(current_col_state, new_state)
 
         def _parse_forest(
             self,
@@ -1231,6 +1352,8 @@ class Grammar(NodeVisitor):
                     # Advance to next byte
                     w += 1
 
+                self.place_repetition_shortcut(table, k)
+
                 k += 1
 
         def parse_forest(
@@ -1268,6 +1391,7 @@ class Grammar(NodeVisitor):
             self._incomplete = set()
             forest = []
             for tree in self._parse_forest(word, start, mode=mode):
+                tree = self.to_derivation_tree(tree)
                 forest.append(tree)
                 if include_controlflow:
                     yield tree
@@ -1483,20 +1607,27 @@ class Grammar(NodeVisitor):
         else:
             tree = self.parse(string, symbol)
         if tree is None:
-            raise ValueError(
+            raise FandangoValueError(
                 f"Failed to parse generated string: {string} for {symbol} with generator {self.generators[symbol]}"
             )
         tree.generator_params = deepcopy(generator_params)
         return tree
 
     def fuzz(
-        self, start: str | NonTerminal = "<start>", max_nodes: int = 50
+        self,
+        start: str | NonTerminal = "<start>",
+        max_nodes: int = 50,
+        prefix_node: Optional[DerivationTree] = None,
     ) -> DerivationTree:
         if isinstance(start, str):
             start = NonTerminal(start)
-        root = DerivationTree(start)
+        if prefix_node is None:
+            root = DerivationTree(start)
+        else:
+            root = prefix_node
+        fuzzed_idx = len(root.children)
         NonTerminalNode(start).fuzz(root, self, max_nodes=max_nodes)
-        root = root.children[0]
+        root = root.children[fuzzed_idx]
         root._parent = None
         return root
 
@@ -1617,6 +1748,11 @@ class Grammar(NodeVisitor):
             call=param, nonterminals=searches_map
         )
 
+    def remove_generator(self, symbol: str | NonTerminal):
+        if isinstance(symbol, str):
+            symbol = NonTerminal(symbol)
+        self.generators.pop(symbol)
+
     def has_generator(self, symbol: str | NonTerminal):
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
@@ -1708,7 +1844,9 @@ class Grammar(NodeVisitor):
                 continue
             elif node.node_type == NodeType.NON_TERMINAL:
                 if node.symbol not in self.rules:
-                    raise ValueError(f"Symbol {node.symbol} not found in grammar")
+                    raise FandangoValueError(
+                        f"Symbol {node.symbol} not found in grammar"
+                    )
                 if self.rules[node.symbol].distance_to_completion == float("inf"):
                     nodes.append(node)
                 else:
@@ -1740,7 +1878,7 @@ class Grammar(NodeVisitor):
                         node.node.distance_to_completion * min_rep + 1
                     )
             else:
-                raise ValueError(f"Unknown node type {node.node_type}")
+                raise FandangoValueError(f"Unknown node type {node.node_type}")
 
     def default_result(self):
         return []
@@ -1835,7 +1973,7 @@ class Grammar(NodeVisitor):
 
         # Compute coverage
         if not all_k_paths:
-            raise ValueError("No k-paths found in the grammar")
+            raise FandangoValueError("No k-paths found in the grammar")
 
         return (
             len(covered_k_paths) / len(all_k_paths),
