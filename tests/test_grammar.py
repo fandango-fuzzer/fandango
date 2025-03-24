@@ -108,6 +108,13 @@ class ConstraintTest(unittest.TestCase):
         for solution in solutions:
             len_outer = solution.children[0].to_int()
             self.assertEqual(len_outer, len(solution.children) - 3)
-            for tree in solution.children[2:-2]:
+            for tree in solution.children[2:-1]:
                 len_inner = tree.children[0].to_int()
                 self.assertEqual(len_inner, len(tree.children) - 1)
+
+    def test_generator_redefinition(self):
+        file = open("tests/resources/generator_remove.fan", "r")
+        GRAMMAR, c = parse(file, use_stdlib=True, use_cache=False)
+        solutions = self.get_solutions(GRAMMAR, c)
+        for solution in solutions:
+            self.assertNotEqual(solution, "10")
