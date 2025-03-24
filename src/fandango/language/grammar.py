@@ -976,7 +976,7 @@ class RoleAssigner:
             c_node.role = self.implicite_role
 
 
-class GrammarTruncator(NodeVisitor):
+class PacketTruncator(NodeVisitor):
     def __init__(self, grammar: "Grammar", keep_roles: set[str]):
         self.grammar = grammar
         self.keep_roles = keep_roles
@@ -1194,24 +1194,6 @@ class Column:
     def __repr__(self):
         return f"Column({self.states})"
 
-class ParserState:
-    def __init__(self):
-        self.table: list[set[ParseState] | Column] = []
-        self.implicit_start = NonTerminal("<*start*>")
-        self._max_position = -1
-        self.w = 0
-        self.k = 0
-        self.bit_count = -1
-        self.nr_bits_scanned = 0
-        self.rules = {}
-        self.implicit_rules = {}
-        self.context_rules = {}
-        self.alternative_count = 0
-        self.concatenation_count = 0
-        self.repetition_count = 0
-        self.star_count = 0
-        self.plus_count = 0
-        self.option_count = 0
 
 class Grammar(NodeVisitor):
 
@@ -1245,34 +1227,45 @@ class Grammar(NodeVisitor):
         ):
             self.grammar_rules: Dict[NonTerminal, Node] = grammar.rules
             self.grammar = grammar
-            self._parser_state = ParserState()
+            self._rules = {}
+            self._implicit_rules = {}
+            self._context_rules: dict[
+                NonTerminal, tuple[Node, tuple[NonTerminal, frozenset]]
+            ] = dict()
+            self.alternative_count = 0
+            self.concatenation_count = 0
+            self.repetition_count = 0
+            self.star_count = 0
+            self.plus_count = 0
+            self.option_count = 0
             self._process()
             self._cache: Dict[Tuple[str, NonTerminal], DerivationTree, bool] = {}
             self._incomplete = dict()
             self._max_position = -1
 
         def _process(self):
-            self._parser_state = ParserState()
-            self._parser_state.context_rules.clear()
-            self._parser_state.alternative_count = 0
-            self._parser_state.concatenation_count = 0
-            self._parser_state.repetition_count = 0
-            self._parser_state.star_count = 0
-            self._parser_state.plus_count = 0
-            self._parser_state.option_count = 0
+            self._rules.clear()
+            self._implicit_rules.clear()
+            self._context_rules.clear()
+            self.alternative_count = 0
+            self.concatenation_count = 0
+            self.repetition_count = 0
+            self.star_count = 0
+            self.plus_count = 0
+            self.option_count = 0
             for nonterminal in self.grammar_rules:
                 self.set_rule(nonterminal, self.visit(self.grammar_rules[nonterminal]))
 
-            for nonterminal in self._parser_state.implicit_rules:
-                self._parser_state.implicit_rules[nonterminal] = {
-                    tuple(a) for a in self._parser_state.implicit_rules[nonterminal]
+            for nonterminal in self._implicit_rules:
+                self._implicit_rules[nonterminal] = {
+                    tuple(a) for a in self._implicit_rules[nonterminal]
                 }
 
         def set_implicit_rule(
             self, rule: List[List[NonTerminal]]
         ) -> tuple[NonTerminal, frozenset]:
-            nonterminal = NonTerminal(f"<*{len(self._parser_state.implicit_rules)}*>")
-            self._parser_state.implicit_rules[nonterminal] = rule
+            nonterminal = NonTerminal(f"<*{len(self._implicit_rules)}*>")
+            self._implicit_rules[nonterminal] = rule
             return (nonterminal, frozenset())
 
         def set_rule(
@@ -1280,13 +1273,13 @@ class Grammar(NodeVisitor):
             nonterminal: NonTerminal,
             rule: List[List[tuple[NonTerminal, frozenset]]],
         ):
-            self._parser_state.rules[nonterminal] = {tuple(a) for a in rule}
+            self._rules[nonterminal] = {tuple(a) for a in rule}
 
         def set_context_rule(
             self, node: Node, non_terminal: tuple[NonTerminal, frozenset]
         ) -> NonTerminal:
-            nonterminal = NonTerminal(f"<*ctx_{len(self._parser_state.context_rules)}*>")
-            self._parser_state.context_rules[nonterminal] = (node, non_terminal)
+            nonterminal = NonTerminal(f"<*ctx_{len(self._context_rules)}*>")
+            self._context_rules[nonterminal] = (node, non_terminal)
             return nonterminal
 
         def default_result(self):
@@ -1299,10 +1292,10 @@ class Grammar(NodeVisitor):
         def visitAlternative(self, node: Alternative):
             result = self.visitChildren(node)
             intermediate_nt = NonTerminal(
-                f"<__{NodeType.ALTERNATIVE}:{self._parser_state.alternative_count}>"
+                f"<__{NodeType.ALTERNATIVE}:{self.alternative_count}>"
             )
             self.set_rule(intermediate_nt, result)
-            self._parser_state.alternative_count += 1
+            self.alternative_count += 1
             return [[(intermediate_nt, frozenset())]]
 
         def visitConcatenation(self, node: Concatenation):
@@ -1315,10 +1308,10 @@ class Grammar(NodeVisitor):
                         new_result.append(r + a)
                 result = new_result
             intermediate_nt = NonTerminal(
-                f"<__{NodeType.CONCATENATION}:{self._parser_state.concatenation_count}>"
+                f"<__{NodeType.CONCATENATION}:{self.concatenation_count}>"
             )
             self.set_rule(intermediate_nt, result)
-            self._parser_state.concatenation_count += 1
+            self.concatenation_count += 1
             return [[(intermediate_nt, frozenset())]]
 
         def visitRepetition(
@@ -1348,10 +1341,10 @@ class Grammar(NodeVisitor):
                 alts.append(node_min * [nt] + [prev])
             min_nt = self.set_implicit_rule(alts)
             intermediate_nt = NonTerminal(
-                f"<__{NodeType.REPETITION}:{self._parser_state.repetition_count}>"
+                f"<__{NodeType.REPETITION}:{self.repetition_count}>"
             )
             self.set_rule(intermediate_nt, [[min_nt]])
-            self._parser_state.repetition_count += 1
+            self.repetition_count += 1
             return [[(intermediate_nt, frozenset())]]
 
         def visitStar(self, node: Star):
@@ -1360,9 +1353,9 @@ class Grammar(NodeVisitor):
             for r in self.visit(node.node):
                 alternatives.append(r + [nt])
             result = [[nt]]
-            intermediate_nt = NonTerminal(f"<__{NodeType.STAR}:{self._parser_state.star_count}>")
+            intermediate_nt = NonTerminal(f"<__{NodeType.STAR}:{self.star_count}>")
             self.set_rule(intermediate_nt, result)
-            self._parser_state.star_count += 1
+            self.star_count += 1
             return [[(intermediate_nt, frozenset())]]
 
         def visitPlus(self, node: Plus):
@@ -1372,16 +1365,16 @@ class Grammar(NodeVisitor):
                 alternatives.append(r)
                 alternatives.append(r + [nt])
             result = [[nt]]
-            intermediate_nt = NonTerminal(f"<__{NodeType.PLUS}:{self._parser_state.plus_count}>")
+            intermediate_nt = NonTerminal(f"<__{NodeType.PLUS}:{self.plus_count}>")
             self.set_rule(intermediate_nt, result)
-            self._parser_state.plus_count += 1
+            self.plus_count += 1
             return [[(intermediate_nt, frozenset())]]
 
         def visitOption(self, node: Option):
             result = [[(Terminal(""), frozenset())]] + self.visit(node.node)
-            intermediate_nt = NonTerminal(f"<__{NodeType.OPTION}:{self._parser_state.option_count}>")
+            intermediate_nt = NonTerminal(f"<__{NodeType.OPTION}:{self.option_count}>")
             self.set_rule(intermediate_nt, result)
-            self._parser_state.option_count += 1
+            self.option_count += 1
             return [[(intermediate_nt, frozenset())]]
 
         def visitNonTerminalNode(self, node: NonTerminalNode):
@@ -1397,6 +1390,8 @@ class Grammar(NodeVisitor):
             return [[(node.symbol, frozenset())]]
 
         def collapse(self, tree: DerivationTree):
+            if tree is None:
+                return None
             if isinstance(tree.symbol, NonTerminal):
                 if tree.symbol.symbol.startswith("<__"):
                     raise FandangoValueError(
@@ -1428,22 +1423,22 @@ class Grammar(NodeVisitor):
         def predict(
             self, state: ParseState, table: List[Set[ParseState] | Column], k: int
         ):
-            if state.dot in self._parser_state.rules:
+            if state.dot in self._rules:
                 table[k].update(
                     {
                         ParseState(state.dot, k, rule, 0)
-                        for rule in self._parser_state.rules[state.dot]
+                        for rule in self._rules[state.dot]
                     }
                 )
-            elif state.dot in self._parser_state.implicit_rules:
+            elif state.dot in self._implicit_rules:
                 table[k].update(
                     {
                         ParseState(state.dot, k, rule, 0)
-                        for rule in self._parser_state.implicit_rules[state.dot]
+                        for rule in self._implicit_rules[state.dot]
                     }
                 )
-            elif state.dot in self._parser_state.context_rules:
-                node, nt = self._parser_state.context_rules[state.dot]
+            elif state.dot in self._context_rules:
+                node, nt = self._context_rules[state.dot]
                 self.predict_ctx_rule(state, table, k, node, nt)
 
         def construct_incomplete_tree(
@@ -1507,9 +1502,9 @@ class Grammar(NodeVisitor):
             if state in table[k]:
                 table[k].replace(state, new_state)
             state.symbols = tuple(new_symbols)
-            for nonterminal in self._parser_state.implicit_rules:
-                self._parser_state.implicit_rules[nonterminal] = {
-                    tuple(a) for a in self._parser_state.implicit_rules[nonterminal]
+            for nonterminal in self._implicit_rules:
+                self._implicit_rules[nonterminal] = {
+                    tuple(a) for a in self._implicit_rules[nonterminal]
                 }
             self.predict(state, table, k)
 
@@ -1653,6 +1648,8 @@ class Grammar(NodeVisitor):
             return ret
 
         def to_derivation_tree(self, tree: "Grammar.ParserDerivationTree"):
+            if tree is None:
+                return None
             children = self._rec_to_derivation_tree(tree.children)
             return DerivationTree(tree.symbol, children,
                            tree.parent, tree.generator_params,
@@ -1669,14 +1666,14 @@ class Grammar(NodeVisitor):
                 dot_params = s.dot_params
                 s = s.next()
                 table[k].add(s)
-                if state.nonterminal in self._parser_state.rules:
+                if state.nonterminal in self._rules:
                     s.children.append(
                         Grammar.ParserDerivationTree(
                             state.nonterminal, state.children, **dict(dot_params)
                         )
                     )
                 else:
-                    if use_implicit and state.nonterminal in self._parser_state.implicit_rules:
+                    if use_implicit and state.nonterminal in self._implicit_rules:
                         s.children.append(
                             Grammar.ParserDerivationTree(
                                 NonTerminal(state.nonterminal.symbol),
@@ -1770,19 +1767,11 @@ class Grammar(NodeVisitor):
 
             while k < len(table):
                 # LOGGER.debug(f"Processing {len(table[k])} states at column {k}")
-                for state in table[k]:
-                    # True iff we have processed all characters
-                    # (or some bits of the last character)
-                    at_end = w >= len(word)  # or (bit_count > 0 and w == len(word) - 1)
 
-                    if at_end:
-                        if mode == Grammar.Parser.ParsingMode.INCOMPLETE:
-                            if state.nonterminal == implicit_start:
-                                table_cpy = copy.deepcopy(table)
-                                for child in state.children:
-                                    self._incomplete[child] = table_cpy
-                            state.is_incomplete = True
-                            self.complete(state, table, k)
+                # True iff we have processed all characters
+                # (or some bits of the last character)
+                at_end = w >= len(word)  # or (bit_count > 0 and w == len(word) - 1)
+                for state in table[k]:
 
                     if state.finished():
                         # LOGGER.debug(f"Finished")
@@ -1829,6 +1818,19 @@ class Grammar(NodeVisitor):
                                     match = self.scan_regex(state, word, table, k, w)
                                 else:
                                     match = self.scan_bytes(state, word, table, k, w)
+                    else:
+                        if state.next_symbol_is_nonterminal():
+                            self.predict(state, table, k)
+
+                if mode == Grammar.Parser.ParsingMode.INCOMPLETE and at_end:
+                    for state in table[k]:
+                        table_cpy = copy.deepcopy(table)
+                        if state.nonterminal == implicit_start:
+                            if len(state.children) != 0:
+                                for child in state.children:
+                                    self._incomplete[child] = table_cpy
+                        state.is_incomplete = True
+                        self.complete(state, table, k)
 
                 # LOGGER.debug(f"Scanned byte at position {w:#06x} ({w}); bit_count = {bit_count}")
                 if bit_count >= 0:
@@ -1876,23 +1878,23 @@ class Grammar(NodeVisitor):
 
             self._incomplete = dict()
             forest = []
-            for tree, table in self._parse_forest(word, start, mode=mode):
+            for tree, state in self._parse_forest(word, start, mode=mode):
                 tree = self.to_derivation_tree(tree)
                 forest.append(tree)
                 if not include_controlflow:
                     tree = self.collapse(tree)
                 if emit_parsing_state:
-                    yield tree, table
+                    yield tree, state
                 else:
                     yield tree
 
             if mode == Grammar.Parser.ParsingMode.INCOMPLETE:
-                for tree, table in self._incomplete.items():
+                for tree, state in self._incomplete.items():
                     forest.append(tree)
                     if not include_controlflow:
                         tree = self.collapse(tree)
                     if emit_parsing_state:
-                        yield tree, table
+                        yield tree, state
                     else:
                         yield tree
 
