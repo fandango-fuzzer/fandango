@@ -1202,10 +1202,13 @@ class Grammar(NodeVisitor):
                      symbol: Symbol,
                      children: Optional[List["DerivationTree"]] = None,
                      parent: Optional["DerivationTree"] = None,
+                     role: str = None,
+                     recipient = None,
                      read_only: bool = False,
                      ):
             super().__init__(
-                symbol, children, parent, read_only
+                symbol, children, parent,
+                [], role, recipient, read_only
             )
 
         def set_children(self, children: List["DerivationTree"]):
@@ -1637,13 +1640,15 @@ class Grammar(NodeVisitor):
             for child in tree:
                 children = self._rec_to_derivation_tree(child.children)
                 ret.append(DerivationTree(child.symbol, children,
-                               child.parent, child.read_only))
+                               child.parent, child.generator_params,
+                               child.role, child.recipient, child.read_only))
             return ret
 
         def to_derivation_tree(self, tree: "Grammar.ParserDerivationTree"):
             children = self._rec_to_derivation_tree(tree.children)
             return DerivationTree(tree.symbol, children,
-                           tree.parent, tree.read_only)
+                           tree.parent, tree.generator_params,
+                           tree.role, tree.recipient, tree.read_only)
 
         def complete(
             self,
@@ -2082,7 +2087,6 @@ class Grammar(NodeVisitor):
         tree = self.parse(string, symbol)
         if tree is None:
             raise GeneratorParserValueError(
-            raise FandangoValueError(
                 f"Failed to parse generated string: {string} for {symbol} with generator {self.generators[symbol]}"
             )
         tree.generator_params = deepcopy(generator_params)

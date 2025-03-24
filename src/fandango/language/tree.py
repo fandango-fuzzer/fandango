@@ -571,7 +571,7 @@ class DerivationTree:
             return self
         return self
 
-    def replace(self, tree_to_replace, new_subtree):
+    def replace(self, grammar: "Grammar", tree_to_replace, new_subtree):
         """
         Replace the subtree rooted at the given node with the new subtree.
         """
