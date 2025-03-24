@@ -7,9 +7,20 @@ from scipy.linalg import solve_lyapunov
 
 from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse
+from fandango.language.tree import DerivationTree
 
 
 class ConstraintTest(unittest.TestCase):
+
+    def count_g_params(self, tree: DerivationTree):
+        count = 0
+        if len(tree.generator_params) > 0:
+            count += 1
+        for child in tree.children:
+            count += self.count_g_params(child)
+        for child in tree.generator_params:
+            count += self.count_g_params(child)
+        return count
 
     def test_generate_k_paths(self):
 
@@ -51,6 +62,21 @@ class ConstraintTest(unittest.TestCase):
         actual = self.get_solutions(GRAMMAR, constraints)
 
         self.assertEqual(expected, actual)
+
+    def test_nested_generators(self):
+        file = open("tests/resources/nested_grammar_parameters.fan", "r")
+        grammar, c = parse(file, use_stdlib=False, use_cache=False)
+
+        for solution in self.get_solutions(grammar, c):
+            self.assertEqual(self.count_g_params(solution), 4)
+            converted_inner = solution.children[0].generator_params[0]
+            self.assertEqual(self.count_g_params(converted_inner), 3)
+            dummy_inner_2 = converted_inner.children[0].generator_params[0]
+            self.assertEqual(self.count_g_params(dummy_inner_2), 2)
+            dummy_inner = dummy_inner_2.children[0].generator_params[0]
+            self.assertEqual(self.count_g_params(dummy_inner), 1)
+            source_nr = dummy_inner.children[0].children[1].generator_params[0]
+            self.assertEqual(self.count_g_params(source_nr), 0)
 
     def test_repetitions(self):
         file = open("tests/resources/repetitions.fan", "r")
