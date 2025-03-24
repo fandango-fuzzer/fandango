@@ -1,7 +1,8 @@
 from typing import Callable, List, Set
 
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
-from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode, PacketForecaster
+from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode
+from fandango.language.packetforecaster import PacketForecaster
 from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER
 
