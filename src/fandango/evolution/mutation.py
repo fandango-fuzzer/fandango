@@ -61,7 +61,7 @@ class SimpleMutation(MutationOperator):
             else:
                 ctx_tree = None
             new_subtree = grammar.fuzz(node_to_mutate.symbol, prefix_node=ctx_tree)
-            mutated = individual.replace(node_to_mutate, new_subtree)
+            mutated = individual.replace(grammar, node_to_mutate, new_subtree)
             return mutated
 
         return individual
