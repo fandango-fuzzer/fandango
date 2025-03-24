@@ -6,6 +6,8 @@ import logging
 import os
 import os.path
 import re
+import time
+
 import gnureadline as readline
 import shlex
 import subprocess

@@ -266,14 +266,10 @@ class DerivationTree:
         memo[id(self)] = copied
 
         # Deepcopy the children
-        copied._children = [copy.deepcopy(child, memo) for child in self._children]
-
-        # Set parent pointers
-        for child in copied._children:
-            child._parent = copied
+        copied.set_children([copy.deepcopy(child, memo) for child in self._children])
 
         # Set the parent to None or update if necessary
-        copied._parent = None  # or copy.deepcopy(self.parent, memo) if parent is needed
+        copied._parent = copy.deepcopy(self.parent, memo)
 
         return copied
 
@@ -556,7 +552,26 @@ class DerivationTree:
             current = current.parent
         return path[::-1]
 
-    def replace(self, grammar: "Grammar", tree_to_replace, new_subtree):
+    def split_end(self) -> "DerivationTree":
+        cpy = copy.deepcopy(self)
+        return cpy._split_end()
+
+    def root(self):
+        root = self
+        if root.parent is not None:
+            root = root.parent
+        return root
+
+    def _split_end(self):
+        if self.parent is not None:
+            me_idx = self.parent.children.index(self)
+            keep_children = self.parent.children[:(me_idx + 1)]
+            parent = self.parent._split_end()
+            parent.set_children(keep_children)
+            return self
+        return self
+
+    def replace(self, tree_to_replace, new_subtree):
         """
         Replace the subtree rooted at the given node with the new subtree.
         """
@@ -731,7 +746,9 @@ class DerivationTree:
                     aggregate = aggregate + chr(value)
                     bits = 0
                 else:
-                    raise FandangoValueError(f"Cannot compute {aggregate!r} + {value!r}")
+                    raise FandangoValueError(
+                        f"Cannot compute {aggregate!r} + {value!r}"
+                    )
 
             elif isinstance(aggregate, bytes):
                 if isinstance(value, str):
@@ -742,7 +759,9 @@ class DerivationTree:
                     aggregate = aggregate + bytes([value])
                     bits = 0
                 else:
-                    raise FandangoValueError(f"Cannot compute {aggregate!r} + {value!r}")
+                    raise FandangoValueError(
+                        f"Cannot compute {aggregate!r} + {value!r}"
+                    )
 
             elif isinstance(aggregate, int):
                 if isinstance(value, str):
@@ -755,7 +774,9 @@ class DerivationTree:
                     aggregate = (aggregate << child_bits) + value
                     bits += child_bits
                 else:
-                    raise FandangoValueError(f"Cannot compute {aggregate!r} + {value!r}")
+                    raise FandangoValueError(
+                        f"Cannot compute {aggregate!r} + {value!r}"
+                    )
 
         # LOGGER.debug(f"value(): {' '.join(repr(child.value()) for child in self._children)} = {aggregate!r} ({bits} bits)")
 

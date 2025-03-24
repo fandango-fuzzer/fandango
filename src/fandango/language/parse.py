@@ -48,7 +48,6 @@ from fandango.logger import LOGGER, print_exception
 from fandango import FandangoSyntaxError, FandangoValueError
 
 
-
 class MyErrorListener(ErrorListener):
     """This is invoked from ANTLR when a syntax error is encountered"""
 
@@ -57,11 +56,14 @@ class MyErrorListener(ErrorListener):
         super().__init__()
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        exc = FandangoSyntaxError(f"{self.filename!r}, line {line}, column {column}: {msg}")
+        exc = FandangoSyntaxError(
+            f"{self.filename!r}, line {line}, column {column}: {msg}"
+        )
         exc.line = line
         exc.column = column
         exc.messsage = msg
         raise exc
+
 
 def closest_match(word, candidates):
     """
@@ -658,7 +660,9 @@ def check_grammar_definitions(
 
     if undefined_symbols:
         first_undefined_symbol = undefined_symbols.pop()
-        error = FandangoValueError(f"Undefined symbol {first_undefined_symbol!s} in grammar")
+        error = FandangoValueError(
+            f"Undefined symbol {first_undefined_symbol!s} in grammar"
+        )
         if undefined_symbols:
             error.add_note(
                 f"Other undefined symbols: {', '.join(str(symbol) for symbol in undefined_symbols)}"
