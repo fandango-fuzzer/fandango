@@ -1248,7 +1248,7 @@ class Grammar(NodeVisitor):
             self._parser_state = ParserState()
             self._process()
             self._cache: Dict[Tuple[str, NonTerminal], DerivationTree, bool] = {}
-            self._incomplete = set()
+            self._incomplete = dict()
             self._max_position = -1
 
         def _process(self):
@@ -1778,7 +1778,9 @@ class Grammar(NodeVisitor):
                     if at_end:
                         if mode == Grammar.Parser.ParsingMode.INCOMPLETE:
                             if state.nonterminal == implicit_start:
-                                self._incomplete.update(state.children)
+                                table_cpy = copy.deepcopy(table)
+                                for child in state.children:
+                                    self._incomplete[child] = table_cpy
                             state.is_incomplete = True
                             self.complete(state, table, k)
 
@@ -1872,7 +1874,7 @@ class Grammar(NodeVisitor):
                         yield tree
                 return
 
-            self._incomplete = set()
+            self._incomplete = dict()
             forest = []
             for tree, table in self._parse_forest(word, start, mode=mode):
                 tree = self.to_derivation_tree(tree)
@@ -1885,7 +1887,7 @@ class Grammar(NodeVisitor):
                     yield tree
 
             if mode == Grammar.Parser.ParsingMode.INCOMPLETE:
-                for tree, table in self._incomplete:
+                for tree, table in self._incomplete.items():
                     forest.append(tree)
                     if not include_controlflow:
                         tree = self.collapse(tree)
