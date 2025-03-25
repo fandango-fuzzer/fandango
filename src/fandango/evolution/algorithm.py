@@ -466,7 +466,7 @@ class Fandango:
 
         if msg_role not in forecast.getRoles():
             raise RuntimeError(
-                f"Unexpected sender sent message. Expected:",
+                f"Unexpected agent sent message. Expected:",
                 "|".join(forecast.getRoles()),
                 f" Received: {msg_role}",
             )
