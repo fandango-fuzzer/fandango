@@ -67,7 +67,7 @@ def compress_msg(uncompressed):
 
 def decompress_name(compressed, name_idx):
     segment_len_bin = compressed[name_idx]
-    segment_len = byte_to_int(segment_len_bin)
+    segment_len = byte_to_int(b'\x00' + segment_len_bin)
     compressed_len = 0
     decompressed = b''
     while segment_len != 0:
@@ -78,11 +78,12 @@ def decompress_name(compressed, name_idx):
         compressed_len = compressed_len + segment_len + 1
         name_idx = name_idx + segment_len + 1
         segment_len_bin = compressed[name_idx]
-        segment_len = byte_to_int(segment_len_bin)
+        segment_len = byte_to_int(b'\x00' + segment_len_bin)
     return decompressed, compressed_len + 1
 
 
 def decompress_msg(compressed):
+    compressed = compressed.to_bytes()
     count_header = compressed[4:13]
     qd_count = byte_to_int(count_header[:2])
     an_count = byte_to_int(count_header[2:4])
