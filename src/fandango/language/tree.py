@@ -665,6 +665,8 @@ class DerivationTree:
         """
         Find all nodes in the derivation tree with the given non-terminal symbol.
         """
+        if isinstance(symbol, str):
+            symbol = NonTerminal(symbol)
         nodes = []
         if self.symbol == symbol and not (exclude_read_only and self.read_only):
             nodes.append(self)

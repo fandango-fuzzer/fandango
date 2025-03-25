@@ -529,7 +529,7 @@ def fail_on_role_in_generator(grammar):
 
 def is_role_reachable(grammar, node):
     seen_nt_nodes = set()
-    nt_node_queue: set[NonTerminalNode] = NonTerminalFinder().visit(node)
+    nt_node_queue: set[NonTerminalNode] = set(NonTerminalFinder().visit(node))
     while len(nt_node_queue) != 0:
         current_node = nt_node_queue.pop()
         if current_node.role is not None or current_node.recipient is not None:

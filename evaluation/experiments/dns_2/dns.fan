@@ -1,5 +1,7 @@
-from struct import unpack
+from struct import unpack, pack
 from faker import Faker
+from copy import deepcopy
+
 fake = Faker()
 
 def gen_q_name():
@@ -14,8 +16,56 @@ def gen_q_name():
 def byte_to_int(byte_val):
     return int(unpack('>H', bytes(byte_val))[0])
 
+def msg_suffix(name):
+    suffixes = []
+    len_idx = 0
+    prefix_len = name[len_idx]
+    while prefix_len != 0:
+        suffixes.append((len_idx, name[len_idx:]))
+        len_idx = len_idx + prefix_len + 1
+        prefix_len = name[len_idx]
+    return suffixes
+
+def to_byte_tree(byte_val):
+    children = []
+    for idx, bit_in_b in range(8):
+        bit_val = (byte_val >> idx) & 1
+        children.append(DerivationTree(NonTerminal('<bit>'), [
+            DerivationTree(Terminal(bit_val))
+        ]))
+    return DerivationTree(NonTerminal('byte'), children)
+
+
 def compress_msg(uncompressed):
-    pass
+    uncompressed = deepcopy(uncompressed)
+    names = uncompressed.find_all_nodes('<q_name>', False)
+    suffix_dict = dict()
+
+    len_reduction = 0
+    for name in names:
+        b_name = name.to_bytes()
+        for n_offset, suffix in msg_suffix(b_name):
+            if suffix in suffix_dict:
+                cpr_ptr = suffix_dict[suffix]
+                bin_ptr = pack('>H', cpr_ptr) and b'\xC0\x00'
+                new_name = b_name[:n_offset] + bin_ptr
+                new_name_tree = []
+                for byte_val in new_name:
+                    new_name_tree.append(to_byte_tree(byte_val))
+                if n_offset == 0:
+                    new_name_tree = DerivationTree(NonTerminal('<q_name_written_pointer>'), new_name_tree)
+                else:
+                    new_name_tree = DerivationTree(NonTerminal('<q_name_written_partly>'), new_name_tree)
+                # insert new_name into tree
+                name.set_children([new_name_tree])
+                len_reduction += len(b_name) - len(new_name_tree.to_bytes())
+                break
+            else:
+                offset_name_start = len(name.split_end().root().to_bytes()) - len(b_name)
+                suffix_dict[suffix] = offset_name_start + n_offset - len_reduction
+    return uncompressed.to_bytes()
+
+
 
 def decompress_msg(compressed):
     pass
@@ -77,7 +127,7 @@ where forall <req> in <start>[:]:
 
 
 <question> ::= <q_name> <q_type> <rr_class>
-<q_name> ::= <q_name_written_complete> | <q_name_written_partly> | <q_name_written_pointer>
+<q_name> ::= <q_name_written_complete> #| <q_name_written_partly> | <q_name_written_pointer>
 <offset_qname> ::= 1 1 <bit>{14}
 <q_name_written_complete> ::= <q_name_written> 0{8}
 <q_name_written_partly> ::= <q_name_written> <offset_qname>
