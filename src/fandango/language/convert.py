@@ -66,10 +66,12 @@ class GrammarProcessor(FandangoParserVisitor):
         self,
         local_variables: Optional[Dict[str, Any]] = None,
         global_variables: Optional[Dict[str, Any]] = None,
+        max_repetitions: int = 5,
     ):
         self.local_variables = local_variables
         self.global_variables = global_variables
         self.searches = SearchProcessor(Grammar.dummy())
+        self.max_repetitions = max_repetitions
 
     def get_grammar(
         self, productions: List[FandangoParser.ProductionContext], prime=True
@@ -113,10 +115,10 @@ class GrammarProcessor(FandangoParserVisitor):
         return Concatenation(nodes)
 
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
-        return Star(self.visit(ctx.symbol()))
+        return Star(self.visit(ctx.symbol()), self.max_repetitions)
 
     def visitPlus(self, ctx: FandangoParser.PlusContext):
-        return Plus(self.visit(ctx.symbol()))
+        return Plus(self.visit(ctx.symbol()), self.max_repetitions)
 
     def visitOption(self, ctx: FandangoParser.OptionContext):
         return Option(self.visit(ctx.symbol()))
@@ -148,7 +150,6 @@ class GrammarProcessor(FandangoParserVisitor):
             elif min_ is None:
                 return Repetition(node, max_=max_)
             elif max_ is None:
-
                 return Repetition(
                     node, min_=min_, max_=(f"{self.max_repetitions}", [], {})
                 )

@@ -212,6 +212,7 @@ def parse_content(
     filename: str = "<input>",
     use_cache: bool = True,
     lazy: bool = False,
+    max_repetitions: int = 5,
 ) -> Tuple[Grammar, List[str]]:
     """
     Parse given content into a grammar and constraints.
@@ -287,6 +288,7 @@ def parse_content(
         spec = FandangoSpec(
             tree, fan_contents, lazy, filename=filename, max_repetitions=max_repetitions
         )
+
     assert spec is not None
 
     if use_cache and not from_cache:
@@ -323,6 +325,7 @@ def parse(
     given_grammars: List[Grammar] = [],
     start_symbol: Optional[str] = None,
     includes: List[str] = [],
+    max_repetitions: int = 5,
 ) -> Tuple[Optional[Grammar], List[str]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
