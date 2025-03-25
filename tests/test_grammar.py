@@ -117,21 +117,4 @@ class ConstraintTest(unittest.TestCase):
         GRAMMAR, c = parse(file, use_stdlib=True, use_cache=False)
         solutions = self.get_solutions(GRAMMAR, c)
         for solution in solutions:
-<<<<<<< HEAD
             self.assertNotEqual(solution, "10")
-
-    def test_generator_chunk(self):
-        file = open("tests/resources/generator_chunk.fan", "r")
-        GRAMMAR, c = parse(file, use_stdlib=True, use_cache=False)
-        fandango = Fandango(
-            grammar=GRAMMAR, constraints=c, desired_solutions=10, random_seed=6942012
-        )
-        solutions = fandango.evolve()
-        for solution in solutions:
-            sol = str(solution).split(".")
-            if len(sol[1]) > 2:
-                return
-        self.assertTrue(False)
-=======
-            self.assertNotEqual(solution, "10")
->>>>>>> parent of e50dc01 (fix and tests for #372 and #375)
