@@ -7,6 +7,8 @@ import time
 from typing import List, Union
 
 from copy import deepcopy
+from zoneinfo import available_timezones
+
 from fandango.constraints.base import Constraint
 from fandango.evolution.adaptation import AdaptiveTuner
 from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
@@ -212,22 +214,23 @@ class Fandango:
             self.solution.clear()
             self.solution_set.clear()
             forecaster = PacketForecaster(self.grammar)
-            role_options = forecaster.predict(history_tree)
+            forecast = forecaster.predict(history_tree)
 
-            if len(role_options.getRoles()) == 0:
+            if len(forecast.getRoles()) == 0:
                 if len(history_tree.find_role_msgs()) == 0:
                     raise RuntimeError("Couldn't forecast next packet!")
                 return [history_tree]
 
-            selected_role = random.choice(list(role_options.getRoles()))
+            selected_role = random.choice(list(forecast.getRoles()))
             if (
                     io_instance.roles[selected_role].is_fandango()
                     and not io_instance.received_msg()
             ):
-                non_terminal_options = role_options[selected_role]
-                symbol = random.choice(list(non_terminal_options.getNonTerminals()))
-                selected_option = non_terminal_options[symbol]
-                self.population_manager.io_next_packet = selected_option
+                forecast_non_terminals = forecast[selected_role]
+                selected_symbol = random.choice(list(forecast_non_terminals.getNonTerminals()))
+                forecast_packet = forecast_non_terminals[selected_symbol]
+                self.population_manager.io_next_packet = forecast_packet
+
                 new_population = (
                     self.population_manager.generate_random_initial_population(
                         self.fix_individual
@@ -258,14 +261,14 @@ class Fandango:
                 else:
                     send_str = new_packet.msg.to_string()
                 if (
-                        packet_node.recipient is None
-                        or not io_instance.roles[packet_node.recipient].is_fandango()
+                        new_packet.recipient is None
+                        or not io_instance.roles[new_packet.recipient].is_fandango()
                 ):
                     io_instance.set_transmit(
                         new_packet.role, new_packet.recipient, send_str
                     )
                     exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
-                hookin_option = next(iter(selected_option.paths))
+                hookin_option = next(iter(forecast_packet.paths))
                 history_tree = hookin_option.tree
                 history_tree.append(hookin_option.path[1:], new_packet.msg)
                 history_tree.set_all_read_only(True)
@@ -273,7 +276,7 @@ class Fandango:
                 while not io_instance.received_msg():
                     time.sleep(0.25)
                 forecast, packet_tree = self._parse_next_remote_packet(
-                    role_options, io_instance
+                    forecast, io_instance
                 )
 
                 hookin_option = next(iter(forecast.paths))
@@ -467,8 +470,8 @@ class Fandango:
                 "|".join(forecast.getRoles()),
                 f" Received: {msg_role}",
             )
-        forecasted_nonterminals = forecast[msg_role]
-        nts_with_role = set(forecasted_nonterminals.getNonTerminals())
+        forecast_non_terminals = forecast[msg_role]
+        available_non_terminals = set(forecast_non_terminals.getNonTerminals())
 
         is_msg_complete = False
         next_fragment_idx = 0
@@ -486,14 +489,14 @@ class Fandango:
                 used_fragments_idx.append(idx)
 
                 parsed_packet_tree = None
-                packet_option = None
-                for non_terminal in set(nts_with_role):
-                    packet_option = forecasted_nonterminals[non_terminal]
-                    parsed_packet_tree = self.grammar.parse(complete_msg, packet_option.node.symbol)
+                forecast_packet = None
+                for non_terminal in set(available_non_terminals):
+                    forecast_packet = forecast_non_terminals[non_terminal]
+                    parsed_packet_tree = self.grammar.parse(complete_msg, forecast_packet.node.symbol)
 
                     if parsed_packet_tree is not None:
-                        parsed_packet_tree.role = packet_option.node.role
-                        parsed_packet_tree.recipient = packet_option.node.recipient
+                        parsed_packet_tree.role = forecast_packet.node.role
+                        parsed_packet_tree.recipient = forecast_packet.node.recipient
                         # Derive generator packets. Note this is only apply this method without inserting the tree into the history,
                         # because the grammar syntax guarantees, that we don't encounter a generator in our path to the root node after hookin.
                         try:
@@ -501,20 +504,20 @@ class Fandango:
                             break
                         except GeneratorParserValueError as e:
                             parsed_packet_tree = None
-                    incomplete_tree = self.grammar.parse(complete_msg, packet_option.node.symbol,
+                    incomplete_tree = self.grammar.parse(complete_msg, forecast_packet.node.symbol,
                                                          mode=Grammar.Parser.ParsingMode.INCOMPLETE)
                     if incomplete_tree is None:
-                        nts_with_role.remove(non_terminal)
+                        available_non_terminals.remove(non_terminal)
 
                 # Check if there are still NonTerminals that can be parsed with received prefix
-                if len(nts_with_role) == 0:
+                if len(available_non_terminals) == 0:
                     raise RuntimeError(
                         f"Couldn't match remote message to any packet matching grammar: {complete_msg}"
                     )
                 if parsed_packet_tree is not None:
-                    for idx in used_fragments_idx:
-                        del remote_msgs[idx]
-                    return packet_option, parsed_packet_tree
+                    for del_idx in used_fragments_idx:
+                        del remote_msgs[del_idx]
+                    return forecast_packet, parsed_packet_tree
 
             if not is_msg_complete:
                 time.sleep(0.25)
