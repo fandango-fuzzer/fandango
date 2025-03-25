@@ -1209,7 +1209,9 @@ class Grammar(NodeVisitor):
         def construct_incomplete_tree(
             self, state: ParseState, table: List[Set[ParseState] | Column]
         ) -> DerivationTree:
-            current_tree = Grammar.ParserDerivationTree(state.nonterminal, state.children)
+            current_tree = Grammar.ParserDerivationTree(
+                state.nonterminal, state.children
+            )
             current_state = state
             found_next_state = True
             while found_next_state:
@@ -1262,7 +1264,7 @@ class Grammar(NodeVisitor):
                 tuple(new_symbols),
                 state._dot,
                 state.children,
-                state.is_incomplete
+                state.is_incomplete,
             )
             if state in table[k]:
                 table[k].replace(state, new_state)
@@ -1456,7 +1458,9 @@ class Grammar(NodeVisitor):
 
             found_beginners = set()
             for state in states:
-                if any(map(lambda b: state.nonterminal.symbol.startswith(b), beginner_nts)):
+                if any(
+                    map(lambda b: state.nonterminal.symbol.startswith(b), beginner_nts)
+                ):
                     found_beginners.add(state.symbols[0][0])
 
             for beginner in found_beginners:
@@ -1471,18 +1475,25 @@ class Grammar(NodeVisitor):
                 if current_col_state is None:
                     continue
                 new_state = current_col_state
-                origin_states = table[current_col_state.position].find_dot(current_col_state.dot)
+                origin_states = table[current_col_state.position].find_dot(
+                    current_col_state.dot
+                )
                 if len(origin_states) != 1:
                     continue
                 origin_state = origin_states[0]
-                while not any(map(lambda b: origin_state.nonterminal.symbol.startswith(b), beginner_nts)):
+                while not any(
+                    map(
+                        lambda b: origin_state.nonterminal.symbol.startswith(b),
+                        beginner_nts,
+                    )
+                ):
                     new_state = ParseState(
                         new_state.nonterminal,
                         origin_state.position,
                         new_state.symbols,
                         new_state._dot,
                         [*origin_state.children, *new_state.children],
-                        new_state.is_incomplete
+                        new_state.is_incomplete,
                     )
                     origin_states = table[new_state.position].find_dot(new_state.dot)
                     if len(origin_states) != 1:
@@ -1773,7 +1784,7 @@ class Grammar(NodeVisitor):
         args = [tree]
         for symbol in dependent_generators:
             generated_param = self.generate(symbol, args)
-            generated_param.generator_params.remove(tree)
+            generated_param.generator_params = []
             generated_param._parent = tree
             for child in generated_param.children:
                 self.populate_generator_params(child)
