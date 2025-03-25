@@ -217,7 +217,7 @@ class Fandango:
             if len(role_options.getRoles()) == 0:
                 if len(history_tree.find_role_msgs()) == 0:
                     raise RuntimeError("Couldn't forecast next packet!")
-                return [self.grammar.collapse(history_tree)]
+                return [history_tree]
 
             selected_role = random.choice(list(role_options.getRoles()))
             if (
@@ -253,29 +253,22 @@ class Fandango:
                     # Abort if we received a message during fuzzing
                     continue
                 new_packet = next_tree.find_role_msgs()[-1]
-                send_msg = new_packet.msg
-                if send_msg.contains_bytes():
-                    send_msg = send_msg.to_bytes()
+                if new_packet.msg.contains_bytes():
+                    send_str = new_packet.msg.to_bytes()
                 else:
-                    send_msg = send_msg.to_string()
+                    send_str = new_packet.msg.to_string()
                 if (
                         packet_node.recipient is None
                         or not io_instance.roles[packet_node.recipient].is_fandango()
                 ):
                     io_instance.set_transmit(
-                        packet_node.role, packet_node.recipient, send_msg
+                        new_packet.role, new_packet.recipient, send_str
                     )
                     exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
-                cf_packet = self.grammar.parse(send_msg,
-                                               selected_option.node.symbol,
-                                               mode=Grammar.Parser.ParsingMode.COMPLETE,
-                                               include_controlflow=True)
-                cf_packet.role = selected_option.node.role
-                cf_packet.recipient = packet_node.recipient
                 hookin_option = next(iter(selected_option.paths))
                 history_tree = hookin_option.tree
-                history_tree.append(hookin_option.path[1:], cf_packet)
-                next_tree.set_all_read_only(True)
+                history_tree.append(hookin_option.path[1:], new_packet.msg)
+                history_tree.set_all_read_only(True)
             else:
                 while not io_instance.received_msg():
                     time.sleep(0.25)
@@ -496,9 +489,8 @@ class Fandango:
                 packet_option = None
                 for non_terminal in set(nts_with_role):
                     packet_option = forecasted_nonterminals[non_terminal]
-                    parsed_packet_tree = self.grammar.parse(
-                        complete_msg, packet_option.node.symbol, include_controlflow=True
-                    )
+                    parsed_packet_tree = self.grammar.parse(complete_msg, packet_option.node.symbol)
+
                     if parsed_packet_tree is not None:
                         parsed_packet_tree.role = packet_option.node.role
                         parsed_packet_tree.recipient = packet_option.node.recipient

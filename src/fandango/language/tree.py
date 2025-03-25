@@ -11,15 +11,19 @@ from fandango import FandangoValueError
 
 
 class RoledMessage:
-    def __init__(self, role: str, msg: "DerivationTree"):
+    def __init__(self, role: str, recipient: str|None, msg: "DerivationTree"):
         self.msg = msg
         self.role = role
+        self.recipient = recipient
 
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
-        return f"({self.role}): {str(self.msg)}"
+        if self.recipient is None:
+            return f"({self.role}:{self.recipient}): {str(self.msg)}"
+        else:
+            return f"({self.role}): {str(self.msg)}"
 
 
 class DerivationTree:
@@ -132,7 +136,7 @@ class DerivationTree:
         if not isinstance(self.symbol, NonTerminal):
             return []
         if self.role is not None:
-            return [RoledMessage(self.role, self)]
+            return [RoledMessage(self.role, self.recipient, self)]
         subtrees = []
         for child in self._children:
             subtrees.extend(child.find_role_msgs())
