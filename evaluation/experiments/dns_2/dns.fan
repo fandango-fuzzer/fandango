@@ -1,5 +1,7 @@
 from struct import unpack, pack
 from faker import Faker
+from fandango.language.symbol import NonTerminal, Terminal
+from fandango.language.tree import DerivationTree
 from copy import deepcopy
 
 fake = Faker()
@@ -66,31 +68,35 @@ def compress_msg(uncompressed):
     return uncompressed.to_bytes()
 
 def decompress_name(compressed, name_idx):
-    segment_len_bin = compressed[name_idx]
-    segment_len = byte_to_int(b'\x00' + segment_len_bin)
+    segment_len = compressed[name_idx]
+    segment_len_bin = bytes([segment_len])
     compressed_len = 0
     decompressed = b''
     while segment_len != 0:
-        if (segment_len_bin and b'\xc0\x00') == b'\xc0\x00':
-            decompressed = decompressed + decompress_name(compressed, byte_to_int(segment_len_bin and b'\x0f\xff'))[0]
+        # If first two bits are 1
+        if segment_len_bin[0] == 192:
+            name_ptr = (segment_len & 15) << 8
+            name_ptr += compressed[name_idx+1]
+            decompressed = decompressed + decompress_name(compressed, name_ptr)[0]
             return decompressed, compressed_len + 2
+        decompressed = decompressed + segment_len_bin
         decompressed = decompressed + compressed[name_idx + 1 : name_idx + 1 + segment_len]
         compressed_len = compressed_len + segment_len + 1
         name_idx = name_idx + segment_len + 1
-        segment_len_bin = compressed[name_idx]
-        segment_len = byte_to_int(b'\x00' + segment_len_bin)
+        segment_len = compressed[name_idx]
+        segment_len_bin = bytes([segment_len])
+    decompressed = decompressed + bytes([0])
     return decompressed, compressed_len + 1
 
 
 def decompress_msg(compressed):
-    compressed = compressed.to_bytes()
-    count_header = compressed[4:13]
+    count_header = compressed[4:12]
     qd_count = byte_to_int(count_header[:2])
     an_count = byte_to_int(count_header[2:4])
     ns_count = byte_to_int(count_header[4:6])
     ar_count = byte_to_int(count_header[6:8])
-    decompressed = count_header
-    curr_idx = 13
+    decompressed = compressed[0:12]
+    curr_idx = 12
     for i in range(qd_count):
         name, compressed_len = decompress_name(compressed, curr_idx)
         decompressed = decompressed + name
@@ -109,6 +115,7 @@ def decompress_msg(compressed):
         decompressed += compressed[curr_idx:curr_idx+r_data_len]
         curr_idx += r_data_len
     return decompressed
+
 
 
 <start> ::= <Client:dns_req_compressed> <Server:dns_resp_compressed>
