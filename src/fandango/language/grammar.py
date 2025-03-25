@@ -1659,6 +1659,7 @@ class Grammar(NodeVisitor):
 
             if mode == Grammar.Parser.ParsingMode.INCOMPLETE:
                 for tree in self._incomplete:
+                    tree = self.to_derivation_tree(tree)
                     forest.append(tree)
                     if not include_controlflow:
                         tree = self.collapse(tree)

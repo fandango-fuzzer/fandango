@@ -280,7 +280,7 @@ class PacketForecaster:
             return Alternative(self.visitChildren(node))
 
         def visitRepetition(self, node: Repetition):
-            return Repetition(self.visit(node), node.expr_data_min, node.expr_data_max)
+            return Repetition(self.visit(node.node), node.expr_data_min, node.expr_data_max)
 
         def visitOption(self, node: Option):
             return Option(self.visit(node))
@@ -295,7 +295,7 @@ class PacketForecaster:
             return CharSet(node.chars)
 
         def visitNonTerminalNode(self, node: NonTerminalNode):
-            if node.role is None or node.recipient is None:
+            if node.role is None and node.recipient is None:
                 self.seen_keys.add(node.symbol)
                 return node
 
@@ -319,6 +319,7 @@ class PacketForecaster:
             i_cpy = deepcopy(i_tree)
             for i_msg, r_msg in zip(i_cpy.find_role_msgs(), self.reference_tree.find_role_msgs()):
                 i_msg.msg.set_children(r_msg.msg.children)
+                i_msg.msg.symbol = NonTerminal('<' + str(r_msg.msg.symbol)[1:])
             return i_cpy
 
 
@@ -349,5 +350,8 @@ class PacketForecaster:
                             and r_msg.recipient == orig_r_msg.recipient):
                         r_msg.msg.set_children(deepcopy(orig_r_msg.msg.children))
                         r_msg.msg.symbol = NonTerminal('<' + str(orig_r_msg.msg.symbol)[1:])
-                options = options.merge(finder.find(suggested_tree))
+                    else:
+                        break
+                else:
+                    options = options.merge(finder.find(suggested_tree))
         return options
