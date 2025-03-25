@@ -65,10 +65,49 @@ def compress_msg(uncompressed):
                 suffix_dict[suffix] = offset_name_start + n_offset - len_reduction
     return uncompressed.to_bytes()
 
+def decompress_name(compressed, name_idx):
+    segment_len_bin = compressed[name_idx]
+    segment_len = byte_to_int(segment_len_bin)
+    compressed_len = 0
+    decompressed = b''
+    while segment_len != 0:
+        if (segment_len_bin and b'\xc0\x00') == b'\xc0\x00':
+            decompressed = decompressed + decompress_name(compressed, byte_to_int(segment_len_bin and b'\x0f\xff'))[0]
+            return decompressed, compressed_len + 2
+        decompressed = decompressed + compressed[name_idx + 1 : name_idx + 1 + segment_len]
+        compressed_len = compressed_len + segment_len + 1
+        name_idx = name_idx + segment_len + 1
+        segment_len_bin = compressed[name_idx]
+        segment_len = byte_to_int(segment_len_bin)
+    return decompressed, compressed_len + 1
 
 
 def decompress_msg(compressed):
-    pass
+    count_header = compressed[4:13]
+    qd_count = byte_to_int(count_header[:2])
+    an_count = byte_to_int(count_header[2:4])
+    ns_count = byte_to_int(count_header[4:6])
+    ar_count = byte_to_int(count_header[6:8])
+    decompressed = count_header
+    curr_idx = 13
+    for i in range(qd_count):
+        name, compressed_len = decompress_name(compressed, curr_idx)
+        decompressed = decompressed + name
+        curr_idx += compressed_len
+        decompressed += compressed[curr_idx:curr_idx+4]
+        curr_idx += 4
+    for i in range(an_count + ns_count + ar_count):
+        name, compressed_len = decompress_name(compressed, curr_idx)
+        decompressed = decompressed + name
+        curr_idx += compressed_len
+        decompressed += compressed[curr_idx:curr_idx+8]
+        curr_idx += 8
+        r_data_len = byte_to_int(compressed[curr_idx:curr_idx+2])
+        decompressed += compressed[curr_idx:curr_idx+2]
+        curr_idx += 2
+        decompressed += compressed[curr_idx:curr_idx+r_data_len]
+        curr_idx += r_data_len
+    return decompressed
 
 
 <start> ::= <Client:dns_req_compressed> <Server:dns_resp_compressed>
@@ -129,7 +168,7 @@ where forall <req> in <start>[:]:
 <question> ::= <q_name> <q_type> <rr_class>
 <q_name> ::= <q_name_written_complete> #| <q_name_written_partly> | <q_name_written_pointer>
 <offset_qname> ::= 1 1 <bit>{14}
-<q_name_written_complete> ::= <q_name_written> 0{8}
+<q_name_written_complete> ::= <q_name_written>? 0{8}
 <q_name_written_partly> ::= <q_name_written> <offset_qname>
 <q_name_written_pointer> ::= <offset_qname>
 <q_name_written> ::= <label_len_octet> <non_zero_byte>+ := gen_q_name()
