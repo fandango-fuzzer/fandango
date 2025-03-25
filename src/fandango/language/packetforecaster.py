@@ -349,7 +349,9 @@ class PacketForecaster:
             for suggested_tree in self._parser.parse_multiple(history_nts, NonTerminal("<start>"),
                                Grammar.Parser.ParsingMode.INCOMPLETE, True):
                 for orig_r_msg, r_msg in zip(tree.find_role_msgs(), suggested_tree.find_role_msgs()):
-                    if str(r_msg.msg.symbol)[9:] == str(orig_r_msg.msg.symbol)[1:]:
+                    if (str(r_msg.msg.symbol)[9:] == str(orig_r_msg.msg.symbol)[1:]
+                            and r_msg.role == orig_r_msg.role
+                            and r_msg.recipient == orig_r_msg.recipient):
                         r_msg.msg.set_children(deepcopy(orig_r_msg.msg.children))
                         r_msg.msg.symbol = NonTerminal('<' + str(orig_r_msg.msg.symbol)[1:])
                 options = options.merge(finder.find(suggested_tree))
