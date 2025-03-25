@@ -42,15 +42,11 @@ class PathFinder(NodeVisitor):
         self.current_tree = []
 
         self.result = PacketForecaster.ForcastingResult()
-        if self.tree is not None:
-            self.current_path.append((self.tree.symbol, False))
-            if len(self.tree.children) == 0:
-                self.current_tree = [None]
-            else:
-                self.current_tree = [[self.tree.children[0]]]
-        else:
-            self.current_path.append((NonTerminal("<start>"), True))
+        self.current_path.append((self.tree.symbol, False))
+        if len(self.tree.children) == 0:
             self.current_tree = [None]
+        else:
+            self.current_tree = [[self.tree.children[0]]]
 
         self.visit(self.grammar.rules[self.current_path[-1][0]])
         self.current_tree.pop()
@@ -81,7 +77,6 @@ class PathFinder(NodeVisitor):
 
         if node.role is not None:
             if tree is None:
-                #self.add_option(NonTerminalNode(NonTerminal('<' + node.symbol.symbol[9:]), node.role, node.recipient))
                 self.add_option(node)
                 return False
             else:
