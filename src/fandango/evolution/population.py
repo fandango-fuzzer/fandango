@@ -29,7 +29,7 @@ class PopulationManager:
             mounting_option = next(iter(self.io_next_packet.paths))
             tree = self.grammar.collapse(mounting_option.tree)
             dummy = DerivationTree(NonTerminal("<hookin>"))
-            tree.append(mounting_option.collapsed_path[1:], dummy)
+            tree.append(mounting_option.path[1:], dummy)
 
             fuzz_point = dummy.parent
             fuzz_point.set_children(fuzz_point.children[:-1])

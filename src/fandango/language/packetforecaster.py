@@ -34,6 +34,8 @@ class PathFinder(NodeVisitor):
         return tuple(new_path)
 
     def find(self, tree: Optional[DerivationTree] = None):
+        if tree is None:
+            tree = DerivationTree(NonTerminal("<start>"))
         self.tree = tree
         self.collapsed_tree = self.grammar.collapse(tree)
         self.current_path = []
@@ -79,6 +81,7 @@ class PathFinder(NodeVisitor):
 
         if node.role is not None:
             if tree is None:
+                #self.add_option(NonTerminalNode(NonTerminal('<' + node.symbol.symbol[9:]), node.role, node.recipient))
                 self.add_option(node)
                 return False
             else:
@@ -302,29 +305,34 @@ class PacketForecaster:
                 return node
 
             symbol = NonTerminal("<_packet_" + node.symbol.symbol[1:])
-            node = NonTerminalNode(symbol, node.role, node.recipient)
+            repl_node = NonTerminalNode(symbol, node.role, node.recipient)
             self._reduced[symbol] = TerminalNode(Terminal(node.symbol.symbol))
             self.seen_keys.add(symbol)
             self.processed_keys.add(symbol)
-            return node
+            return repl_node
 
     class Parser(Grammar.Parser):
 
         def __init__(self, grammar: Grammar):
             super().__init__(grammar)
-            self.detailed_tree = None
+            self.reference_tree = None
 
         def construct_incomplete_tree(
             self, state: ParseState, table: List[Set[ParseState] | Column]
         ) -> DerivationTree:
-            pass
+            i_tree = super().construct_incomplete_tree(state, table)
+            i_cpy = deepcopy(i_tree)
+            for i_msg, r_msg in zip(i_cpy.find_role_msgs(), self.reference_tree.find_role_msgs()):
+                i_msg.msg.set_children(r_msg.msg.children)
+            return i_cpy
 
 
     def __init__(self, grammar: Grammar):
         g_globals, g_locals = grammar.get_python_env()
         reduced = PacketForecaster.GrammarReducer().process(grammar)
-        self.grammar = Grammar(reduced, grammar.fuzzing_mode, g_locals, g_globals)
-        self._parser = PacketForecaster.Parser(self.grammar)
+        self.grammar = grammar
+        self.reduced_grammar = Grammar(reduced, grammar.fuzzing_mode, g_locals, g_globals)
+        self._parser = PacketForecaster.Parser(self.reduced_grammar)
 
     def predict(self, tree: DerivationTree):
         history_nts = ""
@@ -337,10 +345,12 @@ class PacketForecaster:
         if history_nts == "":
             options = options.merge(finder.find())
         else:
+            self._parser.reference_tree = tree
             for suggested_tree in self._parser.parse_multiple(history_nts, NonTerminal("<start>"),
                                Grammar.Parser.ParsingMode.INCOMPLETE, True):
                 for orig_r_msg, r_msg in zip(tree.find_role_msgs(), suggested_tree.find_role_msgs()):
-                    if r_msg.msg.symbol == orig_r_msg.msg.symbol:
+                    if str(r_msg.msg.symbol)[9:] == str(orig_r_msg.msg.symbol)[1:]:
                         r_msg.msg.set_children(deepcopy(orig_r_msg.msg.children))
+                        r_msg.msg.symbol = NonTerminal('<' + str(orig_r_msg.msg.symbol)[1:])
                 options = options.merge(finder.find(suggested_tree))
         return options
