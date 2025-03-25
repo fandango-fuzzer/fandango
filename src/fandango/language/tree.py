@@ -569,11 +569,19 @@ class DerivationTree:
     def _split_end(self):
         if self.parent is not None:
             me_idx = self.parent.children.index(self)
-            keep_children = self.parent.children[:(me_idx + 1)]
+            keep_children = self.parent.children[: (me_idx + 1)]
             parent = self.parent._split_end()
             parent.set_children(keep_children)
             return self
         return self
+
+    def get_path(self):
+        current = self
+        path = list()
+        while current is not None:
+            path.append(current.symbol)
+            current = current.parent
+        return path[::-1]
 
     def replace(self, grammar: "Grammar", tree_to_replace, new_subtree):
         """
