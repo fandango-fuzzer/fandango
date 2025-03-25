@@ -184,7 +184,7 @@ where forall <req> in <start>[:]:
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
 
 
-<answer> ::= <q_name> <a_type> <rr_class> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
+<answer> ::= <q_name> ((<a_type> <rr_class>) | <type_opt> <udp_payload_size>) <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
 <a_type> ::= <type_a> | <type_ns>
 <a_ttl> ::= <byte>{4}
 <a_rd_length> ::= <byte>{2}
@@ -193,6 +193,8 @@ where forall <req> in <start>[:]:
 
 <type_a> ::= 0{15} 1
 <type_ns> ::= 0{14} 1 0
+<type_opt> ::= 0{10} 1 0 1 0 0 1
+<udp_payload_size> ::= <bit>{16}
 
 
 import socket
