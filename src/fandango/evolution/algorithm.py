@@ -50,8 +50,6 @@ class Fandango:
         start_symbol: str = "<start>",
         diversity_k: int = 5,
         diversity_weight: float = 1.0,
-        max_repetition_rate: float = 0.5,
-        max_repetitions: int = None,
     ):
         if tournament_size > 1:
             raise FandangoValueError(
@@ -88,13 +86,7 @@ class Fandango:
             diversity_weight,
             warnings_are_errors,
         )
-        self.adaptive_tuner = AdaptiveTuner(
-            mutation_rate,
-            crossover_rate,
-            grammar.get_max_repetitions(),
-            max_repetition_rate,
-            max_repetitions,
-        )
+        self.adaptive_tuner = AdaptiveTuner(mutation_rate, crossover_rate)
         self.crossover_operator = crossover_method
         self.mutation_method = mutation_method
 
@@ -184,7 +176,9 @@ class Fandango:
                     )
                     if suggested_tree is None:
                         continue
-                    individual = individual.replace(failing_tree.tree, suggested_tree)
+                    individual = individual.replace(
+                        self.grammar, failing_tree.tree, suggested_tree
+                    )
                     self.fixes_made += 1
         return individual
 
@@ -224,7 +218,7 @@ class Fandango:
                             self.evaluation, self.tournament_size
                         )
                         child1, child2 = self.crossover_operator.crossover(
-                            parent1, parent2
+                            self.grammar, parent1, parent2
                         )
                         self.population_manager.add_unique_individual(
                             new_population, child1, unique_hashes
@@ -290,21 +284,13 @@ class Fandango:
             )
 
             current_best_fitness = max(fitness for _, fitness, _ in self.evaluation)
-            current_max_repetitions = self.grammar.get_max_repetitions()
             self.adaptive_tuner.update_parameters(
                 generation,
                 prev_best_fitness,
                 current_best_fitness,
                 self.population,
                 self.evaluator,
-                current_max_repetitions,
             )
-
-            if self.adaptive_tuner.cur_max_repetitions > current_max_repetitions:
-                self.grammar.set_max_repetitions(
-                    self.adaptive_tuner.cur_max_repetitions
-                )
-
             prev_best_fitness = current_best_fitness
 
             self.adaptive_tuner.log_generation_statistics(
@@ -341,8 +327,6 @@ class Fandango:
                 )
             if self.best_effort:
                 return self.population[: self.desired_solutions]
-            
-        LOGGER.debug(f"Root:{self.solution[0].symbol}, Children: {self.solution[0].children}")
 
         return self.solution
 
