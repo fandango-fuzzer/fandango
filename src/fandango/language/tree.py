@@ -567,12 +567,12 @@ class DerivationTree:
         return root
 
     def _split_end(self):
-        if self.parent is not None:
-            me_idx = self.parent.children.index(self)
-            keep_children = self.parent.children[: (me_idx + 1)]
-            parent = self.parent._split_end()
-            parent.set_children(keep_children)
+        if self.parent is None or self in self.parent.generator_params:
             return self
+        me_idx = self.parent.children.index(self)
+        keep_children = self.parent.children[: (me_idx + 1)]
+        parent = self.parent._split_end()
+        parent.set_children(keep_children)
         return self
 
     def get_path(self):
@@ -657,6 +657,8 @@ class DerivationTree:
             symbols.add(self.symbol)
         for child in self._children:
             symbols.update(child.get_non_terminal_symbols(exclude_read_only))
+        for param in self._generator_params:
+            symbols.update(param.get_non_terminal_symbols(exclude_read_only))
         return symbols
 
     def find_all_nodes(
@@ -671,7 +673,9 @@ class DerivationTree:
         if self.symbol == symbol and not (exclude_read_only and self.read_only):
             nodes.append(self)
         for child in self._children:
-            nodes.extend(child.find_all_nodes(symbol))
+            nodes.extend(child.find_all_nodes(symbol, exclude_read_only))
+        for param in self._generator_params:
+            nodes.extend(param.find_all_nodes(symbol, exclude_read_only))
         return nodes
 
     @property

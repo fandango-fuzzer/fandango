@@ -126,12 +126,12 @@ def decompress_msg(compressed):
 <start> ::= <Client:dns_req_compressed> <Server:dns_resp_compressed>
 <dns_req_compressed> ::= <byte>+ := compress_msg(<dns_req>)
 <dns_resp_compressed> ::= <byte>+ := compress_msg(<dns_resp>)
-<dns_req> ::= <header_req> <question> := decompress_msg(<dns_req_compressed>)
+<dns_req> ::= <header_req> <question> <answer>{byte_to_int(<req_ar_count>)} := decompress_msg(<dns_req_compressed>)
 <dns_resp> ::= <header_resp> <question>{byte_to_int(<resp_qd_count>)} <answer>{byte_to_int(<resp_an_count>)} <answer>{byte_to_int(<resp_ns_count>)} <answer>{byte_to_int(<resp_ar_count>)} := decompress_msg(<dns_resp_compressed>)
 
 #                       qr      opcode       aa tc rd  ra  z      rcode   qdcount  ancount nscount arcount
-<header_req> ::= <h_id> 0 <h_opcode_standard> 1 0 <h_rd> 0 0 0 0 <h_rcode_none> 0{15} 1 0{16} 0{16} 0{16}
-<header_resp> ::= <h_id> 1 <h_opcode_standard> <bit> 0 <h_rd> <bit> 0 0 0 <h_rcode_none> <resp_qd_count> <resp_an_count> <resp_ns_count> <resp_ar_count>
+<header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_none> 0{15} 1 0{16} 0{16} <req_ar_count>
+<header_resp> ::= <h_id> 1 <h_opcode_standard> <bit> 0 <h_rd> <bit> 0 <h_aa> 0 <h_rcode_none> <resp_qd_count> <resp_an_count> <resp_ns_count> <resp_ar_count>
 # aa=1 if server has authority over domain
 
 where <dns_req>.<header_req>.<h_rd> == <dns_resp>.<header_resp>.<h_rd>
@@ -140,14 +140,16 @@ where <dns_req>.<question>.<q_name>.<q_name_written_complete> == <dns_resp>.<ans
 where <dns_req>.<question> == <dns_resp>.<question>
 where byte_to_int(bytes(<dns_resp>.<header_resp>.<resp_qd_count>)) == len((<dns_resp>).find_direct_trees(NonTerminal("<question>"))) # count nr of questions
 where (byte_to_int(bytes(<dns_resp>.<header_resp>.<resp_an_count>)) + byte_to_int(bytes(<dns_resp>.<header_resp>.<resp_ns_count>)) + byte_to_int(bytes(<dns_resp>.<header_resp>.<resp_ar_count>))) == len((<dns_resp>).find_direct_trees(NonTerminal("<answer>"))) # count nr of answers
-<resp_qd_count> ::= <bit>{16} := randint(0, 2)
-<resp_an_count> ::= <bit>{16} := randint(0, 2)
-<resp_ns_count> ::= <bit>{16} := randint(0, 2)
-<resp_ar_count> ::= <bit>{16} := randint(0, 2)
+<resp_qd_count> ::= <bit>{16} := pack(">H", randint(0, 2))
+<resp_an_count> ::= <bit>{16} := pack(">H", randint(0, 2))
+<resp_ns_count> ::= <bit>{16} := pack(">H", randint(0, 2))
+<resp_ar_count> ::= <bit>{16} := pack(">H", randint(0, 2))
+<req_ar_count> ::= <bit>{16} := pack(">H", randint(0, 0))
 
 <h_id> ::= <byte><byte>
 <h_opcode_standard> ::= 0 0 0 0
 <h_rd> ::= <bit>
+<h_aa> ::= <bit>
 
 <h_rcode> ::= <h_rcode_none> | <h_rcode_format> | <h_rcode_server> | <h_rcode_name> | <h_rcode_ni> | <h_rcode_refused> | <h_rcode_other>
 <h_rcode_none> ::= 0 0 0 0
@@ -174,7 +176,7 @@ where (byte_to_int(bytes(<dns_resp>.<header_resp>.<resp_an_count>)) + byte_to_in
 <answer> ::= <q_name> ((<a_type> <rr_class>) | <type_opt> <udp_payload_size>) <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
 <a_type> ::= <type_a> | <type_ns> | <type_soa>
 <a_ttl> ::= <byte>{4}
-<a_rd_length> ::= <byte>{2}
+<a_rd_length> ::= <byte>{2} := pack(">H", randint(0, 0))
 <a_rdata> ::= <byte>
 
 
@@ -199,11 +201,13 @@ class Client(FandangoAgent):
 class Server(FandangoAgent):
 
         def __init__(self):
-            super().__init__(True)
-            self.id_addr = dict()
-            self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            server_thread = threading.Thread(target=self.server_loop)
-            server_thread.start()
+            is_fandango = True
+            super().__init__(is_fandango)
+            if is_fandango:
+                self.id_addr = dict()
+                self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                server_thread = threading.Thread(target=self.server_loop)
+                server_thread.start()
 
         def server_loop(self):
             bufferSize = 1024
