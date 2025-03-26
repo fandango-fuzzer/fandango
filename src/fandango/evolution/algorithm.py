@@ -477,7 +477,7 @@ class Fandango:
         next_fragment_idx = 0
 
         while not is_msg_complete:
-            for idx, (role, msg_fragment) in enumerate(remote_msgs, next_fragment_idx):
+            for idx, (role, msg_fragment) in enumerate(remote_msgs[next_fragment_idx:]):
                 next_fragment_idx = idx + 1
 
                 if msg_role != role:

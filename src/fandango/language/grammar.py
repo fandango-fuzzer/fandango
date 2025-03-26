@@ -382,7 +382,7 @@ class NonTerminalNode(Node):
         grammar: "Grammar",
         max_nodes: int = 100,
         in_role: str = None,
-    ) -> List[DerivationTree]:
+    ):
         if self.symbol not in grammar:
             raise ValueError(f"Symbol {self.symbol} not found in grammar")
         dummy_current_tree = DerivationTree(self.symbol)
@@ -396,6 +396,9 @@ class NonTerminalNode(Node):
             # Prevent children from being overwritten without executing generator
             generated.set_all_read_only(True)
             generated.read_only = False
+
+            generated.role = self.role
+            generated.recipient = self.recipient
             parent.set_children(parent.children[:-1])
             parent.add_child(generated)
             return

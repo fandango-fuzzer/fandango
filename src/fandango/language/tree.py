@@ -562,7 +562,7 @@ class DerivationTree:
 
     def root(self):
         root = self
-        if root.parent is not None:
+        while root.parent is not None:
             root = root.parent
         return root
 
