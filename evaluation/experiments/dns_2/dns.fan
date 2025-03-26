@@ -5,6 +5,7 @@ from fandango.language.tree import DerivationTree
 from copy import deepcopy
 from fandango.language.parse import parse
 from fandango.language.grammar import Grammar
+from random import randint
 
 fake = Faker()
 
@@ -137,10 +138,10 @@ where <dns_req>.<question>.<q_name>.<q_name_written_complete> == <dns_resp>.<ans
 where <dns_req>.<question> == <dns_resp>.<question>
 where unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_qd_count>))[0] == len((<dns_resp>).find_direct_trees(NonTerminal("<question>"))) # count nr of questions
 where (unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_an_count>))[0] + unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_ns_count>))[0] + unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_ar_count>))[0]) == len((<dns_resp>).find_direct_trees(NonTerminal("<answer>"))) # count nr of answers
-<resp_qd_count> ::= 0{15} 1
-<resp_an_count> ::= 0{15} 1
-<resp_ns_count> ::= 0{15} <bit>
-<resp_ar_count> ::= 0{15} <bit>
+<resp_qd_count> ::= <bit>{16} := randint(0, 2)
+<resp_an_count> ::= <bit>{16} := randint(0, 2)
+<resp_ns_count> ::= <bit>{16} := randint(0, 2)
+<resp_ar_count> ::= <bit>{16} := randint(0, 2)
 
 <h_id> ::= <byte><byte>
 <h_opcode_standard> ::= 0 0 0 0
