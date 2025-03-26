@@ -1,8 +1,6 @@
 import time
 
 from fandango.evolution.algorithm import Fandango
-from fandango.language.grammar import *
-from fandango.language.symbol import *
 from fandango.language.parse import parse
 
 
@@ -13,9 +11,6 @@ def main():
 
     time_start = time.time()
     fandango = Fandango(grammar=grammar, constraints=constraints, population_size=10)
-    from faker import Faker
-    fake = Faker()
-    fake.domain_name()
 
     # Evolve solutions
 

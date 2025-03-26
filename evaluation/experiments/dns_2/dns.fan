@@ -3,13 +3,15 @@ from faker import Faker
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 from copy import deepcopy
+from fandango.language.parse import parse
+from fandango.language.grammar import Grammar
 
 fake = Faker()
 
 def gen_q_name():
     result = b''
     #domain_parts = fake.domain_name().split('.')
-    domain_parts = "fandango.io".split('.')
+    domain_parts = "google.com".split('.')
     for part in domain_parts:
         result += len(part).to_bytes(1, 'big')
         result += part.encode('iso8859-1')
@@ -30,9 +32,9 @@ def msg_suffix(name):
 
 def to_byte_tree(byte_val):
     children = []
-    for idx, bit_in_b in range(8):
+    for idx in range(8):
         bit_val = (byte_val >> idx) & 1
-        children.append(DerivationTree(NonTerminal('<bit>'), [
+        children.insert(0, DerivationTree(NonTerminal('<bit>'), [
             DerivationTree(Terminal(bit_val))
         ]))
     return DerivationTree(NonTerminal('byte'), children)
@@ -49,7 +51,7 @@ def compress_msg(uncompressed):
         for n_offset, suffix in msg_suffix(b_name):
             if suffix in suffix_dict:
                 cpr_ptr = suffix_dict[suffix]
-                bin_ptr = pack('>H', cpr_ptr) and b'\xC0\x00'
+                bin_ptr = pack('>H', (192 << 8) | cpr_ptr)
                 new_name = b_name[:n_offset] + bin_ptr
                 new_name_tree = []
                 for byte_val in new_name:
@@ -90,6 +92,7 @@ def decompress_name(compressed, name_idx):
 
 
 def decompress_msg(compressed):
+    compressed = compressed.to_bytes()
     count_header = compressed[4:12]
     qd_count = byte_to_int(count_header[:2])
     an_count = byte_to_int(count_header[2:4])
@@ -117,7 +120,6 @@ def decompress_msg(compressed):
     return decompressed
 
 
-
 <start> ::= <Client:dns_req_compressed> <Server:dns_resp_compressed>
 <dns_req_compressed> ::= <byte>+ := compress_msg(<dns_req>)
 <dns_resp_compressed> ::= <byte>+ := compress_msg(<dns_resp>)
@@ -139,20 +141,6 @@ where (unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_an_count>))[0] + unpack
 <resp_an_count> ::= 0{15} 1
 <resp_ns_count> ::= 0{15} <bit>
 <resp_ar_count> ::= 0{15} <bit>
-
-where forall <req> in <start>[:]:
-    forall <n1> in <req>..<q_name_written_complete>:
-        get_index_within(<n1>, <req>, ['<q_name_written_complete>', '<q_name_written_partly>', '<q_name_written_pointer>']) == 0
-
-where forall <req> in <start>[:]:
-    forall <n2> in <req>..<q_name_written_pointer>:
-        get_index_within(<n2>, <req>, ['<q_name_written_complete>', '<q_name_written_partly>', '<q_name_written_pointer>']) != 0
-
-where forall <req> in <start>[:]:
-    forall <n3> in <req>..<q_name_written_partly>:
-        get_index_within(<n3>, <req>, ['<q_name_written_complete>', '<q_name_written_partly>', '<q_name_written_pointer>']) != 0
-
-
 
 <h_id> ::= <byte><byte>
 <h_opcode_standard> ::= 0 0 0 0
@@ -185,7 +173,7 @@ where forall <req> in <start>[:]:
 
 
 <answer> ::= <q_name> ((<a_type> <rr_class>) | <type_opt> <udp_payload_size>) <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
-<a_type> ::= <type_a> | <type_ns>
+<a_type> ::= <type_a> | <type_ns> | <type_soa>
 <a_ttl> ::= <byte>{4}
 <a_rd_length> ::= <byte>{2}
 <a_rdata> ::= <byte>
@@ -193,6 +181,7 @@ where forall <req> in <start>[:]:
 
 <type_a> ::= 0{15} 1
 <type_ns> ::= 0{14} 1 0
+<type_soa> ::= 0{13} 1 1 0
 <type_opt> ::= 0{10} 1 0 1 0 0 1
 <udp_payload_size> ::= <bit>{16}
 
@@ -204,7 +193,7 @@ class Client(FandangoAgent):
 
         def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.sendto(message, ("liggesmeyer.net", 53))
+            sock.sendto(message, ("1.1.1.1", 53))
             response, nothing = sock.recvfrom(1024)
 
             response_setter("Server", response)
