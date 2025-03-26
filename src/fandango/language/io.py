@@ -29,11 +29,11 @@ class FandangoAgent(object):
         print(f"({self.class_name}): {message}")
 
     """
-    Call if a message has been received from this party.
+    Call if a message has been received by this party.
     """
+    def receive_msg(self, sender: str, message: str) -> None:
+        FandangoIO.instance().add_receive(sender, self.class_name, message)
 
-    def receive_msg(self, message: str) -> None:
-        FandangoIO.instance().add_receive(self.class_name, message)
 
 
 class STDOUT(FandangoAgent):
@@ -56,21 +56,21 @@ class FandangoIO:
             raise Exception("Singleton already created!")
         FandangoIO.__instance = self
         self.transmit: Tuple[str, str, str] | None = None
-        self.receive = list[(str, str)]()
+        self.receive = list[(str, str, str)]()
         self.roles = dict[str, FandangoAgent]()
 
     def run_com_loop(self):
         if self.transmit is not None:
             role, recipient, msg = self.transmit
             if role in self.roles.keys():
-                self.roles[role].on_send(msg, recipient, self.add_receive)
+                self.roles[role].on_send(msg, recipient, self.roles[role].receive_msg)
         self.clear_transmit_msgs()
 
     def clear_transmit_msgs(self):
         self.transmit = None
 
-    def add_receive(self, role: str, message: str) -> None:
-        self.receive.append((role, message))
+    def add_receive(self, role: str, receiver: str, message: str) -> None:
+        self.receive.append((role, receiver, message))
 
     def received_msg(self):
         return len(self.receive) != 0

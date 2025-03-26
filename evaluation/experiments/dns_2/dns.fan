@@ -6,6 +6,8 @@ from copy import deepcopy
 from fandango.language.parse import parse
 from fandango.language.grammar import Grammar
 from random import randint
+import socket
+import threading
 
 fake = Faker()
 
@@ -186,16 +188,35 @@ where (byte_to_int(bytes(<dns_resp>.<header_resp>.<resp_an_count>)) + byte_to_in
 import socket
 class Client(FandangoAgent):
         def __init__(self):
-            super().__init__(True)
+            super().__init__(False)
 
         def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.sendto(message, ("1.1.1.1", 53))
             response, nothing = sock.recvfrom(1024)
-
-            response_setter("Server", response)
+            self.receive_msg("Server", response)
 
 class Server(FandangoAgent):
 
         def __init__(self):
-            super().__init__(False)
+            super().__init__(True)
+            self.id_addr = dict()
+            self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            server_thread = threading.Thread(target=self.server_loop)
+            server_thread.start()
+
+        def server_loop(self):
+            bufferSize = 1024
+            localIP = "127.0.0.1"
+            localPort = 25565
+            self.server_socket.bind((localIP, localPort))
+            while(True):
+                message, addr = self.server_socket.recvfrom(bufferSize)
+                m_id = message[:2]
+                self.id_addr[m_id] = addr
+                self.receive_msg("Client", message)
+
+
+        def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
+            m_id = message[:2]
+            self.server_socket.sendto(message, self.id_addr[m_id])
