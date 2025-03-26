@@ -136,8 +136,8 @@ where <dns_req>.<header_req>.<h_rd> == <dns_resp>.<header_resp>.<h_rd>
 where <dns_req>.<header_req>.<h_id> == <dns_resp>.<header_resp>.<h_id>
 where <dns_req>.<question>.<q_name>.<q_name_written_complete> == <dns_resp>.<answer>.<q_name>.<q_name_written_complete>
 where <dns_req>.<question> == <dns_resp>.<question>
-where unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_qd_count>))[0] == len((<dns_resp>).find_direct_trees(NonTerminal("<question>"))) # count nr of questions
-where (unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_an_count>))[0] + unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_ns_count>))[0] + unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_ar_count>))[0]) == len((<dns_resp>).find_direct_trees(NonTerminal("<answer>"))) # count nr of answers
+where byte_to_int(bytes(<dns_resp>.<header_resp>.<resp_qd_count>)) == len((<dns_resp>).find_direct_trees(NonTerminal("<question>"))) # count nr of questions
+where (byte_to_int(bytes(<dns_resp>.<header_resp>.<resp_an_count>)) + byte_to_int(bytes(<dns_resp>.<header_resp>.<resp_ns_count>)) + byte_to_int(bytes(<dns_resp>.<header_resp>.<resp_ar_count>))) == len((<dns_resp>).find_direct_trees(NonTerminal("<answer>"))) # count nr of answers
 <resp_qd_count> ::= <bit>{16} := randint(0, 2)
 <resp_an_count> ::= <bit>{16} := randint(0, 2)
 <resp_ns_count> ::= <bit>{16} := randint(0, 2)
@@ -146,7 +146,6 @@ where (unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_an_count>))[0] + unpack
 <h_id> ::= <byte><byte>
 <h_opcode_standard> ::= 0 0 0 0
 <h_rd> ::= <bit>
-<h_qr> ::= <bit>
 
 <h_rcode> ::= <h_rcode_none> | <h_rcode_format> | <h_rcode_server> | <h_rcode_name> | <h_rcode_ni> | <h_rcode_refused> | <h_rcode_other>
 <h_rcode_none> ::= 0 0 0 0
@@ -163,11 +162,8 @@ where (unpack('>H', bytes(<dns_resp>.<header_resp>.<resp_an_count>))[0] + unpack
 
 
 <question> ::= <q_name> <q_type> <rr_class>
-<q_name> ::= <q_name_written_complete> #| <q_name_written_partly> | <q_name_written_pointer>
-<offset_qname> ::= 1 1 <bit>{14}
+<q_name> ::= <q_name_written_complete>
 <q_name_written_complete> ::= <q_name_written>? 0{8}
-<q_name_written_partly> ::= <q_name_written> <offset_qname>
-<q_name_written_pointer> ::= <offset_qname>
 <q_name_written> ::= <label_len_octet> <non_zero_byte>+ := gen_q_name()
 <q_type> ::= 0{15} 1 # Equals type A (Host address)
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
