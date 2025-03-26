@@ -230,6 +230,8 @@ class Fandango:
                 forecast_non_terminals = forecast[selected_role]
                 selected_symbol = random.choice(list(forecast_non_terminals.getNonTerminals()))
                 forecast_packet = forecast_non_terminals[selected_symbol]
+                for path in forecast_packet.paths:
+                    path.tree.set_all_read_only(True)
                 self.population_manager.io_next_packet = forecast_packet
 
                 new_population = (
