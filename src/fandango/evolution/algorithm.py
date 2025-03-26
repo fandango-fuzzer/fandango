@@ -463,7 +463,7 @@ class Fandango:
         complete_msg = None
         used_fragments_idx = []
 
-        msg_role, _ = remote_msgs[0]
+        msg_role, msg_recipient, _ = remote_msgs[0]
 
         if msg_role not in forecast.getRoles():
             raise RuntimeError(
@@ -482,7 +482,7 @@ class Fandango:
         failed_parameter_parsing = False
 
         while not is_msg_complete:
-            for idx, (role, msg_fragment) in enumerate(remote_msgs[next_fragment_idx:]):
+            for idx, (role, recipient, msg_fragment) in enumerate(remote_msgs[next_fragment_idx:]):
                 next_fragment_idx = idx + 1
 
                 if msg_role != role:
