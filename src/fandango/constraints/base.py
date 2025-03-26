@@ -326,15 +326,15 @@ class ComparisonConstraint(Constraint):
             try:
                 left = self.eval(self.left, self.global_variables, local_variables)
             except Exception as e:
-                # e.add_note("Evaluation failed: " + self.left)
-                # print_exception(e)
+                e.add_note("Evaluation failed: " + self.left)
+                print_exception(e)
                 continue
 
             try:
                 right = self.eval(self.right, self.global_variables, local_variables)
             except Exception as e:
-                # e.add_note("Evaluation failed: " + self.right)
-                # print_exception(e)
+                e.add_note("Evaluation failed: " + self.right)
+                print_exception(e)
                 continue
 
             if not hasattr(self, "types_checked") or not self.types_checked:

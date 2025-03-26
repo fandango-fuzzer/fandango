@@ -212,6 +212,7 @@ def parse_content(
     filename: str = "<input>",
     use_cache: bool = True,
     lazy: bool = False,
+    max_repetitions: int = 5,
 ) -> Tuple[Grammar, List[str]]:
     """
     Parse given content into a grammar and constraints.
@@ -287,6 +288,7 @@ def parse_content(
         spec = FandangoSpec(
             tree, fan_contents, lazy, filename=filename, max_repetitions=max_repetitions
         )
+
     assert spec is not None
 
     if use_cache and not from_cache:
@@ -323,6 +325,7 @@ def parse(
     given_grammars: List[Grammar] = [],
     start_symbol: Optional[str] = None,
     includes: List[str] = [],
+    max_repetitions: int = 5,
 ) -> Tuple[Optional[Grammar], List[str]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
@@ -417,12 +420,18 @@ def parse(
         if depth == 0:
             # Given file: process in order
             more_grammars.append(new_grammar)
+            for generator in new_grammar.generators.values():
+                for nonterminal in generator.nonterminals.values():
+                    USED_SYMBOLS.add(nonterminal.symbol.symbol)
         else:
             # Included file: process _before_ current grammar
             more_grammars = [new_grammar] + more_grammars
             # Do not complain about unused symbols in included files
             for symbol in new_grammar.rules.keys():
                 USED_SYMBOLS.add(str(symbol))
+            for generator in new_grammar.generators.values():
+                for nonterminal in generator.nonterminals.values():
+                    USED_SYMBOLS.add(nonterminal.symbol.symbol)
 
         if INCLUDE_DEPTH > 0:
             INCLUDE_DEPTH -= 1

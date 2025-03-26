@@ -7,9 +7,20 @@ from scipy.linalg import solve_lyapunov
 
 from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse
+from fandango.language.tree import DerivationTree
 
 
 class ConstraintTest(unittest.TestCase):
+
+    def count_g_params(self, tree: DerivationTree):
+        count = 0
+        if len(tree.generator_params) > 0:
+            count += 1
+        for child in tree.children:
+            count += self.count_g_params(child)
+        for child in tree.generator_params:
+            count += self.count_g_params(child)
+        return count
 
     def test_generate_k_paths(self):
 
@@ -52,6 +63,21 @@ class ConstraintTest(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_nested_generators(self):
+        file = open("tests/resources/nested_grammar_parameters.fan", "r")
+        grammar, c = parse(file, use_stdlib=False, use_cache=False)
+
+        for solution in self.get_solutions(grammar, c):
+            self.assertEqual(self.count_g_params(solution), 4)
+            converted_inner = solution.children[0].generator_params[0]
+            self.assertEqual(self.count_g_params(converted_inner), 3)
+            dummy_inner_2 = converted_inner.children[0].generator_params[0]
+            self.assertEqual(self.count_g_params(dummy_inner_2), 2)
+            dummy_inner = dummy_inner_2.children[0].generator_params[0]
+            self.assertEqual(self.count_g_params(dummy_inner), 1)
+            source_nr = dummy_inner.children[0].children[1].generator_params[0]
+            self.assertEqual(self.count_g_params(source_nr), 0)
+
     def test_repetitions(self):
         file = open("tests/resources/repetitions.fan", "r")
         GRAMMAR, c = parse(file, use_stdlib=False, use_cache=False)
@@ -91,21 +117,4 @@ class ConstraintTest(unittest.TestCase):
         GRAMMAR, c = parse(file, use_stdlib=True, use_cache=False)
         solutions = self.get_solutions(GRAMMAR, c)
         for solution in solutions:
-<<<<<<< HEAD
             self.assertNotEqual(solution, "10")
-
-    def test_generator_chunk(self):
-        file = open("tests/resources/generator_chunk.fan", "r")
-        GRAMMAR, c = parse(file, use_stdlib=True, use_cache=False)
-        fandango = Fandango(
-            grammar=GRAMMAR, constraints=c, desired_solutions=10, random_seed=6942012
-        )
-        solutions = fandango.evolve()
-        for solution in solutions:
-            sol = str(solution).split(".")
-            if len(sol[1]) > 2:
-                return
-        self.assertTrue(False)
-=======
-            self.assertNotEqual(solution, "10")
->>>>>>> parent of e50dc01 (fix and tests for #372 and #375)
