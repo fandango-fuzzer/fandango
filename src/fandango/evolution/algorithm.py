@@ -4,6 +4,7 @@ import enum
 import logging
 import random
 import time
+from tokenize import String
 from typing import List, Union
 
 from copy import deepcopy
@@ -476,6 +477,10 @@ class Fandango:
         is_msg_complete = False
         next_fragment_idx = 0
 
+        elapsed_rounds = 0
+        max_rounds = 0.25 * 20
+        failed_parameter_parsing = False
+
         while not is_msg_complete:
             for idx, (role, msg_fragment) in enumerate(remote_msgs[next_fragment_idx:]):
                 next_fragment_idx = idx + 1
@@ -497,13 +502,12 @@ class Fandango:
                     if parsed_packet_tree is not None:
                         parsed_packet_tree.role = forecast_packet.node.role
                         parsed_packet_tree.recipient = forecast_packet.node.recipient
-                        # Derive generator packets. Note this is only apply this method without inserting the tree into the history,
-                        # because the grammar syntax guarantees, that we don't encounter a generator in our path to the root node after hookin.
                         try:
                             self.grammar.populate_generator_params(parsed_packet_tree)
                             break
                         except GeneratorParserValueError as e:
                             parsed_packet_tree = None
+                            failed_parameter_parsing = True
                     incomplete_tree = self.grammar.parse(complete_msg, forecast_packet.node.symbol,
                                                          mode=Grammar.Parser.ParsingMode.INCOMPLETE)
                     if incomplete_tree is None:
@@ -520,6 +524,17 @@ class Fandango:
                     return forecast_packet, parsed_packet_tree
 
             if not is_msg_complete:
+                elapsed_rounds += 1
+                if elapsed_rounds >= max_rounds:
+                    if failed_parameter_parsing:
+                        applicable_nt = list(map(lambda x: str(x.symbol), available_non_terminals))
+                        if len(applicable_nt) == 0:
+                            applicable_nt = "None"
+                        else:
+                            applicable_nt = ', '.join(applicable_nt)
+                        raise FandangoFailedError(f"Couldn't derive parameters for received packet or timed out while waiting for remaining packet. Applicable NT: {applicable_nt} Received part: {complete_msg}")
+                    else:
+                        raise FandangoFailedError(f"Incomplete packet received. Timed out while waiting for packet. Received part: {complete_msg}")
                 time.sleep(0.25)
 
     def select_elites(self) -> List[DerivationTree]:
