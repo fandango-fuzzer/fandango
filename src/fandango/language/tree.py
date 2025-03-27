@@ -122,14 +122,19 @@ class DerivationTree:
         self._recipient = recipient
         self.invalidate_hash()
 
-    def get_root(self):
-        if self._parent is None:
-            return self
-        return self._parent.get_root()
+    def get_path(self):
+        path = []
+        current = self
+        while current is not None:
+            path.insert(0, current)
+            current = current.parent
+        return path
 
     def set_all_read_only(self, read_only: bool):
         self.read_only = read_only
         for child in self._children:
+            child.set_all_read_only(read_only)
+        for child in self._generator_params:
             child.set_all_read_only(read_only)
 
     def find_role_msgs(self) -> List[RoledMessage]:
@@ -548,40 +553,26 @@ class DerivationTree:
     def is_num(self):
         return self.is_float()
 
-    def get_path(self):
-        current = self
-        path = list()
-        while current is not None:
-            path.append(current.symbol)
-            current = current.parent
-        return path[::-1]
-
     def split_end(self) -> "DerivationTree":
         cpy = copy.deepcopy(self)
         return cpy._split_end()
 
-    def root(self):
+    def get_root(self, stop_at_argument_begin=False):
         root = self
-        while root.parent is not None:
+        while root.parent is not None and not (root in root.parent.generator_params and stop_at_argument_begin):
             root = root.parent
         return root
 
     def _split_end(self):
         if self.parent is None or self in self.parent.generator_params:
+            if self.parent is not None:
+                self._parent = None
             return self
         me_idx = self.parent.children.index(self)
         keep_children = self.parent.children[: (me_idx + 1)]
         parent = self.parent._split_end()
         parent.set_children(keep_children)
         return self
-
-    def get_path(self):
-        current = self
-        path = list()
-        while current is not None:
-            path.append(current.symbol)
-            current = current.parent
-        return path[::-1]
 
     def replace(self, grammar: "Grammar", tree_to_replace, new_subtree):
         """

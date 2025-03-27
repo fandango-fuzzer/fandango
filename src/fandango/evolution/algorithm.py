@@ -25,7 +25,7 @@ from fandango.language.grammar import (
 )
 from fandango.language.packetforecaster import PacketForecaster
 from fandango.language.symbol import NonTerminal
-from fandango.language.tree import RoledMessage
+from fandango.language.trash import compress_msg, decompress_msg
 from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
 
 from fandango import FandangoFailedError, FandangoParseError, FandangoValueError
@@ -240,6 +240,8 @@ class Fandango:
                     )
                 )
                 packet_node = self.population_manager.io_next_packet.node
+                for i in new_population:
+                    self.delete_me_later(i)
 
                 self.population = new_population
                 self.evaluation = self.evaluator.evaluate_population(self.population)
@@ -274,7 +276,6 @@ class Fandango:
                 hookin_option = next(iter(forecast_packet.paths))
                 history_tree = hookin_option.tree
                 history_tree.append(hookin_option.path[1:], new_packet.msg)
-                history_tree.set_all_read_only(True)
             else:
                 while not io_instance.received_msg():
                     time.sleep(0.25)
@@ -285,11 +286,11 @@ class Fandango:
                 hookin_option = next(iter(forecast.paths))
                 history_tree = hookin_option.tree
                 history_tree.append(hookin_option.path[1:], packet_tree)
-                history_tree.set_all_read_only(True)
                 fitness, eval_report = self.evaluator.evaluate_individual(history_tree)
                 if fitness < 0.99:
                     raise RuntimeError("Remote response doesn't match constraints!")
                 self.solution.clear()
+            history_tree.set_all_read_only(True)
 
 
     def evolve(self) -> List[DerivationTree]:
@@ -299,6 +300,22 @@ class Fandango:
             return self._evolve_io()
         else:
             raise RuntimeError(f"Invalid mode: {self.grammar.fuzzing_mode}")
+
+    def delete_me_later(self, individual: DerivationTree):
+        if len(individual.children) == 0:
+            return
+        individual = individual.children[-1]
+        compressed = compress_msg(individual.generator_params[0])
+        compressed_tree = self.grammar.parse(compressed, individual.symbol)
+        compressed = compress_msg(individual.generator_params[0])
+        decompressed = decompress_msg(compressed_tree)
+        decompressed_tree = self.grammar.parse(decompressed, individual.generator_params[0].symbol)
+        assert decompressed_tree == individual.generator_params[0]
+
+        decompressed = decompress_msg(individual)
+        decompressed_tree = self.grammar.parse(decompressed, individual.generator_params[0].symbol)
+        compressed = compress_msg(decompressed_tree)
+        assert compressed == individual.to_bytes()
 
     def _evolve_single(self) -> List[DerivationTree]:
         LOGGER.info("---------- Starting evolution ----------")
