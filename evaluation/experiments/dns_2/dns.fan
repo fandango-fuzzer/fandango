@@ -14,7 +14,7 @@ fake = Faker()
 def gen_q_name():
     result = b''
     #domain_parts = fake.domain_name().split('.')
-    domain_parts = "google.com".split('.')
+    domain_parts = "fandango.io".split('.')
     for part in domain_parts:
         result += len(part).to_bytes(1, 'big')
         result += part.encode('iso8859-1')
@@ -74,22 +74,20 @@ def compress_msg(uncompressed):
 
 def decompress_name(compressed, name_idx):
     segment_len = compressed[name_idx]
-    segment_len_bin = bytes([segment_len])
     compressed_len = 0
     decompressed = b''
     while segment_len != 0:
         # If first two bits are 1
-        if segment_len & (3 << 6) == 192:
-            name_ptr = (segment_len & 63) << 8 # remote leading two bits (segment_len & 15) << 8
+        if (segment_len & 192) == 192:
+            name_ptr = (segment_len & 63) << 8
             name_ptr += compressed[name_idx+1]
             decompressed = decompressed + decompress_name(compressed, name_ptr)[0]
             return decompressed, compressed_len + 2
-        decompressed = decompressed + segment_len_bin
+        decompressed = decompressed + bytes([segment_len])
         decompressed = decompressed + compressed[name_idx + 1 : name_idx + 1 + segment_len]
         compressed_len = compressed_len + segment_len + 1
         name_idx = name_idx + segment_len + 1
         segment_len = compressed[name_idx]
-        segment_len_bin = bytes([segment_len])
     decompressed = decompressed + bytes([0])
     return decompressed, compressed_len + 1
 
