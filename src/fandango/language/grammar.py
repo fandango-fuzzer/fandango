@@ -11,7 +11,7 @@ from copy import deepcopy
 from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union, Generator
 
 from fandango.language.symbol import NonTerminal, Symbol, Terminal
-from fandango.language.tree import DerivationTree, RoledMessage
+from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
 from fandango import FandangoValueError
@@ -236,17 +236,32 @@ class Repetition(Node):
             raise FandangoValueError("tree required if searches present!")
 
         nodes = []
-        for name, search in searches.items():
-            nodes.extend(
-                [(name, container) for container in search.find(tree.get_root())]
-            )
-        for _, container in nodes:
-            container.evaluate().set_all_read_only(True)
-        local_cpy.update({name: container.evaluate() for name, container in nodes})
-        for name, _ in nodes:
-            if not isinstance(local_cpy[name], DerivationTree):
-                continue
-            local_cpy[name].set_all_read_only(True)
+        if len(searches) != 1:
+            raise FandangoValueError("Computed repetition requires exactly one or zero searches!")
+
+        search_name, search = next(iter(searches.items()))
+        nodes.extend(
+            [(search_name, container) for container in search.find(tree.get_root())]
+        )
+        if len(nodes) == 0:
+            raise FandangoValueError(f"Couldn't find search target ({search}) in prefixed DerivationTree for computed repetition!")
+
+        target_name, target_container = nodes[-1]
+        target = target_container.evaluate()
+        local_cpy[target_name] = target
+        if isinstance(target, DerivationTree):
+            target.set_all_read_only(True)
+            first_uncommon_idx = 0
+            for idx, (target_parent, tree_parent) in enumerate(zip(target.get_path(), tree.get_path())):
+                if target_parent.symbol == tree_parent.symbol:
+                    first_uncommon_idx = idx + 1
+                else:
+                    break
+            for parent in target.get_path()[first_uncommon_idx:]:
+                parent.read_only = True
+            for parent in tree.get_path()[first_uncommon_idx:]:
+                parent.read_only = True
+
         return eval(expr, grammar._global_variables, local_cpy), False
 
     def min(self, grammar: "Grammar", tree: "DerivationTree" = None):
@@ -283,8 +298,8 @@ class Repetition(Node):
     ):
         prev_parent_size = parent.size()
 
-        current_min = self.min(grammar, parent.get_root())
-        current_max = self.max(grammar, parent.get_root())
+        current_min = self.min(grammar, parent)
+        current_max = self.max(grammar, parent)
 
         for rep in range(random.randint(current_min, current_max)):
             if self.node.distance_to_completion >= max_nodes:
@@ -394,8 +409,8 @@ class NonTerminalNode(Node):
                 NonTerminalNode(nt).fuzz(dummy_current_tree, grammar, max_nodes - 1)
             generated = grammar.generate(self.symbol, dummy_current_tree.children)
             # Prevent children from being overwritten without executing generator
-            generated.set_all_read_only(True)
-            generated.read_only = False
+            for child in generated.children:
+                child.set_all_read_only(True)
 
             generated.role = self.role
             generated.recipient = self.recipient
@@ -1362,9 +1377,11 @@ class Grammar(NodeVisitor):
             # Found a match
             # LOGGER.debug(f"Matched byte(s) {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w + match_length]!r}")
             next_state = state.next()
-            next_state.children.append(
-                Grammar.ParserDerivationTree(Terminal(word[w : w + match_length]))
-            )
+            tree = Grammar.ParserDerivationTree(Terminal(word[w : w + match_length]))
+            if match_length != 0:
+                next_state.children.append(
+                    tree
+                )
             table[k + match_length].add(next_state)
             # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
             self._max_position = max(self._max_position, w + match_length)
@@ -1757,9 +1774,9 @@ class Grammar(NodeVisitor):
         if tree is None:
             path = set()
         else:
-            path = tree.get_path()
+            path = set(map(lambda x: x.symbol, tree.get_path()))
         generator_dependencies = self.generator_dependencies(symbol)
-        intersection = set(path).intersection(set(generator_dependencies))
+        intersection = path.intersection(set(generator_dependencies))
         return len(intersection) == 0
 
     def derive_generator_params(self, tree: "DerivationTree"):
@@ -1805,8 +1822,10 @@ class Grammar(NodeVisitor):
         self._populate_generator_params(tree)
 
     def _populate_generator_params(self, tree: "DerivationTree"):
-        if tree.symbol in self.generators:
+        if self.is_use_generator(tree):
             tree.generator_params = self.derive_generator_params(tree)
+            for child in tree.children:
+                child.set_all_read_only(True)
             return
         for child in tree.children:
             self._populate_generator_params(child)
@@ -1878,41 +1897,6 @@ class Grammar(NodeVisitor):
 
     def collapse(self, tree: DerivationTree) -> DerivationTree:
         return self._parser.collapse(tree)
-
-    def assign_roles(
-        self,
-        tree: DerivationTree,
-        roles: list[RoledMessage],
-        parent_symbol=NonTerminal("<start>"),
-    ):
-        return self._assign_roles(tree, list(roles), parent_symbol)
-
-    def _assign_roles(
-        self, tree: DerivationTree, roles: list[RoledMessage], parent_symbol
-    ):
-        if len(roles) == 0:
-            return True
-        first = roles[0]
-        current_str = str(tree)
-        if not current_str.startswith(str(first.msg)):
-            return False
-        if current_str == str(first.msg):
-            if parent_symbol in self.rules:
-                nodes = []
-                rule = self.rules[parent_symbol]
-                nodes.append(rule)
-                nodes.extend(rule.children())
-                nodes = list(filter(lambda x: isinstance(x, NonTerminalNode), nodes))
-                for node in nodes:
-                    if tree.symbol == node.symbol and first.role == node.role:
-                        tree.role = first.role
-                        roles.remove(first)
-                        return len(roles) == 0
-
-        for child in tree.children:
-            if self._assign_roles(child, roles, tree.symbol):
-                return True
-        return len(roles) == 0
 
     def fuzz(
         self,
