@@ -80,7 +80,7 @@ def decompress_name(compressed, name_idx):
     while segment_len != 0:
         # If first two bits are 1
         if segment_len & (3 << 6) == 192:
-            name_ptr = (segment_len & 63) << 8 # remote leading two bits and shift
+            name_ptr = (segment_len & 63) << 8 # remote leading two bits (segment_len & 15) << 8
             name_ptr += compressed[name_idx+1]
             decompressed = decompressed + decompress_name(compressed, name_ptr)[0]
             return decompressed, compressed_len + 2
