@@ -50,6 +50,10 @@ class Fandango:
         start_symbol: str = "<start>",
         diversity_k: int = 5,
         diversity_weight: float = 1.0,
+        max_repetition_rate: float = 0.5,
+        max_repetitions: int = None,
+        max_nodes: int = 200,
+        max_nodes_rate: float = 0.5,
     ):
         if tournament_size > 1:
             raise FandangoValueError(
@@ -73,10 +77,11 @@ class Fandango:
         self.max_generations = max_generations
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
+        self.current_max_nodes = 50
 
         # Instantiate managers
         self.population_manager = PopulationManager(
-            grammar, start_symbol, population_size, warnings_are_errors
+            grammar, start_symbol, self.population_size, self.current_max_nodes, warnings_are_errors
         )
         self.evaluator = Evaluator(
             grammar,
@@ -86,7 +91,16 @@ class Fandango:
             diversity_weight,
             warnings_are_errors,
         )
-        self.adaptive_tuner = AdaptiveTuner(mutation_rate, crossover_rate)
+        self.adaptive_tuner = AdaptiveTuner(
+            mutation_rate, 
+            crossover_rate, 
+            grammar.get_max_repetition(), 
+            self.current_max_nodes,
+            max_repetitions, 
+            max_repetition_rate,
+            max_nodes,
+            max_nodes_rate,
+        )
         self.crossover_operator = crossover_method
         self.mutation_method = mutation_method
 
@@ -118,7 +132,7 @@ class Fandango:
             attempts = 0
             max_attempts = (population_size - len(unique_population)) * 10
             while len(unique_population) < population_size and attempts < max_attempts:
-                candidate = self.fix_individual(self.grammar.fuzz(self.start_symbol))
+                candidate = self.fix_individual(self.grammar.fuzz(self.start_symbol, max_nodes=self.current_max_nodes))
                 h = hash(candidate)
                 if h not in unique_hashes:
                     unique_hashes.add(h)
@@ -243,7 +257,7 @@ class Fandango:
                 if random.random() < self.adaptive_tuner.mutation_rate:
                     try:
                         mutated_individual = self.mutation_method.mutate(
-                            individual, self.grammar, self.evaluator.evaluate_individual
+                            individual, self.grammar, self.evaluator.evaluate_individual, self.current_max_nodes
                         )
                         mutated_population.append(mutated_individual)
                         self.mutations_made += 1
@@ -284,13 +298,22 @@ class Fandango:
             )
 
             current_best_fitness = max(fitness for _, fitness, _ in self.evaluation)
+            current_max_repetitions = self.grammar.get_max_repetition()
             self.adaptive_tuner.update_parameters(
                 generation,
                 prev_best_fitness,
                 current_best_fitness,
                 self.population,
                 self.evaluator,
+                current_max_repetitions,
             )
+
+            if self.adaptive_tuner.current_max_repetition > current_max_repetitions:
+                self.grammar.set_max_repetition(self.adaptive_tuner.current_max_repetition)
+
+            self.population_manager.max_nodes = self.adaptive_tuner.current_max_nodes
+            self.current_max_nodes = self.adaptive_tuner.current_max_nodes
+
             prev_best_fitness = current_best_fitness
 
             self.adaptive_tuner.log_generation_statistics(

@@ -115,10 +115,10 @@ class GrammarProcessor(FandangoParserVisitor):
         return Concatenation(nodes)
 
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
-        return Star(self.visit(ctx.symbol()), self.max_repetitions)
+        return Star(self.visit(ctx.symbol()))
 
     def visitPlus(self, ctx: FandangoParser.PlusContext):
-        return Plus(self.visit(ctx.symbol()), self.max_repetitions)
+        return Plus(self.visit(ctx.symbol()))
 
     def visitOption(self, ctx: FandangoParser.OptionContext):
         return Option(self.visit(ctx.symbol()))
@@ -151,7 +151,7 @@ class GrammarProcessor(FandangoParserVisitor):
                 return Repetition(node, max_=max_)
             elif max_ is None:
                 return Repetition(
-                    node, min_=min_, max_=(f"{self.max_repetitions}", [], {})
+                    node, min_=min_
                 )
             return Repetition(node, min_, max_)
         reps = self.searches.visit(ctx.expression(0))

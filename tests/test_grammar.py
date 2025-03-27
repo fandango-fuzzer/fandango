@@ -118,3 +118,20 @@ class ConstraintTest(unittest.TestCase):
         solutions = self.get_solutions(GRAMMAR, c)
         for solution in solutions:
             self.assertNotEqual(solution, "10")
+
+    def test_num_solutions(self):
+        file = open("docs/digits.fan", "r")
+        GRAMMAR, c = parse(file, use_stdlib=True, use_cache=False)
+        fan = Fandango(grammar=GRAMMAR, constraints=c, desired_solutions=1000)
+        sol = fan.evolve()
+        self.assertEqual(len(sol), 1000)
+
+    def test_max_nodes(self):
+        file = open("tests/resources/gen_number.fan", "r")
+        GRAMMAR, c = parse(file, use_cache=False, use_stdlib=True)
+        solution = self.get_solutions(GRAMMAR, c)
+        for sol in solution:
+            s = str(sol).split('.')
+            self.assertEqual(s[0], "a" * 50)
+            self.assertTrue(len(s[1]) >= 10)
+        
