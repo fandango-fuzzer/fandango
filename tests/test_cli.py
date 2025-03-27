@@ -47,44 +47,6 @@ class test_cli(unittest.TestCase):
         self.assertEqual(expected, out.strip())
         self.assertEqual("", err)
 
-    def test_max_rep(self):
-        command = shlex.split(
-            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 --no-cache --max-repetitions 10"
-        )
-        out, err, code = self.run_command(command)
-        expected = """3571614697
-8230756
-805195
-4922034
-93
-91101
-130
-4473
-4152014020
-084"""
-        self.assertEqual(0, code)
-        self.assertEqual(expected, out.strip())
-        self.assertEqual("", err)
-
-    def test_max_rep_constraint(self):
-        command = shlex.split(
-            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 --no-cache -c 'len(str(<start>)) > 5' --max-repetitions 10"
-        )
-        out, err, code = self.run_command(command)
-        expected = """3571614697
-8230756
-805195
-4922034
-4152014020
-7380291522
-4271893135
-2612956
-2723411217
-7583942286"""
-        self.assertEqual(0, code)
-        self.assertEqual(expected, out.strip())
-        self.assertEqual("", err)
-
     def test_output_to_file(self):
         command = shlex.split(
             "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 -o tests/resources/test.txt -s ; --no-cache"
@@ -151,3 +113,28 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
+
+    def test_max_repetition(self):
+        command = shlex.split(
+            "fandango fuzz -f tests/resources/digit.fan -n 10 --max-generations 50 --max-repetitions 10 --no-cache -c 'len(str(<start>)) > 10'"
+        )
+        expected = """fandango:ERROR: Population did not converge to a perfect population
+fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
+"""
+        out, err, code = self.run_command(command)
+        self.assertEqual(0, code)
+        self.assertEqual("", out)
+        self.assertEqual(expected, err)
+
+    def test_max_nodes_unsat(self):
+        command = shlex.split(
+            "fandango fuzz -f tests/resources/gen_number.fan  -n 10 --population-size 10 --max-generations 50 --no-cache -c 'len(str(<start>)) > 60' --max-nodes 50"
+        )
+        expected = """fandango:ERROR: Population did not converge to a perfect population
+fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
+"""
+        out, err, code = self.run_command(command)
+        self.assertEqual(0, code)
+        self.assertEqual("", out)
+        self.assertEqual(expected, err)
+

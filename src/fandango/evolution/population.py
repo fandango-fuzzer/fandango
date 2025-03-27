@@ -11,12 +11,14 @@ class PopulationManager:
         grammar: Grammar,
         start_symbol: str,
         population_size: int,
+        max_nodes: int,
         warnings_are_errors: bool = False,
     ):
         self.grammar = grammar
         self.start_symbol = start_symbol
         self.population_size = population_size
         self.warnings_are_errors = warnings_are_errors
+        self.max_nodes = max_nodes
 
     def add_unique_individual(
         self,
@@ -40,7 +42,7 @@ class PopulationManager:
         max_attempts = self.population_size * 10  # safeguard against infinite loops
 
         while len(unique_population) < self.population_size and attempts < max_attempts:
-            candidate = fix_func(self.grammar.fuzz(self.start_symbol))
+            candidate = fix_func(self.grammar.fuzz(self.start_symbol, self.max_nodes))
             self.add_unique_individual(unique_population, candidate, unique_hashes)
             attempts += 1
 
@@ -62,7 +64,7 @@ class PopulationManager:
         while (
             len(current_population) < self.population_size and attempts < max_attempts
         ):
-            candidate = fix_func(self.grammar.fuzz(self.start_symbol))
+            candidate = fix_func(self.grammar.fuzz(self.start_symbol, self.max_nodes))
             if hash(candidate) not in unique_hashes:
                 unique_hashes.add(hash(candidate))
                 current_population.append(candidate)
@@ -73,7 +75,7 @@ class PopulationManager:
                 "Could not generate full unique new population, filling remaining slots with duplicates."
             )
             while len(current_population) < self.population_size:
-                current_population.append(self.grammar.fuzz(self.start_symbol))
+                current_population.append(self.grammar.fuzz(self.start_symbol, self.max_nodes))
 
         return current_population
 

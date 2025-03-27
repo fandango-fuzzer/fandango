@@ -149,7 +149,7 @@ class Concatenation(Node):
 
 class Repetition(Node):
     def __init__(
-        self, node: Node, min_=("0", [], {}), max_=(f"{MAX_REPETITIONS}", [], {})
+        self, node: Node, min_=("0", [], {}), max_=(f"{None}", [], {})
     ):
         super().__init__(NodeType.REPETITION)
         # min_expr, min_nt, min_search = min_
@@ -163,6 +163,7 @@ class Repetition(Node):
         #    raise ValueError(
         #        f"Maximum repetitions {max_} must be greater than 0 or greater than min {min_}"
         #    )
+        
         self.node = node
         self.expr_data_min = min_
         self.expr_data_max = max_
@@ -181,6 +182,8 @@ class Repetition(Node):
 
     def _compute_rep_bound(self, grammar: "Grammar", tree: "DerivationTree", expr_data):
         expr, _, searches = expr_data
+        if expr == "None" :
+            expr = f"{MAX_REPETITIONS}"
         local_cpy = grammar._local_variables.copy()
 
         if len(searches) == 0:
@@ -218,8 +221,9 @@ class Repetition(Node):
             current_max, is_static = self._compute_rep_bound(
                 grammar, tree, self.expr_data_max
             )
-            if is_static:
-                self.static_max = current_max
+            
+            #if is_static:
+            #    self.static_max = current_max
             return current_max
         else:
             return self.static_max
@@ -273,7 +277,7 @@ class Repetition(Node):
 
 class Star(Repetition):
     def __init__(self, node: Node, max_repetitions: int = 5):
-        super().__init__(node, ("0", [], {}), (f"{max_repetitions}", [], {}))
+        super().__init__(node, ("0", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitStar(self)
@@ -287,7 +291,7 @@ class Star(Repetition):
 
 class Plus(Repetition):
     def __init__(self, node: Node, max_repetitions: int = 5):
-        super().__init__(node, ("1", [], {}), (f"{max_repetitions}", [], {}))
+        super().__init__(node, ("1", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitPlus(self)
@@ -2038,3 +2042,10 @@ class Grammar(NodeVisitor):
         * `start`: a start symbol other than `<start>`.
         """
         return self.contains_type(str, start=start)
+    
+    def set_max_repetition(self, max_rep:int):
+        global MAX_REPETITIONS
+        MAX_REPETITIONS = max_rep
+    
+    def get_max_repetition(self):
+        return MAX_REPETITIONS

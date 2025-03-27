@@ -153,6 +153,30 @@ def get_parser(in_command_line=True):
         default=None,
     )
     algorithm_group.add_argument(
+        "--max-repetition-rate",
+        type=float,
+        help="rate at which the number of maximal repetitions should be increased",
+        default=None,
+    )
+    algorithm_group.add_argument(
+        "--max-repetitions",
+        type=int,
+        help="Maximal value, the number of repetitions can be increased to",
+        default=None,
+    )
+    algorithm_group.add_argument(
+        "--max-node-rate",
+        type=float,
+        help="rate at which the maximal number of nodes in a tree is increased",
+        default=None,
+    )
+    algorithm_group.add_argument(
+        "--max-nodes",
+        type=int,
+        help="Maximal value, the number of nodes in a tree can be increased to",
+        default=None,
+    )
+    algorithm_group.add_argument(
         "-n",
         "--num-outputs",
         "--desired-solutions",
@@ -298,13 +322,6 @@ def get_parser(in_command_line=True):
         default=False,
         action="store_true",
         help="run internal consistency checks for debugging",
-    )
-    file_parser.add_argument(
-        "--max-repetitions",
-        dest="max_repetitions",
-        type=int,
-        help="the maximal number of repetitions if not specified otherwise by {N, M} in the grammar (default: 5)",
-        default=5,
     )
 
     # Commands
@@ -537,7 +554,6 @@ def parse_contents_from_args(args, given_grammars=[]):
         use_cache=args.use_cache,
         use_stdlib=args.use_stdlib,
         start_symbol=args.start_symbol,
-        max_repetitions=args.max_repetitions,
     )
 
 
@@ -562,6 +578,10 @@ def make_fandango_settings(args, initial_settings={}):
     copy(settings, "warnings_are_errors")
     copy(settings, "best_effort")
     copy(settings, "random_seed")
+    copy(settings, "max_repetition_rate")
+    copy(settings, "max_repetitions")
+    copy(settings, "max_nodes")
+    copy(settings, "max_node_rate")
 
     if hasattr(args, "start_symbol") and args.start_symbol is not None:
         if args.start_symbol.startswith("<"):
