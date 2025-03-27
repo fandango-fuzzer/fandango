@@ -68,7 +68,7 @@ def compress_msg(uncompressed):
                 len_reduction += len(b_name) - len(new_name_tree.to_bytes())
                 break
             else:
-                offset_name_start = len(name.split_end().root().to_bytes()) - len(b_name)
+                offset_name_start = len(name.split_end().get_root(True).to_bytes()) - len(b_name)
                 suffix_dict[suffix] = offset_name_start + n_offset - len_reduction
     return uncompressed.to_bytes()
 
@@ -79,8 +79,8 @@ def decompress_name(compressed, name_idx):
     decompressed = b''
     while segment_len != 0:
         # If first two bits are 1
-        if segment_len_bin[0] == 192:
-            name_ptr = (segment_len & 15) << 8
+        if segment_len & (3 << 6) == 192:
+            name_ptr = (segment_len & 63) << 8 # remote leading two bits and shift
             name_ptr += compressed[name_idx+1]
             decompressed = decompressed + decompress_name(compressed, name_ptr)[0]
             return decompressed, compressed_len + 2
@@ -138,8 +138,6 @@ where <dns_req>.<header_req>.<h_rd> == <dns_resp>.<header_resp>.<h_rd>
 where <dns_req>.<header_req>.<h_id> == <dns_resp>.<header_resp>.<h_id>
 where <dns_req>.<question>.<q_name>.<q_name_written_complete> == <dns_resp>.<answer>.<q_name>.<q_name_written_complete>
 where <dns_req>.<question> == <dns_resp>.<question>
-where byte_to_int(bytes(<dns_resp>.<header_resp>.<resp_qd_count>)) == len((<dns_resp>).find_direct_trees(NonTerminal("<question>"))) # count nr of questions
-where (byte_to_int(bytes(<dns_resp>.<header_resp>.<resp_an_count>)) + byte_to_int(bytes(<dns_resp>.<header_resp>.<resp_ns_count>)) + byte_to_int(bytes(<dns_resp>.<header_resp>.<resp_ar_count>))) == len((<dns_resp>).find_direct_trees(NonTerminal("<answer>"))) # count nr of answers
 <resp_qd_count> ::= <bit>{16} := pack(">H", randint(0, 2))
 <resp_an_count> ::= <bit>{16} := pack(">H", randint(0, 2))
 <resp_ns_count> ::= <bit>{16} := pack(">H", randint(0, 2))
@@ -207,6 +205,7 @@ class Server(FandangoAgent):
                 self.id_addr = dict()
                 self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 server_thread = threading.Thread(target=self.server_loop)
+                server_thread.daemon = True
                 server_thread.start()
 
         def server_loop(self):
