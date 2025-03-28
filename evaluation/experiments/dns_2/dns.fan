@@ -14,7 +14,8 @@ fake = Faker()
 def gen_q_name():
     result = b''
     #domain_parts = fake.domain_name().split('.')
-    domain_parts = "fandango.io".split('.')
+    #domain_parts = "fandango.io".split('.')
+    domain_parts = "google.com".split('.')
     for part in domain_parts:
         result += len(part).to_bytes(1, 'big')
         result += part.encode('iso8859-1')
@@ -48,6 +49,9 @@ def compress_name(uncompressed, curr_idx, len_reduction, suffix_dict):
         name_len += uncompressed[curr_idx + name_len] + 1
     name_len += 1
     b_name = uncompressed[curr_idx:(curr_idx+name_len)]
+
+    if name_len == 1:
+        return b_name, name_len, len_reduction
 
     for n_offset, suffix in msg_suffix(b_name):
         if suffix in suffix_dict:
@@ -203,7 +207,7 @@ where <dns_req>.<question> == <dns_resp>.<question>
 import socket
 class Client(FandangoAgent):
         def __init__(self):
-            super().__init__(False)
+            super().__init__(True)
 
         def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -214,7 +218,7 @@ class Client(FandangoAgent):
 class Server(FandangoAgent):
 
         def __init__(self):
-            is_fandango = True
+            is_fandango = False
             super().__init__(is_fandango)
             if is_fandango:
                 self.id_addr = dict()
