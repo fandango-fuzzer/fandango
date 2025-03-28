@@ -1,14 +1,9 @@
 # fandango/evolution/algorithm.py
-import copy
 import enum
 import logging
 import random
 import time
-from tokenize import String
 from typing import List, Union
-
-from copy import deepcopy
-from zoneinfo import available_timezones
 
 from fandango.constraints.base import Constraint
 from fandango.evolution.adaptation import AdaptiveTuner
@@ -24,8 +19,6 @@ from fandango.language.grammar import (
     GeneratorParserValueError,
 )
 from fandango.language.packetforecaster import PacketForecaster
-from fandango.language.symbol import NonTerminal
-from fandango.language.trash import compress_msg, decompress_msg
 from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
 
 from fandango import FandangoFailedError, FandangoParseError, FandangoValueError
@@ -240,8 +233,6 @@ class Fandango:
                     )
                 )
                 packet_node = self.population_manager.io_next_packet.node
-                for i in new_population:
-                    self.delete_me_later(i)
 
                 self.population = new_population
                 self.evaluation = self.evaluator.evaluate_population(self.population)
@@ -300,22 +291,6 @@ class Fandango:
             return self._evolve_io()
         else:
             raise RuntimeError(f"Invalid mode: {self.grammar.fuzzing_mode}")
-
-    def delete_me_later(self, individual: DerivationTree):
-        if len(individual.children) == 0:
-            return
-        individual = individual.children[-1]
-        compressed = compress_msg(individual.generator_params[0])
-        compressed_tree = self.grammar.parse(compressed, individual.symbol)
-        compressed = compress_msg(individual.generator_params[0])
-        decompressed = decompress_msg(compressed_tree)
-        decompressed_tree = self.grammar.parse(decompressed, individual.generator_params[0].symbol)
-        assert decompressed_tree == individual.generator_params[0]
-
-        decompressed = decompress_msg(individual)
-        decompressed_tree = self.grammar.parse(decompressed, individual.generator_params[0].symbol)
-        compressed = compress_msg(decompressed_tree)
-        assert compressed == individual.to_bytes()
 
     def _evolve_single(self) -> List[DerivationTree]:
         LOGGER.info("---------- Starting evolution ----------")
