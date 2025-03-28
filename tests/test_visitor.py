@@ -14,6 +14,7 @@ class CountingVisitor(ConstraintVisitor):
     A simple visitor that counts the occurrences of each constraint type.
     Stores counts in a defaultdict for easy access during testing.
     """
+
     def __init__(self):
         super().__init__()
         self.counts = defaultdict(int)
@@ -71,12 +72,13 @@ class LoggingVisitor(ConstraintVisitor):
         LOGGER.info("Visiting implication constraint")
 
 
-
 class TestConstraintVisitor(unittest.TestCase):
 
     def get_constraint(self, constraint):
         file = open("tests/resources/constraints.fan", "r")
-        _, constraints = parse(file, constraints=[constraint], use_stdlib=False, use_cache=False)
+        _, constraints = parse(
+            file, constraints=[constraint], use_stdlib=False, use_cache=False
+        )
         self.assertEqual(1, len(constraints))
         return constraints[0]
 

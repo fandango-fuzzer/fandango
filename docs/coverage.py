@@ -3,11 +3,12 @@
 
 import sys
 
+
 def coverage(fun, *args, **kwargs):
     covered_lines = set()
 
     def traceit(frame, event, arg):
-        if event == 'line':
+        if event == "line":
             filename = frame.f_code.co_filename
             lineno = frame.f_lineno
             covered_lines.add((filename, lineno))
@@ -19,16 +20,18 @@ def coverage(fun, *args, **kwargs):
 
     return ret, covered_lines
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
+
     def remove_html_markup(s):
         tag = False
         quote = False
         out = ""
 
         for c in s:
-            if c == '<' and not quote:
+            if c == "<" and not quote:
                 tag = True
-            elif c == '>' and not quote:
+            elif c == ">" and not quote:
                 tag = False
             elif (c == '"' or c == "'") and tag:
                 quote = not quote
@@ -38,5 +41,5 @@ if __name__ == '__main__':
         return out
 
     ret, covered_lines = coverage(remove_html_markup, "foo")
-    print('Return value:', ret)
-    print('Covered lines:', len(covered_lines))
+    print("Return value:", ret)
+    print("Covered lines:", len(covered_lines))
