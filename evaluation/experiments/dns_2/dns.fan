@@ -142,11 +142,12 @@ def decompress_msg(compressed):
     return decompressed
 
 
-<start> ::= <Client:dns_req> <Server:dns_resp>
-<dns_req_compressed> ::= <byte>+ #:= compress_msg(<dns_req>)
-<dns_resp_compressed> ::= <byte>+ #:= compress_msg(<dns_resp>)
-<dns_req> ::= <header_req> <question> <answer>{byte_to_int(<req_ar_count>)} #:= decompress_msg(<dns_req_compressed>)
-<dns_resp> ::= <header_resp> <question>{byte_to_int(<resp_qd_count>)} <answer>{byte_to_int(<resp_an_count>)} <answer>{byte_to_int(<resp_ns_count>)} <answer>{byte_to_int(<resp_ar_count>)} #:= decompress_msg(<dns_resp_compressed>)
+#<start> ::= <Client:dns_req> <Server:dns_resp>
+<start> ::= <Client:dns_req_compressed> <Server:dns_resp_compressed>
+<dns_req_compressed> ::= <byte>+ := compress_msg(<dns_req>.to_bytes())
+<dns_resp_compressed> ::= <byte>+ := compress_msg(<dns_resp>.to_bytes())
+<dns_req> ::= <header_req> <question> <answer>{byte_to_int(<req_ar_count>)} := decompress_msg(<dns_req_compressed>.to_bytes())
+<dns_resp> ::= <header_resp> <question>{byte_to_int(<resp_qd_count>)} <answer>{byte_to_int(<resp_an_count>)} <answer>{byte_to_int(<resp_ns_count>)} <answer>{byte_to_int(<resp_ar_count>)} := decompress_msg(<dns_resp_compressed>.to_bytes())
 
 #                       qr      opcode       aa tc rd  ra  z      rcode   qdcount  ancount nscount arcount
 <header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_none> 0{15} 1 0{16} 0{16} <req_ar_count>
@@ -157,7 +158,7 @@ where <dns_req>.<header_req>.<h_rd> == <dns_resp>.<header_resp>.<h_rd>
 where <dns_req>.<header_req>.<h_id> == <dns_resp>.<header_resp>.<h_id>
 where <dns_req>.<question>.<q_name>.<q_name_written_complete> == <dns_resp>.<answer>.<q_name>.<q_name_written_complete>
 where <dns_req>.<question> == <dns_resp>.<question>
-<resp_qd_count> ::= <bit>{16} := pack(">H", randint(0, 2))
+<resp_qd_count> ::= <bit>{16} := pack(">H", 1)
 <resp_an_count> ::= <bit>{16} := pack(">H", randint(0, 2))
 <resp_ns_count> ::= <bit>{16} := pack(">H", randint(0, 2))
 <resp_ar_count> ::= <bit>{16} := pack(">H", randint(0, 2))
@@ -190,17 +191,16 @@ where <dns_req>.<question> == <dns_resp>.<question>
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
 
 
-<answer> ::= <q_name> ((<a_type> <rr_class>) | <type_opt> <udp_payload_size>) <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
-<a_type> ::= <type_a> | <type_ns> | <type_soa>
+<answer> ::= <q_name> (<type_a> | <type_ns> | <type_soa> | <type_opt>)
 <a_ttl> ::= <byte>{4}
 <a_rd_length> ::= <byte>{2} := pack(">H", randint(0, 0))
 <a_rdata> ::= <byte>
 
 
-<type_a> ::= 0{15} 1
-<type_ns> ::= 0{14} 1 0
-<type_soa> ::= 0{13} 1 1 0
-<type_opt> ::= 0{10} 1 0 1 0 0 1
+<type_a> ::= 0{15} 1 <rr_class> <a_ttl> 0{13} 1 0 0 <byte>{4}
+<type_ns> ::= 0{14} 1 0 <rr_class> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
+<type_soa> ::= 0{13} 1 1 0 <rr_class> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
+<type_opt> ::= 0{10} 1 0 1 0 0 1 <udp_payload_size> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
 <udp_payload_size> ::= <bit>{16}
 
 
@@ -236,9 +236,11 @@ class Server(FandangoAgent):
                 message, addr = self.server_socket.recvfrom(bufferSize)
                 m_id = message[:2]
                 self.id_addr[m_id] = addr
-                self.receive_msg("Client", decompress_msg(message))
+                #self.receive_msg("Client", decompress_msg(message))
+                self.receive_msg("Client", message)
 
 
         def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
             m_id = message[:2]
-            self.server_socket.sendto(compress_msg(message), self.id_addr[m_id])
+            #self.server_socket.sendto(compress_msg(message), self.id_addr[m_id])
+            self.server_socket.sendto(message, self.id_addr[m_id])
