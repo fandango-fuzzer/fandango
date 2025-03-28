@@ -210,12 +210,6 @@ class Fandango:
             receiver = '*' + receiver
         print(f"({sender} -> {receiver}): {msg}")
 
-    def convert_transmittable(self, tree: DerivationTree) -> bytes|str:
-        if tree.contains_bytes():
-            return tree.to_bytes()
-        else:
-            return tree.to_string()
-
     def _evolve_io(self) -> List[DerivationTree]:
         global_env, local_env = self.grammar.get_python_env()
         io_instance: FandangoIO = global_env["FandangoIO"].instance()
@@ -272,7 +266,7 @@ class Fandango:
                     # Abort if we received a message during fuzzing
                     continue
                 new_packet = next_tree.find_role_msgs()[-1]
-                send_str = self.convert_transmittable(new_packet.msg)
+                send_str = new_packet.convert_transmittable()
                 if (
                         new_packet.recipient is None
                         or not io_instance.roles[new_packet.recipient].is_fandango()
@@ -291,8 +285,8 @@ class Fandango:
                 forecast, packet_tree = self._parse_next_remote_packet(
                     forecast, io_instance
                 )
-                received_str = self.convert_transmittable(packet_tree)
-                self.log_message_transfer(packet_tree.role, packet_tree.recipient, received_str, False)
+                received_packet = RoledMessage(packet_tree.role, packet_tree.recipient, packet_tree)
+                self.log_message_transfer(packet_tree.role, packet_tree.recipient, received_packet.convert_transmittable(), False)
 
                 hookin_option = next(iter(forecast.paths))
                 history_tree = hookin_option.tree
