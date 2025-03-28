@@ -165,6 +165,7 @@ class Fandango:
 
     def fix_individual(self, individual: DerivationTree) -> DerivationTree:
         _, failing_trees = self.evaluator.evaluate_individual(individual)
+        replacements = dict()
         for failing_tree in failing_trees:
             if failing_tree.tree.read_only:
                 continue
@@ -190,10 +191,10 @@ class Fandango:
                     )
                     if suggested_tree is None:
                         continue
-                    individual = individual.replace(
-                        self.grammar, failing_tree.tree, suggested_tree
-                    )
+                    replacements[failing_tree.tree] = suggested_tree
                     self.fixes_made += 1
+        if len(replacements) > 0:
+            individual = individual.replace_multiple(self.grammar, replacements)
         return individual
 
     def _evolve_io(self) -> List[DerivationTree]:

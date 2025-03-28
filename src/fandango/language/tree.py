@@ -584,11 +584,14 @@ class DerivationTree:
         return self
 
     def replace(self, grammar: "Grammar", tree_to_replace, new_subtree):
+        return self.replace_multiple(grammar, {tree_to_replace: new_subtree})
+
+    def replace_multiple(self, grammar: "Grammar", replacements: dict["DerivationTree", "DerivationTree"]):
         """
         Replace the subtree rooted at the given node with the new subtree.
         """
-        if self == tree_to_replace and not self.read_only:
-            new_subtree = deepcopy(new_subtree)
+        if self in replacements and not self.read_only:
+            new_subtree = deepcopy(replacements[self])
             new_subtree._parent = self.parent
             grammar.populate_generator_params(new_subtree)
             return new_subtree
@@ -598,12 +601,12 @@ class DerivationTree:
         new_children = []
         generator_params = []
         for param in self._generator_params:
-            new_param = param.replace(grammar, tree_to_replace, new_subtree)
+            new_param = param.replace_multiple(grammar, replacements)
             generator_params.append(new_param)
             if new_param != param:
                 regen_children = True
         for child in self._children:
-            new_child = child.replace(grammar, tree_to_replace, new_subtree)
+            new_child = child.replace_multiple(grammar, replacements)
             new_children.append(new_child)
             if new_child != child:
                 regen_params = True
