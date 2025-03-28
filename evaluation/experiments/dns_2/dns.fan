@@ -121,11 +121,11 @@ def decompress_msg(compressed):
     return decompressed
 
 
-<start> ::= <Client:dns_req_compressed> <Server:dns_resp_compressed>
-<dns_req_compressed> ::= <byte>+ := compress_msg(<dns_req>)
-<dns_resp_compressed> ::= <byte>+ := compress_msg(<dns_resp>)
-<dns_req> ::= <header_req> <question> <answer>{byte_to_int(<req_ar_count>)} := decompress_msg(<dns_req_compressed>)
-<dns_resp> ::= <header_resp> <question>{byte_to_int(<resp_qd_count>)} <answer>{byte_to_int(<resp_an_count>)} <answer>{byte_to_int(<resp_ns_count>)} <answer>{byte_to_int(<resp_ar_count>)} := decompress_msg(<dns_resp_compressed>)
+<start> ::= <Client:dns_req> <Server:dns_resp>
+<dns_req_compressed> ::= <byte>+ #:= compress_msg(<dns_req>)
+<dns_resp_compressed> ::= <byte>+ #:= compress_msg(<dns_resp>)
+<dns_req> ::= <header_req> <question> <answer>{byte_to_int(<req_ar_count>)} #:= decompress_msg(<dns_req_compressed>)
+<dns_resp> ::= <header_resp> <question>{byte_to_int(<resp_qd_count>)} <answer>{byte_to_int(<resp_an_count>)} <answer>{byte_to_int(<resp_ns_count>)} <answer>{byte_to_int(<resp_ar_count>)} #:= decompress_msg(<dns_resp_compressed>)
 
 #                       qr      opcode       aa tc rd  ra  z      rcode   qdcount  ancount nscount arcount
 <header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_none> 0{15} 1 0{16} 0{16} <req_ar_count>
@@ -190,9 +190,9 @@ class Client(FandangoAgent):
 
         def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.sendto(message, ("1.1.1.1", 53))
+            sock.sendto(compress_msg(message), ("1.1.1.1", 53))
             response, nothing = sock.recvfrom(1024)
-            self.receive_msg("Server", response)
+            self.receive_msg("Server", decompress_msg(response))
 
 class Server(FandangoAgent):
 
@@ -215,9 +215,9 @@ class Server(FandangoAgent):
                 message, addr = self.server_socket.recvfrom(bufferSize)
                 m_id = message[:2]
                 self.id_addr[m_id] = addr
-                self.receive_msg("Client", message)
+                self.receive_msg("Client", decompress_msg(message))
 
 
         def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
             m_id = message[:2]
-            self.server_socket.sendto(message, self.id_addr[m_id])
+            self.server_socket.sendto(compress_msg(message), self.id_addr[m_id])
