@@ -207,7 +207,7 @@ where <dns_req>.<question> == <dns_resp>.<question>
 import socket
 class Client(FandangoAgent):
         def __init__(self):
-            super().__init__(True)
+            super().__init__(False)
 
         def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -218,7 +218,7 @@ class Client(FandangoAgent):
 class Server(FandangoAgent):
 
         def __init__(self):
-            is_fandango = False
+            is_fandango = True
             super().__init__(is_fandango)
             if is_fandango:
                 self.id_addr = dict()
