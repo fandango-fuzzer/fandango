@@ -42,35 +42,53 @@ def to_byte_tree(byte_val):
         ]))
     return DerivationTree(NonTerminal('byte'), children)
 
+def compress_name(uncompressed, curr_idx, len_reduction, suffix_dict):
+    name_len = 0
+    while uncompressed[curr_idx + name_len] != 0:
+        name_len += uncompressed[curr_idx + name_len] + 1
+    name_len += 1
+    b_name = uncompressed[curr_idx:(curr_idx+name_len)]
+
+    for n_offset, suffix in msg_suffix(b_name):
+        if suffix in suffix_dict:
+            cpr_ptr = suffix_dict[suffix]
+            bin_ptr = pack('>H', (192 << 8) | cpr_ptr)
+            new_name = b_name[:n_offset] + bin_ptr
+            len_reduction += len(b_name) - len(new_name)
+            return new_name, name_len, len_reduction
+        else:
+            offset_name_start = curr_idx
+            suffix_dict[suffix] = offset_name_start + n_offset - len_reduction
+            return b_name, name_len, len_reduction
 
 def compress_msg(uncompressed):
-    uncompressed = deepcopy(uncompressed)
-    names = uncompressed.find_all_nodes('<q_name>', False)
-    suffix_dict = dict()
+    qd_count = byte_to_int(uncompressed[4:6])
+    an_count = byte_to_int(uncompressed[6:8])
+    ns_count = byte_to_int(uncompressed[8:10])
+    ar_count = byte_to_int(uncompressed[10:12])
+    compressed = uncompressed[0:12]
+    curr_idx = 12
 
+    suffix_dict = dict()
     len_reduction = 0
-    for name in names:
-        b_name = name.to_bytes()
-        for n_offset, suffix in msg_suffix(b_name):
-            if suffix in suffix_dict:
-                cpr_ptr = suffix_dict[suffix]
-                bin_ptr = pack('>H', (192 << 8) | cpr_ptr)
-                new_name = b_name[:n_offset] + bin_ptr
-                new_name_tree = []
-                for byte_val in new_name:
-                    new_name_tree.append(to_byte_tree(byte_val))
-                if n_offset == 0:
-                    new_name_tree = DerivationTree(NonTerminal('<q_name_written_pointer>'), new_name_tree)
-                else:
-                    new_name_tree = DerivationTree(NonTerminal('<q_name_written_partly>'), new_name_tree)
-                # insert new_name into tree
-                name.set_children([new_name_tree])
-                len_reduction += len(b_name) - len(new_name_tree.to_bytes())
-                break
-            else:
-                offset_name_start = len(name.split_end().get_root(True).to_bytes()) - len(b_name)
-                suffix_dict[suffix] = offset_name_start + n_offset - len_reduction
-    return uncompressed.to_bytes()
+    for i in range(qd_count):
+        name, decompressed_len, len_reduction = compress_name(uncompressed, curr_idx, len_reduction, suffix_dict)
+        compressed = compressed + name
+        curr_idx += decompressed_len
+        compressed += uncompressed[curr_idx:curr_idx+4]
+        curr_idx += 4
+    for i in range(an_count + ns_count + ar_count):
+        name, decompressed_len, len_reduction = compress_name(uncompressed, curr_idx, len_reduction, suffix_dict)
+        compressed = compressed + name
+        curr_idx += decompressed_len
+        compressed += uncompressed[curr_idx:curr_idx+8]
+        curr_idx += 8
+        r_data_len = byte_to_int(uncompressed[curr_idx:curr_idx+2])
+        compressed += uncompressed[curr_idx:curr_idx+2]
+        curr_idx += 2
+        compressed += uncompressed[curr_idx:curr_idx+r_data_len]
+        curr_idx += r_data_len
+    return compressed
 
 def decompress_name(compressed, name_idx):
     segment_len = compressed[name_idx]
@@ -93,7 +111,6 @@ def decompress_name(compressed, name_idx):
 
 
 def decompress_msg(compressed):
-    compressed = compressed.to_bytes()
     count_header = compressed[4:12]
     qd_count = byte_to_int(count_header[:2])
     an_count = byte_to_int(count_header[2:4])
