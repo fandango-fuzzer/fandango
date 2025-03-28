@@ -19,6 +19,7 @@ from fandango.language.grammar import (
     GeneratorParserValueError,
 )
 from fandango.language.packetforecaster import PacketForecaster
+from fandango.language.tree import RoledMessage
 from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
 
 from fandango import FandangoFailedError, FandangoParseError, FandangoValueError
@@ -197,6 +198,24 @@ class Fandango:
             individual = individual.replace_multiple(self.grammar, replacements)
         return individual
 
+    def log_message_transfer(self, sender: str, receiver: str|None, msg: str, self_is_sender: bool):
+        if receiver is None:
+            if self_is_sender:
+                receiver = 'Unknown'
+            else:
+                receiver = 'Fandango'
+        if self_is_sender:
+            sender = '*' + sender
+        else:
+            receiver = '*' + receiver
+        print(f"({sender} -> {receiver}): {msg}")
+
+    def convert_transmittable(self, tree: DerivationTree) -> bytes|str:
+        if tree.contains_bytes():
+            return tree.to_bytes()
+        else:
+            return tree.to_string()
+
     def _evolve_io(self) -> List[DerivationTree]:
         global_env, local_env = self.grammar.get_python_env()
         io_instance: FandangoIO = global_env["FandangoIO"].instance()
@@ -253,10 +272,7 @@ class Fandango:
                     # Abort if we received a message during fuzzing
                     continue
                 new_packet = next_tree.find_role_msgs()[-1]
-                if new_packet.msg.contains_bytes():
-                    send_str = new_packet.msg.to_bytes()
-                else:
-                    send_str = new_packet.msg.to_string()
+                send_str = self.convert_transmittable(new_packet.msg)
                 if (
                         new_packet.recipient is None
                         or not io_instance.roles[new_packet.recipient].is_fandango()
@@ -265,6 +281,7 @@ class Fandango:
                         new_packet.role, new_packet.recipient, send_str
                     )
                     exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
+                    self.log_message_transfer(new_packet.role, new_packet.recipient, send_str, True)
                 hookin_option = next(iter(forecast_packet.paths))
                 history_tree = hookin_option.tree
                 history_tree.append(hookin_option.path[1:], new_packet.msg)
@@ -274,6 +291,8 @@ class Fandango:
                 forecast, packet_tree = self._parse_next_remote_packet(
                     forecast, io_instance
                 )
+                received_str = self.convert_transmittable(packet_tree)
+                self.log_message_transfer(packet_tree.role, packet_tree.recipient, received_str, False)
 
                 hookin_option = next(iter(forecast.paths))
                 history_tree = hookin_option.tree
