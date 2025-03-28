@@ -407,7 +407,10 @@ class NonTerminalNode(Node):
             dependencies = grammar.generator_dependencies(self.symbol)
             for nt in dependencies:
                 NonTerminalNode(nt).fuzz(dummy_current_tree, grammar, max_nodes - 1)
-            generated = grammar.generate(self.symbol, dummy_current_tree.children)
+            parameters = dummy_current_tree.children
+            for p in parameters:
+                p._parent = None
+            generated = grammar.generate(self.symbol, parameters)
             # Prevent children from being overwritten without executing generator
             for child in generated.children:
                 child.set_all_read_only(True)
