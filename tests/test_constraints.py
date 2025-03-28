@@ -11,7 +11,9 @@ from fandango.language.parse import parse
 class ConstraintTest(unittest.TestCase):
     def get_constraint(self, constraint):
         file = open("tests/resources/constraints.fan", "r")
-        _, constraints = parse(file, constraints=[constraint], use_stdlib=False, use_cache=False)
+        _, constraints = parse(
+            file, constraints=[constraint], use_stdlib=False, use_cache=False
+        )
         self.assertEqual(1, len(constraints))
         return constraints[0]
 
@@ -296,43 +298,23 @@ class ConstraintTest(unittest.TestCase):
         constraint = self.get_constraint("str(<start>.<ab>) == 'a';")
         counter_example = DerivationTree(
             NonTerminal("<start>"),
-            [
-                DerivationTree(
-                    NonTerminal("<ab>"),
-                    [
-                        DerivationTree(
-                            Terminal("b"),
-                            []
-                        )
-                    ]
-                )
-            ]
+            [DerivationTree(NonTerminal("<ab>"), [DerivationTree(Terminal("b"), [])])],
         )
 
         self.assertFalse(constraint.check(counter_example))
         example = DerivationTree(
             NonTerminal("<start>"),
-            [
-                DerivationTree(
-                    NonTerminal("<ab>"),
-                    [
-                        DerivationTree(
-                            Terminal("a"),
-                            []
-                        )
-                    ]
-                )
-            ]
+            [DerivationTree(NonTerminal("<ab>"), [DerivationTree(Terminal("a"), [])])],
         )
         self.assertTrue(constraint.check(example))
 
     def test_indirect_children(self):
         file = open("tests/resources/indirect_children.fan", "r")
         grammar, constraint = parse(file, use_stdlib=False, use_cache=False)
-        
+
         self.assertEqual(1, len(constraint))
         constraint = constraint[0]
-        
+
         counter_example = grammar.parse("19")
         self.assertFalse(constraint.check(counter_example))
 
@@ -369,7 +351,9 @@ int(<number>) < 100000;
 """
 
         file = open("tests/resources/complex_constraints.fan", "r")
-        _, constraints = parse(file, constraints=[constraint], use_stdlib=False, use_cache=False)
+        _, constraints = parse(
+            file, constraints=[constraint], use_stdlib=False, use_cache=False
+        )
         self.assertEqual(3, len(constraints))
 
         def get_tree(x):
@@ -400,31 +384,31 @@ class ConverterTest(unittest.TestCase):
     def test_standards(self):
         # Earlier Fandango versions overloaded int(); so check if it still works
         self.assertEqual(int(45), 45)
-        self.assertEqual(int.from_bytes(b'\x01'), 1)
+        self.assertEqual(int.from_bytes(b"\x01"), 1)
 
     def test_string_converters(self):
-        tree = DerivationTree(Terminal('5'))
+        tree = DerivationTree(Terminal("5"))
         self.assertEqual(int(tree), 5)
         self.assertEqual(float(tree), 5.0)
-        self.assertEqual(complex(tree), 5+0j)
-        self.assertEqual(bytes(tree), b'5')
-        self.assertEqual(str(tree), '5')
+        self.assertEqual(complex(tree), 5 + 0j)
+        self.assertEqual(bytes(tree), b"5")
+        self.assertEqual(str(tree), "5")
         self.assertTrue(bool(tree))
-        self.assertEqual(tree.value(), '5')
+        self.assertEqual(tree.value(), "5")
 
     def test_byte_converters(self):
-        tree = DerivationTree(Terminal(b'\x05'))
-        self.assertEqual(bytes(tree), b'\x05')
-        self.assertEqual(str(tree), '\x05')
+        tree = DerivationTree(Terminal(b"\x05"))
+        self.assertEqual(bytes(tree), b"\x05")
+        self.assertEqual(str(tree), "\x05")
         self.assertTrue(bool(tree))
-        self.assertEqual(tree.value(), b'\x05')
+        self.assertEqual(tree.value(), b"\x05")
 
     def test_bit_converters(self):
         tree = DerivationTree(Terminal(1))
         self.assertEqual(int(tree), 1)
         self.assertEqual(float(tree), 1.0)
-        self.assertEqual(complex(tree), 1+0j)
-        self.assertEqual(bytes(tree), b'\x01')
-        self.assertEqual(str(tree), '\x01')
+        self.assertEqual(complex(tree), 1 + 0j)
+        self.assertEqual(bytes(tree), b"\x01")
+        self.assertEqual(str(tree), "\x01")
         self.assertTrue(bool(tree))
         self.assertEqual(tree.value(), 1)
