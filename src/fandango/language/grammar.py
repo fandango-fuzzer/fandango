@@ -1530,7 +1530,8 @@ class Grammar(NodeVisitor):
             self,
             word: str,
             start: str | NonTerminal = "<start>",
-            mode: ParsingMode = ParsingMode.COMPLETE
+            mode: ParsingMode = ParsingMode.COMPLETE,
+            starter_bit = -1
         ):
             """
             Parse a forest of input trees from `word`.
@@ -1561,7 +1562,7 @@ class Grammar(NodeVisitor):
             k = 0
 
             # If >= 0, indicates the next bit to be scanned (7-0)
-            bit_count = -1
+            bit_count = starter_bit
             nr_bits_scanned = 0
 
             while k < len(table):
@@ -1651,8 +1652,13 @@ class Grammar(NodeVisitor):
             """
             Yield multiple parse alternatives, using a cache.
             """
+            starter_bit = -1
             if isinstance(word, DerivationTree):
-                word = word.value()  # type: ignore
+                if word.contains_bytes():
+                    starter_bit = (word.count_terminals() - 1) % 8
+                    word = word.to_bytes()
+                else:
+                    word = word.to_string()
             if isinstance(word, int):
                 word = str(word)
             assert isinstance(word, str) or isinstance(word, bytes)
@@ -1673,7 +1679,7 @@ class Grammar(NodeVisitor):
 
             self._incomplete = set()
             forest = []
-            for tree in self._parse_forest(word, start, mode=mode):
+            for tree in self._parse_forest(word, start, mode=mode, starter_bit=starter_bit):
                 tree = self.to_derivation_tree(tree)
                 forest.append(tree)
                 if not include_controlflow:

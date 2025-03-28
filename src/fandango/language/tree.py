@@ -60,6 +60,14 @@ class DerivationTree:
     def __len__(self):
         return len(self._children)
 
+    def count_terminals(self):
+        if self.symbol.is_terminal:
+            return 1
+        count = 0
+        for child in self._children:
+            count += child.count_terminals()
+        return count
+
     def size(self):
         return self._size
 
@@ -269,7 +277,7 @@ class DerivationTree:
             [],
             role=self.role,
             recipient=self.recipient,
-            generator_params=self.generator_params,
+            generator_params=[],
             read_only=self.read_only,
         )
         memo[id(self)] = copied
@@ -279,6 +287,7 @@ class DerivationTree:
 
         # Set the parent to None or update if necessary
         copied._parent = copy.deepcopy(self.parent, memo)
+        copied.generator_params = copy.deepcopy(self.generator_params, memo)
 
         return copied
 
