@@ -33,6 +33,7 @@ parts:
     chapters:
     - file: Reference
     - file: Installing
+    - file: Commands
     - file: Language
     - file: Stdlib
     - file: DerivationTree
