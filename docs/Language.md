@@ -13,6 +13,21 @@ kernelspec:
 (sec:language)=
 # Fandango Syntax and Semantics
 
+```{code-cell}
+import os
+
+cmd = """
+SOURCE="Language.md"
+TARGET="fandango.fan"
+(
+    echo 'Automatically generated from `'"$SOURCE"'`. Do not edit.'
+    sed -n '/^```python$/,/^```$/p' "$SOURCE" | grep -v '```'
+) > "$TARGET"
+"""
+print(cmd)
+os.system(cmd)
+```
+
 ## General Structure
 
 ```python
