@@ -1,14 +1,38 @@
-Automatically generated from `Language.md`. Do not edit.
+# Automatically generated from `Language.md`. Do not edit.
+
+
+# (sec:language)=
+# Fandango Syntax and Semantics
+
+
+## General Structure
+
 <start> ::= <fandango>
 <fandango> ::= <statement>*
 <statement> ::= <newline> | <production> | <constraint> | <comment> | <python>
+
+
+## Whitespace
+
 <newline> ::= (('\r'? '\n' | '\r' | '\f') ' '?) := '\n'
 <_> ::= r'[ \t]'* := ' '
+
+## Comments
+
 <comment> ::= <_>{2} '#' <_> r'[^\r\n\f]'* <newline>
+
+
+
+## Grammars
+
 <production> ::= (
     <nonterminal> <_> '::=' <_> <alternatives>
     (<_> ':=' <_> <python_expression>)?
     <comment>? <_> (';' | <newline>))
+
+
+## Nonterminals
+
 <nonterminal> ::= '<' <name> '>'
 <name> ::= <id_start> <id_continue>*
 <id_start> ::= <uppercase_letter> | '_'
@@ -19,9 +43,19 @@ Automatically generated from `Language.md`. Do not edit.
 <uppercase_letter> ::= r'[A-Z]'
 <lowercase_letter> ::= r'[a-z]'
 <digit> ::= r'[0-9]'
+
+## Alternatives
+
 <alternatives> ::= <concatenation> (<_> '|' <_> <concatenation>)*
+
+## Concatenations
+
 <concatenation> ::= <operator> (<_> <operator>)*
+
+## Symbols and Operators
+
 <operator> ::= <symbol> | <kleene> | <plus> | <option> | <repeat>
+
 <symbol> ::= (
       <nonterminal>
     | <string_literal>
@@ -30,36 +64,52 @@ Automatically generated from `Language.md`. Do not edit.
     | <generator_call>
     | '(' <alternatives> ')'
     )
+
 <kleene> ::= <symbol> '*'
 <plus>  ::= <symbol> '+'
 <option> ::= <symbol> '?'
 <repeat> ::= (
      <symbol> '{' <python_expression> '}'
    | <symbol> '{' <python_expression>? ',' <python_expression>? '}')
+
+
+## Strings
+
 <string_literal> ::= (
       r'[rR]'
     | r'[uU]'
     | r'[fF]'
     | r'[fF][rR]'
     | r'[rR][fF]')? ( <short_string> | <long_string>)
+
 <short_string> ::= (
       "'" (<string_escape_seq> | r"[^\\\r\n\f']")* "'"
     | '"' (<string_escape_seq> | r'[^\\\r\n\f"]')* '"')
+
 <string_escape_seq> ::= '\\' r'.' | '\\' <newline>
+
 <long_string> ::= (
       "'''" <long_string_item>* "'''"
     | '"""' <long_string_item>* '"""')
 <long_string_item> ::= <long_string_char> | <string_escape_seq>
 
 <long_string_char> ::= r'[^\\]'
+
+
+
+## Bytes
+
 <bytes_literal> ::= (
       r'[bB]'
     | r'[bB][rR]'
     | r'[rR][bB]') (<short_bytes> | <long_bytes>)
+
 <short_bytes> ::= (
       "'" (<short_bytes_char_no_single_quote> | <bytes_escape_seq>)* "'"
     | '"' ( <short_bytes_char_no_double_quote> | <bytes_escape_seq> )* '"')
+
 <bytes_escape_seq> ::= '\\' r'[\u0000-\u007F]'
+
 <short_bytes_char_no_single_quote> ::= (
       r'[\u0000-\u0009]'
     | r'[\u000B-\u000C]'
@@ -72,17 +122,25 @@ Automatically generated from `Language.md`. Do not edit.
     | r'[\u000E-\u0021]'
     | r'[\u0023-\u005B]'
     | r'[\u005D-\u007F]')
+
 <long_bytes> ::= (
       "'''" <long_bytes_item>* "'''"
     | '"""' <long_bytes_item>* '"""')
 <long_bytes_item> ::= <long_bytes_char> | <bytes_escape_seq>
 
 <long_bytes_char> ::= r'[\u0000-\u005B]' | r'[\u005D-\u007F]'
+
+
+## Numbers
+
 <number> ::= <integer> | <float_number> | <imag_number>
+
 <integer> ::= <decimal_integer> | <oct_integer> | <hex_integer> | <bin_integer>
+
 <decimal_integer> ::= <non_zero_digit> <digit>* | '0'+
 <non_zero_digit> ::= r'[1-9]'
 <digit> ::= r'[0-9]'
+
 <oct_integer> ::= '0' r'[oO]' <oct_digit>+
 <oct_digit> ::= r'[0-7]'
 
@@ -91,6 +149,7 @@ Automatically generated from `Language.md`. Do not edit.
 
 <bin_integer> ::= '0' r'[bB]' <bin_digit>+
 <bin_digit> ::= r'[01]'
+
 <float_number> ::= <point_float> | <exponent_float>
 <point_float> ::= <int_part>? <fraction> | <int_part> '.'
 <exponent_float> ::= ( <int_part> | <point_float> ) <exponent>
@@ -99,12 +158,23 @@ Automatically generated from `Language.md`. Do not edit.
 <exponent> ::= r'[eE]' r'[+-]'? <digit>+
 
 <imag_number> ::= (<float_number> | <int_part>) r'[jJ]'
+
+
+## Inline Generators
+
 <generator_call> ::= (<name>
     | <generator_call> '.' <name>
     | <generator_call> '[' <python_slices> ']'
     | <generator_call> <python_genexp>
     | <generator_call> '(' <python_arguments>? ')')
+
+## Constraints
+
 <constraint> ::= 'where ' <python_expression> <comment>? (';' | <newline>)
+
+
+## Python Code
+
 <python> ::= 'pass' <newline>
 <python_slices> ::= '0:1'
 <python_arguments> ::= '1'
