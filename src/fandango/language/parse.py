@@ -510,6 +510,7 @@ def parse(
 
 ### Consistency Checks
 
+
 def fail_on_role_in_generator(grammar):
     for nt, node in grammar.rules.items():
         if nt not in grammar.generators:
@@ -517,7 +518,8 @@ def fail_on_role_in_generator(grammar):
         found_node = is_role_reachable(grammar, node)
         if found_node is not None:
             raise ValueError(
-                f"{found_node} contains a role or recipient and is generated using the generator on {nt}. This is not allowed!")
+                f"{found_node} contains a role or recipient and is generated using the generator on {nt}. This is not allowed!"
+            )
 
     for nt in grammar.generators.keys():
         dependencies: set[NonTerminal] = grammar.generator_dependencies(nt)
@@ -525,7 +527,9 @@ def fail_on_role_in_generator(grammar):
             found_node = is_role_reachable(grammar, grammar[dep_nt])
             if found_node is not None:
                 raise ValueError(
-                    f"{found_node} contains a role or recipient and is a parameter for the generator of {nt}. This is not allowed!")
+                    f"{found_node} contains a role or recipient and is a parameter for the generator of {nt}. This is not allowed!"
+                )
+
 
 def is_role_reachable(grammar, node):
     seen_nt_nodes = set()
@@ -536,12 +540,13 @@ def is_role_reachable(grammar, node):
             return current_node
 
         seen_nt_nodes.add(current_node)
-        next_nts: list[NonTerminalNode] = NonTerminalFinder().visit(grammar[current_node.symbol])
+        next_nts: list[NonTerminalNode] = NonTerminalFinder().visit(
+            grammar[current_node.symbol]
+        )
         for next_nt in next_nts:
             if next_nt not in seen_nt_nodes:
                 nt_node_queue.add(next_nt)
     return None
-
 
 
 def init_fandango_agents(grammar: "Grammar"):

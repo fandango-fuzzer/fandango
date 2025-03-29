@@ -11,12 +11,12 @@ from fandango import FandangoValueError
 
 
 class RoledMessage:
-    def __init__(self, role: str, recipient: str|None, msg: "DerivationTree"):
+    def __init__(self, role: str, recipient: str | None, msg: "DerivationTree"):
         self.msg = msg
         self.role = role
         self.recipient = recipient
 
-    def convert_transmittable(self) -> bytes|str:
+    def convert_transmittable(self) -> bytes | str:
         if self.msg.contains_bytes():
             return self.msg.to_bytes()
         else:
@@ -161,16 +161,26 @@ class DerivationTree:
             subtrees.extend(child.find_role_msgs())
         return subtrees
 
-    def append(self, hookin_path: tuple[(NonTerminal, bool), ...], tree: "DerivationTree"):
+    def append(
+        self, hookin_path: tuple[(NonTerminal, bool), ...], tree: "DerivationTree"
+    ):
         if len(hookin_path) == 0:
             self.add_child(tree)
             return
         next_nt, add_new_node = hookin_path[0]
         if add_new_node:
             self.add_child(DerivationTree(next_nt))
-        elif (len(self.children) == 0 or
-              (not next_nt.symbol.startswith("<__") and str(self.children[-1].symbol) != next_nt.symbol) or
-              (next_nt.symbol.startswith("<__") and not str(self.children[-1].symbol).startswith(next_nt.symbol))):
+        elif (
+            len(self.children) == 0
+            or (
+                not next_nt.symbol.startswith("<__")
+                and str(self.children[-1].symbol) != next_nt.symbol
+            )
+            or (
+                next_nt.symbol.startswith("<__")
+                and not str(self.children[-1].symbol).startswith(next_nt.symbol)
+            )
+        ):
             raise ValueError("Invalid hookin_path!")
         self.children[-1].append(hookin_path[1:], tree)
 
@@ -574,7 +584,9 @@ class DerivationTree:
 
     def get_root(self, stop_at_argument_begin=False):
         root = self
-        while root.parent is not None and not (root in root.parent.generator_params and stop_at_argument_begin):
+        while root.parent is not None and not (
+            root in root.parent.generator_params and stop_at_argument_begin
+        ):
             root = root.parent
         return root
 
@@ -592,7 +604,9 @@ class DerivationTree:
     def replace(self, grammar: "Grammar", tree_to_replace, new_subtree):
         return self.replace_multiple(grammar, {tree_to_replace: new_subtree})
 
-    def replace_multiple(self, grammar: "Grammar", replacements: dict["DerivationTree", "DerivationTree"]):
+    def replace_multiple(
+        self, grammar: "Grammar", replacements: dict["DerivationTree", "DerivationTree"]
+    ):
         """
         Replace the subtree rooted at the given node with the new subtree.
         """

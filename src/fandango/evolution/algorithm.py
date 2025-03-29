@@ -198,16 +198,18 @@ class Fandango:
             individual = individual.replace_multiple(self.grammar, replacements)
         return individual
 
-    def log_message_transfer(self, sender: str, receiver: str|None, msg: str, self_is_sender: bool):
+    def log_message_transfer(
+        self, sender: str, receiver: str | None, msg: str, self_is_sender: bool
+    ):
         if receiver is None:
             if self_is_sender:
-                receiver = 'Unknown'
+                receiver = "Unknown"
             else:
-                receiver = 'Fandango'
+                receiver = "Fandango"
         if self_is_sender:
-            sender = '*' + sender
+            sender = "*" + sender
         else:
-            receiver = '*' + receiver
+            receiver = "*" + receiver
         print(f"({sender} -> {receiver}): {msg}")
 
     def _evolve_io(self) -> List[DerivationTree]:
@@ -231,11 +233,13 @@ class Fandango:
 
             selected_role = random.choice(list(forecast.getRoles()))
             if (
-                    io_instance.roles[selected_role].is_fandango()
-                    and not io_instance.received_msg()
+                io_instance.roles[selected_role].is_fandango()
+                and not io_instance.received_msg()
             ):
                 forecast_non_terminals = forecast[selected_role]
-                selected_symbol = random.choice(list(forecast_non_terminals.getNonTerminals()))
+                selected_symbol = random.choice(
+                    list(forecast_non_terminals.getNonTerminals())
+                )
                 forecast_packet = forecast_non_terminals[selected_symbol]
                 for path in forecast_packet.paths:
                     path.tree.set_all_read_only(True)
@@ -251,8 +255,8 @@ class Fandango:
                 self.population = new_population
                 self.evaluation = self.evaluator.evaluate_population(self.population)
                 self.fitness = (
-                        sum(fitness for _, fitness, _ in self.evaluation)
-                        / self.population_size
+                    sum(fitness for _, fitness, _ in self.evaluation)
+                    / self.population_size
                 )
 
                 evolve_result = self._evolve_single()
@@ -268,14 +272,16 @@ class Fandango:
                 new_packet = next_tree.find_role_msgs()[-1]
                 send_str = new_packet.convert_transmittable()
                 if (
-                        new_packet.recipient is None
-                        or not io_instance.roles[new_packet.recipient].is_fandango()
+                    new_packet.recipient is None
+                    or not io_instance.roles[new_packet.recipient].is_fandango()
                 ):
                     io_instance.set_transmit(
                         new_packet.role, new_packet.recipient, send_str
                     )
                     exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
-                    self.log_message_transfer(new_packet.role, new_packet.recipient, send_str, True)
+                    self.log_message_transfer(
+                        new_packet.role, new_packet.recipient, send_str, True
+                    )
                 hookin_option = next(iter(forecast_packet.paths))
                 history_tree = hookin_option.tree
                 history_tree.append(hookin_option.path[1:], new_packet.msg)
@@ -285,8 +291,15 @@ class Fandango:
                 forecast, packet_tree = self._parse_next_remote_packet(
                     forecast, io_instance
                 )
-                received_packet = RoledMessage(packet_tree.role, packet_tree.recipient, packet_tree)
-                self.log_message_transfer(packet_tree.role, packet_tree.recipient, received_packet.convert_transmittable(), False)
+                received_packet = RoledMessage(
+                    packet_tree.role, packet_tree.recipient, packet_tree
+                )
+                self.log_message_transfer(
+                    packet_tree.role,
+                    packet_tree.recipient,
+                    received_packet.convert_transmittable(),
+                    False,
+                )
 
                 hookin_option = next(iter(forecast.paths))
                 history_tree = hookin_option.tree
@@ -296,7 +309,6 @@ class Fandango:
                     raise RuntimeError("Remote response doesn't match constraints!")
                 self.solution.clear()
             history_tree.set_all_read_only(True)
-
 
     def evolve(self) -> List[DerivationTree]:
         if self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
@@ -490,7 +502,9 @@ class Fandango:
         failed_parameter_parsing = False
 
         while not is_msg_complete:
-            for idx, (role, recipient, msg_fragment) in enumerate(remote_msgs[next_fragment_idx:]):
+            for idx, (role, recipient, msg_fragment) in enumerate(
+                remote_msgs[next_fragment_idx:]
+            ):
                 next_fragment_idx = idx + 1
 
                 if msg_role != role:
@@ -505,7 +519,9 @@ class Fandango:
                 forecast_packet = None
                 for non_terminal in set(available_non_terminals):
                     forecast_packet = forecast_non_terminals[non_terminal]
-                    parsed_packet_tree = self.grammar.parse(complete_msg, forecast_packet.node.symbol)
+                    parsed_packet_tree = self.grammar.parse(
+                        complete_msg, forecast_packet.node.symbol
+                    )
 
                     if parsed_packet_tree is not None:
                         parsed_packet_tree.role = forecast_packet.node.role
@@ -516,8 +532,11 @@ class Fandango:
                         except GeneratorParserValueError as e:
                             parsed_packet_tree = None
                             failed_parameter_parsing = True
-                    incomplete_tree = self.grammar.parse(complete_msg, forecast_packet.node.symbol,
-                                                         mode=Grammar.Parser.ParsingMode.INCOMPLETE)
+                    incomplete_tree = self.grammar.parse(
+                        complete_msg,
+                        forecast_packet.node.symbol,
+                        mode=Grammar.Parser.ParsingMode.INCOMPLETE,
+                    )
                     if incomplete_tree is None:
                         available_non_terminals.remove(non_terminal)
 
@@ -535,14 +554,20 @@ class Fandango:
                 elapsed_rounds += 1
                 if elapsed_rounds >= max_rounds:
                     if failed_parameter_parsing:
-                        applicable_nt = list(map(lambda x: str(x.symbol), available_non_terminals))
+                        applicable_nt = list(
+                            map(lambda x: str(x.symbol), available_non_terminals)
+                        )
                         if len(applicable_nt) == 0:
                             applicable_nt = "None"
                         else:
-                            applicable_nt = ', '.join(applicable_nt)
-                        raise FandangoFailedError(f"Couldn't derive parameters for received packet or timed out while waiting for remaining packet. Applicable NT: {applicable_nt} Received part: {complete_msg}")
+                            applicable_nt = ", ".join(applicable_nt)
+                        raise FandangoFailedError(
+                            f"Couldn't derive parameters for received packet or timed out while waiting for remaining packet. Applicable NT: {applicable_nt} Received part: {complete_msg}"
+                        )
                     else:
-                        raise FandangoFailedError(f"Incomplete packet received. Timed out while waiting for packet. Received part: {complete_msg}")
+                        raise FandangoFailedError(
+                            f"Incomplete packet received. Timed out while waiting for packet. Received part: {complete_msg}"
+                        )
                 time.sleep(0.25)
 
     def select_elites(self) -> List[DerivationTree]:
