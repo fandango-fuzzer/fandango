@@ -1,10 +1,27 @@
 from copy import deepcopy
 from typing import List, Set, Tuple, Optional
 
-from fandango.language.grammar import Grammar, NodeVisitor, NonTerminalNode, TerminalNode, ParseState, Column, Node, \
-    Concatenation, Alternative, Repetition, Option, Plus, Star, CharSet, GrammarKeyError, NodeType
+from fandango.language.grammar import (
+    Grammar,
+    NodeVisitor,
+    NonTerminalNode,
+    TerminalNode,
+    ParseState,
+    Column,
+    Node,
+    Concatenation,
+    Alternative,
+    Repetition,
+    Option,
+    Plus,
+    Star,
+    CharSet,
+    GrammarKeyError,
+    NodeType,
+)
 from fandango.language.symbol import Terminal, NonTerminal
 from fandango.language.tree import DerivationTree
+
 
 class PathFinder(NodeVisitor):
 
@@ -58,7 +75,9 @@ class PathFinder(NodeVisitor):
         cf_nt = (NonTerminal(expected_nt_prefix), True)
         if tree is not None:
             if len(tree) != 1:
-                raise GrammarKeyError("Expected len(tree) == 1 for controlflow entries!")
+                raise GrammarKeyError(
+                    "Expected len(tree) == 1 for controlflow entries!"
+                )
             if not str(tree[0].symbol).startswith(expected_nt_prefix):
                 raise GrammarKeyError("Symbol mismatch!")
             cf_nt = (NonTerminal(str(tree[0].symbol)), False)
@@ -144,7 +163,6 @@ class PathFinder(NodeVisitor):
         self.visitRepetitionType(node)
         self.on_leave_controlflow()
 
-
     def visitRepetitionType(self, node: Repetition):
         tree = self.current_tree[-1]
         continue_exploring = True
@@ -184,7 +202,9 @@ class PathFinder(NodeVisitor):
 
 class PacketForecaster:
     class MountingPath:
-        def __init__(self, tree: DerivationTree, path: Tuple[Tuple[NonTerminal, bool], ...]):
+        def __init__(
+            self, tree: DerivationTree, path: Tuple[Tuple[NonTerminal, bool], ...]
+        ):
             self.tree = tree
             self.path = path
 
@@ -280,7 +300,9 @@ class PacketForecaster:
             return Alternative(self.visitChildren(node))
 
         def visitRepetition(self, node: Repetition):
-            return Repetition(self.visit(node.node), node.expr_data_min, node.expr_data_max)
+            return Repetition(
+                self.visit(node.node), node.expr_data_min, node.expr_data_max
+            )
 
         def visitOption(self, node: Option):
             return Option(self.visit(node))
@@ -317,18 +339,21 @@ class PacketForecaster:
         ) -> DerivationTree:
             i_tree = super().construct_incomplete_tree(state, table)
             i_cpy = deepcopy(i_tree)
-            for i_msg, r_msg in zip(i_cpy.find_role_msgs(), self.reference_tree.find_role_msgs()):
+            for i_msg, r_msg in zip(
+                i_cpy.find_role_msgs(), self.reference_tree.find_role_msgs()
+            ):
                 i_msg.msg.set_children(r_msg.msg.children)
                 i_msg.msg.generator_params = r_msg.msg.generator_params
-                i_msg.msg.symbol = NonTerminal('<' + str(r_msg.msg.symbol)[1:])
+                i_msg.msg.symbol = NonTerminal("<" + str(r_msg.msg.symbol)[1:])
             return i_cpy
-
 
     def __init__(self, grammar: Grammar):
         g_globals, g_locals = grammar.get_python_env()
         reduced = PacketForecaster.GrammarReducer().process(grammar)
         self.grammar = grammar
-        self.reduced_grammar = Grammar(reduced, grammar.fuzzing_mode, g_locals, g_globals)
+        self.reduced_grammar = Grammar(
+            reduced, grammar.fuzzing_mode, g_locals, g_globals
+        )
         self._parser = PacketForecaster.Parser(self.reduced_grammar)
 
     def predict(self, tree: DerivationTree):
@@ -343,15 +368,27 @@ class PacketForecaster:
             options = options.merge(finder.find())
         else:
             self._parser.reference_tree = tree
-            for suggested_tree in self._parser.parse_multiple(history_nts, NonTerminal("<start>"),
-                               Grammar.Parser.ParsingMode.INCOMPLETE, True):
-                for orig_r_msg, r_msg in zip(tree.find_role_msgs(), suggested_tree.find_role_msgs()):
-                    if (str(r_msg.msg.symbol)[9:] == str(orig_r_msg.msg.symbol)[1:]
-                            and r_msg.role == orig_r_msg.role
-                            and r_msg.recipient == orig_r_msg.recipient):
+            for suggested_tree in self._parser.parse_multiple(
+                history_nts,
+                NonTerminal("<start>"),
+                Grammar.Parser.ParsingMode.INCOMPLETE,
+                True,
+            ):
+                for orig_r_msg, r_msg in zip(
+                    tree.find_role_msgs(), suggested_tree.find_role_msgs()
+                ):
+                    if (
+                        str(r_msg.msg.symbol)[9:] == str(orig_r_msg.msg.symbol)[1:]
+                        and r_msg.role == orig_r_msg.role
+                        and r_msg.recipient == orig_r_msg.recipient
+                    ):
                         r_msg.msg.set_children(deepcopy(orig_r_msg.msg.children))
-                        r_msg.msg.generator_params = deepcopy(orig_r_msg.msg.generator_params)
-                        r_msg.msg.symbol = NonTerminal('<' + str(orig_r_msg.msg.symbol)[1:])
+                        r_msg.msg.generator_params = deepcopy(
+                            orig_r_msg.msg.generator_params
+                        )
+                        r_msg.msg.symbol = NonTerminal(
+                            "<" + str(orig_r_msg.msg.symbol)[1:]
+                        )
                     else:
                         break
                 else:

@@ -31,9 +31,9 @@ class FandangoAgent(object):
     """
     Call if a message has been received by this party.
     """
+
     def receive_msg(self, sender: str, message: str) -> None:
         FandangoIO.instance().add_receive(sender, self.class_name, message)
-
 
 
 class STDOUT(FandangoAgent):

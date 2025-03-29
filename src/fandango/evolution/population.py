@@ -19,7 +19,7 @@ class PopulationManager:
         self.start_symbol = start_symbol
         self.population_size = population_size
         self.warnings_are_errors = warnings_are_errors
-        self.io_next_packet: PacketForecaster.ForcastingPacket|None = None
+        self.io_next_packet: PacketForecaster.ForcastingPacket | None = None
 
     def _generate_population_entry(self):
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
