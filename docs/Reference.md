@@ -16,6 +16,7 @@ kernelspec:
 This manual contains reference information about Fandango:
 
 * [Installing Fandango](sec:installing)
+* [Fandango command reference](sec:commands)
 * [The _syntax_ and _semantics_ of Fandango specifications](sec:language)
 * [The Fandango standard library](sec:stdlib)
 * [The Derivation Tree reference](sec:derivation-tree)
