@@ -13,53 +13,23 @@ kernelspec:
 (sec:language)=
 # Fandango Syntax and Semantics
 
-```{code-cell}
-:tags: ["remove-input"]
-# Create fandango.fan file from this input file
-SOURCE = 'Language.md'
-TARGET = 'fandango.fan'
-
-with open(TARGET, 'w') as target:
-    target.write(f'# Automatically generated from `{SOURCE}`. Do not edit.\n\n')
-
-    code = False
-    ignore = False
-    for line in open(SOURCE).readlines():
-        # print(f'code={code}, ignore={ignore}, {line!r}')
-        if line.startswith('```{code-cell}'):
-            ignore = True
-        elif line.startswith('---'):
-            ignore = not ignore
-        elif line.startswith('```'):
-            if not ignore:
-                code = not code
-            ignore = False
-        elif ignore:
-            pass
-        elif code or line.startswith('#') or line == '\n':
-            target.write(f'{line}')
-        else:
-            target.write(f'# {line}')
-```
-
 This chapter specifies the exact syntax (and semantics) of Fandango specifications (`.fan` files).
 
 (sec:fan)=
 ## General Structure
 
 We specify the Fandango syntax in form of a Fandango specification.
-The file [`fandango.fan`](fandango.fan) is available for reference.
 
 A `.fan` Fandango specification file consists of
 
 * [_grammar productions_](sec:grammar) (`<production>`)
 * [_constraints_](sec:constraint) (`<constraint>`)
-* [_python code_](sec:code) (`<python>`).
+* [_Python code_](sec:code) (`<python_code>`).
 
 ```python
 <start> ::= <fandango>
 <fandango> ::= <statement>*
-<statement> ::= <production> | <constraint> | <python> | <newline> | <comment>
+<statement> ::= <production> | <constraint> | <python_code> | <newline> | <comment>
 ```
 
 
@@ -68,14 +38,14 @@ A `.fan` Fandango specification file consists of
 
 Besides grammar productions, constraints, and code, a `.fan` file can contain _newlines_ (`<newline>`) and _whitespace_ (`<_>`).
 
-```python
-<newline> ::= (('\r'? '\n' | '\r' | '\f') ' '?) := '\n'
-<_> ::= r'[ \t]'* := ' '
-```
-
 :::{margin}
 The _generators_ (`:= '\n'` and `:= ' '`) specify useful default values when fuzzing.
 :::
+
+```python
+<newline> ::= ('\r'? '\n' | '\r' | '\f') := '\n'
+<_> ::= r'[ \t]*' := ' '
+```
 
 (sec:lines)=
 ## Physical and Logical Lines
@@ -113,29 +83,24 @@ Productions end with a newline or a `;` character.
 ```python
 <production> ::= (
     <nonterminal> <_> '::=' <_> <alternatives> 
-    <generator>? <comment>? <_> (';' | <newline>))
+    <generator>? <comment>? (';' | <newline>))
 ```
 
 (sec:nonterminal)=
 ## Nonterminals
 
-A _nonterminal_ is a Python identifier enclosed in `<>`.
+A _nonterminal_ is a Python identifier enclosed in angle brackets `<...>`.
+It starts with a letter (regular expression `\w`) or an underscore (`_`), followed by more letters, digits (regular expression `\d`), or underscores.
 
 ```python
 <nonterminal> ::= '<' <name> '>'
-<name> ::= <id_start> <id_continue>*
-<id_start> ::= <uppercase_letter> | '_'
-<id_continue> ::= (<uppercase_letter>
-    | <lowercase_letter>
-    | <digit>
-    | '_')
-<uppercase_letter> ::= r'[A-Z]'
-<lowercase_letter> ::= r'[a-z]'
-<digit> ::= r'[0-9]'
+<name> ::= r'(\w|_)(\w|\d|_)*'
 ```
 
+Like Python, Fandango allows all Unicode letters and digits in identifiers.
+
 :::{note}
-The actual implementation uses the Python rules for identifiers, which allow other upper- and lowercase letters besides ASCII. We recommend to use only ASCII letters.
+For portability, we recommend to use only ASCII letters `a`..`z`, `A`..`Z`, digits `0`..`9`, and underscores `_` in identifiers.
 :::
 
 
@@ -192,10 +157,10 @@ Both `N` and `M` can be omitted:
 * If `N` is omitted, it defaults to zero.
 * If `M` is omitted, it defaults to infinity (i.e, any number of repetitions).
 
-```{tip}
+:::{tip}
 In Fandango, the number of repetitions is limited.
 Use the `--max-repetitions M` flag to change the limit.
-```
+:::
 
 Fandango supports a number of abbreviations for repetitions:
 
@@ -220,7 +185,7 @@ Fandango supports a number of abbreviations for repetitions:
 Fandango supports the full [Python syntax for string literals](https://docs.python.org/3/reference/lexical_analysis.html#string-and-bytes-literals):
 
 * Short strings are enclosed in single (`'...'`) or double (`"..."`) quotes
-* Long strings are enclosed in triple quotes (`'''...'''`)
+* Long strings are enclosed in triple quotes (`'''...'''` and `"""..."""`)
 * One can use [escape sequences](https://docs.python.org/3/reference/lexical_analysis.html#escape-sequences) (`\n`) to express special characters
 
 Fandango interprets Python _raw strings_ (using an `r` prefix, as in `r'foo'`) as _regular expressions_.
@@ -249,8 +214,8 @@ During parsing, these are matched against the input; during fuzzing, they are in
 <long_string> ::= (
       "'''" <long_string_item>* "'''"
     | '"""' <long_string_item>* '"""')
-<long_string_item> ::= <long_string_char> | <string_escape_seq>
 
+<long_string_item> ::= <long_string_char> | <string_escape_seq>
 <long_string_char> ::= r'[^\\]'
 ```
 
@@ -288,6 +253,7 @@ Byte literals (a string prefixed with `b`) are interpreted as in Python; the [ru
     | r'[\u000E-\u0026]'
     | r'[\u0028-\u005B]'
     | r'[\u005D-\u007F]')
+
 <short_bytes_char_no_double_quote> ::= (
       r'[\u0000-\u0009]'
     | r'[\u000B-\u000C]'
@@ -300,8 +266,8 @@ Byte literals (a string prefixed with `b`) are interpreted as in Python; the [ru
 <long_bytes> ::= (
       "'''" <long_bytes_item>* "'''"
     | '"""' <long_bytes_item>* '"""')
-<long_bytes_item> ::= <long_bytes_char> | <bytes_escape_seq>
 
+<long_bytes_item> ::= <long_bytes_char> | <bytes_escape_seq>
 <long_bytes_char> ::= r'[\u0000-\u005B]' | r'[\u005D-\u007F]'
 ```
 
@@ -377,7 +343,8 @@ It is introduced by the keyword `where`.
 
 Constraints typically contain [_symbols_](sec:selector) (`<...>`); these are allowed wherever values are allowed.
 The constraint has to hold for all values of the given symbols.
-Symbols in constraints have a type of `DerivationTree`; see the [Derivation Tree Reference](sec:derivation-tree) for details.
+
+Symbols in constraints have a `DerivationTree` type; see the [Derivation Tree Reference](sec:derivation-tree) for details.
 
 ```python
 <constraint> ::= 'where' <_> <python_expression> <comment>? (';' | <newline>)
@@ -403,7 +370,7 @@ For details, see [the section on derivation trees](sec:derivation-tree).
 The `[...]` operator allows accessing individual children of a derivation tree:
 
 ```python
-<selection> ::= <base_selection> | <base_selection> '[' <rs_slices> ']'
+<selection> ::= <base_selection> | <base_selection> '[' <python_slices> ']'
 ```
 
 These operators can be combined and parenthesized:
@@ -418,12 +385,79 @@ These operators can be combined and parenthesized:
 In a `.fan` file, anything that is neither a [grammar production rule](sec:grammar) nor a [constraint](sec:constraint) is interpreted as Python code.
 For details on Python syntax and semantics, consult the [Python language reference](https://docs.python.org/3/reference/index.html)
 
-The following definitions are here to complete the grammar.
+Let us define the following Python elements to complete the grammar.
 
 ```python
-<python> ::= 'pass' <newline>
+<python_code> ::= 'pass' <newline>
 <python_slices> ::= '0:1'
 <python_arguments> ::= '1'
 <python_expression> ::= '1' | <selector>
-<python_genexp> ::= '[for' <name> 'in' <name> ':' <python_expression> ']'
+<python_genexp> ::= '[for' <_> <name> <_> 'in' <_> <name> ':' <_> <python_expression> ']'
 ```
+
+
+## The Full Spec
+
+```{code-cell}
+:tags: ["remove-input"]
+# Create fandango.fan file from this input file
+SOURCE = 'Language.md'
+TARGET = 'fandango.fan'
+
+with open(TARGET, 'w') as target:
+    target.write(f'# Automatically generated from `{SOURCE}`. Do not edit.\n\n')
+
+    code = False
+    ignore = False
+    for line in open(SOURCE).readlines():
+        # print(f'code={code}, ignore={ignore}, {line!r}')
+        if line.startswith('---'):
+            ignore = not ignore
+        elif line.startswith('```{code-cell}'):
+            ignore = True
+        elif line.startswith('```shell'):
+            pass
+        elif line.startswith('```python'):
+            code = True
+        elif line.startswith('(sec:'):
+            pass
+        elif line.startswith('```'):
+            if not ignore:
+                code = False
+            ignore = False
+        elif ignore:
+            pass
+        elif code or line.startswith('#') or line == '\n':
+            target.write(f'{line}') 
+        else:
+            target.write(f'# {line}')
+```
+
+You can access the above spec [`fandango.fan`](fandango.fan) for reference.
+
+`fandango.fan` is sufficient for parsing `.fan` input without Python expressions:
+
+```shell
+$ echo '<start> ::= "a" | "b" | "c"' | fandango parse -f fandango.fan -o -
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!echo '<start> ::= "a" | "b" | "c"' | fandango parse -f fandango.fan -o -
+```
+
+Of course, it is also possible to produce Fandango specs using `fandango.fan`:
+
+```shell
+$ fandango fuzz -f fandango.fan -n 1
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f fandango.fan --random-seed 6 -n 1
+```
+
+% FIXME: Implement this
+Note that this input satisfies the Fandango syntax, but not its _semantics_; one would have to add extra constraints such that all used nonterminals are defined.
+
+Still, Fandango can be fuzzed with itself :-)
