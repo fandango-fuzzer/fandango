@@ -1157,7 +1157,7 @@ class Grammar(NodeVisitor):
             return [[(intermediate_nt, frozenset())]]
 
         def visitOption(self, node: Option):
-            result = [[(Terminal(""), frozenset())]] + self.visit(node.node)
+            result = [[]] + self.visit(node.node)
             intermediate_nt = NonTerminal(f"<__{NodeType.OPTION}:{self.option_count}>")
             self.set_rule(intermediate_nt, result)
             self.option_count += 1
@@ -1381,10 +1381,9 @@ class Grammar(NodeVisitor):
             # LOGGER.debug(f"Matched byte(s) {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w + match_length]!r}")
             next_state = state.next()
             tree = Grammar.ParserDerivationTree(Terminal(word[w : w + match_length]))
-            if match_length != 0:
-                next_state.children.append(
-                    tree
-                )
+            next_state.children.append(
+                tree
+            )
             table[k + match_length].add(next_state)
             # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
             self._max_position = max(self._max_position, w + match_length)
