@@ -50,47 +50,41 @@ stdlib += any_char
 
 
 stdlib += make_header("Printable characters")
-# printable = make_def("printable", string.printable)
 printable = make_rule(
     "printable",
     [
         "r'[0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\\x22#$%&\\x27()*+,-./:;<=>?@[\\]^_`{|}~ \\t\\n\\r\\x0b\\x0c]'"
     ],
 )
-
-# printable += make_def("whitespace", string.whitespace)
 printable += make_rule("whitespace", [r"r'[ \t\n\r\x0b\x0c]'"])
-
-# printable += make_def("digit", string.digits)
 printable += make_rule("digit", ["r'[0-9]'"])
-
-# printable += make_def("hexdigit", string.hexdigits)
 printable += make_rule("hexdigit", ["r'[0-9a-fA-F]'"])
-
-# printable += make_def("octdigit", string.octdigits)
 printable += make_rule("octdigit", ["r'[0-7]'"])
-
-# printable += make_def("ascii_letter", string.ascii_letters)
 printable += make_rule("ascii_letter", ["r'[a-zA-Z]'"])
-
-# printable += make_def("ascii_lowercase_letter", string.ascii_lowercase)
 printable += make_rule("ascii_lowercase_letter", ["r'[a-z]'"])
-
-# printable += make_def("ascii_uppercase_letter", string.ascii_uppercase)
 printable += make_rule("ascii_uppercase_letter", ["r'[A-Z]'"])
-
-# printable += make_def("punctuation", string.punctuation)
 printable += make_rule(
     "punctuation", ["r'[!\\x22#$%&\\x27()*+,-./:;<=>?@[\\]^_`{|}~]'"]
 )
-
-# printable += make_def("alphanum", string.ascii_letters + string.digits)
 printable += make_rule("alphanum", ["r'[a-zA-Z0-9]'"])
-
-# printable += make_def("alphanum_", string.ascii_letters + string.digits + "_")
 printable += make_rule("alphanum", ["r'[a-zA-Z0-9_]'"])
 
 stdlib += printable
+
+
+stdlib += make_header("Unicode characters")
+unicode = ''
+
+unicode += make_rule("any_letter", ["r'\\w'"])
+unicode += make_rule("any_digit", ["r'\\d'"]) 
+unicode += make_rule("any_whitespace", ["r'\\s'"]) 
+
+unicode += make_rule("any_non_letter", ["r'\\W'"])
+unicode += make_rule("any_non_digit", ["r'\\D'"]) 
+unicode += make_rule("any_non_whitespace", ["r'\\S'"]) 
+
+stdlib += unicode
+
 
 stdlib += make_header("ASCII characters")
 ascii_char = make_rule("ascii_char", ["rb'[\\x00-\\x7f]'"])
