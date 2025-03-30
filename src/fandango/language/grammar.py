@@ -1338,10 +1338,6 @@ class Grammar(NodeVisitor):
             )
             if state in table[k]:
                 table[k].replace(state, new_state)
-            for nonterminal in self._implicit_rules:
-                self._implicit_rules[nonterminal] = {
-                    tuple(a) for a in self._implicit_rules[nonterminal]
-                }
             self.predict(new_state, table, k)
 
         def scan_bit(
