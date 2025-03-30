@@ -287,7 +287,7 @@ class Fandango:
                 history_tree.append(hookin_option.path[1:], new_packet.msg)
             else:
                 while not io_instance.received_msg():
-                    time.sleep(0.25)
+                    time.sleep(0.025)
                 forecast, packet_tree = self._parse_next_remote_packet(
                     forecast, io_instance
                 )
@@ -498,7 +498,7 @@ class Fandango:
         next_fragment_idx = 0
 
         elapsed_rounds = 0
-        max_rounds = 0.25 * 20
+        max_rounds = 0.025 * 200
         failed_parameter_parsing = False
 
         while not is_msg_complete:
@@ -568,7 +568,7 @@ class Fandango:
                         raise FandangoFailedError(
                             f"Incomplete packet received. Timed out while waiting for packet. Received part: {complete_msg}"
                         )
-                time.sleep(0.25)
+                time.sleep(0.025)
 
     def select_elites(self) -> List[DerivationTree]:
         return [
