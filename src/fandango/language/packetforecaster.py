@@ -382,12 +382,13 @@ class PacketForecaster:
                         and r_msg.role == orig_r_msg.role
                         and r_msg.recipient == orig_r_msg.recipient
                     ):
-                        r_msg.msg.set_children(deepcopy(orig_r_msg.msg.children))
+                        cpy = orig_r_msg.msg.__deepcopy__(None, copy_parent=False)
+                        r_msg.msg.set_children(cpy.children)
                         r_msg.msg.generator_params = deepcopy(
-                            orig_r_msg.msg.generator_params
+                            cpy.generator_params
                         )
                         r_msg.msg.symbol = NonTerminal(
-                            "<" + str(orig_r_msg.msg.symbol)[1:]
+                            "<" + str(cpy.symbol)[1:]
                         )
                     else:
                         break
