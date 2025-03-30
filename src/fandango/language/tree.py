@@ -283,7 +283,9 @@ class DerivationTree:
             symbol, [DerivationTree.from_tree(child) for child in children]
         )
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo, copy_children=True, copy_params=True, copy_parent=True):
+        if memo is None:
+            memo = {}
         if id(self) in memo:
             return memo[id(self)]
 
@@ -299,11 +301,14 @@ class DerivationTree:
         memo[id(self)] = copied
 
         # Deepcopy the children
-        copied.set_children([copy.deepcopy(child, memo) for child in self._children])
+        if copy_children:
+            copied.set_children([copy.deepcopy(child, memo) for child in self._children])
 
         # Set the parent to None or update if necessary
-        copied._parent = copy.deepcopy(self.parent, memo)
-        copied.generator_params = copy.deepcopy(self.generator_params, memo)
+        if copy_parent:
+            copied._parent = copy.deepcopy(self.parent, memo)
+        if copy_params:
+            copied.generator_params = copy.deepcopy(self.generator_params, memo)
 
         return copied
 
@@ -611,7 +616,7 @@ class DerivationTree:
         Replace the subtree rooted at the given node with the new subtree.
         """
         if self in replacements and not self.read_only:
-            new_subtree = deepcopy(replacements[self])
+            new_subtree = replacements[self].__deepcopy__(None, True, False, False)
             new_subtree._parent = self.parent
             grammar.populate_generator_params(new_subtree)
             return new_subtree
