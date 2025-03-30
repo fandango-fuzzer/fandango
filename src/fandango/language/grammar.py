@@ -2,6 +2,7 @@ import abc
 import copy
 import enum
 import random
+import time
 import typing
 from collections import defaultdict
 
@@ -1021,18 +1022,23 @@ class Grammar(NodeVisitor):
             self._context_rules: dict[
                 NonTerminal, tuple[Node, tuple[NonTerminal, frozenset]]
             ] = dict()
+            self._tmp_rules = dict()
             self.alternative_count = 0
             self.concatenation_count = 0
             self.repetition_count = 0
             self.star_count = 0
             self.plus_count = 0
             self.option_count = 0
-            self._process()
+            self.processing_time = 0
             self._cache: Dict[Tuple[str, NonTerminal], DerivationTree, bool] = {}
             self._incomplete = set()
             self._max_position = -1
+            self.elapsed_time = 0
+            self.search_time = 0
+            self._process()
 
         def _process(self):
+            time_start = time.time()
             self._rules.clear()
             self._implicit_rules.clear()
             self._context_rules.clear()
@@ -1049,9 +1055,13 @@ class Grammar(NodeVisitor):
                 self._implicit_rules[nonterminal] = {
                     tuple(a) for a in self._implicit_rules[nonterminal]
                 }
+            time_took = time.time() - time_start
+            time_took *= 1000
+            self.processing_time += time_took
+            print(f'Parser processing: {time_took:.2f}ms/{self.processing_time:.2f}ms')
 
         def set_implicit_rule(
-            self, rule: List[List[NonTerminal]]
+            self, rule: List[List[tuple[NonTerminal, frozenset]]]
         ) -> tuple[NonTerminal, frozenset]:
             nonterminal = NonTerminal(f"<*{len(self._implicit_rules)}*>")
             self._implicit_rules[nonterminal] = rule
@@ -1070,6 +1080,16 @@ class Grammar(NodeVisitor):
             nonterminal = NonTerminal(f"<*ctx_{len(self._context_rules)}*>")
             self._context_rules[nonterminal] = (node, non_terminal)
             return nonterminal
+
+        def set_tmp_rule(self, rule: List[List[tuple[NonTerminal, frozenset]]], nonterminal: Optional[NonTerminal] = None):
+            if nonterminal is None:
+                nonterminal = NonTerminal(f"<*tmp_{len(self._tmp_rules)}*>")
+            rule_id = nonterminal.symbol[2:-2]
+            self._tmp_rules[nonterminal] = {tuple(a) for a in rule}
+            return (nonterminal, frozenset()), rule_id
+
+        def _clear_tmp(self):
+            self._tmp_rules.clear()
 
         def default_result(self):
             return []
@@ -1109,11 +1129,12 @@ class Grammar(NodeVisitor):
             nt: tuple[NonTerminal, frozenset] = None,
             tree: DerivationTree = None,
         ):
+            is_context = len(node.get_access_points()) != 0
             if nt is None:
                 alternatives = self.visit(node.node)
                 nt = self.set_implicit_rule(alternatives)
 
-                if len(node.get_access_points()) != 0:
+                if is_context:
                     i_nt = self.set_context_rule(node, nt)
                     return [[(i_nt, frozenset())]]
 
@@ -1124,16 +1145,26 @@ class Grammar(NodeVisitor):
                 alts = [[nt]]
                 if prev is not None:
                     alts.append([nt, prev])
-                prev = self.set_implicit_rule(alts)
+                if is_context:
+                    prev = self.set_tmp_rule(alts)
+                else:
+                    prev = self.set_implicit_rule(alts)
             alts = [node_min * [nt]]
             if prev is not None:
                 alts.append(node_min * [nt] + [prev])
-            min_nt = self.set_implicit_rule(alts)
-            intermediate_nt = NonTerminal(
-                f"<__{NodeType.REPETITION}:{self.repetition_count}>"
-            )
-            self.set_rule(intermediate_nt, [[min_nt]])
-            self.repetition_count += 1
+            if is_context:
+                min_nt, rule_id = self.set_tmp_rule(alts)
+                intermediate_nt = NonTerminal(
+                    f"<__{NodeType.REPETITION}:{rule_id}>"
+                )
+                self.set_tmp_rule([[min_nt]], intermediate_nt)
+            else:
+                min_nt = self.set_implicit_rule(alts)
+                intermediate_nt = NonTerminal(
+                    f"<__{NodeType.REPETITION}:{self.repetition_count}>"
+                )
+                self.set_rule(intermediate_nt, [[min_nt]])
+                self.repetition_count += 1
             return [[(intermediate_nt, frozenset())]]
 
         def visitStar(self, node: Star):
@@ -1226,6 +1257,13 @@ class Grammar(NodeVisitor):
                         for rule in self._implicit_rules[state.dot]
                     }
                 )
+            elif state.dot in self._tmp_rules:
+                table[k].update(
+                    {
+                        ParseState(state.dot, k, rule, 0)
+                        for rule in self._tmp_rules[state.dot]
+                    }
+                )
             elif state.dot in self._context_rules:
                 node, nt = self._context_rules[state.dot]
                 self.predict_ctx_rule(state, table, k, node, nt)
@@ -1268,6 +1306,7 @@ class Grammar(NodeVisitor):
             node: Node,
             nt_rule,
         ):
+            start_time = time.time()
             if not isinstance(node, Repetition):
                 raise FandangoValueError("Node needs to be a Repetition")
             tree = self.construct_incomplete_tree(state, table)
@@ -1275,6 +1314,7 @@ class Grammar(NodeVisitor):
             try:
                 [[context_nt]] = self.visitRepetition(node, nt_rule, tree)
             except ValueError:
+                self.search_time += time.time() - start_time
                 return
             new_symbols = []
             for symbol, dot_params in state.symbols:
@@ -1297,6 +1337,7 @@ class Grammar(NodeVisitor):
                 self._implicit_rules[nonterminal] = {
                     tuple(a) for a in self._implicit_rules[nonterminal]
                 }
+            self.search_time += (time.time() - start_time) * 1000
             self.predict(state, table, k)
 
         def scan_bit(
@@ -1554,6 +1595,7 @@ class Grammar(NodeVisitor):
             """
             if isinstance(start, str):
                 start = NonTerminal(start)
+            self._clear_tmp()
 
             # LOGGER.debug(f"Parsing {word} into {start!s}")
 
@@ -1562,7 +1604,7 @@ class Grammar(NodeVisitor):
                 Column() for _ in range(len(word) + 1)
             ]
             implicit_start = NonTerminal("<*start*>")
-            self._process()
+            time_start = time.time()
             table[0].add(ParseState(implicit_start, 0, ((start, frozenset()),)))
 
             # Save the maximum scan position, so we can report errors
@@ -1593,6 +1635,11 @@ class Grammar(NodeVisitor):
                             if at_end:
                                 # LOGGER.debug(f"Found {len(state.children)} parse tree(s)")
                                 for child in state.children:
+                                    time_took = time.time() - time_start
+                                    time_took = time_took * 1000
+                                    self.elapsed_time += time_took
+                                    print(f"Parser took {time_took:4.2f}ms/{self.elapsed_time:4.2f}ms/{self.search_time:4.2f}ms: {start} {word}")
+                                    time_start = time.time()
                                     yield child
 
                         self.complete(state, table, k)
