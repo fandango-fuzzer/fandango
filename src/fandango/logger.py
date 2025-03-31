@@ -13,8 +13,8 @@ logging.basicConfig(
 )
 
 
-def print_exception(e: Exception, exception_note: (str | None) = None):
-    if exception_note is not None and getattr(Exception, 'add_note', None):
+def print_exception(e: Exception, exception_note: str | None = None):
+    if exception_note is not None and getattr(Exception, "add_note", None):
         # Python 3.11+ has add_note() method
         e.add_note(exception_note)
         exception_note = None
@@ -23,7 +23,7 @@ def print_exception(e: Exception, exception_note: (str | None) = None):
         LOGGER.info(traceback.format_exc().rstrip())
     else:
         print(type(e).__name__ + ":", e, file=sys.stderr)
-        for note in getattr(e, '__notes__', []):
+        for note in getattr(e, "__notes__", []):
             print("  " + note, file=sys.stderr)
 
     if exception_note:
