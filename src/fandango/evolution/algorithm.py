@@ -83,7 +83,11 @@ class Fandango:
 
         # Instantiate managers
         self.population_manager = PopulationManager(
-            grammar, start_symbol, self.population_size, self.current_max_nodes, warnings_are_errors
+            grammar,
+            start_symbol,
+            self.population_size,
+            self.current_max_nodes,
+            warnings_are_errors,
         )
         self.evaluator = Evaluator(
             grammar,
@@ -94,11 +98,11 @@ class Fandango:
             warnings_are_errors,
         )
         self.adaptive_tuner = AdaptiveTuner(
-            mutation_rate, 
-            crossover_rate, 
-            grammar.get_max_repetition(), 
+            mutation_rate,
+            crossover_rate,
+            grammar.get_max_repetition(),
             self.current_max_nodes,
-            max_repetitions, 
+            max_repetitions,
             max_repetition_rate,
             max_nodes,
             max_nodes_rate,
@@ -108,7 +112,6 @@ class Fandango:
         if self.profiling:
             self.profiler = Profiler()
 
-        self.adaptive_tuner = AdaptiveTuner(mutation_rate, crossover_rate)
         self.crossover_operator = crossover_method
         self.mutation_method = mutation_method
 
@@ -140,7 +143,11 @@ class Fandango:
             attempts = 0
             max_attempts = (population_size - len(unique_population)) * 10
             while len(unique_population) < population_size and attempts < max_attempts:
-                candidate = self.fix_individual(self.grammar.fuzz(self.start_symbol, max_nodes=self.current_max_nodes))
+                candidate = self.fix_individual(
+                    self.grammar.fuzz(
+                        self.start_symbol, max_nodes=self.current_max_nodes
+                    )
+                )
                 h = hash(candidate)
                 if h not in unique_hashes:
                     unique_hashes.add(h)
@@ -189,7 +196,6 @@ class Fandango:
         self.solution = self.evaluator.solution
         self.solution_set = self.evaluator.solution_set
         self.desired_solutions = desired_solutions
-
 
     def evolve(self) -> List[DerivationTree]:
         LOGGER.info("---------- Starting evolution ----------")
@@ -282,7 +288,10 @@ class Fandango:
                             self.profiler.start_timer("mutation")
 
                         mutated_individual = self.mutation_method.mutate(
-                            individual, self.grammar, self.evaluator.evaluate_individual, self.current_max_nodes
+                            individual,
+                            self.grammar,
+                            self.evaluator.evaluate_individual,
+                            self.current_max_nodes,
                         )
                         if self.profiling:
                             self.profiler.stop_timer("mutation")
@@ -343,7 +352,9 @@ class Fandango:
             )
 
             if self.adaptive_tuner.current_max_repetition > current_max_repetitions:
-                self.grammar.set_max_repetition(self.adaptive_tuner.current_max_repetition)
+                self.grammar.set_max_repetition(
+                    self.adaptive_tuner.current_max_repetition
+                )
 
             self.population_manager.max_nodes = self.adaptive_tuner.current_max_nodes
             self.current_max_nodes = self.adaptive_tuner.current_max_nodes

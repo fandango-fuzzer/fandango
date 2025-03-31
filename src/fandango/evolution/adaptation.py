@@ -7,16 +7,16 @@ from fandango.logger import LOGGER
 
 class AdaptiveTuner:
     def __init__(
-            self,
-            initial_mutation_rate: float, 
-            initial_crossover_rate: float, 
-            initial_max_repetition: int, 
-            initial_max_nodes: int,
-            max_repetition: int, 
-            max_repetition_rate: float,
-            max_nodes: int,
-            max_nodes_rate: float,
-        ):
+        self,
+        initial_mutation_rate: float,
+        initial_crossover_rate: float,
+        initial_max_repetition: int,
+        initial_max_nodes: int,
+        max_repetition: int,
+        max_repetition_rate: float,
+        max_nodes: int,
+        max_nodes_rate: float,
+    ):
         self.mutation_rate = initial_mutation_rate
         self.crossover_rate = initial_crossover_rate
         self.max_repetitions = max_repetition
@@ -75,13 +75,20 @@ class AdaptiveTuner:
             )
             self.crossover_rate = new_crossover_rate
 
-        if avg_diversity < diversity_low_threshold or (current_best_fitness - prev_best_fitness) < fitness_improvement_threshold:
+        if (
+            avg_diversity < diversity_low_threshold
+            or (current_best_fitness - prev_best_fitness)
+            < fitness_improvement_threshold
+        ):
             new_max_repetition = current_max_repetition
             new_max_repetition += self.max_repetition_rate * new_max_repetition
             if new_max_repetition == current_max_repetition:
                 new_max_repetition += 1
             new_max_repetition = int(new_max_repetition)
-            if self.max_repetitions is None or new_max_repetition <= self.max_repetitions:
+            if (
+                self.max_repetitions is None
+                or new_max_repetition <= self.max_repetitions
+            ):
                 LOGGER.info(
                     f"Generation {generation}: Increasing MAX_REPETITION from {self.current_max_repetition} to {new_max_repetition}"
                 )
@@ -92,8 +99,9 @@ class AdaptiveTuner:
         prev_max_nodes = self.current_max_nodes
         self.current_max_nodes = int(min(self.max_nodes, new_max_nodes))
         if prev_max_nodes != self.current_max_nodes:
-            LOGGER.info(f"Generation {generation}: Increasing Fuzzing Budget from {prev_max_nodes} to {self.current_max_nodes}")
-        
+            LOGGER.info(
+                f"Generation {generation}: Increasing Fuzzing Budget from {prev_max_nodes} to {self.current_max_nodes}"
+            )
 
         return self.mutation_rate, self.crossover_rate
 

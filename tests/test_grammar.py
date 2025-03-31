@@ -131,7 +131,6 @@ class ConstraintTest(unittest.TestCase):
         GRAMMAR, c = parse(file, use_cache=False, use_stdlib=True)
         solution = self.get_solutions(GRAMMAR, c)
         for sol in solution:
-            s = str(sol).split('.')
+            s = str(sol).split(".")
             self.assertEqual(s[0], "a" * 50)
             self.assertTrue(len(s[1]) >= 10)
-        

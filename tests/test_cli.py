@@ -137,4 +137,3 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         self.assertEqual(0, code)
         self.assertEqual("", out)
         self.assertEqual(expected, err)
-
