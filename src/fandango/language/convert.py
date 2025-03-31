@@ -150,9 +150,7 @@ class GrammarProcessor(FandangoParserVisitor):
             elif min_ is None:
                 return Repetition(node, max_=max_)
             elif max_ is None:
-                return Repetition(
-                    node, min_=min_
-                )
+                return Repetition(node, min_=min_)
             return Repetition(node, min_, max_)
         reps = self.searches.visit(ctx.expression(0))
         reps = (ast.unparse(reps[0]), *reps[1:])

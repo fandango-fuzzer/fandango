@@ -75,7 +75,9 @@ class PopulationManager:
                 "Could not generate full unique new population, filling remaining slots with duplicates."
             )
             while len(current_population) < self.population_size:
-                current_population.append(self.grammar.fuzz(self.start_symbol, self.max_nodes))
+                current_population.append(
+                    self.grammar.fuzz(self.start_symbol, self.max_nodes)
+                )
 
         return current_population
 

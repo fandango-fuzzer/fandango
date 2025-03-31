@@ -148,9 +148,7 @@ class Concatenation(Node):
 
 
 class Repetition(Node):
-    def __init__(
-        self, node: Node, min_=("0", [], {}), max_=(f"{None}", [], {})
-    ):
+    def __init__(self, node: Node, min_=("0", [], {}), max_=(f"{None}", [], {})):
         super().__init__(NodeType.REPETITION)
         # min_expr, min_nt, min_search = min_
         # max_expr, max_nt, max_search = max_
@@ -163,7 +161,7 @@ class Repetition(Node):
         #    raise ValueError(
         #        f"Maximum repetitions {max_} must be greater than 0 or greater than min {min_}"
         #    )
-        
+
         self.node = node
         self.expr_data_min = min_
         self.expr_data_max = max_
@@ -182,7 +180,7 @@ class Repetition(Node):
 
     def _compute_rep_bound(self, grammar: "Grammar", tree: "DerivationTree", expr_data):
         expr, _, searches = expr_data
-        if expr == "None" :
+        if expr == "None":
             expr = f"{MAX_REPETITIONS}"
         local_cpy = grammar._local_variables.copy()
 
@@ -221,8 +219,8 @@ class Repetition(Node):
             current_max, is_static = self._compute_rep_bound(
                 grammar, tree, self.expr_data_max
             )
-            
-            #if is_static:
+
+            # if is_static:
             #    self.static_max = current_max
             return current_max
         else:
@@ -2042,10 +2040,10 @@ class Grammar(NodeVisitor):
         * `start`: a start symbol other than `<start>`.
         """
         return self.contains_type(str, start=start)
-    
-    def set_max_repetition(self, max_rep:int):
+
+    def set_max_repetition(self, max_rep: int):
         global MAX_REPETITIONS
         MAX_REPETITIONS = max_rep
-    
+
     def get_max_repetition(self):
         return MAX_REPETITIONS
