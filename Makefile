@@ -230,3 +230,5 @@ install-test install-tests:
 uninstall:
 	$(PIP) uninstall fandango-fuzzer -y
 
+remove cache:
+	rm -rf ~/Library/Caches/Fandango
