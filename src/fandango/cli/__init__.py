@@ -35,6 +35,9 @@ if not "readline" in globals():
     except Exception:
         pass
 
+=======
+
+import time
 import shlex
 import subprocess
 import sys

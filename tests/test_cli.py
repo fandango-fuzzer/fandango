@@ -48,7 +48,9 @@ class test_cli(unittest.TestCase):
         self.assertEqual("", err)
 
     def test_max_rep(self):
-        command = shlex.split("fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 --no-cache --max-repetitions 10")
+        command = shlex.split(
+            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 --no-cache --max-repetitions 10"
+        )
         out, err, code = self.run_command(command)
         expected = """3571614697
 8230756
@@ -65,7 +67,9 @@ class test_cli(unittest.TestCase):
         self.assertEqual("", err)
 
     def test_max_rep_constraint(self):
-        command = shlex.split("fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 --no-cache -c 'len(str(<start>)) > 5' --max-repetitions 10")
+        command = shlex.split(
+            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 --no-cache -c 'len(str(<start>)) > 5' --max-repetitions 10"
+        )
         out, err, code = self.run_command(command)
         expected = """3571614697
 8230756
