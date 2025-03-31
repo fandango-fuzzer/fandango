@@ -1,6 +1,7 @@
 from typing import Callable, List, Set
 
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
+from fandango.evolution.evaluation import Evaluator
 from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode
 from fandango.language.packetforecaster import PacketForecaster
 from fandango.language.symbol import NonTerminal
@@ -36,20 +37,24 @@ class PopulationManager:
             return True
         return False
 
+    def _is_population_complete(self, unique_population: List[DerivationTree]) -> bool:
+        return len(unique_population) >= self.population_size
+
+
     def generate_random_initial_population(
         self, fix_func: Callable[[DerivationTree], DerivationTree]
     ) -> List[DerivationTree]:
         unique_population = []
         unique_hashes = set()
         attempts = 0
-        max_attempts = self.population_size * 10  # safeguard against infinite loops
+        max_attempts = self.population_size * 10
 
-        while len(unique_population) < self.population_size and attempts < max_attempts:
-            fitness, candidate = fix_func(self._generate_population_entry())
+        while not self._is_population_complete(unique_population) and attempts < max_attempts:
+            candidate = fix_func(self._generate_population_entry())
             self.add_unique_individual(unique_population, candidate, unique_hashes)
             attempts += 1
 
-        if len(unique_population) < self.population_size:
+        if attempts >= max_attempts:
             LOGGER.warning(
                 f"Could not generate a full population of unique individuals. Population size reduced to {len(unique_population)}."
             )
@@ -64,16 +69,14 @@ class PopulationManager:
         attempts = 0
         max_attempts = (self.population_size - len(current_population)) * 10
 
-        while (
-            len(current_population) < self.population_size and attempts < max_attempts
-        ):
-            fitness, candidate = fix_func(self._generate_population_entry())
+        while not self._is_population_complete(current_population) and attempts < max_attempts:
+            candidate = fix_func(self._generate_population_entry())
             if hash(candidate) not in unique_hashes:
                 unique_hashes.add(hash(candidate))
                 current_population.append(candidate)
             attempts += 1
 
-        if len(current_population) < self.population_size:
+        if attempts > max_attempts:
             LOGGER.warning(
                 "Could not generate full unique new population, filling remaining slots with duplicates."
             )
@@ -85,14 +88,22 @@ class PopulationManager:
 class IoPopulationManager(PopulationManager):
 
     def __init__(
-            self,
-            grammar: Grammar,
-            start_symbol: str,
-            population_size: int,
-            warnings_are_errors: bool = False,
+        self,
+        grammar: Grammar,
+        evaluator: Evaluator,
+        start_symbol: str,
+        population_size: int,
+        warnings_are_errors: bool = False,
     ):
         super().__init__(grammar, start_symbol, population_size, warnings_are_errors)
+        self.evaluator = evaluator
         self.io_next_packet: PacketForecaster.ForcastingPacket | None = None
+
+    def _is_population_complete(self, unique_population: List[DerivationTree]) -> bool:
+        for entry in unique_population:
+            if self.evaluator.evaluate_individual(entry)[0] >= 0.99:
+                return True
+        return super()._is_population_complete(unique_population)
 
     def _generate_population_entry(self):
         if self.io_next_packet is None:
