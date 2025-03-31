@@ -1,5 +1,6 @@
 from struct import unpack, pack
 from faker import Faker
+import time
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 from copy import deepcopy
@@ -233,12 +234,16 @@ class Server(FandangoAgent):
             while(True):
                 message, addr = self.server_socket.recvfrom(bufferSize)
                 m_id = message[:2]
-                self.id_addr[m_id] = addr
+                self.id_addr[m_id] = (addr, time.time())
                 #self.receive_msg("Client", decompress_msg(message))
                 self.receive_msg("Client", message)
 
 
         def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
             m_id = message[:2]
-            #self.server_socket.sendto(compress_msg(message), self.id_addr[m_id])
-            self.server_socket.sendto(message, self.id_addr[m_id])
+            addr, receive_time = self.id_addr[m_id]
+            elapsed_time = time.time() - receive_time
+            elapsed_time *= 1000
+            print("Answered after: " + str(elapsed_time) + "ms")
+            #self.server_socket.sendto(compress_msg(message), addr)
+            self.server_socket.sendto(message, addr)
