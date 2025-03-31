@@ -73,15 +73,15 @@ stdlib += printable
 
 
 stdlib += make_header("Unicode characters")
-unicode = ''
+unicode = ""
 
 unicode += make_rule("any_letter", ["r'\\w'"])
-unicode += make_rule("any_digit", ["r'\\d'"]) 
-unicode += make_rule("any_whitespace", ["r'\\s'"]) 
+unicode += make_rule("any_digit", ["r'\\d'"])
+unicode += make_rule("any_whitespace", ["r'\\s'"])
 
 unicode += make_rule("any_non_letter", ["r'\\W'"])
-unicode += make_rule("any_non_digit", ["r'\\D'"]) 
-unicode += make_rule("any_non_whitespace", ["r'\\S'"]) 
+unicode += make_rule("any_non_digit", ["r'\\D'"])
+unicode += make_rule("any_non_whitespace", ["r'\\S'"])
 
 stdlib += unicode
 
