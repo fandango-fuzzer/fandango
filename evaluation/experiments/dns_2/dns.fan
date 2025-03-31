@@ -143,15 +143,15 @@ def decompress_msg(compressed):
     return decompressed
 
 
-#<start> ::= <Client:dns_req> <Server:dns_resp>
-<start> ::= <Client:dns_req_compressed> <Server:dns_resp_compressed>
-<dns_req_compressed> ::= <byte>+ := compress_msg(<dns_req>.to_bytes())
-<dns_resp_compressed> ::= <byte>+ := compress_msg(<dns_resp>.to_bytes())
-<dns_req> ::= <header_req> <question> <answer>{byte_to_int(<req_ar_count>)} := decompress_msg(<dns_req_compressed>.to_bytes())
-<dns_resp> ::= <header_resp> <question>{byte_to_int(<resp_qd_count>)} <answer>{byte_to_int(<resp_an_count>)} <answer>{byte_to_int(<resp_ns_count>)} <answer>{byte_to_int(<resp_ar_count>)} := decompress_msg(<dns_resp_compressed>.to_bytes())
+<start> ::= <Client:dns_req> <Server:dns_resp>
+#<start> ::= <Client:dns_req_compressed> <Server:dns_resp_compressed>
+<dns_req_compressed> ::= <byte>+ #:= compress_msg(<dns_req>.to_bytes())
+<dns_resp_compressed> ::= <byte>+ #:= compress_msg(<dns_resp>.to_bytes())
+<dns_req> ::= <header_req> <question> <answer>{byte_to_int(<req_ar_count>)} #:= decompress_msg(<dns_req_compressed>.to_bytes())
+<dns_resp> ::= <header_resp> <question>{byte_to_int(<header_req>.<req_qd_count>)} <answer>{byte_to_int(<header_req>.<req_qd_count>)} <answer>{byte_to_int(<resp_ns_count>)} <answer>{byte_to_int(<resp_ar_count>)} #:= decompress_msg(<dns_resp_compressed>.to_bytes())
 
 #                       qr      opcode       aa tc rd  ra  z      rcode   qdcount  ancount nscount arcount
-<header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_none> 0{15} 1 0{16} 0{16} <req_ar_count>
+<header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_none> <req_qd_count> 0{16} 0{16} <req_ar_count>
 <header_resp> ::= <h_id> 1 <h_opcode_standard> <bit> 0 <h_rd> <bit> 0 <h_aa> 0 <h_rcode_none> <resp_qd_count> <resp_an_count> <resp_ns_count> <resp_ar_count>
 # aa=1 if server has authority over domain
 
@@ -159,6 +159,9 @@ where <dns_req>.<header_req>.<h_rd> == <dns_resp>.<header_resp>.<h_rd>
 where <dns_req>.<header_req>.<h_id> == <dns_resp>.<header_resp>.<h_id>
 where <dns_req>.<question>.<q_name> == <dns_resp>.<answer>.<q_name>
 where <dns_req>.<question> == <dns_resp>.<question>
+where bytes(<dns_req>.<header_req>.<req_qd_count>) == bytes(<dns_resp>.<header_resp>.<resp_qd_count>)
+where bytes(<dns_req>.<header_req>.<req_qd_count>) == bytes(<dns_resp>.<header_resp>.<resp_an_count>)
+<req_qd_count> ::= 0{15} 1
 <resp_qd_count> ::= <bit>{16} := pack(">H", 1)
 <resp_an_count> ::= <bit>{16} := pack(">H", randint(0, 2))
 <resp_ns_count> ::= <bit>{16} := pack(">H", randint(0, 2))
@@ -235,8 +238,8 @@ class Server(FandangoAgent):
                 message, addr = self.server_socket.recvfrom(bufferSize)
                 m_id = message[:2]
                 self.id_addr[m_id] = (addr, time.time())
-                #self.receive_msg("Client", decompress_msg(message))
-                self.receive_msg("Client", message)
+                self.receive_msg("Client", decompress_msg(message))
+                #self.receive_msg("Client", message)
 
 
         def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
@@ -245,5 +248,5 @@ class Server(FandangoAgent):
             elapsed_time = time.time() - receive_time
             elapsed_time *= 1000
             print("Answered after: " + str(elapsed_time) + "ms")
-            #self.server_socket.sendto(compress_msg(message), addr)
-            self.server_socket.sendto(message, addr)
+            self.server_socket.sendto(compress_msg(message), addr)
+            #self.server_socket.sendto(message, addr)

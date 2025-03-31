@@ -228,7 +228,7 @@ class Fandango:
             sender = "*" + sender
         else:
             receiver = "*" + receiver
-        print(f"({sender} -> {receiver}): {msg}")
+        LOGGER.info(f"({sender} -> {receiver}): {msg}")
 
     def _evolve_io(self) -> List[DerivationTree]:
         global_env, local_env = self.grammar.get_python_env()
