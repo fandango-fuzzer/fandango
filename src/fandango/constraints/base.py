@@ -78,8 +78,7 @@ class Value(GeneticBase):
                     )
                     values.append(result)
                 except Exception as e:
-                    e.add_note(f"Evaluation failed: {self.expression}")
-                    print_exception(e)
+                    print_exception(e, f"Evaluation failed: {self.expression}")
                     values.append(0)
             # Create the fitness object
             fitness = ValueFitness(
@@ -232,8 +231,7 @@ class ExpressionConstraint(Constraint):
                             if node not in failing_trees:
                                 failing_trees.append(node)
             except Exception as e:
-                e.add_note("Evaluation failed: " + self.expression)
-                print_exception(e)
+                print_exception(e, f"Evaluation failed: {self.expression}")
 
             total += 1
         # If there are no combinations, the fitness is perfect
@@ -326,15 +324,13 @@ class ComparisonConstraint(Constraint):
             try:
                 left = self.eval(self.left, self.global_variables, local_variables)
             except Exception as e:
-                e.add_note("Evaluation failed: " + self.left)
-                print_exception(e)
+                print_exception(e, f"Evaluation failed: {self.left}")
                 continue
 
             try:
                 right = self.eval(self.right, self.global_variables, local_variables)
             except Exception as e:
-                e.add_note("Evaluation failed: " + self.right)
-                print_exception(e)
+                print_exception(e, f"Evaluation failed: {self.right}")
                 continue
 
             if not hasattr(self, "types_checked") or not self.types_checked:

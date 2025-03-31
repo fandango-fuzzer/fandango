@@ -36,7 +36,6 @@ from fandango.logger import LOGGER, print_exception
 from fandango import FandangoSyntaxError, FandangoValueError
 
 
-
 class MyErrorListener(ErrorListener):
     """This is invoked from ANTLR when a syntax error is encountered"""
 
@@ -45,11 +44,14 @@ class MyErrorListener(ErrorListener):
         super().__init__()
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        exc = FandangoSyntaxError(f"{self.filename!r}, line {line}, column {column}: {msg}")
+        exc = FandangoSyntaxError(
+            f"{self.filename!r}, line {line}, column {column}: {msg}"
+        )
         exc.line = line
         exc.column = column
         exc.messsage = msg
         raise exc
+
 
 def closest_match(word, candidates):
     """
@@ -418,12 +420,18 @@ def parse(
         if depth == 0:
             # Given file: process in order
             more_grammars.append(new_grammar)
+            for generator in new_grammar.generators.values():
+                for nonterminal in generator.nonterminals.values():
+                    USED_SYMBOLS.add(nonterminal.symbol.symbol)
         else:
             # Included file: process _before_ current grammar
             more_grammars = [new_grammar] + more_grammars
             # Do not complain about unused symbols in included files
             for symbol in new_grammar.rules.keys():
                 USED_SYMBOLS.add(str(symbol))
+            for generator in new_grammar.generators.values():
+                for nonterminal in generator.nonterminals.values():
+                    USED_SYMBOLS.add(nonterminal.symbol.symbol)
 
         if INCLUDE_DEPTH > 0:
             INCLUDE_DEPTH -= 1
@@ -533,11 +541,15 @@ def check_grammar_definitions(
 
     if undefined_symbols:
         first_undefined_symbol = undefined_symbols.pop()
-        error = FandangoValueError(f"Undefined symbol {first_undefined_symbol!s} in grammar")
+        error = FandangoValueError(
+            f"Undefined symbol {first_undefined_symbol!s} in grammar"
+        )
         if undefined_symbols:
-            error.add_note(
-                f"Other undefined symbols: {', '.join(str(symbol) for symbol in undefined_symbols)}"
-            )
+            if getattr(Exception, 'add_note', None):
+                # Python 3.11+ has add_note() method
+                error.add_note(
+                    f"Other undefined symbols: {', '.join(str(symbol) for symbol in undefined_symbols)}"
+                )
         raise error
 
 

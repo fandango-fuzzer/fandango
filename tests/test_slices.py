@@ -99,4 +99,3 @@ class TestSlices(unittest.TestCase):
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
-

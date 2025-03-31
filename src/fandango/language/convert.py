@@ -87,12 +87,8 @@ class GrammarProcessor(FandangoParserVisitor):
                 grammar.remove_generator(symbol)
             if production.expression():
                 # Handle generator expressions
-                expr, searches, _ = self.searches.visit(production.expression())
-                if searches:
-                    raise UnsupportedOperation(
-                        "Searches in expressions are currently not supported"
-                    )
-                grammar.set_generator(symbol, ast.unparse(expr))
+                expr, _, searches_map = self.searches.visit(production.expression())
+                grammar.set_generator(symbol, ast.unparse(expr), searches_map)
 
                 if not production.EXPR_ASSIGN():
                     LOGGER.warning(
@@ -119,10 +115,10 @@ class GrammarProcessor(FandangoParserVisitor):
         return Concatenation(nodes)
 
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
-        return Star(self.visit(ctx.symbol()), self.max_repetitions)
+        return Star(self.visit(ctx.symbol()))
 
     def visitPlus(self, ctx: FandangoParser.PlusContext):
-        return Plus(self.visit(ctx.symbol()), self.max_repetitions)
+        return Plus(self.visit(ctx.symbol()))
 
     def visitOption(self, ctx: FandangoParser.OptionContext):
         return Option(self.visit(ctx.symbol()))
@@ -154,9 +150,7 @@ class GrammarProcessor(FandangoParserVisitor):
             elif min_ is None:
                 return Repetition(node, max_=max_)
             elif max_ is None:
-                return Repetition(
-                    node, min_=min_, max_=(f"{self.max_repetitions}", [], {})
-                )
+                return Repetition(node, min_=min_)
             return Repetition(node, min_, max_)
         reps = self.searches.visit(ctx.expression(0))
         reps = (ast.unparse(reps[0]), *reps[1:])
@@ -173,7 +167,11 @@ class GrammarProcessor(FandangoParserVisitor):
                 raise UnsupportedOperation(f"Unsupported bit spec: {number}")
             return TerminalNode(Terminal.from_number(number))
         elif ctx.char_set():
-            return CharSet(ctx.char_set().getText())
+            text = ctx.char_set().getText()
+            LOGGER.warning(
+                f"{text}: Charset specs are deprecated. Use regular expressions (r'...') instead."
+            )
+            return CharSet(text)
         elif ctx.alternative():
             return self.visit(ctx.alternative())
         else:
@@ -231,10 +229,10 @@ class ConstraintProcessor(FandangoParserVisitor):
 
     def visitImplies(self, ctx: FandangoParser.ImpliesContext):
         if ctx.ARROW():
-            e = UnsupportedOperation(f"{ctx.getText()}: Implication is deprecated")
-            operants = ctx.getText().split("->")
-            e.add_note(f"Instead use: not({operants[0]}) or {operants[1]}")
-            raise e
+            operands = ctx.getText().split("->")
+            LOGGER.warning(
+                f"{ctx.getText()}: Implication is deprecated. Use `not({operands[0]}) or {operands[1]}` instead."
+            )
         return self.visit(ctx.quantifier())
 
     def visitQuantifier(self, ctx: FandangoParser.QuantifierContext):
@@ -923,6 +921,38 @@ class SearchProcessor(FandangoParserVisitor):
             searches + gen_searches,
             {**search_map, **gen_search_map},
         )
+
+    def visitArguments(self, ctx: FandangoParser.ArgumentsContext):
+        return self.visit(ctx.args())
+
+    def visitArgs(self, ctx: FandangoParser.ArgsContext):
+        if ctx.kwargs() and not ctx.arg():
+            return self.visit(ctx.kwargs())
+
+        result = list(), list(), dict()
+        for arg in ctx.arg():
+            result = self.aggregateResult(result, self.visit(arg))
+        if ctx.kwargs():
+            result = self.aggregateResult(result, self.visit(ctx.kwargs()))
+        return result
+
+    def visitArg(self, ctx: FandangoParser.ArgContext):
+        if ctx.starred_expression():
+            return self.visit(ctx.starred_expression())
+        elif ctx.assignment_expression():
+            return self.visit(ctx.assignment_expression())
+        elif ctx.expression():
+            return self.visit(ctx.expression())
+
+    def visitKwargs(self, ctx: FandangoParser.KwargsContext):
+        result = list(), list(), dict()
+
+        for kwarg in ctx.kwarg_or_starred():
+            result = self.aggregateResult(result, self.visit(kwarg))
+        for kwarg in ctx.kwarg_or_double_starred():
+            result = self.aggregateResult(result, self.visit(kwarg))
+
+        return result
 
     def visitFor_if_clauses(self, ctx: FandangoParser.For_if_clausesContext):
         result = list(), list(), dict()
