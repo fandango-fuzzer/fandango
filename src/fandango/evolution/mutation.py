@@ -32,6 +32,7 @@ class SimpleMutation(MutationOperator):
         individual: DerivationTree,
         grammar: Grammar,
         evaluate_func: Callable[[DerivationTree], Tuple[float, List[FailingTree]]],
+        max_nodes: int = 50,
     ) -> DerivationTree:
         """
         Default mutation operator: evaluates the individual, selects a failing subtree
@@ -60,7 +61,9 @@ class SimpleMutation(MutationOperator):
                 ctx_tree.set_children(ctx_tree.children[:-1])
             else:
                 ctx_tree = None
-            new_subtree = grammar.fuzz(node_to_mutate.symbol, prefix_node=ctx_tree)
+            new_subtree = grammar.fuzz(
+                node_to_mutate.symbol, prefix_node=ctx_tree, max_nodes=max_nodes
+            )
             mutated = individual.replace(grammar, node_to_mutate, new_subtree)
             return mutated
 
