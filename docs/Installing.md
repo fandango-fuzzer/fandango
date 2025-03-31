@@ -15,9 +15,9 @@ kernelspec:
 
 ## Installing Fandango for Normal Usage
 
-```{warning}
-While Fandango is in beta, only development versions can be installed.
-```
+% ```{warning}
+% While Fandango is in beta, only development versions can be installed.
+% ```
 
 Fandango comes as a Python package. To install Fandango, run the following command:
 
@@ -54,9 +54,9 @@ assert _exit_code == 0
 This will get you the very latest version of Fandango, which may be unstable. Use at your own risk.
 ```
 
-```{note}
-At this point, only registered developers have access to Fandango.
-```
+% ```{note}
+% At this point, only registered developers have access to Fandango.
+% ```
 
 Clone the Fandango repository:
 

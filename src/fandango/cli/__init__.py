@@ -6,7 +6,36 @@ import logging
 import os
 import os.path
 import re
-import gnureadline as readline
+
+if not "readline" in globals():
+    try:
+        # Linux and Mac. This should do the trick.
+        import gnureadline as readline
+    except Exception:
+        pass
+
+if not "readline" in globals():
+    try:
+        # Windows. This should do the trick.
+        import pyreadline3 as readline
+    except Exception:
+        pass
+
+if not "readline" in globals():
+    try:
+        # Another Windows alternative
+        import pyreadline as readline
+    except Exception:
+        pass
+
+if not "readline" in globals():
+    try:
+        # A Hail Mary Pass
+        import readline
+    except Exception:
+        pass
+
+import time
 import shlex
 import subprocess
 import sys
@@ -148,6 +177,30 @@ def get_parser(in_command_line=True):
         "--destruction-rate",
         type=float,
         help="the rate of individuals that will be randomly destroyed in every generation",
+        default=None,
+    )
+    algorithm_group.add_argument(
+        "--max-repetition-rate",
+        type=float,
+        help="rate at which the number of maximal repetitions should be increased",
+        default=None,
+    )
+    algorithm_group.add_argument(
+        "--max-repetitions",
+        type=int,
+        help="Maximal value, the number of repetitions can be increased to",
+        default=None,
+    )
+    algorithm_group.add_argument(
+        "--max-node-rate",
+        type=float,
+        help="rate at which the maximal number of nodes in a tree is increased",
+        default=None,
+    )
+    algorithm_group.add_argument(
+        "--max-nodes",
+        type=int,
+        help="Maximal value, the number of nodes in a tree can be increased to",
         default=None,
     )
     algorithm_group.add_argument(
@@ -296,13 +349,6 @@ def get_parser(in_command_line=True):
         default=False,
         action="store_true",
         help="run internal consistency checks for debugging",
-    )
-    file_parser.add_argument(
-        "--max-repetitions",
-        dest="max_repetitions",
-        type=int,
-        help="the maximal number of repetitions if not specified otherwise by {N, M} in the grammar (default: 5)",
-        default=5,
     )
 
     # Commands
@@ -535,7 +581,6 @@ def parse_contents_from_args(args, given_grammars=[]):
         use_cache=args.use_cache,
         use_stdlib=args.use_stdlib,
         start_symbol=args.start_symbol,
-        max_repetitions=args.max_repetitions,
     )
 
 
@@ -560,6 +605,10 @@ def make_fandango_settings(args, initial_settings={}):
     copy(settings, "warnings_are_errors")
     copy(settings, "best_effort")
     copy(settings, "random_seed")
+    copy(settings, "max_repetition_rate")
+    copy(settings, "max_repetitions")
+    copy(settings, "max_nodes")
+    copy(settings, "max_node_rate")
 
     if hasattr(args, "start_symbol") and args.start_symbol is not None:
         if args.start_symbol.startswith("<"):
@@ -783,9 +832,24 @@ def output_population(population, args, file_mode=None, *, output_on_stdout=True
                 prefix = "fandango-"
                 suffix = args.filename_extension
                 mode = "wb" if file_mode == "binary" else "w"
-                with tempfile.NamedTemporaryFile(
-                    mode=mode, prefix=prefix, suffix=suffix
-                ) as fd:
+
+                def named_temp_file(*, mode, prefix, suffix):
+                    try:
+                        # Windows needs delete_on_close=False, so the subprocess
+                        # can access the file by name
+                        return tempfile.NamedTemporaryFile(
+                            mode=mode,
+                            prefix=prefix,
+                            suffix=suffix,
+                            delete_on_close=False,
+                        )
+                    except Exception:
+                        # Python 3.11 and earlier have no 'delete_on_close'
+                        return tempfile.NamedTemporaryFile(
+                            mode=mode, prefix=prefix, suffix=suffix
+                        )
+
+                with named_temp_file(mode=mode, prefix=prefix, suffix=suffix) as fd:
                     fd.write(output(individual, args, file_mode))
                     fd.flush()
                     cmd = base_cmd + [fd.name]
@@ -1207,6 +1271,9 @@ def shell_command(args):
     PROMPT = "(fandango)"
 
     def _read_history():
+        if not "readline" in globals():
+            return
+
         histfile = os.path.join(os.path.expanduser("~"), ".fandango_history")
         try:
             readline.read_history_file(histfile)
@@ -1219,6 +1286,9 @@ def shell_command(args):
         atexit.register(readline.write_history_file, histfile)
 
     def _complete(text, state):
+        if not "readline" in globals():
+            return
+
         global MATCHES
         if state == 0:  # first trigger
             buffer = readline.get_line_buffer()[: readline.get_endidx()]
@@ -1229,10 +1299,11 @@ def shell_command(args):
             return None
 
     if sys.stdin.isatty():
-        _read_history()
-        readline.set_completer_delims(" \t\n;")
-        readline.set_completer(_complete)
-        readline.parse_and_bind("tab: complete")
+        if "readline" in globals():
+            _read_history()
+            readline.set_completer_delims(" \t\n;")
+            readline.set_completer(_complete)
+            readline.parse_and_bind("tab: complete")
 
         version_command([])
         print("Type a command, 'help', 'copyright', 'version', or 'exit'.")
