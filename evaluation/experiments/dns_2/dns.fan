@@ -156,7 +156,7 @@ def decompress_msg(compressed):
 
 where <dns_req>.<header_req>.<h_rd> == <dns_resp>.<header_resp>.<h_rd>
 where <dns_req>.<header_req>.<h_id> == <dns_resp>.<header_resp>.<h_id>
-where <dns_req>.<question>.<q_name>.<q_name_written_complete> == <dns_resp>.<answer>.<q_name>.<q_name_written_complete>
+where <dns_req>.<question>.<q_name> == <dns_resp>.<answer>.<q_name>
 where <dns_req>.<question> == <dns_resp>.<question>
 <resp_qd_count> ::= <bit>{16} := pack(">H", 1)
 <resp_an_count> ::= <bit>{16} := pack(">H", randint(0, 2))
@@ -179,14 +179,12 @@ where <dns_req>.<question> == <dns_resp>.<question>
 <h_rcode_other> ::= (1 <bit>{3, 3}) | (0 1 1 <bit>)
 <bit> ::= 0 | 1
 <byte> ::= <bit>{8}
-<non_zero_byte> ::= (<bit>{7} 1) | (<bit>{6} 1 <bit>) | (<bit>{5} 1 <bit>{2}) | (<bit>{4} 1 <bit>{3}) | (<bit>{3} 1 <bit>{4}) | (<bit>{2} 1 <bit>{5}) | (<bit> 1 <bit>{6}) | (1 <bit>{7})
 <label_len_octet> ::= (<bit>{7} 1) | (<bit>{6} 1 <bit>) | (<bit>{5} 1 <bit>{2}) | (<bit>{4} 1 <bit>{3}) | (<bit>{3} 1 <bit>{4}) | (<bit>{2} 1 <bit>{5}) # Max label length = 63
 
 
 <question> ::= <q_name> <q_type> <rr_class>
-<q_name> ::= <q_name_written_complete>
-<q_name_written_complete> ::= <q_name_written>? 0{8}
-<q_name_written> ::= <label_len_octet> <non_zero_byte>+ := gen_q_name()
+<q_name> ::= <q_name_written>? 0{8}
+<q_name_written> ::= (<label_len_octet> <byte>{byte_to_int(b'\x00' + bytes(<label_len_octet>))})+ := gen_q_name()
 <q_type> ::= 0{15} 1 # Equals type A (Host address)
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
 

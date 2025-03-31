@@ -10,7 +10,7 @@ def main():
         grammar, constraints = parse(f, use_stdlib=False)
 
     time_start = time.time()
-    fandango = Fandango(grammar=grammar, constraints=constraints, population_size=10)
+    fandango = Fandango(grammar=grammar, constraints=constraints, population_size=1)
 
     # Evolve solutions
 
