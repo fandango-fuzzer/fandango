@@ -83,14 +83,6 @@ class Fandango:
         self.best_effort = best_effort
 
         # Instantiate managers
-        if self.grammar.fuzzing_mode == FuzzingMode.IO:
-            self.population_manager = IoPopulationManager(
-               grammar, start_symbol, population_size, warnings_are_errors
-            )
-        else:
-            self.population_manager = PopulationManager(
-                grammar, start_symbol, population_size, warnings_are_errors
-            )
         self.evaluator = Evaluator(
             grammar,
             constraints,
@@ -99,6 +91,14 @@ class Fandango:
             diversity_weight,
             warnings_are_errors,
         )
+        if self.grammar.fuzzing_mode == FuzzingMode.IO:
+            self.population_manager = IoPopulationManager(
+               grammar, self.evaluator, start_symbol, population_size, warnings_are_errors
+            )
+        else:
+            self.population_manager = PopulationManager(
+                grammar, start_symbol, population_size, warnings_are_errors
+            )
         self.adaptive_tuner = AdaptiveTuner(mutation_rate, crossover_rate)
         self.crossover_operator = crossover_method
         self.mutation_method = mutation_method
@@ -205,8 +205,7 @@ class Fandango:
                     self.fixes_made += 1
         if len(replacements) > 0:
             individual = individual.replace_multiple(self.grammar, replacements)
-        score, failing_trees = self.evaluator.evaluate_individual(individual)
-        return score, individual
+        return individual
 
     def log_message_transfer(
         self, sender: str, receiver: str | None, msg: str, self_is_sender: bool
