@@ -15,6 +15,9 @@ kernelspec:
 
 This document lists major changes across releases.
 
+Fandango 0.8
+: First public beta release.
+
 Fandango 0.1.4
 : Fandango now supports [bits](sec:bits) and [binaries](sec:binary), including [parsing](sec:parsing) them.
 Major improvements to the evolutionary algorithm.
