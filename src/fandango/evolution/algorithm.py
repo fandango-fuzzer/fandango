@@ -417,7 +417,9 @@ class Fandango:
                     )
                     if suggested_tree is None:
                         continue
-                    individual = individual.replace(failing_tree.tree, suggested_tree)
+                    individual = individual.replace(
+                        self.grammar, failing_tree.tree, suggested_tree
+                    )
                     self.fixes_made += 1
         return individual
 
