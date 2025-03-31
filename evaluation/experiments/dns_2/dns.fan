@@ -161,7 +161,7 @@ where <dns_req>.<question>.<q_name> == <dns_resp>.<answer>.<q_name>
 where <dns_req>.<question> == <dns_resp>.<question>
 where bytes(<dns_req>.<header_req>.<req_qd_count>) == bytes(<dns_resp>.<header_resp>.<resp_qd_count>)
 where bytes(<dns_req>.<header_req>.<req_qd_count>) == bytes(<dns_resp>.<header_resp>.<resp_an_count>)
-<req_qd_count> ::= 0{15} 1
+<req_qd_count> ::= <byte>{2}
 <resp_qd_count> ::= <bit>{16} := pack(">H", 1)
 <resp_an_count> ::= <bit>{16} := pack(">H", randint(0, 2))
 <resp_ns_count> ::= <bit>{16} := pack(">H", randint(0, 2))
