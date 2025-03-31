@@ -6,9 +6,36 @@ import logging
 import os
 import os.path
 import re
-import time
 
-import gnureadline as readline
+if not "readline" in globals():
+    try:
+        # Linux and Mac. This should do the trick.
+        import gnureadline as readline
+    except Exception:
+        pass
+
+if not "readline" in globals():
+    try:
+        # Windows. This should do the trick.
+        import pyreadline3 as readline
+    except Exception:
+        pass
+
+if not "readline" in globals():
+    try:
+        # Another Windows alternative
+        import pyreadline as readline
+    except Exception:
+        pass
+
+if not "readline" in globals():
+    try:
+        # A Hail Mary Pass
+        import readline
+    except Exception:
+        pass
+
+import time
 import shlex
 import subprocess
 import sys
@@ -805,9 +832,24 @@ def output_population(population, args, file_mode=None, *, output_on_stdout=True
                 prefix = "fandango-"
                 suffix = args.filename_extension
                 mode = "wb" if file_mode == "binary" else "w"
-                with tempfile.NamedTemporaryFile(
-                    mode=mode, prefix=prefix, suffix=suffix
-                ) as fd:
+
+                def named_temp_file(*, mode, prefix, suffix):
+                    try:
+                        # Windows needs delete_on_close=False, so the subprocess
+                        # can access the file by name
+                        return tempfile.NamedTemporaryFile(
+                            mode=mode,
+                            prefix=prefix,
+                            suffix=suffix,
+                            delete_on_close=False,
+                        )
+                    except Exception:
+                        # Python 3.11 and earlier have no 'delete_on_close'
+                        return tempfile.NamedTemporaryFile(
+                            mode=mode, prefix=prefix, suffix=suffix
+                        )
+
+                with named_temp_file(mode=mode, prefix=prefix, suffix=suffix) as fd:
                     fd.write(output(individual, args, file_mode))
                     fd.flush()
                     cmd = base_cmd + [fd.name]
@@ -1229,6 +1271,9 @@ def shell_command(args):
     PROMPT = "(fandango)"
 
     def _read_history():
+        if not "readline" in globals():
+            return
+
         histfile = os.path.join(os.path.expanduser("~"), ".fandango_history")
         try:
             readline.read_history_file(histfile)
@@ -1241,6 +1286,9 @@ def shell_command(args):
         atexit.register(readline.write_history_file, histfile)
 
     def _complete(text, state):
+        if not "readline" in globals():
+            return
+
         global MATCHES
         if state == 0:  # first trigger
             buffer = readline.get_line_buffer()[: readline.get_endidx()]
@@ -1251,10 +1299,11 @@ def shell_command(args):
             return None
 
     if sys.stdin.isatty():
-        _read_history()
-        readline.set_completer_delims(" \t\n;")
-        readline.set_completer(_complete)
-        readline.parse_and_bind("tab: complete")
+        if "readline" in globals():
+            _read_history()
+            readline.set_completer_delims(" \t\n;")
+            readline.set_completer(_complete)
+            readline.parse_and_bind("tab: complete")
 
         version_command([])
         print("Type a command, 'help', 'copyright', 'version', or 'exit'.")

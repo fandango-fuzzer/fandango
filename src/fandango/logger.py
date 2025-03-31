@@ -3,6 +3,7 @@ import traceback
 import sys
 import os
 import time
+
 from ansi_styles import ansiStyles as styles
 
 LOGGER = logging.getLogger("fandango")
@@ -12,13 +13,25 @@ logging.basicConfig(
 )
 
 
-def print_exception(e: Exception):
-    LOGGER.info(traceback.format_exc().rstrip())
-    if not LOGGER.isEnabledFor(logging.INFO):
+def print_exception(e: Exception, exception_note: (str | None) = None):
+    if exception_note is not None and getattr(Exception, 'add_note', None):
+        # Python 3.11+ has add_note() method
+        e.add_note(exception_note)
+        exception_note = None
+
+    if LOGGER.isEnabledFor(logging.INFO):
+        LOGGER.info(traceback.format_exc().rstrip())
+    else:
         print(type(e).__name__ + ":", e, file=sys.stderr)
+        for note in getattr(e, '__notes__', []):
+            print("  " + note, file=sys.stderr)
+
+    if exception_note:
+        print("  " + exception_note, file=sys.stderr)
+
     if "DerivationTree" in str(e):
         print(
-            "Convert <symbol> to the expected type, say 'str(<symbol>)', 'int(<symbol>)', or 'float(<symbol>)'",
+            "  Convert <symbol> to the expected type, say 'str(<symbol>)', 'int(<symbol>)', or 'float(<symbol>)'",
             file=sys.stderr,
         )
 

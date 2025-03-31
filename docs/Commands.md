@@ -1,0 +1,51 @@
+---
+jupytext:
+  formats: md:myst
+  text_representation:
+    extension: .md
+    format_name: myst
+kernelspec:
+  display_name: Python 3
+  language: python
+  name: python3
+---
+
+(sec:commands)=
+# Fandango Command Reference
+
+## All Commands
+
+Here is a list of all `fandango` commands:
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango --help
+```
+
+
+## Fuzzing
+
+To [produce outputs with `fandango`](sec:fuzzing), use `fandango fuzz`:
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz --help
+```
+
+## Parsing
+
+To [parse inputs with `fandango`](sec:parsing), use `fandango parse`:
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango parse --help
+```
+
+## Shell
+
+To [enter commands in `fandango`](sec:shell), use `fandango shell` or just `fandango`:
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango shell --help
+```
