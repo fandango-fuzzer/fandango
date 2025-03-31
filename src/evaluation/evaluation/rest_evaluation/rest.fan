@@ -9,8 +9,10 @@
 <paragraph_elements> ::= <paragraph_element> <paragraph_elements> | <paragraph_element> ;
 <first_paragraph_element> ::= <paragraph_chars_nospace> | <internal_reference_nospace> ;
 <paragraph_element> ::= <paragraph_chars> | <internal_reference> ;
-<internal_reference> ::= <presep> <id> "_" <postsep> ;
-<internal_reference_nospace> ::= <id> "_" <postsep> ;
+
+<internal_reference> ::= <presep> <id> "/_" <postsep> ;
+<internal_reference_nospace> ::= <id> "/_" <postsep> ;
+
 <enumeration> ::= <enumeration_items> "\n" ;
 <enumeration_items> ::= <enumeration_item> "\n" <enumeration_items> | <enumeration_item> ;
 <enumeration_item> ::= "#. " <nobr_string> ;
