@@ -384,12 +384,8 @@ class PacketForecaster:
                     ):
                         cpy = orig_r_msg.msg.__deepcopy__(None, copy_parent=False)
                         r_msg.msg.set_children(cpy.children)
-                        r_msg.msg.generator_params = deepcopy(
-                            cpy.generator_params
-                        )
-                        r_msg.msg.symbol = NonTerminal(
-                            "<" + str(cpy.symbol)[1:]
-                        )
+                        r_msg.msg.generator_params = deepcopy(cpy.generator_params)
+                        r_msg.msg.symbol = NonTerminal("<" + str(cpy.symbol)[1:])
                     else:
                         break
                 else:

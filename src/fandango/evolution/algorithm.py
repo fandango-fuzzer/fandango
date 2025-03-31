@@ -93,7 +93,11 @@ class Fandango:
         )
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
             self.population_manager = IoPopulationManager(
-               grammar, self.evaluator, start_symbol, population_size, warnings_are_errors
+                grammar,
+                self.evaluator,
+                start_symbol,
+                population_size,
+                warnings_are_errors,
             )
         else:
             self.population_manager = PopulationManager(
@@ -169,7 +173,9 @@ class Fandango:
         self.solution_set = self.evaluator.solution_set
         self.desired_solutions = desired_solutions
 
-    def fix_individual(self, individual: DerivationTree) -> tuple[float, DerivationTree]:
+    def fix_individual(
+        self, individual: DerivationTree
+    ) -> tuple[float, DerivationTree]:
         _, failing_trees = self.evaluator.evaluate_individual(individual)
         replacements = dict()
         for failing_tree in failing_trees:
@@ -192,7 +198,10 @@ class Fandango:
                         and side == ComparisonSide.RIGHT
                     ):
                         continue
-                    if isinstance(value, DerivationTree) and  failing_tree.tree.symbol == value.symbol:
+                    if (
+                        isinstance(value, DerivationTree)
+                        and failing_tree.tree.symbol == value.symbol
+                    ):
                         suggested_tree = value.__deepcopy__(None, True, False, False)
                         suggested_tree.set_all_read_only(False)
                     else:
