@@ -1,13 +1,10 @@
 import copy
 from copy import deepcopy
-from typing import Optional, List, Any, Union, Set, Tuple
-
-from fandango.language.symbol import Symbol, NonTerminal, Terminal, Slice
-from io import StringIO, BytesIO
-
-from fandango.logger import LOGGER, print_exception
+from io import BytesIO, StringIO
+from typing import Any, List, Optional, Set, Tuple, Union
 
 from fandango import FandangoValueError
+from fandango.language.symbol import NonTerminal, Slice, Symbol, Terminal
 
 
 class DerivationTree:
