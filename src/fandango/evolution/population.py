@@ -19,29 +19,9 @@ class PopulationManager:
         self.start_symbol = start_symbol
         self.population_size = population_size
         self.warnings_are_errors = warnings_are_errors
-        self.io_next_packet: PacketForecaster.ForcastingPacket | None = None
 
     def _generate_population_entry(self):
-        if self.grammar.fuzzing_mode == FuzzingMode.IO:
-            if self.io_next_packet is None:
-                return DerivationTree(NonTerminal(self.start_symbol))
-
-            mounting_option = next(iter(self.io_next_packet.paths))
-            tree = self.grammar.collapse(mounting_option.tree)
-            dummy = DerivationTree(NonTerminal("<hookin>"))
-            tree.append(mounting_option.path[1:], dummy)
-
-            fuzz_point = dummy.parent
-            fuzz_point.set_children(fuzz_point.children[:-1])
-            self.io_next_packet.node.fuzz(fuzz_point, self.grammar, max_nodes=999999)
-
-            return tree
-        elif self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
-            return self.grammar.fuzz(self.start_symbol)
-        else:
-            raise NotImplementedError(
-                f"Unknown FuzzingMode: {self.grammar.fuzzing_mode}"
-            )
+        return self.grammar.fuzz(self.start_symbol)
 
     def add_unique_individual(
         self,
@@ -65,7 +45,7 @@ class PopulationManager:
         max_attempts = self.population_size * 10  # safeguard against infinite loops
 
         while len(unique_population) < self.population_size and attempts < max_attempts:
-            candidate = fix_func(self._generate_population_entry())
+            fitness, candidate = fix_func(self._generate_population_entry())
             self.add_unique_individual(unique_population, candidate, unique_hashes)
             attempts += 1
 
@@ -87,7 +67,7 @@ class PopulationManager:
         while (
             len(current_population) < self.population_size and attempts < max_attempts
         ):
-            candidate = fix_func(self._generate_population_entry())
+            fitness, candidate = fix_func(self._generate_population_entry())
             if hash(candidate) not in unique_hashes:
                 unique_hashes.add(hash(candidate))
                 current_population.append(candidate)
@@ -102,23 +82,29 @@ class PopulationManager:
 
         return current_population
 
-    def fix_individual(
-        self, individual: DerivationTree, failing_trees: List[FailingTree]
-    ) -> DerivationTree:
-        fixes_made = 0
-        for failing_tree in failing_trees:
-            if failing_tree.tree.read_only:
-                continue
-            for operator, value, side in failing_tree.suggestions:
-                if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
-                    # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
-                    suggested_tree = self.grammar.parse(
-                        value, start=failing_tree.tree.symbol.symbol
-                    )
-                    if suggested_tree is None:
-                        continue
-                    individual = individual.replace(
-                        self.grammar, failing_tree.tree, suggested_tree
-                    )
-                    fixes_made += 1
-        return individual, fixes_made
+class IoPopulationManager(PopulationManager):
+
+    def __init__(
+            self,
+            grammar: Grammar,
+            start_symbol: str,
+            population_size: int,
+            warnings_are_errors: bool = False,
+    ):
+        super().__init__(grammar, start_symbol, population_size, warnings_are_errors)
+        self.io_next_packet: PacketForecaster.ForcastingPacket | None = None
+
+    def _generate_population_entry(self):
+        if self.io_next_packet is None:
+            return DerivationTree(NonTerminal(self.start_symbol))
+
+        mounting_option = next(iter(self.io_next_packet.paths))
+        tree = self.grammar.collapse(mounting_option.tree)
+        dummy = DerivationTree(NonTerminal("<hookin>"))
+        tree.append(mounting_option.path[1:], dummy)
+
+        fuzz_point = dummy.parent
+        fuzz_point.set_children(fuzz_point.children[:-1])
+        self.io_next_packet.node.fuzz(fuzz_point, self.grammar, max_nodes=999999)
+
+        return tree

@@ -947,6 +947,8 @@ class Column:
         self.states = states or []
         self.dot_map = dict[NonTerminal, list[ParseState]]()
         self.unique = set(self.states)
+        for state in self.states:
+            self.dot_map[state.nonterminal].append(state)
 
     def __iter__(self):
         index = 0

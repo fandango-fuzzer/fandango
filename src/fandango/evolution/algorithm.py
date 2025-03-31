@@ -10,7 +10,7 @@ from fandango.evolution.adaptation import AdaptiveTuner
 from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
 from fandango.evolution.evaluation import Evaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
-from fandango.evolution.population import PopulationManager
+from fandango.evolution.population import PopulationManager, IoPopulationManager
 from fandango.language.io import FandangoIO
 from fandango.language.grammar import (
     DerivationTree,
@@ -83,9 +83,14 @@ class Fandango:
         self.best_effort = best_effort
 
         # Instantiate managers
-        self.population_manager = PopulationManager(
-            grammar, start_symbol, population_size, warnings_are_errors
-        )
+        if self.grammar.fuzzing_mode == FuzzingMode.IO:
+            self.population_manager = IoPopulationManager(
+               grammar, start_symbol, population_size, warnings_are_errors
+            )
+        else:
+            self.population_manager = PopulationManager(
+                grammar, start_symbol, population_size, warnings_are_errors
+            )
         self.evaluator = Evaluator(
             grammar,
             constraints,
@@ -164,7 +169,7 @@ class Fandango:
         self.solution_set = self.evaluator.solution_set
         self.desired_solutions = desired_solutions
 
-    def fix_individual(self, individual: DerivationTree) -> DerivationTree:
+    def fix_individual(self, individual: DerivationTree) -> tuple[float, DerivationTree]:
         _, failing_trees = self.evaluator.evaluate_individual(individual)
         replacements = dict()
         for failing_tree in failing_trees:
@@ -187,16 +192,21 @@ class Fandango:
                         and side == ComparisonSide.RIGHT
                     ):
                         continue
-                    suggested_tree = self.grammar.parse(
-                        value, start=failing_tree.tree.symbol.symbol
-                    )
+                    if isinstance(value, DerivationTree) and  failing_tree.tree.symbol == value.symbol:
+                        suggested_tree = value.__deepcopy__(None, True, False, False)
+                        suggested_tree.set_all_read_only(False)
+                    else:
+                        suggested_tree = self.grammar.parse(
+                            value, start=failing_tree.tree.symbol.symbol
+                        )
                     if suggested_tree is None:
                         continue
                     replacements[failing_tree.tree] = suggested_tree
                     self.fixes_made += 1
         if len(replacements) > 0:
             individual = individual.replace_multiple(self.grammar, replacements)
-        return individual
+        score, failing_trees = self.evaluator.evaluate_individual(individual)
+        return score, individual
 
     def log_message_transfer(
         self, sender: str, receiver: str | None, msg: str, self_is_sender: bool
