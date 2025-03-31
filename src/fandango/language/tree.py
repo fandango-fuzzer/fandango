@@ -368,15 +368,13 @@ class DerivationTree:
         """
         Output the derivation tree as (specialized) grammar
         """
-        bit_count = -1
-        byte_count = 0
 
-        def _to_grammar(node, indent=0, start_indent=0) -> str:
+        def _to_grammar(node, indent=0, start_indent=0, bit_count = -1, byte_count = 0) -> tuple[str, int, int]:
             """
             Output the derivation tree as (specialized) grammar
             """
             assert isinstance(node.symbol.symbol, str)
-            nonlocal bit_count, byte_count, include_position, include_value
+            nonlocal include_position, include_value
 
             s = "  " * start_indent + f"{node.symbol.symbol} ::="
             terminal_symbols = 0
@@ -421,10 +419,16 @@ class DerivationTree:
 
             for child in node._children:
                 if child.symbol.is_non_terminal:
-                    s += "\n" + _to_grammar(child, indent + 1, start_indent=indent + 1)
-            return s
+                    child_str, bit_count, byte_count = _to_grammar(child, indent + 1, start_indent=indent + 1, bit_count=bit_count, byte_count=byte_count)
+                    s += "\n" + child_str
+                if len(child._generator_params) != 0:
+                    s += "\n  " + ("  " * start_indent) + "Generator Parameters:"
+                    for param in child._generator_params:
+                        child_str, _, _ = _to_grammar(param, indent + 2, start_indent=indent + 1)
+                        s += "\n  " + child_str
+            return s, bit_count, byte_count
 
-        return _to_grammar(self)
+        return _to_grammar(self)[0]
 
     def __repr__(self):
         return self.to_repr()
