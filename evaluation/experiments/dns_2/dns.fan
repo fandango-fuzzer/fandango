@@ -148,7 +148,7 @@ def decompress_msg(compressed):
 <dns_req_compressed> ::= <byte>+ #:= compress_msg(<dns_req>.to_bytes())
 <dns_resp_compressed> ::= <byte>+ #:= compress_msg(<dns_resp>.to_bytes())
 <dns_req> ::= <header_req> <question> <answer>{byte_to_int(<req_ar_count>)} #:= decompress_msg(<dns_req_compressed>.to_bytes())
-<dns_resp> ::= <header_resp> <question>{byte_to_int(<header_req>.<req_qd_count>)} <answer>{byte_to_int(<header_req>.<req_qd_count>)} <answer>{byte_to_int(<resp_ns_count>)} <answer>{byte_to_int(<resp_ar_count>)} #:= decompress_msg(<dns_resp_compressed>.to_bytes())
+<dns_resp> ::= <header_resp> <question>{byte_to_int(<header_req>.<req_qd_count>)} <answer_an>{byte_to_int(<header_req>.<req_qd_count>)} <answer>{byte_to_int(<resp_ns_count>)} <answer>{byte_to_int(<resp_ar_count>)} #:= decompress_msg(<dns_resp_compressed>.to_bytes())
 
 #                       qr      opcode       aa tc rd  ra  z      rcode   qdcount  ancount nscount arcount
 <header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_none> <req_qd_count> 0{16} 0{16} <req_ar_count>
@@ -192,10 +192,13 @@ where bytes(<dns_req>.<header_req>.<req_qd_count>) == bytes(<dns_resp>.<header_r
 <question> ::= <q_name> <q_type> <rr_class>
 <q_name> ::= <q_name_written>? 0{8}
 <q_name_written> ::= (<label_len_octet> <byte>{byte_to_int(b'\x00' + bytes(<label_len_octet>))})+ := gen_q_name()
-<q_type> ::= 0{15} 1 # Equals type A (Host address)
+<q_type> ::= <type_id_a> # Equals type A (Host address)
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
 
+where bytes(<dns_req>.<question>.<q_type>) == bytes(<dns_resp>.<answer_an>.<answer>.children[1])[0:2]
 
+
+<answer_an> ::= <answer>
 <answer> ::= <q_name> (<type_a> | <type_ns> | <type_soa> | <type_opt>)
 <a_ttl> ::= <byte>{4}
 <a_rd_length> ::= <byte>{2} := pack(">H", randint(0, 0))
