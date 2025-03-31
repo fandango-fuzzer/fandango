@@ -11,7 +11,7 @@ kernelspec:
 ---
 
 (sec:language)=
-# Fandango Syntax and Semantics
+# Fandango Language Reference
 
 This chapter specifies the exact syntax (and semantics) of Fandango specifications (`.fan` files).
 
@@ -24,12 +24,12 @@ A `.fan` Fandango specification file consists of
 
 * [_grammar productions_](sec:grammar) (`<production>`)
 * [_constraints_](sec:constraint) (`<constraint>`)
-* [_Python code_](sec:code) (`<python_code>`).
+* [_Python code_](sec:code) (`<python_statement>`).
 
 ```python
 <start> ::= <fandango>
 <fandango> ::= <statement>*
-<statement> ::= <production> | <constraint> | <python_code> | <newline> | <comment>
+<statement> ::= <production> | <constraint> | <python_statement> | <newline> | <comment>
 ```
 
 
@@ -382,18 +382,11 @@ These operators can be combined and parenthesized:
 (sec:code)=
 ## Python Code
 
-In a `.fan` file, anything that is neither a [grammar production rule](sec:grammar) nor a [constraint](sec:constraint) is interpreted as Python code.
-For details on Python syntax and semantics, consult the [Python language reference](https://docs.python.org/3/reference/index.html)
+In a `.fan` file, anything that is neither a [grammar production rule](sec:grammar) nor a [constraint](sec:constraint) is interpreted as _Python code_, parsed as `<statement>` in the [official Python grammar](https://docs.python.org/3/reference/grammar.html).
 
-Let us define the following Python elements to complete the grammar.
+Also, in the above spec, any nonterminal in the form `<python_NAME>` (say, `<python_expression>`) refers to `<NAME>` (say, `<expression>`) in the [official Python grammar](https://docs.python.org/3/reference/grammar.html).
 
-```python
-<python_code> ::= 'pass' <newline>
-<python_slices> ::= '0:1'
-<python_arguments> ::= '1'
-<python_expression> ::= '1' | <selector>
-<python_genexp> ::= '[for' <_> <name> <_> 'in' <_> <name> ':' <_> <python_expression> ']'
-```
+For more details on Python syntax and semantics, consult the [Python language reference](https://docs.python.org/3/reference/index.html).
 
 
 ## The Full Spec
@@ -428,14 +421,14 @@ with open(TARGET, 'w') as target:
         elif ignore:
             pass
         elif code or line.startswith('#') or line == '\n':
-            target.write(f'{line}') 
+            target.write(f'{line}')
         else:
             target.write(f'# {line}')
 ```
 
 You can access the above spec [`fandango.fan`](fandango.fan) for reference.
 
-`fandango.fan` is sufficient for parsing `.fan` input without Python expressions:
+`fandango.fan` is sufficient for parsing `.fan` input without Python expressions or code:
 
 ```shell
 $ echo '<start> ::= "a" | "b" | "c"' | fandango parse -f fandango.fan -o -
@@ -444,9 +437,21 @@ $ echo '<start> ::= "a" | "b" | "c"' | fandango parse -f fandango.fan -o -
 ```{code-cell}
 :tags: ["remove-input"]
 !echo '<start> ::= "a" | "b" | "c"' | fandango parse -f fandango.fan -o -
+assert _exit_code == 0
 ```
 
-Of course, it is also possible to produce Fandango specs using `fandango.fan`:
+To complete the grammar, `fandango.fan` provides placeholders for included Python elements:
+
+```python
+<python_statement> ::= 'pass' <newline>
+<python_slices> ::= '0:1'
+<python_arguments> ::= '1'
+<python_expression> ::= '1' | <selector>
+<python_genexp> ::= '[for' <_> <name> <_> 'in' <_> <name> ':' <_> <python_expression> ']'
+```
+
+Hence, it is also possible to produce Fandango specs (with set Python code) using `fandango.fan`.
+Hence, Fandango can be fuzzed with itself:
 
 ```shell
 $ fandango fuzz -f fandango.fan -n 1
@@ -454,10 +459,11 @@ $ fandango fuzz -f fandango.fan -n 1
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f fandango.fan --random-seed 6 -n 1
+!fandango fuzz -f fandango.fan --random-seed 9 -n 1
+assert _exit_code == 0
 ```
 
 % FIXME: Implement this
-Note that this input satisfies the Fandango syntax, but not its _semantics_; one would have to add extra constraints such that all used nonterminals are defined.
+Note that such generated files satisfy the Fandango syntax, but not its _semantics_.
+For instance, one would have to add extra constraints such that all used nonterminals are defined.
 
-Still, Fandango can be fuzzed with itself :-)
