@@ -175,6 +175,7 @@ class Fandango:
         self.solution_set = self.evaluator.solution_set
         self.desired_solutions = desired_solutions
 
+
     def evolve(self) -> List[DerivationTree]:
         LOGGER.info("---------- Starting evolution ----------")
         start_time = time.time()
@@ -225,7 +226,7 @@ class Fandango:
                         if self.profiling:
                             self.profiler.start_timer("crossover")
                         child1, child2 = self.crossover_operator.crossover(
-                            parent1, parent2
+                            self.grammar, parent1, parent2
                         )
                         if self.profiling:
                             self.profiler.stop_timer("crossover")

@@ -89,8 +89,8 @@
 ## File Size Constraint "file_size_constr" (generator in grammar)
 
 forall <entr> in <entry>:
-    int(<entr>.<header>.<file_size>, 8) >= 10 and
-    int(<entr>.<header>.<file_size>, 8) <= 100
+    int(str(<entr>.<header>.<file_size>), 8) >= 10 and
+    int(str(<entr>.<header>.<file_size>), 8) <= 100
 ;
 
 ## File Name Length Constraint "file_name_length_constraint" (generator in grammar)
@@ -306,8 +306,7 @@ def generate_content():
 ## 16. Content Size Constraint "content_size_constr" (constraint for the fuzzer)
 
 forall <entr> in <entry>:
-    str(<entr>.<content>.<content_chars>) == str(<entr>.<content>.<content_chars>).ljust(int(<entr>.<header>.<file_size>, 8), " ")
-;
+    str(<entr>.<content>.<content_chars>) == str(<entr>.<content>.<content_chars>).ljust(int(str(<entr>.<header>.<file_size>), 8), " ");
 
 ## 17. Final Entry Length Constraint "final_entry_length_constraint" (generator in grammar)
 
