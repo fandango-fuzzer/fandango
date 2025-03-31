@@ -115,7 +115,6 @@ $(HTML_MARKER): $(DOCS_SOURCES) $(ALL_HTML_MARKER)
 	$(PATCH_HTML)
 	@$(CHECK_DOCS)
 	echo 'Success' > $@
-	-$(REFRESH_HTML)
 	@echo Output written to $(HTML_INDEX)
 
 # If we change Python sources, _toc.yml, or _config.yml, all docs need to be rebuilt

@@ -545,9 +545,11 @@ def check_grammar_definitions(
             f"Undefined symbol {first_undefined_symbol!s} in grammar"
         )
         if undefined_symbols:
-            error.add_note(
-                f"Other undefined symbols: {', '.join(str(symbol) for symbol in undefined_symbols)}"
-            )
+            if getattr(Exception, 'add_note', None):
+                # Python 3.11+ has add_note() method
+                error.add_note(
+                    f"Other undefined symbols: {', '.join(str(symbol) for symbol in undefined_symbols)}"
+                )
         raise error
 
 
