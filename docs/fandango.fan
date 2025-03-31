@@ -1,7 +1,7 @@
 # Automatically generated from `Language.md`. Do not edit.
 
 
-# Fandango Syntax and Semantics
+# Fandango Language Reference
 
 # This chapter specifies the exact syntax (and semantics) of Fandango specifications (`.fan` files).
 
@@ -13,11 +13,11 @@
 
 # * [_grammar productions_](sec:grammar) (`<production>`)
 # * [_constraints_](sec:constraint) (`<constraint>`)
-# * [_Python code_](sec:code) (`<python_code>`).
+# * [_Python code_](sec:code) (`<python_statement>`).
 
 <start> ::= <fandango>
 <fandango> ::= <statement>*
-<statement> ::= <production> | <constraint> | <python_code> | <newline> | <comment>
+<statement> ::= <production> | <constraint> | <python_statement> | <newline> | <comment>
 
 
 ## Whitespace
@@ -71,8 +71,10 @@
 <nonterminal> ::= '<' <name> '>'
 <name> ::= r'(\w|_)(\w|\d|_)*'
 
+# Like Python, Fandango allows all Unicode letters and digits in identifiers.
+
 # :::{note}
-# We recommend to use only ASCII letters and digits for identifiers.
+# For portability, we recommend to use only ASCII letters `a`..`z`, `A`..`Z`, digits `0`..`9`, and underscores `_` in identifiers.
 # :::
 
 
@@ -142,7 +144,7 @@
 # Fandango supports the full [Python syntax for string literals](https://docs.python.org/3/reference/lexical_analysis.html#string-and-bytes-literals):
 
 # * Short strings are enclosed in single (`'...'`) or double (`"..."`) quotes
-# * Long strings are enclosed in triple quotes (`'''...'''`)
+# * Long strings are enclosed in triple quotes (`'''...'''` and `"""..."""`)
 # * One can use [escape sequences](https://docs.python.org/3/reference/lexical_analysis.html#escape-sequences) (`\n`) to express special characters
 
 # Fandango interprets Python _raw strings_ (using an `r` prefix, as in `r'foo'`) as _regular expressions_.
@@ -293,28 +295,38 @@
 
 ## Python Code
 
-# In a `.fan` file, anything that is neither a [grammar production rule](sec:grammar) nor a [constraint](sec:constraint) is interpreted as Python code.
-# For details on Python syntax and semantics, consult the [Python language reference](https://docs.python.org/3/reference/index.html)
+# In a `.fan` file, anything that is neither a [grammar production rule](sec:grammar) nor a [constraint](sec:constraint) is interpreted as _Python code_, parsed as `<statement>` in the [official Python grammar](https://docs.python.org/3/reference/grammar.html).
 
-# Let us define the following Python elements to complete the grammar.
+# Also, in the above spec, any nonterminal in the form `<python_NAME>` (say, `<python_expression>`) refers to `<NAME>` (say, `<expression>`) in the [official Python grammar](https://docs.python.org/3/reference/grammar.html).
 
-<python_code> ::= 'pass' <newline>
-<python_slices> ::= '0:1'
-<python_arguments> ::= '1'
-<python_expression> ::= '1' | <selector>
-<python_genexp> ::= '[for' <_> <name> <_> 'in' <_> <name> ':' <_> <python_expression> ']'
+# For more details on Python syntax and semantics, consult the [Python language reference](https://docs.python.org/3/reference/index.html).
 
 
 ## The Full Spec
 
 
 # You can access the above spec [`fandango.fan`](fandango.fan) for reference.
-# `fandango.fan` is sufficient for parsing `.fan` input without Python expressions:
+
+# `fandango.fan` is sufficient for parsing `.fan` input without Python expressions or code:
 
 # $ echo '<start> ::= "a" | "b" | "c"' | fandango parse -f fandango.fan -o -
 
 
-# It is also possible to fuzz Fandango with `fandango.fan`:
+# To complete the grammar, `fandango.fan` provides placeholders for included Python elements:
+
+<python_statement> ::= 'pass' <newline>
+<python_slices> ::= '0:1'
+<python_arguments> ::= '1'
+<python_expression> ::= '1' | <selector>
+<python_genexp> ::= '[for' <_> <name> <_> 'in' <_> <name> ':' <_> <python_expression> ']'
+
+# Hence, it is also possible to produce Fandango specs (with set Python code) using `fandango.fan`.
+# Hence, Fandango can be fuzzed with itself:
 
 # $ fandango fuzz -f fandango.fan -n 1
+
+
+# % FIXME: Implement this
+# Note that such generated files satisfy the Fandango syntax, but not its _semantics_.
+# For instance, one would have to add extra constraints such that all used nonterminals are defined.
 
