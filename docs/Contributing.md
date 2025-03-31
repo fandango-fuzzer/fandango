@@ -11,7 +11,7 @@ kernelspec:
 ---
 
 (sec:contributing)=
-# Contributing
+# Contributing to Fandango
 
 Welcome!
 Fandango is a community project that aims to work for a wide
@@ -179,3 +179,7 @@ $ make html
 
 to create a HTML version of the documentation in `docs/_build/html`.
 
+
+## Attributions
+
+This guide was forked from the [mypy contribution guide](https://github.com/python/mypy/blob/master/CONTRIBUTING.md), which is licensed under the terms of the MIT license.
