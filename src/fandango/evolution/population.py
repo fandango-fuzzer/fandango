@@ -40,7 +40,6 @@ class PopulationManager:
     def _is_population_complete(self, unique_population: List[DerivationTree]) -> bool:
         return len(unique_population) >= self.population_size
 
-
     def generate_random_initial_population(
         self, fix_func: Callable[[DerivationTree], DerivationTree]
     ) -> List[DerivationTree]:
@@ -49,7 +48,10 @@ class PopulationManager:
         attempts = 0
         max_attempts = self.population_size * 10
 
-        while not self._is_population_complete(unique_population) and attempts < max_attempts:
+        while (
+            not self._is_population_complete(unique_population)
+            and attempts < max_attempts
+        ):
             candidate = fix_func(self._generate_population_entry())
             self.add_unique_individual(unique_population, candidate, unique_hashes)
             attempts += 1
@@ -69,7 +71,10 @@ class PopulationManager:
         attempts = 0
         max_attempts = (self.population_size - len(current_population)) * 10
 
-        while not self._is_population_complete(current_population) and attempts < max_attempts:
+        while (
+            not self._is_population_complete(current_population)
+            and attempts < max_attempts
+        ):
             candidate = fix_func(self._generate_population_entry())
             if hash(candidate) not in unique_hashes:
                 unique_hashes.add(hash(candidate))
@@ -84,6 +89,7 @@ class PopulationManager:
                 current_population.append(self._generate_population_entry())
 
         return current_population
+
 
 class IoPopulationManager(PopulationManager):
 

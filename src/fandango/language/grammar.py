@@ -905,7 +905,9 @@ class ParseState:
 
     def __hash__(self):
         if self._hash is None:
-            self._hash = hash((self.nonterminal, self.position, self.symbols, self._dot))
+            self._hash = hash(
+                (self.nonterminal, self.position, self.symbols, self._dot)
+            )
         return self._hash
 
     def __eq__(self, other):
@@ -1091,7 +1093,11 @@ class Grammar(NodeVisitor):
             self._context_rules[nonterminal] = (node, non_terminal)
             return nonterminal
 
-        def set_tmp_rule(self, rule: List[List[tuple[NonTerminal, frozenset]]], nonterminal: Optional[NonTerminal] = None):
+        def set_tmp_rule(
+            self,
+            rule: List[List[tuple[NonTerminal, frozenset]]],
+            nonterminal: Optional[NonTerminal] = None,
+        ):
             if nonterminal is None:
                 nonterminal = NonTerminal(f"<*tmp_{len(self._tmp_rules)}*>")
             rule_id = nonterminal.symbol[2:-2]
@@ -1164,9 +1170,7 @@ class Grammar(NodeVisitor):
                 alts.append(node_min * [nt] + [prev])
             if is_context:
                 min_nt, rule_id = self.set_tmp_rule(alts)
-                intermediate_nt = NonTerminal(
-                    f"<__{NodeType.REPETITION}:{rule_id}>"
-                )
+                intermediate_nt = NonTerminal(f"<__{NodeType.REPETITION}:{rule_id}>")
                 self.set_tmp_rule([[min_nt]], intermediate_nt)
             else:
                 min_nt = self.set_implicit_rule(alts)
@@ -1640,7 +1644,7 @@ class Grammar(NodeVisitor):
                                     time_took = time.time() - time_start
                                     time_took = time_took * 1000
                                     self.elapsed_time += time_took
-                                    #print(f"Parser took {time_took:4.2f}ms/{self.elapsed_time:4.2f}ms: {start} {word}")
+                                    # print(f"Parser took {time_took:4.2f}ms/{self.elapsed_time:4.2f}ms: {start} {word}")
                                     time_start = time.time()
                                     yield child
 
@@ -1966,7 +1970,9 @@ class Grammar(NodeVisitor):
             raise GeneratorParserValueError(
                 f"Failed to parse generated string: {string} for {symbol} with generator {self.generators[symbol]}"
             )
-        tree.generator_params = [p.__deepcopy__(None, copy_parent=False) for p in generator_params]
+        tree.generator_params = [
+            p.__deepcopy__(None, copy_parent=False) for p in generator_params
+        ]
         return tree
 
     def collapse(self, tree: DerivationTree) -> DerivationTree:

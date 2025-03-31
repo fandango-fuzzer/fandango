@@ -283,7 +283,9 @@ class DerivationTree:
             symbol, [DerivationTree.from_tree(child) for child in children]
         )
 
-    def __deepcopy__(self, memo, copy_children=True, copy_params=True, copy_parent=True):
+    def __deepcopy__(
+        self, memo, copy_children=True, copy_params=True, copy_parent=True
+    ):
         if memo is None:
             memo = {}
         if id(self) in memo:
@@ -302,7 +304,9 @@ class DerivationTree:
 
         # Deepcopy the children
         if copy_children:
-            copied.set_children([copy.deepcopy(child, memo) for child in self._children])
+            copied.set_children(
+                [copy.deepcopy(child, memo) for child in self._children]
+            )
 
         # Set the parent to None or update if necessary
         if copy_parent:
