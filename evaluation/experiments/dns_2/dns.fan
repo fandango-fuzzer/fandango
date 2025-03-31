@@ -161,6 +161,9 @@ where <dns_req>.<question>.<q_name> == <dns_resp>.<answer>.<q_name>
 where <dns_req>.<question> == <dns_resp>.<question>
 where bytes(<dns_req>.<header_req>.<req_qd_count>) == bytes(<dns_resp>.<header_resp>.<resp_qd_count>)
 where bytes(<dns_req>.<header_req>.<req_qd_count>) == bytes(<dns_resp>.<header_resp>.<resp_an_count>)
+
+
+
 <req_qd_count> ::= <byte>{2}
 <resp_qd_count> ::= <bit>{16} := pack(">H", 1)
 <resp_an_count> ::= <bit>{16} := pack(">H", randint(0, 2))
@@ -198,11 +201,14 @@ where bytes(<dns_req>.<header_req>.<req_qd_count>) == bytes(<dns_resp>.<header_r
 <a_rd_length> ::= <byte>{2} := pack(">H", randint(0, 0))
 <a_rdata> ::= <byte>
 
-
-<type_a> ::= 0{15} 1 <rr_class> <a_ttl> 0{13} 1 0 0 <byte>{4}
-<type_ns> ::= 0{14} 1 0 <rr_class> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
-<type_soa> ::= 0{13} 1 1 0 <rr_class> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
-<type_opt> ::= 0{10} 1 0 1 0 0 1 <udp_payload_size> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
+<type_id_a> ::= 0{15} 1
+<type_id_ns> ::= 0{14} 1 0
+<type_id_soa> ::= 0{13} 1 1 0
+<type_id_opt> ::= 0{10} 1 0 1 0 0 1
+<type_a> ::= <type_id_a> <rr_class> <a_ttl> 0{13} 1 0 0 <byte>{4}
+<type_ns> ::= <type_id_ns> <rr_class> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
+<type_soa> ::= <type_id_soa> <rr_class> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
+<type_opt> ::= <type_id_opt> <udp_payload_size> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
 <udp_payload_size> ::= <bit>{16}
 
 
