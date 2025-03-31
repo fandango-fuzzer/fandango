@@ -37,6 +37,7 @@ def evaluate_ssl():
         max_generations=100,
         desired_solutions=100,
         population_size=100,
+        profiling=True,
     )
     fandango.evolve()
     end_time = time.time()
