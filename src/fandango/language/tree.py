@@ -244,6 +244,23 @@ class DerivationTree:
         else:
             return items
 
+    def get_last_by_path(self, path: list[NonTerminal]):
+        symbol = path[0]
+        if self.symbol == symbol:
+            return self._get_last_by_path(path[1:])
+        raise IndexError(f"No such path in tree: {path} Tree: {self}")
+
+    def _get_last_by_path(self, path: list[NonTerminal]) -> "DerivationTree":
+        symbol = path[0]
+        for child in self._children[::-1]:
+            if child.symbol == symbol:
+                if len(path) == 1:
+                    return child
+                else:
+                    return child._get_last_by_path(path[1:])
+        raise IndexError(f"No such path in tree: {path} Tree: {self.get_root(stop_at_argument_begin=True)}")
+
+
     def __str__(self):
         return self.to_string()
 

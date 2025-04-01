@@ -1162,7 +1162,7 @@ class Grammar(NodeVisitor):
                 if prev is not None:
                     alts.append([nt, prev])
                 if is_context:
-                    prev = self.set_tmp_rule(alts)
+                    prev, rule_id = self.set_tmp_rule(alts)
                 else:
                     prev = self.set_implicit_rule(alts)
             alts = [node_min * [nt]]
@@ -1255,7 +1255,7 @@ class Grammar(NodeVisitor):
             ]
 
         def predict(
-            self, state: ParseState, table: List[Set[ParseState] | Column], k: int
+            self, state: ParseState, table: List[Set[ParseState] | Column], k: int, hookin_parent: DerivationTree = None
         ):
             if state.dot in self._rules:
                 table[k].update(
@@ -1280,7 +1280,7 @@ class Grammar(NodeVisitor):
                 )
             elif state.dot in self._context_rules:
                 node, nt = self._context_rules[state.dot]
-                self.predict_ctx_rule(state, table, k, node, nt)
+                self.predict_ctx_rule(state, table, k, node, nt, hookin_parent)
 
         def construct_incomplete_tree(
             self, state: ParseState, table: List[Set[ParseState] | Column]
@@ -1319,19 +1319,27 @@ class Grammar(NodeVisitor):
             k: int,
             node: Node,
             nt_rule,
+            hookin_parent: DerivationTree = None,
         ):
             if not isinstance(node, Repetition):
                 raise FandangoValueError("Node needs to be a Repetition")
             tree = self.construct_incomplete_tree(state, table)
             tree = self.collapse(tree)
+            if hookin_parent is not None:
+                hookin_parent.set_children(hookin_parent.children + [tree])
             try:
-                [[context_nt]] = self.visitRepetition(node, nt_rule, tree)
+                [[context_nt]] = self.visitRepetition(node, nt_rule, tree if hookin_parent is None else hookin_parent)
             except ValueError:
                 return
+            finally:
+                if hookin_parent is not None:
+                    hookin_parent.set_children(hookin_parent.children[:-1])
             new_symbols = []
+            placed = False
             for symbol, dot_params in state.symbols:
-                if symbol == state.dot:
+                if symbol == state.dot and not placed:
                     new_symbols.append(context_nt)
+                    placed = True
                 else:
                     new_symbols.append((symbol, dot_params))
             new_state = ParseState(
@@ -1581,8 +1589,10 @@ class Grammar(NodeVisitor):
                     )
                     origin_states = table[new_state.position].find_dot(new_state.dot)
                     if len(origin_states) != 1:
-                        continue
+                        new_state = None
+                        break
                     origin_state = origin_states[0]
+
 
                 if new_state is not None:
                     col.replace(current_col_state, new_state)
@@ -1592,6 +1602,7 @@ class Grammar(NodeVisitor):
             word: str,
             start: str | NonTerminal = "<start>",
             mode: ParsingMode = ParsingMode.COMPLETE,
+            hookin_parent: DerivationTree = None,
             starter_bit=-1,
         ):
             """
@@ -1602,6 +1613,7 @@ class Grammar(NodeVisitor):
             if isinstance(start, str):
                 start = NonTerminal(start)
             self._clear_tmp()
+            hookin_parent=deepcopy(hookin_parent)
 
             # LOGGER.debug(f"Parsing {word} into {start!s}")
 
@@ -1651,7 +1663,7 @@ class Grammar(NodeVisitor):
                         self.complete(state, table, k)
                     elif not state.is_incomplete:
                         if state.next_symbol_is_nonterminal():
-                            self.predict(state, table, k)
+                            self.predict(state, table, k, hookin_parent)
                             # LOGGER.debug(f"Predicted {state} at position {w:#06x} ({w}) {word[w:]!r}")
                         else:
                             if isinstance(state.dot.symbol, int):
@@ -1714,6 +1726,7 @@ class Grammar(NodeVisitor):
             word: str | bytes | DerivationTree,
             start: str | NonTerminal = "<start>",
             mode: ParsingMode = ParsingMode.COMPLETE,
+            hookin_parent: DerivationTree = None,
             include_controlflow: bool = False,
         ) -> Generator[tuple[DerivationTree, any] | DerivationTree, None, None]:
             """
@@ -1734,7 +1747,7 @@ class Grammar(NodeVisitor):
                 start = NonTerminal(start)
             assert isinstance(start, NonTerminal)
 
-            cache_key = (word, start, mode)
+            cache_key = (word, start, mode, hookin_parent)
             if cache_key in self._cache:
                 forest = self._cache[cache_key]
                 for tree in forest:
@@ -1747,7 +1760,7 @@ class Grammar(NodeVisitor):
             self._incomplete = set()
             forest = []
             for tree in self._parse_forest(
-                word, start, mode=mode, starter_bit=starter_bit
+                word, start, mode=mode, hookin_parent=hookin_parent, starter_bit=starter_bit
             ):
                 tree = self.to_derivation_tree(tree)
                 forest.append(tree)
@@ -1771,6 +1784,7 @@ class Grammar(NodeVisitor):
             word: str | bytes | DerivationTree,
             start: str | NonTerminal = "<start>",
             mode: ParsingMode = ParsingMode.COMPLETE,
+            hookin_parent: DerivationTree = None,
             include_controlflow: bool = False,
         ):
             """
@@ -1778,7 +1792,7 @@ class Grammar(NodeVisitor):
             even for incomplete inputs
             """
             return self.parse_forest(
-                word, start, mode=mode, include_controlflow=include_controlflow
+                word, start, mode=mode, hookin_parent=hookin_parent, include_controlflow=include_controlflow
             )
 
         def parse(
@@ -1786,6 +1800,7 @@ class Grammar(NodeVisitor):
             word: str | bytes | DerivationTree,
             start: str | NonTerminal = "<start>",
             mode: ParsingMode = ParsingMode.COMPLETE,
+            hookin_parent: DerivationTree = None,
             include_controlflow: bool = False,
         ):
             """
@@ -1793,7 +1808,7 @@ class Grammar(NodeVisitor):
             or `None` if no parse is possible
             """
             tree_gen = self.parse_multiple(
-                word, start=start, mode=mode, include_controlflow=include_controlflow
+                word, start=start, mode=mode, hookin_parent=hookin_parent, include_controlflow=include_controlflow
             )
             return next(tree_gen, None)
 
@@ -2030,10 +2045,11 @@ class Grammar(NodeVisitor):
         word: str | bytes | DerivationTree,
         start: str | NonTerminal = "<start>",
         mode: Parser.ParsingMode = Parser.ParsingMode.COMPLETE,
+        hookin_parent: DerivationTree = None,
         include_controlflow: bool = False,
     ):
         return self._parser.parse(
-            word, start, mode=mode, include_controlflow=include_controlflow
+            word, start, mode=mode, hookin_parent=hookin_parent, include_controlflow=include_controlflow
         )
 
     def parse_forest(
