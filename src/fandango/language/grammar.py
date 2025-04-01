@@ -725,10 +725,15 @@ class Grammar(NodeVisitor):
             self,
             symbol: Symbol,
             children: Optional[List["DerivationTree"]] = None,
+            *,
             parent: Optional["DerivationTree"] = None,
             read_only: bool = False,
         ):
-            super().__init__(symbol, children, parent, [], read_only)
+            super().__init__(symbol,
+                             children,
+                             parent=parent,
+                             sources=[],
+                             read_only=read_only)
 
         def set_children(self, children: List["DerivationTree"]):
             self._children = children
@@ -1158,9 +1163,9 @@ class Grammar(NodeVisitor):
                     DerivationTree(
                         child.symbol,
                         children,
-                        child.parent,
-                        child.sources,
-                        child.read_only,
+                        parent=child.parent,
+                        sources=child.sources,
+                        read_only=child.read_only,
                     )
                 )
             return ret
@@ -1170,9 +1175,9 @@ class Grammar(NodeVisitor):
             return DerivationTree(
                 tree.symbol,
                 children,
-                tree.parent,
-                tree.sources,
-                tree.read_only,
+                parent=tree.parent,
+                sources=tree.sources,
+                read_only=tree.read_only,
             )
 
         def complete(

@@ -16,16 +16,25 @@ class DerivationTree:
         self,
         symbol: Symbol,
         children: Optional[List["DerivationTree"]] = None,
+        *,
         parent: Optional["DerivationTree"] = None,
         sources: list["DerivationTree"] = None,
         read_only: bool = False,
     ):
+        """
+        Create a new derivation tree node.
+        :param symbol: The symbol for this node (type Symbol)
+        :param children: The children of this node (a list of DerivationTree)
+        :param parent: (optional) The parent of this node (a DerivationTree node)
+        :param sources: (optional) The sources of this node (a list of DerivationTrees used in generators to produce this node)
+        :param read_only: If True, the node is read-only and cannot be modified (default: False)
+        """
         if not isinstance(symbol, Symbol):
             raise TypeError(f"Expected Symbol, got {type(symbol)}")
 
         self.hash_cache = None
         self._parent: Optional["DerivationTree"] = parent
-        self.symbol: Symbol = symbol
+        self._symbol: Symbol = symbol
         self._children: list["DerivationTree"] = []
         self._sources: list["DerivationTree"] = []
         if sources is not None:
@@ -33,6 +42,7 @@ class DerivationTree:
         self.read_only = read_only
         self._size = 1
         self.set_children(children or [])
+        self.invalidate_hash()
 
     def __len__(self):
         return len(self._children)
