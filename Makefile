@@ -4,5 +4,5 @@ install:
 test:
 	pytest
 
-experiments:
-	python evaluation/
+evaluation:
+	python evaluation/vs_isla/run_evaluation.py
