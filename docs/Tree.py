@@ -11,12 +11,16 @@ class Tree:
     id_counter = 1
     dot = None
 
-    def __init__(self, symbol, *children):
+    def __init__(self, symbol, *children, sources=[]):
         self.symbol = symbol
         self._children = children
+        self._sources = sources
 
     def children(self):
         return self._children
+
+    def sources(self):
+        return self._sources
 
     def visualize(self, title="Derivation Tree"):
         """Display as PNG. (PNG works with HTML and PDF books, SVG does not)"""
@@ -52,5 +56,9 @@ class Tree:
         for child in self.children():
             child_name = child._visualize()
             Tree.dot.edge(name, child_name)
+
+        for source in self.sources():
+            source_name = source._visualize()
+            Tree.dot.edge(name, source_name)
 
         return name

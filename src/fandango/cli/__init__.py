@@ -934,6 +934,7 @@ def parse_file(fd, args, grammar, constraints, settings):
     while tree := next(tree_gen, None):
         LOGGER.debug(f"Checking parse alternative #{alternative_counter}")
         last_tree = tree
+        grammar.populate_generator_params(last_tree)
 
         passed = True
         for constraint in constraints:
