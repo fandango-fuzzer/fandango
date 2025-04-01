@@ -3,10 +3,7 @@ from fandango.language.parse import parse_file
 
 
 def evaluate_hash():
-    grammar, constraints = parse_file("hash.fan")
-
-    print(grammar)
-    print(constraints)
+    grammar, constraints = parse_file("hash/hash.fan")
 
     fandango = FANDANGO(grammar, constraints, verbose=True)
     fandango.evolve()

@@ -3,10 +3,7 @@ from fandango.language.parse import parse_file
 
 
 def evaluate_faker():
-    grammar, constraints = parse_file("faker.fan")
-
-    print(grammar)
-    print(constraints)
+    grammar, constraints = parse_file("faker/faker.fan")
 
     fandango = FANDANGO(grammar, constraints, verbose=True)
     fandango.evolve()

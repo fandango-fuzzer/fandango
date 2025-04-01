@@ -1,12 +1,12 @@
 from typing import Tuple
 
-from evaluation.evaluation.csv_evaluation.csv_evaluation import evaluate_csv
-from evaluation.evaluation.rest_evaluation.rest_evaluation import evaluate_rest
-from evaluation.evaluation.scriptsizec_evaluation.scriptsizec_evaluation import (
+from evaluation.vs_isla.csv_evaluation.csv_evaluation import evaluate_csv
+from evaluation.vs_isla.rest_evaluation.rest_evaluation import evaluate_rest
+from evaluation.vs_isla.scriptsizec_evaluation.scriptsizec_evaluation import (
     evaluate_scriptsizec,
 )
-from evaluation.evaluation.tar_evaluation.tar_evaluation import evaluate_tar
-from evaluation.evaluation.xml_evaluation.xml_evaluation import evaluate_xml
+from evaluation.vs_isla.tar_evaluation.tar_evaluation import evaluate_tar
+from evaluation.vs_isla.xml_evaluation.xml_evaluation import evaluate_xml
 
 
 # Return the evaluation results as a tuple of values (subject, total, valid, percentage, diversity, mean_length, median)
