@@ -40,4 +40,3 @@ class ConstraintTest(unittest.TestCase):
 
         for path in grammar.traverse_derivation(tree):
             print(path)
-

@@ -28,6 +28,8 @@ all: package-info parser html web pdf
 # requirements.txt:	pyproject.toml
 # 	pip-compile $<
 
+test:
+	pytest
 
 ## Package info
 EGG_INFO = src/fandango_fuzzer.egg-info
@@ -192,8 +194,8 @@ EVALUATION_MARKER = $(EVALUATION)/test-evaluation.txt
 
 # python -m evaluation.vs_isla.run_evaluation
 .PHONY: evaluation evaluate
-evaluation evaluate $(EVALUATION_MARKER): $(PYTHON_SOURCES) $(EVALUATION_SOURCES)
-	$(PYTHON) -m evaluation.vs_isla.run_evaluation 1
+evaluation $(EVALUATION_MARKER): $(PYTHON_SOURCES) $(EVALUATION_SOURCES)
+	$(PYTHON) -m evaluation.vs_isla.run_evaluation 3600
 	echo 'Success' > $(EVALUATION_MARKER)
 
 run-evaluation: $(EVALUATION_MARKER)
