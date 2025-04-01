@@ -21,7 +21,7 @@
     <file_name_prefix>
     <header_padding>
 ;
-<file_name> ::= <file_name_first_char> <file_name_chars> <NULs> :: generate_file_name() ;
+<file_name> ::= <file_name_first_char> <file_name_chars> <NULs> := generate_file_name() ;
 <file_name_chars> ::= <file_name_char> <file_name_chars> | "" ;
 <NULs> ::= <NUL> <NULs> | "" ;
 <file_mode> ::= <octal_digit>{6} <SPACE> <NUL>;
@@ -31,10 +31,10 @@
 <mod_time> ::= <octal_digit>{11} <SPACE>;
 <checksum> ::= <octal_digit>{6} <NUL> <SPACE> ;
 <typeflag> ::= '0' ;
-<linked_file_name> ::= <file_name_first_char> <file_name_char_or_nul>{99} | <NUL>{100} :: generate_linked_file_name();
+<linked_file_name> ::= <file_name_first_char> <file_name_char_or_nul>{99} | <NUL>{100} := generate_linked_file_name();
 <file_name_char_or_nul> ::= <file_name_char> | <NUL> ;
-<uname> ::= <uname_first_char> <name_char_dollar_nul>{31} :: generate_uname("<uname>") ;
-<gname> ::= <uname_first_char> <name_char_dollar_nul>{31} :: generate_uname("<gname>") ;
+<uname> ::= <uname_first_char> <name_char_dollar_nul>{31} := generate_uname("<uname>") ;
+<gname> ::= <uname_first_char> <name_char_dollar_nul>{31} := generate_uname("<gname>") ;
 <name_char_dollar_nul> ::= <uname_char> | '$' | <NUL> ;
 <uname_first_char> ::=
     'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm'
@@ -49,7 +49,7 @@
 <dev_min_num> ::= <octal_digit>{6} <SPACE> <NUL> ;
 <file_name_prefix> ::= <NUL>{155};
 <header_padding> ::= <NUL>{12};
-<content> ::= <char_or_nul>{512} :: generate_content() ;
+<content> ::= <char_or_nul>{512} := generate_content() ;
 <char_or_nul> ::= <character> | <NUL> ;
 <final_entry> ::= <NUL>{1024};
 <octal_digit> ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' ;
