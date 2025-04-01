@@ -1810,11 +1810,11 @@ class Grammar(NodeVisitor):
     ):
         self.rules = rules or {}
         self.generators: Dict[NonTerminal, LiteralGenerator] = {}
-        self._parser = Grammar.Parser(self)
         self.fuzzing_mode = fuzzing_mode
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
         self._visited = set()
+        self._parser = Grammar.Parser(self)
 
     @staticmethod
     def _topological_sort(graph: dict[str, set[str]]):
