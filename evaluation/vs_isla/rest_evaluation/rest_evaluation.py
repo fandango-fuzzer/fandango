@@ -30,8 +30,10 @@ def is_syntactically_valid_rest(rst_string):
         return False
 
 
-def evaluate_rest(seconds=60) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
-    grammar, constraints = parse_file("rest_evaluation/rest.fan")
+def evaluate_rest(
+    seconds=60,
+) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
+    grammar, constraints = parse_file("evaluation/vs_isla/rest_evaluation/rest.fan")
     solutions = []
 
     time_in_an_hour = time.time() + seconds

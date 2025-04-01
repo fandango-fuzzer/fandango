@@ -12,8 +12,8 @@ from fandango.language.parse import parse_file
 
 
 def declare_variables(c_code):
-    import re
     import random
+    import re
 
     # Regular expressions to find variable usage and check for declarations
     var_usage_pattern = r"\b([a-zA-Z])\b"  # Matches single-letter variables
@@ -29,7 +29,7 @@ def declare_variables(c_code):
 
     # Identify undeclared single-letter variables
     undeclared_vars = (
-            var_usage - declared_vars - {"while", "if", "for", "return", "main"}
+        var_usage - declared_vars - {"while", "if", "for", "return", "main"}
     )
 
     # Generate declarations for undeclared variables
@@ -82,9 +82,11 @@ def is_valid_tinyc_code(c_code: str) -> bool:
 
 
 def evaluate_scriptsizec(
-        seconds=60,
+    seconds=60,
 ) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
-    grammar, constraints = parse_file("scriptsizec_evaluation/scriptsizec.fan")
+    grammar, constraints = parse_file(
+        "evaluation/vs_isla/scriptsizec_evaluation/scriptsizec.fan"
+    )
     solutions = []
 
     time_in_an_hour = time.time() + seconds

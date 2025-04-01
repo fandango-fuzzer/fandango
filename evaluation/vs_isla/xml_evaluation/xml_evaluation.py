@@ -17,7 +17,7 @@ def is_syntactically_valid_xml(xml_string):
 
 
 def evaluate_xml(seconds=60) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
-    grammar, constraints = parse_file("xml_evaluation/xml.fan")
+    grammar, constraints = parse_file("evaluation/vs_isla/xml_evaluation/xml.fan")
     solutions = []
 
     time_in_an_hour = time.time() + seconds
