@@ -20,9 +20,14 @@ class FandangoError(ValueError):
 class FandangoParseError(FandangoError, SyntaxError):
     """Error during parsing inputs"""
 
-    def __init__(self, position: int, *, message: str = None):
+    def __init__(self, message: str | None = None, position: int | None = None):
         if message is None:
-            message = f"Parse error at position {position}"
+            if position is not None:
+                message = f"Parse error at position {position}"
+            else:
+                message = "Parse error"
+
+        # Call the parent class constructors
         FandangoError.__init__(self, message)
         SyntaxError.__init__(self, message)
         self.position = position
@@ -214,7 +219,7 @@ class Fandango(FandangoBase):
         )
         try:
             peek = next(tree_generator)
-            self.grammar.populate_generator_params(peek)
+            self.grammar.populate_sources(peek)
             tree_generator = itertools.chain([peek], tree_generator)
             have_tree = True
         except StopIteration:
@@ -222,7 +227,7 @@ class Fandango(FandangoBase):
 
         if not have_tree:
             position = self.grammar.max_position() + 1
-            raise FandangoParseError(position)
+            raise FandangoParseError(position=position)
 
         return tree_generator
 
