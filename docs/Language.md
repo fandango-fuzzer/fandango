@@ -152,10 +152,13 @@ A symbol can be a [_nonterminal_](sec:nonterminal), a [string](sec:string) or [b
 
 Any symbol can be followed by a repetition specification.
 The syntax `{N,M}` stands for a number of repetitions from `N` to `M`.
+For example, `<a>{3,5}` will match from 3 to 5 `<a>` symbols.
+
 Both `N` and `M` can be omitted:
 
-* If `N` is omitted, it defaults to zero.
-* If `M` is omitted, it defaults to infinity (i.e, any number of repetitions).
+* Omitting `N` creates a lower bound of zero.
+* Omitting `M` creates an infinite upper bound (i.e, any number of repetitions).
+* The comma may not be omitted, as this would create confusion with `{N}` (see below).
 
 :::{tip}
 In Fandango, the number of repetitions is limited.
@@ -164,10 +167,10 @@ Use the `--max-repetitions M` flag to change the limit.
 
 Fandango supports a number of abbreviations for repetitions:
 
-* The syntax `{N}` stands for `{N, N}` (exactly `N` repetitions)
-* The syntax `*` stands for `{0,}` (zero or more repetitions)
-* The syntax `+` stands for `{1,}` (one or more repetitions)
-* The syntax `?` stands for `{0, 1}` (an optional element)
+* The form `{N}` stands for `{N, N}` (exactly `N` repetitions)
+* The form `*` stands for `{0,}` (zero or more repetitions)
+* The form `+` stands for `{1,}` (one or more repetitions)
+* The form `?` stands for `{0,1}` (an optional element)
 
 ```python
 <kleene> ::= <symbol> '*'
