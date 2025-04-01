@@ -86,13 +86,24 @@ def compress_msg(uncompressed):
         name, decompressed_len, len_reduction = compress_name(uncompressed, curr_idx, len_reduction, suffix_dict)
         compressed = compressed + name
         curr_idx += decompressed_len
-        compressed += uncompressed[curr_idx:curr_idx+8]
-        curr_idx += 8
-        r_data_len = byte_to_int(uncompressed[curr_idx:curr_idx+2])
-        compressed += uncompressed[curr_idx:curr_idx+2]
+        rr_type = uncompressed[curr_idx:curr_idx+2]
+        compressed += rr_type
+        rr_type = byte_to_int(rr_type)
         curr_idx += 2
-        compressed += uncompressed[curr_idx:curr_idx+r_data_len]
-        curr_idx += r_data_len
+        compressed += uncompressed[curr_idx:curr_idx+6]
+        curr_idx += 6
+        r_data_len = byte_to_int(uncompressed[curr_idx:curr_idx+2])
+        curr_idx += 2
+
+        if rr_type == 5: # If CNAME entry
+            name, decompressed_len, len_reduction = compress_name(uncompressed, curr_idx, len_reduction, suffix_dict)
+            compressed += pack('>H', len(name))
+            compressed = compressed + name
+            curr_idx += decompressed_len
+        else:
+            compressed += uncompressed[curr_idx-2:curr_idx]
+            compressed += uncompressed[curr_idx:curr_idx+r_data_len]
+            curr_idx += r_data_len
     return compressed
 
 def decompress_name(compressed, name_idx):
@@ -133,13 +144,24 @@ def decompress_msg(compressed):
         name, compressed_len = decompress_name(compressed, curr_idx)
         decompressed = decompressed + name
         curr_idx += compressed_len
-        decompressed += compressed[curr_idx:curr_idx+8]
-        curr_idx += 8
-        r_data_len = byte_to_int(compressed[curr_idx:curr_idx+2])
-        decompressed += compressed[curr_idx:curr_idx+2]
+        rr_type = compressed[curr_idx:curr_idx+2]
+        decompressed += rr_type
+        rr_type = byte_to_int(rr_type)
         curr_idx += 2
-        decompressed += compressed[curr_idx:curr_idx+r_data_len]
-        curr_idx += r_data_len
+        decompressed += compressed[curr_idx:curr_idx+6]
+        curr_idx += 6
+        r_data_len = byte_to_int(compressed[curr_idx:curr_idx+2])
+        curr_idx += 2
+        if rr_type == 5: #If CNAME entry
+            c_name, compressed_len = decompress_name(compressed, curr_idx)
+            decompressed += pack('>H', len(c_name))
+            decompressed += c_name
+            curr_idx += compressed_len
+            pass
+        else:
+            decompressed += compressed[curr_idx-2:curr_idx]
+            decompressed += compressed[curr_idx:curr_idx+r_data_len]
+            curr_idx += r_data_len
     return decompressed
 
 
@@ -194,7 +216,7 @@ where forall <ex> in <start>.<exchange>:
 <question> ::= <q_name> <q_type> <rr_class>
 <q_name> ::= <q_name_written>? 0{8}
 <q_name_written> ::= (<label_len_octet> <byte>{byte_to_int(b'\x00' + bytes(<label_len_octet>))})+ := gen_q_name()
-<q_type> ::= <type_id_a> | <type_id_ns>
+<q_type> ::= <type_id_a> | <type_id_ns> | <type_id_cname>
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
 
 where forall <ex> in <start>.<exchange>:
@@ -205,7 +227,7 @@ where forall <ex> in <start>.<exchange>:
 
 
 <answer_an> ::= <answer>
-<answer> ::= <q_name> (<type_a> | <type_ns> | <type_soa> | <type_opt>)
+<answer> ::= <q_name> (<type_a> |<type_cname> | <type_ns> | <type_soa> | <type_opt>)
 <a_ttl> ::= 0 <bit>{7} <byte>{3}
 <a_rd_length> ::= <byte>{2} := pack(">H", randint(0, 0))
 <a_rdata> ::= <byte>
@@ -213,12 +235,17 @@ where forall <ex> in <start>.<exchange>:
 <type_id_a> ::= 0{15} 1
 <type_id_ns> ::= 0{14} 1 0
 <type_id_soa> ::= 0{13} 1 1 0
+<type_id_cname> ::= 0{13} 1 0 1
 <type_id_opt> ::= 0{10} 1 0 1 0 0 1
 <type_a> ::= <type_id_a> <rr_class> <a_ttl> 0{13} 1 0 0 <byte>{4}
 <type_ns> ::= <type_id_ns> <rr_class> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
 <type_soa> ::= <type_id_soa> <rr_class> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
 <type_opt> ::= <type_id_opt> <udp_payload_size> <a_ttl> <a_rd_length> <a_rdata>{int(unpack('>H', bytes(<a_rd_length>))[0])}
+<type_cname> ::= <type_id_cname> <rr_class> <a_ttl> <a_rd_length> <q_name>
 <udp_payload_size> ::= <bit>{16}
+
+where forall <t> in <type_cname>:
+    pack('>H', len(bytes(<t>.<q_name>))) == bytes(<t>.<a_rd_length>)
 
 
 import socket
