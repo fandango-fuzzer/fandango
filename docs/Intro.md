@@ -62,7 +62,7 @@ Get Started
 % overview icon
 
 Specify the format of your input data in a single file, combining _grammars_ (for input syntax) and _constraints_ (for arbitrary input features).
-Constraints come as Python code, so there are no limits to what you can specify.
+Constraints come as _Python code_, so there are no limits to what you can specify.
 
 +++
 [Learn more »](sec:about)
@@ -77,7 +77,7 @@ Constraints come as Python code, so there are no limits to what you can specify.
 % developer_guide icon
 
 Produce valid inputs at high speeds, from hundreds to thousands of inputs per second, quickly covering the entire input space.
-Test with extreme and uncommon values, uncovering bugs before your users do.
+Test with _extreme_ and _uncommon_ values, uncovering bugs before your users do.
 
 
 +++
@@ -91,9 +91,9 @@ Test with extreme and uncommon values, uncovering bugs before your users do.
 :link-type: ref
 % local_library icon; was {material-regular}`local_library;2em`
 
-Shape inputs using your _own testing targets_, constraints, and statistical distributions.
+Create _textual_ and _binary_ inputs, using bit fields and bit sequences.
+Use _regular expressions_ for quick and easy specifications.
 Make use of _existing samples_ to obtain realistic inputs.
-Use _feedback_ from the program under test to guide test generation to uncovered code.
 
 +++
 [Learn more »](sec:reference)
