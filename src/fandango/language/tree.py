@@ -347,7 +347,7 @@ class DerivationTree:
                 for child in self._generator_params:
                     s += child.to_tree(indent + 2, start_indent=indent + 2) + ",\n"
                     has_children = True
-                s += "  " * (indent + 1) +"]"
+                s += "  " * (indent + 1) + "]"
             if has_children:
                 s += "\n" + "  " * indent
         s += ")"
@@ -382,7 +382,9 @@ class DerivationTree:
         Output the derivation tree as (specialized) grammar
         """
 
-        def _to_grammar(node, indent=0, start_indent=0, bit_count = -1, byte_count = 0) -> tuple[str, int, int]:
+        def _to_grammar(
+            node, indent=0, start_indent=0, bit_count=-1, byte_count=0
+        ) -> tuple[str, int, int]:
             """
             Output the derivation tree as (specialized) grammar
             """
@@ -418,8 +420,13 @@ class DerivationTree:
 
             if len(node._generator_params) > 0:
                 # We don't know the grammar, so we report a symbolic generator
-                s += " := f(" + ", ".join(
-                    [param.symbol.symbol for param in node._generator_params]) + ")"
+                s += (
+                    " := f("
+                    + ", ".join(
+                        [param.symbol.symbol for param in node._generator_params]
+                    )
+                    + ")"
+                )
 
             have_position = False
             if include_position and terminal_symbols > 0:
@@ -437,10 +444,18 @@ class DerivationTree:
 
             for child in node._children:
                 if child.symbol.is_non_terminal:
-                    child_str, bit_count, byte_count = _to_grammar(child, indent + 1, start_indent=indent + 1, bit_count=bit_count, byte_count=byte_count)
+                    child_str, bit_count, byte_count = _to_grammar(
+                        child,
+                        indent + 1,
+                        start_indent=indent + 1,
+                        bit_count=bit_count,
+                        byte_count=byte_count,
+                    )
                     s += "\n" + child_str
                 for param in child._generator_params:
-                    child_str, _, _ = _to_grammar(param, indent + 2, start_indent=indent + 1)
+                    child_str, _, _ = _to_grammar(
+                        param, indent + 2, start_indent=indent + 1
+                    )
                     s += "\n  " + child_str
             return s, bit_count, byte_count
 
