@@ -49,13 +49,9 @@ For the complete FANDANGO documentation, including tutorials, references, and ad
 FANDANGO has been evaluated against [ISLa](https://github.com/rindPHI/isla/tree/ESEC_FSE_22), a state-of-the-art language-based fuzzer. The results show that FANDANGO is faster and more scalable than ISLa, while maintaining the same level of precision.
 
 To reproduce the evaluation results from ISLa, please refer to [their replication package](https://dl.acm.org/do/10.1145/3554336/full/), published in FSE 2022.
-To reproduce the evaluation results from FANDANGO, please download a development copy of the repository from [the official GitHub Repository](https://github.com/fandango-fuzzer/fandango), execute: (from the root directory)
+To reproduce the evaluation results from FANDANGO, please checkout to branch `replication-package` and follow the README.md.
 
-```bash
-python -m evaluation.vs_isla.run_evaluation
-```
-
-This script will execute FANDANGO on 5 subjects (CSV, reST, ScriptSizeC, TAR and XML). Each subject will be run for an hour, followed up by a computation on each grammar coverage (This process can take a while). The results will be printed in the terminal. Our evaluation showcases FANDANGO's search-based approach as a viable alternative to symbolic solvers, offering the following advantages:
+Our evaluation showcases FANDANGO's search-based approach as a viable alternative to symbolic solvers, offering the following advantages:
 
 - **Speed**: Faster by one to three orders of magnitude compared to symbolic solvers.
 - **Precision**: Maintains precision in satisfying constraints.
