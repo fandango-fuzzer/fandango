@@ -154,11 +154,11 @@ class Repetition(Node):
         # max_expr, max_nt, max_search = max_
 
         # if min_ < 0:
-        #    raise ValueError(
+        #    raise FandangoValueError(
         #        f"Minimum repetitions {min_} must be greater than or equal to 0"
         #    )
         # if max_ <= 0 or max_ < min_:
-        #    raise ValueError(
+        #    raise FandangoValueError(
         #        f"Maximum repetitions {max_} must be greater than 0 or greater than min {min_}"
         #    )
 
@@ -187,7 +187,7 @@ class Repetition(Node):
         if len(searches) == 0:
             return eval(expr, grammar._global_variables, local_cpy), True
         if tree is None:
-            raise FandangoValueError("tree required if symbols present")
+            raise FandangoValueError("Need `tree` argument if symbols present")
 
         nodes = []
         for name, search in searches.items():
@@ -325,7 +325,7 @@ class NonTerminalNode(Node):
 
     def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
         if self.symbol not in grammar:
-            raise ValueError(f"Symbol {self.symbol} not found in grammar")
+            raise FandangoValueError(f"Symbol {self.symbol} not found in grammar")
         dummy_current_tree = DerivationTree(self.symbol)
         parent.add_child(dummy_current_tree)
 
@@ -995,13 +995,15 @@ class Grammar(NodeVisitor):
             nt_rule,
         ):
             if not isinstance(node, Repetition):
-                raise FandangoValueError("Node needs to be a Repetition")
+                raise FandangoValueError(f"Node {node} needs to be a Repetition")
+
             tree = self.construct_incomplete_tree(state, table)
             tree = self.collapse(tree)
             try:
                 [[context_nt]] = self.visitRepetition(node, nt_rule, tree)
-            except ValueError:
+            except (ValueError, FandangoValueError):
                 return
+
             new_symbols = []
             for symbol, dot_params in state.symbols:
                 if symbol == state.dot:
@@ -1518,12 +1520,12 @@ class Grammar(NodeVisitor):
     def derive_sources(self, tree: "DerivationTree"):
         gen_symbol = tree.symbol
         if not isinstance(gen_symbol, NonTerminal):
-            raise ValueError(
-                "Can't derive generator output. tree.symbol is not a NonTerminal!"
+            raise FandangoValueError(
+                f"Tree {tree.symbol} is not a nonterminal"
             )
         if tree.symbol not in self.generators:
-            raise ValueError(
-                "Can't derive generator output. tree.symbol not in generators!"
+            raise FandangoValueError(
+                f"No generator found for tree {tree.symbol}"
             )
 
         if not self.is_use_generator(tree):
@@ -1532,12 +1534,12 @@ class Grammar(NodeVisitor):
         dependent_generators = {gen_symbol: set()}
         for key, val in self.generators[gen_symbol].nonterminals.items():
             if val.symbol not in self.generators:
-                raise ValueError(
-                    f"Can't derive generator parameters. No generator existing for required symbol: {val.symbol}!"
-                )
+                raise FandangoValueError(f"Generator required for {val.symbol}")
+
             dependent_generators[val.symbol] = self.generator_dependencies(val.symbol)
         dependent_generators = self._topological_sort(dependent_generators)
         dependent_generators.remove(gen_symbol)
+
         args = [tree]
         for symbol in dependent_generators:
             generated_param = self.generate(symbol, args)
@@ -1577,7 +1579,8 @@ class Grammar(NodeVisitor):
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         if self.generators[symbol] is None:
-            raise ValueError(f"No generator for symbol {symbol}")
+            raise ValueError(f"{symbol}: no generator")
+
         if sources is None:
             sources = dict()
         else:
@@ -1587,7 +1590,7 @@ class Grammar(NodeVisitor):
         local_variables = self._local_variables.copy()
         for id, nonterminal in generator.nonterminals.items():
             if nonterminal.symbol not in sources:
-                raise ValueError(f"Missing generator parameter: {nonterminal.symbol}")
+                raise FandangoValueError(f"{nonterminal.symbol}: missing generator parameter")
             local_variables[id] = sources[nonterminal.symbol]
 
         return list(sources.values()), eval(
