@@ -194,7 +194,7 @@ where forall <ex> in <start>.<exchange>:
 <question> ::= <q_name> <q_type> <rr_class>
 <q_name> ::= <q_name_written>? 0{8}
 <q_name_written> ::= (<label_len_octet> <byte>{byte_to_int(b'\x00' + bytes(<label_len_octet>))})+ := gen_q_name()
-<q_type> ::= <type_id_a> # Equals type A (Host address)
+<q_type> ::= <type_id_a> | <type_id_ns>
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
 
 where forall <ex> in <start>.<exchange>:
@@ -206,7 +206,7 @@ where forall <ex> in <start>.<exchange>:
 
 <answer_an> ::= <answer>
 <answer> ::= <q_name> (<type_a> | <type_ns> | <type_soa> | <type_opt>)
-<a_ttl> ::= <byte>{4}
+<a_ttl> ::= 0 <bit>{7} <byte>{3}
 <a_rd_length> ::= <byte>{2} := pack(">H", randint(0, 0))
 <a_rdata> ::= <byte>
 
