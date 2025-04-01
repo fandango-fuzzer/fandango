@@ -16,14 +16,16 @@ kernelspec:
 When defining a complex input format, some parts may be the result of applying an _operation_ on another, more structured part.
 Most importantly, content may be _encoded_, _compressed_, or _converted_.
 
-Fandango uses a special form of [generators](sec:generators) to handle these, namely generators with _symbols_.
+Fandango uses a special form of [generators](sec:generators) to handle these, called _converters_.
+These are generator expressions with _symbols_, mostly functions that take symbols as arguments.
 Let's have a look at how these work.
 
 
 ## Encoding Data During Fuzzing
 
 In Fandango, a [generator](sec:generators) expression can contain _symbols_ (enclosed in `<...>`) as elements.
-When fuzzing, this has the effect of Fandango using the grammar to
+Such generators are called _converters_.
+When fuzzing, converters have the effect of Fandango using the grammar to
 
 * instantiate each symbol from the grammar,
 * evaluate the resulting expression, and
@@ -96,10 +98,10 @@ assert _exit_code == 0
 In the same vein, one can use functions for compressing data or any other kind of conversion.
 
 
-## Encoders and Constraints
+## Sources, Encoders, and Constraints
 
-When Fandango produces an input using a generator, it _saves_ the generated arguments in the produced derivation tree.
-These become visible as soon as the input is shown as a grammar:
+When Fandango produces an input using a generator, it _saves_ the generated arguments as a _source_ in the produced derivation tree.
+Sources become visible as soon as the input is shown as a grammar:
 
 ```shell
 $ fandango fuzz -f encode.fan -n 1 --format=grammar
@@ -111,10 +113,10 @@ $ fandango fuzz -f encode.fan -n 1 --format=grammar
 assert _exit_code == 0
 ```
 
-In the definition of `<item>`, we see a generator `f(<data>)` as well as the definition of `<data>` that went into the generator.
-(The actual generator code, `base64.b64encode(bytes(<data>))`, is not saved.)
+In the definition of `<item>`, we see a generic converter `f(<data>)` as well as the definition of `<data>` that went into the generator.
+(The actual generator code, `base64.b64encode(bytes(<data>))`, is not saved in the derivation tree.)
 
-We can visualize the resulting tree, using a double arrow between `<data>` and `<item>`, indicating that their values depend on each other:
+We can visualize the resulting tree, using a double arrow between `<item>` and its source `<data>`, indicating that their values depend on each other:
 
 ```{code-cell}
 :tags: ["remove-input"]
@@ -137,7 +139,7 @@ tree = Tree('<start>',
 tree.visualize()
 ```
 
-Since arguments like `<data>` are preserved, we can use them in [constraints](sec:constraints).
+Since sources like `<data>` are preserved, we can use them in [constraints](sec:constraints).
 For instance, we can produce a string with specific values for `<data>`:
 
 ```shell

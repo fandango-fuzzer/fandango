@@ -181,7 +181,10 @@ Invoking methods (`<SYMBOL>.METHOD()`), as well as operators (say, `<SYMBOL> + .
 Since any `<SYMBOL>` has the type `DerivationTree`, one must convert it first into a standard Python type before passing it as argument to a standard Python function.
 
 `str(<SYMBOL>) -> str`
-: Convert `<SYMBOL>` into a Unicode string. If `<SYMBOL>` is a byte string, its contents are converted using `latin-1` encoding.
+: Convert `<SYMBOL>` into a Unicode string. Byte strings in `<SYMBOL>` are converted using `latin-1` encoding.
+
+`bytes(<SYMBOL>) -> bytes`
+: Convert `<SYMBOL>` into a byte string. Unicode strings in `<SYMBOL>` are converted using `utf-8` encoding.
 
 `int(<SYMBOL>) -> int`
 : Convert `<SYMBOL>` into an integer, like the Python `int()` function.
@@ -189,11 +192,11 @@ Since any `<SYMBOL>` has the type `DerivationTree`, one must convert it first in
 
 `float(<SYMBOL>) -> float`
 : Convert `<SYMBOL>` into a floating-point number, like the Python `float()` function.
-`<SYMBOL>` must be an int, or a Unicode string or byte string representing a float literal.
+`<SYMBOL>` must be an `int`, or a Unicode string or byte string representing a float literal.
 
 `complex(<SYMBOL>) -> complex`
 : Convert `<SYMBOL>` into a complex number, like the Python `complex()` function.
-`<SYMBOL>` must be an int, or a Unicode string or byte string representing a float literal.
+`<SYMBOL>` must be an `int`, or a Unicode string or byte string representing a float or complex literal.
 
 `bool(<SYMBOL>) -> bool`
 : Convert `<SYMBOL>` into a truth value:
@@ -274,6 +277,12 @@ Each element of the list can have a different type, depending on the type the `v
 
 `<SYMBOL>.parent() -> DerivationTree | None`
 : Return the parent of the current node, or `None` for the root node.
+
+
+### Accessing Sources
+
+`<SYMBOL>.sources() -> list[DerivationTree]`
+: Return a list containing all sources of `<SYMBOL>`. Sources are symbols used in generator expressions out of which the value of `<SYMBOL>` was created; see [the section on data conversions](sec:conversion) for details.
 
 
 ### Comparisons
