@@ -88,7 +88,7 @@ In general, you should use
 * `include()` only if you want to make use of Fandango features.
 
 :::{warning}
-Using `include` for Python code, as in `include('code.py')` is not recommended.
+Using `include` for _pure Python code_, as in `include('code.py')` is not recommended.
 Most importantly, the current Fandango implementation will process "included" Python code only _after_ all code in the "including" spec has been run. In contrast, the effects of `import` are immediate.
 :::
 

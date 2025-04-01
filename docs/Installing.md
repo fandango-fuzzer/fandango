@@ -21,13 +21,13 @@ kernelspec:
 
 Fandango comes as a Python package. To install Fandango, run the following command:
 
-```
+```shell
 $ pip install fandango-fuzzer
 ```
 
 To test if everything worked well, try
 
-```
+```shell
 $ fandango --help
 ```
 
@@ -60,12 +60,18 @@ This will get you the very latest version of Fandango, which may be unstable. Us
 
 Clone the Fandango repository:
 
-```
+```shell
 $ git clone https://github.com/fandango-fuzzer/fandango/
 ```
 
-In the top-level `fandango/` folder, run
+Switch to the top-level `fandango/` folder:
+
+```shell
+$ cd fandango
 ```
+
+Run
+```shell
 $ pip install -e .
 ```
 
