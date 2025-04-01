@@ -15,13 +15,13 @@ def compute_end_balance_sender(start_balance, amount):
 <info> ::= '   <info>\n' <currency> <stmt_date> <amount>'   </info>'
 <currency> ::= '      <currency>' 'EUR' '</currency>\n' | '      <currency>' 'USD' '</currency>\n'
 <stmt_date> ::= '      <stmt_date>' <timestamp> '</stmt_date>\n'
-<timestamp> ::= <digit>+ :: str(int(time.time()))
+<timestamp> ::= <digit>+ := str(int(time.time()))
 <amount> ::= '      <amount>' <am> '</amount>\n'
 <am> ::= <digit>+ ;
 <sender> ::= '\n   <sender>' <name> <account_no> <bank_key> <start_balance> <end_balance> '   </sender>'
 <receiver> ::= '\n   <receiver>' <name> <account_no> <bank_key> <start_balance> <end_balance> '   </receiver>\n'
 <name> ::= '\n      <name>' <name_str> '</name>'
-<name_str> ::= <letter>* :: str(fake.name()).upper();
+<name_str> ::= <letter>* := str(fake.name()).upper();
 <account_no> ::= '\n      <account_no>' <account_number> '</account_no>\n'
 <account_number> ::= <digit><digit><digit><digit><digit> <digit><digit><digit><digit><digit> <digit><digit><digit><digit><digit> <digit><digit><digit><digit><digit> <digit><digit>
 <bank_key> ::= '      <bank_key>' <bank_id> '</bank_key>\n'

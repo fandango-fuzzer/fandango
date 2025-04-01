@@ -5,11 +5,11 @@ from fandango.language.tree import DerivationTree
 
 def count_g_params(tree: DerivationTree):
     count = 0
-    if len(tree.generator_params) > 0:
+    if len(tree.sources) > 0:
         count += 1
     for child in tree.children:
         count += count_g_params(child)
-    for child in tree.generator_params:
+    for child in tree.sources:
         count += count_g_params(child)
     return count
 

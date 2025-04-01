@@ -15,6 +15,9 @@ from fandango.logger import LOGGER
 
 from fandango import FandangoValueError
 
+from thefuzz import process as thefuzz_process
+
+
 
 MAX_REPETITIONS = 5
 
@@ -154,11 +157,11 @@ class Repetition(Node):
         # max_expr, max_nt, max_search = max_
 
         # if min_ < 0:
-        #    raise ValueError(
+        #    raise FandangoValueError(
         #        f"Minimum repetitions {min_} must be greater than or equal to 0"
         #    )
         # if max_ <= 0 or max_ < min_:
-        #    raise ValueError(
+        #    raise FandangoValueError(
         #        f"Maximum repetitions {max_} must be greater than 0 or greater than min {min_}"
         #    )
 
@@ -187,7 +190,7 @@ class Repetition(Node):
         if len(searches) == 0:
             return eval(expr, grammar._global_variables, local_cpy), True
         if tree is None:
-            raise FandangoValueError("tree required if symbols present")
+            raise FandangoValueError("Need `tree` argument if symbols present")
 
         nodes = []
         for name, search in searches.items():
@@ -325,7 +328,7 @@ class NonTerminalNode(Node):
 
     def fuzz(self, parent: "DerivationTree", grammar: "Grammar", max_nodes: int = 100):
         if self.symbol not in grammar:
-            raise ValueError(f"Symbol {self.symbol} not found in grammar")
+            raise FandangoValueError(f"Symbol {self.symbol} not found in grammar")
         dummy_current_tree = DerivationTree(self.symbol)
         parent.add_child(dummy_current_tree)
 
@@ -717,7 +720,17 @@ class Column:
         return f"Column({self.states})"
 
 
+def closest_match(word, candidates):
+    """
+    `word` raises a syntax error;
+    return alternate suggestion for `word` from `candidates`
+    """
+    return thefuzz_process.extractOne(word, candidates)[0]
+
+
+
 class Grammar(NodeVisitor):
+    """Represent a grammar."""
 
     class ParserDerivationTree(DerivationTree):
 
@@ -725,10 +738,15 @@ class Grammar(NodeVisitor):
             self,
             symbol: Symbol,
             children: Optional[List["DerivationTree"]] = None,
+            *,
             parent: Optional["DerivationTree"] = None,
             read_only: bool = False,
         ):
-            super().__init__(symbol, children, parent, [], read_only)
+            super().__init__(symbol,
+                             children,
+                             parent=parent,
+                             sources=[],
+                             read_only=read_only)
 
         def set_children(self, children: List["DerivationTree"]):
             self._children = children
@@ -925,7 +943,7 @@ class Grammar(NodeVisitor):
                 DerivationTree(
                     tree.symbol,
                     children=reduced,
-                    generator_params=tree.generator_params,
+                    sources=tree.sources,
                     read_only=tree.read_only,
                 )
             ]
@@ -990,13 +1008,15 @@ class Grammar(NodeVisitor):
             nt_rule,
         ):
             if not isinstance(node, Repetition):
-                raise FandangoValueError("Node needs to be a Repetition")
+                raise FandangoValueError(f"Node {node} needs to be a Repetition")
+
             tree = self.construct_incomplete_tree(state, table)
             tree = self.collapse(tree)
             try:
                 [[context_nt]] = self.visitRepetition(node, nt_rule, tree)
-            except ValueError:
+            except (ValueError, FandangoValueError):
                 return
+
             new_symbols = []
             for symbol, dot_params in state.symbols:
                 if symbol == state.dot:
@@ -1158,9 +1178,9 @@ class Grammar(NodeVisitor):
                     DerivationTree(
                         child.symbol,
                         children,
-                        child.parent,
-                        child.generator_params,
-                        child.read_only,
+                        parent=child.parent,
+                        sources=child.sources,
+                        read_only=child.read_only,
                     )
                 )
             return ret
@@ -1170,9 +1190,9 @@ class Grammar(NodeVisitor):
             return DerivationTree(
                 tree.symbol,
                 children,
-                tree.parent,
-                tree.generator_params,
-                tree.read_only,
+                parent=tree.parent,
+                sources=tree.sources,
+                read_only=tree.read_only,
             )
 
         def complete(
@@ -1510,15 +1530,15 @@ class Grammar(NodeVisitor):
         intersection = set(path).intersection(set(generator_dependencies))
         return len(intersection) == 0
 
-    def derive_generator_params(self, tree: "DerivationTree"):
+    def derive_sources(self, tree: "DerivationTree"):
         gen_symbol = tree.symbol
         if not isinstance(gen_symbol, NonTerminal):
-            raise ValueError(
-                "Can't derive generator output. tree.symbol is not a NonTerminal!"
+            raise FandangoValueError(
+                f"Tree {tree.symbol} is not a nonterminal"
             )
         if tree.symbol not in self.generators:
-            raise ValueError(
-                "Can't derive generator output. tree.symbol not in generators!"
+            raise FandangoValueError(
+                f"No generator found for tree {tree.symbol}"
             )
 
         if not self.is_use_generator(tree):
@@ -1526,66 +1546,72 @@ class Grammar(NodeVisitor):
 
         dependent_generators = {gen_symbol: set()}
         for key, val in self.generators[gen_symbol].nonterminals.items():
+            if val.symbol not in self.rules:
+                closest = closest_match(str(val), self.rules.keys())
+                raise FandangoValueError(
+                    f"Symbol {val.symbol!s} not defined in grammar. Did you mean {closest!s}?")
+
             if val.symbol not in self.generators:
-                raise ValueError(
-                    f"Can't derive generator parameters. No generator existing for required symbol: {val.symbol}!"
-                )
+                raise FandangoValueError(f"{val.symbol}: Missing converter from {gen_symbol} ({val.symbol} ::= ... := f({gen_symbol}))")
+
             dependent_generators[val.symbol] = self.generator_dependencies(val.symbol)
         dependent_generators = self._topological_sort(dependent_generators)
         dependent_generators.remove(gen_symbol)
+
         args = [tree]
         for symbol in dependent_generators:
             generated_param = self.generate(symbol, args)
-            generated_param.generator_params = []
+            generated_param.sources = []
             generated_param._parent = tree
             for child in generated_param.children:
-                self.populate_generator_params(child)
+                self.populate_sources(child)
             args.append(generated_param)
         args.pop(0)
         return args
 
     def derive_generator_output(self, tree: "DerivationTree"):
-        generated = self.generate(tree.symbol, tree.generator_params)
+        generated = self.generate(tree.symbol, tree.sources)
         return generated.children
 
-    def populate_generator_params(self, tree: "DerivationTree"):
-        self._rec_remove_generator_params(tree)
-        self._populate_generator_params(tree)
+    def populate_sources(self, tree: "DerivationTree"):
+        self._rec_remove_sources(tree)
+        self._populate_sources(tree)
 
-    def _populate_generator_params(self, tree: "DerivationTree"):
+    def _populate_sources(self, tree: "DerivationTree"):
         if tree.symbol in self.generators:
-            tree.generator_params = self.derive_generator_params(tree)
+            tree.sources = self.derive_sources(tree)
             return
         for child in tree.children:
-            self._populate_generator_params(child)
+            self._populate_sources(child)
 
-    def _rec_remove_generator_params(self, tree: "DerivationTree"):
-        tree.generator_params = []
+    def _rec_remove_sources(self, tree: "DerivationTree"):
+        tree.sources = []
         for child in tree.children:
-            self._rec_remove_generator_params(child)
+            self._rec_remove_sources(child)
 
     def generate_string(
         self,
         symbol: str | NonTerminal = "<start>",
-        generator_params: list[DerivationTree] = None,
+        sources: list[DerivationTree] = None,
     ) -> tuple[list[DerivationTree], str]:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         if self.generators[symbol] is None:
-            raise ValueError(f"No generator for symbol {symbol}")
-        if generator_params is None:
-            generator_params = dict()
+            raise ValueError(f"{symbol}: no generator")
+
+        if sources is None:
+            sources = dict()
         else:
-            generator_params = {tree.symbol: tree for tree in generator_params}
+            sources = {tree.symbol: tree for tree in sources}
         generator = self.generators[symbol]
 
         local_variables = self._local_variables.copy()
         for id, nonterminal in generator.nonterminals.items():
-            if nonterminal.symbol not in generator_params:
-                raise ValueError(f"Missing generator parameter: {nonterminal.symbol}")
-            local_variables[id] = generator_params[nonterminal.symbol]
+            if nonterminal.symbol not in sources:
+                raise FandangoValueError(f"{nonterminal.symbol}: missing generator parameter")
+            local_variables[id] = sources[nonterminal.symbol]
 
-        return list(generator_params.values()), eval(
+        return list(sources.values()), eval(
             generator.call, self._global_variables, local_variables
         )
 
@@ -1601,9 +1627,9 @@ class Grammar(NodeVisitor):
     def generate(
         self,
         symbol: str | NonTerminal = "<start>",
-        generator_params: Optional[list[DerivationTree]] = None,
+        sources: Optional[list[DerivationTree]] = None,
     ) -> DerivationTree:
-        generator_params, string = self.generate_string(symbol, generator_params)
+        sources, string = self.generate_string(symbol, sources)
         if not (
             isinstance(string, str)
             or isinstance(string, bytes)
@@ -1622,7 +1648,7 @@ class Grammar(NodeVisitor):
             raise FandangoValueError(
                 f"Could not parse {string!r} (generated by {self.generators[symbol]}) into {symbol}"
             )
-        tree.generator_params = deepcopy(generator_params)
+        tree.sources = deepcopy(sources)
         return tree
 
     def fuzz(
