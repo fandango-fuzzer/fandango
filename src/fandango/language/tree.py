@@ -247,7 +247,10 @@ class DerivationTree:
     def get_last_by_path(self, path: list[NonTerminal]):
         symbol = path[0]
         if self.symbol == symbol:
-            return self._get_last_by_path(path[1:])
+            if len(path) == 1:
+                return self
+            else:
+                return self._get_last_by_path(path[1:])
         raise IndexError(f"No such path in tree: {path} Tree: {self}")
 
     def _get_last_by_path(self, path: list[NonTerminal]) -> "DerivationTree":
