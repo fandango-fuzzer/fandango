@@ -11,7 +11,175 @@ kernelspec:
 ---
 
 (sec:contributing)=
-# Contributing
+# Contributing to Fandango
 
-We're always happy for suggestions and extensions.
-Check out our [GitHub repository](https://github.com/fandango-fuzzer/fandango), where you can find all code, current issues, and ways to contribute.
+Welcome!
+Fandango is a community project that aims to work for a wide
+range of developers.
+If you're trying out Fandango, your experience and what you can contribute are
+important to the project's success.
+
+## Code of Conduct
+
+Everyone participating in Fandango, and in particular in our
+issue tracker, pull requests, and chat, is expected to treat
+other people with respect and more generally to follow the guidelines
+articulated in the [Python Community Code of Conduct](https://www.python.org/psf/codeofconduct/).
+
+## Getting Started with Development
+
+### Step 1: Fork the Fandango repository
+
+Within GitHub, navigate to the [Fandango GitHub repository](https://github.com/fandango-fuzzer/fandango) and fork the repository.
+
+
+### Step 2: Clone the Fandango repository and enter into it
+
+```shell
+$ git clone https://github.com/fandango-fuzzer/fandango.git
+```
+
+```shell
+$ cd fandango
+```
+
+### Step 3: Create, then activate a virtual environment
+
+```shell
+$ python3 -m venv venv
+```
+
+```shell
+$ source venv/bin/activate
+```
+
+For Windows, use
+```shell
+$ python -m venv venv
+```
+
+```shell
+$ . venv/Scripts/activate
+```
+
+For more details, see https://docs.python.org/3/library/venv.html#creating-virtual-environments
+
+
+### Step 4: Install development tools
+
+Install `antlr` and other system-level tools:
+
+```shell
+$ make system-dev-tools
+```
+
+Install `jupyter-book` and other Python tools:
+
+```shell
+$ make dev-tools
+```
+
+Install `pytest` and required files:
+
+```shell
+$ make install-test
+```
+
+### Step 5: Install Fandango
+
+Install your local copy of Fandango:
+
+```shell
+$ python -m pip install -e .
+```
+
+Reset the shell PATH cache (not necessary on Windows):
+
+```shell
+$ hash -r
+```
+
+That's it! You just have installed your personal copy of Fandango.
+You can invoke it as `fandango` and can alter its code as you like.
+
+## Running Tests
+
+Running the full test suite can take a while, and usually is not necessary when
+preparing a pull request.
+Once you file a pull request, the full test suite will run on GitHub.
+You'll then be able to see any test failures, and make any necessary changes to
+your pull request.
+
+However, if you wish to do so, you can run the full test suite
+like this:
+
+```shell
+$ make tests
+```
+
+or simply
+
+```shell
+$ pytest
+```
+
+
+## First Time Contributors
+
+If you're looking for things to help with, browse our [issue tracker](https://github.com/fandango-fuzzer/fandango/issues)!
+
+You do not need to ask for permission to work on any of these issues.
+Just fix the issue yourself, [try to add a unit test](#running-tests) and [open a pull request](#submitting-changes).
+
+To get help fixing a specific issue, it's often best to comment on the issue itself.
+You're much more likely to get help if you provide details about what you've tried and where you've looked (maintainers tend to help those who help themselves).
+
+
+## Contributing Code
+
+Even more excellent than a good bug report is a fix for a bug, or the implementation of a much-needed new feature.
+We'd love to have your contributions.
+
+We use the usual GitHub pull-request flow, which may be familiar to you if you've contributed to other projects on GitHub.
+For the mechanics, see [GitHub's own documentation](https://help.github.com/articles/using-pull-requests/).
+
+Anyone interested in Fandango may review your code.
+One of the Fandango core developers will merge your pull request when they think it's ready.
+
+If your change will be a significant amount of work to write, we highly recommend starting by opening an issue laying out
+what you want to do.
+That lets a conversation happen early in case other contributors disagree with what you'd like to do or have ideas that will help you do it.
+
+The best pull requests are focused, clearly describe what they're for and why they're correct, and contain tests for whatever changes they make to the code's behavior.
+As a bonus these are easiest for someone to review, which helps your pull request get merged quickly!
+Standard advice about good pull requests for open-source projects applies.
+
+
+### Changing Parser Files
+
+If your contribution involves changing the ANTLR `.g4` parser files, you need to recreate the parser code.
+
+Use
+
+```shell
+$ make parser
+```
+
+to recreate the parser code.
+
+
+### Contributing to Documentation
+
+If you want to contribute to this very tutorial and reference, be sure to preview your changes.
+Use
+
+```shell
+$ make html
+```
+
+to create a HTML version of the documentation in `docs/_build/html`.
+
+
+## Attributions
+
+This guide was forked from the [mypy contribution guide](https://github.com/python/mypy/blob/master/CONTRIBUTING.md), which is licensed under the terms of the MIT license.
