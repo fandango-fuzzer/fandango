@@ -42,14 +42,15 @@ class Tree:
             label = repr(self.symbol)
 
         # https://graphviz.org/doc/info/colors.html
+        # Colors checked against color vision deficiency
         if isinstance(self.symbol, int):
             color = "bisque4"
         elif isinstance(self.symbol, bytes):
-            color = "gray25"
+            color = "darkblue"
         elif self.symbol.startswith("<"):
             color = "firebrick"
         else:
-            color = "darkblue"
+            color = "olivedrab4"
 
         label = label.replace("<", "\\<")
         label = label.replace(">", "\\>")
