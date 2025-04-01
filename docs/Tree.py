@@ -45,7 +45,7 @@ class Tree:
         if isinstance(self.symbol, int):
             color = "bisque4"
         elif isinstance(self.symbol, bytes):
-            color = "darkgray"
+            color = "gray25"
         elif self.symbol.startswith("<"):
             color = "firebrick"
         else:
@@ -61,6 +61,6 @@ class Tree:
 
         for source in self.sources():
             source_name = source._visualize()
-            Tree.dot.edge(name, source_name, style="dotted", color="gray")
+            Tree.dot.edge(name, source_name, style="dotted", color="gray", dir="both")
 
         return name
