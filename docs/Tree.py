@@ -36,14 +36,16 @@ class Tree:
     def _visualize(self):
         name = f"node-{Tree.id_counter}"
         Tree.id_counter += 1
-        if isinstance(self.symbol, int):
-            label = str(self.symbol)
-        else:
+        if str(self.symbol).startswith("<"):
             label = self.symbol
+        else:
+            label = repr(self.symbol)
 
         # https://graphviz.org/doc/info/colors.html
         if isinstance(self.symbol, int):
             color = "bisque4"
+        elif isinstance(self.symbol, bytes):
+            color = "darkgray"
         elif self.symbol.startswith("<"):
             color = "firebrick"
         else:
@@ -59,6 +61,6 @@ class Tree:
 
         for source in self.sources():
             source_name = source._visualize()
-            Tree.dot.edge(name, source_name)
+            Tree.dot.edge(name, source_name, style="dotted", color="gray")
 
         return name
