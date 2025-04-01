@@ -335,13 +335,19 @@ class DerivationTree:
         Pretty-print the derivation tree (for visualization).
         """
         s = "  " * start_indent + "Tree(" + repr(self.symbol.symbol)
-        if len(self._children) == 1:
+        if len(self._children) == 1 and len(self._generator_params) == 0:
             s += ", " + self._children[0].to_tree(indent, start_indent=0)
         else:
             has_children = False
             for child in self._children:
                 s += ",\n" + child.to_tree(indent + 1, start_indent=indent + 1)
                 has_children = True
+            if len(self._generator_params) > 0:
+                s += ",\n" + "  " * (indent + 1) + "sources=[\n"
+                for child in self._generator_params:
+                    s += child.to_tree(indent + 2, start_indent=indent + 2) + ",\n"
+                    has_children = True
+                s += "  " * (indent + 1) +"]"
             if has_children:
                 s += "\n" + "  " * indent
         s += ")"
@@ -352,14 +358,21 @@ class DerivationTree:
         Output the derivation tree in internal representation.
         """
         s = "  " * start_indent + "DerivationTree(" + repr(self.symbol)
-        if len(self._children) == 1:
+        if len(self._children) == 1 and len(self._generator_params) == 0:
             s += ", [" + self._children[0].to_repr(indent, start_indent=0) + "])"
-        elif len(self._children) >= 1:
+        elif len(self._children + self._generator_params) >= 1:
             s += ",\n" + "  " * indent + "  [\n"
             for child in self._children:
                 s += child.to_repr(indent + 2, start_indent=indent + 2)
                 s += ",\n"
             s += "  " * indent + "  ]\n" + "  " * indent + ")"
+
+            if len(self._generator_params) > 0:
+                s += ",\n" + "  " * (indent + 1) + "sources=[\n"
+                for source in self._generator_params:
+                    s += source.to_repr(indent + 2, start_indent=indent + 2)
+                    s += ",\n"
+                s += "  " * indent + "  ]\n" + "  " * indent + ")"
         else:
             s += ")"
         return s
