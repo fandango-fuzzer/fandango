@@ -152,7 +152,7 @@ Example 1 - in
 `<foo>.value()` will be the byte string `b"barfoo"`.
 
 :::{warning}
-If you mix Unicode strings and byte strings in a grammar, Fandango will issue a warning.
+If you mix byte strings and Unicode strings a grammar, Fandango will issue a warning.
 :::
 
 Example 2 - in
@@ -164,7 +164,7 @@ Example 2 - in
 `<foo>.value()` will be the byte string `b"foo\xff"`.
 
 :::{warning}
-If you mix Unicode strings and bits in a grammar, Fandango will issue a warning.
+If you mix bits and Unicode strings in a grammar, Fandango will issue a warning.
 :::
 
 
