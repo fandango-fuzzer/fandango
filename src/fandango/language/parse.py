@@ -16,7 +16,6 @@ import dill as pickle
 
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
-from thefuzz import process as thefuzz_process
 from xdg_base_dirs import xdg_cache_home, xdg_data_dirs, xdg_data_home
 
 from fandango.constraints import predicates
@@ -26,7 +25,7 @@ from fandango.language.convert import (
     GrammarProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import Grammar, NodeType, MAX_REPETITIONS
+from fandango.language.grammar import Grammar, NodeType, MAX_REPETITIONS, closest_match
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.stdlib import stdlib
@@ -52,13 +51,6 @@ class MyErrorListener(ErrorListener):
         exc.messsage = msg
         raise exc
 
-
-def closest_match(word, candidates):
-    """
-    `word` raises a syntax error;
-    return alternate suggestion for `word` from `candidates`
-    """
-    return thefuzz_process.extractOne(word, candidates)[0]
 
 
 ### Including Files
