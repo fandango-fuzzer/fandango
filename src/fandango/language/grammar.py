@@ -15,6 +15,9 @@ from fandango.logger import LOGGER
 
 from fandango import FandangoValueError
 
+from thefuzz import process as thefuzz_process
+
+
 
 MAX_REPETITIONS = 5
 
@@ -717,7 +720,17 @@ class Column:
         return f"Column({self.states})"
 
 
+def closest_match(word, candidates):
+    """
+    `word` raises a syntax error;
+    return alternate suggestion for `word` from `candidates`
+    """
+    return thefuzz_process.extractOne(word, candidates)[0]
+
+
+
 class Grammar(NodeVisitor):
+    """Represent a grammar."""
 
     class ParserDerivationTree(DerivationTree):
 
@@ -1533,8 +1546,13 @@ class Grammar(NodeVisitor):
 
         dependent_generators = {gen_symbol: set()}
         for key, val in self.generators[gen_symbol].nonterminals.items():
+            if val.symbol not in self.rules:
+                closest = closest_match(str(val), self.rules.keys())
+                raise FandangoValueError(
+                    f"Symbol {val.symbol!s} not defined in grammar. Did you mean {closest!s}?")
+
             if val.symbol not in self.generators:
-                raise FandangoValueError(f"Generator required for {val.symbol}")
+                raise FandangoValueError(f"{val.symbol}: Missing converter from {gen_symbol} ({val.symbol} ::= ... := f({gen_symbol}))")
 
             dependent_generators[val.symbol] = self.generator_dependencies(val.symbol)
         dependent_generators = self._topological_sort(dependent_generators)
