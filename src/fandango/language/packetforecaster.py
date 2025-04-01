@@ -373,7 +373,7 @@ class PacketForecaster:
                 history_nts,
                 NonTerminal("<start>"),
                 Grammar.Parser.ParsingMode.INCOMPLETE,
-                True,
+                include_controlflow=True,
             ):
                 for orig_r_msg, r_msg in zip(
                     tree.find_role_msgs(), suggested_tree.find_role_msgs()

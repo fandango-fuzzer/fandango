@@ -170,25 +170,26 @@ def decompress_msg(compressed):
 #<exchange> ::= <Client:dns_req_compressed> <Server:dns_resp_compressed>
 <dns_req_compressed> ::= <byte>+ #:= compress_msg(<dns_req>.to_bytes())
 <dns_resp_compressed> ::= <byte>+ #:= compress_msg(<dns_resp>.to_bytes())
-<dns_req> ::= <header_req> <question> <answer>{byte_to_int(<req_ar_count>)} #:= decompress_msg(<dns_req_compressed>.to_bytes())
-<dns_resp> ::= <header_resp> <question>{byte_to_int(<header_req>.<req_qd_count>)} <answer_an>{byte_to_int(<header_req>.<req_qd_count>)} <answer>{byte_to_int(<resp_ns_count>)} <answer>{byte_to_int(<resp_ar_count>)} #:= decompress_msg(<dns_resp_compressed>.to_bytes())
+<dns_req> ::= <header_req> <question>{byte_to_int(<req_qd_count>)} <answer>{byte_to_int(<req_ar_count>)} #:= decompress_msg(<dns_req_compressed>.to_bytes())
+<dns_resp> ::= <header_resp> <question>{byte_to_int(<header_req>.<req_qd_count>)} <answer_an>{byte_to_int(<resp_an_count>)} <answer>{byte_to_int(<resp_ns_count>)} <answer>{byte_to_int(<resp_ar_count>)} #:= decompress_msg(<dns_resp_compressed>.to_bytes())
 
 #                       qr      opcode       aa tc rd  ra  z      rcode   qdcount  ancount nscount arcount
 <header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_none> <req_qd_count> 0{16} 0{16} <req_ar_count>
-<header_resp> ::= <h_id> 1 <h_opcode_standard> <bit> 0 <h_rd> <bit> 0 <h_aa> 0 <h_rcode_none> <resp_qd_count> <resp_an_count> <resp_ns_count> <resp_ar_count>
+<header_resp> ::= <h_id> 1 <h_opcode_standard> <bit> 0 <h_rd> <h_ra> 0 <h_aa> 0 <h_rcode_none> <resp_qd_count> <resp_an_count> <resp_ns_count> <resp_ar_count>
 # aa=1 if server has authority over domain
 
 where forall <ex> in <start>.<exchange>:
     <ex>.<dns_req>.<header_req>.<h_rd> == <ex>.<dns_resp>.<header_resp>.<h_rd>
+    # Not true ## and bytes(<ex>.<dns_req>.<header_req>.<h_rd>) == bytes(<ex>.<dns_resp>.<header_resp>.<h_ra>)
     and <ex>.<dns_req>.<header_req>.<h_id> == <ex>.<dns_resp>.<header_resp>.<h_id>
     and <ex>.<dns_req>.<question>.<q_name> == <ex>.<dns_resp>.<answer>.<q_name>
     and <ex>.<dns_req>.<question> == <ex>.<dns_resp>.<question>
     and bytes(<ex>.<dns_req>.<header_req>.<req_qd_count>) == bytes(<ex>.<dns_resp>.<header_resp>.<resp_qd_count>)
-    and bytes(<ex>.<dns_req>.<header_req>.<req_qd_count>) == bytes(<ex>.<dns_resp>.<header_resp>.<resp_an_count>)
+    # Not true ## and byte_to_int(bytes(<ex>.<dns_req>.<header_req>.<req_qd_count>)) <= byte_to_int(bytes(<ex>.<dns_resp>.<header_resp>.<resp_an_count>))
 
 
 
-<req_qd_count> ::= <byte>{2}
+<req_qd_count> ::= <byte>{2} := pack(">H", 1)
 <resp_qd_count> ::= <bit>{16} := pack(">H", 1)
 <resp_an_count> ::= <bit>{16} := pack(">H", randint(0, 2))
 <resp_ns_count> ::= <bit>{16} := pack(">H", randint(0, 2))
@@ -199,6 +200,7 @@ where forall <ex> in <start>.<exchange>:
 <h_opcode_standard> ::= 0 0 0 0
 <h_rd> ::= <bit>
 <h_aa> ::= <bit>
+<h_ra> ::= <bit>
 
 <h_rcode> ::= <h_rcode_none> | <h_rcode_format> | <h_rcode_server> | <h_rcode_name> | <h_rcode_ni> | <h_rcode_refused> | <h_rcode_other>
 <h_rcode_none> ::= 0 0 0 0
@@ -210,11 +212,12 @@ where forall <ex> in <start>.<exchange>:
 <h_rcode_other> ::= (1 <bit>{3, 3}) | (0 1 1 <bit>)
 <bit> ::= 0 | 1
 <byte> ::= <bit>{8}
-<label_len_octet> ::= (<bit>{7} 1) | (<bit>{6} 1 <bit>) | (<bit>{5} 1 <bit>{2}) | (<bit>{4} 1 <bit>{3}) | (<bit>{3} 1 <bit>{4}) | (<bit>{2} 1 <bit>{5}) # Max label length = 63
+<label_len_octet> ::= <byte>
 
 
 <question> ::= <q_name> <q_type> <rr_class>
-<q_name> ::= <q_name_written>? 0{8}
+<q_name_optional> ::= <q_name_written>? 0{8}
+<q_name> ::= <q_name_written> 0{8}
 <q_name_written> ::= (<label_len_octet> <byte>{byte_to_int(b'\x00' + bytes(<label_len_octet>))})+ := gen_q_name()
 <q_type> ::= <type_id_a> | <type_id_ns> | <type_id_cname>
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
@@ -227,7 +230,7 @@ where forall <ex> in <start>.<exchange>:
 
 
 <answer_an> ::= <answer>
-<answer> ::= <q_name> (<type_a> |<type_cname> | <type_ns> | <type_soa> | <type_opt>)
+<answer> ::= <q_name_optional> (<type_a> |<type_cname> | <type_ns> | <type_soa> | <type_opt>)
 <a_ttl> ::= 0 <bit>{7} <byte>{3}
 <a_rd_length> ::= <byte>{2} := pack(">H", randint(0, 0))
 <a_rdata> ::= <byte>
@@ -251,18 +254,19 @@ where forall <t> in <type_cname>:
 import socket
 class Client(FandangoAgent):
         def __init__(self):
-            super().__init__(False)
+            super().__init__(True)
 
         def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.sendto(compress_msg(message), ("1.1.1.1", 53))
             response, nothing = sock.recvfrom(1024)
+            print('Incoming: ', response)
             self.receive_msg("Server", decompress_msg(response))
 
 class Server(FandangoAgent):
 
         def __init__(self):
-            is_fandango = True
+            is_fandango = False
             super().__init__(is_fandango)
             if is_fandango:
                 self.id_addr = dict()

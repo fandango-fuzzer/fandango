@@ -516,7 +516,7 @@ class Fandango:
         next_fragment_idx = 0
 
         elapsed_rounds = 0
-        max_rounds = 0.025 * 200
+        max_rounds = 0.025 * 2000
         failed_parameter_parsing = False
 
         while not is_msg_complete:
@@ -537,8 +537,12 @@ class Fandango:
                 forecast_packet = None
                 for non_terminal in set(available_non_terminals):
                     forecast_packet = forecast_non_terminals[non_terminal]
+                    path = random.choice(list(forecast_packet.paths))
+                    hookin_tree = path.tree
+                    path = list(map(lambda x: x[0], filter(lambda x: not x[1], path.path)))
+                    hookin_point = hookin_tree.get_last_by_path(path)
                     parsed_packet_tree = self.grammar.parse(
-                        complete_msg, forecast_packet.node.symbol
+                        complete_msg, forecast_packet.node.symbol, hookin_parent=hookin_point
                     )
 
                     if parsed_packet_tree is not None:
@@ -554,6 +558,7 @@ class Fandango:
                         complete_msg,
                         forecast_packet.node.symbol,
                         mode=Grammar.Parser.ParsingMode.INCOMPLETE,
+                        hookin_parent=hookin_point
                     )
                     if incomplete_tree is None:
                         available_non_terminals.remove(non_terminal)
