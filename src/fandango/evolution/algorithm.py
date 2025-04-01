@@ -126,8 +126,8 @@ class Fandango:
                     if not tree:
                         position = self.grammar.max_position()
                         raise FandangoParseError(
-                            position,
                             message=f"Failed to parse initial individual{individual!r}",
+                            position=position
                         )
                 elif isinstance(individual, DerivationTree):
                     tree = individual
