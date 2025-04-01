@@ -20,7 +20,7 @@ Fandango uses a special form of [generators](sec:generators) to handle these, na
 Let's have a look at how these work.
 
 
-## Encoding Data
+## Encoding Data During Fuzzing
 
 In Fandango, a [generator](sec:generators) expression can contain _symbols_ (enclosed in `<...>`) as elements.
 When fuzzing, this has the effect of Fandango using the grammar to
@@ -80,3 +80,29 @@ The resulting [`encode.fan`](encode.fan) spec allows us to encode and embed bina
 ```
 
 In the same vein, one can use functions for compressing data or any other kind of conversion.
+
+
+## Decoding Parsed Data
+
+```{code-cell}
+!echo -n 'Data: RmFuZGFuZ2+O' | fandango parse -f encode-decode.fan -o - --format=grammar
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+from Tree import Tree
+
+tree = Tree('<start>',
+  Tree(b'Data: '),
+  Tree('<item>',
+    Tree(b'RmFuZGFuZ2+O'),
+    sources=[
+      Tree('<data>',
+        Tree(b'Fandango'),
+        Tree('<byte>', Tree('<_byte>', Tree(b'\x8e')))
+      ),
+    ]
+  )
+)
+tree.visualize()
+```
