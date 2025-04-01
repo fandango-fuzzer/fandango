@@ -36,4 +36,4 @@ def run_evaluation(seconds: int = 60):
 
 
 if __name__ == "__main__":
-    run_evaluation(1)
+    run_evaluation(60)
