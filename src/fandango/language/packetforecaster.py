@@ -281,6 +281,7 @@ class PacketForecaster:
                 key = diff_keys.pop()
                 self._reduced[key] = self.visit(grammar.rules[key])
                 self.processed_keys.add(key)
+                diff_keys = self.seen_keys - self.processed_keys
             return self._reduced
 
         def default_result(self):
@@ -305,13 +306,13 @@ class PacketForecaster:
             )
 
         def visitOption(self, node: Option):
-            return Option(self.visit(node))
+            return Option(self.visit(node.node))
 
         def visitPlus(self, node: Plus):
-            return Plus(self.visit(node), node.expr_data_max)
+            return Plus(self.visit(node.node), node.expr_data_max)
 
         def visitStar(self, node: Star):
-            return Star(self.visit(node), node.expr_data_max)
+            return Star(self.visit(node.node), node.expr_data_max)
 
         def visitCharSet(self, node: CharSet):
             return CharSet(node.chars)

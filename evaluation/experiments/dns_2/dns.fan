@@ -143,8 +143,9 @@ def decompress_msg(compressed):
     return decompressed
 
 
-<start> ::= <Client:dns_req> <Server:dns_resp>
-#<start> ::= <Client:dns_req_compressed> <Server:dns_resp_compressed>
+<start> ::= <exchange>{2}
+<exchange> ::= <Client:dns_req> <Server:dns_resp>
+#<exchange> ::= <Client:dns_req_compressed> <Server:dns_resp_compressed>
 <dns_req_compressed> ::= <byte>+ #:= compress_msg(<dns_req>.to_bytes())
 <dns_resp_compressed> ::= <byte>+ #:= compress_msg(<dns_resp>.to_bytes())
 <dns_req> ::= <header_req> <question> <answer>{byte_to_int(<req_ar_count>)} #:= decompress_msg(<dns_req_compressed>.to_bytes())
@@ -155,12 +156,13 @@ def decompress_msg(compressed):
 <header_resp> ::= <h_id> 1 <h_opcode_standard> <bit> 0 <h_rd> <bit> 0 <h_aa> 0 <h_rcode_none> <resp_qd_count> <resp_an_count> <resp_ns_count> <resp_ar_count>
 # aa=1 if server has authority over domain
 
-where <dns_req>.<header_req>.<h_rd> == <dns_resp>.<header_resp>.<h_rd>
-where <dns_req>.<header_req>.<h_id> == <dns_resp>.<header_resp>.<h_id>
-where <dns_req>.<question>.<q_name> == <dns_resp>.<answer>.<q_name>
-where <dns_req>.<question> == <dns_resp>.<question>
-where bytes(<dns_req>.<header_req>.<req_qd_count>) == bytes(<dns_resp>.<header_resp>.<resp_qd_count>)
-where bytes(<dns_req>.<header_req>.<req_qd_count>) == bytes(<dns_resp>.<header_resp>.<resp_an_count>)
+where forall <ex> in <start>.<exchange>:
+    <ex>.<dns_req>.<header_req>.<h_rd> == <ex>.<dns_resp>.<header_resp>.<h_rd>
+    and <ex>.<dns_req>.<header_req>.<h_id> == <ex>.<dns_resp>.<header_resp>.<h_id>
+    and <ex>.<dns_req>.<question>.<q_name> == <ex>.<dns_resp>.<answer>.<q_name>
+    and <ex>.<dns_req>.<question> == <ex>.<dns_resp>.<question>
+    and bytes(<ex>.<dns_req>.<header_req>.<req_qd_count>) == bytes(<ex>.<dns_resp>.<header_resp>.<resp_qd_count>)
+    and bytes(<ex>.<dns_req>.<header_req>.<req_qd_count>) == bytes(<ex>.<dns_resp>.<header_resp>.<resp_an_count>)
 
 
 
@@ -195,7 +197,11 @@ where bytes(<dns_req>.<header_req>.<req_qd_count>) == bytes(<dns_resp>.<header_r
 <q_type> ::= <type_id_a> # Equals type A (Host address)
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
 
-where bytes(<dns_req>.<question>.<q_type>) == bytes(<dns_resp>.<answer_an>.<answer>.children[1])[0:2]
+where forall <ex> in <start>.<exchange>:
+    forall <q> in <ex>.<dns_req>.<question>:
+        forall <a> in <ex>.<dns_resp>.<answer_an>.<answer>:
+            bytes(<q>.<q_type>) == bytes(<a>.children[1])[0:2] or <ex>.<dns_req>.<header_req>.<h_id> != <ex>.<dns_resp>.<header_resp>.<h_id> or get_index_within(<q>, <ex>.<dns_req>, ['<question>']) != get_index_within(<a>, <ex>.<dns_resp>, ['<answer>'])
+
 
 
 <answer_an> ::= <answer>
