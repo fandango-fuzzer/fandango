@@ -214,6 +214,7 @@ class Fandango(FandangoBase):
         )
         try:
             peek = next(tree_generator)
+            self.grammar.populate_generator_params(peek)
             tree_generator = itertools.chain([peek], tree_generator)
             have_tree = True
         except StopIteration:
