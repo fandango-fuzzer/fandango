@@ -11,7 +11,7 @@ kernelspec:
 ---
 
 (sec:conversion)=
-# Data Conversions
+# Data Converters
 
 When defining a complex input format, some parts may be the result of applying an _operation_ on another, more structured part.
 Most importantly, content may be _encoded_, _compressed_, or _converted_.
@@ -275,3 +275,70 @@ Typical applications include:
 
 Even though parts of the input are encoded (or compressed), you can still use _constraints_ to shape them.
 And if the encoding or compression can be inverted, you can also use it to _parse_ inputs again.
+
+
+## Converters vs. Constraints
+
+Since converters (and generally, generators) can do anything, they can be used for any purpose, including producing solutions that normally would come from [constraints](sec:constraints).
+
+As an example, consider the credit card grammar from the [chapter on binary inputs](sec:binary):
+
+```{code-cell}
+:tags: ["remove-input"]
+# show grammar except '<byte>'
+!grep '::=' credit_card.fan; grep 'where' credit_card.fan
+```
+
+Instead of having a constraint (`where`) that expresses the relationship between `<number>` and `<check_digit>`, we can easily enhance the grammar with converters between `<number>` and `<credit_card_number>`:
+
+```python
+<credit_card_number> ::= <number> <check_digit> := add_check_digit(str(<number>))
+<number>             ::= <digit>{15} := strip_check_digit(str(<credit_card_number>))
+```
+
+with
+
+```python
+def add_check_digit(number: str) -> str:
+    """Add a check digit to the credit card number `number`."""
+    check_digit = credit_card_check_digit(number)
+    return number + check_digit
+```
+
+and
+
+```
+def strip_check_digit(number: str) -> str:
+    """Strip the check digit from the credit card number `number`."""
+    return number[:-1]
+```
+
+The resulting `.fan` spec [`credit_card-gen.fan`](credit_card-gen.fan)
+has the same effect as the original [`credit_card.fan`](credit_card.fan) from the [chapter on binary inputs](sec:binary):
+
+```shell
+$ fandango fuzz -f credit_card-gen.fan -n 10
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f credit_card-gen.fan -n 10
+```
+
+
+Now, these two functions `add_check_digit()` and `strip_check_digit()` are definitely longer than our original constraint
+
+```python
+where <check_digit> == credit_card_check_digit(str(<number>))
+```
+
+However, they are not necessarily more complex.
+And they are more efficient, as they provide a solution right away.
+So when should one use constraints, and when converters?
+
+:::{tip}
+In general:
+
+* If you have a simple, _operational_ way to solve a problem, consider a _converter_.
+* If you want a simple, _declarative_ way to specify your needs, use a _constraint_.
+:::
