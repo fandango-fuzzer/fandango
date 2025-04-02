@@ -67,11 +67,23 @@ def version():
     return importlib.metadata.version(DISTRIBUTION_NAME)
 
 
+def terminal_link(url: str, text: str | None=None):
+    """Output URL as a link"""
+    if text is None:
+        text = url
+    # https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
+    return f"\x1b]8;;{url}\x1b\\{text}\x1b]8;;\x1b\\"
+
 def homepage():
     """Return the Fandango homepage"""
     for key, value in importlib.metadata.metadata(DISTRIBUTION_NAME).items():
         if key == "Project-URL" and value.startswith("homepage,"):
-            return value.split(",")[1].strip()
+            url = value.split(",")[1].strip()
+            if sys.stdout.isatty():
+                homepage = terminal_link(url)
+            else:
+                homepage = url
+            return homepage
     return "the Fandango homepage"
 
 
