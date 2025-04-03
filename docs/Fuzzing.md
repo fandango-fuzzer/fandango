@@ -158,6 +158,7 @@ The `cat` program is then invoked repeatedly, each time passing a new Fandango-g
 
 ## Executable `.fan` files
 
+
 On a Unix system, you can turn a `.fan` file into an _executable file_ by placing a line
 
 ```
@@ -165,6 +166,7 @@ On a Unix system, you can turn a `.fan` file into an _executable file_ by placin
 ```
 
 at the top.
+
 If you set its "executable" flag with `chmod +x FILE`, you can then directly execute the `.fan` file as a command as if it were prefixed by `fandango fuzz -f`.
 
 As an example, let us create a file [`fuzz-persons.fan`](fuzz-persons.fan):
@@ -190,3 +192,11 @@ $ ./fuzz-persons.fan -n 1
 :tags: ["remove-input"]
 ! ./fuzz-persons.fan -n 1
 ```
+
+:::{note}
+The `env` command varies greatly across Unix systems.
+If the above does not work on your system, try skipping the `-S` option, such that the first line reads:
+```
+#!/usr/bin/env fandango fuzz -f
+```
+:::
