@@ -3,7 +3,7 @@ import time
 import gif
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-from fandango.language.parse import parse
+from fandango.language.legacy.parse import parse
 
 
 def is_syntactically_valid_gif(file_path):

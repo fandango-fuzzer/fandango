@@ -1,19 +1,25 @@
 #!/usr/bin/env python3
 
-__all__ = ["FandangoError",
-           "FandangoParseError",
-           "FandangoSyntaxError",
-           "FandangoValueError",
-           "FandangoBase",
-           "Fandango",
-           "DerivationTree"]
+__all__ = [
+    "FandangoError",
+    "FandangoParseError",
+    "FandangoSyntaxError",
+    "FandangoValueError",
+    "FandangoBase",
+    "Fandango",
+    "DerivationTree",
+]
+
 
 class FandangoError(ValueError):
     """Generic Error"""
+
     pass
+
 
 class FandangoParseError(FandangoError, SyntaxError):
     """Error during parsing inputs"""
+
     def __init__(self, position: int, *, message: str = None):
         if message is None:
             message = f"Parse error at position {position}"
@@ -21,23 +27,28 @@ class FandangoParseError(FandangoError, SyntaxError):
         SyntaxError.__init__(self, message)
         self.position = position
 
+
 class FandangoSyntaxError(FandangoError, SyntaxError):
     """Error during parsing a Fandango spec"""
+
     def __init__(self, message: str):
         FandangoError.__init__(self, message)
         SyntaxError.__init__(self, message)
 
+
 class FandangoValueError(FandangoError, ValueError):
     """Error during evaluating a Fandango spec"""
+
     def __init__(self, message: str):
         FandangoError.__init__(self, message)
         ValueError.__init__(self, message)
 
+
 class FandangoFailedError(FandangoError):
     """Error during the Fandango algorithm"""
+
     def __init__(self, message: str):
         super().__init__(self, message)
-
 
 
 from abc import ABC, abstractmethod
@@ -45,10 +56,10 @@ from typing import IO, List, Optional, Generator
 import sys
 import logging
 
-from fandango.language.parse import parse
+from fandango.language.legacy.parse import parse
 from fandango.evolution.algorithm import Fandango as FandangoStrategy
 import fandango.language.tree
-from fandango.language.grammar import Grammar
+from fandango.language import Grammar
 from fandango.logger import LOGGER
 import itertools
 

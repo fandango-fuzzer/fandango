@@ -4,8 +4,8 @@ import unittest
 import shlex
 import subprocess
 
-from fandango.language.grammar import ParseState, Grammar, NodeType
-from fandango.language.parse import parse
+from fandango.language import Grammar, NodeType
+from fandango.language.legacy.parse import parse
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 
@@ -491,9 +491,7 @@ class TestBitstreamParsing(TestCLIParsing):
         self.assertEqual("", err)
 
     def test_local_import(self):
-        command = shlex.split(
-            "fandango fuzz -f tests/resources/import.fan -n 1"
-        )
+        command = shlex.split("fandango fuzz -f tests/resources/import.fan -n 1")
         out, err, code = self.run_command(command)
         self.assertEqual(0, code)
         self.assertEqual("import\n", out)

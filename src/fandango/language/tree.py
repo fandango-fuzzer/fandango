@@ -4,8 +4,6 @@ from typing import Optional, List, Any, Union, Set, Tuple
 from fandango.language.symbol import Symbol, NonTerminal, Terminal, Slice
 from io import StringIO, BytesIO
 
-from fandango.logger import LOGGER, print_exception
-
 from fandango import FandangoValueError
 
 
@@ -568,7 +566,9 @@ class DerivationTree:
                     aggregate = aggregate + chr(value)
                     bits = 0
                 else:
-                    raise FandangoValueError(f"Cannot compute {aggregate!r} + {value!r}")
+                    raise FandangoValueError(
+                        f"Cannot compute {aggregate!r} + {value!r}"
+                    )
 
             elif isinstance(aggregate, bytes):
                 if isinstance(value, str):
@@ -579,7 +579,9 @@ class DerivationTree:
                     aggregate = aggregate + bytes([value])
                     bits = 0
                 else:
-                    raise FandangoValueError(f"Cannot compute {aggregate!r} + {value!r}")
+                    raise FandangoValueError(
+                        f"Cannot compute {aggregate!r} + {value!r}"
+                    )
 
             elif isinstance(aggregate, int):
                 if isinstance(value, str):
@@ -592,7 +594,9 @@ class DerivationTree:
                     aggregate = (aggregate << child_bits) + value
                     bits += child_bits
                 else:
-                    raise FandangoValueError(f"Cannot compute {aggregate!r} + {value!r}")
+                    raise FandangoValueError(
+                        f"Cannot compute {aggregate!r} + {value!r}"
+                    )
 
         # LOGGER.debug(f"value(): {' '.join(repr(child.value()) for child in self._children)} = {aggregate!r} ({bits} bits)")
 

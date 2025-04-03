@@ -1,7 +1,7 @@
 from typing import Callable, List, Set
 
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
-from fandango.language.grammar import DerivationTree, Grammar
+from fandango.language import DerivationTree, Grammar
 from fandango.logger import LOGGER
 
 

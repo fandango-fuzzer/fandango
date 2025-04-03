@@ -61,7 +61,7 @@ system-dev-tools:
 
 ## Parser
 
-PARSER = src/fandango/language/parser
+PARSER = src/fandango/language/legacy/parser
 LEXER_G4 = language/FandangoLexer.g4
 PARSER_G4 = language/FandangoParser.g4
 

@@ -9,7 +9,6 @@ from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union, Gener
 
 from fandango.language.symbol import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree
-from fandango.logger import LOGGER
 
 from fandango import FandangoValueError
 
@@ -1530,7 +1529,9 @@ class Grammar(NodeVisitor):
                 continue
             elif node.node_type == NodeType.NON_TERMINAL:
                 if node.symbol not in self.rules:
-                    raise FandangoValueError(f"Symbol {node.symbol} not found in grammar")
+                    raise FandangoValueError(
+                        f"Symbol {node.symbol} not found in grammar"
+                    )
                 if self.rules[node.symbol].distance_to_completion == float("inf"):
                     nodes.append(node)
                 else:
