@@ -6,7 +6,7 @@ import unittest
 from scipy.linalg import solve_lyapunov
 
 from fandango.evolution.algorithm import Fandango
-from fandango.language.parse import parse
+from fandango.language.legacy.parse import parse
 
 
 class ConstraintTest(unittest.TestCase):

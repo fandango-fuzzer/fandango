@@ -186,12 +186,32 @@ class FandangoParserListener(ParseTreeListener):
     def exitSelector_length(self, ctx: FandangoParser.Selector_lengthContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#selector.
-    def enterSelector(self, ctx: FandangoParser.SelectorContext):
+    # Enter a parse tree produced by FandangoParser#star_selection_or_dot_selection.
+    def enterStar_selection_or_dot_selection(
+        self, ctx: FandangoParser.Star_selection_or_dot_selectionContext
+    ):
         pass
 
-    # Exit a parse tree produced by FandangoParser#selector.
-    def exitSelector(self, ctx: FandangoParser.SelectorContext):
+    # Exit a parse tree produced by FandangoParser#star_selection_or_dot_selection.
+    def exitStar_selection_or_dot_selection(
+        self, ctx: FandangoParser.Star_selection_or_dot_selectionContext
+    ):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#star_selection.
+    def enterStar_selection(self, ctx: FandangoParser.Star_selectionContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#star_selection.
+    def exitStar_selection(self, ctx: FandangoParser.Star_selectionContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#dot_selection.
+    def enterDot_selection(self, ctx: FandangoParser.Dot_selectionContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#dot_selection.
+    def exitDot_selection(self, ctx: FandangoParser.Dot_selectionContext):
         pass
 
     # Enter a parse tree produced by FandangoParser#selection.
@@ -1894,6 +1914,14 @@ class FandangoParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by FandangoParser#func_type_comment.
     def exitFunc_type_comment(self, ctx: FandangoParser.Func_type_commentContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#identifier.
+    def enterIdentifier(self, ctx: FandangoParser.IdentifierContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#identifier.
+    def exitIdentifier(self, ctx: FandangoParser.IdentifierContext):
         pass
 
 

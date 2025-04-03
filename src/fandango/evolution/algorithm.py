@@ -11,7 +11,7 @@ from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossov
 from fandango.evolution.evaluation import Evaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import PopulationManager
-from fandango.language.grammar import DerivationTree, Grammar
+from fandango.language import DerivationTree, Grammar
 from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
 
 from fandango import FandangoFailedError, FandangoParseError, FandangoValueError
@@ -100,8 +100,9 @@ class Fandango:
                     tree = self.grammar.parse(individual)
                     if not tree:
                         position = self.grammar.max_position()
-                        raise FandangoParseError(position,
-                            message=f"Failed to parse initial individual{individual!r}"
+                        raise FandangoParseError(
+                            position,
+                            message=f"Failed to parse initial individual{individual!r}",
                         )
                 elif isinstance(individual, DerivationTree):
                     tree = individual

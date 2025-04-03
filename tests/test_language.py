@@ -9,17 +9,17 @@ from antlr4.error.Errors import ParseCancellationException
 
 from fandango.constraints.base import ComparisonConstraint
 from fandango.constraints.fitness import Comparison
-from fandango.language.convert import (
+from fandango.language.legacy.convert import (
     FandangoSplitter,
     GrammarProcessor,
     SearchProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import Alternative, Grammar
-from fandango.language.parse import parse
-from fandango.language.parser.FandangoLexer import FandangoLexer
-from fandango.language.parser.FandangoParser import FandangoParser
-from fandango.language.search import RuleSearch
+from fandango.language import Alternative, Grammar
+from fandango.language.legacy.parse import parse
+from fandango.language.legacy.parser.FandangoLexer import FandangoLexer
+from fandango.language.legacy.parser.FandangoParser import FandangoParser
+from fandango.language import RuleSearch
 from fandango.language.symbol import NonTerminal
 
 from fandango.constraints import predicates

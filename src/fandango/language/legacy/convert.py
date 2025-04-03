@@ -24,8 +24,8 @@ from fandango.language.grammar import (
     Star,
     TerminalNode,
 )
-from fandango.language.parser.FandangoParser import FandangoParser
-from fandango.language.parser.FandangoParserVisitor import FandangoParserVisitor
+from fandango.language.legacy.parser.FandangoParser import FandangoParser
+from fandango.language.legacy.parser.FandangoParserVisitor import FandangoParserVisitor
 from fandango.language.search import (
     AttributeSearch,
     DescendantAttributeSearch,
@@ -33,6 +33,8 @@ from fandango.language.search import (
     LengthSearch,
     RuleSearch,
     SelectiveSearch,
+    StarSearch,
+    PopulationSearch,
 )
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.logger import LOGGER
@@ -240,11 +242,14 @@ class ConstraintProcessor(FandangoParserVisitor):
     def visitQuantifier(self, ctx: FandangoParser.QuantifierContext):
         if ctx.formula_disjunction():
             return self.visit(ctx.formula_disjunction())
-        elif ctx.EXISTS() or ctx.FORALL():
+        elif ctx.EXISTS() or ctx.FORALL() or ctx.ANY() or ctx.ALL():
             constraint = self.visit(ctx.quantifier())
             bound = NonTerminal(ctx.NONTERMINAL().getText())
-            search = self.searches.visit(ctx.selector())[1][0]
-            if ctx.EXISTS():
+            if ctx.star_selection():
+                search = self.searches.visit(ctx.star_selection())[1][0]
+            else:
+                search = self.searches.visit(ctx.dot_selection())[1][0]
+            if ctx.EXISTS() or ctx.ANY():
                 return ExistsConstraint(
                     constraint,
                     bound,
@@ -253,7 +258,7 @@ class ConstraintProcessor(FandangoParserVisitor):
                     global_variables=self.global_variables,
                     lazy=self.lazy,
                 )
-            elif ctx.FORALL():
+            elif ctx.FORALL() or ctx.ALL():
                 return ForallConstraint(
                     constraint,
                     bound,
@@ -422,8 +427,8 @@ class SearchProcessor(FandangoParserVisitor):
     def visitBase_selection(self, ctx: FandangoParser.Base_selectionContext):
         if ctx.NONTERMINAL():
             return RuleSearch(NonTerminal(ctx.NONTERMINAL().getText()))
-        elif ctx.selector():
-            return self.get_attribute_searches(ctx.selector())
+        elif ctx.dot_selection():
+            return self.get_attribute_searches(ctx.dot_selection())
         else:
             raise FandangoValueError(f"Unknown base selection: {ctx.getText()}")
 
@@ -436,25 +441,50 @@ class SearchProcessor(FandangoParserVisitor):
             return ItemSearch(base, self.visitRs_slices(ctx.rs_slices()))
         return base
 
-    def get_attribute_searches(self, ctx: FandangoParser.SelectorContext):
+    def get_attribute_searches(self, ctx: FandangoParser.Dot_selectionContext):
         search = self.transform_selection(ctx.selection())
-
         if ctx.DOT():
-            return AttributeSearch(self.get_attribute_searches(ctx.selector()), search)
+            return AttributeSearch(
+                self.get_attribute_searches(ctx.dot_selection()), search
+            )
         elif ctx.DOTDOT():
             return DescendantAttributeSearch(
-                self.get_attribute_searches(ctx.selector()), search
+                self.get_attribute_searches(ctx.dot_selection()), search
             )
         else:
             return search
 
     def visitSelector_length(self, ctx: FandangoParser.Selector_lengthContext):
-        tree, searches, search_map = self.visitSelector(ctx.selector())
         if ctx.OR_OP():
-            search_map[tree.id] = LengthSearch(searches[0])
-        return tree, searches, search_map
+            tree, searches, search_map = self.visitDot_selection(ctx.dot_selection())
+        elif ctx.LEN():
+            tree, searches, search_map = self.visit(ctx.star_selection())
+        else:
+            return self.visitStar_selection_or_dot_selection(
+                ctx.star_selection_or_dot_selection()
+            )
+        search = LengthSearch(searches[0])
+        search_map[tree.id] = search
+        return tree, [search], search_map
 
-    def visitSelector(self, ctx: FandangoParser.SelectorContext):
+    def visitStar_selection_or_dot_selection(
+        self, ctx: FandangoParser.Star_selection_or_dot_selectionContext
+    ):
+        if ctx.star_selection():
+            return self.visitStar_selection(ctx.star_selection())
+        else:
+            return self.visitDot_selection(ctx.dot_selection())
+
+    def visitStar_selection(self, ctx: FandangoParser.Star_selectionContext):
+        tree, searches, search_map = self.visit(ctx.selection())
+        if ctx.STAR():
+            search = StarSearch(searches[0])
+        else:
+            search = PopulationSearch(searches[0])
+        search_map[tree.id] = search
+        return tree, [search], search_map
+
+    def visitDot_selection(self, ctx: FandangoParser.Dot_selectionContext):
         identifier = self.get_new_identifier()
         search = self.get_attribute_searches(ctx)
         return ast.Name(id=identifier), [search], {identifier: search}
@@ -653,10 +683,10 @@ class SearchProcessor(FandangoParserVisitor):
         return self.visit(ctx.primary())
 
     def visitPrimary(self, ctx: FandangoParser.PrimaryContext):
-        if ctx.NAME():
+        if ctx.identifier():
             tree, searches, search_map = self.visit(ctx.primary())
             return (
-                ast.Attribute(value=tree, attr=ctx.NAME().getText()),
+                ast.Attribute(value=tree, attr=ctx.identifier().getText()),
                 searches,
                 search_map,
             )
@@ -707,8 +737,8 @@ class SearchProcessor(FandangoParserVisitor):
         )
 
     def visitAtom(self, ctx: FandangoParser.AtomContext):
-        if ctx.NAME():
-            return ast.Name(id=ctx.NAME().getText()), [], {}
+        if ctx.identifier():
+            return ast.Name(id=ctx.identifier().getText()), [], {}
         elif ctx.TRUE():
             return ast.Constant(value=True), [], {}
         elif ctx.FALSE():
@@ -748,7 +778,7 @@ class SearchProcessor(FandangoParserVisitor):
         if ctx.ASSIGN():
             tree, searches, search_map = self.visit(ctx.expression())
             return (
-                ast.keyword(arg=ctx.NAME().getText(), value=tree),
+                ast.keyword(arg=ctx.identifier().getText(), value=tree),
                 searches,
                 search_map,
             )
@@ -761,7 +791,7 @@ class SearchProcessor(FandangoParserVisitor):
         tree, searches, search_map = self.visit(ctx.expression())
         arg = None
         if ctx.ASSIGN():
-            arg = ctx.NAME().getText()
+            arg = ctx.identifier().getText()
         return (
             ast.keyword(arg=arg, value=tree),
             searches,
@@ -996,7 +1026,7 @@ class SearchProcessor(FandangoParserVisitor):
         if ctx.DOT():
             target, searches, search_map = self.visit(ctx.t_primary())
             return (
-                ast.Attribute(value=target, attr=ctx.NAME().getText()),
+                ast.Attribute(value=target, attr=ctx.identifier().getText()),
                 searches,
                 search_map,
             )
@@ -1006,8 +1036,8 @@ class SearchProcessor(FandangoParserVisitor):
         return self.visit(ctx.star_atom())
 
     def visitStar_atom(self, ctx: FandangoParser.Star_atomContext):
-        if ctx.NAME():
-            return ast.Name(id=ctx.NAME().getText()), [], {}
+        if ctx.identifier():
+            return ast.Name(id=ctx.identifier().getText()), [], {}
         elif ctx.target_with_star_atom():
             return self.visit(ctx.target_with_star_atom())
         elif ctx.OPEN_PAREN():
@@ -1025,7 +1055,7 @@ class SearchProcessor(FandangoParserVisitor):
         if ctx.DOT():
             target, searches, search_map = self.visit(ctx.t_primary())
             return (
-                ast.Attribute(value=target, attr=ctx.NAME().getText()),
+                ast.Attribute(value=target, attr=ctx.identifier().getText()),
                 searches,
                 search_map,
             )
@@ -1183,7 +1213,7 @@ class SearchProcessor(FandangoParserVisitor):
             annotation, searches, search_map = None, [], {}
         return (
             ast.arg(
-                arg=ctx.NAME().getText(),
+                arg=ctx.identifier().getText(),
                 annotation=annotation,
             ),
             searches,
@@ -1201,7 +1231,7 @@ class SearchProcessor(FandangoParserVisitor):
             annotation, searches, search_map = None, [], {}
         return (
             ast.arg(
-                arg=ctx.NAME().getText(),
+                arg=ctx.identifier().getText(),
                 annotation=annotation,
             ),
             searches,
@@ -1209,8 +1239,8 @@ class SearchProcessor(FandangoParserVisitor):
         )
 
     def visitSingle_target(self, ctx: FandangoParser.Single_targetContext):
-        if ctx.NAME():
-            return ast.Name(id=ctx.NAME().getText()), [], {}
+        if ctx.identifier():
+            return ast.Name(id=ctx.identifier().getText()), [], {}
         elif ctx.single_subscript_attribute_target():
             return self.visitSingle_subscript_attribute_target(
                 ctx.single_subscript_attribute_target()
@@ -1224,7 +1254,7 @@ class SearchProcessor(FandangoParserVisitor):
         tree, searches, search_map = self.visit(ctx.t_primary())
         if ctx.DOT():
             return (
-                ast.Attribute(value=tree, attr=ctx.NAME().getText()),
+                ast.Attribute(value=tree, attr=ctx.identifier().getText()),
                 searches,
                 search_map,
             )
@@ -1235,7 +1265,7 @@ class SearchProcessor(FandangoParserVisitor):
         if ctx.DOT():
             tree, searches, search_map = self.visit(ctx.t_primary())
             return (
-                ast.Attribute(value=tree, attr=ctx.NAME().getText()),
+                ast.Attribute(value=tree, attr=ctx.identifier().getText()),
                 searches,
                 search_map,
             )
@@ -1246,8 +1276,8 @@ class SearchProcessor(FandangoParserVisitor):
             return self.visitDel_t_atom(ctx.del_t_atom())
 
     def visitDel_t_atom(self, ctx: FandangoParser.Del_t_atomContext):
-        if ctx.NAME():
-            return ast.Name(id=ctx.NAME().getText()), [], {}
+        if ctx.identifier():
+            return ast.Name(id=ctx.identifier().getText()), [], {}
         else:
             if ctx.del_targets():
                 trees, searches, search_map = self.visitDel_targets(ctx.del_targets())
@@ -1289,7 +1319,8 @@ class PythonProcessor(FandangoParserVisitor):
             tree, searches, _ = self.search_processor.visit(expression)
             if searches:
                 raise FandangoValueError(
-                    f"Nonterminals can only be used in grammars and constraints, not in regular Python code: {expression.getText()}"
+                    "Nonterminals can only be used in grammars and "
+                    f"constraints, not in regular Python code: {expression.getText()}"
                 )
             return tree
         return None
@@ -1343,9 +1374,9 @@ class PythonProcessor(FandangoParserVisitor):
     def visitAssignment(self, ctx: FandangoParser.AssignmentContext):
         if ctx.COLON():
             right = self.get_expression(ctx.annotated_rhs())
-            if ctx.NAME():
+            if ctx.identifier():
                 return ast.AnnAssign(
-                    target=ast.Name(id=ctx.NAME().getText()),
+                    target=ast.Name(id=ctx.identifier().getText()),
                     annotation=self.get_expression(ctx.expression()),
                     value=right,
                     simple=1,
@@ -1435,10 +1466,10 @@ class PythonProcessor(FandangoParserVisitor):
         )
 
     def visitGlobal_stmt(self, ctx: FandangoParser.Global_stmtContext):
-        return ast.Global(names=[name.getText() for name in ctx.NAME()])
+        return ast.Global(names=[name.getText() for name in ctx.identifier()])
 
     def visitNonlocal_stmt(self, ctx: FandangoParser.Nonlocal_stmtContext):
-        return ast.Nonlocal(names=[name.getText() for name in ctx.NAME()])
+        return ast.Nonlocal(names=[name.getText() for name in ctx.identifier()])
 
     def visitDel_stmt(self, ctx: FandangoParser.Del_stmtContext):
         return ast.Delete(targets=self.get_expression(ctx.del_targets()))
@@ -1477,7 +1508,7 @@ class PythonProcessor(FandangoParserVisitor):
     def visitDotted_as_name(self, ctx: FandangoParser.Dotted_as_nameContext):
         return ast.alias(
             name=ctx.dotted_name().getText(),
-            asname=ctx.NAME().getText() if ctx.NAME() else None,
+            asname=ctx.identifier().getText() if ctx.identifier() else None,
         )
 
     def visitImport_from_targets(self, ctx: FandangoParser.Import_from_targetsContext):
@@ -1495,8 +1526,8 @@ class PythonProcessor(FandangoParserVisitor):
 
     def visitImport_from_as_name(self, ctx: FandangoParser.Import_from_as_nameContext):
         return ast.alias(
-            name=ctx.NAME(0).getText(),
-            asname=ctx.NAME(1).getText() if ctx.NAME(1) else None,
+            name=ctx.identifier(0).getText(),
+            asname=ctx.identifier(1).getText() if ctx.identifier(1) else None,
         )
 
     def visitCompound_stmt(self, ctx: FandangoParser.Compound_stmtContext):
@@ -1538,7 +1569,8 @@ class PythonProcessor(FandangoParserVisitor):
             )
             if base_searches:
                 raise FandangoValueError(
-                    f"Nonterminals can only be used in grammars and constraints, not in regular Python code: {ctx.getText()}"
+                    "Nonterminals can only be used in grammars and constraints, "
+                    f"not in regular Python code: {ctx.getText()}"
                 )
             for base in base_trees:
                 if isinstance(base, ast.keyword):
@@ -1547,11 +1579,12 @@ class PythonProcessor(FandangoParserVisitor):
                     bases.append(base)
         body = self.visitBlock(ctx.block())
         return ast.ClassDef(
-            name=ctx.NAME().getText(),
+            name=ctx.identifier().getText(),
             bases=bases,
             keywords=keywords,
             body=body,
             decorator_list=[],
+            type_params=[],
         )
 
     def visitFunction_def(self, ctx: FandangoParser.Function_defContext):
@@ -1575,13 +1608,14 @@ class PythonProcessor(FandangoParserVisitor):
         else:
             class_ = ast.FunctionDef
         return class_(
-            name=ctx.NAME().getText(),
+            name=ctx.identifier().getText(),
             args=params,
             body=body,
             decorator_list=[],
             returns=self.get_expression(ctx.expression()),
             type_comment=None,
             lineno=0,
+            type_params=[],
         )
 
     def visitDecorators(self, ctx: FandangoParser.DecoratorsContext):
@@ -1590,7 +1624,8 @@ class PythonProcessor(FandangoParserVisitor):
             tree, searches, _ = self.search_processor.visitNamed_expression(expression)
             if searches:
                 raise FandangoValueError(
-                    f"Nonterminals can only be used in grammars and constraints, not in regular Python code: {ctx.getText()}"
+                    "Nonterminals can only be used in grammars and constraints, "
+                    f"not in regular Python code: {ctx.getText()}"
                 )
             decorators.append(expression)
         return decorators
@@ -1715,8 +1750,8 @@ class PythonProcessor(FandangoParserVisitor):
         )
 
     def visitExcept_block(self, ctx: FandangoParser.Except_blockContext):
-        if ctx.NAME():
-            name = ctx.NAME().getText()
+        if ctx.identifier():
+            name = ctx.identifier().getText()
         else:
             name = None
         return ast.ExceptHandler(
@@ -1726,8 +1761,8 @@ class PythonProcessor(FandangoParserVisitor):
         )
 
     def visitExcept_star_block(self, ctx: FandangoParser.Except_star_blockContext):
-        if ctx.NAME():
-            name = ctx.NAME().getText()
+        if ctx.identifier():
+            name = ctx.identifier().getText()
         else:
             name = None
         return ast.ExceptHandler(

@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 from typing import Tuple
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-from fandango.language.parse import parse
+from fandango.language.legacy.parse import parse
 
 
 def is_syntactically_valid_xml(xml_string):

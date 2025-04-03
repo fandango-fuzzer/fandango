@@ -99,8 +99,18 @@ class FandangoParserVisitor(ParseTreeVisitor):
     def visitSelector_length(self, ctx: FandangoParser.Selector_lengthContext):
         return self.visitChildren(ctx)
 
-    # Visit a parse tree produced by FandangoParser#selector.
-    def visitSelector(self, ctx: FandangoParser.SelectorContext):
+    # Visit a parse tree produced by FandangoParser#star_selection_or_dot_selection.
+    def visitStar_selection_or_dot_selection(
+        self, ctx: FandangoParser.Star_selection_or_dot_selectionContext
+    ):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#star_selection.
+    def visitStar_selection(self, ctx: FandangoParser.Star_selectionContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#dot_selection.
+    def visitDot_selection(self, ctx: FandangoParser.Dot_selectionContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by FandangoParser#selection.
@@ -953,6 +963,10 @@ class FandangoParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by FandangoParser#func_type_comment.
     def visitFunc_type_comment(self, ctx: FandangoParser.Func_type_commentContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#identifier.
+    def visitIdentifier(self, ctx: FandangoParser.IdentifierContext):
         return self.visitChildren(ctx)
 
 

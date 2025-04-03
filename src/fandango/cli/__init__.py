@@ -11,20 +11,18 @@ import shlex
 import subprocess
 import sys
 import tempfile
-import textwrap
 import zipfile
 import shutil
 import textwrap
 
 from io import StringIO
-from io import UnsupportedOperation
 from pathlib import Path
 
 from ansi_styles import ansiStyles as styles
 
 from fandango.evolution.algorithm import Fandango
-from fandango.language.grammar import Grammar
-from fandango.language.parse import parse
+from fandango.language import Grammar
+from fandango.language.legacy.parse import parse
 from fandango.logger import LOGGER, print_exception
 
 from fandango import FandangoParseError, FandangoError

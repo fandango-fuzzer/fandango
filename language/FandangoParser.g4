@@ -78,8 +78,10 @@ implies:
 quantifier:
     NEWLINE*
     (
-        FORALL NONTERMINAL IN selector COLON quantifier
-        | EXISTS NONTERMINAL IN selector COLON quantifier
+        FORALL NONTERMINAL IN dot_selection COLON quantifier // deprecated
+        | EXISTS NONTERMINAL IN dot_selection COLON quantifier // deprecated
+        | 'any' '(' quantifier 'for' NONTERMINAL IN star_selection ')'
+        | 'all' '(' quantifier 'for' NONTERMINAL IN star_selection ')'
         | formula_disjunction
     )
     NEWLINE*
@@ -123,14 +125,25 @@ expr:
     ;
 
 selector_length
-    : '|' selector '|'
-    | selector
+    : '|' dot_selection '|' // deprecated
+    | 'len' '(' star_selection ')'
+    | star_selection_or_dot_selection
     ;
 
-selector:
+star_selection_or_dot_selection
+    : star_selection
+    | dot_selection
+    ;
+
+star_selection
+    : '*' selection
+    | '**' selection
+    ;
+
+dot_selection:
     selection
-    | selector '.' selection
-    | selector '..' selection
+    | dot_selection '.' selection
+    | dot_selection '..' selection
     ;
 
 selection
@@ -141,7 +154,7 @@ selection
 
 base_selection
     : NONTERMINAL
-    | '(' selector ')'
+    | '(' dot_selection ')'
     ;
 
 rs_pairs
@@ -247,7 +260,7 @@ compound_stmt
 // =================
 
 assignment
-    : NAME ':' expression ('=' annotated_rhs)?
+    : identifier ':' expression ('=' annotated_rhs)?
     | ('(' single_target ')'
          | single_subscript_attribute_target) ':' expression ('=' annotated_rhs)?
     | (star_targets '=' )+ (yield_expr | star_expressions)
@@ -285,11 +298,11 @@ raise_stmt
     ;
 
 global_stmt
-    : 'global' NAME (',' NAME)*
+    : 'global' identifier (',' identifier)*
     ;
 
 nonlocal_stmt
-    : 'nonlocal' NAME (',' NAME)*
+    : 'nonlocal' identifier (',' identifier)*
     ;
 
 del_stmt
@@ -332,7 +345,7 @@ import_from_as_names
     ;
 
 import_from_as_name
-    : NAME ('as' NAME)?
+    : identifier ('as' identifier)?
     ;
 
 dotted_as_names
@@ -340,12 +353,12 @@ dotted_as_names
     ;
 
 dotted_as_name
-    : dotted_name ('as' NAME)?
+    : dotted_name ('as' identifier)?
     ;
 
 dotted_name
-    : dotted_name '.' NAME
-    | NAME
+    : dotted_name '.' identifier
+    | identifier
     ;
 
 // COMPOUND STATEMENTS
@@ -371,7 +384,7 @@ class_def
     ;
 
 class_def_raw
-    : 'class' NAME type_params? ('(' arguments? ')')? ':' block
+    : 'class' identifier type_params? ('(' arguments? ')')? ':' block
     ;
 
 // Function definitions
@@ -382,7 +395,7 @@ function_def
     ;
 
 function_def_raw
-    : 'async'? 'def' NAME type_params? '(' params? ')' ('->' expression)? ':' func_type_comment? block
+    : 'async'? 'def' identifier type_params? '(' params? ')' ('->' expression)? ':' func_type_comment? block
     ;
 
 // Function parameters
@@ -456,11 +469,11 @@ param_maybe_default
     ;
 
 param
-    : NAME annotation?
+    : identifier annotation?
     ;
 
 param_star_annotation
-    : NAME star_annotation
+    : identifier star_annotation
     ;
 
 annotation
@@ -536,12 +549,12 @@ try_stmt
 // ----------------
 
 except_block
-    : 'except' expression ('as' NAME)? ':' block
+    : 'except' expression ('as' identifier)? ':' block
     | 'except' ':' block
     ;
 
 except_star_block
-    : 'except' '*' expression ('as' NAME)? ':' block
+    : 'except' '*' expression ('as' identifier)? ':' block
     ;
 
 finally_block
@@ -645,7 +658,7 @@ capture_pattern
     ;
 
 pattern_capture_target
-    : NAME
+    : identifier
     ;
 
 wildcard_pattern
@@ -657,12 +670,12 @@ value_pattern
     ;
 
 attr
-    : name_or_attr '.' NAME
+    : name_or_attr '.' identifier
     ;
 
 name_or_attr
-    : name_or_attr '.' NAME
-    | NAME
+    : name_or_attr '.' identifier
+    | identifier
     ;
 
 group_pattern
@@ -727,14 +740,14 @@ keyword_patterns
     ;
 
 keyword_pattern
-    : NAME '=' pattern
+    : identifier '=' pattern
     ;
 
 // Type statement
 // ---------------
 
 type_alias
-    : 'type' NAME type_params? '=' expression
+    : 'type' identifier type_params? '=' expression
     ;
 
 // Type parameter declaration
@@ -749,9 +762,9 @@ type_param_seq
     ;
 
 type_param
-    : NAME type_param_bound?
-    | '*' NAME
-    | '**' NAME
+    : identifier type_param_bound?
+    | '*' identifier
+    | '**' identifier
     ;
 
 type_param_bound
@@ -795,7 +808,7 @@ star_named_expression
     ;
 
 assignment_expression
-    : NAME ':=' expression
+    : identifier ':=' expression
     ;
 
 named_expression
@@ -941,7 +954,7 @@ await_primary
     ;
 
 primary
-    : primary '.' NAME
+    : primary '.' identifier
     | primary genexp
     | primary '(' arguments? ')'
     | primary '[' slices ']'
@@ -959,7 +972,7 @@ slice
 
 atom
     : selector_length
-    | NAME
+    | identifier
     | 'True'
     | 'False'
     | 'None'
@@ -1029,7 +1042,7 @@ lambda_param_maybe_default
     ;
 
 lambda_param
-    : NAME
+    : identifier
     ;
 
 // LITERALS
@@ -1045,7 +1058,7 @@ fstring_replacement_field
     ;
 
 fstring_conversion:
-    | '!' NAME
+    | '!' identifier
     ;
 
 fstring_full_format_spec
@@ -1157,12 +1170,12 @@ starred_expression
     ;
 
 kwarg_or_starred
-    : NAME '=' expression
+    : identifier '=' expression
     | starred_expression
     ;
 
 kwarg_or_double_starred
-    : NAME '=' expression
+    : identifier '=' expression
     | '**' expression
     ;
 
@@ -1192,13 +1205,13 @@ star_target
     ;
 
 target_with_star_atom
-    : t_primary '.' NAME
+    : t_primary '.' identifier
     | t_primary '[' slices ']'
     | star_atom
     ;
 
 star_atom
-    : NAME
+    : identifier
     | '(' target_with_star_atom ')'
     | '(' star_targets_tuple_seq? ')'
     | '[' star_targets_list_seq? ']'
@@ -1206,17 +1219,17 @@ star_atom
 
 single_target
     : single_subscript_attribute_target
-    | NAME
+    | identifier
     | '(' single_target ')'
     ;
 
 single_subscript_attribute_target
-    : t_primary '.' NAME
+    : t_primary '.' identifier
     | t_primary '[' slices ']'
     ;
 
 t_primary
-    : t_primary '.' NAME
+    : t_primary '.' identifier
     | t_primary '[' slices ']'
     | t_primary genexp
     | t_primary '(' arguments? ')'
@@ -1231,13 +1244,13 @@ del_targets
     ;
 
 del_target
-    : t_primary '.' NAME
+    : t_primary '.' identifier
     | t_primary '[' slices ']'
     | del_t_atom
     ;
 
 del_t_atom
-    : NAME
+    : identifier
     | '(' del_targets? ')'
     | '[' del_targets? ']'
     ;
@@ -1258,6 +1271,13 @@ type_expressions
 
 func_type_comment
     : NEWLINE
+    ;
+
+identifier
+    : NAME
+    | ANY
+    | ALL
+    | LEN
     ;
 
 // ========================= END OF THE GRAMMAR ===========================

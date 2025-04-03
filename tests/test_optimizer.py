@@ -6,7 +6,7 @@ from typing import List
 
 from fandango.constraints.fitness import FailingTree
 from fandango.evolution.algorithm import Fandango
-from fandango.language.parse import parse
+from fandango.language.legacy.parse import parse
 from fandango.language.tree import DerivationTree
 
 

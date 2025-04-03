@@ -4,7 +4,7 @@ from io import StringIO
 from typing import Tuple
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-from fandango.language.parse import parse
+from fandango.language.legacy.parse import parse
 
 
 def is_syntactically_valid_csv(csv_string):

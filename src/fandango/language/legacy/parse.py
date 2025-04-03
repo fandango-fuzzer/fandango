@@ -20,21 +20,20 @@ from thefuzz import process as thefuzz_process
 from xdg_base_dirs import xdg_cache_home, xdg_data_dirs, xdg_data_home
 
 from fandango.constraints import predicates
-from fandango.language.convert import (
+from fandango.language.legacy.convert import (
     ConstraintProcessor,
     FandangoSplitter,
     GrammarProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import Grammar, NodeType, MAX_REPETITIONS
-from fandango.language.parser.FandangoLexer import FandangoLexer
-from fandango.language.parser.FandangoParser import FandangoParser
+from fandango.language.grammar import Grammar, NodeType
+from fandango.language.legacy.parser.FandangoLexer import FandangoLexer
+from fandango.language.legacy.parser.FandangoParser import FandangoParser
 from fandango.language.stdlib import stdlib
 from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER, print_exception
 
 from fandango import FandangoSyntaxError, FandangoValueError
-
 
 
 class MyErrorListener(ErrorListener):
@@ -45,11 +44,14 @@ class MyErrorListener(ErrorListener):
         super().__init__()
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        exc = FandangoSyntaxError(f"{self.filename!r}, line {line}, column {column}: {msg}")
+        exc = FandangoSyntaxError(
+            f"{self.filename!r}, line {line}, column {column}: {msg}"
+        )
         exc.line = line
         exc.column = column
         exc.messsage = msg
         raise exc
+
 
 def closest_match(word, candidates):
     """
@@ -90,7 +92,7 @@ def include(file_to_be_included: str):
 
     path = os.path.dirname(CURRENT_FILENAME)
     if not path:
-        path = "."  # For strings and standard input
+        path = ".."  # For strings and standard input
     if INCLUDES:
         path += ":" + ":".join(INCLUDES)
     if os.environ.get("FANDANGO_PATH"):
@@ -533,7 +535,9 @@ def check_grammar_definitions(
 
     if undefined_symbols:
         first_undefined_symbol = undefined_symbols.pop()
-        error = FandangoValueError(f"Undefined symbol {first_undefined_symbol!s} in grammar")
+        error = FandangoValueError(
+            f"Undefined symbol {first_undefined_symbol!s} in grammar"
+        )
         if undefined_symbols:
             error.add_note(
                 f"Other undefined symbols: {', '.join(str(symbol) for symbol in undefined_symbols)}"

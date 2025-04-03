@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 
 from fandango.constraints.base import Constraint
 from fandango.constraints.fitness import FailingTree
-from fandango.language.grammar import DerivationTree, Grammar
+from fandango.language import DerivationTree, Grammar
 from fandango.logger import LOGGER
 
 
