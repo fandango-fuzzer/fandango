@@ -1,4 +1,4 @@
-#!/usr/bin/env fandango fuzz -f
+#!/usr/bin/env -S fandango fuzz -f
 <start> ::= <person_name> "," <age>
 <person_name> ::= <first_name> " " <last_name>
 <first_name> ::= <name>
