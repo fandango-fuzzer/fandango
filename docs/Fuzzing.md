@@ -194,7 +194,7 @@ $ ./fuzz-persons.fan -n 1
 ```
 
 :::{note}
-The `env` command varies greatly across Unix systems.
+The `env` command varies greatly across Unix flavors and versions.
 If the above does not work on your system, try skipping the `-S` option, such that the first line reads:
 ```
 #!/usr/bin/env fandango fuzz -f
