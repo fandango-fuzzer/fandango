@@ -14,9 +14,9 @@ fake = Faker()
 
 def gen_q_name():
     result = b''
-    #domain_parts = fake.domain_name().split('.')
+    domain_parts = fake.domain_name().split('.')
     #domain_parts = "fandango.io".split('.')
-    domain_parts = "google.com".split('.')
+    #domain_parts = "google.com".split('.')
     for part in domain_parts:
         result += len(part).to_bytes(1, 'big')
         result += part.encode('iso8859-1')
@@ -175,7 +175,7 @@ def decompress_msg(compressed):
 
 #                       qr      opcode       aa tc rd  ra  z      rcode   qdcount  ancount nscount arcount
 <header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_none> <req_qd_count> 0{16} 0{16} <req_ar_count>
-<header_resp> ::= <h_id> 1 <h_opcode_standard> <bit> 0 <h_rd> <h_ra> 0 <h_aa> 0 <h_rcode_none> <resp_qd_count> <resp_an_count> <resp_ns_count> <resp_ar_count>
+<header_resp> ::= <h_id> 1 <h_opcode_standard> <bit> 0 <h_rd> <h_ra> 0 <h_aa> 0 (<h_rcode_none> | <h_rcode_name>) <resp_qd_count> <resp_an_count> <resp_ns_count> <resp_ar_count>
 # aa=1 if server has authority over domain
 
 where forall <ex> in <start>.<exchange>:
@@ -219,7 +219,7 @@ where forall <ex> in <start>.<exchange>:
 <q_name_optional> ::= <q_name_written>? 0{8}
 <q_name> ::= <q_name_written> 0{8}
 <q_name_written> ::= (<label_len_octet> <byte>{byte_to_int(b'\x00' + bytes(<label_len_octet>))})+ := gen_q_name()
-<q_type> ::= <type_id_a> | <type_id_ns> | <type_id_cname>
+<q_type> ::= <type_id_cname> #| <type_id_a> | <type_id_ns>
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
 
 where forall <ex> in <start>.<exchange>:

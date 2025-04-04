@@ -8,7 +8,7 @@ services:
       - TZ=Europe/Berlin
     ports:
 #      - "53:53/tcp"
-      - "53:53/udp"
+      - "25566:53/udp"
     volumes:
       - ./data/config:/etc/bind
       - ./data/cache:/var/cache/bind
