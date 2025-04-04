@@ -165,7 +165,7 @@ def decompress_msg(compressed):
     return decompressed
 
 
-<start> ::= <exchange>{2}
+<start> ::= <exchange>{20}
 <exchange> ::= <Client:dns_req> <Server:dns_resp>
 #<exchange> ::= <Client:dns_req_compressed> <Server:dns_resp_compressed>
 <dns_req_compressed> ::= <byte>+ #:= compress_msg(<dns_req>.to_bytes())
@@ -198,7 +198,7 @@ where forall <ex> in <start>.<exchange>:
 
 <h_id> ::= <byte><byte>
 <h_opcode_standard> ::= 0 0 0 0
-<h_rd> ::= <bit>
+<h_rd> ::= 1 #:= DerivationTree(NonTerminal('<bit>'), [Terminal(1)]) # 0 causes server failure with cname
 <h_aa> ::= <bit>
 <h_ra> ::= <bit>
 
@@ -260,7 +260,6 @@ class Client(FandangoAgent):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.sendto(compress_msg(message), ("1.1.1.1", 53))
             response, nothing = sock.recvfrom(1024)
-            print('Incoming: ', response)
             self.receive_msg("Server", decompress_msg(response))
 
 class Server(FandangoAgent):
