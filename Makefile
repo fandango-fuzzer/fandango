@@ -231,10 +231,11 @@ credit:
 		grep -v 'src/fandango/language/parser/' | \
 		grep -v 'utils/dtd2fan/.*\.fan' | \
 		xargs -n1 git blame -wfn | \
-		sed 's/joszamama/José Antonio Zamudio/g' | \
+		sed 's/joszamama/José Antonio/g' | \
 		sed 's/alex9849/Alexander Liggesmeyer/g' | \
 		perl -n -e '/\((.*)\s[\d]{4}\-/ && print $$1."\n"' | \
 		awk '{print $$1" "$$2}' | \
+		sed 's/José Antonio$$/José Antonio Zamudio Amaya/g' | \
 		sort -f | \
 		uniq -c | \
 		sort -nr; \
