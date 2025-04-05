@@ -225,7 +225,7 @@ install:
 credit:
 	@echo "Lines contributed"
 	@for pattern in .py .g4 .md .fan .toml .yml file; do \
-		echo "'$$pattern' files:"; \
+		echo "*$$pattern files:"; \
 		git ls-files | \
 		grep "$$pattern"'$$' | \
 		grep -v 'src/fandango/language/parser/' | \
