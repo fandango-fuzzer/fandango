@@ -66,6 +66,10 @@ class NonTerminal(Symbol):
     def __eq__(self, other):
         return isinstance(other, NonTerminal) and self.symbol == other.symbol
 
+    def __lt__(self, other):
+        if isinstance(other, NonTerminal):
+            return self.symbol < other.symbol
+
     def __hash__(self):
         return hash((self.symbol, self.type))
 
