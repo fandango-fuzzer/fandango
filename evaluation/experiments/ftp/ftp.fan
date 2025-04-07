@@ -17,7 +17,7 @@ from random import randint
 
 
 <request_login_user_ok> ::= 'USER the_user\r\n'
-<response_login_user> ::= '331 Password required for the_user\r\n'
+<response_login_user> ::= '331 Password required for ' <user_name> '\r\n'
 <request_login_pass_ok> ::= 'PASS the_password\r\n'
 <response_login_pass_ok> ::= '230 User the_user logged in\r\n'
 
@@ -70,7 +70,8 @@ from random import randint
 <filesystem_name> ::= r'[a-zA-Z0-9]+'
 <client_name> ::= r'[a-zA-Z0-9]+'
 
-<wrong_user_name> ::= r'[a-zA-Z0-9]*'
+<user_name> ::= <wrong_user_name>
+<wrong_user_name> ::= r'[a-zA-Z0-9\_]*'
 <wrong_user_password> ::= r'[a-zA-Z0-9]*'
 
 <open_port> ::= <passive_port> := open_data_agent(<open_port_param>)
@@ -134,12 +135,12 @@ class ClientControl(FandangoAgent):
             server_thread.start()
 
         def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
-            self.sock.sendall(message)
+            self.sock.sendall(message.encode("utf-8"))
 
         def listen_loop(self):
             while True:
                 response, nothing = self.sock.recvfrom(1024)
-                self.receive_msg("ServerControl", response)
+                self.receive_msg("ServerControl", response.decode("utf-8"))
 
 class ServerControl(FandangoAgent):
     def __init__(self):
