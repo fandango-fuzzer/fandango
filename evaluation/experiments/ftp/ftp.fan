@@ -14,9 +14,14 @@ from random import randint
 <exchange_login_ok> ::= <ClientControl:ServerControl:request_login_user_ok><ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_ok><ServerControl:ClientControl:response_login_pass_ok><state_post_login>
 <exchange_login_fail> ::= (<ClientControl:ServerControl:request_login_user_ok> | <ClientControl:ServerControl:request_login_user_fail>)<ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_fail><ServerControl:ClientControl:response_login_pass_fail><state_logged_out>
 
+where forall <ex> in <exchange_login_ok>:
+    str(<ex>.<request_login_user_ok>.<correct_username>) == str(<ex>.<response_login_user>.<user_name>)
+where forall <ex> in <exchange_login_fail>:
+    str(<ex>.<request_login_user_ok>.<correct_username>) == str(<ex>.<response_login_user>.<user_name>)
+    or str(<ex>.<request_login_user_fail>.<wrong_user_name>) == str(<ex>.<response_login_user>.<user_name>)
 
-
-<request_login_user_ok> ::= 'USER the_user\r\n'
+<request_login_user_ok> ::= 'USER ' <correct_username> '\r\n'
+<correct_username> ::= 'the_user'
 <response_login_user> ::= '331 Password required for ' <user_name> '\r\n'
 <request_login_pass_ok> ::= 'PASS the_password\r\n'
 <response_login_pass_ok> ::= '230 User the_user logged in\r\n'
@@ -71,7 +76,7 @@ from random import randint
 <client_name> ::= r'[a-zA-Z0-9]+'
 
 <user_name> ::= <wrong_user_name>
-<wrong_user_name> ::= r'[a-zA-Z0-9\_]*'
+<wrong_user_name> ::= r'[a-zA-Z0-9\_]+'
 <wrong_user_password> ::= r'[a-zA-Z0-9]*'
 
 <open_port> ::= <passive_port> := open_data_agent(<open_port_param>)
