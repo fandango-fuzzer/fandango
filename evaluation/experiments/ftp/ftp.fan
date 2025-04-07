@@ -29,7 +29,7 @@ from random import randint
 <request_set_client> ::= 'CLNT ' <client_name> '\r\n'
 <response_set_client> ::= '200 OK\r\n'
 
-<exchange_set_utf8> ::= <exchange_set_utf8><ServerControl:response_set_utf8>
+<exchange_set_utf8> ::= <ClientControl:request_set_utf8><ServerControl:response_set_utf8>
 <request_set_utf8> ::= 'OPTS UTF8 ON\r\n'
 <response_set_utf8> ::= '200 UTF8 set to on\r\n'
 
@@ -111,7 +111,7 @@ from random import randint
 #<decimal-integer> ::= any decimal integer
 
 
-<ftp_number> ::= <number> := randint(1, 255)
+#<ftp_number> ::= <number> := randint(1, 255)
 <number> ::= '0' | (<number_start> <number_tail>*)
 <number_start> ::= '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 <number_tail> ::= '0' | <number_start>
@@ -198,7 +198,7 @@ class ClientData(FandangoAgent):
                     raise Exception("Socket not running!")
                 self.sock.sendall(message)
             except Exception as e:
-                print(f"Error sending message: {e}")
+                print("Error sending message: " + str(e))
 
 
 class ServerData(FandangoAgent):
