@@ -64,6 +64,8 @@ YIELD      : 'yield';
 FORALL     : 'forall';
 EXISTS     : 'exists';
 FITNESS    : 'fitness';
+MIN        : 'min';
+MAX        : 'max';
 
 // identifiers
 NAME: ID_START ID_CONTINUE*;
