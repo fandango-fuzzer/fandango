@@ -507,7 +507,8 @@ class Fandango:
             raise RuntimeError(
                 f"Unexpected agent sent message. Expected:",
                 "|".join(forecast.getRoles()),
-                f" Received: {msg_role}",
+                f"Received: {msg_role}",
+                f"Messages: {io_instance.get_received_msgs()}",
             )
         forecast_non_terminals = forecast[msg_role]
         available_non_terminals = set(forecast_non_terminals.getNonTerminals())
