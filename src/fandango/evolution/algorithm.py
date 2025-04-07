@@ -566,7 +566,10 @@ class Fandango:
                 # Check if there are still NonTerminals that can be parsed with received prefix
                 if len(available_non_terminals) == 0:
                     raise RuntimeError(
-                        f"Couldn't match remote message to any packet matching grammar: {complete_msg}"
+                        "Couldn't match remote message to any packet matching grammar! Expected nonterminal:",
+                        "|".join(map(lambda x: str(x), forecast_non_terminals.getNonTerminals())),
+                        "Got message:",
+                        complete_msg
                     )
                 if parsed_packet_tree is not None:
                     for del_idx in used_fragments_idx:

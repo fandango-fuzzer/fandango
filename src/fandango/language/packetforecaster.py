@@ -133,9 +133,9 @@ class PathFinder(NodeVisitor):
     def visitAlternative(self, node: Alternative):
         self.on_enter_controlflow(f"<__{NodeType.ALTERNATIVE}:")
         tree = self.current_tree[-1]
-        continue_exploring = True
 
         if tree is not None:
+            continue_exploring = True
             self.current_tree.append([tree[0]])
             found = False
             for alt in node.alternatives:
@@ -151,9 +151,10 @@ class PathFinder(NodeVisitor):
                 raise GrammarKeyError("Alternative mismatch")
             return continue_exploring
         else:
+            continue_exploring = False
             self.current_tree.append(None)
             for alt in node.alternatives:
-                continue_exploring |= not self.visit(alt)
+                continue_exploring |= self.visit(alt)
             self.current_tree.pop()
             self.on_leave_controlflow()
             return continue_exploring
