@@ -9,7 +9,9 @@ from fandango.constraints.base import (
     ExistsConstraint,
     ExpressionConstraint,
     ForallConstraint,
+    SoftConstraint,
     Value,
+    SoftValue,
 )
 from fandango.constraints.fitness import Comparison
 from fandango.language.grammar import (
@@ -213,17 +215,31 @@ class ConstraintProcessor(FandangoParserVisitor):
             )
         if ctx.WHERE() and ctx.SEMI_COLON():
             LOGGER.info(f"{ctx.getText()}: A final ';' is not required with 'where'.")
-
         if ctx.implies():
-            return self.visit(ctx.implies())
+            constraint = self.visit(ctx.implies())
+            if ctx.MIN():
+                return SoftConstraint(constraint, "min")
+            elif ctx.MAX():
+                return SoftConstraint(constraint, "max")
+            return constraint
         elif ctx.FITNESS():
             expression_constraint = self.visitExpr(ctx.expr())
-            return Value(
-                expression_constraint.expression,
-                searches=expression_constraint.searches,
-                local_variables=expression_constraint.local_variables,
-                global_variables=expression_constraint.global_variables,
-            )
+            if ctx.MIN() or ctx.MAX():
+                optimization_goal = "min" if ctx.MIN() else "max"
+                return SoftValue(
+                    optimization_goal,
+                    expression_constraint.expression,
+                    searches=expression_constraint.searches,
+                    local_variables=expression_constraint.local_variables,
+                    global_variables=expression_constraint.global_variables,
+                )
+            else:
+                return Value(
+                    expression_constraint.expression,
+                    searches=expression_constraint.searches,
+                    local_variables=expression_constraint.local_variables,
+                    global_variables=expression_constraint.global_variables,
+                )
         else:
             raise FandangoValueError(f"Unknown constraint: {ctx.getText()}")
 

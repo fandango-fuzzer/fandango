@@ -1,8 +1,8 @@
 import concurrent.futures
 import random
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
-from fandango.constraints.base import Constraint
+from fandango.constraints.base import Constraint, Value, SoftConstraint, SoftValue
 from fandango.constraints.fitness import FailingTree
 from fandango.language.grammar import DerivationTree, Grammar
 from fandango.logger import LOGGER
@@ -12,7 +12,7 @@ class Evaluator:
     def __init__(
         self,
         grammar: Grammar,
-        constraints: List[Constraint],
+        constraints: List[Union[Constraint, Value]],
         expected_fitness: float,
         diversity_k: int,
         diversity_weight: float,
@@ -20,6 +20,8 @@ class Evaluator:
     ):
         self.grammar = grammar
         self.constraints = constraints
+        self.soft_constraints: List[Union[SoftConstraint, SoftValue]] = []
+        self.hard_constraints: List[Constraint] = []
         self.expected_fitness = expected_fitness
         self.diversity_k = diversity_k
         self.diversity_weight = diversity_weight
@@ -28,6 +30,12 @@ class Evaluator:
         self.solution = []
         self.solution_set = set()
         self.checks_made = 0
+
+        for constraint in constraints:
+            if isinstance(constraint, (SoftValue, SoftConstraint)):
+                self.soft_constraints.append(constraint)
+            else:
+                self.hard_constraints.append(constraint)
 
     def compute_diversity_bonus(
         self, individuals: List[DerivationTree]
@@ -53,6 +61,55 @@ class Evaluator:
             bonus[idx] = bonus_score * self.diversity_weight
         return bonus
 
+    def evaluate_hard_constraints(
+        self, individual: DerivationTree
+    ) -> Tuple[float, List[FailingTree]]:
+        hard_fitness = 0.0
+        failing_trees: List[FailingTree] = []
+        for constraint in self.hard_constraints:
+            try:
+                result = constraint.fitness(individual)
+
+                if result.success:
+                    hard_fitness += result.fitness()
+                else:
+                    failing_trees.extend(result.failing_trees)
+                    hard_fitness += result.fitness()
+                self.checks_made += 1
+            except Exception as e:
+                LOGGER.error(f"Error evaluating hard constraint {constraint}: {e}")
+                hard_fitness += 0.0
+        try:
+            hard_fitness /= len(self.hard_constraints)
+        except ZeroDivisionError:
+            hard_fitness = 1.0
+        return hard_fitness, failing_trees
+
+    def evaluate_soft_constraints(
+        self, individual: DerivationTree
+    ) -> Tuple[float, List[FailingTree]]:
+        soft_fitness = 0.0
+        failing_trees: List[FailingTree] = []
+        for constraint in self.soft_constraints:
+            try:
+                result = constraint.fitness(individual)
+                if not result.success:
+                    failing_trees.extend(result.failing_trees)
+
+                constraint.tdigest.update(result.fitness())
+                normalized_fitness = constraint.tdigest.score(result.fitness())
+
+                if constraint.optimization_goal == "max":
+                    soft_fitness += normalized_fitness
+                else:  # "min"
+                    soft_fitness += 1 - normalized_fitness
+            except Exception as e:
+                LOGGER.error(f"Error evaluating soft constraint {constraint}: {e}")
+                soft_fitness += 0.0
+
+        soft_fitness /= len(self.soft_constraints)
+        return soft_fitness, failing_trees
+
     def evaluate_individual(
         self, individual: DerivationTree
     ) -> Tuple[float, List[FailingTree]]:
@@ -66,28 +123,33 @@ class Evaluator:
                 self.solution.append(individual)
             return self.fitness_cache[key]
 
-        fitness = 0.0
-        failing_trees: List[FailingTree] = []
-        for constraint in self.constraints:
-            try:
-                result = constraint.fitness(individual)
-                if result.success:
-                    fitness += result.fitness()
-                else:
-                    failing_trees.extend(result.failing_trees)
-                    fitness += result.fitness()
-                self.checks_made += 1
-            except Exception as e:
-                LOGGER.error(f"Error evaluating constraint {constraint}: {e}")
-                fitness += 0.0
-        try:
-            fitness /= len(self.constraints)
-        except ZeroDivisionError:
-            fitness = 1.0
+        hard_fitness, hard_failing_trees = self.evaluate_hard_constraints(individual)
+
+        if self.soft_constraints == []:
+            fitness = hard_fitness
+        else:
+            if hard_fitness < 1.0:
+                fitness = (
+                    hard_fitness * len(self.hard_constraints) / len(self.constraints)
+                )
+            else:  # hard_fitness == 1.0
+                soft_fitness, soft_failing_trees = self.evaluate_soft_constraints(
+                    individual
+                )
+
+                fitness = (
+                    hard_fitness * len(self.hard_constraints)
+                    + soft_fitness * len(self.soft_constraints)
+                ) / len(self.constraints)
 
         if fitness >= self.expected_fitness and key not in self.solution_set:
             self.solution_set.add(key)
             self.solution.append(individual)
+        try:
+            failing_trees = hard_failing_trees + soft_failing_trees
+        except NameError:
+            failing_trees = hard_failing_trees
+
         self.fitness_cache[key] = (fitness, failing_trees)
         return fitness, failing_trees
 

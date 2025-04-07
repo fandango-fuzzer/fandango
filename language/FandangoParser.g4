@@ -69,10 +69,10 @@ char_set
 
 // constraint part
 constraint
-    : WHERE implies (';' | NEWLINE | EOF)
-    | WHERE 'fitness' expr (';' | NEWLINE | EOF)
-    | implies ';' // deprecated
-    | 'fitness' expr ';' // deprecated
+    : WHERE (MAX | MIN)? implies (';' | NEWLINE | EOF)
+    | WHERE (MAX | MIN)? 'fitness' expr (';' | NEWLINE | EOF)
+    | (MAX | MIN)? implies ';' // deprecated
+    | (MAX | MIN)? 'fitness' expr ';' // deprecated
     ;
 
 implies:
