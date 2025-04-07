@@ -825,11 +825,11 @@ class RoleNestingDetector(NodeVisitor):
         self.current_path = list()
 
     def fail_on_nested_packet(self, start_symbol: NonTerminal):
-        self.current_nt = start_symbol
+        self.current_path.append(start_symbol)
         self.visit(self.grammar[start_symbol])
+        self.current_path.pop()
 
     def visitNonTerminalNode(self, node: NonTerminalNode):
-        self.current_path.append(node.symbol)
         if node.symbol not in self.seen_nt:
             self.seen_nt.add(node.symbol)
         elif node.role is not None and node.symbol in self.current_path:
@@ -849,7 +849,7 @@ class RoleNestingDetector(NodeVisitor):
                     + ", ".join(tree_roles)
                 )
             return
-
+        self.current_path.append(node.symbol)
         self.visit(self.grammar[node.symbol])
         self.current_path.pop()
 
