@@ -7,12 +7,12 @@ from random import randint
 <state_post_login> ::= <exchange_set_client><exchange_set_utf8><state_logged_in>
 <state_logged_in> ::= ''
 
-<exchange_socket_connect> ::= <ServerControl:response_server_info>
+<exchange_socket_connect> ::= <ServerControl:ClientControl:response_server_info>
 <response_server_info> ::= '220 ProFTPD Server (Debian) [1.2.3.4]\r\n'
 
 <exchange_login> ::= <exchange_login_ok> | <exchange_login_fail>
-<exchange_login_ok> ::= <ClientControl:request_login_user_ok><ServerControl:response_login_user><ClientControl:request_login_pass_ok><ServerControl:response_login_pass_ok><state_post_login>
-<exchange_login_fail> ::= (<ClientControl:request_login_user_ok> | <ClientControl:request_login_user_fail>)<ServerControl:response_login_user><ClientControl:request_login_pass_fail><ServerControl:response_login_pass_fail><state_logged_out>
+<exchange_login_ok> ::= <ClientControl:ServerControl:request_login_user_ok><ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_ok><ServerControl:ClientControl:response_login_pass_ok><state_post_login>
+<exchange_login_fail> ::= (<ClientControl:ServerControl:request_login_user_ok> | <ClientControl:ServerControl:request_login_user_fail>)<ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_fail><ServerControl:ClientControl:response_login_pass_fail><state_logged_out>
 
 
 
@@ -25,26 +25,26 @@ from random import randint
 <request_login_pass_fail> ::= 'PASS ' <wrong_user_password> '\r\n'
 <response_login_pass_fail> ::= '530 Login incorrect.\r\n'
 
-<exchange_set_client> ::= <ClientControl:request_set_client><ServerControl:response_set_client>
+<exchange_set_client> ::= <ClientControl:ServerControl:request_set_client><ServerControl:ClientControl:response_set_client>
 <request_set_client> ::= 'CLNT ' <client_name> '\r\n'
 <response_set_client> ::= '200 OK\r\n'
 
-<exchange_set_utf8> ::= <ClientControl:request_set_utf8><ServerControl:response_set_utf8>
+<exchange_set_utf8> ::= <ClientControl:ServerControl:request_set_utf8><ServerControl:ClientControl:response_set_utf8>
 <request_set_utf8> ::= 'OPTS UTF8 ON\r\n'
 <response_set_utf8> ::= '200 UTF8 set to on\r\n'
 
-<exchange_set_type> ::= <ClientControl:request_set_type><ServerControl:response_set_type>
+<exchange_set_type> ::= <ClientControl:ServerControl:request_set_type><ServerControl:ClientControl:response_set_type>
 <request_set_type> ::= 'TYPE I\r\n'
 <response_set_type> ::= '200 Type set to I\r\n'
 
-<exchange_set_passive> ::= <ClientControl:request_set_passive><ServerControl:response_set_passive>
+<exchange_set_passive> ::= <ClientControl:ServerControl:request_set_passive><ServerControl:ClientControl:response_set_passive>
 <request_set_passive> ::= 'EPSV\r\n'
 <response_set_passive> ::= '229 Entering Extended Passive Mode (|||' <open_port> '|)\r\n'
 
-<exchange_mlsd> ::= <ClientControl:request_mlsd><ServerControl:open_mlsd><mlsd_transfer>
+<exchange_mlsd> ::= <ClientControl:ServerControl:request_mlsd><ServerControl:ClientControl:open_mlsd><mlsd_transfer>
 <request_mlsd> ::= 'MLSD\r\n'
 <open_mlsd> ::= '150 Opening BINARY mode data connection for MLSD\r\n'
-<mlsd_transfer> ::= (<ServerData:mlsd_data><mlsd_transfer>) | <ServerControl:finalize_mlsd>
+<mlsd_transfer> ::= (<ServerData:mlsd_data><mlsd_transfer>) | <ServerControl:ClientControl:finalize_mlsd>
 <finalize_mlsd> ::= '226 Transfer complete\r\n'
 <mlsd_data> ::= 'modify=' <modify_timestamp> ';perm=flcdmpe;type=' <mlsd_type> ';unique=2CUA;UNIX.group=33;UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=33;UNIX.ownername=the_user; <mlsd_folder>\r\n'
 
@@ -62,7 +62,7 @@ from random import randint
 <permission_byte> ::= <number_tail> := randint(0, 7)
 <mlsd_folder> ::= '.' | '..' | <filesystem_name>
 
-<exchange_pwd> ::= <ClientControl:request_pwd><ServerControl:response_pwd>
+<exchange_pwd> ::= <ClientControl:ServerControl:request_pwd><ServerControl:ClientControl:response_pwd>
 <request_pwd> ::= 'PWD\r\n'
 <response_pwd> ::= '257 \"' <directory> '\" is the current directory\r\n'
 <directory> ::= '/' | ('/' <filesystem_name>)+
@@ -78,7 +78,7 @@ from random import randint
 <open_port_param> ::= <passive_port> := open_data_agent(<open_port>)
 <passive_port> ::= <number> := randint(50000, 50100)
 
-<exchange_feat> ::= <ClientControl:request_feat><ServerControl:response_feat>
+<exchange_feat> ::= <ClientControl:ServerControl:request_feat><ServerControl:ClientControl:response_feat>
 <request_feat> ::= 'FEAT\r\n'
 <response_feat> ::= r'[a-zA-Z0-9]+' (' ' r'[a-zA-Z0-9\*\.\;]+')* '\r\n'
 <response_feat_end> ::= '211 End\r\n'
