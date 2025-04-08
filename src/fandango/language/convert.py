@@ -217,15 +217,14 @@ class ConstraintProcessor(FandangoParserVisitor):
             LOGGER.info(f"{ctx.getText()}: A final ';' is not required with 'where'.")
         if ctx.implies():
             constraint = self.visit(ctx.implies())
-            if ctx.MIN():
-                return SoftConstraint(constraint, "min")
-            elif ctx.MAX():
-                return SoftConstraint(constraint, "max")
+            if ctx.minOrMax():
+                optimization_goal = ctx.minOrMax().getText()  # "min" or "max"
+                return SoftConstraint(constraint, optimization_goal)
             return constraint
         elif ctx.FITNESS():
             expression_constraint = self.visitExpr(ctx.expr())
-            if ctx.MIN() or ctx.MAX():
-                optimization_goal = "min" if ctx.MIN() else "max"
+            if ctx.minOrMax():
+                optimization_goal = ctx.minOrMax().getText()  # "min" or "max"
                 return SoftValue(
                     optimization_goal,
                     expression_constraint.expression,

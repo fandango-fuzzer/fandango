@@ -69,10 +69,14 @@ char_set
 
 // constraint part
 constraint
-    : WHERE (MAX | MIN)? implies (';' | NEWLINE | EOF)
-    | WHERE (MAX | MIN)? 'fitness' expr (';' | NEWLINE | EOF)
-    | (MAX | MIN)? implies ';' // deprecated
-    | (MAX | MIN)? 'fitness' expr ';' // deprecated
+    : WHERE minOrMax? implies (';' | NEWLINE | EOF)
+    | WHERE minOrMax? 'fitness' expr (';' | NEWLINE | EOF)
+    | minOrMax? implies ';' // deprecated
+    | minOrMax? 'fitness' expr ';' // deprecated
+    ;
+
+minOrMax
+    : { self._input.LT(1).text == "min" or self._input.LT(1).text == "max" }? NAME
     ;
 
 implies:
