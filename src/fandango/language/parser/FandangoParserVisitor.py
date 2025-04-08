@@ -71,6 +71,10 @@ class FandangoParserVisitor(ParseTreeVisitor):
     def visitConstraint(self, ctx: FandangoParser.ConstraintContext):
         return self.visitChildren(ctx)
 
+    # Visit a parse tree produced by FandangoParser#minOrMax.
+    def visitMinOrMax(self, ctx: FandangoParser.MinOrMaxContext):
+        return self.visitChildren(ctx)
+
     # Visit a parse tree produced by FandangoParser#implies.
     def visitImplies(self, ctx: FandangoParser.ImpliesContext):
         return self.visitChildren(ctx)
