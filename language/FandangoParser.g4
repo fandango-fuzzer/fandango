@@ -76,7 +76,7 @@ constraint
     ;
 
 minOrMax
-    : { self._input.LT(1).text == "min" or self._input.LT(1).text == "max" }? NAME
+    : { self._input.LT(1).text in ["min", "max"] }? NAME
     ;
 
 implies:
