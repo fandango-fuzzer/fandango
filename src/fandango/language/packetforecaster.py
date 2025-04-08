@@ -166,8 +166,9 @@ class PathFinder(NodeVisitor):
 
     def visitRepetition(self, node: Repetition):
         self.on_enter_controlflow(f"<__{NodeType.REPETITION}:")
-        self.visitRepetitionType(node)
+        ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
+        return ret
 
     def visitRepetitionType(self, node: Repetition):
         tree = self.current_tree[-1]
@@ -192,18 +193,21 @@ class PathFinder(NodeVisitor):
 
     def visitStar(self, node: Star):
         self.on_enter_controlflow(f"<__{NodeType.STAR}:")
-        self.visitRepetitionType(node)
+        ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
+        return ret
 
     def visitPlus(self, node: Plus):
         self.on_enter_controlflow(f"<__{NodeType.PLUS}:")
-        self.visitRepetitionType(node)
+        ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
+        return ret
 
     def visitOption(self, node: Option):
         self.on_enter_controlflow(f"<__{NodeType.OPTION}:")
-        self.visitRepetitionType(node)
+        ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
+        return ret
 
 
 class PacketForecaster:

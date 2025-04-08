@@ -4,8 +4,8 @@ from random import randint
 
 <state_setup> ::= <exchange_socket_connect> <state_logged_out>
 <state_logged_out> ::= <exchange_login>
-<state_post_login> ::= <exchange_set_client><exchange_set_utf8><state_logged_in>
-<state_logged_in> ::= ''
+<state_post_login> ::= <exchange_set_client><exchange_set_utf8><exchange_set_type><state_logged_in>
+<state_logged_in> ::= (<exchange_set_passive><exchange_mlsd><state_finished>) | <exchange_pwd>
 <state_finished> ::= ''
 
 <exchange_socket_connect> ::= <ServerControl:ClientControl:response_server_info>
@@ -53,10 +53,9 @@ where forall <ex> in <exchange_login_fail>:
 <exchange_mlsd> ::= <ClientControl:ServerControl:request_mlsd><ServerControl:ClientControl:open_mlsd><mlsd_transfer>
 <request_mlsd> ::= 'MLSD\r\n'
 <open_mlsd> ::= '150 Opening BINARY mode data connection for MLSD\r\n'
-<mlsd_transfer> ::= (<ServerData:mlsd_data><mlsd_transfer>) | <ServerControl:ClientControl:finalize_mlsd>
+<mlsd_transfer> ::= <ServerData:ClientData:mlsd_data>*<ServerControl:ClientControl:finalize_mlsd>
 <finalize_mlsd> ::= '226 Transfer complete\r\n'
-<mlsd_data> ::= 'modify=' <modify_timestamp> ';perm=flcdmpe;type=' <mlsd_type> ';unique=2CUA;UNIX.group=33;UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=33;UNIX.ownername=the_user; <mlsd_folder>\r\n'
-
+<mlsd_data> ::= ('modify=' <modify_timestamp> ';perm=flcdmpe;type=' <mlsd_type> ';unique=' <mlsd_unique> ';UNIX.group=33;UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=33;UNIX.ownername=the_user; ' <mlsd_folder>'\r\n')+
 
 <modify_timestamp> ::= <year><month><day><hour><minute><second>
 <year> ::= <number_tail>{4} := "{:04d}".format(randint(0, 9999))
@@ -66,12 +65,13 @@ where forall <ex> in <exchange_login_fail>:
 <minute> ::= <number_tail>{2} := "{:02d}".format(randint(0, 59))
 <second> ::= <number_tail>{2} := "{:02d}".format(randint(0, 59))
 <mlsd_type> ::= 'cdir' | 'pdir' | 'dir'
+<mlsd_unique> ::= '2BUA' | '2BUB' | '2CUA'
 
 <mlsd_permission> ::= '0' <permission_byte>{3}
 <permission_byte> ::= <number_tail> := randint(0, 7)
 <mlsd_folder> ::= '.' | '..' | <filesystem_name>
 
-<exchange_pwd> ::= <ClientControl:ServerControl:request_pwd><ServerControl:ClientControl:response_pwd>
+<exchange_pwd> ::= <ClientControl:ServerControl:request_pwd><ServerControl:ClientControl:response_pwd><state_logged_in>
 <request_pwd> ::= 'PWD\r\n'
 <response_pwd> ::= '257 \"' <directory> '\" is the current directory\r\n'
 <directory> ::= '/' | ('/' <filesystem_name>)+
@@ -83,8 +83,8 @@ where forall <ex> in <exchange_login_fail>:
 <wrong_user_name> ::= r'[a-zA-Z0-9\_]+'
 <wrong_user_password> ::= r'[a-zA-Z0-9]*'
 
-<open_port> ::= <passive_port> := open_data_agent(<open_port_param>)
-<open_port_param> ::= <passive_port> := open_data_agent(<open_port>)
+<open_port> ::= <passive_port> := open_data_port(int(<open_port_param>))
+<open_port_param> ::= <passive_port> := open_data_port(int(<open_port>))
 <passive_port> ::= <number> := randint(50000, 50100)
 
 <exchange_feat> ::= <ClientControl:ServerControl:request_feat><ServerControl:ClientControl:response_feat>
@@ -130,6 +130,7 @@ where forall <ex> in <exchange_login_fail>:
 def open_data_port(port):
     FandangoIO.instance().roles['ClientData'].update_port(port)
     FandangoIO.instance().roles['ServerData'].update_port(port)
+    return port
 
 import socket
 import threading
@@ -199,7 +200,7 @@ class ClientData(FandangoAgent):
                 if len(data) == 0:
                     continue
                 if data:
-                    self.receive_msg("ServerControl", data)
+                    self.receive_msg("ServerData", data.decode("utf-8"))
                 else:
                     self.running = False
                     break
@@ -220,3 +221,6 @@ class ClientData(FandangoAgent):
 class ServerData(FandangoAgent):
     def __init__(self):
         super().__init__(False)
+
+    def update_port(self, new_port: int):
+        pass
