@@ -483,19 +483,25 @@ class DerivationTree:
         Output the derivation tree in internal representation.
         """
         s = "  " * start_indent + "DerivationTree("
-        if self.role is not None:
-            s += self.role
-        if self.recipient is not None:
-            s += self.recipient
         s += repr(self.symbol)
         if len(self._children) == 1:
-            s += ", [" + self._children[0].to_repr(indent, start_indent=0) + "])"
+            s += ", [" + self._children[0].to_repr(indent, start_indent=0) + "]"
+            if self.role is not None:
+                s += ", role='" + self.role + "'"
+            if self.recipient is not None:
+                s += ", recipient='" + self.recipient + "'"
+            s+= ")"
         elif len(self._children) >= 1:
             s += ",\n" + "  " * indent + "  [\n"
             for child in self._children:
                 s += child.to_repr(indent + 2, start_indent=indent + 2)
                 s += ",\n"
-            s += "  " * indent + "  ]\n" + "  " * indent + ")"
+            s += "  " * indent + "  ]"
+            if self.role is not None:
+                s += ", role='" + self.role + "'"
+            if self.recipient is not None:
+                s += ", recipient='" + self.recipient + "'"
+            s += "\n" + "  " * indent + ")"
         else:
             s += ")"
         return s
