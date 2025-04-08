@@ -26690,12 +26690,11 @@ class FandangoParser(Parser):
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 641
-            if not self._input.LT(1).text == "min" or self._input.LT(1).text == "max":
+            if not self._input.LT(1).text in ["min", "max"]:
                 from antlr4.error.Errors import FailedPredicateException
 
                 raise FailedPredicateException(
-                    self,
-                    ' self._input.LT(1).text == "min" or self._input.LT(1).text == "max" ',
+                    self, ' self._input.LT(1).text in ["min", "max"] '
                 )
             self.state = 642
             self.match(FandangoParser.NAME)
@@ -44000,7 +43999,7 @@ class FandangoParser(Parser):
 
     def minOrMax_sempred(self, localctx: MinOrMaxContext, predIndex: int):
         if predIndex == 4:
-            return self._input.LT(1).text == "min" or self._input.LT(1).text == "max"
+            return self._input.LT(1).text in ["min", "max"]
 
     def selector_sempred(self, localctx: SelectorContext, predIndex: int):
         if predIndex == 5:
