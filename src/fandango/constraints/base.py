@@ -49,6 +49,7 @@ class TDigest(TDigest):
             else:
                 return self.cdf(x)
 
+
 class Value(GeneticBase):
     """
     Represents a value that can be used for fitness evaluation.
