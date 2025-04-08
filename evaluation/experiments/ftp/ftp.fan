@@ -6,13 +6,16 @@ from random import randint
 <state_logged_out> ::= <exchange_login>
 <state_post_login> ::= <exchange_set_client><exchange_set_utf8><state_logged_in>
 <state_logged_in> ::= ''
+<state_finished> ::= ''
 
 <exchange_socket_connect> ::= <ServerControl:ClientControl:response_server_info>
 <response_server_info> ::= '220 ProFTPD Server (Debian) [1.2.3.4]\r\n'
 
 <exchange_login> ::= <exchange_login_ok> | <exchange_login_fail>
 <exchange_login_ok> ::= <ClientControl:ServerControl:request_login_user_ok><ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_ok><ServerControl:ClientControl:response_login_pass_ok><state_post_login>
-<exchange_login_fail> ::= (<ClientControl:ServerControl:request_login_user_ok> | <ClientControl:ServerControl:request_login_user_fail>)<ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_fail><ServerControl:ClientControl:response_login_pass_fail><state_logged_out>
+<exchange_login_fail> ::= (<ClientControl:ServerControl:request_login_user_ok> | <ClientControl:ServerControl:request_login_user_fail>)
+                           <ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_fail>
+                           <ServerControl:ClientControl:response_login_pass_fail>((<ServerControl:ClientControl:response_login_throttled><state_finished>)|<state_logged_out>)
 
 where forall <ex> in <exchange_login_ok>:
     str(<ex>.<request_login_user_ok>.<correct_username>) == str(<ex>.<response_login_user>.<user_name>)
@@ -29,6 +32,7 @@ where forall <ex> in <exchange_login_fail>:
 <request_login_user_fail> ::= 'USER ' <wrong_user_name> '\r\n'
 <request_login_pass_fail> ::= 'PASS ' <wrong_user_password> '\r\n'
 <response_login_pass_fail> ::= '530 Login incorrect.\r\n'
+<response_login_throttled> ::= 'FTP session closed.\r\n'
 
 <exchange_set_client> ::= <ClientControl:ServerControl:request_set_client><ServerControl:ClientControl:response_set_client>
 <request_set_client> ::= 'CLNT ' <client_name> '\r\n'
@@ -145,6 +149,10 @@ class ClientControl(FandangoAgent):
         def listen_loop(self):
             while True:
                 response, nothing = self.sock.recvfrom(1024)
+                if len(response) == 0:
+                    self.receive_msg("ServerControl", "FTP session closed.\r\n")
+                    self.sock.close()
+                    break
                 self.receive_msg("ServerControl", response.decode("utf-8"))
 
 class ServerControl(FandangoAgent):
@@ -188,6 +196,8 @@ class ClientData(FandangoAgent):
         while self.running:
             try:
                 data = self.sock.recv(1024)
+                if len(data) == 0:
+                    continue
                 if data:
                     self.receive_msg("ServerControl", data)
                 else:

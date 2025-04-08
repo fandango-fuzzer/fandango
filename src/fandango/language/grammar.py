@@ -454,9 +454,9 @@ class NonTerminalNode(Node):
 
         if self.role is not None:
             if self.recipient is None:
-                return f"<{self.role}:{self.symbol.__repr__()[1:-1]}>"
+                return f"<{self.role}:{self.symbol.__repr__()[:-1]}>"
             else:
-                return f"<{self.role}:{self.recipient}:{self.symbol.__repr__()[1:-1]}>"
+                return f"<{self.role}:{self.recipient}:{self.symbol.__repr__()[:-1]}>"
         else:
             return self.symbol.__repr__()
 

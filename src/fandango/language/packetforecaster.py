@@ -117,6 +117,8 @@ class PathFinder(NodeVisitor):
         if tree is not None:
             self.current_tree.append([tree[child_idx]])
             try:
+                if len(node.nodes) <= child_idx:
+                    raise GrammarKeyError("Tree contains more children, then concatination node")
                 continue_exploring = self.visit(node.nodes[child_idx])
                 child_idx += 1
             finally:
@@ -137,6 +139,8 @@ class PathFinder(NodeVisitor):
         if tree is not None:
             continue_exploring = True
             self.current_tree.append([tree[0]])
+            fallback_tree = list(self.current_tree)
+            fallback_path = list(self.current_path)
             found = False
             for alt in node.alternatives:
                 try:
@@ -144,7 +148,8 @@ class PathFinder(NodeVisitor):
                     found = True
                     break
                 except GrammarKeyError as e:
-                    pass
+                    self.current_tree = fallback_tree
+                    self.current_path = fallback_path
             self.current_tree.pop()
             self.on_leave_controlflow()
             if not found:

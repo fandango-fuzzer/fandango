@@ -249,7 +249,14 @@ class Fandango:
                     raise RuntimeError("Couldn't forecast next packet!")
                 return [history_tree]
 
-            selected_role = random.choice(list(forecast.getRoles()))
+            fandango_roles = []
+            for role in forecast.getRoles():
+                if io_instance.roles[role].is_fandango():
+                    fandango_roles.append(role)
+            if len(fandango_roles) != 0:
+                selected_role = random.choice(fandango_roles)
+            else:
+                selected_role = random.choice(list(forecast.getRoles()))
             if (
                 io_instance.roles[selected_role].is_fandango()
                 and not io_instance.received_msg()
