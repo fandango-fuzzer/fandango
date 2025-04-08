@@ -11,4 +11,3 @@ where len(str(<start>)) == 5
 where max forall <d1> in <digit>:
     exists <d2> in <digit>:
         int(str(<d1>)) == int(str(<d2>)) + 1
-;
