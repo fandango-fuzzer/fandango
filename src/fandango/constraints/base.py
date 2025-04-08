@@ -42,13 +42,12 @@ class TDigest(TDigest):
         with self._lock:
             if self._min is None or self._max is None:
                 return 0
-            if x < self._min:
+            if x <= self._min:
                 return 0
             if x >= self._max:
                 return 1
             else:
                 return self.cdf(x)
-
 
 class Value(GeneticBase):
     """
