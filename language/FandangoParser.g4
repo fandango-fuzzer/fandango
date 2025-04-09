@@ -75,10 +75,6 @@ constraint
     | implies ';' // deprecated
     ;
 
-minOrMax
-    : { self._input.LT(1).text in ["min", "max"] }? NAME
-    ;
-
 implies:
     NEWLINE*
     (
