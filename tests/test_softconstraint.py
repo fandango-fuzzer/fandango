@@ -56,7 +56,7 @@ class TestSoftValue(TestSoft):
         self.assertEqual(len(first_name), 2)
         self.assertEqual(len(last_name), 2)
     
-    def test_cli_max(self):
+    def test_cli_max_1(self):
         command = shlex.split(
             "fandango fuzz -f tests/resources/persons.fan -c 'maximizing int(<age>)' -n 100 --random-seed 1"
         )
@@ -65,9 +65,27 @@ class TestSoftValue(TestSoft):
         last_age = int(lines[-1].split(",")[1]) # e.g., 9999999999999599999999
         self.assertGreater(last_age, 999999)
 
-    def test_cli_min(self):
+    def test_cli_max_2(self):
+        command = shlex.split(
+            "fandango fuzz -f tests/resources/persons.fan --maximize 'int(<age>)' -n 100 --random-seed 1"
+        )
+        out, err, code = self.run_command(command)
+        lines = [line for line in out.split('\n') if line.strip()]
+        last_age = int(lines[-1].split(",")[1]) # e.g., 9999999999999599999999
+        self.assertGreater(last_age, 999999)
+
+    def test_cli_min_1(self):
         command = shlex.split(
             "fandango fuzz -f tests/resources/persons.fan -c 'minimizing int(<age>)' -n 100 --random-seed 1"
+        )
+        out, err, code = self.run_command(command)
+        lines = [line for line in out.split('\n') if line.strip()]
+        last_age = int(lines[-1].split(",")[1]) 
+        self.assertEqual(last_age, 0)
+
+    def test_cli_min_2(self):
+        command = shlex.split(
+            "fandango fuzz -f tests/resources/persons.fan --minimize 'int(<age>)' -n 100 --random-seed 1"
         )
         out, err, code = self.run_command(command)
         lines = [line for line in out.split('\n') if line.strip()]
