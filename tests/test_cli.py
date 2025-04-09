@@ -137,3 +137,14 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         self.assertEqual(0, code)
         self.assertEqual("", out)
         self.assertEqual(expected, err)
+
+    def test_unparse_grammar(self):
+        # We unparse the standard library as well as docs/persons.fan
+        command = shlex.split("""
+                              sh -c 'printf "set -f docs/persons.fan\nset" | fandango shell'
+                              """)
+        out, err, code = self.run_command(command)
+        self.assertEqual(0, code)
+        self.assertEqual("", err)
+        self.assertTrue(out.startswith("<_char> ::= r'(.|\\n)'\n"))
+        self.assertTrue(out.endswith("<age> ::= <digit>+\n"))
