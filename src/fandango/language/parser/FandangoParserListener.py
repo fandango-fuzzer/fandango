@@ -130,14 +130,6 @@ class FandangoParserListener(ParseTreeListener):
     def exitConstraint(self, ctx: FandangoParser.ConstraintContext):
         pass
 
-    # Enter a parse tree produced by FandangoParser#minOrMax.
-    def enterMinOrMax(self, ctx: FandangoParser.MinOrMaxContext):
-        pass
-
-    # Exit a parse tree produced by FandangoParser#minOrMax.
-    def exitMinOrMax(self, ctx: FandangoParser.MinOrMaxContext):
-        pass
-
     # Enter a parse tree produced by FandangoParser#implies.
     def enterImplies(self, ctx: FandangoParser.ImpliesContext):
         pass

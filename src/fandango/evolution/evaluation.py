@@ -2,7 +2,7 @@ import concurrent.futures
 import random
 from typing import Dict, List, Tuple, Union
 
-from fandango.constraints.base import Constraint, Value, SoftValue
+from fandango.constraints.base import Constraint, SoftValue
 from fandango.constraints.fitness import FailingTree
 from fandango.language.grammar import DerivationTree, Grammar
 from fandango.logger import LOGGER
@@ -12,7 +12,7 @@ class Evaluator:
     def __init__(
         self,
         grammar: Grammar,
-        constraints: List[Union[Constraint, Value]],
+        constraints: List[Union[Constraint, SoftValue]],
         expected_fitness: float,
         diversity_k: int,
         diversity_weight: float,
