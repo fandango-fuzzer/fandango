@@ -58,7 +58,7 @@ class TestSoftValue(TestSoft):
     
     def test_cli_max(self):
         command = shlex.split(
-            "fandango fuzz -f tests/resources/persons.fan -c 'max fitness int(<age>)' -n 100 --random-seed 1"
+            "fandango fuzz -f tests/resources/persons.fan -c 'maximizing int(<age>)' -n 100 --random-seed 1"
         )
         out, err, code = self.run_command(command)
         lines = [line for line in out.split('\n') if line.strip()]
@@ -67,28 +67,9 @@ class TestSoftValue(TestSoft):
 
     def test_cli_min(self):
         command = shlex.split(
-            "fandango fuzz -f tests/resources/persons.fan -c 'min fitness int(<age>)' -n 100 --random-seed 1"
+            "fandango fuzz -f tests/resources/persons.fan -c 'minimizing int(<age>)' -n 100 --random-seed 1"
         )
         out, err, code = self.run_command(command)
         lines = [line for line in out.split('\n') if line.strip()]
         last_age = int(lines[-1].split(",")[1]) 
         self.assertEqual(last_age, 0)
-
-class TestSoftConstraint(TestSoft):
-    def test_soft_constraint(self):
-        solutions = self.get_solutions(
-            "tests/resources/softconstraint.fan",
-            desired_solutions=10,
-            random_seed=1,
-        )
-        sol: str
-        best_matches = 0
-        for sol in solutions:
-            assert len(sol) == 5
-            matches = 0
-            s = set(int(digit) for digit in sol)
-            for digit in sol:
-                if int(digit)+1 in s:
-                    matches += 1
-            best_matches = max(best_matches, matches)
-        self.assertEqual(best_matches, 4) 

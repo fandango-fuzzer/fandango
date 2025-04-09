@@ -9,8 +9,6 @@ from fandango.constraints.base import (
     ExistsConstraint,
     ExpressionConstraint,
     ForallConstraint,
-    SoftConstraint,
-    Value,
     SoftValue,
 )
 from fandango.constraints.fitness import Comparison
@@ -209,7 +207,7 @@ class ConstraintProcessor(FandangoParserVisitor):
 
     def visitConstraint(self, ctx: FandangoParser.ConstraintContext):
         LOGGER.debug(f"Visiting constraint: {ctx.getText()}")
-        if not ctx.WHERE():
+        if (not ctx.WHERE()) and (not ctx.MINIMIZING()) and (not ctx.MAXIMIZING()):
             LOGGER.warning(
                 f"{ctx.getText()}: Constraints should be prefixed with 'where'."
             )
@@ -217,28 +215,17 @@ class ConstraintProcessor(FandangoParserVisitor):
             LOGGER.info(f"{ctx.getText()}: A final ';' is not required with 'where'.")
         if ctx.implies():
             constraint = self.visit(ctx.implies())
-            if ctx.minOrMax():
-                optimization_goal = ctx.minOrMax().getText()  # "min" or "max"
-                return SoftConstraint(constraint, optimization_goal)
             return constraint
-        elif ctx.FITNESS():
+        elif ctx.MINIMIZING() or ctx.MAXIMIZING():
             expression_constraint = self.visitExpr(ctx.expr())
-            if ctx.minOrMax():
-                optimization_goal = ctx.minOrMax().getText()  # "min" or "max"
-                return SoftValue(
-                    optimization_goal,
-                    expression_constraint.expression,
-                    searches=expression_constraint.searches,
-                    local_variables=expression_constraint.local_variables,
-                    global_variables=expression_constraint.global_variables,
-                )
-            else:
-                return Value(
-                    expression_constraint.expression,
-                    searches=expression_constraint.searches,
-                    local_variables=expression_constraint.local_variables,
-                    global_variables=expression_constraint.global_variables,
-                )
+            optimization_goal = "min" if ctx.MINIMIZING() else "max"
+            return SoftValue(
+                optimization_goal,
+                expression_constraint.expression,
+                searches=expression_constraint.searches,
+                local_variables=expression_constraint.local_variables,
+                global_variables=expression_constraint.global_variables,
+            )
         else:
             raise FandangoValueError(f"Unknown constraint: {ctx.getText()}")
 

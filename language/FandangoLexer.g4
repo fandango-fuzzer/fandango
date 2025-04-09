@@ -63,7 +63,8 @@ WITH       : 'with' {self.python_start()};
 YIELD      : 'yield';
 FORALL     : 'forall';
 EXISTS     : 'exists';
-FITNESS    : 'fitness';
+MAXIMIZING    : 'maximizing';
+MINIMIZING    : 'minimizing';
 
 // identifiers
 NAME: ID_START ID_CONTINUE*;
