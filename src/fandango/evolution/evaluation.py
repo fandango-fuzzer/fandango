@@ -2,7 +2,7 @@ import concurrent.futures
 import random
 from typing import Dict, List, Tuple, Union
 
-from fandango.constraints.base import Constraint, Value, SoftConstraint, SoftValue
+from fandango.constraints.base import Constraint, Value, SoftValue
 from fandango.constraints.fitness import FailingTree
 from fandango.language.grammar import DerivationTree, Grammar
 from fandango.logger import LOGGER
@@ -20,7 +20,7 @@ class Evaluator:
     ):
         self.grammar = grammar
         self.constraints = constraints
-        self.soft_constraints: List[Union[SoftConstraint, SoftValue]] = []
+        self.soft_constraints: List[SoftValue] = []
         self.hard_constraints: List[Constraint] = []
         self.expected_fitness = expected_fitness
         self.diversity_k = diversity_k
@@ -32,7 +32,7 @@ class Evaluator:
         self.checks_made = 0
 
         for constraint in constraints:
-            if isinstance(constraint, (SoftValue, SoftConstraint)):
+            if isinstance(constraint, SoftValue):
                 self.soft_constraints.append(constraint)
             else:
                 self.hard_constraints.append(constraint)

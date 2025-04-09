@@ -622,43 +622,6 @@ class ConjunctionConstraint(Constraint):
                 constraint.accept(visitor)
 
 
-class SoftConstraint(Constraint):
-    """
-    Wraps a constraint that is not mandatory, but attempted to be optimized.
-    """
-
-    def __init__(self, constraint: Constraint, optimization_goal: str, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        assert isinstance(constraint, Constraint)
-        assert optimization_goal in (
-            "min",
-            "max",
-        ), f"Invalid SoftConstraint optimization goal {type!r}"
-        self.constraint = constraint
-        self.optimization_goal = optimization_goal
-        self.tdigest = TDigest()
-
-    def fitness(
-        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
-    ) -> ConstraintFitness:
-        return self.constraint.fitness(tree, scope)
-
-    def __repr__(self):
-        return f"{self.optimization_goal}({repr(self.constraint)})"
-
-    def __str__(self):
-        return f"{self.optimization_goal}({str(self.constraint)})"
-
-    def accept(self, visitor: "ConstraintVisitor"):
-        """
-        Accepts a visitor to traverse the constraint structure.
-        :param ConstraintVisitor visitor: The visitor to accept.
-        """
-        visitor.visit_soft_constraint(self)
-        if visitor.do_continue(self):
-            self.constraint.accept(visitor)
-
-
 class DisjunctionConstraint(Constraint):
     """
     Represents a disjunction constraint that can be used for fitness evaluation.
@@ -1024,10 +987,6 @@ class ConstraintVisitor:
 
     def visit_exists_constraint(self, constraint: "ExistsConstraint"):
         """Visits an exists constraint."""
-        pass
-
-    def visit_soft_constraint(self, constraint: "SoftConstraint"):
-        """Visits a soft constraint."""
         pass
 
     def visit_disjunction_constraint(self, constraint: "DisjunctionConstraint"):

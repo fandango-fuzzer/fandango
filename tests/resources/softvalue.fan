@@ -12,4 +12,4 @@ where str(<a>) == str(<b>)
 where int(str(<a>)) < 1000000 # Unbounded growth would lead to float OverflowError in Fandango 
 
 # Soft value
-where max fitness int(<a>)
+maximizing int(<a>)

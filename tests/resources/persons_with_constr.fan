@@ -11,4 +11,4 @@
 
 # soft constraint
 
-where min fitness min (len(<name>), int(<age>)+100);
+minimizing min (len(str(<name>)), int(<age>)+100);
