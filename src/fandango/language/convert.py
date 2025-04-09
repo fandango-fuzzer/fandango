@@ -211,8 +211,10 @@ class ConstraintProcessor(FandangoParserVisitor):
             LOGGER.warning(
                 f"{ctx.getText()}: Constraints should be prefixed with 'where'."
             )
-        if ctx.WHERE() and ctx.SEMI_COLON():
-            LOGGER.info(f"{ctx.getText()}: A final ';' is not required with 'where'.")
+        if (ctx.WHERE() or ctx.MINIMIZING() or ctx.MAXIMIZING()) and ctx.SEMI_COLON():
+            LOGGER.info(
+                f"{ctx.getText()}: A final ';' is not required with 'where', 'minimizing', 'maximizing'."
+            )
         if ctx.implies():
             constraint = self.visit(ctx.implies())
             return constraint
