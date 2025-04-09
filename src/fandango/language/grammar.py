@@ -249,14 +249,22 @@ class Repetition(Node):
             prev_parent_size = parent.size()
 
     def __repr__(self):
-        if self.min == self.max:
-            return f"{self.node}{{{self.min}}}"
-        return f"{self.node}{{{self.min},{self.max}}}"
+        # We use "f()" as a placeholder for some function
+        min_str = str(self.static_min) if self.static_min is not None else "f()"
+        max_str = str(self.static_max) if self.static_max is not None else "f()"
+
+        if min_str == max_str:
+            return f"{self.node}{{{min_str}}}"
+        return f"{self.node}{{{min_str},{max_str}}}"
 
     def __str__(self):
-        if self.min == self.max:
-            return f"{self.node!s}{{{self.min}}}"
-        return f"{self.node!s}{{{self.min},{self.max}}}"
+        # We use "f()" as a placeholder for some function
+        min_str = str(self.static_min) if self.static_min is not None else "f()"
+        max_str = str(self.static_max) if self.static_max is not None else "f()"
+
+        if min_str == max_str:
+            return f"{self.node!s}{{{min_str}}}"
+        return f"{self.node!s}{{{min_str},{max_str}}}"
 
     def descendents(self, rules: Dict[NonTerminal, "Node"] | None) -> Iterator["Node"]:
         base = []
@@ -410,10 +418,10 @@ class LiteralGenerator:
         self.nonterminals = nonterminals
 
     def __repr__(self):
-        return tuple.__repr__((self.call.__repr__(), self.nonterminals.__repr__()))
+        return f'LiteralGenerator({self.call!r}, {self.nonterminals!r})'
 
     def __str__(self):
-        return tuple.__str__((self.call.__str__(), self.nonterminals.__str__()))
+        return str(self.call)
 
     def __eq__(self, other):
         return (
@@ -1770,7 +1778,7 @@ class Grammar(NodeVisitor):
             symbol = NonTerminal(symbol)
         return (
             f"{symbol} ::= {self.rules[symbol]}"
-            f"{' := ' + self.generators[symbol] if symbol in self.generators else ''}"
+            f"{' := ' + str(self.generators[symbol]) if symbol in self.generators else ''}"
         )
 
     @staticmethod
