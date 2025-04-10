@@ -15,15 +15,5 @@ kernelspec:
 
 This document lists major changes across releases.
 
-Fandango 0.8
+Fandango 0.8 (April 10, 2025)
 : First public beta release.
-
-Fandango 0.1.9
-: Fandango new supports [compression and conversion](sec:conversion) by allowing symbols as generator arguments.
-
-Fandango 0.1.4
-: Fandango now supports [bits](sec:bits) and [binaries](sec:binary), including [parsing](sec:parsing) them.
-Major improvements to the evolutionary algorithm.
-
-Fandango 0.0.1
-: Initial version.
