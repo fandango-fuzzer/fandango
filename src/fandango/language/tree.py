@@ -430,8 +430,11 @@ class DerivationTree:
 
             if len(node._sources) > 0:
                 # We don't know the grammar, so we report a symbolic generator
-                s += " := f(" + ", ".join(
-                    [param.symbol.symbol for param in node._sources]) + ")"
+                s += (
+                    " := f("
+                    + ", ".join([param.symbol.symbol for param in node._sources])
+                    + ")"
+                )
 
             have_position = False
             if include_position and terminal_symbols > 0:
@@ -459,7 +462,9 @@ class DerivationTree:
                     s += "\n" + child_str
 
                 for param in child._sources:
-                    child_str, _, _ = _to_grammar(param, indent + 2, start_indent=indent + 1)
+                    child_str, _, _ = _to_grammar(
+                        param, indent + 2, start_indent=indent + 1
+                    )
                     s += "\n  " + child_str
 
             return s, bit_count, byte_count
