@@ -223,6 +223,28 @@ run-all: $(TEST_MARKER) $(EVALUATION_MARKER) $(EXPERIMENTS_MARKER)
 install:
 	$(PIP) install -e .
 
+## Credit - from https://gist.github.com/Alpha59/4e9cd6c65f7aa2711b79
+.PHONY: credit
+credit:
+	@echo "Lines contributed"
+	@for pattern in .py .g4 .md .fan .toml .yml file; do \
+		echo "*$$pattern files:"; \
+		git ls-files | \
+		grep "$$pattern"'$$' | \
+		grep -v 'src/fandango/language/parser/' | \
+		grep -v 'utils/dtd2fan/.*\.fan' | \
+		xargs -n1 git blame -wfn | \
+		sed 's/joszamama/José Antonio/g' | \
+		sed 's/alex9849/Alexander Liggesmeyer/g' | \
+		perl -n -e '/\((.*)\s[\d]{4}\-/ && print $$1."\n"' | \
+		awk '{print $$1" "$$2}' | \
+		sed 's/José Antonio$$/José Antonio Zamudio Amaya/g' | \
+		sort -f | \
+		uniq -c | \
+		sort -nr; \
+		echo; \
+	done
+
 # We separate _installing_ from _running_ tests
 # so we can run 'make tests' quickly (see above)
 # without having to reinstall things

@@ -157,12 +157,12 @@ tree.visualize()
 The `grammar` format shows us that the values are properly assigned:
 
 ```shell
-$ echo -n '\xf0' | fandango parse -f bits.fan -o - --format=grammar
+$ printf '\xf0' | fandango parse -f bits.fan -o - --format=grammar
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!echo -n '\xf0' | fandango parse -f bits.fan -o - --format=grammar --validate
+!printf '\xf0' | fandango parse -f bits.fan -o - --format=grammar --validate
 assert _exit_code == 0
 ```
 
