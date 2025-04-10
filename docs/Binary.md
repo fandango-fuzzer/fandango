@@ -251,7 +251,7 @@ In Fandango, repetitions `{}` can also contain _expressions_, and like constrain
 Hence, we can specify a rule
 
 ```python
-<content> ::- <byte>{f(<length>)}
+<content> ::= <byte>{f(<length>)}
 ```
 
 where `f()` is a function that computes the number of `<byte>` repetitions based on `<length>`.
