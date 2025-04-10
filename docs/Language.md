@@ -133,8 +133,8 @@ An operator is a _symbol_ (`<symbol>`), followed by an optional [repetition](sec
 <operator> ::= <symbol> | <kleene> | <plus> | <option> | <repeat>
 ```
 
-A symbol can be a [_nonterminal_](sec:nonterminal), a [string](sec:string) or [bytes](sec:bytes) _literal_, a [_number_](sec:number) (for bits), a [_generator call_](sec:generator), or
-(parenthesized) [alternatives](sec:alteratives).
+A symbol can be a [_nonterminal_](sec:nonterminal), a [string](sec:strings) or [bytes](sec:bytes) _literal_, a [_number_](sec:number) (for bits), a [_generator call_](sec:generator), or
+(parenthesized) [alternatives](sec:alternatives).
 
 ```python
 <symbol> ::= (
@@ -182,7 +182,7 @@ Fandango supports a number of abbreviations for repetitions:
 ```
 
 
-(sec:string)=
+(sec:strings)=
 ## String Literals
 
 Fandango supports the full [Python syntax for string literals](https://docs.python.org/3/reference/lexical_analysis.html#string-and-bytes-literals):
