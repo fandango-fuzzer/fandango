@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from copy import copy
 from typing import List, Dict, Any, Optional
 from tdigest import TDigest
-import threading
+import math
 
 from fandango.constraints.fitness import (
     ConstraintFitness,
@@ -24,30 +24,40 @@ from fandango.logger import print_exception, LOGGER
 
 
 class TDigest(TDigest):
-    def __init__(self):
+    def __init__(self, optimization_goal: str):
         super().__init__()
         self._min = None
         self._max = None
-        self._lock = threading.Lock()  # For evaluate_population_parallel()
+        self.contrast = 200.0
+        if optimization_goal == "min":
+            self.transform = self.amplify_near_0
+        else:
+            self.transform = self.amplify_near_1
 
     def update(self, x, w=1):
-        with self._lock:
-            super().update(x, w)
-            if self._min is None or x < self._min:
-                self._min = x
-            if self._max is None or x > self._max:
-                self._max = x
+        super().update(x, w)
+        if self._min is None or x < self._min:
+            self._min = x
+        if self._max is None or x > self._max:
+            self._max = x
+
+    def amplify_near_0(self, q):
+        return 1 - math.exp(-self.contrast * q)
+
+    def amplify_near_1(self, q):
+        return math.exp(self.contrast * (q - 1))
 
     def score(self, x):
-        with self._lock:
-            if self._min is None or self._max is None:
-                return 0
-            if x <= self._min:
-                return 0
-            if x >= self._max:
-                return 1
-            else:
-                return self.cdf(x)
+        if self._min is None or self._max is None:
+            return 0
+        if self._min == self._max:
+            return self.transform(self.cdf(x))
+        if x <= self._min:
+            return 0
+        if x >= self._max:
+            return 1
+        else:
+            return self.transform(self.cdf(x))
 
 
 class Value(GeneticBase):
@@ -82,7 +92,7 @@ class Value(GeneticBase):
         tree_hash = self.get_hash(tree, scope)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
-            return copy(self.cache[tree_hash])
+            return self.cache[tree_hash]
         # If the tree is None, the fitness is 0
         if tree is None:
             fitness = ValueFitness()
@@ -147,7 +157,7 @@ class SoftValue(Value):
             "max",
         ), f"Invalid SoftValue optimization goal {type!r}"
         self.optimization_goal = optimization_goal
-        self.tdigest = TDigest()
+        self.tdigest = TDigest(optimization_goal)
 
     def __repr__(self):
         return f"SoftValue_{self.optimization_goal}({super().__repr__()})"

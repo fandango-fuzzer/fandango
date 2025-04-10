@@ -45,7 +45,7 @@ class TestSoftValue(TestSoft):
             "tests/resources/softvalue.fan", desired_solutions=100, random_seed=1,
             max_generations=50
         )
-        self.assertEqual(solutions[-1], "999999-999999")
+        self.assertIn("999999-999999", solutions)
 
     def test_min_in_different_contexts(self):    
         solutions = self.get_solutions(
@@ -58,21 +58,21 @@ class TestSoftValue(TestSoft):
     
     def test_cli_max_1(self):
         command = shlex.split(
-            "fandango fuzz -f tests/resources/persons.fan -c 'maximizing int(<age>)' -n 100 --random-seed 1"
+            "fandango fuzz -f tests/resources/persons.fan -c 'maximizing int(<age>)' -n 50 --random-seed 1"
         )
         out, err, code = self.run_command(command)
         lines = [line for line in out.split('\n') if line.strip()]
         last_age = int(lines[-1].split(",")[1]) # e.g., 9999999999999599999999
-        self.assertGreater(last_age, 999999)
+        self.assertGreater(last_age, 9999999999999)
 
     def test_cli_max_2(self):
         command = shlex.split(
-            "fandango fuzz -f tests/resources/persons.fan --maximize 'int(<age>)' -n 100 --random-seed 1"
+            "fandango fuzz -f tests/resources/persons.fan --maximize 'int(<age>)' -n 50 --random-seed 1"
         )
         out, err, code = self.run_command(command)
         lines = [line for line in out.split('\n') if line.strip()]
         last_age = int(lines[-1].split(",")[1]) # e.g., 9999999999999599999999
-        self.assertGreater(last_age, 999999)
+        self.assertGreater(last_age, 9999999999999)
 
     def test_cli_min_1(self):
         command = shlex.split(

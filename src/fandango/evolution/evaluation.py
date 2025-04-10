@@ -93,8 +93,10 @@ class Evaluator:
         for constraint in self.soft_constraints:
             try:
                 result = constraint.fitness(individual)
-                if not result.success:
-                    failing_trees.extend(result.failing_trees)
+
+                # failing_trees are required for mutations;
+                # with soft constraints, we never know when they are fully optimized.
+                failing_trees.extend(result.failing_trees)
 
                 constraint.tdigest.update(result.fitness())
                 normalized_fitness = constraint.tdigest.score(result.fitness())
