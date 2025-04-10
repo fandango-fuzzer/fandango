@@ -37,7 +37,8 @@ dependencies = [
     "py010parser>=0.1.18",
     "exrex>=0.12.0",
     "gnureadline>=8.2.13 ; platform_system != 'Windows'",
-    "pyreadline3>=3.5.4; platform_system == 'Windows'"
+    "pyreadline3>=3.5.4; platform_system == 'Windows'",
+    "tdigest>=0.5.2.2"
 ]
 
 [project.urls]

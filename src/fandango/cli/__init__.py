@@ -300,6 +300,26 @@ def get_parser(in_command_line=True):
         help="define an additional constraint CONSTRAINT. Can be given multiple times.",
     )
     file_parser.add_argument(
+        "--max",
+        "--maximize",
+        type=str,
+        dest="maxconstraints",
+        metavar="MAXCONSTRAINT",
+        default=None,
+        action="append",
+        help="define an additional constraint MAXCONSTRAINT to be maximized. Can be given multiple times.",
+    )
+    file_parser.add_argument(
+        "--min",
+        "--minimize",
+        type=str,
+        dest="minconstraints",
+        metavar="MINCONSTRAINTS",
+        default=None,
+        action="append",
+        help="define an additional constraint MINCONSTRAINT to be minimized. Can be given multiple times.",
+    )
+    file_parser.add_argument(
         "--no-cache",
         default=True,
         dest="use_cache",
@@ -573,9 +593,12 @@ def parse_files_from_args(args, given_grammars=[]):
 
 def parse_constraints_from_args(args, given_grammars=[]):
     """Parse .fan constraints as given in args"""
+    max_constraints = [f"maximizing {c}" for c in (args.maxconstraints or [])]
+    min_constraints = [f"minimizing {c}" for c in (args.minconstraints or [])]
+    constraints = (args.constraints or []) + max_constraints + min_constraints
     return parse(
         [],
-        args.constraints,
+        constraints,
         given_grammars=given_grammars,
         includes=args.includes,
         use_cache=args.use_cache,
@@ -586,9 +609,12 @@ def parse_constraints_from_args(args, given_grammars=[]):
 
 def parse_contents_from_args(args, given_grammars=[]):
     """Parse .fan content as given in args"""
+    max_constraints = [f"maximizing {c}" for c in (args.maxconstraints or [])]
+    min_constraints = [f"minimizing {c}" for c in (args.minconstraints or [])]
+    constraints = (args.constraints or []) + max_constraints + min_constraints
     return parse(
         args.fan_files,
-        args.constraints,
+        constraints,
         given_grammars=given_grammars,
         includes=args.includes,
         use_cache=args.use_cache,
@@ -688,7 +714,7 @@ def set_command(args):
         grammar, constraints = parse_contents_from_args(args)
         DEFAULT_FAN_CONTENT = (grammar, constraints)
         DEFAULT_CONSTRAINTS = []  # Don't leave these over
-    elif args.constraints:
+    elif args.constraints or args.maxconstraints or args.minconstraints:
         default_grammar = DEFAULT_FAN_CONTENT[0]
         if not default_grammar:
             raise FandangoError("Open a `.fan` file first ('set -f FILE.fan')")

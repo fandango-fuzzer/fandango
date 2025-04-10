@@ -9,7 +9,7 @@ from fandango.constraints.base import (
     ExistsConstraint,
     ExpressionConstraint,
     ForallConstraint,
-    Value,
+    SoftValue,
 )
 from fandango.constraints.fitness import Comparison
 from fandango.language.grammar import (
@@ -207,18 +207,22 @@ class ConstraintProcessor(FandangoParserVisitor):
 
     def visitConstraint(self, ctx: FandangoParser.ConstraintContext):
         LOGGER.debug(f"Visiting constraint: {ctx.getText()}")
-        if not ctx.WHERE():
+        if (not ctx.WHERE()) and (not ctx.MINIMIZING()) and (not ctx.MAXIMIZING()):
             LOGGER.warning(
                 f"{ctx.getText()}: Constraints should be prefixed with 'where'."
             )
-        if ctx.WHERE() and ctx.SEMI_COLON():
-            LOGGER.info(f"{ctx.getText()}: A final ';' is not required with 'where'.")
-
+        if (ctx.WHERE() or ctx.MINIMIZING() or ctx.MAXIMIZING()) and ctx.SEMI_COLON():
+            LOGGER.info(
+                f"{ctx.getText()}: A final ';' is not required with 'where', 'minimizing', 'maximizing'."
+            )
         if ctx.implies():
-            return self.visit(ctx.implies())
-        elif ctx.FITNESS():
+            constraint = self.visit(ctx.implies())
+            return constraint
+        elif ctx.MINIMIZING() or ctx.MAXIMIZING():
             expression_constraint = self.visitExpr(ctx.expr())
-            return Value(
+            optimization_goal = "min" if ctx.MINIMIZING() else "max"
+            return SoftValue(
+                optimization_goal,
                 expression_constraint.expression,
                 searches=expression_constraint.searches,
                 local_variables=expression_constraint.local_variables,
