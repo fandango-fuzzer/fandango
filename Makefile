@@ -196,7 +196,6 @@ EVALUATION_MARKER = $(EVALUATION)/test-evaluation.txt
 .PHONY: evaluation evaluate
 evaluation $(EVALUATION_MARKER): $(PYTHON_SOURCES) $(EVALUATION_SOURCES)
 	$(PYTHON) -m evaluation.vs_isla.run_evaluation 3600
-	echo 'Success' > $(EVALUATION_MARKER)
 
 run-evaluation: $(EVALUATION_MARKER)
 
@@ -208,7 +207,6 @@ EXPERIMENTS_MARKER = $(EXPERIMENTS)/test-experiments.txt
 .PHONY: experiment experiments
 experiment experiments $(EXPERIMENTS_MARKER): $(PYTHON_SOURCES) $(EXPERIMENTS_SOURCES)
 	$(PYTHON) -m evaluation.experiments.run_experiments
-	echo 'Success' > $(EXPERIMENTS_MARKER)
 
 run-experiments: $(EXPERIMENTS_MARKER)
 

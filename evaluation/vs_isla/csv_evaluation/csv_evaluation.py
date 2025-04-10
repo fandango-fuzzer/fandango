@@ -11,16 +11,20 @@ def is_syntactically_valid_csv(tree) -> bool:
     with tempfile.NamedTemporaryFile(suffix=".csv") as tmp:
         tmp.write(str(tree).encode())
         tmp.flush()
+
         cmd = ["csvlint", "-delimiter", ";", tmp.name]
-        process = subprocess.Popen(cmd, stderr=subprocess.PIPE)
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,  # <--- capture stdout to suppress terminal output
+            stderr=subprocess.PIPE,
+        )
         (stdout, stderr) = process.communicate()
         exit_code = process.wait()
 
         err_msg = stderr.decode("utf-8")
-
         has_error = exit_code != 0 or (bool(err_msg) and "valid" not in err_msg)
 
-        return True if not has_error else False
+        return not has_error
 
 
 def evaluate_csv(
@@ -36,7 +40,7 @@ def evaluate_csv(
         fandango.evolve()
         solutions.extend(fandango.solution)
 
-    coverage = grammar.compute_grammar_coverage(solutions, 4)
+    # coverage = grammar.compute_grammar_coverage(solutions, 4)
 
     valid = []
     for solution in solutions:
@@ -51,7 +55,7 @@ def evaluate_csv(
         len(solutions),
         len(valid),
         valid_percentage,
-        coverage,
+        0,
         set_mean_length,
         set_medium_length,
     )

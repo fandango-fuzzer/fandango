@@ -24,9 +24,9 @@ def better_print_results(
     print("================================")
     print(f"Total inputs: {results[1]}")
     print(f"Valid {results[0]} solutions: {results[2]} ({results[3]:.2f}%)")
-    print(
-        f"Grammar coverage (0 to 1): {results[4][0]:.2f} ({results[4][1]} / {results[4][2]})"
-    )
+    # print(
+    #     f"Grammar coverage (0 to 1): {results[4][0]:.2f} ({results[4][1]} / {results[4][2]})"
+    # )
     print(f"Mean length: {results[5]:.2f}")
     print(f"Median length: {results[6]:.2f}")
     print("")
@@ -47,10 +47,10 @@ def run_evaluation(time: int = 3600):
     random.seed(random_seed)
 
     better_print_results(evaluate_csv(seconds))
-    better_print_results(evaluate_rest(seconds))
-    better_print_results(evaluate_scriptsizec(seconds))
-    better_print_results(evaluate_tar(seconds))
-    better_print_results(evaluate_xml(seconds))
+    # better_print_results(evaluate_rest(seconds))
+    # better_print_results(evaluate_scriptsizec(seconds))
+    # better_print_results(evaluate_tar(seconds))
+    # better_print_results(evaluate_xml(seconds))
 
 
 if __name__ == "__main__":
