@@ -78,6 +78,9 @@ $(PARSERS) &: $(LEXER_G4) $(PARSER_G4)
 		-visitor -listener $(LEXER_G4) $(PARSER_G4)
 	$(BLACK) src
 
+.PHONY: format
+format:
+	$(BLACK) src
 
 ## Documentation
 DOCS = docs
