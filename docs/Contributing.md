@@ -19,6 +19,7 @@ range of developers.
 If you're trying out Fandango, your experience and what you can contribute are
 important to the project's success.
 
+(sec:code-of-conduct)=
 ## Code of Conduct
 
 Everyone participating in Fandango, and in particular in our
@@ -26,6 +27,7 @@ issue tracker, pull requests, and chat, is expected to treat
 other people with respect and more generally to follow the guidelines
 articulated in the [Python Community Code of Conduct](https://www.python.org/psf/codeofconduct/).
 
+(sec:getting-started-with-development)=
 ## Getting Started with Development
 
 ### Step 1: Fork the Fandango repository
@@ -102,6 +104,7 @@ $ hash -r
 That's it! You just have installed your personal copy of Fandango.
 You can invoke it as `fandango` and can alter its code as you like.
 
+(sec:running-tests)=
 ## Running Tests
 
 Running the full test suite can take a while, and usually is not necessary when
@@ -123,18 +126,19 @@ or simply
 $ pytest
 ```
 
-
+(sec:first-time-contributors)=
 ## First Time Contributors
 
 If you're looking for things to help with, browse our [issue tracker](https://github.com/fandango-fuzzer/fandango/issues)!
 
 You do not need to ask for permission to work on any of these issues.
-Just fix the issue yourself, [try to add a unit test](#running-tests) and [open a pull request](#submitting-changes).
+Just fix the issue yourself, [try to add a unit test](sec:running-tests) and open a pull request.
 
 To get help fixing a specific issue, it's often best to comment on the issue itself.
 You're much more likely to get help if you provide details about what you've tried and where you've looked (maintainers tend to help those who help themselves).
 
 
+(sec:contributing-code)=
 ## Contributing Code
 
 Even more excellent than a good bug report is a fix for a bug, or the implementation of a much-needed new feature.
