@@ -140,9 +140,11 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
 
     def test_unparse_grammar(self):
         # We unparse the standard library as well as docs/persons.fan
-        command = shlex.split("""
+        command = shlex.split(
+            """
                               sh -c 'printf "set -f docs/persons.fan\nset" | fandango shell'
-                              """)
+                              """
+        )
         out, err, code = self.run_command(command)
         self.assertEqual(0, code)
         self.assertEqual("", err)
