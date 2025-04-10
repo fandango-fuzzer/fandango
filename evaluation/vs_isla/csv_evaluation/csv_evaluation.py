@@ -1,29 +1,26 @@
-import csv
+import subprocess
+import tempfile
 import time
-from io import StringIO
 from typing import Tuple
 
 from fandango.evolution.algorithm import FANDANGO
 from fandango.language.parse import parse_file
 
 
-def is_syntactically_valid_csv(csv_string):
-    try:
-        # Create a file-like object from the string
-        csv_file = StringIO(csv_string)
+def is_syntactically_valid_csv(tree) -> bool:
+    with tempfile.NamedTemporaryFile(suffix=".csv") as tmp:
+        tmp.write(str(tree).encode())
+        tmp.flush()
+        cmd = ["csvlint", "-delimiter", ";", tmp.name]
+        process = subprocess.Popen(cmd, stderr=subprocess.PIPE)
+        (stdout, stderr) = process.communicate()
+        exit_code = process.wait()
 
-        # Create a CSV reader to parse the string
-        reader = csv.reader(csv_file)
+        err_msg = stderr.decode("utf-8")
 
-        # Iterate through the reader to trigger any parsing errors
-        for row in reader:
-            pass
+        has_error = exit_code != 0 or (bool(err_msg) and "valid" not in err_msg)
 
-        # If no errors, it's a valid CSV syntactically
-        return True
-    except csv.Error:
-        # If there's a CSV parsing error, it's not valid
-        return False
+        return True if not has_error else False
 
 
 def evaluate_csv(
