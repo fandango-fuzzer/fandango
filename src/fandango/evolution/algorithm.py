@@ -256,6 +256,7 @@ class Fandango:
                         self.population_manager.add_unique_individual(
                             new_population, child1, unique_hashes
                         )
+                        self.evaluator.evaluate_individual(child1)
 
                         if self.profiling:
                             self.profiler.start_timer("filling")
@@ -264,6 +265,8 @@ class Fandango:
                             self.population_manager.add_unique_individual(
                                 new_population, child2, unique_hashes
                             )
+                            self.evaluator.evaluate_individual(child2)
+
                         if self.profiling:
                             self.profiler.stop_timer("filling")
                             self.profiler.increment(
@@ -281,6 +284,13 @@ class Fandango:
 
             # Mutation
             mutated_population = []
+            weights = [
+                self.evaluator.fitness_cache[hash(ind)][0] for ind in new_population
+            ]
+            if not all(w == 0 for w in weights):
+                new_population = random.choices(
+                    new_population, weights=weights, k=len(new_population)
+                )
             for individual in new_population:
                 if random.random() < self.adaptive_tuner.mutation_rate:
                     try:
