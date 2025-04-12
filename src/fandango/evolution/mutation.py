@@ -76,5 +76,3 @@ class SimpleMutation(MutationOperator):
         )
         mutated = individual.replace(grammar, node_to_mutate, new_subtree)
         return mutated
-
-        return individual
