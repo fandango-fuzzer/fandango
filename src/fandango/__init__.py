@@ -210,9 +210,12 @@ class Fandango(FandangoBase):
         """
         constraints = self.constraints[:]
         if extra_constraints:
-            _, extra_constraints_parsed = parse([], extra_constraints,
-                                                given_grammars=[self.grammar],
-                                                start_symbol=self.start_symbol)
+            _, extra_constraints_parsed = parse(
+                [],
+                extra_constraints,
+                given_grammars=[self.grammar],
+                start_symbol=self.start_symbol,
+            )
             constraints += extra_constraints_parsed
 
         fandango = FandangoStrategy(
@@ -273,8 +276,7 @@ if __name__ == "__main__":
     fan = Fandango(spec, logging_level=logging_level, start_symbol="<my_start>")
 
     # Instantiate the spec into a population of derivation trees
-    population = fan.fuzz(extra_constraints=["<my_start> != 'e'"],
-                          population_size=3)
+    population = fan.fuzz(extra_constraints=["<my_start> != 'e'"], population_size=3)
     print("Fuzzed:", ", ".join(str(individual) for individual in population))
 
     # Parse a single input into a derivation tree
