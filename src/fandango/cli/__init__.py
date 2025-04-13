@@ -70,10 +70,10 @@ def terminal_link(url: str, text: str | None = None):
 def homepage_as_link():
     """Return the Fandango homepage, formatted for terminals"""
     homepage = fandango.homepage()
-    if homepage.startswith('http') and sys.stdout.isatty():
-          return terminal_link(homepage)
+    if homepage.startswith("http") and sys.stdout.isatty():
+        return terminal_link(homepage)
     else:
-          return homepage
+        return homepage
 
 
 def get_parser(in_command_line=True):
