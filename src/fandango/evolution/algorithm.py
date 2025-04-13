@@ -127,7 +127,7 @@ class Fandango:
                         position = self.grammar.max_position()
                         raise FandangoParseError(
                             message=f"Failed to parse initial individual{individual!r}",
-                            position=position
+                            position=position,
                         )
                 elif isinstance(individual, DerivationTree):
                     tree = individual
@@ -330,9 +330,7 @@ class Fandango:
 
             if self.profiling:
                 self.profiler.start_timer("evaluate_population")
-            self.evaluation = self.evaluator.evaluate_population_parallel(
-                self.population, num_workers=4
-            )
+            self.evaluation = self.evaluator.evaluate_population(self.population)
             if self.profiling:
                 self.profiler.stop_timer("evaluate_population")
                 self.profiler.increment("evaluate_population", len(self.population))
