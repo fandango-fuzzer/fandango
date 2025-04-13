@@ -230,8 +230,7 @@ def parse_content(
             cachedir_tag.tag(CACHE_DIR, application="Fandango")
 
         # Keep separate hashes for different Fandango and Python versions
-        hash_contents = (fan_contents + fandango.version() + 
-                         "-" + sys.version)
+        hash_contents = fan_contents + fandango.version() + "-" + sys.version
         hash = hashlib.sha256(hash_contents.encode()).hexdigest()
         pickle_file = CACHE_DIR / (hash + ".pickle")
 
