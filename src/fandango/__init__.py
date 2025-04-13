@@ -6,8 +6,9 @@ __all__ = [
     "FandangoSyntaxError",
     "FandangoValueError",
     "FandangoBase",
-    "Fandango",
     "DerivationTree",
+    "version",
+    "homepage",
 ]
 
 
@@ -54,6 +55,22 @@ class FandangoFailedError(FandangoError):
 
     def __init__(self, message: str):
         super().__init__(self, message)
+
+import importlib.metadata
+
+DISTRIBUTION_NAME = "fandango-fuzzer"
+
+def version():
+    """Return the Fandango version number"""
+    return importlib.metadata.version(DISTRIBUTION_NAME)
+
+def homepage():
+    """Return the Fandango homepage"""
+    for key, value in importlib.metadata.metadata(DISTRIBUTION_NAME).items():
+        if key == "Project-URL" and value.startswith("homepage,"):
+            return value.split(",")[1].strip()
+    return "the Fandango homepage"
+
 
 
 from abc import ABC, abstractmethod
