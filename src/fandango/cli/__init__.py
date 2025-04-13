@@ -58,6 +58,24 @@ from fandango.logger import LOGGER, print_exception
 from fandango import FandangoParseError, FandangoError
 import fandango
 
+
+def terminal_link(url: str, text: str | None = None):
+    """Output URL as a link"""
+    if text is None:
+        text = url
+    # https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
+    return f"\x1b]8;;{url}\x1b\\{text}\x1b]8;;\x1b\\"
+
+
+def homepage_as_link():
+    """Return the Fandango homepage, formatted for terminals"""
+    homepage = fandango.homepage()
+    if homepage.startswith('http') and sys.stdout.isatty():
+          return terminal_link(homepage)
+    else:
+          return homepage
+
+
 def get_parser(in_command_line=True):
     # Main parser
     if in_command_line:
@@ -75,7 +93,7 @@ def get_parser(in_command_line=True):
             Use `help COMMAND` to learn more about COMMAND.
             Use TAB to complete commands."""
         )
-    epilog += f"\nSee {fandango.homepage()} for more information."
+    epilog += f"\nSee {homepage_as_link()} for more information."
 
     main_parser = argparse.ArgumentParser(
         prog=prog,

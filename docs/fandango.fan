@@ -98,8 +98,8 @@
 
 <operator> ::= <symbol> | <kleene> | <plus> | <option> | <repeat>
 
-# A symbol can be a [_nonterminal_](sec:nonterminal), a [string](sec:string) or [bytes](sec:bytes) _literal_, a [_number_](sec:number) (for bits), a [_generator call_](sec:generator), or
-# (parenthesized) [alternatives](sec:alteratives).
+# A symbol can be a [_nonterminal_](sec:nonterminal), a [string](sec:strings) or [bytes](sec:bytes) _literal_, a [_number_](sec:number) (for bits), a [_generator call_](sec:generator), or
+# (parenthesized) [alternatives](sec:alternatives).
 
 <symbol> ::= (
       <nonterminal>

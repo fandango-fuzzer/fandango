@@ -22,3 +22,47 @@ patch -c -N _build/html/_static/copybutton.js <<EOF
 EOF
 
 rm -f _build/html/_static/copybutton.js.*
+
+for file in _build/html/[A-Z]*.html; do
+patch -c -N $file <<EOF
+***************
+*** 340,348 ****
+        
+        
+        <li>
+! <button onclick="window.print()"
+    class="btn btn-sm btn-download-pdf-button dropdown-item"
+!   title="Print to PDF"
+    data-bs-placement="left" data-bs-toggle="tooltip"
+  >
+    
+--- 340,348 ----
+        
+        
+        <li>
+! <a href="_static/fandango.pdf" target="_blank"
+    class="btn btn-sm btn-download-pdf-button dropdown-item"
+!   title="Download PDF"
+    data-bs-placement="left" data-bs-toggle="tooltip"
+  >
+    
+***************
+*** 351,357 ****
+    <i class="fas fa-file-pdf"></i>
+    </span>
+  <span class="btn__text-container">.pdf</span>
+! </button>
+  </li>
+        
+    </ul>
+--- 351,357 ----
+    <i class="fas fa-file-pdf"></i>
+    </span>
+  <span class="btn__text-container">.pdf</span>
+! </a>
+  </li>
+        
+    </ul>
+
+EOF
+done

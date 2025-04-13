@@ -18,7 +18,6 @@ from fandango import FandangoValueError
 from thefuzz import process as thefuzz_process
 
 
-
 MAX_REPETITIONS = 5
 
 
@@ -249,14 +248,22 @@ class Repetition(Node):
             prev_parent_size = parent.size()
 
     def __repr__(self):
-        if self.min == self.max:
-            return f"{self.node}{{{self.min}}}"
-        return f"{self.node}{{{self.min},{self.max}}}"
+        # We use "f()" as a placeholder for some function
+        min_str = str(self.static_min) if self.static_min is not None else "f()"
+        max_str = str(self.static_max) if self.static_max is not None else "f()"
+
+        if min_str == max_str:
+            return f"{self.node}{{{min_str}}}"
+        return f"{self.node}{{{min_str},{max_str}}}"
 
     def __str__(self):
-        if self.min == self.max:
-            return f"{self.node!s}{{{self.min}}}"
-        return f"{self.node!s}{{{self.min},{self.max}}}"
+        # We use "f()" as a placeholder for some function
+        min_str = str(self.static_min) if self.static_min is not None else "f()"
+        max_str = str(self.static_max) if self.static_max is not None else "f()"
+
+        if min_str == max_str:
+            return f"{self.node!s}{{{min_str}}}"
+        return f"{self.node!s}{{{min_str},{max_str}}}"
 
     def descendents(self, rules: Dict[NonTerminal, "Node"] | None) -> Iterator["Node"]:
         base = []
@@ -410,10 +417,10 @@ class LiteralGenerator:
         self.nonterminals = nonterminals
 
     def __repr__(self):
-        return tuple.__repr__((self.call.__repr__(), self.nonterminals.__repr__()))
+        return f"LiteralGenerator({self.call!r}, {self.nonterminals!r})"
 
     def __str__(self):
-        return tuple.__str__((self.call.__str__(), self.nonterminals.__str__()))
+        return str(self.call)
 
     def __eq__(self, other):
         return (
@@ -728,7 +735,6 @@ def closest_match(word, candidates):
     return thefuzz_process.extractOne(word, candidates)[0]
 
 
-
 class Grammar(NodeVisitor):
     """Represent a grammar."""
 
@@ -742,11 +748,9 @@ class Grammar(NodeVisitor):
             parent: Optional["DerivationTree"] = None,
             read_only: bool = False,
         ):
-            super().__init__(symbol,
-                             children,
-                             parent=parent,
-                             sources=[],
-                             read_only=read_only)
+            super().__init__(
+                symbol, children, parent=parent, sources=[], read_only=read_only
+            )
 
         def set_children(self, children: List["DerivationTree"]):
             self._children = children
@@ -1533,13 +1537,9 @@ class Grammar(NodeVisitor):
     def derive_sources(self, tree: "DerivationTree"):
         gen_symbol = tree.symbol
         if not isinstance(gen_symbol, NonTerminal):
-            raise FandangoValueError(
-                f"Tree {tree.symbol} is not a nonterminal"
-            )
+            raise FandangoValueError(f"Tree {tree.symbol} is not a nonterminal")
         if tree.symbol not in self.generators:
-            raise FandangoValueError(
-                f"No generator found for tree {tree.symbol}"
-            )
+            raise FandangoValueError(f"No generator found for tree {tree.symbol}")
 
         if not self.is_use_generator(tree):
             return []
@@ -1549,10 +1549,13 @@ class Grammar(NodeVisitor):
             if val.symbol not in self.rules:
                 closest = closest_match(str(val), self.rules.keys())
                 raise FandangoValueError(
-                    f"Symbol {val.symbol!s} not defined in grammar. Did you mean {closest!s}?")
+                    f"Symbol {val.symbol!s} not defined in grammar. Did you mean {closest!s}?"
+                )
 
             if val.symbol not in self.generators:
-                raise FandangoValueError(f"{val.symbol}: Missing converter from {gen_symbol} ({val.symbol} ::= ... := f({gen_symbol}))")
+                raise FandangoValueError(
+                    f"{val.symbol}: Missing converter from {gen_symbol} ({val.symbol} ::= ... := f({gen_symbol}))"
+                )
 
             dependent_generators[val.symbol] = self.generator_dependencies(val.symbol)
         dependent_generators = self._topological_sort(dependent_generators)
@@ -1608,7 +1611,9 @@ class Grammar(NodeVisitor):
         local_variables = self._local_variables.copy()
         for id, nonterminal in generator.nonterminals.items():
             if nonterminal.symbol not in sources:
-                raise FandangoValueError(f"{nonterminal.symbol}: missing generator parameter")
+                raise FandangoValueError(
+                    f"{nonterminal.symbol}: missing generator parameter"
+                )
             local_variables[id] = sources[nonterminal.symbol]
 
         return list(sources.values()), eval(
@@ -1770,7 +1775,7 @@ class Grammar(NodeVisitor):
             symbol = NonTerminal(symbol)
         return (
             f"{symbol} ::= {self.rules[symbol]}"
-            f"{' := ' + self.generators[symbol] if symbol in self.generators else ''}"
+            f"{' := ' + str(self.generators[symbol]) if symbol in self.generators else ''}"
         )
 
     @staticmethod
