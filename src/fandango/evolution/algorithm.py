@@ -503,13 +503,22 @@ class Fandango:
         if len(io_instance.get_received_msgs()) == 0:
             return None, None
 
-        remote_msgs = io_instance.get_received_msgs()
-
         complete_msg = None
         used_fragments_idx = []
+        next_fragment_idx = 0
 
-        msg_role, msg_recipient, _ = remote_msgs[0]
+        found_role = False
+        selection_rounds = 0
+        msg_role = 'None'
+        while not found_role and selection_rounds < 20:
+            for start_idx, (msg_role, msg_recipient, _) in enumerate(io_instance.get_received_msgs()):
+                next_fragment_idx = start_idx
+                if msg_role in forecast.getRoles():
+                    found_role = True
+                    break
+            time.sleep(0.025)
 
+        remote_msgs = io_instance.get_received_msgs()
         if msg_role not in forecast.getRoles():
             raise RuntimeError(
                 f"Unexpected agent sent message. Expected: " +
@@ -521,7 +530,6 @@ class Fandango:
         available_non_terminals = set(forecast_non_terminals.getNonTerminals())
 
         is_msg_complete = False
-        next_fragment_idx = 0
 
         elapsed_rounds = 0
         max_rounds = 0.025 * 2000
