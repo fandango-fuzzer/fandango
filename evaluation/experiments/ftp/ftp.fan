@@ -55,7 +55,9 @@ where forall <ex> in <exchange_login_fail>:
 <open_mlsd> ::= '150 Opening BINARY mode data connection for MLSD\r\n'
 <mlsd_transfer> ::= <ServerData:ClientData:mlsd_data>*<ServerControl:ClientControl:finalize_mlsd>
 <finalize_mlsd> ::= '226 Transfer complete\r\n'
-<mlsd_data> ::= ('modify=' <modify_timestamp> ';perm=flcdmpe;type=' <mlsd_type> ';unique=' <mlsd_unique> ';UNIX.group=33;UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=33;UNIX.ownername=the_user; ' <mlsd_folder>'\r\n')+
+<mlsd_data> ::= (<mlsd_data_folder> | <mlsd_data_file>)+
+<mlsd_data_folder> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_folder> ';type=' <mlsd_type_folder> ';unique=' <mlsd_unique> ';UNIX.group=33;UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=33;UNIX.ownername=the_user; ' <mlsd_folder>'\r\n'
+<mlsd_data_file> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_file> ';size=' <mlsd_size> ';type=' <mlsd_type_file> ';unique=' <mlsd_unique> ';UNIX.group=33;UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=33;UNIX.ownername=the_user; ' <mlsd_file>'\r\n'
 
 <modify_timestamp> ::= <year><month><day><hour><minute><second>
 <year> ::= <number_tail>{4} := "{:04d}".format(randint(0, 9999))
@@ -64,12 +66,20 @@ where forall <ex> in <exchange_login_fail>:
 <hour> ::= <number_tail>{2} := "{:02d}".format(randint(0, 23))
 <minute> ::= <number_tail>{2} := "{:02d}".format(randint(0, 59))
 <second> ::= <number_tail>{2} := "{:02d}".format(randint(0, 59))
-<mlsd_type> ::= 'cdir' | 'pdir' | 'dir'
-<mlsd_unique> ::= '2BUA' | '2BUB' | '2CUA' | '2CUB'
+<mlsd_type_folder> ::= 'cdir' | 'pdir' | 'dir' | 'file'
+<mlsd_type_file> ::= 'file'
+<mlsd_unique> ::= '2BUA' | '2BUB' | '2CUA' | '2CUB' | '2CUD'
+<mlsd_perm_folder> ::= 'flcdmpe'
+<mlsd_perm_file> ::= 'adfrw'
+<mlsd_size> ::= <number>
+
+#where forall <entry> in <mlsd_data>:
+#    (<entry>.<mlsd_type> != 'file' or (<entry>.<mlsd_perm> == 'adfrw')) and (<entry>.<mlsd_type> == 'file' or (<entry>.<mlsd_perm> != 'adfrw'))
 
 <mlsd_permission> ::= '0' <permission_byte>{3}
 <permission_byte> ::= <number_tail> := randint(0, 7)
 <mlsd_folder> ::= '.' | '..' | <filesystem_name>
+<mlsd_file> ::= <filesystem_name> ('.' r'[a-zA-Z0-9]+')?
 
 <exchange_pwd> ::= <ClientControl:ServerControl:request_pwd><ServerControl:ClientControl:response_pwd><state_logged_in>
 <request_pwd> ::= 'PWD\r\n'
