@@ -65,7 +65,7 @@ where forall <ex> in <exchange_login_fail>:
 <minute> ::= <number_tail>{2} := "{:02d}".format(randint(0, 59))
 <second> ::= <number_tail>{2} := "{:02d}".format(randint(0, 59))
 <mlsd_type> ::= 'cdir' | 'pdir' | 'dir'
-<mlsd_unique> ::= '2BUA' | '2BUB' | '2CUA'
+<mlsd_unique> ::= '2BUA' | '2BUB' | '2CUA' | '2CUB'
 
 <mlsd_permission> ::= '0' <permission_byte>{3}
 <permission_byte> ::= <number_tail> := randint(0, 7)
@@ -136,29 +136,64 @@ import socket
 import threading
 
 class ClientControl(FandangoAgent):
-        def __init__(self):
-            super().__init__(True)
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.connect(("127.0.0.1", 21))
-            server_thread = threading.Thread(target=self.listen_loop)
-            server_thread.daemon = True
-            server_thread.start()
+    def __init__(self):
+        super().__init__(True)
+        if not self.is_fandango():
+            return
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect(("127.0.0.1", 21))
+        server_thread = threading.Thread(target=self.listen_loop)
+        server_thread.daemon = True
+        server_thread.start()
 
-        def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
-            self.sock.sendall(message.encode("utf-8"))
+    def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
+        self.sock.sendall(message.encode("utf-8"))
 
-        def listen_loop(self):
-            while True:
-                response, nothing = self.sock.recvfrom(1024)
-                if len(response) == 0:
-                    self.receive_msg("ServerControl", "FTP session closed.\r\n")
-                    self.sock.close()
-                    break
-                self.receive_msg("ServerControl", response.decode("utf-8"))
+    def listen_loop(self):
+        while True:
+            response, nothing = self.sock.recvfrom(1024)
+            if len(response) == 0:
+                self.receive_msg("ServerControl", "FTP session closed.\r\n")
+                self.sock.close()
+                break
+            self.receive_msg("ServerControl", response.decode("utf-8"))
 
 class ServerControl(FandangoAgent):
     def __init__(self):
         super().__init__(False)
+        self.sock = None
+        self.send_thread = None
+        self.running = False
+        if not self.is_fandango():
+            return
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.bind(("127.0.0.1", 21))
+        self.running = True
+        self.send_thread = threading.Thread(target=self._listen, daemon=True)
+        self.send_thread.start()
+
+    def _listen(self):
+        while self.running:
+            try:
+                data = self.sock.recv(1024)
+                if len(data) == 0:
+                    continue
+                if data:
+                    self.receive_msg("ClientControl", data.decode("utf-8"))
+                else:
+                    self.running = False
+                    break
+            except Exception as e:
+                self.running = False
+                break
+
+    def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
+        try:
+            if not self.running:
+                raise Exception("Socket not running!")
+            self.sock.sendall(message)
+        except Exception as e:
+            print("Error sending message: " + str(e))
 
 class ClientData(FandangoAgent):
     def __init__(self):
@@ -188,6 +223,8 @@ class ClientData(FandangoAgent):
         self.sock.close()
 
     def update_port(self, new_port: int):
+        if not self.is_fandango():
+            return
         self.close()
         self.port = new_port
         self._create_socket()
@@ -209,18 +246,68 @@ class ClientData(FandangoAgent):
                 break
 
     def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
-        with self.lock:
-            try:
-                if not self.running:
-                    raise Exception("Socket not running!")
-                self.sock.sendall(message)
-            except Exception as e:
-                print("Error sending message: " + str(e))
+        try:
+            if not self.running:
+                raise Exception("Socket not running!")
+            self.sock.sendall(message)
+        except Exception as e:
+            print("Error sending message: " + str(e))
 
 
 class ServerData(FandangoAgent):
     def __init__(self):
         super().__init__(False)
+        self.sock = None
+        self.port = None
+        self.send_thread = None
+        self.running = False
+
+    def _create_socket(self):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    def connect(self):
+        self.sock.bind(("127.0.0.1", self.port))
+        self.running = True
+        self.send_thread = threading.Thread(target=self._listen, daemon=True)
+        self.send_thread.start()
+
+    def close(self):
+        self.running = False
+        if self.sock is None:
+            return
+        try:
+            self.sock.shutdown(socket.SHUT_RDWR)
+        except:
+            pass  # socket might already be closed
+        self.sock.close()
 
     def update_port(self, new_port: int):
-        pass
+        if not self.is_fandango():
+            return
+        self.close()
+        self.port = new_port
+        self._create_socket()
+        self.connect()
+
+    def _listen(self):
+        while self.running:
+            try:
+                data = self.sock.recv(1024)
+                if len(data) == 0:
+                    continue
+                if data:
+                    self.receive_msg("ClientData", data.decode("utf-8"))
+                else:
+                    self.running = False
+                    break
+            except Exception as e:
+                self.running = False
+                break
+
+    def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
+        try:
+            if not self.running:
+                raise Exception("Socket not running!")
+            self.sock.sendall(message)
+        except Exception as e:
+            print("Error sending message: " + str(e))
