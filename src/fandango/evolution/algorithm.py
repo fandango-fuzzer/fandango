@@ -580,8 +580,11 @@ class Fandango:
                         complete_msg
                     )
                 if parsed_packet_tree is not None:
+                    nr_deleted = 0
+                    used_fragments_idx.sort()
                     for del_idx in used_fragments_idx:
-                        del remote_msgs[del_idx]
+                        del remote_msgs[del_idx - nr_deleted]
+                        nr_deleted += 1
                     return forecast_packet, parsed_packet_tree
 
             if not is_msg_complete:

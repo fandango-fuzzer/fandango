@@ -1,14 +1,18 @@
 from random import randint
 import math
 
+fandango_is_client = True
+
 <start> ::= <state_setup>
 
 <state_setup> ::= <exchange_socket_connect> <exchange_auth_tls>? <exchange_auth_ssl>? <state_logged_out>
 <state_logged_out> ::= <exchange_login>
 <state_post_login> ::= <state_logged_in> #<exchange_syst>?<exchange_feat>?<exchange_set_client><exchange_set_utf8><exchange_set_type>
-<state_logged_in> ::= (<exchange_mlsd><state_finished>) | ((<exchange_pwd> | <exchange_syst> | <exchange_feat> | <exchange_set_client> | <exchange_set_utf8> | <exchange_set_type> | <exchange_set_epassive>) <state_logged_in>)
+<state_logged_in> ::= (<exchange_set_type><state_bin_mode>) | (<any_state_cmds><state_logged_in>)
+<state_bin_mode> ::= (<exchange_mlsd><state_finished>) | (<any_state_cmds><state_bin_mode>)
 <state_finished> ::= ''
 
+<any_state_cmds> ::= <exchange_pwd> | <exchange_syst> | <exchange_feat> | <exchange_set_client> | <exchange_set_utf8> | <exchange_set_type> | <exchange_set_epassive>
 <exchange_socket_connect> ::= <ServerControl:ClientControl:response_server_info>
 <response_server_info> ::= '220 ProFTPD Server (Debian) [1.2.3.4]\r\n'
 
@@ -47,7 +51,7 @@ where forall <ex> in <exchange_login_fail>:
 <exchange_syst> ::= <ClientControl:ServerControl:request_syst><ServerControl:ClientControl:response_syst>
 <request_syst> ::= 'SYST\r\n'
 <response_syst> ::= '215 ' <syst_name> '\r\n'
-<syst_name> ::= r'[a-zA-Z0-9]+' := 'Linux'
+<syst_name> ::= r'[a-zA-Z0-9\: ]+' := 'Linux'
 
 <exchange_set_client> ::= <ClientControl:ServerControl:request_set_client><ServerControl:ClientControl:response_set_client>
 <request_set_client> ::= 'CLNT ' <client_name> '\r\n'
@@ -59,11 +63,11 @@ where forall <ex> in <exchange_login_fail>:
 
 <exchange_feat> ::= <ClientControl:ServerControl:request_feat><ServerControl:ClientControl:response_feat>
 <request_feat> ::= 'FEAT\r\n'
-<response_feat> ::= '211-Features:\r\n' <feat_entry>+ '211 END\r\n' := feat_response()
+<response_feat> ::= '211-Features:\r\n' <feat_entry>+ '211 End\r\n' := feat_response()
 <feat_entry> ::= ' ' r'[a-zA-Z0-9\*\;\-\. ]+' '\r\n'
 
 def feat_response():
-    features = '211-Features:\r\n CLNT\r\n EPRT\r\n EPSV\r\n HOST\r\n LANG en-US*\r\n MDTM\r\n MFF modify;UNIX.group;UNIX.mode;\r\n MFMT\r\n MLST modify*;perm*;size*;type*;unique*;UNIX.group*;UNIX.groupname*;UNIX.mode*;UNIX.owner*;UNIX.ownername*;\r\n211 END\r\n'
+    features = '211-Features:\r\n CLNT\r\n EPRT\r\n EPSV\r\n HOST\r\n LANG en-US*\r\n MDTM\r\n MFF modify;UNIX.group;UNIX.mode;\r\n MFMT\r\n MLST modify*;perm*;size*;type*;unique*;UNIX.group*;UNIX.groupname*;UNIX.mode*;UNIX.owner*;UNIX.ownername*;\r\n211 End\r\n'
     return features
 
 <exchange_set_type> ::= <ClientControl:ServerControl:request_set_type><ServerControl:ClientControl:response_set_type>
@@ -103,7 +107,7 @@ def to_pasv_syntax(port_nr):
 <second> ::= <number_tail>{2} := "{:02d}".format(randint(0, 59))
 <mlsd_type_folder> ::= 'cdir' | 'pdir' | 'dir' | 'file'
 <mlsd_type_file> ::= 'file'
-<mlsd_unique> ::= '2BUA' | '2BUB' | '2CUA' | '2CUB' | '2CUD'
+<mlsd_unique> ::= '2BUA' | '2BUB' | '2BUC' | '2CUA' | '2CUB' | '2CUD'
 <mlsd_perm_folder> ::= 'flcdmpe'
 <mlsd_perm_file> ::= 'adfrw'
 <mlsd_size> ::= <number>
@@ -143,7 +147,7 @@ import threading
 
 class ClientControl(FandangoAgent):
     def __init__(self):
-        super().__init__(False)
+        super().__init__(fandango_is_client)
         if not self.is_fandango():
             return
         self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
@@ -166,7 +170,7 @@ class ClientControl(FandangoAgent):
 
 class ServerControl(FandangoAgent):
     def __init__(self):
-        super().__init__(True)
+        super().__init__(not fandango_is_client)
         self.sock = None
         self.send_thread = None
         self.running = False
@@ -205,7 +209,7 @@ class ServerControl(FandangoAgent):
 
 class ClientData(FandangoAgent):
     def __init__(self):
-        super().__init__(False)
+        super().__init__(fandango_is_client)
         self.sock = None
         self.port = None
         self.listen_thread = None
@@ -264,7 +268,7 @@ class ClientData(FandangoAgent):
 
 class ServerData(FandangoAgent):
     def __init__(self):
-        super().__init__(True)
+        super().__init__(not fandango_is_client)
         self.sock = None
         self.port = None
         self.send_thread = None
