@@ -1,15 +1,24 @@
 from random import randint
+import math
 
 <start> ::= <state_setup>
 
-<state_setup> ::= <exchange_socket_connect> <state_logged_out>
+<state_setup> ::= <exchange_socket_connect> <exchange_auth_tls>? <exchange_auth_ssl>? <state_logged_out>
 <state_logged_out> ::= <exchange_login>
-<state_post_login> ::= <exchange_set_client><exchange_set_utf8><exchange_set_type><state_logged_in>
-<state_logged_in> ::= (<exchange_set_passive><exchange_mlsd><state_finished>) | <exchange_pwd>
+<state_post_login> ::= <state_logged_in> #<exchange_syst>?<exchange_feat>?<exchange_set_client><exchange_set_utf8><exchange_set_type>
+<state_logged_in> ::= (<exchange_mlsd><state_finished>) | ((<exchange_pwd> | <exchange_syst> | <exchange_feat> | <exchange_set_client> | <exchange_set_utf8> | <exchange_set_type> | <exchange_set_epassive>) <state_logged_in>)
 <state_finished> ::= ''
 
 <exchange_socket_connect> ::= <ServerControl:ClientControl:response_server_info>
 <response_server_info> ::= '220 ProFTPD Server (Debian) [1.2.3.4]\r\n'
+
+<exchange_auth_tls> ::= <ClientControl:ServerControl:request_auth_tls><ServerControl:ClientControl:response_auth_tls>
+<request_auth_tls> ::= 'AUTH TLS\r\n'
+<response_auth_tls> ::= '500 AUTH not understood\r\n'
+
+<exchange_auth_ssl> ::= <ClientControl:ServerControl:request_auth_ssl><ServerControl:ClientControl:response_auth_ssl>
+<request_auth_ssl> ::= 'AUTH SSL\r\n'
+<response_auth_ssl> ::= '500 AUTH not understood\r\n'
 
 <exchange_login> ::= <exchange_login_ok> | <exchange_login_fail>
 <exchange_login_ok> ::= <ClientControl:ServerControl:request_login_user_ok><ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_ok><ServerControl:ClientControl:response_login_pass_ok><state_post_login>
@@ -21,7 +30,8 @@ where forall <ex> in <exchange_login_ok>:
     str(<ex>.<request_login_user_ok>.<correct_username>) == str(<ex>.<response_login_user>.<user_name>)
 where forall <ex> in <exchange_login_fail>:
     str(<ex>.<request_login_user_ok>.<correct_username>) == str(<ex>.<response_login_user>.<user_name>)
-    or str(<ex>.<request_login_user_fail>.<wrong_user_name>) == str(<ex>.<response_login_user>.<user_name>)
+where forall <ex> in <exchange_login_fail>:
+    str(<ex>.<request_login_user_fail>.<wrong_user_name>) == str(<ex>.<response_login_user>.<user_name>)
 
 <request_login_user_ok> ::= 'USER ' <correct_username> '\r\n'
 <correct_username> ::= 'the_user'
@@ -34,6 +44,11 @@ where forall <ex> in <exchange_login_fail>:
 <response_login_pass_fail> ::= '530 Login incorrect.\r\n'
 <response_login_throttled> ::= 'FTP session closed.\r\n'
 
+<exchange_syst> ::= <ClientControl:ServerControl:request_syst><ServerControl:ClientControl:response_syst>
+<request_syst> ::= 'SYST\r\n'
+<response_syst> ::= '215 ' <syst_name> '\r\n'
+<syst_name> ::= r'[a-zA-Z0-9]+' := 'Linux'
+
 <exchange_set_client> ::= <ClientControl:ServerControl:request_set_client><ServerControl:ClientControl:response_set_client>
 <request_set_client> ::= 'CLNT ' <client_name> '\r\n'
 <response_set_client> ::= '200 OK\r\n'
@@ -42,13 +57,33 @@ where forall <ex> in <exchange_login_fail>:
 <request_set_utf8> ::= 'OPTS UTF8 ON\r\n'
 <response_set_utf8> ::= '200 UTF8 set to on\r\n'
 
+<exchange_feat> ::= <ClientControl:ServerControl:request_feat><ServerControl:ClientControl:response_feat>
+<request_feat> ::= 'FEAT\r\n'
+<response_feat> ::= '211-Features:\r\n' <feat_entry>+ '211 END\r\n' := feat_response()
+<feat_entry> ::= ' ' r'[a-zA-Z0-9\*\;\-\. ]+' '\r\n'
+
+def feat_response():
+    features = '211-Features:\r\n CLNT\r\n EPRT\r\n EPSV\r\n HOST\r\n LANG en-US*\r\n MDTM\r\n MFF modify;UNIX.group;UNIX.mode;\r\n MFMT\r\n MLST modify*;perm*;size*;type*;unique*;UNIX.group*;UNIX.groupname*;UNIX.mode*;UNIX.owner*;UNIX.ownername*;\r\n211 END\r\n'
+    return features
+
 <exchange_set_type> ::= <ClientControl:ServerControl:request_set_type><ServerControl:ClientControl:response_set_type>
 <request_set_type> ::= 'TYPE I\r\n'
 <response_set_type> ::= '200 Type set to I\r\n'
 
-<exchange_set_passive> ::= <ClientControl:ServerControl:request_set_passive><ServerControl:ClientControl:response_set_passive>
-<request_set_passive> ::= 'EPSV\r\n'
-<response_set_passive> ::= '229 Entering Extended Passive Mode (|||' <open_port> '|)\r\n'
+<exchange_set_epassive> ::= <ClientControl:ServerControl:request_set_epassive><ServerControl:ClientControl:response_set_epassive>
+<request_set_epassive> ::= 'EPSV\r\n'
+<response_set_epassive> ::= '229 Entering Extended Passive Mode (|||' <open_port> '|)\r\n'
+
+#<exchange_set_passive> ::= <ClientControl:ServerControl:request_set_passive><ServerControl:ClientControl:response_set_passive>
+#<request_set_passive> ::= 'PASV\r\n'
+#<response_set_passive> ::= '227 Entering Passive Mode (127,0,0,1,'<pasv_passive_port>')\r\n'
+#<pasv_passive_port> ::= <number>','<number> := to_pasv_syntax(<open_port>)
+
+def to_pasv_syntax(port_nr):
+    port_nr = int(port_nr)
+    upper_frac = math.floor(port_nr / 256)
+    lower_frac = port_nr % 256
+    return str(upper_frac) + ',' + str(lower_frac)
 
 <exchange_mlsd> ::= <ClientControl:ServerControl:request_mlsd><ServerControl:ClientControl:open_mlsd><mlsd_transfer>
 <request_mlsd> ::= 'MLSD\r\n'
@@ -73,15 +108,12 @@ where forall <ex> in <exchange_login_fail>:
 <mlsd_perm_file> ::= 'adfrw'
 <mlsd_size> ::= <number>
 
-#where forall <entry> in <mlsd_data>:
-#    (<entry>.<mlsd_type> != 'file' or (<entry>.<mlsd_perm> == 'adfrw')) and (<entry>.<mlsd_type> == 'file' or (<entry>.<mlsd_perm> != 'adfrw'))
-
 <mlsd_permission> ::= '0' <permission_byte>{3}
 <permission_byte> ::= <number_tail> := randint(0, 7)
 <mlsd_folder> ::= '.' | '..' | <filesystem_name>
 <mlsd_file> ::= <filesystem_name> ('.' r'[a-zA-Z0-9]+')?
 
-<exchange_pwd> ::= <ClientControl:ServerControl:request_pwd><ServerControl:ClientControl:response_pwd><state_logged_in>
+<exchange_pwd> ::= <ClientControl:ServerControl:request_pwd><ServerControl:ClientControl:response_pwd>
 <request_pwd> ::= 'PWD\r\n'
 <response_pwd> ::= '257 \"' <directory> '\" is the current directory\r\n'
 <directory> ::= '/' | ('/' <filesystem_name>)+
@@ -89,53 +121,17 @@ where forall <ex> in <exchange_login_fail>:
 <filesystem_name> ::= r'[a-zA-Z0-9]+'
 <client_name> ::= r'[a-zA-Z0-9]+'
 
-<user_name> ::= <wrong_user_name>
-<wrong_user_name> ::= r'[a-zA-Z0-9\_]+'
-<wrong_user_password> ::= r'[a-zA-Z0-9]*'
+<user_name> ::= r'[a-zA-Z0-9\_]+'
+<wrong_user_name> ::= r'^(?!the_user)([a-zA-Z0-9\_]+)'
+<wrong_user_password> ::= r'^(?!the_password)([a-zA-Z0-9\_]*)'
 
 <open_port> ::= <passive_port> := open_data_port(int(<open_port_param>))
 <open_port_param> ::= <passive_port> := open_data_port(int(<open_port>))
 <passive_port> ::= <number> := randint(50000, 50100)
 
-<exchange_feat> ::= <ClientControl:ServerControl:request_feat><ServerControl:ClientControl:response_feat>
-<request_feat> ::= 'FEAT\r\n'
-<response_feat> ::= r'[a-zA-Z0-9]+' (' ' r'[a-zA-Z0-9\*\.\;]+')* '\r\n'
-<response_feat_end> ::= '211 End\r\n'
-
-
-
-
-
-
-
-
-
-
-#<username> ::= <string>
-#<password> ::= <string>
-#<account-information> ::= <string>
-#<string> ::= <char> | <char><string>
-#<char> ::= '!' | '\"' | '#' | '$' | '%' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' | '-' | '.' | '/' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | ':' | ';' | '<' | '=' | '>' | '?' | '@' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '[' | '\' | ']' | '^' | '_' | '`' | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | '{' | '|' | '}' | '~'
-#<marker> ::= <pr-string>
-#<pr-string> ::= <pr-char> | <pr-char><pr-string>
-#<pr-char> ::= '!' | '\"' | '#' | '$' | '%' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' | '-' | '.' | '/' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | ':' | ';' | '<' | '=' | '>' | '?' | '@' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '[' | '\' | ']' | '^' | '_' | '`' | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | '{' | '|' | '}' | '~'
-#<byte-size> ::= <ftp_number>
-#<host-port> ::= <host-number>,<port-number>
-#<host-number> ::= <ftp_number>,<ftp_number>,<ftp_number>,<ftp_number>
-#<port-number> ::= <ftp_number>,<ftp_number>
-#<form-code> ::= N | T | C
-#<type-code> ::= A [<sp> <form-code>] | E [<sp> <form-code>] | I | L <sp> <byte-size>
-#<structure-code> ::= F | R | P
-#<mode-code> ::= S | B | C
-#<pathname> ::= <string>
-#<decimal-integer> ::= any decimal integer
-
-
-#<ftp_number> ::= <number> := randint(1, 255)
 <number> ::= '0' | (<number_start> <number_tail>*)
 <number_start> ::= '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 <number_tail> ::= '0' | <number_start>
-
 
 def open_data_port(port):
     FandangoIO.instance().roles['ClientData'].update_port(port)
@@ -147,11 +143,11 @@ import threading
 
 class ClientControl(FandangoAgent):
     def __init__(self):
-        super().__init__(True)
+        super().__init__(False)
         if not self.is_fandango():
             return
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect(("127.0.0.1", 21))
+        self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        self.sock.connect(("::1", 21))
         server_thread = threading.Thread(target=self.listen_loop)
         server_thread.daemon = True
         server_thread.start()
@@ -170,14 +166,16 @@ class ClientControl(FandangoAgent):
 
 class ServerControl(FandangoAgent):
     def __init__(self):
-        super().__init__(False)
+        super().__init__(True)
         self.sock = None
         self.send_thread = None
         self.running = False
         if not self.is_fandango():
             return
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.bind(("127.0.0.1", 21))
+        self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        self.sock.bind(("::1", 50200))
+        self.sock.listen(1)
+        self.conn, self.address = self.sock.accept()
         self.running = True
         self.send_thread = threading.Thread(target=self._listen, daemon=True)
         self.send_thread.start()
@@ -185,7 +183,7 @@ class ServerControl(FandangoAgent):
     def _listen(self):
         while self.running:
             try:
-                data = self.sock.recv(1024)
+                data = self.conn.recv(1024)
                 if len(data) == 0:
                     continue
                 if data:
@@ -201,23 +199,23 @@ class ServerControl(FandangoAgent):
         try:
             if not self.running:
                 raise Exception("Socket not running!")
-            self.sock.sendall(message)
+            self.conn.send(message.encode("utf-8"))
         except Exception as e:
             print("Error sending message: " + str(e))
 
 class ClientData(FandangoAgent):
     def __init__(self):
-        super().__init__(True)
+        super().__init__(False)
         self.sock = None
         self.port = None
         self.listen_thread = None
         self.running = False
 
     def _create_socket(self):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 
     def connect(self):
-        self.sock.connect(("127.0.0.1", self.port))
+        self.sock.connect(("::1", self.port))
         self.running = True
         self.listen_thread = threading.Thread(target=self._listen, daemon=True)
         self.listen_thread.start()
@@ -233,10 +231,10 @@ class ClientData(FandangoAgent):
         self.sock.close()
 
     def update_port(self, new_port: int):
+        self.port = new_port
         if not self.is_fandango():
             return
         self.close()
-        self.port = new_port
         self._create_socket()
         self.connect()
 
@@ -266,17 +264,17 @@ class ClientData(FandangoAgent):
 
 class ServerData(FandangoAgent):
     def __init__(self):
-        super().__init__(False)
+        super().__init__(True)
         self.sock = None
         self.port = None
         self.send_thread = None
         self.running = False
 
     def _create_socket(self):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 
     def connect(self):
-        self.sock.bind(("127.0.0.1", self.port))
+        self.sock.bind(("::1", self.port))
         self.running = True
         self.send_thread = threading.Thread(target=self._listen, daemon=True)
         self.send_thread.start()
@@ -292,10 +290,10 @@ class ServerData(FandangoAgent):
         self.sock.close()
 
     def update_port(self, new_port: int):
+        self.port = new_port
         if not self.is_fandango():
             return
         self.close()
-        self.port = new_port
         self._create_socket()
         self.connect()
 
