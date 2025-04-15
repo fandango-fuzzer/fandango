@@ -95,11 +95,38 @@ def to_pasv_syntax(port_nr):
 <exchange_mlsd> ::= <ClientControl:ServerControl:request_mlsd><ServerControl:ClientControl:open_mlsd><mlsd_transfer>
 <request_mlsd> ::= 'MLSD\r\n'
 <open_mlsd> ::= '150 Opening BINARY mode data connection for MLSD\r\n'
-<mlsd_transfer> ::= <ServerData:ClientData:mlsd_data>*<ServerControl:ClientControl:finalize_mlsd>
+<mlsd_transfer> ::= <ServerData:ClientData:mlsd_data>+<ServerControl:ClientControl:finalize_mlsd>
 <finalize_mlsd> ::= '226 Transfer complete\r\n'
 <mlsd_data> ::= (<mlsd_data_folder> | <mlsd_data_file>)+
 <mlsd_data_folder> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_folder> ';type=' <mlsd_type_folder> ';unique=' <mlsd_unique> ';UNIX.group=33;UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=33;UNIX.ownername=the_user; ' <mlsd_folder>'\r\n'
 <mlsd_data_file> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_file> ';size=' <mlsd_size> ';type=' <mlsd_type_file> ';unique=' <mlsd_unique> ';UNIX.group=33;UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=33;UNIX.ownername=the_user; ' <mlsd_file>'\r\n'
+
+where forall <data> in <mlsd_transfer>.<mlsd_data>:
+    forall <mlsd_folder> in <data>..<mlsd_folder>:
+        is_unique_folder_and_file(<mlsd_folder>, <data>)
+
+where forall <data> in <mlsd_transfer>.<mlsd_data>:
+    forall <mlsd_file> in <data>..<mlsd_file>:
+        is_unique_folder_and_file(<mlsd_file>, <data>)
+
+where forall <data> in <mlsd_transfer>.<mlsd_data>:
+    exists <mlsd_folder> in <data>..<mlsd_folder>:
+        str(<mlsd_folder>) == '.'
+
+where forall <data> in <mlsd_transfer>.<mlsd_data>:
+    exists <mlsd_folder> in <data>..<mlsd_folder>:
+        str(<mlsd_folder>) == '..'
+
+def is_unique_folder_and_file(current_file_or_folder, data):
+    files_and_dirs = data.find_all_trees(NonTerminal('<mlsd_folder>'))
+    files_and_dirs.extend(data.find_all_trees(NonTerminal('<mlsd_file>')))
+    seen = False
+    for entry in files_and_dirs:
+        if str(entry) == str(current_file_or_folder):
+            if seen:
+                return False
+            seen = True
+    return True
 
 <modify_timestamp> ::= <year><month><day><hour><minute><second>
 <year> ::= <number_tail>{4} := "{:04d}".format(randint(0, 9999))
