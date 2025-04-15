@@ -5,14 +5,12 @@ fandango_is_client = False
 
 <start> ::= <state_setup>
 
-<state_setup> ::= <exchange_socket_connect> <exchange_auth_tls>? <exchange_auth_ssl>? <state_logged_out>
-<state_logged_out> ::= <exchange_login>
-<state_post_login> ::= <state_logged_in> #<exchange_syst>?<exchange_feat>?<exchange_set_client><exchange_set_utf8><exchange_set_type>
-<state_logged_in> ::= (<exchange_set_type><state_bin_mode>) | (<any_state_cmds><state_logged_in>)
-<state_bin_mode> ::= (<exchange_mlsd><state_finished>) | (<any_state_cmds><state_bin_mode>)
+<state_setup> ::= <exchange_socket_connect> <state_logged_out>
+<state_logged_out> ::= (<exchange_auth_tls><state_logged_out>) | (<exchange_auth_ssl><state_logged_out>) | (<exchange_login>)
+<state_logged_in> ::= (<exchange_mlsd><state_finished>) | (<logged_in_cmds><state_logged_in>)
 <state_finished> ::= ''
 
-<any_state_cmds> ::= <exchange_pwd> | <exchange_syst> | <exchange_feat> | <exchange_set_client> | <exchange_set_utf8> | <exchange_set_type> | <exchange_set_epassive>
+<logged_in_cmds> ::= <exchange_set_type> | <exchange_pwd> | <exchange_syst> | <exchange_feat> | <exchange_set_client> | <exchange_set_utf8> | <exchange_set_type> | <exchange_set_epassive>
 <exchange_socket_connect> ::= <ServerControl:ClientControl:response_server_info>
 <response_server_info> ::= '220 ProFTPD Server (Debian) [1.2.3.4]\r\n'
 
@@ -25,7 +23,7 @@ fandango_is_client = False
 <response_auth_ssl> ::= '500 AUTH not understood\r\n'
 
 <exchange_login> ::= <exchange_login_ok> | <exchange_login_fail>
-<exchange_login_ok> ::= <ClientControl:ServerControl:request_login_user_ok><ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_ok><ServerControl:ClientControl:response_login_pass_ok><state_post_login>
+<exchange_login_ok> ::= <ClientControl:ServerControl:request_login_user_ok><ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_ok><ServerControl:ClientControl:response_login_pass_ok><state_logged_in>
 <exchange_login_fail> ::= (<ClientControl:ServerControl:request_login_user_ok> | <ClientControl:ServerControl:request_login_user_fail>)
                            <ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_fail>
                            <ServerControl:ClientControl:response_login_pass_fail>((<ServerControl:ClientControl:response_login_throttled><state_finished>)|<state_logged_out>)
@@ -36,6 +34,16 @@ where forall <ex> in <exchange_login_fail>:
     str(<ex>.<request_login_user_ok>.<correct_username>) == str(<ex>.<response_login_user>.<user_name>)
 where forall <ex> in <exchange_login_fail>:
     str(<ex>.<request_login_user_fail>.<wrong_user_name>) == str(<ex>.<response_login_user>.<user_name>)
+
+
+where (not contains_nt(<start>, NonTerminal('<request_mlsd>')))
+    or (contains_nt(<start>, NonTerminal('<request_set_utf8>')) and contains_nt(<start>, NonTerminal('<request_set_type>')))
+
+def contains_nt(tree, nt):
+    for msg in tree.find_role_msgs():
+        if msg.msg.symbol == NonTerminal(nt):
+            return True
+    return False
 
 <request_login_user_ok> ::= 'USER ' <correct_username> '\r\n'
 <correct_username> ::= 'the_user'
@@ -77,11 +85,6 @@ def feat_response():
 <exchange_set_epassive> ::= <ClientControl:ServerControl:request_set_epassive><ServerControl:ClientControl:response_set_epassive>
 <request_set_epassive> ::= 'EPSV\r\n'
 <response_set_epassive> ::= '229 Entering Extended Passive Mode (|||' <open_port> '|)\r\n'
-
-#<exchange_set_passive> ::= <ClientControl:ServerControl:request_set_passive><ServerControl:ClientControl:response_set_passive>
-#<request_set_passive> ::= 'PASV\r\n'
-#<response_set_passive> ::= '227 Entering Passive Mode (127,0,0,1,'<pasv_passive_port>')\r\n'
-#<pasv_passive_port> ::= <number>','<number> := to_pasv_syntax(<open_port>)
 
 def to_pasv_syntax(port_nr):
     port_nr = int(port_nr)
