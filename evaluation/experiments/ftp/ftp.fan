@@ -1,7 +1,7 @@
 from random import randint
 import math
 
-fandango_is_client = True
+fandango_is_client = False
 
 <start> ::= <state_setup>
 
@@ -37,7 +37,7 @@ where forall <ex> in <exchange_login_fail>:
 
 
 where (not contains_nt(<start>, NonTerminal('<request_mlsd>')))
-    or (contains_nt(<start>, NonTerminal('<request_set_epassive>')) and contains_nt(<start>, NonTerminal('<request_set_utf8>')) and contains_nt(<start>, NonTerminal('<request_set_type>')))
+    or (contains_nt(<start>, NonTerminal('<request_set_epassive>')) and contains_nt(<start>, NonTerminal('<request_set_type>')))
 
 def contains_nt(tree, nt):
     for msg in tree.find_role_msgs():
@@ -154,6 +154,7 @@ class ClientControl(FandangoAgent):
         if not self.is_fandango():
             return
         self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.connect(("::1", 21))
         server_thread = threading.Thread(target=self.listen_loop)
         server_thread.daemon = True
@@ -180,6 +181,7 @@ class ServerControl(FandangoAgent):
         if not self.is_fandango():
             return
         self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind(("::1", 50200))
         self.sock.listen(1)
         self.conn, self.address = self.sock.accept()
@@ -220,6 +222,7 @@ class ClientData(FandangoAgent):
 
     def _create_socket(self):
         self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     def connect(self):
         self.sock.connect(("::1", self.port))
@@ -279,6 +282,7 @@ class ServerData(FandangoAgent):
 
     def _create_socket(self):
         self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     def connect(self):
         self.sock.bind(("::1", self.port))
