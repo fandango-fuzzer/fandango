@@ -254,29 +254,20 @@ class Fandango:
             for role in forecast.getRoles():
                 if io_instance.roles[role].is_fandango():
                     fandango_roles.append(role)
-            if len(fandango_roles) != 0:
-                selected_role = random.choice(fandango_roles)
-            else:
-                selected_role = random.choice(list(forecast.getRoles()))
             if (
-                io_instance.roles[selected_role].is_fandango()
+                len(fandango_roles) != 0
                 and not io_instance.received_msg()
             ):
-                forecast_non_terminals = forecast[selected_role]
-                selected_symbol = random.choice(
-                    list(forecast_non_terminals.getNonTerminals())
-                )
-                forecast_packet = forecast_non_terminals[selected_symbol]
-                for path in forecast_packet.paths:
-                    path.tree.set_all_read_only(True)
-                self.population_manager.io_next_packet = forecast_packet
+                fuzzable_packets = []
+                for role in fandango_roles:
+                    fuzzable_packets.extend(forecast[role].nt_to_packet.values())
+                self.population_manager.fuzzable_packets = fuzzable_packets
 
                 new_population = (
                     self.population_manager.generate_random_initial_population(
                         self.fix_individual
                     )
                 )
-                packet_node = self.population_manager.io_next_packet.node
 
                 self.population = new_population
                 self.evaluation = self.evaluator.evaluate_population(self.population)
@@ -287,11 +278,11 @@ class Fandango:
 
                 evolve_result = self._evolve_single()
                 if len(evolve_result) == 0:
+                    nonterminals_str = ' | '.join(map(lambda x: str(x.node.symbol), fuzzable_packets))
                     raise RuntimeError(
-                        f"Couldn't find solution with packet: {packet_node.symbol}"
+                        f"Couldn't find solution for any packet: {nonterminals_str}"
                     )
                 next_tree = evolve_result[0]
-                self.evaluation = self.evaluator.evaluate_population(self.population)
                 if io_instance.received_msg():
                     # Abort if we received a message during fuzzing
                     continue
@@ -308,9 +299,7 @@ class Fandango:
                     self.log_message_transfer(
                         new_packet.role, new_packet.recipient, send_str, True
                     )
-                hookin_option = next(iter(forecast_packet.paths))
-                history_tree = hookin_option.tree
-                history_tree.append(hookin_option.path[1:], new_packet.msg)
+                history_tree = next_tree
             else:
                 while not io_instance.received_msg():
                     time.sleep(0.025)
