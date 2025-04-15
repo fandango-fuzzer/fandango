@@ -137,7 +137,7 @@ def is_unique_folder_and_file(current_file_or_folder, data):
     return True
 
 <modify_timestamp> ::= <year><month><day><hour><minute><second>
-<year> ::= <number_tail>{4} := "{:04d}".format(randint(2020, 2024))
+<year> ::= <number_tail>{4} := "{:04d}".format(randint(0, 9999))
 <month> ::= <number_tail>{2} := "{:02d}".format(randint(1, 12))
 <day> ::= <number_tail>{2} := "{:02d}".format(randint(1, 28))
 <hour> ::= <number_tail>{2} := "{:02d}".format(randint(0, 23))
@@ -150,7 +150,7 @@ def is_unique_folder_and_file(current_file_or_folder, data):
 <mlsd_perm_file> ::= 'adfrw'
 <mlsd_size> ::= <number>
 
-<mlsd_permission> ::= '0' <permission_byte>{3} := '0755'
+<mlsd_permission> ::= '0' <permission_byte>{3}
 <permission_byte> ::= <number_tail> := randint(0, 7)
 <mlsd_folder> ::= '.' | '..' | <filesystem_name>
 <mlsd_file> ::= <filesystem_name> ('.' r'[a-zA-Z0-9]+')?
@@ -334,6 +334,9 @@ class ServerData(FandangoAgent):
         if self.send_thread is not None:
             self.send_thread.join()
             self.send_thread = None
+        if self.conn is not None:
+            self.conn.shutdown(socket.SHUT_RDWR)
+            self.conn = None
         if self.sock is None:
             return
         try:
@@ -348,14 +351,12 @@ class ServerData(FandangoAgent):
                 self.conn, self.address = self.sock.accept()
 
     def update_port(self, new_port: int):
-        print("ServerData update_port")
         self.port = new_port
         if not self.is_fandango():
             return
         self.close()
         self._create_socket()
         self.connect()
-        print("ServerData port updated")
 
     def _listen(self):
         self.wait_accept()
@@ -379,3 +380,5 @@ class ServerData(FandangoAgent):
             raise Exception("Socket not running!")
         self.wait_accept()
         self.conn.send(message.encode("utf-8"))
+        self.conn.shutdown(socket.SHUT_RDWR)
+        self.conn = None
