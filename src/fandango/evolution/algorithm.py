@@ -19,6 +19,7 @@ from fandango.language.grammar import (
     GeneratorParserValueError,
 )
 from fandango.language.packetforecaster import PacketForecaster
+from fandango.language.symbol import NonTerminal
 from fandango.language.tree import RoledMessage
 from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
 
@@ -518,7 +519,6 @@ class Fandango:
                     break
             time.sleep(0.025)
 
-        remote_msgs = io_instance.get_received_msgs()
         if msg_role not in forecast.getRoles():
             raise RuntimeError(
                 f"Unexpected agent sent message. Expected: " +
@@ -537,7 +537,7 @@ class Fandango:
 
         while not is_msg_complete:
             for idx, (role, recipient, msg_fragment) in enumerate(
-                remote_msgs[next_fragment_idx:]
+                io_instance.get_received_msgs()[next_fragment_idx:]
             ):
                 next_fragment_idx = idx + 1
 
@@ -585,13 +585,15 @@ class Fandango:
                         "Couldn't match remote message to any packet matching grammar! Expected nonterminal:",
                         "|".join(map(lambda x: str(x), forecast_non_terminals.getNonTerminals())),
                         "Got message:",
-                        complete_msg
+                        complete_msg,
+                        "\nUnprocessed messages: ",
+                        str(io_instance.get_received_msgs())
                     )
                 if parsed_packet_tree is not None:
                     nr_deleted = 0
                     used_fragments_idx.sort()
                     for del_idx in used_fragments_idx:
-                        del remote_msgs[del_idx - nr_deleted]
+                        io_instance.clear_received_msg(del_idx - nr_deleted)
                         nr_deleted += 1
                     return forecast_packet, parsed_packet_tree
 

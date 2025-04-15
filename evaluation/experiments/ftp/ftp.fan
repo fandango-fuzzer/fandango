@@ -1,7 +1,7 @@
 from random import randint
 import math
 
-fandango_is_client = False
+fandango_is_client = True
 
 <start> ::= <state_setup>
 
@@ -37,11 +37,11 @@ where forall <ex> in <exchange_login_fail>:
 
 
 where (not contains_nt(<start>, NonTerminal('<request_mlsd>')))
-    or (contains_nt(<start>, NonTerminal('<request_set_utf8>')) and contains_nt(<start>, NonTerminal('<request_set_type>')))
+    or (contains_nt(<start>, NonTerminal('<request_set_epassive>')) and contains_nt(<start>, NonTerminal('<request_set_utf8>')) and contains_nt(<start>, NonTerminal('<request_set_type>')))
 
 def contains_nt(tree, nt):
     for msg in tree.find_role_msgs():
-        if msg.msg.symbol == NonTerminal(nt):
+        if msg.msg.symbol == nt:
             return True
     return False
 
@@ -110,7 +110,7 @@ def to_pasv_syntax(port_nr):
 <second> ::= <number_tail>{2} := "{:02d}".format(randint(0, 59))
 <mlsd_type_folder> ::= 'cdir' | 'pdir' | 'dir' | 'file'
 <mlsd_type_file> ::= 'file'
-<mlsd_unique> ::= '2BUA' | '2BUB' | '2BUC' | '2CUA' | '2CUB' | '2CUD'
+<mlsd_unique> ::= '2BUA' | '2BUB' | '2BUC' | '2CUA' | '2CUB' | '2CUC' | '2CUD'
 <mlsd_perm_folder> ::= 'flcdmpe'
 <mlsd_perm_file> ::= 'adfrw'
 <mlsd_size> ::= <number>
