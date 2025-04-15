@@ -1,3 +1,4 @@
+import threading
 from typing import Callable, Tuple
 
 
@@ -58,6 +59,7 @@ class FandangoIO:
         self.transmit: Tuple[str, str, str] | None = None
         self.receive = list[(str, str, str)]()
         self.roles = dict[str, FandangoAgent]()
+        self.receive_lock = threading.Lock()
 
     def run_com_loop(self):
         if self.transmit is not None:
@@ -70,16 +72,24 @@ class FandangoIO:
         self.transmit = None
 
     def add_receive(self, role: str, receiver: str, message: str) -> None:
-        self.receive.append((role, receiver, message))
+        with self.receive_lock:
+            self.receive.append((role, receiver, message))
 
     def received_msg(self):
-        return len(self.receive) != 0
+        with self.receive_lock:
+            return len(self.receive) != 0
 
     def get_received_msgs(self):
-        return self.receive
+        with self.receive_lock:
+            return list(self.receive)
+
+    def clear_received_msg(self, idx: int):
+        with self.receive_lock:
+            del self.receive[idx]
 
     def clear_received_msgs(self):
-        self.receive.clear()
+        with self.receive_lock:
+            self.receive.clear()
 
     def set_transmit(
         self, role: str, recipient: str | None, message: str | bytes
