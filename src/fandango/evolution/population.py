@@ -1,3 +1,4 @@
+import random
 from typing import Callable, List, Set
 
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
@@ -103,7 +104,8 @@ class IoPopulationManager(PopulationManager):
     ):
         super().__init__(grammar, start_symbol, population_size, warnings_are_errors)
         self.evaluator = evaluator
-        self.io_next_packet: PacketForecaster.ForcastingPacket | None = None
+        self.prev_packet_idx = 0
+        self.fuzzable_packets: list[PacketForecaster.ForcastingPacket] | None = None
 
     def _is_population_complete(self, unique_population: List[DerivationTree]) -> bool:
         for entry in unique_population:
@@ -112,16 +114,21 @@ class IoPopulationManager(PopulationManager):
         return super()._is_population_complete(unique_population)
 
     def _generate_population_entry(self):
-        if self.io_next_packet is None:
+        if self.fuzzable_packets is None or len(self.fuzzable_packets) == 0:
             return DerivationTree(NonTerminal(self.start_symbol))
 
-        mounting_option = next(iter(self.io_next_packet.paths))
+        current_idx = (self.prev_packet_idx + 1) % len(self.fuzzable_packets)
+        current_pck = self.fuzzable_packets[current_idx]
+        mounting_option = random.choice(list(current_pck.paths))
+
         tree = self.grammar.collapse(mounting_option.tree)
+        tree.set_all_read_only(True)
         dummy = DerivationTree(NonTerminal("<hookin>"))
         tree.append(mounting_option.path[1:], dummy)
 
         fuzz_point = dummy.parent
         fuzz_point.set_children(fuzz_point.children[:-1])
-        self.io_next_packet.node.fuzz(fuzz_point, self.grammar, max_nodes=999999)
+        current_pck.node.fuzz(fuzz_point, self.grammar, max_nodes=999999)
 
+        self.prev_packet_idx = current_idx
         return tree
