@@ -117,6 +117,14 @@ where forall <data> in <mlsd_transfer>.<mlsd_data>:
     exists <mlsd_folder> in <data>..<mlsd_folder>:
         str(<mlsd_folder>) == '..'
 
+where forall <data_folder> in <mlsd_data_folder>:
+    ((str(<data_folder>.<mlsd_folder>) != '.') or (str(<data_folder>.<mlsd_type_folder>) == 'cdir'))
+    and ((str(<data_folder>.<mlsd_folder>) == '.') or (str(<data_folder>.<mlsd_type_folder>) != 'cdir'))
+
+where forall <data_folder> in <mlsd_data_folder>:
+    ((str(<data_folder>.<mlsd_folder>) != '..') or (str(<data_folder>.<mlsd_type_folder>) == 'pdir'))
+    and ((str(<data_folder>.<mlsd_folder>) == '..') or (str(<data_folder>.<mlsd_type_folder>) != 'pdir'))
+
 def is_unique_folder_and_file(current_file_or_folder, data):
     files_and_dirs = data.find_all_trees(NonTerminal('<mlsd_folder>'))
     files_and_dirs.extend(data.find_all_trees(NonTerminal('<mlsd_file>')))
@@ -129,20 +137,20 @@ def is_unique_folder_and_file(current_file_or_folder, data):
     return True
 
 <modify_timestamp> ::= <year><month><day><hour><minute><second>
-<year> ::= <number_tail>{4} := "{:04d}".format(randint(0, 9999))
+<year> ::= <number_tail>{4} := "{:04d}".format(randint(2020, 2024))
 <month> ::= <number_tail>{2} := "{:02d}".format(randint(1, 12))
-<day> ::= <number_tail>{2} := "{:02d}".format(randint(1, 31))
+<day> ::= <number_tail>{2} := "{:02d}".format(randint(1, 28))
 <hour> ::= <number_tail>{2} := "{:02d}".format(randint(0, 23))
 <minute> ::= <number_tail>{2} := "{:02d}".format(randint(0, 59))
 <second> ::= <number_tail>{2} := "{:02d}".format(randint(0, 59))
-<mlsd_type_folder> ::= 'cdir' | 'pdir' | 'dir' | 'file'
+<mlsd_type_folder> ::= 'cdir' | 'pdir' | 'dir'
 <mlsd_type_file> ::= 'file'
 <mlsd_unique> ::= '2BUA' | '2BUB' | '2BUC' | '2CUA' | '2CUB' | '2CUC' | '2CUD'
 <mlsd_perm_folder> ::= 'flcdmpe'
 <mlsd_perm_file> ::= 'adfrw'
 <mlsd_size> ::= <number>
 
-<mlsd_permission> ::= '0' <permission_byte>{3}
+<mlsd_permission> ::= '0' <permission_byte>{3} := '0755'
 <permission_byte> ::= <number_tail> := randint(0, 7)
 <mlsd_folder> ::= '.' | '..' | <filesystem_name>
 <mlsd_file> ::= <filesystem_name> ('.' r'[a-zA-Z0-9]+')?
@@ -294,7 +302,7 @@ class ClientData(FandangoAgent):
         try:
             if not self.running:
                 raise Exception("Socket not running!")
-            self.sock.sendall(message)
+            self.sock.sendall(message.encode("utf-8"))
         except Exception as e:
             print("Error sending message: " + str(e))
 
@@ -304,8 +312,11 @@ class ServerData(FandangoAgent):
         super().__init__(not fandango_is_client)
         self.sock = None
         self.port = None
+        self.conn = None
+        self.address = None
         self.send_thread = None
         self.running = False
+        self.lock = threading.Lock()
 
     def _create_socket(self):
         self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
@@ -313,12 +324,16 @@ class ServerData(FandangoAgent):
 
     def connect(self):
         self.sock.bind(("::1", self.port))
+        self.sock.listen(1)
         self.running = True
         self.send_thread = threading.Thread(target=self._listen, daemon=True)
         self.send_thread.start()
 
     def close(self):
         self.running = False
+        if self.send_thread is not None:
+            self.send_thread.join()
+            self.send_thread = None
         if self.sock is None:
             return
         try:
@@ -327,23 +342,32 @@ class ServerData(FandangoAgent):
             pass  # socket might already be closed
         self.sock.close()
 
+    def wait_accept(self):
+        with self.lock:
+            if self.conn is None:
+                self.conn, self.address = self.sock.accept()
+
     def update_port(self, new_port: int):
+        print("ServerData update_port")
         self.port = new_port
         if not self.is_fandango():
             return
         self.close()
         self._create_socket()
         self.connect()
+        print("ServerData port updated")
 
     def _listen(self):
+        self.wait_accept()
         while self.running:
             try:
-                data = self.sock.recv(1024)
+                data = self.conn.recv(1024)
                 if len(data) == 0:
                     continue
                 if data:
                     self.receive_msg("ClientData", data.decode("utf-8"))
                 else:
+                    print("Listen, disable socket")
                     self.running = False
                     break
             except Exception as e:
@@ -351,9 +375,7 @@ class ServerData(FandangoAgent):
                 break
 
     def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
-        try:
-            if not self.running:
-                raise Exception("Socket not running!")
-            self.sock.sendall(message)
-        except Exception as e:
-            print("Error sending message: " + str(e))
+        if not self.running:
+            raise Exception("Socket not running!")
+        self.wait_accept()
+        self.conn.send(message.encode("utf-8"))
