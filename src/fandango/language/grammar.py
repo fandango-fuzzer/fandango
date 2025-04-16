@@ -11,6 +11,8 @@ import exrex
 from copy import deepcopy
 from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union, Generator
 
+import regex
+
 from fandango.language.symbol import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
@@ -1433,7 +1435,12 @@ class Grammar(NodeVisitor):
 
             match, match_length = state.dot.check(word[w:])
             if not match:
-                return False
+                if (w + len(state.dot)) < len(word):
+                    return False
+                match, match_length = state.dot.check(word[w:], incomplete=True)
+                if not match:
+                    return False
+                state.is_incomplete = True
 
             # Found a match
             # LOGGER.debug(f"Matched byte(s) {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w + match_length]!r}")
@@ -1470,7 +1477,12 @@ class Grammar(NodeVisitor):
 
             match, match_length = state.dot.check(word[w:])
             if not match:
-                return False
+                if w < len(word):
+                    return False
+                match, match_length = state.dot.check(word[w:], incomplete=True)
+                if not match:
+                    return False
+                state.is_incomplete = True
 
             # Found a match
             # LOGGER.debug(f"Matched regex {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w+match_length]!r}")
