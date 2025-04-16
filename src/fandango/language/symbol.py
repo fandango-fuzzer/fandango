@@ -1,6 +1,9 @@
 import abc
 import enum
 import re
+
+import regex
+
 from fandango.logger import LOGGER
 
 
@@ -16,7 +19,7 @@ class Symbol(abc.ABC):
         self.type = type_
         self._is_regex = False
 
-    def check(self, word: str) -> tuple[bool, int]:
+    def check(self, word: str, incomplete=False) -> tuple[bool, int]:
         """Return (True, # of characters matched by `word`), or (False, 0)"""
         return False, 0
 
@@ -109,7 +112,7 @@ class Terminal(Symbol):
     def from_number(number: str) -> "Terminal":
         return Terminal(Terminal.clean(number))
 
-    def check(self, word: str | int) -> tuple[bool, int]:
+    def check(self, word: str | int, incomplete=False) -> tuple[bool, int]:
         """Return (True, # characters matched by `word`), or (False, 0)"""
         if isinstance(self.symbol, int) or isinstance(word, int):
             return self.check_all(word), 1
@@ -129,14 +132,23 @@ class Terminal(Symbol):
         )
 
         if self.is_regex:
-            match = re.match(symbol, word)
-            if match:
-                # LOGGER.debug(f"It's a match: {match.group(0)!r}")
-                return True, len(match.group(0))
+            if not incomplete:
+                match = re.match(symbol, word)
+                if match:
+                    # LOGGER.debug(f"It's a match: {match.group(0)!r}")
+                    return True, len(match.group(0))
+            else:
+                compiled = regex.compile('')
+                match = compiled.match(word, partial=True)
+                return match is not None and (match.partial or match.end() == len(word)), len(match.group(0))
         else:
-            if word.startswith(symbol):
-                # LOGGER.debug(f"It's a match: {symbol!r}")
-                return True, len(symbol)
+            if not incomplete:
+                if word.startswith(symbol):
+                    # LOGGER.debug(f"It's a match: {symbol!r}")
+                    return True, len(symbol)
+            else:
+                if symbol.startswith(word):
+                    return True, len(word)
 
         # LOGGER.debug(f"No match")
         return False, 0
