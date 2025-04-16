@@ -1,5 +1,15 @@
 import base64
 import socket
+from datetime import datetime, timezone
+import random
+
+def format_unix_time(unix_time):
+    dt = datetime.fromtimestamp(unix_time, tz=timezone.utc)
+    return dt.strftime('%a, %d %b %Y %H:%M:%S %z')
+
+def str_to_unix_time(unix_time_formatted):
+    dt = datetime.strptime(unix_time_formatted, '%a, %d %b %Y %H:%M:%S %z')
+    return int(dt.timestamp())
 
 def encode64(input):
     return base64.b64encode(input.encode('utf-8')).decode('utf-8')
@@ -38,7 +48,8 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 
 
 <response_setup> ::= '220 fake-smtp-server ESMTP FakeSMTPServer 2.2.1\r\n'
-<request_ehlo> ::= 'EHLO Fandango.local\r\n'
+<request_ehlo> ::= 'EHLO ' <client_identifier> '\r\n'
+<client_identifier> ::= r'[a-zA-Z0-9\- ]+'
 <response_ehlo> ::= <response_ehlo_param>+<response_ehlo_end>
 <response_ehlo_param> ::= '250-' r'[a-zA-Z0-9\- ]+' '\r\n'
 <response_ehlo_end> ::= '250 Ok\r\n'
@@ -51,7 +62,7 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 <exchange_mail> ::= <Client:request_mail_from><Server:response_mail_from>
     <Client:request_mail_to><Server:response_mail_to>
     <Client:request_mail_data><Server:response_mail_data>
-    <Client:Server:mail_data><Server:response_submit>
+    <Client:Server:mail_data><Server:response_submit><state_logged_in>
 
 <mail_data> ::= <mail_header><mail_body>
 <mail_header> ::= <mail_header_subject>
@@ -79,7 +90,7 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 <mail_header_subject> ::= 'subject: ' r'[a-z]+' '\r\n'
 <mail_header_from> ::= 'from: ' <email_address> '\r\n'
 <mail_header_to> ::= 'to: ' <email_address> '\r\n'
-<mail_header_date> ::= 'date: Wed, 16 Apr 2025 10:56:38 +0000\r\n'
+<mail_header_date> ::= 'date: ' <unix_time_formatted> '\r\n'
 <mail_header_mailer> ::= 'x-mailer: ' r'[a-z]+' '\r\n'
 <mail_header_mime> ::= 'mime-version: 1.0\r\n'
 <mail_header_content_type> ::= 'content-type: text/plain; charset=utf-8\r\n'
@@ -87,6 +98,9 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 <mail_header_end> ::= '\r\n'
 <response_submit> ::= '250 Ok\r\n'
 <email_address> ::= r'[a-z]+@[a-z]+\.[a-z]+'
+<unix_time_formatted> ::= r'[a-zA-Z0-9\:\+\, ]+' := format_unix_time(int(<unix_time>))
+<unix_time> ::= <unix_time_number> := str(str_to_unix_time(<unix_time_formatted>))
+<unix_time_number> ::= r'[1-9][0-9]+' := str(random.randint(0, 2147483647))
 
 where forall <mail> in <mail_data>:
     str(<mail>..<request_mail_from>.<email_address>) == str(<mail>..<mail_header_from>.<email_address>)
