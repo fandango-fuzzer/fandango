@@ -19,12 +19,20 @@ fandango_is_client = True
 <request_auth> ::= 'AUTH LOGIN\r\n'
 <response_auth_expect_user> ::= '334 VXNlcm5hbWU6\r\n'
 <request_auth_user_correct> ::= 'dGhlX3VzZXI=\r\n'
-<request_auth_user_incorrect> ::= r'^(?!dGhlX3VzZXI=)([a-zA-Z0-9\_]+)' '\r\n'
+<request_auth_user_incorrect> ::= <user_incorrect_64> '\r\n'
 <response_auth_user> ::= '334 UGFzc3dvcmQ6\r\n'
 <request_auth_pass_correct> ::= 'dGhlX3Bhc3N3b3Jk\r\n'
-<request_auth_pass_incorrect> ::= r'^(?!dGhlX3Bhc3N3b3Jk)([a-zA-Z0-9\_]*)' '\r\n'
+<request_auth_pass_incorrect> ::= <pass_incorrect_64> '\r\n'
 <response_auth_success> ::= '235 Authentication successful.\r\n'
 <response_auth_fail> ::= '535 Authentication credentials invalid\r\n'
+
+<user_incorrect_64> ::= r'[a-zA-Z0-9\+\\\=]+' := encode64(<user_incorrect>)
+<pass_incorrect_64> ::= r'[a-zA-Z0-9\+\\\=]+' := encode64(<pass_incorrect>)
+
+<user_incorrect> ::= r'^(?!the_user)([a-zA-Z0-9]+)' := decode64(<user_incorrect_64>)
+<pass_incorrect> ::= r'^(?!the_password)([a-zA-Z0-9]+)' := decode64(<pass_incorrect_64>)
+
+where len(str(<request_auth_user_incorrect>)) >= 6
 
 
 <response_setup> ::= '220 fake-smtp-server ESMTP FakeSMTPServer 2.2.1\r\n'
