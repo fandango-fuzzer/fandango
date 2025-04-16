@@ -10,9 +10,9 @@ def decode64(input):
 fandango_is_client = True
 
 <start> ::= <state_setup>
-<state_setup> ::= <Server:response_setup><state_logged_out>
+<state_setup> ::= <Server:response_setup><Client:request_ehlo><Server:response_ehlo><state_logged_out>
 <state_logged_out> ::= <exchange_login>
-<state_logged_in> ::= <exchange_quit>
+<state_logged_in> ::= <exchange_quit> |  <exchange_mail>
 
 <exchange_login> ::= <Client:request_auth><Server:response_auth_expect_user>
     (<Client:request_auth_user_correct>|<Client:request_auth_user_incorrect>)<Server:response_auth_expect_pass>
@@ -38,10 +38,55 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 
 
 <response_setup> ::= '220 fake-smtp-server ESMTP FakeSMTPServer 2.2.1\r\n'
+<request_ehlo> ::= 'EHLO Fandango.local\r\n'
+<response_ehlo> ::= <response_ehlo_param>+<response_ehlo_end>
+<response_ehlo_param> ::= '250-' r'[a-zA-Z0-9\- ]+' '\r\n'
+<response_ehlo_end> ::= '250 Ok\r\n'
+
 <exchange_quit> ::= <Client:request_quit><Server:response_quit>(<state_logged_out> | '')
 <request_quit> ::= 'QUIT\r\n'
 <response_quit> ::= '221 Bye\r\n'
 
+
+<exchange_mail> ::= <Client:request_mail_from><Server:response_mail_from>
+    <Client:request_mail_to><Server:response_mail_to>
+    <Client:request_mail_data><Server:response_mail_data>
+    <Client:Server:mail_data><Server:response_submit>
+
+<mail_data> ::= <mail_header><mail_body>
+<mail_header> ::= <mail_header_subject>
+    <mail_header_from>
+    <mail_header_to>
+    <mail_header_date>
+    <mail_header_mailer>
+    <mail_header_mime>
+    <mail_header_content_type>
+    <mail_header_encoding>
+    <mail_header_end>
+<mail_body> ::= <mail_contents_64><mail_body_end>
+
+<request_mail_from> ::= 'MAIL FROM:<alice@example.com>\r\n'
+<response_mail_from> ::= '250 Ok\r\n'
+<request_mail_to> ::= 'RCPT TO:<alice@example.com>\r\n'
+<response_mail_to> ::= '250 Ok\r\n'
+<request_mail_data> ::= 'DATA\r\n'
+<response_mail_data> ::= '354 End data with <CR><LF>.<CR><LF>\r\n'
+
+<mail_body_end> ::= '\r\n.\r\n'
+<mail_contents_64> ::= r'[a-zA-Z0-9\+\\\=]+' := encode64(<mail_contents>)
+<mail_contents> ::= r'([a-zA-Z0-9]+)' := decode64(<mail_contents_64>)
+
+<mail_header_subject> ::= 'subject: Testmail 2025-04-16 12:56:38.494337\r\n'
+<mail_header_from> ::= 'from: alice@example.com\r\n'
+<mail_header_to> ::= 'to: alice@example.com\r\n'
+<mail_header_date> ::= 'date: Wed, 16 Apr 2025 10:56:38 +0000\r\n'
+<mail_header_mailer> ::= 'x-mailer: Dart Mailer library\r\n'
+<mail_header_mime> ::= 'mime-version: 1.0\r\n'
+<mail_header_content_type> ::= 'content-type: text/plain; charset=utf-8\r\n'
+<mail_header_encoding> ::= 'content-transfer-encoding: base64\r\n'
+<mail_header_end> ::= '\r\n'
+
+<response_submit> ::= '250 Ok\r\n'
 
 
 
