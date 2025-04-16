@@ -118,7 +118,8 @@ class IoPopulationManager(PopulationManager):
             return DerivationTree(NonTerminal(self.start_symbol))
 
         current_idx = (self.prev_packet_idx + 1) % len(self.fuzzable_packets)
-        current_pck = self.fuzzable_packets[current_idx]
+        #current_pck = self.fuzzable_packets[current_idx]
+        current_pck = random.choice(self.fuzzable_packets)
         mounting_option = random.choice(list(current_pck.paths))
 
         tree = self.grammar.collapse(mounting_option.tree)
