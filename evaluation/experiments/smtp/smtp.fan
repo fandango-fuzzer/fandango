@@ -65,9 +65,9 @@ where len(str(<request_auth_user_incorrect>)) >= 6
     <mail_header_end>
 <mail_body> ::= <mail_contents_64><mail_body_end>
 
-<request_mail_from> ::= 'MAIL FROM:<alice@example.com>\r\n'
+<request_mail_from> ::= 'MAIL FROM:' <email_address> '\r\n'
 <response_mail_from> ::= '250 Ok\r\n'
-<request_mail_to> ::= 'RCPT TO:<alice@example.com>\r\n'
+<request_mail_to> ::= 'RCPT TO:' <email_address> '\r\n'
 <response_mail_to> ::= '250 Ok\r\n'
 <request_mail_data> ::= 'DATA\r\n'
 <response_mail_data> ::= '354 End data with <CR><LF>.<CR><LF>\r\n'
@@ -76,18 +76,21 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 <mail_contents_64> ::= r'[a-zA-Z0-9\+\\\=]+' := encode64(<mail_contents>)
 <mail_contents> ::= r'([a-zA-Z0-9]+)' := decode64(<mail_contents_64>)
 
-<mail_header_subject> ::= 'subject: Testmail 2025-04-16 12:56:38.494337\r\n'
-<mail_header_from> ::= 'from: alice@example.com\r\n'
-<mail_header_to> ::= 'to: alice@example.com\r\n'
+<mail_header_subject> ::= 'subject: ' r'[a-z]+' '\r\n'
+<mail_header_from> ::= 'from: ' <email_address> '\r\n'
+<mail_header_to> ::= 'to: ' <email_address> '\r\n'
 <mail_header_date> ::= 'date: Wed, 16 Apr 2025 10:56:38 +0000\r\n'
-<mail_header_mailer> ::= 'x-mailer: Dart Mailer library\r\n'
+<mail_header_mailer> ::= 'x-mailer: ' r'[a-z]+' '\r\n'
 <mail_header_mime> ::= 'mime-version: 1.0\r\n'
 <mail_header_content_type> ::= 'content-type: text/plain; charset=utf-8\r\n'
 <mail_header_encoding> ::= 'content-transfer-encoding: base64\r\n'
 <mail_header_end> ::= '\r\n'
-
 <response_submit> ::= '250 Ok\r\n'
+<email_address> ::= r'[a-z]+@[a-z]+\.[a-z]+'
 
+where forall <mail> in <mail_data>:
+    str(<mail>..<request_mail_from>.<email_address>) == str(<mail>..<mail_header_from>.<email_address>)
+    and str(<mail>..<request_mail_to>.<email_address>) == str(<mail>..<mail_header_to>.<email_address>)
 
 
 class Client(FandangoAgent):
