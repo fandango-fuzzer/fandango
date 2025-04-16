@@ -3,6 +3,8 @@ import socket
 from datetime import datetime, timezone
 import random
 
+fandango_is_client = False
+
 def format_unix_time(unix_time):
     dt = datetime.fromtimestamp(unix_time, tz=timezone.utc)
     return dt.strftime('%a, %d %b %Y %H:%M:%S %z')
@@ -16,8 +18,6 @@ def encode64(input):
 
 def decode64(input):
     return base64.b64decode(input.encode('utf-8')).decode('utf-8')
-
-fandango_is_client = True
 
 <start> ::= <state_setup>
 <state_setup> ::= <Server:response_setup><Client:request_ehlo><Server:response_ehlo><state_logged_out>
@@ -49,8 +49,8 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 
 <response_setup> ::= '220 fake-smtp-server ESMTP FakeSMTPServer 2.2.1\r\n'
 <request_ehlo> ::= 'EHLO ' <client_identifier> '\r\n'
-<client_identifier> ::= r'[a-zA-Z0-9\- ]+'
-<response_ehlo> ::= <response_ehlo_param>+<response_ehlo_end>
+<client_identifier> ::= r'[a-zA-Z0-9\-\. ]+'
+<response_ehlo> ::= <response_ehlo_param>+<response_ehlo_end> := '250-fandango-server\r\n250-8BITMIME\r\n250-AUTH PLAIN LOGIN\r\n250 Ok\r\n'
 <response_ehlo_param> ::= '250-' r'[a-zA-Z0-9\- ]+' '\r\n'
 <response_ehlo_end> ::= '250 Ok\r\n'
 
@@ -76,9 +76,9 @@ where len(str(<request_auth_user_incorrect>)) >= 6
     <mail_header_end>
 <mail_body> ::= <mail_contents_64><mail_body_end>
 
-<request_mail_from> ::= 'MAIL FROM:' <email_address> '\r\n'
+<request_mail_from> ::= 'MAIL FROM:<' <email_address> '>\r\n'
 <response_mail_from> ::= '250 Ok\r\n'
-<request_mail_to> ::= 'RCPT TO:' <email_address> '\r\n'
+<request_mail_to> ::= 'RCPT TO:<' <email_address> '>\r\n'
 <response_mail_to> ::= '250 Ok\r\n'
 <request_mail_data> ::= 'DATA\r\n'
 <response_mail_data> ::= '354 End data with <CR><LF>.<CR><LF>\r\n'
@@ -136,6 +136,40 @@ class Client(FandangoAgent):
 class Server(FandangoAgent):
     def __init__(self):
         super().__init__(not fandango_is_client)
+        self.sock = None
+        self.send_thread = None
+        self.running = False
+        if not self.is_fandango():
+            return
+        self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock.bind(("127.0.0.1", 8025))
+        self.sock.listen(1)
+        print("listening on port 8025")
+        self.conn, self.address = self.sock.accept()
+        self.running = True
+        self.send_thread = threading.Thread(target=self._listen, daemon=True)
+        self.send_thread.start()
+
+    def _listen(self):
+        while self.running:
+            try:
+                data = self.conn.recv(1024)
+                if len(data) == 0:
+                    continue
+                if data:
+                    self.receive_msg("Client", data.decode("utf-8"))
+                else:
+                    self.running = False
+                    break
+            except Exception as e:
+                self.running = False
+                break
 
     def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
-        pass
+        try:
+            if not self.running:
+                raise Exception("Socket not running!")
+            self.conn.send(message.encode("utf-8"))
+        except Exception as e:
+            print("Error sending message: " + str(e))
