@@ -14,13 +14,15 @@ fandango_is_client = True
 <state_logged_out> ::= <exchange_login>
 <state_logged_in> ::= <exchange_quit>
 
-<exchange_login> ::= <Client:request_auth><Server:response_auth_expect_user>(<Client:request_auth_user_correct>|<Client:request_auth_user_incorrect>)<Server:response_auth_user>(<Client:request_auth_pass_correct>|<Client:request_auth_pass_incorrect>)((<Server:response_auth_success><state_logged_in>)|(<Server:response_auth_fail><state_logged_out>))
+<exchange_login> ::= <Client:request_auth><Server:response_auth_expect_user>
+    (<Client:request_auth_user_correct>|<Client:request_auth_user_incorrect>)<Server:response_auth_expect_pass>
+    (<Client:request_auth_pass_correct>|<Client:request_auth_pass_incorrect>) ((<Server:response_auth_success><state_logged_in>)|(<Server:response_auth_fail><state_logged_out>))
 
 <request_auth> ::= 'AUTH LOGIN\r\n'
 <response_auth_expect_user> ::= '334 VXNlcm5hbWU6\r\n'
 <request_auth_user_correct> ::= 'dGhlX3VzZXI=\r\n'
 <request_auth_user_incorrect> ::= <user_incorrect_64> '\r\n'
-<response_auth_user> ::= '334 UGFzc3dvcmQ6\r\n'
+<response_auth_expect_pass> ::= '334 UGFzc3dvcmQ6\r\n'
 <request_auth_pass_correct> ::= 'dGhlX3Bhc3N3b3Jk\r\n'
 <request_auth_pass_incorrect> ::= <pass_incorrect_64> '\r\n'
 <response_auth_success> ::= '235 Authentication successful.\r\n'
