@@ -30,13 +30,12 @@ from fandango.language.convert import (
 from fandango.language.grammar import (
     Grammar,
     NodeType,
-    NonTerminalFinder,
-    RoleAssigner,
+    SymbolFinder,
     FuzzingMode,
     NonTerminalNode,
     PacketTruncator,
     RoleNestingDetector,
-    MAX_REPETITIONS,
+    MAX_REPETITIONS, NodeReplacer,
 )
 from fandango.language.io import FandangoIO, FandangoAgent
 from fandango.language.parser.FandangoLexer import FandangoLexer
@@ -482,7 +481,6 @@ def parse(
     if grammar and parsed_constraints:
         check_constraints_existence(grammar, parsed_constraints)
 
-    assign_implicit_role(grammar, "STDOUT")
 
     global_env, local_env = grammar.get_python_env()
     if grammar.fuzzing_mode == FuzzingMode.IO:
@@ -490,6 +488,7 @@ def parse(
             exec("FandangoIO.instance()", global_env, local_env)
         io_instance: FandangoIO = global_env["FandangoIO"].instance()
 
+        assign_implicit_role(grammar, "STDOUT")
         init_fandango_agents(grammar)
         assign_std_out_role(grammar, io_instance)
 
@@ -533,17 +532,18 @@ def fail_on_role_in_generator(grammar):
 
 def is_role_reachable(grammar, node):
     seen_nt_nodes = set()
-    nt_node_queue: set[NonTerminalNode] = set(NonTerminalFinder().visit(node))
+    symbol_finder = SymbolFinder()
+    symbol_finder.visit(node)
+    nt_node_queue: set[NonTerminalNode] = set(symbol_finder.nonTerminalNodes)
     while len(nt_node_queue) != 0:
         current_node = nt_node_queue.pop()
         if current_node.role is not None or current_node.recipient is not None:
             return current_node
 
         seen_nt_nodes.add(current_node)
-        next_nts: list[NonTerminalNode] = NonTerminalFinder().visit(
-            grammar[current_node.symbol]
-        )
-        for next_nt in next_nts:
+        symbol_finder = SymbolFinder()
+        symbol_finder.visit(grammar[current_node.symbol])
+        for next_nt in symbol_finder.nonTerminalNodes:
             if next_nt not in seen_nt_nodes:
                 nt_node_queue.add(next_nt)
     return None
@@ -572,9 +572,9 @@ def assign_std_out_role(grammar: "Grammar", io_instance: FandangoIO):
     remapped_roles = set()
     unknown_recipients = set()
     for symbol in grammar.rules.keys():
-        non_terminals: list[NonTerminalNode] = NonTerminalFinder().visit(
-            grammar.rules[symbol]
-        )
+        symbol_finder = SymbolFinder()
+        symbol_finder.visit(grammar.rules[symbol])
+        non_terminals: list[NonTerminalNode] = symbol_finder.nonTerminalNodes
 
         for nt in non_terminals:
             if nt.role is not None:
@@ -875,9 +875,9 @@ def check_constraints_existence_children(
     #
     # Simpler version; may overfit (e.g. matches <...> in strings),
     # but that should not hurt us -- AZ
-    finder = NonTerminalFinder()
-    non_terminals = finder.visit(grammar_symbols)
-    non_terminals = [str(nt.symbol)[1:-1] for nt in non_terminals]
+    finder = SymbolFinder()
+    finder.visit(grammar_symbols)
+    non_terminals = [str(nt.symbol)[1:-1] for nt in finder.nonTerminalNodes]
 
     if symbol in non_terminals:
         indirect_child[f"<{parent}>"][f"<{symbol}>"] = True
@@ -894,20 +894,44 @@ def check_constraints_existence_children(
 
 
 def assign_implicit_role(grammar, implicit_role: str):
-    seen_non_terminals = set()
-    seen_non_terminals.add(NonTerminal("<start>"))
+    seen_nts = set()
+    seen_nts.add(NonTerminal("<start>"))
+    processed_nts = set()
+    unprocessed_nts = seen_nts.difference(processed_nts)
 
-    processed_non_terminals = set()
-    unprocessed_non_terminals = seen_non_terminals.difference(processed_non_terminals)
+    while len(unprocessed_nts) > 0:
+        current_symbol = unprocessed_nts.pop()
+        current_node = grammar.rules[current_symbol]
 
-    while len(unprocessed_non_terminals) > 0:
-        current_symbol = unprocessed_non_terminals.pop()
+        symbol_finder = SymbolFinder()
+        symbol_finder.visit(current_node)
+        rule_nts = list(filter(lambda x: x not in processed_nts, symbol_finder.nonTerminalNodes))
 
-        assigner = RoleAssigner(implicit_role, grammar, processed_non_terminals)
-        assigner.run(grammar.rules[current_symbol])
+        if current_node in rule_nts and not isinstance(current_node, NonTerminalNode):
+            rule_nts.remove(current_node)
+        child_roles = set()
 
-        processed_non_terminals.add(current_symbol)
-        seen_non_terminals = seen_non_terminals.union(assigner.seen_non_terminals)
-        unprocessed_non_terminals = seen_non_terminals.difference(
-            processed_non_terminals
-        )
+        for c_node in rule_nts:
+            child_roles = child_roles.union(c_node.tree_roles(grammar, False))
+
+        if len(child_roles) == 0:
+            processed_nts.add(current_symbol)
+            unprocessed_nts = seen_nts.difference(processed_nts)
+            continue
+        for c_node in rule_nts:
+            seen_nts.add(c_node.symbol)
+            if len(c_node.tree_roles(grammar, False)) != 0:
+                continue
+            c_node.role = implicit_role
+        for t_node in symbol_finder.terminalNodes:
+            terminal_id = 0
+            rule_nt = NonTerminal(f"<_terminal:{terminal_id}>")
+            while rule_nt in grammar.rules:
+                terminal_id += 1
+                rule_nt = NonTerminal(f"<_terminal:{terminal_id}>")
+            n_node = NonTerminalNode(rule_nt, implicit_role)
+            NodeReplacer(t_node, n_node).visit(current_node)
+            grammar.rules[rule_nt] = t_node
+
+        processed_nts.add(current_symbol)
+        unprocessed_nts = seen_nts.difference(processed_nts)
