@@ -1739,7 +1739,9 @@ class Grammar(NodeVisitor):
                             continue
                         if state.nonterminal == self.implicit_start:
                             for child in state.children:
-                                self._incomplete.add(child)
+                                if child not in self._incomplete:
+                                    self._incomplete.add(child)
+                                    yield child
                         self.complete(state, table, k)
 
                 # LOGGER.debug(f"Scanned byte at position {w:#06x} ({w}); bit_count = {bit_count}")
@@ -1801,15 +1803,6 @@ class Grammar(NodeVisitor):
                 if not include_controlflow:
                     tree = self.collapse(tree)
                 yield tree
-
-            if mode == Grammar.Parser.ParsingMode.INCOMPLETE:
-                for tree in self._incomplete:
-                    tree = self.to_derivation_tree(tree)
-                    forest.append(tree)
-                    if not include_controlflow:
-                        tree = self.collapse(tree)
-                    yield tree
-
             # Cache entire forest
             self._cache[cache_key] = forest
 
