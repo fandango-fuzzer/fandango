@@ -1194,15 +1194,13 @@ class Grammar(NodeVisitor):
             if prev is not None:
                 alts.append(node_min * [nt] + [prev])
             if is_context:
-                min_nt, rule_id = self.set_tmp_rule(alts)
-                intermediate_nt = NonTerminal(f"<__TEMPORARY:{rule_id}>")
-                self.set_tmp_rule([[min_nt]], intermediate_nt)
-            else:
-                min_nt = self.set_implicit_rule(alts)
-                intermediate_nt = NonTerminal(
-                    f"<__{NodeType.REPETITION}:{node.id}>"
-                )
-                self.set_rule(intermediate_nt, [[min_nt]])
+                tmp_nt, rule_id = self.set_tmp_rule(alts)
+                return [[tmp_nt]]
+            min_nt = self.set_implicit_rule(alts)
+            intermediate_nt = NonTerminal(
+                f"<__{NodeType.REPETITION}:{node.id}>"
+            )
+            self.set_rule(intermediate_nt, [[min_nt]])
             return [[(intermediate_nt, frozenset())]]
 
         def visitStar(self, node: Star):
