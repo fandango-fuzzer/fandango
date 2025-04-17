@@ -728,49 +728,72 @@ class Disambiguator(NodeVisitor):
         return {(Terminal(c),): [(node, TerminalNode(Terminal(c)))] for c in node.chars}
 
 
-class NonTerminalFinder(NodeVisitor):
+class SymbolFinder(NodeVisitor):
+    def __init__(self):
+        self.terminalNodes = []
+        self.nonTerminalNodes = []
+
+    def visitNonTerminalNode(self, node: NonTerminalNode):
+        self.nonTerminalNodes.append(node)
+
+    def visitTerminalNode(self, node: TerminalNode):
+        self.terminalNodes.append(node)
+
+
+class NodeReplacer(NodeVisitor):
+    def __init__(self, old_node: Node, new_node: Node):
+        self.old_node = old_node
+        self.new_node = new_node
+
+    def replace(self, node: Node):
+        if node == self.old_node:
+            return self.new_node
+        return node
 
     def default_result(self):
         return []
 
     def aggregate_results(self, aggregate, result):
-        aggregate.extend(result)
+        aggregate.append(result)
         return aggregate
 
+    def visitConcatenation(self, node: Concatenation):
+        node = self.replace(node)
+        node.nodes = self.visitChildren(node)
+        return node
+
+    def visitAlternative(self, node: Alternative):
+        node = self.replace(node)
+        node.alternatives = self.visitChildren(node)
+        return node
+
+    def visitRepetition(self, node: Repetition):
+        node = self.replace(node)
+        node.node = self.visit(node.node)
+        return node
+
+    def visitStar(self, node: Star):
+        node = self.replace(node)
+        node.node = self.visit(node.node)
+        return node
+
+    def visitPlus(self, node: Plus):
+        node = self.replace(node)
+        node.node = self.visit(node.node)
+        return node
+
+    def visitOption(self, node: Option):
+        node = self.replace(node)
+        node.node = self.visit(node.node)
+        return node
+
     def visitNonTerminalNode(self, node: NonTerminalNode):
-        return [node]
+        node = self.replace(node)
+        return node
 
-
-class RoleAssigner:
-
-    def __init__(
-        self, implicite_role: str, grammar: "Grammar", processed_non_terminals: set[str]
-    ):
-        self.grammar = grammar
-        self.seen_non_terminals = set()
-        self.processed_non_terminals = set(processed_non_terminals)
-        self.implicite_role = implicite_role
-
-    def run(self, node: Node):
-        non_terminals: list[NonTerminalNode] = NonTerminalFinder().visit(node)
-        unprocessed_non_terminals = []
-        for nt in non_terminals:
-            if nt not in self.processed_non_terminals:
-                unprocessed_non_terminals.append(nt)
-        if node in unprocessed_non_terminals and not isinstance(node, NonTerminalNode):
-            unprocessed_non_terminals.remove(node)
-        child_roles = set()
-
-        for c_node in unprocessed_non_terminals:
-            child_roles = child_roles.union(c_node.tree_roles(self.grammar, False))
-
-        if len(child_roles) == 0:
-            return
-        for c_node in unprocessed_non_terminals:
-            self.seen_non_terminals.add(c_node.symbol)
-            if len(c_node.tree_roles(self.grammar, False)) != 0:
-                continue
-            c_node.role = self.implicite_role
+    def visitTerminalNode(self, node: TerminalNode):
+        node = self.replace(node)
+        return node
 
 
 class PacketTruncator(NodeVisitor):
