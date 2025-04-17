@@ -1,6 +1,7 @@
 from copy import deepcopy
 from typing import List, Set, Tuple, Optional
 
+from fandango import FandangoValueError
 from fandango.language.grammar import (
     Grammar,
     NodeVisitor,
@@ -70,15 +71,15 @@ class PathFinder(NodeVisitor):
         self.current_path.pop()
         return self.result
 
-    def on_enter_controlflow(self, expected_nt_prefix: str):
+    def on_enter_controlflow(self, expected_nt: str):
         tree = self.current_tree[-1]
-        cf_nt = (NonTerminal(expected_nt_prefix), True)
+        cf_nt = (NonTerminal(expected_nt), True)
         if tree is not None:
             if len(tree) != 1:
                 raise GrammarKeyError(
                     "Expected len(tree) == 1 for controlflow entries!"
                 )
-            if not str(tree[0].symbol).startswith(expected_nt_prefix):
+            if str(tree[0].symbol) != expected_nt:
                 raise GrammarKeyError("Symbol mismatch!")
             cf_nt = (NonTerminal(str(tree[0].symbol)), False)
         self.current_tree.append(None if tree is None else tree[0].children)
@@ -109,8 +110,11 @@ class PathFinder(NodeVisitor):
             self.current_tree.pop()
         return result
 
+    def visitTerminalNode(self, node: TerminalNode):
+        raise FandangoValueError("PacketForecaster reached TerminalNode! This is a bug.")
+
     def visitConcatenation(self, node: Concatenation):
-        self.on_enter_controlflow(f"<__{NodeType.CONCATENATION}:")
+        self.on_enter_controlflow(f"<__{NodeType.CONCATENATION}:{node.id}>")
         tree = self.current_tree[-1]
         child_idx = 0 if tree is None else (len(tree) - 1)
         continue_exploring = True
@@ -133,7 +137,7 @@ class PathFinder(NodeVisitor):
         return continue_exploring
 
     def visitAlternative(self, node: Alternative):
-        self.on_enter_controlflow(f"<__{NodeType.ALTERNATIVE}:")
+        self.on_enter_controlflow(f"<__{NodeType.ALTERNATIVE}:{node.id}>")
         tree = self.current_tree[-1]
 
         if tree is not None:
@@ -165,7 +169,7 @@ class PathFinder(NodeVisitor):
             return continue_exploring
 
     def visitRepetition(self, node: Repetition):
-        self.on_enter_controlflow(f"<__{NodeType.REPETITION}:")
+        self.on_enter_controlflow(f"<__{NodeType.REPETITION}:{node.id}>")
         ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
         return ret
@@ -192,19 +196,19 @@ class PathFinder(NodeVisitor):
         return continue_exploring
 
     def visitStar(self, node: Star):
-        self.on_enter_controlflow(f"<__{NodeType.STAR}:")
+        self.on_enter_controlflow(f"<__{NodeType.STAR}:{node.id}>")
         ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
         return ret
 
     def visitPlus(self, node: Plus):
-        self.on_enter_controlflow(f"<__{NodeType.PLUS}:")
+        self.on_enter_controlflow(f"<__{NodeType.PLUS}:{node.id}>")
         ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
         return ret
 
     def visitOption(self, node: Option):
-        self.on_enter_controlflow(f"<__{NodeType.OPTION}:")
+        self.on_enter_controlflow(f"<__{NodeType.OPTION}:{node.id}>")
         ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
         return ret
@@ -302,27 +306,27 @@ class PacketForecaster:
             return aggregate
 
         def visitConcatenation(self, node: Concatenation):
-            return Concatenation(self.visitChildren(node))
+            return Concatenation(self.visitChildren(node), node.id)
 
         def visitTerminalNode(self, node: TerminalNode):
             return TerminalNode(node.symbol)
 
         def visitAlternative(self, node: Alternative):
-            return Alternative(self.visitChildren(node))
+            return Alternative(self.visitChildren(node), node.id)
 
         def visitRepetition(self, node: Repetition):
             return Repetition(
-                self.visit(node.node), node.expr_data_min, node.expr_data_max
+                self.visit(node.node), node.id, node.expr_data_min, node.expr_data_max
             )
 
         def visitOption(self, node: Option):
-            return Option(self.visit(node.node))
+            return Option(self.visit(node.node), node.id)
 
         def visitPlus(self, node: Plus):
-            return Plus(self.visit(node.node), node.expr_data_max)
+            return Plus(self.visit(node.node), node.id, node.expr_data_max)
 
         def visitStar(self, node: Star):
-            return Star(self.visit(node.node), node.expr_data_max)
+            return Star(self.visit(node.node), node.id, node.expr_data_max)
 
         def visitCharSet(self, node: CharSet):
             return CharSet(node.chars)

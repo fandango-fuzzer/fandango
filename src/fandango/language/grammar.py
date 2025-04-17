@@ -110,8 +110,9 @@ class Node(abc.ABC):
 
 
 class Alternative(Node):
-    def __init__(self, alternatives: list[Node]):
+    def __init__(self, alternatives: list[Node], id: int):
         super().__init__(NodeType.ALTERNATIVE)
+        self.id = id
         self.alternatives = alternatives
 
     def fuzz(
@@ -156,8 +157,9 @@ class Alternative(Node):
 
 
 class Concatenation(Node):
-    def __init__(self, nodes: list[Node]):
+    def __init__(self, nodes: list[Node], id: int):
         super().__init__(NodeType.CONCATENATION)
+        self.id = id
         self.nodes = nodes
 
     def fuzz(
@@ -200,9 +202,10 @@ class Concatenation(Node):
 
 class Repetition(Node):
     def __init__(
-        self, node: Node, min_=("0", [], {}), max_=(f"{MAX_REPETITIONS}", [], {})
+        self, node: Node, id: int, min_=("0", [], {}), max_=(f"{MAX_REPETITIONS}", [], {})
     ):
         super().__init__(NodeType.REPETITION)
+        self.id = id
         # min_expr, min_nt, min_search = min_
         # max_expr, max_nt, max_search = max_
 
@@ -350,8 +353,8 @@ class Repetition(Node):
 
 
 class Star(Repetition):
-    def __init__(self, node: Node, max_repetitions: int = 5):
-        super().__init__(node, ("0", [], {}), (f"{max_repetitions}", [], {}))
+    def __init__(self, node: Node, id: int, max_repetitions: int = 5):
+        super().__init__(node, id, ("0", [], {}), (f"{max_repetitions}", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitStar(self)
@@ -364,8 +367,8 @@ class Star(Repetition):
 
 
 class Plus(Repetition):
-    def __init__(self, node: Node, max_repetitions: int = 5):
-        super().__init__(node, ("1", [], {}), (f"{max_repetitions}", [], {}))
+    def __init__(self, node: Node, id: int, max_repetitions: int = 5):
+        super().__init__(node, id, ("1", [], {}), (f"{max_repetitions}", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitPlus(self)
@@ -378,8 +381,8 @@ class Plus(Repetition):
 
 
 class Option(Repetition):
-    def __init__(self, node: Node):
-        super().__init__(node, ("0", [], {}), ("1", [], {}))
+    def __init__(self, node: Node, id: int):
+        super().__init__(node, id, ("0", [], {}), ("1", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitOption(self)
@@ -878,6 +881,14 @@ class ParseState:
     def nonterminal(self):
         return self._nonterminal
 
+    def append_child(self, child: DerivationTree):
+        self.children.append(child)
+        self._hash = None
+
+    def extend_children(self, children: List[DerivationTree]):
+        self.children.extend(children)
+        self._hash = None
+
     @property
     def position(self):
         return self._position
@@ -908,7 +919,7 @@ class ParseState:
     def __hash__(self):
         if self._hash is None:
             self._hash = hash(
-                (self.nonterminal, self.position, self.symbols, self._dot)
+                (self.nonterminal, self.position, self.symbols, self._dot, tuple(self.children))
             )
         return self._hash
 
@@ -1036,6 +1047,7 @@ class Grammar(NodeVisitor):
             self,
             grammar: "Grammar",
         ):
+            self.implicit_start = NonTerminal("<*start*>")
             self.grammar_rules: Dict[NonTerminal, Node] = grammar.rules
             self.grammar = grammar
             self._rules = {}
@@ -1044,12 +1056,6 @@ class Grammar(NodeVisitor):
                 NonTerminal, tuple[Node, tuple[NonTerminal, frozenset]]
             ] = dict()
             self._tmp_rules = dict()
-            self.alternative_count = 0
-            self.concatenation_count = 0
-            self.repetition_count = 0
-            self.star_count = 0
-            self.plus_count = 0
-            self.option_count = 0
             self._cache: Dict[Tuple[str, NonTerminal], DerivationTree, bool] = {}
             self._incomplete = set()
             self._max_position = -1
@@ -1060,12 +1066,6 @@ class Grammar(NodeVisitor):
             self._rules.clear()
             self._implicit_rules.clear()
             self._context_rules.clear()
-            self.alternative_count = 0
-            self.concatenation_count = 0
-            self.repetition_count = 0
-            self.star_count = 0
-            self.plus_count = 0
-            self.option_count = 0
             for nonterminal in self.grammar_rules:
                 self.set_rule(nonterminal, self.visit(self.grammar_rules[nonterminal]))
 
@@ -1119,10 +1119,9 @@ class Grammar(NodeVisitor):
         def visitAlternative(self, node: Alternative):
             result = self.visitChildren(node)
             intermediate_nt = NonTerminal(
-                f"<__{NodeType.ALTERNATIVE}:{self.alternative_count}>"
+                f"<__{NodeType.ALTERNATIVE}:{node.id}>"
             )
             self.set_rule(intermediate_nt, result)
-            self.alternative_count += 1
             return [[(intermediate_nt, frozenset())]]
 
         def visitConcatenation(self, node: Concatenation):
@@ -1135,10 +1134,9 @@ class Grammar(NodeVisitor):
                         new_result.append(r + a)
                 result = new_result
             intermediate_nt = NonTerminal(
-                f"<__{NodeType.CONCATENATION}:{self.concatenation_count}>"
+                f"<__{NodeType.CONCATENATION}:{node.id}>"
             )
             self.set_rule(intermediate_nt, result)
-            self.concatenation_count += 1
             return [[(intermediate_nt, frozenset())]]
 
         def visitRepetition(
@@ -1177,10 +1175,9 @@ class Grammar(NodeVisitor):
             else:
                 min_nt = self.set_implicit_rule(alts)
                 intermediate_nt = NonTerminal(
-                    f"<__{NodeType.REPETITION}:{self.repetition_count}>"
+                    f"<__{NodeType.REPETITION}:{node.id}>"
                 )
                 self.set_rule(intermediate_nt, [[min_nt]])
-                self.repetition_count += 1
             return [[(intermediate_nt, frozenset())]]
 
         def visitStar(self, node: Star):
@@ -1189,9 +1186,8 @@ class Grammar(NodeVisitor):
             for r in self.visit(node.node):
                 alternatives.append(r + [nt])
             result = [[nt]]
-            intermediate_nt = NonTerminal(f"<__{NodeType.STAR}:{self.star_count}>")
+            intermediate_nt = NonTerminal(f"<__{NodeType.STAR}:{node.id}>")
             self.set_rule(intermediate_nt, result)
-            self.star_count += 1
             return [[(intermediate_nt, frozenset())]]
 
         def visitPlus(self, node: Plus):
@@ -1201,16 +1197,14 @@ class Grammar(NodeVisitor):
                 alternatives.append(r)
                 alternatives.append(r + [nt])
             result = [[nt]]
-            intermediate_nt = NonTerminal(f"<__{NodeType.PLUS}:{self.plus_count}>")
+            intermediate_nt = NonTerminal(f"<__{NodeType.PLUS}:{node.id}>")
             self.set_rule(intermediate_nt, result)
-            self.plus_count += 1
             return [[(intermediate_nt, frozenset())]]
 
         def visitOption(self, node: Option):
             result = [[]] + self.visit(node.node)
-            intermediate_nt = NonTerminal(f"<__{NodeType.OPTION}:{self.option_count}>")
+            intermediate_nt = NonTerminal(f"<__{NodeType.OPTION}:{node.id}>")
             self.set_rule(intermediate_nt, result)
-            self.option_count += 1
             return [[(intermediate_nt, frozenset())]]
 
         def visitNonTerminalNode(self, node: NonTerminalNode):
@@ -1386,7 +1380,7 @@ class Grammar(NodeVisitor):
 
             # LOGGER.debug(f"Checking {state.dot} against {bit}")
             match, match_length = state.dot.check(bit)
-            if not match:
+            if not match or match_length == 0:
                 # LOGGER.debug(f"No match")
                 return False
 
@@ -1394,7 +1388,7 @@ class Grammar(NodeVisitor):
             # LOGGER.debug(f"Found bit {bit}")
             next_state = state.next()
             tree = Grammar.ParserDerivationTree(Terminal(bit))
-            next_state.children.append(tree)
+            next_state.append_child(tree)
             # LOGGER.debug(f"Added tree {tree.to_string()!r} to state {next_state!r}")
             # Insert a new table entry with next state
             # This is necessary, as our initial table holds one entry
@@ -1439,7 +1433,7 @@ class Grammar(NodeVisitor):
                 if mode != Grammar.Parser.ParsingMode.INCOMPLETE or (w + len(state.dot)) < len(word):
                     return False
                 match, match_length = state.dot.check(word[w:], incomplete=True)
-                if not match:
+                if not match or match_length == 0:
                     return False
                 state.is_incomplete = True
 
@@ -1447,7 +1441,7 @@ class Grammar(NodeVisitor):
             # LOGGER.debug(f"Matched byte(s) {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w + match_length]!r}")
             next_state = state.next()
             tree = Grammar.ParserDerivationTree(Terminal(word[w : w + match_length]))
-            next_state.children.append(tree)
+            next_state.append_child(tree)
             table[k + match_length].add(next_state)
             # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
             self._max_position = max(self._max_position, w + match_length)
@@ -1489,7 +1483,7 @@ class Grammar(NodeVisitor):
             # Found a match
             # LOGGER.debug(f"Matched regex {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w+match_length]!r}")
             next_state = state.next()
-            next_state.children.append(
+            next_state.append_child(
                 Grammar.ParserDerivationTree(Terminal(word[w : w + match_length]))
             )
             table[k + match_length].add(next_state)
@@ -1538,16 +1532,15 @@ class Grammar(NodeVisitor):
             for s in table[state.position].find_dot(state.nonterminal):
                 dot_params = s.dot_params
                 s = s.next()
-                table[k].add(s)
                 if state.nonterminal in self._rules:
-                    s.children.append(
+                    s.append_child(
                         Grammar.ParserDerivationTree(
                             state.nonterminal, state.children, **dict(dot_params)
                         )
                     )
                 else:
                     if use_implicit and state.nonterminal in self._implicit_rules:
-                        s.children.append(
+                        s.append_child(
                             Grammar.ParserDerivationTree(
                                 NonTerminal(state.nonterminal.symbol),
                                 state.children,
@@ -1555,7 +1548,21 @@ class Grammar(NodeVisitor):
                             )
                         )
                     else:
-                        s.children.extend(state.children)
+                        s.extend_children(state.children)
+                if s.nonterminal != self.implicit_start:
+                    table[k].add(s)
+                else:
+                    old = None
+                    for entry in table[k]:
+                        if entry.nonterminal == self.implicit_start:
+                            old = entry
+                            break
+                    if old is None:
+                        table[k].add(s)
+                    else:
+                        s.extend_children(old.children)
+                        table[k].replace(old, s)
+
 
         def place_repetition_shortcut(self, table: List[Column], k: int):
             col = table[k]
@@ -1635,9 +1642,8 @@ class Grammar(NodeVisitor):
             table: list[set[ParseState] | Column] = [
                 Column() for _ in range(len(word) + 1)
             ]
-            implicit_start = NonTerminal("<*start*>")
             time_start = time.time()
-            table[0].add(ParseState(implicit_start, 0, ((start, frozenset()),)))
+            table[0].add(ParseState(self.implicit_start, 0, ((start, frozenset()),)))
 
             # Save the maximum scan position, so we can report errors
             self._max_position = -1
@@ -1663,7 +1669,7 @@ class Grammar(NodeVisitor):
 
                     if state.finished():
                         # LOGGER.debug(f"Finished")
-                        if state.nonterminal == implicit_start:
+                        if state.nonterminal == self.implicit_start:
                             if at_end:
                                 # LOGGER.debug(f"Found {len(state.children)} parse tree(s)")
                                 for child in state.children:
@@ -1717,10 +1723,13 @@ class Grammar(NodeVisitor):
 
                 if mode == Grammar.Parser.ParsingMode.INCOMPLETE and at_end:
                     for state in table[k]:
-                        if state.nonterminal == implicit_start:
-                            self._incomplete.update(state.children)
                         state.is_incomplete = True
+                        if state.is_incomplete and state._dot == 0:
+                            continue
                         self.complete(state, table, k)
+                    for state in table[k]:
+                        if state.nonterminal == self.implicit_start:
+                            self._incomplete.update(state.children)
 
                 # LOGGER.debug(f"Scanned byte at position {w:#06x} ({w}); bit_count = {bit_count}")
                 if bit_count >= 0:
