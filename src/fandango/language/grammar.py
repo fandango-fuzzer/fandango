@@ -1572,19 +1572,7 @@ class Grammar(NodeVisitor):
                         )
                     else:
                         s.extend_children(state.children)
-                if s.nonterminal != self.implicit_start:
-                    table[k].add(s)
-                else:
-                    old = None
-                    for entry in table[k]:
-                        if entry.nonterminal == self.implicit_start:
-                            old = entry
-                            break
-                    if old is None:
-                        table[k].add(s)
-                    else:
-                        s.extend_children(old.children)
-                        table[k].replace(old, s)
+                table[k].add(s)
 
 
         def place_repetition_shortcut(self, table: List[Column], k: int):
@@ -1749,10 +1737,10 @@ class Grammar(NodeVisitor):
                         state.is_incomplete = True
                         if state.is_incomplete and state._dot == 0:
                             continue
-                        self.complete(state, table, k)
-                    for state in table[k]:
                         if state.nonterminal == self.implicit_start:
-                            self._incomplete.update(state.children)
+                            for child in state.children:
+                                self._incomplete.add(child)
+                        self.complete(state, table, k)
 
                 # LOGGER.debug(f"Scanned byte at position {w:#06x} ({w}); bit_count = {bit_count}")
                 if bit_count >= 0:
