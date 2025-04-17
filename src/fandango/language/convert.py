@@ -147,6 +147,7 @@ class GrammarProcessor(FandangoParserVisitor):
 
     def visitRepeat(self, ctx: FandangoParser.RepeatContext):
         node = self.visit(ctx.symbol())
+        self.seenRepetitions += 1
         if ctx.COMMA():
             bounds = [None, None]
             bounds_index = 0
@@ -167,7 +168,6 @@ class GrammarProcessor(FandangoParserVisitor):
                         )
 
             min_, max_ = bounds
-            self.seenRepetitions += 1
             if min_ is None and max_ is None:
                 return Repetition(node, self.seenRepetitions)
             elif min_ is None:
@@ -181,7 +181,7 @@ class GrammarProcessor(FandangoParserVisitor):
         reps = (ast.unparse(reps[0]), *reps[1:])
 
         node = self.visit(ctx.symbol())
-        return Repetition(node, reps, reps)
+        return Repetition(node, self.seenRepetitions, reps, reps)
 
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
         if ctx.nonterminal_right():
