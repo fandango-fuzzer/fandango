@@ -523,6 +523,7 @@ class Fandango:
         elapsed_rounds = 0
         max_rounds = 0.025 * 2000
         failed_parameter_parsing = False
+        parameter_parsing_exception = None
 
         while not is_msg_complete:
             for idx, (role, recipient, msg_fragment) in enumerate(
@@ -559,6 +560,7 @@ class Fandango:
                         except GeneratorParserValueError as e:
                             parsed_packet_tree = None
                             failed_parameter_parsing = True
+                            parameter_parsing_exception = e
                     incomplete_tree = self.grammar.parse(
                         complete_msg,
                         forecast_packet.node.symbol,
@@ -598,7 +600,7 @@ class Fandango:
                         else:
                             applicable_nt = ", ".join(applicable_nt)
                         raise FandangoFailedError(
-                            f"Couldn't derive parameters for received packet or timed out while waiting for remaining packet. Applicable NT: {applicable_nt} Received part: {complete_msg}"
+                            f"Couldn't derive parameters for received packet or timed out while waiting for remaining packet. Applicable NT: {applicable_nt} Received part: \"{complete_msg}\". Exception: {str(parameter_parsing_exception)}"
                         )
                     else:
                         raise FandangoFailedError(
