@@ -83,15 +83,15 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 <request_mail_data> ::= 'DATA\r\n'
 <response_mail_data> ::= '354 End data with <CR><LF>.<CR><LF>\r\n'
 
-<mail_body_end> ::= '\r\n.\r\n'
+<mail_body_end> ::= '\r\n\r\n.\r\n'
 <mail_contents_64> ::= r'[a-zA-Z0-9\+\\\=]+' := encode64(<mail_contents>)
 <mail_contents> ::= r'([a-zA-Z0-9]+)' := decode64(<mail_contents_64>)
 
-<mail_header_subject> ::= 'subject: ' r'[a-z]+' '\r\n'
+<mail_header_subject> ::= 'subject: ' r'[a-zA-Z0-9\-\_\:\. ]+' '\r\n'
 <mail_header_from> ::= 'from: ' <email_address> '\r\n'
 <mail_header_to> ::= 'to: ' <email_address> '\r\n'
 <mail_header_date> ::= 'date: ' <unix_time_formatted> '\r\n'
-<mail_header_mailer> ::= 'x-mailer: ' r'[a-z]+' '\r\n'
+<mail_header_mailer> ::= 'x-mailer: ' r'[a-zA-Z ]+' '\r\n'
 <mail_header_mime> ::= 'mime-version: 1.0\r\n'
 <mail_header_content_type> ::= 'content-type: text/plain; charset=utf-8\r\n'
 <mail_header_encoding> ::= 'content-transfer-encoding: base64\r\n'
@@ -99,7 +99,7 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 <response_submit> ::= '250 Ok\r\n'
 <email_address> ::= r'[a-z]+@[a-z]+\.[a-z]+'
 <unix_time_formatted> ::= r'[a-zA-Z0-9\:\+\, ]+' := format_unix_time(int(<unix_time>))
-<unix_time> ::= <unix_time_number> := str(str_to_unix_time(<unix_time_formatted>))
+<unix_time> ::= <unix_time_number> := str(str_to_unix_time(str(<unix_time_formatted>)))
 <unix_time_number> ::= r'[1-9][0-9]+' := str(random.randint(0, 2147483647))
 
 where forall <mail> in <mail_data>:
@@ -112,7 +112,7 @@ class Client(FandangoAgent):
         super().__init__(fandango_is_client)
         if not self.is_fandango():
             return
-        self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.connect(("127.0.0.1", 8025))
         server_thread = threading.Thread(target=self.listen_loop)
@@ -131,6 +131,15 @@ class Client(FandangoAgent):
                 break
             self.receive_msg("Server", response.decode("utf-8"))
 
+    def cleanup(self, *args):
+        print("Cleaning up server socket...")
+        self.running = False
+        if self.conn:
+            self.conn.close()
+        if self.sock:
+            self.sock.close()
+        sys.exit(0)
+
 
 
 class Server(FandangoAgent):
@@ -141,11 +150,11 @@ class Server(FandangoAgent):
         self.running = False
         if not self.is_fandango():
             return
-        self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.bind(("127.0.0.1", 8025))
+        self.sock.bind(("127.0.0.1", 9025))
         self.sock.listen(1)
-        print("listening on port 8025")
+        print("listening on port 9025")
         self.conn, self.address = self.sock.accept()
         self.running = True
         self.send_thread = threading.Thread(target=self._listen, daemon=True)
@@ -173,3 +182,12 @@ class Server(FandangoAgent):
             self.conn.send(message.encode("utf-8"))
         except Exception as e:
             print("Error sending message: " + str(e))
+
+    def cleanup(self, *args):
+        print("Cleaning up server socket...")
+        self.running = False
+        if self.conn:
+            self.conn.close()
+        if self.sock:
+            self.sock.close()
+        sys.exit(0)
