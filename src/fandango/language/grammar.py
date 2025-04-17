@@ -1418,6 +1418,7 @@ class Grammar(NodeVisitor):
             table: List[Set[ParseState] | Column],
             k: int,
             w: int,
+            mode: ParsingMode
         ) -> bool:
             """
             Scan a byte from the input `word`.
@@ -1435,7 +1436,7 @@ class Grammar(NodeVisitor):
 
             match, match_length = state.dot.check(word[w:])
             if not match:
-                if (w + len(state.dot)) < len(word):
+                if mode != Grammar.Parser.ParsingMode.INCOMPLETE or (w + len(state.dot)) < len(word):
                     return False
                 match, match_length = state.dot.check(word[w:], incomplete=True)
                 if not match:
@@ -1460,6 +1461,7 @@ class Grammar(NodeVisitor):
             table: List[Set[ParseState] | Column],
             k: int,
             w: int,
+            mode: ParsingMode
         ) -> bool:
             """
             Scan a byte from the input `word`.
@@ -1477,10 +1479,10 @@ class Grammar(NodeVisitor):
 
             match, match_length = state.dot.check(word[w:])
             if not match:
-                if w < len(word):
+                if mode != Grammar.Parser.ParsingMode.INCOMPLETE:
                     return False
                 match, match_length = state.dot.check(word[w:], incomplete=True)
-                if not match:
+                if not match or (match_length + w) < len(word):
                     return False
                 state.is_incomplete = True
 
@@ -1706,9 +1708,9 @@ class Grammar(NodeVisitor):
 
                                 # LOGGER.debug(f"Checking byte(s) {state} at position {w:#06x} ({w}) {word[w:]!r}")
                                 if state.dot.is_regex:
-                                    match = self.scan_regex(state, word, table, k, w)
+                                    match = self.scan_regex(state, word, table, k, w, mode)
                                 else:
-                                    match = self.scan_bytes(state, word, table, k, w)
+                                    match = self.scan_bytes(state, word, table, k, w, mode)
                     else:
                         if state.next_symbol_is_nonterminal():
                             self.predict(state, table, k)
