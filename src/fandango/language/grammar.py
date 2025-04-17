@@ -1175,7 +1175,9 @@ class Grammar(NodeVisitor):
 
                 if is_context:
                     i_nt = self.set_context_rule(node, nt)
-                    return [[(i_nt, frozenset())]]
+                    repetition_nt = NonTerminal(f"<__{NodeType.REPETITION}:{node.id}>")
+                    self.set_rule(repetition_nt, [[(i_nt, frozenset())]])
+                    return [[(repetition_nt, frozenset())]]
 
             prev = None
             node_min = node.min(self.grammar, tree)
@@ -1193,7 +1195,7 @@ class Grammar(NodeVisitor):
                 alts.append(node_min * [nt] + [prev])
             if is_context:
                 min_nt, rule_id = self.set_tmp_rule(alts)
-                intermediate_nt = NonTerminal(f"<__{NodeType.REPETITION}:{rule_id}>")
+                intermediate_nt = NonTerminal(f"<__TEMPORARY:{rule_id}>")
                 self.set_tmp_rule([[min_nt]], intermediate_nt)
             else:
                 min_nt = self.set_implicit_rule(alts)
