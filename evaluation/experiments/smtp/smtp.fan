@@ -85,7 +85,7 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 
 <mail_body_end> ::= '\r\n\r\n.\r\n'
 <mail_contents_64> ::= r'[a-zA-Z0-9\+\\\=]+' := encode64(<mail_contents>)
-<mail_contents> ::= r'([a-zA-Z0-9]+)' := decode64(<mail_contents_64>)
+<mail_contents> ::= r'([a-zA-Z0-9\r\n]+)' := decode64(<mail_contents_64>)
 
 <mail_header_subject> ::= 'subject: ' r'[a-zA-Z0-9\-\_\:\. ]+' '\r\n'
 <mail_header_from> ::= 'from: ' <email_address> '\r\n'
