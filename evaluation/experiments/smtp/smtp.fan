@@ -47,8 +47,8 @@ def decode64(input):
 <user_incorrect_64> ::= r'[a-zA-Z0-9\+\\\=]+' := encode64(<user_incorrect>)
 <pass_incorrect_64> ::= r'[a-zA-Z0-9\+\\\=]+' := encode64(<pass_incorrect>)
 
-<user_incorrect> ::= r'^(?!the_user)([a-zA-Z0-9]+)' := decode64(<user_incorrect_64>)
-<pass_incorrect> ::= r'^(?!the_password)([a-zA-Z0-9]+)' := decode64(<pass_incorrect_64>)
+<user_incorrect> ::= r'^(?!the_user$)([a-zA-Z0-9_]+)' := decode64(<user_incorrect_64>)
+<pass_incorrect> ::= r'^(?!the_password$)([a-zA-Z0-9_]+)' := decode64(<pass_incorrect_64>)
 
 where len(str(<request_auth_user_incorrect>)) >= 6
 

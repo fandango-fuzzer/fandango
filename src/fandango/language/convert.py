@@ -78,6 +78,13 @@ class GrammarProcessor(FandangoParserVisitor):
         self.additionalRules = dict[NonTerminal, Node]()
         self.max_repetitions = max_repetitions
 
+        self.seenAlternatives = 0
+        self.seenConcatenations = 0
+        self.seenStars = 0
+        self.seenRepetitions = 0
+        self.seenOptions = 0
+        self.seenPluses = 0
+
     def get_grammar(
         self, productions: List[FandangoParser.ProductionContext], prime=True
     ):
@@ -116,22 +123,27 @@ class GrammarProcessor(FandangoParserVisitor):
         nodes = [self.visit(child) for child in ctx.concatenation()]
         if len(nodes) == 1:
             return nodes[0]
-        return Alternative(nodes)
+        self.seenAlternatives += 1
+        return Alternative(nodes, self.seenAlternatives)
 
     def visitConcatenation(self, ctx: FandangoParser.ConcatenationContext):
         nodes = [self.visit(child) for child in ctx.operator()]
         if len(nodes) == 1:
             return nodes[0]
-        return Concatenation(nodes)
+        self.seenConcatenations += 1
+        return Concatenation(nodes, self.seenConcatenations)
 
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
-        return Star(self.visit(ctx.symbol()), self.max_repetitions)
+        self.seenStars += 1
+        return Star(self.visit(ctx.symbol()), self.seenStars, self.max_repetitions)
 
     def visitPlus(self, ctx: FandangoParser.PlusContext):
-        return Plus(self.visit(ctx.symbol()), self.max_repetitions)
+        self.seenPluses += 1
+        return Plus(self.visit(ctx.symbol()), self.seenPluses, self.max_repetitions)
 
     def visitOption(self, ctx: FandangoParser.OptionContext):
-        return Option(self.visit(ctx.symbol()))
+        self.seenOptions += 1
+        return Option(self.visit(ctx.symbol()), self.seenOptions)
 
     def visitRepeat(self, ctx: FandangoParser.RepeatContext):
         node = self.visit(ctx.symbol())
@@ -155,15 +167,16 @@ class GrammarProcessor(FandangoParserVisitor):
                         )
 
             min_, max_ = bounds
+            self.seenRepetitions += 1
             if min_ is None and max_ is None:
-                return Repetition(node)
+                return Repetition(node, self.seenRepetitions)
             elif min_ is None:
-                return Repetition(node, max_=max_)
+                return Repetition(node, self.seenRepetitions, max_=max_)
             elif max_ is None:
                 return Repetition(
-                    node, min_=min_, max_=(f"{self.max_repetitions}", [], {})
+                    node, self.seenRepetitions, min_=min_, max_=(f"{self.max_repetitions}", [], {})
                 )
-            return Repetition(node, min_, max_)
+            return Repetition(node, self.seenRepetitions, min_, max_)
         reps = self.searches.visit(ctx.expression(0))
         reps = (ast.unparse(reps[0]), *reps[1:])
 
