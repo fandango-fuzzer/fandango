@@ -179,6 +179,7 @@ class FandangoSpec:
         grammar_processor = GrammarProcessor(
             local_variables=self.local_vars,
             global_variables=self.global_vars,
+            id_prefix="{0:x}".format(abs(hash(filename))),
             max_repetitions=max_repetitions,
         )
         self.grammar: Grammar = grammar_processor.get_grammar(

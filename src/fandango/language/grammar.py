@@ -110,7 +110,7 @@ class Node(abc.ABC):
 
 
 class Alternative(Node):
-    def __init__(self, alternatives: list[Node], id: int):
+    def __init__(self, alternatives: list[Node], id: str):
         super().__init__(NodeType.ALTERNATIVE)
         self.id = id
         self.alternatives = alternatives
@@ -157,7 +157,7 @@ class Alternative(Node):
 
 
 class Concatenation(Node):
-    def __init__(self, nodes: list[Node], id: int):
+    def __init__(self, nodes: list[Node], id: str):
         super().__init__(NodeType.CONCATENATION)
         self.id = id
         self.nodes = nodes
@@ -202,7 +202,7 @@ class Concatenation(Node):
 
 class Repetition(Node):
     def __init__(
-        self, node: Node, id: int, min_=("0", [], {}), max_=(f"{MAX_REPETITIONS}", [], {})
+        self, node: Node, id: str, min_=("0", [], {}), max_=(f"{MAX_REPETITIONS}", [], {})
     ):
         super().__init__(NodeType.REPETITION)
         self.id = id
@@ -353,7 +353,7 @@ class Repetition(Node):
 
 
 class Star(Repetition):
-    def __init__(self, node: Node, id: int, max_repetitions: int = 5):
+    def __init__(self, node: Node, id: str, max_repetitions: int = 5):
         super().__init__(node, id, ("0", [], {}), (f"{max_repetitions}", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
@@ -367,7 +367,7 @@ class Star(Repetition):
 
 
 class Plus(Repetition):
-    def __init__(self, node: Node, id: int, max_repetitions: int = 5):
+    def __init__(self, node: Node, id: str, max_repetitions: int = 5):
         super().__init__(node, id, ("1", [], {}), (f"{max_repetitions}", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
@@ -381,7 +381,7 @@ class Plus(Repetition):
 
 
 class Option(Repetition):
-    def __init__(self, node: Node, id: int):
+    def __init__(self, node: Node, id: str):
         super().__init__(node, id, ("0", [], {}), ("1", [], {}))
 
     def accept(self, visitor: "NodeVisitor"):
