@@ -12,6 +12,8 @@ import threading
 
 fake = Faker()
 
+fandango_is_client = False
+
 def gen_q_name():
     result = b''
     domain_parts = fake.domain_name().split('.')
@@ -165,7 +167,7 @@ def decompress_msg(compressed):
     return decompressed
 
 
-<start> ::= <exchange>{20}
+<start> ::= <exchange>{2}
 <exchange> ::= <Client:dns_req> <Server:dns_resp>
 #<exchange> ::= <Client:dns_req_compressed> <Server:dns_resp_compressed>
 <dns_req_compressed> ::= <byte>+ #:= compress_msg(<dns_req>.to_bytes())
@@ -219,13 +221,14 @@ where forall <ex> in <start>.<exchange>:
 <q_name_optional> ::= <q_name_written>? 0{8}
 <q_name> ::= <q_name_written> 0{8}
 <q_name_written> ::= (<label_len_octet> <byte>{byte_to_int(b'\x00' + bytes(<label_len_octet>))})+ := gen_q_name()
-<q_type> ::= <type_id_cname> #| <type_id_a> | <type_id_ns>
+<q_type> ::= <type_id_cname> | <type_id_a> | <type_id_ns>
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
 
 where forall <ex> in <start>.<exchange>:
     forall <q> in <ex>.<dns_req>.<question>:
         forall <a> in <ex>.<dns_resp>.<answer_an>.<answer>:
             bytes(<q>.<q_type>) == bytes(<a>.children[1])[0:2] or <ex>.<dns_req>.<header_req>.<h_id> != <ex>.<dns_resp>.<header_resp>.<h_id> or get_index_within(<q>, <ex>.<dns_req>, ['<question>']) != get_index_within(<a>, <ex>.<dns_resp>, ['<answer>'])
+
 
 
 
@@ -254,7 +257,7 @@ where forall <t> in <type_cname>:
 import socket
 class Client(FandangoAgent):
         def __init__(self):
-            super().__init__(True)
+            super().__init__(fandango_is_client)
 
         def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -265,9 +268,8 @@ class Client(FandangoAgent):
 class Server(FandangoAgent):
 
         def __init__(self):
-            is_fandango = False
-            super().__init__(is_fandango)
-            if is_fandango:
+            super().__init__(not fandango_is_client)
+            if self.is_fandango():
                 self.id_addr = dict()
                 self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 server_thread = threading.Thread(target=self.server_loop)
