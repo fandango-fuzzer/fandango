@@ -65,25 +65,27 @@ class FandangoSplitter(FandangoParserVisitor):
 
 
 class GrammarProcessor(FandangoParserVisitor):
-    globalAlternatives = 0
-    globalConcatenations = 0
-    globalStars = 0
-    globalRepetitions = 0
-    globalOptions = 0
-    globalPluses = 0
-
     def __init__(
         self,
         local_variables: Optional[Dict[str, Any]] = None,
         global_variables: Optional[Dict[str, Any]] = None,
+        id_prefix: str = None,
         max_repetitions: int = 5,
     ):
         self.local_variables = local_variables
         self.global_variables = global_variables
+        self.id_prefix = id_prefix
         self.searches = SearchProcessor(Grammar.dummy())
         self.seenRoles = set[str]()
         self.additionalRules = dict[NonTerminal, Node]()
         self.max_repetitions = max_repetitions
+
+        self.seenAlternatives = 0
+        self.seenConcatenations = 0
+        self.seenStars = 0
+        self.seenRepetitions = 0
+        self.seenOptions = 0
+        self.seenPluses = 0
 
     def get_grammar(
         self, productions: List[FandangoParser.ProductionContext], prime=True
@@ -123,31 +125,31 @@ class GrammarProcessor(FandangoParserVisitor):
         nodes = [self.visit(child) for child in ctx.concatenation()]
         if len(nodes) == 1:
             return nodes[0]
-        GrammarProcessor.globalAlternatives += 1
-        return Alternative(nodes, GrammarProcessor.globalAlternatives)
+        self.seenAlternatives += 1
+        return Alternative(nodes, f"{self.seenAlternatives}_{self.id_prefix}")
 
     def visitConcatenation(self, ctx: FandangoParser.ConcatenationContext):
         nodes = [self.visit(child) for child in ctx.operator()]
         if len(nodes) == 1:
             return nodes[0]
-        GrammarProcessor.globalConcatenations += 1
-        return Concatenation(nodes, GrammarProcessor.globalConcatenations)
+        self.seenConcatenations += 1
+        return Concatenation(nodes, f"{self.seenConcatenations}_{self.id_prefix}")
 
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
-        GrammarProcessor.globalStars += 1
-        return Star(self.visit(ctx.symbol()), GrammarProcessor.globalStars, self.max_repetitions)
+        self.seenStars += 1
+        return Star(self.visit(ctx.symbol()), f"{self.seenStars}_{self.id_prefix}", self.max_repetitions)
 
     def visitPlus(self, ctx: FandangoParser.PlusContext):
-        GrammarProcessor.globalPluses += 1
-        return Plus(self.visit(ctx.symbol()), GrammarProcessor.globalPluses, self.max_repetitions)
+        self.seenPluses += 1
+        return Plus(self.visit(ctx.symbol()), f"{self.seenPluses}_{self.id_prefix}", self.max_repetitions)
 
     def visitOption(self, ctx: FandangoParser.OptionContext):
-        GrammarProcessor.globalOptions += 1
-        return Option(self.visit(ctx.symbol()), GrammarProcessor.globalOptions)
+        self.seenOptions += 1
+        return Option(self.visit(ctx.symbol()), f"{self.seenOptions}_{self.id_prefix}")
 
     def visitRepeat(self, ctx: FandangoParser.RepeatContext):
         node = self.visit(ctx.symbol())
-        GrammarProcessor.globalRepetitions += 1
+        self.seenRepetitions += 1
         if ctx.COMMA():
             bounds = [None, None]
             bounds_index = 0
@@ -169,19 +171,19 @@ class GrammarProcessor(FandangoParserVisitor):
 
             min_, max_ = bounds
             if min_ is None and max_ is None:
-                return Repetition(node, GrammarProcessor.globalRepetitions)
+                return Repetition(node, f"{self.seenRepetitions}_{self.id_prefix}")
             elif min_ is None:
-                return Repetition(node, GrammarProcessor.globalRepetitions, max_=max_)
+                return Repetition(node, f"{self.seenRepetitions}_{self.id_prefix}", max_=max_)
             elif max_ is None:
                 return Repetition(
-                    node, GrammarProcessor.globalRepetitions, min_=min_, max_=(f"{self.max_repetitions}", [], {})
+                    node, f"{self.seenRepetitions}_{self.id_prefix}", min_=min_, max_=(f"{self.max_repetitions}", [], {})
                 )
-            return Repetition(node, GrammarProcessor.globalRepetitions, min_, max_)
+            return Repetition(node, f"{self.seenRepetitions}_{self.id_prefix}", min_, max_)
         reps = self.searches.visit(ctx.expression(0))
         reps = (ast.unparse(reps[0]), *reps[1:])
 
         node = self.visit(ctx.symbol())
-        return Repetition(node, GrammarProcessor.globalRepetitions, reps, reps)
+        return Repetition(node, f"{self.seenRepetitions}_{self.id_prefix}", reps, reps)
 
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
         if ctx.nonterminal_right():
