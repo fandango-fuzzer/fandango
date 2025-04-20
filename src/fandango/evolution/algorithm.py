@@ -343,7 +343,9 @@ class Fandango:
                 self.profiler.start_timer("evaluate_population")
             self.evaluation = self.evaluator.evaluate_population(self.population)
             # Keep only the fittest individuals
-            self.evaluation = sorted(self.evaluation, key=lambda x: x[1], reverse=True)[:self.population_size]
+            self.evaluation = sorted(self.evaluation, key=lambda x: x[1], reverse=True)[
+                : self.population_size
+            ]
             if self.profiling:
                 self.profiler.stop_timer("evaluate_population")
                 self.profiler.increment("evaluate_population", len(self.population))
