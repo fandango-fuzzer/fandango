@@ -283,15 +283,17 @@ class Fandango:
                 new_population = new_population[: self.population_size]
 
             # Mutation
-            mutated_population = []
             weights = [
                 self.evaluator.fitness_cache[hash(ind)][0] for ind in new_population
             ]
             if not all(w == 0 for w in weights):
-                new_population = random.choices(
+                mutation_pool = random.choices(
                     new_population, weights=weights, k=len(new_population)
                 )
-            for individual in new_population:
+            else:
+                mutation_pool = new_population
+            mutated_population = []
+            for individual in mutation_pool:
                 if random.random() < self.adaptive_tuner.mutation_rate:
                     try:
                         if self.profiling:
@@ -313,7 +315,7 @@ class Fandango:
                         mutated_population.append(individual)
                 else:
                     mutated_population.append(individual)
-            new_population = mutated_population
+            new_population.extend(mutated_population)
 
             # Destruction
             if self.destruction_rate > 0:
@@ -335,12 +337,13 @@ class Fandango:
                 new_population, self.fix_individual
             )
 
-            fixed_population = [self.fix_individual(ind) for ind in new_population]
-            self.population = fixed_population[: self.population_size]
+            self.population = [self.fix_individual(ind) for ind in new_population]
 
             if self.profiling:
                 self.profiler.start_timer("evaluate_population")
             self.evaluation = self.evaluator.evaluate_population(self.population)
+            # Keep only the fittest individuals
+            self.evaluation = sorted(self.evaluation, key=lambda x: x[1], reverse=True)[:self.population_size]
             if self.profiling:
                 self.profiler.stop_timer("evaluate_population")
                 self.profiler.increment("evaluate_population", len(self.population))
