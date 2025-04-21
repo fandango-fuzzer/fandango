@@ -193,7 +193,7 @@ where forall <ex> in <start>.<exchange>:
 
 <req_qd_count> ::= <byte>{2} := pack(">H", 1)
 <resp_qd_count> ::= <bit>{16} := pack(">H", 1)
-<resp_an_count> ::= <bit>{16} := pack(">H", randint(0, 2))
+<resp_an_count> ::= <bit>{16} := pack(">H", randint(1, 2))
 <resp_ns_count> ::= <bit>{16} := pack(">H", randint(0, 2))
 <resp_ar_count> ::= <bit>{16} := pack(">H", randint(0, 2))
 <req_ar_count> ::= <bit>{16} := pack(">H", randint(0, 0))
@@ -224,10 +224,13 @@ where forall <ex> in <start>.<exchange>:
 <q_type> ::= <type_id_cname> | <type_id_a> | <type_id_ns>
 <rr_class> ::= 0{15} 1 # Equals class IN (Internet)
 
+# Type of first answer is the same as of the question
 where forall <ex> in <start>.<exchange>:
     forall <q> in <ex>.<dns_req>.<question>:
         forall <a> in <ex>.<dns_resp>.<answer_an>.<answer>:
-            bytes(<q>.<q_type>) == bytes(<a>.children[1])[0:2] or <ex>.<dns_req>.<header_req>.<h_id> != <ex>.<dns_resp>.<header_resp>.<h_id> or get_index_within(<q>, <ex>.<dns_req>, ['<question>']) != get_index_within(<a>, <ex>.<dns_resp>, ['<answer>'])
+            (bytes(<q>.<q_type>) == bytes(<a>.children[1])[0:2] and bytes(<q>.<q_name>) == bytes(<a>.<q_name_optional>))
+            #or <ex>.<dns_req>.<header_req>.<h_id> != <ex>.<dns_resp>.<header_resp>.<h_id>
+            or get_index_within(<q>, <ex>.<dns_req>, ['<question>']) != get_index_within(<a>, <ex>.<dns_resp>, ['<answer>'])
 
 
 
