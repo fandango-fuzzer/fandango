@@ -173,7 +173,7 @@ def decompress_msg(compressed):
 <dns_req_compressed> ::= <byte>+ #:= compress_msg(<dns_req>.to_bytes())
 <dns_resp_compressed> ::= <byte>+ #:= compress_msg(<dns_resp>.to_bytes())
 <dns_req> ::= <header_req> <question>{byte_to_int(<req_qd_count>)} <answer>{byte_to_int(<req_ar_count>)} #:= decompress_msg(<dns_req_compressed>.to_bytes())
-<dns_resp> ::= <header_resp> <question>{byte_to_int(<header_req>.<req_qd_count>)} <answer_an>{byte_to_int(<resp_an_count>)} <answer>{byte_to_int(<resp_ns_count>)} <answer>{byte_to_int(<resp_ar_count>)} #:= decompress_msg(<dns_resp_compressed>.to_bytes())
+<dns_resp> ::= <header_resp> <question>{byte_to_int(<header_req>.<req_qd_count>)} <answer_an>{byte_to_int(<resp_an_count>)} <answer_au>{byte_to_int(<resp_ns_count>)} <answer_opt>{byte_to_int(<resp_ar_count>)} #:= decompress_msg(<dns_resp_compressed>.to_bytes())
 
 #                       qr      opcode       aa tc rd  ra  z      rcode   qdcount  ancount nscount arcount
 <header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_none> <req_qd_count> 0{16} 0{16} <req_ar_count>
@@ -184,7 +184,6 @@ where forall <ex> in <start>.<exchange>:
     <ex>.<dns_req>.<header_req>.<h_rd> == <ex>.<dns_resp>.<header_resp>.<h_rd>
     # Not true ## and bytes(<ex>.<dns_req>.<header_req>.<h_rd>) == bytes(<ex>.<dns_resp>.<header_resp>.<h_ra>)
     and <ex>.<dns_req>.<header_req>.<h_id> == <ex>.<dns_resp>.<header_resp>.<h_id>
-    and <ex>.<dns_req>.<question>.<q_name> == <ex>.<dns_resp>.<answer>.<q_name>
     and <ex>.<dns_req>.<question> == <ex>.<dns_resp>.<question>
     and bytes(<ex>.<dns_req>.<header_req>.<req_qd_count>) == bytes(<ex>.<dns_resp>.<header_resp>.<resp_qd_count>)
     # Not true ## and byte_to_int(bytes(<ex>.<dns_req>.<header_req>.<req_qd_count>)) <= byte_to_int(bytes(<ex>.<dns_resp>.<header_resp>.<resp_an_count>))
@@ -216,7 +215,6 @@ where forall <ex> in <start>.<exchange>:
 <byte> ::= <bit>{8}
 <label_len_octet> ::= <byte>
 
-
 <question> ::= <q_name> <q_type> <rr_class>
 <q_name_optional> ::= <q_name_written>? 0{8}
 <q_name> ::= <q_name_written> 0{8}
@@ -227,15 +225,16 @@ where forall <ex> in <start>.<exchange>:
 # Type of first answer is the same as of the question
 where forall <ex> in <start>.<exchange>:
     forall <q> in <ex>.<dns_req>.<question>:
-        forall <a> in <ex>.<dns_resp>.<answer_an>.<answer>:
+        forall <a> in <ex>.<dns_resp>.<answer_an>:
             (bytes(<q>.<q_type>) == bytes(<a>.children[1])[0:2] and bytes(<q>.<q_name>) == bytes(<a>.<q_name_optional>))
             #or <ex>.<dns_req>.<header_req>.<h_id> != <ex>.<dns_resp>.<header_resp>.<h_id>
-            or get_index_within(<q>, <ex>.<dns_req>, ['<question>']) != get_index_within(<a>, <ex>.<dns_resp>, ['<answer>'])
+            or get_index_within(<q>, <ex>.<dns_req>, ['<question>']) != get_index_within(<a>, <ex>.<dns_resp>, ['<answer_an>'])
 
 
 
-
-<answer_an> ::= <answer>
+<answer_au> ::= <q_name_optional> <type_soa>
+<answer_opt> ::= <q_name_optional> <type_opt>
+<answer_an> ::= <q_name_optional> (<type_a> |<type_cname> | <type_ns>)
 <answer> ::= <q_name_optional> (<type_a> |<type_cname> | <type_ns> | <type_soa> | <type_opt>)
 <a_ttl> ::= 0 <bit>{7} <byte>{3}
 <a_rd_length> ::= <byte>{2} := pack(">H", randint(0, 0))
