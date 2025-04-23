@@ -6,8 +6,9 @@ __all__ = [
     "FandangoSyntaxError",
     "FandangoValueError",
     "FandangoBase",
-    "Fandango",
     "DerivationTree",
+    "version",
+    "homepage",
 ]
 
 
@@ -54,6 +55,24 @@ class FandangoFailedError(FandangoError):
 
     def __init__(self, message: str):
         super().__init__(self, message)
+
+
+import importlib.metadata
+
+DISTRIBUTION_NAME = "fandango-fuzzer"
+
+
+def version():
+    """Return the Fandango version number"""
+    return importlib.metadata.version(DISTRIBUTION_NAME)
+
+
+def homepage():
+    """Return the Fandango homepage"""
+    for key, value in importlib.metadata.metadata(DISTRIBUTION_NAME).items():
+        if key == "Project-URL" and value.startswith("homepage,"):
+            return value.split(",")[1].strip()
+    return "the Fandango homepage"
 
 
 from abc import ABC, abstractmethod
@@ -150,7 +169,7 @@ class FandangoBase(ABC):
 
     @abstractmethod
     def fuzz(
-        self, extra_constraints: Optional[List[str]] = None, **settings
+        self, *, extra_constraints: Optional[List[str]] = None, **settings
     ) -> List[DerivationTree]:
         """
         Create a Fandango population.
@@ -181,7 +200,7 @@ class Fandango(FandangoBase):
         super().__init__(*args, **kwargs)
 
     def fuzz(
-        self, extra_constraints: Optional[List[str]] = None, **settings
+        self, *, extra_constraints: Optional[List[str]] = None, **settings
     ) -> List[DerivationTree]:
         """
         Create a Fandango population.
@@ -191,7 +210,13 @@ class Fandango(FandangoBase):
         """
         constraints = self.constraints[:]
         if extra_constraints:
-            constraints += extra_constraints
+            _, extra_constraints_parsed = parse(
+                [],
+                extra_constraints,
+                given_grammars=[self.grammar],
+                start_symbol=self.start_symbol,
+            )
+            constraints += extra_constraints_parsed
 
         fandango = FandangoStrategy(
             self.grammar, constraints, start_symbol=self.start_symbol, **settings
@@ -245,13 +270,13 @@ if __name__ == "__main__":
     # Read in a .fan spec (from a string)
     # We could also pass an (open) file or a list of files
     spec = """
-        <start> ::= 'a' | 'b' | 'c'
-        where str(<start>) != 'd'
+        <my_start> ::= 'a' | 'b' | 'c'
+        where str(<my_start>) != 'd'
     """
-    fan = Fandango(spec, logging_level=logging_level)
+    fan = Fandango(spec, logging_level=logging_level, start_symbol="<my_start>")
 
     # Instantiate the spec into a population of derivation trees
-    population = fan.fuzz(population_size=3)
+    population = fan.fuzz(extra_constraints=["<my_start> != 'e'"], population_size=3)
     print("Fuzzed:", ", ".join(str(individual) for individual in population))
 
     # Parse a single input into a derivation tree
