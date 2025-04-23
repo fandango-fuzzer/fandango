@@ -33,6 +33,7 @@ from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER, print_exception
 
 from fandango import FandangoSyntaxError, FandangoValueError
+import fandango
 
 
 class MyErrorListener(ErrorListener):
@@ -138,7 +139,7 @@ class FandangoSpec:
         filename: str = "<input>",
         max_repetitions: int = 5,
     ):
-        self.version = importlib.metadata.version("fandango-fuzzer")
+        self.version = fandango.version()
         self.fan_contents = fan_contents
         self.global_vars = self.GLOBALS.copy()
         self.local_vars = self.LOCALS
@@ -228,7 +229,9 @@ def parse_content(
             os.makedirs(CACHE_DIR, mode=0o700)
             cachedir_tag.tag(CACHE_DIR, application="Fandango")
 
-        hash = hashlib.sha256(fan_contents.encode()).hexdigest()
+        # Keep separate hashes for different Fandango and Python versions
+        hash_contents = fan_contents + fandango.version() + "-" + sys.version
+        hash = hashlib.sha256(hash_contents.encode()).hexdigest()
         pickle_file = CACHE_DIR / (hash + ".pickle")
 
         if os.path.exists(pickle_file):

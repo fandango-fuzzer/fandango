@@ -115,7 +115,7 @@ pdf: $(PDF_TARGET)
 # Re-create the book in HTML
 $(HTML_MARKER): $(DOCS_SOURCES) $(ALL_HTML_MARKER)
 	$(JB) build $(DOCS)
-	$(PATCH_HTML)
+	-$(PATCH_HTML)
 	@$(CHECK_DOCS)
 	echo 'Success' > $@
 	@echo Output written to $(HTML_INDEX)
@@ -123,6 +123,7 @@ $(HTML_MARKER): $(DOCS_SOURCES) $(ALL_HTML_MARKER)
 # If we change Python sources, _toc.yml, or _config.yml, all docs need to be rebuilt
 $(ALL_HTML_MARKER): $(DOCS)/_toc.yml $(DOCS)/_config.yml $(PYTHON_SOURCES)
 	$(JB) build --all $(DOCS)
+	-$(PATCH_HTML)
 	@$(CHECK_DOCS)
 	echo 'Success' > $@
 
