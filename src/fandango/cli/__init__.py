@@ -1,7 +1,6 @@
 import argparse
 import atexit
 import glob
-import importlib.metadata
 import logging
 import os
 import os.path
@@ -57,14 +56,7 @@ from fandango.language.parse import parse
 from fandango.logger import LOGGER, print_exception
 
 from fandango import FandangoParseError, FandangoError
-
-
-DISTRIBUTION_NAME = "fandango-fuzzer"
-
-
-def version():
-    """Return the Fandango version number"""
-    return importlib.metadata.version(DISTRIBUTION_NAME)
+import fandango
 
 
 def terminal_link(url: str, text: str | None = None):
@@ -75,17 +67,13 @@ def terminal_link(url: str, text: str | None = None):
     return f"\x1b]8;;{url}\x1b\\{text}\x1b]8;;\x1b\\"
 
 
-def homepage():
-    """Return the Fandango homepage"""
-    for key, value in importlib.metadata.metadata(DISTRIBUTION_NAME).items():
-        if key == "Project-URL" and value.startswith("homepage,"):
-            url = value.split(",")[1].strip()
-            if sys.stdout.isatty():
-                homepage = terminal_link(url)
-            else:
-                homepage = url
-            return homepage
-    return "the Fandango homepage"
+def homepage_as_link():
+    """Return the Fandango homepage, formatted for terminals"""
+    homepage = fandango.homepage()
+    if homepage.startswith("http") and sys.stdout.isatty():
+        return terminal_link(homepage)
+    else:
+        return homepage
 
 
 def get_parser(in_command_line=True):
@@ -105,7 +93,7 @@ def get_parser(in_command_line=True):
             Use `help COMMAND` to learn more about COMMAND.
             Use TAB to complete commands."""
         )
-    epilog += f"\nSee {homepage()} for more information."
+    epilog += f"\nSee {homepage_as_link()} for more information."
 
     main_parser = argparse.ArgumentParser(
         prog=prog,
@@ -119,7 +107,7 @@ def get_parser(in_command_line=True):
         main_parser.add_argument(
             "--version",
             action="version",
-            version=f"Fandango {version()}",
+            version=f"Fandango {fandango.version()}",
             help="show version number",
         )
 
@@ -1167,9 +1155,9 @@ def copyright_command(args):
 
 def version_command(args):
     if sys.stdout.isatty():
-        version_line = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango{styles.color.close} {version()}"
+        version_line = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango{styles.color.close} {fandango.version()}"
     else:
-        version_line = f"Fandango {version()}"
+        version_line = f"Fandango {fandango.version()}"
     print(version_line)
 
 
@@ -1478,14 +1466,6 @@ def main(*argv: str, stdout=sys.stdout, stderr=sys.stderr):
         last_status = 2
 
     return last_status
-
-
-def fandango(cmd: str, stdout=sys.stdout, stderr=sys.stderr):
-    # Entry point for tutorial
-    try:
-        main(*shlex.split(cmd, comments=True), stdout=stdout, stderr=stderr)
-    except SystemExit as e:
-        pass  # Do not exit
 
 
 if __name__ == "__main__":
