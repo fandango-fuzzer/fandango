@@ -6,7 +6,7 @@ import time
 from typing import List, Union
 
 from fandango import FandangoFailedError, FandangoParseError, FandangoValueError
-from fandango.constraints.base import Constraint
+from fandango.constraints.base import Constraint, SoftValue
 from fandango.constraints.fitness import Comparison, ComparisonSide
 from fandango.evolution.adaptation import AdaptiveTuner
 from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
@@ -327,6 +327,11 @@ class Fandango:
 
             fixed_population = [self.fix_individual(ind) for ind in new_population]
             self.population = fixed_population[: self.population_size]
+
+            if any(isinstance(c, SoftValue) for c in self.constraints):
+                # For soft constraints, the normalized fitness may change over time as we observe more inputs.
+                # Hence, we periodically flush the fitness cache to re-evaluate the population.
+                self.evaluator.fitness_cache = {}
 
             if self.profiling:
                 self.profiler.start_timer("evaluate_population")
