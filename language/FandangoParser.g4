@@ -70,9 +70,9 @@ char_set
 // constraint part
 constraint
     : WHERE implies (';' | NEWLINE | EOF)
-    | WHERE 'fitness' expr (';' | NEWLINE | EOF)
+    | MINIMIZING expr (';' | NEWLINE | EOF)
+    | MAXIMIZING expr (';' | NEWLINE | EOF)
     | implies ';' // deprecated
-    | 'fitness' expr ';' // deprecated
     ;
 
 implies:
