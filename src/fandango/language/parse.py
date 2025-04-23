@@ -450,9 +450,20 @@ def parse(
     LOGGER.debug("Processing constraints")
     for constraint in constraints or []:
         LOGGER.debug(f"Constraint {constraint}")
-        _, new_constraints = parse_content(
-            "where " + constraint, filename=constraint, use_cache=use_cache, lazy=lazy
-        )
+        first_token = constraint.split()[0]
+        if any(
+            first_token.startswith(kw) for kw in ["where", "minimizing", "maximizing"]
+        ):
+            _, new_constraints = parse_content(
+                constraint, filename=constraint, use_cache=use_cache, lazy=lazy
+            )
+        else:
+            _, new_constraints = parse_content(
+                "where " + constraint,
+                filename=constraint,
+                use_cache=use_cache,
+                lazy=lazy,
+            )
         parsed_constraints += new_constraints
 
     LOGGER.debug("Checking and finalizing content")

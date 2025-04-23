@@ -123,7 +123,11 @@ class ValueFitness(Fitness):
         :return float: The fitness of the tree.
         """
         if self.values:
-            return sum(self.values) / len(self.values)
+            try:
+                return sum(self.values) / len(self.values)
+            except OverflowError:
+                # OverflowError: integer division result too large for a float
+                return sum(self.values) // len(self.values)
         else:
             return 0
 

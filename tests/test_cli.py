@@ -128,7 +128,7 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
 
     def test_max_nodes_unsat(self):
         command = shlex.split(
-            "fandango fuzz -f tests/resources/gen_number.fan  -n 10 --population-size 10 --max-generations 50 --no-cache -c 'len(str(<start>)) > 60' --max-nodes 50"
+            "fandango fuzz -f tests/resources/gen_number.fan  -n 10 --population-size 10 --max-generations 30 --no-cache -c 'len(str(<start>)) > 60' --max-nodes 30"
         )
         expected = """fandango:ERROR: Population did not converge to a perfect population
 fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
