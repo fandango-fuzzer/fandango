@@ -141,8 +141,11 @@ class Fandango:
                     unique_population.append(tree)
 
             attempts = 0
-            max_attempts = (population_size - len(unique_population)) * 10
-            while len(unique_population) < population_size and attempts < max_attempts:
+            max_attempts = (self.population_size - len(unique_population)) * 10
+            while (
+                len(unique_population) < self.population_size
+                and attempts < max_attempts
+            ):
                 candidate = self.fix_individual(
                     self.grammar.fuzz(
                         self.start_symbol, max_nodes=self.current_max_nodes
@@ -153,13 +156,15 @@ class Fandango:
                     unique_hashes.add(h)
                     unique_population.append(candidate)
                 attempts += 1
-            if len(unique_population) < population_size:
+            if len(unique_population) < self.population_size:
                 LOGGER.warning(
                     f"Could not generate full unique initial population. Final size is {len(unique_population)}."
                 )
             self.population = unique_population
         else:
-            LOGGER.info(f"Generating initial population (size: {population_size})...")
+            LOGGER.info(
+                f"Generating initial population (size: {self.population_size})..."
+            )
             st_time = time.time()
 
             if self.profiling:
@@ -185,7 +190,7 @@ class Fandango:
             self.profiler.stop_timer("evaluate_population")
             self.profiler.increment("evaluate_population", len(self.population))
         self.fitness = (
-            sum(fitness for _, fitness, _ in self.evaluation) / population_size
+            sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
 
         self.fixes_made = 0
