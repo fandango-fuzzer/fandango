@@ -142,7 +142,10 @@ class Fandango:
 
             attempts = 0
             max_attempts = (self.population_size - len(unique_population)) * 10
-            while len(unique_population) < self.population_size and attempts < max_attempts:
+            while (
+                len(unique_population) < self.population_size
+                and attempts < max_attempts
+            ):
                 candidate = self.fix_individual(
                     self.grammar.fuzz(
                         self.start_symbol, max_nodes=self.current_max_nodes
@@ -159,7 +162,9 @@ class Fandango:
                 )
             self.population = unique_population
         else:
-            LOGGER.info(f"Generating initial population (size: {self.population_size})...")
+            LOGGER.info(
+                f"Generating initial population (size: {self.population_size})..."
+            )
             st_time = time.time()
 
             if self.profiling:
