@@ -267,7 +267,7 @@ class Repetition(Node):
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         base = []
-        if self.min == 0:
+        if self.min(grammar) == 0:
             base.append(TerminalNode(Terminal("")))
         if self.min(grammar) <= 1 <= self.max(grammar):
             base.append(self.node)
