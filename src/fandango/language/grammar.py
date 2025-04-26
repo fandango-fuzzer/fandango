@@ -267,6 +267,7 @@ class Repetition(Node):
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         base = []
+        # Todo: Context from DerivationTree is missing. Repetitions that depend on a value within the tree will cause a crash.
         if self.min(grammar) == 0:
             base.append(TerminalNode(Terminal("")))
         if self.min(grammar) <= 1 <= self.max(grammar):
