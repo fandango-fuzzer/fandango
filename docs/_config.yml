@@ -5,7 +5,11 @@ copyright: 2024-2025 CISPA Helmholtz Center for Information Security (www.cispa.
 exclude_patterns: [BookIntro.md]
 
 bibtex_bibfiles:
-  - fandango.bib
+    - fandango.bib
+sphinx:
+  config:
+    bibtex_reference_style: author_year
+    bibtex_bibfiles: "fandango.bib"
 
 latex:
   latex_documents:
