@@ -42,25 +42,34 @@ and many more.
 
 
 
-## Refer to Us
+## Refer to Fandango
 
 To refer to Fandango, use its official URL:
 
   https://fandango-fuzzer.github.io
 
 
-## Cite Us
+## Cite Fandango
+
+```{code-cell}
+:tags: ["remove-input"]
+import re
+
+def find_reference(key, bibfile='fandango.bib'):
+    bib = open(bibfile, 'r').read()
+    match = re.match(r'@[a-zA-Z0-9]*\{' + key + r',(.|\n)*\n\}', bib)
+    assert match is not None
+    return match.group(0)
+
+def print_reference(key, bibfile='fandango.bib'):
+    print(find_reference(key, bibfile))
+```
 
 If you want to cite Fandango in your academic work, use our ISSTA 2025 paper {cite:ps}`zamudio2025fandango`:
 
-```
-@inproceedings{zamudio2025fandango,
-  author = {José Antonio Zamudio Amaya and Marius Smytzek and Andreas Zeller},
-  booktitle = {Proc. International Symposium on Software Testing and Analysis (ISSTA)},
-  title = {{FANDANGO}: {E}volving Language-Based Testing},
-  year = {2025},
-  url = {https://publications.cispa.de/articles/standard/FANDANGO_Evolving_Language-Based_Testing/28769252?file=53591066}
-}
+```{code-cell}
+:tags: ["remove-input"]
+print_reference('zamudio2025fandango')
 ```
 
 
