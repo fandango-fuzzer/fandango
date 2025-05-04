@@ -65,7 +65,8 @@ def print_reference(key, bibfile='fandango.bib'):
     print(find_reference(key, bibfile))
 ```
 
-If you want to cite Fandango in your academic work, use our ISSTA 2025 paper {cite:ps}`zamudio2025fandango`:
+If you want to cite Fandango in your academic work, use the ISSTA 2025 paper by {cite:ts}`zamudio2025fandango`.
+Note that José Antonio has two proper last names, Zamudio Amaya, so the proper way to cite the paper is like this:
 
 ```{code-cell}
 :tags: ["remove-input"]
@@ -75,7 +76,7 @@ print_reference('zamudio2025fandango')
 
 ## Read More
 
-To learn more about how Fandango works, start with our ISSTA 2025 paper {cite:ps}`zamudio2025fandango`.
+To learn more about how Fandango works, start with the ISSTA 2025 paper by {cite:ts}`zamudio2025fandango`.
 
 ```{bibliography}
 ```
