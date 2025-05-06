@@ -196,9 +196,9 @@ class Evaluator:
         evaluation: List[Tuple[DerivationTree, float, List]],
         elitism_rate: float,
         population_size: int,
-    ) -> List[DerivationTree]:
+    ) -> List[Tuple[DerivationTree, float, List]]:
         return [
-            x[0]
+            x
             for x in sorted(evaluation, key=lambda x: x[1], reverse=True)[
                 : int(elitism_rate * population_size)
             ]
@@ -207,7 +207,7 @@ class Evaluator:
     def tournament_selection(
         self, evaluation: List[Tuple[DerivationTree, float, List]], tournament_size: int
     ) -> Tuple[DerivationTree, DerivationTree]:
-        tournament = random.sample(evaluation, k=tournament_size)
+        tournament = random.sample(evaluation, k=min(tournament_size, len(evaluation)))
         tournament.sort(key=lambda x: x[1], reverse=True)
         parent1 = tournament[0][0]
         if len(tournament) == 2:
