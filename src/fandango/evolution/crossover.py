@@ -29,6 +29,6 @@ class SimpleSubtreeCrossover(CrossoverOperator):
         nodes2 = parent2.find_all_nodes(symbol)
         node1 = random.choice(nodes1)
         node2 = random.choice(nodes2)
-        child1 = parent1.replace(grammar, node1, copy.deepcopy(node2))
-        child2 = parent2.replace(grammar, node2, copy.deepcopy(node1))
+        child1 = parent1.replace(grammar, node1, node2)
+        child2 = parent2.replace(grammar, node2, node1)
         return child1, child2

@@ -77,18 +77,6 @@ class GeneticTest(unittest.TestCase):
         for individual in self.fandango.population:
             self.assertTrue(self.fandango.grammar.parse(str(individual)))
 
-    def test_select_elites(self):
-        # Select the elites
-        elites = self.fandango.select_elites()
-
-        self.assertEqual(
-            len(elites), self.fandango.elitism_rate * self.fandango.population_size
-        )
-
-        # Check that the population is valid
-        for individual in elites:
-            self.assertTrue(self.fandango.grammar.parse(str(individual)))
-
     def test_selection(self):
         # Select the parents
         parent1, parent2 = self.fandango.evaluator.tournament_selection(

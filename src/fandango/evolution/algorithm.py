@@ -80,6 +80,7 @@ class Fandango:
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
         self.current_max_nodes = 50
+        self.tree_cache: dict[int, DerivationTree] = {}
 
         # Instantiate managers
         self.population_manager = PopulationManager(
@@ -202,6 +203,11 @@ class Fandango:
         self.solution_set = self.evaluator.solution_set
         self.desired_solutions = desired_solutions
 
+    def canonicalize_reference(self, individual: DerivationTree) -> DerivationTree:
+        if hash(individual) not in self.tree_cache:
+            self.tree_cache[hash(individual)] = individual
+        return self.tree_cache[hash(individual)]
+
     def evolve(self) -> List[DerivationTree]:
         LOGGER.info("---------- Starting evolution ----------")
         start_time = time.time()
@@ -228,61 +234,67 @@ class Fandango:
             # Selection & Crossover
             if self.profiling:
                 self.profiler.start_timer("select_elites")
-            new_population = self.evaluator.select_elites(
+            self.evaluation = self.evaluator.select_elites(
                 self.evaluation, self.elitism_rate, self.population_size
             )
+            new_population = [
+                self.evaluation[i][0] for i in range(len(self.evaluation))
+            ]
             if self.profiling:
                 self.profiler.stop_timer("select_elites")
                 self.profiler.increment("select_elites", len(new_population))
 
             unique_hashes = {hash(ind) for ind in new_population}
 
-            while len(new_population) < self.population_size:
-                if random.random() < self.adaptive_tuner.crossover_rate:
-                    try:
-                        if self.profiling:
-                            self.profiler.start_timer("tournament_selection")
-                        parent1, parent2 = self.evaluator.tournament_selection(
-                            self.evaluation, self.tournament_size
-                        )
-                        if self.profiling:
-                            self.profiler.stop_timer("tournament_selection")
-                            self.profiler.increment("tournament_selection", 2)
+            if len(new_population) >= 2:
+                while len(new_population) < self.population_size:
+                    if random.random() < self.adaptive_tuner.crossover_rate:
+                        try:
+                            if self.profiling:
+                                self.profiler.start_timer("tournament_selection")
+                            parent1, parent2 = self.evaluator.tournament_selection(
+                                self.evaluation, self.tournament_size
+                            )
+                            if self.profiling:
+                                self.profiler.stop_timer("tournament_selection")
+                                self.profiler.increment("tournament_selection", 2)
 
-                        if self.profiling:
-                            self.profiler.start_timer("crossover")
-                        child1, child2 = self.crossover_operator.crossover(
-                            self.grammar, parent1, parent2
-                        )
-                        if self.profiling:
-                            self.profiler.stop_timer("crossover")
-                            self.profiler.increment("crossover", 2)
+                            if self.profiling:
+                                self.profiler.start_timer("crossover")
+                            child1, child2 = self.crossover_operator.crossover(
+                                self.grammar, parent1, parent2
+                            )
+                            if self.profiling:
+                                self.profiler.stop_timer("crossover")
+                                self.profiler.increment("crossover", 2)
 
-                        self.population_manager.add_unique_individual(
-                            new_population, child1, unique_hashes
-                        )
-                        self.evaluator.evaluate_individual(child1)
-
-                        if self.profiling:
-                            self.profiler.start_timer("filling")
-                            count = len(new_population)
-                        if len(new_population) < self.population_size:
+                            child1 = self.canonicalize_reference(child1)
+                            self.evaluator.evaluate_individual(child1)
                             self.population_manager.add_unique_individual(
-                                new_population, child2, unique_hashes
+                                new_population, child1, unique_hashes
                             )
-                            self.evaluator.evaluate_individual(child2)
 
-                        if self.profiling:
-                            self.profiler.stop_timer("filling")
-                            self.profiler.increment(
-                                "filling", len(new_population) - count
-                            )
-                        self.crossovers_made += 2
-                    except Exception as e:
-                        LOGGER.error(f"Error during crossover: {e}")
-                        continue
-                else:
-                    break
+                            if self.profiling:
+                                self.profiler.start_timer("filling")
+                                count = len(new_population)
+                            if len(new_population) < self.population_size:
+                                child2 = self.canonicalize_reference(child2)
+                                self.evaluator.evaluate_individual(child2)
+                                self.population_manager.add_unique_individual(
+                                    new_population, child2, unique_hashes
+                                )
+
+                            if self.profiling:
+                                self.profiler.stop_timer("filling")
+                                self.profiler.increment(
+                                    "filling", len(new_population) - count
+                                )
+                            self.crossovers_made += 2
+                        except Exception as e:
+                            LOGGER.error(f"Error during crossover: {e}")
+                            continue
+                    else:
+                        break
 
             if len(new_population) > self.population_size:
                 new_population = new_population[: self.population_size]
@@ -304,11 +316,13 @@ class Fandango:
                         if self.profiling:
                             self.profiler.start_timer("mutation")
 
-                        mutated_individual = self.mutation_method.mutate(
-                            individual,
-                            self.grammar,
-                            self.evaluator.evaluate_individual,
-                            self.current_max_nodes,
+                        mutated_individual = self.canonicalize_reference(
+                            self.mutation_method.mutate(
+                                individual,
+                                self.grammar,
+                                self.evaluator.evaluate_individual,
+                                self.current_max_nodes,
+                            )
                         )
                         if self.profiling:
                             self.profiler.stop_timer("mutation")
@@ -445,11 +459,3 @@ class Fandango:
                     )
                     self.fixes_made += 1
         return individual
-
-    def select_elites(self) -> List[DerivationTree]:
-        return [
-            x[0]
-            for x in sorted(self.evaluation, key=lambda x: x[1], reverse=True)[
-                : int(self.elitism_rate * self.population_size)
-            ]
-        ]

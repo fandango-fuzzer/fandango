@@ -547,7 +547,7 @@ class DerivationTree:
         """
         Replace the subtree rooted at the given node with the new subtree.
         """
-        if self == tree_to_replace and not self.read_only:
+        if self is tree_to_replace:
             new_subtree = deepcopy(new_subtree)
             new_subtree._parent = self.parent
             grammar.populate_sources(new_subtree)
@@ -652,7 +652,7 @@ class DerivationTree:
 
     def flatten(self):
         """
-        Flatten the derivation tree into a list of symbols.
+        Flatten the derivation tree into a list of DerivationTrees.
         """
         flat = [self]
         for child in self._children:
