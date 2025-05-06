@@ -84,7 +84,7 @@ class test_cli(unittest.TestCase):
 
     def test_unsat(self):
         command = shlex.split(
-            "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 -c False"
+            "fandango fuzz -f tests/resources/digit.fan -n 10 -N 10 --random-seed 426912 -c False"
         )
         expected = """fandango:ERROR: Population did not converge to a perfect population
 fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
