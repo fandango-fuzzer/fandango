@@ -1,7 +1,5 @@
-from fandango.evolution.havoc import havoc_mutate
-
 # Start symbol
-<start> ::= <byte>* := havoc_mutate(<gif_file>) ;
+<start> ::= <gif_file> ;
 
 # A complete GIF file: header, logical screen descriptor, data blocks, and trailer
 <gif_file> ::= <header> <logical_screen_descriptor> <data_blocks> <trailer> ;
@@ -15,8 +13,8 @@ from fandango.evolution.havoc import havoc_mutate
 <width> ::= <uint16>           # 2 bytes little-endian width
 <height> ::= <uint16>          # 2 bytes little-endian height
 <packed_fields> ::= "\\x00"     # 1 byte: no global color table
-<background_color_index> ::= <hex_byte>  # 1 byte (arbitrary since no global color table)
-<pixel_aspect_ratio> ::= <hex_byte>        # 1 byte
+<background_color_index> ::= <byte>  # 1 byte (arbitrary since no global color table)
+<pixel_aspect_ratio> ::= <byte>        # 1 byte
 
 # Data Blocks: In this example, we produce one image block.
 <data_blocks> ::= <image_block> ;
@@ -41,12 +39,12 @@ from fandango.evolution.havoc import havoc_mutate
 # For simplicity, we generate a fixed sub-block of 8 bytes of LZW data.
 <block_size_nonzero> ::= "\\x08"  # Indicates 8 bytes of data follow
 <block_data> ::= <lzw_data_bytes> ;
-<lzw_data_bytes> ::= <hex_byte> <hex_byte> <hex_byte> <hex_byte> <hex_byte> <hex_byte> <hex_byte> <hex_byte> ;
+<lzw_data_bytes> ::= <byte> <byte> <byte> <byte> <byte> <byte> <byte> <byte> ;
 
 # Trailer: 1 byte terminator for the GIF file
 <trailer> ::= "\\x3B" ;
 
 # Data Types
-<uint16> ::= <hex_byte> <hex_byte>  # 2-byte little-endian unsigned integer
-<hex_byte> ::= "\\x" <hex_digit> <hex_digit>  # A byte represented as \xHH
+<uint16> ::= <byte> <byte>  # 2-byte little-endian unsigned integer
+<byte> ::= "\\x" <hex_digit> <hex_digit>  # A byte represented as \xHH
 <hex_digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "A" | "B" | "C" | "D" | "E" | "F" ;
