@@ -547,6 +547,7 @@ def havoc_mutate(
     input: DerivationTree,
     mutations: list[ByteLevelMutationOperator] = havoc_mutations(),
     max_stack_pow=7,
+    nop_probability=0,
 ) -> bytes:
     """
     Mutates the input using the given mutations, defaulting to a .
@@ -556,6 +557,9 @@ def havoc_mutate(
     :param max_stack_pow: The maximum power of 2 for the stack size.
     :return: The mutated input.
     """
+    if random.random() < nop_probability:
+        return input.to_bytes()
+
     input = bytearray(input.to_bytes())
     for _ in range(1 << random.randint(0, max_stack_pow)):
         mutation = random.choice(mutations)
