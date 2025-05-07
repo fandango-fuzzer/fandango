@@ -18,7 +18,7 @@ get_coverage: gif_parser
 	gcovr -r . --txt-metric branch --txt --output branch_coverage_havoc.txt
 	# Pure branch mutation
 	rm -f **/*.gcda
-	fandango fuzz -f havoc_gif.fan -n 10000 --input-method=stdin --file-mode=binary  ./gif_parser
+	fandango fuzz -f gif.fan -n 10000 --input-method=stdin --file-mode=binary  ./gif_parser
 	gcovr -r . --txt-metric branch --txt --output branch_coverage_pure.txt
 
 clean:
