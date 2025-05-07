@@ -1,7 +1,7 @@
 from fandango.evolution.havoc import havoc_mutate
 
 # Start symbol
-<start> ::= <byte>* := havoc_mutate(<gif_file>) ;
+<start> ::= <byte>* := havoc_mutate(<gif_file>, nop_probability=0.2) ;
 
 # A complete GIF file: header, logical screen descriptor, data blocks, and trailer
 <gif_file> ::= <header> <logical_screen_descriptor> <data_blocks> <trailer> ;
