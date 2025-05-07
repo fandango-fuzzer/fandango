@@ -1,1 +1,8 @@
-files
+giflib-code
+
+gif_parser
+
+*.gcov
+*.gcno
+*.gcda
+*.txt
