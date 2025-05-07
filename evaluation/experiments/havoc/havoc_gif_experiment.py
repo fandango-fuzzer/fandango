@@ -31,6 +31,7 @@ def evaluate_gif():
                 or reader.has_unknown_block()
                 or not reader.is_complete()
             ):
+                os.makedirs("evaluation/experiments/havoc/files", exist_ok=True)
                 with open(
                     f"evaluation/experiments/havoc/files/havoc_gif_error_{i}.gif", "wb"
                 ) as fd:
