@@ -1,7 +1,7 @@
 from random import randint
 import math
 
-fandango_is_client = False
+fandango_is_client = True
 
 <start> ::= <state_setup>
 
@@ -12,7 +12,7 @@ fandango_is_client = False
 
 <logged_in_cmds> ::= <exchange_set_type> | <exchange_pwd> | <exchange_syst> | <exchange_feat> | <exchange_set_client> | <exchange_set_utf8> | <exchange_set_type> | <exchange_set_epassive>
 <exchange_socket_connect> ::= <ServerControl:ClientControl:response_server_info>
-<response_server_info> ::= '220 ProFTPD Server (Debian) [1.2.3.4]\r\n'
+<response_server_info> ::= '220 ProFTPD Server (Debian) [' r'[a-zA-Z0-9\:\.]+' ']\r\n'
 
 <exchange_auth_tls> ::= <ClientControl:ServerControl:request_auth_tls><ServerControl:ClientControl:response_auth_tls>
 <request_auth_tls> ::= 'AUTH TLS\r\n'
@@ -98,8 +98,12 @@ def to_pasv_syntax(port_nr):
 <mlsd_transfer> ::= <ServerData:ClientData:mlsd_data>+<ServerControl:ClientControl:finalize_mlsd>
 <finalize_mlsd> ::= '226 Transfer complete\r\n'
 <mlsd_data> ::= (<mlsd_data_folder> | <mlsd_data_file>)+
-<mlsd_data_folder> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_folder> ';type=' <mlsd_type_folder> ';unique=' <mlsd_unique> ';UNIX.group=33;UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=33;UNIX.ownername=the_user; ' <mlsd_folder>'\r\n'
-<mlsd_data_file> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_file> ';size=' <mlsd_size> ';type=' <mlsd_type_file> ';unique=' <mlsd_unique> ';UNIX.group=33;UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=33;UNIX.ownername=the_user; ' <mlsd_file>'\r\n'
+<mlsd_data_folder> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_folder> ';type=' <mlsd_type_folder> ';unique=' <mlsd_unique> ';UNIX.group=' <mlsd_data_user_uid> ';UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=' <mlsd_data_user_uid> ';UNIX.ownername=the_user; ' <mlsd_folder> '\r\n'
+<mlsd_data_file> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_file> ';size=' <mlsd_size> ';type=' <mlsd_type_file> ';unique=' <mlsd_unique> ';UNIX.group=' <mlsd_data_user_uid> ';UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=' <mlsd_data_user_uid> ';UNIX.ownername=the_user; ' <mlsd_file> '\r\n'
+<mlsd_data_user_uid> ::= <number>
+<mlsd_unique> ::= r'[A-Z0-9]+'
+
+where int(<mlsd_data_user_uid>.<number>) < 1000
 
 where forall <data> in <mlsd_transfer>.<mlsd_data>:
     forall <mlsd_folder> in <data>..<mlsd_folder>:
@@ -145,8 +149,8 @@ def is_unique_folder_and_file(current_file_or_folder, data):
 <second> ::= <number_tail>{2} := "{:02d}".format(randint(0, 59))
 <mlsd_type_folder> ::= 'cdir' | 'pdir' | 'dir'
 <mlsd_type_file> ::= 'file'
-<mlsd_unique> ::= '2BUA' | '2BUB' | '2BUC' | '2CUA' | '2CUB' | '2CUC' | '2CUD'
-<mlsd_perm_folder> ::= 'flcdmpe'
+#<mlsd_unique> ::= '2BUA' | '2BUB' | '2BUC' | '2CUA' | '2CUB' | '2CUC' | '2CUD'
+<mlsd_perm_folder> ::= 'flcdmpe' | 'fle'
 <mlsd_perm_file> ::= 'adfrw'
 <mlsd_size> ::= <number>
 
@@ -190,7 +194,7 @@ class ClientControl(FandangoAgent):
             return
         self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.connect(("::1", 21))
+        self.sock.connect(("liggesmeyer.net", 21))
         server_thread = threading.Thread(target=self.listen_loop)
         server_thread.daemon = True
         server_thread.start()
@@ -260,7 +264,7 @@ class ClientData(FandangoAgent):
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     def connect(self):
-        self.sock.connect(("::1", self.port))
+        self.sock.connect(("liggesmeyer.net", self.port))
         self.running = True
         self.listen_thread = threading.Thread(target=self._listen, daemon=True)
         self.listen_thread.start()
