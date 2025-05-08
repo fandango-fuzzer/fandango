@@ -26,7 +26,7 @@ fandango_is_client = True
 <exchange_login_ok> ::= <ClientControl:ServerControl:request_login_user_ok><ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_ok><ServerControl:ClientControl:response_login_pass_ok><state_logged_in>
 <exchange_login_fail> ::= (<ClientControl:ServerControl:request_login_user_ok> | <ClientControl:ServerControl:request_login_user_fail>)
                            <ServerControl:ClientControl:response_login_user>
-                           (<ClientControl:ServerControl:request_login_pass_fail> | <ClientControl:ServerControl:request_login_pass_ok>)
+                           <ClientControl:ServerControl:request_login_pass_fail>
                            ((<ServerControl:ClientControl:response_login_pass_fail><state_logged_out>) | (<ServerControl:ClientControl:response_login_throttled><state_finished>))
 
 where forall <ex> in <exchange_login_ok>:
@@ -35,11 +35,6 @@ where forall <ex> in <exchange_login_fail>:
     str(<ex>.<request_login_user_ok>.<correct_username>) == str(<ex>.<response_login_user>.<user_name>)
 where forall <ex> in <exchange_login_fail>:
     str(<ex>.<request_login_user_fail>.<wrong_user_name>) == str(<ex>.<response_login_user>.<user_name>)
-
-where forall <ex> in <exchange_login_fail>:
-    forall <user_ok> in <ex>.<request_login_user_ok>:
-        forall <pass_ok> in <ex>.<request_login_pass_ok>:
-            False
 
 
 where (not contains_nt(<start>, NonTerminal('<request_mlsd>')))
