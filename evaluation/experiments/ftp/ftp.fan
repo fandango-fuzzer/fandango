@@ -22,11 +22,12 @@ fandango_is_client = True
 <request_auth_ssl> ::= 'AUTH SSL\r\n'
 <response_auth_ssl> ::= '500 AUTH not understood\r\n'
 
-<exchange_login> ::= <exchange_login_ok> | <exchange_login_fail>
+<exchange_login> ::= <exchange_login_fail> | <exchange_login_ok>
 <exchange_login_ok> ::= <ClientControl:ServerControl:request_login_user_ok><ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_ok><ServerControl:ClientControl:response_login_pass_ok><state_logged_in>
 <exchange_login_fail> ::= (<ClientControl:ServerControl:request_login_user_ok> | <ClientControl:ServerControl:request_login_user_fail>)
-                           <ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_fail>
-                           <ServerControl:ClientControl:response_login_pass_fail>((<ServerControl:ClientControl:response_login_throttled><state_finished>)|<state_logged_out>)
+                           <ServerControl:ClientControl:response_login_user>
+                           (<ClientControl:ServerControl:request_login_pass_fail> | <ClientControl:ServerControl:request_login_pass_ok>)
+                           ((<ServerControl:ClientControl:response_login_pass_fail><state_logged_out>) | (<ServerControl:ClientControl:response_login_throttled><state_finished>))
 
 where forall <ex> in <exchange_login_ok>:
     str(<ex>.<request_login_user_ok>.<correct_username>) == str(<ex>.<response_login_user>.<user_name>)
@@ -34,6 +35,11 @@ where forall <ex> in <exchange_login_fail>:
     str(<ex>.<request_login_user_ok>.<correct_username>) == str(<ex>.<response_login_user>.<user_name>)
 where forall <ex> in <exchange_login_fail>:
     str(<ex>.<request_login_user_fail>.<wrong_user_name>) == str(<ex>.<response_login_user>.<user_name>)
+
+where forall <ex> in <exchange_login_fail>:
+    forall <user_ok> in <ex>.<request_login_user_ok>:
+        forall <pass_ok> in <ex>.<request_login_pass_ok>:
+            False
 
 
 where (not contains_nt(<start>, NonTerminal('<request_mlsd>')))
@@ -186,6 +192,7 @@ def open_data_port(port):
 
 import socket
 import threading
+import select
 
 class ClientControl(FandangoAgent):
     def __init__(self):
@@ -204,12 +211,17 @@ class ClientControl(FandangoAgent):
 
     def listen_loop(self):
         while True:
-            response, nothing = self.sock.recvfrom(1024)
-            if len(response) == 0:
-                self.receive_msg("ServerControl", "FTP session closed.\r\n")
-                self.sock.close()
-                break
-            self.receive_msg("ServerControl", response.decode("utf-8"))
+            readable, n, n2 = select.select([self.sock], [], [], 1.0)
+            if readable:
+                try:
+                    response, n3 = self.sock.recvfrom(1024)
+                    if not response:
+                        self.receive_msg("ServerControl", "FTP session closed.\r\n")
+                        self.sock.close()
+                        break
+                    self.receive_msg("ServerControl", response.decode("utf-8"))
+                except ConnectionResetError:
+                    break
 
 class ServerControl(FandangoAgent):
     def __init__(self):
