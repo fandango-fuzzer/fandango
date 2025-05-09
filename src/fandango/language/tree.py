@@ -296,7 +296,14 @@ class DerivationTree:
 
         if isinstance(val, int):
             # This is a bit value; convert to bytes
-            val = int(val).to_bytes(val // 256 + 1)
+            assert (
+                val >= 0
+            ), "Assumption: ints are unsigned. If this does not hold, the following needs to change"
+            required_bytes = (val.bit_length() + 7) // 8  # for unsigned ints
+            required_bytes = max(
+                1, required_bytes
+            )  # ensure at least 1 byte for number 0
+            val = int(val).to_bytes(required_bytes)
             assert isinstance(val, bytes)
 
         if isinstance(val, bytes):

@@ -886,7 +886,9 @@ def output_population(population, args, file_mode=None, *, output_on_stdout=True
                 cmd = base_cmd
                 LOGGER.debug(f"Running {cmd} with individual as stdin")
                 subprocess.run(
-                    cmd, input=output(individual, args, file_mode), text=True
+                    cmd,
+                    input=output(individual, args, file_mode),
+                    text=(None if file_mode == "binary" else True),
                 )
             else:
                 raise NotImplementedError("Unsupported input method")
