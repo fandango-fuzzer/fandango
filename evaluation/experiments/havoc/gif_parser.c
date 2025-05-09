@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
-#include "giflib-code/gif_lib.h"
+#include "giflib-code-gcov/gif_lib.h"
 
 int main(int argc, char *argv[])
 {
