@@ -1,6 +1,11 @@
-giflib-code
-
+giflib-code*
+LibAFL
+libafl_libfuzzer_runtime.dylib
 gif_parser
+corpus
+
+libfuzzer_harness
+libfuzzer_harness.dSYM
 
 *.gcov
 *.gcno
