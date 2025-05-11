@@ -218,7 +218,7 @@ class Fandango:
         return individual
 
     def log_message_transfer(
-        self, sender: str, receiver: str | None, msg: str, self_is_sender: bool
+        self, sender: str, receiver: str | None, msg: DerivationTree, self_is_sender: bool
     ):
         if receiver is None:
             if self_is_sender:
@@ -229,6 +229,12 @@ class Fandango:
             sender = "*" + sender
         else:
             receiver = "*" + receiver
+
+        if msg.contains_bytes():
+            msg = msg.to_bytes()
+        else:
+            msg = msg.to_string()
+
         LOGGER.info(f"({sender} -> {receiver}): {msg}")
 
     def _evolve_io(self) -> List[DerivationTree]:
@@ -287,17 +293,16 @@ class Fandango:
                     # Abort if we received a message during fuzzing
                     continue
                 new_packet = next_tree.find_role_msgs()[-1]
-                send_str = new_packet.convert_transmittable()
                 if (
                     new_packet.recipient is None
                     or not io_instance.roles[new_packet.recipient].is_fandango()
                 ):
                     io_instance.set_transmit(
-                        new_packet.role, new_packet.recipient, send_str
+                        new_packet.role, new_packet.recipient, new_packet.msg
                     )
                     exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
                     self.log_message_transfer(
-                        new_packet.role, new_packet.recipient, send_str, True
+                        new_packet.role, new_packet.recipient, new_packet.msg, True
                     )
                 history_tree = next_tree
             else:
@@ -306,13 +311,10 @@ class Fandango:
                 forecast, packet_tree = self._parse_next_remote_packet(
                     forecast, io_instance
                 )
-                received_packet = RoledMessage(
-                    packet_tree.role, packet_tree.recipient, packet_tree
-                )
                 self.log_message_transfer(
                     packet_tree.role,
                     packet_tree.recipient,
-                    received_packet.convert_transmittable(),
+                    packet_tree,
                     False,
                 )
 

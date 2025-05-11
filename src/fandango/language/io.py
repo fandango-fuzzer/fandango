@@ -1,6 +1,8 @@
 import threading
 from typing import Callable, Tuple
 
+from fandango.language.tree import DerivationTree
+
 
 class FandangoAgent(object):
 
@@ -25,9 +27,9 @@ class FandangoAgent(object):
     """
 
     def on_send(
-        self, message: str, recipient: str, response_setter: Callable[[str, str], None]
+        self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]
     ):
-        print(f"({self.class_name}): {message}")
+        print(f"({self.class_name}): {message.to_string()}")
 
     """
     Call if a message has been received by this party.
@@ -56,7 +58,7 @@ class FandangoIO:
         if FandangoIO.__instance is not None:
             raise Exception("Singleton already created!")
         FandangoIO.__instance = self
-        self.transmit: Tuple[str, str, str] | None = None
+        self.transmit: Tuple[str, str, DerivationTree] | None = None
         self.receive = list[(str, str, str)]()
         self.roles = dict[str, FandangoAgent]()
         self.receive_lock = threading.Lock()
@@ -92,6 +94,6 @@ class FandangoIO:
             self.receive.clear()
 
     def set_transmit(
-        self, role: str, recipient: str | None, message: str | bytes
+        self, role: str, recipient: str | None, message: DerivationTree
     ) -> None:
         self.transmit = (role, recipient, message)
