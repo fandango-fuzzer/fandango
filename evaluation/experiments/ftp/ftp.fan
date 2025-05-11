@@ -201,8 +201,8 @@ class ClientControl(FandangoAgent):
         server_thread.daemon = True
         server_thread.start()
 
-    def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
-        self.sock.sendall(message.encode("utf-8"))
+    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
+        self.sock.sendall(message.to_string().encode("utf-8"))
 
     def listen_loop(self):
         while True:
@@ -250,11 +250,11 @@ class ServerControl(FandangoAgent):
                 self.running = False
                 break
 
-    def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
+    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
         try:
             if not self.running:
                 raise Exception("Socket not running!")
-            self.conn.send(message.encode("utf-8"))
+            self.conn.send(message.to_string().encode("utf-8"))
         except Exception as e:
             print("Error sending message: " + str(e))
 
@@ -309,11 +309,11 @@ class ClientData(FandangoAgent):
                 self.running = False
                 break
 
-    def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
+    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
         try:
             if not self.running:
                 raise Exception("Socket not running!")
-            self.sock.sendall(message.encode("utf-8"))
+            self.sock.sendall(message.to_string().encode("utf-8"))
         except Exception as e:
             print("Error sending message: " + str(e))
 
@@ -386,10 +386,10 @@ class ServerData(FandangoAgent):
                 self.running = False
                 break
 
-    def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
+    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
         if not self.running:
             raise Exception("Socket not running!")
         self.wait_accept()
-        self.conn.send(message.encode("utf-8"))
+        self.conn.send(message.to_string().encode("utf-8"))
         self.conn.shutdown(socket.SHUT_RDWR)
         self.conn = None
