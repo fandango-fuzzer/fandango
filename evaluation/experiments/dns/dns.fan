@@ -261,9 +261,9 @@ class Client(FandangoAgent):
         def __init__(self):
             super().__init__(fandango_is_client)
 
-        def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
+        def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.sendto(compress_msg(message), ("1.1.1.1", 53))
+            sock.sendto(compress_msg(message.to_bytes()), ("1.1.1.1", 53))
             response, nothing = sock.recvfrom(1024)
             self.receive_msg("Server", decompress_msg(response))
 
@@ -291,11 +291,11 @@ class Server(FandangoAgent):
                 #self.receive_msg("Client", message)
 
 
-        def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
-            m_id = message[:2]
+        def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
+            m_id = message.to_bytes()[:2]
             addr, receive_time = self.id_addr[m_id]
             elapsed_time = time.time() - receive_time
             elapsed_time *= 1000
             print("Answered after: " + str(elapsed_time) + "ms")
-            self.server_socket.sendto(compress_msg(message), addr)
-            #self.server_socket.sendto(message, addr)
+            self.server_socket.sendto(compress_msg(message.to_bytes()), addr)
+            #self.server_socket.sendto(message.to_bytes(), addr)
