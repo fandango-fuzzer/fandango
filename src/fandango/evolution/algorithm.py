@@ -300,10 +300,10 @@ class Fandango:
                     io_instance.set_transmit(
                         new_packet.role, new_packet.recipient, new_packet.msg
                     )
-                    exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
                     self.log_message_transfer(
                         new_packet.role, new_packet.recipient, new_packet.msg, True
                     )
+                    exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
                 history_tree = next_tree
             else:
                 while not io_instance.received_msg():
