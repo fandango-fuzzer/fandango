@@ -3,7 +3,7 @@ import socket
 from datetime import datetime, timezone
 import random
 
-fandango_is_client = False
+fandango_is_client = True
 
 def format_unix_time(unix_time):
     dt = datetime.fromtimestamp(unix_time, tz=timezone.utc)
@@ -53,16 +53,17 @@ def decode64(input):
 where len(str(<request_auth_user_incorrect>)) >= 6
 
 
-<response_setup> ::= '220 fake-smtp-server ESMTP FakeSMTPServer 2.2.1\r\n'
+<response_setup> ::= '220 ' r'[a-zA-Z0-9\-\. ]+' '\r\n'
 <request_ehlo> ::= 'EHLO ' <client_identifier> '\r\n'
 <client_identifier> ::= r'[a-zA-Z0-9\-\. ]+'
 <response_ehlo> ::= <response_ehlo_param>+<response_ehlo_end> := '250-fandango-server\r\n250-8BITMIME\r\n250-AUTH PLAIN LOGIN\r\n250 Ok\r\n'
 <response_ehlo_param> ::= '250-' r'[a-zA-Z0-9\- ]+' '\r\n'
 <response_ehlo_end> ::= '250 Ok\r\n'
 
-<exchange_quit> ::= <Client:request_quit><Server:response_quit>(<state_logged_out> | '')
+<exchange_quit> ::= <Client:request_quit><Server:response_quit><state_end>
 <request_quit> ::= 'QUIT\r\n'
 <response_quit> ::= '221 Bye\r\n'
+<state_end> ::= ''
 
 
 <exchange_mail> ::= <Client:request_mail_from><Server:response_mail_from>
@@ -125,8 +126,8 @@ class Client(FandangoAgent):
         server_thread.daemon = True
         server_thread.start()
 
-    def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
-        self.sock.sendall(message.encode("utf-8"))
+    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
+        self.sock.sendall(message.to_string().encode("utf-8"))
 
     def listen_loop(self):
         while True:
@@ -181,11 +182,11 @@ class Server(FandangoAgent):
                 self.running = False
                 break
 
-    def on_send(self, message: str|bytes, recipient: str, response_setter: Callable[[str, str], None]):
+    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
         try:
             if not self.running:
                 raise Exception("Socket not running!")
-            self.conn.send(message.encode("utf-8"))
+            self.conn.send(message.to_string().encode("utf-8"))
         except Exception as e:
             print("Error sending message: " + str(e))
 

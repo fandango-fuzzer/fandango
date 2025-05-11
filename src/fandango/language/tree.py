@@ -16,18 +16,12 @@ class RoledMessage:
         self.role = role
         self.recipient = recipient
 
-    def convert_transmittable(self) -> bytes | str:
-        if self.msg.contains_bytes():
-            return self.msg.to_bytes()
-        else:
-            return self.msg.to_string()
-
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
         if self.recipient is None:
-            return f"({self.role} -> {self.recipient}): {self.convert_transmittable()}"
+            return f"({self.role} -> {self.recipient}): {str(self.msg)}"
         else:
             return f"({self.role}): {str(self.msg)}"
 
