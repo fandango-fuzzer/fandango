@@ -24,9 +24,15 @@ fandango_is_client = True
 
 <exchange_login> ::= <exchange_login_fail> | <exchange_login_ok>
 <exchange_login_ok> ::= <ClientControl:ServerControl:request_login_user_ok><ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_ok><ServerControl:ClientControl:response_login_pass_ok><state_logged_in>
-<exchange_login_fail> ::= (<ClientControl:ServerControl:request_login_user_ok> | <ClientControl:ServerControl:request_login_user_fail>)
-                           <ServerControl:ClientControl:response_login_user>
-                           <ClientControl:ServerControl:request_login_pass_fail><ServerControl:ClientControl:response_login_pass_fail>
+<exchange_login_fail> ::= (<ClientControl:ServerControl:request_login_user_ok>
+                            <ServerControl:ClientControl:response_login_user>
+                            <ClientControl:ServerControl:request_login_pass_fail>
+                          )
+                               | (<ClientControl:ServerControl:request_login_user_fail>
+                                    <ServerControl:ClientControl:response_login_user>
+                                    (<ClientControl:ServerControl:request_login_pass_fail>|<ClientControl:ServerControl:request_login_pass_ok>)
+                          )
+                           <ServerControl:ClientControl:response_login_pass_fail>
                            (<state_logged_out> | (<ServerControl:ClientControl:response_login_throttled><state_finished>))
 
 where forall <ex> in <exchange_login_ok>:
