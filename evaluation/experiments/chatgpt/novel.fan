@@ -4,8 +4,6 @@ fake = Faker()
 <start> ::= <exchange>
 <exchange> ::= <Client:request><Gpt:response>
 <request> ::= <gpt_model><gpt_message>
-
-
 <gpt_model> ::= 'gpt-4.1' #| 'o4-mini' #| 'o3'
 <gpt_message> ::= 'You are a poet. Write me a poem that includes the words: ' <msg_words> '. You are not allowed to alter these words in any way.'
 <msg_words> ::= <msg_word> (', ' <msg_word>)*

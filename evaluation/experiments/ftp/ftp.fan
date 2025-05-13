@@ -1,7 +1,7 @@
 from random import randint
 import math
 
-fandango_is_client = True
+fandango_is_client = False
 
 <start> ::= <state_setup>
 
@@ -28,9 +28,10 @@ fandango_is_client = True
                             <ServerControl:ClientControl:response_login_user>
                             <ClientControl:ServerControl:request_login_pass_fail>
                           )
-                               | (<ClientControl:ServerControl:request_login_user_fail>
-                                    <ServerControl:ClientControl:response_login_user>
-                                    (<ClientControl:ServerControl:request_login_pass_fail>|<ClientControl:ServerControl:request_login_pass_ok>)
+                               |
+                          (<ClientControl:ServerControl:request_login_user_fail>
+                            <ServerControl:ClientControl:response_login_user>
+                            (<ClientControl:ServerControl:request_login_pass_fail>|<ClientControl:ServerControl:request_login_pass_ok>)
                           )
                            <ServerControl:ClientControl:response_login_pass_fail>
                            (<state_logged_out> | (<ServerControl:ClientControl:response_login_throttled><state_finished>))
@@ -175,8 +176,9 @@ def is_unique_folder_and_file(current_file_or_folder, data):
 <client_name> ::= r'[a-zA-Z0-9]+'
 
 <user_name> ::= r'[a-zA-Z0-9\_]+'
-<wrong_user_name> ::= r'^(?!the_user$)([a-zA-Z0-9_]+)'
-<wrong_user_password> ::= r'^(?!the_password$)([a-zA-Z0-9_]+)'
+<wrong_user_name> ::= r'^(?!the_user\r\n$)([a-zA-Z0-9_]+)'
+
+<wrong_user_password> ::= r'^(?!the_password\r\n$)([a-zA-Z0-9_]+)'
 
 <open_port> ::= <passive_port> := open_data_port(int(<open_port_param>))
 <open_port_param> ::= <passive_port> := open_data_port(int(<open_port>))
