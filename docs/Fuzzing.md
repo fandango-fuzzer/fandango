@@ -127,7 +127,7 @@ The programs are specified as arguments on the command line.
 
 There are three ways to pass the input into programs, on the command line, via standard input, and in-process to a shared object with a libFuzzer style harness.
 
-Refer to the [example](https://github.com/fandango-fuzzer/fandango/tree/main/evaluation/experiments/libfuzzer-harness) for further details on how a harness can be compiled to interface with each mode.
+Refer to [this example](https://github.com/fandango-fuzzer/fandango/tree/main/evaluation/experiments/libfuzzer-harness) for further details on how a harness can be compiled to interface with each mode.
 
 ### Passing Inputs on the Command Line
 
