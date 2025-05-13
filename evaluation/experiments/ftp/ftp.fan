@@ -1,7 +1,7 @@
 from random import randint
 import math
 
-fandango_is_client = False
+fandango_is_client = True
 
 <start> ::= <state_setup>
 
