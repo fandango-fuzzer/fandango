@@ -209,5 +209,67 @@ def semantic_tokens_full(ls: FandangoLanguageServer, params: lsp.SemanticTokensP
     return lsp.SemanticTokens(data=output)
 
 
+@server.feature(
+    lsp.TEXT_DOCUMENT_CODE_ACTION,
+    lsp.CodeActionOptions(code_action_kinds=[lsp.CodeActionKind.QuickFix]),
+)
+def code_actions(params: lsp.CodeActionParams):
+    if (
+        params.range.start.line != params.range.end.line
+        or params.range.start.character != params.range.end.character
+    ):
+        return []  # ignore selections for now
+
+    line = params.range.start.line
+    column = params.range.start.character
+
+    tokens = server.get_file_assets(params.text_document).tokens
+
+    current_token = None
+    for t in tokens:
+        # only work if no range is selected for now
+        if (
+            t.line - 1 == line
+            and t.column <= column
+            and t.column + len(t.text) >= column
+        ):
+            current_token = t
+            break
+
+    if current_token == None:
+        return []
+
+    defined_tokens = set()
+    for i, t in enumerate(tokens):
+        if t.type != FandangoLexer.GRAMMAR_ASSIGN:
+            continue
+        non_terminals = [
+            nt for nt in tokens[i:0:-1] if nt.type == FandangoLexer.NONTERMINAL
+        ]
+        if len(non_terminals) == 0:
+            continue
+        defined_tokens.add(non_terminals[0].text)
+
+    if current_token.text in defined_tokens:
+        return []
+
+    position = lsp.Position(line=current_token.line, character=0)
+    range = lsp.Range(start=position, end=position)  # start == end means insert
+    text_edit = lsp.TextEdit(
+        range=range,
+        new_text=f"{current_token.text} ::= # TODO: Implement\n",
+    )
+
+    return [
+        lsp.CodeAction(
+            title=f"Add definition for '{t.text}'",
+            kind=lsp.CodeActionKind.QuickFix,
+            edit=lsp.WorkspaceEdit(
+                changes={params.text_document.uri: [text_edit]},
+            ),
+        )
+    ]
+
+
 if __name__ == "__main__":
     server.start_io()
