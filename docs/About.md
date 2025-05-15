@@ -10,6 +10,7 @@ kernelspec:
   name: python3
 ---
 
+
 (sec:about)=
 # About Fandango
 
@@ -38,6 +39,47 @@ Fandango is in active development! Features planned for 2025 include:
 * high diversity inputs
 
 and many more.
+
+
+
+## Refer to Fandango
+
+To refer to Fandango, use its official URL:
+
+  https://fandango-fuzzer.github.io
+
+
+## Cite Fandango
+
+```{code-cell}
+:tags: ["remove-input"]
+import re
+
+def find_reference(key, bibfile='fandango.bib'):
+    bib = open(bibfile, 'r').read()
+    match = re.match(r'@[a-zA-Z0-9]*\{' + key + r',(.|\n)*\n\}', bib)
+    assert match is not None
+    return match.group(0)
+
+def print_reference(key, bibfile='fandango.bib'):
+    print(find_reference(key, bibfile))
+```
+
+If you want to cite Fandango in your academic work, use the ISSTA 2025 paper by {cite:ts}`zamudio2025fandango`.
+Note that José Antonio has two proper last names, Zamudio Amaya, so the proper way to cite the paper is like this:
+
+```{code-cell}
+:tags: ["remove-input"]
+print_reference('zamudio2025fandango')
+```
+
+
+## Read More
+
+To learn more about how Fandango works, start with the ISSTA 2025 paper by {cite:ts}`zamudio2025fandango`.
+
+```{bibliography}
+```
 
 
 ## Acknowledgments
