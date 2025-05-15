@@ -62,11 +62,11 @@ class Node(abc.ABC):
     def __str__(self):
         return self.__repr__()
 
-    def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterator["Node"]:
+    def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         """
         Returns an iterator of the descendents of this node.
 
-        :param rules: The rules upon which to base non-terminal lookups.
+        :param grammar: The rules upon which to base non-terminal lookups.
         :return An iterator over the descendent nodes.
         """
         yield from ()
@@ -108,7 +108,7 @@ class Alternative(Node):
     def __str__(self):
         return "(" + " | ".join(map(str, self.alternatives)) + ")"
 
-    def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterator["Node"]:
+    def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         yield from self.alternatives
 
 
@@ -145,7 +145,7 @@ class Concatenation(Node):
     def __str__(self):
         return " ".join(map(str, self.nodes))
 
-    def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterator["Node"]:
+    def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         yield from self.nodes
 
 
@@ -265,17 +265,18 @@ class Repetition(Node):
             return f"{self.node!s}{{{min_str}}}"
         return f"{self.node!s}{{{min_str},{max_str}}}"
 
-    def descendents(self, rules: Dict[NonTerminal, "Node"] | None) -> Iterator["Node"]:
+    def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         base = []
-        if self.min == 0:
+        # Todo: Context from DerivationTree is missing. Repetitions that depend on a value within the tree will cause a crash.
+        if self.min(grammar) == 0:
             base.append(TerminalNode(Terminal("")))
-        if self.min <= 1 <= self.max:
+        if self.min(grammar) <= 1 <= self.max(grammar):
             base.append(self.node)
         yield Alternative(
             base
             + [
                 Concatenation([self.node] * r)
-                for r in range(max(2, self.min), self.max + 1)
+                for r in range(max(2, self.min(grammar)), self.max(grammar) + 1)
             ]
         )
 
@@ -324,7 +325,7 @@ class Option(Repetition):
     def __str__(self):
         return f"{self.node!s}?"
 
-    def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterator["Node"]:
+    def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         yield from (self.node, TerminalNode(Terminal("")))
 
 
@@ -371,8 +372,8 @@ class NonTerminalNode(Node):
     def __hash__(self):
         return hash(self.symbol)
 
-    def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterator["Node"]:
-        yield rules[self.symbol]
+    def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
+        yield grammar.rules[self.symbol]
 
 
 class TerminalNode(Node):
@@ -444,7 +445,7 @@ class CharSet(Node):
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitCharSet(self)
 
-    def descendents(self, rules: Dict[NonTerminal, "Node"]) -> Iterator["Node"]:
+    def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         for char in self.chars:
             yield TerminalNode(Terminal(char))
 
@@ -499,8 +500,9 @@ class NodeVisitor(abc.ABC):
 
 
 class Disambiguator(NodeVisitor):
-    def __init__(self):
+    def __init__(self, grammar: "Grammar"):
         self.known_disambiguations = {}
+        self.grammar = grammar
 
     def visit(
         self, node: Node
@@ -557,7 +559,7 @@ class Disambiguator(NodeVisitor):
         self, node: Repetition
     ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
         # repetitions are alternatives over concatenations
-        implicit_alternative = next(node.descendents(None))
+        implicit_alternative = next(node.descendents(self.grammar))
         return self.visit(implicit_alternative)
 
     def visitStar(
@@ -1844,14 +1846,14 @@ class Grammar(NodeVisitor):
             if node in initial:
                 continue
             initial.add(node)
-            initial_work.extend(node.descendents(self.rules))
+            initial_work.extend(node.descendents(self))
 
         work: List[Set[Tuple[Node]]] = [set((x,) for x in initial)]
 
         for _ in range(1, k):
             next_work = set()
             for base in work[-1]:
-                for descendent in base[-1].descendents(self.rules):
+                for descendent in base[-1].descendents(self):
                     next_work.add(base + (descendent,))
             work.append(next_work)
 
@@ -1969,10 +1971,12 @@ class Grammar(NodeVisitor):
     def traverse_derivation(
         self,
         tree: DerivationTree,
-        disambiguator: Disambiguator = Disambiguator(),
+        disambiguator: Disambiguator = None,
         paths: Set[Tuple[Node, ...]] = None,
         cur_path: Tuple[Node, ...] = None,
     ) -> Set[Tuple[Node, ...]]:
+        if disambiguator is None:
+            disambiguator = Disambiguator(self)
         if paths is None:
             paths = set()
         if tree.symbol.is_terminal:
@@ -2004,7 +2008,7 @@ class Grammar(NodeVisitor):
         # Compute all possible k-paths in the grammar
         all_k_paths = self.compute_k_paths(k)
 
-        disambiguator = Disambiguator()
+        disambiguator = Disambiguator(self)
 
         # Extract k-paths from the derivation trees
         covered_k_paths = set()
