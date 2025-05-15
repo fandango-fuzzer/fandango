@@ -18,7 +18,7 @@ The Fandango project includes a simple language server that makes writing Fandan
 - Jump to definition of nonterminal
 - Find all references of nonterminal
 - Rename nonterminal
-- Create a definition for an undefined nonterminal quickfix
+- Create a definition for an undefined nonterminal
 - Initial Semantic Token support
 
 Start the language server by running
