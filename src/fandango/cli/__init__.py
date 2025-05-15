@@ -1,5 +1,6 @@
 import argparse
 import atexit
+import ctypes
 import glob
 import logging
 import os
@@ -393,9 +394,9 @@ def get_parser(in_command_line=True):
 
     command_group.add_argument(
         "--input-method",
-        choices=["stdin", "filename"],
+        choices=["stdin", "filename", "libfuzzer"],
         default="filename",
-        help="when invoking COMMAND, choose whether Fandango input will be passed as standard input (`stdin`) or as last argument on the command line (`filename`) (default)",
+        help="when invoking COMMAND, choose whether Fandango input will be passed as standard input (`stdin`), as last argument on the command line (`filename`) (default), or to a libFuzzer style harness compiled to a shared object (.so/.dylib)",
     )
     command_group.add_argument(
         "test_command",
@@ -854,6 +855,14 @@ def output_population(population, args, file_mode=None, *, output_on_stdout=True
     if "test_command" in args and args.test_command:
         LOGGER.info(f"Running {args.test_command}")
         base_cmd = [args.test_command] + args.test_args
+
+        if args.input_method == "libfuzzer":
+            if args.file_mode != "binary" or file_mode != "binary":
+                raise NotImplementedError(
+                    "LibFuzzer harnesses only support binary input"
+                )
+            harness = ctypes.CDLL(args.test_command).LLVMFuzzerTestOneInput
+
         for individual in population:
             if args.input_method == "filename":
                 prefix = "fandango-"
@@ -890,6 +899,9 @@ def output_population(population, args, file_mode=None, *, output_on_stdout=True
                     input=output(individual, args, file_mode),
                     text=(None if file_mode == "binary" else True),
                 )
+            elif args.input_method == "libfuzzer":
+                bytes = output(individual, args, file_mode)
+                harness(bytes, len(bytes))
             else:
                 raise NotImplementedError("Unsupported input method")
 
