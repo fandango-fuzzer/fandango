@@ -8,16 +8,23 @@ from fandango.language.parser.FandangoLexer import FandangoLexer
 logger = logging.getLogger(__name__)
 
 
+def map_to_ranges(references: List[Token], uri: str):
+    return [
+        lsp.Range(
+            start=lsp.Position(line=t.line - 1, character=t.column),
+            end=lsp.Position(line=t.line - 1, character=t.column + len(t.text)),
+        )
+        for t in references
+    ]
+
+
 def map_to_locations(references: List[Token], uri: str):
     locations = [
         lsp.Location(
             uri=uri,
-            range=lsp.Range(
-                start=lsp.Position(line=t.line - 1, character=t.column),
-                end=lsp.Position(line=t.line - 1, character=t.column + len(t.text)),
-            ),
+            range=range,
         )
-        for t in references
+        for range in map_to_ranges(references, uri)
     ]
 
     return locations
@@ -136,6 +143,33 @@ def goto_definition(server: FandangoLanguageServer, params: lsp.DefinitionParams
                 [r],
                 params.text_document.uri,
             )[0]
+
+
+@server.feature(lsp.TEXT_DOCUMENT_RENAME)
+def rename(ls: FandangoLanguageServer, params: lsp.RenameParams):
+    """Rename the symbol at the given position."""
+
+    references = ls.get_references(params.text_document, params.position)
+    edits = [
+        lsp.TextEdit(
+            new_text=f"<{params.new_name}>",
+            range=range,
+        )
+        for range in map_to_ranges(references, params.text_document.uri)
+    ]
+
+    return lsp.WorkspaceEdit(changes={params.text_document.uri: edits})
+
+
+@server.feature(lsp.TEXT_DOCUMENT_PREPARE_RENAME)
+def prepare_rename(ls: FandangoLanguageServer, params: lsp.PrepareRenameParams):
+    """Called by the client to determine if renaming the symbol at the given location
+    is a valid operation."""
+
+    if len(ls.get_references(params.text_document, params.position)) == 0:
+        return None
+
+    return lsp.PrepareRenameDefaultBehavior(default_behavior=True)
 
 
 if __name__ == "__main__":
