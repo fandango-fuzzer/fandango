@@ -4,6 +4,10 @@ import lsprotocol.types as lsp
 from typing import Dict, Optional, List
 import logging
 from fandango.language.parser.FandangoLexer import FandangoLexer
+from fandango.language.server.semantic_tokens import (
+    SemanticTokenModifiers,
+    SemanticTokenTypes,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +36,7 @@ def map_to_locations(references: List[Token], uri: str):
 
 class FileAssets:
     def __init__(self, lexer: FandangoLexer):
-        self.tokens = lexer.getAllTokens()
+        self.tokens: List[Token] = lexer.getAllTokens()
 
 
 class FandangoLanguageServer(LanguageServer):
@@ -170,6 +174,39 @@ def prepare_rename(ls: FandangoLanguageServer, params: lsp.PrepareRenameParams):
         return None
 
     return lsp.PrepareRenameDefaultBehavior(default_behavior=True)
+
+
+@server.feature(
+    lsp.TEXT_DOCUMENT_SEMANTIC_TOKENS_FULL,
+    lsp.SemanticTokensLegend(
+        token_types=SemanticTokenTypes.values(),
+        token_modifiers=SemanticTokenModifiers.values(),
+    ),
+)
+def semantic_tokens_full(ls: FandangoLanguageServer, params: lsp.SemanticTokensParams):
+    """Return the semantic tokens for the entire document"""
+
+    tokens = ls.get_file_assets(params.text_document).tokens
+
+    output = []
+    line, offset = 0, 0
+
+    for t in tokens:
+        if t.line - 1 > line:
+            line = t.line - 1
+            offset = 0
+        output.append(
+            [
+                line,
+                offset,
+                len(t.text),
+                SemanticTokenTypes.from_token_as_number(t),
+                SemanticTokenModifiers.from_token_as_number(t),
+            ]
+        )
+        offset = t.column + len(t.text)
+
+    return lsp.SemanticTokens(data=output)
 
 
 if __name__ == "__main__":
