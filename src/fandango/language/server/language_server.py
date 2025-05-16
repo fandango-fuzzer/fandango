@@ -184,27 +184,29 @@ def prepare_rename(ls: FandangoLanguageServer, params: lsp.PrepareRenameParams):
     ),
 )
 def semantic_tokens_full(ls: FandangoLanguageServer, params: lsp.SemanticTokensParams):
-    """Return the semantic tokens for the entire document"""
-
     tokens = ls.get_file_assets(params.text_document).tokens
 
     output = []
-    line, offset = 0, 0
+    prev_line = 0
+    prev_col = 0
 
     for t in tokens:
-        if t.line - 1 > line:
-            line = t.line - 1
-            offset = 0
-        output.append(
-            [
-                line,
-                offset,
-                len(t.text),
-                SemanticTokenTypes.from_token_as_number(t),
-                SemanticTokenModifiers.from_token_as_number(t),
-            ]
-        )
-        offset = t.column + len(t.text)
+        line = t.line - 1
+        col = t.column
+
+        delta_line = line - prev_line
+        delta_start = col - prev_col if delta_line == 0 else col
+
+        output.extend([
+            delta_line,
+            delta_start,
+            len(t.text),
+            SemanticTokenTypes.from_token_as_number(t),
+            SemanticTokenModifiers.from_token_as_number(t),
+        ])
+
+        prev_line = line
+        prev_col = col
 
     return lsp.SemanticTokens(data=output)
 
