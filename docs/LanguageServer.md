@@ -13,10 +13,13 @@ kernelspec:
 (sec:language-server)=
 # Fandango Language Server
 
-The Fandango project includes a simple language server that makes writing Fandango grammars significantly easier. Currently, it supports:
-- Autocompletion of nonterminals
-- Jump to definition
-- Find all references
+The Fandango project includes a simple language server that makes writing Fandango grammars significantly easier. Currently, it supports the following:
+- Autocomplete of nonterminals
+- Jump to definition of nonterminal
+- Find all references of nonterminal
+- Rename nonterminal
+- Create a definition for an undefined nonterminal
+- Initial Semantic Token support
 
 Start the language server by running
 
