@@ -35,3 +35,15 @@ npm run compile
 ```
 
 You can then install it from the workspace-recommended extension section in the extension manager. For additional documentation, refer to `.vscode/extensions/fandango-language-server/README.md`.
+
+## IntelliJ / Pycharm Code Extension
+To integrate the Fandango language server into IntelliJ or PyCharm, follow these steps:
+
+1. Download and install the [LSP4IJ plugin](https://plugins.jetbrains.com/plugin/23257-lsp4ij) for IntelliJ / Pycharm.
+2. Download the [Fandango LSP4J Language Server configuration](lsp4ij-fandangospec.zip).
+3. In your IDE, navigate to the `Language Servers` tab.
+4. Click the `+` button or right-click an empty area in the list to add a new language server.
+5. In the `Add New Language Server` popup:
+   1. For `Template`, select `Import from custom template...`
+   2. A file browser will appear. Select the previously downloaded language server configuration (lsp4ij-fandangospec.zip).
+   3. If necessary, adjust the command in the Server tab to ensure the correct Python executable is used (matching your desired Python version and virtual environment).
