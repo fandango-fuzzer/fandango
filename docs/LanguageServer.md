@@ -45,5 +45,5 @@ To integrate the Fandango language server into IntelliJ or PyCharm, follow these
 4. Click the `+` button or right-click an empty area in the list to add a new language server.
 5. In the `Add New Language Server` popup:
    1. For `Template`, select `Import from custom template...`
-   2. A file browser will appear. Select the previously downloaded language server configuration (lsp4ij-fandangospec.zip).
+   2. A file browser will appear. Select the previously downloaded language server configuration.
    3. If necessary, adjust the command in the Server tab to ensure the correct Python executable is used (matching your desired Python version and virtual environment).
