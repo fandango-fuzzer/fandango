@@ -188,145 +188,188 @@ class Fandango:
             )
         return unique_population
 
+    def _should_terminate_evolution(self) -> bool:
+        """
+        Checks if the evolution should terminate.
+
+        The evolution terminates if:
+        - We have found enough solutions based on the desired number of solutions (self.desired_solutions)
+        - We have found enough solutions for the next generation (self.population_size)
+        - We have reached the expected fitness (self.expected_fitness)
+
+        :return: True if the evolution should terminate, False otherwise.
+        """
+        if 0 < self.desired_solutions <= len(self.solution):
+            # Found enough solutions: Manually only require self.desired_solutions
+            self.fitness = 1.0
+            self.solution = self.solution[: self.desired_solutions]
+            return True
+        if len(self.solution) >= self.population_size:
+            # Found enough solutions: Found enough for next generation
+            self.fitness = 1.0
+            self.solution = self.solution[: self.population_size]
+            return True
+        if self.fitness >= self.expected_fitness:
+            # Found enough solutions: Reached expected fitness
+            self.fitness = 1.0
+            self.solution = self.population[: self.population_size]
+            return True
+        return False
+
+    def _perform_selection(self) -> tuple[list[DerivationTree], set[int]]:
+        """
+        Performs selection of the elites from the population.
+
+        :return: A tuple containing the new population and the set of unique hashes of the individuals in the new population.
+        """
+        if self.profiling:
+            self.profiler.start_timer("select_elites")
+        new_population = self.evaluator.select_elites(
+            self.evaluation, self.elitism_rate, self.population_size
+        )
+        if self.profiling:
+            self.profiler.stop_timer("select_elites")
+            self.profiler.increment("select_elites", len(new_population))
+
+        unique_hashes = {hash(ind) for ind in new_population}
+        return new_population, unique_hashes
+
+    def _perform_crossover(
+        self, new_population: list[DerivationTree], unique_hashes: set[int]
+    ) -> None:
+        """
+        Performs crossover of the population.
+
+        :param new_population: The new population to perform crossover on.
+        :param unique_hashes: The set of unique hashes of the individuals in the new population.
+        """
+        try:
+            if self.profiling:
+                self.profiler.start_timer("tournament_selection")
+            parent1, parent2 = self.evaluator.tournament_selection(
+                self.evaluation, self.tournament_size
+            )
+            if self.profiling:
+                self.profiler.stop_timer("tournament_selection")
+                self.profiler.increment("tournament_selection", 2)
+
+            if self.profiling:
+                self.profiler.start_timer("crossover")
+            child1, child2 = self.crossover_operator.crossover(
+                self.grammar, parent1, parent2
+            )
+            if self.profiling:
+                self.profiler.stop_timer("crossover")
+                self.profiler.increment("crossover", 2)
+
+            PopulationManager.add_unique_individual(
+                new_population, child1, unique_hashes
+            )
+            self.evaluator.evaluate_individual(child1)
+
+            if self.profiling:
+                self.profiler.start_timer("filling")
+                count = len(new_population)
+            if len(new_population) < self.population_size:
+                PopulationManager.add_unique_individual(
+                    new_population, child2, unique_hashes
+                )
+                self.evaluator.evaluate_individual(child2)
+
+            if self.profiling:
+                self.profiler.stop_timer("filling")
+                self.profiler.increment("filling", len(new_population) - count)
+            self.crossovers_made += 2
+        except Exception as e:
+            LOGGER.error(f"Error during crossover: {e}")
+
+    def _perform_mutation(self, new_population: list[DerivationTree]) -> None:
+        """
+        Performs mutation of the population.
+
+        :param new_population: The new population to perform mutation on.
+        """
+        weights = [self.evaluator.fitness_cache[hash(ind)][0] for ind in new_population]
+        if not all(w == 0 for w in weights):
+            mutation_pool = random.choices(
+                new_population, weights=weights, k=len(new_population)
+            )
+        else:
+            mutation_pool = new_population
+        mutated_population = []
+        for individual in mutation_pool:
+            if random.random() < self.adaptive_tuner.mutation_rate:
+                try:
+                    if self.profiling:
+                        self.profiler.start_timer("mutation")
+
+                    mutated_individual = self.mutation_method.mutate(
+                        individual,
+                        self.grammar,
+                        self.evaluator.evaluate_individual,
+                        self.current_max_nodes,
+                    )
+                    if self.profiling:
+                        self.profiler.stop_timer("mutation")
+                        self.profiler.increment("mutation", 1)
+                    mutated_population.append(mutated_individual)
+                    self.mutations_made += 1
+                except Exception as e:
+                    LOGGER.error(f"Error during mutation: {e}")
+                    mutated_population.append(individual)
+            else:
+                mutated_population.append(individual)
+        new_population.extend(mutated_population)
+
+    def _perform_destruction(
+        self, new_population: list[DerivationTree]
+    ) -> tuple[list[DerivationTree]]:
+        """
+        Randomly destroys a portion of the population.
+
+        :param new_population: The new population to perform destruction on.
+        :return: The new population after destruction.
+        """
+        LOGGER.debug(f"Destroying {self.destruction_rate * 100:.2f}% of the population")
+        random.shuffle(new_population)
+        return new_population[: int(self.population_size * (1 - self.destruction_rate))]
+
     def evolve(self) -> list[DerivationTree]:
         LOGGER.info("---------- Starting evolution ----------")
         start_time = time.time()
         prev_best_fitness = 0.0
 
         for generation in range(1, self.max_generations + 1):
-            if 0 < self.desired_solutions <= len(self.solution):
-                # Found enough solutions: Manually only require self.desired_solutions
-                self.fitness = 1.0
-                self.solution = self.solution[: self.desired_solutions]
-                break
-            if len(self.solution) >= self.population_size:
-                # Found enough solutions: Found enough for next generation
-                self.fitness = 1.0
-                self.solution = self.solution[: self.population_size]
-                break
-            if self.fitness >= self.expected_fitness:
-                # Found enough solutions: Reached expected fitness
-                self.fitness = 1.0
-                self.solution = self.population[: self.population_size]
+            if self._should_terminate_evolution():
                 break
 
             LOGGER.info(
                 f"Generation {generation} - Fitness: {self.fitness:.2f} - #solutions found: {len(self.solution)}"
             )
 
-            # Selection & Crossover
-            if self.profiling:
-                self.profiler.start_timer("select_elites")
-            new_population = self.evaluator.select_elites(
-                self.evaluation, self.elitism_rate, self.population_size
-            )
-            if self.profiling:
-                self.profiler.stop_timer("select_elites")
-                self.profiler.increment("select_elites", len(new_population))
+            # Selection
+            new_population, unique_hashes = self._perform_selection()
 
-            unique_hashes = {hash(ind) for ind in new_population}
+            # Crossover
+            while (
+                len(new_population) < self.population_size
+                and random.random() >= self.adaptive_tuner.crossover_rate
+            ):
+                self._perform_crossover(new_population, unique_hashes)
 
-            while len(new_population) < self.population_size:
-                if random.random() < self.adaptive_tuner.crossover_rate:
-                    try:
-                        if self.profiling:
-                            self.profiler.start_timer("tournament_selection")
-                        parent1, parent2 = self.evaluator.tournament_selection(
-                            self.evaluation, self.tournament_size
-                        )
-                        if self.profiling:
-                            self.profiler.stop_timer("tournament_selection")
-                            self.profiler.increment("tournament_selection", 2)
-
-                        if self.profiling:
-                            self.profiler.start_timer("crossover")
-                        child1, child2 = self.crossover_operator.crossover(
-                            self.grammar, parent1, parent2
-                        )
-                        if self.profiling:
-                            self.profiler.stop_timer("crossover")
-                            self.profiler.increment("crossover", 2)
-
-                        PopulationManager.add_unique_individual(
-                            new_population, child1, unique_hashes
-                        )
-                        self.evaluator.evaluate_individual(child1)
-
-                        if self.profiling:
-                            self.profiler.start_timer("filling")
-                            count = len(new_population)
-                        if len(new_population) < self.population_size:
-                            PopulationManager.add_unique_individual(
-                                new_population, child2, unique_hashes
-                            )
-                            self.evaluator.evaluate_individual(child2)
-
-                        if self.profiling:
-                            self.profiler.stop_timer("filling")
-                            self.profiler.increment(
-                                "filling", len(new_population) - count
-                            )
-                        self.crossovers_made += 2
-                    except Exception as e:
-                        LOGGER.error(f"Error during crossover: {e}")
-                        continue
-                else:
-                    break
-
+            # Truncate if necessary
             if len(new_population) > self.population_size:
                 new_population = new_population[: self.population_size]
 
             # Mutation
-            weights = [
-                self.evaluator.fitness_cache[hash(ind)][0] for ind in new_population
-            ]
-            if not all(w == 0 for w in weights):
-                mutation_pool = random.choices(
-                    new_population, weights=weights, k=len(new_population)
-                )
-            else:
-                mutation_pool = new_population
-            mutated_population = []
-            for individual in mutation_pool:
-                if random.random() < self.adaptive_tuner.mutation_rate:
-                    try:
-                        if self.profiling:
-                            self.profiler.start_timer("mutation")
-
-                        mutated_individual = self.mutation_method.mutate(
-                            individual,
-                            self.grammar,
-                            self.evaluator.evaluate_individual,
-                            self.current_max_nodes,
-                        )
-                        if self.profiling:
-                            self.profiler.stop_timer("mutation")
-                            self.profiler.increment("mutation", 1)
-                        mutated_population.append(mutated_individual)
-                        self.mutations_made += 1
-                    except Exception as e:
-                        LOGGER.error(f"Error during mutation: {e}")
-                        mutated_population.append(individual)
-                else:
-                    mutated_population.append(individual)
-            new_population.extend(mutated_population)
+            self._perform_mutation(new_population)
 
             # Destruction
             if self.destruction_rate > 0:
-                LOGGER.debug(
-                    f"Destroying {self.destruction_rate * 100:.2f}% of the population"
-                )
-                random.shuffle(new_population)
-                new_population = new_population[
-                    : int(self.population_size * (1 - self.destruction_rate))
-                ]
-                unique_hashes = {hash(ind) for ind in new_population}
+                new_population = self._perform_destruction(new_population)
 
             # Ensure Uniqueness & Fill Population
-            unique_temp = {}
-            for ind in new_population:
-                unique_temp[hash(ind)] = ind
-            new_population = list(unique_temp.values())
+            new_population = list(set(new_population))
             new_population = self.population_manager.refill_population(
                 new_population, self.evaluator.evaluate_individual
             )
