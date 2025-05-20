@@ -36,14 +36,6 @@ fandango_is_client = True
                            <ServerControl:ClientControl:response_login_pass_fail>
                            (<state_logged_out> | (<ServerControl:ClientControl:response_login_throttled><state_finished>))
 
-where forall <ex> in <exchange_login_ok>:
-    str(<ex>.<request_login_user_ok>.<correct_username>) == str(<ex>.<response_login_user>.<user_name>)
-where forall <ex> in <exchange_login_fail>:
-    str(<ex>.<request_login_user_ok>.<correct_username>) == str(<ex>.<response_login_user>.<user_name>)
-where forall <ex> in <exchange_login_fail>:
-    str(<ex>.<request_login_user_fail>.<wrong_user_name>) == str(<ex>.<response_login_user>.<user_name>)
-
-
 where (not contains_nt(<start>, NonTerminal('<request_mlsd>')))
     or (contains_nt(<start>, NonTerminal('<request_set_epassive>')) and contains_nt(<start>, NonTerminal('<request_set_type>')))
 
@@ -53,15 +45,15 @@ def contains_nt(tree, nt):
             return True
     return False
 
-<request_login_user_ok> ::= 'USER ' <correct_username> '\r\n'
-<correct_username> ::= 'the_user'
-<response_login_user> ::= '331 Password required for ' <user_name> '\r\n'
+<request_login_user_ok> ::= 'USER the_user\r\n'
+<response_login_user> ::= '331 ' <command_tail> '\r\n'
 <request_login_pass_ok> ::= 'PASS the_password\r\n'
-<response_login_pass_ok> ::= '230 User the_user logged in\r\n'
+<response_login_pass_ok> ::= '230 ' <command_tail> '\r\n'
+<command_tail> ::= r'([a-zA-Z0-9\_\. ]+)'
 
 <request_login_user_fail> ::= 'USER ' <wrong_user_name> '\r\n'
 <request_login_pass_fail> ::= 'PASS ' <wrong_user_password> '\r\n'
-<response_login_pass_fail> ::= '530 Login incorrect.\r\n'
+<response_login_pass_fail> ::= '530 ' <command_tail> '\r\n'
 <response_login_throttled> ::= 'FTP session closed.\r\n'
 
 <exchange_syst> ::= <ClientControl:ServerControl:request_syst><ServerControl:ClientControl:response_syst>
@@ -175,9 +167,7 @@ def is_unique_folder_and_file(current_file_or_folder, data):
 <filesystem_name> ::= r'[a-zA-Z0-9]+'
 <client_name> ::= r'[a-zA-Z0-9]+'
 
-<user_name> ::= r'[a-zA-Z0-9\_]+'
 <wrong_user_name> ::= r'^(?!the_user\r\n$)([a-zA-Z0-9_]+)'
-
 <wrong_user_password> ::= r'^(?!the_password\r\n$)([a-zA-Z0-9_]+)'
 
 <open_port> ::= <passive_port> := open_data_port(int(<open_port_param>))
