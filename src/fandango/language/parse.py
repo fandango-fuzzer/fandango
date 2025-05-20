@@ -9,7 +9,7 @@ import re
 from copy import deepcopy
 from pathlib import Path
 from io import StringIO
-from typing import IO, Any, Optional, Set, Tuple
+from typing import Any, IO, Optional
 
 import cachedir_tag
 import dill as pickle
@@ -67,7 +67,7 @@ INCLUDES: list[str] = []
 # An include depth of 0 means the file was given as input.
 # A higher include depth means the file was included from another file;
 # hence its grammar and constraints should be processed _before_ the current file.
-FILES_TO_PARSE: list[Tuple[IO, int]] = []
+FILES_TO_PARSE: list[tuple[IO, int]] = []
 
 # The current include depth
 INCLUDE_DEPTH: int = 0
@@ -205,7 +205,7 @@ def parse_content(
     use_cache: bool = True,
     lazy: bool = False,
     max_repetitions: int = 5,
-) -> Tuple[Grammar, list[str]]:
+) -> tuple[Grammar, list[str]]:
     """
     Parse given content into a grammar and constraints.
     This is a helper function; use `parse()` as the main entry point.
@@ -302,7 +302,7 @@ def parse_content(
 
 
 # Save the set of symbols used in the standard library and imported grammars
-USED_SYMBOLS: Set[str] = set()
+USED_SYMBOLS: set[str] = set()
 
 # Save the standard library grammar and constraints
 STDLIB_GRAMMAR: Optional[Grammar] = None
@@ -320,7 +320,7 @@ def parse(
     start_symbol: Optional[str] = None,
     includes: list[str] = [],
     max_repetitions: int = 5,
-) -> Tuple[Optional[Grammar], list[str]]:
+) -> tuple[Optional[Grammar], list[str]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
     :param fan_files: One (open) .fan file, one string, or a list of these

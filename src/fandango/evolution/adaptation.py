@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from fandango.evolution.evaluation import Evaluator
 from fandango.language.grammar import DerivationTree
 from fandango.logger import LOGGER
@@ -34,7 +32,7 @@ class AdaptiveTuner:
         population: list[DerivationTree],
         evaluator: Evaluator,
         current_max_repetition: int,
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         diversity_map = evaluator.compute_diversity_bonus(population)
         avg_diversity = (
             sum(diversity_map.values()) / len(diversity_map) if diversity_map else 0
@@ -108,7 +106,7 @@ class AdaptiveTuner:
     def log_generation_statistics(
         self,
         generation: int,
-        evaluation: list[Tuple[DerivationTree, float, list]],
+        evaluation: list[tuple[DerivationTree, float, list]],
         population: list[DerivationTree],
         evaluator: Evaluator,
     ):

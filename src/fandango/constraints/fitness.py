@@ -5,7 +5,7 @@ The `fitness` module provides the `Fitness` class and its subclasses `ValueFitne
 import abc
 import enum
 import itertools
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Any
 
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
@@ -43,14 +43,14 @@ class FailingTree:
         self,
         tree: DerivationTree,
         cause: "GeneticBase",
-        suggestions: Optional[list[Tuple[Comparison, Any, ComparisonSide]]] = None,
+        suggestions: Optional[list[tuple[Comparison, Any, ComparisonSide]]] = None,
     ):
         """
         Initialize the FailingTree with the given tree, cause, and suggestions.
 
         :param DerivationTree tree: The tree that failed to satisfy the constraint.
         :param GeneticBase cause: The cause of the failure.
-        :param Optional[list[Tuple[Comparison, Any, ComparisonSide]]] suggestions: The list of suggestions to
+        :param Optional[list[tuple[Comparison, Any, ComparisonSide]]] suggestions: The list of suggestions to
         which causes the cause to fail.
         """
         self.tree = tree
@@ -191,15 +191,15 @@ class GeneticBase(abc.ABC):
 
     def __init__(
         self,
-        searches: Optional[Dict[str, NonTerminalSearch]] = None,
-        local_variables: Optional[Dict[str, Any]] = None,
-        global_variables: Optional[Dict[str, Any]] = None,
+        searches: Optional[dict[str, NonTerminalSearch]] = None,
+        local_variables: Optional[dict[str, Any]] = None,
+        global_variables: Optional[dict[str, Any]] = None,
     ):
         """
         Initialize the GeneticBase with the given searches, local variables, and global variables.
-        :param Optional[Dict[str, NonTerminalSearch]] searches: The dictionary of searches.
-        :param Optional[Dict[str, Any]] local_variables: The dictionary of local variables.
-        :param Optional[Dict[str, Any]] global_variables: The dictionary of global variables.
+        :param Optional[dict[str, NonTerminalSearch]] searches: The dictionary of searches.
+        :param Optional[dict[str, Any]] local_variables: The dictionary of local variables.
+        :param Optional[dict[str, Any]] global_variables: The dictionary of global variables.
         """
         self.searches = searches or dict()
         self.local_variables = local_variables or dict()
@@ -218,12 +218,12 @@ class GeneticBase(abc.ABC):
     def fitness(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
     ) -> Fitness:
         """
         Abstract method to calculate the fitness of the tree.
         :param DerivationTree tree: The tree to calculate the fitness.
-        :param Optional[Dict[NonTerminal, DerivationTree]] scope: The scope of non-terminals matching to trees.
+        :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of non-terminals matching to trees.
         :return Fitness: The fitness of the tree.
         """
         raise NotImplementedError("Fitness function not implemented")
@@ -231,23 +231,23 @@ class GeneticBase(abc.ABC):
     @staticmethod
     def get_hash(
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
     ):
         return hash((tree, tuple((scope or {}).items())))
 
     def combinations(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
     ):
         """
         Get all possible combinations of trees that satisfy the searches.
         :param DerivationTree tree: The tree to calculate the fitness.
-        :param Optional[Dict[NonTerminal, DerivationTree]] scope: The scope of non-terminals matching to trees.
-        :return list[list[Tuple[str, DerivationTree]]]: The list of combinations of trees that fill all non-terminals
+        :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of non-terminals matching to trees.
+        :return list[list[tuple[str, DerivationTree]]]: The list of combinations of trees that fill all non-terminals
         in the genetic base.
         """
-        nodes: list[list[Tuple[str, DerivationTree]]] = []
+        nodes: list[list[tuple[str, DerivationTree]]] = []
         for name, search in self.searches.items():
             nodes.append(
                 [(name, container) for container in search.find(tree, scope=scope)]
@@ -257,12 +257,12 @@ class GeneticBase(abc.ABC):
     def check(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
     ) -> bool:
         """
         Check if the tree satisfies the genetic base.
         :param DerivationTree tree: The tree to check.
-        :param Optional[Dict[NonTerminal, DerivationTree]] scope: The scope of non-terminals matching to trees.
+        :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of non-terminals matching to trees.
         :return bool: True if the tree satisfies the genetic base, False otherwise.
         """
         return self.fitness(tree, scope).success

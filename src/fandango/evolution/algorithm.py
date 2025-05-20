@@ -3,7 +3,7 @@ import enum
 import logging
 import random
 import time
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, Optional, Union
 
 from fandango import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.constraints.base import Constraint, SoftValue

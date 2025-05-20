@@ -1,7 +1,7 @@
 from antlr4 import InputStream, Token
 from pygls.server import LanguageServer
 import lsprotocol.types as lsp
-from typing import Dict, Optional
+from typing import Optional
 import logging
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.server.semantic_tokens import (
@@ -42,7 +42,7 @@ class FileAssets:
 class FandangoLanguageServer(LanguageServer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.files: Dict[str, FileAssets] = {}
+        self.files: dict[str, FileAssets] = {}
 
     def get_text_document(self, document: lsp.VersionedTextDocumentIdentifier):
         return self.workspace.get_text_document(document.uri)

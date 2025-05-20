@@ -1,7 +1,7 @@
 import copy
 from copy import deepcopy
 from io import BytesIO, StringIO
-from typing import Any, Optional, Set, Tuple, Union
+from typing import Any, Optional, Union
 
 from fandango import FandangoValueError
 from fandango.language.symbol import NonTerminal, Slice, Symbol, Terminal
@@ -182,7 +182,7 @@ class DerivationTree:
         return self.symbol, [child.__tree__() for child in self._children]
 
     @staticmethod
-    def from_tree(tree: Tuple[str, list[Tuple[str, list]]]) -> "DerivationTree":
+    def from_tree(tree: tuple[str, list[tuple[str, list]]]) -> "DerivationTree":
         symbol, children = tree
         if not isinstance(symbol, str):
             raise TypeError(f"{symbol} must be a string")
@@ -613,7 +613,7 @@ class DerivationTree:
 
         return new_tree
 
-    def get_non_terminal_symbols(self, exclude_read_only=True) -> Set[NonTerminal]:
+    def get_non_terminal_symbols(self, exclude_read_only=True) -> set[NonTerminal]:
         """
         Retrieve all non-terminal symbols present in the derivation tree.
         """
