@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Tuple
 
 from fandango.evolution.evaluation import Evaluator
 from fandango.language.grammar import DerivationTree
@@ -31,7 +31,7 @@ class AdaptiveTuner:
         generation: int,
         prev_best_fitness: float,
         current_best_fitness: float,
-        population: List[DerivationTree],
+        population: list[DerivationTree],
         evaluator: Evaluator,
         current_max_repetition: int,
     ) -> Tuple[float, float]:
@@ -108,8 +108,8 @@ class AdaptiveTuner:
     def log_generation_statistics(
         self,
         generation: int,
-        evaluation: List[Tuple[DerivationTree, float, List]],
-        population: List[DerivationTree],
+        evaluation: list[Tuple[DerivationTree, float, list]],
+        population: list[DerivationTree],
         evaluator: Evaluator,
     ):
         best_fitness = max(fitness for _, fitness, _ in evaluation)

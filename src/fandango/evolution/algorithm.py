@@ -3,7 +3,7 @@ import enum
 import logging
 import random
 import time
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, Optional, Tuple, Union
 
 from fandango import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.constraints.base import Constraint, SoftValue
@@ -31,10 +31,10 @@ class Fandango:
     def __init__(
         self,
         grammar: Grammar,
-        constraints: List[Constraint],
+        constraints: list[Constraint],
         population_size: int = 100,
         desired_solutions: int = 0,
-        initial_population: Optional[List[Union[DerivationTree, str]]] = None,
+        initial_population: Optional[list[Union[DerivationTree, str]]] = None,
         max_generations: int = 500,
         expected_fitness: float = 1.0,
         elitism_rate: float = 0.1,
@@ -157,8 +157,8 @@ class Fandango:
         self.desired_solutions = desired_solutions
 
     def _parse_and_deduplicate(
-        self, population: Optional[List[Union[DerivationTree, str]]]
-    ) -> List[DerivationTree]:
+        self, population: Optional[list[Union[DerivationTree, str]]]
+    ) -> list[DerivationTree]:
         """
         Parses and deduplicates the initial population along unique parse trees. If no initial population is provided, an empty list is returned.
 
@@ -188,7 +188,7 @@ class Fandango:
             )
         return unique_population
 
-    def evolve(self) -> List[DerivationTree]:
+    def evolve(self) -> list[DerivationTree]:
         LOGGER.info("---------- Starting evolution ----------")
         start_time = time.time()
         prev_best_fitness = 0.0
@@ -420,7 +420,7 @@ class Fandango:
 
         return self.solution
 
-    def select_elites(self) -> List[DerivationTree]:
+    def select_elites(self) -> list[DerivationTree]:
         return [
             x[0]
             for x in sorted(self.evaluation, key=lambda x: x[1], reverse=True)[
