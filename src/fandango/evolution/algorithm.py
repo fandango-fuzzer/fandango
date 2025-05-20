@@ -3,7 +3,7 @@ import enum
 import logging
 import random
 import time
-from typing import List, Union
+from typing import Callable, List, Optional, Tuple, Union
 
 from fandango import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.constraints.base import Constraint, SoftValue
@@ -34,7 +34,7 @@ class Fandango:
         constraints: List[Constraint],
         population_size: int = 100,
         desired_solutions: int = 0,
-        initial_population: List[Union[DerivationTree, str]] = None,
+        initial_population: Optional[List[Union[DerivationTree, str]]] = None,
         max_generations: int = 500,
         expected_fitness: float = 1.0,
         elitism_rate: float = 0.1,
@@ -44,15 +44,15 @@ class Fandango:
         mutation_method: MutationOperator = SimpleMutation(),
         mutation_rate: float = 0.2,
         destruction_rate: float = 0.0,
-        logger_level: LoggerLevel = None,
+        logger_level: Optional[LoggerLevel] = None,
         warnings_are_errors: bool = False,
         best_effort: bool = False,
-        random_seed: int = None,
+        random_seed: Optional[int] = None,
         start_symbol: str = "<start>",
         diversity_k: int = 5,
         diversity_weight: float = 1.0,
         max_repetition_rate: float = 0.5,
-        max_repetitions: int = None,
+        max_repetitions: Optional[int] = None,
         max_nodes: int = 200,
         max_nodes_rate: float = 0.5,
         profiling: bool = False,
@@ -67,7 +67,6 @@ class Fandango:
             LOGGER.setLevel(logger_level.value)
         LOGGER.info("---------- Initializing FANDANGO algorithm ---------- ")
 
-        self.fixes_made = 0
         self.grammar = grammar
         self.constraints = constraints
         self.population_size = max(population_size, desired_solutions)
@@ -115,72 +114,27 @@ class Fandango:
         self.crossover_operator = crossover_method
         self.mutation_method = mutation_method
 
-        # Initialize population
-        if initial_population is not None:
-            LOGGER.info("Saving the provided initial population...")
-            unique_population = []
-            unique_hashes = set()
-            for individual in initial_population:
-                if isinstance(individual, str):
-                    tree = self.grammar.parse(individual)
-                    if not tree:
-                        position = self.grammar.max_position()
-                        raise FandangoParseError(
-                            message=f"Failed to parse initial individual{individual!r}",
-                            position=position,
-                        )
-                elif isinstance(individual, DerivationTree):
-                    tree = individual
-                else:
-                    raise TypeError(
-                        "Initial individuals must be DerivationTree or String"
-                    )
-                h = hash(tree)
-                if h not in unique_hashes:
-                    unique_hashes.add(h)
-                    unique_population.append(tree)
+        initial_population = self._parse_and_deduplicate(population=initial_population)
 
-            attempts = 0
-            max_attempts = (self.population_size - len(unique_population)) * 10
-            while (
-                len(unique_population) < self.population_size
-                and attempts < max_attempts
-            ):
-                candidate = self.fix_individual(
-                    self.grammar.fuzz(
-                        self.start_symbol, max_nodes=self.current_max_nodes
-                    )
-                )
-                h = hash(candidate)
-                if h not in unique_hashes:
-                    unique_hashes.add(h)
-                    unique_population.append(candidate)
-                attempts += 1
-            if len(unique_population) < self.population_size:
-                LOGGER.warning(
-                    f"Could not generate full unique initial population. Final size is {len(unique_population)}."
-                )
-            self.population = unique_population
-        else:
-            LOGGER.info(
-                f"Generating initial population (size: {self.population_size})..."
-            )
-            st_time = time.time()
+        LOGGER.info(
+            f"Generating (additional) initial population (size: {len(initial_population) - self.population_size})..."
+        )
+        st_time = time.time()
 
-            if self.profiling:
-                self.profiler.start_timer("initial_population")
-            self.population = (
-                self.population_manager.generate_random_initial_population(
-                    self.fix_individual
-                )
-            )
-            if self.profiling:
-                self.profiler.stop_timer("initial_population")
-                self.profiler.increment("initial_population", len(self.population))
+        if self.profiling:
+            self.profiler.start_timer("initial_population")
 
-            LOGGER.info(
-                f"Initial population generated in {time.time() - st_time:.2f} seconds"
-            )
+        self.population = self.population_manager.generate_random_population(
+            eval_individual=self.evaluator.evaluate_individual,
+            initial_population=initial_population,
+        )
+        if self.profiling:
+            self.profiler.stop_timer("initial_population")
+            self.profiler.increment("initial_population", len(self.population))
+
+        LOGGER.info(
+            f"Initial population generated in {time.time() - st_time:.2f} seconds"
+        )
 
         # Evaluate initial population
         if self.profiling:
@@ -202,6 +156,38 @@ class Fandango:
         self.solution_set = self.evaluator.solution_set
         self.desired_solutions = desired_solutions
 
+    def _parse_and_deduplicate(
+        self, population: Optional[List[Union[DerivationTree, str]]]
+    ) -> List[DerivationTree]:
+        """
+        Parses and deduplicates the initial population along unique parse trees. If no initial population is provided, an empty list is returned.
+
+        :param population: The initial population to parse and deduplicate.
+        :return: A list of unique parse trees.
+        """
+        if population == None:
+            return []
+        LOGGER.info("Deduplicating the provided initial population...")
+        unique_population = []
+        unique_hashes = set()
+        for individual in population:
+            if isinstance(individual, str):
+                tree = self.grammar.parse(individual)
+                if not tree:
+                    position = self.grammar.max_position()
+                    raise FandangoParseError(
+                        message=f"Failed to parse initial individual{individual!r}",
+                        position=position,
+                    )
+            elif isinstance(individual, DerivationTree):
+                tree = individual
+            else:
+                raise TypeError("Initial individuals must be DerivationTree or String")
+            PopulationManager.add_unique_individual(
+                population=unique_population, candidate=tree, unique_set=unique_hashes
+            )
+        return unique_population
+
     def evolve(self) -> List[DerivationTree]:
         LOGGER.info("---------- Starting evolution ----------")
         start_time = time.time()
@@ -209,14 +195,17 @@ class Fandango:
 
         for generation in range(1, self.max_generations + 1):
             if 0 < self.desired_solutions <= len(self.solution):
+                # Found enough solutions: Manually only require self.desired_solutions
                 self.fitness = 1.0
                 self.solution = self.solution[: self.desired_solutions]
                 break
             if len(self.solution) >= self.population_size:
+                # Found enough solutions: Found enough for next generation
                 self.fitness = 1.0
                 self.solution = self.solution[: self.population_size]
                 break
             if self.fitness >= self.expected_fitness:
+                # Found enough solutions: Reached expected fitness
                 self.fitness = 1.0
                 self.solution = self.population[: self.population_size]
                 break
@@ -258,7 +247,7 @@ class Fandango:
                             self.profiler.stop_timer("crossover")
                             self.profiler.increment("crossover", 2)
 
-                        self.population_manager.add_unique_individual(
+                        PopulationManager.add_unique_individual(
                             new_population, child1, unique_hashes
                         )
                         self.evaluator.evaluate_individual(child1)
@@ -267,7 +256,7 @@ class Fandango:
                             self.profiler.start_timer("filling")
                             count = len(new_population)
                         if len(new_population) < self.population_size:
-                            self.population_manager.add_unique_individual(
+                            PopulationManager.add_unique_individual(
                                 new_population, child2, unique_hashes
                             )
                             self.evaluator.evaluate_individual(child2)
@@ -339,10 +328,17 @@ class Fandango:
                 unique_temp[hash(ind)] = ind
             new_population = list(unique_temp.values())
             new_population = self.population_manager.refill_population(
-                new_population, self.fix_individual
+                new_population, self.evaluator.evaluate_individual
             )
 
-            self.population = [self.fix_individual(ind) for ind in new_population]
+            self.population = []
+            for ind in new_population:
+                _, failing_trees = self.evaluator.evaluate_individual(ind)
+                ind, num_fixes = self.population_manager.fix_individual(
+                    ind, failing_trees
+                )
+                self.population.append(ind)
+                self.fixes_made += num_fixes
 
             if any(isinstance(c, SoftValue) for c in self.constraints):
                 # For soft constraints, the normalized fitness may change over time as we observe more inputs.
@@ -423,28 +419,6 @@ class Fandango:
                 return self.population[: self.desired_solutions]
 
         return self.solution
-
-    def fix_individual(self, individual: DerivationTree) -> DerivationTree:
-        _, failing_trees = self.evaluator.evaluate_individual(individual)
-        for failing_tree in failing_trees:
-            if failing_tree.tree.read_only:
-                continue
-            for operator, value, side in failing_tree.suggestions:
-                if (
-                    operator == Comparison.EQUAL
-                    and side == ComparisonSide.LEFT
-                    and isinstance(value, (str, bytes, DerivationTree))
-                ):
-                    suggested_tree = self.grammar.parse(
-                        value, start=failing_tree.tree.symbol.symbol
-                    )
-                    if suggested_tree is None:
-                        continue
-                    individual = individual.replace(
-                        self.grammar, failing_tree.tree, suggested_tree
-                    )
-                    self.fixes_made += 1
-        return individual
 
     def select_elites(self) -> List[DerivationTree]:
         return [
