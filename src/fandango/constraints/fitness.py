@@ -5,7 +5,7 @@ The `fitness` module provides the `Fitness` class and its subclasses `ValueFitne
 import abc
 import enum
 import itertools
-from typing import List, Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any, Tuple
 
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
@@ -43,14 +43,14 @@ class FailingTree:
         self,
         tree: DerivationTree,
         cause: "GeneticBase",
-        suggestions: Optional[List[Tuple[Comparison, Any, ComparisonSide]]] = None,
+        suggestions: Optional[list[Tuple[Comparison, Any, ComparisonSide]]] = None,
     ):
         """
         Initialize the FailingTree with the given tree, cause, and suggestions.
 
         :param DerivationTree tree: The tree that failed to satisfy the constraint.
         :param GeneticBase cause: The cause of the failure.
-        :param Optional[List[Tuple[Comparison, Any, ComparisonSide]]] suggestions: The list of suggestions to
+        :param Optional[list[Tuple[Comparison, Any, ComparisonSide]]] suggestions: The list of suggestions to
         which causes the cause to fail.
         """
         self.tree = tree
@@ -75,12 +75,14 @@ class Fitness(abc.ABC):
     Abstract class to represent the fitness of a tree.
     """
 
-    def __init__(self, success: bool, failing_trees: List[FailingTree] = None):
+    def __init__(
+        self, success: bool, failing_trees: Optional[list[FailingTree]] = None
+    ):
         """
         Initialize the Fitness with the given success and failing trees.
 
         :param bool success: The success of the fitness.
-        :param Optional[List[FailingTree]] failing_trees: The list of failing trees.
+        :param Optional[list[FailingTree]] failing_trees: The list of failing trees.
         """
         self.success = success
         self.failing_trees = failing_trees or []
@@ -107,12 +109,14 @@ class ValueFitness(Fitness):
     """
 
     def __init__(
-        self, values: List[float] = None, failing_trees: List[FailingTree] = None
+        self,
+        values: Optional[list[float]] = None,
+        failing_trees: Optional[list[FailingTree]] = None,
     ):
         """
         Initialize the ValueFitness with the given values and failing trees.
-        :param Optional[List[float]] values: The list of values.
-        :param Optional[List[FailingTree]] failing_trees: The list of failing trees.
+        :param Optional[list[float]] values: The list of values.
+        :param Optional[list[FailingTree]] failing_trees: The list of failing trees.
         """
         super().__init__(True, failing_trees)
         self.values = values or []
@@ -147,14 +151,14 @@ class ConstraintFitness(Fitness):
         solved: int,
         total: int,
         success: bool,
-        failing_trees: List[FailingTree] = None,
+        failing_trees: Optional[list[FailingTree]] = None,
     ):
         """
         Initialize the ConstraintFitness with the given solved, total, success, and failing trees.
         :param int solved: The number of constraints solved by the tree.
         :param int total: The total number of constraints.
         :param bool success: The success of the fitness.
-        :param Optional[List[FailingTree]] failing_trees: The list of failing trees.
+        :param Optional[list[FailingTree]] failing_trees: The list of failing trees.
         """
         super().__init__(success, failing_trees)
         self.solved = solved
@@ -204,7 +208,7 @@ class GeneticBase(abc.ABC):
     def get_access_points(self):
         """
         Get the access points of the genetic base, i.e., the non-terminal that are considered in this genetic base.
-        :return List[NonTerminal]: The list of access points.
+        :return list[NonTerminal]: The list of access points.
         """
         return sum(
             [search.get_access_points() for search in self.searches.values()], []
@@ -240,10 +244,10 @@ class GeneticBase(abc.ABC):
         Get all possible combinations of trees that satisfy the searches.
         :param DerivationTree tree: The tree to calculate the fitness.
         :param Optional[Dict[NonTerminal, DerivationTree]] scope: The scope of non-terminals matching to trees.
-        :return List[List[Tuple[str, DerivationTree]]]: The list of combinations of trees that fill all non-terminals
+        :return list[List[Tuple[str, DerivationTree]]]: The list of combinations of trees that fill all non-terminals
         in the genetic base.
         """
-        nodes: List[List[Tuple[str, DerivationTree]]] = []
+        nodes: list[List[Tuple[str, DerivationTree]]] = []
         for name, search in self.searches.items():
             nodes.append(
                 [(name, container) for container in search.find(tree, scope=scope)]
@@ -267,7 +271,7 @@ class GeneticBase(abc.ABC):
         """
         Get the failing nodes of the tree.
         :param DerivationTree tree: The tree to check.
-        :return List[FailingTree]: The list of failing trees
+        :return list[FailingTree]: The list of failing trees
         """
         return self.fitness(tree).failing_trees
 

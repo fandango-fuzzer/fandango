@@ -1,7 +1,7 @@
 # mutation.py
 import random
 from abc import ABC, abstractmethod
-from typing import Callable, List, Tuple
+from typing import Callable, Tuple
 
 from fandango.constraints.fitness import FailingTree
 from fandango.language.grammar import DerivationTree, Grammar
@@ -13,7 +13,7 @@ class MutationOperator(ABC):
         self,
         individual: DerivationTree,
         grammar: Grammar,
-        evaluate_func: Callable[[DerivationTree], Tuple[float, List[FailingTree]]],
+        evaluate_func: Callable[[DerivationTree], Tuple[float, list[FailingTree]]],
     ) -> DerivationTree:
         """
         Abstract method to perform mutation on an individual.
@@ -31,7 +31,7 @@ class SimpleMutation(MutationOperator):
         self,
         individual: DerivationTree,
         grammar: Grammar,
-        evaluate_func: Callable[[DerivationTree], Tuple[float, List[FailingTree]]],
+        evaluate_func: Callable[[DerivationTree], Tuple[float, list[FailingTree]]],
         max_nodes: int = 50,
     ) -> DerivationTree:
         """

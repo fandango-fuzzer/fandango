@@ -5,7 +5,7 @@ This module contains the base classes for constraints in the fandango library.
 import itertools
 from abc import ABC, abstractmethod
 from copy import copy
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, Optional
 from tdigest import TDigest
 import math
 
@@ -558,11 +558,11 @@ class ConjunctionConstraint(Constraint):
     """
 
     def __init__(
-        self, constraints: List[Constraint], *args, lazy: bool = False, **kwargs
+        self, constraints: list[Constraint], *args, lazy: bool = False, **kwargs
     ):
         """
         Initializes the conjunction constraint with the given constraints.
-        :param List[Constraint] constraints: The constraints to use.
+        :param list[Constraint] constraints: The constraints to use.
         :param args: Additional arguments.
         :param bool lazy: If True, the conjunction is lazy evaluated.
         """
@@ -638,11 +638,11 @@ class DisjunctionConstraint(Constraint):
     """
 
     def __init__(
-        self, constraints: List[Constraint], *args, lazy: bool = False, **kwargs
+        self, constraints: list[Constraint], *args, lazy: bool = False, **kwargs
     ):
         """
         Initializes the disjunction constraint with the given constraints.
-        :param List[Constraint] constraints: The constraints to use.
+        :param list[Constraint] constraints: The constraints to use.
         :param args: Additional arguments.
         :param bool lazy: If True, the disjunction is lazy evaluated.
         """

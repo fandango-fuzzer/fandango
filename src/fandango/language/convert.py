@@ -1,6 +1,6 @@
 import ast
 from io import UnsupportedOperation
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from fandango.constraints.base import (
     ComparisonConstraint,
@@ -74,7 +74,7 @@ class GrammarProcessor(FandangoParserVisitor):
         self.max_repetitions = max_repetitions
 
     def get_grammar(
-        self, productions: List[FandangoParser.ProductionContext], prime=True
+        self, productions: list[FandangoParser.ProductionContext], prime=True
     ):
         grammar = Grammar(
             local_variables=self.local_variables,
@@ -192,8 +192,8 @@ class ConstraintProcessor(FandangoParserVisitor):
         self.global_variables = global_variables
 
     def get_constraints(
-        self, constraints: List[FandangoParser.ConstraintContext]
-    ) -> List[str]:
+        self, constraints: list[FandangoParser.ConstraintContext]
+    ) -> list[str]:
         return [self.visit(constraint) for constraint in constraints]
         # if len(constraints) == 1:
         #     return constraints[0]
@@ -364,7 +364,7 @@ class SearchProcessor(FandangoParserVisitor):
     def defaultResult(
         self,
     ) -> Tuple[
-        ast.AST | List[ast.AST], List[AttributeSearch], Dict[str, AttributeSearch]
+        ast.AST | list[ast.AST], list[AttributeSearch], Dict[str, AttributeSearch]
     ]:
         return [], [], {}
 
@@ -1315,7 +1315,7 @@ class PythonProcessor(FandangoParserVisitor):
     def __init__(self):
         self.search_processor = SearchProcessor(Grammar.dummy())
 
-    def get_code(self, stmts: List[FandangoParser.PythonContext]):
+    def get_code(self, stmts: list[FandangoParser.PythonContext]):
         return ast.Module(body=[self.visit(stmt) for stmt in stmts], type_ignores=[])
 
     def get_expression(self, expression):
