@@ -1,6 +1,6 @@
 import concurrent.futures
 import random
-from typing import Dict, Tuple, Union
+from typing import Union
 
 from fandango.constraints.base import Constraint, SoftValue
 from fandango.constraints.fitness import FailingTree
@@ -26,7 +26,7 @@ class Evaluator:
         self.diversity_k = diversity_k
         self.diversity_weight = diversity_weight
         self.warnings_are_errors = warnings_are_errors
-        self.fitness_cache: Dict[int, Tuple[float, list[FailingTree]]] = {}
+        self.fitness_cache: dict[int, tuple[float, list[FailingTree]]] = {}
         self.solution = []
         self.solution_set = set()
         self.checks_made = 0
@@ -39,20 +39,20 @@ class Evaluator:
 
     def compute_diversity_bonus(
         self, individuals: list[DerivationTree]
-    ) -> Dict[int, float]:
+    ) -> dict[int, float]:
         k = self.diversity_k
-        ind_kpaths: Dict[int, set] = {}
+        ind_kpaths: dict[int, set] = {}
         for idx, tree in enumerate(individuals):
             # Assuming your grammar is available in evaluator
             paths = self.grammar._extract_k_paths_from_tree(tree, k)
             ind_kpaths[idx] = paths
 
-        frequency: Dict[tuple, int] = {}
+        frequency: dict[tuple, int] = {}
         for paths in ind_kpaths.values():
             for path in paths:
                 frequency[path] = frequency.get(path, 0) + 1
 
-        bonus: Dict[int, float] = {}
+        bonus: dict[int, float] = {}
         for idx, paths in ind_kpaths.items():
             if paths:
                 bonus_score = sum(1.0 / frequency[path] for path in paths) / len(paths)
@@ -63,7 +63,7 @@ class Evaluator:
 
     def evaluate_hard_constraints(
         self, individual: DerivationTree
-    ) -> Tuple[float, list[FailingTree]]:
+    ) -> tuple[float, list[FailingTree]]:
         hard_fitness = 0.0
         failing_trees: list[FailingTree] = []
         for constraint in self.hard_constraints:
@@ -87,7 +87,7 @@ class Evaluator:
 
     def evaluate_soft_constraints(
         self, individual: DerivationTree
-    ) -> Tuple[float, list[FailingTree]]:
+    ) -> tuple[float, list[FailingTree]]:
         soft_fitness = 0.0
         failing_trees: list[FailingTree] = []
         for constraint in self.soft_constraints:
@@ -114,7 +114,7 @@ class Evaluator:
 
     def evaluate_individual(
         self, individual: DerivationTree
-    ) -> Tuple[float, list[FailingTree]]:
+    ) -> tuple[float, list[FailingTree]]:
         key = hash(individual)
         if key in self.fitness_cache:
             if (
@@ -157,7 +157,7 @@ class Evaluator:
 
     def evaluate_population(
         self, population: list[DerivationTree]
-    ) -> list[Tuple[DerivationTree, float, list[FailingTree]]]:
+    ) -> list[tuple[DerivationTree, float, list[FailingTree]]]:
         evaluation = []
         for individual in population:
             fitness, failing_trees = self.evaluate_individual(individual)
@@ -173,7 +173,7 @@ class Evaluator:
 
     def evaluate_population_parallel(
         self, population: list[DerivationTree], num_workers: int = 4
-    ) -> list[Tuple[DerivationTree, float, list]]:
+    ) -> list[tuple[DerivationTree, float, list]]:
         evaluation = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
             future_to_individual = {
@@ -193,7 +193,7 @@ class Evaluator:
 
     def select_elites(
         self,
-        evaluation: list[Tuple[DerivationTree, float, list]],
+        evaluation: list[tuple[DerivationTree, float, list]],
         elitism_rate: float,
         population_size: int,
     ) -> list[DerivationTree]:
@@ -205,8 +205,8 @@ class Evaluator:
         ]
 
     def tournament_selection(
-        self, evaluation: list[Tuple[DerivationTree, float, list]], tournament_size: int
-    ) -> Tuple[DerivationTree, DerivationTree]:
+        self, evaluation: list[tuple[DerivationTree, float, list]], tournament_size: int
+    ) -> tuple[DerivationTree, DerivationTree]:
         tournament = random.sample(evaluation, k=tournament_size)
         tournament.sort(key=lambda x: x[1], reverse=True)
         parent1 = tournament[0][0]

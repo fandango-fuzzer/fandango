@@ -1,6 +1,6 @@
 import ast
 from io import UnsupportedOperation
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 from fandango.constraints.base import (
     ComparisonConstraint,
@@ -64,8 +64,8 @@ class FandangoSplitter(FandangoParserVisitor):
 class GrammarProcessor(FandangoParserVisitor):
     def __init__(
         self,
-        local_variables: Optional[Dict[str, Any]] = None,
-        global_variables: Optional[Dict[str, Any]] = None,
+        local_variables: Optional[dict[str, Any]] = None,
+        global_variables: Optional[dict[str, Any]] = None,
         max_repetitions: int = 5,
     ):
         self.local_variables = local_variables
@@ -182,8 +182,8 @@ class ConstraintProcessor(FandangoParserVisitor):
     def __init__(
         self,
         grammar: Grammar,
-        local_variables: Optional[Dict[str, Any]] = None,
-        global_variables: Optional[Dict[str, Any]] = None,
+        local_variables: Optional[dict[str, Any]] = None,
+        global_variables: Optional[dict[str, Any]] = None,
         lazy: bool = False,
     ):
         self.searches = SearchProcessor(grammar)
@@ -363,8 +363,8 @@ class SearchProcessor(FandangoParserVisitor):
 
     def defaultResult(
         self,
-    ) -> Tuple[
-        ast.AST | list[ast.AST], list[AttributeSearch], Dict[str, AttributeSearch]
+    ) -> tuple[
+        ast.AST | list[ast.AST], list[AttributeSearch], dict[str, AttributeSearch]
     ]:
         return [], [], {}
 

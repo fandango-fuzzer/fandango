@@ -4,7 +4,7 @@ search criteria.
 """
 
 import abc
-from typing import Optional, Dict, Tuple, Any
+from typing import Any, Optional
 
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -111,12 +111,12 @@ class NonTerminalSearch(abc.ABC):
     def find(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, list[DerivationTree]]] = None,
+        scope: Optional[dict[NonTerminal, list[DerivationTree]]] = None,
     ) -> list[Container]:
         """
         Find all the non-terminals in the derivation tree that match the search criteria.
         :param DerivationTree tree: The derivation tree.
-        :param Optional[Dict[NonTerminal, list[DerivationTree]]] scope: The scope of non-terminals matching to trees.
+        :param Optional[dict[NonTerminal, list[DerivationTree]]] scope: The scope of non-terminals matching to trees.
         :return list[Container]: The list of containers that hold the matching derivation trees.
         """
 
@@ -124,24 +124,24 @@ class NonTerminalSearch(abc.ABC):
     def find_direct(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, list[DerivationTree]]] = None,
+        scope: Optional[dict[NonTerminal, list[DerivationTree]]] = None,
     ) -> list[Container]:
         """
         Find the direct-child non-terminals in the derivation tree that match the search criteria.
         :param DerivationTree tree: The derivation tree.
-        :param Optional[Dict[NonTerminal, list[DerivationTree]]] scope: The scope of non-terminals matching to trees.
+        :param Optional[dict[NonTerminal, list[DerivationTree]]] scope: The scope of non-terminals matching to trees.
         :return list[Container]: The list of containers that hold the matching derivation trees.
         """
 
     def find_all(
         self,
         trees: list[DerivationTree],
-        scope: Optional[Dict[NonTerminal, list[DerivationTree]]] = None,
+        scope: Optional[dict[NonTerminal, list[DerivationTree]]] = None,
     ) -> list[list[Container]]:
         """
         Find all the non-terminals in the list of derivation trees that match the search criteria.
         :param list[DerivationTree] trees: The list of derivation trees.
-        :param Optional[Dict[NonTerminal, list[DerivationTree]]] scope: The scope of non-terminals matching to trees.
+        :param Optional[dict[NonTerminal, list[DerivationTree]]] scope: The scope of non-terminals matching to trees.
         :return list[list[Container]]: The list of lists of containers that hold the matching derivation trees.
         """
         targets = []
@@ -179,7 +179,7 @@ class LengthSearch(NonTerminalSearch):
     def find(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, list[DerivationTree]]] = None,
+        scope: Optional[dict[NonTerminal, list[DerivationTree]]] = None,
     ) -> list[Container]:
         ret = [
             Length(
@@ -198,7 +198,7 @@ class LengthSearch(NonTerminalSearch):
     def find_direct(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, list[DerivationTree]]] = None,
+        scope: Optional[dict[NonTerminal, list[DerivationTree]]] = None,
     ) -> list[Container]:
         ret = [
             Length(
@@ -239,7 +239,7 @@ class RuleSearch(NonTerminalSearch):
     def find(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, list[DerivationTree]]] = None,
+        scope: Optional[dict[NonTerminal, list[DerivationTree]]] = None,
     ) -> list[Container]:
         if scope and self.symbol in scope:
             ret = [Tree(scope[self.symbol])]
@@ -252,7 +252,7 @@ class RuleSearch(NonTerminalSearch):
     def find_direct(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, list[DerivationTree]]] = None,
+        scope: Optional[dict[NonTerminal, list[DerivationTree]]] = None,
     ) -> list[Container]:
         if scope and self.symbol in scope:
             ret = [Tree(scope[self.symbol])]
@@ -290,7 +290,7 @@ class AttributeSearch(NonTerminalSearch):
     def find(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, list[DerivationTree]]] = None,
+        scope: Optional[dict[NonTerminal, list[DerivationTree]]] = None,
     ) -> list[Container]:
         bases = self.base.find(tree, scope=scope)
         targets = []
@@ -303,7 +303,7 @@ class AttributeSearch(NonTerminalSearch):
     def find_direct(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, list[DerivationTree]]] = None,
+        scope: Optional[dict[NonTerminal, list[DerivationTree]]] = None,
     ) -> list[Container]:
         bases = self.base.find_direct(tree, scope=scope)
         targets = []
@@ -341,7 +341,7 @@ class DescendantAttributeSearch(NonTerminalSearch):
     def find(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, list[DerivationTree]]] = None,
+        scope: Optional[dict[NonTerminal, list[DerivationTree]]] = None,
     ) -> list[Container]:
         bases = self.base.find(tree, scope=scope)
         targets = []
@@ -355,7 +355,7 @@ class DescendantAttributeSearch(NonTerminalSearch):
     def find_direct(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, list[DerivationTree]]] = None,
+        scope: Optional[dict[NonTerminal, list[DerivationTree]]] = None,
     ) -> list[Container]:
         bases = self.base.find_direct(tree, scope=scope)
         targets = []
@@ -381,11 +381,11 @@ class ItemSearch(NonTerminalSearch):
     Non-terminal search that finds the non-terminals that get the items from the base non-terminal.
     """
 
-    def __init__(self, base: NonTerminalSearch, slices: Tuple[Any] | slice | int):
+    def __init__(self, base: NonTerminalSearch, slices: tuple[Any] | slice | int):
         """
         Initialize the ItemSearch with the given base and slices.
         :param NonTerminalSearch base: The base non-terminal
-        :param Tuple[Any] slices: The slices to get the items from the base non-terminal.
+        :param tuple[Any] slices: The slices to get the items from the base non-terminal.
         """
         self.base = base
         self.slices = slices
@@ -405,14 +405,14 @@ class ItemSearch(NonTerminalSearch):
     def find(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, list[DerivationTree]]] = None,
+        scope: Optional[dict[NonTerminal, list[DerivationTree]]] = None,
     ) -> list[Container]:
         return self._find(self.base.find(tree, scope=scope))
 
     def find_direct(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, list[DerivationTree]]] = None,
+        scope: Optional[dict[NonTerminal, list[DerivationTree]]] = None,
     ) -> list[Container]:
         return self._find(self.base.find_direct(tree, scope=scope))
 
@@ -462,13 +462,13 @@ class SelectiveSearch(NonTerminalSearch):
     def __init__(
         self,
         base: NonTerminalSearch,
-        symbols: list[Tuple[NonTerminal, bool]],
+        symbols: list[tuple[NonTerminal, bool]],
         slices: list[Optional[Any]] = None,
     ):
         """
         Initialize the SelectiveSearch with the given base, symbols, and slices.
         :param NonTerminalSearch base: The base non-terminal search.
-        :param list[Tuple[NonTerminal, bool]] symbols: The list of symbols and whether to find direct or all trees.
+        :param list[tuple[NonTerminal, bool]] symbols: The list of symbols and whether to find direct or all trees.
         :param list[Optional[Any]] slices: The list of slices to get the items from the symbols.
         """
         self.base = base
@@ -498,7 +498,7 @@ class SelectiveSearch(NonTerminalSearch):
     def find(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, list[DerivationTree]]] = None,
+        scope: Optional[dict[NonTerminal, list[DerivationTree]]] = None,
     ) -> list[Container]:
         ret = self._find(self.base.find(tree, scope=scope))
         # LOGGER.debug(f"SelectiveSearch({self}).find({tree.value()!r}) = {ret}")
@@ -507,7 +507,7 @@ class SelectiveSearch(NonTerminalSearch):
     def find_direct(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, list[DerivationTree]]] = None,
+        scope: Optional[dict[NonTerminal, list[DerivationTree]]] = None,
     ) -> list[Container]:
         ret = self._find(self.base.find_direct(tree, scope=scope))
         # LOGGER.debug(f"SelectiveSearch({self}).find_direct({tree.value()!r}) = {ret}")

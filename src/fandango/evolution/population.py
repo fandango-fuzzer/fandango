@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Set, Tuple
+from typing import Callable, Optional, Set
 
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
 from fandango.language.grammar import DerivationTree, Grammar
@@ -24,7 +24,7 @@ class PopulationManager:
     def add_unique_individual(
         population: list[DerivationTree],
         candidate: DerivationTree,
-        unique_set: Set[int],
+        unique_set: set[int],
     ) -> bool:
         """
         Adds individual to the population if it is unique, according to its hash.
@@ -43,7 +43,7 @@ class PopulationManager:
 
     def generate_random_population(
         self,
-        eval_individual: Callable[[DerivationTree], Tuple[float, list[FailingTree]]],
+        eval_individual: Callable[[DerivationTree], tuple[float, list[FailingTree]]],
         initial_population: Optional[list[DerivationTree]] = None,
     ) -> list[DerivationTree]:
         """
@@ -82,7 +82,7 @@ class PopulationManager:
     def refill_population(
         self,
         current_population: list[DerivationTree],
-        eval_individual: Callable[[DerivationTree], Tuple[float, list[FailingTree]]],
+        eval_individual: Callable[[DerivationTree], tuple[float, list[FailingTree]]],
     ) -> list[DerivationTree]:
         unique_hashes = {hash(ind) for ind in current_population}
         attempts = 0
@@ -117,7 +117,7 @@ class PopulationManager:
         self,
         individual: DerivationTree,
         failing_trees: list[FailingTree],
-    ) -> Tuple[DerivationTree, int]:
+    ) -> tuple[DerivationTree, int]:
         fixes_made = 0
         for failing_tree in failing_trees:
             if failing_tree.tree.read_only:
