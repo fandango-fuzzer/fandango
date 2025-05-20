@@ -86,12 +86,6 @@ def feat_response():
 <request_set_epassive> ::= 'EPSV\r\n'
 <response_set_epassive> ::= '229 Entering Extended Passive Mode (|||' <open_port> '|)\r\n'
 
-def to_pasv_syntax(port_nr):
-    port_nr = int(port_nr)
-    upper_frac = math.floor(port_nr / 256)
-    lower_frac = port_nr % 256
-    return str(upper_frac) + ',' + str(lower_frac)
-
 <exchange_mlsd> ::= <ClientControl:ServerControl:request_mlsd><ServerControl:ClientControl:open_mlsd><mlsd_transfer>
 <request_mlsd> ::= 'MLSD\r\n'
 <open_mlsd> ::= '150 Opening BINARY mode data connection for MLSD\r\n'
