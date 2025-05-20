@@ -52,7 +52,7 @@ class GeneticTest(unittest.TestCase):
             self.assertIsInstance(fitness, float)
             self.assertGreaterEqual(fitness, 0.0)
             self.assertLessEqual(fitness, 1.0)
-            self.assertIsInstance(failing_trees, List)
+            self.assertIsInstance(failing_trees, list)
             for failing_tree in failing_trees:
                 self.assertIsInstance(failing_tree, FailingTree)
             self.assertTrue(self.fandango.grammar.parse(str(individual)))
@@ -67,7 +67,7 @@ class GeneticTest(unittest.TestCase):
             self.assertIsInstance(fitness, float)
             self.assertGreaterEqual(fitness, 0.0)
             self.assertLessEqual(fitness, 1.0)
-            self.assertIsInstance(failing_trees, List)
+            self.assertIsInstance(failing_trees, list)
             for failing_tree in failing_trees:
                 self.assertIsInstance(failing_tree, FailingTree)
 
