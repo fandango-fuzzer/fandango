@@ -244,10 +244,10 @@ class GeneticBase(abc.ABC):
         Get all possible combinations of trees that satisfy the searches.
         :param DerivationTree tree: The tree to calculate the fitness.
         :param Optional[Dict[NonTerminal, DerivationTree]] scope: The scope of non-terminals matching to trees.
-        :return list[List[Tuple[str, DerivationTree]]]: The list of combinations of trees that fill all non-terminals
+        :return list[list[Tuple[str, DerivationTree]]]: The list of combinations of trees that fill all non-terminals
         in the genetic base.
         """
-        nodes: list[List[Tuple[str, DerivationTree]]] = []
+        nodes: list[list[Tuple[str, DerivationTree]]] = []
         for name, search in self.searches.items():
             nodes.append(
                 [(name, container) for container in search.find(tree, scope=scope)]

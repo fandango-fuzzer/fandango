@@ -804,7 +804,7 @@ class Grammar(NodeVisitor):
                 }
 
         def set_implicit_rule(
-            self, rule: list[List[NonTerminal]]
+            self, rule: list[list[NonTerminal]]
         ) -> tuple[NonTerminal, frozenset]:
             nonterminal = NonTerminal(f"<*{len(self._implicit_rules)}*>")
             self._implicit_rules[nonterminal] = rule
@@ -813,7 +813,7 @@ class Grammar(NodeVisitor):
         def set_rule(
             self,
             nonterminal: NonTerminal,
-            rule: list[List[tuple[NonTerminal, frozenset]]],
+            rule: list[list[tuple[NonTerminal, frozenset]]],
         ):
             self._rules[nonterminal] = {tuple(a) for a in rule}
 

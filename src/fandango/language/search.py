@@ -137,12 +137,12 @@ class NonTerminalSearch(abc.ABC):
         self,
         trees: list[DerivationTree],
         scope: Optional[Dict[NonTerminal, list[DerivationTree]]] = None,
-    ) -> list[List[Container]]:
+    ) -> list[list[Container]]:
         """
         Find all the non-terminals in the list of derivation trees that match the search criteria.
         :param list[DerivationTree] trees: The list of derivation trees.
         :param Optional[Dict[NonTerminal, list[DerivationTree]]] scope: The scope of non-terminals matching to trees.
-        :return list[List[Container]]: The list of lists of containers that hold the matching derivation trees.
+        :return list[list[Container]]: The list of lists of containers that hold the matching derivation trees.
         """
         targets = []
         for tree in trees:
