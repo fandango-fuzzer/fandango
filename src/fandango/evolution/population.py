@@ -1,4 +1,4 @@
-from typing import Callable, List, Set
+from typing import Callable, List, Optional, Set, Tuple
 
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
 from fandango.language.grammar import DerivationTree, Grammar
@@ -20,12 +20,20 @@ class PopulationManager:
         self.warnings_are_errors = warnings_are_errors
         self.max_nodes = max_nodes
 
+    @staticmethod
     def add_unique_individual(
-        self,
         population: List[DerivationTree],
         candidate: DerivationTree,
         unique_set: Set[int],
     ) -> bool:
+        """
+        Adds individual to the population if it is unique, according to its hash.
+
+        :param population: The population to potentially add the individual to.
+        :param candidate: The individual to potentially add to the population.
+        :param unique_set: The set of unique individuals.
+        :return: True if the individual was added, False otherwise.
+        """
         h = hash(candidate)
         if h not in unique_set:
             unique_set.add(h)
@@ -33,17 +41,36 @@ class PopulationManager:
             return True
         return False
 
-    def generate_random_initial_population(
-        self, fix_func: Callable[[DerivationTree], DerivationTree]
+    def generate_random_population(
+        self,
+        eval_individual: Callable[[DerivationTree], Tuple[float, List[FailingTree]]],
+        initial_population: Optional[List[DerivationTree]] = None,
     ) -> List[DerivationTree]:
-        unique_population = []
-        unique_hashes = set()
+        """
+        Generates a random population of unique individuals.
+
+        :param eval_individual: A function that evaluates an individual.
+        :param initial_population: An optional initial population to add to.
+        :return: A population of unique individuals.
+        """
+
+        unique_population = initial_population or []
+        unique_hashes = {hash(ind) for ind in unique_population}
         attempts = 0
-        max_attempts = self.population_size * 10  # safeguard against infinite loops
+        max_attempts = (
+            self.population_size - len(unique_population)
+        ) * 10  # safeguard against infinite loops
 
         while len(unique_population) < self.population_size and attempts < max_attempts:
-            candidate = fix_func(self.grammar.fuzz(self.start_symbol, self.max_nodes))
-            self.add_unique_individual(unique_population, candidate, unique_hashes)
+            individual = self.grammar.fuzz(self.start_symbol, self.max_nodes)
+            _fitness, failing_trees = eval_individual(individual)
+            candidate, _fixes_made = self.fix_individual(
+                individual,
+                failing_trees,
+            )
+            PopulationManager.add_unique_individual(
+                unique_population, candidate, unique_hashes
+            )
             attempts += 1
 
         if len(unique_population) < self.population_size:
@@ -55,7 +82,7 @@ class PopulationManager:
     def refill_population(
         self,
         current_population: List[DerivationTree],
-        fix_func: Callable[[DerivationTree], DerivationTree],
+        eval_individual: Callable[[DerivationTree], Tuple[float, List[FailingTree]]],
     ) -> List[DerivationTree]:
         unique_hashes = {hash(ind) for ind in current_population}
         attempts = 0
@@ -64,11 +91,16 @@ class PopulationManager:
         while (
             len(current_population) < self.population_size and attempts < max_attempts
         ):
-            candidate = fix_func(self.grammar.fuzz(self.start_symbol, self.max_nodes))
-            if hash(candidate) not in unique_hashes:
-                unique_hashes.add(hash(candidate))
-                current_population.append(candidate)
-            attempts += 1
+            individual = self.grammar.fuzz(self.start_symbol, self.max_nodes)
+            _fitness, failing_trees = eval_individual(individual)
+            candidate, _fixes_made = self.fix_individual(
+                individual,
+                failing_trees,
+            )
+            if PopulationManager.add_unique_individual(
+                current_population, candidate, unique_hashes
+            ):
+                attempts += 1
 
         if len(current_population) < self.population_size:
             LOGGER.warning(
@@ -82,8 +114,10 @@ class PopulationManager:
         return current_population
 
     def fix_individual(
-        self, individual: DerivationTree, failing_trees: List[FailingTree]
-    ) -> DerivationTree:
+        self,
+        individual: DerivationTree,
+        failing_trees: List[FailingTree],
+    ) -> Tuple[DerivationTree, int]:
         fixes_made = 0
         for failing_tree in failing_trees:
             if failing_tree.tree.read_only:
