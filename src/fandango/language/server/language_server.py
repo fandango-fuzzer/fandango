@@ -1,7 +1,7 @@
 from antlr4 import InputStream, Token
 from pygls.server import LanguageServer
 import lsprotocol.types as lsp
-from typing import Dict, Optional,  
+from typing import Dict, Optional
 import logging
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.server.semantic_tokens import (
