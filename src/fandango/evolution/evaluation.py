@@ -147,10 +147,8 @@ class Evaluator:
         if fitness >= self.expected_fitness and key not in self.solution_set:
             self.solution_set.add(key)
             self.solution.append(individual)
-        try:
-            failing_trees = hard_failing_trees + soft_failing_trees
-        except NameError:
-            failing_trees = hard_failing_trees
+
+        failing_trees = hard_failing_trees + (soft_failing_trees or [])
 
         self.fitness_cache[key] = (fitness, failing_trees)
         return fitness, failing_trees
