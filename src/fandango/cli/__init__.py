@@ -5,6 +5,7 @@ import glob
 import logging
 import os
 import os.path
+import traceback
 import re
 
 if not "readline" in globals():
@@ -1439,7 +1440,8 @@ def run(command, args):
         command(args)
 
     except Exception as e:
-        print_exception(e)
+        traceback.print_exc()
+        print(e)
         return 1
 
     return 0
