@@ -1,7 +1,7 @@
 from random import randint
 import math
 
-fandango_is_client = True
+fandango_is_client = False
 
 <start> ::= <state_setup>
 
@@ -12,15 +12,15 @@ fandango_is_client = True
 
 <logged_in_cmds> ::= <exchange_set_type> | <exchange_pwd> | <exchange_syst> | <exchange_feat> | <exchange_set_client> | <exchange_set_utf8> | <exchange_set_type> | <exchange_set_epassive>
 <exchange_socket_connect> ::= <ServerControl:ClientControl:response_server_info>
-<response_server_info> ::= '220 ProFTPD Server (Debian) [' r'[a-zA-Z0-9\:\.]+' ']\r\n'
+<response_server_info> ::= '220 ' r'[a-zA-Z0-9\_\.\(\) ]+\s' '[' r'[a-zA-Z0-9\:\.]+' ']\r\n'
 
 <exchange_auth_tls> ::= <ClientControl:ServerControl:request_auth_tls><ServerControl:ClientControl:response_auth_tls>
 <request_auth_tls> ::= 'AUTH TLS\r\n'
-<response_auth_tls> ::= '500 AUTH not understood\r\n'
+<response_auth_tls> ::= '500 ' <command_tail> '\r\n'
 
 <exchange_auth_ssl> ::= <ClientControl:ServerControl:request_auth_ssl><ServerControl:ClientControl:response_auth_ssl>
 <request_auth_ssl> ::= 'AUTH SSL\r\n'
-<response_auth_ssl> ::= '500 AUTH not understood\r\n'
+<response_auth_ssl> ::= '500 ' <command_tail> '\r\n'
 
 <exchange_login> ::= <exchange_login_fail> | <exchange_login_ok>
 <exchange_login_ok> ::= <ClientControl:ServerControl:request_login_user_ok><ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_ok><ServerControl:ClientControl:response_login_pass_ok><state_logged_in>
@@ -63,11 +63,11 @@ def contains_nt(tree, nt):
 
 <exchange_set_client> ::= <ClientControl:ServerControl:request_set_client><ServerControl:ClientControl:response_set_client>
 <request_set_client> ::= 'CLNT ' <client_name> '\r\n'
-<response_set_client> ::= '200 OK\r\n'
+<response_set_client> ::= '200 ' <command_tail> '\r\n'
 
 <exchange_set_utf8> ::= <ClientControl:ServerControl:request_set_utf8><ServerControl:ClientControl:response_set_utf8>
 <request_set_utf8> ::= 'OPTS UTF8 ON\r\n'
-<response_set_utf8> ::= '200 UTF8 set to on\r\n'
+<response_set_utf8> ::= '200 ' <command_tail> '\r\n'
 
 <exchange_feat> ::= <ClientControl:ServerControl:request_feat><ServerControl:ClientControl:response_feat>
 <request_feat> ::= 'FEAT\r\n'
@@ -80,7 +80,7 @@ def feat_response():
 
 <exchange_set_type> ::= <ClientControl:ServerControl:request_set_type><ServerControl:ClientControl:response_set_type>
 <request_set_type> ::= 'TYPE I\r\n'
-<response_set_type> ::= '200 Type set to I\r\n'
+<response_set_type> ::= '200 ' <command_tail> '\r\n'
 
 <exchange_set_epassive> ::= <ClientControl:ServerControl:request_set_epassive><ServerControl:ClientControl:response_set_epassive>
 <request_set_epassive> ::= 'EPSV\r\n'
