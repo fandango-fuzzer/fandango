@@ -5,27 +5,21 @@ fake = Faker()
 <exchange> ::= <Client:request><Gpt:response>
 <request> ::= <gpt_model><gpt_message>
 <gpt_model> ::= 'gpt-4.1' #| 'o4-mini' #| 'o3'
-<gpt_message> ::= 'You are a researcher. Write me a report about the following subjects: ' <subjects> '. In the following context: ' <context> '. Describe the subject in the following style: ' <adjective> '. All these mentioned words need to be part of the text and are not allowed to be changed in any way. Avoid the following words at all cost: ' <avoid> '.'
-<subjects> ::= <subject> (', ' <subject>)*
-<subject> ::= 'Flying cars' | 'Quantum computing' | 'Artificial intelligence' | 'Space exploration' | 'Climate change' | 'Economic collapse'
-<context> ::= 'Environmental impact' | 'Technological advancements' | 'Societal implications' | 'Economic factors' | 'Ethical considerations'
+<gpt_message> ::= 'You are a researcher. Write a report about the following subject: ' <subject>
+                  '. Every word in the subject must appear exactly as written in the text. No changes allowed. '
+                  'Avoid using the following words under any circumstances: ' <avoid> '.'
+<subject> ::= <verb> ' ' <adjective> ' ' <noun>
+<verb> ::= 'testing' | 'evaluating' | 'debugging' | 'inventing' | 'fixing' | 'discussing'
+<noun> ::= 'rocket' | 'networks' | 'cars' | 'cyborgs' | 'space' | 'climate' | 'economy'
 <adjective> ::= 'innovative' | 'sustainable' | 'disruptive' | 'transformative' | 'revolutionary'
-<avoid> ::= 'Large language model' | 'Musk' | 'AI' | 'Crash' | 'Universe'
+<avoid> ::= 'AI' | 'crash' | 'Elon' | 'universe'
 
 <response> ::= r'(?s).*'
 
-where forall <ex> in <exchange>:
-    forall <word> in <ex>.<request>..<subject>:
-        str(<word>).lower() in str(<ex>.<response>).lower()
-where forall <ex> in <exchange>:
-    forall <word> in <ex>.<request>..<context>:
-        str(<word>).lower() in str(<ex>.<response>).lower()
-where forall <ex> in <exchange>:
-    forall <word> in <ex>.<request>..<adjective>:
-        str(<word>).lower() in str(<ex>.<response>).lower()
-where forall <ex> in <exchange>:
-    forall <word> in <ex>.<request>..<avoid>:
-        str(<word>).lower() not in str(<ex>.<response>).lower()
+where str(<exchange>.<request>..<verb>).lower() in str(<exchange>.<response>).lower()
+where str(<exchange>.<request>..<adjective>).lower() in str(<exchange>.<response>).lower()
+where str(<exchange>.<request>..<noun>).lower() in str(<exchange>.<response>).lower()
+where str(<exchange>.<request>..<avoid>).lower() not in str(<exchange>.<response>).lower().split(' ')
 
 import openai
 class Client(FandangoAgent):
