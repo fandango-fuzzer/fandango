@@ -1438,10 +1438,8 @@ def shell_command(args):
 def run(command, args):
     try:
         command(args)
-
     except Exception as e:
-        traceback.print_exc()
-        print(e)
+        print_exception(e)
         return 1
 
     return 0
