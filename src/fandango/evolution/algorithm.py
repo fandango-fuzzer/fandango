@@ -107,8 +107,7 @@ class Fandango:
             max_nodes_rate,
         )
 
-        self.profiling = profiling
-        if self.profiling:
+        if profiling:
             self.profiler = Profiler()
 
         self.crossover_operator = crossover_method
@@ -121,14 +120,14 @@ class Fandango:
         )
         st_time = time.time()
 
-        if self.profiling:
+        if self.profiler:
             self.profiler.start_timer("initial_population")
 
         self.population = self.population_manager.generate_random_population(
             eval_individual=self.evaluator.evaluate_individual,
             initial_population=initial_population,
         )
-        if self.profiling:
+        if self.profiler:
             self.profiler.stop_timer("initial_population")
             self.profiler.increment("initial_population", len(self.population))
 
@@ -137,10 +136,10 @@ class Fandango:
         )
 
         # Evaluate initial population
-        if self.profiling:
+        if self.profiler:
             self.profiler.start_timer("evaluate_population")
         self.evaluation = self.evaluator.evaluate_population(self.population)
-        if self.profiling:
+        if self.profiler:
             self.profiler.stop_timer("evaluate_population")
             self.profiler.increment("evaluate_population", len(self.population))
         self.fitness = (
@@ -222,12 +221,12 @@ class Fandango:
 
         :return: A tuple containing the new population and the set of unique hashes of the individuals in the new population.
         """
-        if self.profiling:
+        if self.profiler:
             self.profiler.start_timer("select_elites")
         new_population = self.evaluator.select_elites(
             self.evaluation, self.elitism_rate, self.population_size
         )
-        if self.profiling:
+        if self.profiler:
             self.profiler.stop_timer("select_elites")
             self.profiler.increment("select_elites", len(new_population))
 
@@ -244,21 +243,21 @@ class Fandango:
         :param unique_hashes: The set of unique hashes of the individuals in the new population.
         """
         try:
-            if self.profiling:
+            if self.profiler:
                 self.profiler.start_timer("tournament_selection")
             parent1, parent2 = self.evaluator.tournament_selection(
                 self.evaluation, self.tournament_size
             )
-            if self.profiling:
+            if self.profiler:
                 self.profiler.stop_timer("tournament_selection")
                 self.profiler.increment("tournament_selection", 2)
 
-            if self.profiling:
+            if self.profiler:
                 self.profiler.start_timer("crossover")
             child1, child2 = self.crossover_operator.crossover(
                 self.grammar, parent1, parent2
             )
-            if self.profiling:
+            if self.profiler:
                 self.profiler.stop_timer("crossover")
                 self.profiler.increment("crossover", 2)
 
@@ -267,7 +266,7 @@ class Fandango:
             )
             self.evaluator.evaluate_individual(child1)
 
-            if self.profiling:
+            if self.profiler:
                 self.profiler.start_timer("filling")
                 count = len(new_population)
             if len(new_population) < self.population_size:
@@ -276,7 +275,7 @@ class Fandango:
                 )
                 self.evaluator.evaluate_individual(child2)
 
-            if self.profiling:
+            if self.profiler:
                 self.profiler.stop_timer("filling")
                 self.profiler.increment("filling", len(new_population) - count)
             self.crossovers_made += 2
@@ -300,7 +299,7 @@ class Fandango:
         for individual in mutation_pool:
             if random.random() < self.adaptive_tuner.mutation_rate:
                 try:
-                    if self.profiling:
+                    if self.profiler:
                         self.profiler.start_timer("mutation")
 
                     mutated_individual = self.mutation_method.mutate(
@@ -309,7 +308,7 @@ class Fandango:
                         self.evaluator.evaluate_individual,
                         self.current_max_nodes,
                     )
-                    if self.profiling:
+                    if self.profiler:
                         self.profiler.stop_timer("mutation")
                         self.profiler.increment("mutation", 1)
                     mutated_population.append(mutated_individual)
@@ -388,14 +387,14 @@ class Fandango:
                 # Hence, we periodically flush the fitness cache to re-evaluate the population.
                 self.evaluator.fitness_cache = {}
 
-            if self.profiling:
+            if self.profiler:
                 self.profiler.start_timer("evaluate_population")
             self.evaluation = self.evaluator.evaluate_population(self.population)
             # Keep only the fittest individuals
             self.evaluation = sorted(self.evaluation, key=lambda x: x[1], reverse=True)[
                 : self.population_size
             ]
-            if self.profiling:
+            if self.profiler:
                 self.profiler.stop_timer("evaluate_population")
                 self.profiler.increment("evaluate_population", len(self.population))
             self.fitness = (
@@ -440,7 +439,7 @@ class Fandango:
         LOGGER.debug(f"Crossovers made: {self.crossovers_made}")
         LOGGER.debug(f"Mutations made: {self.mutations_made}")
 
-        if self.profiling:
+        if self.profiler:
             self.profiler.log_results()
 
         if self.fitness < self.expected_fitness:
