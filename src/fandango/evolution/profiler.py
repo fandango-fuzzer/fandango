@@ -2,7 +2,8 @@ import time
 
 
 class Profiler:
-    def __init__(self):
+    def __init__(self, enabled: bool):
+        self.enabled = enabled
         self.metrics = {
             "initial_population": {"count": 0, "time": 0.0},
             "evaluate_population": {"count": 0, "time": 0.0},
@@ -14,11 +15,17 @@ class Profiler:
         }
 
     def start_timer(self, key: str):
+        if not self.enabled:
+            return
+
         if key not in self.metrics or not isinstance(self.metrics[key], dict):
             self.metrics[key] = {}  # Ensure it's a dictionary before adding keys
         self.metrics[key]["_start_time"] = time.time()
 
     def stop_timer(self, key: str):
+        if not self.enabled:
+            return
+
         if key not in self.metrics or not isinstance(self.metrics[key], dict):
             raise KeyError(f"Timer '{key}' was never started.")
 
@@ -33,9 +40,15 @@ class Profiler:
         self.metrics[key]["time"] += elapsed
 
     def increment(self, key: str, count: int = 1):
+        if not self.enabled:
+            return
+
         self.metrics[key]["count"] += count
 
     def log_results(self):
+        if not self.enabled:
+            return
+
         for key, value in self.metrics.items():
             if isinstance(value, dict) and "time" in value and "count" in value:
                 avg_time = value["time"] / value["count"] if value["count"] > 0 else 0

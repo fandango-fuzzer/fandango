@@ -1,8 +1,6 @@
 # from https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#semanticTokenTypes
 
 import enum
-from typing import List
-
 from antlr4 import Token
 
 
@@ -102,7 +100,7 @@ class SemanticTokenModifiers(enum.Enum):
         return [e.value for e in cls]
 
     @classmethod
-    def from_token(cls, token: Token) -> List["SemanticTokenModifiers"]:
+    def from_token(cls, token: Token) -> list["SemanticTokenModifiers"]:
         """Get the semantic token modifiers for a given token.
 
         :param token: The token to get the semantic token modifiers for

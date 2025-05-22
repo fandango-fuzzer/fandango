@@ -1,6 +1,6 @@
 import time
 from io import StringIO
-from typing import Tuple
+
 
 from docutils.core import publish_doctree
 
@@ -32,7 +32,7 @@ def is_syntactically_valid_rest(rst_string):
 
 def evaluate_rest(
     seconds=60,
-) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
+) -> tuple[str, int, int, float, tuple[float, int, int], float, float]:
     file = open("evaluation/vs_isla/rest_evaluation/rest.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False)
     solutions = []

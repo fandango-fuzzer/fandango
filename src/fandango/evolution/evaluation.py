@@ -1,6 +1,6 @@
 import concurrent.futures
 import random
-from typing import Dict, List, Tuple, Union
+from typing import Union
 
 from fandango.constraints.base import Constraint, SoftValue
 from fandango.constraints.fitness import FailingTree
@@ -12,7 +12,7 @@ class Evaluator:
     def __init__(
         self,
         grammar: Grammar,
-        constraints: List[Union[Constraint, SoftValue]],
+        constraints: list[Union[Constraint, SoftValue]],
         expected_fitness: float,
         diversity_k: int,
         diversity_weight: float,
@@ -20,13 +20,13 @@ class Evaluator:
     ):
         self.grammar = grammar
         self.constraints = constraints
-        self.soft_constraints: List[SoftValue] = []
-        self.hard_constraints: List[Constraint] = []
+        self.soft_constraints: list[SoftValue] = []
+        self.hard_constraints: list[Constraint] = []
         self.expected_fitness = expected_fitness
         self.diversity_k = diversity_k
         self.diversity_weight = diversity_weight
         self.warnings_are_errors = warnings_are_errors
-        self.fitness_cache: Dict[int, Tuple[float, List[FailingTree]]] = {}
+        self.fitness_cache: dict[int, tuple[float, list[FailingTree]]] = {}
         self.solution = []
         self.solution_set = set()
         self.checks_made = 0
@@ -38,21 +38,21 @@ class Evaluator:
                 self.hard_constraints.append(constraint)
 
     def compute_diversity_bonus(
-        self, individuals: List[DerivationTree]
-    ) -> Dict[int, float]:
+        self, individuals: list[DerivationTree]
+    ) -> dict[int, float]:
         k = self.diversity_k
-        ind_kpaths: Dict[int, set] = {}
+        ind_kpaths: dict[int, set] = {}
         for idx, tree in enumerate(individuals):
             # Assuming your grammar is available in evaluator
             paths = self.grammar._extract_k_paths_from_tree(tree, k)
             ind_kpaths[idx] = paths
 
-        frequency: Dict[tuple, int] = {}
+        frequency: dict[tuple, int] = {}
         for paths in ind_kpaths.values():
             for path in paths:
                 frequency[path] = frequency.get(path, 0) + 1
 
-        bonus: Dict[int, float] = {}
+        bonus: dict[int, float] = {}
         for idx, paths in ind_kpaths.items():
             if paths:
                 bonus_score = sum(1.0 / frequency[path] for path in paths) / len(paths)
@@ -63,9 +63,9 @@ class Evaluator:
 
     def evaluate_hard_constraints(
         self, individual: DerivationTree
-    ) -> Tuple[float, List[FailingTree]]:
+    ) -> tuple[float, list[FailingTree]]:
         hard_fitness = 0.0
-        failing_trees: List[FailingTree] = []
+        failing_trees: list[FailingTree] = []
         for constraint in self.hard_constraints:
             try:
                 result = constraint.fitness(individual)
@@ -87,9 +87,9 @@ class Evaluator:
 
     def evaluate_soft_constraints(
         self, individual: DerivationTree
-    ) -> Tuple[float, List[FailingTree]]:
+    ) -> tuple[float, list[FailingTree]]:
         soft_fitness = 0.0
-        failing_trees: List[FailingTree] = []
+        failing_trees: list[FailingTree] = []
         for constraint in self.soft_constraints:
             try:
                 result = constraint.fitness(individual)
@@ -114,7 +114,7 @@ class Evaluator:
 
     def evaluate_individual(
         self, individual: DerivationTree
-    ) -> Tuple[float, List[FailingTree]]:
+    ) -> tuple[float, list[FailingTree]]:
         key = hash(individual)
         if key in self.fitness_cache:
             if (
@@ -156,8 +156,8 @@ class Evaluator:
         return fitness, failing_trees
 
     def evaluate_population(
-        self, population: List[DerivationTree]
-    ) -> List[Tuple[DerivationTree, float, List[FailingTree]]]:
+        self, population: list[DerivationTree]
+    ) -> list[tuple[DerivationTree, float, list[FailingTree]]]:
         evaluation = []
         for individual in population:
             fitness, failing_trees = self.evaluate_individual(individual)
@@ -172,8 +172,8 @@ class Evaluator:
         return evaluation
 
     def evaluate_population_parallel(
-        self, population: List[DerivationTree], num_workers: int = 4
-    ) -> List[Tuple[DerivationTree, float, List]]:
+        self, population: list[DerivationTree], num_workers: int = 4
+    ) -> list[tuple[DerivationTree, float, list]]:
         evaluation = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
             future_to_individual = {
@@ -193,10 +193,10 @@ class Evaluator:
 
     def select_elites(
         self,
-        evaluation: List[Tuple[DerivationTree, float, List]],
+        evaluation: list[tuple[DerivationTree, float, list]],
         elitism_rate: float,
         population_size: int,
-    ) -> List[DerivationTree]:
+    ) -> list[DerivationTree]:
         return [
             x[0]
             for x in sorted(evaluation, key=lambda x: x[1], reverse=True)[
@@ -205,8 +205,8 @@ class Evaluator:
         ]
 
     def tournament_selection(
-        self, evaluation: List[Tuple[DerivationTree, float, List]], tournament_size: int
-    ) -> Tuple[DerivationTree, DerivationTree]:
+        self, evaluation: list[tuple[DerivationTree, float, list]], tournament_size: int
+    ) -> tuple[DerivationTree, DerivationTree]:
         tournament = random.sample(evaluation, k=tournament_size)
         tournament.sort(key=lambda x: x[1], reverse=True)
         parent1 = tournament[0][0]
