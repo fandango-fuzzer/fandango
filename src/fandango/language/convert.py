@@ -1,6 +1,6 @@
 import ast
 from io import UnsupportedOperation
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from fandango.constraints.base import (
     ComparisonConstraint,
@@ -64,8 +64,8 @@ class FandangoSplitter(FandangoParserVisitor):
 class GrammarProcessor(FandangoParserVisitor):
     def __init__(
         self,
-        local_variables: Optional[Dict[str, Any]] = None,
-        global_variables: Optional[Dict[str, Any]] = None,
+        local_variables: Optional[dict[str, Any]] = None,
+        global_variables: Optional[dict[str, Any]] = None,
         max_repetitions: int = 5,
     ):
         self.local_variables = local_variables
@@ -74,7 +74,7 @@ class GrammarProcessor(FandangoParserVisitor):
         self.max_repetitions = max_repetitions
 
     def get_grammar(
-        self, productions: List[FandangoParser.ProductionContext], prime=True
+        self, productions: list[FandangoParser.ProductionContext], prime=True
     ):
         grammar = Grammar(
             local_variables=self.local_variables,
@@ -182,8 +182,8 @@ class ConstraintProcessor(FandangoParserVisitor):
     def __init__(
         self,
         grammar: Grammar,
-        local_variables: Optional[Dict[str, Any]] = None,
-        global_variables: Optional[Dict[str, Any]] = None,
+        local_variables: Optional[dict[str, Any]] = None,
+        global_variables: Optional[dict[str, Any]] = None,
         lazy: bool = False,
     ):
         self.searches = SearchProcessor(grammar)
@@ -192,8 +192,8 @@ class ConstraintProcessor(FandangoParserVisitor):
         self.global_variables = global_variables
 
     def get_constraints(
-        self, constraints: List[FandangoParser.ConstraintContext]
-    ) -> List[str]:
+        self, constraints: list[FandangoParser.ConstraintContext]
+    ) -> list[str]:
         return [self.visit(constraint) for constraint in constraints]
         # if len(constraints) == 1:
         #     return constraints[0]
@@ -363,8 +363,8 @@ class SearchProcessor(FandangoParserVisitor):
 
     def defaultResult(
         self,
-    ) -> Tuple[
-        ast.AST | List[ast.AST], List[AttributeSearch], Dict[str, AttributeSearch]
+    ) -> tuple[
+        ast.AST | list[ast.AST], list[AttributeSearch], dict[str, AttributeSearch]
     ]:
         return [], [], {}
 
@@ -1315,7 +1315,7 @@ class PythonProcessor(FandangoParserVisitor):
     def __init__(self):
         self.search_processor = SearchProcessor(Grammar.dummy())
 
-    def get_code(self, stmts: List[FandangoParser.PythonContext]):
+    def get_code(self, stmts: list[FandangoParser.PythonContext]):
         return ast.Module(body=[self.visit(stmt) for stmt in stmts], type_ignores=[])
 
     def get_expression(self, expression):

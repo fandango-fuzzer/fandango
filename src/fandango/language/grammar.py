@@ -7,7 +7,7 @@ from collections import defaultdict
 import exrex
 
 from copy import deepcopy
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union, Generator
+from typing import Any, Iterator, Optional, Set, Union, Generator
 
 from fandango.language.symbol import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree
@@ -205,7 +205,7 @@ class Repetition(Node):
             local_cpy[name].set_all_read_only(True)
         return eval(expr, grammar._global_variables, local_cpy), False
 
-    def min(self, grammar: "Grammar", tree: "DerivationTree" = None):
+    def min(self, grammar: "Grammar", tree: Optional["DerivationTree"] = None):
         if self.static_min is None:
             current_min, is_static = self._compute_rep_bound(
                 grammar, tree, self.expr_data_min
@@ -216,7 +216,7 @@ class Repetition(Node):
         else:
             return self.static_min
 
-    def max(self, grammar: "Grammar", tree: "DerivationTree" = None):
+    def max(self, grammar: "Grammar", tree: Optional["DerivationTree"] = None):
         if self.static_max is None:
             current_max, is_static = self._compute_rep_bound(
                 grammar, tree, self.expr_data_max
@@ -439,7 +439,7 @@ class CharSet(Node):
         super().__init__(NodeType.CHAR_SET, 0)
         self.chars = chars
 
-    def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> List[DerivationTree]:
+    def fuzz(self, grammar: "Grammar", max_nodes: int = 100) -> list[DerivationTree]:
         raise NotImplementedError("CharSet fuzzing not implemented")
 
     def accept(self, visitor: "NodeVisitor"):
@@ -506,7 +506,7 @@ class Disambiguator(NodeVisitor):
 
     def visit(
         self, node: Node
-    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    ) -> dict[tuple[Union[NonTerminal, Terminal], ...], list[tuple[Node, ...]]]:
         if node in self.known_disambiguations:
             return self.known_disambiguations[node]
         result = super().visit(node)
@@ -515,11 +515,11 @@ class Disambiguator(NodeVisitor):
 
     def visitAlternative(
         self, node: Alternative
-    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    ) -> dict[tuple[Union[NonTerminal, Terminal], ...], list[tuple[Node, ...]]]:
         child_endpoints = {}
         for child in node.children():
-            endpoints: Dict[
-                Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]
+            endpoints: dict[
+                tuple[Union[NonTerminal, Terminal], ...], list[tuple[Node, ...]]
             ] = self.visit(child)
             for children in endpoints:
                 # prepend the alternative to all paths
@@ -534,12 +534,12 @@ class Disambiguator(NodeVisitor):
 
     def visitConcatenation(
         self, node: Concatenation
-    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    ) -> dict[tuple[Union[NonTerminal, Terminal], ...], list[tuple[Node, ...]]]:
         child_endpoints = {(): []}
         for child in node.children():
             next_endpoints = {}
-            endpoints: Dict[
-                Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]
+            endpoints: dict[
+                tuple[Union[NonTerminal, Terminal], ...], list[tuple[Node, ...]]
             ] = self.visit(child)
             for children in endpoints:
                 for existing in child_endpoints:
@@ -557,24 +557,24 @@ class Disambiguator(NodeVisitor):
 
     def visitRepetition(
         self, node: Repetition
-    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    ) -> dict[tuple[Union[NonTerminal, Terminal], ...], list[tuple[Node, ...]]]:
         # repetitions are alternatives over concatenations
         implicit_alternative = next(node.descendents(self.grammar))
         return self.visit(implicit_alternative)
 
     def visitStar(
         self, node: Star
-    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    ) -> dict[tuple[Union[NonTerminal, Terminal], ...], list[tuple[Node, ...]]]:
         return self.visitRepetition(node)
 
     def visitPlus(
         self, node: Plus
-    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    ) -> dict[tuple[Union[NonTerminal, Terminal], ...], list[tuple[Node, ...]]]:
         return self.visitRepetition(node)
 
     def visitOption(
         self, node: Option
-    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    ) -> dict[tuple[Union[NonTerminal, Terminal], ...], list[tuple[Node, ...]]]:
         implicit_alternative = Alternative(
             [Concatenation([]), Concatenation([node.node])]
         )
@@ -582,17 +582,17 @@ class Disambiguator(NodeVisitor):
 
     def visitNonTerminalNode(
         self, node: NonTerminalNode
-    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    ) -> dict[tuple[Union[NonTerminal, Terminal], ...], list[tuple[Node, ...]]]:
         return {(node.symbol,): [(node,)]}
 
     def visitTerminalNode(
         self, node: TerminalNode
-    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    ) -> dict[tuple[Union[NonTerminal, Terminal], ...], list[tuple[Node, ...]]]:
         return {(node.symbol,): [(node,)]}
 
     def visitCharSet(
         self, node: CharSet
-    ) -> Dict[Tuple[Union[NonTerminal, Terminal], ...], List[Tuple[Node, ...]]]:
+    ) -> dict[tuple[Union[NonTerminal, Terminal], ...], list[tuple[Node, ...]]]:
         return {(Terminal(c),): [(node, TerminalNode(Terminal(c)))] for c in node.chars}
 
 
@@ -601,9 +601,9 @@ class ParseState:
         self,
         nonterminal: NonTerminal,
         position: int,
-        symbols: Tuple[tuple[Symbol, frozenset[tuple[str, any]]], ...],
+        symbols: tuple[tuple[Symbol, frozenset[tuple[str, any]]], ...],
         dot: int = 0,
-        children: Optional[List[DerivationTree]] = None,
+        children: Optional[list[DerivationTree]] = None,
         is_incomplete: bool = False,
     ):
         self.nonterminal = nonterminal
@@ -670,7 +670,7 @@ class ParseState:
 
 
 class Column:
-    def __init__(self, states: Optional[List[ParseState]] = None):
+    def __init__(self, states: Optional[list[ParseState]] = None):
         self.states = states or []
         self.dot_map = dict[NonTerminal, list[ParseState]]()
         self.unique = set(self.states)
@@ -721,7 +721,7 @@ class Column:
             return True
         return False
 
-    def update(self, states: Set[ParseState]):
+    def update(self, states: set[ParseState]):
         for state in states:
             self.add(state)
 
@@ -745,7 +745,7 @@ class Grammar(NodeVisitor):
         def __init__(
             self,
             symbol: Symbol,
-            children: Optional[List["DerivationTree"]] = None,
+            children: Optional[list["DerivationTree"]] = None,
             *,
             parent: Optional["DerivationTree"] = None,
             read_only: bool = False,
@@ -754,7 +754,7 @@ class Grammar(NodeVisitor):
                 symbol, children, parent=parent, sources=[], read_only=read_only
             )
 
-        def set_children(self, children: List["DerivationTree"]):
+        def set_children(self, children: list["DerivationTree"]):
             self._children = children
             self.invalidate_hash()
 
@@ -767,7 +767,7 @@ class Grammar(NodeVisitor):
             self,
             grammar: "Grammar",
         ):
-            self.grammar_rules: Dict[NonTerminal, Node] = grammar.rules
+            self.grammar_rules: dict[NonTerminal, Node] = grammar.rules
             self.grammar = grammar
             self._rules = {}
             self._implicit_rules = {}
@@ -781,7 +781,7 @@ class Grammar(NodeVisitor):
             self.plus_count = 0
             self.option_count = 0
             self._process()
-            self._cache: Dict[Tuple[str, NonTerminal], DerivationTree, bool] = {}
+            self._cache: dict[tuple[str, NonTerminal], DerivationTree, bool] = {}
             self._incomplete = set()
             self._max_position = -1
 
@@ -804,7 +804,7 @@ class Grammar(NodeVisitor):
                 }
 
         def set_implicit_rule(
-            self, rule: List[List[NonTerminal]]
+            self, rule: list[list[NonTerminal]]
         ) -> tuple[NonTerminal, frozenset]:
             nonterminal = NonTerminal(f"<*{len(self._implicit_rules)}*>")
             self._implicit_rules[nonterminal] = rule
@@ -813,7 +813,7 @@ class Grammar(NodeVisitor):
         def set_rule(
             self,
             nonterminal: NonTerminal,
-            rule: List[List[tuple[NonTerminal, frozenset]]],
+            rule: list[list[tuple[NonTerminal, frozenset]]],
         ):
             self._rules[nonterminal] = {tuple(a) for a in rule}
 
@@ -859,8 +859,8 @@ class Grammar(NodeVisitor):
         def visitRepetition(
             self,
             node: Repetition,
-            nt: tuple[NonTerminal, frozenset] = None,
-            tree: DerivationTree = None,
+            nt: Optional[tuple[NonTerminal, frozenset]] = None,
+            tree: Optional[DerivationTree] = None,
         ):
             if nt is None:
                 alternatives = self.visit(node.node)
@@ -955,7 +955,7 @@ class Grammar(NodeVisitor):
             ]
 
         def predict(
-            self, state: ParseState, table: List[Set[ParseState] | Column], k: int
+            self, state: ParseState, table: list[set[ParseState] | Column], k: int
         ):
             if state.dot in self._rules:
                 table[k].update(
@@ -976,7 +976,7 @@ class Grammar(NodeVisitor):
                 self.predict_ctx_rule(state, table, k, node, nt)
 
         def construct_incomplete_tree(
-            self, state: ParseState, table: List[Set[ParseState] | Column]
+            self, state: ParseState, table: list[set[ParseState] | Column]
         ) -> DerivationTree:
             current_tree = Grammar.ParserDerivationTree(
                 state.nonterminal, state.children
@@ -1008,7 +1008,7 @@ class Grammar(NodeVisitor):
         def predict_ctx_rule(
             self,
             state: ParseState,
-            table: List[Set[ParseState] | Column],
+            table: list[set[ParseState] | Column],
             k: int,
             node: Node,
             nt_rule,
@@ -1050,7 +1050,7 @@ class Grammar(NodeVisitor):
             self,
             state: ParseState,
             word: str | bytes,
-            table: List[Set[ParseState] | Column],
+            table: list[set[ParseState] | Column],
             k: int,
             w: int,
             bit_count: int,
@@ -1105,7 +1105,7 @@ class Grammar(NodeVisitor):
             self,
             state: ParseState,
             word: str | bytes,
-            table: List[Set[ParseState] | Column],
+            table: list[set[ParseState] | Column],
             k: int,
             w: int,
         ) -> bool:
@@ -1143,7 +1143,7 @@ class Grammar(NodeVisitor):
             self,
             state: ParseState,
             word: str | bytes,
-            table: List[Set[ParseState] | Column],
+            table: list[set[ParseState] | Column],
             k: int,
             w: int,
         ) -> bool:
@@ -1204,7 +1204,7 @@ class Grammar(NodeVisitor):
         def complete(
             self,
             state: ParseState,
-            table: List[Set[ParseState] | Column],
+            table: list[set[ParseState] | Column],
             k: int,
             use_implicit: bool = False,
         ):
@@ -1230,7 +1230,7 @@ class Grammar(NodeVisitor):
                     else:
                         s.children.extend(state.children)
 
-        def place_repetition_shortcut(self, table: List[Column], k: int):
+        def place_repetition_shortcut(self, table: list[Column], k: int):
             col = table[k]
             states = col.states
             beginner_nts = ["<__plus:", "<__star:"]
@@ -1484,12 +1484,12 @@ class Grammar(NodeVisitor):
 
     def __init__(
         self,
-        rules: Optional[Dict[NonTerminal, Node]] = None,
-        local_variables: Optional[Dict[str, Any]] = None,
-        global_variables: Optional[Dict[str, Any]] = None,
+        rules: Optional[dict[NonTerminal, Node]] = None,
+        local_variables: Optional[dict[str, Any]] = None,
+        global_variables: Optional[dict[str, Any]] = None,
     ):
         self.rules = rules or {}
-        self.generators: Dict[NonTerminal, LiteralGenerator] = {}
+        self.generators: dict[NonTerminal, LiteralGenerator] = {}
         self._parser = Grammar.Parser(self)
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
@@ -1597,7 +1597,7 @@ class Grammar(NodeVisitor):
     def generate_string(
         self,
         symbol: str | NonTerminal = "<start>",
-        sources: list[DerivationTree] = None,
+        sources: Optional[list[DerivationTree]] = None,
     ) -> tuple[list[DerivationTree], str]:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
@@ -1676,7 +1676,7 @@ class Grammar(NodeVisitor):
         root._parent = None
         return root
 
-    def update(self, grammar: "Grammar" | Dict[NonTerminal, Node], prime=True):
+    def update(self, grammar: Union["Grammar", dict[NonTerminal, Node]], prime=True):
         if isinstance(grammar, Grammar):
             generators = grammar.generators
             local_variables = grammar._local_variables
@@ -1812,7 +1812,7 @@ class Grammar(NodeVisitor):
         self._parser = Grammar.Parser(self)
 
     def compute_kpath_coverage(
-        self, derivation_trees: List[DerivationTree], k: int
+        self, derivation_trees: list[DerivationTree], k: int
     ) -> float:
         """
         Computes the k-path coverage of the grammar given a set of derivation trees.
@@ -1831,7 +1831,7 @@ class Grammar(NodeVisitor):
             return 1.0  # If there are no k-paths, coverage is 100%
         return len(covered_k_paths) / len(all_k_paths)
 
-    def _generate_all_k_paths(self, k: int) -> Set[Tuple[Node, ...]]:
+    def _generate_all_k_paths(self, k: int) -> set[tuple[Node, ...]]:
         """
         Computes the *k*-paths for this grammar, constructively. See: doi.org/10.1109/ASE.2019.00027
 
@@ -1848,7 +1848,7 @@ class Grammar(NodeVisitor):
             initial.add(node)
             initial_work.extend(node.descendents(self))
 
-        work: List[Set[Tuple[Node]]] = [set((x,) for x in initial)]
+        work: list[set[tuple[Node]]] = [set((x,) for x in initial)]
 
         for _ in range(1, k):
             next_work = set()
@@ -1863,13 +1863,13 @@ class Grammar(NodeVisitor):
     @staticmethod
     def _extract_k_paths_from_tree(
         tree: DerivationTree, k: int
-    ) -> Set[Tuple[Node, ...]]:
+    ) -> set[tuple[Node, ...]]:
         """
         Extracts all k-length paths (k-paths) from a derivation tree.
         """
         paths = set()
 
-        def traverse(node: DerivationTree, current_path: Tuple[str, ...]):
+        def traverse(node: DerivationTree, current_path: tuple[str, ...]):
             new_path = current_path + (node.symbol.symbol,)
             if len(new_path) == k:
                 paths.add(new_path)
@@ -1959,7 +1959,7 @@ class Grammar(NodeVisitor):
     def visitCharSet(self, node: CharSet):
         return []
 
-    def compute_k_paths(self, k: int) -> Set[Tuple[Node, ...]]:
+    def compute_k_paths(self, k: int) -> set[tuple[Node, ...]]:
         """
         Computes all possible k-paths in the grammar.
 
@@ -1971,10 +1971,10 @@ class Grammar(NodeVisitor):
     def traverse_derivation(
         self,
         tree: DerivationTree,
-        disambiguator: Disambiguator = None,
-        paths: Set[Tuple[Node, ...]] = None,
-        cur_path: Tuple[Node, ...] = None,
-    ) -> Set[Tuple[Node, ...]]:
+        disambiguator: Optional[Disambiguator] = None,
+        paths: Optional[set[tuple[Node, ...]]] = None,
+        cur_path: Optional[tuple[Node, ...]] = None,
+    ) -> set[tuple[Node, ...]]:
         if disambiguator is None:
             disambiguator = Disambiguator(self)
         if paths is None:
@@ -1995,8 +1995,8 @@ class Grammar(NodeVisitor):
         return paths
 
     def compute_grammar_coverage(
-        self, derivation_trees: List[DerivationTree], k: int
-    ) -> Tuple[float, int, int]:
+        self, derivation_trees: list[DerivationTree], k: int
+    ) -> tuple[float, int, int]:
         """
         Compute the coverage of k-paths in the grammar based on the given derivation trees.
 

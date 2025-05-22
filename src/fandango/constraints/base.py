@@ -5,7 +5,7 @@ This module contains the base classes for constraints in the fandango library.
 import itertools
 from abc import ABC, abstractmethod
 from copy import copy
-from typing import List, Dict, Any, Optional
+from typing import Any, Optional
 from tdigest import TDigest
 import math
 
@@ -76,17 +76,17 @@ class Value(GeneticBase):
         """
         super().__init__(*args, **kwargs)
         self.expression = expression
-        self.cache: Dict[int, ValueFitness] = dict()
+        self.cache: dict[int, ValueFitness] = dict()
 
     def fitness(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
     ) -> ValueFitness:
         """
         Calculate the fitness of the tree based on the given expression.
         :param DerivationTree tree: The tree to evaluate.
-        :param Optional[Dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
+        :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
         :return ValueFitness: The fitness of the tree.
         """
         tree_hash = self.get_hash(tree, scope)
@@ -173,24 +173,24 @@ class Constraint(GeneticBase, ABC):
 
     def __init__(
         self,
-        searches: Optional[Dict[str, NonTerminalSearch]] = None,
-        local_variables: Optional[Dict[str, Any]] = None,
-        global_variables: Optional[Dict[str, Any]] = None,
+        searches: Optional[dict[str, NonTerminalSearch]] = None,
+        local_variables: Optional[dict[str, Any]] = None,
+        global_variables: Optional[dict[str, Any]] = None,
     ):
         """
         Initializes the constraint with the given searches, local variables, and global variables.
-        :param Optional[Dict[str, NonTerminalSearch]] searches: The searches to use.
-        :param Optional[Dict[str, Any]] local_variables: The local variables to use.
-        :param Optional[Dict[str, Any]] global_variables: The global variables to use.
+        :param Optional[dict[str, NonTerminalSearch]] searches: The searches to use.
+        :param Optional[dict[str, Any]] local_variables: The local variables to use.
+        :param Optional[dict[str, Any]] global_variables: The global variables to use.
         """
         super().__init__(searches, local_variables, global_variables)
-        self.cache: Dict[int, ConstraintFitness] = dict()
+        self.cache: dict[int, ConstraintFitness] = dict()
 
     @abstractmethod
     def fitness(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
         Abstract method to calculate the fitness of the tree.
@@ -253,12 +253,12 @@ class ExpressionConstraint(Constraint):
         self.expression = expression
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
+        self, tree: DerivationTree, scope: Optional[dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on whether the given expression evaluates to True.
         :param DerivationTree tree: The tree to evaluate.
-        :param Optional[Dict[str, DerivationTree]] scope: The scope of the tree.
+        :param Optional[dict[str, DerivationTree]] scope: The scope of the tree.
         """
         tree_hash = self.get_hash(tree, scope)
         # If the fitness has already been calculated, return the cached value
@@ -360,7 +360,7 @@ class ComparisonConstraint(Constraint):
         self.types_checked = False
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
+        self, tree: DerivationTree, scope: Optional[dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given comparison.
@@ -558,11 +558,11 @@ class ConjunctionConstraint(Constraint):
     """
 
     def __init__(
-        self, constraints: List[Constraint], *args, lazy: bool = False, **kwargs
+        self, constraints: list[Constraint], *args, lazy: bool = False, **kwargs
     ):
         """
         Initializes the conjunction constraint with the given constraints.
-        :param List[Constraint] constraints: The constraints to use.
+        :param list[Constraint] constraints: The constraints to use.
         :param args: Additional arguments.
         :param bool lazy: If True, the conjunction is lazy evaluated.
         """
@@ -571,12 +571,12 @@ class ConjunctionConstraint(Constraint):
         self.lazy = lazy
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
+        self, tree: DerivationTree, scope: Optional[dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given conjunction.
         :param DerivationTree tree: The tree to evaluate.
-        :param Optional[Dict[str, DerivationTree]] scope: The scope of the tree.
+        :param Optional[dict[str, DerivationTree]] scope: The scope of the tree.
         :return ConstraintFitness: The fitness of the tree.
         """
         tree_hash = self.get_hash(tree, scope)
@@ -638,11 +638,11 @@ class DisjunctionConstraint(Constraint):
     """
 
     def __init__(
-        self, constraints: List[Constraint], *args, lazy: bool = False, **kwargs
+        self, constraints: list[Constraint], *args, lazy: bool = False, **kwargs
     ):
         """
         Initializes the disjunction constraint with the given constraints.
-        :param List[Constraint] constraints: The constraints to use.
+        :param list[Constraint] constraints: The constraints to use.
         :param args: Additional arguments.
         :param bool lazy: If True, the disjunction is lazy evaluated.
         """
@@ -651,12 +651,12 @@ class DisjunctionConstraint(Constraint):
         self.lazy = lazy
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
+        self, tree: DerivationTree, scope: Optional[dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given disjunction.
         :param DerivationTree tree: The tree to evaluate.
-        :param Optional[Dict[str, DerivationTree]] scope: The scope of the tree.
+        :param Optional[dict[str, DerivationTree]] scope: The scope of the tree.
         :return ConstraintFitness: The fitness of the tree.
         """
         tree_hash = self.get_hash(tree, scope)
@@ -728,12 +728,12 @@ class ImplicationConstraint(Constraint):
         self.consequent = consequent
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
+        self, tree: DerivationTree, scope: Optional[dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given implication.
         :param DerivationTree tree: The tree to evaluate.
-        :param Optional[Dict[str, DerivationTree]] scope: The scope of the tree.
+        :param Optional[dict[str, DerivationTree]] scope: The scope of the tree.
         :return ConstraintFitness: The fitness of the tree.
         """
         tree_hash = self.get_hash(tree, scope)
@@ -808,12 +808,12 @@ class ExistsConstraint(Constraint):
     def fitness(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given exists constraint.
         :param DerivationTree tree: The tree to evaluate.
-        :param Optional[Dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
+        :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
         :return ConstraintFitness: The fitness of the tree.
         """
         tree_hash = self.get_hash(tree, scope)
@@ -901,12 +901,12 @@ class ForallConstraint(Constraint):
     def fitness(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given forall constraint.
         :param DerivationTree tree: The tree to evaluate.
-        :param Optional[Dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
+        :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
         :return ConstraintFitness: The fitness of the tree.
         """
         tree_hash = self.get_hash(tree, scope)
