@@ -3,7 +3,7 @@ import socket
 from datetime import datetime, timezone
 import random
 
-fandango_is_client = True
+fandango_is_client = False
 
 def format_unix_time(unix_time):
     dt = datetime.fromtimestamp(unix_time, tz=timezone.utc)
@@ -28,11 +28,16 @@ def decode64(input):
     <Client:request_auth_pass_correct><Server:response_auth_success><state_logged_in>
 
 <exchange_login_invalid> ::= <Client:request_auth><Server:response_auth_expect_user>
-    ((<Client:request_auth_user_correct><Server:response_auth_expect_pass><Client:request_auth_pass_incorrect>)
-    |
-    <Client:request_auth_user_incorrect><Server:response_auth_expect_pass>
-    (<Client:request_auth_pass_correct>|<Client:request_auth_pass_incorrect>)) <Server:response_auth_fail><state_logged_out>
-
+                          ((<Client:request_auth_user_correct>
+                            <Server:response_auth_expect_pass>
+                            <Client:request_auth_pass_incorrect>
+                          )
+                               |
+                          (<Client:request_auth_user_incorrect>
+                            <Server:response_auth_expect_pass>
+                            (<Client:request_auth_pass_incorrect>|<Client:request_auth_pass_correct>)
+                          ))
+                           <Server:response_auth_fail><state_logged_out>
 
 <request_auth> ::= 'AUTH LOGIN\r\n'
 <response_auth_expect_user> ::= '334 VXNlcm5hbWU6\r\n'
