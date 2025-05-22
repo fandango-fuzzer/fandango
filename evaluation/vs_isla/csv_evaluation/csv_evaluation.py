@@ -32,14 +32,23 @@ def evaluate_csv(
 ) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
     grammar, constraints = parse_file("evaluation/vs_isla/csv_evaluation/csv.fan")
     solutions = []
-
+    profiling_results = {}
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
         fandango = FANDANGO(grammar, constraints, verbose=False, desired_solutions=100)
         fandango.evolve()
-        solutions.extend(fandango.solution)
+        for key, value in fandango.profiler.metrics.items():
+            if key in profiling_results:
+                profiling_results[key]["count"] += value["count"]
+                profiling_results[key]["time"] += value["time"]
+            else:
+                profiling_results[key] = {
+                    "count": value["count"],
+                    "time": value["time"],
+                }
 
+        solutions.extend(fandango.solution)
     # coverage = grammar.compute_grammar_coverage(solutions, 4)
 
     # valid = []
@@ -53,6 +62,7 @@ def evaluate_csv(
     return (
         "CSV",
         len(solutions),
+        profiling_results,
         # len(valid),
         # valid_percentage,
         # 0,

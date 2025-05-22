@@ -5,9 +5,10 @@ import time
 from typing import List, Set, Tuple
 
 from fandango.constraints.base import Constraint
-from fandango.constraints.fitness import FailingTree, Comparison, ComparisonSide
-from fandango.language.grammar import DerivationTree
+from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
+from fandango.evolution.profiler import Profiler
 from fandango.language.grammar import (
+    DerivationTree,
     Grammar,
 )
 
@@ -26,6 +27,7 @@ class FANDANGO:
         tournament_size: float = 0.1,
         mutation_rate: float = 0.2,
         verbose: bool = False,
+        profiling: bool = False,
     ):
         """
         Initialize the FANDANGO genetic algorithm. The algorithm will evolve a population of individuals
@@ -41,7 +43,7 @@ class FANDANGO:
         :param verbose: Whether to print information about the evolution process.
         """
         if verbose:
-            print(f" ---------- Initializing FANDANGO algorithm ---------- ")
+            print(" ---------- Initializing FANDANGO algorithm ---------- ")
         self.grammar = grammar
         self.constraints = constraints
         self.population_size = population_size
@@ -60,23 +62,18 @@ class FANDANGO:
         self.mutations_made = 0
 
         self.time_taken = None
+        self.profiler = Profiler(enabled=True)
 
         # Initialize population
         self.solution = list()
+        self.profiling_results = None
 
         self.desired_solutions = desired_solutions
 
-        if initial_population is not None:
-            self.population = list(initial_population)
-        else:
-            if self.verbose:
-                print("[INFO] - Generating initial population...")
-            st_time = time.time()
-            self.population = self.generate_random_initial_population()
-            if self.verbose:
-                print(
-                    f"[INFO] - Initial population generated in {time.time() - st_time:.2f} seconds"
-                )
+        self.profiler.start_timer("initial_population")
+        self.population = self.generate_random_initial_population()
+        self.profiler.stop_timer("initial_population")
+        self.profiler.increment("initial_population", len(self.population))
 
         # Evaluate population
         self.evaluation = self.evaluate_population()
@@ -84,7 +81,7 @@ class FANDANGO:
             sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
         if self.verbose:
-            print(f" ---------- Starting evolution ---------- ")
+            print(" ---------- Starting evolution ---------- ")
 
     def evolve(self) -> List[DerivationTree]:
         """
@@ -116,13 +113,22 @@ class FANDANGO:
                 )
 
             # Select elites
+            self.profiler.start_timer("select_elites")
             new_population = self.select_elites()
+            self.profiler.stop_timer("select_elites")
+            self.profiler.increment("select_elites", len(new_population))
 
             # Crossover
             while len(new_population) < self.population_size:
                 if random.random() < self.crossover_rate:
+                    self.profiler.start_timer("tournament_selection")
                     parent1, parent2 = self.tournament_selection()
+                    self.profiler.stop_timer("tournament_selection")
+                    self.profiler.increment("tournament_selection", 2)
+                    self.profiler.start_timer("crossover")
                     child1, child2 = self.crossover(parent1, parent2)
+                    self.profiler.stop_timer("crossover")
+                    self.profiler.increment("crossover", 2)
                     new_population.append(child1)
                     new_population.append(child2)
                     self.crossovers_made += 1
@@ -133,12 +139,19 @@ class FANDANGO:
             for individual in new_population:
                 if random.random() < self.mutation_rate:
                     new_population.remove(individual)
+                    self.profiler.start_timer("mutation")
                     new_population.append(self.mutate(individual))
+                    self.profiler.stop_timer("mutation")
+                    self.profiler.increment("mutation", 1)
                     self.mutations_made += 1
 
             # Add new individuals
+            curr_size = len(new_population)
+            self.profiler.start_timer("filling")
             while len(new_population) < self.population_size:
                 new_population.append(self.grammar.fuzz())
+            self.profiler.stop_timer("filling")
+            self.profiler.increment("filling", len(new_population) - curr_size)
 
             # Fix individuals
             fixed_population = list()
@@ -155,7 +168,7 @@ class FANDANGO:
         self.time_taken = time.time() - start_time
 
         if self.verbose:
-            print(f" ---------- Evolution finished ---------- ")
+            print(" ---------- Evolution finished ---------- ")
             print(
                 f"[INFO] - Perfect solutions found: ({len(self.solution)}) "
                 f"- Fitness of final population: {self.fitness:.2f}"
@@ -163,12 +176,13 @@ class FANDANGO:
             print(f"[INFO] - Time taken: {self.time_taken:.2f} seconds")
 
         if self.verbose:
-            print(f" ---------- FANDANGO statistics ---------- ")
+            print(" ---------- FANDANGO statistics ---------- ")
             print(f"[DEBUG] - Fixes made: {self.fixes_made}")
             print(f"[DEBUG] - Fitness checks: {self.checks_made}")
             print(f"[DEBUG] - Crossovers made: {self.crossovers_made}")
             print(f"[DEBUG] - Mutations made: {self.mutations_made}")
 
+        self.profiling_results = self.profiler.metrics
         return self.population
 
     def generate_random_initial_population(self) -> List[DerivationTree]:
@@ -210,7 +224,10 @@ class FANDANGO:
                     )
                     if suggested_tree is None:
                         continue
+                    self.profiler.start_timer("fixing")
                     individual = individual.replace(failing_tree.tree, suggested_tree)
+                    self.profiler.stop_timer("fixing")
+                    self.profiler.increment("fixing", 1)
                     self.fixes_made += 1
         return individual
 
@@ -260,7 +277,10 @@ class FANDANGO:
         """
         evaluation = []
         for individual in self.population:
+            self.profiler.start_timer("evaluate_individual")
             fitness, failing_trees = self.evaluate_individual(individual)
+            self.profiler.stop_timer("evaluate_individual")
+            self.profiler.increment("evaluate_individual", 1)
             evaluation.append((individual, fitness, failing_trees))
         return evaluation
 
