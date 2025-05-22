@@ -195,7 +195,7 @@ EVALUATION_MARKER = $(EVALUATION)/test-evaluation.txt
 # python -m evaluation.vs_isla.run_evaluation
 .PHONY: evaluation evaluate
 evaluation $(EVALUATION_MARKER): $(PYTHON_SOURCES) $(EVALUATION_SOURCES)
-	$(PYTHON) -m evaluation.vs_isla.run_evaluation 10
+	$(PYTHON) -m evaluation.vs_isla.run_evaluation 3600
 
 run-evaluation: $(EVALUATION_MARKER)
 

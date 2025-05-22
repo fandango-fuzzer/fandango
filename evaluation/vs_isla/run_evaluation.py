@@ -27,7 +27,7 @@ def better_print_results(results: Tuple[str, int, any, any]):
     # )
     # print(f"Mean length: {results[5]:.2f}")
     # print(f"Median length: {results[6]:.2f}")
-    print(f"Profiling results: {results[2]}")
+    # print(f"Profiling results: {results[2]}")
     print("")
     print("")
 
@@ -45,11 +45,28 @@ def run_evaluation(time: int = 3600):
     # Set the random seed
     random.seed(random_seed)
 
-    better_print_results(evaluate_csv(seconds))
-    better_print_results(evaluate_rest(seconds))
-    better_print_results(evaluate_scriptsizec(seconds))
-    better_print_results(evaluate_tar(seconds))
-    better_print_results(evaluate_xml(seconds))
+    try:
+        better_print_results(evaluate_csv(seconds))
+    except Exception as e:
+        LOGGER.error(f"Error evaluating CSV: {e}")
+    try:
+        better_print_results(evaluate_rest(seconds))
+    except Exception as e:
+        LOGGER.error(f"Error evaluating REST: {e}")
+    try:
+        better_print_results(evaluate_scriptsizec(seconds))
+    except Exception as e:
+        LOGGER.error(f"Error evaluating ScriptSizeC: {e}")
+    try:
+        better_print_results(evaluate_tar(seconds))
+    except Exception as e:
+        LOGGER.error(f"Error evaluating TAR: {e}")
+    try:
+        better_print_results(evaluate_xml(seconds))
+    except Exception as e:
+        LOGGER.error(f"Error evaluating XML: {e}")
+    print("Evaluation completed.")
+    print("================================")
 
 
 if __name__ == "__main__":
