@@ -16,9 +16,7 @@ LOGGER.setLevel(logging.WARNING)  # Default
 
 
 # Return the evaluation results as a tuple of values (subject, total, valid, percentage, diversity, mean_length, median)
-def better_print_results(
-    results: Tuple[str, int, any],
-):
+def better_print_results(results: Tuple[str, int, any, any]):
     print("================================")
     print(f"{results[0]} Evaluation Results")
     print("================================")
@@ -30,6 +28,7 @@ def better_print_results(
     # print(f"Mean length: {results[5]:.2f}")
     # print(f"Median length: {results[6]:.2f}")
     print(f"Profiling results: {results[2]}")
+    print(f"Constraint results: {results[3]}")
     print("")
     print("")
 

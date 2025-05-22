@@ -89,6 +89,7 @@ def evaluate_scriptsizec(
     )
     solutions = []
     profiling_results = {}
+    constraint_results = []
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
@@ -103,6 +104,7 @@ def evaluate_scriptsizec(
                     "count": value["count"],
                     "time": value["time"],
                 }
+        constraint_results.extend(fandango.constraint_profile)
 
         solutions.extend(fandango.solution)
 
@@ -126,6 +128,7 @@ def evaluate_scriptsizec(
         "SCRIPTSIZEC",
         len(solutions),
         profiling_results,
+        constraint_results,
         # len(valid),
         # valid_percentage,
         # 0,

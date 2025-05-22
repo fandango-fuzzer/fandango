@@ -33,6 +33,7 @@ def evaluate_csv(
     grammar, constraints = parse_file("evaluation/vs_isla/csv_evaluation/csv.fan")
     solutions = []
     profiling_results = {}
+    constraint_results = []
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
@@ -48,6 +49,7 @@ def evaluate_csv(
                     "time": value["time"],
                 }
 
+        constraint_results.extend(fandango.constraint_profile)
         solutions.extend(fandango.solution)
     # coverage = grammar.compute_grammar_coverage(solutions, 4)
 
@@ -63,6 +65,7 @@ def evaluate_csv(
         "CSV",
         len(solutions),
         profiling_results,
+        constraint_results,
         # len(valid),
         # valid_percentage,
         # 0,

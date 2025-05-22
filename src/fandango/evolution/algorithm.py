@@ -28,6 +28,7 @@ class FANDANGO:
         mutation_rate: float = 0.2,
         verbose: bool = False,
         profiling: bool = False,
+        subject: str = "default",
     ):
         """
         Initialize the FANDANGO genetic algorithm. The algorithm will evolve a population of individuals
@@ -52,9 +53,9 @@ class FANDANGO:
         self.tournament_size = int(population_size * tournament_size) or population_size
         self.max_generations = max_generations
         self.elitism_rate = elitism_rate
-
+        self.subject = subject
         self.fitness_cache = {}
-
+        self.constraint_profile = []
         self.verbose = verbose
         self.fixes_made = 0
         self.checks_made = 0
@@ -183,6 +184,14 @@ class FANDANGO:
             print(f"[DEBUG] - Mutations made: {self.mutations_made}")
 
         self.profiling_results = self.profiler.metrics
+
+        # for each first element in the list of lists self.constraint_profile, replace the first element with devtree[NUMBER].txt, and save the devtree in the file devtree[NUMBER].txt
+        for i, item in enumerate(self.constraint_profile):
+            if isinstance(item[0], DerivationTree):
+                with open(f"execution/{self.subject}/devtree{i}.txt", "w") as f:
+                    f.write(str(item[0]))
+                    # replace the first element with the name of the file
+                    self.constraint_profile[i][0] = f"devtree{i}.txt"
         return self.population
 
     def generate_random_initial_population(self) -> List[DerivationTree]:
@@ -242,12 +251,16 @@ class FANDANGO:
         """
         fitness = 0.0
         failing_trees = []
-
         if str(individual) in self.fitness_cache:
             return self.fitness_cache[str(individual)]
 
         for constraint in self.constraints:
+            str_time = time.time()
             result = constraint.fitness(individual)
+            end_time = time.time()
+            self.constraint_profile.extend(
+                [individual, constraint, end_time - str_time]
+            )
             if result.success:
                 fitness += result.fitness()
             else:

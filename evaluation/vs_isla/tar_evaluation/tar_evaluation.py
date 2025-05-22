@@ -28,6 +28,7 @@ def evaluate_tar(
     grammar, constraints = parse_file("evaluation/vs_isla/tar_evaluation/tar.fan")
     solutions = []
     profiling_results = {}
+    constraint_results = []
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
@@ -42,6 +43,7 @@ def evaluate_tar(
                     "count": value["count"],
                     "time": value["time"],
                 }
+        constraint_results.extend(fandango.constraint_profile)
 
         solutions.extend(fandango.solution)
 
@@ -59,6 +61,7 @@ def evaluate_tar(
         "TAR",
         len(solutions),
         profiling_results,
+        constraint_results,
         # len(valid),
         # valid_percentage,
         # 0,

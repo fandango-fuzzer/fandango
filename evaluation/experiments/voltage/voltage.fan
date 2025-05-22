@@ -11,3 +11,5 @@ def produce_gaussian_integer():
     sigma = 50
     value = random.gauss(mu, sigma)
     return round(value)
+
+int(<positive_integer>) >= 10 ;

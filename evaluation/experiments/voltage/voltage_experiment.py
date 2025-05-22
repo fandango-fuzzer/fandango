@@ -3,7 +3,7 @@ from fandango.language.parse import parse_file
 
 
 def evaluate_voltage():
-    grammar, constraints = parse_file("voltage/voltage.fan")
+    grammar, constraints = parse_file("evaluation/experiments/voltage/voltage.fan")
 
     fandango = FANDANGO(grammar, constraints, verbose=False, desired_solutions=100)
     fandango.evolve()

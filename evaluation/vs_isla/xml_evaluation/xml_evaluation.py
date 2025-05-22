@@ -22,6 +22,7 @@ def evaluate_xml(
     grammar, constraints = parse_file("evaluation/vs_isla/xml_evaluation/xml.fan")
     solutions = []
     profiling_results = {}
+    constraint_results = []
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
@@ -36,6 +37,7 @@ def evaluate_xml(
                     "count": value["count"],
                     "time": value["time"],
                 }
+        constraint_results.extend(fandango.constraint_profile)
 
         solutions.extend(fandango.solution)
 
@@ -53,6 +55,7 @@ def evaluate_xml(
         "XML",
         len(solutions),
         profiling_results,
+        constraint_results,
         # len(valid),
         # valid_percentage,
         # 0,
