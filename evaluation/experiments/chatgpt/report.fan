@@ -7,7 +7,7 @@ fake = Faker()
 <gpt_model> ::= 'gpt-4.1' #| 'o4-mini' #| 'o3'
 <gpt_message> ::= 'You are a researcher. Write a report about the following subject: ' <subject>
                   '. Every word in the subject must appear exactly as written in the text. No changes allowed. '
-                  'Avoid using the following character non case sensitive sequence under any circumstances: ' <avoid> ''
+                  'Under no circumstances should the following non-case sensitive character sequence be used: ' <avoid> ''
 <subject> ::= <verb> ' ' <adjective> ' ' <noun> ' ' <place>
 <verb> ::= 'testing' | 'evaluating' | 'debugging' | 'inventing' | 'fixing' | 'discussing'
 <adjective> ::= 'innovative' | 'sustainable' | 'disruptive' | 'transformative' | 'revolutionary'
