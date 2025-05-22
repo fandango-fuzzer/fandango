@@ -29,6 +29,7 @@ class FANDANGO:
         verbose: bool = False,
         profiling: bool = False,
         subject: str = "default",
+        run: int = 1,
     ):
         """
         Initialize the FANDANGO genetic algorithm. The algorithm will evolve a population of individuals
@@ -64,7 +65,7 @@ class FANDANGO:
 
         self.time_taken = None
         self.profiler = Profiler(enabled=True)
-
+        self.run = run
         # Initialize population
         self.solution = list()
         self.profiling_results = None
@@ -185,13 +186,32 @@ class FANDANGO:
 
         self.profiling_results = self.profiler.metrics
 
-        # for each first element in the list of lists self.constraint_profile, replace the first element with devtree[NUMBER].txt, and save the devtree in the file devtree[NUMBER].txt
-        for i, item in enumerate(self.constraint_profile):
-            if isinstance(item[0], DerivationTree):
-                with open(f"execution/{self.subject}/devtree{i}.txt", "w") as f:
-                    f.write(str(item[0]))
-                    # replace the first element with the name of the file
-                    self.constraint_profile[i][0] = f"devtree{i}.txt"
+        i = 0
+
+        import os
+
+        os.makedirs(f"execution/{self.subject}/{self.run:06d}/devtree", exist_ok=True)
+        os.makedirs(f"execution/{self.subject}/{self.run:06d}/constr", exist_ok=True)
+        os.makedirs(f"execution/{self.subject}/{self.run:06d}/time", exist_ok=True)
+
+        for indi, constr, tim in self.constraint_profile:
+            if isinstance(indi, DerivationTree):
+                with open(
+                    f"execution/{self.subject}/{self.run:06d}/devtree/devtree{i:04d}.txt",
+                    "w",
+                ) as f:
+                    f.write(str(indi))
+                with open(
+                    f"execution/{self.subject}/{self.run:06d}/constr/constr{i:04d}.txt",
+                    "w",
+                ) as f:
+                    f.write(str(constr))
+                with open(
+                    f"execution/{self.subject}/{self.run:06d}/time/time{i:04d}.txt", "w"
+                ) as f:
+                    f.write(str(tim))
+
+                i += 1
         return self.population
 
     def generate_random_initial_population(self) -> List[DerivationTree]:
@@ -258,7 +278,7 @@ class FANDANGO:
             str_time = time.time()
             result = constraint.fitness(individual)
             end_time = time.time()
-            self.constraint_profile.extend(
+            self.constraint_profile.append(
                 [individual, constraint, end_time - str_time]
             )
             if result.success:

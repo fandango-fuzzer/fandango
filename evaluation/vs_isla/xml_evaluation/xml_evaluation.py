@@ -21,12 +21,21 @@ def evaluate_xml(
 ) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
     grammar, constraints = parse_file("evaluation/vs_isla/xml_evaluation/xml.fan")
     solutions = []
+    run = 0
     profiling_results = {}
     constraint_results = []
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
-        fandango = FANDANGO(grammar, constraints, verbose=False, desired_solutions=100)
+        fandango = FANDANGO(
+            grammar,
+            constraints,
+            verbose=False,
+            desired_solutions=100,
+            subject="xml",
+            run=run,
+        )
+        run += 1
         fandango.evolve()
         for key, value in fandango.profiler.metrics.items():
             if key in profiling_results:

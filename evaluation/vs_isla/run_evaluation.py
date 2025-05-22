@@ -28,7 +28,6 @@ def better_print_results(results: Tuple[str, int, any, any]):
     # print(f"Mean length: {results[5]:.2f}")
     # print(f"Median length: {results[6]:.2f}")
     print(f"Profiling results: {results[2]}")
-    print(f"Constraint results: {results[3]}")
     print("")
     print("")
 

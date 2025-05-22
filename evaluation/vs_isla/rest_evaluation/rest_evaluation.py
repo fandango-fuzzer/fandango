@@ -38,9 +38,17 @@ def evaluate_rest(
     profiling_results = {}
     constraint_results = []
     time_in_an_hour = time.time() + seconds
-
+    run = 0
     while time.time() < time_in_an_hour:
-        fandango = FANDANGO(grammar, constraints, verbose=False, desired_solutions=100)
+        fandango = FANDANGO(
+            grammar,
+            constraints,
+            verbose=False,
+            desired_solutions=100,
+            subject="rest",
+            run=run,
+        )
+        run += 1
         fandango.evolve()
         for key, value in fandango.profiler.metrics.items():
             if key in profiling_results:

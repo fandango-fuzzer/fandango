@@ -28,11 +28,20 @@ def evaluate_tar(
     grammar, constraints = parse_file("evaluation/vs_isla/tar_evaluation/tar.fan")
     solutions = []
     profiling_results = {}
+    run = 0
     constraint_results = []
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
-        fandango = FANDANGO(grammar, constraints, verbose=False, desired_solutions=100)
+        fandango = FANDANGO(
+            grammar,
+            constraints,
+            verbose=False,
+            desired_solutions=100,
+            subject="tar",
+            run=run,
+        )
+        run += 1
         fandango.evolve()
         for key, value in fandango.profiler.metrics.items():
             if key in profiling_results:

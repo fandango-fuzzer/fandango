@@ -87,13 +87,22 @@ def evaluate_scriptsizec(
     grammar, constraints = parse_file(
         "evaluation/vs_isla/scriptsizec_evaluation/scriptsizec.fan"
     )
+    run = 0
     solutions = []
     profiling_results = {}
     constraint_results = []
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
-        fandango = FANDANGO(grammar, constraints, verbose=False, desired_solutions=100)
+        fandango = FANDANGO(
+            grammar,
+            constraints,
+            verbose=False,
+            desired_solutions=100,
+            subject="c",
+            run=run,
+        )
+        run += 1
         fandango.evolve()
         for key, value in fandango.profiler.metrics.items():
             if key in profiling_results:
