@@ -609,6 +609,7 @@ class Fandango:
                             f"Incomplete packet received. Timed out while waiting for packet. Received part: {complete_msg}"
                         )
                 time.sleep(0.025)
+        return None
 
     def select_elites(self) -> List[DerivationTree]:
         return [
