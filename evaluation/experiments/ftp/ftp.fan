@@ -3,13 +3,19 @@ import math
 
 fandango_is_client = True
 
+# The starting symbol from which the fuzzer starts generating messages.
 <start> ::= <state_setup>
 
+# Setup stage that directs server to send a welcome message and leads over to the logged out state.
 <state_setup> ::= <exchange_socket_connect> <state_logged_out>
+
+# Logged out state. Client is not logged in yet. Client might ask for ssl or tls auth, which gets rejected by the server.
+# Client is allowed to log in unencrypted.
 <state_logged_out> ::= (<exchange_auth_tls><state_logged_out>) | (<exchange_auth_ssl><state_logged_out>) | (<exchange_login>)
 <state_logged_in> ::= (<exchange_mlsd><state_finished>) | (<logged_in_cmds><state_logged_in>)
 <state_finished> ::= ''
 
+# The logged in state. If the client is logged in, it is allowed to send the following commands.
 <logged_in_cmds> ::= <exchange_set_type> | <exchange_pwd> | <exchange_syst> | <exchange_feat> | <exchange_set_client> | <exchange_set_utf8> | <exchange_set_type> | <exchange_set_epassive>
 <exchange_socket_connect> ::= <ServerControl:ClientControl:response_server_info>
 <response_server_info> ::= '220 ' r'[a-zA-Z0-9\_\.\(\) ]+\s' '[' r'[a-zA-Z0-9\:\.]+' ']\r\n'
@@ -22,8 +28,14 @@ fandango_is_client = True
 <request_auth_ssl> ::= 'AUTH SSL\r\n'
 <response_auth_ssl> ::= '500 ' <command_tail> '\r\n'
 
+# When client client logs in, he can either login with the correct or incorrect credentials.
 <exchange_login> ::= <exchange_login_fail> | <exchange_login_ok>
+
+# A successful login consist of the correct username and password and leads to the logged in state.
 <exchange_login_ok> ::= <ClientControl:ServerControl:request_login_user_ok><ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_ok><ServerControl:ClientControl:response_login_pass_ok><state_logged_in>
+
+# A failed login consist of incorrect username and incorrect password, incorrect username and correct
+# password or correct username and incorrect password. The rule ends with the fuzzer going back into the logged out state.
 <exchange_login_fail> ::= (<ClientControl:ServerControl:request_login_user_ok>
                             <ServerControl:ClientControl:response_login_user>
                             <ClientControl:ServerControl:request_login_pass_fail>
@@ -36,6 +48,8 @@ fandango_is_client = True
                            <ServerControl:ClientControl:response_login_pass_fail>
                            (<state_logged_out> | (<ServerControl:ClientControl:response_login_throttled><state_finished>))
 
+# This constraint ensured, that the client sent the EPSV command (opening a passive port, for transmitting data),
+# before executing the mlsd command.
 where (not contains_nt(<start>, NonTerminal('<request_mlsd>')))
     or (contains_nt(<start>, NonTerminal('<request_set_epassive>')) and contains_nt(<start>, NonTerminal('<request_set_type>')))
 
@@ -56,6 +70,7 @@ def contains_nt(tree, nt):
 <response_login_pass_fail> ::= '530 ' <command_tail> '\r\n'
 <response_login_throttled> ::= 'FTP session closed.\r\n'
 
+# SYST command expects 215 + the name of the system back.
 <exchange_syst> ::= <ClientControl:ServerControl:request_syst><ServerControl:ClientControl:response_syst>
 <request_syst> ::= 'SYST\r\n'
 <response_syst> ::= '215 ' <syst_name> '\r\n'
@@ -69,6 +84,9 @@ def contains_nt(tree, nt):
 <request_set_utf8> ::= 'OPTS UTF8 ON\r\n'
 <response_set_utf8> ::= '200 ' <command_tail> '\r\n'
 
+# The FEAT command returns a list of features that the server supports. If Fandango generates the feature list,
+# we return a fixed value generated with the generator.
+# When receiving a feature list, we parse it according to the provided regex.
 <exchange_feat> ::= <ClientControl:ServerControl:request_feat><ServerControl:ClientControl:response_feat>
 <request_feat> ::= 'FEAT\r\n'
 <response_feat> ::= '211-Features:\r\n' <feat_entry>+ '211 End\r\n' := feat_response()
@@ -82,10 +100,15 @@ def feat_response():
 <request_set_type> ::= 'TYPE I\r\n'
 <response_set_type> ::= '200 ' <command_tail> '\r\n'
 
+# EPSV directs the server to open a port for data transmission. The server returns the port number.
+# While parsing that port number into <open_port>, we run a generator that reconfigures the data agent to connect to that port.
+# While generating that port server side, we use the same generator function to open the port server side.
 <exchange_set_epassive> ::= <ClientControl:ServerControl:request_set_epassive><ServerControl:ClientControl:response_set_epassive>
 <request_set_epassive> ::= 'EPSV\r\n'
 <response_set_epassive> ::= '229 Entering Extended Passive Mode (|||' <open_port> '|)\r\n'
 
+# MLSD requests the server to send a list of files and folders included in the current working directory.
+# This list is transmitted though the data channel.
 <exchange_mlsd> ::= <ClientControl:ServerControl:request_mlsd><ServerControl:ClientControl:open_mlsd><mlsd_transfer>
 <request_mlsd> ::= 'MLSD\r\n'
 <open_mlsd> ::= '150 Opening BINARY mode data connection for MLSD\r\n'
@@ -153,6 +176,7 @@ def is_unique_folder_and_file(current_file_or_folder, data):
 <mlsd_folder> ::= '.' | '..' | <filesystem_name>
 <mlsd_file> ::= <filesystem_name> ('.' r'[a-zA-Z0-9]+')?
 
+# PWD requests the current working directory. The server answers with a (random) path.
 <exchange_pwd> ::= <ClientControl:ServerControl:request_pwd><ServerControl:ClientControl:response_pwd>
 <request_pwd> ::= 'PWD\r\n'
 <response_pwd> ::= '257 \"' <directory> '\" is the current directory\r\n'
@@ -172,6 +196,8 @@ def is_unique_folder_and_file(current_file_or_folder, data):
 <number_start> ::= '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 <number_tail> ::= '0' | <number_start>
 
+# open_data_port(port) is a generator. When executed, it returns the value that was given to it and reconfigures the
+# data party definitions to use that port.
 def open_data_port(port):
     FandangoIO.instance().roles['ClientData'].update_port(port)
     FandangoIO.instance().roles['ServerData'].update_port(port)
