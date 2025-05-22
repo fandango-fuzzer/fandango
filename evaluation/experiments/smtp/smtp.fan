@@ -20,13 +20,22 @@ def decode64(input):
     return base64.b64decode(input.encode('utf-8')).decode('utf-8')
 
 <start> ::= <state_setup>
+
+# When setting up the connection the server sends a id message and exchange an ehlo. Afterwards the grammar leads over to <state_logged_out>.
 <state_setup> ::= <Server:response_setup><Client:request_ehlo><Server:response_ehlo><state_logged_out>
+
+# In state logged out the grammar accepts either a failing or a successful login.
 <state_logged_out> ::= <exchange_login_valid> | <exchange_login_invalid>
+
+# When logged in the grammar accepts either a quit (terminating the connection) or a mail exchange.
 <state_logged_in> ::= <exchange_quit> |  <exchange_mail>
 
+# A successful login consist of the correct username and password and leads to the logged in state.
 <exchange_login_valid> ::= <Client:request_auth><Server:response_auth_expect_user><Client:request_auth_user_correct><Server:response_auth_expect_pass>
     <Client:request_auth_pass_correct><Server:response_auth_success><state_logged_in>
 
+# A failed login consist of incorrect username and incorrect password, incorrect username and correct
+# password or correct username and incorrect password. The rule ends with the fuzzer going back into the logged out state.
 <exchange_login_invalid> ::= <Client:request_auth><Server:response_auth_expect_user>
                           ((<Client:request_auth_user_correct>
                             <Server:response_auth_expect_pass>
@@ -70,7 +79,8 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 <response_quit> ::= '221 Bye\r\n'
 <state_end> ::= ''
 
-
+# When sending a mail the client to the server, the client first tells the server who he is and where to send the mail
+# to, afterwards the client send mail headers and the mail body before finally submitting the mail and goind back to the logged in state.
 <exchange_mail> ::= <Client:request_mail_from><Server:response_mail_from>
     <Client:request_mail_to><Server:response_mail_to>
     <Client:request_mail_data><Server:response_mail_data>
