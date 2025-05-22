@@ -79,8 +79,17 @@ class Fandango:
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
         self.current_max_nodes = 50
+        self.crossover_operator = crossover_method
+        self.mutation_method = mutation_method
+        self.fixes_made = 0
+        self.crossovers_made = 0
+        self.mutations_made = 0
+        self.time_taken = None
+        self.desired_solutions = desired_solutions
 
         # Instantiate managers
+        self.profiler = Profiler(enabled=profiling)
+
         self.population_manager = PopulationManager(
             grammar,
             start_symbol,
@@ -107,22 +116,29 @@ class Fandango:
             max_nodes_rate,
         )
 
-        self.profiler = Profiler(enabled=profiling)
+        self._init_initial_population(initial_population)
 
-        self.crossover_operator = crossover_method
-        self.mutation_method = mutation_method
+        self.checks_made = self.evaluator.checks_made
+        self.solution = self.evaluator.solution
+        self.solution_set = self.evaluator.solution_set
 
-        initial_population = self._parse_and_deduplicate(population=initial_population)
+    def _init_initial_population(
+        self, initial_population: Optional[list[Union[DerivationTree, str]]]
+    ) -> None:
+        """
+        Initializes the initial population.
+        """
+        deduplicated = self._parse_and_deduplicate(population=initial_population)
 
         LOGGER.info(
-            f"Generating (additional) initial population (size: {len(initial_population) - self.population_size})..."
+            f"Generating (additional) initial population (size: {len(deduplicated) - self.population_size})..."
         )
         st_time = time.time()
 
         with self.profiler.timer("initial_population") as timer:
             self.population = self.population_manager.generate_random_population(
                 eval_individual=self.evaluator.evaluate_individual,
-                initial_population=initial_population,
+                initial_population=deduplicated,
             )
             timer.increment(len(self.population))
 
@@ -137,15 +153,6 @@ class Fandango:
         self.fitness = (
             sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
-
-        self.fixes_made = 0
-        self.checks_made = self.evaluator.checks_made
-        self.crossovers_made = 0
-        self.mutations_made = 0
-        self.time_taken = None
-        self.solution = self.evaluator.solution
-        self.solution_set = self.evaluator.solution_set
-        self.desired_solutions = desired_solutions
 
     def _parse_and_deduplicate(
         self, population: Optional[list[Union[DerivationTree, str]]]

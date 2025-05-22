@@ -1,4 +1,3 @@
-import concurrent.futures
 import random
 from typing import Union
 
@@ -147,10 +146,8 @@ class Evaluator:
         if fitness >= self.expected_fitness and key not in self.solution_set:
             self.solution_set.add(key)
             self.solution.append(individual)
-        try:
-            failing_trees = hard_failing_trees + soft_failing_trees
-        except NameError:
-            failing_trees = hard_failing_trees
+
+        failing_trees = hard_failing_trees + (soft_failing_trees or [])
 
         self.fitness_cache[key] = (fitness, failing_trees)
         return fitness, failing_trees
@@ -169,26 +166,6 @@ class Evaluator:
                 new_fitness = fitness + bonus_map.get(idx, 0.0)
                 new_evaluation.append((ind, new_fitness, failing_trees))
             evaluation = new_evaluation
-        return evaluation
-
-    def evaluate_population_parallel(
-        self, population: list[DerivationTree], num_workers: int = 4
-    ) -> list[tuple[DerivationTree, float, list]]:
-        evaluation = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
-            future_to_individual = {
-                executor.submit(self.evaluate_individual, ind): ind
-                for ind in population
-            }
-            for future in concurrent.futures.as_completed(future_to_individual):
-                ind = future_to_individual[future]
-                try:
-                    # evaluate_individual returns a 2-tuple: (fitness, failing_trees)
-                    fitness, failing_trees = future.result()
-                    # Pack the individual with its evaluation so that we have a 3-tuple.
-                    evaluation.append((ind, fitness, failing_trees))
-                except Exception as e:
-                    LOGGER.error(f"Error during parallel evaluation: {e}")
         return evaluation
 
     def select_elites(

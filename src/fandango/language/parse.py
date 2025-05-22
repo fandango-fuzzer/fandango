@@ -43,7 +43,7 @@ class MyErrorListener(ErrorListener):
         self.filename = filename
         super().__init__()
 
-    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+    def syntaxError(self, _recognizer, _offendingSymbol, line, column, msg, e):
         exc = FandangoSyntaxError(
             f"{self.filename!r}, line {line}, column {column}: {msg}"
         )
