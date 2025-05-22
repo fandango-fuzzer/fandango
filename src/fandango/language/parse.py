@@ -9,7 +9,7 @@ import re
 from copy import deepcopy
 from pathlib import Path
 from io import StringIO
-from typing import IO, Any, List, Optional, Set, Tuple
+from typing import Any, IO, Optional
 
 import cachedir_tag
 import dill as pickle
@@ -61,13 +61,13 @@ class MyErrorListener(ErrorListener):
 CURRENT_FILENAME: str = "<undefined>"
 
 # The list of directories to search for include files
-INCLUDES: List[str] = []
+INCLUDES: list[str] = []
 
 # The list of files to parse, with their include depth.
 # An include depth of 0 means the file was given as input.
 # A higher include depth means the file was included from another file;
 # hence its grammar and constraints should be processed _before_ the current file.
-FILES_TO_PARSE: List[Tuple[IO, int]] = []
+FILES_TO_PARSE: list[tuple[IO, int]] = []
 
 # The current include depth
 INCLUDE_DEPTH: int = 0
@@ -173,7 +173,7 @@ class FandangoSpec:
             global_variables=self.global_vars,
             lazy=self.lazy,
         )
-        self.constraints: List[str] = constraint_processor.get_constraints(
+        self.constraints: list[str] = constraint_processor.get_constraints(
             splitter.constraints
         )
 
@@ -205,7 +205,7 @@ def parse_content(
     use_cache: bool = True,
     lazy: bool = False,
     max_repetitions: int = 5,
-) -> Tuple[Grammar, List[str]]:
+) -> tuple[Grammar, list[str]]:
     """
     Parse given content into a grammar and constraints.
     This is a helper function; use `parse()` as the main entry point.
@@ -302,25 +302,25 @@ def parse_content(
 
 
 # Save the set of symbols used in the standard library and imported grammars
-USED_SYMBOLS: Set[str] = set()
+USED_SYMBOLS: set[str] = set()
 
 # Save the standard library grammar and constraints
 STDLIB_GRAMMAR: Optional[Grammar] = None
-STDLIB_CONSTRAINTS: Optional[List[str]] = None
+STDLIB_CONSTRAINTS: Optional[list[str]] = None
 
 
 def parse(
-    fan_files: str | IO | List[str | IO],
-    constraints: List[str] = None,
+    fan_files: str | IO | list[str | IO],
+    constraints: Optional[list[str]] = None,
     *,
     use_cache: bool = True,
     use_stdlib: bool = True,
     lazy: bool = False,
-    given_grammars: List[Grammar] = [],
+    given_grammars: list[Grammar] = [],
     start_symbol: Optional[str] = None,
-    includes: List[str] = [],
+    includes: list[str] = [],
     max_repetitions: int = 5,
-) -> Tuple[Optional[Grammar], List[str]]:
+) -> tuple[Optional[Grammar], list[str]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
     :param fan_files: One (open) .fan file, one string, or a list of these
@@ -372,7 +372,7 @@ def parse(
     INCLUDES = includes
 
     grammars = []
-    parsed_constraints: List[str] = []
+    parsed_constraints: list[str] = []
     if use_stdlib:
         assert STDLIB_GRAMMAR is not None
         assert STDLIB_CONSTRAINTS is not None

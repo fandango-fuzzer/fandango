@@ -1,7 +1,7 @@
 import subprocess
 import tempfile
 import time
-from typing import Tuple
+
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.parse import parse
@@ -24,7 +24,7 @@ def is_syntactically_valid_tar(tree: str):
 
 def evaluate_tar(
     seconds=60,
-) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
+) -> tuple[str, int, int, float, tuple[float, int, int], float, float]:
     file = open("evaluation/vs_isla/tar_evaluation/tar.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False)
     solutions = []

@@ -1,7 +1,7 @@
 from antlr4 import InputStream, Token
 from pygls.server import LanguageServer
 import lsprotocol.types as lsp
-from typing import Dict, Optional, List
+from typing import Optional
 import logging
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.server.semantic_tokens import (
@@ -12,7 +12,7 @@ from fandango.language.server.semantic_tokens import (
 logger = logging.getLogger(__name__)
 
 
-def map_to_ranges(references: List[Token], uri: str):
+def map_to_ranges(references: list[Token], uri: str):
     return [
         lsp.Range(
             start=lsp.Position(line=t.line - 1, character=t.column),
@@ -22,7 +22,7 @@ def map_to_ranges(references: List[Token], uri: str):
     ]
 
 
-def map_to_locations(references: List[Token], uri: str):
+def map_to_locations(references: list[Token], uri: str):
     locations = [
         lsp.Location(
             uri=uri,
@@ -36,13 +36,13 @@ def map_to_locations(references: List[Token], uri: str):
 
 class FileAssets:
     def __init__(self, lexer: FandangoLexer):
-        self.tokens: List[Token] = lexer.getAllTokens()
+        self.tokens: list[Token] = lexer.getAllTokens()
 
 
 class FandangoLanguageServer(LanguageServer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.files: Dict[str, FileAssets] = {}
+        self.files: dict[str, FileAssets] = {}
 
     def get_text_document(self, document: lsp.VersionedTextDocumentIdentifier):
         return self.workspace.get_text_document(document.uri)

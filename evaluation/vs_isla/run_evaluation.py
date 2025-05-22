@@ -1,7 +1,7 @@
 import logging
 import random
 import sys
-from typing import Tuple
+
 
 from evaluation.vs_isla.csv_evaluation.csv_evaluation import evaluate_csv
 from evaluation.vs_isla.rest_evaluation.rest_evaluation import evaluate_rest
@@ -17,7 +17,7 @@ LOGGER.setLevel(logging.WARNING)  # Default
 
 # Return the evaluation results as a tuple of values (subject, total, valid, percentage, diversity, mean_length, median)
 def better_print_results(
-    results: Tuple[str, int, int, float, Tuple[float, int, int], float, float],
+    results: tuple[str, int, int, float, tuple[float, int, int], float, float],
 ):
     print("================================")
     print(f"{results[0]} Evaluation Results")
