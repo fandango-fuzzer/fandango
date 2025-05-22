@@ -1,25 +1,27 @@
 from faker import Faker
 fake = Faker()
 
-<start> ::= <exchange>
+<start> ::= <exchange>{20}
 <exchange> ::= <Client:request><Gpt:response>
 <request> ::= <gpt_model><gpt_message>
 <gpt_model> ::= 'gpt-4.1' #| 'o4-mini' #| 'o3'
 <gpt_message> ::= 'You are a researcher. Write a report about the following subject: ' <subject>
                   '. Every word in the subject must appear exactly as written in the text. No changes allowed. '
-                  'Avoid using the following words under any circumstances: ' <avoid> '.'
-<subject> ::= <verb> ' ' <adjective> ' ' <noun>
+                  'Avoid using the following character non case sensitive sequence under any circumstances: ' <avoid> ''
+<subject> ::= <verb> ' ' <adjective> ' ' <noun> ' ' <place>
 <verb> ::= 'testing' | 'evaluating' | 'debugging' | 'inventing' | 'fixing' | 'discussing'
-<noun> ::= 'rocket' | 'networks' | 'cars' | 'cyborgs' | 'space' | 'climate' | 'economy'
 <adjective> ::= 'innovative' | 'sustainable' | 'disruptive' | 'transformative' | 'revolutionary'
+<noun> ::= 'rocket' | 'networks' | 'cars' | 'cyborgs' | 'space' | 'climate' | 'economy'
+<place> ::= 'on Mars' | 'in Korea' | 'in the White House' | 'in the metaverse' | 'in an amusement park'
 <avoid> ::= 'AI' | 'crash' | 'Elon' | 'universe'
 
 <response> ::= r'(?s).*'
 
-where str(<exchange>.<request>..<verb>).lower() in str(<exchange>.<response>).lower()
-where str(<exchange>.<request>..<adjective>).lower() in str(<exchange>.<response>).lower()
-where str(<exchange>.<request>..<noun>).lower() in str(<exchange>.<response>).lower()
-where str(<exchange>.<request>..<avoid>).lower() not in str(<exchange>.<response>).lower().split(' ')
+where forall <ex> in <exchange>:
+    str(<ex>.<request>..<verb>).lower() in str(<ex>.<response>).lower()
+    and str(<ex>.<request>..<adjective>).lower() in str(<ex>.<response>).lower()
+    and str(<ex>.<request>..<noun>).lower() in str(<ex>.<response>).lower()
+    and str(<ex>.<request>..<avoid>).lower() not in str(<ex>.<response>).lower()
 
 import openai
 class Client(FandangoAgent):
