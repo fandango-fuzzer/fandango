@@ -18,7 +18,6 @@ def send_socket(sock, message):
 def scan_socket(sock):
     response, _ = sock.recvfrom(1024)
     return response.decode("utf-8")
-
 def random_string():
     return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(random.randint(10, 20)))
 
