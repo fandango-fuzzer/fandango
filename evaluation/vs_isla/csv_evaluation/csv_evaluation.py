@@ -42,20 +42,20 @@ def evaluate_csv(
 
     # coverage = grammar.compute_grammar_coverage(solutions, 4)
 
-    valid = []
-    for solution in solutions:
-        if is_syntactically_valid_csv(str(solution)):
-            valid.append(solution)
+    # valid = []
+    # for solution in solutions:
+    #     if is_syntactically_valid_csv(str(solution)):
+    #         valid.append(solution)
 
-    set_mean_length = sum(len(str(x)) for x in valid) / len(valid)
-    set_medium_length = sorted(len(str(x)) for x in valid)[len(valid) // 2]
-    valid_percentage = len(valid) / len(solutions) * 100
+    # set_mean_length = sum(len(str(x)) for x in valid) / len(valid)
+    # set_medium_length = sorted(len(str(x)) for x in valid)[len(valid) // 2]
+    # valid_percentage = len(valid) / len(solutions) * 100
     return (
         "CSV",
         len(solutions),
-        len(valid),
-        valid_percentage,
-        0,
-        set_mean_length,
-        set_medium_length,
+        # len(valid),
+        # valid_percentage,
+        # 0,
+        # set_mean_length,
+        # set_medium_length,
     )

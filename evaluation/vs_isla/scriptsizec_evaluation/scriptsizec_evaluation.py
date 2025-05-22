@@ -96,28 +96,28 @@ def evaluate_scriptsizec(
         fandango.evolve()
         solutions.extend(fandango.solution)
 
-    coverage = grammar.compute_grammar_coverage(solutions, 4)
+    # coverage = grammar.compute_grammar_coverage(solutions, 4)
 
-    valid = []
-    for solution in solutions:
-        parsed_solution = "int main() {\n"
-        parsed_solution += "    " + str(solution).replace("\n", "    \t")
-        parsed_solution += "\n" + "}"
+    # valid = []
+    # for solution in solutions:
+    #     parsed_solution = "int main() {\n"
+    #     parsed_solution += "    " + str(solution).replace("\n", "    \t")
+    #     parsed_solution += "\n" + "}"
 
-        fixed_solution = declare_variables(parsed_solution)
+    #     fixed_solution = declare_variables(parsed_solution)
 
-        if is_valid_tinyc_code(str(fixed_solution)):
-            valid.append(solution)
+    #     if is_valid_tinyc_code(str(fixed_solution)):
+    #         valid.append(solution)
 
-    set_mean_length = sum(len(str(x)) for x in valid) / len(valid)
-    set_medium_length = sorted(len(str(x)) for x in valid)[len(valid) // 2]
-    valid_percentage = len(valid) / len(solutions) * 100
+    # set_mean_length = sum(len(str(x)) for x in valid) / len(valid)
+    # set_medium_length = sorted(len(str(x)) for x in valid)[len(valid) // 2]
+    # valid_percentage = len(valid) / len(solutions) * 100
     return (
         "SCRIPTSIZEC",
         len(solutions),
-        len(valid),
-        valid_percentage,
-        coverage,
-        set_mean_length,
-        set_medium_length,
+        # len(valid),
+        # valid_percentage,
+        # 0,
+        # set_mean_length,
+        # set_medium_length,
     )
