@@ -190,28 +190,36 @@ class FANDANGO:
 
         import os
 
-        os.makedirs(f"execution/{self.subject}/{self.run:06d}/devtree", exist_ok=True)
-        os.makedirs(f"execution/{self.subject}/{self.run:06d}/constr", exist_ok=True)
-        os.makedirs(f"execution/{self.subject}/{self.run:06d}/time", exist_ok=True)
+        os.makedirs(f"execution/{self.subject}/{self.run:06d}/", exist_ok=True)
 
-        for indi, constr, tim in self.constraint_profile:
-            if isinstance(indi, DerivationTree):
-                with open(
-                    f"execution/{self.subject}/{self.run:06d}/devtree/devtree{i:04d}.txt",
-                    "w",
-                ) as f:
-                    f.write(str(indi))
-                with open(
-                    f"execution/{self.subject}/{self.run:06d}/constr/constr{i:04d}.txt",
-                    "w",
-                ) as f:
-                    f.write(str(constr))
-                with open(
-                    f"execution/{self.subject}/{self.run:06d}/time/time{i:04d}.txt", "w"
-                ) as f:
-                    f.write(str(tim))
+        for indi, tim in self.constraint_profile:
+            with open(
+                f"execution/{self.subject}/{self.run:06d}/eval{i:06d}.txt", "w"
+            ) as f:
+                f.write(f"{str(int(indi))},{tim}\n")
+            i += 1
+            # if isinstance(indi, DerivationTree):
+            #     with open(
+            #         f"execution/{self.subject}/{self.run:06d}/devtree/devtree{i:04d}.txt",
+            #         "w",
+            #     ) as f:
+            #         f.write(str(indi))
+            #     with open(
+            #         f"execution/{self.subject}/{self.run:06d}/constr/constr{i:04d}.txt",
+            #         "w",
+            #     ) as f:
+            #         f.write(str(constr))
+            #     with open(
+            #         f"execution/{self.subject}/{self.run:06d}/time/time{i:04d}.txt", "w"
+            #     ) as f:
+            #         f.write(str(tim))
 
-                i += 1
+            #     i += 1
+            with open(
+                f"execution/{self.subject}/{self.run:06d}/profiling.txt",
+                "w",
+            ) as f:
+                f.write(str(self.profiling_results))
         return self.population
 
     def generate_random_initial_population(self) -> List[DerivationTree]:
@@ -274,19 +282,18 @@ class FANDANGO:
         if str(individual) in self.fitness_cache:
             return self.fitness_cache[str(individual)]
 
+        str_time = time.time()
         for constraint in self.constraints:
-            str_time = time.time()
+            self.profiler.start_timer("evaluate_individual_constr")
             result = constraint.fitness(individual)
-            end_time = time.time()
-            self.constraint_profile.append(
-                [individual, constraint, end_time - str_time]
-            )
+            self.profiler.stop_timer("evaluate_individual_constr")
+            self.profiler.increment("evaluate_individual_constr", 1)
             if result.success:
                 fitness += result.fitness()
             else:
                 failing_trees.extend(result.failing_trees)
                 fitness += result.fitness()
-            self.checks_made += 1
+        self.constraint_profile.append([int(individual.size()), time.time() - str_time])
 
         # Normalize fitness
         try:

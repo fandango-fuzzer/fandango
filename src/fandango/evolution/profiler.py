@@ -6,6 +6,7 @@ class Profiler:
         self.enabled = enabled
         self.metrics = {
             "initial_population": {"count": 0, "time": 0.0},
+            "evaluate_individual_constr": {"count": 0, "time": 0.0},
             "evaluate_individual": {"count": 0, "time": 0.0},
             "select_elites": {"count": 0, "time": 0.0},
             "tournament_selection": {"count": 0, "time": 0.0},
