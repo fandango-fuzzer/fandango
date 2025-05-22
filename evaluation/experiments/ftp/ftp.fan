@@ -1,7 +1,7 @@
 from random import randint
 import math
 
-fandango_is_client = True
+fandango_is_client = False
 
 # The starting symbol from which the fuzzer starts generating messages.
 <start> ::= <state_setup>
@@ -210,11 +210,12 @@ import select
 class ClientControl(FandangoAgent):
     def __init__(self):
         super().__init__(fandango_is_client)
+        self.server_domain = "127.0.0.1"
         if not self.is_fandango():
             return
         self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.connect(("liggesmeyer.net", 21))
+        self.sock.connect((self.server_domain, 21))
         server_thread = threading.Thread(target=self.listen_loop)
         server_thread.daemon = True
         server_thread.start()
@@ -281,6 +282,7 @@ class ClientData(FandangoAgent):
         super().__init__(fandango_is_client)
         self.sock = None
         self.port = None
+        self.server_domain = "127.0.0.1"
         self.listen_thread = None
         self.running = False
 
@@ -289,7 +291,7 @@ class ClientData(FandangoAgent):
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     def connect(self):
-        self.sock.connect(("liggesmeyer.net", self.port))
+        self.sock.connect((self.server_domain, self.port))
         self.running = True
         self.listen_thread = threading.Thread(target=self._listen, daemon=True)
         self.listen_thread.start()
@@ -301,7 +303,7 @@ class ClientData(FandangoAgent):
         try:
             self.sock.shutdown(socket.SHUT_RDWR)
         except:
-            pass  # socket might already be closed
+            pass
         self.sock.close()
 
     def update_port(self, new_port: int):
@@ -371,7 +373,7 @@ class ServerData(FandangoAgent):
         try:
             self.sock.shutdown(socket.SHUT_RDWR)
         except:
-            pass  # socket might already be closed
+            pass
         self.sock.close()
 
     def wait_accept(self):

@@ -167,13 +167,14 @@ def decompress_msg(compressed):
     return decompressed
 
 
-<start> ::= <exchange>{2}
+<start> ::= <exchange>
+
+# Each exchange consists of a request made by the client and a response from the server.
 <exchange> ::= <Client:dns_req> <Server:dns_resp>
-#<exchange> ::= <Client:dns_req_compressed> <Server:dns_resp_compressed>
-<dns_req_compressed> ::= <byte>+ #:= compress_msg(<dns_req>.to_bytes())
-<dns_resp_compressed> ::= <byte>+ #:= compress_msg(<dns_resp>.to_bytes())
-<dns_req> ::= <header_req> <question>{byte_to_int(<req_qd_count>)} <answer>{byte_to_int(<req_ar_count>)} #:= decompress_msg(<dns_req_compressed>.to_bytes())
-<dns_resp> ::= <header_resp> <question>{byte_to_int(<header_req>.<req_qd_count>)} <answer_an>{byte_to_int(<resp_an_count>)} <answer_au>{byte_to_int(<resp_ns_count>)} <answer_opt>{byte_to_int(<resp_ar_count>)} #:= decompress_msg(<dns_resp_compressed>.to_bytes())
+
+# A request consists of a header and a number of questions and answers as specified in the header
+<dns_req> ::= <header_req> <question>{byte_to_int(<req_qd_count>)} <answer>{byte_to_int(<req_ar_count>)}
+<dns_resp> ::= <header_resp> <question>{byte_to_int(<header_req>.<req_qd_count>)} <answer_an>{byte_to_int(<resp_an_count>)} <answer_au>{byte_to_int(<resp_ns_count>)} <answer_opt>{byte_to_int(<resp_ar_count>)}
 
 #                       qr      opcode       aa tc rd  ra  z      rcode   qdcount  ancount nscount arcount
 <header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_none> <req_qd_count> 0{16} 0{16} <req_ar_count>
@@ -182,12 +183,9 @@ def decompress_msg(compressed):
 
 where forall <ex> in <start>.<exchange>:
     <ex>.<dns_req>.<header_req>.<h_rd> == <ex>.<dns_resp>.<header_resp>.<h_rd>
-    # Not true ## and bytes(<ex>.<dns_req>.<header_req>.<h_rd>) == bytes(<ex>.<dns_resp>.<header_resp>.<h_ra>)
     and <ex>.<dns_req>.<header_req>.<h_id> == <ex>.<dns_resp>.<header_resp>.<h_id>
     and <ex>.<dns_req>.<question> == <ex>.<dns_resp>.<question>
     and bytes(<ex>.<dns_req>.<header_req>.<req_qd_count>) == bytes(<ex>.<dns_resp>.<header_resp>.<resp_qd_count>)
-    # Not true ## and byte_to_int(bytes(<ex>.<dns_req>.<header_req>.<req_qd_count>)) <= byte_to_int(bytes(<ex>.<dns_resp>.<header_resp>.<resp_an_count>))
-
 
 
 <req_qd_count> ::= <byte>{2} := pack(">H", 1)
@@ -199,7 +197,7 @@ where forall <ex> in <start>.<exchange>:
 
 <h_id> ::= <byte><byte>
 <h_opcode_standard> ::= 0 0 0 0
-<h_rd> ::= 1 #:= DerivationTree(NonTerminal('<bit>'), [Terminal(1)]) # 0 causes server failure with cname
+<h_rd> ::= 1 # 0 causes server failure with cname
 <h_aa> ::= <bit>
 <h_ra> ::= <bit>
 
@@ -227,7 +225,6 @@ where forall <ex> in <start>.<exchange>:
     forall <q> in <ex>.<dns_req>.<question>:
         forall <a> in <ex>.<dns_resp>.<answer_an>:
             (bytes(<q>.<q_type>) == bytes(<a>.children[1])[0:2] and bytes(<q>.<q_name>) == bytes(<a>.<q_name_optional>))
-            #or <ex>.<dns_req>.<header_req>.<h_id> != <ex>.<dns_resp>.<header_resp>.<h_id>
             or get_index_within(<q>, <ex>.<dns_req>, ['<question>']) != get_index_within(<a>, <ex>.<dns_resp>, ['<answer_an>'])
 
 
@@ -260,15 +257,15 @@ import socket
 class Client(FandangoAgent):
         def __init__(self):
             super().__init__(fandango_is_client)
+            self.server_domain = "127.0.0.1"
 
         def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.sendto(compress_msg(message.to_bytes()), ("1.1.1.1", 53))
+            sock.sendto(compress_msg(message.to_bytes()), (self.server_domain, 53))
             response, nothing = sock.recvfrom(1024)
             self.receive_msg("Server", decompress_msg(response))
 
 class Server(FandangoAgent):
-
         def __init__(self):
             super().__init__(not fandango_is_client)
             if self.is_fandango():
@@ -288,8 +285,6 @@ class Server(FandangoAgent):
                 m_id = message[:2]
                 self.id_addr[m_id] = (addr, time.time())
                 self.receive_msg("Client", decompress_msg(message))
-                #self.receive_msg("Client", message)
-
 
         def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
             m_id = message.to_bytes()[:2]
@@ -298,4 +293,3 @@ class Server(FandangoAgent):
             elapsed_time *= 1000
             print("Answered after: " + str(elapsed_time) + "ms")
             self.server_socket.sendto(compress_msg(message.to_bytes()), addr)
-            #self.server_socket.sendto(message.to_bytes(), addr)
