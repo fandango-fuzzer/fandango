@@ -3,7 +3,7 @@ version: '3.7'
 services:
   proftpd:
     image: kibatic/proftpd@sha256:6f3d8dc449720be2c098bdf4a9b5f07ce6ec3a7df9cd80aff9a74607b23aee65
-    restart: unless-stopped
+    restart: no
     environment:
       FTP_LIST: "the_user:the_password"
       #USERADD_OPTIONS: "-o --gid 33 --uid 33"
