@@ -39,7 +39,12 @@ def evaluate_csv(
 
     while time.time() < time_in_an_hour:
         fandango = FANDANGO(
-            grammar, constraints, verbose=False, desired_solutions=100, subject="csv", run=run
+            grammar,
+            constraints,
+            verbose=False,
+            desired_solutions=100,
+            subject="csv",
+            run=run,
         )
         run += 1
         fandango.evolve()
@@ -52,7 +57,11 @@ def evaluate_csv(
                     "count": value["count"],
                     "time": value["time"],
                 }
-
+        with open(
+            f"execution/csv/{run:10d}/profiling.txt",
+            "w",
+        ) as f:
+            f.write(str(profiling_results))
         constraint_results.extend(fandango.constraint_profile)
         solutions.extend(fandango.solution)
     # coverage = grammar.compute_grammar_coverage(solutions, 4)

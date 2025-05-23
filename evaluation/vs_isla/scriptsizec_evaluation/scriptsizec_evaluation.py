@@ -114,7 +114,11 @@ def evaluate_scriptsizec(
                     "time": value["time"],
                 }
         constraint_results.extend(fandango.constraint_profile)
-
+        with open(
+            f"execution/c/{run:10d}/profiling.txt",
+            "w",
+        ) as f:
+            f.write(str(profiling_results))
         solutions.extend(fandango.solution)
 
     # coverage = grammar.compute_grammar_coverage(solutions, 4)

@@ -215,11 +215,7 @@ class FANDANGO:
             #         f.write(str(tim))
 
             #     i += 1
-            with open(
-                f"execution/{self.subject}/{self.run:10d}/profiling.txt",
-                "w",
-            ) as f:
-                f.write(str(self.profiling_results))
+
         return self.population
 
     def generate_random_initial_population(self) -> List[DerivationTree]:
