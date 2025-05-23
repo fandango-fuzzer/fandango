@@ -45,7 +45,7 @@ def run_evaluation(time: int = 3600):
 
     # Set the random seed
 
-    while rounds < 10:
+    while True:
         random.seed(random_seed)
         try:
             better_print_results(evaluate_csv(seconds, rounds))
