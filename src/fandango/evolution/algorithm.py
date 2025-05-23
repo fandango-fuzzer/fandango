@@ -186,18 +186,20 @@ class FANDANGO:
 
         self.profiling_results = self.profiler.metrics
 
-        i = 0
-
+        import csv
         import os
 
-        os.makedirs(f"execution/{self.subject}/{self.run:10d}/", exist_ok=True)
+        output_dir = f"execution/{self.subject}/{self.run}/"
+        os.makedirs(output_dir, exist_ok=True)
 
-        for indi, tim in self.constraint_profile:
-            with open(
-                f"execution/{self.subject}/{self.run:10d}/eval{i:10d}.txt", "w"
-            ) as f:
-                f.write(f"{str(int(indi))},{tim}\n")
-            i += 1
+        with open(
+            os.path.join(output_dir, "evaluations.csv"), "w", newline=""
+        ) as csvfile:
+            writer = csv.writer(csvfile, delimiter=";")
+            writer.writerow(["nodes", "time"])  # header
+            for indi, tim in self.constraint_profile:
+                writer.writerow([int(indi), tim])
+
             # if isinstance(indi, DerivationTree):
             #     with open(
             #         f"execution/{self.subject}/{self.run:10d}/devtree/devtree{i:04d}.txt",
