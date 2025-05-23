@@ -30,6 +30,7 @@ class FANDANGO:
         profiling: bool = False,
         subject: str = "default",
         run: int = 1,
+        rounds: int = 1,
     ):
         """
         Initialize the FANDANGO genetic algorithm. The algorithm will evolve a population of individuals
@@ -47,6 +48,7 @@ class FANDANGO:
         if verbose:
             print(" ---------- Initializing FANDANGO algorithm ---------- ")
         self.grammar = grammar
+        self.rounds = rounds
         self.constraints = constraints
         self.population_size = population_size
         self.mutation_rate = mutation_rate
@@ -189,7 +191,7 @@ class FANDANGO:
         import csv
         import os
 
-        output_dir = f"execution/{self.subject}/{self.run}/"
+        output_dir = f"execution/{self.rounds}/{self.subject}/{self.run}/"
         os.makedirs(output_dir, exist_ok=True)
 
         with open(

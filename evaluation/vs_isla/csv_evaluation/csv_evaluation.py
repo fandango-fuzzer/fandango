@@ -29,6 +29,7 @@ def is_syntactically_valid_csv(tree) -> bool:
 
 def evaluate_csv(
     seconds=60,
+    rounds=1,
 ) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
     grammar, constraints = parse_file("evaluation/vs_isla/csv_evaluation/csv.fan")
     solutions = []
@@ -45,6 +46,7 @@ def evaluate_csv(
             desired_solutions=100,
             subject="csv",
             run=run,
+            rounds=rounds
         )
         fandango.evolve()
         for key, value in fandango.profiler.metrics.items():
@@ -61,7 +63,7 @@ def evaluate_csv(
         solutions.extend(fandango.solution)
         run += 1
     with open(
-        "execution/csv/profiling.txt",
+        f"execution/{rounds}/csv/profiling.txt",
         "w",
     ) as f:
         f.write(str(profiling_results))

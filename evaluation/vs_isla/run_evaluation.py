@@ -33,6 +33,7 @@ def better_print_results(results: Tuple[str, int, any, any]):
 
 
 def run_evaluation(time: int = 3600):
+    rounds = 1
     seconds = 3600
     random_seed = 1
 
@@ -43,30 +44,33 @@ def run_evaluation(time: int = 3600):
         print("Running evaluation with default settings (1 hour).")
 
     # Set the random seed
-    random.seed(random_seed)
 
-    try:
-        better_print_results(evaluate_csv(seconds))
-    except Exception as e:
-        LOGGER.error(f"Error evaluating CSV: {e}")
-    try:
-        better_print_results(evaluate_rest(seconds))
-    except Exception as e:
-        LOGGER.error(f"Error evaluating REST: {e}")
-    try:
-        better_print_results(evaluate_scriptsizec(seconds))
-    except Exception as e:
-        LOGGER.error(f"Error evaluating ScriptSizeC: {e}")
-    try:
-        better_print_results(evaluate_tar(seconds))
-    except Exception as e:
-        LOGGER.error(f"Error evaluating TAR: {e}")
-    try:
-        better_print_results(evaluate_xml(seconds))
-    except Exception as e:
-        LOGGER.error(f"Error evaluating XML: {e}")
-    print("Evaluation completed.")
-    print("================================")
+    while rounds < 10:
+        random.seed(random_seed)
+        try:
+            better_print_results(evaluate_csv(seconds, rounds))
+        except Exception as e:
+            LOGGER.error(f"Error evaluating CSV: {e}")
+        try:
+            better_print_results(evaluate_rest(seconds, rounds))
+        except Exception as e:
+            LOGGER.error(f"Error evaluating REST: {e}")
+        try:
+            better_print_results(evaluate_scriptsizec(seconds, rounds))
+        except Exception as e:
+            LOGGER.error(f"Error evaluating ScriptSizeC: {e}")
+        try:
+            better_print_results(evaluate_tar(seconds, rounds))
+        except Exception as e:
+            LOGGER.error(f"Error evaluating TAR: {e}")
+        try:
+            better_print_results(evaluate_xml(seconds, rounds))
+        except Exception as e:
+            LOGGER.error(f"Error evaluating XML: {e}")
+        print(f"Evaluation {rounds} completed.")
+        print("================================")
+        rounds += 1
+        random_seed += 1
 
 
 if __name__ == "__main__":

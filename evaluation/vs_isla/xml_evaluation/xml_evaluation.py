@@ -18,6 +18,7 @@ def is_syntactically_valid_xml(xml_string):
 
 def evaluate_xml(
     seconds=60,
+    rounds=1,
 ) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
     grammar, constraints = parse_file("evaluation/vs_isla/xml_evaluation/xml.fan")
     solutions = []
@@ -34,6 +35,7 @@ def evaluate_xml(
             desired_solutions=100,
             subject="xml",
             run=run,
+            rounds=rounds,
         )
         fandango.evolve()
         for key, value in fandango.profiler.metrics.items():
@@ -49,7 +51,7 @@ def evaluate_xml(
         solutions.extend(fandango.solution)
         run += 1
     with open(
-        "execution/xml/profiling.txt",
+        f"execution/{rounds}/xml/profiling.txt",
         "w",
     ) as f:
         f.write(str(profiling_results))

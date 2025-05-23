@@ -32,6 +32,7 @@ def is_syntactically_valid_rest(rst_string):
 
 def evaluate_rest(
     seconds=60,
+    rounds=1,
 ) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
     grammar, constraints = parse_file("evaluation/vs_isla/rest_evaluation/rest.fan")
     solutions = []
@@ -47,6 +48,7 @@ def evaluate_rest(
             desired_solutions=100,
             subject="rest",
             run=run,
+            rounds=rounds,
         )
 
         fandango.evolve()
@@ -64,7 +66,7 @@ def evaluate_rest(
         solutions.extend(fandango.solution)
         run += 1
     with open(
-        "execution/rest/profiling.txt",
+        f"execution/{rounds}/rest/profiling.txt",
         "w",
     ) as f:
         f.write(str(profiling_results))

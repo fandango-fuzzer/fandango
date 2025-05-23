@@ -83,6 +83,7 @@ def is_valid_tinyc_code(c_code: str) -> bool:
 
 def evaluate_scriptsizec(
     seconds=60,
+    rounds=1,
 ) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
     grammar, constraints = parse_file(
         "evaluation/vs_isla/scriptsizec_evaluation/scriptsizec.fan"
@@ -101,6 +102,7 @@ def evaluate_scriptsizec(
             desired_solutions=100,
             subject="c",
             run=run,
+            rounds=rounds,
         )
         fandango.evolve()
         for key, value in fandango.profiler.metrics.items():
@@ -117,7 +119,7 @@ def evaluate_scriptsizec(
         solutions.extend(fandango.solution)
         run += 1
     with open(
-        "execution/c/profiling.txt",
+        f"execution/{rounds}/c/profiling.txt",
         "w",
     ) as f:
         f.write(str(profiling_results))
