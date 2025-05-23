@@ -11,7 +11,7 @@
                            <ServerControl:ClientControl:response_login_pass_fail>
                            <ClientControl:ServerControl:request_quit>
 
-<response_server_info> ::= '220 ' r'[a-zA-Z0-9\_\.\(\) ]+\s' '[' r'[a-zA-Z0-9\:\.]+' ']\r\n'
+<response_server_info> ::= '220 ' r'[a-zA-Z0-9\_\.\(\) ]+\s' '\r\n'
 <request_login_user_ok> ::= 'USER the_user\r\n'
 <response_login_user> ::= '331 ' <command_tail> '\r\n'
 <request_login_pass_ok> ::= 'PASS the_password\r\n'
@@ -26,12 +26,12 @@
 import socket
 import threading
 import select
-fandango_is_client = True
+fandango_is_client = False
 
 class ClientControl(FandangoAgent):
     def __init__(self):
         super().__init__(fandango_is_client)
-        self.server_domain = "liggesmeyer.net"
+        self.server_domain = "localhost"
         if not self.is_fandango():
             return
         self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
