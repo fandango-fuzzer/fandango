@@ -35,7 +35,6 @@ def evaluate_xml(
             subject="xml",
             run=run,
         )
-        run += 1
         fandango.evolve()
         for key, value in fandango.profiler.metrics.items():
             if key in profiling_results:
@@ -46,13 +45,14 @@ def evaluate_xml(
                     "count": value["count"],
                     "time": value["time"],
                 }
-        constraint_results.extend(fandango.constraint_profile)
-        with open(
-            f"execution/xml/{run:10d}/profiling.txt",
-            "w",
-        ) as f:
-            f.write(str(profiling_results))
+
         solutions.extend(fandango.solution)
+        run += 1
+    with open(
+        "execution/xml/profiling.txt",
+        "w",
+    ) as f:
+        f.write(str(profiling_results))
 
     # coverage = grammar.compute_grammar_coverage(solutions, 4)
 

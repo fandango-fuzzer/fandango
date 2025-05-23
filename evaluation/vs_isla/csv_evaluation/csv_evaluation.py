@@ -46,7 +46,6 @@ def evaluate_csv(
             subject="csv",
             run=run,
         )
-        run += 1
         fandango.evolve()
         for key, value in fandango.profiler.metrics.items():
             if key in profiling_results:
@@ -57,13 +56,15 @@ def evaluate_csv(
                     "count": value["count"],
                     "time": value["time"],
                 }
-        with open(
-            f"execution/csv/{run:10d}/profiling.txt",
-            "w",
-        ) as f:
-            f.write(str(profiling_results))
+
         constraint_results.extend(fandango.constraint_profile)
         solutions.extend(fandango.solution)
+        run += 1
+    with open(
+        "execution/csv/profiling.txt",
+        "w",
+    ) as f:
+        f.write(str(profiling_results))
     # coverage = grammar.compute_grammar_coverage(solutions, 4)
 
     # valid = []

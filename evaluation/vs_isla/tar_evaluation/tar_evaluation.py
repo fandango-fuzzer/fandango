@@ -41,7 +41,6 @@ def evaluate_tar(
             subject="tar",
             run=run,
         )
-        run += 1
         fandango.evolve()
         for key, value in fandango.profiler.metrics.items():
             if key in profiling_results:
@@ -53,12 +52,14 @@ def evaluate_tar(
                     "time": value["time"],
                 }
         constraint_results.extend(fandango.constraint_profile)
-        with open(
-            f"execution/tar/{run:10d}/profiling.txt",
-            "w",
-        ) as f:
-            f.write(str(profiling_results))
+
         solutions.extend(fandango.solution)
+        run += 1
+    with open(
+        "execution/tar/profiling.txt",
+        "w",
+    ) as f:
+        f.write(str(profiling_results))
 
     # coverage = grammar.compute_grammar_coverage(solutions, 4)
 
