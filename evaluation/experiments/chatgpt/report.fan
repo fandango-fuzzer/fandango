@@ -1,20 +1,18 @@
-from faker import Faker
-fake = Faker()
-
 <start> ::= <exchange>{20}
 <exchange> ::= <Client:request><Gpt:response>
 <request> ::= <gpt_model><gpt_message>
 <gpt_model> ::= 'gpt-4.1' #| 'o4-mini' #| 'o3'
-<gpt_message> ::= 'You are a researcher. Write a report about the following subject: ' <subject>
-                  '. Every word in the subject must appear exactly as written in the text. No changes allowed. '
-                  'Under no circumstances should the following non-case sensitive character sequence be used: ' <avoid> ''
+<gpt_message> ::= 'Write a report about ' <subject> '. '
+                  'Include every word from the subject. '
+                  'Under no circumstances should the '
+                  'following non-case sensitive character '
+                  'sequence be used: ' <avoid>
 <subject> ::= <verb> ' ' <adjective> ' ' <noun> ' ' <place>
-<verb> ::= 'testing' | 'evaluating' | 'debugging' | 'inventing' | 'fixing' | 'discussing'
-<adjective> ::= 'innovative' | 'sustainable' | 'disruptive' | 'transformative' | 'revolutionary'
-<noun> ::= 'rocket' | 'networks' | 'cars' | 'cyborgs' | 'space' | 'climate' | 'economy'
-<place> ::= 'on Mars' | 'in Korea' | 'in the White House' | 'in the metaverse' | 'in an amusement park'
+<verb> ::= 'testing' | 'evaluating' | 'fixing'
+<adjective> ::= 'sustainable' | 'intestinal' | 'innovative'
+<noun> ::= 'rocket' | 'cars' | 'rockets' | 'satellites'
+<place> ::= 'at Google' | 'on Mars' | 'at ASE 2025'
 <avoid> ::= 'AI' | 'crash' | 'Elon' | 'universe'
-
 <response> ::= r'(?s).*'
 
 where forall <ex> in <exchange>:
