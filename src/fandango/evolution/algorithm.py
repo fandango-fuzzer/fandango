@@ -119,23 +119,21 @@ class Fandango:
         )
         st_time = time.time()
 
-        self.profiler.start_timer("initial_population")
-        self.population = self.population_manager.generate_random_population(
-            eval_individual=self.evaluator.evaluate_individual,
-            initial_population=initial_population,
-        )
-        self.profiler.stop_timer("initial_population")
-        self.profiler.increment("initial_population", len(self.population))
+        with self.profiler.timer("initial_population") as timer:
+            self.population = self.population_manager.generate_random_population(
+                eval_individual=self.evaluator.evaluate_individual,
+                initial_population=initial_population,
+            )
+            timer.increment(len(self.population))
 
         LOGGER.info(
             f"Initial population generated in {time.time() - st_time:.2f} seconds"
         )
 
         # Evaluate initial population
-        self.profiler.start_timer("evaluate_population")
-        self.evaluation = self.evaluator.evaluate_population(self.population)
-        self.profiler.stop_timer("evaluate_population")
-        self.profiler.increment("evaluate_population", len(self.population))
+        with self.profiler.timer("evaluate_population", increment=self.population):
+            self.evaluation = self.evaluator.evaluate_population(self.population)
+
         self.fitness = (
             sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
@@ -215,12 +213,12 @@ class Fandango:
 
         :return: A tuple containing the new population and the set of unique hashes of the individuals in the new population.
         """
-        self.profiler.start_timer("select_elites")
-        new_population = self.evaluator.select_elites(
-            self.evaluation, self.elitism_rate, self.population_size
-        )
-        self.profiler.stop_timer("select_elites")
-        self.profiler.increment("select_elites", len(new_population))
+        # defer increment until data is available
+        with self.profiler.timer("select_elites") as timer:
+            new_population = self.evaluator.select_elites(
+                self.evaluation, self.elitism_rate, self.population_size
+            )
+            timer.increment(len(new_population))
 
         unique_hashes = {hash(ind) for ind in new_population}
         return new_population, unique_hashes
@@ -235,35 +233,29 @@ class Fandango:
         :param unique_hashes: The set of unique hashes of the individuals in the new population.
         """
         try:
-            self.profiler.start_timer("tournament_selection")
-            parent1, parent2 = self.evaluator.tournament_selection(
-                self.evaluation, self.tournament_size
-            )
-            self.profiler.stop_timer("tournament_selection")
-            self.profiler.increment("tournament_selection", 2)
+            with self.profiler.timer("tournament_selection", increment=2):
+                parent1, parent2 = self.evaluator.tournament_selection(
+                    self.evaluation, self.tournament_size
+                )
 
-            self.profiler.start_timer("crossover")
-            child1, child2 = self.crossover_operator.crossover(
-                self.grammar, parent1, parent2
-            )
-            self.profiler.stop_timer("crossover")
-            self.profiler.increment("crossover", 2)
+            with self.profiler.timer("crossover", increment=2):
+                child1, child2 = self.crossover_operator.crossover(
+                    self.grammar, parent1, parent2
+                )
 
             PopulationManager.add_unique_individual(
                 new_population, child1, unique_hashes
             )
             self.evaluator.evaluate_individual(child1)
 
-            self.profiler.start_timer("filling")
             count = len(new_population)
-            if len(new_population) < self.population_size:
-                PopulationManager.add_unique_individual(
-                    new_population, child2, unique_hashes
-                )
+            with self.profiler.timer("filling") as timer:
+                if len(new_population) < self.population_size:
+                    PopulationManager.add_unique_individual(
+                        new_population, child2, unique_hashes
+                    )
                 self.evaluator.evaluate_individual(child2)
-
-            self.profiler.stop_timer("filling")
-            self.profiler.increment("filling", len(new_population) - count)
+                timer.increment(len(new_population) - count)
             self.crossovers_made += 2
         except Exception as e:
             LOGGER.error(f"Error during crossover: {e}")
@@ -285,15 +277,13 @@ class Fandango:
         for individual in mutation_pool:
             if random.random() < self.adaptive_tuner.mutation_rate:
                 try:
-                    self.profiler.start_timer("mutation")
-                    mutated_individual = self.mutation_method.mutate(
-                        individual,
-                        self.grammar,
-                        self.evaluator.evaluate_individual,
-                        self.current_max_nodes,
-                    )
-                    self.profiler.stop_timer("mutation")
-                    self.profiler.increment("mutation", 1)
+                    with self.profiler.timer("mutation", increment=1):
+                        mutated_individual = self.mutation_method.mutate(
+                            individual,
+                            self.grammar,
+                            self.evaluator.evaluate_individual,
+                            self.current_max_nodes,
+                        )
                     mutated_population.append(mutated_individual)
                     self.mutations_made += 1
                 except Exception as e:
@@ -370,14 +360,12 @@ class Fandango:
                 # Hence, we periodically flush the fitness cache to re-evaluate the population.
                 self.evaluator.fitness_cache = {}
 
-            self.profiler.start_timer("evaluate_population")
-            self.evaluation = self.evaluator.evaluate_population(self.population)
-            # Keep only the fittest individuals
-            self.evaluation = sorted(self.evaluation, key=lambda x: x[1], reverse=True)[
-                : self.population_size
-            ]
-            self.profiler.stop_timer("evaluate_population")
-            self.profiler.increment("evaluate_population", len(self.population))
+            with self.profiler.timer("evaluate_population", increment=self.population):
+                self.evaluation = self.evaluator.evaluate_population(self.population)
+                # Keep only the fittest individuals
+                self.evaluation = sorted(
+                    self.evaluation, key=lambda x: x[1], reverse=True
+                )[: self.population_size]
             self.fitness = (
                 sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
