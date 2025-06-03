@@ -149,7 +149,7 @@ class DerivationTree:
         self.read_only = read_only
         for child in self._children:
             child.set_all_read_only(read_only)
-        for child in self._generator_params:
+        for child in self._sources:
             child.set_all_read_only(read_only)
 
     def find_role_msgs(self) -> List[RoledMessage]:
@@ -262,8 +262,9 @@ class DerivationTree:
                     return child
                 else:
                     return child._get_last_by_path(path[1:])
-        raise IndexError(f"No such path in tree: {path} Tree: {self.get_root(stop_at_argument_begin=True)}")
-
+        raise IndexError(
+            f"No such path in tree: {path} Tree: {self.get_root(stop_at_argument_begin=True)}"
+        )
 
     def __str__(self):
         return self.to_string()
