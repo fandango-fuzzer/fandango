@@ -138,9 +138,11 @@ class Terminal(Symbol):
                     # LOGGER.debug(f"It's a match: {match.group(0)!r}")
                     return True, len(match.group(0))
             else:
-                compiled = regex.compile('')
+                compiled = regex.compile("")
                 match = compiled.match(word, partial=True)
-                return match is not None and (match.partial or match.end() == len(word)), len(match.group(0))
+                return match is not None and (
+                    match.partial or match.end() == len(word)
+                ), len(match.group(0))
         else:
             if not incomplete:
                 if word.startswith(symbol):

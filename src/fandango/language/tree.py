@@ -255,8 +255,9 @@ class DerivationTree:
                     return child
                 else:
                     return child._get_last_by_path(path[1:])
-        raise IndexError(f"No such path in tree: {path} Tree: {self.get_root(stop_at_argument_begin=True)}")
-
+        raise IndexError(
+            f"No such path in tree: {path} Tree: {self.get_root(stop_at_argument_begin=True)}"
+        )
 
     def __str__(self):
         return self.to_string()
@@ -484,7 +485,7 @@ class DerivationTree:
                 s += ", role='" + self.role + "'"
             if self.recipient is not None:
                 s += ", recipient='" + self.recipient + "'"
-            s+= ")"
+            s += ")"
         elif len(self._children) >= 1:
             s += ",\n" + "  " * indent + "  [\n"
             for child in self._children:

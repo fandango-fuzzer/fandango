@@ -202,7 +202,11 @@ class Concatenation(Node):
 
 class Repetition(Node):
     def __init__(
-        self, node: Node, id: str, min_=("0", [], {}), max_=(f"{MAX_REPETITIONS}", [], {})
+        self,
+        node: Node,
+        id: str,
+        min_=("0", [], {}),
+        max_=(f"{MAX_REPETITIONS}", [], {}),
     ):
         super().__init__(NodeType.REPETITION)
         self.id = id
@@ -942,7 +946,13 @@ class ParseState:
     def __hash__(self):
         if self._hash is None:
             self._hash = hash(
-                (self.nonterminal, self.position, self.symbols, self._dot, tuple(self.children))
+                (
+                    self.nonterminal,
+                    self.position,
+                    self.symbols,
+                    self._dot,
+                    tuple(self.children),
+                )
             )
         return self._hash
 
@@ -1141,9 +1151,7 @@ class Grammar(NodeVisitor):
 
         def visitAlternative(self, node: Alternative):
             result = self.visitChildren(node)
-            intermediate_nt = NonTerminal(
-                f"<__{NodeType.ALTERNATIVE}:{node.id}>"
-            )
+            intermediate_nt = NonTerminal(f"<__{NodeType.ALTERNATIVE}:{node.id}>")
             self.set_rule(intermediate_nt, result)
             return [[(intermediate_nt, frozenset())]]
 
@@ -1156,9 +1164,7 @@ class Grammar(NodeVisitor):
                     for a in to_add:
                         new_result.append(r + a)
                 result = new_result
-            intermediate_nt = NonTerminal(
-                f"<__{NodeType.CONCATENATION}:{node.id}>"
-            )
+            intermediate_nt = NonTerminal(f"<__{NodeType.CONCATENATION}:{node.id}>")
             self.set_rule(intermediate_nt, result)
             return [[(intermediate_nt, frozenset())]]
 
@@ -1197,9 +1203,7 @@ class Grammar(NodeVisitor):
                 tmp_nt, rule_id = self.set_tmp_rule(alts)
                 return [[tmp_nt]]
             min_nt = self.set_implicit_rule(alts)
-            intermediate_nt = NonTerminal(
-                f"<__{NodeType.REPETITION}:{node.id}>"
-            )
+            intermediate_nt = NonTerminal(f"<__{NodeType.REPETITION}:{node.id}>")
             self.set_rule(intermediate_nt, [[min_nt]])
             return [[(intermediate_nt, frozenset())]]
 
@@ -1274,7 +1278,11 @@ class Grammar(NodeVisitor):
             ]
 
         def predict(
-            self, state: ParseState, table: List[Set[ParseState] | Column], k: int, hookin_parent: DerivationTree = None
+            self,
+            state: ParseState,
+            table: List[Set[ParseState] | Column],
+            k: int,
+            hookin_parent: DerivationTree = None,
         ):
             if state.dot in self._rules:
                 table[k].update(
@@ -1347,7 +1355,9 @@ class Grammar(NodeVisitor):
             if hookin_parent is not None:
                 hookin_parent.set_children(hookin_parent.children + [tree])
             try:
-                [[context_nt]] = self.visitRepetition(node, nt_rule, tree if hookin_parent is None else hookin_parent)
+                [[context_nt]] = self.visitRepetition(
+                    node, nt_rule, tree if hookin_parent is None else hookin_parent
+                )
             except ValueError:
                 return
             finally:
@@ -1435,7 +1445,7 @@ class Grammar(NodeVisitor):
             table: List[Set[ParseState] | Column],
             k: int,
             w: int,
-            mode: ParsingMode
+            mode: ParsingMode,
         ) -> bool:
             """
             Scan a byte from the input `word`.
@@ -1453,7 +1463,9 @@ class Grammar(NodeVisitor):
 
             match, match_length = state.dot.check(word[w:])
             if not match:
-                if mode != Grammar.Parser.ParsingMode.INCOMPLETE or (w + len(state.dot)) < len(word):
+                if mode != Grammar.Parser.ParsingMode.INCOMPLETE or (
+                    w + len(state.dot)
+                ) < len(word):
                     return False
                 match, match_length = state.dot.check(word[w:], incomplete=True)
                 if not match or match_length == 0:
@@ -1478,7 +1490,7 @@ class Grammar(NodeVisitor):
             table: List[Set[ParseState] | Column],
             k: int,
             w: int,
-            mode: ParsingMode
+            mode: ParsingMode,
         ) -> bool:
             """
             Scan a byte from the input `word`.
@@ -1574,7 +1586,6 @@ class Grammar(NodeVisitor):
                         s.extend_children(state.children)
                 table[k].add(s)
 
-
         def place_repetition_shortcut(self, table: List[Column], k: int):
             col = table[k]
             states = col.states
@@ -1625,7 +1636,6 @@ class Grammar(NodeVisitor):
                         break
                     origin_state = origin_states[0]
 
-
                 if new_state is not None:
                     col.replace(current_col_state, new_state)
 
@@ -1645,7 +1655,7 @@ class Grammar(NodeVisitor):
             if isinstance(start, str):
                 start = NonTerminal(start)
             self._clear_tmp()
-            hookin_parent=deepcopy(hookin_parent)
+            hookin_parent = deepcopy(hookin_parent)
 
             # LOGGER.debug(f"Parsing {word} into {start!s}")
 
@@ -1725,9 +1735,13 @@ class Grammar(NodeVisitor):
 
                                 # LOGGER.debug(f"Checking byte(s) {state} at position {w:#06x} ({w}) {word[w:]!r}")
                                 if state.dot.is_regex:
-                                    match = self.scan_regex(state, word, table, k, w, mode)
+                                    match = self.scan_regex(
+                                        state, word, table, k, w, mode
+                                    )
                                 else:
-                                    match = self.scan_bytes(state, word, table, k, w, mode)
+                                    match = self.scan_bytes(
+                                        state, word, table, k, w, mode
+                                    )
                     else:
                         if state.next_symbol_is_nonterminal():
                             self.predict(state, table, k)
@@ -1796,7 +1810,11 @@ class Grammar(NodeVisitor):
             self._incomplete = set()
             forest = []
             for tree in self._parse_forest(
-                word, start, mode=mode, hookin_parent=hookin_parent, starter_bit=starter_bit
+                word,
+                start,
+                mode=mode,
+                hookin_parent=hookin_parent,
+                starter_bit=starter_bit,
             ):
                 tree = self.to_derivation_tree(tree)
                 forest.append(tree)
@@ -1819,7 +1837,11 @@ class Grammar(NodeVisitor):
             even for incomplete inputs
             """
             return self.parse_forest(
-                word, start, mode=mode, hookin_parent=hookin_parent, include_controlflow=include_controlflow
+                word,
+                start,
+                mode=mode,
+                hookin_parent=hookin_parent,
+                include_controlflow=include_controlflow,
             )
 
         def parse(
@@ -1835,7 +1857,11 @@ class Grammar(NodeVisitor):
             or `None` if no parse is possible
             """
             tree_gen = self.parse_multiple(
-                word, start=start, mode=mode, hookin_parent=hookin_parent, include_controlflow=include_controlflow
+                word,
+                start=start,
+                mode=mode,
+                hookin_parent=hookin_parent,
+                include_controlflow=include_controlflow,
             )
             return next(tree_gen, None)
 
@@ -2076,7 +2102,11 @@ class Grammar(NodeVisitor):
         include_controlflow: bool = False,
     ):
         return self._parser.parse(
-            word, start, mode=mode, hookin_parent=hookin_parent, include_controlflow=include_controlflow
+            word,
+            start,
+            mode=mode,
+            hookin_parent=hookin_parent,
+            include_controlflow=include_controlflow,
         )
 
     def parse_forest(
