@@ -5,7 +5,7 @@ import unittest
 
 from scipy.linalg import solve_lyapunov
 
-from fandango.evolution.algorithm import Fandango
+from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
 
@@ -50,10 +50,8 @@ class ConstraintTest(unittest.TestCase):
             print(path)
 
     def get_solutions(self, grammar, constraints):
-        fandango = Fandango(
-            grammar=grammar, constraints=constraints, desired_solutions=1
-        )
-        return fandango.evolve()
+        fandango = Fandango(grammar=grammar, constraints=constraints)
+        return fandango.evolve(desired_solutions=1)
 
     def test_generators(self):
         file = open("tests/resources/bar.fan", "r")
@@ -122,8 +120,8 @@ class ConstraintTest(unittest.TestCase):
     def test_num_solutions(self):
         file = open("docs/digits.fan", "r")
         GRAMMAR, c = parse(file, use_stdlib=True, use_cache=False)
-        fan = Fandango(grammar=GRAMMAR, constraints=c, desired_solutions=1000)
-        sol = fan.evolve()
+        fan = Fandango(grammar=GRAMMAR, constraints=c, logger_level=LoggerLevel.DEBUG)
+        sol = fan.evolve(desired_solutions=1000)
         self.assertEqual(len(sol), 1000)
 
     def test_max_nodes(self):

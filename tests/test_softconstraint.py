@@ -18,11 +18,12 @@ class TestSoft(unittest.TestCase):
         fandango = Fandango(
             grammar=grammar_int,
             constraints=constraints_int,
-            desired_solutions=desired_solutions,
-            max_generations=max_generations,
             random_seed=random_seed,
         )
-        solutions: list[DerivationTree] = fandango.evolve()
+        solutions: list[DerivationTree] = fandango.evolve(
+            max_generations=max_generations,
+            desired_solutions=desired_solutions
+        )
         return [s.to_string() for s in solutions]
 
     def run_command(self, command):

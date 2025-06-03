@@ -30,7 +30,6 @@ class GeneticTest(unittest.TestCase):
             population_size=50,
             mutation_rate=0.2,
             crossover_rate=0.8,
-            max_generations=100,
             elitism_rate=0.2,
         )
 
@@ -89,8 +88,9 @@ class GeneticTest(unittest.TestCase):
 
     def test_selection(self):
         # Select the parents
+        tournament_size = max(2, int(self.fandango.population_size * self.fandango.tournament_size))
         parent1, parent2 = self.fandango.evaluator.tournament_selection(
-            self.fandango.evaluation, self.fandango.tournament_size
+            self.fandango.evaluation, tournament_size
         )
 
         # Check that the parents are in the population
@@ -110,8 +110,9 @@ class GeneticTest(unittest.TestCase):
 
     def test_crossover(self):
         # Select the parents
+        tournament_size = max(2, int(self.fandango.population_size * self.fandango.tournament_size))
         parent1, parent2 = self.fandango.evaluator.tournament_selection(
-            self.fandango.evaluation, self.fandango.tournament_size
+            self.fandango.evaluation, tournament_size
         )
 
         # Perform crossover
@@ -132,8 +133,9 @@ class GeneticTest(unittest.TestCase):
 
     def test_mutation(self):
         # Select the parents
+        tournament_size = max(2, int(self.fandango.population_size * self.fandango.tournament_size))
         parent1, parent2 = self.fandango.evaluator.tournament_selection(
-            self.fandango.evaluation, self.fandango.tournament_size
+            self.fandango.evaluation, tournament_size
         )
 
         children = self.fandango.crossover_operator.crossover(
@@ -165,7 +167,7 @@ class GeneticTest(unittest.TestCase):
 
     def test_evolve(self):
         # Run the evolution process
-        self.fandango.evolve()
+        self.fandango.evolve(max_generations=100)
 
         # Check that the population has been updated
         self.assertIsNotNone(self.fandango.population)
@@ -189,10 +191,11 @@ class DeterminismTests(unittest.TestCase):
         fandango = Fandango(
             grammar=grammar_int,
             constraints=constraints_int,
-            desired_solutions=desired_solutions,
             random_seed=random_seed,
         )
-        solutions: list[DerivationTree] = fandango.evolve()
+        solutions: list[DerivationTree] = fandango.evolve(
+            desired_solutions=desired_solutions,max_generations=100,
+        )
         return [s.to_string() for s in solutions]
 
     def test_deterministic_solutions(self):

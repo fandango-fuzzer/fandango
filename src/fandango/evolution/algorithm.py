@@ -3,7 +3,7 @@ import enum
 import logging
 import random
 import time
-from typing import Callable, Optional, Union
+from typing import Callable, Generator, Optional, Union
 
 from fandango import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.constraints.base import Constraint, SoftValue
@@ -15,7 +15,7 @@ from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import PopulationManager
 from fandango.evolution.profiler import Profiler
 from fandango.language.grammar import DerivationTree, Grammar
-from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
+from fandango.logger import LOGGER, clear_visualization, print_exception, visualize_evaluation
 
 
 class LoggerLevel(enum.Enum):
@@ -33,9 +33,7 @@ class Fandango:
         grammar: Grammar,
         constraints: list[Constraint],
         population_size: int = 100,
-        desired_solutions: int = 0,
         initial_population: Optional[list[Union[DerivationTree, str]]] = None,
-        max_generations: int = 500,
         expected_fitness: float = 1.0,
         elitism_rate: float = 0.1,
         crossover_method: CrossoverOperator = SimpleSubtreeCrossover(),
@@ -69,13 +67,12 @@ class Fandango:
 
         self.grammar = grammar
         self.constraints = constraints
-        self.population_size = max(population_size, desired_solutions)
+        self.population_size = population_size
         self.expected_fitness = expected_fitness
         self.elitism_rate = elitism_rate
         self.destruction_rate = destruction_rate
         self.start_symbol = start_symbol
-        self.tournament_size = max(2, int(self.population_size * tournament_size))
-        self.max_generations = max_generations
+        self.tournament_size = tournament_size
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
         self.current_max_nodes = 50
@@ -145,7 +142,6 @@ class Fandango:
         self.time_taken = None
         self.solution = self.evaluator.solution
         self.solution_set = self.evaluator.solution_set
-        self.desired_solutions = desired_solutions
 
     def _parse_and_deduplicate(
         self, population: Optional[list[Union[DerivationTree, str]]]
@@ -179,30 +175,30 @@ class Fandango:
             )
         return unique_population
 
-    def _should_terminate_evolution(self) -> bool:
+    def _should_terminate_evolution(self, desired_solutions: Optional[int]) -> bool:
         """
         Checks if the evolution should terminate.
 
         The evolution terminates if:
-        - We have found enough solutions based on the desired number of solutions (self.desired_solutions)
+        - We have found enough solutions based on the desired number of solutions (desired_solutions)
         - We have found enough solutions for the next generation (self.population_size)
         - We have reached the expected fitness (self.expected_fitness)
 
         :return: True if the evolution should terminate, False otherwise.
         """
-        if 0 < self.desired_solutions <= len(self.solution):
-            # Found enough solutions: Manually only require self.desired_solutions
-            self.fitness = 1.0
-            self.solution = self.solution[: self.desired_solutions]
+        if desired_solutions != None and desired_solutions <= len(self.solution):
+            # Found enough solutions: Manually only require desired_solutions
+            LOGGER.debug("Already found more solutions than desired, stopping evolution")
+            self.solution = self.solution[:desired_solutions]
             return True
         if len(self.solution) >= self.population_size:
             # Found enough solutions: Found enough for next generation
-            self.fitness = 1.0
+            LOGGER.debug("Solutions count is greater than population size, stopping evolution")
             self.solution = self.solution[: self.population_size]
             return True
         if self.fitness >= self.expected_fitness:
+            LOGGER.debug("Current fitness is greater than the expected fitness, stopping evolution")
             # Found enough solutions: Reached expected fitness
-            self.fitness = 1.0
             self.solution = self.population[: self.population_size]
             return True
         return False
@@ -234,8 +230,9 @@ class Fandango:
         """
         try:
             with self.profiler.timer("tournament_selection", increment=2):
+                tournament_size = max(2, int(self.population_size * self.tournament_size))
                 parent1, parent2 = self.evaluator.tournament_selection(
-                    self.evaluation, self.tournament_size
+                    self.evaluation, tournament_size
                 )
 
             with self.profiler.timer("crossover", increment=2):
@@ -258,7 +255,7 @@ class Fandango:
                 timer.increment(len(new_population) - count)
             self.crossovers_made += 2
         except Exception as e:
-            LOGGER.error(f"Error during crossover: {e}")
+            print_exception(e, "Error during crossover")
 
     def _perform_mutation(self, new_population: list[DerivationTree]) -> None:
         """
@@ -306,13 +303,11 @@ class Fandango:
         random.shuffle(new_population)
         return new_population[: int(self.population_size * (1 - self.destruction_rate))]
 
-    def evolve(self) -> list[DerivationTree]:
-        LOGGER.info("---------- Starting evolution ----------")
-        start_time = time.time()
+    def generate(self, max_generations: Optional[int] = None, desired_solutions: Optional[int] = None) -> Generator[DerivationTree, None, None]:
         prev_best_fitness = 0.0
 
-        for generation in range(1, self.max_generations + 1):
-            if self._should_terminate_evolution():
+        for generation in range(1, max_generations + 1):
+            if self._should_terminate_evolution(desired_solutions=desired_solutions):
                 break
 
             LOGGER.info(
@@ -394,7 +389,29 @@ class Fandango:
             self.adaptive_tuner.log_generation_statistics(
                 generation, self.evaluation, self.population, self.evaluator
             )
-            visualize_evaluation(generation, self.max_generations, self.evaluation)
+            visualize_evaluation(generation, max_generations, self.evaluation)
+
+    def evolve(
+        self,
+        max_generations: Optional[int] = 500,
+        desired_solutions: Optional[int] = None,
+    ) -> list[DerivationTree]:
+        LOGGER.info("---------- Starting evolution ----------")
+        start_time = time.time()
+
+        if desired_solutions != None and self.population_size < desired_solutions:
+            LOGGER.warning(
+                "Requested more solutions than in the population. Adjusting population size and extending the intial population."
+            )
+            self.population_size = desired_solutions
+            self.population_manager.population_size = desired_solutions
+            self.population = self.population_manager.generate_random_population(
+                eval_individual=self.evaluator.evaluate_individual,
+                initial_population=self.population,
+            )
+
+
+        self.generate(max_generations=max_generations, desired_solutions=desired_solutions)
 
         clear_visualization()
         self.time_taken = time.time() - start_time
@@ -417,16 +434,16 @@ class Fandango:
             if self.best_effort:
                 return self.population
 
-        if self.desired_solutions > 0 and len(self.solution) < self.desired_solutions:
+        if desired_solutions != None and len(self.solution) < desired_solutions:
             LOGGER.error(
-                f"Only found {len(self.solution)} perfect solutions, instead of the required {self.desired_solutions}"
+                f"Only found {len(self.solution)} perfect solutions, instead of the required {desired_solutions}"
             )
             if self.warnings_are_errors:
                 raise FandangoFailedError(
                     "Failed to find the required number of perfect solutions"
                 )
             if self.best_effort:
-                return self.population[: self.desired_solutions]
+                return self.population[:desired_solutions]
 
         return self.solution
 
