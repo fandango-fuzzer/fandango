@@ -620,6 +620,7 @@ def _copy_setting(args, settings, name, *, args_name=None):
         settings[name] = getattr(args, args_name)
         LOGGER.debug(f"Settings: {name} is {settings[name]}")
 
+
 def make_fandango_settings(args, initial_settings={}):
     """Create keyword settings for Fandango() constructor"""
     settings = initial_settings.copy()
@@ -657,6 +658,7 @@ def make_fandango_settings(args, initial_settings={}):
             args.initial_population
         )
     return settings
+
 
 def make_evolve_settings(args):
     evolve_settings = {}

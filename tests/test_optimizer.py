@@ -88,9 +88,11 @@ class GeneticTest(unittest.TestCase):
 
     def test_selection(self):
         # Select the parents
-        tournament_size = max(2, int(self.fandango.population_size * self.fandango.tournament_size))
         parent1, parent2 = self.fandango.evaluator.tournament_selection(
-            self.fandango.evaluation, tournament_size
+            self.fandango.evaluation,
+            tournament_size=max(
+                2, int(self.fandango.population_size * self.fandango.tournament_size)
+            ),
         )
 
         # Check that the parents are in the population
@@ -110,7 +112,9 @@ class GeneticTest(unittest.TestCase):
 
     def test_crossover(self):
         # Select the parents
-        tournament_size = max(2, int(self.fandango.population_size * self.fandango.tournament_size))
+        tournament_size = max(
+            2, int(self.fandango.population_size * self.fandango.tournament_size)
+        )
         parent1, parent2 = self.fandango.evaluator.tournament_selection(
             self.fandango.evaluation, tournament_size
         )
@@ -133,7 +137,9 @@ class GeneticTest(unittest.TestCase):
 
     def test_mutation(self):
         # Select the parents
-        tournament_size = max(2, int(self.fandango.population_size * self.fandango.tournament_size))
+        tournament_size = max(
+            2, int(self.fandango.population_size * self.fandango.tournament_size)
+        )
         parent1, parent2 = self.fandango.evaluator.tournament_selection(
             self.fandango.evaluation, tournament_size
         )
@@ -194,7 +200,8 @@ class DeterminismTests(unittest.TestCase):
             random_seed=random_seed,
         )
         solutions: list[DerivationTree] = fandango.evolve(
-            desired_solutions=desired_solutions,max_generations=100,
+            desired_solutions=desired_solutions,
+            max_generations=100,
         )
         return [s.to_string() for s in solutions]
 

@@ -44,7 +44,7 @@ class Evaluator:
         :return: The number of perfect solutions found so far.
         """
         return len(self.__solution)
-    
+
     def truncate_solution(self, desired_solutions: int) -> None:
         """
         Truncates the solution set to the desired number of solutions.
@@ -58,14 +58,16 @@ class Evaluator:
         :return: The list of perfect solutions found so far.
         """
         return self.__solution
-    
-    def get_fitness_check_count(self) -> int:   
+
+    def get_fitness_check_count(self) -> int:
         """
         :return: The number of fitness checks made so far.
         """
         return self.__checks_made
 
-    def compute_mutation_pool(self, population: list[DerivationTree]) -> list[DerivationTree]:
+    def compute_mutation_pool(
+        self, population: list[DerivationTree]
+    ) -> list[DerivationTree]:
         """
         Computes the mutation pool for the given population.
 
@@ -76,12 +78,10 @@ class Evaluator:
         """
         weights = [self.__fitness_cache[hash(ind)][0] for ind in population]
         if not all(w == 0 for w in weights):
-            return random.choices(
-                population, weights=weights, k=len(population)
-            )
+            return random.choices(population, weights=weights, k=len(population))
         else:
             return population
-        
+
     def flush_fitness_cache(self) -> None:
         """
         For soft constraints, the normalized fitness may change over time as we observe more inputs, this method flushes the fitness cache if the grammar contains any soft constraints.
@@ -184,7 +184,9 @@ class Evaluator:
         else:
             if hard_fitness < 1.0:
                 fitness = (
-                    hard_fitness * len(self.__hard_constraints) / len(self.__constraints)
+                    hard_fitness
+                    * len(self.__hard_constraints)
+                    / len(self.__constraints)
                 )
             else:  # hard_fitness == 1.0
                 soft_fitness, soft_failing_trees = self.evaluate_soft_constraints(
