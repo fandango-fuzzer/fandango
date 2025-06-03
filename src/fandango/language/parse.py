@@ -35,7 +35,8 @@ from fandango.language.grammar import (
     NonTerminalNode,
     PacketTruncator,
     RoleNestingDetector,
-    MAX_REPETITIONS, NodeReplacer,
+    MAX_REPETITIONS,
+    NodeReplacer,
 )
 from fandango.language.io import FandangoIO, FandangoAgent
 from fandango.language.parser.FandangoLexer import FandangoLexer
@@ -482,7 +483,6 @@ def parse(
     if grammar and parsed_constraints:
         check_constraints_existence(grammar, parsed_constraints)
 
-
     global_env, local_env = grammar.get_python_env()
     if grammar.fuzzing_mode == FuzzingMode.IO:
         if "FandangoIO" not in global_env.keys():
@@ -906,7 +906,9 @@ def assign_implicit_role(grammar, implicit_role: str):
 
         symbol_finder = SymbolFinder()
         symbol_finder.visit(current_node)
-        rule_nts = list(filter(lambda x: x not in processed_nts, symbol_finder.nonTerminalNodes))
+        rule_nts = list(
+            filter(lambda x: x not in processed_nts, symbol_finder.nonTerminalNodes)
+        )
 
         if current_node in rule_nts and not isinstance(current_node, NonTerminalNode):
             rule_nts.remove(current_node)

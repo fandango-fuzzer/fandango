@@ -111,7 +111,9 @@ class PathFinder(NodeVisitor):
         return result
 
     def visitTerminalNode(self, node: TerminalNode):
-        raise FandangoValueError("PacketForecaster reached TerminalNode! This is a bug.")
+        raise FandangoValueError(
+            "PacketForecaster reached TerminalNode! This is a bug."
+        )
 
     def visitConcatenation(self, node: Concatenation):
         self.on_enter_controlflow(f"<__{NodeType.CONCATENATION}:{node.id}>")
@@ -122,7 +124,9 @@ class PathFinder(NodeVisitor):
             self.current_tree.append([tree[child_idx]])
             try:
                 if len(node.nodes) <= child_idx:
-                    raise GrammarKeyError("Tree contains more children, then concatination node")
+                    raise GrammarKeyError(
+                        "Tree contains more children, then concatination node"
+                    )
                 continue_exploring = self.visit(node.nodes[child_idx])
                 child_idx += 1
             finally:

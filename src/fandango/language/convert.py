@@ -137,11 +137,19 @@ class GrammarProcessor(FandangoParserVisitor):
 
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
         self.seenStars += 1
-        return Star(self.visit(ctx.symbol()), f"{self.seenStars}_{self.id_prefix}", self.max_repetitions)
+        return Star(
+            self.visit(ctx.symbol()),
+            f"{self.seenStars}_{self.id_prefix}",
+            self.max_repetitions,
+        )
 
     def visitPlus(self, ctx: FandangoParser.PlusContext):
         self.seenPluses += 1
-        return Plus(self.visit(ctx.symbol()), f"{self.seenPluses}_{self.id_prefix}", self.max_repetitions)
+        return Plus(
+            self.visit(ctx.symbol()),
+            f"{self.seenPluses}_{self.id_prefix}",
+            self.max_repetitions,
+        )
 
     def visitOption(self, ctx: FandangoParser.OptionContext):
         self.seenOptions += 1
@@ -173,12 +181,19 @@ class GrammarProcessor(FandangoParserVisitor):
             if min_ is None and max_ is None:
                 return Repetition(node, f"{self.seenRepetitions}_{self.id_prefix}")
             elif min_ is None:
-                return Repetition(node, f"{self.seenRepetitions}_{self.id_prefix}", max_=max_)
+                return Repetition(
+                    node, f"{self.seenRepetitions}_{self.id_prefix}", max_=max_
+                )
             elif max_ is None:
                 return Repetition(
-                    node, f"{self.seenRepetitions}_{self.id_prefix}", min_=min_, max_=(f"{self.max_repetitions}", [], {})
+                    node,
+                    f"{self.seenRepetitions}_{self.id_prefix}",
+                    min_=min_,
+                    max_=(f"{self.max_repetitions}", [], {}),
                 )
-            return Repetition(node, f"{self.seenRepetitions}_{self.id_prefix}", min_, max_)
+            return Repetition(
+                node, f"{self.seenRepetitions}_{self.id_prefix}", min_, max_
+            )
         reps = self.searches.visit(ctx.expression(0))
         reps = (ast.unparse(reps[0]), *reps[1:])
 

@@ -27,7 +27,10 @@ class FandangoAgent(object):
     """
 
     def on_send(
-        self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]
+        self,
+        message: DerivationTree,
+        recipient: str,
+        response_setter: Callable[[str, str], None],
     ):
         print(f"({self.class_name}): {message.to_string()}")
 
