@@ -58,7 +58,7 @@ class PopulationManager:
             self.add_unique_individual(unique_population, candidate, unique_hashes)
             attempts += 1
 
-        if attempts >= max_attempts:
+        if not self._is_population_complete(unique_population):
             LOGGER.warning(
                 f"Could not generate a full population of unique individuals. Population size reduced to {len(unique_population)}."
             )
@@ -83,7 +83,7 @@ class PopulationManager:
                 current_population.append(candidate)
             attempts += 1
 
-        if attempts > max_attempts:
+        if not self._is_population_complete(current_population):
             LOGGER.warning(
                 "Could not generate full unique new population, filling remaining slots with duplicates."
             )
