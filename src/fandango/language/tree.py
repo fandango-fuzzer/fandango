@@ -653,13 +653,13 @@ class DerivationTree:
     def get_root(self, stop_at_argument_begin=False):
         root = self
         while root.parent is not None and not (
-            root in root.parent.generator_params and stop_at_argument_begin
+            root in root.parent.sources and stop_at_argument_begin
         ):
             root = root.parent
         return root
 
     def _split_end(self):
-        if self.parent is None or self in self.parent.generator_params:
+        if self.parent is None or self in self.parent.sources:
             if self.parent is not None:
                 self._parent = None
             return self
