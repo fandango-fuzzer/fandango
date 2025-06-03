@@ -101,9 +101,10 @@ class IoPopulationManager(PopulationManager):
         evaluator: Evaluator,
         start_symbol: str,
         population_size: int,
+        max_nodes: int,
         warnings_are_errors: bool = False,
     ):
-        super().__init__(grammar, start_symbol, population_size, warnings_are_errors)
+        super().__init__(grammar, start_symbol, population_size, max_nodes, warnings_are_errors)
         self.evaluator = evaluator
         self.prev_packet_idx = 0
         self.fuzzable_packets: list[PacketForecaster.ForcastingPacket] | None = None
