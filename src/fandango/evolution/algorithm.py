@@ -15,7 +15,12 @@ from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import PopulationManager
 from fandango.evolution.profiler import Profiler
 from fandango.language.grammar import DerivationTree, Grammar
-from fandango.logger import LOGGER, clear_visualization, print_exception, visualize_evaluation
+from fandango.logger import (
+    LOGGER,
+    clear_visualization,
+    print_exception,
+    visualize_evaluation,
+)
 
 
 class LoggerLevel(enum.Enum):
@@ -183,20 +188,29 @@ class Fandango:
 
         :return: True if the evolution should terminate, False otherwise.
         """
-        if desired_solutions != None and desired_solutions <= self.evaluator.solution_count():
+        if (
+            desired_solutions != None
+            and desired_solutions <= self.evaluator.solution_count()
+        ):
             # Found enough solutions: Manually only require desired_solutions
-            LOGGER.debug("Already found more solutions than desired, stopping evolution")
+            LOGGER.debug(
+                "Already found more solutions than desired, stopping evolution"
+            )
             self.evaluator.truncate_solution(desired_solutions)
             self.fitness = 1
             return True
         if self.evaluator.solution_count() >= self.population_size:
             # Found enough solutions: Found enough for next generation
-            LOGGER.debug("Solutions count is greater than population size, stopping evolution")
+            LOGGER.debug(
+                "Solutions count is greater than population size, stopping evolution"
+            )
             self.evaluator.truncate_solution(self.population_size)
             self.fitness = 1
             return True
         if self.fitness >= self.expected_fitness:
-            LOGGER.debug("Current fitness is greater than the expected fitness, stopping evolution")
+            LOGGER.debug(
+                "Current fitness is greater than the expected fitness, stopping evolution"
+            )
             # Found enough solutions: Reached expected fitness
             self.evaluator.truncate_solution(self.population_size)
             self.fitness = 1
@@ -230,9 +244,11 @@ class Fandango:
         """
         try:
             with self.profiler.timer("tournament_selection", increment=2):
-                tournament_size = max(2, int(self.population_size * self.tournament_size))
                 parent1, parent2 = self.evaluator.tournament_selection(
-                    self.evaluation, tournament_size
+                    evaluation=self.evaluation,
+                    tournament_size=max(
+                        2, int(self.population_size * self.tournament_size)
+                    ),
                 )
 
             with self.profiler.timer("crossover", increment=2):
@@ -297,7 +313,11 @@ class Fandango:
         random.shuffle(new_population)
         return new_population[: int(self.population_size * (1 - self.destruction_rate))]
 
-    def generate(self, max_generations: Optional[int] = None, desired_solutions: Optional[int] = None) -> Generator[DerivationTree, None, None]:
+    def generate(
+        self,
+        max_generations: Optional[int] = None,
+        desired_solutions: Optional[int] = None,
+    ) -> Generator[DerivationTree, None, None]:
         prev_best_fitness = 0.0
 
         for generation in range(1, max_generations + 1):
@@ -403,8 +423,9 @@ class Fandango:
                 initial_population=self.population,
             )
 
-
-        self.generate(max_generations=max_generations, desired_solutions=desired_solutions)
+        self.generate(
+            max_generations=max_generations, desired_solutions=desired_solutions
+        )
 
         clear_visualization()
         self.time_taken = time.time() - start_time
@@ -427,7 +448,10 @@ class Fandango:
             if self.best_effort:
                 return self.population
 
-        if desired_solutions != None and self.evaluator.solution_count() < desired_solutions:
+        if (
+            desired_solutions != None
+            and self.evaluator.solution_count() < desired_solutions
+        ):
             LOGGER.error(
                 f"Only found {self.evaluator.solution_count()} perfect solutions, instead of the required {desired_solutions}"
             )
