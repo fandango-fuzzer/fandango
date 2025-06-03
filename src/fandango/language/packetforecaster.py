@@ -362,7 +362,7 @@ class PacketForecaster:
                 i_cpy.find_role_msgs(), self.reference_tree.find_role_msgs()
             ):
                 i_msg.msg.set_children(r_msg.msg.children)
-                i_msg.msg.generator_params = r_msg.msg.generator_params
+                i_msg.msg.sources = r_msg.msg.sources
                 i_msg.msg.symbol = NonTerminal("<" + str(r_msg.msg.symbol)[1:])
             return i_cpy
 
@@ -403,7 +403,7 @@ class PacketForecaster:
                     ):
                         cpy = orig_r_msg.msg.__deepcopy__(None, copy_parent=False)
                         r_msg.msg.set_children(cpy.children)
-                        r_msg.msg.generator_params = deepcopy(cpy.generator_params)
+                        r_msg.msg.sources = deepcopy(cpy.sources)
                         r_msg.msg.symbol = NonTerminal("<" + str(cpy.symbol)[1:])
                     else:
                         break

@@ -2004,7 +2004,7 @@ class Grammar(NodeVisitor):
 
     def _populate_sources(self, tree: "DerivationTree"):
         if self.is_use_generator(tree):
-            tree.generator_params = self.derive_sources(tree)
+            tree.sources = self.derive_sources(tree)
             for child in tree.children:
                 child.set_all_read_only(True)
             return
