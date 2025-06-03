@@ -35,10 +35,9 @@ def evaluate_tar(
         fandango = Fandango(
             grammar,
             constraints,
-            desired_solutions=100,
             logger_level=LoggerLevel.ERROR,
         )
-        fandango.evolve()
+        fandango.evolve(desired_solutions=100)
         solutions.extend(fandango.solution)
 
     coverage = grammar.compute_grammar_coverage(solutions, 4)

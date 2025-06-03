@@ -613,31 +613,28 @@ def parse_contents_from_args(args, given_grammars=[]):
     )
 
 
+def _copy_setting(args, settings, name, *, args_name=None):
+    if args_name is None:
+        args_name = name
+    if hasattr(args, args_name) and getattr(args, args_name) is not None:
+        settings[name] = getattr(args, args_name)
+        LOGGER.debug(f"Settings: {name} is {settings[name]}")
+
 def make_fandango_settings(args, initial_settings={}):
     """Create keyword settings for Fandango() constructor"""
-
-    def copy(settings, name, *, args_name=None):
-        if args_name is None:
-            args_name = name
-        if hasattr(args, args_name) and getattr(args, args_name) is not None:
-            settings[name] = getattr(args, args_name)
-            LOGGER.debug(f"Settings: {name} is {settings[name]}")
-
     settings = initial_settings.copy()
-    copy(settings, "population_size")
-    copy(settings, "desired_solutions", args_name="num_outputs")
-    copy(settings, "mutation_rate")
-    copy(settings, "crossover_rate")
-    copy(settings, "max_generations")
-    copy(settings, "elitism_rate")
-    copy(settings, "destruction_rate")
-    copy(settings, "warnings_are_errors")
-    copy(settings, "best_effort")
-    copy(settings, "random_seed")
-    copy(settings, "max_repetition_rate")
-    copy(settings, "max_repetitions")
-    copy(settings, "max_nodes")
-    copy(settings, "max_node_rate")
+    _copy_setting(args, settings, "population_size")
+    _copy_setting(args, settings, "mutation_rate")
+    _copy_setting(args, settings, "crossover_rate")
+    _copy_setting(args, settings, "elitism_rate")
+    _copy_setting(args, settings, "destruction_rate")
+    _copy_setting(args, settings, "warnings_are_errors")
+    _copy_setting(args, settings, "best_effort")
+    _copy_setting(args, settings, "random_seed")
+    _copy_setting(args, settings, "max_repetition_rate")
+    _copy_setting(args, settings, "max_repetitions")
+    _copy_setting(args, settings, "max_nodes")
+    _copy_setting(args, settings, "max_node_rate")
 
     if hasattr(args, "start_symbol") and args.start_symbol is not None:
         if args.start_symbol.startswith("<"):
@@ -660,6 +657,12 @@ def make_fandango_settings(args, initial_settings={}):
             args.initial_population
         )
     return settings
+
+def make_evolve_settings(args):
+    evolve_settings = {}
+    _copy_setting(args, evolve_settings, "desired_solutions", args_name="num_outputs")
+    _copy_setting(args, evolve_settings, "max_generations")
+    return evolve_settings
 
 
 def extract_initial_population(path):
@@ -1066,9 +1069,8 @@ def fuzz_command(args):
 
     LOGGER.debug("Starting Fandango")
     fandango = Fandango(grammar, constraints, **settings)
-
     LOGGER.debug("Evolving population")
-    population = fandango.evolve()
+    population = fandango.evolve(**make_evolve_settings(args))
 
     output_population(population, args, file_mode=file_mode, output_on_stdout=True)
 
@@ -1458,7 +1460,7 @@ def main(*argv: str, stdout=sys.stdout, stderr=sys.stderr):
     parser = get_parser(in_command_line=True)
     args = parser.parse_args(argv or sys.argv[1:])
 
-    LOGGER.setLevel(logging.WARNING)  # Default
+    LOGGER.setLevel(os.getenv("FANDANGO_LOG_LEVEL", "WARNING"))  # Default
 
     if args.quiet and args.quiet == 1:
         LOGGER.setLevel(logging.WARNING)  # (Back to default)

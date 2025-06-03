@@ -64,6 +64,9 @@ class Evaluator:
     def evaluate_hard_constraints(
         self, individual: DerivationTree
     ) -> tuple[float, list[FailingTree]]:
+        if len(self.hard_constraints) == 0:
+            return 1.0, []
+
         hard_fitness = 0.0
         failing_trees: list[FailingTree] = []
         for constraint in self.hard_constraints:
@@ -79,10 +82,7 @@ class Evaluator:
             except Exception as e:
                 LOGGER.error(f"Error evaluating hard constraint {constraint}: {e}")
                 hard_fitness += 0.0
-        try:
-            hard_fitness /= len(self.hard_constraints)
-        except ZeroDivisionError:
-            hard_fitness = 1.0
+        hard_fitness /= len(self.hard_constraints)
         return hard_fitness, failing_trees
 
     def evaluate_soft_constraints(

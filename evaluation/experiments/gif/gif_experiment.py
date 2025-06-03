@@ -27,12 +27,10 @@ def evaluate_gif():
         grammar,
         constraints,
         logger_level=LoggerLevel.DEBUG,
-        max_generations=100,
-        desired_solutions=100,
         population_size=100,
         profiling=True,
     )
-    fandango.evolve()
+    fandango.evolve(max_generations=100, desired_solutions=100)
     i = 0
     for sol in fandango.solution:
         with open(f"evaluation/experiments/gif/files/fuzzed_{i}.gif", "wb") as fd:
