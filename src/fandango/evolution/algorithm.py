@@ -136,12 +136,9 @@ class Fandango:
         )
 
         self.fixes_made = 0
-        self.checks_made = self.evaluator.checks_made
         self.crossovers_made = 0
         self.mutations_made = 0
         self.time_taken = None
-        self.solution = self.evaluator.solution
-        self.solution_set = self.evaluator.solution_set
 
     def _parse_and_deduplicate(
         self, population: Optional[list[Union[DerivationTree, str]]]
@@ -186,20 +183,23 @@ class Fandango:
 
         :return: True if the evolution should terminate, False otherwise.
         """
-        if desired_solutions != None and desired_solutions <= len(self.solution):
+        if desired_solutions != None and desired_solutions <= self.evaluator.solution_count():
             # Found enough solutions: Manually only require desired_solutions
             LOGGER.debug("Already found more solutions than desired, stopping evolution")
-            self.solution = self.solution[:desired_solutions]
+            self.evaluator.truncate_solution(desired_solutions)
+            self.fitness = 1
             return True
-        if len(self.solution) >= self.population_size:
+        if self.evaluator.solution_count() >= self.population_size:
             # Found enough solutions: Found enough for next generation
             LOGGER.debug("Solutions count is greater than population size, stopping evolution")
-            self.solution = self.solution[: self.population_size]
+            self.evaluator.truncate_solution(self.population_size)
+            self.fitness = 1
             return True
         if self.fitness >= self.expected_fitness:
             LOGGER.debug("Current fitness is greater than the expected fitness, stopping evolution")
             # Found enough solutions: Reached expected fitness
-            self.solution = self.population[: self.population_size]
+            self.evaluator.truncate_solution(self.population_size)
+            self.fitness = 1
             return True
         return False
 
@@ -263,13 +263,7 @@ class Fandango:
 
         :param new_population: The new population to perform mutation on.
         """
-        weights = [self.evaluator.fitness_cache[hash(ind)][0] for ind in new_population]
-        if not all(w == 0 for w in weights):
-            mutation_pool = random.choices(
-                new_population, weights=weights, k=len(new_population)
-            )
-        else:
-            mutation_pool = new_population
+        mutation_pool = self.evaluator.compute_mutation_pool(new_population)
         mutated_population = []
         for individual in mutation_pool:
             if random.random() < self.adaptive_tuner.mutation_rate:
@@ -311,7 +305,7 @@ class Fandango:
                 break
 
             LOGGER.info(
-                f"Generation {generation} - Fitness: {self.fitness:.2f} - #solutions found: {len(self.solution)}"
+                f"Generation {generation} - Fitness: {self.fitness:.2f} - #solutions found: {self.evaluator.solution_count()}"
             )
 
             # Selection
@@ -350,10 +344,9 @@ class Fandango:
                 self.population.append(ind)
                 self.fixes_made += num_fixes
 
-            if any(isinstance(c, SoftValue) for c in self.constraints):
-                # For soft constraints, the normalized fitness may change over time as we observe more inputs.
-                # Hence, we periodically flush the fitness cache to re-evaluate the population.
-                self.evaluator.fitness_cache = {}
+            # For soft constraints, the normalized fitness may change over time as we observe more inputs.
+            # Hence, we periodically flush the fitness cache to re-evaluate the population if the grammar contains soft constraints.
+            self.evaluator.flush_fitness_cache()
 
             with self.profiler.timer("evaluate_population", increment=self.population):
                 self.evaluation = self.evaluator.evaluate_population(self.population)
@@ -416,12 +409,12 @@ class Fandango:
         clear_visualization()
         self.time_taken = time.time() - start_time
         LOGGER.info("---------- Evolution finished ----------")
-        LOGGER.info(f"Perfect solutions found: ({len(self.solution)})")
+        LOGGER.info(f"Perfect solutions found: ({self.evaluator.solution_count()})")
         LOGGER.info(f"Fitness of final population: {self.fitness:.2f}")
         LOGGER.info(f"Time taken: {self.time_taken:.2f} seconds")
         LOGGER.debug("---------- FANDANGO statistics ----------")
         LOGGER.debug(f"Fixes made: {self.fixes_made}")
-        LOGGER.debug(f"Fitness checks: {self.checks_made}")
+        LOGGER.debug(f"Fitness checks: {self.evaluator.get_fitness_check_count()}")
         LOGGER.debug(f"Crossovers made: {self.crossovers_made}")
         LOGGER.debug(f"Mutations made: {self.mutations_made}")
 
@@ -434,9 +427,9 @@ class Fandango:
             if self.best_effort:
                 return self.population
 
-        if desired_solutions != None and len(self.solution) < desired_solutions:
+        if desired_solutions != None and self.evaluator.solution_count() < desired_solutions:
             LOGGER.error(
-                f"Only found {len(self.solution)} perfect solutions, instead of the required {desired_solutions}"
+                f"Only found {self.evaluator.solution_count()} perfect solutions, instead of the required {desired_solutions}"
             )
             if self.warnings_are_errors:
                 raise FandangoFailedError(
@@ -445,7 +438,7 @@ class Fandango:
             if self.best_effort:
                 return self.population[:desired_solutions]
 
-        return self.solution
+        return self.evaluator.get_solutions()
 
     def select_elites(self) -> list[DerivationTree]:
         return [
