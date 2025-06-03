@@ -264,7 +264,11 @@ class Fandango:
         return individual
 
     def log_message_transfer(
-        self, sender: str, receiver: str | None, msg: DerivationTree, self_is_sender: bool
+        self,
+        sender: str,
+        receiver: str | None,
+        msg: DerivationTree,
+        self_is_sender: bool,
     ):
         if receiver is None:
             if self_is_sender:
@@ -306,10 +310,7 @@ class Fandango:
             for role in forecast.getRoles():
                 if io_instance.roles[role].is_fandango():
                     fandango_roles.append(role)
-            if (
-                len(fandango_roles) != 0
-                and not io_instance.received_msg()
-            ):
+            if len(fandango_roles) != 0 and not io_instance.received_msg():
                 fuzzable_packets = []
                 for role in fandango_roles:
                     fuzzable_packets.extend(forecast[role].nt_to_packet.values())
@@ -330,7 +331,9 @@ class Fandango:
 
                 evolve_result = self._evolve_single()
                 if len(evolve_result) == 0:
-                    nonterminals_str = ' | '.join(map(lambda x: str(x.node.symbol), fuzzable_packets))
+                    nonterminals_str = " | ".join(
+                        map(lambda x: str(x.node.symbol), fuzzable_packets)
+                    )
                     raise RuntimeError(
                         f"Couldn't find solution for any packet: {nonterminals_str}"
                     )
@@ -621,9 +624,11 @@ class Fandango:
 
         found_role = False
         selection_rounds = 0
-        msg_role = 'None'
+        msg_role = "None"
         while not found_role and selection_rounds < 20:
-            for start_idx, (msg_role, msg_recipient, _) in enumerate(io_instance.get_received_msgs()):
+            for start_idx, (msg_role, msg_recipient, _) in enumerate(
+                io_instance.get_received_msgs()
+            ):
                 next_fragment_idx = start_idx
                 if msg_role in forecast.getRoles():
                     found_role = True
@@ -632,10 +637,10 @@ class Fandango:
 
         if msg_role not in forecast.getRoles():
             raise RuntimeError(
-                f"Unexpected agent sent message. Expected: " +
-                " | ".join(forecast.getRoles()) +
-                f" Received: {msg_role}" +
-                f" Messages: {io_instance.get_received_msgs()}"
+                f"Unexpected agent sent message. Expected: "
+                + " | ".join(forecast.getRoles())
+                + f" Received: {msg_role}"
+                + f" Messages: {io_instance.get_received_msgs()}"
             )
         forecast_non_terminals = forecast[msg_role]
         available_non_terminals = set(forecast_non_terminals.getNonTerminals())
@@ -667,17 +672,21 @@ class Fandango:
                     forecast_packet = forecast_non_terminals[non_terminal]
                     path = random.choice(list(forecast_packet.paths))
                     hookin_tree = path.tree
-                    path = list(map(lambda x: x[0], filter(lambda x: not x[1], path.path)))
+                    path = list(
+                        map(lambda x: x[0], filter(lambda x: not x[1], path.path))
+                    )
                     hookin_point = hookin_tree.get_last_by_path(path)
                     parsed_packet_tree = self.grammar.parse(
-                        complete_msg, forecast_packet.node.symbol, hookin_parent=hookin_point
+                        complete_msg,
+                        forecast_packet.node.symbol,
+                        hookin_parent=hookin_point,
                     )
 
                     if parsed_packet_tree is not None:
                         parsed_packet_tree.role = forecast_packet.node.role
                         parsed_packet_tree.recipient = forecast_packet.node.recipient
                         try:
-                            self.grammar.populate_generator_params(parsed_packet_tree)
+                            self.grammar.populate_sources(parsed_packet_tree)
                             break
                         except GeneratorParserValueError as e:
                             parsed_packet_tree = None
@@ -687,7 +696,7 @@ class Fandango:
                         complete_msg,
                         forecast_packet.node.symbol,
                         mode=Grammar.Parser.ParsingMode.INCOMPLETE,
-                        hookin_parent=hookin_point
+                        hookin_parent=hookin_point,
                     )
                     if incomplete_tree is None:
                         available_non_terminals.remove(non_terminal)
@@ -696,11 +705,16 @@ class Fandango:
                 if len(available_non_terminals) == 0:
                     raise RuntimeError(
                         "Couldn't match remote message to any packet matching grammar! Expected nonterminal:",
-                        "|".join(map(lambda x: str(x), forecast_non_terminals.getNonTerminals())),
+                        "|".join(
+                            map(
+                                lambda x: str(x),
+                                forecast_non_terminals.getNonTerminals(),
+                            )
+                        ),
                         "Got message:",
                         complete_msg,
                         "\nUnprocessed messages: ",
-                        str(io_instance.get_received_msgs())
+                        str(io_instance.get_received_msgs()),
                     )
                 if parsed_packet_tree is not None:
                     nr_deleted = 0
@@ -722,7 +736,7 @@ class Fandango:
                         else:
                             applicable_nt = ", ".join(applicable_nt)
                         raise FandangoFailedError(
-                            f"Couldn't derive parameters for received packet or timed out while waiting for remaining packet. Applicable NT: {applicable_nt} Received part: \"{complete_msg}\". Exception: {str(parameter_parsing_exception)}"
+                            f'Couldn\'t derive parameters for received packet or timed out while waiting for remaining packet. Applicable NT: {applicable_nt} Received part: "{complete_msg}". Exception: {str(parameter_parsing_exception)}'
                         )
                     else:
                         raise FandangoFailedError(

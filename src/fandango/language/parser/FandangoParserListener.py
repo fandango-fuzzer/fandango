@@ -122,6 +122,14 @@ class FandangoParserListener(ParseTreeListener):
     def exitNonterminal(self, ctx: FandangoParser.NonterminalContext):
         pass
 
+    # Enter a parse tree produced by FandangoParser#generator_call.
+    def enterGenerator_call(self, ctx: FandangoParser.Generator_callContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#generator_call.
+    def exitGenerator_call(self, ctx: FandangoParser.Generator_callContext):
+        pass
+
     # Enter a parse tree produced by FandangoParser#char_set.
     def enterChar_set(self, ctx: FandangoParser.Char_setContext):
         pass
