@@ -91,9 +91,18 @@ class Fandango:
         self.current_max_nodes = 50
 
         # Instantiate managers
+        self.evaluator = Evaluator(
+            grammar,
+            constraints,
+            expected_fitness,
+            diversity_k,
+            diversity_weight,
+            warnings_are_errors,
+        )
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
             self.population_manager = IoPopulationManager(
                 grammar,
+                self.evaluator,
                 start_symbol,
                 self.population_size,
                 self.current_max_nodes,
@@ -107,14 +116,6 @@ class Fandango:
                 self.current_max_nodes,
                 warnings_are_errors,
             )
-        self.evaluator = Evaluator(
-            grammar,
-            constraints,
-            expected_fitness,
-            diversity_k,
-            diversity_weight,
-            warnings_are_errors,
-        )
         self.adaptive_tuner = AdaptiveTuner(
             mutation_rate,
             crossover_rate,
