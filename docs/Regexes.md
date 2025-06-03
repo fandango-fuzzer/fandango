@@ -96,16 +96,17 @@ For parsing inputs, Fandango uses the Python [`re`](https://docs.python.org/3/li
 for producing inputs, Fandango uses the Python [`exrex`](https://github.com/asciimoo/exrex) module for generating strings that match regular expressions.
 All the `re` and `exrex` capabilities and limitations thus extend to Fandango.
 
-:::{tip}
-For regex shortcuts, the `exrex` producer only produces characters in the range `\0x00` to `\0xff`:
-
-* for digits (`\d`), the characters `[0-9]`
-* for whitespace (`\s`), the characters `[ \t\n\r\f\v]`
-* for words (`\w`), the characters `[a-zA-Z0-9_]`
-* for non-words (`\W`), the character range `[^a-zA-Z0-9_]`
-
-To produce Unicode characters, make them part of an explicit range (e.g. `[äöüÄÖÜß]`).
-:::
+% No longer true -- AZ
+% :::{tip}
+% For regex shortcuts, the `exrex` producer only produces characters in the range `\0x00` to `\0xff`:
+%
+% * for digits (`\d`), the characters `[0-9]`
+% * for whitespace (`\s`), the characters `[ \t\n\r\f\v]`
+% * for words (`\w`), the characters `[a-zA-Z0-9_]`
+% * for non-words (`\W`), the character range `[^a-zA-Z0-9_]`
+%
+% To produce Unicode characters, make them part of an explicit range (e.g. `[äöüÄÖÜß]`).
+% :::
 
 
 ### Repetition Limits

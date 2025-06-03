@@ -9,6 +9,8 @@ def evaluate_hash():
     fandango = Fandango(grammar, constraints, max_generations=100, desired_solutions=10)
     fandango.evolve()
 
+    print("HASHES")
+
     for solution in fandango.solution:
         print(solution)
 

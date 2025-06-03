@@ -2,7 +2,7 @@ from struct import unpack
 import random
 
 <start> ::= <len> '(' <inner>{int(<len>)} ')'
-<len> ::= <number> :: str(random.randrange(1, 4))
+<len> ::= <number> := str(random.randrange(1, 4))
 <inner> ::= <len> <letter>{int(<len>)}
 <letter> ::= r'[a-zA-Z]'
 

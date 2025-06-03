@@ -14,11 +14,11 @@ class ConstraintTest(unittest.TestCase):
 
     def count_g_params(self, tree: DerivationTree):
         count = 0
-        if len(tree.generator_params) > 0:
+        if len(tree.sources) > 0:
             count += 1
         for child in tree.children:
             count += self.count_g_params(child)
-        for child in tree.generator_params:
+        for child in tree.sources:
             count += self.count_g_params(child)
         return count
 
@@ -69,13 +69,13 @@ class ConstraintTest(unittest.TestCase):
 
         for solution in self.get_solutions(grammar, c):
             self.assertEqual(self.count_g_params(solution), 4)
-            converted_inner = solution.children[0].generator_params[0]
+            converted_inner = solution.children[0].sources[0]
             self.assertEqual(self.count_g_params(converted_inner), 3)
-            dummy_inner_2 = converted_inner.children[0].generator_params[0]
+            dummy_inner_2 = converted_inner.children[0].sources[0]
             self.assertEqual(self.count_g_params(dummy_inner_2), 2)
-            dummy_inner = dummy_inner_2.children[0].generator_params[0]
+            dummy_inner = dummy_inner_2.children[0].sources[0]
             self.assertEqual(self.count_g_params(dummy_inner), 1)
-            source_nr = dummy_inner.children[0].children[1].generator_params[0]
+            source_nr = dummy_inner.children[0].children[1].sources[0]
             self.assertEqual(self.count_g_params(source_nr), 0)
 
     def test_repetitions(self):
@@ -118,3 +118,19 @@ class ConstraintTest(unittest.TestCase):
         solutions = self.get_solutions(GRAMMAR, c)
         for solution in solutions:
             self.assertNotEqual(solution, "10")
+
+    def test_num_solutions(self):
+        file = open("docs/digits.fan", "r")
+        GRAMMAR, c = parse(file, use_stdlib=True, use_cache=False)
+        fan = Fandango(grammar=GRAMMAR, constraints=c, desired_solutions=1000)
+        sol = fan.evolve()
+        self.assertEqual(len(sol), 1000)
+
+    def test_max_nodes(self):
+        file = open("tests/resources/gen_number.fan", "r")
+        GRAMMAR, c = parse(file, use_cache=False, use_stdlib=True)
+        solution = self.get_solutions(GRAMMAR, c)
+        for sol in solution:
+            s = str(sol).split(".")
+            self.assertEqual(s[0], "a" * 50)
+            self.assertTrue(len(s[1]) >= 10)

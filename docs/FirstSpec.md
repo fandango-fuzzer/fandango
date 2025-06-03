@@ -13,6 +13,10 @@ kernelspec:
 (sec:first-spec)=
 # A First Fandango Spec
 
+```{tip}
+To write extended Fandango Specs, you may want to use the [Fandango language server and an IDE extension](sec:language-server).
+```
+
 To create test inputs, Fandango needs a _Fandango spec_ – a file that describes how the input should be structured.
 
 A Fandango specification contains three types of elements:

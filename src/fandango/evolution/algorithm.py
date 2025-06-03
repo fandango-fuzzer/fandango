@@ -5,13 +5,16 @@ import random
 import time
 from typing import List, Union
 
-from fandango.constraints.base import Constraint
+from fandango import FandangoFailedError, FandangoParseError, FandangoValueError
+from fandango.constraints.base import Constraint, SoftValue
+from fandango.constraints.fitness import Comparison, ComparisonSide
 from fandango.evolution.adaptation import AdaptiveTuner
 from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
 from fandango.evolution.evaluation import Evaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import PopulationManager, IoPopulationManager
 from fandango.language.io import FandangoIO
+from fandango.evolution.profiler import Profiler
 from fandango.language.grammar import (
     DerivationTree,
     Grammar,
@@ -22,8 +25,6 @@ from fandango.language.packetforecaster import PacketForecaster
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import RoledMessage
 from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
-
-from fandango import FandangoFailedError, FandangoParseError, FandangoValueError
 
 
 class LoggerLevel(enum.Enum):
@@ -59,6 +60,11 @@ class Fandango:
         start_symbol: str = "<start>",
         diversity_k: int = 5,
         diversity_weight: float = 1.0,
+        max_repetition_rate: float = 0.5,
+        max_repetitions: int = None,
+        max_nodes: int = 200,
+        max_nodes_rate: float = 0.5,
+        profiling: bool = False,
     ):
         if tournament_size > 1:
             raise FandangoValueError(
@@ -82,8 +88,25 @@ class Fandango:
         self.max_generations = max_generations
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
+        self.current_max_nodes = 50
 
         # Instantiate managers
+        if self.grammar.fuzzing_mode == FuzzingMode.IO:
+            self.population_manager = IoPopulationManager(
+                grammar,
+                start_symbol,
+                self.population_size,
+                self.current_max_nodes,
+                warnings_are_errors,
+            )
+        else:
+            self.population_manager = PopulationManager(
+                grammar,
+                start_symbol,
+                self.population_size,
+                self.current_max_nodes,
+                warnings_are_errors,
+            )
         self.evaluator = Evaluator(
             grammar,
             constraints,
@@ -92,19 +115,21 @@ class Fandango:
             diversity_weight,
             warnings_are_errors,
         )
-        if self.grammar.fuzzing_mode == FuzzingMode.IO:
-            self.population_manager = IoPopulationManager(
-                grammar,
-                self.evaluator,
-                start_symbol,
-                population_size,
-                warnings_are_errors,
-            )
-        else:
-            self.population_manager = PopulationManager(
-                grammar, start_symbol, population_size, warnings_are_errors
-            )
-        self.adaptive_tuner = AdaptiveTuner(mutation_rate, crossover_rate)
+        self.adaptive_tuner = AdaptiveTuner(
+            mutation_rate,
+            crossover_rate,
+            grammar.get_max_repetition(),
+            self.current_max_nodes,
+            max_repetitions,
+            max_repetition_rate,
+            max_nodes,
+            max_nodes_rate,
+        )
+
+        self.profiling = profiling
+        if self.profiling:
+            self.profiler = Profiler()
+
         self.crossover_operator = crossover_method
         self.mutation_method = mutation_method
 
@@ -119,8 +144,8 @@ class Fandango:
                     if not tree:
                         position = self.grammar.max_position()
                         raise FandangoParseError(
-                            position,
                             message=f"Failed to parse initial individual{individual!r}",
+                            position=position,
                         )
                 elif isinstance(individual, DerivationTree):
                     tree = individual
@@ -134,35 +159,56 @@ class Fandango:
                     unique_population.append(tree)
 
             attempts = 0
-            max_attempts = (population_size - len(unique_population)) * 10
-            while len(unique_population) < population_size and attempts < max_attempts:
-                candidate = self.fix_individual(self.grammar.fuzz(self.start_symbol))
+            max_attempts = (self.population_size - len(unique_population)) * 10
+            while (
+                len(unique_population) < self.population_size
+                and attempts < max_attempts
+            ):
+                candidate = self.fix_individual(
+                    self.grammar.fuzz(
+                        self.start_symbol, max_nodes=self.current_max_nodes
+                    )
+                )
                 h = hash(candidate)
                 if h not in unique_hashes:
                     unique_hashes.add(h)
                     unique_population.append(candidate)
                 attempts += 1
-            if len(unique_population) < population_size:
+            if len(unique_population) < self.population_size:
                 LOGGER.warning(
                     f"Could not generate full unique initial population. Final size is {len(unique_population)}."
                 )
             self.population = unique_population
         else:
-            LOGGER.info(f"Generating initial population (size: {population_size})...")
+            LOGGER.info(
+                f"Generating initial population (size: {self.population_size})..."
+            )
             st_time = time.time()
+
+            if self.profiling:
+                self.profiler.start_timer("initial_population")
             self.population = (
                 self.population_manager.generate_random_initial_population(
                     self.fix_individual
                 )
             )
+            if self.profiling:
+                self.profiler.stop_timer("initial_population")
+                self.profiler.increment("initial_population", len(self.population))
+
             LOGGER.info(
                 f"Initial population generated in {time.time() - st_time:.2f} seconds"
             )
 
         # Evaluate initial population
+        if self.profiling:
+            self.profiler.start_timer("evaluate_population")
         self.evaluation = self.evaluator.evaluate_population(self.population)
+        if self.profiling:
+            self.profiler.stop_timer("evaluate_population")
+            self.profiler.increment("evaluate_population", len(self.population))
         self.fitness = (
-            sum(fitness for _, fitness, _ in self.evaluation) / population_size
+            sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
         )
 
         self.fixes_made = 0
@@ -365,28 +411,58 @@ class Fandango:
             )
 
             # Selection & Crossover
+            if self.profiling:
+                self.profiler.start_timer("select_elites")
             new_population = self.evaluator.select_elites(
                 self.evaluation, self.elitism_rate, self.population_size
             )
+            if self.profiling:
+                self.profiler.stop_timer("select_elites")
+                self.profiler.increment("select_elites", len(new_population))
+
             unique_hashes = {hash(ind) for ind in new_population}
 
             while len(new_population) < self.population_size:
                 if random.random() < self.adaptive_tuner.crossover_rate:
                     try:
+                        if self.profiling:
+                            self.profiler.start_timer("tournament_selection")
                         parent1, parent2 = self.evaluator.tournament_selection(
                             self.evaluation, self.tournament_size
                         )
+                        if self.profiling:
+                            self.profiler.stop_timer("tournament_selection")
+                            self.profiler.increment("tournament_selection", 2)
+
+                        if self.profiling:
+                            self.profiler.start_timer("crossover")
                         child1, child2 = self.crossover_operator.crossover(
                             self.grammar, parent1, parent2
                         )
+                        if self.profiling:
+                            self.profiler.stop_timer("crossover")
+                            self.profiler.increment("crossover", 2)
+
                         self.population_manager.add_unique_individual(
                             new_population, child1, unique_hashes
                         )
+                        self.evaluator.evaluate_individual(child1)
+
+                        if self.profiling:
+                            self.profiler.start_timer("filling")
+                            count = len(new_population)
                         if len(new_population) < self.population_size:
                             self.population_manager.add_unique_individual(
                                 new_population, child2, unique_hashes
                             )
-                        self.crossovers_made += 1
+                            self.evaluator.evaluate_individual(child2)
+
+                        if self.profiling:
+                            self.profiler.stop_timer("filling")
+                            self.profiler.increment(
+                                "filling", len(new_population) - count
+                            )
+                        self.crossovers_made += 2
                     except Exception as e:
                         LOGGER.error(f"Error during crossover: {e}")
                         continue
@@ -397,13 +473,31 @@ class Fandango:
                 new_population = new_population[: self.population_size]
 
             # Mutation
+            weights = [
+                self.evaluator.fitness_cache[hash(ind)][0] for ind in new_population
+            ]
+            if not all(w == 0 for w in weights):
+                mutation_pool = random.choices(
+                    new_population, weights=weights, k=len(new_population)
+                )
+            else:
+                mutation_pool = new_population
             mutated_population = []
-            for individual in new_population:
+            for individual in mutation_pool:
                 if random.random() < self.adaptive_tuner.mutation_rate:
                     try:
+                        if self.profiling:
+                            self.profiler.start_timer("mutation")
+
                         mutated_individual = self.mutation_method.mutate(
-                            individual, self.grammar, self.evaluator.evaluate_individual
+                            individual,
+                            self.grammar,
+                            self.evaluator.evaluate_individual,
+                            self.current_max_nodes,
                         )
+                        if self.profiling:
+                            self.profiler.stop_timer("mutation")
+                            self.profiler.increment("mutation", 1)
                         mutated_population.append(mutated_individual)
                         self.mutations_made += 1
                     except Exception as e:
@@ -411,7 +505,7 @@ class Fandango:
                         mutated_population.append(individual)
                 else:
                     mutated_population.append(individual)
-            new_population = mutated_population
+            new_population.extend(mutated_population)
 
             # Destruction
             if self.destruction_rate > 0:
@@ -433,23 +527,46 @@ class Fandango:
                 new_population, self.fix_individual
             )
 
-            fixed_population = [self.fix_individual(ind) for ind in new_population]
-            self.population = fixed_population[: self.population_size]
-            self.evaluation = self.evaluator.evaluate_population_parallel(
-                self.population, num_workers=4
-            )
+            self.population = [self.fix_individual(ind) for ind in new_population]
+
+            if any(isinstance(c, SoftValue) for c in self.constraints):
+                # For soft constraints, the normalized fitness may change over time as we observe more inputs.
+                # Hence, we periodically flush the fitness cache to re-evaluate the population.
+                self.evaluator.fitness_cache = {}
+
+            if self.profiling:
+                self.profiler.start_timer("evaluate_population")
+            self.evaluation = self.evaluator.evaluate_population(self.population)
+            # Keep only the fittest individuals
+            self.evaluation = sorted(self.evaluation, key=lambda x: x[1], reverse=True)[
+                : self.population_size
+            ]
+            if self.profiling:
+                self.profiler.stop_timer("evaluate_population")
+                self.profiler.increment("evaluate_population", len(self.population))
             self.fitness = (
                 sum(fitness for _, fitness, _ in self.evaluation) / self.population_size
             )
 
             current_best_fitness = max(fitness for _, fitness, _ in self.evaluation)
+            current_max_repetitions = self.grammar.get_max_repetition()
             self.adaptive_tuner.update_parameters(
                 generation,
                 prev_best_fitness,
                 current_best_fitness,
                 self.population,
                 self.evaluator,
+                current_max_repetitions,
             )
+
+            if self.adaptive_tuner.current_max_repetition > current_max_repetitions:
+                self.grammar.set_max_repetition(
+                    self.adaptive_tuner.current_max_repetition
+                )
+
+            self.population_manager.max_nodes = self.adaptive_tuner.current_max_nodes
+            self.current_max_nodes = self.adaptive_tuner.current_max_nodes
+
             prev_best_fitness = current_best_fitness
 
             self.adaptive_tuner.log_generation_statistics(
@@ -468,6 +585,9 @@ class Fandango:
         LOGGER.debug(f"Fitness checks: {self.checks_made}")
         LOGGER.debug(f"Crossovers made: {self.crossovers_made}")
         LOGGER.debug(f"Mutations made: {self.mutations_made}")
+
+        if self.profiling:
+            self.profiler.log_results()
 
         if self.fitness < self.expected_fitness:
             LOGGER.error("Population did not converge to a perfect population")

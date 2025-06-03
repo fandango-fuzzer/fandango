@@ -125,8 +125,9 @@ If you want a different file extension (for instance, because `.txt` is not suit
 You can have Fandango invoke _programs directly_, and have Fandango feed them the generated inputs.
 The programs are specified as arguments on the command line.
 
-There are two ways to pass the input into programs, on the command line and via standard input.
+There are three ways to pass the input into programs, on the command line, via standard input, and in-process to a shared object with a libFuzzer style harness.
 
+Refer to [this example](https://github.com/fandango-fuzzer/fandango/tree/main/evaluation/experiments/libfuzzer-harness) for further details on how a harness can be compiled to interface with each mode.
 
 ### Passing Inputs on the Command Line
 
@@ -155,28 +156,40 @@ $ fandango fuzz -f persons.fan -n 10 --input-method=stdin cat -n
 
 The `cat` program is then invoked repeatedly, each time passing a new Fandango-generated input as its standard input.
 
+### Calling a libFuzzer style harness directly
+
+Fandango further supports calling a libFuzzer style harness directly. If you are able to compile your binary to a shared object (`.so` on Linux or `.dylib` on macOS), Fandango can load the binary and directly call the function. This requires some extra work initially but removes the need to start a new process for each input evaluation, thus improving performance significantly. Fandango will exit on the first crashing input. `--input-method=libfuzzer` is only supported in combination with `--file-mode=binary`, since libFuzzer style harnesses expect binary data.
+
+Fandango is invoked as follows:
+
+```
+$ fandango fuzz -f persons.fan -n 10 --input-method=libfuzzer --file-mode=binary ./harness.{so,dylib}
+```
+
 
 ## Executable `.fan` files
+
 
 On a Unix system, you can turn a `.fan` file into an _executable file_ by placing a line
 
 ```
-#!/usr/bin/env fandango fuzz -f
+#!/usr/bin/env -S fandango fuzz -f
 ```
 
 at the top.
+
 If you set its "executable" flag with `chmod +x FILE`, you can then directly execute the `.fan` file as a command as if it were prefixed by `fandango fuzz -f`.
 
 As an example, let us create a file [`fuzz-persons.fan`](fuzz-persons.fan):
 
 ```shell
-$ (echo '#!/usr/bin/env fandango fuzz -f'; cat persons.fan) > fuzz-persons.fan
+$ (echo '#!/usr/bin/env -S fandango fuzz -f'; cat persons.fan) > fuzz-persons.fan
 $ chmod +x fuzz-persons.fan
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-! (echo '#!/usr/bin/env fandango fuzz -f'; cat persons.fan) > fuzz-persons.fan
+! (echo '#!/usr/bin/env -S fandango fuzz -f'; cat persons.fan) > fuzz-persons.fan
 ! chmod +x fuzz-persons.fan
 ```
 
@@ -190,3 +203,11 @@ $ ./fuzz-persons.fan -n 1
 :tags: ["remove-input"]
 ! ./fuzz-persons.fan -n 1
 ```
+
+:::{note}
+The `env` command varies greatly across Unix flavors and versions.
+If the above does not work on your system, try skipping the `-S` option, such that the first line reads:
+```
+#!/usr/bin/env fandango fuzz -f
+```
+:::
