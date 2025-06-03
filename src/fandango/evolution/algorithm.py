@@ -235,15 +235,7 @@ class Fandango:
                 if operator == Comparison.EQUAL and isinstance(
                     value, (str, bytes, DerivationTree)
                 ):
-                    if (
-                        self.grammar.fuzzing_mode == FuzzingMode.IO
-                        and side == ComparisonSide.LEFT
-                    ):
-                        continue
-                    if (
-                        self.grammar.fuzzing_mode != FuzzingMode.IO
-                        and side == ComparisonSide.RIGHT
-                    ):
+                    if side == ComparisonSide.RIGHT:
                         continue
                     if (
                         isinstance(value, DerivationTree)
