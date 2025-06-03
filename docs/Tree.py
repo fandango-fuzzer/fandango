@@ -11,12 +11,16 @@ class Tree:
     id_counter = 1
     dot = None
 
-    def __init__(self, symbol, *children):
+    def __init__(self, symbol, *children, sources=[]):
         self.symbol = symbol
         self._children = children
+        self._sources = sources
 
     def children(self):
         return self._children
+
+    def sources(self):
+        return self._sources
 
     def visualize(self, title="Derivation Tree"):
         """Display as PNG. (PNG works with HTML and PDF books, SVG does not)"""
@@ -32,18 +36,21 @@ class Tree:
     def _visualize(self):
         name = f"node-{Tree.id_counter}"
         Tree.id_counter += 1
-        if isinstance(self.symbol, int):
-            label = str(self.symbol)
-        else:
+        if str(self.symbol).startswith("<"):
             label = self.symbol
+        else:
+            label = repr(self.symbol)
 
         # https://graphviz.org/doc/info/colors.html
+        # Colors checked against color vision deficiency
         if isinstance(self.symbol, int):
             color = "bisque4"
+        elif isinstance(self.symbol, bytes):
+            color = "darkblue"
         elif self.symbol.startswith("<"):
             color = "firebrick"
         else:
-            color = "darkblue"
+            color = "olivedrab4"
 
         label = label.replace("<", "\\<")
         label = label.replace(">", "\\>")
@@ -52,5 +59,9 @@ class Tree:
         for child in self.children():
             child_name = child._visualize()
             Tree.dot.edge(name, child_name)
+
+        for source in self.sources():
+            source_name = source._visualize()
+            Tree.dot.edge(name, source_name, style="dotted", color="gray", dir="both")
 
         return name

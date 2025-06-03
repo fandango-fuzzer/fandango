@@ -1,9 +1,8 @@
 import random
 from typing import Callable, List, Set
 
-from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
 from fandango.evolution.evaluation import Evaluator
-from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode
+from fandango.language.grammar import DerivationTree, Grammar
 from fandango.language.packetforecaster import PacketForecaster
 from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER
@@ -15,15 +14,17 @@ class PopulationManager:
         grammar: Grammar,
         start_symbol: str,
         population_size: int,
+        max_nodes: int,
         warnings_are_errors: bool = False,
     ):
         self.grammar = grammar
         self.start_symbol = start_symbol
         self.population_size = population_size
         self.warnings_are_errors = warnings_are_errors
+        self.max_nodes = max_nodes
 
     def _generate_population_entry(self):
-        return self.grammar.fuzz(self.start_symbol)
+        return self.grammar.fuzz(self.start_symbol, self.max_nodes)
 
     def add_unique_individual(
         self,

@@ -6,6 +6,8 @@ import itertools
 from abc import ABC, abstractmethod
 from copy import copy
 from typing import List, Dict, Any, Optional
+from tdigest import TDigest
+import math
 
 from fandango.constraints.fitness import (
     ConstraintFitness,
@@ -19,6 +21,43 @@ from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import print_exception, LOGGER
+
+
+class TDigest(TDigest):
+    def __init__(self, optimization_goal: str):
+        super().__init__()
+        self._min = None
+        self._max = None
+        self.contrast = 200.0
+        if optimization_goal == "min":
+            self.transform = self.amplify_near_0
+        else:
+            self.transform = self.amplify_near_1
+
+    def update(self, x, w=1):
+        super().update(x, w)
+        if self._min is None or x < self._min:
+            self._min = x
+        if self._max is None or x > self._max:
+            self._max = x
+
+    def amplify_near_0(self, q):
+        return 1 - math.exp(-self.contrast * q)
+
+    def amplify_near_1(self, q):
+        return math.exp(self.contrast * (q - 1))
+
+    def score(self, x):
+        if self._min is None or self._max is None:
+            return 0
+        if self._min == self._max:
+            return self.transform(self.cdf(x))
+        if x <= self._min:
+            return 0
+        if x >= self._max:
+            return 1
+        else:
+            return self.transform(self.cdf(x))
 
 
 class Value(GeneticBase):
@@ -53,7 +92,7 @@ class Value(GeneticBase):
         tree_hash = self.get_hash(tree, scope)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
-            return copy(self.cache[tree_hash])
+            return self.cache[tree_hash]
         # If the tree is None, the fitness is 0
         if tree is None:
             fitness = ValueFitness()
@@ -73,13 +112,12 @@ class Value(GeneticBase):
                             trees.append(node)
                 try:
                     # Evaluate the expression
-                    result = self.eval(
+                    result = eval(
                         self.expression, self.global_variables, local_variables
                     )
                     values.append(result)
                 except Exception as e:
-                    e.add_note(f"Evaluation failed: {self.expression}")
-                    print_exception(e)
+                    print_exception(e, f"Evaluation failed: {self.expression}")
                     values.append(0)
             # Create the fitness object
             fitness = ValueFitness(
@@ -88,6 +126,12 @@ class Value(GeneticBase):
         # Cache the fitness
         self.cache[tree_hash] = fitness
         return fitness
+
+    def get_symbols(self):
+        """
+        Get the placeholders of the constraint.
+        """
+        return self.searches.values()
 
     def __repr__(self):
         representation = self.expression
@@ -99,6 +143,27 @@ class Value(GeneticBase):
 
     def __str__(self):
         return self.expression
+
+
+class SoftValue(Value):
+    """
+    A `Value`, which is not mandatory, but aimed to be optimized.
+    """
+
+    def __init__(self, optimization_goal: str, expression: str, *args, **kwargs):
+        super().__init__(expression, *args, **kwargs)
+        assert optimization_goal in (
+            "min",
+            "max",
+        ), f"Invalid SoftValue optimization goal {type!r}"
+        self.optimization_goal = optimization_goal
+        self.tdigest = TDigest(optimization_goal)
+
+    def __repr__(self):
+        return f"SoftValue_{self.optimization_goal}({super().__repr__()})"
+
+    def __str__(self):
+        return f"SoftValue{self.optimization_goal}({super().__str__()})"
 
 
 class Constraint(GeneticBase, ABC):
@@ -232,8 +297,7 @@ class ExpressionConstraint(Constraint):
                             if node not in failing_trees:
                                 failing_trees.append(node)
             except Exception as e:
-                e.add_note("Evaluation failed: " + self.expression)
-                print_exception(e)
+                print_exception(e, f"Evaluation failed: {self.expression}")
 
             total += 1
         # If there are no combinations, the fitness is perfect
@@ -326,15 +390,13 @@ class ComparisonConstraint(Constraint):
             try:
                 left = self.eval(self.left, self.global_variables, local_variables)
             except Exception as e:
-                e.add_note("Evaluation failed: " + self.left)
-                print_exception(e)
+                print_exception(e, f"Evaluation failed: {self.left}")
                 continue
 
             try:
                 right = self.eval(self.right, self.global_variables, local_variables)
             except Exception as e:
-                e.add_note("Evaluation failed: " + self.right)
-                print_exception(e)
+                print_exception(e, f"Evaluation failed: {self.right}")
                 continue
 
             if not hasattr(self, "types_checked") or not self.types_checked:

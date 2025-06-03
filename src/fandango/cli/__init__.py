@@ -1,14 +1,41 @@
 import argparse
 import atexit
+import ctypes
 import glob
-import importlib.metadata
 import logging
 import os
 import os.path
 import re
-import time
 
-import gnureadline as readline
+if not "readline" in globals():
+    try:
+        # Linux and Mac. This should do the trick.
+        import gnureadline as readline
+    except Exception:
+        pass
+
+if not "readline" in globals():
+    try:
+        # Windows. This should do the trick.
+        import pyreadline3 as readline
+    except Exception:
+        pass
+
+if not "readline" in globals():
+    try:
+        # Another Windows alternative
+        import pyreadline as readline
+    except Exception:
+        pass
+
+if not "readline" in globals():
+    try:
+        # A Hail Mary Pass
+        import readline
+    except Exception:
+        pass
+
+import time
 import shlex
 import subprocess
 import sys
@@ -30,22 +57,24 @@ from fandango.language.parse import parse
 from fandango.logger import LOGGER, print_exception
 
 from fandango import FandangoParseError, FandangoError
+import fandango
 
 
-DISTRIBUTION_NAME = "fandango-fuzzer"
+def terminal_link(url: str, text: str | None = None):
+    """Output URL as a link"""
+    if text is None:
+        text = url
+    # https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
+    return f"\x1b]8;;{url}\x1b\\{text}\x1b]8;;\x1b\\"
 
 
-def version():
-    """Return the Fandango version number"""
-    return importlib.metadata.version(DISTRIBUTION_NAME)
-
-
-def homepage():
-    """Return the Fandango homepage"""
-    for key, value in importlib.metadata.metadata(DISTRIBUTION_NAME).items():
-        if key == "Project-URL" and value.startswith("homepage,"):
-            return value.split(",")[1].strip()
-    return "the Fandango homepage"
+def homepage_as_link():
+    """Return the Fandango homepage, formatted for terminals"""
+    homepage = fandango.homepage()
+    if homepage.startswith("http") and sys.stdout.isatty():
+        return terminal_link(homepage)
+    else:
+        return homepage
 
 
 def get_parser(in_command_line=True):
@@ -65,7 +94,7 @@ def get_parser(in_command_line=True):
             Use `help COMMAND` to learn more about COMMAND.
             Use TAB to complete commands."""
         )
-    epilog += f"\nSee {homepage()} for more information."
+    epilog += f"\nSee {homepage_as_link()} for more information."
 
     main_parser = argparse.ArgumentParser(
         prog=prog,
@@ -79,7 +108,7 @@ def get_parser(in_command_line=True):
         main_parser.add_argument(
             "--version",
             action="version",
-            version=f"Fandango {version()}",
+            version=f"Fandango {fandango.version()}",
             help="show version number",
         )
 
@@ -150,6 +179,30 @@ def get_parser(in_command_line=True):
         "--destruction-rate",
         type=float,
         help="the rate of individuals that will be randomly destroyed in every generation",
+        default=None,
+    )
+    algorithm_group.add_argument(
+        "--max-repetition-rate",
+        type=float,
+        help="rate at which the number of maximal repetitions should be increased",
+        default=None,
+    )
+    algorithm_group.add_argument(
+        "--max-repetitions",
+        type=int,
+        help="Maximal value, the number of repetitions can be increased to",
+        default=None,
+    )
+    algorithm_group.add_argument(
+        "--max-node-rate",
+        type=float,
+        help="rate at which the maximal number of nodes in a tree is increased",
+        default=None,
+    )
+    algorithm_group.add_argument(
+        "--max-nodes",
+        type=int,
+        help="Maximal value, the number of nodes in a tree can be increased to",
         default=None,
     )
     algorithm_group.add_argument(
@@ -236,6 +289,26 @@ def get_parser(in_command_line=True):
         help="define an additional constraint CONSTRAINT. Can be given multiple times.",
     )
     file_parser.add_argument(
+        "--max",
+        "--maximize",
+        type=str,
+        dest="maxconstraints",
+        metavar="MAXCONSTRAINT",
+        default=None,
+        action="append",
+        help="define an additional constraint MAXCONSTRAINT to be maximized. Can be given multiple times.",
+    )
+    file_parser.add_argument(
+        "--min",
+        "--minimize",
+        type=str,
+        dest="minconstraints",
+        metavar="MINCONSTRAINTS",
+        default=None,
+        action="append",
+        help="define an additional constraint MINCONSTRAINT to be minimized. Can be given multiple times.",
+    )
+    file_parser.add_argument(
         "--no-cache",
         default=True,
         dest="use_cache",
@@ -299,13 +372,6 @@ def get_parser(in_command_line=True):
         action="store_true",
         help="run internal consistency checks for debugging",
     )
-    file_parser.add_argument(
-        "--max-repetitions",
-        dest="max_repetitions",
-        type=int,
-        help="the maximal number of repetitions if not specified otherwise by {N, M} in the grammar (default: 5)",
-        default=5,
-    )
 
     # Commands
 
@@ -328,9 +394,9 @@ def get_parser(in_command_line=True):
 
     command_group.add_argument(
         "--input-method",
-        choices=["stdin", "filename"],
+        choices=["stdin", "filename", "libfuzzer"],
         default="filename",
-        help="when invoking COMMAND, choose whether Fandango input will be passed as standard input (`stdin`) or as last argument on the command line (`filename`) (default)",
+        help="when invoking COMMAND, choose whether Fandango input will be passed as standard input (`stdin`), as last argument on the command line (`filename`) (default), or to a libFuzzer style harness compiled to a shared object (.so/.dylib)",
     )
     command_group.add_argument(
         "test_command",
@@ -516,9 +582,12 @@ def parse_files_from_args(args, given_grammars=[]):
 
 def parse_constraints_from_args(args, given_grammars=[]):
     """Parse .fan constraints as given in args"""
+    max_constraints = [f"maximizing {c}" for c in (args.maxconstraints or [])]
+    min_constraints = [f"minimizing {c}" for c in (args.minconstraints or [])]
+    constraints = (args.constraints or []) + max_constraints + min_constraints
     return parse(
         [],
-        args.constraints,
+        constraints,
         given_grammars=given_grammars,
         includes=args.includes,
         use_cache=args.use_cache,
@@ -529,15 +598,17 @@ def parse_constraints_from_args(args, given_grammars=[]):
 
 def parse_contents_from_args(args, given_grammars=[]):
     """Parse .fan content as given in args"""
+    max_constraints = [f"maximizing {c}" for c in (args.maxconstraints or [])]
+    min_constraints = [f"minimizing {c}" for c in (args.minconstraints or [])]
+    constraints = (args.constraints or []) + max_constraints + min_constraints
     return parse(
         args.fan_files,
-        args.constraints,
+        constraints,
         given_grammars=given_grammars,
         includes=args.includes,
         use_cache=args.use_cache,
         use_stdlib=args.use_stdlib,
         start_symbol=args.start_symbol,
-        max_repetitions=args.max_repetitions,
     )
 
 
@@ -562,6 +633,10 @@ def make_fandango_settings(args, initial_settings={}):
     copy(settings, "warnings_are_errors")
     copy(settings, "best_effort")
     copy(settings, "random_seed")
+    copy(settings, "max_repetition_rate")
+    copy(settings, "max_repetitions")
+    copy(settings, "max_nodes")
+    copy(settings, "max_node_rate")
 
     if hasattr(args, "start_symbol") and args.start_symbol is not None:
         if args.start_symbol.startswith("<"):
@@ -628,7 +703,7 @@ def set_command(args):
         grammar, constraints = parse_contents_from_args(args)
         DEFAULT_FAN_CONTENT = (grammar, constraints)
         DEFAULT_CONSTRAINTS = []  # Don't leave these over
-    elif args.constraints:
+    elif args.constraints or args.maxconstraints or args.minconstraints:
         default_grammar = DEFAULT_FAN_CONTENT[0]
         if not default_grammar:
             raise FandangoError("Open a `.fan` file first ('set -f FILE.fan')")
@@ -780,14 +855,37 @@ def output_population(population, args, file_mode=None, *, output_on_stdout=True
     if "test_command" in args and args.test_command:
         LOGGER.info(f"Running {args.test_command}")
         base_cmd = [args.test_command] + args.test_args
+
+        if args.input_method == "libfuzzer":
+            if args.file_mode != "binary" or file_mode != "binary":
+                raise NotImplementedError(
+                    "LibFuzzer harnesses only support binary input"
+                )
+            harness = ctypes.CDLL(args.test_command).LLVMFuzzerTestOneInput
+
         for individual in population:
             if args.input_method == "filename":
                 prefix = "fandango-"
                 suffix = args.filename_extension
                 mode = "wb" if file_mode == "binary" else "w"
-                with tempfile.NamedTemporaryFile(
-                    mode=mode, prefix=prefix, suffix=suffix
-                ) as fd:
+
+                def named_temp_file(*, mode, prefix, suffix):
+                    try:
+                        # Windows needs delete_on_close=False, so the subprocess
+                        # can access the file by name
+                        return tempfile.NamedTemporaryFile(
+                            mode=mode,
+                            prefix=prefix,
+                            suffix=suffix,
+                            delete_on_close=False,
+                        )
+                    except Exception:
+                        # Python 3.11 and earlier have no 'delete_on_close'
+                        return tempfile.NamedTemporaryFile(
+                            mode=mode, prefix=prefix, suffix=suffix
+                        )
+
+                with named_temp_file(mode=mode, prefix=prefix, suffix=suffix) as fd:
                     fd.write(output(individual, args, file_mode))
                     fd.flush()
                     cmd = base_cmd + [fd.name]
@@ -797,8 +895,13 @@ def output_population(population, args, file_mode=None, *, output_on_stdout=True
                 cmd = base_cmd
                 LOGGER.debug(f"Running {cmd} with individual as stdin")
                 subprocess.run(
-                    cmd, input=output(individual, args, file_mode), text=True
+                    cmd,
+                    input=output(individual, args, file_mode),
+                    text=(None if file_mode == "binary" else True),
                 )
+            elif args.input_method == "libfuzzer":
+                bytes = output(individual, args, file_mode)
+                harness(bytes, len(bytes))
             else:
                 raise NotImplementedError("Unsupported input method")
 
@@ -872,6 +975,7 @@ def parse_file(fd, args, grammar, constraints, settings):
     while tree := next(tree_gen, None):
         LOGGER.debug(f"Checking parse alternative #{alternative_counter}")
         last_tree = tree
+        grammar.populate_sources(last_tree)
 
         passed = True
         for constraint in constraints:
@@ -1065,9 +1169,9 @@ def copyright_command(args):
 
 def version_command(args):
     if sys.stdout.isatty():
-        version_line = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango{styles.color.close} {version()}"
+        version_line = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango{styles.color.close} {fandango.version()}"
     else:
-        version_line = f"Fandango {version()}"
+        version_line = f"Fandango {fandango.version()}"
     print(version_line)
 
 
@@ -1209,6 +1313,9 @@ def shell_command(args):
     PROMPT = "(fandango)"
 
     def _read_history():
+        if not "readline" in globals():
+            return
+
         histfile = os.path.join(os.path.expanduser("~"), ".fandango_history")
         try:
             readline.read_history_file(histfile)
@@ -1221,6 +1328,9 @@ def shell_command(args):
         atexit.register(readline.write_history_file, histfile)
 
     def _complete(text, state):
+        if not "readline" in globals():
+            return
+
         global MATCHES
         if state == 0:  # first trigger
             buffer = readline.get_line_buffer()[: readline.get_endidx()]
@@ -1231,10 +1341,11 @@ def shell_command(args):
             return None
 
     if sys.stdin.isatty():
-        _read_history()
-        readline.set_completer_delims(" \t\n;")
-        readline.set_completer(_complete)
-        readline.parse_and_bind("tab: complete")
+        if "readline" in globals():
+            _read_history()
+            readline.set_completer_delims(" \t\n;")
+            readline.set_completer(_complete)
+            readline.parse_and_bind("tab: complete")
 
         version_command([])
         print("Type a command, 'help', 'copyright', 'version', or 'exit'.")
@@ -1369,14 +1480,6 @@ def main(*argv: str, stdout=sys.stdout, stderr=sys.stderr):
         last_status = 2
 
     return last_status
-
-
-def fandango(cmd: str, stdout=sys.stdout, stderr=sys.stderr):
-    # Entry point for tutorial
-    try:
-        main(*shlex.split(cmd, comments=True), stdout=stdout, stderr=stderr)
-    except SystemExit as e:
-        pass  # Do not exit
 
 
 if __name__ == "__main__":

@@ -16,7 +16,6 @@ import dill as pickle
 
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
-from thefuzz import process as thefuzz_process
 from xdg_base_dirs import xdg_cache_home, xdg_data_dirs, xdg_data_home
 
 from fandango.constraints import predicates
@@ -35,7 +34,7 @@ from fandango.language.grammar import (
     NonTerminalNode,
     PacketTruncator,
     RoleNestingDetector,
-    MAX_REPETITIONS, NodeReplacer,
+    MAX_REPETITIONS, NodeReplacer, closest_match
 )
 from fandango.language.io import FandangoIO, FandangoAgent
 from fandango.language.parser.FandangoLexer import FandangoLexer
@@ -45,6 +44,7 @@ from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER, print_exception
 
 from fandango import FandangoSyntaxError, FandangoValueError
+import fandango
 
 
 class MyErrorListener(ErrorListener):
@@ -62,14 +62,6 @@ class MyErrorListener(ErrorListener):
         exc.column = column
         exc.messsage = msg
         raise exc
-
-
-def closest_match(word, candidates):
-    """
-    `word` raises a syntax error;
-    return alternate suggestion for `word` from `candidates`
-    """
-    return thefuzz_process.extractOne(word, candidates)[0]
 
 
 ### Including Files
@@ -158,7 +150,7 @@ class FandangoSpec:
         filename: str = "<input>",
         max_repetitions: int = 5,
     ):
-        self.version = importlib.metadata.version("fandango-fuzzer")
+        self.version = fandango.version()
         self.fan_contents = fan_contents
         self.global_vars = self.GLOBALS.copy()
         self.local_vars = self.LOCALS
@@ -249,7 +241,9 @@ def parse_content(
             os.makedirs(CACHE_DIR, mode=0o700)
             cachedir_tag.tag(CACHE_DIR, application="Fandango")
 
-        hash = hashlib.sha256(fan_contents.encode()).hexdigest()
+        # Keep separate hashes for different Fandango and Python versions
+        hash_contents = fan_contents + fandango.version() + "-" + sys.version
+        hash = hashlib.sha256(hash_contents.encode()).hexdigest()
         pickle_file = CACHE_DIR / (hash + ".pickle")
 
         if os.path.exists(pickle_file):
@@ -468,9 +462,20 @@ def parse(
     LOGGER.debug("Processing constraints")
     for constraint in constraints or []:
         LOGGER.debug(f"Constraint {constraint}")
-        _, new_constraints = parse_content(
-            "where " + constraint, filename=constraint, use_cache=use_cache, lazy=lazy
-        )
+        first_token = constraint.split()[0]
+        if any(
+            first_token.startswith(kw) for kw in ["where", "minimizing", "maximizing"]
+        ):
+            _, new_constraints = parse_content(
+                constraint, filename=constraint, use_cache=use_cache, lazy=lazy
+            )
+        else:
+            _, new_constraints = parse_content(
+                "where " + constraint,
+                filename=constraint,
+                use_cache=use_cache,
+                lazy=lazy,
+            )
         parsed_constraints += new_constraints
 
     LOGGER.debug("Checking and finalizing content")
@@ -670,9 +675,11 @@ def check_grammar_definitions(
             f"Undefined symbol {first_undefined_symbol!s} in grammar"
         )
         if undefined_symbols:
-            error.add_note(
-                f"Other undefined symbols: {', '.join(str(symbol) for symbol in undefined_symbols)}"
-            )
+            if getattr(Exception, "add_note", None):
+                # Python 3.11+ has add_note() method
+                error.add_note(
+                    f"Other undefined symbols: {', '.join(str(symbol) for symbol in undefined_symbols)}"
+                )
         raise error
 
 

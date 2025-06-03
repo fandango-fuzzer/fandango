@@ -26,4 +26,4 @@ It does not require feedback (such as coverage) from the program to be tested, n
 On the other hand, the constraints used by Fandango do not preclude coverage guidance. Stay tuned for future extensions.
 
 When will Fandango be ready?
-: We expect a public beta in April 2025.
+: We expect a public beta early April 2025, and a 1.0 release end of June 2025.

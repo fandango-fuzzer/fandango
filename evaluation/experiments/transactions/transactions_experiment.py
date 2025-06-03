@@ -10,6 +10,7 @@ def evaluate_transactions():
     fandango = Fandango(grammar, constraints, max_generations=100, desired_solutions=10)
     fandango.evolve()
 
+    print("TRANSACTIONS")
     for solution in fandango.solution:
         print(solution)
 

@@ -48,8 +48,9 @@ symbol
         ( nonterminal_right
         | STRING
         | NUMBER  // for 0 and 1 bits
+        | generator_call
+        | char_set // deprecated
         | OPEN_PAREN alternative CLOSE_PAREN
-        | char_set
         )
       NEWLINE*
     ;
@@ -64,6 +65,14 @@ nonterminal
 
 
 
+generator_call
+    : NAME
+    | generator_call '.' NAME
+    | generator_call '[' slices ']'
+    | generator_call genexp
+    | generator_call '(' arguments? ')'
+    ;
+
 char_set
     : OPEN_BRACK XOR? STRING CLOSE_BRACK
     ;
@@ -71,9 +80,9 @@ char_set
 // constraint part
 constraint
     : WHERE implies (';' | NEWLINE | EOF)
-    | WHERE 'fitness' expr (';' | NEWLINE | EOF)
+    | MINIMIZING expr (';' | NEWLINE | EOF)
+    | MAXIMIZING expr (';' | NEWLINE | EOF)
     | implies ';' // deprecated
-    | 'fitness' expr ';' // deprecated
     ;
 
 implies:
