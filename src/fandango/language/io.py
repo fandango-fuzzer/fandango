@@ -1,6 +1,8 @@
+import socket
 import threading
 from typing import Callable, Tuple
 
+from fandango import FandangoError
 from fandango.language.tree import DerivationTree
 
 
@@ -40,6 +42,91 @@ class FandangoAgent(object):
 
     def receive_msg(self, sender: str, message: str) -> None:
         FandangoIO.instance().add_receive(sender, self.class_name, message)
+
+class SocketServerAgent(FandangoAgent):
+    def __init__(self, is_fandango: bool, is_ipv4: bool = False, ip: str = "::1", port: int = 0, is_tcp: bool = True):
+        super().__init__(is_fandango)
+        self.is_ipv4 = is_ipv4
+        self.is_tcp = is_tcp
+        self.ip = ip
+        self.port = port
+
+        self.sock = None
+        self.conn = None
+        self.remote_address = None
+        self.send_thread = None
+        self.running = False
+        self.lock = threading.Lock()
+
+    def _create_socket(self):
+        protocol = socket.SOCK_STREAM if self.is_tcp else socket.SOCK_DGRAM
+        ip_type = socket.AF_INET if self.is_ipv4 else socket.AF_INET6
+        self.sock = socket.socket(ip_type, protocol)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+    def connect(self):
+        self.sock.bind((self.ip, self.port))
+        self.sock.listen(1)
+        self.running = True
+        self.send_thread = threading.Thread(target=self._listen, daemon=True)
+        self.send_thread.start()
+
+    def close(self):
+        self.running = False
+        if self.send_thread is not None:
+            self.send_thread.join()
+            self.send_thread = None
+        if self.conn is not None:
+            self.conn.shutdown(socket.SHUT_RDWR)
+            self.conn = None
+        if self.sock is None:
+            return
+        try:
+            self.sock.shutdown(socket.SHUT_RDWR)
+        except:
+            pass
+        self.sock.close()
+
+    def wait_accept(self):
+        with self.lock:
+            if self.conn is None:
+                self.conn, self.remote_address = self.sock.accept()
+
+    def update_port(self, new_port: int):
+        self.port = new_port
+        if not self.is_fandango():
+            return
+        self.close()
+        self._create_socket()
+        self.connect()
+
+    def _listen(self):
+        self.wait_accept()
+        while self.running:
+            try:
+                data = self.conn.recv(1024)
+                if len(data) == 0:
+                    continue
+                if data:
+                    self.receive(data)
+                else:
+                    self.running = False
+                    break
+            except Exception as e:
+                self.running = False
+                break
+
+    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
+        if not self.running:
+            raise FandangoError("Socket not running!")
+        self.wait_accept()
+        self.transmit(self.conn, message, recipient)
+
+    def receive(self, data: bytes):
+        pass
+
+    def transmit(self, connection, message: DerivationTree, recipient: str):
+        pass
 
 
 class STDOUT(FandangoAgent):
