@@ -98,22 +98,14 @@ class IoPopulationManager(PopulationManager):
     def __init__(
         self,
         grammar: Grammar,
-        evaluator: Evaluator,
         start_symbol: str,
         population_size: int,
         max_nodes: int,
         warnings_are_errors: bool = False,
     ):
         super().__init__(grammar, start_symbol, population_size, max_nodes, warnings_are_errors)
-        self.evaluator = evaluator
         self.prev_packet_idx = 0
         self.fuzzable_packets: list[PacketForecaster.ForcastingPacket] | None = None
-
-    def _is_population_complete(self, unique_population: List[DerivationTree]) -> bool:
-        for entry in unique_population:
-            if self.evaluator.evaluate_individual(entry)[0] >= 0.99:
-                return True
-        return super()._is_population_complete(unique_population)
 
     def _generate_population_entry(self):
         if self.fuzzable_packets is None or len(self.fuzzable_packets) == 0:
