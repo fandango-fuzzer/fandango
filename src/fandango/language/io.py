@@ -1,5 +1,8 @@
+import select
 import socket
+import sys
 import threading
+import time
 from typing import Callable, Tuple
 
 from fandango import FandangoError
@@ -161,8 +164,15 @@ class STD(FandangoAgent):
 
     def listen_loop(self):
         while self.running:
-            read = input()
-            self.receive_msg('STD', read)
+            rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
+            if rlist:
+                read = sys.stdin.readline()
+                if read == '':
+                    self.running = False
+                    break
+                self.receive_msg('STD', read.strip())
+            else:
+                time.sleep(0.1)  # prevent tight loop
 
 
 class FandangoIO:

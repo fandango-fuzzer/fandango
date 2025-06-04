@@ -7,7 +7,6 @@ from typing import List, Union
 
 from fandango import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.constraints.base import Constraint, SoftValue
-from fandango.constraints.fitness import Comparison, ComparisonSide
 from fandango.evolution.adaptation import AdaptiveTuner
 from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
 from fandango.evolution.evaluation import Evaluator
@@ -19,7 +18,6 @@ from fandango.language.grammar import (
     DerivationTree,
     Grammar,
     FuzzingMode,
-    GeneratorParserValueError,
 )
 from fandango.language.packetforecaster import PacketForecaster
 from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
