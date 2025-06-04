@@ -586,11 +586,11 @@ def remap_to_std_role(grammar: "Grammar", io_instance: FandangoIO):
 
         for nt in non_terminals:
             if nt.sender is not None:
-                if nt.sender not in io_instance.roles.keys():
+                if nt.sender not in io_instance.agents.keys():
                     remapped_roles.add(nt.sender)
                     nt.sender = "STD"
             if nt.recipient is not None:
-                if nt.recipient not in io_instance.roles.keys():
+                if nt.recipient not in io_instance.agents.keys():
                     unknown_recipients.add(nt.recipient)
 
     for name in remapped_roles:
@@ -603,9 +603,9 @@ def remap_to_std_role(grammar: "Grammar", io_instance: FandangoIO):
 
 def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) -> None:
     keep_roles = grammar.roles(True)
-    io_instance.roles.keys()
+    io_instance.agents.keys()
     for existing_role in list(keep_roles):
-        if not io_instance.roles[existing_role].is_fandango():
+        if not io_instance.agents[existing_role].is_fandango():
             keep_roles.remove(existing_role)
 
     for nt in grammar.rules.keys():

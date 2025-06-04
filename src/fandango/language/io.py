@@ -11,7 +11,7 @@ class FandangoAgent(object):
     def __init__(self, is_fandango: bool):
         self.class_name = type(self).__name__
         self._is_fandango = is_fandango
-        FandangoIO.instance().roles[self.class_name] = self
+        FandangoIO.instance().agents[self.class_name] = self
 
     """
     :return: True, if the party is substituted by fandango.
@@ -25,7 +25,7 @@ class FandangoAgent(object):
     
     :message: The message to send.
     :response_setter: If the recipient of the message answers during the function call, this method can be called to set the response.
-        First parameter of response_setter if the role of the other party. The second is the message, that it answered with.
+        First parameter of response_setter is the name of the other party. The second is the message, that it answered with.
     """
 
     def on_send(
@@ -177,22 +177,22 @@ class FandangoIO:
         FandangoIO.__instance = self
         self.transmit: Tuple[str, str, DerivationTree] | None = None
         self.receive = list[(str, str, str)]()
-        self.roles = dict[str, FandangoAgent]()
+        self.agents = dict[str, FandangoAgent]()
         self.receive_lock = threading.Lock()
 
     def run_com_loop(self):
         if self.transmit is not None:
-            role, recipient, msg = self.transmit
-            if role in self.roles.keys():
-                self.roles[role].on_send(msg, recipient, self.roles[role].receive_msg)
+            sender, recipient, msg = self.transmit
+            if sender in self.agents.keys():
+                self.agents[sender].on_send(msg, recipient, self.agents[sender].receive_msg)
         self.clear_transmit_msgs()
 
     def clear_transmit_msgs(self):
         self.transmit = None
 
-    def add_receive(self, role: str, receiver: str, message: str) -> None:
+    def add_receive(self, sender: str, receiver: str, message: str) -> None:
         with self.receive_lock:
-            self.receive.append((role, receiver, message))
+            self.receive.append((sender, receiver, message))
 
     def received_msg(self):
         with self.receive_lock:
@@ -211,6 +211,6 @@ class FandangoIO:
             self.receive.clear()
 
     def set_transmit(
-        self, role: str, recipient: str | None, message: DerivationTree
+        self, sender: str, recipient: str | None, message: DerivationTree
     ) -> None:
-        self.transmit = (role, recipient, message)
+        self.transmit = (sender, recipient, message)

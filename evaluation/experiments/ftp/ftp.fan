@@ -199,8 +199,8 @@ def is_unique_folder_and_file(current_file_or_folder, data):
 # open_data_port(port) is a generator. When executed, it returns the value that was given to it and reconfigures the
 # data party definitions to use that port.
 def open_data_port(port):
-    FandangoIO.instance().roles['ClientData'].update_port(port)
-    FandangoIO.instance().roles['ServerData'].update_port(port)
+    FandangoIO.instance().agents['ClientData'].update_port(port)
+    FandangoIO.instance().agents['ServerData'].update_port(port)
     return port
 
 import socket
