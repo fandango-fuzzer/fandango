@@ -76,7 +76,7 @@ class GrammarProcessor(FandangoParserVisitor):
         self.global_variables = global_variables
         self.id_prefix = id_prefix
         self.searches = SearchProcessor(Grammar.dummy())
-        self.seenRoles = set[str]()
+        self.seenAgents = set[str]()
         self.additionalRules = dict[NonTerminal, Node]()
         self.max_repetitions = max_repetitions
 
@@ -112,7 +112,7 @@ class GrammarProcessor(FandangoParserVisitor):
                 LOGGER.info(f"{symbol}: A final ';' is not required in grammar rules.")
 
         grammar.rules.update(self.additionalRules)
-        if len(self.seenRoles) == 0:
+        if len(self.seenAgents) == 0:
             grammar.fuzzing_mode = FuzzingMode.COMPLETE
         else:
             grammar.fuzzing_mode = FuzzingMode.IO
@@ -220,7 +220,7 @@ class GrammarProcessor(FandangoParserVisitor):
             return NonTerminalNode(NonTerminal("<" + ctx.NAME(0).getText() + ">"))
         elif ctx.NAME(2) is None:
             # idx 0 = role
-            self.seenRoles.add(ctx.NAME(0).getText())
+            self.seenAgents.add(ctx.NAME(0).getText())
             return NonTerminalNode(
                 NonTerminal("<" + ctx.NAME(1).getText() + ">"),
                 ctx.NAME(0).getText(),
@@ -228,8 +228,8 @@ class GrammarProcessor(FandangoParserVisitor):
             )
         else:
             # idx 0 = role; idx 1 = receiver
-            self.seenRoles.add(ctx.NAME(0).getText())
-            self.seenRoles.add(ctx.NAME(1).getText())
+            self.seenAgents.add(ctx.NAME(0).getText())
+            self.seenAgents.add(ctx.NAME(1).getText())
             return NonTerminalNode(
                 NonTerminal("<" + ctx.NAME(2).getText() + ">"),
                 ctx.NAME(0).getText(),

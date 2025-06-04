@@ -68,7 +68,7 @@ class Node(abc.ABC):
         parent: "DerivationTree",
         grammar: "Grammar",
         max_nodes: int = 100,
-        in_role: str = None,
+        in_message: bool = False,
     ):
         return
 
@@ -76,21 +76,21 @@ class Node(abc.ABC):
     def accept(self, visitor: "NodeVisitor"):
         raise NotImplementedError("accept method not implemented")
 
-    def tree_roles(self, grammar: "Grammar", include_recipients: bool = True):
-        return self._tree_roles(grammar, set(), include_recipients)
+    def agents(self, grammar: "Grammar", include_recipients: bool = True):
+        return self._agents(grammar, set(), include_recipients)
 
-    def _tree_roles(
+    def _agents(
         self,
         grammar: "Grammar",
         seen_nonterminals: set[NonTerminal],
         include_recipients: bool,
     ):
-        roles = set()
+        agents = set()
         for child in self.children():
-            roles = roles.union(
-                child._tree_roles(grammar, seen_nonterminals, include_recipients)
+            agents = agents.union(
+                child._agents(grammar, seen_nonterminals, include_recipients)
             )
-        return roles
+        return agents
 
     def children(self):
         return []
@@ -122,7 +122,7 @@ class Alternative(Node):
         parent: "DerivationTree",
         grammar: "Grammar",
         max_nodes: int = 100,
-        in_role: str = None,
+        in_message: bool = False,
     ):
         if self.distance_to_completion >= max_nodes:
             min_ = min(self.alternatives, key=lambda x: x.distance_to_completion)
@@ -132,9 +132,9 @@ class Alternative(Node):
                     for a in self.alternatives
                     if a.distance_to_completion <= min_.distance_to_completion
                 ]
-            ).fuzz(parent, grammar, 0, in_role)
+            ).fuzz(parent, grammar, 0, in_message)
             return
-        random.choice(self.alternatives).fuzz(parent, grammar, max_nodes - 1, in_role)
+        random.choice(self.alternatives).fuzz(parent, grammar, max_nodes - 1, in_message)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitAlternative(self)
@@ -169,14 +169,14 @@ class Concatenation(Node):
         parent: "DerivationTree",
         grammar: "Grammar",
         max_nodes: int = 100,
-        in_role: str = None,
+        in_message: bool = False,
     ):
         prev_parent_size = parent.size()
         for node in self.nodes:
             if node.distance_to_completion >= max_nodes:
-                node.fuzz(parent, grammar, 0, in_role)
+                node.fuzz(parent, grammar, 0, in_message)
             else:
-                node.fuzz(parent, grammar, max_nodes - 1, in_role)
+                node.fuzz(parent, grammar, max_nodes - 1, in_message)
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
 
@@ -313,7 +313,7 @@ class Repetition(Node):
         parent: "DerivationTree",
         grammar: "Grammar",
         max_nodes: int = 100,
-        in_role: str = None,
+        in_message: bool = False,
     ):
         prev_parent_size = parent.size()
 
@@ -324,9 +324,9 @@ class Repetition(Node):
             if self.node.distance_to_completion >= max_nodes:
                 if rep > current_min:
                     break
-                self.node.fuzz(parent, grammar, 0, in_role)
+                self.node.fuzz(parent, grammar, 0, in_message)
             else:
-                self.node.fuzz(parent, grammar, max_nodes - 1, in_role)
+                self.node.fuzz(parent, grammar, max_nodes - 1, in_message)
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
 
@@ -424,7 +424,7 @@ class NonTerminalNode(Node):
         parent: "DerivationTree",
         grammar: "Grammar",
         max_nodes: int = 100,
-        in_role: str = None,
+        in_message: bool = False,
     ):
         if self.symbol not in grammar:
             raise FandangoValueError(f"Symbol {self.symbol} not found in grammar")
@@ -452,10 +452,10 @@ class NonTerminalNode(Node):
 
         assign_sender = None
         assign_recipient = None
-        if in_role is None:
+        if not in_message and self.sender is not None:
             assign_sender = self.sender
             assign_recipient = self.recipient
-            in_role = self.sender
+            in_message = True
 
         current_tree = DerivationTree(
             self.symbol,
@@ -465,7 +465,7 @@ class NonTerminalNode(Node):
             read_only=False,
         )
         parent.add_child(current_tree)
-        grammar[self.symbol].fuzz(current_tree, grammar, max_nodes - 1, in_role)
+        grammar[self.symbol].fuzz(current_tree, grammar, max_nodes - 1, in_message)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitNonTerminalNode(self)
@@ -488,24 +488,24 @@ class NonTerminalNode(Node):
     def __hash__(self):
         return hash(self.symbol)
 
-    def _tree_roles(
+    def _agents(
         self,
         grammar: "Grammar",
         seen_nonterminals: set[NonTerminal],
         include_recipients: bool,
     ):
-        roles = set()
+        agents = set()
         if self.sender is not None:
-            roles.add(self.sender)
+            agents.add(self.sender)
             if self.recipient is not None and include_recipients:
-                roles.add(self.recipient)
+                agents.add(self.recipient)
         if self.symbol not in seen_nonterminals:
             seen_nonterminals.add(self.symbol)
-            for role in grammar[self.symbol]._tree_roles(
+            for agent in grammar[self.symbol]._agents(
                 grammar, seen_nonterminals, include_recipients
             ):
-                roles.add(role)
-        return roles
+                agents.add(agent)
+        return agents
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         yield grammar.rules[self.symbol]
@@ -521,7 +521,7 @@ class TerminalNode(Node):
         parent: "DerivationTree",
         grammar: "Grammar",
         max_nodes: int = 100,
-        in_role: str = None,
+        in_message: bool = False,
     ) -> List[DerivationTree]:
         if self.symbol.is_regex:
             if isinstance(self.symbol.symbol, bytes):
@@ -585,7 +585,7 @@ class CharSet(Node):
         parent: "DerivationTree",
         grammar: "Grammar",
         max_nodes: int = 100,
-        in_role: str = None,
+        in_message: bool = False,
     ) -> List[DerivationTree]:
         raise NotImplementedError("CharSet fuzzing not implemented")
 
@@ -812,9 +812,9 @@ class NodeReplacer(NodeVisitor):
 
 
 class PacketTruncator(NodeVisitor):
-    def __init__(self, grammar: "Grammar", keep_roles: set[str]):
+    def __init__(self, grammar: "Grammar", keep_agents: set[str]):
         self.grammar = grammar
-        self.keep_roles = keep_roles
+        self.keep_agents = keep_agents
 
     def visitStar(self, node: Star):
         return self.visitRepetition(node)
@@ -851,9 +851,9 @@ class PacketTruncator(NodeVisitor):
         if node.sender is None or node.recipient is None:
             return False
         truncatable = True
-        if node.sender in self.keep_roles:
+        if node.sender in self.keep_agents:
             truncatable = False
-        if node.recipient in self.keep_roles:
+        if node.recipient in self.keep_agents:
             truncatable = False
         return truncatable
 
@@ -861,7 +861,7 @@ class PacketTruncator(NodeVisitor):
         return False
 
 
-class RoleNestingDetector(NodeVisitor):
+class MessageNestingDetector(NodeVisitor):
     def __init__(self, grammar: "Grammar"):
         self.grammar = grammar
         self.seen_nt = set()
@@ -885,11 +885,11 @@ class RoleNestingDetector(NodeVisitor):
             return
 
         if node.sender is not None:
-            tree_roles = self.grammar[node.symbol].tree_roles(self.grammar, False)
-            if len(tree_roles) != 0:
+            agents = self.grammar[node.symbol].agents(self.grammar, False)
+            if len(agents) != 0:
                 raise RuntimeError(
                     f"Found illegal packet-definitions within packet-definition of non_terminal {node.symbol}: "
-                    + ", ".join(tree_roles)
+                    + ", ".join(agents)
                 )
             return
         self.current_path.append(node.symbol)
@@ -2086,7 +2086,7 @@ class Grammar(NodeVisitor):
         self,
         start: str | NonTerminal = "<start>",
         max_nodes: int = 50,
-        in_role: str = None,
+        in_message: bool = False,
         prefix_node: Optional[DerivationTree] = None,
     ) -> DerivationTree:
         if isinstance(start, str):
@@ -2205,11 +2205,11 @@ class Grammar(NodeVisitor):
             ]
         )
 
-    def roles(self, include_recipients: bool = True):
-        found_roles = set()
+    def agents(self, include_recipients: bool = True):
+        found_agents = set()
         for nt, rule in self.rules.items():
-            found_roles = found_roles.union(rule.tree_roles(self, include_recipients))
-        return found_roles
+            found_agents = found_agents.union(rule.agents(self, include_recipients))
+        return found_agents
 
     def get_repr_for_rule(self, symbol: str | NonTerminal):
         if isinstance(symbol, str):

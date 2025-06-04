@@ -33,7 +33,7 @@ from fandango.language.grammar import (
     FuzzingMode,
     NonTerminalNode,
     PacketTruncator,
-    RoleNestingDetector,
+    MessageNestingDetector,
     MAX_REPETITIONS,
     NodeReplacer,
     closest_match,
@@ -500,7 +500,7 @@ def parse(
         remap_to_std_role(grammar, io_instance)
 
         # Detect illegally nested data packets.
-        rir_detector = RoleNestingDetector(grammar)
+        rir_detector = MessageNestingDetector(grammar)
         rir_detector.fail_on_nested_packet(NonTerminal(start_symbol))
         fail_on_role_in_generator(grammar)
 
@@ -558,7 +558,7 @@ def is_role_reachable(grammar, node):
 
 def init_fandango_agents(grammar: "Grammar"):
     agent_names = set()
-    grammar_roles = grammar.roles(True)
+    grammar_roles = grammar.agents(True)
     global_env, local_env = grammar.get_python_env()
 
     # Initialize FandangoAgent instances
@@ -602,7 +602,7 @@ def remap_to_std_role(grammar: "Grammar", io_instance: FandangoIO):
 
 
 def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) -> None:
-    keep_roles = grammar.roles(True)
+    keep_roles = grammar.agents(True)
     io_instance.agents.keys()
     for existing_role in list(keep_roles):
         if not io_instance.agents[existing_role].is_fandango():
@@ -924,7 +924,7 @@ def assign_implicit_role(grammar, implicit_role: str):
         child_roles = set()
 
         for c_node in rule_nts:
-            child_roles = child_roles.union(c_node.tree_roles(grammar, False))
+            child_roles = child_roles.union(c_node.agents(grammar, False))
 
         if len(child_roles) == 0:
             processed_nts.add(current_symbol)
@@ -932,7 +932,7 @@ def assign_implicit_role(grammar, implicit_role: str):
             continue
         for c_node in rule_nts:
             seen_nts.add(c_node.symbol)
-            if len(c_node.tree_roles(grammar, False)) != 0:
+            if len(c_node.agents(grammar, False)) != 0:
                 continue
             c_node.sender = implicit_role
         for t_node in symbol_finder.terminalNodes:
