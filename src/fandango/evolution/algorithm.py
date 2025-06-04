@@ -86,8 +86,6 @@ class Fandango:
         self.population_manager = PopulationManager(
             grammar,
             start_symbol,
-            self.population_size,
-            self.current_max_nodes,
             warnings_are_errors,
         )
         self.evaluator = Evaluator(
@@ -124,6 +122,8 @@ class Fandango:
         with self.profiler.timer("initial_population") as timer:
             self.population = self.population_manager.generate_random_population(
                 eval_individual=self.evaluator.evaluate_individual,
+                max_nodes=self.current_max_nodes,
+                target_population_size=self.population_size,
                 initial_population=initial_population,
             )
             timer.increment(len(self.population))
@@ -352,7 +352,10 @@ class Fandango:
             # Ensure Uniqueness & Fill Population
             new_population = list(set(new_population))
             new_population = self.population_manager.refill_population(
-                new_population, self.evaluator.evaluate_individual
+                new_population,
+                self.evaluator.evaluate_individual,
+                self.current_max_nodes,
+                self.population_size,
             )
 
             self.population = []
@@ -394,7 +397,6 @@ class Fandango:
                     self.adaptive_tuner.current_max_repetition
                 )
 
-            self.population_manager.max_nodes = self.adaptive_tuner.current_max_nodes
             self.current_max_nodes = self.adaptive_tuner.current_max_nodes
 
             prev_best_fitness = current_best_fitness
@@ -417,9 +419,10 @@ class Fandango:
                 "Requested more solutions than in the population. Adjusting population size and extending the intial population."
             )
             self.population_size = desired_solutions
-            self.population_manager.population_size = desired_solutions
             self.population = self.population_manager.generate_random_population(
                 eval_individual=self.evaluator.evaluate_individual,
+                max_nodes=self.current_max_nodes,
+                target_population_size=self.population_size,
                 initial_population=self.population,
             )
 
