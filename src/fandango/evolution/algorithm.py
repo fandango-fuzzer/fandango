@@ -610,19 +610,19 @@ class Fandango:
         used_fragments_idx = []
         next_fragment_idx = 0
 
-        found_role = False
+        found_start = False
         selection_rounds = 0
         msg_sender = "None"
-        while not found_role and selection_rounds < 20:
+        while not found_start and selection_rounds < 20:
             for start_idx, (msg_sender, msg_recipient, _) in enumerate(
                 io_instance.get_received_msgs()
             ):
                 next_fragment_idx = start_idx
                 if msg_sender in forecast.getAgents():
-                    found_role = True
+                    found_start = True
                     break
 
-            if not found_role and len(io_instance.get_received_msgs()) != 0:
+            if not found_start and len(io_instance.get_received_msgs()) != 0:
                 raise FandangoValueError(
                     f"Unexpected agent sent message. Expected: "
                     + " | ".join(forecast.getAgents())
