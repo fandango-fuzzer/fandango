@@ -7,10 +7,10 @@ from fandango import FandangoValueError
 from fandango.language.symbol import NonTerminal, Slice, Symbol, Terminal
 
 
-class RoledMessage:
-    def __init__(self, role: str, recipient: str | None, msg: "DerivationTree"):
+class ProtocolMessage:
+    def __init__(self, sender: str, recipient: str | None, msg: "DerivationTree"):
         self.msg = msg
-        self.role = role
+        self.sender = sender
         self.recipient = recipient
 
     def __repr__(self):
@@ -18,9 +18,9 @@ class RoledMessage:
 
     def __str__(self):
         if self.recipient is None:
-            return f"({self.role} -> {self.recipient}): {str(self.msg)}"
+            return f"({self.sender} -> {self.recipient}): {str(self.msg)}"
         else:
-            return f"({self.role}): {str(self.msg)}"
+            return f"({self.sender}): {str(self.msg)}"
 
 
 class DerivationTree:
@@ -35,7 +35,7 @@ class DerivationTree:
         *,
         parent: Optional["DerivationTree"] = None,
         sources: list["DerivationTree"] = None,
-        role: str = None,
+        sender: str = None,
         recipient: str = None,
         read_only: bool = False,
     ):
@@ -52,8 +52,8 @@ class DerivationTree:
 
         self.hash_cache = None
         self._parent: Optional["DerivationTree"] = parent
-        self.role = role
-        self.recipient = recipient
+        self._sender = sender
+        self._recipient = recipient
         self._symbol: Symbol = symbol
         self._children: list["DerivationTree"] = []
         self._sources: list["DerivationTree"] = []
@@ -120,12 +120,12 @@ class DerivationTree:
             self._parent.invalidate_hash()
 
     @property
-    def role(self):
-        return self._role
+    def sender(self):
+        return self._sender
 
-    @role.setter
-    def role(self, role: str):
-        self._role = role
+    @sender.setter
+    def sender(self, sender: str):
+        self._sender = sender
         self.invalidate_hash()
 
     @property
@@ -152,14 +152,14 @@ class DerivationTree:
         for child in self._sources:
             child.set_all_read_only(read_only)
 
-    def find_role_msgs(self) -> List[RoledMessage]:
+    def find_protocol_msgs(self) -> List[ProtocolMessage]:
         if not isinstance(self.symbol, NonTerminal):
             return []
-        if self.role is not None:
-            return [RoledMessage(self.role, self.recipient, self)]
+        if self.sender is not None:
+            return [ProtocolMessage(self.sender, self.recipient, self)]
         subtrees = []
         for child in self._children:
-            subtrees.extend(child.find_role_msgs())
+            subtrees.extend(child.find_protocol_msgs())
         return subtrees
 
     def append(
@@ -282,7 +282,7 @@ class DerivationTree:
             self.hash_cache = hash(
                 (
                     self.symbol,
-                    self.role,
+                    self.sender,
                     self.recipient,
                     tuple(hash(child) for child in self._children),
                 )
@@ -317,7 +317,7 @@ class DerivationTree:
         copied = DerivationTree(
             self.symbol,
             [],
-            role=self.role,
+            sender=self.sender,
             recipient=self.recipient,
             sources=[],
             read_only=self.read_only,
@@ -703,7 +703,7 @@ class DerivationTree:
             self.symbol,
             new_children,
             parent=self.parent,
-            role=self.role,
+            sender=self.sender,
             recipient=self.recipient,
             sources=sources,
             read_only=self.read_only,

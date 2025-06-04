@@ -22,8 +22,6 @@ from fandango.language.grammar import (
     GeneratorParserValueError,
 )
 from fandango.language.packetforecaster import PacketForecaster
-from fandango.language.symbol import NonTerminal
-from fandango.language.tree import RoledMessage
 from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
 
 
@@ -294,7 +292,7 @@ class Fandango:
             forecast = forecaster.predict(history_tree)
 
             if len(forecast.getRoles()) == 0:
-                if len(history_tree.find_role_msgs()) == 0:
+                if len(history_tree.find_protocol_msgs()) == 0:
                     raise RuntimeError("Couldn't forecast next packet!")
                 return [history_tree]
 
@@ -333,16 +331,16 @@ class Fandango:
                 if io_instance.received_msg():
                     # Abort if we received a message during fuzzing
                     continue
-                new_packet = next_tree.find_role_msgs()[-1]
+                new_packet = next_tree.find_protocol_msgs()[-1]
                 if (
                     new_packet.recipient is None
                     or not io_instance.roles[new_packet.recipient].is_fandango()
                 ):
                     io_instance.set_transmit(
-                        new_packet.role, new_packet.recipient, new_packet.msg
+                        new_packet.sender, new_packet.recipient, new_packet.msg
                     )
                     self.log_message_transfer(
-                        new_packet.role, new_packet.recipient, new_packet.msg, True
+                        new_packet.sender, new_packet.recipient, new_packet.msg, True
                     )
                     exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
                 history_tree = next_tree
@@ -353,7 +351,7 @@ class Fandango:
                     forecast, io_instance
                 )
                 self.log_message_transfer(
-                    packet_tree.role,
+                    packet_tree.sender,
                     packet_tree.recipient,
                     packet_tree,
                     False,
@@ -675,7 +673,7 @@ class Fandango:
                     )
 
                     if parsed_packet_tree is not None:
-                        parsed_packet_tree.role = forecast_packet.node.role
+                        parsed_packet_tree.sender = forecast_packet.node.sender
                         parsed_packet_tree.recipient = forecast_packet.node.recipient
                         try:
                             self.grammar.populate_sources(parsed_packet_tree)
