@@ -623,15 +623,16 @@ class Fandango:
                 if msg_sender in forecast.getAgents():
                     found_role = True
                     break
+
+            if not found_role and len(io_instance.get_received_msgs()) != 0:
+                raise FandangoValueError(
+                    f"Unexpected agent sent message. Expected: "
+                    + " | ".join(forecast.getAgents())
+                    + f". Received: {msg_sender}."
+                    + f" Messages: {io_instance.get_received_msgs()}"
+                )
             time.sleep(0.025)
 
-        if msg_sender not in forecast.getAgents():
-            raise RuntimeError(
-                f"Unexpected agent sent message. Expected: "
-                + " | ".join(forecast.getAgents())
-                + f" Received: {msg_sender}"
-                + f" Messages: {io_instance.get_received_msgs()}"
-            )
         forecast_non_terminals = forecast[msg_sender]
         available_non_terminals = set(forecast_non_terminals.getNonTerminals())
 
