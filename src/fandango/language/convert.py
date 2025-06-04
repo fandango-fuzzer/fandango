@@ -219,7 +219,6 @@ class GrammarProcessor(FandangoParserVisitor):
         if ctx.NAME(1) is None:
             return NonTerminalNode(NonTerminal("<" + ctx.NAME(0).getText() + ">"))
         elif ctx.NAME(2) is None:
-            # idx 0 = role
             self.seenAgents.add(ctx.NAME(0).getText())
             return NonTerminalNode(
                 NonTerminal("<" + ctx.NAME(1).getText() + ">"),
@@ -227,7 +226,6 @@ class GrammarProcessor(FandangoParserVisitor):
                 None,
             )
         else:
-            # idx 0 = role; idx 1 = receiver
             self.seenAgents.add(ctx.NAME(0).getText())
             self.seenAgents.add(ctx.NAME(1).getText())
             return NonTerminalNode(
