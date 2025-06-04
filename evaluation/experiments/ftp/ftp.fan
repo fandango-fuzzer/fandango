@@ -54,7 +54,7 @@ where (not contains_nt(<start>, NonTerminal('<request_mlsd>')))
     or (contains_nt(<start>, NonTerminal('<request_set_epassive>')) and contains_nt(<start>, NonTerminal('<request_set_type>')))
 
 def contains_nt(tree, nt):
-    for msg in tree.find_role_msgs():
+    for msg in tree.find_protocol_msgs():
         if msg.msg.symbol == nt:
             return True
     return False

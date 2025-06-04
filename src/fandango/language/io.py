@@ -148,10 +148,18 @@ class SocketClient(SocketAgent):
                  port: int = 0, is_tcp: bool = True):
         super().__init__(is_fandango, False, is_ipv4, ip, port, is_tcp)
 
-class STDOUT(FandangoAgent):
+class STD(FandangoAgent):
 
     def __init__(self):
         super().__init__(True)
+        self.running = True
+        self.listen_thread = threading.Thread(target=self.listen_loop, daemon=True)
+        self.listen_thread.start()
+
+    def listen_loop(self):
+        while self.running:
+            read = input()
+            self.receive_msg('STD', read)
 
 
 class FandangoIO:

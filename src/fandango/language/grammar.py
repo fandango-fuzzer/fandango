@@ -413,10 +413,10 @@ class Option(Repetition):
 
 
 class NonTerminalNode(Node):
-    def __init__(self, symbol: NonTerminal, role: str = None, recipient: str = None):
+    def __init__(self, symbol: NonTerminal, sender: str = None, recipient: str = None):
         super().__init__(NodeType.NON_TERMINAL)
         self.symbol = symbol
-        self.role = role
+        self.sender = sender
         self.recipient = recipient
 
     def fuzz(
@@ -443,24 +443,24 @@ class NonTerminalNode(Node):
             for child in generated.children:
                 child.set_all_read_only(True)
 
-            generated.role = self.role
+            generated.sender = self.sender
             generated.recipient = self.recipient
             parent.set_children(parent.children[:-1])
             parent.add_child(generated)
             return
         parent.set_children(parent.children[:-1])
 
-        assign_role = None
+        assign_sender = None
         assign_recipient = None
         if in_role is None:
-            assign_role = self.role
+            assign_sender = self.sender
             assign_recipient = self.recipient
-            in_role = self.role
+            in_role = self.sender
 
         current_tree = DerivationTree(
             self.symbol,
             [],
-            role=assign_role,
+            sender=assign_sender,
             recipient=assign_recipient,
             read_only=False,
         )
@@ -471,11 +471,11 @@ class NonTerminalNode(Node):
         return visitor.visitNonTerminalNode(self)
 
     def __repr__(self):
-        if self.role is not None:
+        if self.sender is not None:
             if self.recipient is None:
-                return f"<{self.role}:{self.symbol.__repr__()[:-1]}>"
+                return f"<{self.sender}:{self.symbol.__repr__()[:-1]}>"
             else:
-                return f"<{self.role}:{self.recipient}:{self.symbol.__repr__()[:-1]}>"
+                return f"<{self.sender}:{self.recipient}:{self.symbol.__repr__()[:-1]}>"
         else:
             return self.symbol.__repr__()
 
@@ -495,8 +495,8 @@ class NonTerminalNode(Node):
         include_recipients: bool,
     ):
         roles = set()
-        if self.role is not None:
-            roles.add(self.role)
+        if self.sender is not None:
+            roles.add(self.sender)
             if self.recipient is not None and include_recipients:
                 roles.add(self.recipient)
         if self.symbol not in seen_nonterminals:
@@ -848,10 +848,10 @@ class PacketTruncator(NodeVisitor):
         return False
 
     def visitNonTerminalNode(self, node: NonTerminalNode):
-        if node.role is None or node.recipient is None:
+        if node.sender is None or node.recipient is None:
             return False
         truncatable = True
-        if node.role in self.keep_roles:
+        if node.sender in self.keep_roles:
             truncatable = False
         if node.recipient in self.keep_roles:
             truncatable = False
@@ -875,7 +875,7 @@ class RoleNestingDetector(NodeVisitor):
     def visitNonTerminalNode(self, node: NonTerminalNode):
         if node.symbol not in self.seen_nt:
             self.seen_nt.add(node.symbol)
-        elif node.role is not None and node.symbol in self.current_path:
+        elif node.sender is not None and node.symbol in self.current_path:
             str_path = [str(p) for p in self.current_path]
             raise RuntimeError(
                 f"Found illegal packet-definitions within packet-definition of non_terminal {node.symbol}! DerivationPath: "
@@ -884,7 +884,7 @@ class RoleNestingDetector(NodeVisitor):
         else:
             return
 
-        if node.role is not None:
+        if node.sender is not None:
             tree_roles = self.grammar[node.symbol].tree_roles(self.grammar, False)
             if len(tree_roles) != 0:
                 raise RuntimeError(
@@ -1082,7 +1082,7 @@ class Grammar(NodeVisitor):
             children: Optional[List["DerivationTree"]] = None,
             *,
             parent: Optional["DerivationTree"] = None,
-            role: str = None,
+            sender: str = None,
             recipient=None,
             read_only: bool = False,
         ):
@@ -1091,7 +1091,7 @@ class Grammar(NodeVisitor):
                 children,
                 parent=parent,
                 sources=[],
-                role=role,
+                sender=sender,
                 recipient=recipient,
                 read_only=read_only,
             )
@@ -1265,8 +1265,8 @@ class Grammar(NodeVisitor):
 
         def visitNonTerminalNode(self, node: NonTerminalNode):
             params = dict()
-            if node.role is not None:
-                params["role"] = node.role
+            if node.sender is not None:
+                params["sender"] = node.sender
             if node.recipient is not None:
                 params["recipient"] = node.recipient
             params = frozenset(params.items())
@@ -1302,7 +1302,7 @@ class Grammar(NodeVisitor):
                     sources=tree.sources,
                     read_only=tree.read_only,
                     recipient=tree.recipient,
-                    role=tree.role,
+                    sender=tree.sender,
                 )
             ]
 
@@ -1566,7 +1566,7 @@ class Grammar(NodeVisitor):
                         children,
                         parent=child.parent,
                         sources=child.sources,
-                        role=child.role,
+                        sender=child.sender,
                         recipient=child.recipient,
                         read_only=child.read_only,
                     )
@@ -1582,7 +1582,7 @@ class Grammar(NodeVisitor):
                 children,
                 parent=tree.parent,
                 sources=tree.sources,
-                role=tree.role,
+                sender=tree.sender,
                 recipient=tree.recipient,
                 read_only=tree.read_only,
             )

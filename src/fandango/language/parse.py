@@ -495,9 +495,9 @@ def parse(
             exec("FandangoIO.instance()", global_env, local_env)
         io_instance: FandangoIO = global_env["FandangoIO"].instance()
 
-        assign_implicit_role(grammar, "STDOUT")
+        assign_implicit_role(grammar, "STD")
         init_fandango_agents(grammar)
-        assign_std_out_role(grammar, io_instance)
+        remap_to_std_role(grammar, io_instance)
 
         # Detect illegally nested data packets.
         rir_detector = RoleNestingDetector(grammar)
@@ -544,7 +544,7 @@ def is_role_reachable(grammar, node):
     nt_node_queue: set[NonTerminalNode] = set(symbol_finder.nonTerminalNodes)
     while len(nt_node_queue) != 0:
         current_node = nt_node_queue.pop()
-        if current_node.role is not None or current_node.recipient is not None:
+        if current_node.sender is not None or current_node.recipient is not None:
             return current_node
 
         seen_nt_nodes.add(current_node)
@@ -575,7 +575,8 @@ def init_fandango_agents(grammar: "Grammar"):
         grammar_roles.remove(agent)
 
 
-def assign_std_out_role(grammar: "Grammar", io_instance: FandangoIO):
+# Assign STD role to all roles which have no agents defined.
+def remap_to_std_role(grammar: "Grammar", io_instance: FandangoIO):
     remapped_roles = set()
     unknown_recipients = set()
     for symbol in grammar.rules.keys():
@@ -584,17 +585,17 @@ def assign_std_out_role(grammar: "Grammar", io_instance: FandangoIO):
         non_terminals: list[NonTerminalNode] = symbol_finder.nonTerminalNodes
 
         for nt in non_terminals:
-            if nt.role is not None:
-                if nt.role not in io_instance.roles.keys():
-                    remapped_roles.add(nt.role)
-                    nt.role = "STDOUT"
+            if nt.sender is not None:
+                if nt.sender not in io_instance.roles.keys():
+                    remapped_roles.add(nt.sender)
+                    nt.sender = "STD"
             if nt.recipient is not None:
                 if nt.recipient not in io_instance.roles.keys():
                     unknown_recipients.add(nt.recipient)
 
     for name in remapped_roles:
         LOGGER.warn(
-            f"No class has been specified for role: {name}! Role gets mapped to STDOUT!"
+            f"No class has been specified for role: {name}! Role gets mapped to STD!"
         )
     for name in unknown_recipients:
         f"No class has been specified for recipient: {name}!"
@@ -933,7 +934,7 @@ def assign_implicit_role(grammar, implicit_role: str):
             seen_nts.add(c_node.symbol)
             if len(c_node.tree_roles(grammar, False)) != 0:
                 continue
-            c_node.role = implicit_role
+            c_node.sender = implicit_role
         for t_node in symbol_finder.terminalNodes:
             terminal_id = 0
             rule_nt = NonTerminal(f"<_terminal:{terminal_id}>")
