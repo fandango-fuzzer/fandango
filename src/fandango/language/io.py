@@ -45,7 +45,7 @@ class FandangoAgent(object):
 
 class SocketAgent(FandangoAgent):
     def __init__(self, is_fandango: bool, is_server: bool, is_ipv4: bool = False, ip: str = "::1",
-                 port: int = 0, is_tcp: bool = True):
+                 port: int = 8021, is_tcp: bool = True):
         super().__init__(is_fandango)
         self.is_ipv4 = is_ipv4
         self.is_tcp = is_tcp
@@ -139,13 +139,13 @@ class SocketAgent(FandangoAgent):
 
 class SocketServer(SocketAgent):
     def __init__(self, is_fandango: bool, is_ipv4: bool = False, ip: str = "::1",
-                 port: int = 0, is_tcp: bool = True):
+                 port: int = 8021, is_tcp: bool = True):
         super().__init__(is_fandango, True, is_ipv4, ip, port, is_tcp)
 
 
 class SocketClient(SocketAgent):
     def __init__(self, is_fandango: bool, is_ipv4: bool = False, ip: str = "::1",
-                 port: int = 0, is_tcp: bool = True):
+                 port: int = 8021, is_tcp: bool = True):
         super().__init__(is_fandango, False, is_ipv4, ip, port, is_tcp)
 
 class STD(FandangoAgent):
