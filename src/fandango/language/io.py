@@ -43,17 +43,18 @@ class FandangoAgent(object):
     def receive_msg(self, sender: str, message: str) -> None:
         FandangoIO.instance().add_receive(sender, self.class_name, message)
 
-class SocketServerAgent(FandangoAgent):
-    def __init__(self, is_fandango: bool, is_ipv4: bool = False, ip: str = "::1", port: int = 0, is_tcp: bool = True):
+class SocketAgent(FandangoAgent):
+    def __init__(self, is_fandango: bool, is_server: bool, is_ipv4: bool = False, ip: str = "::1",
+                 port: int = 0, is_tcp: bool = True):
         super().__init__(is_fandango)
         self.is_ipv4 = is_ipv4
         self.is_tcp = is_tcp
         self.ip = ip
         self.port = port
+        self.is_server = is_server
 
         self.sock = None
-        self.conn = None
-        self.remote_address = None
+        self.connection = None
         self.send_thread = None
         self.running = False
         self.lock = threading.Lock()
@@ -67,8 +68,9 @@ class SocketServerAgent(FandangoAgent):
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     def connect(self):
-        self.sock.bind((self.ip, self.port))
-        self.sock.listen(1)
+        if self.is_server:
+            self.sock.bind((self.ip, self.port))
+            self.sock.listen(1)
         self.running = True
         self.send_thread = threading.Thread(target=self._listen, daemon=True)
         self.send_thread.daemon = True
@@ -79,98 +81,22 @@ class SocketServerAgent(FandangoAgent):
         if self.send_thread is not None:
             self.send_thread.join()
             self.send_thread = None
-        if self.conn is not None:
-            self.conn.shutdown(socket.SHUT_RDWR)
-            self.conn = None
-        if self.sock is None:
-            return
-        try:
-            self.sock.shutdown(socket.SHUT_RDWR)
-        except:
-            pass
-        self.sock.close()
-
-    def wait_accept(self):
-        with self.lock:
-            if self.conn is None:
-                self.conn, self.remote_address = self.sock.accept()
-
-    def update_port(self, new_port: int):
-        self.port = new_port
-        if not self.is_fandango():
-            return
-        self.close()
-        self._create_socket()
-        self.connect()
-
-    def _listen(self):
-        self.wait_accept()
-        while self.running:
-            try:
-                data = self.conn.recv(1024)
-                if len(data) == 0:
-                    continue
-                if data:
-                    self.receive(data)
-                else:
-                    self.running = False
-                    break
-            except Exception as e:
-                self.running = False
-                break
-
-    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
-        if not self.running:
-            raise FandangoError("Socket not running!")
-        self.wait_accept()
-        self.transmit(self.conn, message, recipient)
-
-    def receive(self, data: bytes):
-        pass
-
-    def transmit(self, connection: socket.socket, message: DerivationTree, recipient: str):
-        pass
-
-class SocketClientAgent(FandangoAgent):
-    def __init__(self, is_fandango: bool, is_ipv4: bool = False, ip: str = "::1", port: int = 0, is_tcp: bool = True):
-        super().__init__(is_fandango)
-        self.is_ipv4 = is_ipv4
-        self.is_tcp = is_tcp
-        self.ip = ip
-        self.port = port
-        if not self.is_fandango():
-            return
-
-        self.sock = None
-        self.remote_address = None
-        self.send_thread = None
-        self.running = False
-        self.lock = threading.Lock()
-        self._create_socket()
-        self.connect()
-
-    def _create_socket(self):
-        protocol = socket.SOCK_STREAM if self.is_tcp else socket.SOCK_DGRAM
-        ip_type = socket.AF_INET if self.is_ipv4 else socket.AF_INET6
-        self.sock = socket.socket(ip_type, protocol)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-    def connect(self):
-        self.sock.connect((self.ip, 21))
-        self.running = True
-        self.send_thread = threading.Thread(target=self._listen, daemon=True)
-        self.send_thread.daemon = True
-        self.send_thread.start()
-
-    def close(self):
-        self.running = False
-        if self.send_thread is not None:
-            self.send_thread.join()
-            self.send_thread = None
+        if self.connection is not None:
+            self.connection.shutdown(socket.SHUT_RDWR)
+            self.connection.close()
+            self.connection = None
         if self.sock is not None:
             self.sock.shutdown(socket.SHUT_RDWR)
             self.sock.close()
-            self.sock = None
+
+    def wait_accept(self):
+        with self.lock:
+            if self.connection is None:
+                if self.is_server:
+                    self.connection, _ = self.sock.accept()
+                else:
+                    self.sock.connect((self.ip, self.port))
+                    self.connection = self.sock
 
     def update_port(self, new_port: int):
         self.port = new_port
@@ -181,9 +107,10 @@ class SocketClientAgent(FandangoAgent):
         self.connect()
 
     def _listen(self):
+        self.wait_accept()
         while self.running:
             try:
-                data = self.sock.recv(1024)
+                data = self.connection.recv(1024)
                 if len(data) == 0:
                     continue
                 if data:
@@ -198,14 +125,28 @@ class SocketClientAgent(FandangoAgent):
     def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
         if not self.running:
             raise FandangoError("Socket not running!")
-        self.transmit(self.sock, message, recipient)
-        self.sock.sendall(message.to_string().encode("utf-8"))
+        self.wait_accept()
+        self.transmit(message, recipient)
+
+    def transmit(self, message: DerivationTree, recipient: str):
+        if message.contains_bits():
+            self.connection.sendall(message.to_bytes())
+        else:
+            self.connection.sendall(message.to_string().encode("utf-8"))
 
     def receive(self, data: bytes):
-        pass
+        self.receive_msg("Client", data.decode("utf-8"))
 
-    def transmit(self, connection: socket.socket, message: DerivationTree, recipient: str):
-        pass
+class SocketServer(SocketAgent):
+    def __init__(self, is_fandango: bool, is_ipv4: bool = False, ip: str = "::1",
+                 port: int = 0, is_tcp: bool = True):
+        super().__init__(is_fandango, True, is_ipv4, ip, port, is_tcp)
+
+
+class SocketClient(SocketAgent):
+    def __init__(self, is_fandango: bool, is_ipv4: bool = False, ip: str = "::1",
+                 port: int = 0, is_tcp: bool = True):
+        super().__init__(is_fandango, False, is_ipv4, ip, port, is_tcp)
 
 class STDOUT(FandangoAgent):
 
