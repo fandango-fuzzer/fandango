@@ -52,6 +52,8 @@ class SocketAgent(FandangoAgent):
         self.ip = ip
         self.port = port
         self.is_server = is_server
+        if not is_fandango:
+            return
 
         self.sock = None
         self.connection = None
@@ -135,7 +137,8 @@ class SocketAgent(FandangoAgent):
             self.connection.sendall(message.to_string().encode("utf-8"))
 
     def receive(self, data: bytes):
-        self.receive_msg("Client", data.decode("utf-8"))
+        sender = "Client" if self.is_server else "Server"
+        self.receive_msg(sender, data.decode("utf-8"))
 
 class SocketServer(SocketAgent):
     def __init__(self, is_fandango: bool, is_ipv4: bool = False, ip: str = "::1",

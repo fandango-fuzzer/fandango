@@ -678,7 +678,7 @@ class Fandango:
                         try:
                             self.grammar.populate_sources(parsed_packet_tree)
                             break
-                        except GeneratorParserValueError as e:
+                        except FandangoParseError as e:
                             parsed_packet_tree = None
                             failed_parameter_parsing = True
                             parameter_parsing_exception = e
