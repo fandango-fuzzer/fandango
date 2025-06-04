@@ -172,7 +172,7 @@ class STD(FandangoAgent):
                     break
                 self.receive_msg('STD', read.strip())
             else:
-                time.sleep(0.1)  # prevent tight loop
+                time.sleep(0.1)
 
 
 class FandangoIO:
