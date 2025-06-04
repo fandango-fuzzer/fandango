@@ -10,15 +10,11 @@ class PopulationManager:
         self,
         grammar: Grammar,
         start_symbol: str,
-        population_size: int,
-        max_nodes: int,
         warnings_are_errors: bool = False,
     ):
-        self.grammar = grammar
-        self.start_symbol = start_symbol
-        self.population_size = population_size
-        self.warnings_are_errors = warnings_are_errors
-        self.max_nodes = max_nodes
+        self._grammar = grammar
+        self._start_symbol = start_symbol
+        self._warnings_are_errors = warnings_are_errors
 
     @staticmethod
     def add_unique_individual(
@@ -44,6 +40,8 @@ class PopulationManager:
     def generate_random_population(
         self,
         eval_individual: Callable[[DerivationTree], tuple[float, list[FailingTree]]],
+        max_nodes: int,
+        target_population_size: int,
         initial_population: Optional[list[DerivationTree]] = None,
     ) -> list[DerivationTree]:
         """
@@ -58,11 +56,13 @@ class PopulationManager:
         unique_hashes = {hash(ind) for ind in unique_population}
         attempts = 0
         max_attempts = (
-            self.population_size - len(unique_population)
+            target_population_size - len(unique_population)
         ) * 10  # safeguard against infinite loops
 
-        while len(unique_population) < self.population_size and attempts < max_attempts:
-            individual = self.grammar.fuzz(self.start_symbol, self.max_nodes)
+        while (
+            len(unique_population) < target_population_size and attempts < max_attempts
+        ):
+            individual = self._grammar.fuzz(self._start_symbol, max_nodes)
             _fitness, failing_trees = eval_individual(individual)
             candidate, _fixes_made = self.fix_individual(
                 individual,
@@ -73,7 +73,7 @@ class PopulationManager:
             )
             attempts += 1
 
-        if len(unique_population) < self.population_size:
+        if len(unique_population) < target_population_size:
             LOGGER.warning(
                 f"Could not generate a full population of unique individuals. Population size reduced to {len(unique_population)}."
             )
@@ -83,15 +83,17 @@ class PopulationManager:
         self,
         current_population: list[DerivationTree],
         eval_individual: Callable[[DerivationTree], tuple[float, list[FailingTree]]],
+        max_nodes: int,
+        target_population_size: int,
     ) -> list[DerivationTree]:
         unique_hashes = {hash(ind) for ind in current_population}
         attempts = 0
-        max_attempts = (self.population_size - len(current_population)) * 10
+        max_attempts = (target_population_size - len(current_population)) * 10
 
         while (
-            len(current_population) < self.population_size and attempts < max_attempts
+            len(current_population) < target_population_size and attempts < max_attempts
         ):
-            individual = self.grammar.fuzz(self.start_symbol, self.max_nodes)
+            individual = self._grammar.fuzz(self._start_symbol, max_nodes)
             _fitness, failing_trees = eval_individual(individual)
             candidate, _fixes_made = self.fix_individual(
                 individual,
@@ -102,13 +104,13 @@ class PopulationManager:
             ):
                 attempts += 1
 
-        if len(current_population) < self.population_size:
+        if len(current_population) < target_population_size:
             LOGGER.warning(
                 "Could not generate full unique new population, filling remaining slots with duplicates."
             )
-            while len(current_population) < self.population_size:
+            while len(current_population) < target_population_size:
                 current_population.append(
-                    self.grammar.fuzz(self.start_symbol, self.max_nodes)
+                    self._grammar.fuzz(self._start_symbol, max_nodes)
                 )
 
         return current_population
@@ -125,13 +127,13 @@ class PopulationManager:
             for operator, value, side in failing_tree.suggestions:
                 if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
                     # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
-                    suggested_tree = self.grammar.parse(
+                    suggested_tree = self._grammar.parse(
                         value, start=failing_tree.tree.symbol.symbol
                     )
                     if suggested_tree is None:
                         continue
                     individual = individual.replace(
-                        self.grammar, failing_tree.tree, suggested_tree
+                        self._grammar, failing_tree.tree, suggested_tree
                     )
                     fixes_made += 1
         return individual, fixes_made
