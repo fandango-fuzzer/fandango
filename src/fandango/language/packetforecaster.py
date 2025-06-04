@@ -265,7 +265,7 @@ class PacketForecaster:
             # dict[roleName, dict[packetName, PacketForecaster.ForcastingPacket]]
             self.roles_to_packets = dict[str, PacketForecaster.ForcastingNonTerminals]()
 
-        def getRoles(self) -> set[str]:
+        def getAgents(self) -> set[str]:
             return set(self.roles_to_packets.keys())
 
         def __getitem__(self, item: str):

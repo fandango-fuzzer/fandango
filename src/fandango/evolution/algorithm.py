@@ -291,19 +291,19 @@ class Fandango:
             forecaster = PacketForecaster(self.grammar)
             forecast = forecaster.predict(history_tree)
 
-            if len(forecast.getRoles()) == 0:
+            if len(forecast.getAgents()) == 0:
                 if len(history_tree.find_protocol_msgs()) == 0:
                     raise RuntimeError("Couldn't forecast next packet!")
                 return [history_tree]
 
-            fandango_roles = []
-            for role in forecast.getRoles():
-                if io_instance.roles[role].is_fandango():
-                    fandango_roles.append(role)
-            if len(fandango_roles) != 0 and not io_instance.received_msg():
+            fandango_agents = []
+            for agent in forecast.getAgents():
+                if io_instance.agents[agent].is_fandango():
+                    fandango_agents.append(agent)
+            if len(fandango_agents) != 0 and not io_instance.received_msg():
                 fuzzable_packets = []
-                for role in fandango_roles:
-                    fuzzable_packets.extend(forecast[role].nt_to_packet.values())
+                for agent in fandango_agents:
+                    fuzzable_packets.extend(forecast[agent].nt_to_packet.values())
                 self.population_manager.fuzzable_packets = fuzzable_packets
 
                 new_population = (
@@ -334,7 +334,7 @@ class Fandango:
                 new_packet = next_tree.find_protocol_msgs()[-1]
                 if (
                     new_packet.recipient is None
-                    or not io_instance.roles[new_packet.recipient].is_fandango()
+                    or not io_instance.agents[new_packet.recipient].is_fandango()
                 ):
                     io_instance.set_transmit(
                         new_packet.sender, new_packet.recipient, new_packet.msg
@@ -614,25 +614,25 @@ class Fandango:
 
         found_role = False
         selection_rounds = 0
-        msg_role = "None"
+        msg_sender = "None"
         while not found_role and selection_rounds < 20:
-            for start_idx, (msg_role, msg_recipient, _) in enumerate(
+            for start_idx, (msg_sender, msg_recipient, _) in enumerate(
                 io_instance.get_received_msgs()
             ):
                 next_fragment_idx = start_idx
-                if msg_role in forecast.getRoles():
+                if msg_sender in forecast.getAgents():
                     found_role = True
                     break
             time.sleep(0.025)
 
-        if msg_role not in forecast.getRoles():
+        if msg_sender not in forecast.getAgents():
             raise RuntimeError(
                 f"Unexpected agent sent message. Expected: "
-                + " | ".join(forecast.getRoles())
-                + f" Received: {msg_role}"
+                + " | ".join(forecast.getAgents())
+                + f" Received: {msg_sender}"
                 + f" Messages: {io_instance.get_received_msgs()}"
             )
-        forecast_non_terminals = forecast[msg_role]
+        forecast_non_terminals = forecast[msg_sender]
         available_non_terminals = set(forecast_non_terminals.getNonTerminals())
 
         is_msg_complete = False
@@ -643,12 +643,12 @@ class Fandango:
         parameter_parsing_exception = None
 
         while not is_msg_complete:
-            for idx, (role, recipient, msg_fragment) in enumerate(
+            for idx, (sender, recipient, msg_fragment) in enumerate(
                 io_instance.get_received_msgs()[next_fragment_idx:]
             ):
                 next_fragment_idx = idx + 1
 
-                if msg_role != role:
+                if msg_sender != sender:
                     continue
                 if complete_msg is None:
                     complete_msg = msg_fragment
