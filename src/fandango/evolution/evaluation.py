@@ -186,9 +186,7 @@ class Evaluator:
         else:
             if hard_fitness < 1.0:
                 fitness = (
-                    hard_fitness
-                    * len(self._hard_constraints)
-                    / len(self._constraints)
+                    hard_fitness * len(self._hard_constraints) / len(self._constraints)
                 )
             else:  # hard_fitness == 1.0
                 soft_fitness, soft_failing_trees = self.evaluate_soft_constraints(
