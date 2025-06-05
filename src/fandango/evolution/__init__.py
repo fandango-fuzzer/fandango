@@ -1,11 +1,11 @@
-from typing import Generator, Optional, TypeVar
+from typing import Generator, Optional, TypeVar, Generic
 
 # Define type variables for generator type and return type
 GT = TypeVar("GT")  # Generator Type
 RT = TypeVar("RT")  # Return Type
 
 
-class GeneratorWithReturn[GT, RT]:
+class GeneratorWithReturn(Generic[GT, RT]):
     def __init__(self, generator: Generator[GT, None, RT]):
         self.generator = generator
         self._return_value: Optional[RT] = None
