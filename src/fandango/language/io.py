@@ -222,10 +222,14 @@ class SocketClient(SocketParty):
                  port: int = 8021, is_tcp: bool = True):
         super().__init__(is_fandango, False, is_ipv4, ip, port, is_tcp)
 
-class STD(FandangoParty):
+class STDOUT(FandangoParty):
 
     def __init__(self):
         super().__init__(True)
+
+class STDIN(FandangoParty):
+    def __init__(self):
+        super().__init__(False)
         self.running = True
         self.listen_thread = threading.Thread(target=self.listen_loop, daemon=True)
         self.listen_thread.start()
@@ -238,7 +242,7 @@ class STD(FandangoParty):
                 if read == '':
                     self.running = False
                     break
-                self.receive_msg('STD', read.strip())
+                self.receive_msg('STDIN', read.strip())
             else:
                 time.sleep(0.1)
 
