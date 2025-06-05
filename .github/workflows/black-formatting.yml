@@ -37,13 +37,12 @@ jobs:
       
       - name: Get changed Python files
         id: changed-python-files
-        uses: tj-actions/changed-files@v41
+        uses: tj-actions/changed-files@v46
         with:
           files: |
-            src/**.py
+            **.py
 
       - name: Check typing with mypy
-        if: steps.changed-python-files.outputs.any_changed == 'true'
         run: |
           echo "Checking files: ${{ steps.changed-python-files.outputs.all_changed_files }}"
           mypy --check-untyped-defs ${{ steps.changed-python-files.outputs.all_changed_files }}
