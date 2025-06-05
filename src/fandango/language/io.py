@@ -50,10 +50,10 @@ class SocketParty(FandangoParty):
     def __init__(self, is_fandango: bool, is_server: bool, is_ipv4: bool = False, ip: str = "::1",
                  port: int = 8021, is_tcp: bool = True):
         super().__init__(is_fandango)
-        self.is_ipv4 = is_ipv4
-        self.is_tcp = is_tcp
-        self.ip = ip
-        self.port = port
+        self._is_ipv4 = is_ipv4
+        self._is_tcp = is_tcp
+        self._ip = ip
+        self._port = port
         self.is_server = is_server
         if not is_fandango:
             return
@@ -63,18 +63,67 @@ class SocketParty(FandangoParty):
         self.send_thread = None
         self.running = False
         self.lock = threading.Lock()
+
+    def start(self):
+        if self.running:
+            return
         self._create_socket()
-        self.connect()
+        self._connect()
+
+    @property
+    def ip(self) -> str:
+        return self._ip
+
+    @ip.setter
+    def ip(self, value: str):
+        self._ip = value
+        self._apply_attr_update()
+
+    @property
+    def _is_tcp(self) -> bool:
+        return self._is_tcp
+
+    @_is_tcp.setter
+    def _is_tcp(self, value: bool):
+        self._is_tcp = value
+        self._apply_attr_update()
+
+    @property
+    def is_ipv4(self) -> bool:
+        return self._is_ipv4
+
+    @is_ipv4.setter
+    def is_ipv4(self, value: bool):
+        self._is_ipv4 = value
+        self._apply_attr_update()
+
+    @property
+    def port(self) -> int:
+        return self._port
+
+    @port.setter
+    def port(self, value: int):
+        self._port = value
+        self._apply_attr_update()
+
+    def _apply_attr_update(self):
+        if not self.is_fandango():
+            return
+        if not self.running:
+            return
+        self.close()
+        self._create_socket()
+        self._connect()
 
     def _create_socket(self):
-        protocol = socket.SOCK_STREAM if self.is_tcp else socket.SOCK_DGRAM
-        ip_type = socket.AF_INET if self.is_ipv4 else socket.AF_INET6
+        protocol = socket.SOCK_STREAM if self._is_tcp else socket.SOCK_DGRAM
+        ip_type = socket.AF_INET if self._is_ipv4 else socket.AF_INET6
         self.sock = socket.socket(ip_type, protocol)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-    def connect(self):
+    def _connect(self):
         if self.is_server:
-            self.sock.bind((self.ip, self.port))
+            self.sock.bind((self._ip, self._port))
             self.sock.listen(1)
         self.running = True
         self.send_thread = threading.Thread(target=self._listen, daemon=True)
@@ -100,16 +149,8 @@ class SocketParty(FandangoParty):
                 if self.is_server:
                     self.connection, _ = self.sock.accept()
                 else:
-                    self.sock.connect((self.ip, self.port))
+                    self.sock._connect((self._ip, self._port))
                     self.connection = self.sock
-
-    def update_port(self, new_port: int):
-        self.port = new_port
-        if not self.is_fandango():
-            return
-        self.close()
-        self._create_socket()
-        self.connect()
 
     def _listen(self):
         self.wait_accept()
@@ -147,12 +188,14 @@ class SocketServer(SocketParty):
     def __init__(self, is_fandango: bool, is_ipv4: bool = False, ip: str = "::1",
                  port: int = 8021, is_tcp: bool = True):
         super().__init__(is_fandango, True, is_ipv4, ip, port, is_tcp)
+        self.start()
 
 
 class SocketClient(SocketParty):
     def __init__(self, is_fandango: bool, is_ipv4: bool = False, ip: str = "::1",
                  port: int = 8021, is_tcp: bool = True):
         super().__init__(is_fandango, False, is_ipv4, ip, port, is_tcp)
+        self.start()
 
 class STD(FandangoParty):
 
