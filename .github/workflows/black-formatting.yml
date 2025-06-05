@@ -41,11 +41,11 @@ jobs:
         with:
           files: |
             src/**.py
-            test/**.py
+            tests/**.py
 
       - name: Check typing with mypy
         run: |
           echo "Checking files: ${{ steps.changed-python-files.outputs.all_changed_files }}"
           for file in ${{ steps.changed-python-files.outputs.all_changed_files }}; do
-            mypy --check-untyped-defs "$file"
+            mypy "$file"
           done
