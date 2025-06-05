@@ -60,6 +60,8 @@ from fandango.logger import LOGGER, print_exception
 from fandango import FandangoParseError, FandangoError
 import fandango
 
+DEFAULT_MAX_GENERATIONS = 500
+
 
 def terminal_link(url: str, text: str | None = None):
     """Output URL as a link"""
@@ -146,8 +148,14 @@ def get_parser(in_command_line=True):
         "-N",
         "--max-generations",
         type=int,
-        help="the maximum number of generations to run the algorithm",
-        default=None,
+        help="the maximum number of generations to run the algorithm (ignored if --infinite is set)",
+        default=DEFAULT_MAX_GENERATIONS,
+    )
+    algorithm_group.add_argument(
+        "--infinite",
+        action="store_true",
+        help="run the algorithm indefinitely",
+        default=False,
     )
     algorithm_group.add_argument(
         "--population-size", type=int, help="the size of the population", default=None
@@ -663,7 +671,13 @@ def make_fandango_settings(args, initial_settings={}):
 def make_evolve_settings(args):
     evolve_settings = {}
     _copy_setting(args, evolve_settings, "desired_solutions", args_name="num_outputs")
-    _copy_setting(args, evolve_settings, "max_generations")
+    if args.infinite:
+        if args.max_generations != DEFAULT_MAX_GENERATIONS:
+            LOGGER.warning("Ignoring --max-generations because --infinite is set")
+        evolve_settings["max_generations"] = None
+    else:
+        _copy_setting(args, evolve_settings, "max_generations")
+
     return evolve_settings
 
 
