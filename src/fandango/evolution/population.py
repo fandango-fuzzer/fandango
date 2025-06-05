@@ -1,7 +1,7 @@
 import random
-from typing import Callable, List, Set
+from typing import Callable, Optional, Set
 
-from fandango.evolution.evaluation import Evaluator
+from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
 from fandango.language.grammar import DerivationTree, Grammar
 from fandango.language.packetforecaster import PacketForecaster
 from fandango.language.symbol import NonTerminal
@@ -26,12 +26,20 @@ class PopulationManager:
     def _generate_population_entry(self):
         return self.grammar.fuzz(self.start_symbol, self.max_nodes)
 
+    @staticmethod
     def add_unique_individual(
-        self,
-        population: List[DerivationTree],
+        population: list[DerivationTree],
         candidate: DerivationTree,
-        unique_set: Set[int],
+        unique_set: set[int],
     ) -> bool:
+        """
+        Adds individual to the population if it is unique, according to its hash.
+
+        :param population: The population to potentially add the individual to.
+        :param candidate: The individual to potentially add to the population.
+        :param unique_set: The set of unique individuals.
+        :return: True if the individual was added, False otherwise.
+        """
         h = hash(candidate)
         if h not in unique_set:
             unique_set.add(h)
@@ -39,23 +47,42 @@ class PopulationManager:
             return True
         return False
 
-    def _is_population_complete(self, unique_population: List[DerivationTree]) -> bool:
+    def _is_population_complete(self, unique_population: list[DerivationTree]) -> bool:
         return len(unique_population) >= self.population_size
 
-    def generate_random_initial_population(
-        self, fix_func: Callable[[DerivationTree], DerivationTree]
-    ) -> List[DerivationTree]:
-        unique_population = []
-        unique_hashes = set()
+    def generate_random_population(
+        self,
+        eval_individual: Callable[[DerivationTree], tuple[float, list[FailingTree]]],
+        initial_population: Optional[list[DerivationTree]] = None,
+    ) -> list[DerivationTree]:
+        """
+        Generates a random population of unique individuals.
+
+        :param eval_individual: A function that evaluates an individual.
+        :param initial_population: An optional initial population to add to.
+        :return: A population of unique individuals.
+        """
+
+        unique_population = initial_population or []
+        unique_hashes = {hash(ind) for ind in unique_population}
         attempts = 0
-        max_attempts = self.population_size * 10
+        max_attempts = (
+            self.population_size - len(unique_population)
+        ) * 10  # safeguard against infinite loops
 
         while (
-            not self._is_population_complete(unique_population)
-            and attempts < max_attempts
+                not self._is_population_complete(unique_population)
+                and attempts < max_attempts
         ):
-            candidate = fix_func(self._generate_population_entry())
-            self.add_unique_individual(unique_population, candidate, unique_hashes)
+            individual = self._generate_population_entry()
+            _fitness, failing_trees = eval_individual(individual)
+            candidate, _fixes_made = self.fix_individual(
+                individual,
+                failing_trees,
+            )
+            PopulationManager.add_unique_individual(
+                unique_population, candidate, unique_hashes
+            )
             attempts += 1
 
         if not self._is_population_complete(unique_population):
@@ -66,9 +93,9 @@ class PopulationManager:
 
     def refill_population(
         self,
-        current_population: List[DerivationTree],
-        fix_func: Callable[[DerivationTree], DerivationTree],
-    ) -> List[DerivationTree]:
+        current_population: list[DerivationTree],
+        eval_individual: Callable[[DerivationTree], tuple[float, list[FailingTree]]],
+    ) -> list[DerivationTree]:
         unique_hashes = {hash(ind) for ind in current_population}
         attempts = 0
         max_attempts = (self.population_size - len(current_population)) * 10
@@ -77,11 +104,16 @@ class PopulationManager:
             not self._is_population_complete(current_population)
             and attempts < max_attempts
         ):
-            candidate = fix_func(self._generate_population_entry())
-            if hash(candidate) not in unique_hashes:
-                unique_hashes.add(hash(candidate))
-                current_population.append(candidate)
-            attempts += 1
+            individual = self._generate_population_entry()
+            _fitness, failing_trees = eval_individual(individual)
+            candidate, _fixes_made = self.fix_individual(
+                individual,
+                failing_trees,
+            )
+            if PopulationManager.add_unique_individual(
+                current_population, candidate, unique_hashes
+            ):
+                attempts += 1
 
         if not self._is_population_complete(current_population):
             LOGGER.warning(
@@ -91,6 +123,30 @@ class PopulationManager:
                 current_population.append(self._generate_population_entry())
 
         return current_population
+
+    def fix_individual(
+        self,
+        individual: DerivationTree,
+        failing_trees: list[FailingTree],
+    ) -> tuple[DerivationTree, int]:
+        fixes_made = 0
+        for failing_tree in failing_trees:
+            if failing_tree.tree.read_only:
+                continue
+            for operator, value, side in failing_tree.suggestions:
+                if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
+                    # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
+                    suggested_tree = self.grammar.parse(
+                        value, start=failing_tree.tree.symbol.symbol
+                    )
+                    if suggested_tree is None:
+                        continue
+                    individual = individual.replace(
+                        self.grammar, failing_tree.tree, suggested_tree
+                    )
+                    fixes_made += 1
+        return individual, fixes_made
+
 
 
 class IoPopulationManager(PopulationManager):

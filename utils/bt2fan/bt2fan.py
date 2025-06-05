@@ -378,7 +378,7 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
             var = binary_op.right.name
 
         # Identify the function call
-        funccall: c_ast.FuncCall = None
+        funccall: Optional[c_ast.FuncCall] = None
         if isinstance(left, c_ast.FuncCall):
             funccall = left
         elif isinstance(right, c_ast.FuncCall):
