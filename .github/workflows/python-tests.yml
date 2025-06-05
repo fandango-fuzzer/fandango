@@ -59,7 +59,8 @@ jobs:
         uses: tj-actions/changed-files@v46
         with:
           files: |
-            src/**.py
+            src/**/**.py
+            tests/**.py
 
       # Step 7: Check typing with mypy
       - name: Static type checking with mypy
