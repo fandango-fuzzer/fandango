@@ -924,7 +924,7 @@ def assign_implicit_party(grammar, implicit_party: str):
         child_party = set()
 
         for c_node in rule_nts:
-            child_party = child_party.union(c_node.parties(grammar, False))
+            child_party = child_party.union(c_node.msg_parties(grammar, False))
 
         if len(child_party) == 0:
             processed_nts.add(current_symbol)
@@ -932,7 +932,7 @@ def assign_implicit_party(grammar, implicit_party: str):
             continue
         for c_node in rule_nts:
             seen_nts.add(c_node.symbol)
-            if len(c_node.parties(grammar, False)) != 0:
+            if len(c_node.msg_parties(grammar, False)) != 0:
                 continue
             c_node.sender = implicit_party
         for t_node in symbol_finder.terminalNodes:
