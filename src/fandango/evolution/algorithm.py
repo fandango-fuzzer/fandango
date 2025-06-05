@@ -12,7 +12,7 @@ from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossov
 from fandango.evolution.evaluation import Evaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import PopulationManager, IoPopulationManager
-from fandango.language.io import FandangoIO
+from fandango.language.io import FandangoIO, FandangoParty
 from fandango.evolution.profiler import Profiler
 from fandango.language.grammar import (
     DerivationTree,
@@ -599,6 +599,11 @@ class Fandango:
                 return self.population[: self.desired_solutions]
 
         return self.solution
+
+    def msg_parties(self) -> List[FandangoParty]:
+        global_env, local_env = self.grammar.get_python_env()
+        io_instance: FandangoIO = global_env["FandangoIO"].instance()
+        return list(io_instance.parties.values())
 
     def _parse_next_remote_packet(
         self, forecast: PacketForecaster.ForcastingResult, io_instance: FandangoIO
