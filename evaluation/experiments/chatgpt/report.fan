@@ -27,7 +27,7 @@ class Client(FandangoParty):
         super().__init__(True)
         if not self.is_fandango():
             return
-        openai.api_key = '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'
+        openai.api_key = 'YOUR_OPENAI_API_KEY'
 
     def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
         response = openai.responses.create(
