@@ -50,22 +50,21 @@ class SocketParty(FandangoParty):
     def __init__(self, is_fandango: bool, is_server: bool, is_ipv4: bool = False, ip: str = "::1",
                  port: int = 8021, is_tcp: bool = True):
         super().__init__(is_fandango)
+        self.running = False
         self._is_ipv4 = is_ipv4
         self._is_tcp = is_tcp
         self._ip = ip
         self._port = port
         self.is_server = is_server
-        if not is_fandango:
-            return
-
         self.sock = None
         self.connection = None
         self.send_thread = None
-        self.running = False
         self.lock = threading.Lock()
 
     def start(self):
         if self.running:
+            return
+        if not self.is_fandango():
             return
         self._create_socket()
         self._connect()
@@ -80,11 +79,11 @@ class SocketParty(FandangoParty):
         self._apply_attr_update()
 
     @property
-    def _is_tcp(self) -> bool:
+    def is_tcp(self) -> bool:
         return self._is_tcp
 
-    @_is_tcp.setter
-    def _is_tcp(self, value: bool):
+    @is_tcp.setter
+    def is_tcp(self, value: bool):
         self._is_tcp = value
         self._apply_attr_update()
 
@@ -103,6 +102,8 @@ class SocketParty(FandangoParty):
 
     @port.setter
     def port(self, value: int):
+        if self._port == value:
+            return
         self._port = value
         self._apply_attr_update()
 
@@ -112,8 +113,7 @@ class SocketParty(FandangoParty):
         if not self.running:
             return
         self.close()
-        self._create_socket()
-        self._connect()
+        self.start()
 
     def _create_socket(self):
         protocol = socket.SOCK_STREAM if self._is_tcp else socket.SOCK_DGRAM
@@ -136,34 +136,61 @@ class SocketParty(FandangoParty):
             self.send_thread.join()
             self.send_thread = None
         if self.connection is not None:
-            self.connection.shutdown(socket.SHUT_RDWR)
-            self.connection.close()
+            try:
+                self.connection.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass  # Ignore if not connected or already closed
+            try:
+                self.connection.close()
+            except OSError:
+                pass
             self.connection = None
         if self.sock is not None:
-            self.sock.shutdown(socket.SHUT_RDWR)
-            self.sock.close()
+            try:
+                self.sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass  # Ignore if not connected or already closed
+            try:
+                self.sock.close()
+            except OSError:
+                pass
+            self.sock = None
 
     def wait_accept(self):
         with self.lock:
             if self.connection is None:
                 if self.is_server:
-                    self.connection, _ = self.sock.accept()
+                    while self.running:
+                        rlist, _, _ = select.select([self.sock], [], [], 0.1)
+                        if rlist:
+                            self.connection, _ = self.sock.accept()
+                            break
                 else:
-                    self.sock._connect((self._ip, self._port))
-                    self.connection = self.sock
+                    self.sock.setblocking(False)
+                    try:
+                        self.sock.connect((self._ip, self._port))
+                    except BlockingIOError:
+                        pass
+                    while self.running:
+                        _, wlist, _ = select.select([], [self.sock], [], 0.1)
+                        if wlist:
+                            self.connection = self.sock
+                            break
+                    self.sock.setblocking(True)
 
     def _listen(self):
         self.wait_accept()
+        if not self.running:
+            return
+
         while self.running:
             try:
-                data = self.connection.recv(1024)
-                if len(data) == 0:
-                    continue
-                if data:
+                rlist, _, _ = select.select([self.connection], [], [], 0.1)
+                if rlist:
+                    data = self.connection.recv(1024)
+                    if len(data) == 0:
+                        continue  # Keep waiting if connection is open but no data
                     self.receive(data)
-                else:
-                    self.running = False
-                    break
             except Exception as e:
                 self.running = False
                 break
@@ -188,14 +215,12 @@ class SocketServer(SocketParty):
     def __init__(self, is_fandango: bool, is_ipv4: bool = False, ip: str = "::1",
                  port: int = 8021, is_tcp: bool = True):
         super().__init__(is_fandango, True, is_ipv4, ip, port, is_tcp)
-        self.start()
 
 
 class SocketClient(SocketParty):
     def __init__(self, is_fandango: bool, is_ipv4: bool = False, ip: str = "::1",
                  port: int = 8021, is_tcp: bool = True):
         super().__init__(is_fandango, False, is_ipv4, ip, port, is_tcp)
-        self.start()
 
 class STD(FandangoParty):
 

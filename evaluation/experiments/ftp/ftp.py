@@ -6,7 +6,7 @@ from fandango.language.parse import parse
 
 def main():
     # Parse grammar and constraints
-    with open("ftp_auth_fail.fan") as f:
+    with open("ftp.fan") as f:
         grammar, constraints = parse(f, use_stdlib=False)
 
     time_start = time.time()

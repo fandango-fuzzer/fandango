@@ -131,7 +131,9 @@ where forall <mail> in <mail_data>:
 class Client(SocketParty):
     def __init__(self):
         super().__init__(fandango_is_client, False, True, "127.0.0.1", 8025, True)
+        self.start()
 
 class Server(SocketParty):
     def __init__(self):
         super().__init__(not fandango_is_client, True, True, "127.0.0.1", 9025, True)
+        self.start()

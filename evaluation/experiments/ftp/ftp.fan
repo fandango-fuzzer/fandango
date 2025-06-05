@@ -190,7 +190,7 @@ def is_unique_folder_and_file(current_file_or_folder, data):
 
 <open_port> ::= <passive_port> := open_data_port(int(<open_port_param>))
 <open_port_param> ::= <passive_port> := open_data_port(int(<open_port>))
-<passive_port> ::= <number> := randint(50000, 50100)
+<passive_port> ::= <number> := randint(50100, 50100)
 
 <number> ::= '0' | (<number_start> <number_tail>*)
 <number_start> ::= '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
@@ -199,217 +199,44 @@ def is_unique_folder_and_file(current_file_or_folder, data):
 # open_data_port(port) is a generator. When executed, it returns the value that was given to it and reconfigures the
 # data party definitions to use that port.
 def open_data_port(port):
-    FandangoIO.instance().parties['ClientData'].update_port(port)
-    FandangoIO.instance().parties['ServerData'].update_port(port)
+    FandangoIO.instance().parties['ClientData'].port = port
+    FandangoIO.instance().parties['ClientData'].start()
+    FandangoIO.instance().parties['ServerData'].port = port
+    FandangoIO.instance().parties['ServerData'].start()
     return port
 
-import socket
-import threading
-import select
-
-class ClientControl(FandangoParty):
+class ClientControl(SocketClient):
     def __init__(self):
-        super().__init__(fandango_is_client)
-        self.server_domain = "127.0.0.1"
-        if not self.is_fandango():
-            return
-        self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.connect((self.server_domain, 21))
-        server_thread = threading.Thread(target=self.listen_loop)
-        server_thread.daemon = True
-        server_thread.start()
+        super().__init__(fandango_is_client, False, "::1", 50200, True)
+        self.start()
 
-    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
-        self.sock.sendall(message.to_string().encode("utf-8"))
+    def receive(self, data: bytes):
+        self.receive_msg("ServerControl", data.decode("utf-8"))
 
-    def listen_loop(self):
-        while True:
-            readable, n, n2 = select.select([self.sock], [], [], 1.0)
-            if readable:
-                try:
-                    response, n3 = self.sock.recvfrom(1024)
-                    if not response:
-                        self.receive_msg("ServerControl", "FTP session closed.\r\n")
-                        self.sock.close()
-                        break
-                    self.receive_msg("ServerControl", response.decode("utf-8"))
-                except ConnectionResetError:
-                    break
-
-class ServerControl(FandangoParty):
+class ServerControl(SocketServer):
     def __init__(self):
-        super().__init__(not fandango_is_client)
-        self.sock = None
-        self.send_thread = None
-        self.running = False
-        if not self.is_fandango():
-            return
-        self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.bind(("::1", 50200))
-        self.sock.listen(1)
-        self.conn, self.address = self.sock.accept()
-        self.running = True
-        self.send_thread = threading.Thread(target=self._listen, daemon=True)
-        self.send_thread.start()
+        super().__init__(not fandango_is_client, False, "::1", 50200, True)
+        self.start()
 
-    def _listen(self):
-        while self.running:
-            try:
-                data = self.conn.recv(1024)
-                if len(data) == 0:
-                    continue
-                if data:
-                    self.receive_msg("ClientControl", data.decode("utf-8"))
-                else:
-                    self.running = False
-                    break
-            except Exception as e:
-                self.running = False
-                break
+    def receive(self, data: bytes):
+        self.receive_msg("ClientControl", data.decode("utf-8"))
 
-    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
-        try:
-            if not self.running:
-                raise Exception("Socket not running!")
-            self.conn.send(message.to_string().encode("utf-8"))
-        except Exception as e:
-            print("Error sending message: " + str(e))
+    def transmit(self, message: DerivationTree, recipient: str):
+        self.connection.sendall(message.to_string().encode("utf-8"))
+        if message.to_string() == "226 Transfer complete\r\n":
+            FandangoIO.instance().parties['ServerData'].close()
+            FandangoIO.instance().parties['ServerData'].start()
 
-class ClientData(FandangoParty):
+class ClientData(SocketClient):
     def __init__(self):
-        super().__init__(fandango_is_client)
-        self.sock = None
-        self.port = None
-        self.server_domain = "127.0.0.1"
-        self.listen_thread = None
-        self.running = False
+        super().__init__(fandango_is_client, False, "::1", 50100, True)
 
-    def _create_socket(self):
-        self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    def receive(self, data: bytes):
+        self.receive_msg("ServerData", data.decode("utf-8"))
 
-    def connect(self):
-        self.sock.connect((self.server_domain, self.port))
-        self.running = True
-        self.listen_thread = threading.Thread(target=self._listen, daemon=True)
-        self.listen_thread.start()
-
-    def close(self):
-        self.running = False
-        if self.sock is None:
-            return
-        try:
-            self.sock.shutdown(socket.SHUT_RDWR)
-        except:
-            pass
-        self.sock.close()
-
-    def update_port(self, new_port: int):
-        self.port = new_port
-        if not self.is_fandango():
-            return
-        self.close()
-        self._create_socket()
-        self.connect()
-
-    def _listen(self):
-        while self.running:
-            try:
-                data = self.sock.recv(1024)
-                if len(data) == 0:
-                    continue
-                if data:
-                    self.receive_msg("ServerData", data.decode("utf-8"))
-                else:
-                    self.running = False
-                    break
-            except Exception as e:
-                self.running = False
-                break
-
-    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
-        try:
-            if not self.running:
-                raise Exception("Socket not running!")
-            self.sock.sendall(message.to_string().encode("utf-8"))
-        except Exception as e:
-            print("Error sending message: " + str(e))
-
-
-class ServerData(FandangoParty):
+class ServerData(SocketServer):
     def __init__(self):
-        super().__init__(not fandango_is_client)
-        self.sock = None
-        self.port = None
-        self.conn = None
-        self.address = None
-        self.send_thread = None
-        self.running = False
-        self.lock = threading.Lock()
+        super().__init__(not fandango_is_client, False, "::1", 50100, True)
 
-    def _create_socket(self):
-        self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-    def connect(self):
-        self.sock.bind(("::1", self.port))
-        self.sock.listen(1)
-        self.running = True
-        self.send_thread = threading.Thread(target=self._listen, daemon=True)
-        self.send_thread.start()
-
-    def close(self):
-        self.running = False
-        if self.send_thread is not None:
-            self.send_thread.join()
-            self.send_thread = None
-        if self.conn is not None:
-            self.conn.shutdown(socket.SHUT_RDWR)
-            self.conn = None
-        if self.sock is None:
-            return
-        try:
-            self.sock.shutdown(socket.SHUT_RDWR)
-        except:
-            pass
-        self.sock.close()
-
-    def wait_accept(self):
-        with self.lock:
-            if self.conn is None:
-                self.conn, self.address = self.sock.accept()
-
-    def update_port(self, new_port: int):
-        self.port = new_port
-        if not self.is_fandango():
-            return
-        self.close()
-        self._create_socket()
-        self.connect()
-
-    def _listen(self):
-        self.wait_accept()
-        while self.running:
-            try:
-                data = self.conn.recv(1024)
-                if len(data) == 0:
-                    continue
-                if data:
-                    self.receive_msg("ClientData", data.decode("utf-8"))
-                else:
-                    print("Listen, disable socket")
-                    self.running = False
-                    break
-            except Exception as e:
-                self.running = False
-                break
-
-    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
-        if not self.running:
-            raise Exception("Socket not running!")
-        self.wait_accept()
-        self.conn.send(message.to_string().encode("utf-8"))
-        self.conn.shutdown(socket.SHUT_RDWR)
-        self.conn = None
+    def receive(self, data: bytes):
+        self.receive_msg("ClientData", data.decode("utf-8"))
