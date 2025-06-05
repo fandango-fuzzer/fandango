@@ -11,10 +11,10 @@ fandango_is_client = True
 
 # Logged out state. Client is not logged in yet. Client might ask for ssl or tls auth, which gets rejected by the server.
 # Client is allowed to log in unencrypted.
-#<state_logged_out> ::= (<exchange_auth_tls><state_logged_out>) | (<exchange_auth_ssl><state_logged_out>) | (<exchange_login>)
-#<state_logged_in> ::= (<exchange_mlsd><state_finished>) | (<logged_in_cmds><state_logged_in>)
-<state_logged_out> ::= <exchange_login_ok>
-<state_logged_in> ::= <exchange_set_type> <exchange_set_epassive> <exchange_set_epassive> <exchange_mlsd>
+<state_logged_out> ::= (<exchange_auth_tls><state_logged_out>) | (<exchange_auth_ssl><state_logged_out>) | (<exchange_login>)
+<state_logged_in> ::= (<exchange_mlsd><state_finished>) | (<logged_in_cmds><state_logged_in>)
+#<state_logged_out> ::= <exchange_login_ok>
+#<state_logged_in> ::= <exchange_set_type> <exchange_set_epassive> <exchange_set_epassive> <exchange_mlsd>
 <state_finished> ::= ''
 
 # The logged in state. If the client is logged in, it is allowed to send the following commands.
