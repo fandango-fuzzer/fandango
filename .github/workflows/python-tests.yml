@@ -52,13 +52,30 @@ jobs:
         run: |
           python -m pip install --upgrade pip  # Upgrade pip to the latest version
           make install-test  # Install dependencies using the Makefile
+     
+      # Step 6: Get changed Python files
+      - name: Get changed Python files
+        id: changed-python-files
+        uses: tj-actions/changed-files@v46
+        with:
+          files: |
+            src/**.py
+            tests/**.py
 
-      # Step 6: Run tests using pytest
+      # Step 7: Check typing with mypy
+      - name: Check typing with mypy
+        run: |
+          echo "Checking files: ${{ steps.changed-python-files.outputs.all_changed_files }}"
+          for file in ${{ steps.changed-python-files.outputs.all_changed_files }}; do
+            mypy "$file"
+          done
+
+      # Step 8: Run tests using pytest
       - name: Run tests with pytest
         run: |
           make tests  # Run the tests
 
-      # Step 7: Cache installed packages for system dependencies
+      # Step 9: Cache installed packages for system dependencies
       - name: Cache pygraphviz dependencies
         uses: actions/cache@v3
         with:
