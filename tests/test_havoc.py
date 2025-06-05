@@ -1,6 +1,6 @@
 #!/usr/bin/env pytest
 
-from typing import Counter, List
+from collections import Counter
 import pytest
 
 from fandango.evolution import havoc
@@ -9,7 +9,7 @@ ITERS = 100000
 INPUT_SIZE = 100
 
 
-def adjacent_diff(input: bytearray) -> List[int]:
+def adjacent_diff(input: bytearray) -> list[int]:
     return [input[i] - input[i - 1] for i in range(1, len(input))]
 
 

@@ -2,8 +2,6 @@
 
 import random
 import unittest
-from typing import List
-
 from fandango.constraints.fitness import FailingTree
 from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse
@@ -54,7 +52,7 @@ class GeneticTest(unittest.TestCase):
             self.assertIsInstance(fitness, float)
             self.assertGreaterEqual(fitness, 0.0)
             self.assertLessEqual(fitness, 1.0)
-            self.assertIsInstance(failing_trees, List)
+            self.assertIsInstance(failing_trees, list)
             for failing_tree in failing_trees:
                 self.assertIsInstance(failing_tree, FailingTree)
             self.assertTrue(self.fandango.grammar.parse(str(individual)))
@@ -69,7 +67,7 @@ class GeneticTest(unittest.TestCase):
             self.assertIsInstance(fitness, float)
             self.assertGreaterEqual(fitness, 0.0)
             self.assertLessEqual(fitness, 1.0)
-            self.assertIsInstance(failing_trees, List)
+            self.assertIsInstance(failing_trees, list)
             for failing_tree in failing_trees:
                 self.assertIsInstance(failing_tree, FailingTree)
 
@@ -194,7 +192,7 @@ class DeterminismTests(unittest.TestCase):
             desired_solutions=desired_solutions,
             random_seed=random_seed,
         )
-        solutions: List[DerivationTree] = fandango.evolve()
+        solutions: list[DerivationTree] = fandango.evolve()
         return [s.to_string() for s in solutions]
 
     def test_deterministic_solutions(self):

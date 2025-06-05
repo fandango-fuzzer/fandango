@@ -1,7 +1,7 @@
 import copy
 from copy import deepcopy
 from io import BytesIO, StringIO
-from typing import Any, List, Optional, Set, Tuple, Union
+from typing import Any, Optional, Union
 
 from fandango import FandangoValueError
 from fandango.language.symbol import NonTerminal, Slice, Symbol, Terminal
@@ -31,10 +31,10 @@ class DerivationTree:
     def __init__(
         self,
         symbol: Symbol,
-        children: Optional[List["DerivationTree"]] = None,
+        children: Optional[list["DerivationTree"]] = None,
         *,
         parent: Optional["DerivationTree"] = None,
-        sources: list["DerivationTree"] = None,
+        sources: Optional[list["DerivationTree"]] = None,
         sender: str = None,
         recipient: str = None,
         read_only: bool = False,
@@ -185,7 +185,7 @@ class DerivationTree:
             raise ValueError("Invalid hookin_path!")
         self.children[-1].append(hookin_path[1:], tree)
 
-    def set_children(self, children: List["DerivationTree"]):
+    def set_children(self, children: list["DerivationTree"]):
         self._children = children
         self._update_size(1 + sum(child.size() for child in self._children))
         for child in self._children:
@@ -216,7 +216,7 @@ class DerivationTree:
             self._parent._update_size(self.parent.size() + new_val - self._size)
         self._size = new_val
 
-    def find_all_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
+    def find_all_trees(self, symbol: NonTerminal) -> list["DerivationTree"]:
         trees = sum(
             [
                 child.find_all_trees(symbol)
@@ -229,7 +229,7 @@ class DerivationTree:
             trees.append(self)
         return trees
 
-    def find_direct_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
+    def find_direct_trees(self, symbol: NonTerminal) -> list["DerivationTree"]:
         return [
             child
             for child in [*self._children, *self._sources]
@@ -293,7 +293,7 @@ class DerivationTree:
         return self.symbol, [child.__tree__() for child in self._children]
 
     @staticmethod
-    def from_tree(tree: Tuple[str, List[Tuple[str, List]]]) -> "DerivationTree":
+    def from_tree(tree: tuple[str, list[tuple[str, list]]]) -> "DerivationTree":
         symbol, children = tree
         if not isinstance(symbol, str):
             raise TypeError(f"{symbol} must be a string")
@@ -739,7 +739,7 @@ class DerivationTree:
 
         return new_tree
 
-    def get_non_terminal_symbols(self, exclude_read_only=True) -> Set[NonTerminal]:
+    def get_non_terminal_symbols(self, exclude_read_only=True) -> set[NonTerminal]:
         """
         Retrieve all non-terminal symbols present in the derivation tree.
         """
@@ -754,7 +754,7 @@ class DerivationTree:
 
     def find_all_nodes(
         self, symbol: NonTerminal, exclude_read_only=True
-    ) -> List["DerivationTree"]:
+    ) -> list["DerivationTree"]:
         """
         Find all nodes in the derivation tree with the given non-terminal symbol.
         """
@@ -770,7 +770,7 @@ class DerivationTree:
         return nodes
 
     @property
-    def children(self) -> Optional[List["DerivationTree"]]:
+    def children(self) -> Optional[list["DerivationTree"]]:
         """
         Return the children of the current node.
         """
@@ -1076,5 +1076,5 @@ class DerivationTree:
 
 
 class SliceTree(DerivationTree):
-    def __init__(self, children: List["DerivationTree"], read_only: bool = False):
+    def __init__(self, children: list["DerivationTree"], read_only: bool = False):
         super().__init__(Slice(), children, read_only=read_only)
