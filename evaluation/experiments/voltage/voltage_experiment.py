@@ -9,6 +9,8 @@ def evaluate_voltage():
     fandango = Fandango(grammar, constraints, max_generations=100, desired_solutions=10)
     fandango.evolve()
 
+    print("VOLTAGE")
+
     for solution in fandango.solution:
         print(solution)
 

@@ -40,7 +40,7 @@ class PathFinder(NodeVisitor):
         )
         f_packet = PacketForecaster.ForcastingPacket(node)
         f_packet.add_path(mounting_path)
-        self.result.add_packet(node.role, f_packet)
+        self.result.add_packet(node.sender, f_packet)
 
     @staticmethod
     def _collapsed_path(path: list[Tuple[NonTerminal, bool]]):
@@ -95,7 +95,7 @@ class PathFinder(NodeVisitor):
             if tree[0].symbol != node.symbol:
                 raise GrammarKeyError("Symbol mismatch")
 
-        if node.role is not None:
+        if node.sender is not None:
             if tree is None:
                 self.add_option(node)
                 return False
@@ -262,26 +262,25 @@ class PacketForecaster:
 
     class ForcastingResult:
         def __init__(self):
-            # dict[roleName, dict[packetName, PacketForecaster.ForcastingPacket]]
-            self.roles_to_packets = dict[str, PacketForecaster.ForcastingNonTerminals]()
+            self.agents_to_packets = dict[str, PacketForecaster.ForcastingNonTerminals]()
 
-        def getRoles(self) -> set[str]:
-            return set(self.roles_to_packets.keys())
+        def getAgents(self) -> set[str]:
+            return set(self.agents_to_packets.keys())
 
         def __getitem__(self, item: str):
-            return self.roles_to_packets[item]
+            return self.agents_to_packets[item]
 
-        def add_packet(self, role: str, packet: "PacketForecaster.ForcastingPacket"):
-            if role not in self.roles_to_packets.keys():
-                self.roles_to_packets[role] = PacketForecaster.ForcastingNonTerminals()
-            self.roles_to_packets[role].add_packet(packet)
+        def add_packet(self, agent: str, packet: "PacketForecaster.ForcastingPacket"):
+            if agent not in self.agents_to_packets.keys():
+                self.agents_to_packets[agent] = PacketForecaster.ForcastingNonTerminals()
+            self.agents_to_packets[agent].add_packet(packet)
 
         def merge(self, other: "PacketForecaster.ForcastingResult"):
             c_new = deepcopy(self)
             c_other = deepcopy(other)
-            for role, fnt in c_other.roles_to_packets.items():
+            for agent, fnt in c_other.agents_to_packets.items():
                 for fp in fnt.nt_to_packet.values():
-                    c_new.add_packet(role, fp)
+                    c_new.add_packet(agent, fp)
             return c_new
 
     class GrammarReducer(NodeVisitor):
@@ -336,12 +335,12 @@ class PacketForecaster:
             return CharSet(node.chars)
 
         def visitNonTerminalNode(self, node: NonTerminalNode):
-            if node.role is None and node.recipient is None:
+            if node.sender is None and node.recipient is None:
                 self.seen_keys.add(node.symbol)
                 return node
 
             symbol = NonTerminal("<_packet_" + node.symbol.symbol[1:])
-            repl_node = NonTerminalNode(symbol, node.role, node.recipient)
+            repl_node = NonTerminalNode(symbol, node.sender, node.recipient)
             self._reduced[symbol] = TerminalNode(Terminal(node.symbol.symbol))
             self.seen_keys.add(symbol)
             self.processed_keys.add(symbol)
@@ -359,10 +358,10 @@ class PacketForecaster:
             i_tree = super().construct_incomplete_tree(state, table)
             i_cpy = deepcopy(i_tree)
             for i_msg, r_msg in zip(
-                i_cpy.find_role_msgs(), self.reference_tree.find_role_msgs()
+                i_cpy.find_protocol_msgs(), self.reference_tree.find_protocol_msgs()
             ):
                 i_msg.msg.set_children(r_msg.msg.children)
-                i_msg.msg.generator_params = r_msg.msg.generator_params
+                i_msg.msg.sources = r_msg.msg.sources
                 i_msg.msg.symbol = NonTerminal("<" + str(r_msg.msg.symbol)[1:])
             return i_cpy
 
@@ -377,7 +376,7 @@ class PacketForecaster:
 
     def predict(self, tree: DerivationTree):
         history_nts = ""
-        for r_msg in tree.find_role_msgs():
+        for r_msg in tree.find_protocol_msgs():
             history_nts += str(r_msg.msg.symbol)
         self._parser.detailed_tree = tree
 
@@ -394,16 +393,16 @@ class PacketForecaster:
                 include_controlflow=True,
             ):
                 for orig_r_msg, r_msg in zip(
-                    tree.find_role_msgs(), suggested_tree.find_role_msgs()
+                    tree.find_protocol_msgs(), suggested_tree.find_protocol_msgs()
                 ):
                     if (
                         str(r_msg.msg.symbol)[9:] == str(orig_r_msg.msg.symbol)[1:]
-                        and r_msg.role == orig_r_msg.role
+                        and r_msg.sender == orig_r_msg.sender
                         and r_msg.recipient == orig_r_msg.recipient
                     ):
                         cpy = orig_r_msg.msg.__deepcopy__(None, copy_parent=False)
                         r_msg.msg.set_children(cpy.children)
-                        r_msg.msg.generator_params = deepcopy(cpy.generator_params)
+                        r_msg.msg.sources = deepcopy(cpy.sources)
                         r_msg.msg.symbol = NonTerminal("<" + str(cpy.symbol)[1:])
                     else:
                         break

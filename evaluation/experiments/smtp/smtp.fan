@@ -3,7 +3,7 @@ import socket
 from datetime import datetime, timezone
 import random
 
-fandango_is_client = False
+fandango_is_client = True
 
 def format_unix_time(unix_time):
     dt = datetime.fromtimestamp(unix_time, tz=timezone.utc)
@@ -128,88 +128,10 @@ where forall <mail> in <mail_data>:
     str(<mail>..<request_mail_from>.<email_address>) == str(<mail>..<mail_header_from>.<email_address>)
     and str(<mail>..<request_mail_to>.<email_address>) == str(<mail>..<mail_header_to>.<email_address>)
 
-
-class Client(FandangoAgent):
+class Client(SocketAgent):
     def __init__(self):
-        super().__init__(fandango_is_client)
-        if not self.is_fandango():
-            return
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.connect(("127.0.0.1", 8025))
-        server_thread = threading.Thread(target=self.listen_loop)
-        server_thread.daemon = True
-        server_thread.start()
+        super().__init__(fandango_is_client, False, True, "127.0.0.1", 8025, True)
 
-    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
-        self.sock.sendall(message.to_string().encode("utf-8"))
-
-    def listen_loop(self):
-        while True:
-            response, nothing = self.sock.recvfrom(1024)
-            if len(response) == 0:
-                self.receive_msg("Server", "SMTP session closed.\r\n")
-                self.sock.close()
-                break
-            self.receive_msg("Server", response.decode("utf-8"))
-
-    def cleanup(self, *args):
-        print("Cleaning up server socket...")
-        self.running = False
-        if self.conn:
-            self.conn.close()
-        if self.sock:
-            self.sock.close()
-        sys.exit(0)
-
-
-
-class Server(FandangoAgent):
+class Server(SocketAgent):
     def __init__(self):
-        super().__init__(not fandango_is_client)
-        self.sock = None
-        self.send_thread = None
-        self.running = False
-        if not self.is_fandango():
-            return
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.bind(("127.0.0.1", 9025))
-        self.sock.listen(1)
-        print("listening on port 9025")
-        self.conn, self.address = self.sock.accept()
-        self.running = True
-        self.send_thread = threading.Thread(target=self._listen, daemon=True)
-        self.send_thread.start()
-
-    def _listen(self):
-        while self.running:
-            try:
-                data = self.conn.recv(1024)
-                if len(data) == 0:
-                    continue
-                if data:
-                    self.receive_msg("Client", data.decode("utf-8"))
-                else:
-                    self.running = False
-                    break
-            except Exception as e:
-                self.running = False
-                break
-
-    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
-        try:
-            if not self.running:
-                raise Exception("Socket not running!")
-            self.conn.send(message.to_string().encode("utf-8"))
-        except Exception as e:
-            print("Error sending message: " + str(e))
-
-    def cleanup(self, *args):
-        print("Cleaning up server socket...")
-        self.running = False
-        if self.conn:
-            self.conn.close()
-        if self.sock:
-            self.sock.close()
-        sys.exit(0)
+        super().__init__(not fandango_is_client, True, True, "127.0.0.1", 9025, True)

@@ -251,7 +251,7 @@ In Fandango, repetitions `{}` can also contain _expressions_, and like constrain
 Hence, we can specify a rule
 
 ```python
-<content> ::- <byte>{f(<length>)}
+<content> ::= <byte>{f(<length>)}
 ```
 
 where `f()` is a function that computes the number of `<byte>` repetitions based on `<length>`.
@@ -351,30 +351,3 @@ Adding _type annotations_ to functions in `.fan` files allows for future static 
 ```
 
 Check out the [`struct` module](https://docs.python.org/3/library/struct.html) for additional encodings, including float types, long and short integers, and many more.
-
-
-## Compression and Conversion
-
-:::{error}
-To be completed later.
-:::
-
-Some parts of a binary file may be _compressed_ to save space.
-Here's a sketch on how to achieve this:
-
-```python
-<chunk> ::= <header> <compressed_content> <trailer>
-<compressed_content> ::= <byte>*
-<content> ::= <byte>*
-
-where <compressed_content> == compress(<content>)    # for producing
-where <content> == uncompress(<compressed_content>)  # for parsing
-```
-
-or, using generators:
-
-```python
-<chunk> ::= <header> <compressed_content> <trailer>
-<compressed_content> ::= <byte>* | <foo> | <bar> := compress(<content>)
-<content> ::= <byte>* = uncompress(<compressed_content>)
-```
