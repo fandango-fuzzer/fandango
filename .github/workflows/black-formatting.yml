@@ -27,7 +27,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install black
+      - name: Install dependencies
         run: |
           pip install black mypy
 
@@ -35,6 +35,15 @@ jobs:
         run: |
           black --check src
       
+      - name: Get changed Python files
+        id: changed-python-files
+        uses: tj-actions/changed-files@v41
+        with:
+          files: |
+            src/**.py
+
       - name: Check typing with mypy
+        if: steps.changed-python-files.outputs.any_changed == 'true'
         run: |
-          git diff --name-only --diff-filter=ACMR | grep -E '\.py$' | xargs mypy --check-untyped-defs
+          echo "Checking files: ${{ steps.changed-python-files.outputs.all_changed_files }}"
+          mypy --check-untyped-defs ${{ steps.changed-python-files.outputs.all_changed_files }}
