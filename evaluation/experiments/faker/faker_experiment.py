@@ -9,6 +9,8 @@ def evaluate_faker():
     fandango = Fandango(grammar, constraints)
     fandango.evolve()
 
+    print("FAKER")
+
     for solution in fandango.solution:
         print(solution)
 

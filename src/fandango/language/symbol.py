@@ -5,6 +5,7 @@ import re
 import regex
 
 from fandango.logger import LOGGER
+from io import UnsupportedOperation
 
 
 class SymbolType(enum.Enum):
@@ -67,6 +68,10 @@ class NonTerminal(Symbol):
     def __eq__(self, other):
         return isinstance(other, NonTerminal) and self.symbol == other.symbol
 
+    def __lt__(self, other):
+        if isinstance(other, NonTerminal):
+            return self.symbol < other.symbol
+
     def __hash__(self):
         return hash((self.symbol, self.type))
 
@@ -91,15 +96,11 @@ class Terminal(Symbol):
 
     @staticmethod
     def clean(symbol: str) -> str | bytes | int:
-        # Not sure whether any of these are necessary, as we eval() anyway
-        # if len(symbol) >= 2:
-        #     if symbol[0] == symbol[-1] == "'" or symbol[0] == symbol[-1] == '"':
-        #         return eval(symbol)
-        #     elif len(symbol) >= 3:
-        #         if symbol[0] == "b" and (
-        #             symbol[1] == symbol[-1] == "'" or symbol[1] == symbol[-1] == '"'
-        #         ):
-        #             return eval(symbol)
+        # LOGGER.debug(f"Cleaning {symbol!r}")
+        if symbol.startswith("f'") or symbol.startswith('f"'):
+            # Cannot evaluate f-strings
+            raise UnsupportedOperation("f-strings are currently not supported")
+
         return eval(symbol)  # also handles bits "0" and "1"
 
     @staticmethod

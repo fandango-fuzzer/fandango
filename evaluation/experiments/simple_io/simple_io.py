@@ -1,4 +1,4 @@
-from fandango.evolution.algorithm import Fandango
+from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.grammar import *
 from fandango.language.symbol import *
 from fandango.language.parse import parse
@@ -12,7 +12,7 @@ def main():
 
     # tree = grammar.parse("{}{\"nr_high\":10,\"nr_low\":5}", mode=Grammar.Parser.ParsingMode.INCOMPLETE_ROLE)
 
-    fandango = Fandango(grammar=grammar, constraints=constraints, population_size=100)
+    fandango = Fandango(grammar=grammar, constraints=constraints, population_size=100, logger_level=LoggerLevel.INFO)
 
     # Evolve solutions
     solutions = fandango.evolve()

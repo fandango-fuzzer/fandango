@@ -10,6 +10,7 @@ kernelspec:
   name: python3
 ---
 
+
 (sec:about)=
 # About Fandango
 
@@ -23,12 +24,62 @@ Fandango supports multiple modes of operation:
 
 * By default, Fandango operates as a _black-box_ fuzzer - that is, it creates inputs from a `.fan` Fandango specification file.
 * If you have _sample inputs_, Fandango can _mutate_ these to obtain more realistic inputs.
-* Fandango can also operate as a _white-box_ fuzzer - that is, it runs a program under test to maximize coverage. In this case, only a minimal specification may be needed.
+% * Fandango can also operate as a _white-box_ fuzzer - that is, it runs a program under test to maximize coverage. In this case, only a minimal specification may be needed.
 
 Fandango comes as a portable Python program and can easily be run on a large variety of platforms.
 
 Under the hood, Fandango uses sophisticated _evolutionary algorithms_ to produce inputs,
-it starts with a population of random inputs, and evolving these through mutations and cross-over until they fulfill the given constraints.
+it starts with a population of random inputs, and evolves these through mutations and cross-over until they fulfill the given constraints.
+
+Fandango is in active development! Features planned for 2025 include:
+
+* protocol testing
+* coverage-guided testing
+* code-directed testing
+* high diversity inputs
+
+and many more.
+
+
+
+## Refer to Fandango
+
+To refer to Fandango, use its official URL:
+
+  https://fandango-fuzzer.github.io
+
+
+## Cite Fandango
+
+```{code-cell}
+:tags: ["remove-input"]
+import re
+
+def find_reference(key, bibfile='fandango.bib'):
+    bib = open(bibfile, 'r').read()
+    match = re.match(r'@[a-zA-Z0-9]*\{' + key + r',(.|\n)*\n\}', bib)
+    assert match is not None
+    return match.group(0)
+
+def print_reference(key, bibfile='fandango.bib'):
+    print(find_reference(key, bibfile))
+```
+
+If you want to cite Fandango in your academic work, use the ISSTA 2025 paper by {cite:ts}`zamudio2025fandango`.
+Note that José Antonio has two proper last names, Zamudio Amaya, so the proper way to cite the paper is like this:
+
+```{code-cell}
+:tags: ["remove-input"]
+print_reference('zamudio2025fandango')
+```
+
+
+## Read More
+
+To learn more about how Fandango works, start with the ISSTA 2025 paper by {cite:ts}`zamudio2025fandango`.
+
+```{bibliography}
+```
 
 
 ## Acknowledgments

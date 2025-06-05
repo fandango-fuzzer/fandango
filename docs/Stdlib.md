@@ -56,6 +56,25 @@ Use `<digit>`, `<ascii_letter>`, `<whitespace>`, and more to your liking.
 print(stdlib.printable)
 ```
 
+
+## Unicode Characters
+
+A `<any_letter>` is any Unicode alphanumeric character, as well as the underscore (`_`).
+
+An `<any_digit>` is any character in the Unicode character category `[Nd]`.
+This includes `[0-9]`, and also many other digit characters.
+
+An `<any_whitespace>` is any Unicode whitespace character.
+This includes `[ \t\n\r\f\v]`, and also many other characters, for example the non-breaking spaces mandated by typography rules in many languages.
+
+The symbols `<any_non_letter>`, `<any_non_digit>`, and `<any_non_whitespace>` match any character that is not in `<any_letter>`, `<any_digit>`, and `<any_whitespace>`, respectively.
+
+```{code-cell}
+:tags: ["remove-input"]
+print(stdlib.unicode)
+```
+
+
 ## ASCII Characters
 
 `<ascii_char>` expands into all 7-bit characters in the ASCII range 0x00-0x7F, printable and non-printable.

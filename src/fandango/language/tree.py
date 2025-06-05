@@ -1,19 +1,16 @@
 import copy
 from copy import deepcopy
-from typing import Optional, List, Any, Union, Set, Tuple
-
-from fandango.language.symbol import Symbol, NonTerminal, Terminal, Slice
-from io import StringIO, BytesIO
-
-from fandango.logger import LOGGER, print_exception
+from io import BytesIO, StringIO
+from typing import Any, List, Optional, Set, Tuple, Union
 
 from fandango import FandangoValueError
+from fandango.language.symbol import NonTerminal, Slice, Symbol, Terminal
 
 
-class RoledMessage:
-    def __init__(self, role: str, recipient: str | None, msg: "DerivationTree"):
+class ProtocolMessage:
+    def __init__(self, sender: str, recipient: str | None, msg: "DerivationTree"):
         self.msg = msg
-        self.role = role
+        self.sender = sender
         self.recipient = recipient
 
     def __repr__(self):
@@ -21,9 +18,9 @@ class RoledMessage:
 
     def __str__(self):
         if self.recipient is None:
-            return f"({self.role} -> {self.recipient}): {str(self.msg)}"
+            return f"({self.sender} -> {self.recipient}): {str(self.msg)}"
         else:
-            return f"({self.role}): {str(self.msg)}"
+            return f"({self.sender}): {str(self.msg)}"
 
 
 class DerivationTree:
@@ -35,27 +32,37 @@ class DerivationTree:
         self,
         symbol: Symbol,
         children: Optional[List["DerivationTree"]] = None,
+        *,
         parent: Optional["DerivationTree"] = None,
-        generator_params: list["DerivationTree"] = None,
-        role: str = None,
+        sources: list["DerivationTree"] = None,
+        sender: str = None,
         recipient: str = None,
         read_only: bool = False,
     ):
+        """
+        Create a new derivation tree node.
+        :param symbol: The symbol for this node (type Symbol)
+        :param children: The children of this node (a list of DerivationTree)
+        :param parent: (optional) The parent of this node (a DerivationTree node)
+        :param sources: (optional) The sources of this node (a list of DerivationTrees used in generators to produce this node)
+        :param read_only: If True, the node is read-only and cannot be modified (default: False)
+        """
         if not isinstance(symbol, Symbol):
             raise TypeError(f"Expected Symbol, got {type(symbol)}")
 
         self.hash_cache = None
         self._parent: Optional["DerivationTree"] = parent
-        self.symbol: Symbol = symbol
-        self.role = role
-        self.recipient = recipient
+        self._sender = sender
+        self._recipient = recipient
+        self._symbol: Symbol = symbol
         self._children: list["DerivationTree"] = []
-        self._generator_params: list["DerivationTree"] = []
-        if generator_params is not None:
-            self.generator_params = generator_params
+        self._sources: list["DerivationTree"] = []
+        if sources is not None:
+            self.sources = sources
         self.read_only = read_only
         self._size = 1
         self.set_children(children or [])
+        self.invalidate_hash()
 
     def __len__(self):
         return len(self._children)
@@ -113,12 +120,12 @@ class DerivationTree:
             self._parent.invalidate_hash()
 
     @property
-    def role(self):
-        return self._role
+    def sender(self):
+        return self._sender
 
-    @role.setter
-    def role(self, role: str):
-        self._role = role
+    @sender.setter
+    def sender(self, sender: str):
+        self._sender = sender
         self.invalidate_hash()
 
     @property
@@ -142,17 +149,17 @@ class DerivationTree:
         self.read_only = read_only
         for child in self._children:
             child.set_all_read_only(read_only)
-        for child in self._generator_params:
+        for child in self._sources:
             child.set_all_read_only(read_only)
 
-    def find_role_msgs(self) -> List[RoledMessage]:
+    def find_protocol_msgs(self) -> List[ProtocolMessage]:
         if not isinstance(self.symbol, NonTerminal):
             return []
-        if self.role is not None:
-            return [RoledMessage(self.role, self.recipient, self)]
+        if self.sender is not None:
+            return [ProtocolMessage(self.sender, self.recipient, self)]
         subtrees = []
         for child in self._children:
-            subtrees.extend(child.find_role_msgs())
+            subtrees.extend(child.find_protocol_msgs())
         return subtrees
 
     def append(
@@ -186,16 +193,16 @@ class DerivationTree:
         self.invalidate_hash()
 
     @property
-    def generator_params(self) -> list["DerivationTree"]:
-        return self._generator_params
+    def sources(self) -> list["DerivationTree"]:
+        return self._sources
 
-    @generator_params.setter
-    def generator_params(self, source: list["DerivationTree"]):
+    @sources.setter
+    def sources(self, source: list["DerivationTree"]):
         if source is None:
-            self._generator_params = []
+            self._sources = []
         else:
-            self._generator_params = source
-        for param in self._generator_params:
+            self._sources = source
+        for param in self._sources:
             param._parent = self
 
     def add_child(self, child: "DerivationTree"):
@@ -213,7 +220,7 @@ class DerivationTree:
         trees = sum(
             [
                 child.find_all_trees(symbol)
-                for child in [*self._children, *self._generator_params]
+                for child in [*self._children, *self._sources]
                 if child.symbol.is_non_terminal
             ],
             [],
@@ -225,7 +232,7 @@ class DerivationTree:
     def find_direct_trees(self, symbol: NonTerminal) -> List["DerivationTree"]:
         return [
             child
-            for child in [*self._children, *self._generator_params]
+            for child in [*self._children, *self._sources]
             if child.symbol == symbol
         ]
 
@@ -275,7 +282,7 @@ class DerivationTree:
             self.hash_cache = hash(
                 (
                     self.symbol,
-                    self.role,
+                    self.sender,
                     self.recipient,
                     tuple(hash(child) for child in self._children),
                 )
@@ -310,9 +317,9 @@ class DerivationTree:
         copied = DerivationTree(
             self.symbol,
             [],
-            role=self.role,
+            sender=self.sender,
             recipient=self.recipient,
-            generator_params=[],
+            sources=[],
             read_only=self.read_only,
         )
         memo[id(self)] = copied
@@ -327,7 +334,7 @@ class DerivationTree:
         if copy_parent:
             copied._parent = copy.deepcopy(self.parent, memo)
         if copy_params:
-            copied.generator_params = copy.deepcopy(self.generator_params, memo)
+            copied.sources = copy.deepcopy(self.sources, memo)
 
         return copied
 
@@ -412,7 +419,14 @@ class DerivationTree:
 
         if isinstance(val, int):
             # This is a bit value; convert to bytes
-            val = int(val).to_bytes(val // 256 + 1)
+            assert (
+                val >= 0
+            ), "Assumption: ints are unsigned. If this does not hold, the following needs to change"
+            required_bytes = (val.bit_length() + 7) // 8  # for unsigned ints
+            required_bytes = max(
+                1, required_bytes
+            )  # ensure at least 1 byte for number 0
+            val = int(val).to_bytes(required_bytes)
             assert isinstance(val, bytes)
 
         if isinstance(val, bytes):
@@ -461,13 +475,19 @@ class DerivationTree:
         Pretty-print the derivation tree (for visualization).
         """
         s = "  " * start_indent + "Tree(" + repr(self.symbol.symbol)
-        if len(self._children) == 1:
+        if len(self._children) == 1 and len(self._sources) == 0:
             s += ", " + self._children[0].to_tree(indent, start_indent=0)
         else:
             has_children = False
             for child in self._children:
                 s += ",\n" + child.to_tree(indent + 1, start_indent=indent + 1)
                 has_children = True
+            if len(self._sources) > 0:
+                s += ",\n" + "  " * (indent + 1) + "sources=[\n"
+                for child in self._sources:
+                    s += child.to_tree(indent + 2, start_indent=indent + 2) + ",\n"
+                    has_children = True
+                s += "  " * (indent + 1) + "]"
             if has_children:
                 s += "\n" + "  " * indent
         s += ")"
@@ -477,26 +497,22 @@ class DerivationTree:
         """
         Output the derivation tree in internal representation.
         """
-        s = "  " * start_indent + "DerivationTree("
-        s += repr(self.symbol)
-        if len(self._children) == 1:
-            s += ", [" + self._children[0].to_repr(indent, start_indent=0) + "]"
-            if self.role is not None:
-                s += ", role='" + self.role + "'"
-            if self.recipient is not None:
-                s += ", recipient='" + self.recipient + "'"
-            s += ")"
-        elif len(self._children) >= 1:
+        s = "  " * start_indent + "DerivationTree(" + repr(self.symbol)
+        if len(self._children) == 1 and len(self._sources) == 0:
+            s += ", [" + self._children[0].to_repr(indent, start_indent=0) + "])"
+        elif len(self._children + self._sources) >= 1:
             s += ",\n" + "  " * indent + "  [\n"
             for child in self._children:
                 s += child.to_repr(indent + 2, start_indent=indent + 2)
                 s += ",\n"
-            s += "  " * indent + "  ]"
-            if self.role is not None:
-                s += ", role='" + self.role + "'"
-            if self.recipient is not None:
-                s += ", recipient='" + self.recipient + "'"
-            s += "\n" + "  " * indent + ")"
+            s += "  " * indent + "  ]\n" + "  " * indent + ")"
+
+            if len(self._sources) > 0:
+                s += ",\n" + "  " * (indent + 1) + "sources=[\n"
+                for source in self._sources:
+                    s += source.to_repr(indent + 2, start_indent=indent + 2)
+                    s += ",\n"
+                s += "  " * indent + "  ]\n" + "  " * indent + ")"
         else:
             s += ")"
         return s
@@ -505,15 +521,15 @@ class DerivationTree:
         """
         Output the derivation tree as (specialized) grammar
         """
-        bit_count = -1
-        byte_count = 0
 
-        def _to_grammar(node, indent=0, start_indent=0) -> str:
+        def _to_grammar(
+            node, indent=0, start_indent=0, bit_count=-1, byte_count=0
+        ) -> tuple[str, int, int]:
             """
             Output the derivation tree as (specialized) grammar
             """
             assert isinstance(node.symbol.symbol, str)
-            nonlocal bit_count, byte_count, include_position, include_value
+            nonlocal include_position, include_value
 
             s = "  " * start_indent + f"{node.symbol.symbol} ::="
             terminal_symbols = 0
@@ -542,6 +558,14 @@ class DerivationTree:
 
                 # s += f" (bit_count={bit_count}, byte_count={byte_count})"
 
+            if len(node._sources) > 0:
+                # We don't know the grammar, so we report a symbolic generator
+                s += (
+                    " := f("
+                    + ", ".join([param.symbol.symbol for param in node._sources])
+                    + ")"
+                )
+
             have_position = False
             if include_position and terminal_symbols > 0:
                 have_position = True
@@ -558,10 +582,24 @@ class DerivationTree:
 
             for child in node._children:
                 if child.symbol.is_non_terminal:
-                    s += "\n" + _to_grammar(child, indent + 1, start_indent=indent + 1)
-            return s
+                    child_str, bit_count, byte_count = _to_grammar(
+                        child,
+                        indent + 1,
+                        start_indent=indent + 1,
+                        bit_count=bit_count,
+                        byte_count=byte_count,
+                    )
+                    s += "\n" + child_str
 
-        return _to_grammar(self)
+                for param in child._sources:
+                    child_str, _, _ = _to_grammar(
+                        param, indent + 2, start_indent=indent + 1
+                    )
+                    s += "\n  " + child_str
+
+            return s, bit_count, byte_count
+
+        return _to_grammar(self)[0]
 
     def __repr__(self):
         return self.to_repr()
@@ -615,13 +653,13 @@ class DerivationTree:
     def get_root(self, stop_at_argument_begin=False):
         root = self
         while root.parent is not None and not (
-            root in root.parent.generator_params and stop_at_argument_begin
+            root in root.parent.sources and stop_at_argument_begin
         ):
             root = root.parent
         return root
 
     def _split_end(self):
-        if self.parent is None or self in self.parent.generator_params:
+        if self.parent is None or self in self.parent.sources:
             if self.parent is not None:
                 self._parent = None
             return self
@@ -643,16 +681,16 @@ class DerivationTree:
         if self in replacements and not self.read_only:
             new_subtree = replacements[self].__deepcopy__(None, True, False, False)
             new_subtree._parent = self.parent
-            grammar.populate_generator_params(new_subtree)
+            grammar.populate_sources(new_subtree)
             return new_subtree
 
         regen_children = False
         regen_params = False
         new_children = []
-        generator_params = []
-        for param in self._generator_params:
+        sources = []
+        for param in self._sources:
             new_param = param.replace_multiple(grammar, replacements)
-            generator_params.append(new_param)
+            sources.append(new_param)
             if new_param != param:
                 regen_children = True
         for child in self._children:
@@ -665,15 +703,15 @@ class DerivationTree:
             self.symbol,
             new_children,
             parent=self.parent,
-            role=self.role,
+            sender=self.sender,
             recipient=self.recipient,
-            generator_params=generator_params,
+            sources=sources,
             read_only=self.read_only,
         )
 
         # Update children match generator parameters, if parameters updated
         if new_tree.symbol not in grammar.generators:
-            new_tree.generator_params = []
+            new_tree.sources = []
             return new_tree
 
         if regen_children:
@@ -681,7 +719,7 @@ class DerivationTree:
             current = self
             current_parent = self.parent
             while current_parent is not None:
-                if current in current_parent.generator_params:
+                if current in current_parent.sources:
                     break
                 elif current in current_parent.children and grammar.is_use_generator(
                     current_parent
@@ -693,11 +731,11 @@ class DerivationTree:
 
             # Trees generated by generators don't contain children generated with other generators.
             if self_is_generator_child:
-                new_tree.generator_params = []
+                new_tree.sources = []
             else:
                 new_tree.set_children(grammar.derive_generator_output(new_tree))
         elif regen_params:
-            new_tree.generator_params = grammar.derive_generator_params(new_tree)
+            new_tree.sources = grammar.derive_sources(new_tree)
 
         return new_tree
 
@@ -710,7 +748,7 @@ class DerivationTree:
             symbols.add(self.symbol)
         for child in self._children:
             symbols.update(child.get_non_terminal_symbols(exclude_read_only))
-        for param in self._generator_params:
+        for param in self._sources:
             symbols.update(param.get_non_terminal_symbols(exclude_read_only))
         return symbols
 
@@ -727,7 +765,7 @@ class DerivationTree:
             nodes.append(self)
         for child in self._children:
             nodes.extend(child.find_all_nodes(symbol, exclude_read_only))
-        for param in self._generator_params:
+        for param in self._sources:
             nodes.extend(param.find_all_nodes(symbol, exclude_read_only))
         return nodes
 
