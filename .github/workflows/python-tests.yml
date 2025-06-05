@@ -60,7 +60,6 @@ jobs:
         with:
           files: |
             src/**.py
-            tests/**.py
 
       # Step 7: Check typing with mypy
       - name: Static type checking with mypy
