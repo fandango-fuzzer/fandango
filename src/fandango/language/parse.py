@@ -495,7 +495,7 @@ def parse(
             exec("FandangoIO.instance()", global_env, local_env)
         io_instance: FandangoIO = global_env["FandangoIO"].instance()
 
-        assign_implicit_party(grammar, "STD")
+        assign_implicit_party(grammar, "STDOUT")
         init_msg_parties(grammar)
         remap_to_std_party(grammar, io_instance)
 
@@ -588,7 +588,7 @@ def remap_to_std_party(grammar: "Grammar", io_instance: FandangoIO):
             if nt.sender is not None:
                 if nt.sender not in io_instance.parties.keys():
                     remapped_parties.add(nt.sender)
-                    nt.sender = "STD"
+                    nt.sender = "STDOUT"
             if nt.recipient is not None:
                 if nt.recipient not in io_instance.parties.keys():
                     unknown_recipients.add(nt.recipient)
