@@ -16,7 +16,7 @@ where int(<challenge>.<number_low>) < int(<challenge>.<number_high>) + 1
 import requests
 import json
 
-class Client(FandangoAgent):
+class Client(FandangoParty):
 
         def __init__(self):
             super().__init__(True)
@@ -25,7 +25,7 @@ class Client(FandangoAgent):
             x = requests.post("http://127.0.0.1:5000/api/hello", json = json.loads(message.to_string()))
             response_setter("Server", x.text.strip())
 
-class Server(FandangoAgent):
+class Server(FandangoParty):
 
         def __init__(self):
             super().__init__(False)

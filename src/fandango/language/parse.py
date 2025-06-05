@@ -38,7 +38,7 @@ from fandango.language.grammar import (
     NodeReplacer,
     closest_match,
 )
-from fandango.language.io import FandangoIO, FandangoAgent
+from fandango.language.io import FandangoIO, FandangoParty
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.stdlib import stdlib
@@ -495,14 +495,14 @@ def parse(
             exec("FandangoIO.instance()", global_env, local_env)
         io_instance: FandangoIO = global_env["FandangoIO"].instance()
 
-        assign_implicit_agent(grammar, "STD")
-        init_fandango_agents(grammar)
-        remap_to_std_agent(grammar, io_instance)
+        assign_implicit_party(grammar, "STD")
+        init_msg_parties(grammar)
+        remap_to_std_party(grammar, io_instance)
 
         # Detect illegally nested data packets.
         rir_detector = MessageNestingDetector(grammar)
         rir_detector.fail_on_nested_packet(NonTerminal(start_symbol))
-        fail_on_agent_in_generator(grammar)
+        fail_on_party_in_generator(grammar)
 
         truncate_non_visible_packets(grammar, io_instance)
 
@@ -517,27 +517,27 @@ def parse(
 ### Consistency Checks
 
 
-def fail_on_agent_in_generator(grammar):
+def fail_on_party_in_generator(grammar):
     for nt, node in grammar.rules.items():
         if nt not in grammar.generators:
             continue
-        found_node = is_agent_reachable(grammar, node)
+        found_node = is_party_reachable(grammar, node)
         if found_node is not None:
             raise ValueError(
-                f"{found_node} contains a agent or recipient and is generated using the generator on {nt}. This is not allowed!"
+                f"{found_node} contains a party or recipient and is generated using the generator on {nt}. This is not allowed!"
             )
 
     for nt in grammar.generators.keys():
         dependencies: set[NonTerminal] = grammar.generator_dependencies(nt)
         for dep_nt in dependencies:
-            found_node = is_agent_reachable(grammar, grammar[dep_nt])
+            found_node = is_party_reachable(grammar, grammar[dep_nt])
             if found_node is not None:
                 raise ValueError(
-                    f"{found_node} contains a agent or recipient and is a parameter for the generator of {nt}. This is not allowed!"
+                    f"{found_node} contains a party or recipient and is a parameter for the generator of {nt}. This is not allowed!"
                 )
 
 
-def is_agent_reachable(grammar, node):
+def is_party_reachable(grammar, node):
     seen_nt_nodes = set()
     symbol_finder = SymbolFinder()
     symbol_finder.visit(node)
@@ -556,28 +556,28 @@ def is_agent_reachable(grammar, node):
     return None
 
 
-def init_fandango_agents(grammar: "Grammar"):
-    agent_names = set()
-    grammar_agents = grammar.agents(True)
+def init_msg_parties(grammar: "Grammar"):
+    party_names = set()
+    grammar_msg_parties = grammar.msg_parties(True)
     global_env, local_env = grammar.get_python_env()
 
-    # Initialize FandangoAgent instances
+    # Initialize FandangoParty instances
     for key in global_env.keys():
-        if key in grammar_agents:
+        if key in grammar_msg_parties:
             the_type = global_env[key]
             if not isinstance(the_type, type):
                 continue
-            if FandangoAgent in the_type.__mro__:
-                agent_names.add(key)
+            if FandangoParty in the_type.__mro__:
+                party_names.add(key)
     # Call constructor
-    for agent in agent_names:
-        exec(f"{agent}()", global_env, local_env)
-        grammar_agents.remove(agent)
+    for party in party_names:
+        exec(f"{party}()", global_env, local_env)
+        grammar_msg_parties.remove(party)
 
 
-# Assign STD agent to all agents which have no agents defined.
-def remap_to_std_agent(grammar: "Grammar", io_instance: FandangoIO):
-    remapped_agent = set()
+# Assign STD party to all parties which have no party-class defined.
+def remap_to_std_party(grammar: "Grammar", io_instance: FandangoIO):
+    remapped_parties = set()
     unknown_recipients = set()
     for symbol in grammar.rules.keys():
         symbol_finder = SymbolFinder()
@@ -586,30 +586,30 @@ def remap_to_std_agent(grammar: "Grammar", io_instance: FandangoIO):
 
         for nt in non_terminals:
             if nt.sender is not None:
-                if nt.sender not in io_instance.agents.keys():
-                    remapped_agent.add(nt.sender)
+                if nt.sender not in io_instance.parties.keys():
+                    remapped_parties.add(nt.sender)
                     nt.sender = "STD"
             if nt.recipient is not None:
-                if nt.recipient not in io_instance.agents.keys():
+                if nt.recipient not in io_instance.parties.keys():
                     unknown_recipients.add(nt.recipient)
 
-    for name in remapped_agent:
+    for name in remapped_parties:
         LOGGER.warn(
-            f"No class has been specified for agent: {name}! Agent gets mapped to STD!"
+            f"No class has been specified for party: {name}! Party gets mapped to STD!"
         )
     for name in unknown_recipients:
         f"No class has been specified for recipient: {name}!"
 
 
 def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) -> None:
-    keep_agents = grammar.agents(True)
-    io_instance.agents.keys()
-    for existing_agent in list(keep_agents):
-        if not io_instance.agents[existing_agent].is_fandango():
-            keep_agents.remove(existing_agent)
+    keep_parties = grammar.msg_parties(True)
+    io_instance.parties.keys()
+    for existing_party in list(keep_parties):
+        if not io_instance.parties[existing_party].is_fandango():
+            keep_parties.remove(existing_party)
 
     for nt in grammar.rules.keys():
-        PacketTruncator(grammar, keep_agents).visit(grammar.rules[nt])
+        PacketTruncator(grammar, keep_parties).visit(grammar.rules[nt])
 
 
 def check_grammar_consistency(
@@ -903,7 +903,7 @@ def check_constraints_existence_children(
     return is_child
 
 
-def assign_implicit_agent(grammar, implicit_agent: str):
+def assign_implicit_party(grammar, implicit_party: str):
     seen_nts = set()
     seen_nts.add(NonTerminal("<start>"))
     processed_nts = set()
@@ -921,27 +921,27 @@ def assign_implicit_agent(grammar, implicit_agent: str):
 
         if current_node in rule_nts and not isinstance(current_node, NonTerminalNode):
             rule_nts.remove(current_node)
-        child_agent = set()
+        child_party = set()
 
         for c_node in rule_nts:
-            child_agent = child_agent.union(c_node.agents(grammar, False))
+            child_party = child_party.union(c_node.parties(grammar, False))
 
-        if len(child_agent) == 0:
+        if len(child_party) == 0:
             processed_nts.add(current_symbol)
             unprocessed_nts = seen_nts.difference(processed_nts)
             continue
         for c_node in rule_nts:
             seen_nts.add(c_node.symbol)
-            if len(c_node.agents(grammar, False)) != 0:
+            if len(c_node.parties(grammar, False)) != 0:
                 continue
-            c_node.sender = implicit_agent
+            c_node.sender = implicit_party
         for t_node in symbol_finder.terminalNodes:
             terminal_id = 0
             rule_nt = NonTerminal(f"<_terminal:{terminal_id}>")
             while rule_nt in grammar.rules:
                 terminal_id += 1
                 rule_nt = NonTerminal(f"<_terminal:{terminal_id}>")
-            n_node = NonTerminalNode(rule_nt, implicit_agent)
+            n_node = NonTerminalNode(rule_nt, implicit_party)
             NodeReplacer(t_node, n_node).visit(current_node)
             grammar.rules[rule_nt] = t_node
 

@@ -254,7 +254,7 @@ where forall <t> in <type_cname>:
 
 
 import socket
-class Client(FandangoAgent):
+class Client(FandangoParty):
         def __init__(self):
             super().__init__(fandango_is_client)
             self.server_domain = "127.0.0.1"
@@ -265,7 +265,7 @@ class Client(FandangoAgent):
             response, nothing = sock.recvfrom(1024)
             self.receive_msg("Server", decompress_msg(response))
 
-class Server(FandangoAgent):
+class Server(FandangoParty):
         def __init__(self):
             super().__init__(not fandango_is_client)
             if self.is_fandango():

@@ -15,7 +15,7 @@ where len(<response>.find_all_trees(NonTerminal('<quote>'))) == int(<request>.<n
 
 import json
 import requests
-class Client(FandangoAgent):
+class Client(FandangoParty):
     def __init__(self):
         super().__init__(True)
         if not self.is_fandango():
@@ -26,6 +26,6 @@ class Client(FandangoAgent):
         response = requests.get(self.url + message.to_string())
         self.receive_msg("Server", str(response.json()).replace("\"", '\''))
 
-class Server(FandangoAgent):
+class Server(FandangoParty):
     def __init__(self):
         super().__init__(False)

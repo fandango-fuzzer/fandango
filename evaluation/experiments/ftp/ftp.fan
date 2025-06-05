@@ -101,7 +101,7 @@ def feat_response():
 <response_set_type> ::= '200 ' <command_tail> '\r\n'
 
 # EPSV directs the server to open a port for data transmission. The server returns the port number.
-# While parsing that port number into <open_port>, we run a generator that reconfigures the data agent to connect to that port.
+# While parsing that port number into <open_port>, we run a generator that reconfigures the data party to connect to that port.
 # While generating that port server side, we use the same generator function to open the port server side.
 <exchange_set_epassive> ::= <ClientControl:ServerControl:request_set_epassive><ServerControl:ClientControl:response_set_epassive>
 <request_set_epassive> ::= 'EPSV\r\n'
@@ -199,15 +199,15 @@ def is_unique_folder_and_file(current_file_or_folder, data):
 # open_data_port(port) is a generator. When executed, it returns the value that was given to it and reconfigures the
 # data party definitions to use that port.
 def open_data_port(port):
-    FandangoIO.instance().agents['ClientData'].update_port(port)
-    FandangoIO.instance().agents['ServerData'].update_port(port)
+    FandangoIO.instance().parties['ClientData'].update_port(port)
+    FandangoIO.instance().parties['ServerData'].update_port(port)
     return port
 
 import socket
 import threading
 import select
 
-class ClientControl(FandangoAgent):
+class ClientControl(FandangoParty):
     def __init__(self):
         super().__init__(fandango_is_client)
         self.server_domain = "127.0.0.1"
@@ -237,7 +237,7 @@ class ClientControl(FandangoAgent):
                 except ConnectionResetError:
                     break
 
-class ServerControl(FandangoAgent):
+class ServerControl(FandangoParty):
     def __init__(self):
         super().__init__(not fandango_is_client)
         self.sock = None
@@ -277,7 +277,7 @@ class ServerControl(FandangoAgent):
         except Exception as e:
             print("Error sending message: " + str(e))
 
-class ClientData(FandangoAgent):
+class ClientData(FandangoParty):
     def __init__(self):
         super().__init__(fandango_is_client)
         self.sock = None
@@ -338,7 +338,7 @@ class ClientData(FandangoAgent):
             print("Error sending message: " + str(e))
 
 
-class ServerData(FandangoAgent):
+class ServerData(FandangoParty):
     def __init__(self):
         super().__init__(not fandango_is_client)
         self.sock = None

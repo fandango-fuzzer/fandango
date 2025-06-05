@@ -289,19 +289,19 @@ class Fandango:
             forecaster = PacketForecaster(self.grammar)
             forecast = forecaster.predict(history_tree)
 
-            if len(forecast.getAgents()) == 0:
+            if len(forecast.getMsgParties()) == 0:
                 if len(history_tree.find_protocol_msgs()) == 0:
                     raise RuntimeError("Couldn't forecast next packet!")
                 return [history_tree]
 
-            fandango_agents = []
-            for agent in forecast.getAgents():
-                if io_instance.agents[agent].is_fandango():
-                    fandango_agents.append(agent)
-            if len(fandango_agents) != 0 and not io_instance.received_msg():
+            msg_parties = []
+            for party in forecast.getMsgParties():
+                if io_instance.parties[party].is_fandango():
+                    msg_parties.append(party)
+            if len(msg_parties) != 0 and not io_instance.received_msg():
                 fuzzable_packets = []
-                for agent in fandango_agents:
-                    fuzzable_packets.extend(forecast[agent].nt_to_packet.values())
+                for party in msg_parties:
+                    fuzzable_packets.extend(forecast[party].nt_to_packet.values())
                 self.population_manager.fuzzable_packets = fuzzable_packets
 
                 new_population = (
@@ -332,7 +332,7 @@ class Fandango:
                 new_packet = next_tree.find_protocol_msgs()[-1]
                 if (
                     new_packet.recipient is None
-                    or not io_instance.agents[new_packet.recipient].is_fandango()
+                    or not io_instance.parties[new_packet.recipient].is_fandango()
                 ):
                     io_instance.set_transmit(
                         new_packet.sender, new_packet.recipient, new_packet.msg
@@ -618,14 +618,14 @@ class Fandango:
                 io_instance.get_received_msgs()
             ):
                 next_fragment_idx = start_idx
-                if msg_sender in forecast.getAgents():
+                if msg_sender in forecast.getMsgParties():
                     found_start = True
                     break
 
             if not found_start and len(io_instance.get_received_msgs()) != 0:
                 raise FandangoValueError(
-                    f"Unexpected agent sent message. Expected: "
-                    + " | ".join(forecast.getAgents())
+                    f"Unexpected party sent message. Expected: "
+                    + " | ".join(forecast.getMsgParties())
                     + f". Received: {msg_sender}."
                     + f" Messages: {io_instance.get_received_msgs()}"
                 )

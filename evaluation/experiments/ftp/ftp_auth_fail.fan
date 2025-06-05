@@ -28,7 +28,7 @@ import threading
 import select
 fandango_is_client = False
 
-class ClientControl(FandangoAgent):
+class ClientControl(FandangoParty):
     def __init__(self):
         super().__init__(fandango_is_client)
         self.server_domain = "localhost"
@@ -58,7 +58,7 @@ class ClientControl(FandangoAgent):
                 except ConnectionResetError:
                     break
 
-class ServerControl(FandangoAgent):
+class ServerControl(FandangoParty):
     def __init__(self):
         super().__init__(not fandango_is_client)
         self.sock = None

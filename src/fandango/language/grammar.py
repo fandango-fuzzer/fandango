@@ -76,21 +76,21 @@ class Node(abc.ABC):
     def accept(self, visitor: "NodeVisitor"):
         raise NotImplementedError("accept method not implemented")
 
-    def agents(self, grammar: "Grammar", include_recipients: bool = True):
-        return self._agents(grammar, set(), include_recipients)
+    def msg_parties(self, grammar: "Grammar", include_recipients: bool = True):
+        return self._msg_parties(grammar, set(), include_recipients)
 
-    def _agents(
+    def _msg_parties(
         self,
         grammar: "Grammar",
         seen_nonterminals: set[NonTerminal],
         include_recipients: bool,
     ):
-        agents = set()
+        parties = set()
         for child in self.children():
-            agents = agents.union(
-                child._agents(grammar, seen_nonterminals, include_recipients)
+            parties = parties.union(
+                child._msg_parties(grammar, seen_nonterminals, include_recipients)
             )
-        return agents
+        return parties
 
     def children(self):
         return []
@@ -488,24 +488,24 @@ class NonTerminalNode(Node):
     def __hash__(self):
         return hash(self.symbol)
 
-    def _agents(
+    def _msg_parties(
         self,
         grammar: "Grammar",
         seen_nonterminals: set[NonTerminal],
         include_recipients: bool,
     ):
-        agents = set()
+        parties = set()
         if self.sender is not None:
-            agents.add(self.sender)
+            parties.add(self.sender)
             if self.recipient is not None and include_recipients:
-                agents.add(self.recipient)
+                parties.add(self.recipient)
         if self.symbol not in seen_nonterminals:
             seen_nonterminals.add(self.symbol)
-            for agent in grammar[self.symbol]._agents(
+            for party in grammar[self.symbol]._msg_parties(
                 grammar, seen_nonterminals, include_recipients
             ):
-                agents.add(agent)
-        return agents
+                parties.add(party)
+        return parties
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         yield grammar.rules[self.symbol]
@@ -812,9 +812,9 @@ class NodeReplacer(NodeVisitor):
 
 
 class PacketTruncator(NodeVisitor):
-    def __init__(self, grammar: "Grammar", keep_agents: set[str]):
+    def __init__(self, grammar: "Grammar", keep_parties: set[str]):
         self.grammar = grammar
-        self.keep_agents = keep_agents
+        self.keep_msg_parties = keep_parties
 
     def visitStar(self, node: Star):
         return self.visitRepetition(node)
@@ -851,9 +851,9 @@ class PacketTruncator(NodeVisitor):
         if node.sender is None or node.recipient is None:
             return False
         truncatable = True
-        if node.sender in self.keep_agents:
+        if node.sender in self.keep_msg_parties:
             truncatable = False
-        if node.recipient in self.keep_agents:
+        if node.recipient in self.keep_msg_parties:
             truncatable = False
         return truncatable
 
@@ -885,11 +885,11 @@ class MessageNestingDetector(NodeVisitor):
             return
 
         if node.sender is not None:
-            agents = self.grammar[node.symbol].agents(self.grammar, False)
-            if len(agents) != 0:
+            parties = self.grammar[node.symbol].msg_parties(self.grammar, False)
+            if len(parties) != 0:
                 raise RuntimeError(
                     f"Found illegal packet-definitions within packet-definition of non_terminal {node.symbol}: "
-                    + ", ".join(agents)
+                    + ", ".join(parties)
                 )
             return
         self.current_path.append(node.symbol)
@@ -2205,11 +2205,11 @@ class Grammar(NodeVisitor):
             ]
         )
 
-    def agents(self, include_recipients: bool = True):
-        found_agents = set()
+    def msg_parties(self, include_recipients: bool = True):
+        found_parties = set()
         for nt, rule in self.rules.items():
-            found_agents = found_agents.union(rule.agents(self, include_recipients))
-        return found_agents
+            found_parties = found_parties.union(rule.msg_parties(self, include_recipients))
+        return found_parties
 
     def get_repr_for_rule(self, symbol: str | NonTerminal):
         if isinstance(symbol, str):

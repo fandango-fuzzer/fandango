@@ -9,12 +9,12 @@ from fandango import FandangoError
 from fandango.language.tree import DerivationTree
 
 
-class FandangoAgent(object):
+class FandangoParty(object):
 
     def __init__(self, is_fandango: bool):
         self.class_name = type(self).__name__
         self._is_fandango = is_fandango
-        FandangoIO.instance().agents[self.class_name] = self
+        FandangoIO.instance().parties[self.class_name] = self
 
     """
     :return: True, if the party is substituted by fandango.
@@ -46,7 +46,7 @@ class FandangoAgent(object):
     def receive_msg(self, sender: str, message: str) -> None:
         FandangoIO.instance().add_receive(sender, self.class_name, message)
 
-class SocketAgent(FandangoAgent):
+class SocketParty(FandangoParty):
     def __init__(self, is_fandango: bool, is_server: bool, is_ipv4: bool = False, ip: str = "::1",
                  port: int = 8021, is_tcp: bool = True):
         super().__init__(is_fandango)
@@ -143,18 +143,18 @@ class SocketAgent(FandangoAgent):
         sender = "Client" if self.is_server else "Server"
         self.receive_msg(sender, data.decode("utf-8"))
 
-class SocketServer(SocketAgent):
+class SocketServer(SocketParty):
     def __init__(self, is_fandango: bool, is_ipv4: bool = False, ip: str = "::1",
                  port: int = 8021, is_tcp: bool = True):
         super().__init__(is_fandango, True, is_ipv4, ip, port, is_tcp)
 
 
-class SocketClient(SocketAgent):
+class SocketClient(SocketParty):
     def __init__(self, is_fandango: bool, is_ipv4: bool = False, ip: str = "::1",
                  port: int = 8021, is_tcp: bool = True):
         super().__init__(is_fandango, False, is_ipv4, ip, port, is_tcp)
 
-class STD(FandangoAgent):
+class STD(FandangoParty):
 
     def __init__(self):
         super().__init__(True)
@@ -190,14 +190,14 @@ class FandangoIO:
         FandangoIO.__instance = self
         self.transmit: Tuple[str, str, DerivationTree] | None = None
         self.receive = list[(str, str, str)]()
-        self.agents = dict[str, FandangoAgent]()
+        self.parties = dict[str, FandangoParty]()
         self.receive_lock = threading.Lock()
 
     def run_com_loop(self):
         if self.transmit is not None:
             sender, recipient, msg = self.transmit
-            if sender in self.agents.keys():
-                self.agents[sender].on_send(msg, recipient, self.agents[sender].receive_msg)
+            if sender in self.parties.keys():
+                self.parties[sender].on_send(msg, recipient, self.parties[sender].receive_msg)
         self.clear_transmit_msgs()
 
     def clear_transmit_msgs(self):
