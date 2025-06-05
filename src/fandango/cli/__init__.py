@@ -7,25 +7,28 @@ import os
 import os.path
 import traceback
 import re
+from typing import Any
+
+from fandango.constraints.base import Constraint, SoftValue
 
 if not "readline" in globals():
     try:
         # Linux and Mac. This should do the trick.
-        import gnureadline as readline
+        import gnureadline as readline  # type: ignore
     except Exception:
         pass
 
 if not "readline" in globals():
     try:
         # Windows. This should do the trick.
-        import pyreadline3 as readline
+        import pyreadline3 as readline  # type: ignore
     except Exception:
         pass
 
 if not "readline" in globals():
     try:
         # Another Windows alternative
-        import pyreadline as readline
+        import pyreadline as readline  # type: ignore
     except Exception:
         pass
 
@@ -669,7 +672,7 @@ def make_fandango_settings(args, initial_settings={}):
 
 
 def make_evolve_settings(args):
-    evolve_settings = {}
+    evolve_settings: dict[str, Any] = {}
     _copy_setting(args, evolve_settings, "desired_solutions", args_name="num_outputs")
     if args.infinite:
         if args.max_generations != DEFAULT_MAX_GENERATIONS:
@@ -704,7 +707,7 @@ def extract_initial_population(path):
 DEFAULT_FAN_CONTENT = (None, None)
 
 # Additional Fandango constraints; set with `set`
-DEFAULT_CONSTRAINTS = []
+DEFAULT_CONSTRAINTS: list[Constraint | SoftValue] = []
 
 # Default Fandango algorithm settings; set with `set`
 DEFAULT_SETTINGS = {}
@@ -1411,7 +1414,7 @@ def shell_command(args):
                 )
             continue
 
-        command = None
+        command: Any = None
         try:
             command = shlex.split(command_line, comments=True)
         except Exception as e:
