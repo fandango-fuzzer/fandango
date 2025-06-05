@@ -63,10 +63,10 @@ jobs:
             tests/**.py
 
       # Step 7: Check typing with mypy
-      - name: Check typing with mypy
+      - name: Static type checking with mypy
         run: |
-          echo "Checking files: ${{ steps.changed-python-files.outputs.all_changed_files }}"
           for file in ${{ steps.changed-python-files.outputs.all_changed_files }}; do
+            echo "Static type checking: $file"
             mypy "$file"
           done
 
