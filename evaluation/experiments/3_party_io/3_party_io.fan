@@ -26,7 +26,7 @@ where (int(<number_high>) > int(<resolve>.<number>) and int(<resolve>.<number>) 
 import requests
 import json
 
-class Client(FandangoAgent):
+class Client(FandangoParty):
 
         def __init__(self):
             super().__init__(True)
@@ -35,7 +35,7 @@ class Client(FandangoAgent):
             x = requests.post("http://127.0.0.1:8080/api/hello", json = json.loads(message))
             response_setter("ServerA", x.text.strip())
 
-class ServerA(FandangoAgent):
+class ServerA(FandangoParty):
 
         def __init__(self):
             super().__init__(True)
@@ -44,7 +44,7 @@ class ServerA(FandangoAgent):
             x = requests.post("http://127.0.0.1:8081/api/hello", json = json.loads(message))
             response_setter("ServerB", x.text.strip())
 
-class ServerB(FandangoAgent):
+class ServerB(FandangoParty):
 
         def __init__(self):
             super().__init__(False)

@@ -128,10 +128,10 @@ where forall <mail> in <mail_data>:
     str(<mail>..<request_mail_from>.<email_address>) == str(<mail>..<mail_header_from>.<email_address>)
     and str(<mail>..<request_mail_to>.<email_address>) == str(<mail>..<mail_header_to>.<email_address>)
 
-class Client(SocketAgent):
+class Client(SocketParty):
     def __init__(self):
         super().__init__(fandango_is_client, False, True, "127.0.0.1", 8025, True)
 
-class Server(SocketAgent):
+class Server(SocketParty):
     def __init__(self):
         super().__init__(not fandango_is_client, True, True, "127.0.0.1", 9025, True)

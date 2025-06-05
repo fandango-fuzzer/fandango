@@ -262,25 +262,25 @@ class PacketForecaster:
 
     class ForcastingResult:
         def __init__(self):
-            self.agents_to_packets = dict[str, PacketForecaster.ForcastingNonTerminals]()
+            self.parties_to_packets = dict[str, PacketForecaster.ForcastingNonTerminals]()
 
-        def getAgents(self) -> set[str]:
-            return set(self.agents_to_packets.keys())
+        def getMsgParties(self) -> set[str]:
+            return set(self.parties_to_packets.keys())
 
         def __getitem__(self, item: str):
-            return self.agents_to_packets[item]
+            return self.parties_to_packets[item]
 
-        def add_packet(self, agent: str, packet: "PacketForecaster.ForcastingPacket"):
-            if agent not in self.agents_to_packets.keys():
-                self.agents_to_packets[agent] = PacketForecaster.ForcastingNonTerminals()
-            self.agents_to_packets[agent].add_packet(packet)
+        def add_packet(self, party: str, packet: "PacketForecaster.ForcastingPacket"):
+            if party not in self.parties_to_packets.keys():
+                self.parties_to_packets[party] = PacketForecaster.ForcastingNonTerminals()
+            self.parties_to_packets[party].add_packet(packet)
 
         def merge(self, other: "PacketForecaster.ForcastingResult"):
             c_new = deepcopy(self)
             c_other = deepcopy(other)
-            for agent, fnt in c_other.agents_to_packets.items():
+            for party, fnt in c_other.parties_to_packets.items():
                 for fp in fnt.nt_to_packet.values():
-                    c_new.add_packet(agent, fp)
+                    c_new.add_packet(party, fp)
             return c_new
 
     class GrammarReducer(NodeVisitor):

@@ -22,7 +22,7 @@ where forall <ex> in <exchange>:
     and str(<ex>.<request>..<avoid>).lower() not in str(<ex>.<response>).lower()
 
 import openai
-class Client(FandangoAgent):
+class Client(FandangoParty):
     def __init__(self):
         super().__init__(True)
         if not self.is_fandango():
@@ -36,6 +36,6 @@ class Client(FandangoAgent):
         )
         self.receive_msg("Gpt", response.output_text)
 
-class Gpt(FandangoAgent):
+class Gpt(FandangoParty):
     def __init__(self):
         super().__init__(False)
