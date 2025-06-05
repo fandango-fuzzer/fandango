@@ -61,14 +61,6 @@ class SocketParty(FandangoParty):
         self.send_thread = None
         self.lock = threading.Lock()
 
-    def start(self):
-        if self.running:
-            return
-        if not self.is_fandango():
-            return
-        self._create_socket()
-        self._connect()
-
     @property
     def ip(self) -> str:
         return self._ip
@@ -107,12 +99,18 @@ class SocketParty(FandangoParty):
         self._port = value
         self._apply_attr_update()
 
-    def _apply_attr_update(self):
+    def start(self):
+        if self.running:
+            return
         if not self.is_fandango():
             return
+        self.close()
+        self._create_socket()
+        self._connect()
+
+    def _apply_attr_update(self):
         if not self.running:
             return
-        self.close()
         self.start()
 
     def _create_socket(self):
@@ -139,7 +137,7 @@ class SocketParty(FandangoParty):
             try:
                 self.connection.shutdown(socket.SHUT_RDWR)
             except OSError:
-                pass  # Ignore if not connected or already closed
+                pass
             try:
                 self.connection.close()
             except OSError:
@@ -149,7 +147,7 @@ class SocketParty(FandangoParty):
             try:
                 self.sock.shutdown(socket.SHUT_RDWR)
             except OSError:
-                pass  # Ignore if not connected or already closed
+                pass
             try:
                 self.sock.close()
             except OSError:
@@ -169,7 +167,7 @@ class SocketParty(FandangoParty):
                     self.sock.setblocking(False)
                     try:
                         self.sock.connect((self._ip, self._port))
-                    except BlockingIOError:
+                    except BlockingIOError as e:
                         pass
                     while self.running:
                         _, wlist, _ = select.select([], [self.sock], [], 0.1)
@@ -186,7 +184,7 @@ class SocketParty(FandangoParty):
         while self.running:
             try:
                 rlist, _, _ = select.select([self.connection], [], [], 0.1)
-                if rlist:
+                if rlist and self.running:
                     data = self.connection.recv(1024)
                     if len(data) == 0:
                         continue  # Keep waiting if connection is open but no data
