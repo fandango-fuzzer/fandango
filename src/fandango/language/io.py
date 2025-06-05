@@ -242,7 +242,7 @@ class STDIN(FandangoParty):
                 if read == '':
                     self.running = False
                     break
-                self.receive_msg('STDIN', read.strip())
+                self.receive_msg('STDIN', read)
             else:
                 time.sleep(0.1)
 
