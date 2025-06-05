@@ -522,7 +522,7 @@ class TerminalNode(Node):
         grammar: "Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
-    ) -> List[DerivationTree]:
+    ) -> list[DerivationTree]:
         if self.symbol.is_regex:
             if isinstance(self.symbol.symbol, bytes):
                 # Exrex can't do bytes, so we decode to str and back
@@ -662,7 +662,7 @@ class Disambiguator(NodeVisitor):
 
     def visitAlternative(
         self, node: Alternative
-    ) -> dict[tuple[Union[NonTerminal, Terminal], ...], list[Tuple[Node, ...]]]:
+    ) -> dict[tuple[Union[NonTerminal, Terminal], ...], list[tuple[Node, ...]]]:
         child_endpoints = {}
         for child in node.children():
             endpoints: dict[
@@ -923,7 +923,7 @@ class ParseState:
         self.children.append(child)
         self._hash = None
 
-    def extend_children(self, children: List[DerivationTree]):
+    def extend_children(self, children: list[DerivationTree]):
         self.children.extend(children)
         self._hash = None
 
@@ -1110,7 +1110,7 @@ class Grammar(NodeVisitor):
             grammar: "Grammar",
         ):
             self.implicit_start = NonTerminal("<*start*>")
-            self.grammar_rules: Dict[NonTerminal, Node] = grammar.rules
+            self.grammar_rules: dict[NonTerminal, Node] = grammar.rules
             self.grammar = grammar
             self._rules = {}
             self._implicit_rules = {}
@@ -1118,7 +1118,7 @@ class Grammar(NodeVisitor):
                 NonTerminal, tuple[Node, tuple[NonTerminal, frozenset]]
             ] = dict()
             self._tmp_rules = dict()
-            self._cache: Dict[Tuple[str, NonTerminal], DerivationTree, bool] = {}
+            self._cache: dict[tuple[str, NonTerminal], DerivationTree, bool] = {}
             self._incomplete = set()
             self._max_position = -1
             self.elapsed_time = 0
@@ -1159,7 +1159,7 @@ class Grammar(NodeVisitor):
 
         def set_tmp_rule(
             self,
-            rule: List[List[tuple[NonTerminal, frozenset]]],
+            rule: list[list[tuple[NonTerminal, frozenset]]],
             nonterminal: Optional[NonTerminal] = None,
         ):
             if nonterminal is None:

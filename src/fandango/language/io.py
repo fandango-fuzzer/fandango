@@ -258,7 +258,7 @@ class FandangoIO:
         if FandangoIO.__instance is not None:
             raise Exception("Singleton already created!")
         FandangoIO.__instance = self
-        self.transmit: Tuple[str, str, DerivationTree] | None = None
+        self.transmit: tuple[str, str, DerivationTree] | None = None
         self.receive = list[(str, str, str)]()
         self.parties = dict[str, FandangoParty]()
         self.receive_lock = threading.Lock()

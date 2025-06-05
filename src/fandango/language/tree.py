@@ -1,5 +1,4 @@
 import copy
-from copy import deepcopy
 from io import BytesIO, StringIO
 from typing import Any, Optional, Union
 
@@ -152,7 +151,7 @@ class DerivationTree:
         for child in self._sources:
             child.set_all_read_only(read_only)
 
-    def find_protocol_msgs(self) -> List[ProtocolMessage]:
+    def find_protocol_msgs(self) -> list[ProtocolMessage]:
         if not isinstance(self.symbol, NonTerminal):
             return []
         if self.sender is not None:

@@ -31,7 +31,7 @@ class PathFinder(NodeVisitor):
         self.tree = None
         self.collapsed_tree = None
         self.current_tree: list[list[DerivationTree] | None] = []
-        self.current_path: list[Tuple[NonTerminal, bool]] = []
+        self.current_path: list[tuple[NonTerminal, bool]] = []
         self.result = PacketForecaster.ForcastingResult()
 
     def add_option(self, node: NonTerminalNode):
@@ -43,7 +43,7 @@ class PathFinder(NodeVisitor):
         self.result.add_packet(node.sender, f_packet)
 
     @staticmethod
-    def _collapsed_path(path: list[Tuple[NonTerminal, bool]]):
+    def _collapsed_path(path: list[tuple[NonTerminal, bool]]):
         new_path = []
         for nt, new_node in path:
             if nt.symbol.startswith("<__"):
@@ -221,7 +221,7 @@ class PathFinder(NodeVisitor):
 class PacketForecaster:
     class MountingPath:
         def __init__(
-            self, tree: DerivationTree, path: Tuple[Tuple[NonTerminal, bool], ...]
+            self, tree: DerivationTree, path: tuple[tuple[NonTerminal, bool], ...]
         ):
             self.tree = tree
             self.path = path
@@ -353,7 +353,7 @@ class PacketForecaster:
             self.reference_tree = None
 
         def construct_incomplete_tree(
-            self, state: ParseState, table: List[Set[ParseState] | Column]
+            self, state: ParseState, table: list[Set[ParseState] | Column]
         ) -> DerivationTree:
             i_tree = super().construct_incomplete_tree(state, table)
             i_cpy = deepcopy(i_tree)
