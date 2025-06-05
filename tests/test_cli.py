@@ -1,6 +1,7 @@
 #!/usr/bin/env pytest
 
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -10,7 +11,6 @@ from fandango.cli import get_parser
 
 
 class test_cli(unittest.TestCase):
-
     def run_command(self, command):
         proc = subprocess.Popen(
             command,
@@ -130,13 +130,16 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         command = shlex.split(
             "fandango fuzz -f tests/resources/gen_number.fan  -n 10 --population-size 10 --max-generations 30 --no-cache -c 'len(str(<start>)) > 60' --max-nodes 30"
         )
-        expected = """fandango:ERROR: Population did not converge to a perfect population
-fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
-"""
+        err_pattern = """fandango:ERROR: Population did not converge to a perfect population
+fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
+        out_pattern = """(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.\d+\n)+"""
         out, err, code = self.run_command(command)
+        self.assertRegex(out, out_pattern)
+        self.assertRegex(err, err_pattern)
         self.assertEqual(0, code)
-        self.assertEqual("", out)
-        self.assertEqual(expected, err)
+
+        num_from_error_message = int(re.findall(err_pattern, err)[0])
+        self.assertEqual(num_from_error_message, len(out.split("\n")) - 1)
 
     def test_unparse_grammar(self):
         # We unparse the standard library as well as docs/persons.fan

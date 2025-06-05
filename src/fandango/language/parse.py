@@ -1,6 +1,5 @@
 import ast
 import hashlib
-import importlib.metadata
 import os
 import sys
 import platform
@@ -19,13 +18,14 @@ from antlr4.error.ErrorListener import ErrorListener
 from xdg_base_dirs import xdg_cache_home, xdg_data_dirs, xdg_data_home
 
 from fandango.constraints import predicates
+from fandango.constraints.base import Constraint, SoftValue
 from fandango.language.convert import (
     ConstraintProcessor,
     FandangoSplitter,
     GrammarProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import Grammar, NodeType, MAX_REPETITIONS, closest_match
+from fandango.language.grammar import Grammar, NodeType, closest_match
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.stdlib import stdlib
@@ -49,7 +49,7 @@ class MyErrorListener(ErrorListener):
         )
         exc.line = line
         exc.column = column
-        exc.messsage = msg
+        exc.message = msg
         raise exc
 
 
@@ -320,7 +320,7 @@ def parse(
     start_symbol: Optional[str] = None,
     includes: list[str] = [],
     max_repetitions: int = 5,
-) -> tuple[Optional[Grammar], list[str]]:
+) -> tuple[Optional[Grammar], list[Constraint | SoftValue]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
     :param fan_files: One (open) .fan file, one string, or a list of these

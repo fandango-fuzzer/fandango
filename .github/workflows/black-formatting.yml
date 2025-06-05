@@ -29,8 +29,12 @@ jobs:
 
       - name: Install black
         run: |
-          pip install black
+          pip install black mypy
 
       - name: Check formatting with black
         run: |
           black --check src
+      
+      - name: Check typing with mypy
+        run: |
+          git diff --name-only --diff-filter=ACMR | grep -E '\.py$' | xargs mypy --check-untyped-defs

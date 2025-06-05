@@ -72,3 +72,7 @@ test = [
 [tool.black]
 line-length = 88
 target-version = ['py311']
+
+[[tool.mypy.overrides]]
+module = ["ansi_styles.*", "cachedir_tag.*", "dill.*", "antlr4.*"]
+follow_untyped_imports = true

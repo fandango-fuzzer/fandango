@@ -1,6 +1,7 @@
-from typing import Callable, Optional, Set
+from typing import Callable, Generator, Optional
 
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
+from fandango.evolution import GeneratorWithReturn
 from fandango.language.grammar import DerivationTree, Grammar
 from fandango.logger import LOGGER
 
@@ -39,11 +40,14 @@ class PopulationManager:
 
     def generate_random_population(
         self,
-        eval_individual: Callable[[DerivationTree], tuple[float, list[FailingTree]]],
+        eval_individual: Callable[
+            [DerivationTree],
+            Generator[DerivationTree, None, tuple[float, list[FailingTree]]],
+        ],
         max_nodes: int,
         target_population_size: int,
         initial_population: Optional[list[DerivationTree]] = None,
-    ) -> list[DerivationTree]:
+    ) -> tuple[list[DerivationTree], list[DerivationTree]]:
         """
         Generates a random population of unique individuals.
 
@@ -51,7 +55,7 @@ class PopulationManager:
         :param initial_population: An optional initial population to add to.
         :return: A population of unique individuals.
         """
-
+        solutions: list[DerivationTree] = []
         unique_population = initial_population or []
         unique_hashes = {hash(ind) for ind in unique_population}
         attempts = 0
@@ -63,7 +67,9 @@ class PopulationManager:
             len(unique_population) < target_population_size and attempts < max_attempts
         ):
             individual = self._grammar.fuzz(self._start_symbol, max_nodes)
-            _fitness, failing_trees = eval_individual(individual)
+            generator = GeneratorWithReturn(eval_individual(individual))
+            solutions.extend(generator)
+            _fitness, failing_trees = generator.return_value
             candidate, _fixes_made = self.fix_individual(
                 individual,
                 failing_trees,
@@ -77,15 +83,18 @@ class PopulationManager:
             LOGGER.warning(
                 f"Could not generate a full population of unique individuals. Population size reduced to {len(unique_population)}."
             )
-        return unique_population
+        return unique_population, solutions
 
     def refill_population(
         self,
         current_population: list[DerivationTree],
-        eval_individual: Callable[[DerivationTree], tuple[float, list[FailingTree]]],
+        eval_individual: Callable[
+            [DerivationTree],
+            Generator[DerivationTree, None, tuple[float, list[FailingTree]]],
+        ],
         max_nodes: int,
         target_population_size: int,
-    ) -> list[DerivationTree]:
+    ) -> Generator[DerivationTree, None, list[DerivationTree]]:
         unique_hashes = {hash(ind) for ind in current_population}
         attempts = 0
         max_attempts = (target_population_size - len(current_population)) * 10
@@ -94,7 +103,7 @@ class PopulationManager:
             len(current_population) < target_population_size and attempts < max_attempts
         ):
             individual = self._grammar.fuzz(self._start_symbol, max_nodes)
-            _fitness, failing_trees = eval_individual(individual)
+            _fitness, failing_trees = yield from eval_individual(individual)
             candidate, _fixes_made = self.fix_individual(
                 individual,
                 failing_trees,
@@ -127,6 +136,7 @@ class PopulationManager:
             for operator, value, side in failing_tree.suggestions:
                 if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
                     # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
+                    assert isinstance(failing_tree.tree.symbol.symbol, str)
                     suggested_tree = self._grammar.parse(
                         value, start=failing_tree.tree.symbol.symbol
                     )

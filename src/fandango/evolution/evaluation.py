@@ -1,6 +1,5 @@
-import concurrent.futures
 import random
-from typing import Union
+from typing import Counter, Generator, Union
 
 from fandango.constraints.base import Constraint, SoftValue
 from fandango.constraints.fitness import FailingTree
@@ -19,7 +18,6 @@ class Evaluator:
         warnings_are_errors: bool = False,
     ):
         self._grammar = grammar
-        self._constraints = constraints
         self._soft_constraints: list[SoftValue] = []
         self._hard_constraints: list[Constraint] = []
         self._expected_fitness = expected_fitness
@@ -27,8 +25,7 @@ class Evaluator:
         self._diversity_weight = diversity_weight
         self._warnings_are_errors = warnings_are_errors
         self._fitness_cache: dict[int, tuple[float, list[FailingTree]]] = {}
-        self._solution = []
-        self._solution_set = set()
+        self._solution_set: set[int] = set()
         self._checks_made = 0
 
         for constraint in constraints:
@@ -39,27 +36,9 @@ class Evaluator:
             else:
                 raise ValueError(f"Invalid constraint type: {type(constraint)}")
 
-    def solution_count(self) -> int:
-        """
-        :return: The number of perfect solutions found so far.
-        """
-        return len(self._solution)
-
-    def truncate_solution(self, desired_solutions: int) -> None:
-        """
-        Truncates the solution set to the desired number of solutions.
-
-        :param desired_solutions: The number of solutions to keep.
-        """
-        self._solution = self._solution[:desired_solutions]
-
-    def get_solutions(self) -> list[DerivationTree]:
-        """
-        Returns the list of perfect solutions found so far. Should not be mutated.
-
-        :return: The list of perfect solutions found so far.
-        """
-        return self._solution
+    @property
+    def expected_fitness(self) -> float:
+        return self._expected_fitness
 
     def get_fitness_check_count(self) -> int:
         """
@@ -91,28 +70,21 @@ class Evaluator:
         if len(self._soft_constraints) > 0:
             self._fitness_cache = {}
 
-    def compute_diversity_bonus(
-        self, individuals: list[DerivationTree]
-    ) -> dict[int, float]:
-        k = self._diversity_k
-        ind_kpaths: dict[int, set] = {}
-        for idx, tree in enumerate(individuals):
-            # Assuming your grammar is available in evaluator
-            paths = self._grammar._extract_k_paths_from_tree(tree, k)
-            ind_kpaths[idx] = paths
+    def compute_diversity_bonus(self, individuals: list[DerivationTree]) -> list[float]:
+        ind_kpaths = [
+            self._grammar._extract_k_paths_from_tree(ind, self._diversity_k)
+            for ind in individuals
+        ]
+        frequencies = Counter(path for paths in ind_kpaths for path in paths)
 
-        frequency: dict[tuple, int] = {}
-        for paths in ind_kpaths.values():
-            for path in paths:
-                frequency[path] = frequency.get(path, 0) + 1
-
-        bonus: dict[int, float] = {}
-        for idx, paths in ind_kpaths.items():
-            if paths:
-                bonus_score = sum(1.0 / frequency[path] for path in paths) / len(paths)
-            else:
-                bonus_score = 0.0
-            bonus[idx] = bonus_score * self._diversity_weight
+        bonus = [
+            (
+                sum(1.0 / frequencies[path] for path in paths) / len(paths)
+                if paths
+                else 0.0
+            )
+            for paths in ind_kpaths
+        ]
         return bonus
 
     def evaluate_hard_constraints(
@@ -167,87 +139,64 @@ class Evaluator:
         return soft_fitness, failing_trees
 
     def evaluate_individual(
-        self, individual: DerivationTree
-    ) -> tuple[float, list[FailingTree]]:
+        self,
+        individual: DerivationTree,
+    ) -> Generator[DerivationTree, None, tuple[float, list[FailingTree]]]:
         key = hash(individual)
         if key in self._fitness_cache:
-            if (
-                self._fitness_cache[key][0] >= self._expected_fitness
-                and key not in self._solution_set
-            ):
-                self._solution_set.add(key)
-                self._solution.append(individual)
             return self._fitness_cache[key]
 
-        hard_fitness, hard_failing_trees = self.evaluate_hard_constraints(individual)
+        fitness, failing_trees = self.evaluate_hard_constraints(individual)
 
-        if self._soft_constraints == []:
-            fitness = hard_fitness
-        else:
-            if hard_fitness < 1.0:
+        if self._soft_constraints:
+            if fitness < 1.0:
                 fitness = (
-                    hard_fitness * len(self._hard_constraints) / len(self._constraints)
+                    fitness
+                    * len(self._hard_constraints)
+                    / (len(self._hard_constraints) + len(self._soft_constraints))
                 )
-            else:  # hard_fitness == 1.0
+            else:  # fitness from hard constraints == 1.0
                 soft_fitness, soft_failing_trees = self.evaluate_soft_constraints(
                     individual
                 )
 
+                failing_trees.extend(soft_failing_trees)
+
                 fitness = (
-                    hard_fitness * len(self._hard_constraints)
+                    fitness * len(self._hard_constraints)
                     + soft_fitness * len(self._soft_constraints)
-                ) / len(self._constraints)
+                ) / (len(self._hard_constraints) + len(self._soft_constraints))
 
         if fitness >= self._expected_fitness and key not in self._solution_set:
             self._solution_set.add(key)
-            self._solution.append(individual)
-        try:
-            failing_trees = hard_failing_trees + soft_failing_trees
-        except NameError:
-            failing_trees = hard_failing_trees
+            yield individual
 
         self._fitness_cache[key] = (fitness, failing_trees)
         return fitness, failing_trees
 
     def evaluate_population(
-        self, population: list[DerivationTree]
-    ) -> list[tuple[DerivationTree, float, list[FailingTree]]]:
-        evaluation = []
-        for individual in population:
-            fitness, failing_trees = self.evaluate_individual(individual)
-            evaluation.append((individual, fitness, failing_trees))
-        if self._diversity_k > 0 and self._diversity_weight > 0:
-            bonus_map = self.compute_diversity_bonus(population)
-            new_evaluation = []
-            for idx, (ind, fitness, failing_trees) in enumerate(evaluation):
-                new_fitness = fitness + bonus_map.get(idx, 0.0)
-                new_evaluation.append((ind, new_fitness, failing_trees))
-            evaluation = new_evaluation
-        return evaluation
+        self,
+        population: list[DerivationTree],
+    ) -> Generator[
+        DerivationTree, None, list[tuple[DerivationTree, float, list[FailingTree]]]
+    ]:
+        evaluation: list[tuple[float, list[FailingTree]]] = []
+        for ind in population:
+            ind_eval = yield from self.evaluate_individual(ind)
+            evaluation.append((ind, *ind_eval))
 
-    def evaluate_population_parallel(
-        self, population: list[DerivationTree], num_workers: int = 4
-    ) -> list[tuple[DerivationTree, float, list]]:
-        evaluation = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
-            future_to_individual = {
-                executor.submit(self.evaluate_individual, ind): ind
-                for ind in population
-            }
-            for future in concurrent.futures.as_completed(future_to_individual):
-                ind = future_to_individual[future]
-                try:
-                    # evaluate_individual returns a 2-tuple: (fitness, failing_trees)
-                    fitness, failing_trees = future.result()
-                    # Pack the individual with its evaluation so that we have a 3-tuple.
-                    evaluation.append((ind, fitness, failing_trees))
-                except Exception as e:
-                    LOGGER.error(f"Error during parallel evaluation: {e}")
+        if self._diversity_k > 0 and self._diversity_weight > 0:
+            bonuses = self.compute_diversity_bonus(population)
+            evaluation = [
+                (ind, fitness + bonus, failing_trees)
+                for (ind, fitness, failing_trees), bonus in zip(evaluation, bonuses)
+            ]
+
         return evaluation
 
     def select_elites(
         self,
-        evaluation: list[tuple[DerivationTree, float, list]],
+        evaluation: list[tuple[DerivationTree, float, list[FailingTree]]],
         elitism_rate: float,
         population_size: int,
     ) -> list[DerivationTree]:
@@ -259,7 +208,9 @@ class Evaluator:
         ]
 
     def tournament_selection(
-        self, evaluation: list[tuple[DerivationTree, float, list]], tournament_size: int
+        self,
+        evaluation: list[tuple[DerivationTree, float, list[FailingTree]]],
+        tournament_size: int,
     ) -> tuple[DerivationTree, DerivationTree]:
         tournament = random.sample(evaluation, k=tournament_size)
         tournament.sort(key=lambda x: x[1], reverse=True)
