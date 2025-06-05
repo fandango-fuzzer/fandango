@@ -1,5 +1,4 @@
 from fandango.language.symbol import NonTerminal
-from fandango.language.tree import DerivationTree
 from fandango.language.io import *
 
 

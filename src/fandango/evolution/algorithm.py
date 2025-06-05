@@ -387,7 +387,7 @@ class Fandango:
         else:
             raise RuntimeError(f"Invalid mode: {self.grammar.fuzzing_mode}")
 
-    def _evolve_io(self) -> List[DerivationTree]:
+    def _evolve_io(self) -> list[DerivationTree]:
         global_env, local_env = self.grammar.get_python_env()
         io_instance: FandangoIO = global_env["FandangoIO"].instance()
         history_tree: DerivationTree = random.choice(self.population)
@@ -600,7 +600,7 @@ class Fandango:
 
         return self.solution
 
-    def msg_parties(self) -> List[FandangoParty]:
+    def msg_parties(self) -> list[FandangoParty]:
         global_env, local_env = self.grammar.get_python_env()
         io_instance: FandangoIO = global_env["FandangoIO"].instance()
         return list(io_instance.parties.values())
