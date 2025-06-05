@@ -650,7 +650,7 @@ class Fandango:
             for idx, (sender, recipient, msg_fragment) in enumerate(
                 io_instance.get_received_msgs()[next_fragment_idx:]
             ):
-                next_fragment_idx = idx + 1
+                abs_msg_idx = next_fragment_idx + idx
 
                 if msg_sender != sender:
                     continue
@@ -658,7 +658,7 @@ class Fandango:
                     complete_msg = msg_fragment
                 else:
                     complete_msg += msg_fragment
-                used_fragments_idx.append(idx)
+                used_fragments_idx.append(abs_msg_idx)
 
                 parsed_packet_tree = None
                 forecast_packet = None

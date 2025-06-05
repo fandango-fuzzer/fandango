@@ -1,7 +1,7 @@
 from random import randint
 import math
 
-fandango_is_client = False
+fandango_is_client = True
 
 # The starting symbol from which the fuzzer starts generating messages.
 <start> ::= <state_setup>
@@ -11,8 +11,10 @@ fandango_is_client = False
 
 # Logged out state. Client is not logged in yet. Client might ask for ssl or tls auth, which gets rejected by the server.
 # Client is allowed to log in unencrypted.
-<state_logged_out> ::= (<exchange_auth_tls><state_logged_out>) | (<exchange_auth_ssl><state_logged_out>) | (<exchange_login>)
-<state_logged_in> ::= (<exchange_mlsd><state_finished>) | (<logged_in_cmds><state_logged_in>)
+#<state_logged_out> ::= (<exchange_auth_tls><state_logged_out>) | (<exchange_auth_ssl><state_logged_out>) | (<exchange_login>)
+#<state_logged_in> ::= (<exchange_mlsd><state_finished>) | (<logged_in_cmds><state_logged_in>)
+<state_logged_out> ::= <exchange_login_ok>
+<state_logged_in> ::= <exchange_set_type> <exchange_set_epassive> <exchange_set_epassive> <exchange_mlsd>
 <state_finished> ::= ''
 
 # The logged in state. If the client is logged in, it is allowed to send the following commands.
@@ -207,7 +209,7 @@ def open_data_port(port):
 
 class ClientControl(SocketClient):
     def __init__(self):
-        super().__init__(fandango_is_client, False, "::1", 50200, True)
+        super().__init__(fandango_is_client, False, "liggesmeyer.net", 21, True)
         self.start()
 
     def receive(self, data: bytes):
@@ -225,11 +227,10 @@ class ServerControl(SocketServer):
         self.connection.sendall(message.to_string().encode("utf-8"))
         if message.to_string() == "226 Transfer complete\r\n":
             FandangoIO.instance().parties['ServerData'].close()
-            FandangoIO.instance().parties['ServerData'].start()
 
 class ClientData(SocketClient):
     def __init__(self):
-        super().__init__(fandango_is_client, False, "::1", 50100, True)
+        super().__init__(fandango_is_client, False, "liggesmeyer.net", 50100, True)
 
     def receive(self, data: bytes):
         self.receive_msg("ServerData", data.decode("utf-8"))
