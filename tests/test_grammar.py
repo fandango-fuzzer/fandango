@@ -11,11 +11,11 @@ from fandango.language.tree import DerivationTree
 
 
 class ConstraintTest(unittest.TestCase):
-
     def count_g_params(self, tree: DerivationTree):
         count = 0
         if len(tree.sources) > 0:
             count += 1
+        assert tree.children is not None
         for child in tree.children:
             count += self.count_g_params(child)
         for child in tree.sources:
@@ -23,9 +23,9 @@ class ConstraintTest(unittest.TestCase):
         return count
 
     def test_generate_k_paths(self):
-
         file = open("tests/resources/grammar.fan", "r")
         GRAMMAR, _ = parse(file, use_stdlib=False, use_cache=False)
+        assert GRAMMAR is not None
 
         kpaths = GRAMMAR._generate_all_k_paths(3)
         print(len(kpaths))
@@ -36,6 +36,7 @@ class ConstraintTest(unittest.TestCase):
     def test_derivation_k_paths(self):
         file = open("tests/resources/grammar.fan", "r")
         GRAMMAR, _ = parse(file, use_stdlib=False, use_cache=False)
+        assert GRAMMAR is not None
 
         random.seed(0)
         tree = GRAMMAR.fuzz()
@@ -44,6 +45,7 @@ class ConstraintTest(unittest.TestCase):
     def test_parse(self):
         file = open("tests/resources/grammar.fan", "r")
         GRAMMAR, _ = parse(file, use_stdlib=False, use_cache=False)
+        assert GRAMMAR is not None
         tree = GRAMMAR.parse("aabb")
 
         for path in GRAMMAR.traverse_derivation(tree):
@@ -120,6 +122,7 @@ class ConstraintTest(unittest.TestCase):
     def test_num_solutions(self):
         file = open("docs/digits.fan", "r")
         GRAMMAR, c = parse(file, use_stdlib=True, use_cache=False)
+        assert GRAMMAR is not None
         fan = Fandango(grammar=GRAMMAR, constraints=c, logger_level=LoggerLevel.DEBUG)
         sol = fan.evolve(desired_solutions=1000)
         self.assertEqual(len(sol), 1000)

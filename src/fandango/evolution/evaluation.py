@@ -180,7 +180,7 @@ class Evaluator:
     ) -> Generator[
         DerivationTree, None, list[tuple[DerivationTree, float, list[FailingTree]]]
     ]:
-        evaluation: list[tuple[float, list[FailingTree]]] = []
+        evaluation: list[tuple[DerivationTree, float, list[FailingTree]]] = []
         for ind in population:
             ind_eval = yield from self.evaluate_individual(ind)
             evaluation.append((ind, *ind_eval))

@@ -73,6 +73,6 @@ test = [
 line-length = 88
 target-version = ['py311']
 
-[[tool.mypy.overrides]]
-module = ["ansi_styles.*", "cachedir_tag.*", "dill.*", "antlr4.*"]
+[tool.mypy]
 follow_untyped_imports = true
+check_untyped_defs = true
