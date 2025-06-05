@@ -40,7 +40,7 @@ jobs:
         uses: tj-actions/changed-files@v46
         with:
           files: |
-            **.py
+            src/**/*.py
 
       - name: Check typing with mypy
         run: |
