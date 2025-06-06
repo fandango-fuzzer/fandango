@@ -114,6 +114,7 @@ def clear_visualization():
     s = " " * (COLUMNS - 1)
     print(f"\r{s}\r", end="", file=sys.stderr)
 
+
 def log_message_transfer(
     sender: str,
     receiver: str | None,
