@@ -67,8 +67,9 @@ class SocketParty(FandangoParty):
 
     @ip.setter
     def ip(self, value: str):
+        if self._ip == value:
+            return
         self._ip = value
-        self._apply_attr_update()
 
     @property
     def is_tcp(self) -> bool:
@@ -76,8 +77,9 @@ class SocketParty(FandangoParty):
 
     @is_tcp.setter
     def is_tcp(self, value: bool):
+        if self._is_tcp == value:
+            return
         self._is_tcp = value
-        self._apply_attr_update()
 
     @property
     def is_ipv4(self) -> bool:
@@ -85,8 +87,9 @@ class SocketParty(FandangoParty):
 
     @is_ipv4.setter
     def is_ipv4(self, value: bool):
+        if self._is_ipv4 == value:
+            return
         self._is_ipv4 = value
-        self._apply_attr_update()
 
     @property
     def port(self) -> int:
@@ -97,7 +100,6 @@ class SocketParty(FandangoParty):
         if self._port == value:
             return
         self._port = value
-        self._apply_attr_update()
 
     def start(self):
         if self.running:
@@ -108,20 +110,15 @@ class SocketParty(FandangoParty):
         self._create_socket()
         self._connect()
 
-    def _apply_attr_update(self):
-        if not self.running:
-            return
-        self.start()
-
     def _create_socket(self):
-        protocol = socket.SOCK_STREAM if self._is_tcp else socket.SOCK_DGRAM
-        ip_type = socket.AF_INET if self._is_ipv4 else socket.AF_INET6
+        protocol = socket.SOCK_STREAM if self.is_tcp else socket.SOCK_DGRAM
+        ip_type = socket.AF_INET if self.is_ipv4 else socket.AF_INET6
         self.sock = socket.socket(ip_type, protocol)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     def _connect(self):
         if self.is_server:
-            self.sock.bind((self._ip, self._port))
+            self.sock.bind((self.ip, self.port))
             self.sock.listen(1)
         self.running = True
         self.send_thread = threading.Thread(target=self._listen, daemon=True)
@@ -224,6 +221,14 @@ class STDOUT(FandangoParty):
 
     def __init__(self):
         super().__init__(True)
+
+    def on_send(
+        self,
+        message: DerivationTree,
+        recipient: str,
+        response_setter: Callable[[str, str], None],
+    ):
+        print({message.to_string()})
 
 class STDIN(FandangoParty):
     def __init__(self):
