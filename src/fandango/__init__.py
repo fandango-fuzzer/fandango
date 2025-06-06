@@ -76,7 +76,7 @@ def homepage():
 
 
 from abc import ABC, abstractmethod
-from typing import IO, List, Optional, Generator
+from typing import IO, Optional, Generator
 import sys
 import logging
 
@@ -95,15 +95,15 @@ class FandangoBase(ABC):
 
     def __init__(
         self,
-        fan_files: str | IO | List[str | IO],
-        constraints: List[str] = None,
+        fan_files: str | IO | list[str | IO],
+        constraints: Optional[list[str]] = None,
         *,
         logging_level: Optional[int] = None,
         use_cache: bool = True,
         use_stdlib: bool = True,
         lazy: bool = False,
         start_symbol: Optional[str] = None,
-        includes: List[str] = None,
+        includes: Optional[list[str]] = None,
     ):
         """
         Initialize a Fandango object.
@@ -169,8 +169,8 @@ class FandangoBase(ABC):
 
     @abstractmethod
     def fuzz(
-        self, *, extra_constraints: Optional[List[str]] = None, **settings
-    ) -> List[DerivationTree]:
+        self, *, extra_constraints: Optional[list[str]] = None, **settings
+    ) -> list[DerivationTree]:
         """
         Create a Fandango population.
         :param extra_constraints: Additional constraints to apply
@@ -200,8 +200,8 @@ class Fandango(FandangoBase):
         super().__init__(*args, **kwargs)
 
     def fuzz(
-        self, *, extra_constraints: Optional[List[str]] = None, **settings
-    ) -> List[DerivationTree]:
+        self, *, extra_constraints: Optional[list[str]] = None, **settings
+    ) -> list[DerivationTree]:
         """
         Create a Fandango population.
         :param extra_constraints: Additional constraints to apply
