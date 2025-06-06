@@ -135,7 +135,7 @@ class Client(SocketClient):
             ip_type=IpType.IPV4,
             ip="127.0.0.1",
             port=8025,
-            protocol_type=ProtocolType.TCP
+            protocol_type=Protocol.TCP
         )
         self.start()
 
@@ -146,6 +146,6 @@ class Server(SocketServer):
             ip_type=IpType.IPV4,
             ip="127.0.0.1",
             port=9025,
-            protocol_type=ProtocolType.TCP
+            protocol_type=Protocol.TCP
         )
         self.start()
