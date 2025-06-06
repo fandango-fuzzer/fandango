@@ -138,8 +138,8 @@ class PopulationManager:
                 if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
                     # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
                     if (
-                            isinstance(value, DerivationTree)
-                            and failing_tree.tree.symbol == value.symbol
+                        isinstance(value, DerivationTree)
+                        and failing_tree.tree.symbol == value.symbol
                     ):
                         suggested_tree = value.__deepcopy__(None, True, False, False)
                         suggested_tree.set_all_read_only(False)
@@ -154,6 +154,7 @@ class PopulationManager:
         if len(replacements) > 0:
             individual = individual.replace_multiple(self.grammar, replacements)
         return individual, fixes_made
+
 
 class IoPopulationManager(PopulationManager):
 
