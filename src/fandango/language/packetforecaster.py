@@ -262,7 +262,9 @@ class PacketForecaster:
 
     class ForcastingResult:
         def __init__(self):
-            self.parties_to_packets = dict[str, PacketForecaster.ForcastingNonTerminals]()
+            self.parties_to_packets = dict[
+                str, PacketForecaster.ForcastingNonTerminals
+            ]()
 
         def getMsgParties(self) -> set[str]:
             return set(self.parties_to_packets.keys())
@@ -272,7 +274,9 @@ class PacketForecaster:
 
         def add_packet(self, party: str, packet: "PacketForecaster.ForcastingPacket"):
             if party not in self.parties_to_packets.keys():
-                self.parties_to_packets[party] = PacketForecaster.ForcastingNonTerminals()
+                self.parties_to_packets[party] = (
+                    PacketForecaster.ForcastingNonTerminals()
+                )
             self.parties_to_packets[party].add_packet(packet)
 
         def merge(self, other: "PacketForecaster.ForcastingResult"):

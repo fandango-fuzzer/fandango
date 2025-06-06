@@ -71,8 +71,8 @@ class PopulationManager:
         ) * 10  # safeguard against infinite loops
 
         while (
-                not self._is_population_complete(unique_population)
-                and attempts < max_attempts
+            not self._is_population_complete(unique_population)
+            and attempts < max_attempts
         ):
             individual = self._generate_population_entry()
             _fitness, failing_trees = eval_individual(individual)
@@ -148,7 +148,6 @@ class PopulationManager:
         return individual, fixes_made
 
 
-
 class IoPopulationManager(PopulationManager):
 
     def __init__(
@@ -159,7 +158,9 @@ class IoPopulationManager(PopulationManager):
         max_nodes: int,
         warnings_are_errors: bool = False,
     ):
-        super().__init__(grammar, start_symbol, population_size, max_nodes, warnings_are_errors)
+        super().__init__(
+            grammar, start_symbol, population_size, max_nodes, warnings_are_errors
+        )
         self.prev_packet_idx = 0
         self.fuzzable_packets: list[PacketForecaster.ForcastingPacket] | None = None
 

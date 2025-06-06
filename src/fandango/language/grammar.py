@@ -134,7 +134,9 @@ class Alternative(Node):
                 ]
             ).fuzz(parent, grammar, 0, in_message)
             return
-        random.choice(self.alternatives).fuzz(parent, grammar, max_nodes - 1, in_message)
+        random.choice(self.alternatives).fuzz(
+            parent, grammar, max_nodes - 1, in_message
+        )
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitAlternative(self)
@@ -2208,7 +2210,9 @@ class Grammar(NodeVisitor):
     def msg_parties(self, include_recipients: bool = True):
         found_parties = set()
         for nt, rule in self.rules.items():
-            found_parties = found_parties.union(rule.msg_parties(self, include_recipients))
+            found_parties = found_parties.union(
+                rule.msg_parties(self, include_recipients)
+            )
         return found_parties
 
     def get_repr_for_rule(self, symbol: str | NonTerminal):

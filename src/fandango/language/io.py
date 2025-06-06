@@ -46,9 +46,17 @@ class FandangoParty(object):
     def receive_msg(self, sender: str, message: str) -> None:
         FandangoIO.instance().add_receive(sender, self.class_name, message)
 
+
 class SocketParty(FandangoParty):
-    def __init__(self, is_fandango: bool, is_server: bool, is_ipv4: bool = False, ip: str = "::1",
-                 port: int = 8021, is_tcp: bool = True):
+    def __init__(
+        self,
+        is_fandango: bool,
+        is_server: bool,
+        is_ipv4: bool = False,
+        ip: str = "::1",
+        port: int = 8021,
+        is_tcp: bool = True,
+    ):
         super().__init__(is_fandango)
         self.running = False
         self._is_ipv4 = is_ipv4
@@ -190,7 +198,12 @@ class SocketParty(FandangoParty):
                 self.running = False
                 break
 
-    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
+    def on_send(
+        self,
+        message: DerivationTree,
+        recipient: str,
+        response_setter: Callable[[str, str], None],
+    ):
         if not self.running:
             raise FandangoError("Socket not running!")
         self.wait_accept()
@@ -206,16 +219,30 @@ class SocketParty(FandangoParty):
         sender = "Client" if self.is_server else "Server"
         self.receive_msg(sender, data.decode("utf-8"))
 
+
 class SocketServer(SocketParty):
-    def __init__(self, is_fandango: bool, is_ipv4: bool = False, ip: str = "::1",
-                 port: int = 8021, is_tcp: bool = True):
+    def __init__(
+        self,
+        is_fandango: bool,
+        is_ipv4: bool = False,
+        ip: str = "::1",
+        port: int = 8021,
+        is_tcp: bool = True,
+    ):
         super().__init__(is_fandango, True, is_ipv4, ip, port, is_tcp)
 
 
 class SocketClient(SocketParty):
-    def __init__(self, is_fandango: bool, is_ipv4: bool = False, ip: str = "::1",
-                 port: int = 8021, is_tcp: bool = True):
+    def __init__(
+        self,
+        is_fandango: bool,
+        is_ipv4: bool = False,
+        ip: str = "::1",
+        port: int = 8021,
+        is_tcp: bool = True,
+    ):
         super().__init__(is_fandango, False, is_ipv4, ip, port, is_tcp)
+
 
 class STDOUT(FandangoParty):
 
@@ -230,6 +257,7 @@ class STDOUT(FandangoParty):
     ):
         print({message.to_string()})
 
+
 class STDIN(FandangoParty):
     def __init__(self):
         super().__init__(False)
@@ -242,10 +270,10 @@ class STDIN(FandangoParty):
             rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
             if rlist:
                 read = sys.stdin.readline()
-                if read == '':
+                if read == "":
                     self.running = False
                     break
-                self.receive_msg('STDIN', read)
+                self.receive_msg("STDIN", read)
             else:
                 time.sleep(0.1)
 
@@ -272,7 +300,9 @@ class FandangoIO:
         if self.transmit is not None:
             sender, recipient, msg = self.transmit
             if sender in self.parties.keys():
-                self.parties[sender].on_send(msg, recipient, self.parties[sender].receive_msg)
+                self.parties[sender].on_send(
+                    msg, recipient, self.parties[sender].receive_msg
+                )
         self.clear_transmit_msgs()
 
     def clear_transmit_msgs(self):
