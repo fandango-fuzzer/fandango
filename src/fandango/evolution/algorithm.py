@@ -20,7 +20,7 @@ from fandango.language.grammar import (
     FuzzingMode,
 )
 from fandango.language.packetforecaster import PacketForecaster
-from fandango.logger import LOGGER, clear_visualization, visualize_evaluation
+from fandango.logger import LOGGER, clear_visualization, visualize_evaluation, log_message_transfer
 
 
 class LoggerLevel(enum.Enum):
@@ -320,30 +320,6 @@ class Fandango:
         random.shuffle(new_population)
         return new_population[: int(self.population_size * (1 - self.destruction_rate))]
 
-    def log_message_transfer(
-        self,
-        sender: str,
-        receiver: str | None,
-        msg: DerivationTree,
-        self_is_sender: bool,
-    ):
-        if receiver is None:
-            if self_is_sender:
-                receiver = "Unknown"
-            else:
-                receiver = "Fandango"
-        if self_is_sender:
-            sender = "*" + sender
-        else:
-            receiver = "*" + receiver
-
-        if msg.contains_bytes():
-            msg = msg.to_bytes()
-        else:
-            msg = msg.to_string()
-
-        LOGGER.info(f"({sender} -> {receiver}): {msg}")
-
     def evolve(self) -> list[DerivationTree]:
         if self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
             return self._evolve_single()
@@ -414,7 +390,7 @@ class Fandango:
                     io_instance.transmit(
                         new_packet.sender, new_packet.recipient, new_packet.msg
                     )
-                    self.log_message_transfer(
+                    log_message_transfer(
                         new_packet.sender, new_packet.recipient, new_packet.msg, True
                     )
                 history_tree = next_tree
@@ -424,7 +400,7 @@ class Fandango:
                 forecast, packet_tree = self._parse_next_remote_packet(
                     forecast, io_instance
                 )
-                self.log_message_transfer(
+                log_message_transfer(
                     packet_tree.sender,
                     packet_tree.recipient,
                     packet_tree,
