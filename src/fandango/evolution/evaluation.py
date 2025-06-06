@@ -37,6 +37,12 @@ class Evaluator:
             else:
                 self.hard_constraints.append(constraint)
 
+    def reset(self):
+        self.solution.clear()
+        self.fitness_cache.clear()
+        self.solution_set.clear()
+        self.checks_made = 0
+
     def compute_diversity_bonus(
         self, individuals: list[DerivationTree]
     ) -> dict[int, float]:
