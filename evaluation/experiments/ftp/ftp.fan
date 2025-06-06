@@ -209,7 +209,7 @@ def open_data_port(port):
 
 class ClientControl(SocketClient):
     def __init__(self):
-        super().__init__(fandango_is_client, False, "liggesmeyer.net", 21, True)
+        super().__init__(fandango_is_client, False, "::1", 21, True)
         self.start()
 
     def receive(self, data: bytes):
@@ -230,7 +230,7 @@ class ServerControl(SocketServer):
 
 class ClientData(SocketClient):
     def __init__(self):
-        super().__init__(fandango_is_client, False, "liggesmeyer.net", 50100, True)
+        super().__init__(fandango_is_client, False, "::1", 50100, True)
 
     def receive(self, data: bytes):
         self.receive_msg("ServerData", data.decode("utf-8"))
