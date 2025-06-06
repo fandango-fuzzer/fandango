@@ -130,23 +130,30 @@ class PopulationManager:
         failing_trees: list[FailingTree],
     ) -> tuple[DerivationTree, int]:
         fixes_made = 0
+        replacements = dict()
         for failing_tree in failing_trees:
             if failing_tree.tree.read_only:
                 continue
             for operator, value, side in failing_tree.suggestions:
                 if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
                     # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
-                    suggested_tree = self.grammar.parse(
-                        value, start=failing_tree.tree.symbol.symbol
-                    )
+                    if (
+                            isinstance(value, DerivationTree)
+                            and failing_tree.tree.symbol == value.symbol
+                    ):
+                        suggested_tree = value.__deepcopy__(None, True, False, False)
+                        suggested_tree.set_all_read_only(False)
+                    else:
+                        suggested_tree = self.grammar.parse(
+                            value, start=failing_tree.tree.symbol.symbol
+                        )
                     if suggested_tree is None:
                         continue
-                    individual = individual.replace(
-                        self.grammar, failing_tree.tree, suggested_tree
-                    )
+                    replacements[failing_tree.tree] = suggested_tree
                     fixes_made += 1
+        if len(replacements) > 0:
+            individual = individual.replace_multiple(self.grammar, replacements)
         return individual, fixes_made
-
 
 class IoPopulationManager(PopulationManager):
 

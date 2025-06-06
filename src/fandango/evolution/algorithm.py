@@ -320,41 +320,6 @@ class Fandango:
         random.shuffle(new_population)
         return new_population[: int(self.population_size * (1 - self.destruction_rate))]
 
-    def fix_individual(
-        self, individual: DerivationTree
-    ) -> tuple[float, DerivationTree]:
-        _, failing_trees = self.evaluator.evaluate_individual(individual)
-        replacements = dict()
-        for failing_tree in failing_trees:
-            if failing_tree.tree.read_only:
-                continue
-            for operator, value, side in failing_tree.suggestions:
-                from fandango.constraints.fitness import Comparison, ComparisonSide
-
-                # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
-                if operator == Comparison.EQUAL and isinstance(
-                    value, (str, bytes, DerivationTree)
-                ):
-                    if side == ComparisonSide.RIGHT:
-                        continue
-                    if (
-                        isinstance(value, DerivationTree)
-                        and failing_tree.tree.symbol == value.symbol
-                    ):
-                        suggested_tree = value.__deepcopy__(None, True, False, False)
-                        suggested_tree.set_all_read_only(False)
-                    else:
-                        suggested_tree = self.grammar.parse(
-                            value, start=failing_tree.tree.symbol.symbol
-                        )
-                    if suggested_tree is None:
-                        continue
-                    replacements[failing_tree.tree] = suggested_tree
-                    self.fixes_made += 1
-        if len(replacements) > 0:
-            individual = individual.replace_multiple(self.grammar, replacements)
-        return individual
-
     def log_message_transfer(
         self,
         sender: str,
