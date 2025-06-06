@@ -356,12 +356,12 @@ class Fandango:
         spec_env_global, _ = self.grammar.get_spec_env()
         io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
         history_tree: DerivationTree = random.choice(self.population)
+        forecaster = PacketForecaster(self.grammar)
 
         self.desired_solutions = 1
         while True:
             self.population.clear()
             self.evaluator.reset()
-            forecaster = PacketForecaster(self.grammar)
             forecast = forecaster.predict(history_tree)
 
             if len(forecast.getMsgParties()) == 0:
@@ -369,10 +369,12 @@ class Fandango:
                     raise RuntimeError("Couldn't forecast next packet!")
                 return [history_tree]
 
-            msg_parties = []
-            for party in forecast.getMsgParties():
-                if io_instance.parties[party].is_fuzzer_controlled():
-                    msg_parties.append(party)
+            msg_parties = list(
+                filter(
+                    lambda x: io_instance.parties[x].is_fuzzer_controlled(),
+                    forecast.getMsgParties(),
+                )
+            )
             if len(msg_parties) != 0 and not io_instance.received_msg():
                 fuzzable_packets = []
                 for party in msg_parties:
