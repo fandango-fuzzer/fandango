@@ -4,7 +4,7 @@ from fandango.evolution.algorithm import Fandango
 from fandango.language.tree import DerivationTree
 
 
-def test_parsing():
+def test_msg_exchange():
     file = open("tests/resources/minimal_io.fan", "r")
 
     grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
