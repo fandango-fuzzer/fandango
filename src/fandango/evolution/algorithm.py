@@ -388,8 +388,8 @@ class Fandango:
             raise RuntimeError(f"Invalid mode: {self.grammar.fuzzing_mode}")
 
     def _evolve_io(self) -> list[DerivationTree]:
-        global_env, local_env = self.grammar.get_python_env()
-        io_instance: FandangoIO = global_env["FandangoIO"].instance()
+        spec_env_global, _ = self.grammar.get_spec_env()
+        io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
         history_tree: DerivationTree = random.choice(self.population)
 
         self.desired_solutions = 1
@@ -444,13 +444,12 @@ class Fandango:
                         new_packet.recipient
                     ].is_fuzzer_controlled()
                 ):
-                    io_instance.set_transmit(
+                    io_instance.transmit(
                         new_packet.sender, new_packet.recipient, new_packet.msg
                     )
                     self.log_message_transfer(
                         new_packet.sender, new_packet.recipient, new_packet.msg, True
                     )
-                    exec("FandangoIO.instance().run_com_loop()", global_env, local_env)
                 history_tree = next_tree
             else:
                 while not io_instance.received_msg():
@@ -598,8 +597,8 @@ class Fandango:
         return self.solution
 
     def msg_parties(self) -> list[FandangoParty]:
-        global_env, local_env = self.grammar.get_python_env()
-        io_instance: FandangoIO = global_env["FandangoIO"].instance()
+        spec_env_global, _ = self.grammar.get_spec_env()
+        io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
         return list(io_instance.parties.values())
 
     def _parse_next_remote_packet(
