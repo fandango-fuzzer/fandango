@@ -9,7 +9,7 @@ from fandango import FandangoError
 from fandango.language.tree import DerivationTree
 
 
-class ProtocolType(enum.Enum):
+class Protocol(enum.Enum):
     TCP = ("TCP",)
     UDP = "UDP"
 
@@ -76,7 +76,7 @@ class SocketParty(FandangoParty):
         ip_type: IpType = IpType.IPV4,
         ip: str = "127.0.0.1",
         port: int = 8021,
-        protocol_type: ProtocolType = ProtocolType.TCP,
+        protocol_type: Protocol = Protocol.TCP,
     ):
         super().__init__(ownership)
         self.running = False
@@ -121,11 +121,11 @@ class SocketParty(FandangoParty):
         self._ip_type = value
 
     @property
-    def protocol_type(self) -> ProtocolType:
+    def protocol_type(self) -> Protocol:
         return self._protocol_type
 
     @protocol_type.setter
-    def protocol_type(self, value: ProtocolType):
+    def protocol_type(self, value: Protocol):
         if self._protocol_type == value:
             return
         self._protocol_type = value
@@ -152,7 +152,7 @@ class SocketParty(FandangoParty):
     def _create_socket(self):
         protocol = (
             socket.SOCK_STREAM
-            if self._protocol_type == ProtocolType.TCP
+            if self._protocol_type == Protocol.TCP
             else socket.SOCK_DGRAM
         )
         ip_type = socket.AF_INET if self.ip_type == IpType.IPV4 else socket.AF_INET6
@@ -258,7 +258,7 @@ class SocketServer(SocketParty):
         ip_type: IpType = IpType.IPV4,
         ip: str = "127.0.0.1",
         port: int = 8021,
-        protocol_type: ProtocolType = ProtocolType.TCP,
+        protocol_type: Protocol = Protocol.TCP,
     ):
         super().__init__(
             ownership=ownership,
@@ -278,7 +278,7 @@ class SocketClient(SocketParty):
         ip_type: IpType = IpType.IPV4,
         ip: str = "127.0.0.1",
         port: int = 8021,
-        protocol_type: ProtocolType = ProtocolType.TCP,
+        protocol_type: Protocol = Protocol.TCP,
     ):
         super().__init__(
             ownership=ownership,

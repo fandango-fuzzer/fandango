@@ -214,7 +214,7 @@ class ClientControl(SocketClient):
             ip_type=IpType.IPV6,
             ip="::1",
             port=21,
-            protocol_type=ProtocolType.TCP
+            protocol_type=Protocol.TCP
         )
         self.start()
 
@@ -228,7 +228,7 @@ class ServerControl(SocketServer):
             ip_type=IpType.IPV6,
             ip="::1",
             port=50200,
-            protocol_type=ProtocolType.TCP
+            protocol_type=Protocol.TCP
         )
         self.start()
 
@@ -247,7 +247,7 @@ class ClientData(SocketClient):
             ip_type=IpType.IPV6,
             ip="::1",
             port=50100,
-            protocol_type=ProtocolType.TCP
+            protocol_type=Protocol.TCP
         )
 
     def receive(self, data: bytes):
@@ -260,7 +260,7 @@ class ServerData(SocketServer):
             ip_type=IpType.IPV6,
             ip="::1",
             port=50100,
-            protocol_type=ProtocolType.TCP
+            protocol_type=Protocol.TCP
         )
 
     def receive(self, data: bytes):
