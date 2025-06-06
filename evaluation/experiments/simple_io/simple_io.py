@@ -12,7 +12,12 @@ def main():
 
     # tree = grammar.parse("{}{\"nr_high\":10,\"nr_low\":5}", mode=Grammar.Parser.ParsingMode.INCOMPLETE_ROLE)
 
-    fandango = Fandango(grammar=grammar, constraints=constraints, population_size=100, logger_level=LoggerLevel.INFO)
+    fandango = Fandango(
+        grammar=grammar,
+        constraints=constraints,
+        population_size=100,
+        logger_level=LoggerLevel.INFO,
+    )
 
     # Evolve solutions
     solutions = fandango.evolve()

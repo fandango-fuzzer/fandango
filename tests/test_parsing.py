@@ -25,9 +25,9 @@ class ParserTests(unittest.TestCase):
             {((NonTerminal("<number>"), frozenset()),)},
             self.grammar._parser._rules[NonTerminal("<start>")],
         )
-        alt_1 = self.grammar.rules[NonTerminal('<number>')]
-        alt_2 = self.grammar.rules[NonTerminal('<non_zero>')]
-        alt_3 = self.grammar.rules[NonTerminal('<digit>')]
+        alt_1 = self.grammar.rules[NonTerminal("<number>")]
+        alt_2 = self.grammar.rules[NonTerminal("<non_zero>")]
+        alt_3 = self.grammar.rules[NonTerminal("<digit>")]
         concat_1 = alt_1.children()[0]
         star_1 = concat_1.children()[1]
 
@@ -45,7 +45,9 @@ class ParserTests(unittest.TestCase):
         )
         self.assertEqual(
             {((NonTerminal("<*0*>"), frozenset()),)},
-            self.grammar._parser._rules[NonTerminal(f"<__{NodeType.STAR}:{star_1.id}>")],
+            self.grammar._parser._rules[
+                NonTerminal(f"<__{NodeType.STAR}:{star_1.id}>")
+            ],
         )
         self.assertEqual(
             {
@@ -54,14 +56,23 @@ class ParserTests(unittest.TestCase):
                     (NonTerminal(f"<__{NodeType.STAR}:{star_1.id}>"), frozenset()),
                 )
             },
-            self.grammar._parser._rules[NonTerminal(f"<__{NodeType.CONCATENATION}:{concat_1.id}>")],
+            self.grammar._parser._rules[
+                NonTerminal(f"<__{NodeType.CONCATENATION}:{concat_1.id}>")
+            ],
         )
         self.assertEqual(
             {
                 ((Terminal("0"), frozenset()),),
-                ((NonTerminal(f"<__{NodeType.CONCATENATION}:{concat_1.id}>"), frozenset()),),
+                (
+                    (
+                        NonTerminal(f"<__{NodeType.CONCATENATION}:{concat_1.id}>"),
+                        frozenset(),
+                    ),
+                ),
             },
-            self.grammar._parser._rules[NonTerminal(f"<__{NodeType.ALTERNATIVE}:{alt_1.id}>")],
+            self.grammar._parser._rules[
+                NonTerminal(f"<__{NodeType.ALTERNATIVE}:{alt_1.id}>")
+            ],
         )
         self.assertEqual(
             {
@@ -75,7 +86,9 @@ class ParserTests(unittest.TestCase):
                 ((Terminal("8"), frozenset()),),
                 ((Terminal("9"), frozenset()),),
             },
-            self.grammar._parser._rules[NonTerminal(f"<__{NodeType.ALTERNATIVE}:{alt_2.id}>")],
+            self.grammar._parser._rules[
+                NonTerminal(f"<__{NodeType.ALTERNATIVE}:{alt_2.id}>")
+            ],
         )
         self.assertEqual(
             {
@@ -90,7 +103,9 @@ class ParserTests(unittest.TestCase):
                 ((Terminal("8"), frozenset()),),
                 ((Terminal("9"), frozenset()),),
             },
-            self.grammar._parser._rules[NonTerminal(f"<__{NodeType.ALTERNATIVE}:{alt_3.id}>")],
+            self.grammar._parser._rules[
+                NonTerminal(f"<__{NodeType.ALTERNATIVE}:{alt_3.id}>")
+            ],
         )
 
     # def test_parse_table(self):
@@ -117,13 +132,16 @@ class TestComplexParsing(unittest.TestCase):
             DerivationTree(
                 NonTerminal("<ab>"),
                 [
-                    DerivationTree(NonTerminal('<ab>'),
-                                   [
-                                       DerivationTree(NonTerminal('<ab>'), [DerivationTree(Terminal(''))]),
-                                       DerivationTree(Terminal('b')),
-                                   ]
-                                   ),
-                    DerivationTree(Terminal('b')),
+                    DerivationTree(
+                        NonTerminal("<ab>"),
+                        [
+                            DerivationTree(
+                                NonTerminal("<ab>"), [DerivationTree(Terminal(""))]
+                            ),
+                            DerivationTree(Terminal("b")),
+                        ],
+                    ),
+                    DerivationTree(Terminal("b")),
                 ],
             ),
         )
@@ -134,8 +152,8 @@ class TestComplexParsing(unittest.TestCase):
             DerivationTree(
                 NonTerminal("<ab>"),
                 [
-                    DerivationTree(NonTerminal('<ab>'), [DerivationTree(Terminal(''))]),
-                    DerivationTree(Terminal('b')),
+                    DerivationTree(NonTerminal("<ab>"), [DerivationTree(Terminal(""))]),
+                    DerivationTree(Terminal("b")),
                 ],
             ),
         )
@@ -146,13 +164,16 @@ class TestComplexParsing(unittest.TestCase):
             DerivationTree(
                 NonTerminal("<ab>"),
                 [
-                    DerivationTree(NonTerminal('<ab>'),
-                                   [
-                                       DerivationTree(Terminal('a')),
-                                       DerivationTree(NonTerminal('<ab>'), [DerivationTree(Terminal(''))]),
-                                   ]
-                                   ),
-                    DerivationTree(Terminal('b')),
+                    DerivationTree(
+                        NonTerminal("<ab>"),
+                        [
+                            DerivationTree(Terminal("a")),
+                            DerivationTree(
+                                NonTerminal("<ab>"), [DerivationTree(Terminal(""))]
+                            ),
+                        ],
+                    ),
+                    DerivationTree(Terminal("b")),
                 ],
             ),
         )
@@ -163,8 +184,8 @@ class TestComplexParsing(unittest.TestCase):
             DerivationTree(
                 NonTerminal("<ab>"),
                 [
-                    DerivationTree(Terminal('a')),
-                    DerivationTree(NonTerminal('<ab>'), [DerivationTree(Terminal(''))]),
+                    DerivationTree(Terminal("a")),
+                    DerivationTree(NonTerminal("<ab>"), [DerivationTree(Terminal(""))]),
                 ],
             ),
         )
@@ -193,8 +214,10 @@ class TestIncompleteParsing(unittest.TestCase):
             DerivationTree(
                 NonTerminal("<ab>"),
                 [
-                    DerivationTree(Terminal('a')),
-                    DerivationTree(NonTerminal('<ab>'), [DerivationTree(Terminal('a'))]),
+                    DerivationTree(Terminal("a")),
+                    DerivationTree(
+                        NonTerminal("<ab>"), [DerivationTree(Terminal("a"))]
+                    ),
                 ],
             ),
         )
@@ -404,35 +427,35 @@ class TestBitParsing(TestCLIParsing):
         grammar, _ = parse(file, use_stdlib=False, use_cache=False)
         self._test(b"\x00", None, grammar)
         self._test(
-            b'\x01',
+            b"\x01",
             DerivationTree(
                 NonTerminal("<start>"),
                 [
-                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
-                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
-                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
-                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
-                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
-                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
-                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))]),
                     DerivationTree(Terminal(1)),
                 ],
             ),
             grammar,
         )
         self._test(
-            b'\x02',
+            b"\x02",
             DerivationTree(
                 NonTerminal("<start>"),
                 [
-                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
-                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
-                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
-                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
-                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
-                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))]),
                     DerivationTree(Terminal(1)),
-                    DerivationTree(NonTerminal('<bit>'), [DerivationTree(Terminal(0))]),
+                    DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))]),
                 ],
             ),
             grammar,
