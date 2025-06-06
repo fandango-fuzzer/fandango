@@ -117,3 +117,27 @@ def clear_visualization(max_generations: Optional[int] = None):
     assert COLUMNS is not None
     s = " " * (COLUMNS - 1)
     print(f"\r{s}\r", end="", file=sys.stderr)
+
+
+def log_message_transfer(
+    sender: str,
+    receiver: str | None,
+    msg: "DerivationTree",
+    self_is_sender: bool,
+):
+    if receiver is None:
+        if self_is_sender:
+            receiver = "Unknown"
+        else:
+            receiver = "Fandango"
+    if self_is_sender:
+        sender = "*" + sender
+    else:
+        receiver = "*" + receiver
+
+    if msg.contains_bytes():
+        msg = msg.to_bytes()
+    else:
+        msg = msg.to_string()
+
+    LOGGER.info(f"({sender} -> {receiver}): {msg}")

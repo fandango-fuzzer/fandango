@@ -1,4 +1,8 @@
+from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
+
+# wildcard import required for usage in spec files
+from fandango.language.io import *  # noqa: F403
 
 
 def is_int(x):
@@ -65,3 +69,20 @@ def is_after(
     Check if the tree is after the after_tree and before the before_tree.
     """
     return is_before(tree, before_tree, after_tree)
+
+
+def get_index_within(
+    tree: DerivationTree, scope: DerivationTree, index_counter_symbols: list[str]
+):
+    idx = 0
+    index_counter_nts = [NonTerminal(symbol) for symbol in index_counter_symbols]
+    for val in scope.flatten():
+        if val == tree:
+            return idx
+        if val.symbol in index_counter_nts:
+            idx += 1
+    return -1
+
+
+def get_type(tree: DerivationTree):
+    return tree.symbol.symbol

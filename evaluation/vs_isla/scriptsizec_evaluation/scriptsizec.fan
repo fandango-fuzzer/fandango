@@ -38,7 +38,7 @@
 # C1: Ensures that any identifier used in an expression is declared before its use, and the declaration occurs in the same or a higher block level (i.e., considering variable scope).
 
 
-forall <use_id> in <statement>..<expr>..<id>:
+where forall <use_id> in <statement>..<expr>..<id>:
     exists <dec> in <declaration>:
         str(<dec>.<id>) == str(<id>) and is_before(<start>, <dec>, <use_id>)
 ;
@@ -48,7 +48,7 @@ forall <use_id> in <statement>..<expr>..<id>:
 
 # C2: Ensure that no variable is declared more than once in the same scope.
 
-forall <decl1> in <declaration>:
+where forall <decl1> in <declaration>:
     forall <decl2> in <declaration>:
-        not(str(<decl1>.<id>)==str(<decl2>.<id>)) or <decl1>==<decl2>
+        not(str(<decl1>.<id>) == str(<decl2>.<id>)) or <decl1> == <decl2>
 ;
