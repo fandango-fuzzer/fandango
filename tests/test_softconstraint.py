@@ -4,8 +4,6 @@ import unittest
 import unittest
 import subprocess
 import shlex
-from typing import List
-
 from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
@@ -24,7 +22,7 @@ class TestSoft(unittest.TestCase):
             max_generations=max_generations,
             random_seed=random_seed,
         )
-        solutions: List[DerivationTree] = fandango.evolve()
+        solutions: list[DerivationTree] = fandango.evolve()
         return [s.to_string() for s in solutions]
 
     def run_command(self, command):
