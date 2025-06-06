@@ -362,7 +362,7 @@ class PacketForecaster:
             i_tree = super().construct_incomplete_tree(state, table)
             i_cpy = deepcopy(i_tree)
             for i_msg, r_msg in zip(
-                i_cpy.find_protocol_msgs(), self.reference_tree.find_protocol_msgs()
+                i_cpy.protocol_msgs(), self.reference_tree.protocol_msgs()
             ):
                 i_msg.msg.set_children(r_msg.msg.children)
                 i_msg.msg.sources = r_msg.msg.sources
@@ -380,7 +380,7 @@ class PacketForecaster:
 
     def predict(self, tree: DerivationTree):
         history_nts = ""
-        for r_msg in tree.find_protocol_msgs():
+        for r_msg in tree.protocol_msgs():
             history_nts += str(r_msg.msg.symbol)
         self._parser.detailed_tree = tree
 
@@ -397,7 +397,7 @@ class PacketForecaster:
                 include_controlflow=True,
             ):
                 for orig_r_msg, r_msg in zip(
-                    tree.find_protocol_msgs(), suggested_tree.find_protocol_msgs()
+                    tree.protocol_msgs(), suggested_tree.protocol_msgs()
                 ):
                     if (
                         str(r_msg.msg.symbol)[9:] == str(orig_r_msg.msg.symbol)[1:]

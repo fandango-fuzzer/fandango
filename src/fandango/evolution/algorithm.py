@@ -346,7 +346,7 @@ class Fandango:
             forecast = forecaster.predict(history_tree)
 
             if len(forecast.getMsgParties()) == 0:
-                if len(history_tree.find_protocol_msgs()) == 0:
+                if len(history_tree.protocol_msgs()) == 0:
                     raise RuntimeError("Couldn't forecast next packet!")
                 return [history_tree]
 
@@ -385,7 +385,7 @@ class Fandango:
                 if io_instance.received_msg():
                     # Abort if we received a message during fuzzing
                     continue
-                new_packet = next_tree.find_protocol_msgs()[-1]
+                new_packet = next_tree.protocol_msgs()[-1]
                 if (
                     new_packet.recipient is None
                     or not io_instance.parties[

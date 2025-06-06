@@ -259,7 +259,7 @@ class Client(FandangoParty):
             super().__init__(fandango_is_client)
             self.server_domain = "127.0.0.1"
 
-        def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
+        def on_send(self, message: DerivationTree, recipient: str):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.sendto(compress_msg(message.to_bytes()), (self.server_domain, 53))
             response, nothing = sock.recvfrom(1024)
@@ -286,7 +286,7 @@ class Server(FandangoParty):
                 self.id_addr[m_id] = (addr, time.time())
                 self.receive_msg("Client", decompress_msg(message))
 
-        def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
+        def on_send(self, message: DerivationTree, recipient: str):
             m_id = message.to_bytes()[:2]
             addr, receive_time = self.id_addr[m_id]
             elapsed_time = time.time() - receive_time

@@ -31,18 +31,18 @@ class Client(FandangoParty):
         def __init__(self):
             super().__init__(True)
 
-        def on_send(self, message: str, recipient: str, response_setter: Callable[[str, str], None]):
+        def on_send(self, message: str, recipient: str):
             x = requests.post("http://127.0.0.1:8080/api/hello", json = json.loads(message))
-            response_setter("ServerA", x.text.strip())
+            self.receive_msg("ServerA", x.text.strip())
 
 class ServerA(FandangoParty):
 
         def __init__(self):
             super().__init__(True)
 
-        def on_send(self, message: str, recipient: str, response_setter: Callable[[str, str], None]):
+        def on_send(self, message: str, recipient: str):
             x = requests.post("http://127.0.0.1:8081/api/hello", json = json.loads(message))
-            response_setter("ServerB", x.text.strip())
+            self.receive_msg("ServerB", x.text.strip())
 
 class ServerB(FandangoParty):
 

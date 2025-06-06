@@ -4,7 +4,6 @@ import socket
 import sys
 import threading
 import time
-from typing import Callable, Tuple
 
 from fandango import FandangoError
 from fandango.language.tree import DerivationTree
@@ -55,16 +54,9 @@ class FandangoParty(object):
     Called when fandango wants to send a message as this party.
     
     :message: The message to send.
-    :response_setter: If the recipient of the message answers during the function call, this method can be called to set the response.
-        First parameter of response_setter is the name of the other party. The second is the message, that it answered with.
     """
 
-    def on_send(
-        self,
-        message: DerivationTree,
-        recipient: str,
-        response_setter: Callable[[str, str], None],
-    ):
+    def on_send(self, message: DerivationTree, recipient: str):
         print(f"({self.class_name}): {message.to_string()}")
 
     """
@@ -241,12 +233,7 @@ class SocketParty(FandangoParty):
                 self.running = False
                 break
 
-    def on_send(
-        self,
-        message: DerivationTree,
-        recipient: str,
-        response_setter: Callable[[str, str], None],
-    ):
+    def on_send(self, message: DerivationTree, recipient: str):
         if not self.running:
             raise FandangoError("Socket not running!")
         self.wait_accept()
@@ -308,12 +295,7 @@ class STDOUT(FandangoParty):
     def __init__(self):
         super().__init__(Ownership.FUZZER)
 
-    def on_send(
-        self,
-        message: DerivationTree,
-        recipient: str,
-        response_setter: Callable[[str, str], None],
-    ):
+    def on_send(self, message: DerivationTree, recipient: str):
         print({message.to_string()})
 
 
@@ -378,6 +360,4 @@ class FandangoIO:
         self, sender: str, recipient: str | None, message: DerivationTree
     ) -> None:
         if sender in self.parties.keys():
-            self.parties[sender].on_send(
-                message, recipient, self.parties[sender].receive_msg
-            )
+            self.parties[sender].on_send(message, recipient)
