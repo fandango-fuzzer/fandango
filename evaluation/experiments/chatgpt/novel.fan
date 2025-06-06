@@ -18,7 +18,7 @@ import openai
 class Client(FandangoParty):
     def __init__(self):
         super().__init__(True)
-        if not self.is_fandango():
+        if not self.is_fuzzer_controlled():
             return
         openai.api_key = 'YOUR_OPENAI_API_KEY'
 

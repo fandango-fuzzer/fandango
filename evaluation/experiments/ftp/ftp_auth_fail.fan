@@ -32,7 +32,7 @@ class ClientControl(FandangoParty):
     def __init__(self):
         super().__init__(fandango_is_client)
         self.server_domain = "localhost"
-        if not self.is_fandango():
+        if not self.is_fuzzer_controlled():
             return
         self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -64,7 +64,7 @@ class ServerControl(FandangoParty):
         self.sock = None
         self.send_thread = None
         self.running = False
-        if not self.is_fandango():
+        if not self.is_fuzzer_controlled():
             return
         self.sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

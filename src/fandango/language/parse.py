@@ -604,7 +604,7 @@ def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) ->
     keep_parties = grammar.msg_parties(True)
     io_instance.parties.keys()
     for existing_party in list(keep_parties):
-        if not io_instance.parties[existing_party].is_fandango():
+        if not io_instance.parties[existing_party].is_fuzzer_controlled():
             keep_parties.remove(existing_party)
 
     for nt in grammar.rules.keys():

@@ -18,7 +18,7 @@ import requests
 class Client(FandangoParty):
     def __init__(self):
         super().__init__(True)
-        if not self.is_fandango():
+        if not self.is_fuzzer_controlled():
             return
         self.url = "https://dune-api-a4iq.onrender.com"
 

@@ -1,3 +1,4 @@
+import enum
 import select
 import socket
 import sys
@@ -9,19 +10,46 @@ from fandango import FandangoError
 from fandango.language.tree import DerivationTree
 
 
+class ProtocolType(enum.Enum):
+    TCP = ("TCP",)
+    UDP = "UDP"
+
+
+class EndpointType(enum.Enum):
+    SERVER = ("Server",)
+    CLIENT = "Client"
+
+
+class IpType(enum.Enum):
+    IPV4 = ("IPv4",)
+    IPV6 = "IPv6"
+
+
+class Ownership(enum.Enum):
+    FUZZER = ("Fuzzer",)
+    EXTERNAL = "External"
+
+
 class FandangoParty(object):
 
-    def __init__(self, is_fandango: bool):
+    def __init__(self, ownership: Ownership):
         self.class_name = type(self).__name__
-        self._is_fandango = is_fandango
+        self._ownership = ownership
         FandangoIO.instance().parties[self.class_name] = self
 
     """
     :return: True, if the party is substituted by fandango.
     """
 
-    def is_fandango(self):
-        return self._is_fandango
+    @property
+    def ownership(self) -> Ownership:
+        return self._ownership
+
+    def is_fuzzer_controlled(self) -> bool:
+        """
+        Returns True if this party is owned by Fandango, False if it is an external party.
+        """
+        return self.ownership == Ownership.FUZZER
 
     """
     Called when fandango wants to send a message as this party.
@@ -50,20 +78,21 @@ class FandangoParty(object):
 class SocketParty(FandangoParty):
     def __init__(
         self,
-        is_fandango: bool,
-        is_server: bool,
-        is_ipv4: bool = False,
+        *,
+        ownership: Ownership,
+        endpoint_type: EndpointType,
+        ip_type: IpType = IpType.IPV4,
         ip: str = "::1",
         port: int = 8021,
-        is_tcp: bool = True,
+        protocol_type: ProtocolType = ProtocolType.TCP,
     ):
-        super().__init__(is_fandango)
+        super().__init__(ownership)
         self.running = False
-        self._is_ipv4 = is_ipv4
-        self._is_tcp = is_tcp
+        self._ip_type = ip_type
+        self._protocol_type = protocol_type
         self._ip = ip
         self._port = port
-        self.is_server = is_server
+        self._endpoint_type = endpoint_type
         self.sock = None
         self.connection = None
         self.send_thread = None
@@ -80,24 +109,34 @@ class SocketParty(FandangoParty):
         self._ip = value
 
     @property
-    def is_tcp(self) -> bool:
-        return self._is_tcp
+    def endpoint_type(self) -> EndpointType:
+        return self._endpoint_type
 
-    @is_tcp.setter
-    def is_tcp(self, value: bool):
-        if self._is_tcp == value:
+    @endpoint_type.setter
+    def endpoint_type(self, value: EndpointType):
+        if self._endpoint_type == value:
             return
-        self._is_tcp = value
+        self._endpoint_type = value
 
     @property
-    def is_ipv4(self) -> bool:
-        return self._is_ipv4
+    def ip_type(self) -> IpType:
+        return self._ip_type
 
-    @is_ipv4.setter
-    def is_ipv4(self, value: bool):
-        if self._is_ipv4 == value:
+    @ip_type.setter
+    def ip_type(self, value: IpType):
+        if self._ip_type == value:
             return
-        self._is_ipv4 = value
+        self._ip_type = value
+
+    @property
+    def protocol_type(self) -> ProtocolType:
+        return self._protocol_type
+
+    @protocol_type.setter
+    def protocol_type(self, value: ProtocolType):
+        if self._protocol_type == value:
+            return
+        self._protocol_type = value
 
     @property
     def port(self) -> int:
@@ -112,20 +151,24 @@ class SocketParty(FandangoParty):
     def start(self):
         if self.running:
             return
-        if not self.is_fandango():
+        if not self.is_fuzzer_controlled():
             return
-        self.close()
+        self.stop()
         self._create_socket()
         self._connect()
 
     def _create_socket(self):
-        protocol = socket.SOCK_STREAM if self.is_tcp else socket.SOCK_DGRAM
-        ip_type = socket.AF_INET if self.is_ipv4 else socket.AF_INET6
+        protocol = (
+            socket.SOCK_STREAM
+            if self._protocol_type == ProtocolType.TCP
+            else socket.SOCK_DGRAM
+        )
+        ip_type = socket.AF_INET if self.ip_type == IpType.IPV4 else socket.AF_INET6
         self.sock = socket.socket(ip_type, protocol)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     def _connect(self):
-        if self.is_server:
+        if self.endpoint_type == EndpointType.SERVER:
             self.sock.bind((self.ip, self.port))
             self.sock.listen(1)
         self.running = True
@@ -133,7 +176,7 @@ class SocketParty(FandangoParty):
         self.send_thread.daemon = True
         self.send_thread.start()
 
-    def close(self):
+    def stop(self):
         self.running = False
         if self.send_thread is not None:
             self.send_thread.join()
@@ -162,7 +205,7 @@ class SocketParty(FandangoParty):
     def wait_accept(self):
         with self.lock:
             if self.connection is None:
-                if self.is_server:
+                if self.endpoint_type == EndpointType.SERVER:
                     while self.running:
                         rlist, _, _ = select.select([self.sock], [], [], 0.1)
                         if rlist:
@@ -194,7 +237,7 @@ class SocketParty(FandangoParty):
                     if len(data) == 0:
                         continue  # Keep waiting if connection is open but no data
                     self.receive(data)
-            except Exception as e:
+            except Exception:
                 self.running = False
                 break
 
@@ -216,38 +259,54 @@ class SocketParty(FandangoParty):
             self.connection.sendall(message.to_string().encode("utf-8"))
 
     def receive(self, data: bytes):
-        sender = "Client" if self.is_server else "Server"
+        sender = "Client" if self.endpoint_type == EndpointType.CLIENT else "Server"
         self.receive_msg(sender, data.decode("utf-8"))
 
 
 class SocketServer(SocketParty):
     def __init__(
         self,
-        is_fandango: bool,
-        is_ipv4: bool = False,
+        *,
+        ownership: Ownership,
+        ip_type: IpType = IpType.IPV4,
         ip: str = "::1",
         port: int = 8021,
-        is_tcp: bool = True,
+        protocol_type: ProtocolType = ProtocolType.TCP,
     ):
-        super().__init__(is_fandango, True, is_ipv4, ip, port, is_tcp)
+        super().__init__(
+            ownership=ownership,
+            endpoint_type=EndpointType.SERVER,
+            ip_type=ip_type,
+            ip=ip,
+            port=port,
+            protocol_type=protocol_type,
+        )
 
 
 class SocketClient(SocketParty):
     def __init__(
         self,
-        is_fandango: bool,
-        is_ipv4: bool = False,
+        *,
+        ownership: Ownership,
+        ip_type: IpType = IpType.IPV4,
         ip: str = "::1",
         port: int = 8021,
-        is_tcp: bool = True,
+        protocol_type: ProtocolType = ProtocolType.TCP,
     ):
-        super().__init__(is_fandango, False, is_ipv4, ip, port, is_tcp)
+        super().__init__(
+            ownership=ownership,
+            endpoint_type=EndpointType.SERVER,
+            ip_type=ip_type,
+            ip=ip,
+            port=port,
+            protocol_type=protocol_type,
+        )
 
 
 class STDOUT(FandangoParty):
 
     def __init__(self):
-        super().__init__(True)
+        super().__init__(Ownership.FUZZER)
 
     def on_send(
         self,
@@ -260,7 +319,7 @@ class STDOUT(FandangoParty):
 
 class STDIN(FandangoParty):
     def __init__(self):
-        super().__init__(False)
+        super().__init__(Ownership.EXTERNAL)
         self.running = True
         self.listen_thread = threading.Thread(target=self.listen_loop, daemon=True)
         self.listen_thread.start()
