@@ -488,7 +488,7 @@ def parse(
     if grammar and parsed_constraints:
         check_constraints_existence(grammar, parsed_constraints)
 
-    global_env, local_env = grammar.get_python_env()
+    global_env, local_env = grammar.get_spec_env()
     if grammar.fuzzing_mode == FuzzingMode.IO:
         if "FandangoIO" not in global_env.keys():
             exec("FandangoIO.instance()", global_env, local_env)
@@ -558,7 +558,7 @@ def is_party_reachable(grammar, node):
 def init_msg_parties(grammar: "Grammar"):
     party_names = set()
     grammar_msg_parties = grammar.msg_parties(True)
-    global_env, local_env = grammar.get_python_env()
+    global_env, local_env = grammar.get_spec_env()
 
     # Initialize FandangoParty instances
     for key in global_env.keys():

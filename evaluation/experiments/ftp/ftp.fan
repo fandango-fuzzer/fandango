@@ -1,7 +1,7 @@
 from random import randint
 import math
 
-fandango_is_client = True
+fandango_is_client = False
 
 # The starting symbol from which the fuzzer starts generating messages.
 <start> ::= <state_setup>
@@ -209,7 +209,13 @@ def open_data_port(port):
 
 class ClientControl(SocketClient):
     def __init__(self):
-        super().__init__(fandango_is_client, False, "::1", 21, True)
+        super().__init__(
+            ownership=Ownership.FUZZER if fandango_is_client else Ownership.EXTERNAL,
+            ip_type=IpType.IPV6,
+            ip="::1",
+            port=21,
+            protocol_type=ProtocolType.TCP
+        )
         self.start()
 
     def receive(self, data: bytes):
@@ -217,7 +223,13 @@ class ClientControl(SocketClient):
 
 class ServerControl(SocketServer):
     def __init__(self):
-        super().__init__(not fandango_is_client, False, "::1", 50200, True)
+        super().__init__(
+            ownership=Ownership.EXTERNAL if fandango_is_client else Ownership.FUZZER,
+            ip_type=IpType.IPV6,
+            ip="::1",
+            port=50200,
+            protocol_type=ProtocolType.TCP
+        )
         self.start()
 
     def receive(self, data: bytes):
@@ -230,14 +242,26 @@ class ServerControl(SocketServer):
 
 class ClientData(SocketClient):
     def __init__(self):
-        super().__init__(fandango_is_client, False, "::1", 50100, True)
+        super().__init__(
+            ownership=Ownership.FUZZER if fandango_is_client else Ownership.EXTERNAL,
+            ip_type=IpType.IPV6,
+            ip="::1",
+            port=50100,
+            protocol_type=ProtocolType.TCP
+        )
 
     def receive(self, data: bytes):
         self.receive_msg("ServerData", data.decode("utf-8"))
 
 class ServerData(SocketServer):
     def __init__(self):
-        super().__init__(not fandango_is_client, False, "::1", 50100, True)
+        super().__init__(
+            ownership=Ownership.EXTERNAL if fandango_is_client else Ownership.FUZZER,
+            ip_type=IpType.IPV6,
+            ip="::1",
+            port=50100,
+            protocol_type=ProtocolType.TCP
+        )
 
     def receive(self, data: bytes):
         self.receive_msg("ClientData", data.decode("utf-8"))

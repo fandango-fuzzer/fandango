@@ -350,22 +350,9 @@ class FandangoIO:
         if FandangoIO.__instance is not None:
             raise Exception("Singleton already created!")
         FandangoIO.__instance = self
-        self.transmit: tuple[str, str, DerivationTree] | None = None
         self.receive = list[(str, str, str)]()
         self.parties = dict[str, FandangoParty]()
         self.receive_lock = threading.Lock()
-
-    def run_com_loop(self):
-        if self.transmit is not None:
-            sender, recipient, msg = self.transmit
-            if sender in self.parties.keys():
-                self.parties[sender].on_send(
-                    msg, recipient, self.parties[sender].receive_msg
-                )
-        self.clear_transmit_msgs()
-
-    def clear_transmit_msgs(self):
-        self.transmit = None
 
     def add_receive(self, sender: str, receiver: str, message: str) -> None:
         with self.receive_lock:
@@ -387,7 +374,10 @@ class FandangoIO:
         with self.receive_lock:
             self.receive.clear()
 
-    def set_transmit(
+    def transmit(
         self, sender: str, recipient: str | None, message: DerivationTree
     ) -> None:
-        self.transmit = (sender, recipient, message)
+        if sender in self.parties.keys():
+            self.parties[sender].on_send(
+                message, recipient, self.parties[sender].receive_msg
+            )

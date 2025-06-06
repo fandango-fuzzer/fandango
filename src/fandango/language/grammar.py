@@ -2471,7 +2471,7 @@ class Grammar(NodeVisitor):
             len(all_k_paths),
         )
 
-    def get_python_env(self):
+    def get_spec_env(self):
         return self._global_variables, self._local_variables
 
     def contains_type(self, tp: type, *, start="<start>") -> bool:

@@ -370,7 +370,7 @@ class PacketForecaster:
             return i_cpy
 
     def __init__(self, grammar: Grammar):
-        g_globals, g_locals = grammar.get_python_env()
+        g_globals, g_locals = grammar.get_spec_env()
         reduced = PacketForecaster.GrammarReducer().process(grammar)
         self.grammar = grammar
         self.reduced_grammar = Grammar(
