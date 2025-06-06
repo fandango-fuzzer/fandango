@@ -207,17 +207,17 @@ class Fandango:
         if 0 < self.desired_solutions <= len(self.solution):
             # Found enough solutions: Manually only require self.desired_solutions
             self.fitness = 1.0
-            self.solution = self.solution[: self.desired_solutions]
+            del self.solution[self.desired_solutions : ]
             return True
         if len(self.solution) >= self.population_size:
             # Found enough solutions: Found enough for next generation
             self.fitness = 1.0
-            self.solution = self.solution[: self.population_size]
+            del self.solution[self.population_size : ]
             return True
         if self.fitness >= self.expected_fitness:
             # Found enough solutions: Reached expected fitness
             self.fitness = 1.0
-            self.solution = self.population[: self.population_size]
+            del self.solution[self.population_size : ]
             return True
         return False
 
@@ -396,8 +396,6 @@ class Fandango:
         while True:
             self.population.clear()
             self.evaluator.reset()
-            self.solution.clear()
-            self.solution_set.clear()
             forecaster = PacketForecaster(self.grammar)
             forecast = forecaster.predict(history_tree)
 
@@ -417,8 +415,8 @@ class Fandango:
                 self.population_manager.fuzzable_packets = fuzzable_packets
 
                 new_population = (
-                    self.population_manager.generate_random_initial_population(
-                        self.fix_individual
+                    self.population_manager.generate_random_population(
+                        eval_individual=self.evaluator.evaluate_individual
                     )
                 )
 
@@ -473,7 +471,6 @@ class Fandango:
                 fitness, eval_report = self.evaluator.evaluate_individual(history_tree)
                 if fitness < 0.99:
                     raise RuntimeError("Remote response doesn't match constraints!")
-                self.solution.clear()
             history_tree.set_all_read_only(True)
 
     def _evolve_single(self) -> list[DerivationTree]:
