@@ -110,7 +110,7 @@ class PopulationManager:
                 individual,
                 failing_trees,
             )
-            if PopulationManager.add_unique_individual(
+            if not PopulationManager.add_unique_individual(
                 current_population, candidate, unique_hashes
             ):
                 attempts += 1
@@ -119,7 +119,7 @@ class PopulationManager:
             LOGGER.warning(
                 "Could not generate full unique new population, filling remaining slots with duplicates."
             )
-            while len(current_population) < self.population_size:
+            while not self._is_population_complete(current_population):
                 current_population.append(self._generate_population_entry())
 
         return current_population
