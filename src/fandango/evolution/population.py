@@ -141,7 +141,9 @@ class PopulationManager:
                         isinstance(value, DerivationTree)
                         and failing_tree.tree.symbol == value.symbol
                     ):
-                        suggested_tree = value.deepcopy(copy_children=True, copy_params=False, copy_parent=False)
+                        suggested_tree = value.deepcopy(
+                            copy_children=True, copy_params=False, copy_parent=False
+                        )
                         suggested_tree.set_all_read_only(False)
                     else:
                         suggested_tree = self.grammar.parse(

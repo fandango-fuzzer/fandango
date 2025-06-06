@@ -1,4 +1,5 @@
 from fandango.language.symbol import NonTerminal
+
 # Importing '*' here, because all functions, and classes existing in the io file, need to be available within spec files
 from fandango.language.io import *
 
