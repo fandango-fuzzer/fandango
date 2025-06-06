@@ -116,7 +116,7 @@ def feat_response():
 <open_mlsd> ::= '150 Opening BINARY mode data connection for MLSD\r\n'
 <mlsd_transfer> ::= <ServerData:ClientData:mlsd_data>+<ServerControl:ClientControl:finalize_mlsd>
 <finalize_mlsd> ::= '226 Transfer complete\r\n'
-<mlsd_data> ::= (<mlsd_data_folder> | <mlsd_data_file>)+
+<mlsd_data> ::= (<mlsd_data_folder> | <mlsd_data_file>){2, 2}
 <mlsd_data_folder> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_folder> ';type=' <mlsd_type_folder> ';unique=' <mlsd_unique> ';UNIX.group=' <mlsd_data_user_uid> ';UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=' <mlsd_data_user_uid> ';UNIX.ownername=the_user; ' <mlsd_folder> '\r\n'
 <mlsd_data_file> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_file> ';size=' <mlsd_size> ';type=' <mlsd_type_file> ';unique=' <mlsd_unique> ';UNIX.group=' <mlsd_data_user_uid> ';UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=' <mlsd_data_user_uid> ';UNIX.ownername=the_user; ' <mlsd_file> '\r\n'
 <mlsd_data_user_uid> ::= <number>
@@ -238,7 +238,7 @@ class ServerControl(SocketServer):
     def transmit(self, message: DerivationTree, recipient: str):
         self.connection.sendall(message.to_string().encode("utf-8"))
         if message.to_string() == "226 Transfer complete\r\n":
-            FandangoIO.instance().parties['ServerData'].close()
+            FandangoIO.instance().parties['ServerData'].stop()
 
 class ClientData(SocketClient):
     def __init__(self):
