@@ -59,7 +59,7 @@ class Profiler:
 
     def __init__(self, enabled: bool):
         self.enabled = enabled
-        self.metrics: Dict[str, Dict[str, Union[int, float]]] = {
+        self.metrics: dict[str, dict[str, Union[int, float]]] = {
             "initial_population": {"count": 0, "time": 0.0},
             "evaluate_population": {"count": 0, "time": 0.0},
             "select_elites": {"count": 0, "time": 0.0},
