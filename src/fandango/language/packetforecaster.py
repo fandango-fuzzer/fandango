@@ -404,7 +404,7 @@ class PacketForecaster:
                         and r_msg.sender == orig_r_msg.sender
                         and r_msg.recipient == orig_r_msg.recipient
                     ):
-                        cpy = orig_r_msg.msg.__deepcopy__(None, copy_parent=False)
+                        cpy = orig_r_msg.msg.deepcopy(copy_parent=False)
                         r_msg.msg.set_children(cpy.children)
                         r_msg.msg.sources = deepcopy(cpy.sources)
                         r_msg.msg.symbol = NonTerminal("<" + str(cpy.symbol)[1:])
