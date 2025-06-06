@@ -82,7 +82,7 @@ class SocketParty(FandangoParty):
         ownership: Ownership,
         endpoint_type: EndpointType,
         ip_type: IpType = IpType.IPV4,
-        ip: str = "::1",
+        ip: str = "127.0.0.1",
         port: int = 8021,
         protocol_type: ProtocolType = ProtocolType.TCP,
     ):
@@ -259,7 +259,7 @@ class SocketParty(FandangoParty):
             self.connection.sendall(message.to_string().encode("utf-8"))
 
     def receive(self, data: bytes):
-        sender = "Client" if self.endpoint_type == EndpointType.CLIENT else "Server"
+        sender = "Client" if self.endpoint_type == EndpointType.SERVER else "Server"
         self.receive_msg(sender, data.decode("utf-8"))
 
 
@@ -269,7 +269,7 @@ class SocketServer(SocketParty):
         *,
         ownership: Ownership,
         ip_type: IpType = IpType.IPV4,
-        ip: str = "::1",
+        ip: str = "127.0.0.1",
         port: int = 8021,
         protocol_type: ProtocolType = ProtocolType.TCP,
     ):
@@ -289,13 +289,13 @@ class SocketClient(SocketParty):
         *,
         ownership: Ownership,
         ip_type: IpType = IpType.IPV4,
-        ip: str = "::1",
+        ip: str = "127.0.0.1",
         port: int = 8021,
         protocol_type: ProtocolType = ProtocolType.TCP,
     ):
         super().__init__(
             ownership=ownership,
-            endpoint_type=EndpointType.SERVER,
+            endpoint_type=EndpointType.CLIENT,
             ip_type=ip_type,
             ip=ip,
             port=port,

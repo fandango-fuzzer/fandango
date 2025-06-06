@@ -3,8 +3,6 @@ import socket
 from datetime import datetime, timezone
 import random
 
-fandango_is_client = True
-
 def format_unix_time(unix_time):
     dt = datetime.fromtimestamp(unix_time, tz=timezone.utc)
     return dt.strftime('%a, %d %b %Y %H:%M:%S %z')
@@ -128,12 +126,26 @@ where forall <mail> in <mail_data>:
     str(<mail>..<request_mail_from>.<email_address>) == str(<mail>..<mail_header_from>.<email_address>)
     and str(<mail>..<request_mail_to>.<email_address>) == str(<mail>..<mail_header_to>.<email_address>)
 
-class Client(SocketParty):
+fandango_is_client = True
+
+class Client(SocketClient):
     def __init__(self):
-        super().__init__(fandango_is_client, False, True, "127.0.0.1", 8025, True)
+        super().__init__(
+            ownership=Ownership.FUZZER if fandango_is_client else Ownership.EXTERNAL,
+            ip_type=IpType.IPV4,
+            ip="127.0.0.1",
+            port=8025,
+            protocol_type=ProtocolType.TCP
+        )
         self.start()
 
-class Server(SocketParty):
+class Server(SocketServer):
     def __init__(self):
-        super().__init__(not fandango_is_client, True, True, "127.0.0.1", 9025, True)
+        super().__init__(
+            ownership=Ownership.EXTERNAL if fandango_is_client else Ownership.FUZZER,
+            ip_type=IpType.IPV4,
+            ip="127.0.0.1",
+            port=9025,
+            protocol_type=ProtocolType.TCP
+        )
         self.start()
