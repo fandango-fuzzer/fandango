@@ -20,7 +20,12 @@ from fandango.language.grammar import (
     FuzzingMode,
 )
 from fandango.language.packetforecaster import PacketForecaster
-from fandango.logger import LOGGER, clear_visualization, visualize_evaluation, log_message_transfer
+from fandango.logger import (
+    LOGGER,
+    clear_visualization,
+    visualize_evaluation,
+    log_message_transfer,
+)
 
 
 class LoggerLevel(enum.Enum):
