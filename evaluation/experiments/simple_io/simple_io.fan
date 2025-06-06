@@ -21,9 +21,9 @@ class Client(FandangoParty):
         def __init__(self):
             super().__init__(True)
 
-        def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
+        def on_send(self, message: DerivationTree, recipient: str):
             x = requests.post("http://127.0.0.1:5000/api/hello", json = json.loads(message.to_string()))
-            response_setter("Server", x.text.strip())
+            self.receive_msg("Server", x.text.strip())
 
 class Server(FandangoParty):
 

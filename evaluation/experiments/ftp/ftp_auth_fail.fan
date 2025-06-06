@@ -41,7 +41,7 @@ class ClientControl(FandangoParty):
         server_thread.daemon = True
         server_thread.start()
 
-    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
+    def on_send(self, message: DerivationTree, recipient: str):
         self.sock.sendall(message.to_string().encode("utf-8"))
 
     def listen_loop(self):
@@ -90,7 +90,7 @@ class ServerControl(FandangoParty):
                 self.running = False
                 break
 
-    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
+    def on_send(self, message: DerivationTree, recipient: str):
         try:
             if not self.running:
                 raise Exception("Socket not running!")

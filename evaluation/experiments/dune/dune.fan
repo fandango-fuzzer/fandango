@@ -22,7 +22,7 @@ class Client(FandangoParty):
             return
         self.url = "https://dune-api-a4iq.onrender.com"
 
-    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
+    def on_send(self, message: DerivationTree, recipient: str):
         response = requests.get(self.url + message.to_string())
         self.receive_msg("Server", str(response.json()).replace("\"", '\''))
 

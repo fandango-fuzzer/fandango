@@ -22,7 +22,7 @@ class Client(FandangoParty):
             return
         openai.api_key = 'YOUR_OPENAI_API_KEY'
 
-    def on_send(self, message: DerivationTree, recipient: str, response_setter: Callable[[str, str], None]):
+    def on_send(self, message: DerivationTree, recipient: str):
         response = openai.responses.create(
            model=message.children[0].to_string(),
            input=message.children[1].to_string()
