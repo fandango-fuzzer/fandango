@@ -1,5 +1,5 @@
 from fandango.language.symbol import NonTerminal
-from fandango.language.io import *
+from fandango.language.tree import DerivationTree
 
 
 def is_int(x):
