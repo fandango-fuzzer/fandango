@@ -207,17 +207,17 @@ class Fandango:
         if 0 < self.desired_solutions <= len(self.solution):
             # Found enough solutions: Manually only require self.desired_solutions
             self.fitness = 1.0
-            del self.solution[self.desired_solutions : ]
+            del self.solution[self.desired_solutions :]
             return True
         if len(self.solution) >= self.population_size:
             # Found enough solutions: Found enough for next generation
             self.fitness = 1.0
-            del self.solution[self.population_size : ]
+            del self.solution[self.population_size :]
             return True
         if self.fitness >= self.expected_fitness:
             # Found enough solutions: Reached expected fitness
             self.fitness = 1.0
-            del self.solution[self.population_size : ]
+            del self.solution[self.population_size :]
             return True
         return False
 
@@ -414,10 +414,8 @@ class Fandango:
                     fuzzable_packets.extend(forecast[party].nt_to_packet.values())
                 self.population_manager.fuzzable_packets = fuzzable_packets
 
-                new_population = (
-                    self.population_manager.generate_random_population(
-                        eval_individual=self.evaluator.evaluate_individual
-                    )
+                new_population = self.population_manager.generate_random_population(
+                    eval_individual=self.evaluator.evaluate_individual
                 )
 
                 self.population = new_population
