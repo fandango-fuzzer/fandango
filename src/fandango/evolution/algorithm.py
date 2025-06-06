@@ -12,7 +12,7 @@ from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossov
 from fandango.evolution.evaluation import Evaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import PopulationManager, IoPopulationManager
-from fandango.language.io import FandangoIO, FandangoParty
+from fandango.language.io import FandangoIO, FandangoParty, Ownership
 from fandango.evolution.profiler import Profiler
 from fandango.language.grammar import (
     DerivationTree,
@@ -406,7 +406,7 @@ class Fandango:
 
             msg_parties = []
             for party in forecast.getMsgParties():
-                if io_instance.parties[party].is_fandango():
+                if io_instance.parties[party].is_fuzzer_controlled():
                     msg_parties.append(party)
             if len(msg_parties) != 0 and not io_instance.received_msg():
                 fuzzable_packets = []
@@ -440,7 +440,9 @@ class Fandango:
                 new_packet = next_tree.find_protocol_msgs()[-1]
                 if (
                     new_packet.recipient is None
-                    or not io_instance.parties[new_packet.recipient].is_fandango()
+                    or not io_instance.parties[
+                        new_packet.recipient
+                    ].is_fuzzer_controlled()
                 ):
                     io_instance.set_transmit(
                         new_packet.sender, new_packet.recipient, new_packet.msg

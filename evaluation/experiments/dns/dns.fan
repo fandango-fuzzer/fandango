@@ -268,7 +268,7 @@ class Client(FandangoParty):
 class Server(FandangoParty):
         def __init__(self):
             super().__init__(not fandango_is_client)
-            if self.is_fandango():
+            if self.is_fuzzer_controlled():
                 self.id_addr = dict()
                 self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 server_thread = threading.Thread(target=self.server_loop)
