@@ -38,9 +38,6 @@ from fandango.logger import LOGGER, print_exception
 from fandango import FandangoSyntaxError, FandangoValueError
 import fandango
 
-# Set to true to use the speedy ANTLR parser
-USE_SPEEDY_ANTLR_PARSER = True
-
 
 class PythonAntlrErrorListener(ErrorListener):
     """This is invoked from ANTLR when a syntax error is encountered"""
@@ -299,8 +296,14 @@ def parse_content(
             raise exc
 
     if not spec:
-        if USE_SPEEDY_ANTLR_PARSER:
-            # sa_fandango.USE_CPP_IMPLEMENTATION = False
+        if fandango.Fandango.parser != 'legacy':
+            if fandango.Fandango.parser == 'speedy':
+                sa_fandango.USE_CPP_IMPLEMENTATION = True
+            elif fandango.Fandango.parser == 'python':
+                sa_fandango.USE_CPP_IMPLEMENTATION = False
+            elif fandango.Fandango.parser == 'auto':
+                pass  # let sa_fandango decide
+
             if sa_fandango.USE_CPP_IMPLEMENTATION:
                 LOGGER.debug(f"{filename}: setting up fast C++ .fan parser")
             else:
@@ -317,7 +320,7 @@ def parse_content(
                 f"{filename}: parsed in {time.time() - start_time:.2f} seconds"
             )
 
-        else:
+        else:  # legacy parser
             LOGGER.debug(f"{filename}: setting up legacy Python .fan parser")
             input_stream = InputStream(fan_contents)
             error_listener = PythonAntlrErrorListener(filename)
