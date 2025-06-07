@@ -127,6 +127,14 @@ def get_parser(in_command_line=True):
             help="decrease verbosity. Can be given multiple times (-qq)",
         )
 
+        main_parser.add_argument(
+            "--parser",
+            choices=["python", "speedy", "legacy", "auto"],
+            default="auto",
+            help="choose the parser implementation to use (default: 'auto': use speedy if available, otherwise python)",
+        )
+
+
     # The subparsers
     commands = main_parser.add_subparsers(
         title="commands",
@@ -1454,6 +1462,9 @@ def main(*argv: str, stdout=sys.stdout, stderr=sys.stderr):
         LOGGER.setLevel(logging.INFO)  # Give more info
     elif args.verbose and args.verbose > 1:
         LOGGER.setLevel(logging.DEBUG)  # Even more info
+
+    # Set parsing method for .fan files
+    fandango.Fandango.parser = args.parser
 
     if args.command in COMMANDS:
         # LOGGER.info(args.command)
