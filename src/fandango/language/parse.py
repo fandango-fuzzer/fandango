@@ -40,6 +40,7 @@ import fandango
 # Set to true to use the speedy ANTLR parser
 USE_SPEEDY_ANTLR_PARSER = True
 
+
 class PythonAntlrErrorListener(ErrorListener):
     """This is invoked from ANTLR when a syntax error is encountered"""
 
@@ -47,7 +48,9 @@ class PythonAntlrErrorListener(ErrorListener):
         self.filename = filename
         super().__init__()
 
-    def syntaxError(self, recognizer, offendingSymbol, line:int, column:int, msg:str, e):
+    def syntaxError(
+        self, recognizer, offendingSymbol, line: int, column: int, msg: str, e
+    ):
         exc = FandangoSyntaxError(
             f"{self.filename!r}, line {line}, column {column}: {msg}"
         )
@@ -56,6 +59,7 @@ class PythonAntlrErrorListener(ErrorListener):
         exc.messsage = msg
         raise exc
 
+
 class SpeedyAntlrErrorListener(sa_fandango.SA_ErrorListener):
     """This is invoked from the speedy ANTLR parser when a syntax error is encountered"""
 
@@ -63,7 +67,15 @@ class SpeedyAntlrErrorListener(sa_fandango.SA_ErrorListener):
         self.filename = filename
         super().__init__()
 
-    def syntaxError(self, input_stream, offendingSymbol, char_index:int, line:int, column:int, msg):
+    def syntaxError(
+        self,
+        input_stream,
+        offendingSymbol,
+        char_index: int,
+        line: int,
+        column: int,
+        msg,
+    ):
         exc = FandangoSyntaxError(
             f"{self.filename!r}, line {line}, column {column}: {msg}"
         )
@@ -308,7 +320,6 @@ def parse_content(
             tree = parser.fandango()
 
             del error_listenet, input_stream, lexer, token_stream, parser
-
 
         LOGGER.debug(f"{filename}: splitting content")
         spec = FandangoSpec(
