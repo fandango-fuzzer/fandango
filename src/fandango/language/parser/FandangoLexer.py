@@ -11866,88 +11866,88 @@ class FandangoLexer(FandangoLexerBase):
 
     def PYTHON_START_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 0:
-            self.python_start()
+            python_start()
 
     def PYTHON_END_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 1:
-            self.python_end()
+            python_end()
 
     def CASE_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 2:
-            self.python_start()
+            python_start()
 
     def CLASS_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 3:
-            self.python_start()
+            python_start()
 
     def DEF_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 4:
-            self.python_start()
+            python_start()
 
     def ELIF_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 5:
-            self.python_start()
+            python_start()
 
     def ELSE_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 6:
-            self.python_start()
+            python_start()
 
     def EXCEPT_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 7:
-            self.python_start()
+            python_start()
 
     def FINALLY_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 8:
-            self.python_start()
+            python_start()
 
     def FOR_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 9:
-            self.python_start()
+            python_start()
 
     def IF_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 10:
-            self.python_start()
+            python_start()
 
     def MATCH_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 11:
-            self.python_start()
+            python_start()
 
     def TRY_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 12:
-            self.python_start()
+            python_start()
 
     def WHILE_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 13:
-            self.python_start()
+            python_start()
 
     def WITH_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 14:
-            self.python_start()
+            python_start()
 
     def OPEN_PAREN_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 15:
-            self.open_brace()
+            open_brace()
 
     def CLOSE_PAREN_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 16:
-            self.close_brace()
+            close_brace()
 
     def OPEN_BRACK_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 17:
-            self.open_brace()
+            open_brace()
 
     def CLOSE_BRACK_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 18:
-            self.close_brace()
+            close_brace()
 
     def OPEN_BRACE_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 19:
-            self.open_brace()
+            open_brace()
 
     def CLOSE_BRACE_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 20:
-            self.close_brace()
+            close_brace()
 
     def NEWLINE_action(self, localctx: RuleContext, actionIndex: int):
         if actionIndex == 21:
-            self.on_newline()
+            on_newline()

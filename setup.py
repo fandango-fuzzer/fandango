@@ -27,7 +27,7 @@ def run_setup(with_binary):
         cpp_parser_dir = "src/fandango/language/cpp-parser"
         parser_ext = setuptools.Extension(
             # Extension name shall be at the same level as the sa_mygrammar_parser.py module
-            name = 'fandango.parser.sa_mygrammar_cpp_parser',
+            name = 'fandango.language.parser.sa_mygrammar_cpp_parser',
 
             # Add the Antlr runtime source directory to the include search path
             include_dirs = [ cpp_parser_dir + "/antlr4-cpp-runtime"],
