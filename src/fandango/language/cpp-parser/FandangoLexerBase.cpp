@@ -65,7 +65,7 @@ std::unique_ptr<antlr4::Token> FandangoLexerBase::createDedent() {
 }
 
 #if 0
-std::unique_ptr<antlr4::Token> FandangoLexerBase::commonToken(int type, const std::string &text) {
+std::unique_ptr<antlr4::Token> FandangoLexerBase::commonToken(size_t type, const std::string &text) {
     size_t stop = getCharIndex() - 1;
     size_t start = text.empty() ? stop : stop - text.length() + 1;
 
@@ -73,6 +73,9 @@ std::unique_ptr<antlr4::Token> FandangoLexerBase::commonToken(int type, const st
                                    antlr4::Token::DEFAULT_CHANNEL, start, stop);
 }
 #endif
+std::unique_ptr<antlr4::Token> FandangoLexerBase::commonToken(size_t type, const std::string &text) {
+    return (std::unique_ptr<antlr4::Token>)new antlr4::CommonToken(type, text);
+}
 
 int FandangoLexerBase::getIndentationCount(const std::string &whitespace) {
     int count = 0;

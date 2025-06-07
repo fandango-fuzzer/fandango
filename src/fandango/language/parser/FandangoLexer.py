@@ -10,9 +10,9 @@ else:
 
 
 if "." in __name__:
-    from .FandangoLexerBase import FandangoLexerBase
+    from .FandangoLexerBase import *
 else:
-    from FandangoLexerBase import FandangoLexerBase
+    from FandangoLexerBase import *
 
 
 def serializedATN():
