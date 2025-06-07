@@ -62,6 +62,7 @@ system-dev-tools:
 ## Parser
 
 PARSER = src/fandango/language/parser
+CPP_PARSER = src/fandango/language/cpp-parser
 LEXER_G4 = language/FandangoLexer.g4
 PARSER_G4 = language/FandangoParser.g4
 
@@ -71,12 +72,23 @@ PARSERS = \
 	$(PARSER)/FandangoParserVisitor.py \
 	$(PARSER)/FandangoParserListener.py
 
-parser: $(PARSERS)
+CPP_PARSERS = \
+	$(CPP_PARSER)/FandangoLexer.cpp \
+	$(CPP_PARSER)/FandangoParser.cpp \
+	$(CPP_PARSER)/FandangoParserVisitor.cpp \
+	$(CPP_PARSER)/FandangoParserListener.cpp
 
-$(PARSERS) &: $(LEXER_G4) $(PARSER_G4)
+parser: $(PARSERS)
+cpp-parser: $(CPP_PARSERS)
+
+$(PARSERS): $(LEXER_G4) $(PARSER_G4)
 	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
 		-visitor -listener $(LEXER_G4) $(PARSER_G4)
 	$(BLACK) src
+
+$(CPP_PARSERS): $(LEXER_G4) $(PARSER_G4)
+	$(ANTLR) -Dlanguage=Cpp -Xexact-output-dir -o $(CPP_PARSER) \
+		-visitor -listener $(LEXER_G4) $(PARSER_G4)
 
 .PHONY: format
 format:
