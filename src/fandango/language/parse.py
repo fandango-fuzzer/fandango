@@ -5,6 +5,7 @@ import os
 import sys
 import platform
 import re
+import time
 
 from copy import deepcopy
 from pathlib import Path
@@ -270,6 +271,7 @@ def parse_content(
             try:
                 with open(pickle_file, "rb") as fp:
                     LOGGER.info(f"{filename}: loading cached spec from {pickle_file}")
+                    start_time = time.time()
                     spec = pickle.load(fp)
                     assert spec is not None
                     LOGGER.debug(f"Cached spec version: {spec.version}")
@@ -279,6 +281,7 @@ def parse_content(
                         )
                         raise error
 
+                    LOGGER.debug(f"{filename}: loaded from cache in {time.time() - start_time:.2f} seconds")
                     from_cache = True
             except Exception as exc:
                 LOGGER.debug(type(exc).__name__ + ":" + str(exc))
@@ -295,20 +298,23 @@ def parse_content(
 
     if not spec:
         if USE_SPEEDY_ANTLR_PARSER:
-            LOGGER.debug(f"{filename}: setting up speedy ANTLR .fan parser")
+            # sa_fandango.USE_CPP_IMPLEMENTATION = False
+            if sa_fandango.USE_CPP_IMPLEMENTATION:
+                LOGGER.debug(f"{filename}: setting up fast C++ .fan parser")
+            else:
+                LOGGER.debug(f"{filename}: setting up Python .fan parser")
+
             input_stream = InputStream(fan_contents)
             error_listener = SpeedyAntlrErrorListener(filename)
 
-            sa_fandango.USE_CPP_IMPLEMENTATION = True
-            if sa_fandango.USE_CPP_IMPLEMENTATION:
-                LOGGER.debug(f"{filename}: using C++ parser code")
-            else:
-                LOGGER.debug(f"{filename}: using Python parser code")
-
+            # Invoke the Speedy ANTLR parser
             LOGGER.debug(f"{filename}: parsing .fan content")
+            start_time = time.time()
             tree = sa_fandango.parse(input_stream, "fandango", error_listener)
+            LOGGER.debug(f"{filename}: parsed in {time.time() - start_time:.2f} seconds")
+
         else:
-            LOGGER.debug(f"{filename}: setting up Python .fan parser and lexer")
+            LOGGER.debug(f"{filename}: setting up legacy Python .fan parser")
             input_stream = InputStream(fan_contents)
             error_listener = PythonAntlrErrorListener(filename)
 
@@ -323,9 +329,10 @@ def parse_content(
 
             # Invoke the ANTLR parser
             LOGGER.debug(f"{filename}: parsing .fan content")
+            start_time = time.time()
             tree = parser.fandango()
 
-            del error_listenet, input_stream, lexer, token_stream, parser
+            LOGGER.debug(f"{filename}: parsed in {time.time() - start_time:.2f} seconds")
 
         LOGGER.debug(f"{filename}: splitting content")
         spec = FandangoSpec(
