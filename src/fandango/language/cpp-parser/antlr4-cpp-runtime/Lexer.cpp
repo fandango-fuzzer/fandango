@@ -46,7 +46,11 @@ void Lexer::reset() {
   mode = Lexer::DEFAULT_MODE;
   modeStack.clear();
 
-  getInterpreter<atn::LexerATNSimulator>()->reset();
+  std::cerr << "reset() almost done" << std::endl;
+  auto interpreter = getInterpreter<atn::LexerATNSimulator>();
+  std::cerr << "interpreter = " << interpreter << std::endl;
+
+  interpreter->reset();
 }
 
 std::unique_ptr<Token> Lexer::nextToken() {
