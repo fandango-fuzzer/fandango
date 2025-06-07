@@ -66,29 +66,28 @@ CPP_PARSER = src/fandango/language/cpp-parser
 LEXER_G4 = language/FandangoLexer.g4
 PARSER_G4 = language/FandangoParser.g4
 
-PARSERS = \
+parser: \
 	$(PARSER)/FandangoLexer.py \
 	$(PARSER)/FandangoParser.py \
-	$(PARSER)/FandangoParserVisitor.py \
-	$(PARSER)/FandangoParserListener.py
-
-CPP_PARSERS = \
 	$(CPP_PARSER)/FandangoLexer.cpp \
-	$(CPP_PARSER)/FandangoParser.cpp \
-	$(CPP_PARSER)/FandangoParserVisitor.cpp \
-	$(CPP_PARSER)/FandangoParserListener.cpp
+	$(CPP_PARSER)/FandangoParser.cpp
 
-parser: $(PARSERS)
-cpp-parser: $(CPP_PARSERS)
-
-$(PARSERS): $(LEXER_G4) $(PARSER_G4)
+$(PARSER)/FandangoLexer.py: $(LEXER_G4) Makefile
 	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
-		-visitor -listener $(LEXER_G4) $(PARSER_G4)
+		-visitor -listener $(LEXER_G4)
+
+$(PARSER)/FandangoParser.py: $(LEXER_G4) $(PARSER_G4) Makefile
+	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
+		-visitor -listener $(PARSER_G4)
 	$(BLACK) src
 
-$(CPP_PARSERS): $(LEXER_G4) $(PARSER_G4) $(SRC)/language/generate-parser.py
+$(CPP_PARSER)/FandangoLexer.cpp: $(LEXER_G4) Makefile
 	$(ANTLR) -Dlanguage=Cpp -Xexact-output-dir -o $(CPP_PARSER) \
-		-visitor -listener $(LEXER_G4) $(PARSER_G4)
+		$(LEXER_G4)
+
+$(CPP_PARSER)/FandangoParser.cpp: $(LEXER_G4) $(PARSER_G4) $(SRC)/language/generate-parser.py Makefile
+	$(ANTLR) -Dlanguage=Cpp -Xexact-output-dir -o $(CPP_PARSER) \
+		-visitor -no-listener $(PARSER_G4)
 	cd $(SRC)/language; $(PYTHON) generate-parser.py
 
 .PHONY: format
