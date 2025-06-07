@@ -2,7 +2,6 @@
 // Generated from language/FandangoParser.g4 by ANTLR 4.13.2
 
 
-#include "FandangoParserListener.h"
 #include "FandangoParserVisitor.h"
 
 #include "FandangoParser.h"
@@ -1257,18 +1256,6 @@ size_t FandangoParser::FandangoContext::getRuleIndex() const {
   return FandangoParser::RuleFandango;
 }
 
-void FandangoParser::FandangoContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFandango(this);
-}
-
-void FandangoParser::FandangoContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFandango(this);
-}
-
 
 std::any FandangoParser::FandangoContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -1330,18 +1317,6 @@ FandangoParser::StatementContext* FandangoParser::ProgramContext::statement(size
 
 size_t FandangoParser::ProgramContext::getRuleIndex() const {
   return FandangoParser::RuleProgram;
-}
-
-void FandangoParser::ProgramContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterProgram(this);
-}
-
-void FandangoParser::ProgramContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitProgram(this);
 }
 
 
@@ -1435,18 +1410,6 @@ FandangoParser::PythonContext* FandangoParser::StatementContext::python() {
 
 size_t FandangoParser::StatementContext::getRuleIndex() const {
   return FandangoParser::RuleStatement;
-}
-
-void FandangoParser::StatementContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterStatement(this);
-}
-
-void FandangoParser::StatementContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitStatement(this);
 }
 
 
@@ -1560,18 +1523,6 @@ tree::TerminalNode* FandangoParser::ProductionContext::COLON(size_t i) {
 
 size_t FandangoParser::ProductionContext::getRuleIndex() const {
   return FandangoParser::RuleProduction;
-}
-
-void FandangoParser::ProductionContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterProduction(this);
-}
-
-void FandangoParser::ProductionContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitProduction(this);
 }
 
 
@@ -1737,18 +1688,6 @@ size_t FandangoParser::AlternativeContext::getRuleIndex() const {
   return FandangoParser::RuleAlternative;
 }
 
-void FandangoParser::AlternativeContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterAlternative(this);
-}
-
-void FandangoParser::AlternativeContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitAlternative(this);
-}
-
 
 std::any FandangoParser::AlternativeContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -1813,18 +1752,6 @@ FandangoParser::OperatorContext* FandangoParser::ConcatenationContext::operator_
 
 size_t FandangoParser::ConcatenationContext::getRuleIndex() const {
   return FandangoParser::RuleConcatenation;
-}
-
-void FandangoParser::ConcatenationContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterConcatenation(this);
-}
-
-void FandangoParser::ConcatenationContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitConcatenation(this);
 }
 
 
@@ -1903,18 +1830,6 @@ FandangoParser::RepeatContext* FandangoParser::OperatorContext::repeat() {
 
 size_t FandangoParser::OperatorContext::getRuleIndex() const {
   return FandangoParser::RuleOperator;
-}
-
-void FandangoParser::OperatorContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterOperator(this);
-}
-
-void FandangoParser::OperatorContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitOperator(this);
 }
 
 
@@ -2008,18 +1923,6 @@ size_t FandangoParser::KleeneContext::getRuleIndex() const {
   return FandangoParser::RuleKleene;
 }
 
-void FandangoParser::KleeneContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterKleene(this);
-}
-
-void FandangoParser::KleeneContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitKleene(this);
-}
-
 
 std::any FandangoParser::KleeneContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -2075,18 +1978,6 @@ size_t FandangoParser::PlusContext::getRuleIndex() const {
   return FandangoParser::RulePlus;
 }
 
-void FandangoParser::PlusContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterPlus(this);
-}
-
-void FandangoParser::PlusContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitPlus(this);
-}
-
 
 std::any FandangoParser::PlusContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -2140,18 +2031,6 @@ tree::TerminalNode* FandangoParser::OptionContext::QUESTION() {
 
 size_t FandangoParser::OptionContext::getRuleIndex() const {
   return FandangoParser::RuleOption;
-}
-
-void FandangoParser::OptionContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterOption(this);
-}
-
-void FandangoParser::OptionContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitOption(this);
 }
 
 
@@ -2223,18 +2102,6 @@ tree::TerminalNode* FandangoParser::RepeatContext::COMMA() {
 
 size_t FandangoParser::RepeatContext::getRuleIndex() const {
   return FandangoParser::RuleRepeat;
-}
-
-void FandangoParser::RepeatContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterRepeat(this);
-}
-
-void FandangoParser::RepeatContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitRepeat(this);
 }
 
 
@@ -2371,18 +2238,6 @@ tree::TerminalNode* FandangoParser::SymbolContext::NEWLINE(size_t i) {
 
 size_t FandangoParser::SymbolContext::getRuleIndex() const {
   return FandangoParser::RuleSymbol;
-}
-
-void FandangoParser::SymbolContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSymbol(this);
-}
-
-void FandangoParser::SymbolContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSymbol(this);
 }
 
 
@@ -2536,18 +2391,6 @@ FandangoParser::ArgumentsContext* FandangoParser::Generator_callContext::argumen
 
 size_t FandangoParser::Generator_callContext::getRuleIndex() const {
   return FandangoParser::RuleGenerator_call;
-}
-
-void FandangoParser::Generator_callContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterGenerator_call(this);
-}
-
-void FandangoParser::Generator_callContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitGenerator_call(this);
 }
 
 
@@ -2704,18 +2547,6 @@ size_t FandangoParser::Char_setContext::getRuleIndex() const {
   return FandangoParser::RuleChar_set;
 }
 
-void FandangoParser::Char_setContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterChar_set(this);
-}
-
-void FandangoParser::Char_setContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitChar_set(this);
-}
-
 
 std::any FandangoParser::Char_setContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -2804,18 +2635,6 @@ tree::TerminalNode* FandangoParser::ConstraintContext::MAXIMIZING() {
 
 size_t FandangoParser::ConstraintContext::getRuleIndex() const {
   return FandangoParser::RuleConstraint;
-}
-
-void FandangoParser::ConstraintContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterConstraint(this);
-}
-
-void FandangoParser::ConstraintContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitConstraint(this);
 }
 
 
@@ -2976,18 +2795,6 @@ size_t FandangoParser::ImpliesContext::getRuleIndex() const {
   return FandangoParser::RuleImplies;
 }
 
-void FandangoParser::ImpliesContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterImplies(this);
-}
-
-void FandangoParser::ImpliesContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitImplies(this);
-}
-
 
 std::any FandangoParser::ImpliesContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -3116,18 +2923,6 @@ tree::TerminalNode* FandangoParser::QuantifierContext::NEWLINE(size_t i) {
 
 size_t FandangoParser::QuantifierContext::getRuleIndex() const {
   return FandangoParser::RuleQuantifier;
-}
-
-void FandangoParser::QuantifierContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterQuantifier(this);
-}
-
-void FandangoParser::QuantifierContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitQuantifier(this);
 }
 
 
@@ -3284,18 +3079,6 @@ size_t FandangoParser::Formula_disjunctionContext::getRuleIndex() const {
   return FandangoParser::RuleFormula_disjunction;
 }
 
-void FandangoParser::Formula_disjunctionContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFormula_disjunction(this);
-}
-
-void FandangoParser::Formula_disjunctionContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFormula_disjunction(this);
-}
-
 
 std::any FandangoParser::Formula_disjunctionContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -3402,18 +3185,6 @@ tree::TerminalNode* FandangoParser::Formula_conjunctionContext::AND(size_t i) {
 
 size_t FandangoParser::Formula_conjunctionContext::getRuleIndex() const {
   return FandangoParser::RuleFormula_conjunction;
-}
-
-void FandangoParser::Formula_conjunctionContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFormula_conjunction(this);
-}
-
-void FandangoParser::Formula_conjunctionContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFormula_conjunction(this);
 }
 
 
@@ -3526,18 +3297,6 @@ tree::TerminalNode* FandangoParser::Formula_atomContext::NEWLINE(size_t i) {
 
 size_t FandangoParser::Formula_atomContext::getRuleIndex() const {
   return FandangoParser::RuleFormula_atom;
-}
-
-void FandangoParser::Formula_atomContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFormula_atom(this);
-}
-
-void FandangoParser::Formula_atomContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFormula_atom(this);
 }
 
 
@@ -3671,18 +3430,6 @@ size_t FandangoParser::Formula_comparisonContext::getRuleIndex() const {
   return FandangoParser::RuleFormula_comparison;
 }
 
-void FandangoParser::Formula_comparisonContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFormula_comparison(this);
-}
-
-void FandangoParser::Formula_comparisonContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFormula_comparison(this);
-}
-
 
 std::any FandangoParser::Formula_comparisonContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -3759,18 +3506,6 @@ tree::TerminalNode* FandangoParser::ExprContext::ELSE() {
 
 size_t FandangoParser::ExprContext::getRuleIndex() const {
   return FandangoParser::RuleExpr;
-}
-
-void FandangoParser::ExprContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterExpr(this);
-}
-
-void FandangoParser::ExprContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitExpr(this);
 }
 
 
@@ -3862,18 +3597,6 @@ size_t FandangoParser::Selector_lengthContext::getRuleIndex() const {
   return FandangoParser::RuleSelector_length;
 }
 
-void FandangoParser::Selector_lengthContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSelector_length(this);
-}
-
-void FandangoParser::Selector_lengthContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSelector_length(this);
-}
-
 
 std::any FandangoParser::Selector_lengthContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -3955,18 +3678,6 @@ tree::TerminalNode* FandangoParser::SelectorContext::DOTDOT() {
 
 size_t FandangoParser::SelectorContext::getRuleIndex() const {
   return FandangoParser::RuleSelector;
-}
-
-void FandangoParser::SelectorContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSelector(this);
-}
-
-void FandangoParser::SelectorContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSelector(this);
 }
 
 
@@ -4099,18 +3810,6 @@ size_t FandangoParser::SelectionContext::getRuleIndex() const {
   return FandangoParser::RuleSelection;
 }
 
-void FandangoParser::SelectionContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSelection(this);
-}
-
-void FandangoParser::SelectionContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSelection(this);
-}
-
 
 std::any FandangoParser::SelectionContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -4208,18 +3907,6 @@ size_t FandangoParser::Base_selectionContext::getRuleIndex() const {
   return FandangoParser::RuleBase_selection;
 }
 
-void FandangoParser::Base_selectionContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterBase_selection(this);
-}
-
-void FandangoParser::Base_selectionContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitBase_selection(this);
-}
-
 
 std::any FandangoParser::Base_selectionContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -4300,18 +3987,6 @@ tree::TerminalNode* FandangoParser::Rs_pairsContext::COMMA(size_t i) {
 
 size_t FandangoParser::Rs_pairsContext::getRuleIndex() const {
   return FandangoParser::RuleRs_pairs;
-}
-
-void FandangoParser::Rs_pairsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterRs_pairs(this);
-}
-
-void FandangoParser::Rs_pairsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitRs_pairs(this);
 }
 
 
@@ -4399,18 +4074,6 @@ size_t FandangoParser::Rs_pairContext::getRuleIndex() const {
   return FandangoParser::RuleRs_pair;
 }
 
-void FandangoParser::Rs_pairContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterRs_pair(this);
-}
-
-void FandangoParser::Rs_pairContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitRs_pair(this);
-}
-
 
 std::any FandangoParser::Rs_pairContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -4483,18 +4146,6 @@ tree::TerminalNode* FandangoParser::Rs_slicesContext::COMMA(size_t i) {
 
 size_t FandangoParser::Rs_slicesContext::getRuleIndex() const {
   return FandangoParser::RuleRs_slices;
-}
-
-void FandangoParser::Rs_slicesContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterRs_slices(this);
-}
-
-void FandangoParser::Rs_slicesContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitRs_slices(this);
 }
 
 
@@ -4580,18 +4231,6 @@ tree::TerminalNode* FandangoParser::Rs_sliceContext::COLON(size_t i) {
 
 size_t FandangoParser::Rs_sliceContext::getRuleIndex() const {
   return FandangoParser::RuleRs_slice;
-}
-
-void FandangoParser::Rs_sliceContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterRs_slice(this);
-}
-
-void FandangoParser::Rs_sliceContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitRs_slice(this);
 }
 
 
@@ -4714,18 +4353,6 @@ size_t FandangoParser::PythonContext::getRuleIndex() const {
   return FandangoParser::RulePython;
 }
 
-void FandangoParser::PythonContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterPython(this);
-}
-
-void FandangoParser::PythonContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitPython(this);
-}
-
 
 std::any FandangoParser::PythonContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -4841,18 +4468,6 @@ size_t FandangoParser::Python_tagContext::getRuleIndex() const {
   return FandangoParser::RulePython_tag;
 }
 
-void FandangoParser::Python_tagContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterPython_tag(this);
-}
-
-void FandangoParser::Python_tagContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitPython_tag(this);
-}
-
 
 std::any FandangoParser::Python_tagContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -4928,18 +4543,6 @@ size_t FandangoParser::Python_fileContext::getRuleIndex() const {
   return FandangoParser::RulePython_file;
 }
 
-void FandangoParser::Python_fileContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterPython_file(this);
-}
-
-void FandangoParser::Python_fileContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitPython_file(this);
-}
-
 
 std::any FandangoParser::Python_fileContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -5011,18 +4614,6 @@ size_t FandangoParser::InteractiveContext::getRuleIndex() const {
   return FandangoParser::RuleInteractive;
 }
 
-void FandangoParser::InteractiveContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterInteractive(this);
-}
-
-void FandangoParser::InteractiveContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitInteractive(this);
-}
-
 
 std::any FandangoParser::InteractiveContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -5082,18 +4673,6 @@ tree::TerminalNode* FandangoParser::EvalContext::EOF() {
 
 size_t FandangoParser::EvalContext::getRuleIndex() const {
   return FandangoParser::RuleEval;
-}
-
-void FandangoParser::EvalContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterEval(this);
-}
-
-void FandangoParser::EvalContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitEval(this);
 }
 
 
@@ -5197,18 +4776,6 @@ size_t FandangoParser::Func_typeContext::getRuleIndex() const {
   return FandangoParser::RuleFunc_type;
 }
 
-void FandangoParser::Func_typeContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFunc_type(this);
-}
-
-void FandangoParser::Func_typeContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFunc_type(this);
-}
-
 
 std::any FandangoParser::Func_typeContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -5308,18 +4875,6 @@ tree::TerminalNode* FandangoParser::StatementsContext::NEWLINE(size_t i) {
 
 size_t FandangoParser::StatementsContext::getRuleIndex() const {
   return FandangoParser::RuleStatements;
-}
-
-void FandangoParser::StatementsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterStatements(this);
-}
-
-void FandangoParser::StatementsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitStatements(this);
 }
 
 
@@ -5444,18 +4999,6 @@ size_t FandangoParser::StmtContext::getRuleIndex() const {
   return FandangoParser::RuleStmt;
 }
 
-void FandangoParser::StmtContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterStmt(this);
-}
-
-void FandangoParser::StmtContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitStmt(this);
-}
-
 
 std::any FandangoParser::StmtContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -5569,18 +5112,6 @@ FandangoParser::Simple_stmtsContext* FandangoParser::Statement_newlineContext::s
 
 size_t FandangoParser::Statement_newlineContext::getRuleIndex() const {
   return FandangoParser::RuleStatement_newline;
-}
-
-void FandangoParser::Statement_newlineContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterStatement_newline(this);
-}
-
-void FandangoParser::Statement_newlineContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitStatement_newline(this);
 }
 
 
@@ -5721,18 +5252,6 @@ tree::TerminalNode* FandangoParser::Simple_stmtsContext::NEWLINE(size_t i) {
 
 size_t FandangoParser::Simple_stmtsContext::getRuleIndex() const {
   return FandangoParser::RuleSimple_stmts;
-}
-
-void FandangoParser::Simple_stmtsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSimple_stmts(this);
-}
-
-void FandangoParser::Simple_stmtsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSimple_stmts(this);
 }
 
 
@@ -5902,18 +5421,6 @@ FandangoParser::Nonlocal_stmtContext* FandangoParser::Simple_stmtContext::nonloc
 
 size_t FandangoParser::Simple_stmtContext::getRuleIndex() const {
   return FandangoParser::RuleSimple_stmt;
-}
-
-void FandangoParser::Simple_stmtContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSimple_stmt(this);
-}
-
-void FandangoParser::Simple_stmtContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSimple_stmt(this);
 }
 
 
@@ -6094,18 +5601,6 @@ size_t FandangoParser::Compound_stmtContext::getRuleIndex() const {
   return FandangoParser::RuleCompound_stmt;
 }
 
-void FandangoParser::Compound_stmtContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterCompound_stmt(this);
-}
-
-void FandangoParser::Compound_stmtContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitCompound_stmt(this);
-}
-
 
 std::any FandangoParser::Compound_stmtContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -6268,18 +5763,6 @@ FandangoParser::AugassignContext* FandangoParser::AssignmentContext::augassign()
 
 size_t FandangoParser::AssignmentContext::getRuleIndex() const {
   return FandangoParser::RuleAssignment;
-}
-
-void FandangoParser::AssignmentContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterAssignment(this);
-}
-
-void FandangoParser::AssignmentContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitAssignment(this);
 }
 
 
@@ -6510,18 +5993,6 @@ size_t FandangoParser::Annotated_rhsContext::getRuleIndex() const {
   return FandangoParser::RuleAnnotated_rhs;
 }
 
-void FandangoParser::Annotated_rhsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterAnnotated_rhs(this);
-}
-
-void FandangoParser::Annotated_rhsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitAnnotated_rhs(this);
-}
-
 
 std::any FandangoParser::Annotated_rhsContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -6655,18 +6126,6 @@ size_t FandangoParser::AugassignContext::getRuleIndex() const {
   return FandangoParser::RuleAugassign;
 }
 
-void FandangoParser::AugassignContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterAugassign(this);
-}
-
-void FandangoParser::AugassignContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitAugassign(this);
-}
-
 
 std::any FandangoParser::AugassignContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -6727,18 +6186,6 @@ FandangoParser::Star_expressionsContext* FandangoParser::Return_stmtContext::sta
 
 size_t FandangoParser::Return_stmtContext::getRuleIndex() const {
   return FandangoParser::RuleReturn_stmt;
-}
-
-void FandangoParser::Return_stmtContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterReturn_stmt(this);
-}
-
-void FandangoParser::Return_stmtContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitReturn_stmt(this);
 }
 
 
@@ -6813,18 +6260,6 @@ tree::TerminalNode* FandangoParser::Raise_stmtContext::FROM() {
 
 size_t FandangoParser::Raise_stmtContext::getRuleIndex() const {
   return FandangoParser::RuleRaise_stmt;
-}
-
-void FandangoParser::Raise_stmtContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterRaise_stmt(this);
-}
-
-void FandangoParser::Raise_stmtContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitRaise_stmt(this);
 }
 
 
@@ -6926,18 +6361,6 @@ size_t FandangoParser::Global_stmtContext::getRuleIndex() const {
   return FandangoParser::RuleGlobal_stmt;
 }
 
-void FandangoParser::Global_stmtContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterGlobal_stmt(this);
-}
-
-void FandangoParser::Global_stmtContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitGlobal_stmt(this);
-}
-
 
 std::any FandangoParser::Global_stmtContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -7018,18 +6441,6 @@ size_t FandangoParser::Nonlocal_stmtContext::getRuleIndex() const {
   return FandangoParser::RuleNonlocal_stmt;
 }
 
-void FandangoParser::Nonlocal_stmtContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterNonlocal_stmt(this);
-}
-
-void FandangoParser::Nonlocal_stmtContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitNonlocal_stmt(this);
-}
-
 
 std::any FandangoParser::Nonlocal_stmtContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -7098,18 +6509,6 @@ size_t FandangoParser::Del_stmtContext::getRuleIndex() const {
   return FandangoParser::RuleDel_stmt;
 }
 
-void FandangoParser::Del_stmtContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterDel_stmt(this);
-}
-
-void FandangoParser::Del_stmtContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitDel_stmt(this);
-}
-
 
 std::any FandangoParser::Del_stmtContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -7159,18 +6558,6 @@ FandangoParser::Yield_exprContext* FandangoParser::Yield_stmtContext::yield_expr
 
 size_t FandangoParser::Yield_stmtContext::getRuleIndex() const {
   return FandangoParser::RuleYield_stmt;
-}
-
-void FandangoParser::Yield_stmtContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterYield_stmt(this);
-}
-
-void FandangoParser::Yield_stmtContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitYield_stmt(this);
 }
 
 
@@ -7232,18 +6619,6 @@ tree::TerminalNode* FandangoParser::Assert_stmtContext::COMMA() {
 
 size_t FandangoParser::Assert_stmtContext::getRuleIndex() const {
   return FandangoParser::RuleAssert_stmt;
-}
-
-void FandangoParser::Assert_stmtContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterAssert_stmt(this);
-}
-
-void FandangoParser::Assert_stmtContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitAssert_stmt(this);
 }
 
 
@@ -7310,18 +6685,6 @@ FandangoParser::Import_fromContext* FandangoParser::Import_stmtContext::import_f
 
 size_t FandangoParser::Import_stmtContext::getRuleIndex() const {
   return FandangoParser::RuleImport_stmt;
-}
-
-void FandangoParser::Import_stmtContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterImport_stmt(this);
-}
-
-void FandangoParser::Import_stmtContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitImport_stmt(this);
 }
 
 
@@ -7392,18 +6755,6 @@ FandangoParser::Dotted_as_namesContext* FandangoParser::Import_nameContext::dott
 
 size_t FandangoParser::Import_nameContext::getRuleIndex() const {
   return FandangoParser::RuleImport_name;
-}
-
-void FandangoParser::Import_nameContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterImport_name(this);
-}
-
-void FandangoParser::Import_nameContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitImport_name(this);
 }
 
 
@@ -7483,18 +6834,6 @@ tree::TerminalNode* FandangoParser::Import_fromContext::ELLIPSIS(size_t i) {
 
 size_t FandangoParser::Import_fromContext::getRuleIndex() const {
   return FandangoParser::RuleImport_from;
-}
-
-void FandangoParser::Import_fromContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterImport_from(this);
-}
-
-void FandangoParser::Import_fromContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitImport_from(this);
 }
 
 
@@ -7632,18 +6971,6 @@ size_t FandangoParser::Import_from_targetsContext::getRuleIndex() const {
   return FandangoParser::RuleImport_from_targets;
 }
 
-void FandangoParser::Import_from_targetsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterImport_from_targets(this);
-}
-
-void FandangoParser::Import_from_targetsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitImport_from_targets(this);
-}
-
 
 std::any FandangoParser::Import_from_targetsContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -7742,18 +7069,6 @@ size_t FandangoParser::Import_from_as_namesContext::getRuleIndex() const {
   return FandangoParser::RuleImport_from_as_names;
 }
 
-void FandangoParser::Import_from_as_namesContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterImport_from_as_names(this);
-}
-
-void FandangoParser::Import_from_as_namesContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitImport_from_as_names(this);
-}
-
 
 std::any FandangoParser::Import_from_as_namesContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -7824,18 +7139,6 @@ tree::TerminalNode* FandangoParser::Import_from_as_nameContext::AS() {
 
 size_t FandangoParser::Import_from_as_nameContext::getRuleIndex() const {
   return FandangoParser::RuleImport_from_as_name;
-}
-
-void FandangoParser::Import_from_as_nameContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterImport_from_as_name(this);
-}
-
-void FandangoParser::Import_from_as_nameContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitImport_from_as_name(this);
 }
 
 
@@ -7910,18 +7213,6 @@ size_t FandangoParser::Dotted_as_namesContext::getRuleIndex() const {
   return FandangoParser::RuleDotted_as_names;
 }
 
-void FandangoParser::Dotted_as_namesContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterDotted_as_names(this);
-}
-
-void FandangoParser::Dotted_as_namesContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitDotted_as_names(this);
-}
-
 
 std::any FandangoParser::Dotted_as_namesContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -7992,18 +7283,6 @@ size_t FandangoParser::Dotted_as_nameContext::getRuleIndex() const {
   return FandangoParser::RuleDotted_as_name;
 }
 
-void FandangoParser::Dotted_as_nameContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterDotted_as_name(this);
-}
-
-void FandangoParser::Dotted_as_nameContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitDotted_as_name(this);
-}
-
 
 std::any FandangoParser::Dotted_as_nameContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -8070,18 +7349,6 @@ tree::TerminalNode* FandangoParser::Dotted_nameContext::DOT() {
 
 size_t FandangoParser::Dotted_nameContext::getRuleIndex() const {
   return FandangoParser::RuleDotted_name;
-}
-
-void FandangoParser::Dotted_nameContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterDotted_name(this);
-}
-
-void FandangoParser::Dotted_nameContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitDotted_name(this);
 }
 
 
@@ -8181,18 +7448,6 @@ FandangoParser::Simple_stmtsContext* FandangoParser::BlockContext::simple_stmts(
 
 size_t FandangoParser::BlockContext::getRuleIndex() const {
   return FandangoParser::RuleBlock;
-}
-
-void FandangoParser::BlockContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterBlock(this);
-}
-
-void FandangoParser::BlockContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitBlock(this);
 }
 
 
@@ -8319,18 +7574,6 @@ size_t FandangoParser::DecoratorsContext::getRuleIndex() const {
   return FandangoParser::RuleDecorators;
 }
 
-void FandangoParser::DecoratorsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterDecorators(this);
-}
-
-void FandangoParser::DecoratorsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitDecorators(this);
-}
-
 
 std::any FandangoParser::DecoratorsContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -8395,18 +7638,6 @@ FandangoParser::DecoratorsContext* FandangoParser::Class_defContext::decorators(
 
 size_t FandangoParser::Class_defContext::getRuleIndex() const {
   return FandangoParser::RuleClass_def;
-}
-
-void FandangoParser::Class_defContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterClass_def(this);
-}
-
-void FandangoParser::Class_defContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitClass_def(this);
 }
 
 
@@ -8495,18 +7726,6 @@ size_t FandangoParser::Class_def_rawContext::getRuleIndex() const {
   return FandangoParser::RuleClass_def_raw;
 }
 
-void FandangoParser::Class_def_rawContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterClass_def_raw(this);
-}
-
-void FandangoParser::Class_def_rawContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitClass_def_raw(this);
-}
-
 
 std::any FandangoParser::Class_def_rawContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -8593,18 +7812,6 @@ FandangoParser::DecoratorsContext* FandangoParser::Function_defContext::decorato
 
 size_t FandangoParser::Function_defContext::getRuleIndex() const {
   return FandangoParser::RuleFunction_def;
-}
-
-void FandangoParser::Function_defContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFunction_def(this);
-}
-
-void FandangoParser::Function_defContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFunction_def(this);
 }
 
 
@@ -8707,18 +7914,6 @@ FandangoParser::Func_type_commentContext* FandangoParser::Function_def_rawContex
 
 size_t FandangoParser::Function_def_rawContext::getRuleIndex() const {
   return FandangoParser::RuleFunction_def_raw;
-}
-
-void FandangoParser::Function_def_rawContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFunction_def_raw(this);
-}
-
-void FandangoParser::Function_def_rawContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFunction_def_raw(this);
 }
 
 
@@ -8829,18 +8024,6 @@ size_t FandangoParser::ParamsContext::getRuleIndex() const {
   return FandangoParser::RuleParams;
 }
 
-void FandangoParser::ParamsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterParams(this);
-}
-
-void FandangoParser::ParamsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitParams(this);
-}
-
 
 std::any FandangoParser::ParamsContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -8912,18 +8095,6 @@ FandangoParser::Slash_with_defaultContext* FandangoParser::ParametersContext::sl
 
 size_t FandangoParser::ParametersContext::getRuleIndex() const {
   return FandangoParser::RuleParameters;
-}
-
-void FandangoParser::ParametersContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterParameters(this);
-}
-
-void FandangoParser::ParametersContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitParameters(this);
 }
 
 
@@ -9133,18 +8304,6 @@ size_t FandangoParser::Slash_no_defaultContext::getRuleIndex() const {
   return FandangoParser::RuleSlash_no_default;
 }
 
-void FandangoParser::Slash_no_defaultContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSlash_no_default(this);
-}
-
-void FandangoParser::Slash_no_defaultContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSlash_no_default(this);
-}
-
 
 std::any FandangoParser::Slash_no_defaultContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -9231,18 +8390,6 @@ tree::TerminalNode* FandangoParser::Slash_with_defaultContext::COMMA() {
 
 size_t FandangoParser::Slash_with_defaultContext::getRuleIndex() const {
   return FandangoParser::RuleSlash_with_default;
-}
-
-void FandangoParser::Slash_with_defaultContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSlash_with_default(this);
-}
-
-void FandangoParser::Slash_with_defaultContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSlash_with_default(this);
 }
 
 
@@ -9348,18 +8495,6 @@ tree::TerminalNode* FandangoParser::Star_etcContext::COMMA() {
 
 size_t FandangoParser::Star_etcContext::getRuleIndex() const {
   return FandangoParser::RuleStar_etc;
-}
-
-void FandangoParser::Star_etcContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterStar_etc(this);
-}
-
-void FandangoParser::Star_etcContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitStar_etc(this);
 }
 
 
@@ -9507,18 +8642,6 @@ size_t FandangoParser::KwdsContext::getRuleIndex() const {
   return FandangoParser::RuleKwds;
 }
 
-void FandangoParser::KwdsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterKwds(this);
-}
-
-void FandangoParser::KwdsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitKwds(this);
-}
-
 
 std::any FandangoParser::KwdsContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -9572,18 +8695,6 @@ tree::TerminalNode* FandangoParser::Param_no_defaultContext::COMMA() {
 
 size_t FandangoParser::Param_no_defaultContext::getRuleIndex() const {
   return FandangoParser::RuleParam_no_default;
-}
-
-void FandangoParser::Param_no_defaultContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterParam_no_default(this);
-}
-
-void FandangoParser::Param_no_defaultContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitParam_no_default(this);
 }
 
 
@@ -9656,18 +8767,6 @@ tree::TerminalNode* FandangoParser::Param_no_default_star_annotationContext::COM
 
 size_t FandangoParser::Param_no_default_star_annotationContext::getRuleIndex() const {
   return FandangoParser::RuleParam_no_default_star_annotation;
-}
-
-void FandangoParser::Param_no_default_star_annotationContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterParam_no_default_star_annotation(this);
-}
-
-void FandangoParser::Param_no_default_star_annotationContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitParam_no_default_star_annotation(this);
 }
 
 
@@ -9744,18 +8843,6 @@ tree::TerminalNode* FandangoParser::Param_with_defaultContext::COMMA() {
 
 size_t FandangoParser::Param_with_defaultContext::getRuleIndex() const {
   return FandangoParser::RuleParam_with_default;
-}
-
-void FandangoParser::Param_with_defaultContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterParam_with_default(this);
-}
-
-void FandangoParser::Param_with_defaultContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitParam_with_default(this);
 }
 
 
@@ -9836,18 +8923,6 @@ FandangoParser::DefaultContext* FandangoParser::Param_maybe_defaultContext::defa
 
 size_t FandangoParser::Param_maybe_defaultContext::getRuleIndex() const {
   return FandangoParser::RuleParam_maybe_default;
-}
-
-void FandangoParser::Param_maybe_defaultContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterParam_maybe_default(this);
-}
-
-void FandangoParser::Param_maybe_defaultContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitParam_maybe_default(this);
 }
 
 
@@ -9939,18 +9014,6 @@ size_t FandangoParser::ParamContext::getRuleIndex() const {
   return FandangoParser::RuleParam;
 }
 
-void FandangoParser::ParamContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterParam(this);
-}
-
-void FandangoParser::ParamContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitParam(this);
-}
-
 
 std::any FandangoParser::ParamContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -10013,18 +9076,6 @@ size_t FandangoParser::Param_star_annotationContext::getRuleIndex() const {
   return FandangoParser::RuleParam_star_annotation;
 }
 
-void FandangoParser::Param_star_annotationContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterParam_star_annotation(this);
-}
-
-void FandangoParser::Param_star_annotationContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitParam_star_annotation(this);
-}
-
 
 std::any FandangoParser::Param_star_annotationContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -10078,18 +9129,6 @@ FandangoParser::ExpressionContext* FandangoParser::AnnotationContext::expression
 
 size_t FandangoParser::AnnotationContext::getRuleIndex() const {
   return FandangoParser::RuleAnnotation;
-}
-
-void FandangoParser::AnnotationContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterAnnotation(this);
-}
-
-void FandangoParser::AnnotationContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitAnnotation(this);
 }
 
 
@@ -10147,18 +9186,6 @@ size_t FandangoParser::Star_annotationContext::getRuleIndex() const {
   return FandangoParser::RuleStar_annotation;
 }
 
-void FandangoParser::Star_annotationContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterStar_annotation(this);
-}
-
-void FandangoParser::Star_annotationContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitStar_annotation(this);
-}
-
 
 std::any FandangoParser::Star_annotationContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -10212,18 +9239,6 @@ FandangoParser::ExpressionContext* FandangoParser::DefaultContext::expression() 
 
 size_t FandangoParser::DefaultContext::getRuleIndex() const {
   return FandangoParser::RuleDefault;
-}
-
-void FandangoParser::DefaultContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterDefault(this);
-}
-
-void FandangoParser::DefaultContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitDefault(this);
 }
 
 
@@ -10295,18 +9310,6 @@ FandangoParser::Else_blockContext* FandangoParser::If_stmtContext::else_block() 
 
 size_t FandangoParser::If_stmtContext::getRuleIndex() const {
   return FandangoParser::RuleIf_stmt;
-}
-
-void FandangoParser::If_stmtContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterIf_stmt(this);
-}
-
-void FandangoParser::If_stmtContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitIf_stmt(this);
 }
 
 
@@ -10418,18 +9421,6 @@ size_t FandangoParser::Elif_stmtContext::getRuleIndex() const {
   return FandangoParser::RuleElif_stmt;
 }
 
-void FandangoParser::Elif_stmtContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterElif_stmt(this);
-}
-
-void FandangoParser::Elif_stmtContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitElif_stmt(this);
-}
-
 
 std::any FandangoParser::Elif_stmtContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -10527,18 +9518,6 @@ size_t FandangoParser::Else_blockContext::getRuleIndex() const {
   return FandangoParser::RuleElse_block;
 }
 
-void FandangoParser::Else_blockContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterElse_block(this);
-}
-
-void FandangoParser::Else_blockContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitElse_block(this);
-}
-
 
 std::any FandangoParser::Else_blockContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -10606,18 +9585,6 @@ FandangoParser::Else_blockContext* FandangoParser::While_stmtContext::else_block
 
 size_t FandangoParser::While_stmtContext::getRuleIndex() const {
   return FandangoParser::RuleWhile_stmt;
-}
-
-void FandangoParser::While_stmtContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterWhile_stmt(this);
-}
-
-void FandangoParser::While_stmtContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitWhile_stmt(this);
 }
 
 
@@ -10710,18 +9677,6 @@ tree::TerminalNode* FandangoParser::For_stmtContext::ASYNC() {
 
 size_t FandangoParser::For_stmtContext::getRuleIndex() const {
   return FandangoParser::RuleFor_stmt;
-}
-
-void FandangoParser::For_stmtContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFor_stmt(this);
-}
-
-void FandangoParser::For_stmtContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFor_stmt(this);
 }
 
 
@@ -10863,18 +9818,6 @@ tree::TerminalNode* FandangoParser::With_stmtContext::ASYNC() {
 
 size_t FandangoParser::With_stmtContext::getRuleIndex() const {
   return FandangoParser::RuleWith_stmt;
-}
-
-void FandangoParser::With_stmtContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterWith_stmt(this);
-}
-
-void FandangoParser::With_stmtContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitWith_stmt(this);
 }
 
 
@@ -11071,18 +10014,6 @@ size_t FandangoParser::With_itemContext::getRuleIndex() const {
   return FandangoParser::RuleWith_item;
 }
 
-void FandangoParser::With_itemContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterWith_item(this);
-}
-
-void FandangoParser::With_itemContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitWith_item(this);
-}
-
 
 std::any FandangoParser::With_itemContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -11183,18 +10114,6 @@ FandangoParser::Except_star_blockContext* FandangoParser::Try_stmtContext::excep
 
 size_t FandangoParser::Try_stmtContext::getRuleIndex() const {
   return FandangoParser::RuleTry_stmt;
-}
-
-void FandangoParser::Try_stmtContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterTry_stmt(this);
-}
-
-void FandangoParser::Try_stmtContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitTry_stmt(this);
 }
 
 
@@ -11357,18 +10276,6 @@ size_t FandangoParser::Except_blockContext::getRuleIndex() const {
   return FandangoParser::RuleExcept_block;
 }
 
-void FandangoParser::Except_blockContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterExcept_block(this);
-}
-
-void FandangoParser::Except_blockContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitExcept_block(this);
-}
-
 
 std::any FandangoParser::Except_blockContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -11480,18 +10387,6 @@ size_t FandangoParser::Except_star_blockContext::getRuleIndex() const {
   return FandangoParser::RuleExcept_star_block;
 }
 
-void FandangoParser::Except_star_blockContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterExcept_star_block(this);
-}
-
-void FandangoParser::Except_star_blockContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitExcept_star_block(this);
-}
-
 
 std::any FandangoParser::Except_star_blockContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -11566,18 +10461,6 @@ FandangoParser::BlockContext* FandangoParser::Finally_blockContext::block() {
 
 size_t FandangoParser::Finally_blockContext::getRuleIndex() const {
   return FandangoParser::RuleFinally_block;
-}
-
-void FandangoParser::Finally_blockContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFinally_block(this);
-}
-
-void FandangoParser::Finally_blockContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFinally_block(this);
 }
 
 
@@ -11661,18 +10544,6 @@ size_t FandangoParser::Match_stmtContext::getRuleIndex() const {
   return FandangoParser::RuleMatch_stmt;
 }
 
-void FandangoParser::Match_stmtContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterMatch_stmt(this);
-}
-
-void FandangoParser::Match_stmtContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitMatch_stmt(this);
-}
-
 
 std::any FandangoParser::Match_stmtContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -11753,18 +10624,6 @@ FandangoParser::Named_expressionContext* FandangoParser::Subject_exprContext::na
 
 size_t FandangoParser::Subject_exprContext::getRuleIndex() const {
   return FandangoParser::RuleSubject_expr;
-}
-
-void FandangoParser::Subject_exprContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSubject_expr(this);
-}
-
-void FandangoParser::Subject_exprContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSubject_expr(this);
 }
 
 
@@ -11862,18 +10721,6 @@ size_t FandangoParser::Case_blockContext::getRuleIndex() const {
   return FandangoParser::RuleCase_block;
 }
 
-void FandangoParser::Case_blockContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterCase_block(this);
-}
-
-void FandangoParser::Case_blockContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitCase_block(this);
-}
-
 
 std::any FandangoParser::Case_blockContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -11942,18 +10789,6 @@ size_t FandangoParser::GuardContext::getRuleIndex() const {
   return FandangoParser::RuleGuard;
 }
 
-void FandangoParser::GuardContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterGuard(this);
-}
-
-void FandangoParser::GuardContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitGuard(this);
-}
-
 
 std::any FandangoParser::GuardContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -12007,18 +10842,6 @@ FandangoParser::PatternContext* FandangoParser::PatternsContext::pattern() {
 
 size_t FandangoParser::PatternsContext::getRuleIndex() const {
   return FandangoParser::RulePatterns;
-}
-
-void FandangoParser::PatternsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterPatterns(this);
-}
-
-void FandangoParser::PatternsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitPatterns(this);
 }
 
 
@@ -12089,18 +10912,6 @@ FandangoParser::Or_patternContext* FandangoParser::PatternContext::or_pattern() 
 
 size_t FandangoParser::PatternContext::getRuleIndex() const {
   return FandangoParser::RulePattern;
-}
-
-void FandangoParser::PatternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterPattern(this);
-}
-
-void FandangoParser::PatternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitPattern(this);
 }
 
 
@@ -12177,18 +10988,6 @@ size_t FandangoParser::As_patternContext::getRuleIndex() const {
   return FandangoParser::RuleAs_pattern;
 }
 
-void FandangoParser::As_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterAs_pattern(this);
-}
-
-void FandangoParser::As_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitAs_pattern(this);
-}
-
 
 std::any FandangoParser::As_patternContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -12252,18 +11051,6 @@ tree::TerminalNode* FandangoParser::Or_patternContext::OR_OP(size_t i) {
 
 size_t FandangoParser::Or_patternContext::getRuleIndex() const {
   return FandangoParser::RuleOr_pattern;
-}
-
-void FandangoParser::Or_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterOr_pattern(this);
-}
-
-void FandangoParser::Or_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitOr_pattern(this);
 }
 
 
@@ -12354,18 +11141,6 @@ FandangoParser::Class_patternContext* FandangoParser::Closed_patternContext::cla
 
 size_t FandangoParser::Closed_patternContext::getRuleIndex() const {
   return FandangoParser::RuleClosed_pattern;
-}
-
-void FandangoParser::Closed_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterClosed_pattern(this);
-}
-
-void FandangoParser::Closed_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitClosed_pattern(this);
 }
 
 
@@ -12496,18 +11271,6 @@ size_t FandangoParser::Literal_patternContext::getRuleIndex() const {
   return FandangoParser::RuleLiteral_pattern;
 }
 
-void FandangoParser::Literal_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterLiteral_pattern(this);
-}
-
-void FandangoParser::Literal_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitLiteral_pattern(this);
-}
-
 
 std::any FandangoParser::Literal_patternContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -12622,18 +11385,6 @@ size_t FandangoParser::Literal_exprContext::getRuleIndex() const {
   return FandangoParser::RuleLiteral_expr;
 }
 
-void FandangoParser::Literal_exprContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterLiteral_expr(this);
-}
-
-void FandangoParser::Literal_exprContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitLiteral_expr(this);
-}
-
 
 std::any FandangoParser::Literal_exprContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -12740,18 +11491,6 @@ size_t FandangoParser::Complex_numberContext::getRuleIndex() const {
   return FandangoParser::RuleComplex_number;
 }
 
-void FandangoParser::Complex_numberContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterComplex_number(this);
-}
-
-void FandangoParser::Complex_numberContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitComplex_number(this);
-}
-
 
 std::any FandangoParser::Complex_numberContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -12830,18 +11569,6 @@ size_t FandangoParser::Signed_numberContext::getRuleIndex() const {
   return FandangoParser::RuleSigned_number;
 }
 
-void FandangoParser::Signed_numberContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSigned_number(this);
-}
-
-void FandangoParser::Signed_numberContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSigned_number(this);
-}
-
 
 std::any FandangoParser::Signed_numberContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -12914,18 +11641,6 @@ size_t FandangoParser::Signed_real_numberContext::getRuleIndex() const {
   return FandangoParser::RuleSigned_real_number;
 }
 
-void FandangoParser::Signed_real_numberContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSigned_real_number(this);
-}
-
-void FandangoParser::Signed_real_numberContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSigned_real_number(this);
-}
-
 
 std::any FandangoParser::Signed_real_numberContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -12994,18 +11709,6 @@ size_t FandangoParser::Real_numberContext::getRuleIndex() const {
   return FandangoParser::RuleReal_number;
 }
 
-void FandangoParser::Real_numberContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterReal_number(this);
-}
-
-void FandangoParser::Real_numberContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitReal_number(this);
-}
-
 
 std::any FandangoParser::Real_numberContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -13053,18 +11756,6 @@ tree::TerminalNode* FandangoParser::Imaginary_numberContext::NUMBER() {
 
 size_t FandangoParser::Imaginary_numberContext::getRuleIndex() const {
   return FandangoParser::RuleImaginary_number;
-}
-
-void FandangoParser::Imaginary_numberContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterImaginary_number(this);
-}
-
-void FandangoParser::Imaginary_numberContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitImaginary_number(this);
 }
 
 
@@ -13116,18 +11807,6 @@ size_t FandangoParser::Capture_patternContext::getRuleIndex() const {
   return FandangoParser::RuleCapture_pattern;
 }
 
-void FandangoParser::Capture_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterCapture_pattern(this);
-}
-
-void FandangoParser::Capture_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitCapture_pattern(this);
-}
-
 
 std::any FandangoParser::Capture_patternContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -13175,18 +11854,6 @@ tree::TerminalNode* FandangoParser::Pattern_capture_targetContext::NAME() {
 
 size_t FandangoParser::Pattern_capture_targetContext::getRuleIndex() const {
   return FandangoParser::RulePattern_capture_target;
-}
-
-void FandangoParser::Pattern_capture_targetContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterPattern_capture_target(this);
-}
-
-void FandangoParser::Pattern_capture_targetContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitPattern_capture_target(this);
 }
 
 
@@ -13238,18 +11905,6 @@ size_t FandangoParser::Wildcard_patternContext::getRuleIndex() const {
   return FandangoParser::RuleWildcard_pattern;
 }
 
-void FandangoParser::Wildcard_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterWildcard_pattern(this);
-}
-
-void FandangoParser::Wildcard_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitWildcard_pattern(this);
-}
-
 
 std::any FandangoParser::Wildcard_patternContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -13297,18 +11952,6 @@ FandangoParser::AttrContext* FandangoParser::Value_patternContext::attr() {
 
 size_t FandangoParser::Value_patternContext::getRuleIndex() const {
   return FandangoParser::RuleValue_pattern;
-}
-
-void FandangoParser::Value_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterValue_pattern(this);
-}
-
-void FandangoParser::Value_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitValue_pattern(this);
 }
 
 
@@ -13366,18 +12009,6 @@ tree::TerminalNode* FandangoParser::AttrContext::NAME() {
 
 size_t FandangoParser::AttrContext::getRuleIndex() const {
   return FandangoParser::RuleAttr;
-}
-
-void FandangoParser::AttrContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterAttr(this);
-}
-
-void FandangoParser::AttrContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitAttr(this);
 }
 
 
@@ -13439,18 +12070,6 @@ tree::TerminalNode* FandangoParser::Name_or_attrContext::DOT() {
 
 size_t FandangoParser::Name_or_attrContext::getRuleIndex() const {
   return FandangoParser::RuleName_or_attr;
-}
-
-void FandangoParser::Name_or_attrContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterName_or_attr(this);
-}
-
-void FandangoParser::Name_or_attrContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitName_or_attr(this);
 }
 
 
@@ -13544,18 +12163,6 @@ size_t FandangoParser::Group_patternContext::getRuleIndex() const {
   return FandangoParser::RuleGroup_pattern;
 }
 
-void FandangoParser::Group_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterGroup_pattern(this);
-}
-
-void FandangoParser::Group_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitGroup_pattern(this);
-}
-
 
 std::any FandangoParser::Group_patternContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -13627,18 +12234,6 @@ FandangoParser::Open_sequence_patternContext* FandangoParser::Sequence_patternCo
 
 size_t FandangoParser::Sequence_patternContext::getRuleIndex() const {
   return FandangoParser::RuleSequence_pattern;
-}
-
-void FandangoParser::Sequence_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSequence_pattern(this);
-}
-
-void FandangoParser::Sequence_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSequence_pattern(this);
 }
 
 
@@ -13740,18 +12335,6 @@ size_t FandangoParser::Open_sequence_patternContext::getRuleIndex() const {
   return FandangoParser::RuleOpen_sequence_pattern;
 }
 
-void FandangoParser::Open_sequence_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterOpen_sequence_pattern(this);
-}
-
-void FandangoParser::Open_sequence_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitOpen_sequence_pattern(this);
-}
-
 
 std::any FandangoParser::Open_sequence_patternContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -13824,18 +12407,6 @@ tree::TerminalNode* FandangoParser::Maybe_sequence_patternContext::COMMA(size_t 
 
 size_t FandangoParser::Maybe_sequence_patternContext::getRuleIndex() const {
   return FandangoParser::RuleMaybe_sequence_pattern;
-}
-
-void FandangoParser::Maybe_sequence_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterMaybe_sequence_pattern(this);
-}
-
-void FandangoParser::Maybe_sequence_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitMaybe_sequence_pattern(this);
 }
 
 
@@ -13913,18 +12484,6 @@ FandangoParser::PatternContext* FandangoParser::Maybe_star_patternContext::patte
 
 size_t FandangoParser::Maybe_star_patternContext::getRuleIndex() const {
   return FandangoParser::RuleMaybe_star_pattern;
-}
-
-void FandangoParser::Maybe_star_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterMaybe_star_pattern(this);
-}
-
-void FandangoParser::Maybe_star_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitMaybe_star_pattern(this);
 }
 
 
@@ -14010,18 +12569,6 @@ FandangoParser::Wildcard_patternContext* FandangoParser::Star_patternContext::wi
 
 size_t FandangoParser::Star_patternContext::getRuleIndex() const {
   return FandangoParser::RuleStar_pattern;
-}
-
-void FandangoParser::Star_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterStar_pattern(this);
-}
-
-void FandangoParser::Star_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitStar_pattern(this);
 }
 
 
@@ -14112,18 +12659,6 @@ FandangoParser::Items_patternContext* FandangoParser::Mapping_patternContext::it
 
 size_t FandangoParser::Mapping_patternContext::getRuleIndex() const {
   return FandangoParser::RuleMapping_pattern;
-}
-
-void FandangoParser::Mapping_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterMapping_pattern(this);
-}
-
-void FandangoParser::Mapping_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitMapping_pattern(this);
 }
 
 
@@ -14261,18 +12796,6 @@ size_t FandangoParser::Items_patternContext::getRuleIndex() const {
   return FandangoParser::RuleItems_pattern;
 }
 
-void FandangoParser::Items_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterItems_pattern(this);
-}
-
-void FandangoParser::Items_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitItems_pattern(this);
-}
-
 
 std::any FandangoParser::Items_patternContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -14347,18 +12870,6 @@ FandangoParser::AttrContext* FandangoParser::Key_value_patternContext::attr() {
 
 size_t FandangoParser::Key_value_patternContext::getRuleIndex() const {
   return FandangoParser::RuleKey_value_pattern;
-}
-
-void FandangoParser::Key_value_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterKey_value_pattern(this);
-}
-
-void FandangoParser::Key_value_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitKey_value_pattern(this);
 }
 
 
@@ -14440,18 +12951,6 @@ size_t FandangoParser::Double_star_patternContext::getRuleIndex() const {
   return FandangoParser::RuleDouble_star_pattern;
 }
 
-void FandangoParser::Double_star_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterDouble_star_pattern(this);
-}
-
-void FandangoParser::Double_star_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitDouble_star_pattern(this);
-}
-
 
 std::any FandangoParser::Double_star_patternContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -14525,18 +13024,6 @@ FandangoParser::Keyword_patternsContext* FandangoParser::Class_patternContext::k
 
 size_t FandangoParser::Class_patternContext::getRuleIndex() const {
   return FandangoParser::RuleClass_pattern;
-}
-
-void FandangoParser::Class_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterClass_pattern(this);
-}
-
-void FandangoParser::Class_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitClass_pattern(this);
 }
 
 
@@ -14682,18 +13169,6 @@ size_t FandangoParser::Positional_patternsContext::getRuleIndex() const {
   return FandangoParser::RulePositional_patterns;
 }
 
-void FandangoParser::Positional_patternsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterPositional_patterns(this);
-}
-
-void FandangoParser::Positional_patternsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitPositional_patterns(this);
-}
-
 
 std::any FandangoParser::Positional_patternsContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -14770,18 +13245,6 @@ size_t FandangoParser::Keyword_patternsContext::getRuleIndex() const {
   return FandangoParser::RuleKeyword_patterns;
 }
 
-void FandangoParser::Keyword_patternsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterKeyword_patterns(this);
-}
-
-void FandangoParser::Keyword_patternsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitKeyword_patterns(this);
-}
-
 
 std::any FandangoParser::Keyword_patternsContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -14854,18 +13317,6 @@ size_t FandangoParser::Keyword_patternContext::getRuleIndex() const {
   return FandangoParser::RuleKeyword_pattern;
 }
 
-void FandangoParser::Keyword_patternContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterKeyword_pattern(this);
-}
-
-void FandangoParser::Keyword_patternContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitKeyword_pattern(this);
-}
-
 
 std::any FandangoParser::Keyword_patternContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -14933,18 +13384,6 @@ FandangoParser::Type_paramsContext* FandangoParser::Type_aliasContext::type_para
 
 size_t FandangoParser::Type_aliasContext::getRuleIndex() const {
   return FandangoParser::RuleType_alias;
-}
-
-void FandangoParser::Type_aliasContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterType_alias(this);
-}
-
-void FandangoParser::Type_aliasContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitType_alias(this);
 }
 
 
@@ -15019,18 +13458,6 @@ size_t FandangoParser::Type_paramsContext::getRuleIndex() const {
   return FandangoParser::RuleType_params;
 }
 
-void FandangoParser::Type_paramsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterType_params(this);
-}
-
-void FandangoParser::Type_paramsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitType_params(this);
-}
-
 
 std::any FandangoParser::Type_paramsContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -15094,18 +13521,6 @@ tree::TerminalNode* FandangoParser::Type_param_seqContext::COMMA(size_t i) {
 
 size_t FandangoParser::Type_param_seqContext::getRuleIndex() const {
   return FandangoParser::RuleType_param_seq;
-}
-
-void FandangoParser::Type_param_seqContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterType_param_seq(this);
-}
-
-void FandangoParser::Type_param_seqContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitType_param_seq(this);
 }
 
 
@@ -15191,18 +13606,6 @@ tree::TerminalNode* FandangoParser::Type_paramContext::POWER() {
 
 size_t FandangoParser::Type_paramContext::getRuleIndex() const {
   return FandangoParser::RuleType_param;
-}
-
-void FandangoParser::Type_paramContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterType_param(this);
-}
-
-void FandangoParser::Type_paramContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitType_param(this);
 }
 
 
@@ -15295,18 +13698,6 @@ size_t FandangoParser::Type_param_boundContext::getRuleIndex() const {
   return FandangoParser::RuleType_param_bound;
 }
 
-void FandangoParser::Type_param_boundContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterType_param_bound(this);
-}
-
-void FandangoParser::Type_param_boundContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitType_param_bound(this);
-}
-
 
 std::any FandangoParser::Type_param_boundContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -15368,18 +13759,6 @@ tree::TerminalNode* FandangoParser::ExpressionsContext::COMMA(size_t i) {
 
 size_t FandangoParser::ExpressionsContext::getRuleIndex() const {
   return FandangoParser::RuleExpressions;
-}
-
-void FandangoParser::ExpressionsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterExpressions(this);
-}
-
-void FandangoParser::ExpressionsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitExpressions(this);
 }
 
 
@@ -15475,18 +13854,6 @@ size_t FandangoParser::ExpressionContext::getRuleIndex() const {
   return FandangoParser::RuleExpression;
 }
 
-void FandangoParser::ExpressionContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterExpression(this);
-}
-
-void FandangoParser::ExpressionContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitExpression(this);
-}
-
 
 std::any FandangoParser::ExpressionContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -15578,18 +13945,6 @@ FandangoParser::Star_expressionsContext* FandangoParser::Yield_exprContext::star
 
 size_t FandangoParser::Yield_exprContext::getRuleIndex() const {
   return FandangoParser::RuleYield_expr;
-}
-
-void FandangoParser::Yield_exprContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterYield_expr(this);
-}
-
-void FandangoParser::Yield_exprContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitYield_expr(this);
 }
 
 
@@ -15687,18 +14042,6 @@ size_t FandangoParser::Star_expressionsContext::getRuleIndex() const {
   return FandangoParser::RuleStar_expressions;
 }
 
-void FandangoParser::Star_expressionsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterStar_expressions(this);
-}
-
-void FandangoParser::Star_expressionsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitStar_expressions(this);
-}
-
 
 std::any FandangoParser::Star_expressionsContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -15778,18 +14121,6 @@ FandangoParser::ExpressionContext* FandangoParser::Star_expressionContext::expre
 
 size_t FandangoParser::Star_expressionContext::getRuleIndex() const {
   return FandangoParser::RuleStar_expression;
-}
-
-void FandangoParser::Star_expressionContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterStar_expression(this);
-}
-
-void FandangoParser::Star_expressionContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitStar_expression(this);
 }
 
 
@@ -15890,18 +14221,6 @@ size_t FandangoParser::Star_named_expressionsContext::getRuleIndex() const {
   return FandangoParser::RuleStar_named_expressions;
 }
 
-void FandangoParser::Star_named_expressionsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterStar_named_expressions(this);
-}
-
-void FandangoParser::Star_named_expressionsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitStar_named_expressions(this);
-}
-
 
 std::any FandangoParser::Star_named_expressionsContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -15981,18 +14300,6 @@ FandangoParser::Named_expressionContext* FandangoParser::Star_named_expressionCo
 
 size_t FandangoParser::Star_named_expressionContext::getRuleIndex() const {
   return FandangoParser::RuleStar_named_expression;
-}
-
-void FandangoParser::Star_named_expressionContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterStar_named_expression(this);
-}
-
-void FandangoParser::Star_named_expressionContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitStar_named_expression(this);
 }
 
 
@@ -16089,18 +14396,6 @@ size_t FandangoParser::Assignment_expressionContext::getRuleIndex() const {
   return FandangoParser::RuleAssignment_expression;
 }
 
-void FandangoParser::Assignment_expressionContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterAssignment_expression(this);
-}
-
-void FandangoParser::Assignment_expressionContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitAssignment_expression(this);
-}
-
 
 std::any FandangoParser::Assignment_expressionContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -16156,18 +14451,6 @@ FandangoParser::ExpressionContext* FandangoParser::Named_expressionContext::expr
 
 size_t FandangoParser::Named_expressionContext::getRuleIndex() const {
   return FandangoParser::RuleNamed_expression;
-}
-
-void FandangoParser::Named_expressionContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterNamed_expression(this);
-}
-
-void FandangoParser::Named_expressionContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitNamed_expression(this);
 }
 
 
@@ -16248,18 +14531,6 @@ size_t FandangoParser::DisjunctionContext::getRuleIndex() const {
   return FandangoParser::RuleDisjunction;
 }
 
-void FandangoParser::DisjunctionContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterDisjunction(this);
-}
-
-void FandangoParser::DisjunctionContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitDisjunction(this);
-}
-
 
 std::any FandangoParser::DisjunctionContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -16334,18 +14605,6 @@ size_t FandangoParser::ConjunctionContext::getRuleIndex() const {
   return FandangoParser::RuleConjunction;
 }
 
-void FandangoParser::ConjunctionContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterConjunction(this);
-}
-
-void FandangoParser::ConjunctionContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitConjunction(this);
-}
-
 
 std::any FandangoParser::ConjunctionContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -16414,18 +14673,6 @@ FandangoParser::ComparisonContext* FandangoParser::InversionContext::comparison(
 
 size_t FandangoParser::InversionContext::getRuleIndex() const {
   return FandangoParser::RuleInversion;
-}
-
-void FandangoParser::InversionContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterInversion(this);
-}
-
-void FandangoParser::InversionContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitInversion(this);
 }
 
 
@@ -16518,18 +14765,6 @@ FandangoParser::Compare_op_bitwise_or_pairContext* FandangoParser::ComparisonCon
 
 size_t FandangoParser::ComparisonContext::getRuleIndex() const {
   return FandangoParser::RuleComparison;
-}
-
-void FandangoParser::ComparisonContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterComparison(this);
-}
-
-void FandangoParser::ComparisonContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitComparison(this);
 }
 
 
@@ -16628,18 +14863,6 @@ FandangoParser::Is_bitwise_orContext* FandangoParser::Compare_op_bitwise_or_pair
 
 size_t FandangoParser::Compare_op_bitwise_or_pairContext::getRuleIndex() const {
   return FandangoParser::RuleCompare_op_bitwise_or_pair;
-}
-
-void FandangoParser::Compare_op_bitwise_or_pairContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterCompare_op_bitwise_or_pair(this);
-}
-
-void FandangoParser::Compare_op_bitwise_or_pairContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitCompare_op_bitwise_or_pair(this);
 }
 
 
@@ -16768,18 +14991,6 @@ size_t FandangoParser::Eq_bitwise_orContext::getRuleIndex() const {
   return FandangoParser::RuleEq_bitwise_or;
 }
 
-void FandangoParser::Eq_bitwise_orContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterEq_bitwise_or(this);
-}
-
-void FandangoParser::Eq_bitwise_orContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitEq_bitwise_or(this);
-}
-
 
 std::any FandangoParser::Eq_bitwise_orContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -16833,18 +15044,6 @@ FandangoParser::Bitwise_orContext* FandangoParser::Noteq_bitwise_orContext::bitw
 
 size_t FandangoParser::Noteq_bitwise_orContext::getRuleIndex() const {
   return FandangoParser::RuleNoteq_bitwise_or;
-}
-
-void FandangoParser::Noteq_bitwise_orContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterNoteq_bitwise_or(this);
-}
-
-void FandangoParser::Noteq_bitwise_orContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitNoteq_bitwise_or(this);
 }
 
 
@@ -16902,18 +15101,6 @@ size_t FandangoParser::Lte_bitwise_orContext::getRuleIndex() const {
   return FandangoParser::RuleLte_bitwise_or;
 }
 
-void FandangoParser::Lte_bitwise_orContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterLte_bitwise_or(this);
-}
-
-void FandangoParser::Lte_bitwise_orContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitLte_bitwise_or(this);
-}
-
 
 std::any FandangoParser::Lte_bitwise_orContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -16967,18 +15154,6 @@ FandangoParser::Bitwise_orContext* FandangoParser::Lt_bitwise_orContext::bitwise
 
 size_t FandangoParser::Lt_bitwise_orContext::getRuleIndex() const {
   return FandangoParser::RuleLt_bitwise_or;
-}
-
-void FandangoParser::Lt_bitwise_orContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterLt_bitwise_or(this);
-}
-
-void FandangoParser::Lt_bitwise_orContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitLt_bitwise_or(this);
 }
 
 
@@ -17036,18 +15211,6 @@ size_t FandangoParser::Gte_bitwise_orContext::getRuleIndex() const {
   return FandangoParser::RuleGte_bitwise_or;
 }
 
-void FandangoParser::Gte_bitwise_orContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterGte_bitwise_or(this);
-}
-
-void FandangoParser::Gte_bitwise_orContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitGte_bitwise_or(this);
-}
-
 
 std::any FandangoParser::Gte_bitwise_orContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -17101,18 +15264,6 @@ FandangoParser::Bitwise_orContext* FandangoParser::Gt_bitwise_orContext::bitwise
 
 size_t FandangoParser::Gt_bitwise_orContext::getRuleIndex() const {
   return FandangoParser::RuleGt_bitwise_or;
-}
-
-void FandangoParser::Gt_bitwise_orContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterGt_bitwise_or(this);
-}
-
-void FandangoParser::Gt_bitwise_orContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitGt_bitwise_or(this);
 }
 
 
@@ -17174,18 +15325,6 @@ size_t FandangoParser::Notin_bitwise_orContext::getRuleIndex() const {
   return FandangoParser::RuleNotin_bitwise_or;
 }
 
-void FandangoParser::Notin_bitwise_orContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterNotin_bitwise_or(this);
-}
-
-void FandangoParser::Notin_bitwise_orContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitNotin_bitwise_or(this);
-}
-
 
 std::any FandangoParser::Notin_bitwise_orContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -17241,18 +15380,6 @@ FandangoParser::Bitwise_orContext* FandangoParser::In_bitwise_orContext::bitwise
 
 size_t FandangoParser::In_bitwise_orContext::getRuleIndex() const {
   return FandangoParser::RuleIn_bitwise_or;
-}
-
-void FandangoParser::In_bitwise_orContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterIn_bitwise_or(this);
-}
-
-void FandangoParser::In_bitwise_orContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitIn_bitwise_or(this);
 }
 
 
@@ -17314,18 +15441,6 @@ size_t FandangoParser::Isnot_bitwise_orContext::getRuleIndex() const {
   return FandangoParser::RuleIsnot_bitwise_or;
 }
 
-void FandangoParser::Isnot_bitwise_orContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterIsnot_bitwise_or(this);
-}
-
-void FandangoParser::Isnot_bitwise_orContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitIsnot_bitwise_or(this);
-}
-
 
 std::any FandangoParser::Isnot_bitwise_orContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -17381,18 +15496,6 @@ FandangoParser::Bitwise_orContext* FandangoParser::Is_bitwise_orContext::bitwise
 
 size_t FandangoParser::Is_bitwise_orContext::getRuleIndex() const {
   return FandangoParser::RuleIs_bitwise_or;
-}
-
-void FandangoParser::Is_bitwise_orContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterIs_bitwise_or(this);
-}
-
-void FandangoParser::Is_bitwise_orContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitIs_bitwise_or(this);
 }
 
 
@@ -17452,18 +15555,6 @@ tree::TerminalNode* FandangoParser::Bitwise_orContext::OR_OP() {
 
 size_t FandangoParser::Bitwise_orContext::getRuleIndex() const {
   return FandangoParser::RuleBitwise_or;
-}
-
-void FandangoParser::Bitwise_orContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterBitwise_or(this);
-}
-
-void FandangoParser::Bitwise_orContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitBitwise_or(this);
 }
 
 
@@ -17557,18 +15648,6 @@ size_t FandangoParser::Bitwise_xorContext::getRuleIndex() const {
   return FandangoParser::RuleBitwise_xor;
 }
 
-void FandangoParser::Bitwise_xorContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterBitwise_xor(this);
-}
-
-void FandangoParser::Bitwise_xorContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitBitwise_xor(this);
-}
-
 
 std::any FandangoParser::Bitwise_xorContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -17658,18 +15737,6 @@ tree::TerminalNode* FandangoParser::Bitwise_andContext::AND_OP() {
 
 size_t FandangoParser::Bitwise_andContext::getRuleIndex() const {
   return FandangoParser::RuleBitwise_and;
-}
-
-void FandangoParser::Bitwise_andContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterBitwise_and(this);
-}
-
-void FandangoParser::Bitwise_andContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitBitwise_and(this);
 }
 
 
@@ -17765,18 +15832,6 @@ tree::TerminalNode* FandangoParser::Shift_exprContext::RIGHT_SHIFT() {
 
 size_t FandangoParser::Shift_exprContext::getRuleIndex() const {
   return FandangoParser::RuleShift_expr;
-}
-
-void FandangoParser::Shift_exprContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterShift_expr(this);
-}
-
-void FandangoParser::Shift_exprContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitShift_expr(this);
 }
 
 
@@ -17895,18 +15950,6 @@ tree::TerminalNode* FandangoParser::SumContext::MINUS() {
 
 size_t FandangoParser::SumContext::getRuleIndex() const {
   return FandangoParser::RuleSum;
-}
-
-void FandangoParser::SumContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSum(this);
-}
-
-void FandangoParser::SumContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSum(this);
 }
 
 
@@ -18037,18 +16080,6 @@ tree::TerminalNode* FandangoParser::TermContext::AT() {
 
 size_t FandangoParser::TermContext::getRuleIndex() const {
   return FandangoParser::RuleTerm;
-}
-
-void FandangoParser::TermContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterTerm(this);
-}
-
-void FandangoParser::TermContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitTerm(this);
 }
 
 
@@ -18212,18 +16243,6 @@ size_t FandangoParser::FactorContext::getRuleIndex() const {
   return FandangoParser::RuleFactor;
 }
 
-void FandangoParser::FactorContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFactor(this);
-}
-
-void FandangoParser::FactorContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFactor(this);
-}
-
 
 std::any FandangoParser::FactorContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -18331,18 +16350,6 @@ size_t FandangoParser::PowerContext::getRuleIndex() const {
   return FandangoParser::RulePower;
 }
 
-void FandangoParser::PowerContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterPower(this);
-}
-
-void FandangoParser::PowerContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitPower(this);
-}
-
 
 std::any FandangoParser::PowerContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -18415,18 +16422,6 @@ FandangoParser::PrimaryContext* FandangoParser::Await_primaryContext::primary() 
 
 size_t FandangoParser::Await_primaryContext::getRuleIndex() const {
   return FandangoParser::RuleAwait_primary;
-}
-
-void FandangoParser::Await_primaryContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterAwait_primary(this);
-}
-
-void FandangoParser::Await_primaryContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitAwait_primary(this);
 }
 
 
@@ -18547,18 +16542,6 @@ tree::TerminalNode* FandangoParser::PrimaryContext::CLOSE_BRACK() {
 
 size_t FandangoParser::PrimaryContext::getRuleIndex() const {
   return FandangoParser::RulePrimary;
-}
-
-void FandangoParser::PrimaryContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterPrimary(this);
-}
-
-void FandangoParser::PrimaryContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitPrimary(this);
 }
 
 
@@ -18723,18 +16706,6 @@ size_t FandangoParser::SlicesContext::getRuleIndex() const {
   return FandangoParser::RuleSlices;
 }
 
-void FandangoParser::SlicesContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSlices(this);
-}
-
-void FandangoParser::SlicesContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSlices(this);
-}
-
 
 std::any FandangoParser::SlicesContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -18892,18 +16863,6 @@ FandangoParser::Named_expressionContext* FandangoParser::SliceContext::named_exp
 
 size_t FandangoParser::SliceContext::getRuleIndex() const {
   return FandangoParser::RuleSlice;
-}
-
-void FandangoParser::SliceContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSlice(this);
-}
-
-void FandangoParser::SliceContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSlice(this);
 }
 
 
@@ -19073,18 +17032,6 @@ tree::TerminalNode* FandangoParser::AtomContext::ELLIPSIS() {
 
 size_t FandangoParser::AtomContext::getRuleIndex() const {
   return FandangoParser::RuleAtom;
-}
-
-void FandangoParser::AtomContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterAtom(this);
-}
-
-void FandangoParser::AtomContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitAtom(this);
 }
 
 
@@ -19294,18 +17241,6 @@ size_t FandangoParser::GroupContext::getRuleIndex() const {
   return FandangoParser::RuleGroup;
 }
 
-void FandangoParser::GroupContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterGroup(this);
-}
-
-void FandangoParser::GroupContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitGroup(this);
-}
-
 
 std::any FandangoParser::GroupContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -19405,18 +17340,6 @@ size_t FandangoParser::LambdefContext::getRuleIndex() const {
   return FandangoParser::RuleLambdef;
 }
 
-void FandangoParser::LambdefContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterLambdef(this);
-}
-
-void FandangoParser::LambdefContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitLambdef(this);
-}
-
 
 std::any FandangoParser::LambdefContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -19478,18 +17401,6 @@ FandangoParser::Lambda_parametersContext* FandangoParser::Lambda_paramsContext::
 
 size_t FandangoParser::Lambda_paramsContext::getRuleIndex() const {
   return FandangoParser::RuleLambda_params;
-}
-
-void FandangoParser::Lambda_paramsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterLambda_params(this);
-}
-
-void FandangoParser::Lambda_paramsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitLambda_params(this);
 }
 
 
@@ -19563,18 +17474,6 @@ FandangoParser::Lambda_slash_with_defaultContext* FandangoParser::Lambda_paramet
 
 size_t FandangoParser::Lambda_parametersContext::getRuleIndex() const {
   return FandangoParser::RuleLambda_parameters;
-}
-
-void FandangoParser::Lambda_parametersContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterLambda_parameters(this);
-}
-
-void FandangoParser::Lambda_parametersContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitLambda_parameters(this);
 }
 
 
@@ -19784,18 +17683,6 @@ size_t FandangoParser::Lambda_slash_no_defaultContext::getRuleIndex() const {
   return FandangoParser::RuleLambda_slash_no_default;
 }
 
-void FandangoParser::Lambda_slash_no_defaultContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterLambda_slash_no_default(this);
-}
-
-void FandangoParser::Lambda_slash_no_defaultContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitLambda_slash_no_default(this);
-}
-
 
 std::any FandangoParser::Lambda_slash_no_defaultContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -19882,18 +17769,6 @@ tree::TerminalNode* FandangoParser::Lambda_slash_with_defaultContext::COMMA() {
 
 size_t FandangoParser::Lambda_slash_with_defaultContext::getRuleIndex() const {
   return FandangoParser::RuleLambda_slash_with_default;
-}
-
-void FandangoParser::Lambda_slash_with_defaultContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterLambda_slash_with_default(this);
-}
-
-void FandangoParser::Lambda_slash_with_defaultContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitLambda_slash_with_default(this);
 }
 
 
@@ -19995,18 +17870,6 @@ tree::TerminalNode* FandangoParser::Lambda_star_etcContext::COMMA() {
 
 size_t FandangoParser::Lambda_star_etcContext::getRuleIndex() const {
   return FandangoParser::RuleLambda_star_etc;
-}
-
-void FandangoParser::Lambda_star_etcContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterLambda_star_etc(this);
-}
-
-void FandangoParser::Lambda_star_etcContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitLambda_star_etc(this);
 }
 
 
@@ -20127,18 +17990,6 @@ size_t FandangoParser::Lambda_kwdsContext::getRuleIndex() const {
   return FandangoParser::RuleLambda_kwds;
 }
 
-void FandangoParser::Lambda_kwdsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterLambda_kwds(this);
-}
-
-void FandangoParser::Lambda_kwdsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitLambda_kwds(this);
-}
-
 
 std::any FandangoParser::Lambda_kwdsContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -20192,18 +18043,6 @@ tree::TerminalNode* FandangoParser::Lambda_param_no_defaultContext::COMMA() {
 
 size_t FandangoParser::Lambda_param_no_defaultContext::getRuleIndex() const {
   return FandangoParser::RuleLambda_param_no_default;
-}
-
-void FandangoParser::Lambda_param_no_defaultContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterLambda_param_no_default(this);
-}
-
-void FandangoParser::Lambda_param_no_defaultContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitLambda_param_no_default(this);
 }
 
 
@@ -20270,18 +18109,6 @@ tree::TerminalNode* FandangoParser::Lambda_param_with_defaultContext::COMMA() {
 
 size_t FandangoParser::Lambda_param_with_defaultContext::getRuleIndex() const {
   return FandangoParser::RuleLambda_param_with_default;
-}
-
-void FandangoParser::Lambda_param_with_defaultContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterLambda_param_with_default(this);
-}
-
-void FandangoParser::Lambda_param_with_defaultContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitLambda_param_with_default(this);
 }
 
 
@@ -20352,18 +18179,6 @@ size_t FandangoParser::Lambda_param_maybe_defaultContext::getRuleIndex() const {
   return FandangoParser::RuleLambda_param_maybe_default;
 }
 
-void FandangoParser::Lambda_param_maybe_defaultContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterLambda_param_maybe_default(this);
-}
-
-void FandangoParser::Lambda_param_maybe_defaultContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitLambda_param_maybe_default(this);
-}
-
 
 std::any FandangoParser::Lambda_param_maybe_defaultContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -20430,18 +18245,6 @@ size_t FandangoParser::Lambda_paramContext::getRuleIndex() const {
   return FandangoParser::RuleLambda_param;
 }
 
-void FandangoParser::Lambda_paramContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterLambda_param(this);
-}
-
-void FandangoParser::Lambda_paramContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitLambda_param(this);
-}
-
 
 std::any FandangoParser::Lambda_paramContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -20493,18 +18296,6 @@ tree::TerminalNode* FandangoParser::Fstring_middleContext::FSTRING_MIDDLE() {
 
 size_t FandangoParser::Fstring_middleContext::getRuleIndex() const {
   return FandangoParser::RuleFstring_middle;
-}
-
-void FandangoParser::Fstring_middleContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFstring_middle(this);
-}
-
-void FandangoParser::Fstring_middleContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFstring_middle(this);
 }
 
 
@@ -20595,18 +18386,6 @@ FandangoParser::Fstring_full_format_specContext* FandangoParser::Fstring_replace
 
 size_t FandangoParser::Fstring_replacement_fieldContext::getRuleIndex() const {
   return FandangoParser::RuleFstring_replacement_field;
-}
-
-void FandangoParser::Fstring_replacement_fieldContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFstring_replacement_field(this);
-}
-
-void FandangoParser::Fstring_replacement_fieldContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFstring_replacement_field(this);
 }
 
 
@@ -20731,18 +18510,6 @@ size_t FandangoParser::Fstring_conversionContext::getRuleIndex() const {
   return FandangoParser::RuleFstring_conversion;
 }
 
-void FandangoParser::Fstring_conversionContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFstring_conversion(this);
-}
-
-void FandangoParser::Fstring_conversionContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFstring_conversion(this);
-}
-
 
 std::any FandangoParser::Fstring_conversionContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -20819,18 +18586,6 @@ size_t FandangoParser::Fstring_full_format_specContext::getRuleIndex() const {
   return FandangoParser::RuleFstring_full_format_spec;
 }
 
-void FandangoParser::Fstring_full_format_specContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFstring_full_format_spec(this);
-}
-
-void FandangoParser::Fstring_full_format_specContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFstring_full_format_spec(this);
-}
-
 
 std::any FandangoParser::Fstring_full_format_specContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -20895,18 +18650,6 @@ FandangoParser::Fstring_replacement_fieldContext* FandangoParser::Fstring_format
 
 size_t FandangoParser::Fstring_format_specContext::getRuleIndex() const {
   return FandangoParser::RuleFstring_format_spec;
-}
-
-void FandangoParser::Fstring_format_specContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFstring_format_spec(this);
-}
-
-void FandangoParser::Fstring_format_specContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFstring_format_spec(this);
 }
 
 
@@ -20987,18 +18730,6 @@ size_t FandangoParser::FstringContext::getRuleIndex() const {
   return FandangoParser::RuleFstring;
 }
 
-void FandangoParser::FstringContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFstring(this);
-}
-
-void FandangoParser::FstringContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFstring(this);
-}
-
 
 std::any FandangoParser::FstringContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -21063,18 +18794,6 @@ size_t FandangoParser::StringContext::getRuleIndex() const {
   return FandangoParser::RuleString;
 }
 
-void FandangoParser::StringContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterString(this);
-}
-
-void FandangoParser::StringContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitString(this);
-}
-
 
 std::any FandangoParser::StringContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -21134,18 +18853,6 @@ FandangoParser::StringContext* FandangoParser::StringsContext::string(size_t i) 
 
 size_t FandangoParser::StringsContext::getRuleIndex() const {
   return FandangoParser::RuleStrings;
-}
-
-void FandangoParser::StringsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterStrings(this);
-}
-
-void FandangoParser::StringsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitStrings(this);
 }
 
 
@@ -21238,18 +18945,6 @@ size_t FandangoParser::ListContext::getRuleIndex() const {
   return FandangoParser::RuleList;
 }
 
-void FandangoParser::ListContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterList(this);
-}
-
-void FandangoParser::ListContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitList(this);
-}
-
 
 std::any FandangoParser::ListContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -21328,18 +19023,6 @@ size_t FandangoParser::TupleContext::getRuleIndex() const {
   return FandangoParser::RuleTuple;
 }
 
-void FandangoParser::TupleContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterTuple(this);
-}
-
-void FandangoParser::TupleContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitTuple(this);
-}
-
 
 std::any FandangoParser::TupleContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -21415,18 +19098,6 @@ size_t FandangoParser::SetContext::getRuleIndex() const {
   return FandangoParser::RuleSet;
 }
 
-void FandangoParser::SetContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSet(this);
-}
-
-void FandangoParser::SetContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSet(this);
-}
-
 
 std::any FandangoParser::SetContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -21486,18 +19157,6 @@ FandangoParser::Double_starred_kvpairsContext* FandangoParser::DictContext::doub
 
 size_t FandangoParser::DictContext::getRuleIndex() const {
   return FandangoParser::RuleDict;
-}
-
-void FandangoParser::DictContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterDict(this);
-}
-
-void FandangoParser::DictContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitDict(this);
 }
 
 
@@ -21572,18 +19231,6 @@ tree::TerminalNode* FandangoParser::Double_starred_kvpairsContext::COMMA(size_t 
 
 size_t FandangoParser::Double_starred_kvpairsContext::getRuleIndex() const {
   return FandangoParser::RuleDouble_starred_kvpairs;
-}
-
-void FandangoParser::Double_starred_kvpairsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterDouble_starred_kvpairs(this);
-}
-
-void FandangoParser::Double_starred_kvpairsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitDouble_starred_kvpairs(this);
 }
 
 
@@ -21665,18 +19312,6 @@ FandangoParser::KvpairContext* FandangoParser::Double_starred_kvpairContext::kvp
 
 size_t FandangoParser::Double_starred_kvpairContext::getRuleIndex() const {
   return FandangoParser::RuleDouble_starred_kvpair;
-}
-
-void FandangoParser::Double_starred_kvpairContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterDouble_starred_kvpair(this);
-}
-
-void FandangoParser::Double_starred_kvpairContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitDouble_starred_kvpair(this);
 }
 
 
@@ -21773,18 +19408,6 @@ size_t FandangoParser::KvpairContext::getRuleIndex() const {
   return FandangoParser::RuleKvpair;
 }
 
-void FandangoParser::KvpairContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterKvpair(this);
-}
-
-void FandangoParser::KvpairContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitKvpair(this);
-}
-
 
 std::any FandangoParser::KvpairContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -21840,18 +19463,6 @@ FandangoParser::For_if_clauseContext* FandangoParser::For_if_clausesContext::for
 
 size_t FandangoParser::For_if_clausesContext::getRuleIndex() const {
   return FandangoParser::RuleFor_if_clauses;
-}
-
-void FandangoParser::For_if_clausesContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFor_if_clauses(this);
-}
-
-void FandangoParser::For_if_clausesContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFor_if_clauses(this);
 }
 
 
@@ -21942,18 +19553,6 @@ size_t FandangoParser::For_if_clauseContext::getRuleIndex() const {
   return FandangoParser::RuleFor_if_clause;
 }
 
-void FandangoParser::For_if_clauseContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFor_if_clause(this);
-}
-
-void FandangoParser::For_if_clauseContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFor_if_clause(this);
-}
-
 
 std::any FandangoParser::For_if_clauseContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -22042,18 +19641,6 @@ size_t FandangoParser::ListcompContext::getRuleIndex() const {
   return FandangoParser::RuleListcomp;
 }
 
-void FandangoParser::ListcompContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterListcomp(this);
-}
-
-void FandangoParser::ListcompContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitListcomp(this);
-}
-
 
 std::any FandangoParser::ListcompContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -22119,18 +19706,6 @@ tree::TerminalNode* FandangoParser::SetcompContext::CLOSE_BRACE() {
 
 size_t FandangoParser::SetcompContext::getRuleIndex() const {
   return FandangoParser::RuleSetcomp;
-}
-
-void FandangoParser::SetcompContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSetcomp(this);
-}
-
-void FandangoParser::SetcompContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSetcomp(this);
 }
 
 
@@ -22202,18 +19777,6 @@ FandangoParser::ExpressionContext* FandangoParser::GenexpContext::expression() {
 
 size_t FandangoParser::GenexpContext::getRuleIndex() const {
   return FandangoParser::RuleGenexp;
-}
-
-void FandangoParser::GenexpContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterGenexp(this);
-}
-
-void FandangoParser::GenexpContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitGenexp(this);
 }
 
 
@@ -22299,18 +19862,6 @@ size_t FandangoParser::DictcompContext::getRuleIndex() const {
   return FandangoParser::RuleDictcomp;
 }
 
-void FandangoParser::DictcompContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterDictcomp(this);
-}
-
-void FandangoParser::DictcompContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitDictcomp(this);
-}
-
 
 std::any FandangoParser::DictcompContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -22368,18 +19919,6 @@ tree::TerminalNode* FandangoParser::ArgumentsContext::COMMA() {
 
 size_t FandangoParser::ArgumentsContext::getRuleIndex() const {
   return FandangoParser::RuleArguments;
-}
-
-void FandangoParser::ArgumentsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterArguments(this);
-}
-
-void FandangoParser::ArgumentsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitArguments(this);
 }
 
 
@@ -22454,18 +19993,6 @@ FandangoParser::KwargsContext* FandangoParser::ArgsContext::kwargs() {
 
 size_t FandangoParser::ArgsContext::getRuleIndex() const {
   return FandangoParser::RuleArgs;
-}
-
-void FandangoParser::ArgsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterArgs(this);
-}
-
-void FandangoParser::ArgsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitArgs(this);
 }
 
 
@@ -22572,18 +20099,6 @@ size_t FandangoParser::ArgContext::getRuleIndex() const {
   return FandangoParser::RuleArg;
 }
 
-void FandangoParser::ArgContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterArg(this);
-}
-
-void FandangoParser::ArgContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitArg(this);
-}
-
 
 std::any FandangoParser::ArgContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -22675,18 +20190,6 @@ FandangoParser::Kwarg_or_double_starredContext* FandangoParser::KwargsContext::k
 
 size_t FandangoParser::KwargsContext::getRuleIndex() const {
   return FandangoParser::RuleKwargs;
-}
-
-void FandangoParser::KwargsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterKwargs(this);
-}
-
-void FandangoParser::KwargsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitKwargs(this);
 }
 
 
@@ -22827,18 +20330,6 @@ size_t FandangoParser::Starred_expressionContext::getRuleIndex() const {
   return FandangoParser::RuleStarred_expression;
 }
 
-void FandangoParser::Starred_expressionContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterStarred_expression(this);
-}
-
-void FandangoParser::Starred_expressionContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitStarred_expression(this);
-}
-
 
 std::any FandangoParser::Starred_expressionContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -22900,18 +20391,6 @@ FandangoParser::Starred_expressionContext* FandangoParser::Kwarg_or_starredConte
 
 size_t FandangoParser::Kwarg_or_starredContext::getRuleIndex() const {
   return FandangoParser::RuleKwarg_or_starred;
-}
-
-void FandangoParser::Kwarg_or_starredContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterKwarg_or_starred(this);
-}
-
-void FandangoParser::Kwarg_or_starredContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitKwarg_or_starred(this);
 }
 
 
@@ -22996,18 +20475,6 @@ size_t FandangoParser::Kwarg_or_double_starredContext::getRuleIndex() const {
   return FandangoParser::RuleKwarg_or_double_starred;
 }
 
-void FandangoParser::Kwarg_or_double_starredContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterKwarg_or_double_starred(this);
-}
-
-void FandangoParser::Kwarg_or_double_starredContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitKwarg_or_double_starred(this);
-}
-
 
 std::any FandangoParser::Kwarg_or_double_starredContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -23090,18 +20557,6 @@ tree::TerminalNode* FandangoParser::Star_targetsContext::COMMA(size_t i) {
 
 size_t FandangoParser::Star_targetsContext::getRuleIndex() const {
   return FandangoParser::RuleStar_targets;
-}
-
-void FandangoParser::Star_targetsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterStar_targets(this);
-}
-
-void FandangoParser::Star_targetsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitStar_targets(this);
 }
 
 
@@ -23189,18 +20644,6 @@ size_t FandangoParser::Star_targets_list_seqContext::getRuleIndex() const {
   return FandangoParser::RuleStar_targets_list_seq;
 }
 
-void FandangoParser::Star_targets_list_seqContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterStar_targets_list_seq(this);
-}
-
-void FandangoParser::Star_targets_list_seqContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitStar_targets_list_seq(this);
-}
-
 
 std::any FandangoParser::Star_targets_list_seqContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -23284,18 +20727,6 @@ tree::TerminalNode* FandangoParser::Star_targets_tuple_seqContext::COMMA(size_t 
 
 size_t FandangoParser::Star_targets_tuple_seqContext::getRuleIndex() const {
   return FandangoParser::RuleStar_targets_tuple_seq;
-}
-
-void FandangoParser::Star_targets_tuple_seqContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterStar_targets_tuple_seq(this);
-}
-
-void FandangoParser::Star_targets_tuple_seqContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitStar_targets_tuple_seq(this);
 }
 
 
@@ -23404,18 +20835,6 @@ size_t FandangoParser::Star_targetContext::getRuleIndex() const {
   return FandangoParser::RuleStar_target;
 }
 
-void FandangoParser::Star_targetContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterStar_target(this);
-}
-
-void FandangoParser::Star_targetContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitStar_target(this);
-}
-
 
 std::any FandangoParser::Star_targetContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -23518,18 +20937,6 @@ FandangoParser::Star_atomContext* FandangoParser::Target_with_star_atomContext::
 
 size_t FandangoParser::Target_with_star_atomContext::getRuleIndex() const {
   return FandangoParser::RuleTarget_with_star_atom;
-}
-
-void FandangoParser::Target_with_star_atomContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterTarget_with_star_atom(this);
-}
-
-void FandangoParser::Target_with_star_atomContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitTarget_with_star_atom(this);
 }
 
 
@@ -23641,18 +21048,6 @@ FandangoParser::Star_targets_list_seqContext* FandangoParser::Star_atomContext::
 
 size_t FandangoParser::Star_atomContext::getRuleIndex() const {
   return FandangoParser::RuleStar_atom;
-}
-
-void FandangoParser::Star_atomContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterStar_atom(this);
-}
-
-void FandangoParser::Star_atomContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitStar_atom(this);
 }
 
 
@@ -23780,18 +21175,6 @@ size_t FandangoParser::Single_targetContext::getRuleIndex() const {
   return FandangoParser::RuleSingle_target;
 }
 
-void FandangoParser::Single_targetContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSingle_target(this);
-}
-
-void FandangoParser::Single_targetContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSingle_target(this);
-}
-
 
 std::any FandangoParser::Single_targetContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -23887,18 +21270,6 @@ tree::TerminalNode* FandangoParser::Single_subscript_attribute_targetContext::CL
 
 size_t FandangoParser::Single_subscript_attribute_targetContext::getRuleIndex() const {
   return FandangoParser::RuleSingle_subscript_attribute_target;
-}
-
-void FandangoParser::Single_subscript_attribute_targetContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterSingle_subscript_attribute_target(this);
-}
-
-void FandangoParser::Single_subscript_attribute_targetContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitSingle_subscript_attribute_target(this);
 }
 
 
@@ -24015,18 +21386,6 @@ FandangoParser::ArgumentsContext* FandangoParser::T_primaryContext::arguments() 
 
 size_t FandangoParser::T_primaryContext::getRuleIndex() const {
   return FandangoParser::RuleT_primary;
-}
-
-void FandangoParser::T_primaryContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterT_primary(this);
-}
-
-void FandangoParser::T_primaryContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitT_primary(this);
 }
 
 
@@ -24183,18 +21542,6 @@ size_t FandangoParser::Del_targetsContext::getRuleIndex() const {
   return FandangoParser::RuleDel_targets;
 }
 
-void FandangoParser::Del_targetsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterDel_targets(this);
-}
-
-void FandangoParser::Del_targetsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitDel_targets(this);
-}
-
 
 std::any FandangoParser::Del_targetsContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<FandangoParserVisitor*>(visitor))
@@ -24290,18 +21637,6 @@ FandangoParser::Del_t_atomContext* FandangoParser::Del_targetContext::del_t_atom
 
 size_t FandangoParser::Del_targetContext::getRuleIndex() const {
   return FandangoParser::RuleDel_target;
-}
-
-void FandangoParser::Del_targetContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterDel_target(this);
-}
-
-void FandangoParser::Del_targetContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitDel_target(this);
 }
 
 
@@ -24405,18 +21740,6 @@ tree::TerminalNode* FandangoParser::Del_t_atomContext::CLOSE_BRACK() {
 
 size_t FandangoParser::Del_t_atomContext::getRuleIndex() const {
   return FandangoParser::RuleDel_t_atom;
-}
-
-void FandangoParser::Del_t_atomContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterDel_t_atom(this);
-}
-
-void FandangoParser::Del_t_atomContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitDel_t_atom(this);
 }
 
 
@@ -24535,18 +21858,6 @@ tree::TerminalNode* FandangoParser::Type_expressionsContext::POWER() {
 
 size_t FandangoParser::Type_expressionsContext::getRuleIndex() const {
   return FandangoParser::RuleType_expressions;
-}
-
-void FandangoParser::Type_expressionsContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterType_expressions(this);
-}
-
-void FandangoParser::Type_expressionsContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitType_expressions(this);
 }
 
 
@@ -24740,18 +22051,6 @@ tree::TerminalNode* FandangoParser::Func_type_commentContext::NEWLINE() {
 
 size_t FandangoParser::Func_type_commentContext::getRuleIndex() const {
   return FandangoParser::RuleFunc_type_comment;
-}
-
-void FandangoParser::Func_type_commentContext::enterRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->enterFunc_type_comment(this);
-}
-
-void FandangoParser::Func_type_commentContext::exitRule(tree::ParseTreeListener *listener) {
-  auto parserListener = dynamic_cast<FandangoParserListener *>(listener);
-  if (parserListener != nullptr)
-    parserListener->exitFunc_type_comment(this);
 }
 
 
