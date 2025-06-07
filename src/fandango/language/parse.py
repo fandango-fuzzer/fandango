@@ -16,6 +16,8 @@ import dill as pickle
 
 from antlr4 import CommonTokenStream, InputStream, FileStream
 from antlr4.error.ErrorListener import ErrorListener
+from .parser import sa_fandango
+
 from xdg_base_dirs import xdg_cache_home, xdg_data_dirs, xdg_data_home
 
 from fandango.constraints import predicates
@@ -38,14 +40,30 @@ import fandango
 # Set to true to use the speedy ANTLR parser
 USE_SPEEDY_ANTLR_PARSER = True
 
-class MyErrorListener(ErrorListener):
+class PythonAntlrErrorListener(ErrorListener):
     """This is invoked from ANTLR when a syntax error is encountered"""
 
     def __init__(self, filename=None):
         self.filename = filename
         super().__init__()
 
-    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+    def syntaxError(self, recognizer, offendingSymbol, line:int, column:int, msg:str, e):
+        exc = FandangoSyntaxError(
+            f"{self.filename!r}, line {line}, column {column}: {msg}"
+        )
+        exc.line = line
+        exc.column = column
+        exc.messsage = msg
+        raise exc
+
+class SpeedyAntlrErrorListener(sa_fandango.SA_ErrorListener):
+    """This is invoked from the speedy ANTLR parser when a syntax error is encountered"""
+
+    def __init__(self, filename=None):
+        self.filename = filename
+        super().__init__()
+
+    def syntaxError(self, input_stream, offendingSymbol, char_index:int, line:int, column:int, msg):
         exc = FandangoSyntaxError(
             f"{self.filename!r}, line {line}, column {column}: {msg}"
         )
@@ -264,16 +282,17 @@ def parse_content(
             raise exc
 
     if not spec:
-        LOGGER.debug(f"{filename}: setting up .fan parser and lexer")
-        input_stream = InputStream(fan_contents)
-
         if USE_SPEEDY_ANTLR_PARSER:
-            LOGGER.debug(f"{filename}: parsing .fan content using speedy ANTLR parser")
-            from .parser import sa_fandango
+            LOGGER.debug(f"{filename}: setting up speedy ANTLR .fan parser")
             input_stream = InputStream(fan_contents)
-            tree = sa_fandango.parse(input_stream, "fandango")
+            error_listener = SpeedyAntlrErrorListener(filename)
+
+            LOGGER.debug(f"{filename}: parsing .fan content")
+            tree = sa_fandango.parse(input_stream, "fandango", error_listener)
         else:
-            error_listener = MyErrorListener(filename)
+            LOGGER.debug(f"{filename}: setting up Python .fan parser and lexer")
+            input_stream = InputStream(fan_contents)
+            error_listener = PythonAntlrErrorListener(filename)
 
             lexer = FandangoLexer(input_stream)
             lexer.removeErrorListeners()
@@ -284,8 +303,9 @@ def parse_content(
             parser.removeErrorListeners()
             parser.addErrorListener(error_listener)
 
+            # Invoke the ANTLR parser
             LOGGER.debug(f"{filename}: parsing .fan content")
-            tree = parser.fandango()  # Invoke the ANTLR parser
+            tree = parser.fandango()
 
             del error_listenet, input_stream, lexer, token_stream, parser
 
