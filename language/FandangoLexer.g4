@@ -6,7 +6,7 @@ tokens {
 }
 
 options {
-    superClass = FandangoLexerBase;
+   superClass = FandangoLexerBase;
 }
 
 // constants
@@ -27,25 +27,25 @@ ASSERT     : 'assert';
 ASYNC      : 'async';
 AWAIT      : 'await';
 BREAK      : 'break';
-CASE       : 'case' { python_start() };
-CLASS      : 'class' { python_start() };
+CASE       : 'case' { python_start(); };
+CLASS      : 'class' { python_start(); };
 CONTINUE   : 'continue';
-DEF        : 'def' { python_start() };
+DEF        : 'def' { python_start(); };
 DEL        : 'del';
-ELIF       : 'elif' { python_start() };
-ELSE       : 'else' { python_start() };
-EXCEPT     : 'except' { python_start() };
+ELIF       : 'elif' { python_start(); };
+ELSE       : 'else' { python_start(); };
+EXCEPT     : 'except' { python_start(); };
 FALSE      : 'False';
-FINALLY    : 'finally' { python_start() };
-FOR        : 'for' { python_start() };
+FINALLY    : 'finally' { python_start(); };
+FOR        : 'for' { python_start(); };
 FROM       : 'from';
 GLOBAL     : 'global';
-IF         : 'if' { python_start() };
+IF         : 'if' { python_start(); };
 IMPORT     : 'import';
 IN         : 'in';
 IS         : 'is';
 LAMBDA     : 'lambda';
-MATCH      : 'match' { python_start() };
+MATCH      : 'match' { python_start(); };
 NONE       : 'None';
 NONLOCAL   : 'nonlocal';
 NOT        : 'not';
@@ -54,12 +54,12 @@ PASS       : 'pass';
 RAISE      : 'raise';
 RETURN     : 'return';
 TRUE       : 'True';
-TRY        : 'try' { python_start() };
+TRY        : 'try' { python_start(); };
 TYPE       : 'type';
 UNDERSCORE : '_';
-WHILE      : 'while' { python_start() };
+WHILE      : 'while' { python_start(); };
 WHERE      : 'where';
-WITH       : 'with' { python_start() };
+WITH       : 'with' { python_start(); };
 YIELD      : 'yield';
 FORALL     : 'forall';
 EXISTS     : 'exists';
@@ -87,15 +87,15 @@ DOT                : '.';
 DOTDOT             : '..';
 ELLIPSIS           : '...';
 STAR               : '*';
-OPEN_PAREN         : '(' { open_brace() };
-CLOSE_PAREN        : ')' { close_brace() };
+OPEN_PAREN         : '(' { open_brace(); };
+CLOSE_PAREN        : ')' { close_brace(); };
 COMMA              : ',';
 COLON              : ':';
 SEMI_COLON         : ';';
 POWER              : '**';
 ASSIGN             : '=';
-OPEN_BRACK         : '[' { open_brace() };
-CLOSE_BRACK        : ']' { close_brace() };
+OPEN_BRACK         : '[' { open_brace(); };
+CLOSE_BRACK        : ']' { close_brace(); };
 OR_OP              : '|';
 XOR                : '^';
 AND_OP             : '&';
@@ -107,8 +107,8 @@ DIV                : '/';
 MOD                : '%';
 IDIV               : '//';
 NOT_OP             : '~';
-OPEN_BRACE         : '{' { open_brace() };
-CLOSE_BRACE        : '}' { close_brace() };
+OPEN_BRACE         : '{' { open_brace(); };
+CLOSE_BRACE        : '}' { close_brace(); };
 LESS_THAN          : '<';
 GREATER_THAN       : '>';
 EQUALS             : '==';
@@ -135,7 +135,7 @@ EXPR_ASSIGN        : ':=';
 EXCL               : '!';
 
 
-NEWLINE: (('\r'? '\n' | '\r' | '\f') SPACES?) { on_newline() };
+NEWLINE: (('\r'? '\n' | '\r' | '\f') SPACES?) { on_newline(); };
 SKIP_: ( SPACES | COMMENT | LINE_JOINING) -> channel(HIDDEN);
 
 UNKNOWN_CHAR: .;
