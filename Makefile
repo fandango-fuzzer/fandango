@@ -89,6 +89,7 @@ $(PARSERS): $(LEXER_G4) $(PARSER_G4)
 $(CPP_PARSERS): $(LEXER_G4) $(PARSER_G4)
 	$(ANTLR) -Dlanguage=Cpp -Xexact-output-dir -o $(CPP_PARSER) \
 		-visitor -listener $(LEXER_G4) $(PARSER_G4)
+	cd $(SRC)/language; $(PYTHON) generate-parser.py
 
 .PHONY: format
 format:
