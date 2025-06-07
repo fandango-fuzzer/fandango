@@ -6,5 +6,5 @@ from speedy_antlr_tool import generate
 generate(
     py_parser_path="parser/FandangoParser.py",
     cpp_output_dir="cpp-parser",
-    # entry_rule_names=["root"],
+    entry_rule_names=["fandango"],
 )
