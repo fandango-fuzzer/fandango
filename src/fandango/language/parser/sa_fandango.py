@@ -88,6 +88,8 @@ def parse(stream:InputStream, entry_rule_name:str, sa_err_listener:SA_ErrorListe
 # C++ implementation of parser
 #-------------------------------------------------------------------------------
 
+from . import sa_fandango_cpp_parser
+
 try:
     from . import sa_fandango_cpp_parser
 except ImportError:

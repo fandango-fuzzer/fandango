@@ -299,6 +299,12 @@ def parse_content(
             input_stream = InputStream(fan_contents)
             error_listener = SpeedyAntlrErrorListener(filename)
 
+            sa_fandango.USE_CPP_IMPLEMENTATION = True
+            if sa_fandango.USE_CPP_IMPLEMENTATION:
+                LOGGER.debug(f"{filename}: using C++ parser code")
+            else:
+                LOGGER.debug(f"{filename}: using Python parser code")
+
             LOGGER.debug(f"{filename}: parsing .fan content")
             tree = sa_fandango.parse(input_stream, "fandango", error_listener)
         else:
