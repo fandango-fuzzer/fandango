@@ -24,16 +24,17 @@ def run_setup(with_binary):
         }
 
         # Define an Extension object that describes the Antlr accelerator
+        cpp_parser_dir = "src/fandango/language/cpp-parser"
         parser_ext = setuptools.Extension(
             # Extension name shall be at the same level as the sa_mygrammar_parser.py module
-            name='spam.parser.sa_mygrammar_cpp_parser',
+            name = 'fandango.parser.sa_mygrammar_cpp_parser',
 
             # Add the Antlr runtime source directory to the include search path
-            include_dirs=["src/spam/parser/cpp_src/antlr4-cpp-runtime"],
+            include_dirs = [ cpp_parser_dir + "/antlr4-cpp-runtime"],
 
             # Rather than listing each C++ file (Antlr has a lot!), discover them automatically
-            sources=get_files("src/spam/parser/cpp_src", "*.cpp"),
-            depends=get_files("src/spam/parser/cpp_src", "*.h"),
+            sources = get_files(cpp_parser_dir, "*.cpp"),
+            depends = get_files(cpp_parser_dir, "*.h"),
 
             extra_compile_args=extra_compile_args.get(target, [])
         )
@@ -43,16 +44,16 @@ def run_setup(with_binary):
 
     # Define a package
     setuptools.setup (
-        name='spam',
-        version='1.0.0',
-        description='Example Speedy Antlr project',
+        name='fandango',
+        version='0.8.1',
+        description='Fandango',
         packages=setuptools.find_packages("src"),
         package_dir={"": "src"},
         include_package_data=True,
-        python_requires='>=3.6.0',
-        install_requires=[
-            "antlr4-python3-runtime >= 4.11, < 4.12",
-        ],
+        # python_requires='>=3.6.0',
+        # install_requires=[
+        #     "antlr4-python3-runtime >= 4.11, < 4.12",
+        # ],
         ext_modules=ext_modules,
         cmdclass={"build_ext": ve_build_ext},
     )
