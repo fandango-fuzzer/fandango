@@ -183,6 +183,8 @@ class FandangoSpec:
         ast.fix_missing_locations(code_tree)
         self.code_text = ast.unparse(code_tree)
 
+        LOGGER.debug(f"{filename}: code text:\n{self.code_text}")
+
         LOGGER.debug(f"{filename}: running code")
         self.run_code(filename=filename)
 
@@ -305,9 +307,9 @@ def parse_content(
                 pass  # let sa_fandango decide
 
             if sa_fandango.USE_CPP_IMPLEMENTATION:
-                LOGGER.debug(f"{filename}: setting up fast C++ .fan parser")
+                LOGGER.debug(f"{filename}: setting up speedy C++ .fan parser")
             else:
-                LOGGER.debug(f"{filename}: setting up Python .fan parser")
+                LOGGER.debug(f"{filename}: setting up python .fan parser")
 
             input_stream = InputStream(fan_contents)
             error_listener = SpeedyAntlrErrorListener(filename)
@@ -321,7 +323,7 @@ def parse_content(
             )
 
         else:  # legacy parser
-            LOGGER.debug(f"{filename}: setting up legacy Python .fan parser")
+            LOGGER.debug(f"{filename}: setting up legacy .fan parser")
             input_stream = InputStream(fan_contents)
             error_listener = PythonAntlrErrorListener(filename)
 
