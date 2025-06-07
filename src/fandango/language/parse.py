@@ -281,7 +281,9 @@ def parse_content(
                         )
                         raise error
 
-                    LOGGER.debug(f"{filename}: loaded from cache in {time.time() - start_time:.2f} seconds")
+                    LOGGER.debug(
+                        f"{filename}: loaded from cache in {time.time() - start_time:.2f} seconds"
+                    )
                     from_cache = True
             except Exception as exc:
                 LOGGER.debug(type(exc).__name__ + ":" + str(exc))
@@ -311,7 +313,9 @@ def parse_content(
             LOGGER.debug(f"{filename}: parsing .fan content")
             start_time = time.time()
             tree = sa_fandango.parse(input_stream, "fandango", error_listener)
-            LOGGER.debug(f"{filename}: parsed in {time.time() - start_time:.2f} seconds")
+            LOGGER.debug(
+                f"{filename}: parsed in {time.time() - start_time:.2f} seconds"
+            )
 
         else:
             LOGGER.debug(f"{filename}: setting up legacy Python .fan parser")
@@ -332,7 +336,9 @@ def parse_content(
             start_time = time.time()
             tree = parser.fandango()
 
-            LOGGER.debug(f"{filename}: parsed in {time.time() - start_time:.2f} seconds")
+            LOGGER.debug(
+                f"{filename}: parsed in {time.time() - start_time:.2f} seconds"
+            )
 
         LOGGER.debug(f"{filename}: splitting content")
         spec = FandangoSpec(
