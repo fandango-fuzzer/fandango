@@ -62,7 +62,7 @@ system-dev-tools:
 ## Parser
 
 PARSER = src/fandango/language/parser
-CPP_PARSER = src/fandango/language/cpp-parser
+CPP_PARSER = src/fandango/language/cpp_parser
 LEXER_G4 = language/FandangoLexer.g4
 PARSER_G4 = language/FandangoParser.g4
 
