@@ -5,6 +5,7 @@
 #include "FandangoParser.h"
 #include <regex>
 #include <vector>
+#include <deque>
 
 class FandangoLexerBase: public antlr4::Lexer {
 public:
@@ -23,7 +24,7 @@ public:
     static FandangoLexerBase *lexer;
 
 private:
-    std::vector<std::unique_ptr<antlr4::Token>> tokens;
+    std::deque<std::unique_ptr<antlr4::Token>> tokens;
     std::vector<int> indents;
     int opened = 0;
     int inPython = 0;

@@ -1,4 +1,5 @@
 #include "FandangoLexerBase.h"
+#include <assert.h>
 
 const std::regex FandangoLexerBase::NEW_LINE_PATTERN("[^\r\n\f]+");
 const std::regex FandangoLexerBase::SPACES_PATTERN("[\r\n\f]+");
@@ -25,12 +26,20 @@ void FandangoLexerBase::reset() {
 }
 
 void FandangoLexerBase::emitToken(std::unique_ptr<antlr4::Token> token) {
+    assert(token != nullptr);
+
+    // std::cerr << "FandangoLexerBase::emitToken: token = " << token << std::endl;
     tokens.push_back(std::move(token));
+    // std::cerr << "FandangoLexerBase::emitToken: done" << std::endl;
 }
 
 std::unique_ptr<antlr4::Token> FandangoLexerBase::nextToken() {
+    // std::cerr << "FandangoLexerBase::nextToken..." << std::endl;
+
     // Check if the end-of-file is ahead and there are still some DEDENTS expected.
     if (_input->LA(1) == FandangoParser::EOF && !indents.empty()) {
+        // std::cerr << "FandangoLexerBase::nextToken: removing EOFs" << std::endl;
+
         // Remove any trailing EOF tokens from our buffer.
         #if 0
         tokens.erase(std::remove_if(tokens.begin(), tokens.end(),
@@ -59,10 +68,18 @@ std::unique_ptr<antlr4::Token> FandangoLexerBase::nextToken() {
         emitToken(commonToken(FandangoParser::EOF, "<EOF>"));
     }
 
-    if (!tokens.empty())
-        return std::move(tokens.front());
+    std::unique_ptr<antlr4::Token> token = Lexer::nextToken();
+    if (!tokens.empty()) {
+        // std::cerr << "FandangoLexerBase::nextToken: taking token from tokens" << std::endl;
+        token = std::move(tokens.front());
+        tokens.pop_front();
+    }
 
-    return Lexer::nextToken();
+    // std::cerr << "FandangoLexerBase::nextToken: returning " << token << std::endl;
+
+    assert(token != nullptr);
+
+    return token;
 }
 
 std::unique_ptr<antlr4::Token> FandangoLexerBase::createDedent() {
@@ -70,6 +87,7 @@ std::unique_ptr<antlr4::Token> FandangoLexerBase::createDedent() {
 }
 
 #if 0
+// Close to original Python code, but the superclass has no _tokenFactorySourcePair member. -- AZ
 std::unique_ptr<antlr4::Token> FandangoLexerBase::commonToken(size_t type, const std::string &text) {
     size_t stop = getCharIndex() - 1;
     size_t start = text.empty() ? stop : stop - text.length() + 1;
@@ -79,10 +97,29 @@ std::unique_ptr<antlr4::Token> FandangoLexerBase::commonToken(size_t type, const
 }
 #endif
 
+#if 0
 // This is a workaround replacing the commented-out code above. -- AZ
 std::unique_ptr<antlr4::Token> FandangoLexerBase::commonToken(size_t type, const std::string &text) {
     return (std::unique_ptr<antlr4::Token>)new antlr4::CommonToken(type, text);
 }
+#endif
+
+#if 1
+// via https://github.com/antlr/grammars-v4/blob/bdf2e9a5e618f54e7a2ad95610e314a199f10f77/python/python/Cpp/PythonLexerBase.cpp
+std::unique_ptr<antlr4::Token> FandangoLexerBase::commonToken(size_t type, const std::string &text) {
+    // std::cerr << "FandangoLexerBase::commonToken: type = " << type << ", text = '" << text << "'..." << std::endl;
+
+    std::unique_ptr<antlr4::Token> token(
+		_factory->create({ this, _input },
+				         type, text, antlr4::Token::DEFAULT_CHANNEL, getCharIndex() - text.size(), getCharIndex() - 1,
+				         getLine(), getCharPositionInLine()));
+
+    // std::cerr << "FandangoLexerBase::commonToken: returning " << token << std::endl;
+    assert(token != nullptr);
+
+	return std::move(token);
+}
+#endif
 
 int FandangoLexerBase::getIndentationCount(const std::string &whitespace) {
     int count = 0;
@@ -116,7 +153,11 @@ void FandangoLexerBase::_python_end() {
 }
 
 void FandangoLexerBase::_on_newline() {
+    // std::cerr << "FandangoLexerBase::on_newline..." << std::endl;
+
     if (inPython > 0) {
+        // std::cerr << "FandangoLexerBase::on_newline: handling Python" << std::endl;
+
         std::string newLine = std::regex_replace(getText(), NEW_LINE_PATTERN, "");
         std::string spaces = std::regex_replace(getText(), SPACES_PATTERN, "");
 
@@ -144,4 +185,6 @@ void FandangoLexerBase::_on_newline() {
             }
         }
     }
+
+    // std::cerr << "FandangoLexerBase::on_newline: done" << std::endl;
 }
