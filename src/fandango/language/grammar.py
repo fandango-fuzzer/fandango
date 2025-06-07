@@ -1642,7 +1642,7 @@ class Grammar(NodeVisitor):
             or isinstance(string, tuple)
         ):
             raise TypeError(
-                f"Generator {self.generators[symbol]} must return string, bytes, int, or tuple"
+                f"Generator {self.generators[symbol]} must return string, bytes, int, or tuple (returned {string!r})"
             )
 
         if isinstance(string, tuple):
