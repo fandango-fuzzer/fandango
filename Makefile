@@ -86,7 +86,7 @@ $(PARSERS): $(LEXER_G4) $(PARSER_G4)
 		-visitor -listener $(LEXER_G4) $(PARSER_G4)
 	$(BLACK) src
 
-$(CPP_PARSERS): $(LEXER_G4) $(PARSER_G4)
+$(CPP_PARSERS): $(LEXER_G4) $(PARSER_G4) $(SRC)/language/generate-parser.py
 	$(ANTLR) -Dlanguage=Cpp -Xexact-output-dir -o $(CPP_PARSER) \
 		-visitor -listener $(LEXER_G4) $(PARSER_G4)
 	cd $(SRC)/language; $(PYTHON) generate-parser.py
