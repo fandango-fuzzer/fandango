@@ -9,6 +9,7 @@
 
 
 
+
 class  FandangoLexer : public FandangoLexerBase {
 public:
   enum {

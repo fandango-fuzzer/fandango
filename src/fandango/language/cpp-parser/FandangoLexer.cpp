@@ -761,7 +761,7 @@ void FandangoLexer::PYTHON_ENDAction(antlr4::RuleContext *context, size_t action
 
 void FandangoLexer::CASEAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 2:  python_start()  break;
+    case 2:  python_start();  break;
 
   default:
     break;
@@ -770,7 +770,7 @@ void FandangoLexer::CASEAction(antlr4::RuleContext *context, size_t actionIndex)
 
 void FandangoLexer::CLASSAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 3:  python_start()  break;
+    case 3:  python_start();  break;
 
   default:
     break;
@@ -779,7 +779,7 @@ void FandangoLexer::CLASSAction(antlr4::RuleContext *context, size_t actionIndex
 
 void FandangoLexer::DEFAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 4:  python_start()  break;
+    case 4:  python_start();  break;
 
   default:
     break;
@@ -788,7 +788,7 @@ void FandangoLexer::DEFAction(antlr4::RuleContext *context, size_t actionIndex) 
 
 void FandangoLexer::ELIFAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 5:  python_start()  break;
+    case 5:  python_start();  break;
 
   default:
     break;
@@ -797,7 +797,7 @@ void FandangoLexer::ELIFAction(antlr4::RuleContext *context, size_t actionIndex)
 
 void FandangoLexer::ELSEAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 6:  python_start()  break;
+    case 6:  python_start();  break;
 
   default:
     break;
@@ -806,7 +806,7 @@ void FandangoLexer::ELSEAction(antlr4::RuleContext *context, size_t actionIndex)
 
 void FandangoLexer::EXCEPTAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 7:  python_start()  break;
+    case 7:  python_start();  break;
 
   default:
     break;
@@ -815,7 +815,7 @@ void FandangoLexer::EXCEPTAction(antlr4::RuleContext *context, size_t actionInde
 
 void FandangoLexer::FINALLYAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 8:  python_start()  break;
+    case 8:  python_start();  break;
 
   default:
     break;
@@ -824,7 +824,7 @@ void FandangoLexer::FINALLYAction(antlr4::RuleContext *context, size_t actionInd
 
 void FandangoLexer::FORAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 9:  python_start()  break;
+    case 9:  python_start();  break;
 
   default:
     break;
@@ -833,7 +833,7 @@ void FandangoLexer::FORAction(antlr4::RuleContext *context, size_t actionIndex) 
 
 void FandangoLexer::IFAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 10:  python_start()  break;
+    case 10:  python_start();  break;
 
   default:
     break;
@@ -842,7 +842,7 @@ void FandangoLexer::IFAction(antlr4::RuleContext *context, size_t actionIndex) {
 
 void FandangoLexer::MATCHAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 11:  python_start()  break;
+    case 11:  python_start();  break;
 
   default:
     break;
@@ -851,7 +851,7 @@ void FandangoLexer::MATCHAction(antlr4::RuleContext *context, size_t actionIndex
 
 void FandangoLexer::TRYAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 12:  python_start()  break;
+    case 12:  python_start();  break;
 
   default:
     break;
@@ -860,7 +860,7 @@ void FandangoLexer::TRYAction(antlr4::RuleContext *context, size_t actionIndex) 
 
 void FandangoLexer::WHILEAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 13:  python_start()  break;
+    case 13:  python_start();  break;
 
   default:
     break;
@@ -869,7 +869,7 @@ void FandangoLexer::WHILEAction(antlr4::RuleContext *context, size_t actionIndex
 
 void FandangoLexer::WITHAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 14:  python_start()  break;
+    case 14:  python_start();  break;
 
   default:
     break;
@@ -878,7 +878,7 @@ void FandangoLexer::WITHAction(antlr4::RuleContext *context, size_t actionIndex)
 
 void FandangoLexer::OPEN_PARENAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 15:  open_brace()  break;
+    case 15:  open_brace();  break;
 
   default:
     break;
@@ -887,7 +887,7 @@ void FandangoLexer::OPEN_PARENAction(antlr4::RuleContext *context, size_t action
 
 void FandangoLexer::CLOSE_PARENAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 16:  close_brace()  break;
+    case 16:  close_brace();  break;
 
   default:
     break;
@@ -896,7 +896,7 @@ void FandangoLexer::CLOSE_PARENAction(antlr4::RuleContext *context, size_t actio
 
 void FandangoLexer::OPEN_BRACKAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 17:  open_brace()  break;
+    case 17:  open_brace();  break;
 
   default:
     break;
@@ -905,7 +905,7 @@ void FandangoLexer::OPEN_BRACKAction(antlr4::RuleContext *context, size_t action
 
 void FandangoLexer::CLOSE_BRACKAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 18:  close_brace()  break;
+    case 18:  close_brace();  break;
 
   default:
     break;
@@ -914,7 +914,7 @@ void FandangoLexer::CLOSE_BRACKAction(antlr4::RuleContext *context, size_t actio
 
 void FandangoLexer::OPEN_BRACEAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 19:  open_brace()  break;
+    case 19:  open_brace();  break;
 
   default:
     break;
@@ -923,7 +923,7 @@ void FandangoLexer::OPEN_BRACEAction(antlr4::RuleContext *context, size_t action
 
 void FandangoLexer::CLOSE_BRACEAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 20:  close_brace()  break;
+    case 20:  close_brace();  break;
 
   default:
     break;
@@ -932,7 +932,7 @@ void FandangoLexer::CLOSE_BRACEAction(antlr4::RuleContext *context, size_t actio
 
 void FandangoLexer::NEWLINEAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 21:  on_newline()  break;
+    case 21:  on_newline();  break;
 
   default:
     break;

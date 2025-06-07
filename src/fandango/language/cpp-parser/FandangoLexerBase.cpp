@@ -7,15 +7,20 @@ FandangoLexerBase *FandangoLexerBase::lexer = nullptr;
 
 FandangoLexerBase::FandangoLexerBase(antlr4::CharStream *input)
     : Lexer(input) {
-        lexer = this;
-        reset();
-    }
+    tokens.clear();
+    indents.clear();
+    opened = 0;
+    inPython = 0;
+
+    lexer = this;
+}
 
 void FandangoLexerBase::reset() {
     tokens.clear();
     indents.clear();
     opened = 0;
     inPython = 0;
+
     Lexer::reset();
 }
 
@@ -73,6 +78,8 @@ std::unique_ptr<antlr4::Token> FandangoLexerBase::commonToken(size_t type, const
                                    antlr4::Token::DEFAULT_CHANNEL, start, stop);
 }
 #endif
+
+// This is a workaround replacing the commented-out code above. -- AZ
 std::unique_ptr<antlr4::Token> FandangoLexerBase::commonToken(size_t type, const std::string &text) {
     return (std::unique_ptr<antlr4::Token>)new antlr4::CommonToken(type, text);
 }
