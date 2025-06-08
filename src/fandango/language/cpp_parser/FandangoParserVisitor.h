@@ -43,6 +43,10 @@ public:
 
     virtual std::any visitSymbol(FandangoParser::SymbolContext *context) = 0;
 
+    virtual std::any visitNonterminal_right(FandangoParser::Nonterminal_rightContext *context) = 0;
+
+    virtual std::any visitNonterminal(FandangoParser::NonterminalContext *context) = 0;
+
     virtual std::any visitGenerator_call(FandangoParser::Generator_callContext *context) = 0;
 
     virtual std::any visitChar_set(FandangoParser::Char_setContext *context) = 0;

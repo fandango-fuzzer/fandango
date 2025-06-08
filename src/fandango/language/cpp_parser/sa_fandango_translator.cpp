@@ -23,6 +23,8 @@ SA_FandangoTranslator::~SA_FandangoTranslator() {
     Py_XDECREF(OptionContext_cls);
     Py_XDECREF(RepeatContext_cls);
     Py_XDECREF(SymbolContext_cls);
+    Py_XDECREF(Nonterminal_rightContext_cls);
+    Py_XDECREF(NonterminalContext_cls);
     Py_XDECREF(Generator_callContext_cls);
     Py_XDECREF(Char_setContext_cls);
     Py_XDECREF(ConstraintContext_cls);
@@ -308,6 +310,18 @@ antlrcpp::Any SA_FandangoTranslator::visitRepeat(FandangoParser::RepeatContext *
 antlrcpp::Any SA_FandangoTranslator::visitSymbol(FandangoParser::SymbolContext *ctx){
     if(!SymbolContext_cls) SymbolContext_cls = PyObject_GetAttrString(translator->parser_cls, "SymbolContext");
     PyObject *py_ctx = translator->convert_ctx(this, ctx, SymbolContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitNonterminal_right(FandangoParser::Nonterminal_rightContext *ctx){
+    if(!Nonterminal_rightContext_cls) Nonterminal_rightContext_cls = PyObject_GetAttrString(translator->parser_cls, "Nonterminal_rightContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Nonterminal_rightContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitNonterminal(FandangoParser::NonterminalContext *ctx){
+    if(!NonterminalContext_cls) NonterminalContext_cls = PyObject_GetAttrString(translator->parser_cls, "NonterminalContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, NonterminalContext_cls);
     return py_ctx;
 }
 
