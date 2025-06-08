@@ -12,6 +12,7 @@ FandangoLexerBase::FandangoLexerBase(antlr4::CharStream *input)
     indents.clear();
     opened = 0;
     inPython = 0;
+    skipLexer = 0;
 
     lexer = this;
 }
@@ -21,6 +22,7 @@ void FandangoLexerBase::reset() {
     indents.clear();
     opened = 0;
     inPython = 0;
+    skipLexer = 0;
 
     Lexer::reset();
 }
@@ -28,23 +30,23 @@ void FandangoLexerBase::reset() {
 void FandangoLexerBase::emitToken(std::unique_ptr<antlr4::Token> token) {
     assert(token != nullptr);
 
-    // std::cerr << "FandangoLexerBase::emitToken: token = " << token->toString() << std::endl;
+    // std::clog << "FandangoLexerBase::emitToken: token = " << token->toString() << std::endl;
     tokens.push_back(std::move(token));
-    // std::cerr << "FandangoLexerBase::emitToken: done" << std::endl;
+    // std::clog << "FandangoLexerBase::emitToken: done" << std::endl;
 }
 
 std::unique_ptr<antlr4::Token> FandangoLexerBase::nextToken() {
-    // std::cerr << "FandangoLexerBase::nextToken" << std::endl;
+    // std::clog << "FandangoLexerBase::nextToken" << std::endl;
 
-    // std::cerr << "FandangoLexerBase::nextToken: tokens =";
+    // std::clog << "FandangoLexerBase::nextToken: tokens =";
     // for (auto&& t : tokens) {
     //     std::cerr << ' ' << t->toString();
     // }
-    // std::cerr << std::endl;
+    // std::clog << std::endl;
 
     // Check if the end-of-file is ahead and there are still some DEDENTS expected.
     if (_input->LA(1) == FandangoParser::EOF && !indents.empty()) {
-        // std::cerr << "FandangoLexerBase::nextToken: removing EOFs" << std::endl;
+        // std::clog << "FandangoLexerBase::nextToken: removing EOFs" << std::endl;
 
         // Remove any trailing EOF tokens from our buffer.
         #if 0
@@ -66,7 +68,7 @@ std::unique_ptr<antlr4::Token> FandangoLexerBase::nextToken() {
 
         // Now emit as much DEDENT tokens as needed.
         while (!indents.empty()) {
-            emitToken(commonToken(FandangoParser::DEDENT, ""));
+            emitToken(commonToken(FandangoParser::DEDENT, "<DEDENT>"));
             indents.pop_back();
         }
 
@@ -76,34 +78,39 @@ std::unique_ptr<antlr4::Token> FandangoLexerBase::nextToken() {
 
     if (tokens.empty()) {
         // Get a new token from the lexer.
+        // Note that Lexer::nextToken() may call on_newline() and other methods,
+        // affecting the current state.
         std::unique_ptr<antlr4::Token> lexer_token = Lexer::nextToken();
-        // std::cerr << "FandangoLexerBase::nextToken: getting lexer token " << lexer_token->toString() << std::endl;
+        // std::clog << "FandangoLexerBase::nextToken: getting lexer token " << lexer_token->toString() << std::endl;
 
-        // Note that during Lexer::nextToken() calls,
-        // elements may have been added to the `tokens` queue, 
-        // so we enqueue the new token.
-        emitToken(std::move(lexer_token));
+        if (skipLexer > 0) {
+            // After emitting a DEDENT, we may have to skip the lexer token
+            // std::clog << "FandangoLexerBase::nextToken: skipping this lexer token" << std::endl;
+            skipLexer--;
+        } else {
+            emitToken(std::move(lexer_token));
+        }
     }
 
     // Now fetch the next token from the queue
     std::unique_ptr<antlr4::Token> token = std::move(tokens.front());
     tokens.pop_front();
 
-    // std::cerr << "FandangoLexerBase::nextToken: returning " << token->toString() << std::endl;
+    // std::clog << "FandangoLexerBase::nextToken: returning " << token->toString() << std::endl;
 
     return std::move(token);
 }
 
 // via https://github.com/antlr/grammars-v4/blob/bdf2e9a5e618f54e7a2ad95610e314a199f10f77/python/python/Cpp/PythonLexerBase.cpp
 std::unique_ptr<antlr4::Token> FandangoLexerBase::commonToken(size_t type, const std::string &text) {
-    // std::cerr << "FandangoLexerBase::commonToken: type = " << type << ", text = '" << text << "'" << std::endl;
+    // std::clog << "FandangoLexerBase::commonToken: type = " << type << ", text = '" << text << "'" << std::endl;
 
     std::unique_ptr<antlr4::Token> token(
 		_factory->create({ this, _input },
 				         type, text, antlr4::Token::DEFAULT_CHANNEL, getCharIndex() - text.size(), getCharIndex() - 1,
 				         getLine(), getCharPositionInLine()));
 
-    // std::cerr << "FandangoLexerBase::commonToken: returning " << token->toString() << std::endl;
+    // std::clog << "FandangoLexerBase::commonToken: returning " << token->toString() << std::endl;
     assert(token != nullptr);
 
 	return std::move(token);
@@ -141,29 +148,29 @@ void FandangoLexerBase::_python_end() {
 }
 
 void FandangoLexerBase::_on_newline() {
-    // std::cerr << "FandangoLexerBase::on_newline" << std::endl;
+    // std::clog << "FandangoLexerBase::on_newline" << std::endl;
 
     if (inPython > 0) {
-        // std::cerr << "FandangoLexerBase::on_newline: Handling Python" << std::endl;
+        // std::clog << "FandangoLexerBase::on_newline: Handling Python" << std::endl;
 
         int next = _input->LA(1);
         int nextNext = _input->LA(2);
 
         if (opened > 0 || (nextNext != -1 && (next == '\n' || next == '\r' || next == '#'))) {
-            // std::cerr << "FandangoLexerBase::on_newline: Skipping " << next << std::endl;
+            // std::clog << "FandangoLexerBase::on_newline: Skipping " << next << std::endl;
             skip();
         } else {
             std::string newLine = std::regex_replace(getText(), NEW_LINE_PATTERN, "");
             std::string spaces = std::regex_replace(getText(), SPACES_PATTERN, "");
-            // std::cerr << "FandangoLexerBase::on_newline: newLine = '" << newLine << "', spaces = '" << spaces << "'" << std::endl;
+            // std::clog << "FandangoLexerBase::on_newline: newLine = '" << newLine << "', spaces = '" << spaces << "'" << std::endl;
 
             emitToken(commonToken(FandangoParser::NEWLINE, newLine));
             int indent = getIndentationCount(spaces);
             int previous = indents.empty() ? 0 : indents.back();
-            // std::cerr << "FandangoLexerBase::on_newline: indent = " << indent << ", previous = " << previous << std::endl;
+            // std::clog << "FandangoLexerBase::on_newline: indent = " << indent << ", previous = " << previous << std::endl;
 
             if (indent == previous) {
-                // std::cerr << "FandangoLexerBase::on_newline: Skipping identical indent " << next << std::endl;
+                // std::clog << "FandangoLexerBase::on_newline: Skipping identical indent " << next << std::endl;
                 skip();
             } else if (indent > previous) {
                 indents.push_back(indent);
@@ -171,12 +178,13 @@ void FandangoLexerBase::_on_newline() {
             } else {
                 while (!indents.empty() && indents.back() > indent) {
                     inPython--;
-                    emitToken(commonToken(FandangoParser::DEDENT, ""));
+                    emitToken(commonToken(FandangoParser::DEDENT, "<DEDENT>"));
                     indents.pop_back();
                 }
+                skipLexer++;
             }
         }
     }
 
-    // std::cerr << "FandangoLexerBase::on_newline: done" << std::endl;
+    // std::clog << "FandangoLexerBase::on_newline: done" << std::endl;
 }
