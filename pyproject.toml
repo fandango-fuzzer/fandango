@@ -5,6 +5,7 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+# If you update thus info, please also update the version in setup.py
 [project]
 name = "fandango-fuzzer"
 version = "0.8.1"
@@ -64,7 +65,8 @@ test = [
     "numpy>=2.2.1",  # Avoid conflict with pandas
     "matplotlib>=3.9.2",
     "ordered-set>=4.0.2",
-    "cryptography>=44.0.1"
+    "cryptography>=44.0.1",
+    "speedy-antlr-tool>=1.4.3",
 ]
 
 [tool.black]
