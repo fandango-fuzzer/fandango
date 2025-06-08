@@ -175,6 +175,7 @@ gen/*
 *.o
 utils/bt2fan/lextab.py
 utils/bt2fan/yacctab.py
+.antlr/
 
 # Test result markers
 tests/test-marker.txt

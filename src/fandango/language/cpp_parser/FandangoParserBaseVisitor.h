@@ -63,6 +63,14 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitNonterminal_right(FandangoParser::Nonterminal_rightContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitNonterminal(FandangoParser::NonterminalContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitGenerator_call(FandangoParser::Generator_callContext *ctx) override {
     return visitChildren(ctx);
   }

@@ -12,9 +12,9 @@ from antlr4.error.ErrorListener import ErrorListener
 from .FandangoParser import FandangoParser
 from .FandangoLexer import FandangoLexer
 
-# -------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # User API
-# -------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 #: Defines whether C++ implementation is used when calling parse()
 #: This is automatically set to False if the accelerator is not available.
 #: You may override this to False to force use of Python fallback implementation.
@@ -29,15 +29,7 @@ class SA_ErrorListener:
     Instead, this class provides roughly equivalent functionality.
     """
 
-    def syntaxError(
-        self,
-        input_stream: InputStream,
-        offendingSymbol: Token,
-        char_index: int,
-        line: int,
-        column: int,
-        msg: str,
-    ):
+    def syntaxError(self, input_stream:InputStream, offendingSymbol:Token, char_index:int, line:int, column:int, msg:str):
         """
         Called when lexer or parser encountered a syntax error.
 
@@ -64,9 +56,7 @@ class SA_ErrorListener:
         pass
 
 
-def parse(
-    stream: InputStream, entry_rule_name: str, sa_err_listener: SA_ErrorListener = None
-) -> ParseTree:
+def parse(stream:InputStream, entry_rule_name:str, sa_err_listener:SA_ErrorListener=None) -> ParseTree:
     """
     Parse the input stream
 
@@ -94,47 +84,36 @@ def parse(
         return _py_parse(stream, entry_rule_name, sa_err_listener)
 
 
-# -------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # C++ implementation of parser
-# -------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 
 try:
     from . import sa_fandango_cpp_parser
 except ImportError:
     USE_CPP_IMPLEMENTATION = False
 
-
-def _cpp_parse(
-    stream: InputStream, entry_rule_name: str, sa_err_listener: SA_ErrorListener = None
-) -> ParseTree:
+def _cpp_parse(stream:InputStream, entry_rule_name:str, sa_err_listener:SA_ErrorListener=None) -> ParseTree:
     # Validate input types here before handing over to C++
     if not isinstance(stream, InputStream):
         raise TypeError("'stream' shall be an Antlr InputStream")
     if not isinstance(entry_rule_name, str):
         raise TypeError("'entry_rule_name' shall be a string")
-    if sa_err_listener is not None and not isinstance(
-        sa_err_listener, SA_ErrorListener
-    ):
-        raise TypeError(
-            "'sa_err_listener' shall be an instance of SA_ErrorListener or None"
-        )
+    if sa_err_listener is not None and not isinstance(sa_err_listener, SA_ErrorListener):
+        raise TypeError("'sa_err_listener' shall be an instance of SA_ErrorListener or None")
 
-    return sa_fandango_cpp_parser.do_parse(
-        FandangoParser, stream, entry_rule_name, sa_err_listener
-    )
+    return sa_fandango_cpp_parser.do_parse(FandangoParser, stream, entry_rule_name, sa_err_listener)
 
 
-# -------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Fall-back Python implementation of parser
-# -------------------------------------------------------------------------------
-
+#-------------------------------------------------------------------------------
 
 class _FallbackErrorTranslator(ErrorListener):
     """
     Translates syntax error to user-defined SA_ErrorListener callback
     """
-
-    def __init__(self, sa_err_listener: SA_ErrorListener, input_stream: InputStream):
+    def __init__(self, sa_err_listener:SA_ErrorListener, input_stream:InputStream):
         self.sa_err_listener = sa_err_listener
         self.input_stream = input_stream
 
@@ -153,9 +132,7 @@ class _FallbackErrorTranslator(ErrorListener):
         )
 
 
-def _py_parse(
-    stream: InputStream, entry_rule_name: str, sa_err_listener: SA_ErrorListener = None
-) -> ParseTree:
+def _py_parse(stream:InputStream, entry_rule_name:str, sa_err_listener:SA_ErrorListener=None) -> ParseTree:
     if sa_err_listener is not None:
         err_listener = _FallbackErrorTranslator(sa_err_listener, stream)
 
