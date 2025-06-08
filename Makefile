@@ -80,7 +80,7 @@ $(PARSER)/FandangoLexer.py: $(LEXER_G4) Makefile
 $(PARSER)/FandangoParser.py: $(LEXER_G4) $(PARSER_G4) Makefile
 	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
 		-visitor -listener $(PARSER_G4)
-	$(BLACK) src
+	$(BLACK) $(SRC)/language
 
 $(CPP_PARSER)/FandangoLexer.cpp: $(LEXER_G4) Makefile
 	$(ANTLR) -Dlanguage=Cpp -Xexact-output-dir -o $(CPP_PARSER) \
@@ -91,6 +91,7 @@ $(CPP_PARSER)/FandangoParser.cpp: $(LEXER_G4) $(PARSER_G4) $(SRC)/language/gener
 	$(ANTLR) -Dlanguage=Cpp -Xexact-output-dir -o $(CPP_PARSER) \
 		-visitor -no-listener $(PARSER_G4)
 	cd $(SRC)/language; $(PYTHON) generate-parser.py
+	$(BLACK) $(SRC)/language
 	@echo 'Now run "pip install -e ." to compile C++ files'
 
 .PHONY: format black
