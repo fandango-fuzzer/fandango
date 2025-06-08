@@ -3,7 +3,7 @@ import shutil
 import subprocess
 import tempfile
 import time
-from typing import Tuple
+
 
 from tccbox import tcc_bin_path
 
@@ -83,7 +83,7 @@ def is_valid_tinyc_code(c_code: str) -> bool:
 
 def evaluate_scriptsizec(
     seconds=60,
-) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
+) -> tuple[str, int, int, float, tuple[float, int, int], float, float]:
     file = open("evaluation/vs_isla/scriptsizec_evaluation/scriptsizec.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False)
     solutions = []

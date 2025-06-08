@@ -18,9 +18,9 @@ statement
 // grammar part
 
 production
-    : NONTERMINAL '::=' alternative (':=' expression)? (';' | NEWLINE | EOF)
-    | NONTERMINAL '::=' alternative ('=' expression)? (';' | NEWLINE | EOF)   // deprecated
-    | NONTERMINAL '::=' alternative (':' ':' expression)? (';' | NEWLINE | EOF)  // deprecated
+    : nonterminal '::=' alternative (':=' expression)? (';' | NEWLINE | EOF)
+    | nonterminal '::=' alternative ('=' expression)? (';' | NEWLINE | EOF)   // deprecated
+    | nonterminal '::=' alternative (':' ':' expression)? (';' | NEWLINE | EOF)  // deprecated
     ;
 
 alternative: concatenation ('|' concatenation)*;
@@ -45,7 +45,7 @@ repeat
 
 symbol
     : NEWLINE*
-        ( NONTERMINAL
+        ( nonterminal_right
         | STRING
         | NUMBER  // for 0 and 1 bits
         | generator_call
@@ -54,6 +54,16 @@ symbol
         )
       NEWLINE*
     ;
+
+nonterminal_right
+    : '<' ((NAME ':')? NAME ':')? NAME '>'
+    ;
+
+nonterminal
+    : '<' NAME '>'
+    ;
+
+
 
 generator_call
     : NAME
@@ -87,8 +97,8 @@ implies:
 quantifier:
     NEWLINE*
     (
-        FORALL NONTERMINAL IN selector COLON quantifier
-        | EXISTS NONTERMINAL IN selector COLON quantifier
+        FORALL nonterminal IN selector COLON quantifier
+        | EXISTS nonterminal IN selector COLON quantifier
         | formula_disjunction
     )
     NEWLINE*
@@ -149,7 +159,7 @@ selection
     ;
 
 base_selection
-    : NONTERMINAL
+    : nonterminal
     | '(' selector ')'
     ;
 
@@ -158,7 +168,7 @@ rs_pairs
     ;
 
 rs_pair
-    : '*' NONTERMINAL (':' rs_slice)?
+    : '*' nonterminal (':' rs_slice)?
     ;
 
 rs_slices
