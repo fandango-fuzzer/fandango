@@ -7,7 +7,7 @@ import fnmatch
 import setuptools
 
 target = platform.system().lower()
-PLATFORMS = {'windows', 'linux', 'darwin', 'cygwin'}
+PLATFORMS = {"windows", "linux", "darwin", "cygwin"}
 for known in PLATFORMS:
     if target.startswith(known):
         target = known
@@ -17,37 +17,34 @@ def run_setup(with_binary):
     if with_binary:
 
         extra_compile_args = {
-            'windows': ['/DANTLR4CPP_STATIC', '/Zc:__cplusplus', '/std:c++17'],
-            'linux': ['-std=c++17'],
-            'darwin': ['-std=c++17'],
-            'cygwin': ['-std=c++17'],
+            "windows": ["/DANTLR4CPP_STATIC", "/Zc:__cplusplus", "/std:c++17"],
+            "linux": ["-std=c++17"],
+            "darwin": ["-std=c++17"],
+            "cygwin": ["-std=c++17"],
         }
 
         # Define an Extension object that describes the Antlr accelerator
         cpp_parser_dir = "src/fandango/language/cpp_parser"
         parser_ext = setuptools.Extension(
             # Extension name shall be at the same level as the sa_fandango_parser.py module
-            name = 'fandango.language.parser.sa_fandango_cpp_parser',
-
+            name="fandango.language.parser.sa_fandango_cpp_parser",
             # Add the Antlr runtime source directory to the include search path
-            include_dirs = [ cpp_parser_dir + "/antlr4-cpp-runtime"],
-
+            include_dirs=[cpp_parser_dir + "/antlr4-cpp-runtime"],
             # Rather than listing each C++ file (Antlr has a lot!), discover them automatically
-            sources = get_files(cpp_parser_dir, "*.cpp"),
-            depends = get_files(cpp_parser_dir, "*.h"),
-
-            extra_compile_args=extra_compile_args.get(target, [])
+            sources=get_files(cpp_parser_dir, "*.cpp"),
+            depends=get_files(cpp_parser_dir, "*.h"),
+            extra_compile_args=extra_compile_args.get(target, []),
         )
         ext_modules = [parser_ext]
     else:
         ext_modules = []
 
     # Define a package
-    setuptools.setup (
+    setuptools.setup(
         # TODO: This should come from pyproject.toml
-        name='fandango-fuzzer',
-        version='0.9.0',
-        description='Fandango produces myriads of high-quality random inputs to test programs, giving users unprecedented control over format and shape of the inputs.',
+        name="fandango-fuzzer",
+        version="0.9.0",
+        description="Fandango produces myriads of high-quality random inputs to test programs, giving users unprecedented control over format and shape of the inputs.",
         packages=setuptools.find_packages("src"),
         package_dir={"": "src"},
         include_package_data=True,
@@ -59,9 +56,11 @@ def run_setup(with_binary):
         cmdclass={"build_ext": ve_build_ext},
     )
 
-#===============================================================================
+
+# ===============================================================================
 from setuptools.command.build_ext import build_ext
 from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
+
 
 def get_files(path, pattern):
     """
@@ -113,7 +112,7 @@ if not using_fallback:
     try:
         run_setup(with_binary=True)
     except BuildFailed:
-        if 'FANDANGO_REQUIRE_CI_BINARY_BUILD' in os.environ:
+        if "FANDANGO_REQUIRE_CI_BINARY_BUILD" in os.environ:
             # Require build to pass if running in travis-ci
             raise
         else:
