@@ -46,7 +46,7 @@ def run_setup(with_binary):
     setuptools.setup (
         # TODO: This should come from pyproject.toml
         name='fandango-fuzzer',
-        version='0.8.1',
+        version='0.9.0',
         description='Fandango produces myriads of high-quality random inputs to test programs, giving users unprecedented control over format and shape of the inputs.',
         packages=setuptools.find_packages("src"),
         package_dir={"": "src"},
