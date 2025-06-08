@@ -2202,7 +2202,7 @@ class Grammar(NodeVisitor):
     def __repr__(self):
         return "\n".join(
             [
-                f"{key} ::= {str(value)}{' := ' + self.generators[key] if key in self.generators else ''}"
+                f"{key} ::= {str(value)}{' := ' + str(self.generators[key]) if key in self.generators else ''}"
                 for key, value in self.rules.items()
             ]
         )

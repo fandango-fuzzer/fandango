@@ -54,7 +54,7 @@ from ansi_styles import ansiStyles as styles
 
 from fandango.evolution.algorithm import Fandango
 from fandango.language.grammar import Grammar
-from fandango.language.parse import parse
+from fandango.language.parse import parse, parse_spec, FandangoSpec
 from fandango.logger import LOGGER, print_exception
 
 from fandango import FandangoParseError, FandangoError
@@ -404,7 +404,7 @@ def get_parser(in_command_line=True):
         "--input-method",
         choices=["stdin", "filename", "libfuzzer"],
         default="filename",
-        help="when invoking COMMAND, choose whether Fandango input will be passed as standard input (`stdin`), as last argument on the command line (`filename`) (default), or to a libFuzzer style harness compiled to a shared object (.so/.dylib)",
+        help="when invoking COMMAND, choose whether Fandango input will be passed as standard input (`stdin`), as last argument on the command line (`filename`) (default), or to a libFuzzer style harness compiled to a shared .so/.dylib object (`libfuzzer`)",
     )
     command_group.add_argument(
         "test_command",
@@ -447,6 +447,29 @@ def get_parser(in_command_line=True):
         dest="output",
         default=None,
         help="write output to OUTPUT (default: none). Use '-' for stdout",
+    )
+
+    # Dump
+    dump_parser = commands.add_parser(
+        "dump",
+        help="parse and output .fan specs. For internal testing.",
+        parents=[file_parser, settings_parser],
+    )
+    dump_parser.add_argument(
+        "-o",
+        "--output",
+        type=argparse.FileType('w'),
+        dest="output",
+        default=None,
+        help="write output to OUTPUT (default: stdout)",
+    )
+    dump_parser.add_argument(
+        "dump_files",
+        type=argparse.FileType("r"),
+        metavar="FAN_FILE",
+        default=None,
+        nargs="*",
+        help=".fan files to be parsed. Use '-' for stdin",
     )
 
     if not in_command_line:
@@ -575,7 +598,7 @@ def exit_command(args):
     pass
 
 
-def parse_files_from_args(args, given_grammars=[]):
+def parse_files_from_args(args, given_grammars=[], check=True):
     """Parse .fan files as given in args"""
     return parse(
         args.fan_files,
@@ -585,10 +608,11 @@ def parse_files_from_args(args, given_grammars=[]):
         use_cache=args.use_cache,
         use_stdlib=args.use_stdlib,
         start_symbol=args.start_symbol,
-    )
+        check=check,
+   )
 
 
-def parse_constraints_from_args(args, given_grammars=[]):
+def parse_constraints_from_args(args, given_grammars=[], check=True):
     """Parse .fan constraints as given in args"""
     max_constraints = [f"maximizing {c}" for c in (args.maxconstraints or [])]
     min_constraints = [f"minimizing {c}" for c in (args.minconstraints or [])]
@@ -601,10 +625,11 @@ def parse_constraints_from_args(args, given_grammars=[]):
         use_cache=args.use_cache,
         use_stdlib=args.use_stdlib,
         start_symbol=args.start_symbol,
+        check=check,
     )
 
 
-def parse_contents_from_args(args, given_grammars=[]):
+def parse_contents_from_args(args, given_grammars=[], check=True):
     """Parse .fan content as given in args"""
     max_constraints = [f"maximizing {c}" for c in (args.maxconstraints or [])]
     min_constraints = [f"minimizing {c}" for c in (args.minconstraints or [])]
@@ -617,6 +642,7 @@ def parse_contents_from_args(args, given_grammars=[]):
         use_cache=args.use_cache,
         use_stdlib=args.use_stdlib,
         start_symbol=args.start_symbol,
+        check=check,
     )
 
 
@@ -1165,6 +1191,29 @@ def parse_command(args):
         raise FandangoParseError(f"{errors} error(s) during parsing")
 
 
+def dump_command(args):
+    """Dump Fandango spec, including code, grammar, and constraints"""
+
+    output = args.output
+    if output is None:
+        output = sys.stdout
+
+    for input_file in (args.fan_files or []) + args.dump_files:
+        contents = input_file.read()
+
+        try:
+            spec = parse_spec(contents, filename=input_file.name, use_cache=args.use_cache)
+            print(repr(spec), file=output)
+        except FandangoError as e:
+            print_exception(e)
+
+        if input_file != sys.stdin:
+            input_file.close()
+
+    if output != sys.stdout:
+        output.close()
+
+
 def nop_command(args):
     # Dummy command such that we can list ! and / as commands. Never executed.
     pass
@@ -1188,6 +1237,7 @@ COMMANDS = {
     "reset": reset_command,
     "fuzz": fuzz_command,
     "parse": parse_command,
+    "dump": dump_command,
     "cd": cd_command,
     "help": help_command,
     "copyright": copyright_command,
