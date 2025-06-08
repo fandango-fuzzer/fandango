@@ -133,6 +133,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.vscode/extensions/fandango-language-server/node_modules/
 
 # Spyder project settings
 .spyderproject
