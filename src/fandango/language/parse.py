@@ -242,8 +242,18 @@ class FandangoSpec:
         )
         exec(self.code_text, self.global_vars, self.local_vars)
 
+    def __repr__(self):
+        s = self.code_text
+        if s:
+            s += '\n\n'
+        s += str(self.grammar) + '\n'
+        if self.constraints:
+            s += '\n'
+        s += '\n'.join('where ' + str(constraint) for constraint in self.constraints)
+        return s
 
-def parse_content(
+
+def parse_spec(
     fan_contents: str,
     *,
     filename: str = "<input>",
@@ -258,7 +268,7 @@ def parse_content(
     :param filename: The file name of the content (for error messages)
     :param use_cache: If True (default), cache parsing results.
     :param lazy: If True, the constraints are evaluated lazily
-    :return: A tuple of the grammar and constraints
+    :return: A FandangoSpec object containing the parsed grammar, constraints, and code text.
     """
     spec: Optional[FandangoSpec] = None
     from_cache = False
@@ -378,6 +388,12 @@ def parse_content(
                 pass
 
     LOGGER.debug(f"{filename}: parsing complete")
+    return spec
+
+
+# Legacy interface
+def parse_content(*args, **kwargs) -> tuple[Grammar, list[str]]:
+    spec = parse_spec(*args, **kwargs)
     return spec.grammar, spec.constraints
 
 
@@ -395,6 +411,7 @@ def parse(
     *,
     use_cache: bool = True,
     use_stdlib: bool = True,
+    check: bool = True,
     lazy: bool = False,
     given_grammars: list[Grammar] = [],
     start_symbol: Optional[str] = None,
@@ -407,6 +424,7 @@ def parse(
     :param constraints: List of constraints (as strings); default: []
     :param use_cache: If True (default), cache parsing results
     :param use_stdlib: If True (default), use the standard library
+    :param check: If True (default), the constraints are checked for consistency
     :param lazy: If True, the constraints are evaluated lazily
     :param given_grammars: Grammars to use in addition to the standard library
     :param start_symbol: The grammar start symbol (default: "<start>")
@@ -546,14 +564,15 @@ def parse(
             )
         parsed_constraints += new_constraints
 
-    LOGGER.debug("Checking and finalizing content")
-    if grammar and len(grammar.rules) > 0:
-        check_grammar_consistency(
-            grammar, given_used_symbols=USED_SYMBOLS, start_symbol=start_symbol
-        )
+    if check:
+        LOGGER.debug("Checking and finalizing content")
+        if grammar and len(grammar.rules) > 0:
+            check_grammar_consistency(
+                grammar, given_used_symbols=USED_SYMBOLS, start_symbol=start_symbol
+            )
 
-    if grammar and parsed_constraints:
-        check_constraints_existence(grammar, parsed_constraints)
+        if grammar and parsed_constraints:
+            check_constraints_existence(grammar, parsed_constraints)
 
     global_env, local_env = grammar.get_spec_env()
     if grammar.fuzzing_mode == FuzzingMode.IO:
@@ -573,8 +592,9 @@ def parse(
         truncate_non_visible_packets(grammar, io_instance)
 
     # We invoke this at the very end, now that all data is there
-    grammar.update(grammar)
-    grammar.prime()
+    grammar.update(grammar, prime=check)
+    if check:
+        grammar.prime()
 
     LOGGER.debug("All contents parsed")
     return grammar, parsed_constraints
