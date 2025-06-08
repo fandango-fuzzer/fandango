@@ -87,14 +87,14 @@ $(CPP_PARSER)/FandangoLexer.cpp: $(LEXER_G4) Makefile
 		$(LEXER_G4)
 	sed -e '/^#include/a\'$$'\n''#include "FandangoLexerBase.h"' $(CPP_PARSER)/FandangoLexer.h > $(CPP_PARSER)/FandangoLexer.h~ && mv $(CPP_PARSER)/FandangoLexer.h~ $(CPP_PARSER)/FandangoLexer.h
 
-
 $(CPP_PARSER)/FandangoParser.cpp: $(LEXER_G4) $(PARSER_G4) $(SRC)/language/generate-parser.py Makefile
 	$(ANTLR) -Dlanguage=Cpp -Xexact-output-dir -o $(CPP_PARSER) \
 		-visitor -no-listener $(PARSER_G4)
 	cd $(SRC)/language; $(PYTHON) generate-parser.py
+	@echo 'Now run "pip install -e ." to compile C++ files'
 
-.PHONY: format
-format:
+.PHONY: format black
+format black:
 	$(BLACK) src
 
 ## Documentation
