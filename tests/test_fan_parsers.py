@@ -7,37 +7,34 @@ import subprocess
 import unittest
 import glob
 import re
+import pytest
 
-class test_fan_parsers(unittest.TestCase):
-    def run_command(self, command):
-        proc = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        out, err = proc.communicate()
-        return out.decode(), err.decode(), proc.returncode
+def run_command(command):
+    proc = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    out, err = proc.communicate()
+    return out.decode(), err.decode(), proc.returncode
 
-# Add test methods dynamically for each .fan file in the resources directory
-for file in glob.glob("tests/resources/*.fan"):
-    func_name = file.replace("tests/resources/", "").replace(".fan", "")
-    func_name = re.sub(r'[^a-zA-Z0-9_]', '_', func_name)
+files = glob.glob("tests/resources/*.fan") + glob.glob("docs/*.fan")
 
-    def test_file(self):
-        f"""Test the C++ and python .fan parsers for {file!r}"""
-        command = shlex.split("fandango --parser=python dump --no-cache --no-stdlib " + file)
-        python_out, err, return_code = self.run_command(command)
-        self.assertEqual(0, return_code)
-        self.assertEqual(err, "")
+@pytest.mark.parametrize("fan_file", files)
+def test_file(fan_file):
+    """Test the C++ and python .fan parsers for `fan_file`."""
 
-        command = shlex.split("fandango --parser=speedy dump --no-cache --no-stdlib " + file)
-        speedy_out, err, return_code = self.run_command(command)
-        self.assertEqual(0, return_code)
-        self.assertEqual(err, "")
+    command = shlex.split(f"fandango --parser=python dump --no-cache --no-stdlib {fan_file}")
+    python_out, err, return_code = run_command(command)
+    assert return_code == 0
+    assert err == ""
 
-        self.assertEqual(python_out, speedy_out, file)
+    command = shlex.split(f"fandango --parser=speedy dump --no-cache --no-stdlib {fan_file}")
+    speedy_out, err, return_code = run_command(command)
+    assert return_code == 0
+    assert err == ""
 
-    setattr(test_fan_parsers, f'test_{func_name}', test_file)
+    assert python_out == speedy_out, f"{fan_file} produced different outputs for Python and Speedy parsers:\n\nPython output:\n{python_out}\n\nSpeedy output:\n{speedy_out}"
 
 if __name__ == "__main__":
     unittest.main()
