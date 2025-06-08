@@ -136,7 +136,6 @@ def get_parser(in_command_line=True):
             help="choose the parser implementation to use (default: 'auto': use speedy if available, otherwise python)",
         )
 
-
     # The subparsers
     commands = main_parser.add_subparsers(
         title="commands",
