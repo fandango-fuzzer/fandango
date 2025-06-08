@@ -28,6 +28,7 @@ private:
     std::vector<int> indents;
     int opened = 0;
     int inPython = 0;
+    int skipLexer = 0;
 
     static const std::regex NEW_LINE_PATTERN;
     static const std::regex SPACES_PATTERN;
