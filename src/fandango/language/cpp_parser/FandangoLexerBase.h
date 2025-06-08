@@ -32,7 +32,6 @@ private:
     static const std::regex NEW_LINE_PATTERN;
     static const std::regex SPACES_PATTERN;
 
-    std::unique_ptr<antlr4::Token> createDedent();
     std::unique_ptr<antlr4::Token> commonToken(const size_t type, const std::string &text);
     static int getIndentationCount(const std::string &whitespace);
 };
