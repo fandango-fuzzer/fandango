@@ -245,11 +245,11 @@ class FandangoSpec:
     def __repr__(self):
         s = self.code_text
         if s:
-            s += '\n\n'
-        s += str(self.grammar) + '\n'
+            s += "\n\n"
+        s += str(self.grammar) + "\n"
         if self.constraints:
-            s += '\n'
-        s += '\n'.join('where ' + str(constraint) for constraint in self.constraints)
+            s += "\n"
+        s += "\n".join("where " + str(constraint) for constraint in self.constraints)
         return s
 
 

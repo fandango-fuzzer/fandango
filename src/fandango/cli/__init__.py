@@ -458,7 +458,7 @@ def get_parser(in_command_line=True):
     dump_parser.add_argument(
         "-o",
         "--output",
-        type=argparse.FileType('w'),
+        type=argparse.FileType("w"),
         dest="output",
         default=None,
         help="write output to OUTPUT (default: stdout)",
@@ -609,7 +609,7 @@ def parse_files_from_args(args, given_grammars=[], check=True):
         use_stdlib=args.use_stdlib,
         start_symbol=args.start_symbol,
         check=check,
-   )
+    )
 
 
 def parse_constraints_from_args(args, given_grammars=[], check=True):
@@ -1202,7 +1202,9 @@ def dump_command(args):
         contents = input_file.read()
 
         try:
-            spec = parse_spec(contents, filename=input_file.name, use_cache=args.use_cache)
+            spec = parse_spec(
+                contents, filename=input_file.name, use_cache=args.use_cache
+            )
             print(repr(spec), file=output)
         except FandangoError as e:
             print_exception(e)
