@@ -44,9 +44,10 @@ def run_setup(with_binary):
 
     # Define a package
     setuptools.setup (
-        name='fandango',
+        # TODO: This should come from pyproject.toml
+        name='fandango-fuzzer',
         version='0.8.1',
-        description='Fandango',
+        description='Fandango produces myriads of high-quality random inputs to test programs, giving users unprecedented control over format and shape of the inputs.',
         packages=setuptools.find_packages("src"),
         package_dir={"": "src"},
         include_package_data=True,
@@ -112,7 +113,7 @@ if not using_fallback:
     try:
         run_setup(with_binary=True)
     except BuildFailed:
-        if 'SPAM_EXAMPLE_REQUIRE_CI_BINARY_BUILD' in os.environ:
+        if 'FANDANGO_REQUIRE_CI_BINARY_BUILD' in os.environ:
             # Require build to pass if running in travis-ci
             raise
         else:
