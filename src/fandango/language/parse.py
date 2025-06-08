@@ -703,6 +703,10 @@ def check_grammar_definitions(
         defined_symbols.add(str(symbol))
 
     if start_symbol not in defined_symbols:
+        if start_symbol == "<start>":
+            raise FandangoValueError(
+                f"Start symbol {start_symbol!s} not defined in grammar"
+            )
         closest = closest_match(start_symbol, defined_symbols)
         raise FandangoValueError(
             f"Start symbol {start_symbol!s} not defined in grammar. Did you mean {closest!s}?"

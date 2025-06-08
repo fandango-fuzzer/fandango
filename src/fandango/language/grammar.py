@@ -2482,6 +2482,9 @@ class Grammar(NodeVisitor):
         if isinstance(start, str):
             start = NonTerminal(start)
 
+        if start not in self.rules:
+            raise FandangoValueError(f"Start symbol {start} not defined in grammar")
+
         # We start on the right hand side of the start symbol
         start_node = self.rules[start]
         seen = set()
