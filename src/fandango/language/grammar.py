@@ -6,6 +6,7 @@ import time
 import typing
 from collections import defaultdict
 
+import re
 import exrex
 
 from copy import deepcopy
@@ -252,7 +253,7 @@ class Repetition(Node):
         nodes = []
         if len(searches) != 1:
             raise FandangoValueError(
-                "Computed repetition requires exactly one or zero searches!"
+                "Computed repetition requires exactly one or zero searches"
             )
 
         search_name, search = next(iter(searches.items()))
@@ -261,7 +262,7 @@ class Repetition(Node):
         )
         if len(nodes) == 0:
             raise FandangoValueError(
-                f"Couldn't find search target ({search}) in prefixed DerivationTree for computed repetition!"
+                f"Couldn't find search target ({search}) in prefixed DerivationTree for computed repetition"
             )
 
         target_name, target_container = nodes[-1]
@@ -564,7 +565,10 @@ class LiteralGenerator:
         return f"LiteralGenerator({self.call!r}, {self.nonterminals!r})"
 
     def __str__(self):
-        return str(self.call)
+        # Generators are created with internal variables;
+        # we replace them with "..." to avoid cluttering the output.
+        s = re.sub(r"___[0-9a-zA-Z_]+___", r"...", str(self.call))
+        return s
 
     def __eq__(self, other):
         return (
