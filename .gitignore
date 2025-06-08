@@ -182,10 +182,13 @@ tests/test-marker.txt
 evaluation/test-evaluation.txt
 evaluation/experiments/test-experiments.txt
 
+# VS code
+.vscode/
+
 tmp.der
 fuzzed_*.gif
 docs/Pitfalls.md
 docs/Markdown0.fan
 docs/Markdown.fan
 docs/Markdown.fan
-.vscode/settings.json
+
