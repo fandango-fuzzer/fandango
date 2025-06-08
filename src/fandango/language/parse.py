@@ -311,12 +311,12 @@ def parse_content(
             raise exc
 
     if not spec:
-        if fandango.Fandango.parser != 'legacy':
-            if fandango.Fandango.parser == 'speedy':
+        if fandango.Fandango.parser != "legacy":
+            if fandango.Fandango.parser == "speedy":
                 sa_fandango.USE_CPP_IMPLEMENTATION = True
-            elif fandango.Fandango.parser == 'python':
+            elif fandango.Fandango.parser == "python":
                 sa_fandango.USE_CPP_IMPLEMENTATION = False
-            elif fandango.Fandango.parser == 'auto':
+            elif fandango.Fandango.parser == "auto":
                 pass  # let sa_fandango decide
 
             if sa_fandango.USE_CPP_IMPLEMENTATION:
