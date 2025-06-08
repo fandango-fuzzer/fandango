@@ -56,7 +56,6 @@ RETURN     : 'return';
 TRUE       : 'True';
 TRY        : 'try' { python_start(); };
 TYPE       : 'type';
-UNDERSCORE : '_';
 WHILE      : 'while' { python_start(); };
 WHERE      : 'where';
 WITH       : 'with' { python_start(); };
@@ -191,6 +190,7 @@ fragment LINE_JOINING: '\\' SPACES? ( '\r'? '\n' | '\r' | '\f');
 
 fragment UNICODE_OIDS: '\u1885' ..'\u1886' | '\u2118' | '\u212e' | '\u309b' ..'\u309c';
 fragment UNICODE_OIDC: '\u00b7' | '\u0387' | '\u1369' ..'\u1371' | '\u19da';
+fragment UNDERSCORE : '_';
 fragment ID_START:
     UNDERSCORE
     | [\p{L}]
