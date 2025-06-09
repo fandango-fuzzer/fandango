@@ -336,9 +336,9 @@ However, they are not necessarily more complex.
 And they are more efficient, as they provide a solution right away.
 So when should one use constraints, and when converters?
 
-:::{tip}
+```{tip}
 In general:
 
 * If you have a simple, _operational_ way to solve a problem, consider a _converter_.
 * If you want a simple, _declarative_ way to specify your needs, use a _constraint_.
-:::
+```

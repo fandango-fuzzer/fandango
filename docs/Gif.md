@@ -13,9 +13,10 @@ kernelspec:
 (sec:gif)=
 # Case Study: The GIF Format
 
-:::{error}
+```{admonition} Under Construction
+:class: attention
 To be added later.
-:::
+```
 
 The [GIF format](https://www.fileformat.info/format/gif/egff.htm) is widely used to encode image sequences.
 

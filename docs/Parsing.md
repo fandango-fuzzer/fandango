@@ -93,9 +93,9 @@ assert _exit_code == 0
 
 We see that input and output are identical (as should always be with parsing and unparsing).
 
-:::{tip}
+```{tip}
 As it comes to producing and storing outputs, the `parse` command has the same options as the `fuzz` command.
-:::
+```
 
 Since parsing and unparsing should always be symmetrical to each other, Fandango provides a `--validate` option to run this check automatically:
 
@@ -113,9 +113,9 @@ Again, if nothing happens, then the (internal) check was successful.
 
 The `--validate` option can also be passed to the `fuzz` command; here, it ensures that the produced string can be parsed by the same grammar (again, as should be).
 
-:::{tip}
+```{important}
 If you find that `--validate` fails, please report this as a Fandango bug.
-:::
+```
 
 (sec:formats)=
 ## Alternate Output Formats

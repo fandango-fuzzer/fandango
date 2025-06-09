@@ -160,9 +160,9 @@ You can enforce a specific behavior using the Fandango `--file-mode` flag for th
 
 The default is `fuzz --file=mode=auto` (default), which will use `binary` or `text` mode as described above.
 
-:::{tip}
+```{tip}
 Avoid mixing non-ASCII strings with bits and bytes in a single grammar.
-:::
+```
 
 (sec:byte-regexes)=
 ### Bytes and Regular Expressions
@@ -224,9 +224,9 @@ Using `uint16()`, we can now define how the value of `<length>` is related to th
 !grep '^where' binary.fan
 ```
 
-:::{tip}
+```{tip}
 Having a derived value (like `<length>`) isolated on the left-hand side of an equality equation makes it easy for Fandango to first compute the content and then compute and assign the derived value.
-:::
+```
 
 Again, all of this goes into a single `.fan` file: [`binary.fan`](binary.fan) holds the grammar, the `uint16()` definition, and the constraint.
 Let us produce a single output using `binary.fan` and view its (binary) contents, using `od -c`:
@@ -289,9 +289,9 @@ $ fandango fuzz -n 1 -f binary-rep.fan -o - | hexdump -C
 ! fandango fuzz -n 1 -f binary-rep.fan -o - | hexdump -C
 ```
 
-:::{tip}
+```{tip}
 When [parsing](sec:parsing) inputs, computed repetitions are much more efficient than constraints.
-:::
+```
 
 
 

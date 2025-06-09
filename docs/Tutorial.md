@@ -44,19 +44,21 @@ Hovering the mouse pointer over the command offers an option to copy the command
 
 ### Code
 
-File contents (mostly Fandango `.fan`) files are shown like this:
+File contents (mostly Fandango `.fan` files) are shown like this:
 
 ```python
 <start> ::= <fandango>
 ```
 
-You can typically _download_ the complete examples, as in [digits.fan](digits.fan).
+We often only show excerpts; the complete examples can be downloaded, as in [digits.fan](digits.fan).
 
 _Executable code_ examples (mostly in Python) are shown like this:
 
 ```{code-cell}
 from fandango import Fandango
 ```
+
+Enter these at a Python prompt, or include them in your Python programs.
 
 ```{tip}
 Hovering the mouse pointer over the code offers an option to copy the code to the clipboard.
@@ -86,7 +88,7 @@ Bring important information to the readers' attention.
 
 ```{admonition} Under Construction
 :class: attention
-An indication that some parts of the documentation or the implementation are under construction.
+Indicate that some parts of the documentation or the implementation are under construction.
 ```
 
 ```{caution}
@@ -94,27 +96,45 @@ Tell the reader to proceed carefully.
 ```
 
 ```{warning}
-A step that might cause irreversible damage, such as permanent data loss.
+Warn about possible irreversible damage, such as permanent data loss.
 ```
 
 :::{margin}
-So far, there are no "Danger" callouts in this documentation.
+Pretty much all of these occur in the chapter on [Fuzzing Strategies](sec:strategies).
 :::
 
 ```{danger}
-A hazard that may lead to death or serious injury.
+Warn about hazards that may lead to death or serious injury.
 ```
-
 
 ### Quizzes
 
 This documentation also uses _quizzes_ – that is, questions for the reader.
 The solutions are initially hidden, but can be unhidden by clicking on them.
 
+For instance, what does a _Warning_ callout indicate?
+
 ```{admonition} Solution
 :class: tip, dropdown
-You found the solution!
+It indicates a step that might cause irreversible damage, such as permanent data loss.
 ```
+
+### Changes
+
+These hints highlight changes across versions:
+
+```{versionadded} 1.0
+Explanation of the new feature.
+```
+
+```{versionchanged} 1.0
+Explanation of the change.
+```
+
+```{deprecated} 1.0
+Explanation of the deprecation.
+```
+
 
 
 % ## Table of Contents

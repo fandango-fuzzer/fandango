@@ -166,9 +166,9 @@ $ printf '\xf0' | fandango parse -f bits.fan -o - --format=grammar
 assert _exit_code == 0
 ```
 
-:::{warning}
+```{note}
 To parse bits properly, they must come in multiples of eight.
-:::
+```
 
 
 ## Bits and Padding
