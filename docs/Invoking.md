@@ -44,7 +44,7 @@ assert _exit_code == 0
 
 Success! We have created 10 random sequences of digits.
 
-```{danger}
+```{warning}
 Be aware that `.fan` files can contain Python code that is _executed when being loaded_. This code can execute arbitrary commands.
 ```
 

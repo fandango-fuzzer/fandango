@@ -459,7 +459,7 @@ This is why Fandango allows expressing _quantification_ in constraints.
 
 ### Star Expressions
 
-```{error}
+```{admonition} Under Construction}
 The `*` syntax is not operational yet.
 ```
 

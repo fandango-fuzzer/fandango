@@ -13,7 +13,7 @@ kernelspec:
 (sec:distributions)=
 # Statistical Distributions
 
-```{error}
+```{admonition} Under Construction}
 This chapter is still in construction.
 ```
 

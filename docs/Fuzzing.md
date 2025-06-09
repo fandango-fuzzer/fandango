@@ -113,7 +113,7 @@ Fandango will create the directory and store the inputs as `Fandango-0001.txt`, 
 If the directory is already present, Fandango will use that directory.
 ```
 
-```{warning}
+```{caution}
 Fandango will overwrite files `Fandango-0001.txt`, `Fandango-0002.txt`, etc., but leave other files in the directory unchanged.
 ```
 

@@ -32,8 +32,10 @@ A command `fandango help` is shown as follows:
 $ fandango help
 ```
 
-This assumes an input prompt `$ ` already present at the command line.
-Do not enter it.
+```{note}
+In this tutorial, a `$` at the beginning of a command stands for your input prompt.
+Do not enter it yourself.
+```
 
 ```{tip}
 Hovering the mouse pointer over the command offers an option to copy the command to the clipboard.
@@ -56,13 +58,18 @@ _Executable code_ examples (mostly in Python) are shown like this:
 from fandango import Fandango
 ```
 
+```{tip}
+Hovering the mouse pointer over the code offers an option to copy the code to the clipboard.
+```
+
+
 
 ### Callouts
 
 This documentation uses the following conventions for _callouts_:
 
 :::{margin}
-There are also _margin notes_, which show interesting, but not vital information.
+There are also _margin notes_, which show interesting background information.
 :::
 
 ```{tip}
@@ -71,6 +78,15 @@ Show helpful information or another way to do something.
 
 ```{note}
 Bring additional information to the readers' attention.
+```
+
+```{important}
+Bring important information to the readers' attention.
+```
+
+```{admonition} Under Construction
+:class: attention
+An indication that some parts of the documentation or the implementation are under construction.
 ```
 
 ```{caution}
@@ -89,9 +105,6 @@ So far, there are no "Danger" callouts in this documentation.
 A hazard that may lead to death or serious injury.
 ```
 
-```{error}
-An indication that some parts of the documentation are under construction.
-```
 
 ### Quizzes
 

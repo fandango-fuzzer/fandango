@@ -338,7 +338,7 @@ b'\x14\x00' == '\x14\x00'
 
 Hence, a constraint that compares a Fandango symbol against a byte string _will always fail_.
 
-```{warning}
+```{important}
 When comparing symbols against values, always be sure to convert the values to the appropriate type first.
 ```
 
