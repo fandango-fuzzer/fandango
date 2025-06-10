@@ -1,12 +1,10 @@
 #!/usr/bin/env pytest
 
-import os
+import glob
 import shlex
-import shutil
 import subprocess
 import unittest
-import glob
-import re
+
 import pytest
 
 
@@ -35,7 +33,7 @@ def test_file(fan_file):
     assert err == ""
 
     command = shlex.split(
-        f"fandango --parser=speedy dump --no-cache --no-stdlib {fan_file}"
+        f"fandango --parser=cpp dump --no-cache --no-stdlib {fan_file}"
     )
     speedy_out, err, return_code = run_command(command)
     assert return_code == 0

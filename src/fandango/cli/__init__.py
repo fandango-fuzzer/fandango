@@ -131,9 +131,9 @@ def get_parser(in_command_line=True):
 
         main_parser.add_argument(
             "--parser",
-            choices=["python", "speedy", "legacy", "auto"],
+            choices=["python", "cpp", "legacy", "auto"],
             default="auto",
-            help="choose the parser implementation to use (default: 'auto': use speedy if available, otherwise python)",
+            help="choose the parser implementation to use (default: 'auto': use cpp if available, otherwise python)",
         )
 
     # The subparsers

@@ -1,25 +1,23 @@
 import ast
 import hashlib
 import os
-import sys
 import platform
 import re
+import sys
 import time
-
 from copy import deepcopy
-from pathlib import Path
 from io import StringIO
-from typing import Any, IO, Optional
+from pathlib import Path
+from typing import IO, Any, Optional
 
 import cachedir_tag
 import dill as pickle
-
-from antlr4 import CommonTokenStream, InputStream, FileStream
+from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
-from .parser import sa_fandango
-
 from xdg_base_dirs import xdg_cache_home, xdg_data_dirs, xdg_data_home
 
+import fandango
+from fandango import FandangoSyntaxError, FandangoValueError
 from fandango.constraints import predicates
 from fandango.constraints.base import Constraint
 from fandango.language.convert import (
@@ -29,15 +27,14 @@ from fandango.language.convert import (
     PythonProcessor,
 )
 from fandango.language.grammar import (
-    Grammar,
-    NodeType,
-    SymbolFinder,
     FuzzingMode,
+    Grammar,
+    MessageNestingDetector,
+    NodeReplacer,
+    NodeType,
     NonTerminalNode,
     PacketTruncator,
-    MessageNestingDetector,
-    MAX_REPETITIONS,
-    NodeReplacer,
+    SymbolFinder,
     closest_match,
 )
 from fandango.language.io import FandangoIO, FandangoParty
@@ -47,8 +44,7 @@ from fandango.language.stdlib import stdlib
 from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER, print_exception
 
-from fandango import FandangoSyntaxError, FandangoValueError
-import fandango
+from .parser import sa_fandango
 
 
 class PythonAntlrErrorListener(ErrorListener):
@@ -322,7 +318,7 @@ def parse_spec(
 
     if not spec:
         if fandango.Fandango.parser != "legacy":
-            if fandango.Fandango.parser == "speedy":
+            if fandango.Fandango.parser == "cpp":
                 sa_fandango.USE_CPP_IMPLEMENTATION = True
             elif fandango.Fandango.parser == "python":
                 sa_fandango.USE_CPP_IMPLEMENTATION = False
