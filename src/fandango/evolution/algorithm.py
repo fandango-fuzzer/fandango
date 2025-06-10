@@ -296,6 +296,18 @@ class Fandango:
         desired_solutions: Optional[int] = None,
         solution_callback: Callable[[DerivationTree, int], None] = lambda _a, _b: None,
     ) -> list[DerivationTree]:
+        """
+        Evolves the population of the grammar.
+
+        If both max_generations and desired_solutions are provided, the generation will run until either the maximum number of generations is reached or the desired number of solutions is found. If neither is provided, the generation will run indefinitely.
+
+        TODO: go into more details about Fandango IO mode.
+
+        :param max_generations: The maximum number of generations to evolve.
+        :param desired_solutions: The number of solutions to evolve.
+        :param solution_callback: A callback function to be called for each solution.
+        :return: A list of DerivationTree objects, all of which are valid solutions to the grammar (or satisify the minimum fitness threshold). The function may run indefinitely if neither max_generations nor desired_solutions are provided.
+        """
         if self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
             return self._evolve_single(
                 max_generations, desired_solutions, solution_callback
@@ -407,6 +419,12 @@ class Fandango:
     def generate(
         self, max_generations: Optional[int] = None
     ) -> Generator[DerivationTree, None, None]:
+        """
+        Generates solutions for the grammar.
+
+        :param max_generations: The maximum number of generations to generate. If None, the generation will run indefinitely.
+        :return: A generator of DerivationTree objects, all of which are valid solutions to the grammar (or satisify the minimum fitness threshold).
+        """
         while self._initial_solutions:
             yield self._initial_solutions.pop(0)
         prev_best_fitness = 0.0
@@ -570,6 +588,9 @@ class Fandango:
         return solutions
 
     def msg_parties(self) -> list[FandangoParty]:
+        """
+        :return: A list of all parties in the grammar.
+        """
         spec_env_global, _ = self.grammar.get_spec_env()
         io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
         return list(io_instance.parties.values())

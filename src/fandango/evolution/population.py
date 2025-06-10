@@ -63,8 +63,10 @@ class PopulationManager:
         Generates a random population of unique individuals.
 
         :param eval_individual: A function that evaluates an individual.
+        :param max_nodes: The maximum number of nodes to generate.
+        :param target_population_size: The target population size.
         :param initial_population: An optional initial population to add to.
-        :return: A population of unique individuals.
+        :return: A tuple of a list of unique individuals and a list of solutions if any are randomly found during generation.
         """
         solutions: list[DerivationTree] = []
         unique_population = initial_population or []
