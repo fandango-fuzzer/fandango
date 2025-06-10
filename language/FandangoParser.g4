@@ -668,7 +668,7 @@ pattern_capture_target
     ;
 
 wildcard_pattern
-    : '_'
+    : UNDERSCORE
     ;
 
 value_pattern
