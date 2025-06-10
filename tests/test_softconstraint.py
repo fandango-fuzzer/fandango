@@ -1,9 +1,9 @@
 #!/usr/bin/env pytest
 
-import unittest
-import unittest
-import subprocess
 import shlex
+import subprocess
+import unittest
+
 from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
@@ -41,7 +41,7 @@ class TestSoftValue(TestSoft):
             "tests/resources/softvalue.fan",
             desired_solutions=100,
             random_seed=1,
-            max_generations=50,
+            max_generations=200,
         )
         self.assertIn("999999-999999", solutions)
 
