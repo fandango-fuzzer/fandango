@@ -345,10 +345,11 @@ class Fandango:
                     self.evaluation = generator.return_value
 
                 if not solutions:
-                    evolve_result = self._evolve_single(
-                        max_generations=max_generations, desired_solutions=1
-                    )
-                    if len(evolve_result) == 0:
+                    try:
+                        evolve_result = next(
+                            self.generate(max_generations=max_generations)
+                        )
+                    except StopIteration:
                         nonterminals_str = " | ".join(
                             map(lambda x: str(x.node.symbol), fuzzable_packets)
                         )
@@ -403,10 +404,8 @@ class Fandango:
     def generate(
         self, max_generations: Optional[int] = None
     ) -> Generator[DerivationTree, None, None]:
-        if self._initial_solutions:
-            for s in self._initial_solutions:
-                yield s
-            self._initial_solutions = []
+        while self._initial_solutions:
+            yield self._initial_solutions.pop(0)
         prev_best_fitness = 0.0
         generation = 0
 
