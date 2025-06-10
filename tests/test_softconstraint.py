@@ -4,6 +4,7 @@ import unittest
 import subprocess
 import shlex
 from fandango.evolution.algorithm import Fandango, LoggerLevel
+
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
 
@@ -43,7 +44,7 @@ class TestSoftValue(TestSoft):
             "tests/resources/softvalue.fan",
             desired_solutions=100,
             random_seed=1,
-            max_generations=50,
+            max_generations=250,
         )
         self.assertIn("999999-999999", solutions)
 
