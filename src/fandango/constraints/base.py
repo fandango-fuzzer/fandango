@@ -6,7 +6,7 @@ import itertools
 from abc import ABC, abstractmethod
 from copy import copy
 from typing import Any, Optional
-from tdigest import TDigest
+from tdigest import TDigest as BaseTDigest
 import math
 
 from fandango.constraints.fitness import (
@@ -23,7 +23,7 @@ from fandango.language.tree import DerivationTree
 from fandango.logger import print_exception, LOGGER
 
 
-class TDigest(TDigest):
+class TDigest(BaseTDigest):
     def __init__(self, optimization_goal: str):
         super().__init__()
         self._min = None
@@ -533,7 +533,7 @@ class ComparisonConstraint(Constraint):
             # Cannot check - value does not exist
             return False
 
-        if type(left) == type(right):
+        if isinstance(left, type(right)):
             return True
         if isinstance(left, (bool, int, float)) and isinstance(
             right, (bool, int, float)
