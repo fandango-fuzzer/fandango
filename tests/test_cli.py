@@ -85,7 +85,7 @@ class test_cli(unittest.TestCase):
 
     def test_output_with_libfuzzer_harness(self):
         compile = shlex.split(
-            "clang -gv -O2 -fsanitize=fuzzer-no-link -shared -o tests/resources/test_libfuzzer_interface tests/resources/test_libfuzzer_interface.c"
+            "clang -g -O2 -fsanitize=fuzzer-no-link -shared -o tests/resources/test_libfuzzer_interface tests/resources/test_libfuzzer_interface.c"
         )
         out, err, code = self.run_command(compile)
         self.maxDiff = 1000000
