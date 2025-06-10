@@ -203,5 +203,28 @@ class DeterminismTests(unittest.TestCase):
         self.assertListEqual(solutions_1, solutions_2)
 
 
+class TargetedMutations(unittest.TestCase):
+    # fandango fuzz -f tests/resources/digit_targeted_mutation.fan -n 1 --random-seed 1
+    def get_solutions(
+        self,
+        specification_file,
+        desired_solutions,
+        random_seed,
+    ):
+        file = open(specification_file, "r")
+        grammar_int, constraints_int = parse(file, use_stdlib=False, use_cache=False)
+        fandango = Fandango(
+            grammar=grammar_int,
+            constraints=constraints_int,
+            desired_solutions=desired_solutions,
+            random_seed=random_seed,
+        )
+        solutions: list[DerivationTree] = fandango.evolve()
+        return [s.to_string() for s in solutions]
+
+    def test_deterministic_solutions(self):
+        solutions = self.get_solutions("tests/resources/digit_targeted_mutation.fan", 1, 1)
+        self.assertListEqual(solutions, ["0123456789"])
+
 if __name__ == "__main__":
     unittest.main()
