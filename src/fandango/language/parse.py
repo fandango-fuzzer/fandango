@@ -1,22 +1,23 @@
 import ast
 import hashlib
 import os
-import sys
 import platform
 import re
-
+import sys
+import time
 from copy import deepcopy
-from pathlib import Path
 from io import StringIO
-from typing import Any, IO, Optional
+from pathlib import Path
+from typing import IO, Any, Optional
 
 import cachedir_tag
 import dill as pickle
-
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 from xdg_base_dirs import xdg_cache_home, xdg_data_dirs, xdg_data_home
 
+import fandango
+from fandango import FandangoSyntaxError, FandangoValueError
 from fandango.constraints import predicates
 from fandango.constraints.base import Constraint
 from fandango.language.convert import (
@@ -26,15 +27,14 @@ from fandango.language.convert import (
     PythonProcessor,
 )
 from fandango.language.grammar import (
-    Grammar,
-    NodeType,
-    SymbolFinder,
     FuzzingMode,
+    Grammar,
+    MessageNestingDetector,
+    NodeReplacer,
+    NodeType,
     NonTerminalNode,
     PacketTruncator,
-    MessageNestingDetector,
-    MAX_REPETITIONS,
-    NodeReplacer,
+    SymbolFinder,
     closest_match,
 )
 from fandango.language.io import FandangoIO, FandangoParty
@@ -44,18 +44,44 @@ from fandango.language.stdlib import stdlib
 from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER, print_exception
 
-from fandango import FandangoSyntaxError, FandangoValueError
-import fandango
+from .parser import sa_fandango
 
 
-class MyErrorListener(ErrorListener):
+class PythonAntlrErrorListener(ErrorListener):
     """This is invoked from ANTLR when a syntax error is encountered"""
 
     def __init__(self, filename=None):
         self.filename = filename
         super().__init__()
 
-    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+    def syntaxError(
+        self, recognizer, offendingSymbol, line: int, column: int, msg: str, e
+    ):
+        exc = FandangoSyntaxError(
+            f"{self.filename!r}, line {line}, column {column}: {msg}"
+        )
+        exc.line = line
+        exc.column = column
+        exc.messsage = msg
+        raise exc
+
+
+class SpeedyAntlrErrorListener(sa_fandango.SA_ErrorListener):
+    """This is invoked from the speedy ANTLR parser when a syntax error is encountered"""
+
+    def __init__(self, filename=None):
+        self.filename = filename
+        super().__init__()
+
+    def syntaxError(
+        self,
+        input_stream,
+        offendingSymbol,
+        char_index: int,
+        line: int,
+        column: int,
+        msg,
+    ):
         exc = FandangoSyntaxError(
             f"{self.filename!r}, line {line}, column {column}: {msg}"
         )
@@ -165,6 +191,8 @@ class FandangoSpec:
         ast.fix_missing_locations(code_tree)
         self.code_text = ast.unparse(code_tree)
 
+        LOGGER.debug(f"{filename}: code text:\n{self.code_text}")
+
         LOGGER.debug(f"{filename}: running code")
         self.run_code(filename=filename)
 
@@ -210,8 +238,18 @@ class FandangoSpec:
         )
         exec(self.code_text, self.global_vars, self.local_vars)
 
+    def __repr__(self):
+        s = self.code_text
+        if s:
+            s += "\n\n"
+        s += str(self.grammar) + "\n"
+        if self.constraints:
+            s += "\n"
+        s += "\n".join("where " + str(constraint) for constraint in self.constraints)
+        return s
 
-def parse_content(
+
+def parse_spec(
     fan_contents: str,
     *,
     filename: str = "<input>",
@@ -226,7 +264,7 @@ def parse_content(
     :param filename: The file name of the content (for error messages)
     :param use_cache: If True (default), cache parsing results.
     :param lazy: If True, the constraints are evaluated lazily
-    :return: A tuple of the grammar and constraints
+    :return: A FandangoSpec object containing the parsed grammar, constraints, and code text.
     """
     spec: Optional[FandangoSpec] = None
     from_cache = False
@@ -251,6 +289,7 @@ def parse_content(
             try:
                 with open(pickle_file, "rb") as fp:
                     LOGGER.info(f"{filename}: loading cached spec from {pickle_file}")
+                    start_time = time.time()
                     spec = pickle.load(fp)
                     assert spec is not None
                     LOGGER.debug(f"Cached spec version: {spec.version}")
@@ -260,6 +299,9 @@ def parse_content(
                         )
                         raise error
 
+                    LOGGER.debug(
+                        f"{filename}: loaded from cache in {time.time() - start_time:.2f} seconds"
+                    )
                     from_cache = True
             except Exception as exc:
                 LOGGER.debug(type(exc).__name__ + ":" + str(exc))
@@ -275,21 +317,52 @@ def parse_content(
             raise exc
 
     if not spec:
-        LOGGER.debug(f"{filename}: setting up .fan parser and lexer")
-        error_listener = MyErrorListener(filename)
+        if fandango.Fandango.parser != "legacy":
+            if fandango.Fandango.parser == "cpp":
+                sa_fandango.USE_CPP_IMPLEMENTATION = True
+            elif fandango.Fandango.parser == "python":
+                sa_fandango.USE_CPP_IMPLEMENTATION = False
+            elif fandango.Fandango.parser == "auto":
+                pass  # let sa_fandango decide
 
-        input_stream = InputStream(fan_contents)
-        lexer = FandangoLexer(input_stream)
-        lexer.removeErrorListeners()
-        lexer.addErrorListener(error_listener)
+            if sa_fandango.USE_CPP_IMPLEMENTATION:
+                LOGGER.debug(f"{filename}: setting up speedy C++ .fan parser")
+            else:
+                LOGGER.debug(f"{filename}: setting up python .fan parser")
 
-        token_stream = CommonTokenStream(lexer)
-        parser = FandangoParser(token_stream)
-        parser.removeErrorListeners()
-        parser.addErrorListener(error_listener)
+            input_stream = InputStream(fan_contents)
+            error_listener = SpeedyAntlrErrorListener(filename)
 
-        LOGGER.debug(f"{filename}: parsing .fan content")
-        tree = parser.fandango()  # Invoke the ANTLR parser
+            # Invoke the Speedy ANTLR parser
+            LOGGER.debug(f"{filename}: parsing .fan content")
+            start_time = time.time()
+            tree = sa_fandango.parse(input_stream, "fandango", error_listener)
+            LOGGER.debug(
+                f"{filename}: parsed in {time.time() - start_time:.2f} seconds"
+            )
+
+        else:  # legacy parser
+            LOGGER.debug(f"{filename}: setting up legacy .fan parser")
+            input_stream = InputStream(fan_contents)
+            error_listener = PythonAntlrErrorListener(filename)
+
+            lexer = FandangoLexer(input_stream)
+            lexer.removeErrorListeners()
+            lexer.addErrorListener(error_listener)
+
+            token_stream = CommonTokenStream(lexer)
+            parser = FandangoParser(token_stream)
+            parser.removeErrorListeners()
+            parser.addErrorListener(error_listener)
+
+            # Invoke the ANTLR parser
+            LOGGER.debug(f"{filename}: parsing .fan content")
+            start_time = time.time()
+            tree = parser.fandango()
+
+            LOGGER.debug(
+                f"{filename}: parsed in {time.time() - start_time:.2f} seconds"
+            )
 
         LOGGER.debug(f"{filename}: splitting content")
         spec = FandangoSpec(
@@ -311,6 +384,12 @@ def parse_content(
                 pass
 
     LOGGER.debug(f"{filename}: parsing complete")
+    return spec
+
+
+# Legacy interface
+def parse_content(*args, **kwargs) -> tuple[Grammar, list[str]]:
+    spec = parse_spec(*args, **kwargs)
     return spec.grammar, spec.constraints
 
 
@@ -328,6 +407,7 @@ def parse(
     *,
     use_cache: bool = True,
     use_stdlib: bool = True,
+    check: bool = True,
     lazy: bool = False,
     given_grammars: list[Grammar] = [],
     start_symbol: Optional[str] = None,
@@ -340,6 +420,7 @@ def parse(
     :param constraints: List of constraints (as strings); default: []
     :param use_cache: If True (default), cache parsing results
     :param use_stdlib: If True (default), use the standard library
+    :param check: If True (default), the constraints are checked for consistency
     :param lazy: If True, the constraints are evaluated lazily
     :param given_grammars: Grammars to use in addition to the standard library
     :param start_symbol: The grammar start symbol (default: "<start>")
@@ -479,14 +560,15 @@ def parse(
             )
         parsed_constraints += new_constraints
 
-    LOGGER.debug("Checking and finalizing content")
-    if grammar and len(grammar.rules) > 0:
-        check_grammar_consistency(
-            grammar, given_used_symbols=USED_SYMBOLS, start_symbol=start_symbol
-        )
+    if check:
+        LOGGER.debug("Checking and finalizing content")
+        if grammar and len(grammar.rules) > 0:
+            check_grammar_consistency(
+                grammar, given_used_symbols=USED_SYMBOLS, start_symbol=start_symbol
+            )
 
-    if grammar and parsed_constraints:
-        check_constraints_existence(grammar, parsed_constraints)
+        if grammar and parsed_constraints:
+            check_constraints_existence(grammar, parsed_constraints)
 
     global_env, local_env = grammar.get_spec_env()
     if grammar.fuzzing_mode == FuzzingMode.IO:
@@ -506,8 +588,9 @@ def parse(
         truncate_non_visible_packets(grammar, io_instance)
 
     # We invoke this at the very end, now that all data is there
-    grammar.update(grammar)
-    grammar.prime()
+    grammar.update(grammar, prime=check)
+    if check:
+        grammar.prime()
 
     LOGGER.debug("All contents parsed")
     return grammar, parsed_constraints
@@ -636,6 +719,10 @@ def check_grammar_definitions(
         defined_symbols.add(str(symbol))
 
     if start_symbol not in defined_symbols:
+        if start_symbol == "<start>":
+            raise FandangoValueError(
+                f"Start symbol {start_symbol!s} not defined in grammar"
+            )
         closest = closest_match(start_symbol, defined_symbols)
         raise FandangoValueError(
             f"Start symbol {start_symbol!s} not defined in grammar. Did you mean {closest!s}?"
