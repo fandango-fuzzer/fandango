@@ -98,6 +98,7 @@ class test_cli(unittest.TestCase):
         expected = ["35716", "4", "9768", "30", "5658", "5", "9", "649", "20", "41"]
         expected_output = "\n".join([f"data: {value}" for value in expected]) + "\n"
         out, err, code = self.run_command(command)
+        self.maxDiff = 1000000
         self.assertEqual("", err)
         self.assertEqual(expected_output, out)
         self.assertEqual(0, code)
