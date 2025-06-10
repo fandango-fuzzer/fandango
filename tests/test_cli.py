@@ -85,10 +85,9 @@ class test_cli(unittest.TestCase):
 
     def test_output_with_libfuzzer_harness(self):
         compile = shlex.split(
-            "clang -g -O2 -fsanitize=fuzzer-no-link -shared -o tests/resources/test_libfuzzer_interface tests/resources/test_libfuzzer_interface.c"
+            "clang -g -O2 -fPIC -shared -o tests/resources/test_libfuzzer_interface tests/resources/test_libfuzzer_interface.c"
         )
         out, err, code = self.run_command(compile)
-        self.maxDiff = 1000000
         self.assertEqual("", out)
         self.assertEqual("", err)
         self.assertEqual(0, code)
@@ -99,6 +98,7 @@ class test_cli(unittest.TestCase):
         expected = ["35716", "4", "9768", "30", "5658", "5", "9", "649", "20", "41"]
         expected_output = "\n".join([f"data: {value}" for value in expected]) + "\n"
         out, err, code = self.run_command(command)
+        self.maxDiff = 1000000
         self.assertEqual("", err)
         self.assertEqual(expected_output, out)
         self.assertEqual(0, code)
