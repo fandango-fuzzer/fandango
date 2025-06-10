@@ -222,7 +222,7 @@ class TargetedMutations(unittest.TestCase):
         solutions: list[DerivationTree] = fandango.evolve()
         return [s.to_string() for s in solutions]
 
-    def test_deterministic_solutions(self):
+    def test_targeted_mutation_1(self):
         solutions = self.get_solutions("tests/resources/digit_targeted_mutation.fan", 1, 1)
         self.assertListEqual(solutions, ["0123456789"])
 
