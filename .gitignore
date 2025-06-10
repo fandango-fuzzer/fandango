@@ -182,8 +182,16 @@ tests/test-marker.txt
 evaluation/test-evaluation.txt
 evaluation/experiments/test-experiments.txt
 
-# VS code
-.vscode/
+# Ignore everything in .vscode
+.vscode/*
+
+# But do not ignore specific files
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/tasks.json
+
+# Do not ignore the extensions folder and its contents
+!.vscode/extensions/
 
 tmp.der
 fuzzed_*.gif
