@@ -439,7 +439,7 @@ class Fandango:
             # Crossover
             while (
                 len(new_population) < self.population_size
-                and random.random() >= self.adaptive_tuner.crossover_rate
+                and random.random() < self.adaptive_tuner.crossover_rate
             ):
                 self._perform_crossover(new_population, unique_hashes)
 
