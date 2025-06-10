@@ -87,7 +87,10 @@ class test_cli(unittest.TestCase):
         compile = shlex.split(
             "clang -g -O2 -fsanitize=fuzzer-no-link -shared -o tests/resources/test_libfuzzer_interface tests/resources/test_libfuzzer_interface.c"
         )
-        subprocess.run(compile, check=True)
+        out, err, code = self.run_command(compile)
+        self.assertEqual(0, code)
+        self.assertEqual("", out)
+        self.assertEqual("", err)
 
         command = shlex.split(
             "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 --file-mode binary --no-cache --input-method libfuzzer tests/resources/test_libfuzzer_interface"
@@ -95,9 +98,9 @@ class test_cli(unittest.TestCase):
         expected = ["35716", "4", "9768", "30", "5658", "5", "9", "649", "20", "41"]
         expected_output = "\n".join([f"data: {value}" for value in expected]) + "\n"
         out, err, code = self.run_command(command)
-        self.assertEqual(0, code)
-        self.assertEqual(expected_output, out)
         self.assertEqual("", err)
+        self.assertEqual(expected_output, out)
+        self.assertEqual(0, code)
 
     def test_infinite_mode(self):
         command = shlex.split(
