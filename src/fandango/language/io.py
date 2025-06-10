@@ -1,6 +1,9 @@
+import asyncio
 import enum
 import select
+import shlex
 import socket
+import subprocess
 import sys
 import threading
 import time
@@ -294,21 +297,24 @@ class STDOUT(FandangoParty):
 
     def __init__(self):
         super().__init__(Ownership.FUZZER)
+        self.stream = sys.stdout
 
     def on_send(self, message: DerivationTree, recipient: str):
-        print({message.to_string()})
+        self.stream.write(message.to_string())
+        #print(message.to_string())
 
 
 class STDIN(FandangoParty):
     def __init__(self):
         super().__init__(Ownership.EXTERNAL)
         self.running = True
+        self.stream = sys.stdin
         self.listen_thread = threading.Thread(target=self.listen_loop, daemon=True)
         self.listen_thread.start()
 
     def listen_loop(self):
         while self.running:
-            rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
+            rlist, _, _ = select.select([self.stream], [], [], 0.1)
             if rlist:
                 read = sys.stdin.readline()
                 if read == "":
@@ -361,3 +367,44 @@ class FandangoIO:
     ) -> None:
         if sender in self.parties.keys():
             self.parties[sender].on_send(message, recipient)
+
+
+class ProcessManager:
+    __instance = None
+
+    def __init__(self):
+        if ProcessManager.__instance is not None:
+            raise Exception("Singleton already created!")
+        ProcessManager.__instance = self
+        self._command = None
+        self.lock = threading.Lock()
+        self.proc = None
+
+    @classmethod
+    def instance(cls) -> "ProcessManager":
+        if cls.__instance is None:
+            ProcessManager()
+        return cls.__instance
+
+    def get_process(self):
+        with self.lock:
+            if not self.proc:
+                self.start_process()
+            return self.proc
+
+    @property
+    def command(self):
+        return self._command
+
+    @command.setter
+    def command(self, value: str):
+        with self.lock:
+            if self._command == value:
+                return
+            self._command = value
+
+    def start_process(self):
+        command = self.command
+        if command is None:
+            return
+        self.proc = subprocess.Popen(shlex.split(command), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
