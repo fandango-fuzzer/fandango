@@ -84,7 +84,6 @@ class test_cli(unittest.TestCase):
         shutil.rmtree("tests/resources/test")
 
     def test_output_with_libfuzzer_harness(self):
-        print(subprocess.run(["clang", "--version"]))
         compile = shlex.split(
             "clang -gv -O2 -fsanitize=fuzzer-no-link -shared -o tests/resources/test_libfuzzer_interface tests/resources/test_libfuzzer_interface.c"
         )
@@ -92,7 +91,6 @@ class test_cli(unittest.TestCase):
         self.assertEqual(0, code)
         self.assertEqual("", out)
         self.assertEqual("", err)
-        self.assertTrue(False)
 
         command = shlex.split(
             "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 --file-mode binary --no-cache --input-method libfuzzer tests/resources/test_libfuzzer_interface"
@@ -100,7 +98,6 @@ class test_cli(unittest.TestCase):
         expected = ["35716", "4", "9768", "30", "5658", "5", "9", "649", "20", "41"]
         expected_output = "\n".join([f"data: {value}" for value in expected]) + "\n"
         out, err, code = self.run_command(command)
-        self.maxDiff = 1000000
         self.assertEqual("", err)
         self.assertEqual(expected_output, out)
         self.assertEqual(0, code)
