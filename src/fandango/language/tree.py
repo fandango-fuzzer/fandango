@@ -304,6 +304,14 @@ class DerivationTree:
             symbol, [DerivationTree.from_tree(child) for child in children]
         )
 
+    def deepcopy(self, *, copy_children=True, copy_params=True, copy_parent=True):
+        return self.__deepcopy__(
+            None,
+            copy_children=copy_children,
+            copy_params=copy_params,
+            copy_parent=copy_parent,
+        )
+
     def __deepcopy__(
         self, memo, copy_children=True, copy_params=True, copy_parent=True
     ):
@@ -678,7 +686,9 @@ class DerivationTree:
         Replace the subtree rooted at the given node with the new subtree.
         """
         if self in replacements and not self.read_only:
-            new_subtree = replacements[self].__deepcopy__(None, True, False, False)
+            new_subtree = replacements[self].deepcopy(
+                copy_children=True, copy_params=False, copy_parent=False
+            )
             new_subtree._parent = self.parent
             grammar.populate_sources(new_subtree)
             return new_subtree

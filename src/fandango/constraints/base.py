@@ -133,15 +133,15 @@ class Value(GeneticBase):
         """
         return self.searches.values()
 
-    def __repr__(self):
+    def __str__(self):
         representation = self.expression
         for identifier in self.searches:
             representation = representation.replace(
                 identifier, repr(self.searches[identifier])
             )
-        return f"fitness {representation}"
+        return f"where {representation}"
 
-    def __str__(self):
+    def __repr__(self):
         return self.expression
 
 
@@ -160,10 +160,27 @@ class SoftValue(Value):
         self.tdigest = TDigest(optimization_goal)
 
     def __repr__(self):
-        return f"SoftValue_{self.optimization_goal}({super().__repr__()})"
+        representation = repr(self.expression)
+        for identifier in self.searches:
+            representation = representation.replace(
+                identifier, repr(self.searches[identifier])
+            )
+        return f"SoftValue({self.optimization_goal!r}, {representation})"
 
     def __str__(self):
-        return f"SoftValue{self.optimization_goal}({super().__str__()})"
+        representation = str(self.expression)
+        for identifier in self.searches:
+            representation = representation.replace(
+                identifier, str(self.searches[identifier])
+            )
+
+        match self.optimization_goal:
+            case "min":
+                return f"minimizing {representation}"
+            case "max":
+                return f"maximizing {representation}"
+            case _:
+                return f"{self.optimization_goal} {representation}"
 
 
 class Constraint(GeneticBase, ABC):
