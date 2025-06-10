@@ -3,7 +3,7 @@ import enum
 import logging
 import random
 import time
-from typing import Generator, Optional, Union
+from typing import Callable, Generator, Optional, Union
 
 from fandango import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.constraints.base import Constraint, SoftValue
@@ -294,9 +294,12 @@ class Fandango:
         self,
         max_generations: Optional[int] = None,
         desired_solutions: Optional[int] = None,
+        solution_callback: Callable[[DerivationTree, int], None] = lambda _a, _b: None,
     ) -> list[DerivationTree]:
         if self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
-            return self._evolve_single(max_generations, desired_solutions)
+            return self._evolve_single(
+                max_generations, desired_solutions, solution_callback
+            )
         elif self.grammar.fuzzing_mode == FuzzingMode.IO:
             return self._evolve_io(max_generations)
         else:
@@ -501,6 +504,7 @@ class Fandango:
         self,
         max_generations: Optional[int] = None,
         desired_solutions: Optional[int] = None,
+        solution_callback: Callable[[DerivationTree, int], None] = lambda _a, _b: None,
     ) -> list[DerivationTree]:
         LOGGER.info("---------- Starting evolution ----------")
         start_time = time.time()
@@ -509,6 +513,7 @@ class Fandango:
         solutions = []
         found_enough_solutions = False
         for solution in self.generate(max_generations=max_generations):
+            solution_callback(solution, len(solutions))
             solutions.append(solution)
             if desired_solutions is not None and len(solutions) >= desired_solutions:
                 found_enough_solutions = True

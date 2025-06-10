@@ -671,7 +671,7 @@ def make_fandango_settings(args, initial_settings={}):
     return settings
 
 
-def make_evolve_settings(args):
+def make_evolve_settings(args, file_mode):
     evolve_settings: dict[str, Any] = {}
     _copy_setting(args, evolve_settings, "desired_solutions", args_name="num_outputs")
     if args.infinite:
@@ -680,6 +680,12 @@ def make_evolve_settings(args):
         evolve_settings["max_generations"] = None
     else:
         _copy_setting(args, evolve_settings, "max_generations")
+
+    evolve_settings["solution_callback"] = (
+        lambda solution, solution_index: output_solution(
+            solution, args, solution_index, file_mode
+        )
+    )
 
     return evolve_settings
 
@@ -836,110 +842,117 @@ def open_file(filename, file_mode, *, mode="r"):
 
 
 def output_population(population, args, file_mode=None, *, output_on_stdout=True):
+    if args.format == "none":
+        return
+
+    for i, solution in enumerate(population):
+        output_solution(solution, args, i, file_mode, output_on_stdout=output_on_stdout)
+
+
+def output_solution_to_directory(solution, args, solution_index: int, file_mode=None):
+    LOGGER.debug(f"Storing solution in directory {args.directory!r}")
+    os.makedirs(args.directory, exist_ok=True)
+
+    basename = f"fandango-{solution_index:04d}{args.filename_extension}"
+    filename = os.path.join(args.directory, basename)
+    with open_file(filename, file_mode, mode="w") as fd:
+        fd.write(output(solution, args, file_mode))
+
+
+def output_solution_to_file(solution, args, file_mode=None):
+    LOGGER.debug(f"Storing solution in file {args.output!r}")
+    with open_file(args.output, file_mode, mode="a") as fd:
+        if fd.tell() > 0:
+            fd.write(
+                args.separator.encode("utf-8")
+                if file_mode == "binary"
+                else args.separator
+            )
+        fd.write(output(solution, args, file_mode))
+
+
+def output_solution_with_test_command(solution, args, file_mode):
+    LOGGER.info(f"Running {args.test_command}")
+    base_cmd = [args.test_command] + args.test_args
+
+    if args.input_method == "filename":
+        prefix = "fandango-"
+        suffix = args.filename_extension
+        mode = "wb" if file_mode == "binary" else "w"
+
+        def named_temp_file(*, mode, prefix, suffix):
+            try:
+                # Windows needs delete_on_close=False, so the subprocess
+                # can access the file by name
+                return tempfile.NamedTemporaryFile(
+                    mode=mode,
+                    prefix=prefix,
+                    suffix=suffix,
+                    delete_on_close=False,
+                )
+            except Exception:
+                # Python 3.11 and earlier have no 'delete_on_close'
+                return tempfile.NamedTemporaryFile(
+                    mode=mode, prefix=prefix, suffix=suffix
+                )
+
+        with named_temp_file(mode=mode, prefix=prefix, suffix=suffix) as fd:
+            fd.write(output(solution, args, file_mode))
+            fd.flush()
+            cmd = base_cmd + [fd.name]
+            LOGGER.debug(f"Running {cmd}")
+            subprocess.run(cmd, text=True)
+    elif args.input_method == "stdin":
+        cmd = base_cmd
+        LOGGER.debug(f"Running {cmd} with individual as stdin")
+        subprocess.run(
+            cmd,
+            input=output(solution, args, file_mode),
+            text=(None if file_mode == "binary" else True),
+        )
+    elif args.input_method == "libfuzzer":
+        if args.file_mode != "binary" or file_mode != "binary":
+            raise NotImplementedError("LibFuzzer harnesses only support binary input")
+        harness = ctypes.CDLL(args.test_command).LLVMFuzzerTestOneInput
+
+        bytes = output(solution, args, file_mode)
+        harness(bytes, len(bytes))
+    else:
+        raise NotImplementedError("Unsupported input method")
+
+
+def output_solution_to_stdout(solution, args, file_mode):
+    LOGGER.debug("Printing solution on stdout")
+    out = output(solution, args, file_mode)
+    if not isinstance(out, str):
+        out = out.decode("iso8859-1")
+    print(out, end="")
+    print(args.separator, end="")
+
+
+def output_solution(
+    solution, args, solution_index: int, file_mode=None, *, output_on_stdout=True
+):
     assert file_mode == "binary" or file_mode == "text"
 
     if args.format == "none":
         return
 
     if args.directory:
-        LOGGER.debug(f"Storing population in directory {args.directory!r}")
-        try:
-            os.mkdir(args.directory)
-        except FileExistsError:
-            pass
-
-        counter = 1
-        for individual in population:
-            basename = f"fandango-{counter:04d}{args.filename_extension}"
-            filename = os.path.join(args.directory, basename)
-            with open_file(filename, file_mode, mode="w") as fd:
-                fd.write(output(individual, args, file_mode))
-            counter += 1
-
+        output_solution_to_directory(solution, args, solution_index, file_mode)
         output_on_stdout = False
 
     if args.output:
-        LOGGER.debug(f"Storing population in file {args.output!r}")
-
-        with open_file(args.output, file_mode, mode="w") as fd:
-            sep = False
-            for individual in population:
-                if sep:
-                    fd.write(
-                        args.separator.encode("utf-8")
-                        if file_mode == "binary"
-                        else args.separator
-                    )
-                fd.write(output(individual, args, file_mode))
-                sep = True
-
+        output_solution_to_file(solution, args, file_mode)
         output_on_stdout = False
 
     if "test_command" in args and args.test_command:
-        LOGGER.info(f"Running {args.test_command}")
-        base_cmd = [args.test_command] + args.test_args
-
-        if args.input_method == "libfuzzer":
-            if args.file_mode != "binary" or file_mode != "binary":
-                raise NotImplementedError(
-                    "LibFuzzer harnesses only support binary input"
-                )
-            harness = ctypes.CDLL(args.test_command).LLVMFuzzerTestOneInput
-
-        for individual in population:
-            if args.input_method == "filename":
-                prefix = "fandango-"
-                suffix = args.filename_extension
-                mode = "wb" if file_mode == "binary" else "w"
-
-                def named_temp_file(*, mode, prefix, suffix):
-                    try:
-                        # Windows needs delete_on_close=False, so the subprocess
-                        # can access the file by name
-                        return tempfile.NamedTemporaryFile(
-                            mode=mode,
-                            prefix=prefix,
-                            suffix=suffix,
-                            delete_on_close=False,
-                        )
-                    except Exception:
-                        # Python 3.11 and earlier have no 'delete_on_close'
-                        return tempfile.NamedTemporaryFile(
-                            mode=mode, prefix=prefix, suffix=suffix
-                        )
-
-                with named_temp_file(mode=mode, prefix=prefix, suffix=suffix) as fd:
-                    fd.write(output(individual, args, file_mode))
-                    fd.flush()
-                    cmd = base_cmd + [fd.name]
-                    LOGGER.debug(f"Running {cmd}")
-                    subprocess.run(cmd, text=True)
-            elif args.input_method == "stdin":
-                cmd = base_cmd
-                LOGGER.debug(f"Running {cmd} with individual as stdin")
-                subprocess.run(
-                    cmd,
-                    input=output(individual, args, file_mode),
-                    text=(None if file_mode == "binary" else True),
-                )
-            elif args.input_method == "libfuzzer":
-                bytes = output(individual, args, file_mode)
-                harness(bytes, len(bytes))
-            else:
-                raise NotImplementedError("Unsupported input method")
-
+        output_solution_with_test_command(solution, args, file_mode)
         output_on_stdout = False
 
+    # Default
     if output_on_stdout:
-        # Default
-        LOGGER.debug("Printing population on stdout")
-        for individual in population:
-            out = output(individual, args, file_mode)
-            if not isinstance(out, str):
-                out = out.decode("iso8859-1")
-            print(out, end="")
-            print(args.separator, end="")
-            sep = True
+        output_solution_to_stdout(solution, args, file_mode)
 
 
 def report_syntax_error(
@@ -1089,9 +1102,7 @@ def fuzz_command(args):
     LOGGER.debug("Starting Fandango")
     fandango = Fandango(grammar, constraints, **settings)
     LOGGER.debug("Evolving population")
-    population = fandango.evolve(**make_evolve_settings(args))
-
-    output_population(population, args, file_mode=file_mode, output_on_stdout=True)
+    population = fandango.evolve(**make_evolve_settings(args, file_mode))
 
     if args.validate:
         LOGGER.debug("Validating population")
