@@ -41,7 +41,7 @@ class TestSoftValue(TestSoft):
             "tests/resources/softvalue.fan",
             desired_solutions=100,
             random_seed=1,
-            max_generations=250,
+            max_generations=200,
         )
         self.assertIn("999999-999999", solutions)
 
