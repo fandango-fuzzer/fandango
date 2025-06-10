@@ -93,6 +93,9 @@ DerivationTree = fandango.language.tree.DerivationTree
 class FandangoBase(ABC):
     """Public Fandango API"""
 
+    # The parser to be used
+    parser = "auto"  # 'auto', 'cpp', 'python', or 'legacy'
+
     def __init__(
         self,
         fan_files: str | IO | list[str | IO],
