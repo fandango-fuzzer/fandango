@@ -1,7 +1,7 @@
 # mutation.py
 import random
 from abc import ABC, abstractmethod
-from typing import Callable
+from typing import Callable, Generator
 
 from fandango.constraints.fitness import FailingTree
 from fandango.language.grammar import DerivationTree, Grammar
@@ -13,8 +13,11 @@ class MutationOperator(ABC):
         self,
         individual: DerivationTree,
         grammar: Grammar,
-        evaluate_func: Callable[[DerivationTree], tuple[float, list[FailingTree]]],
-    ) -> DerivationTree:
+        evaluate_func: Callable[
+            [DerivationTree],
+            Generator[DerivationTree, None, tuple[float, list[FailingTree]]],
+        ],
+    ) -> Generator[DerivationTree, None, DerivationTree]:
         """
         Abstract method to perform mutation on an individual.
 
@@ -31,15 +34,18 @@ class SimpleMutation(MutationOperator):
         self,
         individual: DerivationTree,
         grammar: Grammar,
-        evaluate_func: Callable[[DerivationTree], tuple[float, list[FailingTree]]],
+        evaluate_func: Callable[
+            [DerivationTree],
+            Generator[DerivationTree, None, tuple[float, list[FailingTree]]],
+        ],
         max_nodes: int = 50,
-    ) -> DerivationTree:
+    ) -> Generator[DerivationTree, None, DerivationTree]:
         """
         Default mutation operator: evaluates the individual, selects a failing subtree
         (if any), and replaces it with a newly fuzzed subtree generated from the grammar.
         """
         # Get fitness and failing trees from the evaluation function
-        _, failing_trees = evaluate_func(individual)
+        _, failing_trees = yield from evaluate_func(individual)
 
         # Collect the failing subtrees
         failing_subtrees = [ft.tree for ft in failing_trees]

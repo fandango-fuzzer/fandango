@@ -1,0 +1,2 @@
+test_libfuzzer_interface*
+!test_libfuzzer_interface.c

@@ -1,10 +1,10 @@
 #!/usr/bin/env pytest
 
-import shlex
-import subprocess
 import unittest
+import subprocess
+import shlex
+from fandango.evolution.algorithm import Fandango, LoggerLevel
 
-from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
 
@@ -15,14 +15,17 @@ class TestSoft(unittest.TestCase):
     ):
         file = open(specification_file, "r")
         grammar_int, constraints_int = parse(file, use_stdlib=False, use_cache=False)
+        assert grammar_int is not None
+        assert constraints_int is not None
         fandango = Fandango(
             grammar=grammar_int,
             constraints=constraints_int,
-            desired_solutions=desired_solutions,
-            max_generations=max_generations,
             random_seed=random_seed,
+            logger_level=LoggerLevel.DEBUG,
         )
-        solutions: list[DerivationTree] = fandango.evolve()
+        solutions: list[DerivationTree] = fandango.evolve(
+            max_generations=max_generations, desired_solutions=desired_solutions
+        )
         return [s.to_string() for s in solutions]
 
     def run_command(self, command):

@@ -19,7 +19,7 @@ from xdg_base_dirs import xdg_cache_home, xdg_data_dirs, xdg_data_home
 import fandango
 from fandango import FandangoSyntaxError, FandangoValueError
 from fandango.constraints import predicates
-from fandango.constraints.base import Constraint
+from fandango.constraints.base import Constraint, SoftValue
 from fandango.language.convert import (
     ConstraintProcessor,
     FandangoSplitter,
@@ -87,7 +87,7 @@ class SpeedyAntlrErrorListener(sa_fandango.SA_ErrorListener):
         )
         exc.line = line
         exc.column = column
-        exc.messsage = msg
+        exc.message = msg
         raise exc
 
 
@@ -413,7 +413,7 @@ def parse(
     start_symbol: Optional[str] = None,
     includes: list[str] = [],
     max_repetitions: int = 5,
-) -> tuple[Optional[Grammar], list[Constraint]]:
+) -> tuple[Optional[Grammar], list[Constraint | SoftValue]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
     :param fan_files: One (open) .fan file, one string, or a list of these
