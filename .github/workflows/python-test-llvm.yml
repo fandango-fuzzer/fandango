@@ -1,7 +1,7 @@
 # GitHub Actions Workflow: Python Tests with Caching
 # This workflow automates running tests on Python code using pytest and speeds up the process using caching.
 
-name: Tests
+name: Tests-LLVM
 
 on:
   push:

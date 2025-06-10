@@ -88,9 +88,10 @@ class test_cli(unittest.TestCase):
             "clang -gv -O2 -fsanitize=fuzzer-no-link -shared -o tests/resources/test_libfuzzer_interface tests/resources/test_libfuzzer_interface.c"
         )
         out, err, code = self.run_command(compile)
-        self.assertEqual(0, code)
+        self.maxDiff = 1000000
         self.assertEqual("", out)
         self.assertEqual("", err)
+        self.assertEqual(0, code)
 
         command = shlex.split(
             "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 --file-mode binary --no-cache --input-method libfuzzer tests/resources/test_libfuzzer_interface"
