@@ -56,7 +56,9 @@ class PathFinder(NodeVisitor):
             new_path.append((nt, new_node))
         return tuple(new_path)
 
-    def find(self, tree: Optional[DerivationTree] = None) -> "PacketForecaster.ForcastingResult":
+    def find(
+        self, tree: Optional[DerivationTree] = None
+    ) -> "PacketForecaster.ForcastingResult":
         """
         Finds all possible protocol messages that can be mounted to the given DerivationTree.
         :param tree: The DerivationTree to base the search on. The DerivationTree must contain controlflow nodes
@@ -288,7 +290,9 @@ class PacketForecaster:
         def __getitem__(self, item: str):
             return self.parties_to_packets[item]
 
-        def add_packet(self, party: str, packet: "PacketForecaster.ForcastingPacket") -> None:
+        def add_packet(
+            self, party: str, packet: "PacketForecaster.ForcastingPacket"
+        ) -> None:
             """
             Adds a packet to the ForcastingResult under the specified party.
             """
@@ -298,7 +302,9 @@ class PacketForecaster:
                 )
             self.parties_to_packets[party].add_packet(packet)
 
-        def union(self, other: "PacketForecaster.ForcastingResult") -> "PacketForecaster.ForcastingResult":
+        def union(
+            self, other: "PacketForecaster.ForcastingResult"
+        ) -> "PacketForecaster.ForcastingResult":
             """
             Combines two ForcastingResults by adding all packets from the other result.
             Returns a copy of the current ForcastingResult with the combined packets.
