@@ -1,0 +1,83 @@
+name: Code checks
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch: # Enables manual execution from the Actions tab
+
+jobs:
+  black-check:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: [ 3.11 ]  # Python version to run
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install black
+        run: |
+          pip install black
+
+      - name: Check formatting with black
+        run: |
+          black --check src
+
+  mypy-check:
+    runs-on: ubuntu-latest  # Use the latest Ubuntu runner provided by GitHub
+
+    strategy:
+      matrix:
+        python-version: [ 3.11 ]  # Python version to run
+
+    steps:
+      # Step 1: Checkout the repository's code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Get changed files
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v46
+        with:
+          files: |
+            src/**/*.py
+            src/**.py
+            tests/**/*.py
+            tests/**.py
+
+      # Step 3: Set up Python environment
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      # Step 4: Install mypy
+      - name: Install dependencies
+        run: |
+          FANDANGO_SKIP_CPP_PARSER=1 pip install -e .
+          pip install mypy
+
+      # Step 5: Run mypy on changed files
+      - name: Run mypy on changed files
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            echo "Checking $file"
+            mypy $file
+          done
+
