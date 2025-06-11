@@ -2,6 +2,7 @@
 
 import random
 import unittest
+
 from fandango.constraints.fitness import FailingTree
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm import Fandango, LoggerLevel
@@ -262,15 +263,20 @@ class TargetedMutations(unittest.TestCase):
         fandango = Fandango(
             grammar=grammar_int,
             constraints=constraints_int,
-            desired_solutions=desired_solutions,
             random_seed=random_seed,
         )
-        solutions: list[DerivationTree] = fandango.evolve()
+        solutions: list[DerivationTree] = fandango.evolve(
+            desired_solutions=desired_solutions,
+            max_generations=100,
+        )
         return [s.to_string() for s in solutions]
 
     def test_targeted_mutation_1(self):
-        solutions = self.get_solutions("tests/resources/digit_targeted_mutation.fan", 1, 1)
+        solutions = self.get_solutions(
+            "tests/resources/digit_targeted_mutation.fan", 1, 1
+        )
         self.assertListEqual(solutions, ["0123456789"])
+
 
 if __name__ == "__main__":
     unittest.main()
