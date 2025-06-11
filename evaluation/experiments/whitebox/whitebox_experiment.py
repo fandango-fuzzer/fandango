@@ -1,7 +1,7 @@
 import warnings
 
 from fandango.evolution.algorithm import Fandango
-from fandango.language.legacy.parse import parse
+from fandango.language.parse import parse
 
 warnings.filterwarnings("ignore")
 

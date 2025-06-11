@@ -71,6 +71,10 @@ test = [
     "jupyter-book>=1.0.4"
 ]
 
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["fandango"]
+
 [tool.black]
 line-length = 88
 target-version = ['py311']

@@ -74,12 +74,12 @@ parser: \
 
 $(PARSER)/FandangoLexer.py: $(LEXER_G4) Makefile
 	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
-		-visitor -listener $(LEXER_G4)
+		-visitor -no-listener $(LEXER_G4)
 	sed 's/import FandangoLexerBase/import */' $@ > $@~ && mv $@~ $@
 
 $(PARSER)/FandangoParser.py: $(LEXER_G4) $(PARSER_G4) Makefile
 	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
-		-visitor -listener $(PARSER_G4)
+		-visitor -no-listener $(PARSER_G4)
 	$(BLACK) $(SRC)/language
 
 $(CPP_PARSER)/FandangoLexer.cpp: $(LEXER_G4) Makefile

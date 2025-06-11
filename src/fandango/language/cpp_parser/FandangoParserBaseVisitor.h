@@ -115,7 +115,15 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitSelector(FandangoParser::SelectorContext *ctx) override {
+  virtual std::any visitStar_selection_or_dot_selection(FandangoParser::Star_selection_or_dot_selectionContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitStar_selection(FandangoParser::Star_selectionContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitDot_selection(FandangoParser::Dot_selectionContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -920,6 +928,10 @@ public:
   }
 
   virtual std::any visitFunc_type_comment(FandangoParser::Func_type_commentContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitIdentifier(FandangoParser::IdentifierContext *ctx) override {
     return visitChildren(ctx);
   }
 

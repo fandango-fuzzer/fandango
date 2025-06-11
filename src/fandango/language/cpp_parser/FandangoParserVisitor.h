@@ -69,7 +69,11 @@ public:
 
     virtual std::any visitSelector_length(FandangoParser::Selector_lengthContext *context) = 0;
 
-    virtual std::any visitSelector(FandangoParser::SelectorContext *context) = 0;
+    virtual std::any visitStar_selection_or_dot_selection(FandangoParser::Star_selection_or_dot_selectionContext *context) = 0;
+
+    virtual std::any visitStar_selection(FandangoParser::Star_selectionContext *context) = 0;
+
+    virtual std::any visitDot_selection(FandangoParser::Dot_selectionContext *context) = 0;
 
     virtual std::any visitSelection(FandangoParser::SelectionContext *context) = 0;
 
@@ -472,6 +476,8 @@ public:
     virtual std::any visitType_expressions(FandangoParser::Type_expressionsContext *context) = 0;
 
     virtual std::any visitFunc_type_comment(FandangoParser::Func_type_commentContext *context) = 0;
+
+    virtual std::any visitIdentifier(FandangoParser::IdentifierContext *context) = 0;
 
 
 };

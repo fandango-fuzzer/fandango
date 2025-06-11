@@ -29,14 +29,14 @@ def test_file(fan_file):
         f"fandango --parser=python dump --no-cache --no-stdlib {fan_file}"
     )
     python_out, err, return_code = run_command(command)
-    assert return_code == 0
+    assert return_code == 0, err
     assert err == ""
 
     command = shlex.split(
         f"fandango --parser=cpp dump --no-cache --no-stdlib {fan_file}"
     )
     speedy_out, err, return_code = run_command(command)
-    assert return_code == 0
+    assert return_code == 0, err
     assert err == ""
 
     assert (

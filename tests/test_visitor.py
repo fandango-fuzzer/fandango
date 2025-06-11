@@ -4,7 +4,7 @@ import unittest
 from collections import defaultdict
 import logging
 
-from fandango.language.legacy.parse import parse
+from fandango.language.parse import parse
 from fandango.constraints.base import *
 from fandango.logger import LOGGER
 

@@ -4,7 +4,7 @@ import time
 
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-from fandango.language.legacy.parse import parse
+from fandango.language.parse import parse
 
 
 def is_syntactically_valid_tar(tree: str):

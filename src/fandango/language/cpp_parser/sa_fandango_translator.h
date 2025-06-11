@@ -37,7 +37,9 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     PyObject *Formula_comparisonContext_cls = NULL;
     PyObject *ExprContext_cls = NULL;
     PyObject *Selector_lengthContext_cls = NULL;
-    PyObject *SelectorContext_cls = NULL;
+    PyObject *Star_selection_or_dot_selectionContext_cls = NULL;
+    PyObject *Star_selectionContext_cls = NULL;
+    PyObject *Dot_selectionContext_cls = NULL;
     PyObject *SelectionContext_cls = NULL;
     PyObject *Base_selectionContext_cls = NULL;
     PyObject *Rs_pairsContext_cls = NULL;
@@ -239,6 +241,7 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     PyObject *Del_t_atomContext_cls = NULL;
     PyObject *Type_expressionsContext_cls = NULL;
     PyObject *Func_type_commentContext_cls = NULL;
+    PyObject *IdentifierContext_cls = NULL;
 
     public:
     SA_FandangoTranslator(speedy_antlr::Translator *translator);
@@ -293,7 +296,11 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
 
     antlrcpp::Any visitSelector_length(FandangoParser::Selector_lengthContext *ctx);
 
-    antlrcpp::Any visitSelector(FandangoParser::SelectorContext *ctx);
+    antlrcpp::Any visitStar_selection_or_dot_selection(FandangoParser::Star_selection_or_dot_selectionContext *ctx);
+
+    antlrcpp::Any visitStar_selection(FandangoParser::Star_selectionContext *ctx);
+
+    antlrcpp::Any visitDot_selection(FandangoParser::Dot_selectionContext *ctx);
 
     antlrcpp::Any visitSelection(FandangoParser::SelectionContext *ctx);
 
@@ -696,5 +703,7 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     antlrcpp::Any visitType_expressions(FandangoParser::Type_expressionsContext *ctx);
 
     antlrcpp::Any visitFunc_type_comment(FandangoParser::Func_type_commentContext *ctx);
+
+    antlrcpp::Any visitIdentifier(FandangoParser::IdentifierContext *ctx);
 
 };
