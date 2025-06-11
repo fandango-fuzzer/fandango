@@ -1,10 +1,5 @@
 name: Code checks
 
-python-versions: &python_versions
-  - '3.8'
-  - '3.9'
-  - '3.10'
-
 on:
   push:
     branches:
@@ -21,7 +16,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: *python_versions  # Python version to run
+        python-version: [ 3.11 ]  # Python version to run
 
     steps:
       - name: Checkout code
@@ -45,7 +40,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: *python_versions  # Python version to run
+        python-version: [ 3.11 ]  # Python version to run
 
     steps:
       # Step 1: Checkout the repository's code
