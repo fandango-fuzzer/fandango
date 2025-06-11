@@ -1,24 +1,51 @@
-# GitHub Actions Workflow: Static type checking with mypy
+name: Code checks
 
-name: Type checking
+python-versions: &python_versions
+  - '3.8'
+  - '3.9'
+  - '3.10'
 
 on:
   push:
     branches:
-      - dev   # Run type checking on pushes to the dev branch
+      - dev
   pull_request:
     branches:
-      - main  # Run type checking on pull requests targeting the main branch
-      - dev   # Run type checking on pull requests targeting the dev branch
+      - main
+      - dev
   workflow_dispatch: # Enables manual execution from the Actions tab
 
 jobs:
-  mypy:
+  black-check:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: *python_versions  # Python version to run
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install black
+        run: |
+          pip install black
+
+      - name: Check formatting with black
+        run: |
+          black --check src
+
+  mypy-check:
     runs-on: ubuntu-latest  # Use the latest Ubuntu runner provided by GitHub
 
     strategy:
       matrix:
-        python-version: [ 3.11 ]  # Python version to run
+        python-version: *python_versions  # Python version to run
 
     steps:
       # Step 1: Checkout the repository's code
@@ -38,7 +65,7 @@ jobs:
 
       # Step 3: Set up Python environment
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
@@ -46,7 +73,6 @@ jobs:
       # Step 4: Install mypy
       - name: Install mypy
         run: |
-          python -m pip install --upgrade pip
           pip install mypy
           pip install -e .
 
