@@ -56,18 +56,18 @@ symbol
     ;
 
 nonterminal_right
-    : '<' ((NAME ':')? NAME ':')? NAME '>'
+    : '<' ((identifier ':')? identifier ':')? identifier '>'
     ;
 
 nonterminal
-    : '<' NAME '>'
+    : '<' identifier '>'
     ;
 
 
 
 generator_call
-    : NAME
-    | generator_call '.' NAME
+    : identifier
+    | generator_call '.' identifier
     | generator_call '[' slices ']'
     | generator_call genexp
     | generator_call '(' arguments? ')'
@@ -97,8 +97,8 @@ implies:
 quantifier:
     NEWLINE*
     (
-        FORALL nonterminal IN selector COLON quantifier
-        | EXISTS nonterminal IN selector COLON quantifier
+        FORALL nonterminal IN dot_selection COLON quantifier
+        | EXISTS nonterminal IN dot_selection COLON quantifier
         | 'any' '(' quantifier 'for' nonterminal IN star_selection ')'
         | 'all' '(' quantifier 'for' nonterminal IN star_selection ')'
         | formula_disjunction
@@ -681,7 +681,7 @@ pattern_capture_target
     ;
 
 wildcard_pattern
-    : '_'
+    : UNDERSCORE
     ;
 
 value_pattern

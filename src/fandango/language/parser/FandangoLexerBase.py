@@ -3,7 +3,7 @@ import sys
 from typing import TextIO
 
 # noinspection PyUnresolvedReferences
-from fandango.language.legacy.parser.FandangoParser import FandangoParser
+from fandango.language.parser.FandangoParser import FandangoParser
 from antlr4 import Lexer, InputStream
 from antlr4.Token import CommonToken
 

@@ -20,22 +20,22 @@ public:
     MATCH = 32, NONE = 33, NONLOCAL = 34, NOT = 35, OR = 36, PASS = 37, 
     RAISE = 38, RETURN = 39, TRUE = 40, TRY = 41, TYPE = 42, WHILE = 43, 
     WHERE = 44, WITH = 45, YIELD = 46, FORALL = 47, EXISTS = 48, MAXIMIZING = 49, 
-    MINIMIZING = 50, NAME = 51, STRING_LITERAL = 52, BYTES_LITERAL = 53, 
-    DECIMAL_INTEGER = 54, OCT_INTEGER = 55, HEX_INTEGER = 56, BIN_INTEGER = 57, 
-    FLOAT_NUMBER = 58, IMAG_NUMBER = 59, GRAMMAR_ASSIGN = 60, QUESTION = 61, 
-    BACKSLASH = 62, DOT = 63, DOTDOT = 64, ELLIPSIS = 65, STAR = 66, OPEN_PAREN = 67, 
-    CLOSE_PAREN = 68, COMMA = 69, COLON = 70, SEMI_COLON = 71, POWER = 72, 
-    ASSIGN = 73, OPEN_BRACK = 74, CLOSE_BRACK = 75, OR_OP = 76, XOR = 77, 
-    AND_OP = 78, LEFT_SHIFT = 79, RIGHT_SHIFT = 80, ADD = 81, MINUS = 82, 
-    DIV = 83, MOD = 84, IDIV = 85, NOT_OP = 86, OPEN_BRACE = 87, CLOSE_BRACE = 88, 
-    LESS_THAN = 89, GREATER_THAN = 90, EQUALS = 91, GT_EQ = 92, LT_EQ = 93, 
-    NOT_EQ_1 = 94, NOT_EQ_2 = 95, AT = 96, ARROW = 97, ADD_ASSIGN = 98, 
-    SUB_ASSIGN = 99, MULT_ASSIGN = 100, AT_ASSIGN = 101, DIV_ASSIGN = 102, 
-    MOD_ASSIGN = 103, AND_ASSIGN = 104, OR_ASSIGN = 105, XOR_ASSIGN = 106, 
-    LEFT_SHIFT_ASSIGN = 107, RIGHT_SHIFT_ASSIGN = 108, POWER_ASSIGN = 109, 
-    IDIV_ASSIGN = 110, EXPR_ASSIGN = 111, EXCL = 112, NEWLINE = 113, SKIP_ = 114, 
-    UNKNOWN_CHAR = 115, UNDERSCORE = 116, FSTRING_MIDDLE = 117, FSTRING_START = 118, 
-    FSTRING_END = 119
+    MINIMIZING = 50, ANY = 51, ALL = 52, LEN = 53, NAME = 54, STRING_LITERAL = 55, 
+    BYTES_LITERAL = 56, DECIMAL_INTEGER = 57, OCT_INTEGER = 58, HEX_INTEGER = 59, 
+    BIN_INTEGER = 60, FLOAT_NUMBER = 61, IMAG_NUMBER = 62, GRAMMAR_ASSIGN = 63, 
+    QUESTION = 64, BACKSLASH = 65, DOT = 66, DOTDOT = 67, ELLIPSIS = 68, 
+    STAR = 69, OPEN_PAREN = 70, CLOSE_PAREN = 71, COMMA = 72, COLON = 73, 
+    SEMI_COLON = 74, POWER = 75, ASSIGN = 76, OPEN_BRACK = 77, CLOSE_BRACK = 78, 
+    OR_OP = 79, XOR = 80, AND_OP = 81, LEFT_SHIFT = 82, RIGHT_SHIFT = 83, 
+    ADD = 84, MINUS = 85, DIV = 86, MOD = 87, IDIV = 88, NOT_OP = 89, OPEN_BRACE = 90, 
+    CLOSE_BRACE = 91, LESS_THAN = 92, GREATER_THAN = 93, EQUALS = 94, GT_EQ = 95, 
+    LT_EQ = 96, NOT_EQ_1 = 97, NOT_EQ_2 = 98, AT = 99, ARROW = 100, ADD_ASSIGN = 101, 
+    SUB_ASSIGN = 102, MULT_ASSIGN = 103, AT_ASSIGN = 104, DIV_ASSIGN = 105, 
+    MOD_ASSIGN = 106, AND_ASSIGN = 107, OR_ASSIGN = 108, XOR_ASSIGN = 109, 
+    LEFT_SHIFT_ASSIGN = 110, RIGHT_SHIFT_ASSIGN = 111, POWER_ASSIGN = 112, 
+    IDIV_ASSIGN = 113, EXPR_ASSIGN = 114, EXCL = 115, NEWLINE = 116, SKIP_ = 117, 
+    UNKNOWN_CHAR = 118, UNDERSCORE = 119, FSTRING_MIDDLE = 120, FSTRING_START = 121, 
+    FSTRING_END = 122
   };
 
   enum {
@@ -45,67 +45,68 @@ public:
     RuleNonterminal = 13, RuleGenerator_call = 14, RuleChar_set = 15, RuleConstraint = 16, 
     RuleImplies = 17, RuleQuantifier = 18, RuleFormula_disjunction = 19, 
     RuleFormula_conjunction = 20, RuleFormula_atom = 21, RuleFormula_comparison = 22, 
-    RuleExpr = 23, RuleSelector_length = 24, RuleSelector = 25, RuleSelection = 26, 
-    RuleBase_selection = 27, RuleRs_pairs = 28, RuleRs_pair = 29, RuleRs_slices = 30, 
-    RuleRs_slice = 31, RulePython = 32, RulePython_tag = 33, RulePython_file = 34, 
-    RuleInteractive = 35, RuleEval = 36, RuleFunc_type = 37, RuleStatements = 38, 
-    RuleStmt = 39, RuleStatement_newline = 40, RuleSimple_stmts = 41, RuleSimple_stmt = 42, 
-    RuleCompound_stmt = 43, RuleAssignment = 44, RuleAnnotated_rhs = 45, 
-    RuleAugassign = 46, RuleReturn_stmt = 47, RuleRaise_stmt = 48, RuleGlobal_stmt = 49, 
-    RuleNonlocal_stmt = 50, RuleDel_stmt = 51, RuleYield_stmt = 52, RuleAssert_stmt = 53, 
-    RuleImport_stmt = 54, RuleImport_name = 55, RuleImport_from = 56, RuleImport_from_targets = 57, 
-    RuleImport_from_as_names = 58, RuleImport_from_as_name = 59, RuleDotted_as_names = 60, 
-    RuleDotted_as_name = 61, RuleDotted_name = 62, RuleBlock = 63, RuleDecorators = 64, 
-    RuleClass_def = 65, RuleClass_def_raw = 66, RuleFunction_def = 67, RuleFunction_def_raw = 68, 
-    RuleParams = 69, RuleParameters = 70, RuleSlash_no_default = 71, RuleSlash_with_default = 72, 
-    RuleStar_etc = 73, RuleKwds = 74, RuleParam_no_default = 75, RuleParam_no_default_star_annotation = 76, 
-    RuleParam_with_default = 77, RuleParam_maybe_default = 78, RuleParam = 79, 
-    RuleParam_star_annotation = 80, RuleAnnotation = 81, RuleStar_annotation = 82, 
-    RuleDefault = 83, RuleIf_stmt = 84, RuleElif_stmt = 85, RuleElse_block = 86, 
-    RuleWhile_stmt = 87, RuleFor_stmt = 88, RuleWith_stmt = 89, RuleWith_item = 90, 
-    RuleTry_stmt = 91, RuleExcept_block = 92, RuleExcept_star_block = 93, 
-    RuleFinally_block = 94, RuleMatch_stmt = 95, RuleSubject_expr = 96, 
-    RuleCase_block = 97, RuleGuard = 98, RulePatterns = 99, RulePattern = 100, 
-    RuleAs_pattern = 101, RuleOr_pattern = 102, RuleClosed_pattern = 103, 
-    RuleLiteral_pattern = 104, RuleLiteral_expr = 105, RuleComplex_number = 106, 
-    RuleSigned_number = 107, RuleSigned_real_number = 108, RuleReal_number = 109, 
-    RuleImaginary_number = 110, RuleCapture_pattern = 111, RulePattern_capture_target = 112, 
-    RuleWildcard_pattern = 113, RuleValue_pattern = 114, RuleAttr = 115, 
-    RuleName_or_attr = 116, RuleGroup_pattern = 117, RuleSequence_pattern = 118, 
-    RuleOpen_sequence_pattern = 119, RuleMaybe_sequence_pattern = 120, RuleMaybe_star_pattern = 121, 
-    RuleStar_pattern = 122, RuleMapping_pattern = 123, RuleItems_pattern = 124, 
-    RuleKey_value_pattern = 125, RuleDouble_star_pattern = 126, RuleClass_pattern = 127, 
-    RulePositional_patterns = 128, RuleKeyword_patterns = 129, RuleKeyword_pattern = 130, 
-    RuleType_alias = 131, RuleType_params = 132, RuleType_param_seq = 133, 
-    RuleType_param = 134, RuleType_param_bound = 135, RuleExpressions = 136, 
-    RuleExpression = 137, RuleYield_expr = 138, RuleStar_expressions = 139, 
-    RuleStar_expression = 140, RuleStar_named_expressions = 141, RuleStar_named_expression = 142, 
-    RuleAssignment_expression = 143, RuleNamed_expression = 144, RuleDisjunction = 145, 
-    RuleConjunction = 146, RuleInversion = 147, RuleComparison = 148, RuleCompare_op_bitwise_or_pair = 149, 
-    RuleEq_bitwise_or = 150, RuleNoteq_bitwise_or = 151, RuleLte_bitwise_or = 152, 
-    RuleLt_bitwise_or = 153, RuleGte_bitwise_or = 154, RuleGt_bitwise_or = 155, 
-    RuleNotin_bitwise_or = 156, RuleIn_bitwise_or = 157, RuleIsnot_bitwise_or = 158, 
-    RuleIs_bitwise_or = 159, RuleBitwise_or = 160, RuleBitwise_xor = 161, 
-    RuleBitwise_and = 162, RuleShift_expr = 163, RuleSum = 164, RuleTerm = 165, 
-    RuleFactor = 166, RulePower = 167, RuleAwait_primary = 168, RulePrimary = 169, 
-    RuleSlices = 170, RuleSlice = 171, RuleAtom = 172, RuleGroup = 173, 
-    RuleLambdef = 174, RuleLambda_params = 175, RuleLambda_parameters = 176, 
-    RuleLambda_slash_no_default = 177, RuleLambda_slash_with_default = 178, 
-    RuleLambda_star_etc = 179, RuleLambda_kwds = 180, RuleLambda_param_no_default = 181, 
-    RuleLambda_param_with_default = 182, RuleLambda_param_maybe_default = 183, 
-    RuleLambda_param = 184, RuleFstring_middle = 185, RuleFstring_replacement_field = 186, 
-    RuleFstring_conversion = 187, RuleFstring_full_format_spec = 188, RuleFstring_format_spec = 189, 
-    RuleFstring = 190, RuleString = 191, RuleStrings = 192, RuleList = 193, 
-    RuleTuple = 194, RuleSet = 195, RuleDict = 196, RuleDouble_starred_kvpairs = 197, 
-    RuleDouble_starred_kvpair = 198, RuleKvpair = 199, RuleFor_if_clauses = 200, 
-    RuleFor_if_clause = 201, RuleListcomp = 202, RuleSetcomp = 203, RuleGenexp = 204, 
-    RuleDictcomp = 205, RuleArguments = 206, RuleArgs = 207, RuleArg = 208, 
-    RuleKwargs = 209, RuleStarred_expression = 210, RuleKwarg_or_starred = 211, 
-    RuleKwarg_or_double_starred = 212, RuleStar_targets = 213, RuleStar_targets_list_seq = 214, 
-    RuleStar_targets_tuple_seq = 215, RuleStar_target = 216, RuleTarget_with_star_atom = 217, 
-    RuleStar_atom = 218, RuleSingle_target = 219, RuleSingle_subscript_attribute_target = 220, 
-    RuleT_primary = 221, RuleDel_targets = 222, RuleDel_target = 223, RuleDel_t_atom = 224, 
-    RuleType_expressions = 225, RuleFunc_type_comment = 226
+    RuleExpr = 23, RuleSelector_length = 24, RuleStar_selection_or_dot_selection = 25, 
+    RuleStar_selection = 26, RuleDot_selection = 27, RuleSelection = 28, 
+    RuleBase_selection = 29, RuleRs_pairs = 30, RuleRs_pair = 31, RuleRs_slices = 32, 
+    RuleRs_slice = 33, RulePython = 34, RulePython_tag = 35, RulePython_file = 36, 
+    RuleInteractive = 37, RuleEval = 38, RuleFunc_type = 39, RuleStatements = 40, 
+    RuleStmt = 41, RuleStatement_newline = 42, RuleSimple_stmts = 43, RuleSimple_stmt = 44, 
+    RuleCompound_stmt = 45, RuleAssignment = 46, RuleAnnotated_rhs = 47, 
+    RuleAugassign = 48, RuleReturn_stmt = 49, RuleRaise_stmt = 50, RuleGlobal_stmt = 51, 
+    RuleNonlocal_stmt = 52, RuleDel_stmt = 53, RuleYield_stmt = 54, RuleAssert_stmt = 55, 
+    RuleImport_stmt = 56, RuleImport_name = 57, RuleImport_from = 58, RuleImport_from_targets = 59, 
+    RuleImport_from_as_names = 60, RuleImport_from_as_name = 61, RuleDotted_as_names = 62, 
+    RuleDotted_as_name = 63, RuleDotted_name = 64, RuleBlock = 65, RuleDecorators = 66, 
+    RuleClass_def = 67, RuleClass_def_raw = 68, RuleFunction_def = 69, RuleFunction_def_raw = 70, 
+    RuleParams = 71, RuleParameters = 72, RuleSlash_no_default = 73, RuleSlash_with_default = 74, 
+    RuleStar_etc = 75, RuleKwds = 76, RuleParam_no_default = 77, RuleParam_no_default_star_annotation = 78, 
+    RuleParam_with_default = 79, RuleParam_maybe_default = 80, RuleParam = 81, 
+    RuleParam_star_annotation = 82, RuleAnnotation = 83, RuleStar_annotation = 84, 
+    RuleDefault = 85, RuleIf_stmt = 86, RuleElif_stmt = 87, RuleElse_block = 88, 
+    RuleWhile_stmt = 89, RuleFor_stmt = 90, RuleWith_stmt = 91, RuleWith_item = 92, 
+    RuleTry_stmt = 93, RuleExcept_block = 94, RuleExcept_star_block = 95, 
+    RuleFinally_block = 96, RuleMatch_stmt = 97, RuleSubject_expr = 98, 
+    RuleCase_block = 99, RuleGuard = 100, RulePatterns = 101, RulePattern = 102, 
+    RuleAs_pattern = 103, RuleOr_pattern = 104, RuleClosed_pattern = 105, 
+    RuleLiteral_pattern = 106, RuleLiteral_expr = 107, RuleComplex_number = 108, 
+    RuleSigned_number = 109, RuleSigned_real_number = 110, RuleReal_number = 111, 
+    RuleImaginary_number = 112, RuleCapture_pattern = 113, RulePattern_capture_target = 114, 
+    RuleWildcard_pattern = 115, RuleValue_pattern = 116, RuleAttr = 117, 
+    RuleName_or_attr = 118, RuleGroup_pattern = 119, RuleSequence_pattern = 120, 
+    RuleOpen_sequence_pattern = 121, RuleMaybe_sequence_pattern = 122, RuleMaybe_star_pattern = 123, 
+    RuleStar_pattern = 124, RuleMapping_pattern = 125, RuleItems_pattern = 126, 
+    RuleKey_value_pattern = 127, RuleDouble_star_pattern = 128, RuleClass_pattern = 129, 
+    RulePositional_patterns = 130, RuleKeyword_patterns = 131, RuleKeyword_pattern = 132, 
+    RuleType_alias = 133, RuleType_params = 134, RuleType_param_seq = 135, 
+    RuleType_param = 136, RuleType_param_bound = 137, RuleExpressions = 138, 
+    RuleExpression = 139, RuleYield_expr = 140, RuleStar_expressions = 141, 
+    RuleStar_expression = 142, RuleStar_named_expressions = 143, RuleStar_named_expression = 144, 
+    RuleAssignment_expression = 145, RuleNamed_expression = 146, RuleDisjunction = 147, 
+    RuleConjunction = 148, RuleInversion = 149, RuleComparison = 150, RuleCompare_op_bitwise_or_pair = 151, 
+    RuleEq_bitwise_or = 152, RuleNoteq_bitwise_or = 153, RuleLte_bitwise_or = 154, 
+    RuleLt_bitwise_or = 155, RuleGte_bitwise_or = 156, RuleGt_bitwise_or = 157, 
+    RuleNotin_bitwise_or = 158, RuleIn_bitwise_or = 159, RuleIsnot_bitwise_or = 160, 
+    RuleIs_bitwise_or = 161, RuleBitwise_or = 162, RuleBitwise_xor = 163, 
+    RuleBitwise_and = 164, RuleShift_expr = 165, RuleSum = 166, RuleTerm = 167, 
+    RuleFactor = 168, RulePower = 169, RuleAwait_primary = 170, RulePrimary = 171, 
+    RuleSlices = 172, RuleSlice = 173, RuleAtom = 174, RuleGroup = 175, 
+    RuleLambdef = 176, RuleLambda_params = 177, RuleLambda_parameters = 178, 
+    RuleLambda_slash_no_default = 179, RuleLambda_slash_with_default = 180, 
+    RuleLambda_star_etc = 181, RuleLambda_kwds = 182, RuleLambda_param_no_default = 183, 
+    RuleLambda_param_with_default = 184, RuleLambda_param_maybe_default = 185, 
+    RuleLambda_param = 186, RuleFstring_middle = 187, RuleFstring_replacement_field = 188, 
+    RuleFstring_conversion = 189, RuleFstring_full_format_spec = 190, RuleFstring_format_spec = 191, 
+    RuleFstring = 192, RuleString = 193, RuleStrings = 194, RuleList = 195, 
+    RuleTuple = 196, RuleSet = 197, RuleDict = 198, RuleDouble_starred_kvpairs = 199, 
+    RuleDouble_starred_kvpair = 200, RuleKvpair = 201, RuleFor_if_clauses = 202, 
+    RuleFor_if_clause = 203, RuleListcomp = 204, RuleSetcomp = 205, RuleGenexp = 206, 
+    RuleDictcomp = 207, RuleArguments = 208, RuleArgs = 209, RuleArg = 210, 
+    RuleKwargs = 211, RuleStarred_expression = 212, RuleKwarg_or_starred = 213, 
+    RuleKwarg_or_double_starred = 214, RuleStar_targets = 215, RuleStar_targets_list_seq = 216, 
+    RuleStar_targets_tuple_seq = 217, RuleStar_target = 218, RuleTarget_with_star_atom = 219, 
+    RuleStar_atom = 220, RuleSingle_target = 221, RuleSingle_subscript_attribute_target = 222, 
+    RuleT_primary = 223, RuleDel_targets = 224, RuleDel_target = 225, RuleDel_t_atom = 226, 
+    RuleType_expressions = 227, RuleFunc_type_comment = 228, RuleIdentifier = 229
   };
 
   explicit FandangoParser(antlr4::TokenStream *input);
@@ -150,7 +151,9 @@ public:
   class Formula_comparisonContext;
   class ExprContext;
   class Selector_lengthContext;
-  class SelectorContext;
+  class Star_selection_or_dot_selectionContext;
+  class Star_selectionContext;
+  class Dot_selectionContext;
   class SelectionContext;
   class Base_selectionContext;
   class Rs_pairsContext;
@@ -351,7 +354,8 @@ public:
   class Del_targetContext;
   class Del_t_atomContext;
   class Type_expressionsContext;
-  class Func_type_commentContext; 
+  class Func_type_commentContext;
+  class IdentifierContext; 
 
   class  FandangoContext : public antlr4::ParserRuleContext {
   public:
@@ -555,8 +559,8 @@ public:
     Nonterminal_rightContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *LESS_THAN();
-    std::vector<antlr4::tree::TerminalNode *> NAME();
-    antlr4::tree::TerminalNode* NAME(size_t i);
+    std::vector<IdentifierContext *> identifier();
+    IdentifierContext* identifier(size_t i);
     antlr4::tree::TerminalNode *GREATER_THAN();
     std::vector<antlr4::tree::TerminalNode *> COLON();
     antlr4::tree::TerminalNode* COLON(size_t i);
@@ -573,7 +577,7 @@ public:
     NonterminalContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *LESS_THAN();
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     antlr4::tree::TerminalNode *GREATER_THAN();
 
 
@@ -587,7 +591,7 @@ public:
   public:
     Generator_callContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     Generator_callContext *generator_call();
     antlr4::tree::TerminalNode *DOT();
     antlr4::tree::TerminalNode *OPEN_BRACK();
@@ -665,10 +669,16 @@ public:
     antlr4::tree::TerminalNode *FORALL();
     NonterminalContext *nonterminal();
     antlr4::tree::TerminalNode *IN();
-    SelectorContext *selector();
+    Dot_selectionContext *dot_selection();
     antlr4::tree::TerminalNode *COLON();
     QuantifierContext *quantifier();
     antlr4::tree::TerminalNode *EXISTS();
+    antlr4::tree::TerminalNode *ANY();
+    antlr4::tree::TerminalNode *OPEN_PAREN();
+    antlr4::tree::TerminalNode *FOR();
+    Star_selectionContext *star_selection();
+    antlr4::tree::TerminalNode *CLOSE_PAREN();
+    antlr4::tree::TerminalNode *ALL();
     Formula_disjunctionContext *formula_disjunction();
     std::vector<antlr4::tree::TerminalNode *> NEWLINE();
     antlr4::tree::TerminalNode* NEWLINE(size_t i);
@@ -779,7 +789,12 @@ public:
     virtual size_t getRuleIndex() const override;
     std::vector<antlr4::tree::TerminalNode *> OR_OP();
     antlr4::tree::TerminalNode* OR_OP(size_t i);
-    SelectorContext *selector();
+    Dot_selectionContext *dot_selection();
+    antlr4::tree::TerminalNode *LEN();
+    antlr4::tree::TerminalNode *OPEN_PAREN();
+    Star_selectionContext *star_selection();
+    antlr4::tree::TerminalNode *CLOSE_PAREN();
+    Star_selection_or_dot_selectionContext *star_selection_or_dot_selection();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -788,12 +803,41 @@ public:
 
   Selector_lengthContext* selector_length();
 
-  class  SelectorContext : public antlr4::ParserRuleContext {
+  class  Star_selection_or_dot_selectionContext : public antlr4::ParserRuleContext {
   public:
-    SelectorContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    Star_selection_or_dot_selectionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    Star_selectionContext *star_selection();
+    Dot_selectionContext *dot_selection();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Star_selection_or_dot_selectionContext* star_selection_or_dot_selection();
+
+  class  Star_selectionContext : public antlr4::ParserRuleContext {
+  public:
+    Star_selectionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *STAR();
+    SelectionContext *selection();
+    antlr4::tree::TerminalNode *POWER();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Star_selectionContext* star_selection();
+
+  class  Dot_selectionContext : public antlr4::ParserRuleContext {
+  public:
+    Dot_selectionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     SelectionContext *selection();
-    SelectorContext *selector();
+    Dot_selectionContext *dot_selection();
     antlr4::tree::TerminalNode *DOT();
     antlr4::tree::TerminalNode *DOTDOT();
 
@@ -802,8 +846,8 @@ public:
    
   };
 
-  SelectorContext* selector();
-  SelectorContext* selector(int precedence);
+  Dot_selectionContext* dot_selection();
+  Dot_selectionContext* dot_selection(int precedence);
   class  SelectionContext : public antlr4::ParserRuleContext {
   public:
     SelectionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -829,7 +873,7 @@ public:
     virtual size_t getRuleIndex() const override;
     NonterminalContext *nonterminal();
     antlr4::tree::TerminalNode *OPEN_PAREN();
-    SelectorContext *selector();
+    Dot_selectionContext *dot_selection();
     antlr4::tree::TerminalNode *CLOSE_PAREN();
 
 
@@ -1109,7 +1153,7 @@ public:
   public:
     AssignmentContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     antlr4::tree::TerminalNode *COLON();
     ExpressionContext *expression();
     std::vector<antlr4::tree::TerminalNode *> ASSIGN();
@@ -1206,8 +1250,8 @@ public:
     Global_stmtContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *GLOBAL();
-    std::vector<antlr4::tree::TerminalNode *> NAME();
-    antlr4::tree::TerminalNode* NAME(size_t i);
+    std::vector<IdentifierContext *> identifier();
+    IdentifierContext* identifier(size_t i);
     std::vector<antlr4::tree::TerminalNode *> COMMA();
     antlr4::tree::TerminalNode* COMMA(size_t i);
 
@@ -1223,8 +1267,8 @@ public:
     Nonlocal_stmtContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *NONLOCAL();
-    std::vector<antlr4::tree::TerminalNode *> NAME();
-    antlr4::tree::TerminalNode* NAME(size_t i);
+    std::vector<IdentifierContext *> identifier();
+    IdentifierContext* identifier(size_t i);
     std::vector<antlr4::tree::TerminalNode *> COMMA();
     antlr4::tree::TerminalNode* COMMA(size_t i);
 
@@ -1363,8 +1407,8 @@ public:
   public:
     Import_from_as_nameContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    std::vector<antlr4::tree::TerminalNode *> NAME();
-    antlr4::tree::TerminalNode* NAME(size_t i);
+    std::vector<IdentifierContext *> identifier();
+    IdentifierContext* identifier(size_t i);
     antlr4::tree::TerminalNode *AS();
 
 
@@ -1396,7 +1440,7 @@ public:
     virtual size_t getRuleIndex() const override;
     Dotted_nameContext *dotted_name();
     antlr4::tree::TerminalNode *AS();
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -1409,7 +1453,7 @@ public:
   public:
     Dotted_nameContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     Dotted_nameContext *dotted_name();
     antlr4::tree::TerminalNode *DOT();
 
@@ -1474,7 +1518,7 @@ public:
     Class_def_rawContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *CLASS();
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     antlr4::tree::TerminalNode *COLON();
     BlockContext *block();
     Type_paramsContext *type_params();
@@ -1508,7 +1552,7 @@ public:
     Function_def_rawContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *DEF();
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     antlr4::tree::TerminalNode *OPEN_PAREN();
     antlr4::tree::TerminalNode *CLOSE_PAREN();
     antlr4::tree::TerminalNode *COLON();
@@ -1688,7 +1732,7 @@ public:
   public:
     ParamContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     AnnotationContext *annotation();
 
 
@@ -1702,7 +1746,7 @@ public:
   public:
     Param_star_annotationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     Star_annotationContext *star_annotation();
 
 
@@ -1909,7 +1953,7 @@ public:
     antlr4::tree::TerminalNode *COLON();
     BlockContext *block();
     antlr4::tree::TerminalNode *AS();
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -1928,7 +1972,7 @@ public:
     antlr4::tree::TerminalNode *COLON();
     BlockContext *block();
     antlr4::tree::TerminalNode *AS();
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -2221,7 +2265,7 @@ public:
   public:
     Pattern_capture_targetContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -2262,7 +2306,7 @@ public:
     virtual size_t getRuleIndex() const override;
     Name_or_attrContext *name_or_attr();
     antlr4::tree::TerminalNode *DOT();
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -2275,7 +2319,7 @@ public:
   public:
     Name_or_attrContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     Name_or_attrContext *name_or_attr();
     antlr4::tree::TerminalNode *DOT();
 
@@ -2498,7 +2542,7 @@ public:
   public:
     Keyword_patternContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     antlr4::tree::TerminalNode *ASSIGN();
     PatternContext *pattern();
 
@@ -2514,7 +2558,7 @@ public:
     Type_aliasContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *TYPE();
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     antlr4::tree::TerminalNode *ASSIGN();
     ExpressionContext *expression();
     Type_paramsContext *type_params();
@@ -2561,7 +2605,7 @@ public:
   public:
     Type_paramContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     Type_param_boundContext *type_param_bound();
     antlr4::tree::TerminalNode *STAR();
     antlr4::tree::TerminalNode *POWER();
@@ -2703,7 +2747,7 @@ public:
   public:
     Assignment_expressionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     antlr4::tree::TerminalNode *EXPR_ASSIGN();
     ExpressionContext *expression();
 
@@ -3103,7 +3147,7 @@ public:
     AtomContext *atom();
     PrimaryContext *primary();
     antlr4::tree::TerminalNode *DOT();
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     GenexpContext *genexp();
     antlr4::tree::TerminalNode *OPEN_PAREN();
     antlr4::tree::TerminalNode *CLOSE_PAREN();
@@ -3159,7 +3203,7 @@ public:
     AtomContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     Selector_lengthContext *selector_length();
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     antlr4::tree::TerminalNode *TRUE();
     antlr4::tree::TerminalNode *FALSE();
     antlr4::tree::TerminalNode *NONE();
@@ -3361,7 +3405,7 @@ public:
   public:
     Lambda_paramContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -3408,7 +3452,7 @@ public:
     Fstring_conversionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *EXCL();
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -3780,7 +3824,7 @@ public:
   public:
     Kwarg_or_starredContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     antlr4::tree::TerminalNode *ASSIGN();
     ExpressionContext *expression();
     Starred_expressionContext *starred_expression();
@@ -3796,7 +3840,7 @@ public:
   public:
     Kwarg_or_double_starredContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     antlr4::tree::TerminalNode *ASSIGN();
     ExpressionContext *expression();
     antlr4::tree::TerminalNode *POWER();
@@ -3877,7 +3921,7 @@ public:
     virtual size_t getRuleIndex() const override;
     T_primaryContext *t_primary();
     antlr4::tree::TerminalNode *DOT();
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     antlr4::tree::TerminalNode *OPEN_BRACK();
     SlicesContext *slices();
     antlr4::tree::TerminalNode *CLOSE_BRACK();
@@ -3894,7 +3938,7 @@ public:
   public:
     Star_atomContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     antlr4::tree::TerminalNode *OPEN_PAREN();
     Target_with_star_atomContext *target_with_star_atom();
     antlr4::tree::TerminalNode *CLOSE_PAREN();
@@ -3915,7 +3959,7 @@ public:
     Single_targetContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     Single_subscript_attribute_targetContext *single_subscript_attribute_target();
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     antlr4::tree::TerminalNode *OPEN_PAREN();
     Single_targetContext *single_target();
     antlr4::tree::TerminalNode *CLOSE_PAREN();
@@ -3933,7 +3977,7 @@ public:
     virtual size_t getRuleIndex() const override;
     T_primaryContext *t_primary();
     antlr4::tree::TerminalNode *DOT();
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     antlr4::tree::TerminalNode *OPEN_BRACK();
     SlicesContext *slices();
     antlr4::tree::TerminalNode *CLOSE_BRACK();
@@ -3952,7 +3996,7 @@ public:
     AtomContext *atom();
     T_primaryContext *t_primary();
     antlr4::tree::TerminalNode *DOT();
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     antlr4::tree::TerminalNode *OPEN_BRACK();
     SlicesContext *slices();
     antlr4::tree::TerminalNode *CLOSE_BRACK();
@@ -3990,7 +4034,7 @@ public:
     virtual size_t getRuleIndex() const override;
     T_primaryContext *t_primary();
     antlr4::tree::TerminalNode *DOT();
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     antlr4::tree::TerminalNode *OPEN_BRACK();
     SlicesContext *slices();
     antlr4::tree::TerminalNode *CLOSE_BRACK();
@@ -4007,7 +4051,7 @@ public:
   public:
     Del_t_atomContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *NAME();
+    IdentifierContext *identifier();
     antlr4::tree::TerminalNode *OPEN_PAREN();
     antlr4::tree::TerminalNode *CLOSE_PAREN();
     Del_targetsContext *del_targets();
@@ -4052,11 +4096,27 @@ public:
 
   Func_type_commentContext* func_type_comment();
 
+  class  IdentifierContext : public antlr4::ParserRuleContext {
+  public:
+    IdentifierContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *NAME();
+    antlr4::tree::TerminalNode *ANY();
+    antlr4::tree::TerminalNode *ALL();
+    antlr4::tree::TerminalNode *LEN();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  IdentifierContext* identifier();
+
 
   bool sempred(antlr4::RuleContext *_localctx, size_t ruleIndex, size_t predicateIndex) override;
 
   bool generator_callSempred(Generator_callContext *_localctx, size_t predicateIndex);
-  bool selectorSempred(SelectorContext *_localctx, size_t predicateIndex);
+  bool dot_selectionSempred(Dot_selectionContext *_localctx, size_t predicateIndex);
   bool dotted_nameSempred(Dotted_nameContext *_localctx, size_t predicateIndex);
   bool name_or_attrSempred(Name_or_attrContext *_localctx, size_t predicateIndex);
   bool bitwise_orSempred(Bitwise_orContext *_localctx, size_t predicateIndex);

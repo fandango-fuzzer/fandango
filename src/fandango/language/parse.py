@@ -40,11 +40,12 @@ from fandango.language.grammar import (
 from fandango.language.io import FandangoIO, FandangoParty
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
+from fandango.language.search import DescendantAttributeSearch, ItemSearch
 from fandango.language.stdlib import stdlib
 from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER, print_exception
 
-from .parser import sa_fandango
+from fandango.language.parser import sa_fandango
 
 
 class PythonAntlrErrorListener(ErrorListener):
@@ -122,7 +123,7 @@ def include(file_to_be_included: str):
 
     path = os.path.dirname(CURRENT_FILENAME)
     if not path:
-        path = "."  # For strings and standard input
+        path = "legacy"  # For strings and standard input
     if INCLUDES:
         path += ":" + ":".join(INCLUDES)
     if os.environ.get("FANDANGO_PATH"):
@@ -945,8 +946,8 @@ def check_constraints_existence(grammar, constraints):
                 # This handles <parent>[...].<symbol> as <parent>..<symbol>.
                 # We could also interpret the actual [...] contents here,
                 # but slices and chains could make this hard -- AZ
-                recurse = f"<{parent!s}>[" in str(value) or f"..<{symbol!s}>" in str(
-                    value
+                recurse = isinstance(value, DescendantAttributeSearch) or isinstance(
+                    value, ItemSearch
                 )
                 if not check_constraints_existence_children(
                     grammar, parent, symbol, recurse, indirect_child

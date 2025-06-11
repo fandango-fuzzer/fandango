@@ -5,7 +5,7 @@ import unittest
 
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
-from fandango.language.legacy.parse import parse
+from fandango.language.parse import parse
 
 
 class ConstraintTest(unittest.TestCase):

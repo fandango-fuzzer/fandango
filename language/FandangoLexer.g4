@@ -64,6 +64,9 @@ FORALL     : 'forall';
 EXISTS     : 'exists';
 MAXIMIZING : 'maximizing';
 MINIMIZING : 'minimizing';
+ANY        : 'any';
+ALL        : 'all';
+LEN        : 'len';
 
 // identifiers
 NAME: ID_START ID_CONTINUE*;
