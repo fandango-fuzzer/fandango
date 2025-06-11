@@ -36,10 +36,8 @@ def evaluate_csv(
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
-        fandango = Fandango(
-            grammar, constraints, desired_solutions=100, logger_level=LoggerLevel.ERROR
-        )
-        fandango.evolve()
+        fandango = Fandango(grammar, constraints, logger_level=LoggerLevel.ERROR)
+        fandango.evolve(desired_solutions=100)
         solutions.extend(fandango.solution)
 
     coverage = grammar.compute_grammar_coverage(solutions, 4)
