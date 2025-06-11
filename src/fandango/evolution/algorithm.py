@@ -350,7 +350,6 @@ class Fandango:
                         target_population_size=self.population_size,
                     )
                 )
-
                 if not solutions:
                     solutions, self.evaluation = GeneratorWithReturn(
                         self.evaluator.evaluate_population(self.population)
