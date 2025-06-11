@@ -7,25 +7,28 @@ import os
 import os.path
 import traceback
 import re
+from typing import Any
+
+from fandango.constraints.base import Constraint, SoftValue
 
 if not "readline" in globals():
     try:
         # Linux and Mac. This should do the trick.
-        import gnureadline as readline
+        import gnureadline as readline  # type: ignore
     except Exception:
         pass
 
 if not "readline" in globals():
     try:
         # Windows. This should do the trick.
-        import pyreadline3 as readline
+        import pyreadline3 as readline  # type: ignore
     except Exception:
         pass
 
 if not "readline" in globals():
     try:
         # Another Windows alternative
-        import pyreadline as readline
+        import pyreadline as readline  # type: ignore
     except Exception:
         pass
 
@@ -59,6 +62,8 @@ from fandango.logger import LOGGER, print_exception
 
 from fandango import FandangoParseError, FandangoError
 import fandango
+
+DEFAULT_MAX_GENERATIONS = 500
 
 
 def terminal_link(url: str, text: str | None = None):
@@ -153,8 +158,14 @@ def get_parser(in_command_line=True):
         "-N",
         "--max-generations",
         type=int,
-        help="the maximum number of generations to run the algorithm",
-        default=None,
+        help="the maximum number of generations to run the algorithm (ignored if --infinite is set)",
+        default=DEFAULT_MAX_GENERATIONS,
+    )
+    algorithm_group.add_argument(
+        "--infinite",
+        action="store_true",
+        help="run the algorithm indefinitely",
+        default=False,
     )
     algorithm_group.add_argument(
         "--population-size", type=int, help="the size of the population", default=None
@@ -646,31 +657,29 @@ def parse_contents_from_args(args, given_grammars=[], check=True):
     )
 
 
+def _copy_setting(args, settings, name, *, args_name=None):
+    if args_name is None:
+        args_name = name
+    if hasattr(args, args_name) and getattr(args, args_name) is not None:
+        settings[name] = getattr(args, args_name)
+        LOGGER.debug(f"Settings: {name} is {settings[name]}")
+
+
 def make_fandango_settings(args, initial_settings={}):
     """Create keyword settings for Fandango() constructor"""
-
-    def copy(settings, name, *, args_name=None):
-        if args_name is None:
-            args_name = name
-        if hasattr(args, args_name) and getattr(args, args_name) is not None:
-            settings[name] = getattr(args, args_name)
-            LOGGER.debug(f"Settings: {name} is {settings[name]}")
-
     settings = initial_settings.copy()
-    copy(settings, "population_size")
-    copy(settings, "desired_solutions", args_name="num_outputs")
-    copy(settings, "mutation_rate")
-    copy(settings, "crossover_rate")
-    copy(settings, "max_generations")
-    copy(settings, "elitism_rate")
-    copy(settings, "destruction_rate")
-    copy(settings, "warnings_are_errors")
-    copy(settings, "best_effort")
-    copy(settings, "random_seed")
-    copy(settings, "max_repetition_rate")
-    copy(settings, "max_repetitions")
-    copy(settings, "max_nodes")
-    copy(settings, "max_node_rate")
+    _copy_setting(args, settings, "population_size")
+    _copy_setting(args, settings, "mutation_rate")
+    _copy_setting(args, settings, "crossover_rate")
+    _copy_setting(args, settings, "elitism_rate")
+    _copy_setting(args, settings, "destruction_rate")
+    _copy_setting(args, settings, "warnings_are_errors")
+    _copy_setting(args, settings, "best_effort")
+    _copy_setting(args, settings, "random_seed")
+    _copy_setting(args, settings, "max_repetition_rate")
+    _copy_setting(args, settings, "max_repetitions")
+    _copy_setting(args, settings, "max_nodes")
+    _copy_setting(args, settings, "max_node_rate")
 
     if hasattr(args, "start_symbol") and args.start_symbol is not None:
         if args.start_symbol.startswith("<"):
@@ -693,6 +702,25 @@ def make_fandango_settings(args, initial_settings={}):
             args.initial_population
         )
     return settings
+
+
+def make_evolve_settings(args, file_mode):
+    evolve_settings: dict[str, Any] = {}
+    _copy_setting(args, evolve_settings, "desired_solutions", args_name="num_outputs")
+    if args.infinite:
+        if args.max_generations != DEFAULT_MAX_GENERATIONS:
+            LOGGER.warning("Ignoring --max-generations because --infinite is set")
+        evolve_settings["max_generations"] = None
+    else:
+        _copy_setting(args, evolve_settings, "max_generations")
+
+    evolve_settings["solution_callback"] = (
+        lambda solution, solution_index: output_solution(
+            solution, args, solution_index, file_mode
+        )
+    )
+
+    return evolve_settings
 
 
 def extract_initial_population(path):
@@ -718,7 +746,7 @@ def extract_initial_population(path):
 DEFAULT_FAN_CONTENT = (None, None)
 
 # Additional Fandango constraints; set with `set`
-DEFAULT_CONSTRAINTS = []
+DEFAULT_CONSTRAINTS: list[Constraint | SoftValue] = []
 
 # Default Fandango algorithm settings; set with `set`
 DEFAULT_SETTINGS = {}
@@ -847,110 +875,117 @@ def open_file(filename, file_mode, *, mode="r"):
 
 
 def output_population(population, args, file_mode=None, *, output_on_stdout=True):
+    if args.format == "none":
+        return
+
+    for i, solution in enumerate(population):
+        output_solution(solution, args, i, file_mode, output_on_stdout=output_on_stdout)
+
+
+def output_solution_to_directory(solution, args, solution_index: int, file_mode=None):
+    LOGGER.debug(f"Storing solution in directory {args.directory!r}")
+    os.makedirs(args.directory, exist_ok=True)
+
+    basename = f"fandango-{solution_index:04d}{args.filename_extension}"
+    filename = os.path.join(args.directory, basename)
+    with open_file(filename, file_mode, mode="w") as fd:
+        fd.write(output(solution, args, file_mode))
+
+
+def output_solution_to_file(solution, args, file_mode=None):
+    LOGGER.debug(f"Storing solution in file {args.output!r}")
+    with open_file(args.output, file_mode, mode="a") as fd:
+        if fd.tell() > 0:
+            fd.write(
+                args.separator.encode("utf-8")
+                if file_mode == "binary"
+                else args.separator
+            )
+        fd.write(output(solution, args, file_mode))
+
+
+def output_solution_with_test_command(solution, args, file_mode):
+    LOGGER.info(f"Running {args.test_command}")
+    base_cmd = [args.test_command] + args.test_args
+
+    if args.input_method == "filename":
+        prefix = "fandango-"
+        suffix = args.filename_extension
+        mode = "wb" if file_mode == "binary" else "w"
+
+        def named_temp_file(*, mode, prefix, suffix):
+            try:
+                # Windows needs delete_on_close=False, so the subprocess
+                # can access the file by name
+                return tempfile.NamedTemporaryFile(
+                    mode=mode,
+                    prefix=prefix,
+                    suffix=suffix,
+                    delete_on_close=False,
+                )
+            except Exception:
+                # Python 3.11 and earlier have no 'delete_on_close'
+                return tempfile.NamedTemporaryFile(
+                    mode=mode, prefix=prefix, suffix=suffix
+                )
+
+        with named_temp_file(mode=mode, prefix=prefix, suffix=suffix) as fd:
+            fd.write(output(solution, args, file_mode))
+            fd.flush()
+            cmd = base_cmd + [fd.name]
+            LOGGER.debug(f"Running {cmd}")
+            subprocess.run(cmd, text=True)
+    elif args.input_method == "stdin":
+        cmd = base_cmd
+        LOGGER.debug(f"Running {cmd} with individual as stdin")
+        subprocess.run(
+            cmd,
+            input=output(solution, args, file_mode),
+            text=(None if file_mode == "binary" else True),
+        )
+    elif args.input_method == "libfuzzer":
+        if args.file_mode != "binary" or file_mode != "binary":
+            raise NotImplementedError("LibFuzzer harnesses only support binary input")
+        harness = ctypes.CDLL(args.test_command).LLVMFuzzerTestOneInput
+
+        bytes = output(solution, args, file_mode)
+        harness(bytes, len(bytes))
+    else:
+        raise NotImplementedError("Unsupported input method")
+
+
+def output_solution_to_stdout(solution, args, file_mode):
+    LOGGER.debug("Printing solution on stdout")
+    out = output(solution, args, file_mode)
+    if not isinstance(out, str):
+        out = out.decode("iso8859-1")
+    print(out, end="")
+    print(args.separator, end="")
+
+
+def output_solution(
+    solution, args, solution_index: int, file_mode=None, *, output_on_stdout=True
+):
     assert file_mode == "binary" or file_mode == "text"
 
     if args.format == "none":
         return
 
     if args.directory:
-        LOGGER.debug(f"Storing population in directory {args.directory!r}")
-        try:
-            os.mkdir(args.directory)
-        except FileExistsError:
-            pass
-
-        counter = 1
-        for individual in population:
-            basename = f"fandango-{counter:04d}{args.filename_extension}"
-            filename = os.path.join(args.directory, basename)
-            with open_file(filename, file_mode, mode="w") as fd:
-                fd.write(output(individual, args, file_mode))
-            counter += 1
-
+        output_solution_to_directory(solution, args, solution_index, file_mode)
         output_on_stdout = False
 
     if args.output:
-        LOGGER.debug(f"Storing population in file {args.output!r}")
-
-        with open_file(args.output, file_mode, mode="w") as fd:
-            sep = False
-            for individual in population:
-                if sep:
-                    fd.write(
-                        args.separator.encode("utf-8")
-                        if file_mode == "binary"
-                        else args.separator
-                    )
-                fd.write(output(individual, args, file_mode))
-                sep = True
-
+        output_solution_to_file(solution, args, file_mode)
         output_on_stdout = False
 
     if "test_command" in args and args.test_command:
-        LOGGER.info(f"Running {args.test_command}")
-        base_cmd = [args.test_command] + args.test_args
-
-        if args.input_method == "libfuzzer":
-            if args.file_mode != "binary" or file_mode != "binary":
-                raise NotImplementedError(
-                    "LibFuzzer harnesses only support binary input"
-                )
-            harness = ctypes.CDLL(args.test_command).LLVMFuzzerTestOneInput
-
-        for individual in population:
-            if args.input_method == "filename":
-                prefix = "fandango-"
-                suffix = args.filename_extension
-                mode = "wb" if file_mode == "binary" else "w"
-
-                def named_temp_file(*, mode, prefix, suffix):
-                    try:
-                        # Windows needs delete_on_close=False, so the subprocess
-                        # can access the file by name
-                        return tempfile.NamedTemporaryFile(
-                            mode=mode,
-                            prefix=prefix,
-                            suffix=suffix,
-                            delete_on_close=False,
-                        )
-                    except Exception:
-                        # Python 3.11 and earlier have no 'delete_on_close'
-                        return tempfile.NamedTemporaryFile(
-                            mode=mode, prefix=prefix, suffix=suffix
-                        )
-
-                with named_temp_file(mode=mode, prefix=prefix, suffix=suffix) as fd:
-                    fd.write(output(individual, args, file_mode))
-                    fd.flush()
-                    cmd = base_cmd + [fd.name]
-                    LOGGER.debug(f"Running {cmd}")
-                    subprocess.run(cmd, text=True)
-            elif args.input_method == "stdin":
-                cmd = base_cmd
-                LOGGER.debug(f"Running {cmd} with individual as stdin")
-                subprocess.run(
-                    cmd,
-                    input=output(individual, args, file_mode),
-                    text=(None if file_mode == "binary" else True),
-                )
-            elif args.input_method == "libfuzzer":
-                bytes = output(individual, args, file_mode)
-                harness(bytes, len(bytes))
-            else:
-                raise NotImplementedError("Unsupported input method")
-
+        output_solution_with_test_command(solution, args, file_mode)
         output_on_stdout = False
 
+    # Default
     if output_on_stdout:
-        # Default
-        LOGGER.debug("Printing population on stdout")
-        for individual in population:
-            out = output(individual, args, file_mode)
-            if not isinstance(out, str):
-                out = out.decode("iso8859-1")
-            print(out, end="")
-            print(args.separator, end="")
-            sep = True
+        output_solution_to_stdout(solution, args, file_mode)
 
 
 def report_syntax_error(
@@ -1099,11 +1134,8 @@ def fuzz_command(args):
 
     LOGGER.debug("Starting Fandango")
     fandango = Fandango(grammar, constraints, **settings)
-
     LOGGER.debug("Evolving population")
-    population = fandango.evolve()
-
-    output_population(population, args, file_mode=file_mode, output_on_stdout=True)
+    population = fandango.evolve(**make_evolve_settings(args, file_mode))
 
     if args.validate:
         LOGGER.debug("Validating population")
@@ -1452,7 +1484,7 @@ def shell_command(args):
                 )
             continue
 
-        command = None
+        command: Any = None
         try:
             command = shlex.split(command_line, comments=True)
         except Exception as e:
@@ -1517,7 +1549,7 @@ def main(*argv: str, stdout=sys.stdout, stderr=sys.stderr):
     parser = get_parser(in_command_line=True)
     args = parser.parse_args(argv or sys.argv[1:])
 
-    LOGGER.setLevel(logging.WARNING)  # Default
+    LOGGER.setLevel(os.getenv("FANDANGO_LOG_LEVEL", "WARNING"))  # Default
 
     if args.quiet and args.quiet == 1:
         LOGGER.setLevel(logging.WARNING)  # (Back to default)

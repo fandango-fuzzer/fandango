@@ -29,11 +29,10 @@ def evaluate_xml(
         fandango = Fandango(
             grammar,
             constraints,
-            desired_solutions=100,
             logger_level=LoggerLevel.ERROR,
             profiling=True,
         )
-        fandango.evolve()
+        fandango.evolve(desired_solutions=100)
         solutions.extend(fandango.solution)
 
     coverage = grammar.compute_grammar_coverage(solutions, 4)
