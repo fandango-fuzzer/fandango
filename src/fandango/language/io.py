@@ -325,6 +325,28 @@ class STDIN(FandangoParty):
                 time.sleep(0.1)
 
 
+class ProgOut(FandangoParty):
+    def __init__(self):
+        super().__init__(Ownership.EXTERNAL)
+        self.proc = ProcessManager.instance().get_process()
+        threading.Thread(target=self.listen_loop, daemon=True).start()
+
+    def listen_loop(self):
+        while True:
+            line = self.proc.stdout.readline()
+            self.receive_msg("ProgOut", line)
+
+class ProgIn(FandangoParty):
+    def __init__(self):
+        super().__init__(Ownership.FUZZER)
+        self.proc = ProcessManager.instance().get_process()
+
+    def on_send(self, message: DerivationTree, recipient: str):
+        self.proc.stdin.write(message.to_string())
+        self.proc.stdin.flush()
+
+
+
 class FandangoIO:
     __instance = None
 
