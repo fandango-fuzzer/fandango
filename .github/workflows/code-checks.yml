@@ -68,7 +68,7 @@ jobs:
       # Step 4: Install mypy
       - name: Install dependencies
         run: |
-          pip install -e . --skip-cpp-parser
+          FANDANGO_SKIP_CPP_PARSER=1 pip install -e .
           pip install mypy
 
       # Step 5: Run mypy on changed files
