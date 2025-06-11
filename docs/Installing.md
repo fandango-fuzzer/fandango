@@ -15,19 +15,19 @@ kernelspec:
 
 ## Installing Fandango for Normal Usage
 
-```{warning}
-While Fandango is in beta, only development versions can be installed.
-```
+% ```{warning}
+% While Fandango is in beta, only development versions can be installed.
+% ```
 
 Fandango comes as a Python package. To install Fandango, run the following command:
 
-```
+```shell
 $ pip install fandango-fuzzer
 ```
 
 To test if everything worked well, try
 
-```
+```shell
 $ fandango --help
 ```
 
@@ -54,19 +54,4 @@ assert _exit_code == 0
 This will get you the very latest version of Fandango, which may be unstable. Use at your own risk.
 ```
 
-```{note}
-At this point, only registered developers have access to Fandango.
-```
-
-Clone the Fandango repository:
-
-```
-$ git clone https://github.com/fandango-fuzzer/fandango/
-```
-
-In the top-level `fandango/` folder, run
-```
-$ pip install -e .
-```
-
-You should then be able to invoke Fandango as described above.
+Refer to the [Getting Started with Development Guide](sec:getting-started-with-development) for instructions on how to prepare an environment to work on Fandango.

@@ -61,23 +61,42 @@ system-dev-tools:
 
 ## Parser
 
-PARSER = src/fandango/language/legacy/parser
+PARSER = src/fandango/language/parser
+CPP_PARSER = src/fandango/language/cpp_parser
 LEXER_G4 = language/FandangoLexer.g4
 PARSER_G4 = language/FandangoParser.g4
 
-PARSERS = \
+parser: \
 	$(PARSER)/FandangoLexer.py \
 	$(PARSER)/FandangoParser.py \
-	$(PARSER)/FandangoParserVisitor.py \
-	$(PARSER)/FandangoParserListener.py
+	$(CPP_PARSER)/FandangoLexer.cpp \
+	$(CPP_PARSER)/FandangoParser.cpp
 
-parser: $(PARSERS)
-
-$(PARSERS) &: $(LEXER_G4) $(PARSER_G4)
+$(PARSER)/FandangoLexer.py: $(LEXER_G4) Makefile
 	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
-		-visitor -listener $(LEXER_G4) $(PARSER_G4)
-	$(BLACK) src
+		-visitor -listener $(LEXER_G4)
+	sed 's/import FandangoLexerBase/import */' $@ > $@~ && mv $@~ $@
 
+$(PARSER)/FandangoParser.py: $(LEXER_G4) $(PARSER_G4) Makefile
+	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
+		-visitor -listener $(PARSER_G4)
+	$(BLACK) $(SRC)/language
+
+$(CPP_PARSER)/FandangoLexer.cpp: $(LEXER_G4) Makefile
+	$(ANTLR) -Dlanguage=Cpp -Xexact-output-dir -o $(CPP_PARSER) \
+		$(LEXER_G4)
+	sed -e '/^#include/a\'$$'\n''#include "FandangoLexerBase.h"' $(CPP_PARSER)/FandangoLexer.h > $(CPP_PARSER)/FandangoLexer.h~ && mv $(CPP_PARSER)/FandangoLexer.h~ $(CPP_PARSER)/FandangoLexer.h
+
+$(CPP_PARSER)/FandangoParser.cpp: $(LEXER_G4) $(PARSER_G4) $(SRC)/language/generate-parser.py Makefile
+	$(ANTLR) -Dlanguage=Cpp -Xexact-output-dir -o $(CPP_PARSER) \
+		-visitor -no-listener $(PARSER_G4)
+	cd $(SRC)/language; $(PYTHON) generate-parser.py
+	$(BLACK) $(SRC)/language
+	@echo 'Now run "pip install -e ." to compile C++ files'
+
+.PHONY: format black
+format black:
+	$(BLACK) src
 
 ## Documentation
 DOCS = docs
@@ -112,15 +131,15 @@ pdf: $(PDF_TARGET)
 # Re-create the book in HTML
 $(HTML_MARKER): $(DOCS_SOURCES) $(ALL_HTML_MARKER)
 	$(JB) build $(DOCS)
-	$(PATCH_HTML)
+	-$(PATCH_HTML)
 	@$(CHECK_DOCS)
 	echo 'Success' > $@
-	-$(REFRESH_HTML)
 	@echo Output written to $(HTML_INDEX)
 
 # If we change Python sources, _toc.yml, or _config.yml, all docs need to be rebuilt
 $(ALL_HTML_MARKER): $(DOCS)/_toc.yml $(DOCS)/_config.yml $(PYTHON_SOURCES)
 	$(JB) build --all $(DOCS)
+	-$(PATCH_HTML)
 	@$(CHECK_DOCS)
 	echo 'Success' > $@
 
@@ -221,13 +240,37 @@ run-all: $(TEST_MARKER) $(EVALUATION_MARKER) $(EXPERIMENTS_MARKER)
 install:
 	$(PIP) install -e .
 
+## Credit - from https://gist.github.com/Alpha59/4e9cd6c65f7aa2711b79
+.PHONY: credit
+credit:
+	@echo "Lines contributed"
+	@for pattern in .py .g4 .md .fan .toml .yml file; do \
+		echo "*$$pattern files:"; \
+		git ls-files | \
+		grep "$$pattern"'$$' | \
+		grep -v 'src/fandango/language/parser/' | \
+		grep -v 'utils/dtd2fan/.*\.fan' | \
+		xargs -n1 git blame -wfn | \
+		sed 's/joszamama/José Antonio/g' | \
+		sed 's/alex9849/Alexander Liggesmeyer/g' | \
+		perl -n -e '/\((.*)\s[\d]{4}\-/ && print $$1."\n"' | \
+		awk '{print $$1" "$$2}' | \
+		sed 's/José Antonio$$/José Antonio Zamudio Amaya/g' | \
+		sort -f | \
+		uniq -c | \
+		sort -nr; \
+		echo; \
+	done
+
 # We separate _installing_ from _running_ tests
 # so we can run 'make tests' quickly (see above)
 # without having to reinstall things
 install-test install-tests:
-	$(PIP) install pytest
+	$(PIP) install pytest mypy
 	$(PIP) install -e ".[test]"
 
 uninstall:
 	$(PIP) uninstall fandango-fuzzer -y
 
+remove cache:
+	rm -rf ~/Library/Caches/Fandango

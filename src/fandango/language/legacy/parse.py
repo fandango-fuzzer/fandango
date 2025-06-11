@@ -1,49 +1,62 @@
 import ast
 import hashlib
-import importlib.metadata
 import os
-import sys
 import platform
 import re
-
+import sys
+import time
 from copy import deepcopy
-from pathlib import Path
 from io import StringIO
-from typing import IO, Any, List, Optional, Set, Tuple
+from pathlib import Path
+from typing import IO, Any, Optional
 
 import cachedir_tag
 import dill as pickle
-
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
-from thefuzz import process as thefuzz_process
 from xdg_base_dirs import xdg_cache_home, xdg_data_dirs, xdg_data_home
 
+import fandango
+from fandango import FandangoSyntaxError, FandangoValueError
 from fandango.constraints import predicates
-from fandango.language.legacy.convert import (
+from fandango.constraints.base import Constraint, SoftValue
+from fandango.language.convert import (
     ConstraintProcessor,
     FandangoSplitter,
     GrammarProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import Grammar, NodeType
-from fandango.language.legacy.parser.FandangoLexer import FandangoLexer
-from fandango.language.legacy.parser.FandangoParser import FandangoParser
+from fandango.language.grammar import (
+    FuzzingMode,
+    Grammar,
+    MessageNestingDetector,
+    NodeReplacer,
+    NodeType,
+    NonTerminalNode,
+    PacketTruncator,
+    SymbolFinder,
+    closest_match,
+)
+from fandango.language.io import FandangoIO, FandangoParty
+from fandango.language.parser.FandangoLexer import FandangoLexer
+from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.stdlib import stdlib
 from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER, print_exception
 
-from fandango import FandangoSyntaxError, FandangoValueError
+from .parser import sa_fandango
 
 
-class MyErrorListener(ErrorListener):
+class PythonAntlrErrorListener(ErrorListener):
     """This is invoked from ANTLR when a syntax error is encountered"""
 
     def __init__(self, filename=None):
         self.filename = filename
         super().__init__()
 
-    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+    def syntaxError(
+        self, recognizer, offendingSymbol, line: int, column: int, msg: str, e
+    ):
         exc = FandangoSyntaxError(
             f"{self.filename!r}, line {line}, column {column}: {msg}"
         )
@@ -53,12 +66,29 @@ class MyErrorListener(ErrorListener):
         raise exc
 
 
-def closest_match(word, candidates):
-    """
-    `word` raises a syntax error;
-    return alternate suggestion for `word` from `candidates`
-    """
-    return thefuzz_process.extractOne(word, candidates)[0]
+class SpeedyAntlrErrorListener(sa_fandango.SA_ErrorListener):
+    """This is invoked from the speedy ANTLR parser when a syntax error is encountered"""
+
+    def __init__(self, filename=None):
+        self.filename = filename
+        super().__init__()
+
+    def syntaxError(
+        self,
+        input_stream,
+        offendingSymbol,
+        char_index: int,
+        line: int,
+        column: int,
+        msg,
+    ):
+        exc = FandangoSyntaxError(
+            f"{self.filename!r}, line {line}, column {column}: {msg}"
+        )
+        exc.line = line
+        exc.column = column
+        exc.message = msg
+        raise exc
 
 
 ### Including Files
@@ -69,13 +99,13 @@ def closest_match(word, candidates):
 CURRENT_FILENAME: str = "<undefined>"
 
 # The list of directories to search for include files
-INCLUDES: List[str] = []
+INCLUDES: list[str] = []
 
 # The list of files to parse, with their include depth.
 # An include depth of 0 means the file was given as input.
 # A higher include depth means the file was included from another file;
 # hence its grammar and constraints should be processed _before_ the current file.
-FILES_TO_PARSE: List[Tuple[IO, int]] = []
+FILES_TO_PARSE: list[tuple[IO, int]] = []
 
 # The current include depth
 INCLUDE_DEPTH: int = 0
@@ -92,7 +122,7 @@ def include(file_to_be_included: str):
 
     path = os.path.dirname(CURRENT_FILENAME)
     if not path:
-        path = ".."  # For strings and standard input
+        path = "."  # For strings and standard input
     if INCLUDES:
         path += ":" + ":".join(INCLUDES)
     if os.environ.get("FANDANGO_PATH"):
@@ -147,7 +177,7 @@ class FandangoSpec:
         filename: str = "<input>",
         max_repetitions: int = 5,
     ):
-        self.version = importlib.metadata.version("fandango-fuzzer")
+        self.version = fandango.version()
         self.fan_contents = fan_contents
         self.global_vars = self.GLOBALS.copy()
         self.local_vars = self.LOCALS
@@ -161,6 +191,8 @@ class FandangoSpec:
         ast.fix_missing_locations(code_tree)
         self.code_text = ast.unparse(code_tree)
 
+        LOGGER.debug(f"{filename}: code text:\n{self.code_text}")
+
         LOGGER.debug(f"{filename}: running code")
         self.run_code(filename=filename)
 
@@ -168,6 +200,7 @@ class FandangoSpec:
         grammar_processor = GrammarProcessor(
             local_variables=self.local_vars,
             global_variables=self.global_vars,
+            id_prefix="{0:x}".format(abs(hash(filename))),
             max_repetitions=max_repetitions,
         )
         self.grammar: Grammar = grammar_processor.get_grammar(
@@ -181,7 +214,7 @@ class FandangoSpec:
             global_variables=self.global_vars,
             lazy=self.lazy,
         )
-        self.constraints: List[str] = constraint_processor.get_constraints(
+        self.constraints: list[str] = constraint_processor.get_constraints(
             splitter.constraints
         )
 
@@ -205,15 +238,25 @@ class FandangoSpec:
         )
         exec(self.code_text, self.global_vars, self.local_vars)
 
+    def __repr__(self):
+        s = self.code_text
+        if s:
+            s += "\n\n"
+        s += str(self.grammar) + "\n"
+        if self.constraints:
+            s += "\n"
+        s += "\n".join("where " + str(constraint) for constraint in self.constraints)
+        return s
 
-def parse_content(
+
+def parse_spec(
     fan_contents: str,
     *,
     filename: str = "<input>",
     use_cache: bool = True,
     lazy: bool = False,
     max_repetitions: int = 5,
-) -> Tuple[Grammar, List[str]]:
+) -> tuple[Grammar, list[str]]:
     """
     Parse given content into a grammar and constraints.
     This is a helper function; use `parse()` as the main entry point.
@@ -221,7 +264,7 @@ def parse_content(
     :param filename: The file name of the content (for error messages)
     :param use_cache: If True (default), cache parsing results.
     :param lazy: If True, the constraints are evaluated lazily
-    :return: A tuple of the grammar and constraints
+    :return: A FandangoSpec object containing the parsed grammar, constraints, and code text.
     """
     spec: Optional[FandangoSpec] = None
     from_cache = False
@@ -237,13 +280,16 @@ def parse_content(
             os.makedirs(CACHE_DIR, mode=0o700)
             cachedir_tag.tag(CACHE_DIR, application="Fandango")
 
-        hash = hashlib.sha256(fan_contents.encode()).hexdigest()
+        # Keep separate hashes for different Fandango and Python versions
+        hash_contents = fan_contents + fandango.version() + "-" + sys.version
+        hash = hashlib.sha256(hash_contents.encode()).hexdigest()
         pickle_file = CACHE_DIR / (hash + ".pickle")
 
         if os.path.exists(pickle_file):
             try:
                 with open(pickle_file, "rb") as fp:
                     LOGGER.info(f"{filename}: loading cached spec from {pickle_file}")
+                    start_time = time.time()
                     spec = pickle.load(fp)
                     assert spec is not None
                     LOGGER.debug(f"Cached spec version: {spec.version}")
@@ -253,6 +299,9 @@ def parse_content(
                         )
                         raise error
 
+                    LOGGER.debug(
+                        f"{filename}: loaded from cache in {time.time() - start_time:.2f} seconds"
+                    )
                     from_cache = True
             except Exception as exc:
                 LOGGER.debug(type(exc).__name__ + ":" + str(exc))
@@ -268,21 +317,52 @@ def parse_content(
             raise exc
 
     if not spec:
-        LOGGER.debug(f"{filename}: setting up .fan parser and lexer")
-        error_listener = MyErrorListener(filename)
+        if fandango.Fandango.parser != "legacy":
+            if fandango.Fandango.parser == "cpp":
+                sa_fandango.USE_CPP_IMPLEMENTATION = True
+            elif fandango.Fandango.parser == "python":
+                sa_fandango.USE_CPP_IMPLEMENTATION = False
+            elif fandango.Fandango.parser == "auto":
+                pass  # let sa_fandango decide
 
-        input_stream = InputStream(fan_contents)
-        lexer = FandangoLexer(input_stream)
-        lexer.removeErrorListeners()
-        lexer.addErrorListener(error_listener)
+            if sa_fandango.USE_CPP_IMPLEMENTATION:
+                LOGGER.debug(f"{filename}: setting up speedy C++ .fan parser")
+            else:
+                LOGGER.debug(f"{filename}: setting up python .fan parser")
 
-        token_stream = CommonTokenStream(lexer)
-        parser = FandangoParser(token_stream)
-        parser.removeErrorListeners()
-        parser.addErrorListener(error_listener)
+            input_stream = InputStream(fan_contents)
+            error_listener = SpeedyAntlrErrorListener(filename)
 
-        LOGGER.debug(f"{filename}: parsing .fan content")
-        tree = parser.fandango()  # Invoke the ANTLR parser
+            # Invoke the Speedy ANTLR parser
+            LOGGER.debug(f"{filename}: parsing .fan content")
+            start_time = time.time()
+            tree = sa_fandango.parse(input_stream, "fandango", error_listener)
+            LOGGER.debug(
+                f"{filename}: parsed in {time.time() - start_time:.2f} seconds"
+            )
+
+        else:  # legacy parser
+            LOGGER.debug(f"{filename}: setting up legacy .fan parser")
+            input_stream = InputStream(fan_contents)
+            error_listener = PythonAntlrErrorListener(filename)
+
+            lexer = FandangoLexer(input_stream)
+            lexer.removeErrorListeners()
+            lexer.addErrorListener(error_listener)
+
+            token_stream = CommonTokenStream(lexer)
+            parser = FandangoParser(token_stream)
+            parser.removeErrorListeners()
+            parser.addErrorListener(error_listener)
+
+            # Invoke the ANTLR parser
+            LOGGER.debug(f"{filename}: parsing .fan content")
+            start_time = time.time()
+            tree = parser.fandango()
+
+            LOGGER.debug(
+                f"{filename}: parsed in {time.time() - start_time:.2f} seconds"
+            )
 
         LOGGER.debug(f"{filename}: splitting content")
         spec = FandangoSpec(
@@ -304,35 +384,43 @@ def parse_content(
                 pass
 
     LOGGER.debug(f"{filename}: parsing complete")
+    return spec
+
+
+# Legacy interface
+def parse_content(*args, **kwargs) -> tuple[Grammar, list[str]]:
+    spec = parse_spec(*args, **kwargs)
     return spec.grammar, spec.constraints
 
 
 # Save the set of symbols used in the standard library and imported grammars
-USED_SYMBOLS: Set[str] = set()
+USED_SYMBOLS: set[str] = set()
 
 # Save the standard library grammar and constraints
 STDLIB_GRAMMAR: Optional[Grammar] = None
-STDLIB_CONSTRAINTS: Optional[List[str]] = None
+STDLIB_CONSTRAINTS: Optional[list[str]] = None
 
 
 def parse(
-    fan_files: str | IO | List[str | IO],
-    constraints: List[str] = None,
+    fan_files: str | IO | list[str | IO],
+    constraints: Optional[list[str]] = None,
     *,
     use_cache: bool = True,
     use_stdlib: bool = True,
+    check: bool = True,
     lazy: bool = False,
-    given_grammars: List[Grammar] = [],
+    given_grammars: list[Grammar] = [],
     start_symbol: Optional[str] = None,
-    includes: List[str] = [],
+    includes: list[str] = [],
     max_repetitions: int = 5,
-) -> Tuple[Optional[Grammar], List[str]]:
+) -> tuple[Optional[Grammar], list[Constraint | SoftValue]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
     :param fan_files: One (open) .fan file, one string, or a list of these
     :param constraints: List of constraints (as strings); default: []
     :param use_cache: If True (default), cache parsing results
     :param use_stdlib: If True (default), use the standard library
+    :param check: If True (default), the constraints are checked for consistency
     :param lazy: If True, the constraints are evaluated lazily
     :param given_grammars: Grammars to use in addition to the standard library
     :param start_symbol: The grammar start symbol (default: "<start>")
@@ -378,7 +466,7 @@ def parse(
     INCLUDES = includes
 
     grammars = []
-    parsed_constraints: List[str] = []
+    parsed_constraints: list[str] = []
     if use_stdlib:
         assert STDLIB_GRAMMAR is not None
         assert STDLIB_CONSTRAINTS is not None
@@ -420,12 +508,18 @@ def parse(
         if depth == 0:
             # Given file: process in order
             more_grammars.append(new_grammar)
+            for generator in new_grammar.generators.values():
+                for nonterminal in generator.nonterminals.values():
+                    USED_SYMBOLS.add(nonterminal.symbol.symbol)
         else:
             # Included file: process _before_ current grammar
             more_grammars = [new_grammar] + more_grammars
             # Do not complain about unused symbols in included files
             for symbol in new_grammar.rules.keys():
                 USED_SYMBOLS.add(str(symbol))
+            for generator in new_grammar.generators.values():
+                for nonterminal in generator.nonterminals.values():
+                    USED_SYMBOLS.add(nonterminal.symbol.symbol)
 
         if INCLUDE_DEPTH > 0:
             INCLUDE_DEPTH -= 1
@@ -450,28 +544,154 @@ def parse(
     LOGGER.debug("Processing constraints")
     for constraint in constraints or []:
         LOGGER.debug(f"Constraint {constraint}")
-        _, new_constraints = parse_content(
-            "where " + constraint, filename=constraint, use_cache=use_cache, lazy=lazy
-        )
+        first_token = constraint.split()[0]
+        if any(
+            first_token.startswith(kw) for kw in ["where", "minimizing", "maximizing"]
+        ):
+            _, new_constraints = parse_content(
+                constraint, filename=constraint, use_cache=use_cache, lazy=lazy
+            )
+        else:
+            _, new_constraints = parse_content(
+                "where " + constraint,
+                filename=constraint,
+                use_cache=use_cache,
+                lazy=lazy,
+            )
         parsed_constraints += new_constraints
 
-    LOGGER.debug("Checking and finalizing content")
-    if grammar and len(grammar.rules) > 0:
-        check_grammar_consistency(
-            grammar, given_used_symbols=USED_SYMBOLS, start_symbol=start_symbol
-        )
+    if check:
+        LOGGER.debug("Checking and finalizing content")
+        if grammar and len(grammar.rules) > 0:
+            check_grammar_consistency(
+                grammar, given_used_symbols=USED_SYMBOLS, start_symbol=start_symbol
+            )
 
-    if grammar and parsed_constraints:
-        check_constraints_existence(grammar, parsed_constraints)
+        if grammar and parsed_constraints:
+            check_constraints_existence(grammar, parsed_constraints)
+
+    global_env, local_env = grammar.get_spec_env()
+    if grammar.fuzzing_mode == FuzzingMode.IO:
+        if "FandangoIO" not in global_env.keys():
+            exec("FandangoIO.instance()", global_env, local_env)
+        io_instance: FandangoIO = global_env["FandangoIO"].instance()
+
+        assign_implicit_party(grammar, "STDOUT")
+        init_msg_parties(grammar)
+        remap_to_std_party(grammar, io_instance)
+
+        # Detect illegally nested data packets.
+        rir_detector = MessageNestingDetector(grammar)
+        rir_detector.fail_on_nested_packet(NonTerminal(start_symbol))
+        fail_on_party_in_generator(grammar)
+
+        truncate_non_visible_packets(grammar, io_instance)
 
     # We invoke this at the very end, now that all data is there
-    grammar.prime()
+    grammar.update(grammar, prime=check)
+    if check:
+        grammar.prime()
 
     LOGGER.debug("All contents parsed")
     return grammar, parsed_constraints
 
 
 ### Consistency Checks
+
+
+def fail_on_party_in_generator(grammar):
+    for nt, node in grammar.rules.items():
+        if nt not in grammar.generators:
+            continue
+        found_node = is_party_reachable(grammar, node)
+        if found_node is not None:
+            raise ValueError(
+                f"{found_node} contains a party or recipient and is generated using the generator on {nt}. This is not allowed!"
+            )
+
+    for nt in grammar.generators.keys():
+        dependencies: set[NonTerminal] = grammar.generator_dependencies(nt)
+        for dep_nt in dependencies:
+            found_node = is_party_reachable(grammar, grammar[dep_nt])
+            if found_node is not None:
+                raise ValueError(
+                    f"{found_node} contains a party or recipient and is a parameter for the generator of {nt}. This is not allowed!"
+                )
+
+
+def is_party_reachable(grammar, node):
+    seen_nt_nodes = set()
+    symbol_finder = SymbolFinder()
+    symbol_finder.visit(node)
+    nt_node_queue: set[NonTerminalNode] = set(symbol_finder.nonTerminalNodes)
+    while len(nt_node_queue) != 0:
+        current_node = nt_node_queue.pop()
+        if current_node.sender is not None or current_node.recipient is not None:
+            return current_node
+
+        seen_nt_nodes.add(current_node)
+        symbol_finder = SymbolFinder()
+        symbol_finder.visit(grammar[current_node.symbol])
+        for next_nt in symbol_finder.nonTerminalNodes:
+            if next_nt not in seen_nt_nodes:
+                nt_node_queue.add(next_nt)
+    return None
+
+
+def init_msg_parties(grammar: "Grammar"):
+    party_names = set()
+    grammar_msg_parties = grammar.msg_parties(True)
+    global_env, local_env = grammar.get_spec_env()
+
+    # Initialize FandangoParty instances
+    for key in global_env.keys():
+        if key in grammar_msg_parties:
+            the_type = global_env[key]
+            if not isinstance(the_type, type):
+                continue
+            if FandangoParty in the_type.__mro__:
+                party_names.add(key)
+    # Call constructor
+    for party in party_names:
+        exec(f"{party}()", global_env, local_env)
+        grammar_msg_parties.remove(party)
+
+
+# Assign STD party to all parties which have no party-class defined.
+def remap_to_std_party(grammar: "Grammar", io_instance: FandangoIO):
+    remapped_parties = set()
+    unknown_recipients = set()
+    for symbol in grammar.rules.keys():
+        symbol_finder = SymbolFinder()
+        symbol_finder.visit(grammar.rules[symbol])
+        non_terminals: list[NonTerminalNode] = symbol_finder.nonTerminalNodes
+
+        for nt in non_terminals:
+            if nt.sender is not None:
+                if nt.sender not in io_instance.parties.keys():
+                    remapped_parties.add(nt.sender)
+                    nt.sender = "STDOUT"
+            if nt.recipient is not None:
+                if nt.recipient not in io_instance.parties.keys():
+                    unknown_recipients.add(nt.recipient)
+
+    for name in remapped_parties:
+        LOGGER.warn(
+            f"No class has been specified for party: {name}! Party gets mapped to STD!"
+        )
+    for name in unknown_recipients:
+        f"No class has been specified for recipient: {name}!"
+
+
+def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) -> None:
+    keep_parties = grammar.msg_parties(True)
+    io_instance.parties.keys()
+    for existing_party in list(keep_parties):
+        if not io_instance.parties[existing_party].is_fuzzer_controlled():
+            keep_parties.remove(existing_party)
+
+    for nt in grammar.rules.keys():
+        PacketTruncator(grammar, keep_parties).visit(grammar.rules[nt])
 
 
 def check_grammar_consistency(
@@ -499,6 +719,10 @@ def check_grammar_definitions(
         defined_symbols.add(str(symbol))
 
     if start_symbol not in defined_symbols:
+        if start_symbol == "<start>":
+            raise FandangoValueError(
+                f"Start symbol {start_symbol!s} not defined in grammar"
+            )
         closest = closest_match(start_symbol, defined_symbols)
         raise FandangoValueError(
             f"Start symbol {start_symbol!s} not defined in grammar. Did you mean {closest!s}?"
@@ -539,9 +763,11 @@ def check_grammar_definitions(
             f"Undefined symbol {first_undefined_symbol!s} in grammar"
         )
         if undefined_symbols:
-            error.add_note(
-                f"Other undefined symbols: {', '.join(str(symbol) for symbol in undefined_symbols)}"
-            )
+            if getattr(Exception, "add_note", None):
+                # Python 3.11+ has add_note() method
+                error.add_note(
+                    f"Other undefined symbols: {', '.join(str(symbol) for symbol in undefined_symbols)}"
+                )
         raise error
 
 
@@ -740,23 +966,70 @@ def check_constraints_existence_children(
     grammar_symbols = grammar.rules[NonTerminal(f"<{parent}>")]
 
     # Original code; fails on <a> "b" <c> -- AZ
-    grammar_matches = re.findall(r'(?<!"|\')<([^>]*)>(?!.*"|\')', str(grammar_symbols))
+    # grammar_matches = re.findall(r'(?<!")<([^>]*)>(?!".*)',
+    #                              str(grammar_symbols))
     #
     # Simpler version; may overfit (e.g. matches <...> in strings),
     # but that should not hurt us -- AZ
-    # grammar_matches = re.findall(r"<([^>]*)>", str(grammar_symbols))
+    finder = SymbolFinder()
+    finder.visit(grammar_symbols)
+    non_terminals = [str(nt.symbol)[1:-1] for nt in finder.nonTerminalNodes]
 
-    if symbol not in grammar_matches:
-        if recurse:
-            is_child = False
-            for match in grammar_matches:
-                is_child = is_child or check_constraints_existence_children(
-                    grammar, match, symbol, recurse, indirect_child
-                )
-            indirect_child[f"<{parent}>"][f"<{symbol}>"] = is_child
-            return is_child
-        else:
-            return False
+    if symbol in non_terminals:
+        indirect_child[f"<{parent}>"][f"<{symbol}>"] = True
+        return True
 
-    indirect_child[f"<{parent}>"][f"<{symbol}>"] = True
-    return True
+    is_child = False
+    for match in non_terminals:
+        if recurse or match.startswith("_"):
+            is_child = is_child or check_constraints_existence_children(
+                grammar, match, symbol, recurse, indirect_child
+            )
+    indirect_child[f"<{parent}>"][f"<{symbol}>"] = is_child
+    return is_child
+
+
+def assign_implicit_party(grammar, implicit_party: str):
+    seen_nts = set()
+    seen_nts.add(NonTerminal("<start>"))
+    processed_nts = set()
+    unprocessed_nts = seen_nts.difference(processed_nts)
+
+    while len(unprocessed_nts) > 0:
+        current_symbol = unprocessed_nts.pop()
+        current_node = grammar.rules[current_symbol]
+
+        symbol_finder = SymbolFinder()
+        symbol_finder.visit(current_node)
+        rule_nts = list(
+            filter(lambda x: x not in processed_nts, symbol_finder.nonTerminalNodes)
+        )
+
+        if current_node in rule_nts and not isinstance(current_node, NonTerminalNode):
+            rule_nts.remove(current_node)
+        child_party = set()
+
+        for c_node in rule_nts:
+            child_party = child_party.union(c_node.msg_parties(grammar, False))
+
+        if len(child_party) == 0:
+            processed_nts.add(current_symbol)
+            unprocessed_nts = seen_nts.difference(processed_nts)
+            continue
+        for c_node in rule_nts:
+            seen_nts.add(c_node.symbol)
+            if len(c_node.msg_parties(grammar, False)) != 0:
+                continue
+            c_node.sender = implicit_party
+        for t_node in symbol_finder.terminalNodes:
+            terminal_id = 0
+            rule_nt = NonTerminal(f"<_terminal:{terminal_id}>")
+            while rule_nt in grammar.rules:
+                terminal_id += 1
+                rule_nt = NonTerminal(f"<_terminal:{terminal_id}>")
+            n_node = NonTerminalNode(rule_nt, implicit_party)
+            NodeReplacer(t_node, n_node).visit(current_node)
+            grammar.rules[rule_nt] = t_node
+
+        processed_nts.add(current_symbol)
+        unprocessed_nts = seen_nts.difference(processed_nts)

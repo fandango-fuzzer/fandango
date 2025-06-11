@@ -7,6 +7,9 @@ from fandango.language.legacy.parser.FandangoParser import FandangoParser
 from antlr4 import Lexer, InputStream
 from antlr4.Token import CommonToken
 
+# Current lexer instance, set by the generated lexer code
+lexer = None
+
 
 class FandangoLexerBase(Lexer):
     NEW_LINE_PATTERN = re.compile("[^\r\n\f]+")
@@ -18,6 +21,10 @@ class FandangoLexerBase(Lexer):
         self.indents = []
         self.opened = 0
         self.in_python = 0
+
+        # Set the global lexer instance to this one
+        global lexer
+        lexer = self
 
     def reset(self):
         self.tokens = []
@@ -116,3 +123,36 @@ class FandangoLexerBase(Lexer):
                         self.in_python -= 1
                         self.emitToken(self.createDedent())
                         self.indents.pop()
+
+
+# These are called from the generated lexer code
+
+
+def at_start_of_input():
+    global lexer
+    return lexer.at_start_of_input()
+
+
+def open_brace():
+    global lexer
+    return lexer.open_brace()
+
+
+def close_brace():
+    global lexer
+    return lexer.close_brace()
+
+
+def python_start():
+    global lexer
+    return lexer.python_start()
+
+
+def python_end():
+    global lexer
+    return lexer.python_end()
+
+
+def on_newline():
+    global lexer
+    return lexer.on_newline()

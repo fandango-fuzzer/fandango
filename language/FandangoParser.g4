@@ -18,9 +18,9 @@ statement
 // grammar part
 
 production
-    : NONTERMINAL '::=' alternative (':=' expression)? (';' | NEWLINE | EOF)
-    | NONTERMINAL '::=' alternative ('=' expression)? (';' | NEWLINE | EOF)   // deprecated
-    | NONTERMINAL '::=' alternative (':' ':' expression)? (';' | NEWLINE | EOF)  // deprecated
+    : nonterminal '::=' alternative (':=' expression)? (';' | NEWLINE | EOF)
+    | nonterminal '::=' alternative ('=' expression)? (';' | NEWLINE | EOF)   // deprecated
+    | nonterminal '::=' alternative (':' ':' expression)? (';' | NEWLINE | EOF)  // deprecated
     ;
 
 alternative: concatenation ('|' concatenation)*;
@@ -45,13 +45,32 @@ repeat
 
 symbol
     : NEWLINE*
-        ( NONTERMINAL
+        ( nonterminal_right
         | STRING
         | NUMBER  // for 0 and 1 bits
+        | generator_call
+        | char_set // deprecated
         | OPEN_PAREN alternative CLOSE_PAREN
-        | char_set
         )
       NEWLINE*
+    ;
+
+nonterminal_right
+    : '<' ((NAME ':')? NAME ':')? NAME '>'
+    ;
+
+nonterminal
+    : '<' NAME '>'
+    ;
+
+
+
+generator_call
+    : NAME
+    | generator_call '.' NAME
+    | generator_call '[' slices ']'
+    | generator_call genexp
+    | generator_call '(' arguments? ')'
     ;
 
 char_set
@@ -61,9 +80,9 @@ char_set
 // constraint part
 constraint
     : WHERE implies (';' | NEWLINE | EOF)
-    | WHERE 'fitness' expr (';' | NEWLINE | EOF)
+    | MINIMIZING expr (';' | NEWLINE | EOF)
+    | MAXIMIZING expr (';' | NEWLINE | EOF)
     | implies ';' // deprecated
-    | 'fitness' expr ';' // deprecated
     ;
 
 implies:
@@ -78,10 +97,10 @@ implies:
 quantifier:
     NEWLINE*
     (
-        FORALL NONTERMINAL IN dot_selection COLON quantifier // deprecated
-        | EXISTS NONTERMINAL IN dot_selection COLON quantifier // deprecated
-        | 'any' '(' quantifier 'for' NONTERMINAL IN star_selection ')'
-        | 'all' '(' quantifier 'for' NONTERMINAL IN star_selection ')'
+        FORALL nonterminal IN selector COLON quantifier
+        | EXISTS nonterminal IN selector COLON quantifier
+        | 'any' '(' quantifier 'for' nonterminal IN star_selection ')'
+        | 'all' '(' quantifier 'for' nonterminal IN star_selection ')'
         | formula_disjunction
     )
     NEWLINE*
@@ -153,7 +172,7 @@ selection
     ;
 
 base_selection
-    : NONTERMINAL
+    : nonterminal
     | '(' dot_selection ')'
     ;
 
@@ -162,7 +181,7 @@ rs_pairs
     ;
 
 rs_pair
-    : '*' NONTERMINAL (':' rs_slice)?
+    : '*' nonterminal (':' rs_slice)?
     ;
 
 rs_slices

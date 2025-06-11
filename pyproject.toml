@@ -5,9 +5,10 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+# If you update thus info, please also update the version in setup.py
 [project]
 name = "fandango-fuzzer"
-version = "0.1.7"
+version = "0.9.0"
 authors = [
     { name = "José Antonio Zamudio Amaya", email = "jose.zamudio@cispa.de" },
     { name = "Marius Smytzek", email = "marius.smytzek@cispa.de" },
@@ -36,7 +37,10 @@ dependencies = [
     "thefuzz>=0.22",
     "py010parser>=0.1.18",
     "exrex>=0.12.0",
-    "gnureadline>=8.2.13",
+    "gnureadline>=8.2.13 ; platform_system != 'Windows' and implementation_name != 'pypy'",
+    "pyreadline3>=3.5.4; platform_system == 'Windows'",
+    "tdigest>=0.5.2.2",
+    "pygls>=1.0.0"
 ]
 
 [project.urls]
@@ -62,9 +66,15 @@ test = [
     "numpy>=2.2.1",  # Avoid conflict with pandas
     "matplotlib>=3.9.2",
     "ordered-set>=4.0.2",
-    "cryptography>=44.0.1"
+    "cryptography>=44.0.1",
+    "speedy-antlr-tool>=1.4.3",
+    "jupyter-book>=1.0.4"
 ]
 
 [tool.black]
 line-length = 88
 target-version = ['py311']
+
+[tool.mypy]
+follow_untyped_imports = true
+check_untyped_defs = true

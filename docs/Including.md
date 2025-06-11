@@ -11,7 +11,7 @@ kernelspec:
 ---
 
 (sec:including)=
-# Fandango Spec Locations
+# Fandango Include Reference
 
 ## Where Does Fandango Look for Included Specs?
 

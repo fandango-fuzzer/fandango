@@ -1,15 +1,25 @@
 title: Fuzzing with Fandango
 author: José Antonio Zamudio Amaya, Marius Smytzek, and Andreas Zeller
 logo: fandango.png
-copyright: 2024 CISPA Helmholtz Center for Information Security (www.cispa.de). All Rights Reserved.
+copyright: 2024-2025 CISPA Helmholtz Center for Information Security (www.cispa.de). All Rights Reserved.
 exclude_patterns: [BookIntro.md]
 
 bibtex_bibfiles:
-  - fandango.bib
+    - fandango.bib
+sphinx:
+  config:
+    bibtex_reference_style: author_year
+    bibtex_bibfiles: "fandango.bib"
 
 latex:
   latex_documents:
      targetname: fandango.tex
+
+sphinx:
+  config:
+    latex_engine: xelatex
+    latex_show_pagerefs: true
+    latex_show_urls: footnote
 
 execute:
   execute_notebooks: cache
@@ -31,7 +41,7 @@ parse:
     - deflist
 
 html:
-  announcement: '<p>💃 Fandango is currently in development - see our <a href="https://github.com/fandango-fuzzer/fandango/issues"  style="color:white;">list of bugs and incomplete features</a>. Expect a first stable release in April 2025.</p>'
+  announcement: '<p>💃 Fandango is currently in public beta; please check the <a href="https://github.com/fandango-fuzzer/fandango/issues"  style="color:white;">list of open issues</a>. A 1.0&nbsp;release is scheduled for June&nbsp;2025.</p>'
   use_issues_button: true
   use_repository_button: true
 

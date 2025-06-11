@@ -59,6 +59,18 @@ class FandangoParserVisitor(ParseTreeVisitor):
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
         return self.visitChildren(ctx)
 
+    # Visit a parse tree produced by FandangoParser#nonterminal_right.
+    def visitNonterminal_right(self, ctx: FandangoParser.Nonterminal_rightContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#nonterminal.
+    def visitNonterminal(self, ctx: FandangoParser.NonterminalContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#generator_call.
+    def visitGenerator_call(self, ctx: FandangoParser.Generator_callContext):
+        return self.visitChildren(ctx)
+
     # Visit a parse tree produced by FandangoParser#char_set.
     def visitChar_set(self, ctx: FandangoParser.Char_setContext):
         return self.visitChildren(ctx)

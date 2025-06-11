@@ -106,6 +106,30 @@ class FandangoParserListener(ParseTreeListener):
     def exitSymbol(self, ctx: FandangoParser.SymbolContext):
         pass
 
+    # Enter a parse tree produced by FandangoParser#nonterminal_right.
+    def enterNonterminal_right(self, ctx: FandangoParser.Nonterminal_rightContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#nonterminal_right.
+    def exitNonterminal_right(self, ctx: FandangoParser.Nonterminal_rightContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#nonterminal.
+    def enterNonterminal(self, ctx: FandangoParser.NonterminalContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#nonterminal.
+    def exitNonterminal(self, ctx: FandangoParser.NonterminalContext):
+        pass
+
+    # Enter a parse tree produced by FandangoParser#generator_call.
+    def enterGenerator_call(self, ctx: FandangoParser.Generator_callContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#generator_call.
+    def exitGenerator_call(self, ctx: FandangoParser.Generator_callContext):
+        pass
+
     # Enter a parse tree produced by FandangoParser#char_set.
     def enterChar_set(self, ctx: FandangoParser.Char_setContext):
         pass

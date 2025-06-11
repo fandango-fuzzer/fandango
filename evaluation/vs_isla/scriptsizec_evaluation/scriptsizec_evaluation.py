@@ -3,7 +3,7 @@ import shutil
 import subprocess
 import tempfile
 import time
-from typing import Tuple
+
 
 from tccbox import tcc_bin_path
 
@@ -83,7 +83,7 @@ def is_valid_tinyc_code(c_code: str) -> bool:
 
 def evaluate_scriptsizec(
     seconds=60,
-) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
+) -> tuple[str, int, int, float, tuple[float, int, int], float, float]:
     file = open("evaluation/vs_isla/scriptsizec_evaluation/scriptsizec.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False)
     solutions = []
@@ -91,10 +91,8 @@ def evaluate_scriptsizec(
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
-        fandango = Fandango(
-            grammar, constraints, desired_solutions=100, logger_level=LoggerLevel.ERROR
-        )
-        fandango.evolve()
+        fandango = Fandango(grammar, constraints, logger_level=LoggerLevel.ERROR)
+        fandango.evolve(desired_solutions=100)
         solutions.extend(fandango.solution)
 
     coverage = grammar.compute_grammar_coverage(solutions, 4)
