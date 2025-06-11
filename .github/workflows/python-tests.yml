@@ -52,6 +52,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           make install-test
+          make fcc
 
       # Step 7: Run tests using pytest
       - name: Run tests with pytest

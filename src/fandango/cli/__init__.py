@@ -408,6 +408,20 @@ def get_parser(in_command_line=True):
         default=None,
         help="write output to OUTPUT (default: stdout)",
     )
+    fuzz_parser.add_argument(
+        "--stop-criterion",
+        type=str,
+        dest="stop_criterion",
+        default="lambda t: False",
+        help='stop criterion to be used. This is a lambda function which is run on every new solution. Example: `lambda t: t.to_string().startswith("abc")`',
+    )
+    fuzz_parser.add_argument(
+        "--stop-after-seconds",
+        type=int,
+        dest="stop_after_seconds",
+        default=None,
+        help="Stop after a given number of seconds. Example: `--stop-after-seconds 60`",
+    )
 
     command_group = fuzz_parser.add_argument_group("command invocation settings")
 
@@ -416,6 +430,13 @@ def get_parser(in_command_line=True):
         choices=["stdin", "filename", "libfuzzer"],
         default="filename",
         help="when invoking COMMAND, choose whether Fandango input will be passed as standard input (`stdin`), as last argument on the command line (`filename`) (default), or to a libFuzzer style harness compiled to a shared .so/.dylib object (`libfuzzer`)",
+    )
+    command_group.add_argument(
+        "--fcc",
+        default=False,
+        dest="use_fcc",
+        action="store_true",
+        help="The command to be invoked is a fcc-compiled binary.",
     )
     command_group.add_argument(
         "test_command",
@@ -680,6 +701,12 @@ def make_fandango_settings(args, initial_settings={}):
     _copy_setting(args, settings, "max_repetitions")
     _copy_setting(args, settings, "max_nodes")
     _copy_setting(args, settings, "max_node_rate")
+    _copy_setting(args, settings, "stop_criterion")
+    _copy_setting(args, settings, "stop_after_seconds")
+    _copy_setting(args, settings, "use_fcc")
+    if "use_fcc" in settings:
+        settings["put"] = args.test_command
+        settings["put_args"] = args.test_args  # list[str]
 
     if hasattr(args, "start_symbol") and args.start_symbol is not None:
         if args.start_symbol.startswith("<"):
@@ -979,7 +1006,9 @@ def output_solution(
         output_solution_to_file(solution, args, file_mode)
         output_on_stdout = False
 
-    if "test_command" in args and args.test_command:
+    if args.use_fcc:
+        assert args.test_command is not None
+    elif "test_command" in args and args.test_command:
         output_solution_with_test_command(solution, args, file_mode)
         output_on_stdout = False
 
