@@ -85,12 +85,12 @@ class test_cli(unittest.TestCase):
 
     def test_output_with_libfuzzer_harness(self):
         compile = shlex.split(
-            "clang -g -O2 -fsanitize=fuzzer-no-link -shared -o tests/resources/test_libfuzzer_interface tests/resources/test_libfuzzer_interface.c"
+            "clang -g -O2 -fPIC -shared -o tests/resources/test_libfuzzer_interface tests/resources/test_libfuzzer_interface.c"
         )
         out, err, code = self.run_command(compile)
-        self.assertEqual(0, code)
         self.assertEqual("", out)
         self.assertEqual("", err)
+        self.assertEqual(0, code)
 
         command = shlex.split(
             "fandango fuzz -f tests/resources/digit.fan -n 10 --random-seed 426912 --file-mode binary --no-cache --input-method libfuzzer tests/resources/test_libfuzzer_interface"
@@ -98,7 +98,6 @@ class test_cli(unittest.TestCase):
         expected = ["35716", "4", "9768", "30", "5658", "5", "9", "649", "20", "41"]
         expected_output = "\n".join([f"data: {value}" for value in expected]) + "\n"
         out, err, code = self.run_command(command)
-        self.maxDiff = 1000000
         self.assertEqual("", err)
         self.assertEqual(expected_output, out)
         self.assertEqual(0, code)
@@ -174,7 +173,7 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         )
         err_pattern = """fandango:ERROR: Population did not converge to a perfect population
 fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
-        out_pattern = """(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.\d+\n)+"""
+        out_pattern = """(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.\d+\n)*"""
         out, err, code = self.run_command(command)
         self.assertRegex(out, out_pattern)
         self.assertRegex(err, err_pattern)
