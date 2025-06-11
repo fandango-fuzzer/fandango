@@ -69,10 +69,12 @@ def version():
 
 def homepage():
     """Return the Fandango homepage"""
-    for key, value in importlib.metadata.metadata(DISTRIBUTION_NAME).items():
-        if key == "Project-URL" and value.startswith("homepage,"):
-            return value.split(",")[1].strip()
-    return "the Fandango homepage"
+    metadata = importlib.metadata.metadata(DISTRIBUTION_NAME)
+    return [
+        e.split(",")[1].strip()
+        for e in metadata.get_all("Project-URL", [])
+        if e.startswith("homepage,")
+    ].pop(0) or "the Fandango homepage"
 
 
 from abc import ABC, abstractmethod
@@ -126,7 +128,7 @@ class FandangoBase(ABC):
             logging_level = logging.WARNING
         LOGGER.setLevel(logging_level)
 
-        grammar, constraints = parse(
+        self._grammar, self._constraints = parse(
             fan_files,
             constraints,
             use_cache=use_cache,
@@ -135,8 +137,6 @@ class FandangoBase(ABC):
             start_symbol=start_symbol,
             includes=includes,
         )
-        self._grammar = grammar
-        self._constraints = constraints
 
     @property
     def grammar(self):
@@ -221,10 +221,16 @@ class Fandango(FandangoBase):
             )
             constraints += extra_constraints_parsed
 
+        evolve_settings = {}
+        for evolve_setting_key in ["max_generations", "desired_solutions"]:
+            if evolve_setting_key in settings:
+                evolve_settings[evolve_setting_key] = settings[evolve_setting_key]
+                del settings[evolve_setting_key]
+
         fandango = FandangoStrategy(
             self.grammar, constraints, start_symbol=self.start_symbol, **settings
         )
-        population = fandango.evolve()
+        population = fandango.evolve(**evolve_settings)
         return population
 
     def parse(
