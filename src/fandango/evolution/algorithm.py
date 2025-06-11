@@ -3,6 +3,8 @@ import enum
 import logging
 import random
 import time
+import gc
+import os
 from typing import Callable, Generator, Optional, Union
 
 from fandango import FandangoFailedError, FandangoParseError, FandangoValueError
@@ -14,6 +16,7 @@ from fandango.evolution.evaluation import Evaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import PopulationManager, IoPopulationManager
 from fandango.evolution.profiler import Profiler
+from fandango.execution.analysis import StaticAnalysis, DynamicAnalysis
 from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode
 from fandango.language.io import FandangoIO, FandangoParty
 from fandango.language.packetforecaster import PacketForecaster
@@ -33,6 +36,12 @@ class LoggerLevel(enum.Enum):
     WARNING = logging.WARNING
     ERROR = logging.ERROR
     CRITICAL = logging.CRITICAL
+
+
+class TimeoutHit(Exception):
+    """Raised when the experiment exceeds the allowed time limit."""
+
+    pass
 
 
 class Fandango:
@@ -62,6 +71,11 @@ class Fandango:
         max_nodes: int = 200,
         max_nodes_rate: float = 0.5,
         profiling: bool = False,
+        use_fcc: bool = False,
+        put: Optional[str] = None,
+        put_args: Optional[list[str]] = None,
+        stop_criterion: str = "lambda t: False",
+        stop_after_seconds: int = None,
     ):
         if tournament_size > 1:
             raise FandangoValueError(
@@ -83,6 +97,20 @@ class Fandango:
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
         self.current_max_nodes = 50
+        self.use_fcc = use_fcc
+        self.sa = None
+        self.da = None
+        self.put = put
+        self.put_args = put_args
+        self.experiment_start_time = time.time()
+        self.stop_after_seconds = stop_after_seconds
+        if self.use_fcc:
+            root_directory: str = os.path.dirname(self.put)
+            cfg_directory: str = os.path.join(root_directory, ".cfg/")
+            bb_to_dbg_json: str = os.path.join(root_directory, ".bb_to_dbg.json")
+            LOGGER.info("Running fcc static analysis...")
+            self.sa = StaticAnalysis(cfg_directory, bb_to_dbg_json)
+            self.da = DynamicAnalysis(self.sa, root_directory, self.put, self.put_args)
 
         # Instantiate managers
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
@@ -104,6 +132,9 @@ class Fandango:
             diversity_k,
             diversity_weight,
             warnings_are_errors,
+            self.sa,
+            self.da,
+            eval(stop_criterion),
         )
         self.adaptive_tuner = AdaptiveTuner(
             mutation_rate,
@@ -290,6 +321,17 @@ class Fandango:
         random.shuffle(new_population)
         return new_population[: int(self.population_size * (1 - self.destruction_rate))]
 
+    def throw_if_time_limit_reached(self):
+        if self.stop_after_seconds is not None:
+            elapsed_time = time.time() - self.experiment_start_time
+            if elapsed_time >= self.stop_after_seconds:
+                LOGGER.info(
+                    f"Stopping experiment after reaching the time limit ({elapsed_time} seconds)."
+                )
+                raise TimeoutHit(
+                    f"Experiment exceeded time limit of {self.stop_after_seconds} seconds."
+                )
+
     def evolve(
         self,
         max_generations: Optional[int] = None,
@@ -430,93 +472,105 @@ class Fandango:
         prev_best_fitness = 0.0
         generation = 0
 
-        while True:
-            if max_generations is not None and generation >= max_generations:
-                break
-            generation += 1
+        try:
+            while True:
+                if max_generations is not None and generation >= max_generations:
+                    break
+                generation += 1
 
-            avg_fitness = sum(e[1] for e in self.evaluation) / self.population_size
+                gc.collect()
+                self.throw_if_time_limit_reached()
+                if self.evaluator._stop_criterion_met:
+                    break
 
-            LOGGER.info(f"Generation {generation} - Average Fitness: {avg_fitness:.2f}")
+                avg_fitness = sum(e[1] for e in self.evaluation) / self.population_size
 
-            # Selection
-            new_population, unique_hashes = self._perform_selection()
-
-            # Crossover
-            while (
-                len(new_population) < self.population_size
-                and random.random() < self.adaptive_tuner.crossover_rate
-            ):
-                yield from self._perform_crossover(new_population, unique_hashes)
-
-            # Truncate if necessary
-            if len(new_population) > self.population_size:
-                new_population = new_population[: self.population_size]
-
-            # Mutation
-            yield from self._perform_mutation(new_population)
-
-            # Destruction
-            if self.destruction_rate > 0:
-                new_population = self._perform_destruction(new_population)
-
-            # Ensure Uniqueness & Fill Population
-            new_population = list(set(new_population))
-            new_population = yield from self.population_manager.refill_population(
-                new_population,
-                self.evaluator.evaluate_individual,
-                self.current_max_nodes,
-                self.population_size,
-            )
-
-            self.population = []
-            for ind in new_population:
-                _fitness, failing_trees = yield from self.evaluator.evaluate_individual(
-                    ind
-                )
-                ind, num_fixes = self.population_manager.fix_individual(
-                    ind, failing_trees
-                )
-                self.population.append(ind)
-                self.fixes_made += num_fixes
-
-            # For soft constraints, the normalized fitness may change over time as we observe more inputs.
-            # Hence, we periodically flush the fitness cache to re-evaluate the population if the grammar contains soft constraints.
-            self.evaluator.flush_fitness_cache()
-
-            with self.profiler.timer("evaluate_population", increment=self.population):
-                self.evaluation = yield from self.evaluator.evaluate_population(
-                    self.population
-                )
-                # Keep only the fittest individuals
-                self.evaluation = sorted(
-                    self.evaluation, key=lambda x: x[1], reverse=True
-                )[: self.population_size]
-
-            current_best_fitness = max(e[1] for e in self.evaluation)
-            current_max_repetitions = self.grammar.get_max_repetition()
-            self.adaptive_tuner.update_parameters(
-                generation,
-                prev_best_fitness,
-                current_best_fitness,
-                self.population,
-                self.evaluator,
-                current_max_repetitions,
-            )
-
-            if self.adaptive_tuner.current_max_repetition > current_max_repetitions:
-                self.grammar.set_max_repetition(
-                    self.adaptive_tuner.current_max_repetition
+                LOGGER.info(
+                    f"Generation {generation} - Average Fitness: {avg_fitness:.2f}"
                 )
 
-            self.current_max_nodes = self.adaptive_tuner.current_max_nodes
+                # Selection
+                new_population, unique_hashes = self._perform_selection()
 
-            prev_best_fitness = current_best_fitness
+                # Crossover
+                while (
+                    len(new_population) < self.population_size
+                    and random.random() < self.adaptive_tuner.crossover_rate
+                ):
+                    yield from self._perform_crossover(new_population, unique_hashes)
 
-            self.adaptive_tuner.log_generation_statistics(
-                generation, self.evaluation, self.population, self.evaluator
-            )
-            visualize_evaluation(generation, max_generations, self.evaluation)
+                # Truncate if necessary
+                if len(new_population) > self.population_size:
+                    new_population = new_population[: self.population_size]
+
+                # Mutation
+                yield from self._perform_mutation(new_population)
+
+                # Destruction
+                if self.destruction_rate > 0:
+                    new_population = self._perform_destruction(new_population)
+
+                # Ensure Uniqueness & Fill Population
+                new_population = list(set(new_population))
+                new_population = yield from self.population_manager.refill_population(
+                    new_population,
+                    self.evaluator.evaluate_individual,
+                    self.current_max_nodes,
+                    self.population_size,
+                )
+
+                self.population = []
+                for ind in new_population:
+                    _fitness, failing_trees = (
+                        yield from self.evaluator.evaluate_individual(ind)
+                    )
+                    ind, num_fixes = self.population_manager.fix_individual(
+                        ind, failing_trees
+                    )
+                    self.population.append(ind)
+                    self.fixes_made += num_fixes
+
+                # For soft constraints, the normalized fitness may change over time as we observe more inputs.
+                # Hence, we periodically flush the fitness cache to re-evaluate the population if the grammar contains soft constraints.
+                self.evaluator.flush_fitness_cache()
+
+                with self.profiler.timer(
+                    "evaluate_population", increment=self.population
+                ):
+                    self.evaluation = yield from self.evaluator.evaluate_population(
+                        self.population
+                    )
+                    # Keep only the fittest individuals
+                    self.evaluation = sorted(
+                        self.evaluation, key=lambda x: x[1], reverse=True
+                    )[: self.population_size]
+
+                current_best_fitness = max(e[1] for e in self.evaluation)
+                current_max_repetitions = self.grammar.get_max_repetition()
+                self.adaptive_tuner.update_parameters(
+                    generation,
+                    prev_best_fitness,
+                    current_best_fitness,
+                    self.population,
+                    self.evaluator,
+                    current_max_repetitions,
+                )
+
+                if self.adaptive_tuner.current_max_repetition > current_max_repetitions:
+                    self.grammar.set_max_repetition(
+                        self.adaptive_tuner.current_max_repetition
+                    )
+
+                self.current_max_nodes = self.adaptive_tuner.current_max_nodes
+
+                prev_best_fitness = current_best_fitness
+
+                self.adaptive_tuner.log_generation_statistics(
+                    generation, self.evaluation, self.population, self.evaluator
+                )
+                visualize_evaluation(generation, max_generations, self.evaluation)
+        except TimeoutHit:
+            LOGGER.info(f"Time out hit.")
 
     def _evolve_single(
         self,
@@ -533,7 +587,12 @@ class Fandango:
         for solution in self.generate(max_generations=max_generations):
             solution_callback(solution, len(solutions))
             solutions.append(solution)
-            if desired_solutions is not None and len(solutions) >= desired_solutions:
+            # Using fcc and soft constraints, there can be a large number of "intermediate solutions" - hence we don't limit generation based on solutions.
+            if (
+                not self.use_fcc
+                and desired_solutions is not None
+                and len(solutions) >= desired_solutions
+            ):
                 found_enough_solutions = True
                 break
         if solutions:

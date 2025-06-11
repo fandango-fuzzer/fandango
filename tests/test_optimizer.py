@@ -2,13 +2,14 @@
 
 import random
 import unittest
+import copy
 
 from fandango.constraints.fitness import FailingTree
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
-
+from fandango.language.symbol import NonTerminal, Terminal
 
 class GeneticTest(unittest.TestCase):
     def setUp(self):
@@ -276,6 +277,36 @@ class TargetedMutations(unittest.TestCase):
             "tests/resources/digit_targeted_mutation.fan", 1, 1
         )
         self.assertListEqual(solutions, ["0123456789"])
+
+    def test_targeted_mutation_2(self):
+        file = open("tests/resources/example_number.fan", "r")
+        try:
+            bogus_grammar, bogus_constraints = parse(
+                file, use_stdlib=False, use_cache=False
+            )
+        except FileNotFoundError:
+            bogus_grammar, bogus_constraints = parse(
+                file, use_stdlib=False, use_cache=False
+            )
+
+        _00 = DerivationTree(Terminal("0"))
+        _01 = DerivationTree(Terminal("0"))
+        _A0 = DerivationTree(NonTerminal("<A>"), [_00])
+        _A1 = DerivationTree(NonTerminal("<A>"), [_01])
+        _R0 = DerivationTree(
+            NonTerminal("<R0>"),
+            [_A0, _A1],
+        )
+        _R1 = DerivationTree(
+            NonTerminal("<R1>"),
+            [_R0],
+        )
+        copy_R1 = copy.deepcopy(_R1)
+
+        new_subtree = DerivationTree(NonTerminal("<B>"), [DerivationTree(Terminal("1"))])
+        tree_to_replace = _R1.children[0].children[1] # _A1
+        result = copy_R1.replace(bogus_grammar, tree_to_replace, new_subtree)
+        self.assertEqual(str(result), "01")
 
 
 if __name__ == "__main__":

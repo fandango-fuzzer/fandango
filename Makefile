@@ -58,6 +58,10 @@ dev-tools: system-dev-tools
 system-dev-tools:
 	$(SYSTEM_DEV_INSTALL) $(SYSTEM_DEV_TOOLS)
 
+fcc:
+	rm -fr fcc
+	git clone git@github.com:leonbett/fcc.git
+	make -C fcc install
 
 ## Parser
 
@@ -272,5 +276,5 @@ install-test install-tests:
 uninstall:
 	$(PIP) uninstall fandango-fuzzer -y
 
-remove cache:
+remove-cache:
 	rm -rf ~/Library/Caches/Fandango

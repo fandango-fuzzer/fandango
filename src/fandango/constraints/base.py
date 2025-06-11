@@ -6,6 +6,7 @@ import itertools
 from abc import ABC, abstractmethod
 from copy import copy
 from typing import Any, Optional
+from cachetools import LRUCache
 from tdigest import TDigest as BaseTDigest
 import math
 
@@ -76,7 +77,7 @@ class Value(GeneticBase):
         """
         super().__init__(*args, **kwargs)
         self.expression = expression
-        self.cache: dict[int, ValueFitness] = dict()
+        self.cache: dict[int, ValueFitness] = LRUCache(maxsize=1000)
 
     def fitness(
         self,
@@ -201,7 +202,7 @@ class Constraint(GeneticBase, ABC):
         :param Optional[dict[str, Any]] global_variables: The global variables to use.
         """
         super().__init__(searches, local_variables, global_variables)
-        self.cache: dict[int, ConstraintFitness] = dict()
+        self.cache: dict[int, ConstraintFitness] = LRUCache(maxsize=1000)
 
     @abstractmethod
     def fitness(
