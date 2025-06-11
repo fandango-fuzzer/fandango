@@ -86,7 +86,7 @@ class Fandango:
 
         # Instantiate managers
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
-            self.population_manager = IoPopulationManager(
+            self.population_manager: PopulationManager = IoPopulationManager(
                 grammar,
                 start_symbol,
                 warnings_are_errors,
@@ -129,13 +129,14 @@ class Fandango:
         st_time = time.time()
 
         with self.profiler.timer("initial_population") as timer:
-            generator = self.population_manager.refill_population(
-                current_population=self.population,
-                eval_individual=self.evaluator.evaluate_individual,
-                max_nodes=self.current_max_nodes,
-                target_population_size=self.population_size,
+            self._initial_solutions = list(
+                self.population_manager.refill_population(
+                    current_population=self.population,
+                    eval_individual=self.evaluator.evaluate_individual,
+                    max_nodes=self.current_max_nodes,
+                    target_population_size=self.population_size,
+                )
             )
-            self._initial_solutions = list(generator)
             timer.increment(len(self.population))
 
         LOGGER.info(
@@ -144,14 +145,13 @@ class Fandango:
 
         # Evaluate initial population
         with self.profiler.timer("evaluate_population", increment=self.population):
-            generator = GeneratorWithReturn(
+            additional_solutions, self.evaluation = GeneratorWithReturn(
                 self.evaluator.evaluate_population(self.population)
-            )
-            self._initial_solutions.extend(generator)
-            self.evaluation = generator.return_value
+            ).collect()
+            self._initial_solutions.extend(additional_solutions)
 
-        self.fixes_made = 0
         self.crossovers_made = 0
+        self.fixes_made = 0
         self.mutations_made = 0
         self.time_taken = 0.0
 
@@ -338,23 +338,22 @@ class Fandango:
                 fuzzable_packets = []
                 for party in msg_parties:
                     fuzzable_packets.extend(forecast[party].nt_to_packet.values())
+                assert isinstance(self.population_manager, IoPopulationManager)
                 self.population_manager.fuzzable_packets = fuzzable_packets
 
                 self.population.clear()
-                generator = self.population_manager.refill_population(
-                    current_population=self.population,
-                    eval_individual=self.evaluator.evaluate_individual,
-                    max_nodes=self.current_max_nodes,
-                    target_population_size=self.population_size,
-                )
-
-                solutions = list(generator)
-
-                if not solutions:
-                    generator = GeneratorWithReturn(
-                        self.evaluator.evaluate_population(self.population)
+                solutions = list(
+                    self.population_manager.refill_population(
+                        current_population=self.population,
+                        eval_individual=self.evaluator.evaluate_individual,
+                        max_nodes=self.current_max_nodes,
+                        target_population_size=self.population_size,
                     )
-                    solutions, self.evaluation = generator.collect()
+                )
+                if not solutions:
+                    solutions, self.evaluation = GeneratorWithReturn(
+                        self.evaluator.evaluate_population(self.population)
+                    ).collect()
 
                 if not solutions:
                     try:
@@ -404,10 +403,9 @@ class Fandango:
                 hookin_option = next(iter(forecast.paths))
                 history_tree = hookin_option.tree
                 history_tree.append(hookin_option.path[1:], packet_tree)
-                generator = GeneratorWithReturn(
+                solutions, (fitness, _failing_trees) = GeneratorWithReturn(
                     self.evaluator.evaluate_individual(history_tree)
-                )
-                solutions, (fitness, _failing_trees) = generator.collect()
+                ).collect()
                 if fitness < 0.99:
                     raise RuntimeError("Remote response doesn't match constraints!")
             history_tree.set_all_read_only(True)
@@ -524,7 +522,7 @@ class Fandango:
         start_time = time.time()
 
         # Take only the first desired_solutions entries from the generator
-        solutions = []
+        solutions: list[DerivationTree] = []
         found_enough_solutions = False
         for solution in self.generate(max_generations=max_generations):
             solution_callback(solution, len(solutions))
@@ -708,13 +706,13 @@ class Fandango:
                 elapsed_rounds += 1
                 if elapsed_rounds >= max_rounds:
                     if failed_parameter_parsing:
-                        applicable_nt = list(
+                        applicable_nt_list = list(
                             map(lambda x: str(x.symbol), available_non_terminals)
                         )
-                        if len(applicable_nt) == 0:
+                        if len(applicable_nt_list) == 0:
                             applicable_nt = "None"
                         else:
-                            applicable_nt = ", ".join(applicable_nt)
+                            applicable_nt = ", ".join(applicable_nt_list)
                         raise FandangoFailedError(
                             f'Couldn\'t derive parameters for received packet or timed out while waiting for remaining packet. Applicable NT: {applicable_nt} Received part: "{complete_msg}". Exception: {str(parameter_parsing_exception)}'
                         )
