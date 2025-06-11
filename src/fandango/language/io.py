@@ -1,4 +1,3 @@
-import asyncio
 import enum
 import select
 import shlex
@@ -430,3 +429,10 @@ class ProcessManager:
         if command is None:
             return
         self.proc = subprocess.Popen(shlex.split(command), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+def set_program_command(command: str):
+    """
+    Set the command to be executed by the ProcessManager.
+    :param command: The command to execute.
+    """
+    ProcessManager.instance().command = command
