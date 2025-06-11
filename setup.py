@@ -103,12 +103,11 @@ class ve_build_ext(build_ext):
 # Detect if an alternate interpreter is being used
 is_jython = "java" in sys.platform
 is_pypy = hasattr(sys, "pypy_version_info")
-skip_cpp = (
-    os.environ.get("FANDANGO_SKIP_CPP_PARSER", "").lower() in ("1", "true", "yes")
-    or "--skip-cpp-parser" in sys.argv
+skip_cpp = os.environ.get("FANDANGO_SKIP_CPP_PARSER", "").lower() in (
+    "1",
+    "true",
+    "yes",
 )
-if "--skip-cpp-parser" in sys.argv:
-    sys.argv.remove("--skip-cpp-parser")
 
 
 # Force using fallback if using an alternate interpreter
