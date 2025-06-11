@@ -25,6 +25,11 @@ from fandango.language.tree import DerivationTree
 
 
 class PathFinder(NodeVisitor):
+    """
+    For a given grammar and DerivationTree, this class
+    finds possible upcoming message types, the nonterminals that generate them and the paths where the messages
+    can be added to the DerivationTree.
+    """
 
     def __init__(self, grammar: Grammar):
         self.grammar = grammar
@@ -34,7 +39,7 @@ class PathFinder(NodeVisitor):
         self.current_path: list[tuple[NonTerminal, bool]] = []
         self.result = PacketForecaster.ForcastingResult()
 
-    def add_option(self, node: NonTerminalNode):
+    def add_option(self, node: NonTerminalNode) -> None:
         mounting_path = PacketForecaster.MountingPath(
             self.collapsed_tree, tuple(self._collapsed_path(self.current_path))
         )
@@ -51,7 +56,12 @@ class PathFinder(NodeVisitor):
             new_path.append((nt, new_node))
         return tuple(new_path)
 
-    def find(self, tree: Optional[DerivationTree] = None):
+    def find(self, tree: Optional[DerivationTree] = None) -> "PacketForecaster.ForcastingResult":
+        """
+        Finds all possible protocol messages that can be mounted to the given DerivationTree.
+        :param tree: The DerivationTree to base the search on. The DerivationTree must contain controlflow nodes
+        as provided by the DerivationTree parser with the parsing option 'include_controlflow=True'
+        """
         if tree is None:
             tree = DerivationTree(NonTerminal("<start>"))
         self.tree = tree
@@ -223,6 +233,9 @@ class PacketForecaster:
         def __init__(
             self, tree: DerivationTree, path: tuple[tuple[NonTerminal, bool], ...]
         ):
+            """
+            Represents a path in the given DerivationTree where a protocol message can be mounted.
+            """
             self.tree = tree
             self.path = path
 
@@ -240,20 +253,23 @@ class PacketForecaster:
             self.node = node
             self.paths: set[PacketForecaster.MountingPath] = set()
 
-        def add_path(self, path: "PacketForecaster.MountingPath"):
+        def add_path(self, path: "PacketForecaster.MountingPath") -> None:
             self.paths.add(path)
 
     class ForcastingNonTerminals:
         def __init__(self):
             self.nt_to_packet = dict[NonTerminal, PacketForecaster.ForcastingPacket]()
 
-        def getNonTerminals(self) -> set[NonTerminal]:
+        def get_non_terminals(self) -> set[NonTerminal]:
             return set(self.nt_to_packet.keys())
 
         def __getitem__(self, item: NonTerminal):
             return self.nt_to_packet[item]
 
-        def add_packet(self, packet: "PacketForecaster.ForcastingPacket"):
+        def add_packet(self, packet: "PacketForecaster.ForcastingPacket") -> None:
+            """
+            Adds a packet to the ForcastingNonTerminals.
+            """
             if packet.node.symbol in self.nt_to_packet.keys():
                 for path in packet.paths:
                     self.nt_to_packet[packet.node.symbol].add_path(path)
@@ -266,20 +282,28 @@ class PacketForecaster:
                 str, PacketForecaster.ForcastingNonTerminals
             ]()
 
-        def getMsgParties(self) -> set[str]:
+        def get_msg_parties(self) -> set[str]:
             return set(self.parties_to_packets.keys())
 
         def __getitem__(self, item: str):
             return self.parties_to_packets[item]
 
-        def add_packet(self, party: str, packet: "PacketForecaster.ForcastingPacket"):
+        def add_packet(self, party: str, packet: "PacketForecaster.ForcastingPacket") -> None:
+            """
+            Adds a packet to the ForcastingResult under the specified party.
+            """
             if party not in self.parties_to_packets.keys():
                 self.parties_to_packets[party] = (
                     PacketForecaster.ForcastingNonTerminals()
                 )
             self.parties_to_packets[party].add_packet(packet)
 
-        def merge(self, other: "PacketForecaster.ForcastingResult"):
+        def union(self, other: "PacketForecaster.ForcastingResult") -> "PacketForecaster.ForcastingResult":
+            """
+            Combines two ForcastingResults by adding all packets from the other result.
+            Returns a copy of the current ForcastingResult with the combined packets.
+            :param other: The other ForcastingResult to combine with.
+            """
             c_new = deepcopy(self)
             c_other = deepcopy(other)
             for party, fnt in c_other.parties_to_packets.items():
@@ -288,11 +312,23 @@ class PacketForecaster:
             return c_new
 
     class GrammarReducer(NodeVisitor):
+        """
+        Converts a grammar into a reduced form, where all protocol message defining NonTerminalNodes are replaced with
+        a TerminalNode that describes the protocol message type.
+        Message defining NonTerminals are replaced with a Terminal, in the form of <_packet_<message_type>>.
+        This allows the PacketForecaster to predict upcoming
+        protocol messages without parsing each protocol message again.
+        """
 
         def __init__(self):
             self._reduced = dict()
+            self.seen_keys = set()
+            self.processed_keys = set()
 
-        def process(self, grammar: Grammar):
+        def process(self, grammar: Grammar) -> dict[NonTerminal, Node]:
+            """
+            Applies the grammar reduction to the provided grammar.
+            """
             self._reduced = dict()
             self.seen_keys = set()
             self.seen_keys.add(NonTerminal("<start>"))
@@ -378,7 +414,12 @@ class PacketForecaster:
         )
         self._parser = PacketForecaster.Parser(self.reduced_grammar)
 
-    def predict(self, tree: DerivationTree):
+    def predict(self, tree: DerivationTree) -> "ForcastingResult":
+        """
+        Predicts the next possible message types based on the provided tree and the grammar,
+        that the PacketForecaster was initialized with.
+        :param tree: The DerivationTree to base the prediction on.
+        """
         history_nts = ""
         for r_msg in tree.protocol_msgs():
             history_nts += str(r_msg.msg.symbol)
@@ -387,7 +428,7 @@ class PacketForecaster:
         finder = PathFinder(self.grammar)
         options = PacketForecaster.ForcastingResult()
         if history_nts == "":
-            options = options.merge(finder.find())
+            options = options.union(finder.find())
         else:
             self._parser.reference_tree = tree
             for suggested_tree in self._parser.parse_multiple(
@@ -411,5 +452,5 @@ class PacketForecaster:
                     else:
                         break
                 else:
-                    options = options.merge(finder.find(suggested_tree))
+                    options = options.union(finder.find(suggested_tree))
         return options
