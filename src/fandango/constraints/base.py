@@ -5,7 +5,9 @@ This module contains the base classes for constraints in the fandango library.
 import itertools
 from abc import ABC, abstractmethod
 from copy import copy
-from typing import List, Dict, Any, Optional
+from typing import Any, Optional
+from tdigest import TDigest as BaseTDigest
+import math
 
 from fandango.constraints.fitness import (
     ConstraintFitness,
@@ -19,6 +21,43 @@ from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import print_exception, LOGGER
+
+
+class TDigest(BaseTDigest):
+    def __init__(self, optimization_goal: str):
+        super().__init__()
+        self._min = None
+        self._max = None
+        self.contrast = 200.0
+        if optimization_goal == "min":
+            self.transform = self.amplify_near_0
+        else:
+            self.transform = self.amplify_near_1
+
+    def update(self, x, w=1):
+        super().update(x, w)
+        if self._min is None or x < self._min:
+            self._min = x
+        if self._max is None or x > self._max:
+            self._max = x
+
+    def amplify_near_0(self, q):
+        return 1 - math.exp(-self.contrast * q)
+
+    def amplify_near_1(self, q):
+        return math.exp(self.contrast * (q - 1))
+
+    def score(self, x):
+        if self._min is None or self._max is None:
+            return 0
+        if self._min == self._max:
+            return self.transform(self.cdf(x))
+        if x <= self._min:
+            return 0
+        if x >= self._max:
+            return 1
+        else:
+            return self.transform(self.cdf(x))
 
 
 class Value(GeneticBase):
@@ -37,23 +76,23 @@ class Value(GeneticBase):
         """
         super().__init__(*args, **kwargs)
         self.expression = expression
-        self.cache: Dict[int, ValueFitness] = dict()
+        self.cache: dict[int, ValueFitness] = dict()
 
     def fitness(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
     ) -> ValueFitness:
         """
         Calculate the fitness of the tree based on the given expression.
         :param DerivationTree tree: The tree to evaluate.
-        :param Optional[Dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
+        :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
         :return ValueFitness: The fitness of the tree.
         """
         tree_hash = self.get_hash(tree, scope)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
-            return copy(self.cache[tree_hash])
+            return self.cache[tree_hash]
         # If the tree is None, the fitness is 0
         if tree is None:
             fitness = ValueFitness()
@@ -73,13 +112,12 @@ class Value(GeneticBase):
                             trees.append(node)
                 try:
                     # Evaluate the expression
-                    result = self.eval(
+                    result = eval(
                         self.expression, self.global_variables, local_variables
                     )
                     values.append(result)
                 except Exception as e:
-                    e.add_note(f"Evaluation failed: {self.expression}")
-                    print_exception(e)
+                    print_exception(e, f"Evaluation failed: {self.expression}")
                     values.append(0)
             # Create the fitness object
             fitness = ValueFitness(
@@ -89,16 +127,60 @@ class Value(GeneticBase):
         self.cache[tree_hash] = fitness
         return fitness
 
-    def __repr__(self):
+    def get_symbols(self):
+        """
+        Get the placeholders of the constraint.
+        """
+        return self.searches.values()
+
+    def __str__(self):
         representation = self.expression
         for identifier in self.searches:
             representation = representation.replace(
                 identifier, repr(self.searches[identifier])
             )
-        return f"fitness {representation}"
+        return f"where {representation}"
+
+    def __repr__(self):
+        return self.expression
+
+
+class SoftValue(Value):
+    """
+    A `Value`, which is not mandatory, but aimed to be optimized.
+    """
+
+    def __init__(self, optimization_goal: str, expression: str, *args, **kwargs):
+        super().__init__(expression, *args, **kwargs)
+        assert optimization_goal in (
+            "min",
+            "max",
+        ), f"Invalid SoftValue optimization goal {type!r}"
+        self.optimization_goal = optimization_goal
+        self.tdigest = TDigest(optimization_goal)
+
+    def __repr__(self):
+        representation = repr(self.expression)
+        for identifier in self.searches:
+            representation = representation.replace(
+                identifier, repr(self.searches[identifier])
+            )
+        return f"SoftValue({self.optimization_goal!r}, {representation})"
 
     def __str__(self):
-        return self.expression
+        representation = str(self.expression)
+        for identifier in self.searches:
+            representation = representation.replace(
+                identifier, str(self.searches[identifier])
+            )
+
+        match self.optimization_goal:
+            case "min":
+                return f"minimizing {representation}"
+            case "max":
+                return f"maximizing {representation}"
+            case _:
+                return f"{self.optimization_goal} {representation}"
 
 
 class Constraint(GeneticBase, ABC):
@@ -108,24 +190,24 @@ class Constraint(GeneticBase, ABC):
 
     def __init__(
         self,
-        searches: Optional[Dict[str, NonTerminalSearch]] = None,
-        local_variables: Optional[Dict[str, Any]] = None,
-        global_variables: Optional[Dict[str, Any]] = None,
+        searches: Optional[dict[str, NonTerminalSearch]] = None,
+        local_variables: Optional[dict[str, Any]] = None,
+        global_variables: Optional[dict[str, Any]] = None,
     ):
         """
         Initializes the constraint with the given searches, local variables, and global variables.
-        :param Optional[Dict[str, NonTerminalSearch]] searches: The searches to use.
-        :param Optional[Dict[str, Any]] local_variables: The local variables to use.
-        :param Optional[Dict[str, Any]] global_variables: The global variables to use.
+        :param Optional[dict[str, NonTerminalSearch]] searches: The searches to use.
+        :param Optional[dict[str, Any]] local_variables: The local variables to use.
+        :param Optional[dict[str, Any]] global_variables: The global variables to use.
         """
         super().__init__(searches, local_variables, global_variables)
-        self.cache: Dict[int, ConstraintFitness] = dict()
+        self.cache: dict[int, ConstraintFitness] = dict()
 
     @abstractmethod
     def fitness(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
         Abstract method to calculate the fitness of the tree.
@@ -188,12 +270,12 @@ class ExpressionConstraint(Constraint):
         self.expression = expression
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
+        self, tree: DerivationTree, scope: Optional[dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on whether the given expression evaluates to True.
         :param DerivationTree tree: The tree to evaluate.
-        :param Optional[Dict[str, DerivationTree]] scope: The scope of the tree.
+        :param Optional[dict[str, DerivationTree]] scope: The scope of the tree.
         """
         tree_hash = self.get_hash(tree, scope)
         # If the fitness has already been calculated, return the cached value
@@ -232,8 +314,7 @@ class ExpressionConstraint(Constraint):
                             if node not in failing_trees:
                                 failing_trees.append(node)
             except Exception as e:
-                e.add_note("Evaluation failed: " + self.expression)
-                print_exception(e)
+                print_exception(e, f"Evaluation failed: {self.expression}")
 
             total += 1
         # If there are no combinations, the fitness is perfect
@@ -296,7 +377,7 @@ class ComparisonConstraint(Constraint):
         self.types_checked = False
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
+        self, tree: DerivationTree, scope: Optional[dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given comparison.
@@ -326,15 +407,13 @@ class ComparisonConstraint(Constraint):
             try:
                 left = self.eval(self.left, self.global_variables, local_variables)
             except Exception as e:
-                e.add_note("Evaluation failed: " + self.left)
-                print_exception(e)
+                print_exception(e, f"Evaluation failed: {self.left}")
                 continue
 
             try:
                 right = self.eval(self.right, self.global_variables, local_variables)
             except Exception as e:
-                e.add_note("Evaluation failed: " + self.right)
-                print_exception(e)
+                print_exception(e, f"Evaluation failed: {self.right}")
                 continue
 
             if not hasattr(self, "types_checked") or not self.types_checked:
@@ -454,7 +533,7 @@ class ComparisonConstraint(Constraint):
             # Cannot check - value does not exist
             return False
 
-        if type(left) == type(right):
+        if isinstance(left, type(right)):
             return True
         if isinstance(left, (bool, int, float)) and isinstance(
             right, (bool, int, float)
@@ -496,11 +575,11 @@ class ConjunctionConstraint(Constraint):
     """
 
     def __init__(
-        self, constraints: List[Constraint], *args, lazy: bool = False, **kwargs
+        self, constraints: list[Constraint], *args, lazy: bool = False, **kwargs
     ):
         """
         Initializes the conjunction constraint with the given constraints.
-        :param List[Constraint] constraints: The constraints to use.
+        :param list[Constraint] constraints: The constraints to use.
         :param args: Additional arguments.
         :param bool lazy: If True, the conjunction is lazy evaluated.
         """
@@ -509,12 +588,12 @@ class ConjunctionConstraint(Constraint):
         self.lazy = lazy
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
+        self, tree: DerivationTree, scope: Optional[dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given conjunction.
         :param DerivationTree tree: The tree to evaluate.
-        :param Optional[Dict[str, DerivationTree]] scope: The scope of the tree.
+        :param Optional[dict[str, DerivationTree]] scope: The scope of the tree.
         :return ConstraintFitness: The fitness of the tree.
         """
         tree_hash = self.get_hash(tree, scope)
@@ -576,11 +655,11 @@ class DisjunctionConstraint(Constraint):
     """
 
     def __init__(
-        self, constraints: List[Constraint], *args, lazy: bool = False, **kwargs
+        self, constraints: list[Constraint], *args, lazy: bool = False, **kwargs
     ):
         """
         Initializes the disjunction constraint with the given constraints.
-        :param List[Constraint] constraints: The constraints to use.
+        :param list[Constraint] constraints: The constraints to use.
         :param args: Additional arguments.
         :param bool lazy: If True, the disjunction is lazy evaluated.
         """
@@ -589,12 +668,12 @@ class DisjunctionConstraint(Constraint):
         self.lazy = lazy
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
+        self, tree: DerivationTree, scope: Optional[dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given disjunction.
         :param DerivationTree tree: The tree to evaluate.
-        :param Optional[Dict[str, DerivationTree]] scope: The scope of the tree.
+        :param Optional[dict[str, DerivationTree]] scope: The scope of the tree.
         :return ConstraintFitness: The fitness of the tree.
         """
         tree_hash = self.get_hash(tree, scope)
@@ -666,12 +745,12 @@ class ImplicationConstraint(Constraint):
         self.consequent = consequent
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[Dict[str, DerivationTree]] = None
+        self, tree: DerivationTree, scope: Optional[dict[str, DerivationTree]] = None
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given implication.
         :param DerivationTree tree: The tree to evaluate.
-        :param Optional[Dict[str, DerivationTree]] scope: The scope of the tree.
+        :param Optional[dict[str, DerivationTree]] scope: The scope of the tree.
         :return ConstraintFitness: The fitness of the tree.
         """
         tree_hash = self.get_hash(tree, scope)
@@ -746,12 +825,12 @@ class ExistsConstraint(Constraint):
     def fitness(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given exists constraint.
         :param DerivationTree tree: The tree to evaluate.
-        :param Optional[Dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
+        :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
         :return ConstraintFitness: The fitness of the tree.
         """
         tree_hash = self.get_hash(tree, scope)
@@ -839,12 +918,12 @@ class ForallConstraint(Constraint):
     def fitness(
         self,
         tree: DerivationTree,
-        scope: Optional[Dict[NonTerminal, DerivationTree]] = None,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given forall constraint.
         :param DerivationTree tree: The tree to evaluate.
-        :param Optional[Dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
+        :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
         :return ConstraintFitness: The fitness of the tree.
         """
         tree_hash = self.get_hash(tree, scope)

@@ -1,7 +1,7 @@
 import csv
 import time
 from io import StringIO
-from typing import Tuple
+
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.legacy.parse import parse
@@ -28,7 +28,7 @@ def is_syntactically_valid_csv(csv_string):
 
 def evaluate_csv(
     seconds=60,
-) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
+) -> tuple[str, int, int, float, tuple[float, int, int], float, float]:
     file = open("evaluation/vs_isla/csv_evaluation/csv.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False)
     solutions = []
@@ -36,10 +36,8 @@ def evaluate_csv(
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
-        fandango = Fandango(
-            grammar, constraints, desired_solutions=100, logger_level=LoggerLevel.ERROR
-        )
-        fandango.evolve()
+        fandango = Fandango(grammar, constraints, logger_level=LoggerLevel.ERROR)
+        fandango.evolve(desired_solutions=100)
         solutions.extend(fandango.solution)
 
     coverage = grammar.compute_grammar_coverage(solutions, 4)

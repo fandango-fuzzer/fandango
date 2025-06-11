@@ -21,8 +21,8 @@ $ pip install fandango-fuzzer
 ```
 
 ```{note}
-In this tutorial, `$` and `!` characters at the beginning of a command line stand for your input prompt.
-Do not enter them yourself.
+In this tutorial, a `$` at the beginning of a command stands for your input prompt.
+Do not enter it yourself.
 ```
 
 You can check if everything works well by running

@@ -3,6 +3,8 @@ import traceback
 import sys
 import os
 import time
+from typing import Optional
+
 from ansi_styles import ansiStyles as styles
 
 LOGGER = logging.getLogger("fandango")
@@ -12,13 +14,25 @@ logging.basicConfig(
 )
 
 
-def print_exception(e: Exception):
-    LOGGER.info(traceback.format_exc().rstrip())
-    if not LOGGER.isEnabledFor(logging.INFO):
+def print_exception(e: Exception, exception_note: str | None = None):
+    if exception_note is not None and getattr(Exception, "add_note", None):
+        # Python 3.11+ has add_note() method
+        e.add_note(exception_note)
+        exception_note = None
+
+    if LOGGER.isEnabledFor(logging.INFO):
+        LOGGER.info(traceback.format_exc().rstrip())
+    else:
         print(type(e).__name__ + ":", e, file=sys.stderr)
+        for note in getattr(e, "__notes__", []):
+            print("  " + note, file=sys.stderr)
+
+    if exception_note:
+        print("  " + exception_note, file=sys.stderr)
+
     if "DerivationTree" in str(e):
         print(
-            "Convert <symbol> to the expected type, say 'str(<symbol>)', 'int(<symbol>)', or 'float(<symbol>)'",
+            "  Convert <symbol> to the expected type, say 'str(<symbol>)', 'int(<symbol>)', or 'float(<symbol>)'",
             file=sys.stderr,
         )
 
@@ -59,21 +73,23 @@ def use_visualization():
     return True
 
 
-def visualize_evaluation(generation, max_generations, evaluation):
+def visualize_evaluation(
+    generation: int,
+    max_generations: Optional[int],
+    evaluation: list[tuple],
+):
     """Visualize current evolution while Fandango is running"""
-    if not use_visualization():
+    if not use_visualization() or max_generations is None:
         return
 
-    fitnesses = []
-    for _, fitness, _ in evaluation:
-        fitnesses.append(fitness)
+    fitnesses = [fitness for _ind, fitness, _failing_trees in evaluation]
     fitnesses.sort(reverse=True)
-
+    assert COLUMNS is not None
     columns = COLUMNS
     s = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango {styles.color.close} {generation}/{max_generations} "
     columns -= len(f"   Fandango {generation}/{max_generations} ") + 1
-    columns /= 3.0
-    for column in range(0, int(columns)):
+    columns = int(columns / 3.0)
+    for column in range(0, columns):
         individual = int(column / columns * len(fitnesses))
         fitness = fitnesses[individual]
 
@@ -92,11 +108,36 @@ def visualize_evaluation(generation, max_generations, evaluation):
     return
 
 
-def clear_visualization():
+def clear_visualization(max_generations: Optional[int] = None):
     """Clear Fandango visualization"""
-    if not use_visualization():
+    if not use_visualization() or max_generations is None:
         return
 
     time.sleep(0.5)
+    assert COLUMNS is not None
     s = " " * (COLUMNS - 1)
     print(f"\r{s}\r", end="", file=sys.stderr)
+
+
+def log_message_transfer(
+    sender: str,
+    receiver: str | None,
+    msg: "DerivationTree",
+    self_is_sender: bool,
+):
+    if receiver is None:
+        if self_is_sender:
+            receiver = "Unknown"
+        else:
+            receiver = "Fandango"
+    if self_is_sender:
+        sender = "*" + sender
+    else:
+        receiver = "*" + receiver
+
+    if msg.contains_bytes():
+        msg = msg.to_bytes()
+    else:
+        msg = msg.to_string()
+
+    LOGGER.info(f"({sender} -> {receiver}): {msg}")

@@ -6,8 +6,9 @@ __all__ = [
     "FandangoSyntaxError",
     "FandangoValueError",
     "FandangoBase",
-    "Fandango",
     "DerivationTree",
+    "version",
+    "homepage",
 ]
 
 
@@ -20,9 +21,14 @@ class FandangoError(ValueError):
 class FandangoParseError(FandangoError, SyntaxError):
     """Error during parsing inputs"""
 
-    def __init__(self, position: int, *, message: str = None):
+    def __init__(self, message: str | None = None, position: int | None = None):
         if message is None:
-            message = f"Parse error at position {position}"
+            if position is not None:
+                message = f"Parse error at position {position}"
+            else:
+                message = "Parse error"
+
+        # Call the parent class constructors
         FandangoError.__init__(self, message)
         SyntaxError.__init__(self, message)
         self.position = position
@@ -51,15 +57,33 @@ class FandangoFailedError(FandangoError):
         super().__init__(self, message)
 
 
+import importlib.metadata
+
+DISTRIBUTION_NAME = "fandango-fuzzer"
+
+
+def version():
+    """Return the Fandango version number"""
+    return importlib.metadata.version(DISTRIBUTION_NAME)
+
+
+def homepage():
+    """Return the Fandango homepage"""
+    for key, value in importlib.metadata.metadata(DISTRIBUTION_NAME).items():
+        if key == "Project-URL" and value.startswith("homepage,"):
+            return value.split(",")[1].strip()
+    return "the Fandango homepage"
+
+
 from abc import ABC, abstractmethod
-from typing import IO, List, Optional, Generator
+from typing import IO, Optional, Generator
 import sys
 import logging
 
-from fandango.language.legacy.parse import parse
+from fandango.language.parse import parse
 from fandango.evolution.algorithm import Fandango as FandangoStrategy
 import fandango.language.tree
-from fandango.language import Grammar
+from fandango.language.grammar import Grammar
 from fandango.logger import LOGGER
 import itertools
 
@@ -69,17 +93,20 @@ DerivationTree = fandango.language.tree.DerivationTree
 class FandangoBase(ABC):
     """Public Fandango API"""
 
+    # The parser to be used
+    parser = "auto"  # 'auto', 'cpp', 'python', or 'legacy'
+
     def __init__(
         self,
-        fan_files: str | IO | List[str | IO],
-        constraints: List[str] = None,
+        fan_files: str | IO | list[str | IO],
+        constraints: Optional[list[str]] = None,
         *,
         logging_level: Optional[int] = None,
         use_cache: bool = True,
         use_stdlib: bool = True,
         lazy: bool = False,
         start_symbol: Optional[str] = None,
-        includes: List[str] = None,
+        includes: Optional[list[str]] = None,
     ):
         """
         Initialize a Fandango object.
@@ -145,8 +172,8 @@ class FandangoBase(ABC):
 
     @abstractmethod
     def fuzz(
-        self, extra_constraints: Optional[List[str]] = None, **settings
-    ) -> List[DerivationTree]:
+        self, *, extra_constraints: Optional[list[str]] = None, **settings
+    ) -> list[DerivationTree]:
         """
         Create a Fandango population.
         :param extra_constraints: Additional constraints to apply
@@ -176,8 +203,8 @@ class Fandango(FandangoBase):
         super().__init__(*args, **kwargs)
 
     def fuzz(
-        self, extra_constraints: Optional[List[str]] = None, **settings
-    ) -> List[DerivationTree]:
+        self, *, extra_constraints: Optional[list[str]] = None, **settings
+    ) -> list[DerivationTree]:
         """
         Create a Fandango population.
         :param extra_constraints: Additional constraints to apply
@@ -186,7 +213,13 @@ class Fandango(FandangoBase):
         """
         constraints = self.constraints[:]
         if extra_constraints:
-            constraints += extra_constraints
+            _, extra_constraints_parsed = parse(
+                [],
+                extra_constraints,
+                given_grammars=[self.grammar],
+                start_symbol=self.start_symbol,
+            )
+            constraints += extra_constraints_parsed
 
         fandango = FandangoStrategy(
             self.grammar, constraints, start_symbol=self.start_symbol, **settings
@@ -214,6 +247,7 @@ class Fandango(FandangoBase):
         )
         try:
             peek = next(tree_generator)
+            self.grammar.populate_sources(peek)
             tree_generator = itertools.chain([peek], tree_generator)
             have_tree = True
         except StopIteration:
@@ -221,7 +255,7 @@ class Fandango(FandangoBase):
 
         if not have_tree:
             position = self.grammar.max_position() + 1
-            raise FandangoParseError(position)
+            raise FandangoParseError(position=position)
 
         return tree_generator
 
@@ -239,13 +273,13 @@ if __name__ == "__main__":
     # Read in a .fan spec (from a string)
     # We could also pass an (open) file or a list of files
     spec = """
-        <start> ::= 'a' | 'b' | 'c'
-        where str(<start>) != 'd'
+        <my_start> ::= 'a' | 'b' | 'c'
+        where str(<my_start>) != 'd'
     """
-    fan = Fandango(spec, logging_level=logging_level)
+    fan = Fandango(spec, logging_level=logging_level, start_symbol="<my_start>")
 
     # Instantiate the spec into a population of derivation trees
-    population = fan.fuzz(population_size=3)
+    population = fan.fuzz(extra_constraints=["<my_start> != 'e'"], population_size=3)
     print("Fuzzed:", ", ".join(str(individual) for individual in population))
 
     # Parse a single input into a derivation tree

@@ -1,6 +1,6 @@
 import time
 from io import StringIO
-from typing import Tuple
+
 
 from docutils.core import publish_doctree
 
@@ -32,7 +32,7 @@ def is_syntactically_valid_rest(rst_string):
 
 def evaluate_rest(
     seconds=60,
-) -> Tuple[str, int, int, float, Tuple[float, int, int], float, float]:
+) -> tuple[str, int, int, float, tuple[float, int, int], float, float]:
     file = open("evaluation/vs_isla/rest_evaluation/rest.fan", "r")
     grammar, constraints = parse(file, use_stdlib=False)
     solutions = []
@@ -40,10 +40,8 @@ def evaluate_rest(
     time_in_an_hour = time.time() + seconds
 
     while time.time() < time_in_an_hour:
-        fandango = Fandango(
-            grammar, constraints, desired_solutions=100, logger_level=LoggerLevel.ERROR
-        )
-        fandango.evolve()
+        fandango = Fandango(grammar, constraints, logger_level=LoggerLevel.ERROR)
+        fandango.evolve(desired_solutions=100)
         solutions.extend(fandango.solution)
 
     coverage = grammar.compute_grammar_coverage(solutions, 4)

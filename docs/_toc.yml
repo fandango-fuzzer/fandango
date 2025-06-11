@@ -24,15 +24,19 @@ parts:
     - file: ISO8601
     - file: Parsing
     - file: Binary
+    - file: Conversion
     - file: Bits
     - file: Gif
-    - file: Distributions
-    - file: Whitebox
+#    - file: Distributions
+#    - file: Whitebox
     - file: Hatching
   - caption: Fandango Reference
     chapters:
     - file: Reference
     - file: Installing
+    - file: Commands
+    - file: Language
+    - file: LanguageServer
     - file: Stdlib
     - file: DerivationTree
     - file: PythonAPI

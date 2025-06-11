@@ -6,6 +6,7 @@ import re
 
 from lxml import etree
 
+
 def fan(name):
     """Convert a name to a Fandango identifier."""
     return re.sub(r"[^a-zA-Z0-9_]", "_", name)
@@ -13,8 +14,10 @@ def fan(name):
 
 # See https://lxml.de/validation.html#dtd-1 for information on DTD structure
 
+
 class DTDConverter(object):
     """Convert a DTD schema to a Fandango grammar."""
+
     def __init__(self, dtd, source="<DTD file>"):
         self.source = source
         self.dtd = dtd
@@ -45,7 +48,7 @@ class DTDConverter(object):
         types = list(self.attribute_types)
         types.sort()
         if types:
-            s += f'\n\n# Attribute types, to be further refined'
+            s += f"\n\n# Attribute types, to be further refined"
         for tp in types:
             s += f"\n<{tp}> ::= {self.attribute_types[tp]}"
 
@@ -61,11 +64,14 @@ class DTDConverter(object):
         s += attrs
 
         if required_attributes:
-            s += f'\nwhere ('
-            s += '\n   and '.join(f"{fan(attribute.name) + '='!r} in <{fan(element.name)}>.descendant_values()" for attribute in required_attributes)
-            s += ')  # required'
+            s += f"\nwhere ("
+            s += "\n   and ".join(
+                f"{fan(attribute.name) + '='!r} in <{fan(element.name)}>.descendant_values()"
+                for attribute in required_attributes
+            )
+            s += ")  # required"
         if values:
-            s += f'\n\n# {element.name} attribute types'
+            s += f"\n\n# {element.name} attribute types"
         for value in values:
             s += f"\n<{fan(element.name)}_{value}> ::= <{value}>"
         return s
@@ -81,11 +87,17 @@ class DTDConverter(object):
             case "element":
                 s += f"<{fan(content.name)}>"
             case "seq":
-                s += (self.convert_content(content.left) + " "
-                      + self.convert_content(content.right))
+                s += (
+                    self.convert_content(content.left)
+                    + " "
+                    + self.convert_content(content.right)
+                )
             case "or":
-                s += (self.convert_content(content.left) + " | "
-                      + self.convert_content(content.right))
+                s += (
+                    self.convert_content(content.left)
+                    + " | "
+                    + self.convert_content(content.right)
+                )
             case _:
                 raise ValueError(f"Unknown content type {content.type!r}")
 
@@ -129,14 +141,18 @@ class DTDConverter(object):
 
         match attribute.type:
             case "enumeration":
-                values = " <q> (" + " | ".join(f"{value!r}" for value in attribute.itervalues()) + ") <q>"
+                values = (
+                    " <q> ("
+                    + " | ".join(f"{value!r}" for value in attribute.itervalues())
+                    + ") <q>"
+                )
                 s += values
             case _:
-                value = fan(attribute.name + '_value')
+                value = fan(attribute.name + "_value")
                 self.attribute_types[value] = f"<{attribute.type}>"
                 s += f" <{fan(attribute.elemname)}_{value}> "
 
-        required = (attribute.default == "required")
+        required = attribute.default == "required"
         s += f"  # {attribute.default}"
         if attribute.default_value:
             s += f"; default {attribute.default_value!r}"
@@ -150,24 +166,22 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-i", "--id",
+        "-i",
+        "--id",
         dest="ids",
         action="append",
         type=str,
-        help="schema ID (e.g. '-//W3C//DTD SVG 1.1//EN')"
+        help="schema ID (e.g. '-//W3C//DTD SVG 1.1//EN')",
     )
     parser.add_argument(
-        dest="files",
-        action="append",
-        type=argparse.FileType('r'),
-        help="schema file"
+        dest="files", action="append", type=argparse.FileType("r"), help="schema file"
     )
 
     args = parser.parse_args(sys.argv[1:])
 
     for arg in (args.ids or []) + (args.files or []):
         if isinstance(arg, str):
-            tree = etree.DTD(external_id=bytes(arg, 'ascii'))
+            tree = etree.DTD(external_id=bytes(arg, "ascii"))
             source = arg
         else:
             tree = etree.DTD(arg)

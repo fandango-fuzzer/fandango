@@ -6,7 +6,7 @@ tokens {
 }
 
 options {
-    superClass = FandangoLexerBase;
+   superClass = FandangoLexerBase;
 }
 
 // constants
@@ -16,9 +16,9 @@ NUMBER: INTEGER | FLOAT_NUMBER | IMAG_NUMBER;
 
 INTEGER: DECIMAL_INTEGER | OCT_INTEGER | HEX_INTEGER | BIN_INTEGER;
 
-PYTHON_START: '<py>' {self.python_start()};
-PYTHON_END  : '</py>' {self.python_end()};
-NONTERMINAL: '<' NAME '>';
+// These calls `python_start()`, `python_end()`, etc. work in Python and in C++
+PYTHON_START: '<py>' { python_start() };
+PYTHON_END  : '</py>' { python_end() };
 
 // python keywords
 AND        : 'and';
@@ -27,25 +27,25 @@ ASSERT     : 'assert';
 ASYNC      : 'async';
 AWAIT      : 'await';
 BREAK      : 'break';
-CASE       : 'case' {self.python_start()};
-CLASS      : 'class' {self.python_start()};
+CASE       : 'case' { python_start(); };
+CLASS      : 'class' { python_start(); };
 CONTINUE   : 'continue';
-DEF        : 'def' {self.python_start()};
+DEF        : 'def' { python_start(); };
 DEL        : 'del';
-ELIF       : 'elif' {self.python_start()};
-ELSE       : 'else' {self.python_start()};
-EXCEPT     : 'except' {self.python_start()};
+ELIF       : 'elif' { python_start(); };
+ELSE       : 'else' { python_start(); };
+EXCEPT     : 'except' { python_start(); };
 FALSE      : 'False';
-FINALLY    : 'finally' {self.python_start()};
-FOR        : 'for' {self.python_start()};
+FINALLY    : 'finally' { python_start(); };
+FOR        : 'for' { python_start(); };
 FROM       : 'from';
 GLOBAL     : 'global';
-IF         : 'if' {self.python_start()};
+IF         : 'if' { python_start(); };
 IMPORT     : 'import';
 IN         : 'in';
 IS         : 'is';
 LAMBDA     : 'lambda';
-MATCH      : 'match' {self.python_start()};
+MATCH      : 'match' { python_start(); };
 NONE       : 'None';
 NONLOCAL   : 'nonlocal';
 NOT        : 'not';
@@ -54,19 +54,16 @@ PASS       : 'pass';
 RAISE      : 'raise';
 RETURN     : 'return';
 TRUE       : 'True';
-TRY        : 'try' {self.python_start()};
+TRY        : 'try' { python_start(); };
 TYPE       : 'type';
-UNDERSCORE : '_';
-WHILE      : 'while' {self.python_start()};
+WHILE      : 'while' { python_start(); };
 WHERE      : 'where';
-WITH       : 'with' {self.python_start()};
+WITH       : 'with' { python_start(); };
 YIELD      : 'yield';
 FORALL     : 'forall';
 EXISTS     : 'exists';
-FITNESS    : 'fitness';
-ANY        : 'any';
-ALL        : 'all';
-LEN        : 'len';
+MAXIMIZING : 'maximizing';
+MINIMIZING : 'minimizing';
 
 // identifiers
 NAME: ID_START ID_CONTINUE*;
@@ -89,15 +86,15 @@ DOT                : '.';
 DOTDOT             : '..';
 ELLIPSIS           : '...';
 STAR               : '*';
-OPEN_PAREN         : '(' {self.open_brace()};
-CLOSE_PAREN        : ')' {self.close_brace()};
+OPEN_PAREN         : '(' { open_brace(); };
+CLOSE_PAREN        : ')' { close_brace(); };
 COMMA              : ',';
 COLON              : ':';
 SEMI_COLON         : ';';
 POWER              : '**';
 ASSIGN             : '=';
-OPEN_BRACK         : '[' {self.open_brace()};
-CLOSE_BRACK        : ']' {self.close_brace()};
+OPEN_BRACK         : '[' { open_brace(); };
+CLOSE_BRACK        : ']' { close_brace(); };
 OR_OP              : '|';
 XOR                : '^';
 AND_OP             : '&';
@@ -109,8 +106,8 @@ DIV                : '/';
 MOD                : '%';
 IDIV               : '//';
 NOT_OP             : '~';
-OPEN_BRACE         : '{' {self.open_brace()};
-CLOSE_BRACE        : '}' {self.close_brace()};
+OPEN_BRACE         : '{' { open_brace(); };
+CLOSE_BRACE        : '}' { close_brace(); };
 LESS_THAN          : '<';
 GREATER_THAN       : '>';
 EQUALS             : '==';
@@ -137,7 +134,7 @@ EXPR_ASSIGN        : ':=';
 EXCL               : '!';
 
 
-NEWLINE: (('\r'? '\n' | '\r' | '\f') SPACES?) {self.on_newline()};
+NEWLINE: (('\r'? '\n' | '\r' | '\f') SPACES?) { on_newline(); };
 SKIP_: ( SPACES | COMMENT | LINE_JOINING) -> channel(HIDDEN);
 
 UNKNOWN_CHAR: .;
@@ -193,8 +190,9 @@ fragment LINE_JOINING: '\\' SPACES? ( '\r'? '\n' | '\r' | '\f');
 
 fragment UNICODE_OIDS: '\u1885' ..'\u1886' | '\u2118' | '\u212e' | '\u309b' ..'\u309c';
 fragment UNICODE_OIDC: '\u00b7' | '\u0387' | '\u1369' ..'\u1371' | '\u19da';
+fragment UNDERSCORE : '_';
 fragment ID_START:
-    '_'
+    UNDERSCORE
     | [\p{L}]
     | [\p{Nl}]
     //| [\p{Other_ID_Start}]

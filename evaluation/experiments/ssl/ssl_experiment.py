@@ -34,11 +34,10 @@ def evaluate_ssl():
         grammar,
         constraints,
         logger_level=LoggerLevel.DEBUG,
-        max_generations=100,
-        desired_solutions=100,
         population_size=100,
+        profiling=True,
     )
-    fandango.evolve()
+    fandango.evolve(max_generations=100, desired_solutions=100)
     end_time = time.time()
     sol = fandango.solution
     i = 0

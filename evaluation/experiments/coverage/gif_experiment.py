@@ -47,11 +47,9 @@ def evaluate_gif():
         grammar,
         constraints,
         logger_level=LoggerLevel.DEBUG,
-        max_generations=100,
-        desired_solutions=1000,
         population_size=1000,
     )
-    fandango.evolve()
+    fandango.evolve(max_generations=100, desired_solutions=1000)
     end_time = time.time()
 
     valid_count = 0
