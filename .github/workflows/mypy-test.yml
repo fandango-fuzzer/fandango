@@ -51,6 +51,7 @@ jobs:
       - name: Run mypy on changed files
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
-          mypy --version
-          echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | xargs -I {} mypy "{}"
+          COMMAND='echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | xargs -I {} mypy "{}"'
+          echo $COMMAND
+          eval $COMMAND
 
