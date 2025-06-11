@@ -150,8 +150,8 @@ class Fandango:
             self._initial_solutions.extend(generator)
             self.evaluation = generator.return_value
 
-        self.fixes_made = 0
         self.crossovers_made = 0
+        self.fixes_made = 0
         self.mutations_made = 0
         self.time_taken = 0.0
 
