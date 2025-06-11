@@ -25,3 +25,9 @@ class GeneratorWithReturn(Generic[GT, RT]):
                 "Generator hasn't been fully executed yet. The return value is only available after complete iteration."
             )
         return self._return_value
+
+    def collect(self) -> tuple[list[GT], RT]:
+        """
+        :return: A tuple containing the list of yielded values and the return value.
+        """
+        return list(self), self.return_value
