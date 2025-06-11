@@ -46,6 +46,7 @@ jobs:
       - name: Install mypy
         run: |
           pip install mypy
+          pip install -r requirements.txt
 
       # Step 6: Run mypy on changed files
       - name: Run mypy on changed files
