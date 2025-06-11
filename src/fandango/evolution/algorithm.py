@@ -214,6 +214,8 @@ class Fandango:
         :param new_population: The new population to perform crossover on.
         :param unique_hashes: The set of unique hashes of the individuals in the new population.
         """
+        if len(self.evaluation) < 2:
+            return None
         try:
             with self.profiler.timer("tournament_selection", increment=2):
                 parent1, parent2 = self.evaluator.tournament_selection(
@@ -319,6 +321,7 @@ class Fandango:
         io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
         history_tree: DerivationTree = random.choice(self.population)
         forecaster = PacketForecaster(self.grammar)
+        self._initial_solutions.clear()
 
         while True:
             forecast = forecaster.predict(history_tree)
@@ -367,7 +370,7 @@ class Fandango:
                         raise RuntimeError(
                             f"Couldn't find solution for any packet: {nonterminals_str}"
                         )
-                    next_tree = evolve_result[0]
+                    next_tree = evolve_result
                 else:
                     next_tree = solutions[0]
                 if io_instance.received_msg():
