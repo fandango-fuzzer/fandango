@@ -1,0 +1,57 @@
+# GitHub Actions Workflow: Static type checking with mypy
+
+name: Static type checking with mypy
+
+on:
+  push:
+    branches:
+      - dev   # Run type checking on pushes to the dev branch
+  pull_request:
+    branches:
+      - main  # Run type checking on pull requests targeting the main branch
+      - dev   # Run type checking on pull requests targeting the dev branch
+  workflow_dispatch: # Enables manual execution from the Actions tab
+
+jobs:
+  test:
+    runs-on: ubuntu-latest  # Use the latest Ubuntu runner provided by GitHub
+
+    strategy:
+      matrix:
+        python-version: [ 3.11 ]  # Python version to run
+
+    steps:
+      # Step 1: Checkout the repository's code
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for comparing changes
+
+      # Step 2: Get changed files
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v41
+        with:
+          files: |
+            **/*.py
+
+      # Step 3: Set up Python environment
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      # Step 4: Install mypy
+      - name: Install mypy
+        run: |
+          pip install mypy
+
+      # Step 6: Run mypy on changed files
+      - name: Run mypy on changed files
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            echo "Checking $file"
+            mypy "$file"
+          done
