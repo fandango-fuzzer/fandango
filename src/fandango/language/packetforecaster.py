@@ -393,6 +393,7 @@ class PacketForecaster:
             return repl_node
 
     class Parser(Grammar.Parser):
+
         def __init__(self, grammar: Grammar):
             super().__init__(grammar)
             self.reference_tree = None
