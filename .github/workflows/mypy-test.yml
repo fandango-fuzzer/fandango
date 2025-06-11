@@ -1,6 +1,6 @@
 # GitHub Actions Workflow: Static type checking with mypy
 
-name: Static type checking with mypy
+name: Type checking
 
 on:
   push:
@@ -13,7 +13,7 @@ on:
   workflow_dispatch: # Enables manual execution from the Actions tab
 
 jobs:
-  test:
+  mypy:
     runs-on: ubuntu-latest  # Use the latest Ubuntu runner provided by GitHub
 
     strategy:
@@ -52,4 +52,5 @@ jobs:
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           mypy --version
-          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do echo "Checking $file"; mypy $file; done
+          echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | xargs -I {} mypy "{}"
+
