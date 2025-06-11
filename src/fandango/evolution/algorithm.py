@@ -129,13 +129,14 @@ class Fandango:
         st_time = time.time()
 
         with self.profiler.timer("initial_population") as timer:
-            generator = self.population_manager.refill_population(
-                current_population=self.population,
-                eval_individual=self.evaluator.evaluate_individual,
-                max_nodes=self.current_max_nodes,
-                target_population_size=self.population_size,
+            self._initial_solutions = list(
+                self.population_manager.refill_population(
+                    current_population=self.population,
+                    eval_individual=self.evaluator.evaluate_individual,
+                    max_nodes=self.current_max_nodes,
+                    target_population_size=self.population_size,
+                )
             )
-            self._initial_solutions = list(generator)
             timer.increment(len(self.population))
 
         LOGGER.info(
@@ -340,6 +341,7 @@ class Fandango:
                 assert isinstance(self.population_manager, IoPopulationManager)
                 self.population_manager.fuzzable_packets = fuzzable_packets
 
+                self.population.clear()
                 solutions = list(
                     self.population_manager.refill_population(
                         current_population=self.population,
