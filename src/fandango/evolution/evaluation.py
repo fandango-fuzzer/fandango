@@ -212,7 +212,7 @@ class Evaluator:
         evaluation: list[tuple[DerivationTree, float, list[FailingTree]]],
         tournament_size: int,
     ) -> tuple[DerivationTree, DerivationTree]:
-        tournament = random.sample(evaluation, k=tournament_size)
+        tournament = random.sample(evaluation, k=min(tournament_size, len(evaluation)))
         tournament.sort(key=lambda x: x[1], reverse=True)
         parent1 = tournament[0][0]
         if len(tournament) == 2:

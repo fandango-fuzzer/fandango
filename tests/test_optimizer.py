@@ -1,10 +1,13 @@
 #!/usr/bin/env pytest
 
+from copy import deepcopy
 import random
 import unittest
+
 from fandango.constraints.fitness import FailingTree
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm import Fandango, LoggerLevel
+from fandango.evolution.population import PopulationManager
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
 
@@ -36,7 +39,7 @@ class GeneticTest(unittest.TestCase):
             logger_level=LoggerLevel.DEBUG,
         )
 
-    def test_generate_initial_population(self):
+    def test_refill_population_during_init(self):
         # Generate a population of derivation trees
         population = self.fandango.population
 
@@ -44,6 +47,70 @@ class GeneticTest(unittest.TestCase):
         for individual in population:
             self.assertIsInstance(individual, DerivationTree)
             self.assertTrue(self.fandango.grammar.parse(str(individual)))
+
+    def test_refill_population_with_empty_population(self):
+        manager = PopulationManager(
+            grammar=self.fandango.grammar,
+            start_symbol=self.fandango.start_symbol,
+            warnings_are_errors=True,
+        )
+        population = []
+        expected_count = 10
+        generator = manager.refill_population(
+            current_population=population,
+            eval_individual=self.fandango.evaluator.evaluate_individual,
+            max_nodes=self.fandango.current_max_nodes,
+            target_population_size=expected_count,
+        )
+        solutions = list(generator)
+        self.assertLessEqual(len(solutions), expected_count)
+        self.assertEqual(len(population), expected_count)
+        for individual in population:
+            self.assertIsInstance(individual, DerivationTree)
+            self.assertTrue(self.fandango.grammar.parse(str(individual)))
+        for individual in solutions:
+            self.assertIn(individual, population)
+            self.assertIsInstance(individual, DerivationTree)
+            self.assertTrue(self.fandango.grammar.parse(str(individual)))
+
+    def test_refill_population_with_non_empty_population(self):
+        # Generate a population of derivation trees
+        manager = PopulationManager(
+            grammar=self.fandango.grammar,
+            start_symbol=self.fandango.start_symbol,
+            warnings_are_errors=True,
+        )
+
+        initial_count = 10
+        population = []
+
+        # add some initial individuals
+        manager.refill_population(
+            current_population=population,
+            eval_individual=self.fandango.evaluator.evaluate_individual,
+            max_nodes=self.fandango.current_max_nodes,
+            target_population_size=initial_count,
+        )
+
+        copy_of_initial_population = deepcopy(population)
+
+        additional_count = 10
+        generator = manager.refill_population(
+            current_population=population,
+            eval_individual=self.fandango.evaluator.evaluate_individual,
+            max_nodes=self.fandango.current_max_nodes,
+            target_population_size=initial_count + additional_count,
+        )
+        solutions = list(generator)
+
+        self.assertEqual(len(population), initial_count + additional_count)
+        self.assertLessEqual(len(solutions), additional_count)
+        for individual in solutions:
+            self.assertIn(individual, population)
+            self.assertIsInstance(individual, DerivationTree)
+            self.assertTrue(self.fandango.grammar.parse(str(individual)))
+        for individual in copy_of_initial_population:
+            self.assertIn(individual, population)
 
     def test_evaluate_fitness(self):
         # Evaluate the fitness of the population
@@ -247,6 +314,34 @@ class DeterminismTests(unittest.TestCase):
         solutions_2 = self.get_solutions("tests/resources/determinism.fan", 100, 1)
 
         self.assertListEqual(solutions_1, solutions_2)
+
+
+class TargetedMutations(unittest.TestCase):
+    # fandango fuzz -f tests/resources/digit_targeted_mutation.fan -n 1 --random-seed 1
+    def get_solutions(
+        self,
+        specification_file,
+        desired_solutions,
+        random_seed,
+    ):
+        file = open(specification_file, "r")
+        grammar_int, constraints_int = parse(file, use_stdlib=False, use_cache=False)
+        fandango = Fandango(
+            grammar=grammar_int,
+            constraints=constraints_int,
+            random_seed=random_seed,
+        )
+        solutions: list[DerivationTree] = fandango.evolve(
+            desired_solutions=desired_solutions,
+            max_generations=100,
+        )
+        return [s.to_string() for s in solutions]
+
+    def test_targeted_mutation_1(self):
+        solutions = self.get_solutions(
+            "tests/resources/digit_targeted_mutation.fan", 1, 1
+        )
+        self.assertListEqual(solutions, ["0123456789"])
 
 
 if __name__ == "__main__":

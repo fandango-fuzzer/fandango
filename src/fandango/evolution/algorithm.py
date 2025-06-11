@@ -121,24 +121,21 @@ class Fandango:
         self.crossover_operator = crossover_method
         self.mutation_method = mutation_method
 
-        deduplicated_initial_population = self._parse_and_deduplicate(
-            population=initial_population
-        )
+        self.population = self._parse_and_deduplicate(population=initial_population)
 
         LOGGER.info(
-            f"Generating (additional) initial population (size: {self.population_size - len(deduplicated_initial_population)})..."
+            f"Generating (additional) initial population (size: {self.population_size - len(self.population)})..."
         )
         st_time = time.time()
 
         with self.profiler.timer("initial_population") as timer:
-            self.population, self._initial_solutions = (
-                self.population_manager.generate_random_population(
-                    eval_individual=self.evaluator.evaluate_individual,
-                    max_nodes=self.current_max_nodes,
-                    target_population_size=self.population_size,
-                    initial_population=deduplicated_initial_population,
-                )
+            generator = self.population_manager.refill_population(
+                current_population=self.population,
+                eval_individual=self.evaluator.evaluate_individual,
+                max_nodes=self.current_max_nodes,
+                target_population_size=self.population_size,
             )
+            self._initial_solutions = list(generator)
             timer.increment(len(self.population))
 
         LOGGER.info(
@@ -343,21 +340,21 @@ class Fandango:
                     fuzzable_packets.extend(forecast[party].nt_to_packet.values())
                 self.population_manager.fuzzable_packets = fuzzable_packets
 
-                self.population, solutions = (
-                    self.population_manager.generate_random_population(
-                        eval_individual=self.evaluator.evaluate_individual,
-                        max_nodes=self.current_max_nodes,
-                        target_population_size=self.population_size,
-                        initial_population=[],
-                    )
+                self.population.clear()
+                generator = self.population_manager.refill_population(
+                    current_population=self.population,
+                    eval_individual=self.evaluator.evaluate_individual,
+                    max_nodes=self.current_max_nodes,
+                    target_population_size=self.population_size,
                 )
+
+                solutions = list(generator)
 
                 if not solutions:
                     generator = GeneratorWithReturn(
                         self.evaluator.evaluate_population(self.population)
                     )
-                    solutions = list(generator)
-                    self.evaluation = generator.return_value
+                    solutions, self.evaluation = generator.collect()
 
                 if not solutions:
                     try:
@@ -410,8 +407,7 @@ class Fandango:
                 generator = GeneratorWithReturn(
                     self.evaluator.evaluate_individual(history_tree)
                 )
-                solutions = list(generator)
-                fitness, _failing_trees = generator.return_value
+                solutions, (fitness, _failing_trees) = generator.collect()
                 if fitness < 0.99:
                     raise RuntimeError("Remote response doesn't match constraints!")
             history_tree.set_all_read_only(True)
@@ -462,7 +458,7 @@ class Fandango:
 
             # Ensure Uniqueness & Fill Population
             new_population = list(set(new_population))
-            new_population = yield from self.population_manager.refill_population(
+            yield from self.population_manager.refill_population(
                 new_population,
                 self.evaluator.evaluate_individual,
                 self.current_max_nodes,
