@@ -126,6 +126,28 @@ or simply
 $ pytest
 ```
 
+To run tests in parallel, you can use [pytest-xdist](https://pytest-xdist.readthedocs.io/en/stable/):
+
+```shell
+pip install pytest-xdist
+pytest -n auto
+```
+
+### Pre-commit
+
+Fandango provides a config file for `pre-commit`. To install it, run the following:
+
+```shell
+pip install pre-commit
+pre-commit install
+```
+
+This will run code formatting and type checking before every commit.
+
+```{warning}
+The [tests](sec:running-tests)= aren't run as part of pre-commit, because they take significant time to complete. Run them manually.
+```
+
 (sec:first-time-contributors)=
 ## First Time Contributors
 
