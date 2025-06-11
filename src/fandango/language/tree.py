@@ -26,6 +26,36 @@ class ProtocolMessage:
             return f"({self.sender}): {str(self.msg)}"
 
 
+class StepException(Exception):
+    def __init__(self, message):
+        super().__init__(f"StepException: {message}")
+
+
+class PathStep:
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __hash__(self):
+        return hash(tuple(sorted(self.__dict__.items())))
+
+
+class SourceStep(PathStep):
+    def __init__(self, index):
+        self.index = index
+
+
+class ChildStep(PathStep):
+    def __init__(self, index):
+        self.index = index
+
+
+def index_by_reference(lst, target):
+    for i, item in enumerate(lst):
+        if item is target:
+            return i
+    return None
+
+
 class DerivationTree:
     """
     This class is used to represent a node in the derivation tree.
@@ -684,17 +714,52 @@ class DerivationTree:
         parent.set_children(keep_children)
         return self
 
+    def get_choices_path(self) -> tuple:
+        current = self
+        path = []
+        while current.parent is not None:
+            parent = current.parent
+            child_idx = index_by_reference(parent.children, current)
+            if child_idx is not None:
+                path.append(ChildStep(child_idx))
+            else:
+                source_idx = index_by_reference(parent.sources, current)
+                if source_idx is None:
+                    try:
+                        # Fallback: If current node reference is not in parent.sources, try to get it by value.
+                        source_idx = parent.sources.index(current)
+                    except ValueError:
+                        raise StepException(
+                            f"Cannot find {current.to_repr()} in parent.children: {parent.children} or parent.sources: {parent.sources}"
+                        )
+                else:
+                    path.append(SourceStep(source_idx))
+            current = parent
+        return tuple(path[::-1])
+
     def replace(self, grammar: "Grammar", tree_to_replace, new_subtree):
         return self.replace_multiple(grammar, {tree_to_replace: new_subtree})
 
     def replace_multiple(
-        self, grammar: "Grammar", replacements: dict["DerivationTree", "DerivationTree"]
+        self,
+        grammar: "Grammar",
+        replacements: dict["DerivationTree", "DerivationTree"],
+        path_to_replacement: dict[tuple, "DerivationTree"] = None,
+        current_path: tuple = None,
     ):
         """
         Replace the subtree rooted at the given node with the new subtree.
         """
-        if self in replacements and not self.read_only:
-            new_subtree = replacements[self].deepcopy(
+        if path_to_replacement is None:
+            path_to_replacement = dict()
+            for replacee, replacement in replacements.items():
+                path_to_replacement[replacee.get_choices_path()] = replacement
+
+        if current_path is None:
+            current_path = self.get_choices_path()
+
+        if current_path in path_to_replacement and not self.read_only:
+            new_subtree = path_to_replacement[current_path].deepcopy(
                 copy_children=True, copy_params=False, copy_parent=False
             )
             new_subtree._parent = self.parent
@@ -705,13 +770,23 @@ class DerivationTree:
         regen_params = False
         new_children = []
         sources = []
-        for param in self._sources:
-            new_param = param.replace_multiple(grammar, replacements)
+        for i, param in enumerate(self._sources):
+            new_param = param.replace_multiple(
+                grammar,
+                replacements,
+                path_to_replacement,
+                current_path + (SourceStep(i),),
+            )
             sources.append(new_param)
             if new_param != param:
                 regen_children = True
-        for child in self._children:
-            new_child = child.replace_multiple(grammar, replacements)
+        for i, child in enumerate(self._children):
+            new_child = child.replace_multiple(
+                grammar,
+                replacements,
+                path_to_replacement,
+                current_path + (ChildStep(i),),
+            )
             new_children.append(new_child)
             if new_child != child:
                 regen_params = True
@@ -808,7 +883,7 @@ class DerivationTree:
 
     def flatten(self):
         """
-        Flatten the derivation tree into a list of symbols.
+        Flatten the derivation tree into a list of DerivationTrees.
         """
         flat = [self]
         for child in self._children:
