@@ -61,7 +61,7 @@ class AdaptiveTuner:
 
         # Adaptive Crossover
         if avg_diversity < diversity_low_threshold:
-            new_crossover_rate = min(1.0, self.crossover_rate * 1.05)
+            new_crossover_rate = min(0.9, self.crossover_rate * 1.05)
             LOGGER.info(
                 f"Generation {generation}: Increasing crossover rate from {self.crossover_rate:.2f} to {new_crossover_rate:.2f}"
             )
