@@ -1347,6 +1347,11 @@ class Grammar(NodeVisitor):
         def construct_incomplete_tree(
             self, state: ParseState, table: list[set[ParseState] | Column]
         ) -> DerivationTree:
+            """
+            Construct a partially parsed derivation tree up to a given state.
+            :param state: The parse state to construct the tree for.
+            :param table: The parse table.
+            """
             current_tree = Grammar.ParserDerivationTree(
                 state.nonterminal, state.children
             )
@@ -2211,7 +2216,7 @@ class Grammar(NodeVisitor):
             ]
         )
 
-    def msg_parties(self, include_recipients: bool = True):
+    def msg_parties(self, include_recipients: bool = True) -> set[str]:
         found_parties = set()
         for nt, rule in self.rules.items():
             found_parties = found_parties.union(
