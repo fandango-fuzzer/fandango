@@ -60,7 +60,7 @@ system-dev-tools:
 
 fcc:
 	rm -fr fcc
-	git clone git@github.com:leonbett/fcc.git
+	git clone https://github.com/leonbett/fcc.git
 	make -C fcc install
 
 ## Parser
