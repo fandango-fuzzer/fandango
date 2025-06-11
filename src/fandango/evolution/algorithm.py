@@ -326,7 +326,7 @@ class Fandango:
         while True:
             forecast = forecaster.predict(history_tree)
 
-            if len(forecast.getMsgParties()) == 0:
+            if len(forecast.get_msg_parties()) == 0:
                 if len(history_tree.protocol_msgs()) == 0:
                     raise RuntimeError("Couldn't forecast next packet!")
                 return [history_tree]
@@ -334,7 +334,7 @@ class Fandango:
             msg_parties = list(
                 filter(
                     lambda x: io_instance.parties[x].is_fuzzer_controlled(),
-                    forecast.getMsgParties(),
+                    forecast.get_msg_parties(),
                 )
             )
             if len(msg_parties) != 0 and not io_instance.received_msg():
@@ -348,7 +348,7 @@ class Fandango:
                         eval_individual=self.evaluator.evaluate_individual,
                         max_nodes=self.current_max_nodes,
                         target_population_size=self.population_size,
-                        initial_population=self.population,
+                        initial_population=[],
                     )
                 )
 
@@ -613,21 +613,21 @@ class Fandango:
                 io_instance.get_received_msgs()
             ):
                 next_fragment_idx = start_idx
-                if msg_sender in forecast.getMsgParties():
+                if msg_sender in forecast.get_msg_parties():
                     found_start = True
                     break
 
             if not found_start and len(io_instance.get_received_msgs()) != 0:
                 raise FandangoValueError(
                     "Unexpected party sent message. Expected: "
-                    + " | ".join(forecast.getMsgParties())
+                    + " | ".join(forecast.get_msg_parties())
                     + f". Received: {msg_sender}."
                     + f" Messages: {io_instance.get_received_msgs()}"
                 )
             time.sleep(0.025)
 
         forecast_non_terminals = forecast[msg_sender]
-        available_non_terminals = set(forecast_non_terminals.getNonTerminals())
+        available_non_terminals = set(forecast_non_terminals.get_non_terminals())
 
         is_msg_complete = False
 
@@ -692,7 +692,7 @@ class Fandango:
                         "|".join(
                             map(
                                 lambda x: str(x),
-                                forecast_non_terminals.getNonTerminals(),
+                                forecast_non_terminals.get_non_terminals(),
                             )
                         ),
                         "Got message:",

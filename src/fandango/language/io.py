@@ -56,7 +56,7 @@ class FandangoParty(object):
     :message: The message to send.
     """
 
-    def on_send(self, message: DerivationTree, recipient: str):
+    def on_send(self, message: DerivationTree, recipient: str) -> None:
         print(f"({self.class_name}): {message.to_string()}")
 
     """
@@ -332,7 +332,7 @@ class FandangoIO:
         if FandangoIO.__instance is not None:
             raise Exception("Singleton already created!")
         FandangoIO.__instance = self
-        self.receive = list[(str, str, str)]()
+        self.receive = list[tuple[str, str, str]]()
         self.parties = dict[str, FandangoParty]()
         self.receive_lock = threading.Lock()
 
@@ -340,19 +340,19 @@ class FandangoIO:
         with self.receive_lock:
             self.receive.append((sender, receiver, message))
 
-    def received_msg(self):
+    def received_msg(self) -> bool:
         with self.receive_lock:
             return len(self.receive) != 0
 
-    def get_received_msgs(self):
+    def get_received_msgs(self) -> list[tuple[str, str, str]]:
         with self.receive_lock:
             return list(self.receive)
 
-    def clear_received_msg(self, idx: int):
+    def clear_received_msg(self, idx: int) -> None:
         with self.receive_lock:
             del self.receive[idx]
 
-    def clear_received_msgs(self):
+    def clear_received_msgs(self) -> None:
         with self.receive_lock:
             self.receive.clear()
 
