@@ -15,6 +15,7 @@ jobs:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false  # Ensures all builds run even if some fail
       matrix:
         os:
           - ubuntu-latest
