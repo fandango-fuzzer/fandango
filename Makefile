@@ -62,24 +62,40 @@ system-dev-tools:
 ## Parser
 
 PARSER = src/fandango/language/parser
+CPP_PARSER = src/fandango/language/cpp_parser
 LEXER_G4 = language/FandangoLexer.g4
 PARSER_G4 = language/FandangoParser.g4
 
-PARSERS = \
+parser: \
 	$(PARSER)/FandangoLexer.py \
 	$(PARSER)/FandangoParser.py \
-	$(PARSER)/FandangoParserVisitor.py \
-	$(PARSER)/FandangoParserListener.py
+	$(CPP_PARSER)/FandangoLexer.cpp \
+	$(CPP_PARSER)/FandangoParser.cpp
 
-parser: $(PARSERS)
-
-$(PARSERS) &: $(LEXER_G4) $(PARSER_G4)
+$(PARSER)/FandangoLexer.py: $(LEXER_G4) Makefile
 	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
-		-visitor -listener $(LEXER_G4) $(PARSER_G4)
-	$(BLACK) src
+		-visitor -listener $(LEXER_G4)
+	sed 's/import FandangoLexerBase/import */' $@ > $@~ && mv $@~ $@
 
-.PHONY: format
-format:
+$(PARSER)/FandangoParser.py: $(LEXER_G4) $(PARSER_G4) Makefile
+	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
+		-visitor -listener $(PARSER_G4)
+	$(BLACK) $(SRC)/language
+
+$(CPP_PARSER)/FandangoLexer.cpp: $(LEXER_G4) Makefile
+	$(ANTLR) -Dlanguage=Cpp -Xexact-output-dir -o $(CPP_PARSER) \
+		$(LEXER_G4)
+	sed -e '/^#include/a\'$$'\n''#include "FandangoLexerBase.h"' $(CPP_PARSER)/FandangoLexer.h > $(CPP_PARSER)/FandangoLexer.h~ && mv $(CPP_PARSER)/FandangoLexer.h~ $(CPP_PARSER)/FandangoLexer.h
+
+$(CPP_PARSER)/FandangoParser.cpp: $(LEXER_G4) $(PARSER_G4) $(SRC)/language/generate-parser.py Makefile
+	$(ANTLR) -Dlanguage=Cpp -Xexact-output-dir -o $(CPP_PARSER) \
+		-visitor -no-listener $(PARSER_G4)
+	cd $(SRC)/language; $(PYTHON) generate-parser.py
+	$(BLACK) $(SRC)/language
+	@echo 'Now run "pip install -e ." to compile C++ files'
+
+.PHONY: format black
+format black:
 	$(BLACK) src
 
 ## Documentation
@@ -250,7 +266,7 @@ credit:
 # so we can run 'make tests' quickly (see above)
 # without having to reinstall things
 install-test install-tests:
-	$(PIP) install pytest
+	$(PIP) install pytest mypy
 	$(PIP) install -e ".[test]"
 
 uninstall:

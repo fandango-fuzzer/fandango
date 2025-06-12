@@ -1,5 +1,5 @@
-# GitHub Actions Workflow: Python Tests with Caching
-# This workflow automates running tests on Python code using pytest and speeds up the process using caching.
+# GitHub Actions Workflow: Python Tests with Caching and LLVM
+# This workflow automates running tests on Python code using pytest, includes LLVM, and speeds up the process using caching.
 
 name: Tests
 
@@ -28,41 +28,42 @@ jobs:
 
       # Step 2: Set up Python environment
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'pip'
 
       # Step 3: Cache pip dependencies to speed up installs
       - name: Cache pip dependencies
         uses: actions/cache@v3
         with:
-          path: ~/.cache/pip  # Path to cache
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('Makefile') }}  # Unique cache key based on the OS, Python version, and Makefile hash
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('Makefile') }}
           restore-keys: |
             ${{ runner.os }}-pip-${{ matrix.python-version }}-
 
-      # Step 4: Install system-level dependencies required by the project
+      # Step 5: Install system dependencies
       - name: Install system dependencies
         run: |
-          sudo apt-get update && sudo apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config libarchive-tools
+          sudo apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config libarchive-tools llvm
           pip install pygraphviz
 
-      # Step 5: Install Python dependencies using make
+      # Step 6: Install Python dependencies using make
       - name: Install dependencies with Makefile
         run: |
-          python -m pip install --upgrade pip  # Upgrade pip to the latest version
-          make install-test  # Install dependencies using the Makefile
+          python -m pip install --upgrade pip
+          make install-test
 
-      # Step 6: Run tests using pytest
+      # Step 7: Run tests using pytest
       - name: Run tests with pytest
         run: |
-          make tests  # Run the tests
+          make tests
 
-      # Step 7: Cache installed packages for system dependencies
+      # Step 8: Cache installed packages for system dependencies
       - name: Cache pygraphviz dependencies
         uses: actions/cache@v3
         with:
-          path: /usr/local/lib/python3.11/dist-packages  # Path to cache the installed system dependencies
+          path: /usr/local/lib/python3.11/dist-packages
           key: pygraphviz-${{ runner.os }}-python3.11
           restore-keys: |
             pygraphviz-${{ runner.os }}-

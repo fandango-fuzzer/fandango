@@ -24,11 +24,9 @@ def run():
     fandango = Fandango(
         grammar,
         constraints,
-        max_generations=100,
-        desired_solutions=10,
         logger_level=LoggerLevel.DEBUG,
     )
-    fandango.evolve()
+    fandango.evolve(max_generations=100, desired_solutions=10)
 
     for solution in fandango.solution:
         print(count_g_params(solution))
