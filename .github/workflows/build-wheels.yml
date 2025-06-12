@@ -23,7 +23,6 @@ jobs:
           - macos-latest # macOS 14: https://github.com/actions/runner-images
           - macos-15
 
-
     steps:
       - uses: actions/checkout@v3
 
@@ -37,7 +36,28 @@ jobs:
           # Signal setup.py to fail if binary build fails
           SPAM_EXAMPLE_REQUIRE_CI_BINARY_BUILD: ~
 
-      - uses: actions/upload-artifact@v4
+      - name: Store wheels
+        uses: actions/upload-artifact@v4
         with:
-          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          name: temp-wheels-${{ github.run_id }}-${{ matrix.os }}
           path: ./wheelhouse/
+          retention-days: 1  # We only need these temporarily
+
+  upload_wheels:
+    name: Upload all wheels
+    needs: build_wheels  # This ensures this job only runs after all builds succeed
+    runs-on: ubuntu-latest
+    if: success()  # Extra check to ensure all previous jobs succeeded
+    steps:
+      - name: Download all wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: temp-wheels-${{ github.run_id }}-*
+          merge-multiple: true
+          path: ./all-wheels
+
+      - name: Upload final wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: all-wheels-${{ github.run_id }}
+          path: ./all-wheels/
