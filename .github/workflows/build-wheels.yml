@@ -1,7 +1,4 @@
-# GitHub Actions Workflow: Python Tests with Caching and LLVM
-# This workflow automates running tests on Python code using pytest, includes LLVM, and speeds up the process using caching.
-
-name: Tests
+name: Build wheels
 
 on:
   push:
@@ -21,8 +18,11 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - windows-latest
-          - macos-latest
+          - windows-latest # Windows Server 2022
+          - windows-2025
+          - macos-latest # macOS 14: https://github.com/actions/runner-images
+          - macos-15
+
 
     steps:
       - uses: actions/checkout@v3
@@ -37,7 +37,7 @@ jobs:
           # Signal setup.py to fail if binary build fails
           SPAM_EXAMPLE_REQUIRE_CI_BINARY_BUILD: ~
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          path: ./wheelhouse/*.whl
-
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: ./wheelhouse/
