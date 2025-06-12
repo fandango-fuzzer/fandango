@@ -7,7 +7,7 @@ def main():
         grammar, constraints = parse(f, use_stdlib=False)
 
     fandango = Fandango(
-        grammar=grammar, constraints=constraints, population_size=100, logger_level=LoggerLevel.ERROR)
+        grammar=grammar, constraints=constraints, population_size=100, logger_level=LoggerLevel.INFO)
     solutions = fandango.evolve()
 
 

@@ -1683,7 +1683,7 @@ class PythonProcessor(FandangoParserVisitor):
                 raise FandangoValueError(
                     f"Nonterminals can only be used in grammars and constraints, not in regular Python code: {ctx.getText()}"
                 )
-            decorators.append(expression)
+            decorators.append(tree)
         return decorators
 
     def visitBlock(self, ctx: FandangoParser.BlockContext):

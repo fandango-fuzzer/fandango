@@ -346,10 +346,23 @@ class ProgIn(FandangoParty):
     def __init__(self):
         super().__init__(Ownership.FUZZER)
         self.proc = ProcessManager.instance().get_process()
+        self._close_post_transmit = False
+
+    @property
+    def close_post_transmit(self) -> bool:
+        return self._close_post_transmit
+
+    @close_post_transmit.setter
+    def close_post_transmit(self, value: bool):
+        if self._close_post_transmit == value:
+            return
+        self._close_post_transmit = value
 
     def on_send(self, message: DerivationTree, recipient: Optional[str]):
         self.proc.stdin.write(message.to_string())
         self.proc.stdin.flush()
+        if self.close_post_transmit:
+            self.proc.stdin.close()
 
 
 class FandangoIO:
