@@ -134,6 +134,8 @@ class NonTerminalSearch(abc.ABC):
     A non-terminal search is a search for specific non-terminals in a derivation tree.
     """
 
+    IS_STAR = False  # Indicates that this is a star search
+
     @abc.abstractmethod
     def find(
         self,
@@ -148,6 +150,21 @@ class NonTerminalSearch(abc.ABC):
         :param Optional[Collection[DerivationTree]] population: The population of derivation trees to search in.
         :return List[Container]: The list of containers that hold the matching derivation trees.
         """
+
+    def quantify(
+        self,
+        tree: DerivationTree,
+        scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
+        population: Optional[Collection[DerivationTree]] = None,
+    ) -> List[Container]:
+        """
+        Quantify the number of non-terminals in the derivation tree that match the search criteria.
+        :param DerivationTree tree: The derivation tree.
+        :param Optional[Dict[NonTerminal, List[DerivationTree]]] scope: The scope of non-terminals matching to trees.
+        :param Optional[Collection[DerivationTree]] population: The population of derivation trees to search in.
+        :return int: The number of matching non-terminals.
+        """
+        return self.find(tree, scope, population)
 
     @abc.abstractmethod
     def find_direct(
@@ -579,6 +596,8 @@ class StarSearch(NonTerminalSearch):
     Non-terminal search that finds the non-terminals that match the star search criteria.
     """
 
+    IS_STAR = True  # Indicates that this is a star search
+
     def __init__(self, base: NonTerminalSearch):
         """
         Initialize the StarSearch with the given base non-terminal search.
@@ -586,20 +605,44 @@ class StarSearch(NonTerminalSearch):
         """
         self.base = base
 
-    def find(
+    def _find(
         self,
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
         population: Optional[Collection[DerivationTree]] = None,
-    ) -> List[Container]:
-        trees = sum(
+    ) -> List[DerivationTree]:
+        return sum(
             [
                 r.get_trees()
                 for r in self.base.find(tree, scope=scope, population=population)
             ],
             [],
         )
-        return [TreeList(trees)]
+
+    def find(
+        self,
+        tree: DerivationTree,
+        scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
+        population: Optional[Collection[DerivationTree]] = None,
+    ) -> List[Container]:
+        return [TreeList(self._find(tree, scope=scope, population=population))]
+
+    def quantify(
+        self,
+        tree: DerivationTree,
+        scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
+        population: Optional[Collection[DerivationTree]] = None,
+    ) -> List[Container]:
+        """
+        Quantify the number of non-terminals in the derivation tree that match the star search criteria.
+        :param DerivationTree tree: The derivation tree.
+        :param Optional[Dict[NonTerminal, List[DerivationTree]]] scope: The scope of non-terminals matching to trees.
+        :param Optional[Collection[DerivationTree]] population: The population of derivation trees to search in.
+        :return int: The number of matching non-terminals.
+        """
+        return [
+            Tree(tree) for tree in self._find(tree, scope=scope, population=population)
+        ]
 
     def find_direct(
         self,
@@ -628,6 +671,8 @@ class PopulationSearch(NonTerminalSearch):
     Non-terminal search that finds the non-terminals that match the star search criteria in the entire population.
     """
 
+    IS_STAR = True
+
     def __init__(self, base: NonTerminalSearch):
         """
         Initialize the PopulationSearch with the given base non-terminal search.
@@ -635,15 +680,15 @@ class PopulationSearch(NonTerminalSearch):
         """
         self.base = base
 
-    def find(
+    def _find(
         self,
         tree: DerivationTree,
         scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
         population: Optional[Collection[DerivationTree]] = None,
-    ) -> List[Container]:
+    ) -> List[DerivationTree]:
         if population is None:
             raise ValueError("Population is required for PopulationSearch")
-        trees = sum(
+        return sum(
             [
                 r.get_trees()
                 for r in self.base.find_all(
@@ -652,7 +697,31 @@ class PopulationSearch(NonTerminalSearch):
             ],
             [],
         )
-        return [TreeList(trees)]
+
+    def find(
+        self,
+        tree: DerivationTree,
+        scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
+        population: Optional[Collection[DerivationTree]] = None,
+    ) -> List[Container]:
+        return [TreeList(self._find(tree, scope=scope, population=population))]
+
+    def quantify(
+        self,
+        tree: DerivationTree,
+        scope: Optional[Dict[NonTerminal, List[DerivationTree]]] = None,
+        population: Optional[Collection[DerivationTree]] = None,
+    ) -> List[Container]:
+        """
+        Quantify the number of non-terminals in the derivation tree that match the star search criteria.
+        :param DerivationTree tree: The derivation tree.
+        :param Optional[Dict[NonTerminal, List[DerivationTree]]] scope: The scope of non-terminals matching to trees.
+        :param Optional[Collection[DerivationTree]] population: The population of derivation trees to search in.
+        :return int: The number of matching non-terminals.
+        """
+        return [
+            Tree(tree) for tree in self._find(tree, scope=scope, population=population)
+        ]
 
     def find_direct(
         self,
