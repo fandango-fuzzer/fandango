@@ -164,6 +164,7 @@ class SocketParty(FandangoParty):
 
     def _connect(self):
         if self.endpoint_type == EndpointType.SERVER:
+            assert self.sock is not None
             self.sock.bind((self.ip, self.port))
             self.sock.listen(1)
         self.running = True
@@ -201,12 +202,14 @@ class SocketParty(FandangoParty):
         with self.lock:
             if self.connection is None:
                 if self.endpoint_type == EndpointType.SERVER:
+                    assert self.sock is not None
                     while self.running:
                         rlist, _, _ = select.select([self.sock], [], [], 0.1)
                         if rlist:
                             self.connection, _ = self.sock.accept()
                             break
                 else:
+                    assert self.sock is not None
                     self.sock.setblocking(False)
                     try:
                         self.sock.connect((self._ip, self._port))
@@ -226,6 +229,7 @@ class SocketParty(FandangoParty):
 
         while self.running:
             try:
+                assert self.connection is not None
                 rlist, _, _ = select.select([self.connection], [], [], 0.1)
                 if rlist and self.running:
                     data = self.connection.recv(1024)
@@ -243,6 +247,7 @@ class SocketParty(FandangoParty):
         self.transmit(message, recipient)
 
     def transmit(self, message: DerivationTree, recipient: Optional[str]):
+        assert self.connection is not None
         if message.contains_bits():
             self.connection.sendall(message.to_bytes())
         else:
@@ -354,6 +359,7 @@ class FandangoIO:
     def instance(cls) -> "FandangoIO":
         if cls.__instance is None:
             FandangoIO()
+        assert cls.__instance is not None
         return cls.__instance
 
     def __init__(self):
@@ -406,6 +412,7 @@ class ProcessManager:
     def instance(cls) -> "ProcessManager":
         if cls.__instance is None:
             ProcessManager()
+        assert cls.__instance is not None
         return cls.__instance
 
     def get_process(self):
