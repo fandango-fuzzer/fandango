@@ -411,7 +411,7 @@ def parse(
     lazy: bool = False,
     given_grammars: list[Grammar] = [],
     start_symbol: Optional[str] = None,
-    includes: list[str] = [],
+    includes: Optional[list[str]] = [],
     max_repetitions: int = 5,
 ) -> tuple[Optional[Grammar], list[Constraint | SoftValue]]:
     """
