@@ -6,6 +6,7 @@ import subprocess
 import sys
 import threading
 import time
+from typing import Optional
 
 from fandango import FandangoError
 from fandango.language.tree import DerivationTree
@@ -58,7 +59,7 @@ class FandangoParty(object):
     :message: The message to send.
     """
 
-    def on_send(self, message: DerivationTree, recipient: str) -> None:
+    def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
         print(f"({self.class_name}): {message.to_string()}")
 
     """
@@ -82,14 +83,14 @@ class SocketParty(FandangoParty):
     ):
         super().__init__(ownership)
         self.running = False
-        self._ip_type = ip_type
-        self._protocol_type = protocol_type
-        self._ip = ip
-        self._port = port
-        self._endpoint_type = endpoint_type
-        self.sock = None
-        self.connection = None
-        self.send_thread = None
+        self._ip_type: IpType = ip_type
+        self._protocol_type: Protocol = protocol_type
+        self._ip: str = ip
+        self._port: int = port
+        self._endpoint_type: EndpointType = endpoint_type
+        self.sock: Optional[socket.socket] = None
+        self.connection: Optional[socket.socket] = None
+        self.send_thread: Optional[threading.Thread] = None
         self.lock = threading.Lock()
 
     @property
@@ -235,13 +236,13 @@ class SocketParty(FandangoParty):
                 self.running = False
                 break
 
-    def on_send(self, message: DerivationTree, recipient: str):
+    def on_send(self, message: DerivationTree, recipient: Optional[str]):
         if not self.running:
             raise FandangoError("Socket not running!")
         self.wait_accept()
         self.transmit(message, recipient)
 
-    def transmit(self, message: DerivationTree, recipient: str):
+    def transmit(self, message: DerivationTree, recipient: Optional[str]):
         if message.contains_bits():
             self.connection.sendall(message.to_bytes())
         else:
@@ -298,7 +299,7 @@ class STDOUT(FandangoParty):
         super().__init__(Ownership.FUZZER)
         self.stream = sys.stdout
 
-    def on_send(self, message: DerivationTree, recipient: str):
+    def on_send(self, message: DerivationTree, recipient: Optional[str]):
         self.stream.write(message.to_string())
         # print(message.to_string())
 
@@ -341,13 +342,13 @@ class ProgIn(FandangoParty):
         super().__init__(Ownership.FUZZER)
         self.proc = ProcessManager.instance().get_process()
 
-    def on_send(self, message: DerivationTree, recipient: str):
+    def on_send(self, message: DerivationTree, recipient: Optional[str]):
         self.proc.stdin.write(message.to_string())
         self.proc.stdin.flush()
 
 
 class FandangoIO:
-    __instance = None
+    __instance: Optional["FandangoIO"] = None
 
     @classmethod
     def instance(cls) -> "FandangoIO":
@@ -384,14 +385,14 @@ class FandangoIO:
             self.receive.clear()
 
     def transmit(
-        self, sender: str, recipient: str | None, message: DerivationTree
+        self, sender: str, recipient: Optional[str], message: DerivationTree
     ) -> None:
         if sender in self.parties.keys():
             self.parties[sender].on_send(message, recipient)
 
 
 class ProcessManager:
-    __instance = None
+    __instance: Optional["ProcessManager"] = None
 
     def __init__(self):
         if ProcessManager.__instance is not None:
