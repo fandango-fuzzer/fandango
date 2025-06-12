@@ -300,7 +300,7 @@ class STDOUT(FandangoParty):
 
     def on_send(self, message: DerivationTree, recipient: str):
         self.stream.write(message.to_string())
-        #print(message.to_string())
+        # print(message.to_string())
 
 
 class STDIN(FandangoParty):
@@ -335,6 +335,7 @@ class ProgOut(FandangoParty):
             line = self.proc.stdout.readline()
             self.receive_msg("ProgOut", line)
 
+
 class ProgIn(FandangoParty):
     def __init__(self):
         super().__init__(Ownership.FUZZER)
@@ -343,7 +344,6 @@ class ProgIn(FandangoParty):
     def on_send(self, message: DerivationTree, recipient: str):
         self.proc.stdin.write(message.to_string())
         self.proc.stdin.flush()
-
 
 
 class FandangoIO:
@@ -428,7 +428,14 @@ class ProcessManager:
         command = self.command
         if command is None:
             return
-        self.proc = subprocess.Popen(shlex.split(command), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        self.proc = subprocess.Popen(
+            shlex.split(command),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+
 
 def set_program_command(command: str):
     """
