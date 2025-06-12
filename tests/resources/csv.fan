@@ -1,7 +1,7 @@
 <start> ::= <csv_file>
 <csv_file> ::= <csv_header> <csv_records>
 <csv_header> ::= <csv_record>
-<csv_records> ::= <csv_record> <csv_records> | ""st
+<csv_records> ::= <csv_record> <csv_records> | ""
 <csv_record> ::= <csv_string_list> "\n"
 <csv_string_list> ::= <raw_field> | <raw_field> ";" <csv_string_list>
 <raw_field> ::= <simple_field> | <quoted_field>

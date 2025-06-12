@@ -6,6 +6,7 @@ import time
 import typing
 from collections import defaultdict
 
+import re
 import exrex
 
 from copy import deepcopy
@@ -252,7 +253,7 @@ class Repetition(Node):
         nodes = []
         if len(searches) != 1:
             raise FandangoValueError(
-                "Computed repetition requires exactly one or zero searches!"
+                "Computed repetition requires exactly one or zero searches"
             )
 
         search_name, search = next(iter(searches.items()))
@@ -261,7 +262,7 @@ class Repetition(Node):
         )
         if len(nodes) == 0:
             raise FandangoValueError(
-                f"Couldn't find search target ({search}) in prefixed DerivationTree for computed repetition!"
+                f"Couldn't find search target ({search}) in prefixed DerivationTree for computed repetition"
             )
 
         target_name, target_container = nodes[-1]
@@ -564,7 +565,10 @@ class LiteralGenerator:
         return f"LiteralGenerator({self.call!r}, {self.nonterminals!r})"
 
     def __str__(self):
-        return str(self.call)
+        # Generators are created with internal variables;
+        # we replace them with "..." to avoid cluttering the output.
+        s = re.sub(r"___[0-9a-zA-Z_]+___", r"...", str(self.call))
+        return s
 
     def __eq__(self, other):
         return (
@@ -1343,6 +1347,11 @@ class Grammar(NodeVisitor):
         def construct_incomplete_tree(
             self, state: ParseState, table: list[set[ParseState] | Column]
         ) -> DerivationTree:
+            """
+            Construct a partially parsed derivation tree up to a given state.
+            :param state: The parse state to construct the tree for.
+            :param table: The parse table.
+            """
             current_tree = Grammar.ParserDerivationTree(
                 state.nonterminal, state.children
             )
@@ -2068,7 +2077,7 @@ class Grammar(NodeVisitor):
             or isinstance(string, tuple)
         ):
             raise TypeError(
-                f"Generator {self.generators[symbol]} must return string, bytes, int, or tuple"
+                f"Generator {self.generators[symbol]} must return string, bytes, int, or tuple (returned {string!r})"
             )
 
         if isinstance(string, tuple):
@@ -2202,12 +2211,12 @@ class Grammar(NodeVisitor):
     def __repr__(self):
         return "\n".join(
             [
-                f"{key} ::= {str(value)}{' := ' + self.generators[key] if key in self.generators else ''}"
+                f"{key} ::= {str(value)}{' := ' + str(self.generators[key]) if key in self.generators else ''}"
                 for key, value in self.rules.items()
             ]
         )
 
-    def msg_parties(self, include_recipients: bool = True):
+    def msg_parties(self, include_recipients: bool = True) -> set[str]:
         found_parties = set()
         for nt, rule in self.rules.items():
             found_parties = found_parties.union(
@@ -2481,6 +2490,9 @@ class Grammar(NodeVisitor):
         """
         if isinstance(start, str):
             start = NonTerminal(start)
+
+        if start not in self.rules:
+            raise FandangoValueError(f"Start symbol {start} not defined in grammar")
 
         # We start on the right hand side of the start symbol
         start_node = self.rules[start]

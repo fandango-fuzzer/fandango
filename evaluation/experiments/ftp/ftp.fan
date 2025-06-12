@@ -56,7 +56,7 @@ where (not contains_nt(<start>, NonTerminal('<request_mlsd>')))
     or (contains_nt(<start>, NonTerminal('<request_set_epassive>')) and contains_nt(<start>, NonTerminal('<request_set_type>')))
 
 def contains_nt(tree, nt):
-    for msg in tree.find_protocol_msgs():
+    for msg in tree.protocol_msgs():
         if msg.msg.symbol == nt:
             return True
     return False
@@ -114,39 +114,28 @@ def feat_response():
 <exchange_mlsd> ::= <ClientControl:ServerControl:request_mlsd><ServerControl:ClientControl:open_mlsd><mlsd_transfer>
 <request_mlsd> ::= 'MLSD\r\n'
 <open_mlsd> ::= '150 Opening BINARY mode data connection for MLSD\r\n'
-<mlsd_transfer> ::= <ServerData:ClientData:mlsd_data>+<ServerControl:ClientControl:finalize_mlsd>
+<mlsd_transfer> ::= <ServerData:ClientData:mlsd_data><ServerControl:ClientControl:finalize_mlsd>
 <finalize_mlsd> ::= '226 Transfer complete\r\n'
-<mlsd_data> ::= (<mlsd_data_folder> | <mlsd_data_file>){2, 2}
-<mlsd_data_folder> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_folder> ';type=' <mlsd_type_folder> ';unique=' <mlsd_unique> ';UNIX.group=' <mlsd_data_user_uid> ';UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=' <mlsd_data_user_uid> ';UNIX.ownername=the_user; ' <mlsd_folder> '\r\n'
+<mlsd_data> ::= (<mlsd_data_folder> | <mlsd_data_file>)+
+<mlsd_data_folder> ::= <mlsd_data_folder_cdir> | <mlsd_data_folder_pdir> | <mlsd_data_folder_dir>
+<mlsd_data_folder_cdir> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_folder> ';type=cdir;unique=' <mlsd_unique> ';UNIX.group=' <mlsd_data_user_uid> ';UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=' <mlsd_data_user_uid> ';UNIX.ownername=the_user; .\r\n'
+<mlsd_data_folder_pdir> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_folder> ';type=pdir;unique=' <mlsd_unique> ';UNIX.group=' <mlsd_data_user_uid> ';UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=' <mlsd_data_user_uid> ';UNIX.ownername=the_user; ..\r\n'
+<mlsd_data_folder_dir> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_folder> ';type=dir;unique=' <mlsd_unique> ';UNIX.group=' <mlsd_data_user_uid> ';UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=' <mlsd_data_user_uid> ';UNIX.ownername=the_user; ' <filesystem_name> '\r\n'
 <mlsd_data_file> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_file> ';size=' <mlsd_size> ';type=' <mlsd_type_file> ';unique=' <mlsd_unique> ';UNIX.group=' <mlsd_data_user_uid> ';UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=' <mlsd_data_user_uid> ';UNIX.ownername=the_user; ' <mlsd_file> '\r\n'
 <mlsd_data_user_uid> ::= <number>
 <mlsd_unique> ::= r'[A-Z0-9]+'
 
 where int(<mlsd_data_user_uid>.<number>) < 1000
 
-where forall <data> in <mlsd_transfer>.<mlsd_data>:
-    forall <mlsd_folder> in <data>..<mlsd_folder>:
-        is_unique_folder_and_file(<mlsd_folder>, <data>)
+where forall <data> in <mlsd_data>:
+    len(<data>.find_all_nodes(NonTerminal('<mlsd_data_folder_cdir>'), exclude_read_only=False)) == 1
+    and len(<data>.find_all_nodes(NonTerminal('<mlsd_data_folder_pdir>'), exclude_read_only=False)) == 1
+
 
 where forall <data> in <mlsd_transfer>.<mlsd_data>:
     forall <mlsd_file> in <data>..<mlsd_file>:
         is_unique_folder_and_file(<mlsd_file>, <data>)
 
-where forall <data> in <mlsd_transfer>.<mlsd_data>:
-    exists <mlsd_folder> in <data>..<mlsd_folder>:
-        str(<mlsd_folder>) == '.'
-
-where forall <data> in <mlsd_transfer>.<mlsd_data>:
-    exists <mlsd_folder> in <data>..<mlsd_folder>:
-        str(<mlsd_folder>) == '..'
-
-where forall <data_folder> in <mlsd_data_folder>:
-    ((str(<data_folder>.<mlsd_folder>) != '.') or (str(<data_folder>.<mlsd_type_folder>) == 'cdir'))
-    and ((str(<data_folder>.<mlsd_folder>) == '.') or (str(<data_folder>.<mlsd_type_folder>) != 'cdir'))
-
-where forall <data_folder> in <mlsd_data_folder>:
-    ((str(<data_folder>.<mlsd_folder>) != '..') or (str(<data_folder>.<mlsd_type_folder>) == 'pdir'))
-    and ((str(<data_folder>.<mlsd_folder>) == '..') or (str(<data_folder>.<mlsd_type_folder>) != 'pdir'))
 
 def is_unique_folder_and_file(current_file_or_folder, data):
     files_and_dirs = data.find_all_trees(NonTerminal('<mlsd_folder>'))
@@ -175,7 +164,7 @@ def is_unique_folder_and_file(current_file_or_folder, data):
 
 <mlsd_permission> ::= '0' <permission_byte>{3}
 <permission_byte> ::= <number_tail> := randint(0, 7)
-<mlsd_folder> ::= '.' | '..' | <filesystem_name>
+<mlsd_folder> ::= <filesystem_name>
 <mlsd_file> ::= <filesystem_name> ('.' r'[a-zA-Z0-9]+')?
 
 # PWD requests the current working directory. The server answers with a (random) path.
