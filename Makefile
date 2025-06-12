@@ -224,18 +224,39 @@ run-all: $(TEST_MARKER) $(EVALUATION_MARKER) $(EXPERIMENTS_MARKER)
 install:
 	$(PIP) install -e .
 
+## Statistics
+.PHONY: stats statistics
+stats statistics:
+	@for pattern in .py .g4 .md .fan .yml file; do \
+		printf "%12s" "*$$pattern lines:"; \
+		git ls-files | \
+		grep ".*$$pattern"'$$' | \
+		grep -v 'src/fandango/language/parser/' | \
+		grep -v 'src/fandango/language/cpp_parser/' | \
+		grep -v 'utils/dtd2fan/.*\.fan' | \
+		xargs wc -l | grep ' total$$'; \
+	done
+	@printf '  All lines:'
+	@git ls-files | \
+	grep -v 'src/fandango/language/parser/' | \
+	grep -v 'src/fandango/language/cpp_parser/' | \
+	grep -v 'utils/dtd2fan/.*\.fan' | \
+	grep -E '(\.py|\.g4|\.md|\.fan|\.yml|file)$$' | xargs wc -l | grep ' total$$'
+
 ## Credit - from https://gist.github.com/Alpha59/4e9cd6c65f7aa2711b79
-.PHONY: credit
-credit:
+.PHONY: credit credits
+credit credits:
 	@echo "Lines contributed"
 	@for pattern in .py .g4 .md .fan .toml .yml file; do \
 		echo "*$$pattern files:"; \
 		git ls-files | \
 		grep "$$pattern"'$$' | \
 		grep -v 'src/fandango/language/parser/' | \
+		grep -v 'src/fandango/language/cpp_parser/' | \
 		grep -v 'utils/dtd2fan/.*\.fan' | \
 		xargs -n1 git blame -wfn | \
 		sed 's/joszamama/José Antonio/g' | \
+		sed 's/Leon/Leon Bettscheider/g' | \
 		sed 's/alex9849/Alexander Liggesmeyer/g' | \
 		perl -n -e '/\((.*)\s[\d]{4}\-/ && print $$1."\n"' | \
 		awk '{print $$1" "$$2}' | \
@@ -245,6 +266,8 @@ credit:
 		sort -nr; \
 		echo; \
 	done
+
+	
 
 # We separate _installing_ from _running_ tests
 # so we can run 'make tests' quickly (see above)
