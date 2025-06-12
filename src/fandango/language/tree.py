@@ -92,6 +92,7 @@ class DerivationTree:
         self._sources: list["DerivationTree"] = []
         if sources is not None:
             self.sources = sources
+        self.origin_nodes: list[str] = []
         self.read_only = read_only
         self._size = 1
         self.set_children(children or [])
@@ -272,6 +273,19 @@ class DerivationTree:
             for child in [*self._children, *self._sources]
             if child.symbol == symbol
         ]
+
+    def find_by_origin(self, node_id: str) -> list["DerivationTree"]:
+        trees = sum(
+            [
+                child.find_by_origin(node_id)
+                for child in [*self._children, *self._sources]
+                if child.symbol.is_non_terminal
+            ],
+            [],
+        )
+        if node_id in self.origin_nodes:
+            trees.append(self)
+        return trees
 
     def __getitem__(self, item) -> "DerivationTree":
         if isinstance(item, list) and len(item) == 1:

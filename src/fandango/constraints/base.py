@@ -979,6 +979,106 @@ class ForallConstraint(Constraint):
             self.statement.accept(visitor)
 
 
+class RepetitionBoundsConstraint(Constraint):
+    """
+    Represents a constraint that checks the number of repetitions of a certain pattern in a tree.
+    This is useful for ensuring that certain patterns do not occur too frequently or too infrequently.
+    """
+
+    def __init__(self, repetition_id: str, expr_data_min=("0", [], {}), expr_data_max=(f"{None}", [], {}), *args, **kwargs):
+        """
+        Initializes the repetition bounds constraint with the given pattern and repetition bounds.
+        :param NonTerminalSearch pattern: The pattern to check for repetitions.
+        :param int min_reps: The minimum number of repetitions allowed.
+        :param int max_reps: The maximum number of repetitions allowed.
+        :param args: Additional arguments.
+        :param kwargs: Additional keyword arguments.
+        """
+        super().__init__(*args, **kwargs)
+        self.repetition_id = repetition_id
+        self.expr_data_min = expr_data_min
+        self.expr_data_max = expr_data_max
+
+    def _compute_rep_bound(self, tree: "DerivationTree", expr_data):
+        expr, _, searches = expr_data
+        if expr == "None":
+            expr = f"{MAX_REPETITIONS}"
+        local_cpy = self.local_variables.copy()
+
+        nodes = []
+        if len(searches) != 1:
+            raise FandangoValueError(
+                "Computed repetition requires exactly one or zero searches"
+            )
+
+        search_name, search = next(iter(searches.items()))
+        nodes.extend(
+            [(search_name, container) for container in search.find(tree.get_root())]
+        )
+        if len(nodes) == 0:
+            raise FandangoValueError(
+                f"Couldn't find search target ({search}) in prefixed DerivationTree for computed repetition"
+            )
+
+        target_name, target_container = nodes[-1]
+        target = target_container.evaluate()
+        local_cpy[target_name] = target
+        if isinstance(target, DerivationTree):
+            target.set_all_read_only(True)
+            first_uncommon_idx = 0
+            for idx, (target_parent, tree_parent) in enumerate(
+                zip(target.get_path(), tree.get_path())
+            ):
+                if target_parent.symbol == tree_parent.symbol:
+                    first_uncommon_idx = idx + 1
+                else:
+                    break
+            for parent in target.get_path()[first_uncommon_idx:]:
+                parent.read_only = True
+            for parent in tree.get_path()[first_uncommon_idx:]:
+                parent.read_only = True
+
+        return eval(expr, self.global_variables, local_cpy)
+
+    def min(self, tree: DerivationTree):
+        return self._compute_rep_bound(tree, self.expr_data_min)
+
+    def max(self, tree: DerivationTree):
+        return self._compute_rep_bound(tree, self.expr_data_max)
+
+    def fitness(
+        self, tree: DerivationTree, scope: Optional[dict[NonTerminal, DerivationTree]] = None
+    ) -> ConstraintFitness:
+        """
+        Calculate the fitness of the tree based on the number of repetitions of the pattern.
+        :param DerivationTree tree: The tree to evaluate.
+        :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
+        :return ConstraintFitness: The fitness of the tree.
+        """
+        trees = tree.find_by_origin(self.repetition_id)
+        if len(trees) == 0:
+            return ConstraintFitness(0, 1, True)
+        ref_tree = trees[0].split_end()
+        ref_tree = ref_tree.parent
+        ref_tree.children = ref_tree.children[:-1]
+        bound_min = self.min(ref_tree)
+        bound_max = self.max(ref_tree)
+        if bound_min <= len(trees) <= bound_max:
+            return ConstraintFitness(1, 1, True)
+        return ConstraintFitness(0, 1, False, failing_trees=[])
+
+
+    def __repr__(self):
+        return f"RepetitionBounds({repr(self.pattern)}, {self.min_reps}, {self.max_reps})"
+
+    def __str__(self):
+        return f"RepetitionBounds({str(self.pattern)}, {self.min_reps}, {self.max_reps})"
+
+    def accept(self, visitor: "ConstraintVisitor"):
+        """Accepts a visitor to traverse the constraint structure."""
+        pass  # No specific visit method needed for this type
+
+
 class ConstraintVisitor:
     """
     A base class for visiting and processing different types of constraints.
