@@ -69,7 +69,7 @@ class GrammarProcessor(FandangoParserVisitor):
         self,
         local_variables: Optional[dict[str, Any]] = None,
         global_variables: Optional[dict[str, Any]] = None,
-        id_prefix: str = None,
+        id_prefix: Optional[str] = None,
         max_repetitions: int = 5,
     ):
         self.local_variables = local_variables
@@ -79,6 +79,8 @@ class GrammarProcessor(FandangoParserVisitor):
         self.seenParties = set[str]()
         self.additionalRules = dict[NonTerminal, Node]()
         self.max_repetitions = max_repetitions
+        if self.id_prefix is None:
+            self.id_prefix = ""
 
         self.seenAlternatives = 0
         self.seenConcatenations = 0
@@ -1174,7 +1176,7 @@ class SearchProcessor(FandangoParserVisitor):
         for param in ctx.param_with_default():
             arg, d, s, m = self.visitParam_with_default(param)
             if ctx.slash_with_default():
-                args.append(arg),
+                args.append(arg)
                 defaults.append(d)
             else:
                 kwonlyargs.append(arg)
