@@ -61,6 +61,7 @@ jobs:
 
       # Step 3: Set up Python environment
       - name: Set up Python ${{ matrix.python-version }}
+        if: steps.changed-files.outputs.any_changed == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -68,6 +69,7 @@ jobs:
 
       # Step 4: Install mypy
       - name: Install dependencies
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           FANDANGO_SKIP_CPP_PARSER=1 pip install -e .
           pip install mypy
