@@ -91,11 +91,11 @@ class ve_build_ext(build_ext):
     def build_extension(self, ext):
         try:
             build_ext.build_extension(self, ext)
-        except (CCompilerError, DistutilsExecError, DistutilsPlatformError) as e:
+        except (CCompilerError, DistutilsExecError, DistutilsPlatformError):
             raise BuildFailed()
-        except ValueError as e:
+        except ValueError:
             # this can happen on Windows 64 bit, see Python issue 7511
-            if "'path'" in str(e):
+            if "'path'" in str(sys.exc_info()[1]):  # works with Python 2 and 3:
                 raise BuildFailed()
             raise
 
@@ -103,7 +103,11 @@ class ve_build_ext(build_ext):
 # Detect if an alternate interpreter is being used
 is_jython = "java" in sys.platform
 is_pypy = hasattr(sys, "pypy_version_info")
-skip_cpp = os.environ.get("FANDANGO_SKIP_CPP_PARSER", "") == "1"
+skip_cpp = os.environ.get("FANDANGO_SKIP_CPP_PARSER", "").lower() in (
+    "1",
+    "true",
+    "yes",
+)
 
 
 # Force using fallback if using an alternate interpreter
@@ -112,9 +116,9 @@ using_fallback = is_jython or is_pypy or skip_cpp
 if not using_fallback:
     try:
         run_setup(with_binary=True)
-    except BuildFailed as e:
+    except BuildFailed:
         if "FANDANGO_REQUIRE_CI_BINARY_BUILD" in os.environ:
-            raise e
+            raise
         else:
             using_fallback = True
 
