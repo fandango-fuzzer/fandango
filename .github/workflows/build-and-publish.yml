@@ -52,9 +52,6 @@ jobs:
             ANTLR4CPP_STATIC=1
             DISTUTILS_USE_SDK=1
             MSSdk=1
-            CFLAGS=/std:c++17 /D_HAS_STD_BYTE=0
-            CXXFLAGS=/std:c++17 /D_HAS_STD_BYTE=0
-            _CL_=/std:c++17 /D_HAS_STD_BYTE=0
         #   CIBW_BUILD: "cp311-*"
         # Can also be configured directly, using `with:`
         # with:
