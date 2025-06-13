@@ -47,6 +47,8 @@ jobs:
           CIBW_PLATFORM: ${{ matrix.platform }}
           CIBW_ARCHS: ${{ matrix.archs }}
           CIBW_SKIP: ${{ matrix.skip }}
+          CIBW_BUILD_VERBOSITY: 3
+          CIBW_ENVIRONMENT_WINDOWS: "ANTLR4CPP_STATIC=1"
         #   CIBW_BUILD: "cp311-*"
         # Can also be configured directly, using `with:`
         # with:
