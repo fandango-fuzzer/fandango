@@ -43,9 +43,10 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.0.0
         env:
-          CIBW_PLATFORM: ${{ matrix.platform }}
           FANDANGO_REQUIRE_CI_BINARY_BUILD: "1" # Force binary build
+          CIBW_PLATFORM: ${{ matrix.platform }}
           CIBW_ARCHS: ${{ matrix.archs }}
+          CIBW_SKIP: ${{ matrix.skip }}
         #   CIBW_BUILD: "cp311-*"
         # Can also be configured directly, using `with:`
         # with:
