@@ -16,13 +16,7 @@ for known in PLATFORMS:
 def run_setup(with_binary):
     if with_binary:
         extra_compile_args = {
-            "windows": [
-                "/DANTLR4CPP_STATIC",
-                "/Zc:__cplusplus",
-                "/std:c++17",
-                "/EHsc",
-                "/D_USE_STD_CHRONO",  # Enable std::chrono
-            ],
+            "windows": ["/DANTLR4CPP_STATIC", "/Zc:__cplusplus", "/std:c++17"],
             "linux": ["-std=c++17"],
             "darwin": ["-std=c++17"],
             "cygwin": ["-std=c++17"],
@@ -98,15 +92,10 @@ class ve_build_ext(build_ext):
         try:
             build_ext.build_extension(self, ext)
         except (CCompilerError, DistutilsExecError, DistutilsPlatformError) as e:
-            print(f"Build failed with error: {str(e)}")
-            if hasattr(e, "output"):
-                print(f"Compiler output: {e.output}")
-            # Print environment information for debugging
             raise BuildFailed()
         except ValueError as e:
             # this can happen on Windows 64 bit, see Python issue 7511
             if "'path'" in str(e):
-                print(f"Build failed with path error: {str(e)}")
                 raise BuildFailed()
             raise
 
@@ -114,11 +103,7 @@ class ve_build_ext(build_ext):
 # Detect if an alternate interpreter is being used
 is_jython = "java" in sys.platform
 is_pypy = hasattr(sys, "pypy_version_info")
-skip_cpp = os.environ.get("FANDANGO_SKIP_CPP_PARSER", "").lower() in (
-    "1",
-    "true",
-    "yes",
-)
+skip_cpp = os.environ.get("FANDANGO_SKIP_CPP_PARSER", "") == "1"
 
 
 # Force using fallback if using an alternate interpreter
@@ -129,10 +114,6 @@ if not using_fallback:
         run_setup(with_binary=True)
     except BuildFailed as e:
         if "FANDANGO_REQUIRE_CI_BINARY_BUILD" in os.environ:
-            # Require build to pass if running in travis-ci
-            import traceback
-
-            traceback.print_exc()
             raise e
         else:
             using_fallback = True

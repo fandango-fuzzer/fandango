@@ -20,14 +20,13 @@ jobs:
       matrix:
         os: [ linux-intel, linux-arm, windows, macOS-arm ]
         include:
-          - archs: auto64
+          - archs: auto
             platform: auto
           - os: linux-intel
             runs-on: ubuntu-latest
           - os: linux-arm
             runs-on: ubuntu-24.04-arm
           - os: windows
-            skip: "*-win32" # skip building 32-bit wheels
             runs-on: windows-latest
           - os: macos-arm
             runs-on: macos-latest
@@ -41,23 +40,12 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.0.0
+        uses: pypa/cibuildwheel@v2.11.2
         env:
           FANDANGO_REQUIRE_CI_BINARY_BUILD: "1" # Force binary build
           CIBW_PLATFORM: ${{ matrix.platform }}
           CIBW_ARCHS: ${{ matrix.archs }}
-          CIBW_SKIP: ${{ matrix.skip }}
           CIBW_BUILD_VERBOSITY: 3
-          CIBW_ENVIRONMENT_WINDOWS: |
-            ANTLR4CPP_STATIC=1
-            DISTUTILS_USE_SDK=1
-            MSSdk=1
-        #   CIBW_BUILD: "cp311-*"
-        # Can also be configured directly, using `with:`
-        # with:
-        #   package-dir: .
-        #   output-dir: wheelhouse
-        #   config-file: "{package}/pyproject.toml"
 
       - uses: actions/upload-artifact@v4
         with:
