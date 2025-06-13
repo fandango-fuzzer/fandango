@@ -21,6 +21,7 @@ def run_setup(with_binary):
                 "/Zc:__cplusplus",
                 "/std:c++17",
                 "/EHsc",
+                "/W4",  # Warning level 4
             ],
             "linux": ["-std=c++17"],
             "darwin": ["-std=c++17"],
@@ -100,6 +101,13 @@ class ve_build_ext(build_ext):
             print(f"Build failed with error: {str(e)}")
             if hasattr(e, "output"):
                 print(f"Compiler output: {e.output}")
+            # Print environment information for debugging
+            print("\nBuild environment information:")
+            print(f"Platform: {platform.platform()}")
+            print(f"Python version: {sys.version}")
+            print(f"Compiler: {self.compiler.compiler_type}")
+            if self.compiler.compiler_type == "msvc":
+                print(f"MSVC version: {self.compiler.compiler_version}")
             raise BuildFailed()
         except ValueError as e:
             # this can happen on Windows 64 bit, see Python issue 7511

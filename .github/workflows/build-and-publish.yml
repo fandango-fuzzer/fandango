@@ -19,7 +19,7 @@ jobs:
       fail-fast: false  # Ensures all builds run even if some fail
       matrix:
         os: [ linux-intel, linux-arm, windows, macOS-intel, macOS-arm ]
-        python-version: [3.12]  
+        python-version: [3.11]  
         include:
           - archs: auto
             platform: auto
@@ -48,9 +48,9 @@ jobs:
         uses: pypa/cibuildwheel@v3.0.0
         env:
           CIBW_PLATFORM: ${{ matrix.platform }}
-          CIBW_ARCHS: ${{ matrix.archs }}
-          CIBW_BUILD: "cp3*"
           FANDANGO_REQUIRE_CI_BINARY_BUILD: "1" # Force binary build
+          CIBW_ARCHS: ${{ matrix.archs }}
+        #   CIBW_BUILD: "cp311-*"
         # Can also be configured directly, using `with:`
         # with:
         #   package-dir: .
