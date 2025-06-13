@@ -16,7 +16,13 @@ for known in PLATFORMS:
 def run_setup(with_binary):
     if with_binary:
         extra_compile_args = {
-            "windows": ["/DANTLR4CPP_STATIC", "/Zc:__cplusplus", "/std:c++17"],
+            "windows": [
+                "/DANTLR4CPP_STATIC",
+                "/Zc:__cplusplus",
+                "/std:c++17",
+                "/EHsc",
+                "/W4",
+            ],
             "linux": ["-std=c++17"],
             "darwin": ["-std=c++17"],
             "cygwin": ["-std=c++17"],
@@ -91,11 +97,15 @@ class ve_build_ext(build_ext):
     def build_extension(self, ext):
         try:
             build_ext.build_extension(self, ext)
-        except (CCompilerError, DistutilsExecError, DistutilsPlatformError):
+        except (CCompilerError, DistutilsExecError, DistutilsPlatformError) as e:
+            print(f"Build failed with error: {str(e)}")
+            if hasattr(e, "output"):
+                print(f"Compiler output: {e.output}")
             raise BuildFailed()
-        except ValueError:
+        except ValueError as e:
             # this can happen on Windows 64 bit, see Python issue 7511
-            if "'path'" in str(sys.exc_info()[1]):  # works with Python 2 and 3
+            if "'path'" in str(e):
+                print(f"Build failed with path error: {str(e)}")
                 raise BuildFailed()
             raise
 
