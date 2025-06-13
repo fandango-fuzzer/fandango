@@ -1,7 +1,6 @@
 import time
 from io import StringIO
 
-
 from docutils.core import publish_doctree
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
@@ -39,10 +38,14 @@ def evaluate_rest(
 
     time_in_an_hour = time.time() + seconds
 
+    fandango = Fandango(grammar, constraints, logger_level=LoggerLevel.ERROR)
+    fan_gen = fandango.generate()
     while time.time() < time_in_an_hour:
-        fandango = Fandango(grammar, constraints, logger_level=LoggerLevel.ERROR)
-        fandango.evolve(desired_solutions=100)
-        solutions.extend(fandango.solution)
+        try:
+            solution = next(fan_gen)
+            solutions.append(solution)
+        except StopIteration:
+            break
 
     coverage = grammar.compute_grammar_coverage(solutions, 4)
 
@@ -62,4 +65,17 @@ def evaluate_rest(
         coverage,
         set_mean_length,
         set_medium_length,
+    )
+
+
+if __name__ == "__main__":
+    result = evaluate_rest(seconds=10)
+    print(
+        f"Type: {result[0]}, "
+        f"Solutions: {result[1]}, "
+        f"Valid: {result[2]}, "
+        f"Valid Percentage: {result[3]:.2f}%, "
+        f"Coverage: {result[4]}, "
+        f"Mean Length: {result[5]:.2f}, "
+        f"Medium Length: {result[6]:.2f}"
     )
