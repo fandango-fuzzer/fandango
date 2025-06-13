@@ -4,6 +4,7 @@ from typing import Counter, Generator, Union
 from fandango.constraints.base import Constraint, SoftValue
 from fandango.constraints.fitness import FailingTree
 from fandango.language.grammar import DerivationTree, Grammar
+from fandango.execution.analysis import StaticAnalysis, DynamicAnalysis
 from fandango.logger import LOGGER
 
 
@@ -16,6 +17,9 @@ class Evaluator:
         diversity_k: int,
         diversity_weight: float,
         warnings_are_errors: bool = False,
+        sa: StaticAnalysis = None,
+        da: DynamicAnalysis = None,
+        stop_criterion: callable = None,
     ):
         self._grammar = grammar
         self._soft_constraints: list[SoftValue] = []
@@ -27,8 +31,15 @@ class Evaluator:
         self._fitness_cache: dict[int, tuple[float, list[FailingTree]]] = {}
         self._solution_set: set[int] = set()
         self._checks_made = 0
+        self._sa = sa
+        self._da = da
+        self._stop_criterion = stop_criterion
+        self._stop_criterion_met = False
 
         for constraint in constraints:
+            if "DynamicAnalysis" in str(constraint):
+                constraint.global_variables["DynamicAnalysis"] = da.trace_input
+
             if isinstance(constraint, SoftValue):
                 self._soft_constraints.append(constraint)
             elif isinstance(constraint, Constraint):
@@ -168,6 +179,8 @@ class Evaluator:
                 ) / (len(self._hard_constraints) + len(self._soft_constraints))
 
         if fitness >= self._expected_fitness and key not in self._solution_set:
+            if self._stop_criterion:
+                self._stop_criterion_met |= self._stop_criterion(individual)
             self._solution_set.add(key)
             yield individual
 
