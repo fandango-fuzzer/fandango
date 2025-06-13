@@ -22,7 +22,7 @@ jobs:
         include:
           - archs: auto64
             platform: auto
-            skip: ["*-win32", "*-manylinux_i686"] # skip building 32-bit wheels
+            skip: "*-win32,*-manylinux_i686" # skip building 32-bit wheels
           - os: linux-intel
             runs-on: ubuntu-latest
           - os: linux-arm
