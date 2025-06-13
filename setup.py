@@ -119,6 +119,9 @@ if not using_fallback:
     except BuildFailed as e:
         if "FANDANGO_REQUIRE_CI_BINARY_BUILD" in os.environ:
             # Require build to pass if running in travis-ci
+            import traceback
+
+            traceback.print_exc()
             raise e
         else:
             using_fallback = True
