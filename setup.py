@@ -116,10 +116,10 @@ using_fallback = is_jython or is_pypy or skip_cpp
 if not using_fallback:
     try:
         run_setup(with_binary=True)
-    except BuildFailed:
+    except BuildFailed as e:
         if "FANDANGO_REQUIRE_CI_BINARY_BUILD" in os.environ:
             # Require build to pass if running in travis-ci
-            raise
+            raise e
         else:
             using_fallback = True
 
