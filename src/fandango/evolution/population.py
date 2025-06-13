@@ -126,6 +126,23 @@ class PopulationManager:
                     replacements[failing_tree.tree] = suggested_tree
                     fixes_made += 1
         if len(replacements) > 0:
+            # Prevent circular replacements
+            deleted = set()
+            for value in set(replacements.values()):
+                if value in deleted:
+                    continue
+                if value in replacements.keys():
+                    if replacements[value] not in replacements.keys():
+                        deleted.add(replacements[value])
+                        del replacements[value]
+                        continue
+                    if random.random() < 0.5:
+                        deleted.add(replacements[value])
+                        del replacements[value]
+                    else:
+                        deleted.add(replacements[replacements[value]])
+                        del replacements[replacements[value]]
+
             individual = individual.replace_multiple(self._grammar, replacements)
         return individual, fixes_made
 
