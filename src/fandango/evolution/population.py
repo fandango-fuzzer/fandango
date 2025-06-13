@@ -118,6 +118,7 @@ class PopulationManager:
                         )
                         suggested_tree.set_all_read_only(False)
                     else:
+                        assert isinstance(failing_tree.tree.symbol.symbol, str)
                         suggested_tree = self._grammar.parse(
                             value, start=failing_tree.tree.symbol.symbol
                         )
@@ -172,6 +173,7 @@ class IoPopulationManager(PopulationManager):
         tree.append(mounting_option.path[1:], dummy)
 
         fuzz_point = dummy.parent
+        assert fuzz_point is not None
         fuzz_point.set_children(fuzz_point.children[:-1])
         current_pck.node.fuzz(fuzz_point, self._grammar, max_nodes)
 
