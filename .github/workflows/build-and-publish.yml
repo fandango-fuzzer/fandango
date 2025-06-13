@@ -21,7 +21,7 @@ jobs:
         os: [ linux-intel, linux-arm, windows, macOS-intel, macOS-arm ]
         python-version: [3.11]  
         include:
-          - archs: auto
+          - archs: auto64
             platform: auto
           - os: linux-intel
             runs-on: ubuntu-latest
@@ -35,7 +35,7 @@ jobs:
           - os: macos-arm
             # macos-14+ (including latest) are ARM64 runners
             runs-on: macos-latest
-            archs: auto,universal2
+            archs: auto64,universal2
 
     steps:
       - uses: actions/checkout@v4
