@@ -992,7 +992,7 @@ class SearchProcessor(FandangoParserVisitor):
         if ctx.kwargs() and not ctx.arg():
             return self.visit(ctx.kwargs())
 
-        result = list(), list(), dict()
+        result: tuple[list, Any, dict] = list(), list(), dict()
         for arg in ctx.arg():
             result = self.aggregateResult(result, self.visit(arg))
         if ctx.kwargs():
@@ -1008,7 +1008,7 @@ class SearchProcessor(FandangoParserVisitor):
             return self.visit(ctx.expression())
 
     def visitKwargs(self, ctx: FandangoParser.KwargsContext):
-        result = list(), list(), dict()
+        result: tuple[list, Any, dict] = list(), list(), dict()
 
         for kwarg in ctx.kwarg_or_starred():
             result = self.aggregateResult(result, self.visit(kwarg))
@@ -1018,7 +1018,7 @@ class SearchProcessor(FandangoParserVisitor):
         return result
 
     def visitFor_if_clauses(self, ctx: FandangoParser.For_if_clausesContext):
-        result = list(), list(), dict()
+        result: tuple[list, Any, dict] = list(), list(), dict()
         for clause in ctx.for_if_clause():
             result = self.aggregateResult(result, self.visit(clause))
         return result
