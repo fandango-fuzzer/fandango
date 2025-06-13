@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false  # Ensures all builds run even if some fail
       matrix:
-        os: [ linux-intel, linux-arm, windows, macOS-intel, macOS-arm ]
+        os: [ linux-intel, linux-arm, windows, macOS-arm ]
         include:
           - archs: auto64
             platform: auto
