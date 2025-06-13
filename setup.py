@@ -21,6 +21,8 @@ def run_setup(with_binary):
                 "/Zc:__cplusplus",
                 "/std:c++17",
                 "/EHsc",
+                "/D_CRT_SECURE_NO_WARNINGS",
+                "/D_WIN32_WINNT=0x0601",  # Windows 7 or later
             ],
             "linux": ["-std=c++17"],
             "darwin": ["-std=c++17"],

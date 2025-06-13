@@ -22,12 +22,12 @@ jobs:
         include:
           - archs: auto64
             platform: auto
-            skip: "*-win32,*-manylinux_i686" # skip building 32-bit wheels
           - os: linux-intel
             runs-on: ubuntu-latest
           - os: linux-arm
             runs-on: ubuntu-24.04-arm
           - os: windows
+            skip: "*-win32" # skip building 32-bit wheels
             runs-on: windows-latest
           - os: macos-arm
             runs-on: macos-latest
@@ -48,7 +48,12 @@ jobs:
           CIBW_ARCHS: ${{ matrix.archs }}
           CIBW_SKIP: ${{ matrix.skip }}
           CIBW_BUILD_VERBOSITY: 3
-          CIBW_ENVIRONMENT_WINDOWS: "ANTLR4CPP_STATIC=1"
+          CIBW_ENVIRONMENT_WINDOWS: |
+            ANTLR4CPP_STATIC=1
+            DISTUTILS_USE_SDK=1
+            MSSdk=1
+            CFLAGS=/std:c++17
+            CXXFLAGS=/std:c++17
         #   CIBW_BUILD: "cp311-*"
         # Can also be configured directly, using `with:`
         # with:
