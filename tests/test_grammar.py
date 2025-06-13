@@ -8,6 +8,7 @@ from scipy.linalg import solve_lyapunov
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
+from utils import RESOURCES_ROOT, DOCS_ROOT
 
 
 class ConstraintTest(unittest.TestCase):
@@ -23,49 +24,50 @@ class ConstraintTest(unittest.TestCase):
         return count
 
     def test_generate_k_paths(self):
-        file = open("tests/resources/grammar.fan", "r")
-        GRAMMAR, _ = parse(file, use_stdlib=False, use_cache=False)
-        assert GRAMMAR is not None
+        with open(RESOURCES_ROOT / "grammar.fan", "r") as file:
+            grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+        self.assertIsNotNone(grammar)
 
-        kpaths = GRAMMAR._generate_all_k_paths(3)
-        print(len(kpaths))
+        k_paths = grammar._generate_all_k_paths(3)
+        print(len(k_paths))
 
-        for path in GRAMMAR._generate_all_k_paths(3):
+        for path in grammar._generate_all_k_paths(3):
             print(tuple(path))
 
     def test_derivation_k_paths(self):
-        file = open("tests/resources/grammar.fan", "r")
-        GRAMMAR, _ = parse(file, use_stdlib=False, use_cache=False)
-        assert GRAMMAR is not None
+        with open(RESOURCES_ROOT / "grammar.fan", "r") as file:
+            grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+        self.assertIsNotNone(grammar)
 
         random.seed(0)
-        tree = GRAMMAR.fuzz()
+        tree = grammar.fuzz()
         print([t.symbol for t in tree.flatten()])
 
     def test_parse(self):
-        file = open("tests/resources/grammar.fan", "r")
-        GRAMMAR, _ = parse(file, use_stdlib=False, use_cache=False)
-        assert GRAMMAR is not None
-        tree = GRAMMAR.parse("aabb")
+        with open(RESOURCES_ROOT / "grammar.fan", "r") as file:
+            grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+        self.assertIsNotNone(grammar)
+        tree = grammar.parse("aabb")
 
-        for path in GRAMMAR.traverse_derivation(tree):
+        for path in grammar.traverse_derivation(tree):
             print(path)
 
-    def get_solutions(self, grammar, constraints):
+    @staticmethod
+    def get_solutions(grammar, constraints):
         fandango = Fandango(grammar=grammar, constraints=constraints)
         return fandango.evolve(desired_solutions=1)
 
     def test_generators(self):
-        file = open("tests/resources/bar.fan", "r")
-        GRAMMAR, constraints = parse(file, use_stdlib=False, use_cache=False)
+        with open(RESOURCES_ROOT / "bar.fan", "r") as file:
+            grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
         expected = ["bar" for _ in range(1)]
-        actual = self.get_solutions(GRAMMAR, constraints)
+        actual = self.get_solutions(grammar, constraints)
 
         self.assertEqual(expected, actual)
 
     def test_nested_generators(self):
-        file = open("tests/resources/nested_grammar_parameters.fan", "r")
-        grammar, c = parse(file, use_stdlib=False, use_cache=False)
+        with open(RESOURCES_ROOT / "nested_grammar_parameters.fan", "r") as file:
+            grammar, c = parse(file, use_stdlib=False, use_cache=False)
 
         for solution in self.get_solutions(grammar, c):
             self.assertEqual(self.count_g_params(solution), 4)
@@ -79,32 +81,32 @@ class ConstraintTest(unittest.TestCase):
             self.assertEqual(self.count_g_params(source_nr), 0)
 
     def test_repetitions(self):
-        file = open("tests/resources/repetitions.fan", "r")
-        GRAMMAR, c = parse(file, use_stdlib=False, use_cache=False)
+        with open(RESOURCES_ROOT / "repetitions.fan", "r") as file:
+            grammar, c = parse(file, use_stdlib=False, use_cache=False)
         expected = ["aaa" for _ in range(1)]
-        actual = self.get_solutions(GRAMMAR, c)
+        actual = self.get_solutions(grammar, c)
 
         self.assertEqual(expected, actual)
 
     def test_repetitions_slice(self):
-        file = open("tests/resources/slicing.fan", "r")
-        GRAMMAR, c = parse(file, use_stdlib=False, use_cache=False)
-        solutions = self.get_solutions(GRAMMAR, c)
+        with open(RESOURCES_ROOT / "slicing.fan", "r") as file:
+            grammar, c = parse(file, use_stdlib=False, use_cache=False)
+        solutions = self.get_solutions(grammar, c)
         for solution in solutions:
             self.assertGreaterEqual(len(str(solution)), 3)
             self.assertLessEqual(len(str(solution)), 10)
 
     def test_repetition_min(self):
-        file = open("tests/resources/min_reps.fan", "r")
-        GRAMMAR, c = parse(file, use_stdlib=False, use_cache=False)
-        solutions = self.get_solutions(GRAMMAR, c)
+        with open(RESOURCES_ROOT / "min_reps.fan", "r") as file:
+            grammar, c = parse(file, use_stdlib=False, use_cache=False)
+        solutions = self.get_solutions(grammar, c)
         for solution in solutions:
             self.assertGreaterEqual(len(str(solution)), 1)
 
     def test_repetition_computed(self):
-        file = open("tests/resources/dynamic_repetition.fan", "r")
-        GRAMMAR, c = parse(file, use_stdlib=False, use_cache=False)
-        solutions = self.get_solutions(GRAMMAR, c)
+        with open(RESOURCES_ROOT / "dynamic_repetition.fan", "r") as file:
+            grammar, c = parse(file, use_stdlib=False, use_cache=False)
+        solutions = self.get_solutions(grammar, c)
         for solution in solutions:
             len_outer = solution.children[0].to_int()
             self.assertEqual(len_outer, len(solution.children) - 3)
@@ -113,24 +115,24 @@ class ConstraintTest(unittest.TestCase):
                 self.assertEqual(len_inner, len(tree.children) - 1)
 
     def test_generator_redefinition(self):
-        file = open("tests/resources/generator_remove.fan", "r")
-        GRAMMAR, c = parse(file, use_stdlib=True, use_cache=False)
-        solutions = self.get_solutions(GRAMMAR, c)
+        with open(RESOURCES_ROOT / "generator_remove.fan", "r") as file:
+            grammar, c = parse(file, use_stdlib=True, use_cache=False)
+        solutions = self.get_solutions(grammar, c)
         for solution in solutions:
             self.assertNotEqual(solution, "10")
 
     def test_num_solutions(self):
-        file = open("docs/digits.fan", "r")
-        GRAMMAR, c = parse(file, use_stdlib=True, use_cache=False)
-        assert GRAMMAR is not None
-        fan = Fandango(grammar=GRAMMAR, constraints=c, logger_level=LoggerLevel.DEBUG)
+        with open(DOCS_ROOT / "digits.fan", "r") as file:
+            grammar, c = parse(file, use_stdlib=True, use_cache=False)
+        assert grammar is not None
+        fan = Fandango(grammar=grammar, constraints=c, logger_level=LoggerLevel.DEBUG)
         sol = fan.evolve(desired_solutions=1000)
         self.assertEqual(len(sol), 1000)
 
     def test_max_nodes(self):
-        file = open("tests/resources/gen_number.fan", "r")
-        GRAMMAR, c = parse(file, use_cache=False, use_stdlib=True)
-        solution = self.get_solutions(GRAMMAR, c)
+        with open(RESOURCES_ROOT / "gen_number.fan", "r") as file:
+            grammar, c = parse(file, use_cache=False, use_stdlib=True)
+        solution = self.get_solutions(grammar, c)
         for sol in solution:
             s = str(sol).split(".")
             self.assertEqual(s[0], "a" * 50)
