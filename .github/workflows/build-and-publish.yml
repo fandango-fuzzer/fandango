@@ -16,6 +16,7 @@ jobs:
     name: Build wheels for ${{ matrix.os }}
     runs-on: ${{ matrix.runs-on }}
     strategy:
+      fail-fast: false  # Ensures all builds run even if some fail
       matrix:
         os: [ linux-intel, linux-arm, windows, macOS-intel, macOS-arm ]
         include:
@@ -43,6 +44,7 @@ jobs:
         env:
           CIBW_PLATFORM: ${{ matrix.platform }}
           CIBW_ARCHS: ${{ matrix.archs }}
+          CIBW_BUILD: "cp3*"
         # Can also be configured directly, using `with:`
         # with:
         #   package-dir: .
