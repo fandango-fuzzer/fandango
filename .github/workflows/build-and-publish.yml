@@ -18,16 +18,18 @@ jobs:
     strategy:
       fail-fast: false  # Ensures all builds run even if some fail
       matrix:
-        os: [ linux-intel, linux-arm, macOS-arm ] # "windows" currently not working, see https://github.com/amykyta3/speedy-antlr-tool/issues/18
         include:
           - os: linux-intel
             runs-on: ubuntu-latest
           - os: linux-arm
             runs-on: ubuntu-24.04-arm
+          #currently not working, see https://github.com/amykyta3/speedy-antlr-tool/issues/18
           - os: windows
             runs-on: windows-latest
           - os: macos-arm
             runs-on: macos-latest
+          - os: macos-intel
+            runs-on: macos-15-large # the large version is x86
 
     steps:
       - uses: actions/checkout@v4
@@ -36,6 +38,7 @@ jobs:
         uses: pypa/cibuildwheel@v2.11.2
         env:
           FANDANGO_REQUIRE_CI_BINARY_BUILD: "1" # Force binary build
+          CIBW_SKIP: "*-win32"
 
       - uses: actions/upload-artifact@v4
         with:
