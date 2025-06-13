@@ -862,7 +862,7 @@ class DerivationTree:
         return nodes
 
     @property
-    def children(self) -> Optional[list["DerivationTree"]]:
+    def children(self) -> list["DerivationTree"]:
         """
         Return the children of the current node.
         """
