@@ -21,7 +21,6 @@ def run_setup(with_binary):
                 "/Zc:__cplusplus",
                 "/std:c++17",
                 "/EHsc",
-                "/W4",
             ],
             "linux": ["-std=c++17"],
             "darwin": ["-std=c++17"],
