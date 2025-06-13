@@ -19,21 +19,17 @@ jobs:
       fail-fast: false  # Ensures all builds run even if some fail
       matrix:
         os: [ linux-intel, linux-arm, windows, macOS-intel, macOS-arm ]
-        python-version: [3.11]  
         include:
           - archs: auto64
             platform: auto
+            skip: ["*-win32", "*-manylinux_i686"] # skip building 32-bit wheels
           - os: linux-intel
             runs-on: ubuntu-latest
           - os: linux-arm
             runs-on: ubuntu-24.04-arm
           - os: windows
             runs-on: windows-latest
-          - os: macos-intel
-            # macos-13 was the last x86_64 runner
-            runs-on: macos-13
           - os: macos-arm
-            # macos-14+ (including latest) are ARM64 runners
             runs-on: macos-latest
             archs: auto64,universal2
 
