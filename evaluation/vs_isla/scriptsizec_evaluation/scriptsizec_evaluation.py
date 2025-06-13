@@ -91,11 +91,9 @@ def evaluate_scriptsizec(
 
     fandango = Fandango(grammar, constraints, logger_level=LoggerLevel.ERROR)
     fan_gen = fandango.generate()
-    while time.time() < time_in_an_hour:
-        try:
-            solution = next(fan_gen)
-            solutions.append(solution)
-        except StopIteration:
+    for solution in fan_gen:
+        solutions.append(solution)
+        if time.time() >= time_in_an_hour:
             break
 
     coverage = grammar.compute_grammar_coverage(solutions, 4)
