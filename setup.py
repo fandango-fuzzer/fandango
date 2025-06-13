@@ -21,11 +21,7 @@ def run_setup(with_binary):
                 "/Zc:__cplusplus",
                 "/std:c++17",
                 "/EHsc",
-                "/D_CRT_SECURE_NO_WARNINGS",
-                "/D_WIN32_WINNT=0x0601",  # Windows 7 or later
-                "/D_HAS_STD_BYTE=0",  # Disable std::byte
-                "/D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING",  # Silence codecvt deprecation
-                "/D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING",  # Silence iterator deprecation
+                "/D_USE_STD_CHRONO",  # Enable std::chrono
             ],
             "linux": ["-std=c++17"],
             "darwin": ["-std=c++17"],
