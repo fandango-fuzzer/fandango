@@ -9,6 +9,7 @@ from typing import Any, Optional
 from tdigest import TDigest as BaseTDigest
 import math
 
+from fandango import FandangoValueError
 from fandango.constraints.fitness import (
     ConstraintFitness,
     ValueFitness,
@@ -1005,6 +1006,9 @@ class RepetitionBoundsConstraint(Constraint):
             expr = f"{MAX_REPETITIONS}"
         local_cpy = self.local_variables.copy()
 
+        if len(searches) == 0:
+            return eval(expr, self.global_variables, local_cpy), True
+
         nodes = []
         if len(searches) != 1:
             raise FandangoValueError(
@@ -1019,25 +1023,9 @@ class RepetitionBoundsConstraint(Constraint):
             raise FandangoValueError(
                 f"Couldn't find search target ({search}) in prefixed DerivationTree for computed repetition"
             )
-
         target_name, target_container = nodes[-1]
         target = target_container.evaluate()
         local_cpy[target_name] = target
-        if isinstance(target, DerivationTree):
-            target.set_all_read_only(True)
-            first_uncommon_idx = 0
-            for idx, (target_parent, tree_parent) in enumerate(
-                zip(target.get_path(), tree.get_path())
-            ):
-                if target_parent.symbol == tree_parent.symbol:
-                    first_uncommon_idx = idx + 1
-                else:
-                    break
-            for parent in target.get_path()[first_uncommon_idx:]:
-                parent.read_only = True
-            for parent in tree.get_path()[first_uncommon_idx:]:
-                parent.read_only = True
-
         return eval(expr, self.global_variables, local_cpy)
 
     def min(self, tree: DerivationTree):
@@ -1069,14 +1057,16 @@ class RepetitionBoundsConstraint(Constraint):
 
 
     def __repr__(self):
-        return f"RepetitionBounds({repr(self.pattern)}, {self.min_reps}, {self.max_reps})"
+        expr_min, _, _ = self.expr_data_min
+        expr_max, _, _ = self.expr_data_max
+        return f"RepetitionBounds({expr_min} <= |{self.repetition_id}| <= {expr_max})"
 
     def __str__(self):
-        return f"RepetitionBounds({str(self.pattern)}, {self.min_reps}, {self.max_reps})"
+        return repr(self)
 
     def accept(self, visitor: "ConstraintVisitor"):
         """Accepts a visitor to traverse the constraint structure."""
-        pass  # No specific visit method needed for this type
+        visitor.visit_repetition_bounds_constraint(self)
 
 
 class ConstraintVisitor:
@@ -1126,4 +1116,8 @@ class ConstraintVisitor:
 
     def visit_implication_constraint(self, constraint: "ImplicationConstraint"):
         """Visits an implication constraint."""
+        pass
+
+    def visit_repetition_bounds_constraint(self, constraint: "RepetitionBoundsConstraint"):
+        """Visits a repetition bounds constraint."""
         pass
