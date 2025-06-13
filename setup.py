@@ -103,11 +103,7 @@ class ve_build_ext(build_ext):
 # Detect if an alternate interpreter is being used
 is_jython = "java" in sys.platform
 is_pypy = hasattr(sys, "pypy_version_info")
-skip_cpp = os.environ.get("FANDANGO_SKIP_CPP_PARSER", "").lower() in (
-    "1",
-    "true",
-    "yes",
-)
+skip_cpp = os.environ.get("FANDANGO_SKIP_CPP_PARSER", "") == "1"
 
 
 # Force using fallback if using an alternate interpreter
@@ -117,7 +113,7 @@ if not using_fallback:
     try:
         run_setup(with_binary=True)
     except BuildFailed:
-        if "FANDANGO_REQUIRE_CI_BINARY_BUILD" in os.environ:
+        if "FANDANGO_REQUIRE_BINARY_BUILD" in os.environ:
             raise
         else:
             using_fallback = True
