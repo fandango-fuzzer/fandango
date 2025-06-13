@@ -45,6 +45,7 @@ jobs:
           CIBW_PLATFORM: ${{ matrix.platform }}
           CIBW_ARCHS: ${{ matrix.archs }}
           CIBW_BUILD: "cp3*"
+          FANDANGO_REQUIRE_CI_BINARY_BUILD: "1" # Force binary build
         # Can also be configured directly, using `with:`
         # with:
         #   package-dir: .
