@@ -1,15 +1,11 @@
 name: Build and upload to PyPI
 
 on:
-  workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - main
-      - dev
   release:
-    types:
-      - published
+    types: [published]  # Trigger the workflow when a release is published
+  pull_request:
+    branches: [main] # Trigger the workflow when a pull request on main is opened, publishing is disabled for PRs
+  workflow_dispatch: # Enables manual execution from the Actions tab
 
 jobs:
   build_wheels:
@@ -58,14 +54,12 @@ jobs:
   upload_pypi:
     needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
-    # environment:
-    #   name: pypi
-    #   url: https://pypi.org/p/fandango-fuzzer
+    environment:
+      name: pypi
+      url: https://pypi.org/p/fandango-fuzzer
     permissions:
       id-token: write
-    # if: github.event_name == 'release' && github.event.action == 'published'
-    # or, alternatively, upload to PyPI on every tag starting with 'v' (remove on: release above to use this)
-    # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'release' && github.event.action == 'published' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -76,4 +70,5 @@ jobs:
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: https://test.pypi.org/legacy/
+          password: ${{ secrets.PYPI_API_TOKEN }}  # Use the secret PyPI token
+      
