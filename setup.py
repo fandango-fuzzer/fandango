@@ -23,6 +23,10 @@ def run_setup(with_binary):
                 "/EHsc",
                 "/D_CRT_SECURE_NO_WARNINGS",
                 "/D_WIN32_WINNT=0x0601",  # Windows 7 or later
+                "/D_USE_32BIT_TIME_T=0",  # Use 64-bit time_t
+                "/D_HAS_STD_BYTE=0",  # Disable std::byte
+                "/D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING",  # Silence codecvt deprecation
+                "/D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING",  # Silence iterator deprecation
             ],
             "linux": ["-std=c++17"],
             "darwin": ["-std=c++17"],
