@@ -9,8 +9,8 @@ ITERS = 100000
 INPUT_SIZE = 100
 
 
-def adjacent_diff(input: bytearray) -> list[int]:
-    return [input[i] - input[i - 1] for i in range(1, len(input))]
+def adjacent_diff(input_: bytearray) -> list[int]:
+    return [input_[i] - input_[i - 1] for i in range(1, len(input_))]
 
 
 def test_wrapping_add():
@@ -51,7 +51,7 @@ def test_get_random_range_of_length():
     with pytest.raises(ValueError):
         _get_random_range_of_length([0] * INPUT_SIZE, INPUT_SIZE + 1)
 
-    # testing edge cases of input size
+    # testing edge cases of input_ size
     with pytest.raises(ValueError):
         _get_random_range_of_length([], 1)
 
@@ -73,7 +73,7 @@ def test_get_random_range_with_max_length():
     with pytest.raises(ValueError):
         _get_random_range_with_max_length([0] * INPUT_SIZE, INPUT_SIZE + 1)
 
-    # testing edge cases of input size
+    # testing edge cases of input_ size
     with pytest.raises(ValueError):
         _get_random_range_with_max_length([], 1)
 
@@ -96,9 +96,11 @@ def test_return_value(mutation, input_size):
         input_copy = input.copy()
         expected = mutation.mutate(input)
         actual = input != input_copy
-        assert (
-            expected == actual
-        ), f"Mutator {mutation} reported to {'not 'if not expected else ''}have mutated, but the input was {'not 'if not actual else ''}mutated.\nOriginal input: {input_copy}\nMutated input: {input}"
+        assert expected == actual, (
+            f"Mutator {mutation} reported to {'not 'if not expected else ''}have mutated, "
+            f"but the input was {'not 'if not actual else ''}mutated.\n"
+            f"Original input: {input_copy}\nMutated input: {input}"
+        )
 
 
 @pytest.mark.parametrize("mutation", havoc.havoc_mutations())
@@ -116,9 +118,11 @@ def test_size_changes(mutation, input_size):
         expected_size = len(input)
         has_mutated = mutation.mutate(input)
         if has_mutated:
-            assert (
-                len(input) != expected_size
-            ) == should_change_size, f"{mutation} mutated and should {'not ' if not should_change_size else ''}change size but has {'not ' if should_change_size else ''}. Input length: {len(input)}, expected size: {expected_size}"
+            assert (len(input) != expected_size) == should_change_size, (
+                f"{mutation} mutated and should {'not ' if not should_change_size else ''}"
+                f"change size but has {'not ' if should_change_size else ''}. "
+                f"Input length: {len(input)}, expected size: {expected_size}"
+            )
         else:
             assert (
                 len(input) == expected_size

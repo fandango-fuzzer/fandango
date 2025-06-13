@@ -2,12 +2,12 @@
 from fandango import parse
 from fandango.evolution.algorithm import Fandango
 from fandango.language.tree import DerivationTree
+from utils import RESOURCES_ROOT
 
 
 def test_msg_exchange():
-    file = open("tests/resources/minimal_io.fan", "r")
-
-    grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
+    with open(RESOURCES_ROOT / "minimal_io.fan", "r") as file:
+        grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
     fandango = Fandango(grammar=grammar, constraints=constraints)
     result = fandango.evolve()
     assert len(result) == 1

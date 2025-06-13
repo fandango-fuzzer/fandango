@@ -36,6 +36,8 @@ from fandango.language.search import (
     LengthSearch,
     RuleSearch,
     SelectiveSearch,
+    StarSearch,
+    PopulationSearch,
 )
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.logger import LOGGER
@@ -561,6 +563,17 @@ class SearchProcessor(FandangoParserVisitor):
             return self.visitDot_selection(ctx.dot_selection())
         else:
             raise FandangoValueError(f"Unknown selection: {ctx.getText()}")
+
+    def visitStar_selection(self, ctx: FandangoParser.Star_selectionContext):
+        identifier = self.get_new_identifier()
+        base = self.transform_selection(ctx.selection())
+        if ctx.STAR():
+            search = StarSearch(base)
+        elif ctx.POWER():
+            search = PopulationSearch(base)
+        else:
+            raise FandangoValueError(f"Unknown star selection: {ctx.getText()}")
+        return ast.Name(id=identifier), [search], {identifier: search}
 
     def visitDot_selection(self, ctx: FandangoParser.Dot_selectionContext):
         identifier = self.get_new_identifier()

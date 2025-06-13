@@ -7,6 +7,8 @@ import unittest
 
 import pytest
 
+from utils import RESOURCES_ROOT, DOCS_ROOT
+
 
 def run_command(command):
     proc = subprocess.Popen(
@@ -18,7 +20,7 @@ def run_command(command):
     return out.decode(), err.decode(), proc.returncode
 
 
-files = glob.glob("tests/resources/*.fan") + glob.glob("docs/*.fan")
+files = glob.glob(str(RESOURCES_ROOT / "*.fan")) + glob.glob(str(DOCS_ROOT / "*.fan"))
 
 
 @pytest.mark.parametrize("fan_file", files)
@@ -39,9 +41,10 @@ def test_file(fan_file):
     assert return_code == 0, err
     assert err == ""
 
-    assert (
-        python_out == speedy_out
-    ), f"{fan_file} produced different outputs for Python and Speedy parsers:\n\nPython output:\n{python_out}\n\nSpeedy output:\n{speedy_out}"
+    assert python_out == speedy_out, (
+        f"{fan_file} produced different outputs for Python and Speedy parsers:\n\nPython output:\n{python_out}\n\n"
+        f"Speedy output:\n{speedy_out}"
+    )
 
 
 if __name__ == "__main__":

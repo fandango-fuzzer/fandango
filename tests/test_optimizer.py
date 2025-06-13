@@ -8,10 +8,12 @@ from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
+from utils import RESOURCES_ROOT
 
 
 class GeneticTest(unittest.TestCase):
-    def setUp(self):
+    def is_this_art_or_can_it_be_deleted(self):
+        # I just need to keep this part of the code to ensure such a piece of art is not lost in the ether
         # Define a simple grammar for testing
         file = open("tests/resources/example_number.fan", "r")
         try:
@@ -27,6 +29,21 @@ class GeneticTest(unittest.TestCase):
 
         # Initialize FANDANGO with a fixed random seed for reproducibility
         assert grammar_int is not None
+        self.fandango = Fandango(
+            grammar=grammar_int,
+            constraints=constraints_int,
+            population_size=50,
+            mutation_rate=0.2,
+            crossover_rate=0.8,
+            elitism_rate=0.2,
+            logger_level=LoggerLevel.DEBUG,
+        )
+
+    def setUp(self):
+        with open(RESOURCES_ROOT / "example_number.fan", "r") as f:
+            grammar_int, constraints_int = parse(f, use_stdlib=False, use_cache=False)
+        assert grammar_int is not None
+        random.seed(25)  # Set random seed for reproducibility
         self.fandango = Fandango(
             grammar=grammar_int,
             constraints=constraints_int,
@@ -222,14 +239,16 @@ class GeneticTest(unittest.TestCase):
 
 class DeterminismTests(unittest.TestCase):
     # fandango fuzz -f tests/resources/determinism.fan -n 100 --random-seed 1
+    @staticmethod
     def get_solutions(
-        self,
         specification_file,
         desired_solutions,
         random_seed,
     ):
-        file = open(specification_file, "r")
-        grammar_int, constraints_int = parse(file, use_stdlib=False, use_cache=False)
+        with open(specification_file, "r") as file:
+            grammar_int, constraints_int = parse(
+                file, use_stdlib=False, use_cache=False
+            )
         assert grammar_int is not None
         fandango = Fandango(
             grammar=grammar_int,
@@ -243,23 +262,25 @@ class DeterminismTests(unittest.TestCase):
         return [s.to_string() for s in solutions]
 
     def test_deterministic_solutions(self):
-        solutions_1 = self.get_solutions("tests/resources/determinism.fan", 100, 1)
+        solutions_1 = self.get_solutions(RESOURCES_ROOT / "determinism.fan", 100, 1)
 
-        solutions_2 = self.get_solutions("tests/resources/determinism.fan", 100, 1)
+        solutions_2 = self.get_solutions(RESOURCES_ROOT / "determinism.fan", 100, 1)
 
         self.assertListEqual(solutions_1, solutions_2)
 
 
 class TargetedMutations(unittest.TestCase):
     # fandango fuzz -f tests/resources/digit_targeted_mutation.fan -n 1 --random-seed 1
+    @staticmethod
     def get_solutions(
-        self,
         specification_file,
         desired_solutions,
         random_seed,
     ):
-        file = open(specification_file, "r")
-        grammar_int, constraints_int = parse(file, use_stdlib=False, use_cache=False)
+        with open(specification_file, "r") as file:
+            grammar_int, constraints_int = parse(
+                file, use_stdlib=False, use_cache=False
+            )
         fandango = Fandango(
             grammar=grammar_int,
             constraints=constraints_int,
@@ -273,7 +294,7 @@ class TargetedMutations(unittest.TestCase):
 
     def test_targeted_mutation_1(self):
         solutions = self.get_solutions(
-            "tests/resources/digit_targeted_mutation.fan", 1, 1
+            RESOURCES_ROOT / "digit_targeted_mutation.fan", 1, 1
         )
         self.assertListEqual(solutions, ["0123456789"])
 

@@ -29,7 +29,7 @@ from fandango.language.search import RuleSearch
 from fandango.language.symbol import NonTerminal
 
 from fandango.constraints import predicates
-
+from utils import RESOURCES_ROOT
 
 FUZZINGBOOK_GRAMMAR = {
     "<start>": ["<number>"],
@@ -269,9 +269,8 @@ def test_conversion_statement(stmt, value, is_global):
 
 
 def test_parsing():
-    file = open("tests/resources/fandango.fan", "r")
-
-    grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
+    with open(RESOURCES_ROOT / "fandango.fan", "r") as file:
+        grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
     assert isinstance(grammar, Grammar)
     assert len(grammar.rules) == 4
     assert "<start>" in grammar
