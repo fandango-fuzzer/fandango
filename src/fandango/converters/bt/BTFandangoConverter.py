@@ -504,7 +504,7 @@ class BTFandangoConverter(FandangoConverter):
     def to_fan(
         self,
         start_symbol: str = "<start>",
-        use_regexes: bool = False,
+        use_regexes: bool = True,
         bitfield_order: BitfieldOrder = BitfieldOrder.LeftToRight,
         endianness: Endianness = Endianness.BigEndian,
     ) -> str:

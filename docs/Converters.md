@@ -120,6 +120,12 @@ Fandango will recognize a number of common patterns; features that will require 
 * Complex length encodings
 ```
 
+```{note}
+The `fandango convert` command provides two options to specify _bit orderings_, should the `.bt` file not already do so.
+
+* `--endianness=(little|big)` and
+* `--bitfield-order=(left-to-right|right-to-left)` 
+```
 
 ## Converting DTDs
 
@@ -175,5 +181,5 @@ $ fandango convert persons-faker.fan
 ```
 
 ```{note}
-This feature is mostly useful for debugging Fandango itself.
+This feature can be useful to detect semantic changes in `.fan` files.
 ```

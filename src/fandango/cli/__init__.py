@@ -61,7 +61,7 @@ from fandango.language.parse import parse, parse_spec, FandangoSpec
 from fandango.logger import LOGGER, print_exception
 
 from fandango.converters.antlr.ANTLRFandangoConverter import ANTLRFandangoConverter
-from fandango.converters.bt.BTFandangoConverter import BTFandangoConverter
+from fandango.converters.bt.BTFandangoConverter import BTFandangoConverter, Endianness, BitfieldOrder
 from fandango.converters.dtd.DTDFandangoConverter import DTDFandangoConverter
 
 from fandango import FandangoParseError, FandangoError
@@ -142,7 +142,7 @@ def get_parser(in_command_line=True):
             "--parser",
             choices=["python", "cpp", "legacy", "auto"],
             default="auto",
-            help="choose the parser implementation to use (default: 'auto': use cpp if available, otherwise python)",
+            help="choose the parser implementation to use (default: 'auto': use C++ parser code if available, otherwise Python)",
         )
 
     # The subparsers
@@ -476,6 +476,14 @@ def get_parser(in_command_line=True):
         choices=["antlr", "g4", "dtd", "010", "bt", "fan", "auto"],
         default="auto",
         help="format of the external spec file: 'antlr'/'g4' (ANTLR), 'dtd' (XML DTD), '010'/'bt' (010 Editor Binary Template), 'fan' (Fandango spec), or 'auto' (default: try to guess from file extension)",
+    )
+    convert_parser.add_argument(
+        "--endianness", choices=["little", "big"], help="set endianness for .bt files"
+    )
+    convert_parser.add_argument(
+        "--bitfield-order",
+        choices=["left-to-right", "right-to-left"],
+        help="set bitfield order for .bt files",
     )
     convert_parser.add_argument(
         "-o",
@@ -1281,8 +1289,18 @@ def convert_command(args):
                 converter = DTDFandangoConverter(input_file)
                 spec = converter.to_fan()
             case "bt" | "010":
+                if args.endianness == "little":
+                    endianness = Endianness.LittleEndian
+                else:
+                    endianness = Endianness.BigEndian
+                if args.bitfield_order == "left-to-right":
+                    bitfield_order = BitfieldOrder.LeftToRight
+                else:
+                    bitfield_order = BitfieldOrder.RightToLeft
+
                 converter = BTFandangoConverter(input_file)
-                spec = converter.to_fan()
+                spec = converter.to_fan(endianness=endianness,
+                                        bitfield_order=bitfield_order)
             case "fan":
                 try:
                     # .fan file
