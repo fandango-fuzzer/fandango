@@ -27,7 +27,7 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
                 content = '^' + content  # Add negation
             return f"[{content}]"
         
-        self.addNote(f"Cannot invert range: {range_str}")
+        self.addNote(f"cannot invert {range_str}")
         return "not " + range_str  # Cannot handle
 
     def quote(self, s: str) -> str:
@@ -53,7 +53,7 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
             self.notes = []
         if not self.notes:
             return ""
-        s = "  # " + "; ".join(self.notes)
+        s = "  # NOTE: " + "; ".join(self.notes)
         self.notes = []
         return s
 
@@ -73,7 +73,19 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
         return '# ' + ctx.identifier().getText() + '\n'
 
     def visitParserRuleSpec(self, ctx: ANTLRv4Parser.ParserRuleSpecContext):
-        # This method can be customized to handle rule specifications
+        if ctx.ruleModifiers():
+            self.addNote(f"had modifier(s) '{ctx.ruleModifiers().getText()}'")
+        if ctx.argActionBlock():
+            self.addNote(f"had action block {ctx.argActionBlock().getText()}")
+        if ctx.ruleReturns():
+            self.addNote(f"had 'returns' clause {ctx.ruleReturns().getText()}")
+        if ctx.throwsSpec():
+            self.addNote(f"had 'throws' clause {ctx.throwsSpec().getText()}")
+        if ctx.rulePrequel():
+            self.addNote(f"had rule prequel '{ctx.rulePrequel().getText()}'")
+        if ctx.exceptionGroup() and ctx.exceptionGroup().getText():
+            self.addNote(f"had exception group '{ctx.exceptionGroup().getText()}'")
+
         nonterminal = ctx.RULE_REF().getText()
         return (f"<{nonterminal}> ::= " +
                 self.visitChildren(ctx) +
@@ -151,7 +163,7 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
         suffix = ctx.getText() if ctx else ""
         if len(suffix) > 1:
             # ANTLR has non-greedy suffixes such as *? and +?
-            self.addNote(f"was {suffix}")
+            self.addNote(f"was '{suffix}'")
             suffix = suffix[0]
         return suffix
 
@@ -182,6 +194,9 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
             return f"{elem}"
 
     def visitLexerElement(self, ctx: ANTLRv4Parser.LexerElementContext):
+        if ctx.actionBlock():
+            self.visit(ctx.actionBlock())
+
         s = ""
         if ctx.lexerAtom():
             s = self.visit(ctx.lexerAtom())
@@ -190,6 +205,22 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
         if ctx.ebnfSuffix():
             s += self.visit(ctx.ebnfSuffix())
         return s
+
+    def visitActionBlock(self, ctx: ANTLRv4Parser.ActionBlockContext):
+        self.addNote(f"was {ctx.getText()}")
+        return super().visitActionBlock(ctx)
+
+    def visitLexerCommand(self, ctx: ANTLRv4Parser.LexerCommandContext):
+        self.addNote(f"was '-> {ctx.getText()}'")
+        return super().visitLexerCommand(ctx)
+
+    def visitPredicateOption(self, ctx):
+        self.addNote(f"was '{ctx.getText()}'")
+        return super().visitPredicateOption(ctx)
+
+    def visitElementOption(self, ctx):
+        self.addNote(f"was '{ctx.getText()}'")
+        return super().visitElementOption(ctx)
 
     def visitLexerElements(self, ctx: ANTLRv4Parser.LexerElementsContext):
         # This method can be customized to handle alternatives
@@ -207,6 +238,9 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
         return "(" + super().visitBlockSet(ctx) + ")"
 
     def visitBlock(self, ctx: ANTLRv4Parser.BlockSetContext):
+        if ctx.ruleAction():
+            # Handle rule actions
+            self.addNote(f"action was {ctx.ruleAction().getText()}")
         return "(" + super().visitBlock(ctx) + ")"
 
     def visitLexerAtom(self, ctx: ANTLRv4Parser.LexerAtomContext):
