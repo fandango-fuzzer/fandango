@@ -61,7 +61,11 @@ from fandango.language.parse import parse, parse_spec, FandangoSpec
 from fandango.logger import LOGGER, print_exception
 
 from fandango.converters.antlr.ANTLRFandangoConverter import ANTLRFandangoConverter
-from fandango.converters.bt.BTFandangoConverter import BTFandangoConverter, Endianness, BitfieldOrder
+from fandango.converters.bt.BTFandangoConverter import (
+    BTFandangoConverter,
+    Endianness,
+    BitfieldOrder,
+)
 from fandango.converters.dtd.DTDFandangoConverter import DTDFandangoConverter
 
 from fandango import FandangoParseError, FandangoError
@@ -1299,8 +1303,9 @@ def convert_command(args):
                     bitfield_order = BitfieldOrder.RightToLeft
 
                 converter = BTFandangoConverter(input_file)
-                spec = converter.to_fan(endianness=endianness,
-                                        bitfield_order=bitfield_order)
+                spec = converter.to_fan(
+                    endianness=endianness, bitfield_order=bitfield_order
+                )
             case "fan":
                 try:
                     # .fan file
