@@ -31,6 +31,7 @@
 from antlr4 import *
 import sys
 from typing import TextIO
+
 # NB!!!!!!!!!:
 # Python3 is a terrible language. You cannot import ANTLRv4Lexer
 # because Python3 cannot handle circular imports. So, we hardwire a
@@ -39,6 +40,7 @@ from typing import TextIO
 # please fix.
 # Cannot import lexer so use parser instead.
 from ANTLRv4Parser import ANTLRv4Parser
+
 
 class LexerAdaptor(Lexer):
     # Constants (mirroring the Java static final ints)
@@ -63,10 +65,12 @@ class LexerAdaptor(Lexer):
         otherwise, it's a normal argument list and we switch to Argument mode.
         """
         if self.inLexerRule():
-            self.pushMode(2); # NB!!!!!!!!!: hardwire ANTLRv4Parser.LexerCharSet)
+            self.pushMode(2)
+            # NB!!!!!!!!!: hardwire ANTLRv4Parser.LexerCharSet)
             self.more()
         else:
-            self.pushMode(1); # NB!!!!!!!!!: hardwire ANTLRv4Lexer.Argument)
+            self.pushMode(1)
+            # NB!!!!!!!!!: hardwire ANTLRv4Lexer.Argument)
 
     def handleEndArgument(self):
         """
@@ -83,11 +87,10 @@ class LexerAdaptor(Lexer):
         CHANNELS, RBRACE, AT, SEMI, ID, etc.
         """
         if (
-            (self._type == ANTLRv4Parser.OPTIONS
-             or self._type == ANTLRv4Parser.TOKENS
-             or self._type == ANTLRv4Parser.CHANNELS)
-            and self.getCurrentRuleType() == Token.INVALID_TYPE
-        ):
+            self._type == ANTLRv4Parser.OPTIONS
+            or self._type == ANTLRv4Parser.TOKENS
+            or self._type == ANTLRv4Parser.CHANNELS
+        ) and self.getCurrentRuleType() == Token.INVALID_TYPE:
             # Enter prequel construct block, which ends when we see a '}'
             self.setCurrentRuleType(self.PREQUEL_CONSTRUCT)
 
@@ -139,7 +142,9 @@ class LexerAdaptor(Lexer):
             # You may need to import Interval or adapt how text is retrieved for your runtime
             from antlr4 import InputStream
 
-            firstChar = self._input.getText(self._tokenStartCharIndex, self._tokenStartCharIndex)
+            firstChar = self._input.getText(
+                self._tokenStartCharIndex, self._tokenStartCharIndex
+            )
             if firstChar and firstChar[0].isupper():
                 self._type = ANTLRv4Parser.TOKEN_REF
             else:
