@@ -28,13 +28,17 @@ class test_convert(unittest.TestCase):
         self.assertEqual(err, "")
 
     def test_convert_antlr(self):
-        command = shlex.split("fandango convert ../src/fandango/converters/antlr/Calculator.g4")
+        command = shlex.split(
+            "fandango convert ../src/fandango/converters/antlr/Calculator.g4"
+        )
         out, err, code = self.run_command(command)
         self.assertEqual(0, code)
         self.assertEqual(err, "")
 
     def test_convert_dtd(self):
-        command = shlex.split("fandango convert ../src/fandango/converters/dtd/svg11-flat-20110816.dtd")
+        command = shlex.split(
+            "fandango convert ../src/fandango/converters/dtd/svg11-flat-20110816.dtd"
+        )
         out, err, code = self.run_command(command)
         self.assertEqual(0, code)
         self.assertEqual(err, "")
