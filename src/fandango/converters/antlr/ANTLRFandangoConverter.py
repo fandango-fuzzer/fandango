@@ -2,13 +2,16 @@
 
 import sys
 
+from typing import IO
+from fandango.converters.FandangoConverter import FandangoConverter
+
 from antlr4 import *
 from ANTLRv4Lexer import ANTLRv4Lexer
 from ANTLRv4Parser import ANTLRv4Parser
 from ANTLRv4ParserVisitor import ANTLRv4ParserVisitor
 from typing import Any
 
-class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
+class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
     def strip_quotes(self, s: str) -> str:
         """Strip quotes from a string."""
         if s.startswith('"') and s.endswith('"'):
@@ -26,7 +29,7 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
             else:
                 content = '^' + content  # Add negation
             return f"[{content}]"
-        
+
         self.addNote(f"cannot invert {range_str}")
         return "not " + range_str  # Cannot handle
 
@@ -268,22 +271,34 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
         # print(f"Visiting terminal: {node.getText()}")
         return super().visitTerminal(node)
 
-def process(filename):
-    g4content = open(filename, 'r').read()
-    input_stream = InputStream(g4content)
+class ANTLRFandangoConverter(FandangoConverter):
+    """Convert ANTLR4 grammar to Fandango format."""
+    def __init__(self, filename: str):
+        """Initialize with given grammar file"""
+        super().__init__(filename)
 
-    lexer = ANTLRv4Lexer(input_stream)
-    stream = CommonTokenStream(lexer)
-    parser = ANTLRv4Parser(stream)
+    def to_fan(self, **kw_args) -> str:
+        """Convert the grammar spec to Fandango format"""
+        # Read the grammar spec
+        input_stream = FileStream(self.filename)
+        lexer = ANTLRv4Lexer(input_stream)
+        stream = CommonTokenStream(lexer)
+        parser = ANTLRv4Parser(stream)
 
-    # Start parsing at the 'grammarSpec' rule
-    tree = parser.grammarSpec()
+        # Start parsing at the 'grammarSpec' rule
+        tree = parser.grammarSpec()
 
-    # Create a visitor and evaluate the expression
-    converter = ANTLR2FanVisitor()
-    result = converter.visit(tree)
-    print(result, end="")
+        # Create a visitor and evaluate the expression
+        converter = ANTLRFandangoConverterVisitor()
+        header = f"""
+# This file contains a Fandango grammar for a 010 binary template.
+# Automatically generated from {self.filename!r}. Do not edit.
+#
+"""
+        return header + converter.visit(tree)
+
 
 if __name__ == "__main__":
     for filename in sys.argv[1:]:
-        process(filename)
+        converter = ANTLRFandangoConverter(filename)
+        print(converter.to_fan(), end="")
