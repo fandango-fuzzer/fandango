@@ -1244,16 +1244,22 @@ def convert_command(args):
     for input_file in args.convert_files:
         from_format = args.from_format
         if from_format == "auto":
-            if input_file.lower().endswith(".g4") or input_file.lower().endswith(".antlr"):
+            if input_file.lower().endswith(".g4") or input_file.lower().endswith(
+                ".antlr"
+            ):
                 from_format = "antlr"
             elif input_file.lower().endswith(".dtd"):
                 from_format = "dtd"
-            elif input_file.lower().endswith(".bt") or input_file.lower().endswith(".010"):
+            elif input_file.lower().endswith(".bt") or input_file.lower().endswith(
+                ".010"
+            ):
                 from_format = "bt"
             elif input_file.lower().endswith(".fan"):
                 from_format = "fan"
             else:
-                raise FandangoError(f"{input_file!r}: unknown file extension; use --from=FORMAT to specify the format")
+                raise FandangoError(
+                    f"{input_file!r}: unknown file extension; use --from=FORMAT to specify the format"
+                )
 
         temp_file = None
         if input_file == "-":
@@ -1280,7 +1286,7 @@ def convert_command(args):
             case "fan":
                 try:
                     # .fan file
-                    contents = open(input_file, 'r').read()
+                    contents = open(input_file, "r").read()
                     parsed_spec = parse_spec(
                         contents, filename=input_file, use_cache=args.use_cache
                     )
