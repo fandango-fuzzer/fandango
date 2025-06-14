@@ -8,41 +8,57 @@ from ANTLRv4Parser import ANTLRv4Parser
 from ANTLRv4ParserVisitor import ANTLRv4ParserVisitor
 
 class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
+    def visitChildren(self, ctx: any):
+        # This method can be customized to handle children nodes
+        result = ""
+        if ctx is None or ctx.children is None:
+            return result
+        for child in ctx.children:
+            s = self.visit(child)
+            if s:
+                result += s
+        return result
+
     def visitParserRuleSpec(self, ctx: ANTLRv4Parser.ParserRuleSpecContext):
         # This method can be customized to handle rule specifications
         nonterminal = ctx.RULE_REF().getText()
-        print(f"<{nonterminal}> ::= ", end='')
-        return self.visitChildren(ctx)
-        print()
+        return f"<{nonterminal}> ::= " + self.visitChildren(ctx) + "\n"
 
-    def visitAltList(self, ctx: ANTLRv4Parser.AltListContext):
+    def visitRuleAltList(self, ctx: ANTLRv4Parser.RuleAltListContext):
         # This method can be customized to handle alternative lists
-        alternatives = []
-        for alt in ctx.alternative():
-            alternatives.append(self.visit(alt))
-        print(' | '.join(alternatives), end='')
-        return None
+        children_s = []
+        for child in ctx.children:
+            s = self.visit(child)
+            if s is not None:
+                children_s.append(s)
+        return " | ".join(children_s)
+    
+    def visitAlternative(self, ctx: ANTLRv4Parser.AlternativeContext):
+        # This method can be customized to handle alternatives
+        children_s = []
+        for child in ctx.children:
+            s = self.visit(child)
+            if s is not None:
+                children_s.append(s)
+        return " ".join(children_s)
 
     def visitLexerRuleSpec(self, ctx: ANTLRv4Parser.LexerRuleSpecContext):
         # This method can be customized to handle rule specifications
         nonterminal = ctx.TOKEN_REF().getText()
-        print(f"<{nonterminal}> ::= ", end='')
-        self.visitChildren(ctx)
-        print()
+        return f"<{nonterminal}> ::= " + self.visitChildren(ctx) + "\n"
 
     def visitRuleref(self, ctx: ANTLRv4Parser.RulerefContext):
         # Handle rule references
         rule_name = ctx.RULE_REF().getText()
-        print(f"<{rule_name}>", end='')
-        return self.visitChildren(ctx)
+        return f"<{rule_name}>"
 
     def visitTerminalDef(self, ctx: ANTLRv4Parser.TerminalDefContext):
         if ctx.STRING_LITERAL():
             terminal = ctx.STRING_LITERAL().getText()
-            print(f"{terminal}", end='')
+            return f"{terminal}"
         elif ctx.TOKEN_REF():
             token = ctx.TOKEN_REF().getText()
-            print(f"<{token}>", end='')
+            return f"<{token}>"
 
     def visitTerminal(self, node: TerminalNode):
         # Handle terminal nodes
@@ -63,6 +79,7 @@ def process(filename):
     # Create a visitor and evaluate the expression
     converter = ANTLR2FanVisitor()
     result = converter.visit(tree)
+    print(result)
 
 if __name__ == "__main__":
     for filename in sys.argv[1:]:
