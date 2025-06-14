@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+
+import sys
+
+from antlr4 import *
+from ANTLRv4Lexer import ANTLRv4Lexer
+from ANTLRv4Parser import ANTLRv4Parser
+
+class ANTLR2FanVisitor(ParseTreeVisitor):
+    def visitGrammarSpec(self, ctx: ANTLRv4Parser.GrammarSpecContext):
+        # This method can be customized to handle the grammar specification
+        print("Visiting grammar specification")
+        return self.visitChildren(ctx)
+
+    def visitRuleSpec(self, ctx: ANTLRv4Parser.RuleSpecContext):
+        # This method can be customized to handle rule specifications
+        print("Visiting rule specification")
+        return self.visitChildren(ctx)
+
+    def visitTerminal(self, node: TerminalNode):
+        # Handle terminal nodes
+        print(f"Visiting terminal: {node.getText()}")
+        return node.getText()
+
+def process(filename):
+    g4content = open(filename, 'r').read()
+    input_stream = InputStream(g4content)
+
+    lexer = ANTLRv4Lexer(input_stream)
+    stream = CommonTokenStream(lexer)
+    parser = ANTLRv4Parser(stream)
+
+    # Start parsing at the 'grammarSpec' rule
+    tree = parser.grammarSpec()
+
+    # Create a visitor and evaluate the expression
+    converter = ANTLR2FanVisitor()
+    result = converter.visit(tree)
+
+if __name__ == "__main__":
+    for filename in sys.argv[1:]:
+        process(filename)
