@@ -49,12 +49,15 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
             s = self.visit(child)
             if s:
                 children_s.append(s)
-        return " ".join(children_s)
+        return "".join(children_s)
+
+    def visitGrammarDecl(self, ctx: ANTLRv4Parser.GrammarDeclContext):
+        return '# ' + ctx.identifier().getText() + '\n'
 
     def visitParserRuleSpec(self, ctx: ANTLRv4Parser.ParserRuleSpecContext):
         # This method can be customized to handle rule specifications
         nonterminal = ctx.RULE_REF().getText()
-        return f"<{nonterminal}> ::= " + self.visitChildren(ctx) + "\n"
+        return f"<{nonterminal}> ::= " + self.visitChildren(ctx) + '\n'
 
     def visitRuleAltList(self, ctx: ANTLRv4Parser.RuleAltListContext):
         # This method can be customized to handle alternative lists
@@ -119,7 +122,7 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
     def visitLexerRuleSpec(self, ctx: ANTLRv4Parser.LexerRuleSpecContext):
         # This method can be customized to handle rule specifications
         nonterminal = ctx.TOKEN_REF().getText()
-        return f"<{nonterminal}> ::= " + self.visitChildren(ctx) + "\n"
+        return f"<{nonterminal}> ::= " + self.visitChildren(ctx) + '\n'
 
     def visitRuleref(self, ctx: ANTLRv4Parser.RulerefContext):
         # Handle rule references
@@ -149,6 +152,15 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
         if ctx.ebnfSuffix():
             s += self.visit(ctx.ebnfSuffix())
         return s
+
+    def visitLexerElements(self, ctx: ANTLRv4Parser.LexerElementsContext):
+        # This method can be customized to handle alternatives
+        children_s = []
+        for child in ctx.children or []:
+            s = self.visit(child)
+            if s is not None:
+                children_s.append(s)
+        return " ".join(children_s)
 
     def visitLexerBlock(self, ctx: ANTLRv4Parser.LexerBlockContext):
         return "(" + super().visitLexerBlock(ctx) + ")"
