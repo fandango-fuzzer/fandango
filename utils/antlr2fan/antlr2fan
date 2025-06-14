@@ -8,37 +8,55 @@ from ANTLRv4Parser import ANTLRv4Parser
 from ANTLRv4ParserVisitor import ANTLRv4ParserVisitor
 from typing import Any
 
-def strip_quotes(s: str) -> str:
-    """Strip quotes from a string."""
-    if s.startswith('"') and s.endswith('"'):
-        return s[1:-1]
-    elif s.startswith("'") and s.endswith("'"):
-        return s[1:-1]
-    return s
-
-def invert_range(range_str: str) -> str:
-    """Invert a character range string."""
-    if range_str.startswith('[') and range_str.endswith(']'):
-        content = range_str[1:-1]
-        if content.startswith('^'):
-            content = content[1:]  # Remove the negation
-        else:
-            content = '^' + content  # Add negation
-        return f"[{content}]"
-    return "not " + range_str  # Cannot handle
-
-def quote(s: str) -> str:
-    """Quote a string if it is not already quoted."""
-    if "'" in s and '"' in s:
-        return f'"""{s}"""'
-    if "'" in s:
-        return f'"{s}"'
-    return f"'{s}'"
-
-def rquote(s: str) -> str:
-    return 'r' + quote(s)
-
 class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
+    def strip_quotes(self, s: str) -> str:
+        """Strip quotes from a string."""
+        if s.startswith('"') and s.endswith('"'):
+            return s[1:-1]
+        elif s.startswith("'") and s.endswith("'"):
+            return s[1:-1]
+        return s
+
+    def invert_range(self, range_str: str) -> str:
+        """Invert a character range string."""
+        if range_str.startswith('[') and range_str.endswith(']'):
+            content = range_str[1:-1]
+            if content.startswith('^'):
+                content = content[1:]  # Remove the negation
+            else:
+                content = '^' + content  # Add negation
+            return f"[{content}]"
+        
+        self.addNote(f"Cannot invert range: {range_str}")
+        return "not " + range_str  # Cannot handle
+
+    def quote(self, s: str) -> str:
+        """Quote a string if it is not already quoted."""
+        if "'" in s and '"' in s:
+            return f'"""{s}"""'
+        if "'" in s:
+            return f'"{s}"'
+        return f"'{s}'"
+
+    def rquote(self, s: str) -> str:
+        return 'r' + self.quote(s)
+
+    def addNote(self, message: str):
+        """Add a note to the current rule"""
+        if getattr(self, 'notes', None) is None:
+            self.notes = []
+        self.notes.append(message)
+
+    def getNotes(self) -> str:
+        """Retrieve notes for current rule"""
+        if getattr(self, 'notes', None) is None:
+            self.notes = []
+        if not self.notes:
+            return ""
+        s = "  # " + "; ".join(self.notes)
+        self.notes = []
+        return s
+
     def visitChildren(self, ctx: Any):
         # This method can be customized to handle children nodes
         if ctx is None or ctx.children is None:
@@ -57,7 +75,9 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
     def visitParserRuleSpec(self, ctx: ANTLRv4Parser.ParserRuleSpecContext):
         # This method can be customized to handle rule specifications
         nonterminal = ctx.RULE_REF().getText()
-        return f"<{nonterminal}> ::= " + self.visitChildren(ctx) + '\n'
+        return (f"<{nonterminal}> ::= " +
+                self.visitChildren(ctx) +
+                self.getNotes() + '\n')
 
     def visitRuleAltList(self, ctx: ANTLRv4Parser.RuleAltListContext):
         # This method can be customized to handle alternative lists
@@ -125,15 +145,22 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
         return s
 
     def visitWildcard(self, ctx: ANTLRv4Parser.WildcardContext):
-        return rquote('.')
+        return self.rquote('.')
 
     def visitEbnfSuffix(self, ctx: ANTLRv4Parser.EbnfSuffixContext):
-        return ctx.getText() if ctx else ""
+        suffix = ctx.getText() if ctx else ""
+        if len(suffix) > 1:
+            # ANTLR has non-greedy suffixes such as *? and +?
+            self.addNote(f"was {suffix}")
+            suffix = suffix[0]
+        return suffix
 
     def visitLexerRuleSpec(self, ctx: ANTLRv4Parser.LexerRuleSpecContext):
         # This method can be customized to handle rule specifications
         nonterminal = ctx.TOKEN_REF().getText()
-        return f"<{nonterminal}> ::= " + self.visitChildren(ctx) + '\n'
+        return (f"<{nonterminal}> ::= " +
+                self.visitChildren(ctx) + 
+                self.getNotes() + '\n')
 
     def visitRuleref(self, ctx: ANTLRv4Parser.RulerefContext):
         # Handle rule references
@@ -185,21 +212,21 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
     def visitLexerAtom(self, ctx: ANTLRv4Parser.LexerAtomContext):
         if ctx.LEXER_CHAR_SET():
             # Handle lexer character sets
-            return rquote(ctx.LEXER_CHAR_SET().getText())
+            return self.rquote(ctx.LEXER_CHAR_SET().getText())
         return super().visitLexerAtom(ctx)
 
     def visitCharacterRange(self, ctx: ANTLRv4Parser.CharacterRangeContext):
-        range_start = strip_quotes(ctx.STRING_LITERAL(0).getText())
-        range_end = strip_quotes(ctx.STRING_LITERAL(1).getText())
-        return rquote(f'[{range_start}-{range_end}]')
+        range_start = self.strip_quotes(ctx.STRING_LITERAL(0).getText())
+        range_end = self.strip_quotes(ctx.STRING_LITERAL(1).getText())
+        return self.rquote(f'[{range_start}-{range_end}]')
 
     def visitNotSet(self, ctx: ANTLRv4Parser.NotSetContext):
         if ctx.setElement():
             # Handle not set elements
-            return rquote(invert_range(ctx.setElement().getText()))
+            return self.rquote(self.invert_range(ctx.setElement().getText()))
         if ctx.blockSet():
             # Handle not set elements
-            return rquote(invert_range(ctx.blockSet().getText()))
+            return self.rquote(self.invert_range(ctx.blockSet().getText()))
         return super().visitChildren(ctx)
 
     def visitTerminal(self, node: TerminalNode):
