@@ -6,18 +6,28 @@ from antlr4 import *
 from ANTLRv4Lexer import ANTLRv4Lexer
 from ANTLRv4Parser import ANTLRv4Parser
 from ANTLRv4ParserVisitor import ANTLRv4ParserVisitor
+from typing import Any
+
+def strip_quotes(s: str) -> str:
+    """Strip quotes from a string."""
+    if s.startswith('"') and s.endswith('"'):
+        return s[1:-1]
+    elif s.startswith("'") and s.endswith("'"):
+        return s[1:-1]
+    return s
 
 class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
-    def visitChildren(self, ctx: any):
+    def visitChildren(self, ctx: Any):
         # This method can be customized to handle children nodes
-        result = ""
         if ctx is None or ctx.children is None:
-            return result
-        for child in ctx.children:
+            return ""
+
+        children_s = []
+        for child in ctx.children or []:
             s = self.visit(child)
             if s:
-                result += s
-        return result
+                children_s.append(s)
+        return " ".join(children_s)
 
     def visitParserRuleSpec(self, ctx: ANTLRv4Parser.ParserRuleSpecContext):
         # This method can be customized to handle rule specifications
@@ -41,6 +51,15 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
             if s is not None:
                 children_s.append(s)
         return " ".join(children_s)
+
+    def visitLexerAltList(self, ctx: ANTLRv4Parser.LexerAltListContext):
+        # This method can be customized to handle alternatives
+        children_s = []
+        for child in ctx.children or []:
+            s = self.visit(child)
+            if s is not None:
+                children_s.append(s)
+        return " | ".join(children_s)
 
     def visitLexerRuleSpec(self, ctx: ANTLRv4Parser.LexerRuleSpecContext):
         # This method can be customized to handle rule specifications
@@ -66,16 +85,16 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
             elem = ctx.getText()
             return f"{elem}"
 
-    def visitCharacterRange(self, ctx: ANTLRv4Parser.CharacterRangeContext):
-        print("Visiting character range:", ctx.getText())
-        return super().visitCharacterRange(ctx)
-
     def visitLexerAtom(self, ctx: ANTLRv4Parser.LexerAtomContext):
-        token = ctx.getText()
-        if token.startswith("'") or token.startswith('"'):
-            # Handle string literals
-            return token
-        return f"r'{token}'"
+        if ctx.LEXER_CHAR_SET():
+            # Handle lexer character sets
+            return f"r'{ctx.LEXER_CHAR_SET().getText()}'"
+        return super().visitLexerAtom(ctx)
+
+    def visitCharacterRange(self, ctx: ANTLRv4Parser.CharacterRangeContext):
+        range_start = strip_quotes(ctx.STRING_LITERAL(0).getText())
+        range_end = strip_quotes(ctx.STRING_LITERAL(1).getText())
+        return f"r'[{range_start}-{range_end}]'"
 
     def visitTerminal(self, node: TerminalNode):
         # Handle terminal nodes
