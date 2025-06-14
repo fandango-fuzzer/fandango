@@ -44,7 +44,13 @@ class test_convert(unittest.TestCase):
         self.assertEqual(err, "")
 
     def test_convert_bt(self):
-        command = shlex.split("fandango convert src/fandango/converters/bt/gif.bt")
+        command = shlex.split("fandango convert --endianness=little --bitfield-order=left-to-right src/fandango/converters/bt/gif.bt")
+        out, err, code = self.run_command(command)
+        self.assertEqual(0, code)
+        self.assertEqual(err, "")
+
+    def test_convert_bt_again(self):
+        command = shlex.split("fandango convert --endianness=big --bitfield-order=right-to-left src/fandango/converters/bt/gif.bt")
         out, err, code = self.run_command(command)
         self.assertEqual(0, code)
         self.assertEqual(err, "")
