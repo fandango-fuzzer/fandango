@@ -11,6 +11,7 @@ from ANTLRv4Parser import ANTLRv4Parser
 from ANTLRv4ParserVisitor import ANTLRv4ParserVisitor
 from typing import Any
 
+
 class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
     def strip_quotes(self, s: str) -> str:
         """Strip quotes from a string."""
@@ -22,12 +23,12 @@ class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
 
     def invert_range(self, range_str: str) -> str:
         """Invert a character range string."""
-        if range_str.startswith('[') and range_str.endswith(']'):
+        if range_str.startswith("[") and range_str.endswith("]"):
             content = range_str[1:-1]
-            if content.startswith('^'):
+            if content.startswith("^"):
                 content = content[1:]  # Remove the negation
             else:
-                content = '^' + content  # Add negation
+                content = "^" + content  # Add negation
             return f"[{content}]"
 
         self.addNote(f"cannot invert {range_str}")
@@ -42,17 +43,17 @@ class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
         return f"'{s}'"
 
     def rquote(self, s: str) -> str:
-        return 'r' + self.quote(s)
+        return "r" + self.quote(s)
 
     def addNote(self, message: str):
         """Add a note to the current rule"""
-        if getattr(self, 'notes', None) is None:
+        if getattr(self, "notes", None) is None:
             self.notes = []
         self.notes.append(message)
 
     def getNotes(self) -> str:
         """Retrieve notes for current rule"""
-        if getattr(self, 'notes', None) is None:
+        if getattr(self, "notes", None) is None:
             self.notes = []
         if not self.notes:
             return ""
@@ -73,7 +74,7 @@ class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
         return "".join(children_s)
 
     def visitGrammarDecl(self, ctx: ANTLRv4Parser.GrammarDeclContext):
-        return '# ' + ctx.identifier().getText() + '\n'
+        return "# " + ctx.identifier().getText() + "\n"
 
     def visitParserRuleSpec(self, ctx: ANTLRv4Parser.ParserRuleSpecContext):
         if ctx.ruleModifiers():
@@ -90,9 +91,9 @@ class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
             self.addNote(f"had exception group '{ctx.exceptionGroup().getText()}'")
 
         nonterminal = ctx.RULE_REF().getText()
-        return (f"<{nonterminal}> ::= " +
-                self.visitChildren(ctx) +
-                self.getNotes() + '\n')
+        return (
+            f"<{nonterminal}> ::= " + self.visitChildren(ctx) + self.getNotes() + "\n"
+        )
 
     def visitRuleAltList(self, ctx: ANTLRv4Parser.RuleAltListContext):
         # This method can be customized to handle alternative lists
@@ -160,7 +161,7 @@ class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
         return s
 
     def visitWildcard(self, ctx: ANTLRv4Parser.WildcardContext):
-        return self.rquote('.')
+        return self.rquote(".")
 
     def visitEbnfSuffix(self, ctx: ANTLRv4Parser.EbnfSuffixContext):
         suffix = ctx.getText() if ctx else ""
@@ -173,9 +174,9 @@ class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
     def visitLexerRuleSpec(self, ctx: ANTLRv4Parser.LexerRuleSpecContext):
         # This method can be customized to handle rule specifications
         nonterminal = ctx.TOKEN_REF().getText()
-        return (f"<{nonterminal}> ::= " +
-                self.visitChildren(ctx) + 
-                self.getNotes() + '\n')
+        return (
+            f"<{nonterminal}> ::= " + self.visitChildren(ctx) + self.getNotes() + "\n"
+        )
 
     def visitRuleref(self, ctx: ANTLRv4Parser.RulerefContext):
         # Handle rule references
@@ -255,7 +256,7 @@ class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
     def visitCharacterRange(self, ctx: ANTLRv4Parser.CharacterRangeContext):
         range_start = self.strip_quotes(ctx.STRING_LITERAL(0).getText())
         range_end = self.strip_quotes(ctx.STRING_LITERAL(1).getText())
-        return self.rquote(f'[{range_start}-{range_end}]')
+        return self.rquote(f"[{range_start}-{range_end}]")
 
     def visitNotSet(self, ctx: ANTLRv4Parser.NotSetContext):
         if ctx.setElement():
@@ -271,8 +272,10 @@ class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
         # print(f"Visiting terminal: {node.getText()}")
         return super().visitTerminal(node)
 
+
 class ANTLRFandangoConverter(FandangoConverter):
     """Convert ANTLR4 grammar to Fandango format."""
+
     def __init__(self, filename: str):
         """Initialize with given grammar file"""
         super().__init__(filename)

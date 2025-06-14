@@ -492,12 +492,13 @@ class BTFandangoConverter(FandangoConverter):
             ast = parse_file(filename)
         self.ast = ast
 
-    def to_fan(self,
-               start_symbol: str = "<start>",
-               use_regexes: bool = False,
-               bitfield_order: BitfieldOrder = BitfieldOrder.LeftToRight,
-               endianness: Endianness = Endianness.BigEndian,
-               ) -> str:
+    def to_fan(
+        self,
+        start_symbol: str = "<start>",
+        use_regexes: bool = False,
+        bitfield_order: BitfieldOrder = BitfieldOrder.LeftToRight,
+        endianness: Endianness = Endianness.BigEndian,
+    ) -> str:
         visitor = BTFandangoConverterVisitor(
             start_symbol=start_symbol,
             use_regexes=use_regexes,
@@ -532,8 +533,9 @@ if __name__ == "__main__":
         choices=["left-to-right", "right-to-left"],
         help="set bitfield order",
     )
-    parser.add_argument("filename", nargs="+", type=str,
-                        help=".bt binary template file")
+    parser.add_argument(
+        "filename", nargs="+", type=str, help=".bt binary template file"
+    )
 
     args = parser.parse_args(sys.argv[1:])
     if args.endianness == "little":
