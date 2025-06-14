@@ -169,9 +169,7 @@ if __name__ == "__main__":
         description="Convert a [DTD] schema to a Fandango specification"
     )
 
-    parser.add_argument(
-        dest="files", action="append", type=str, help="schema file"
-    )
+    parser.add_argument(dest="files", action="append", type=str, help="schema file")
 
     args = parser.parse_args(sys.argv[1:])
 
