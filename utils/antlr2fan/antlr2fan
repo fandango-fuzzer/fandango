@@ -5,22 +5,49 @@ import sys
 from antlr4 import *
 from ANTLRv4Lexer import ANTLRv4Lexer
 from ANTLRv4Parser import ANTLRv4Parser
+from ANTLRv4ParserVisitor import ANTLRv4ParserVisitor
 
-class ANTLR2FanVisitor(ParseTreeVisitor):
-    def visitGrammarSpec(self, ctx: ANTLRv4Parser.GrammarSpecContext):
-        # This method can be customized to handle the grammar specification
-        print("Visiting grammar specification")
-        return self.visitChildren(ctx)
-
-    def visitRuleSpec(self, ctx: ANTLRv4Parser.RuleSpecContext):
+class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
+    def visitParserRuleSpec(self, ctx: ANTLRv4Parser.ParserRuleSpecContext):
         # This method can be customized to handle rule specifications
-        print("Visiting rule specification")
+        nonterminal = ctx.RULE_REF().getText()
+        print(f"<{nonterminal}> ::= ", end='')
         return self.visitChildren(ctx)
+        print()
+
+    def visitAltList(self, ctx: ANTLRv4Parser.AltListContext):
+        # This method can be customized to handle alternative lists
+        alternatives = []
+        for alt in ctx.alternative():
+            alternatives.append(self.visit(alt))
+        print(' | '.join(alternatives), end='')
+        return None
+
+    def visitLexerRuleSpec(self, ctx: ANTLRv4Parser.LexerRuleSpecContext):
+        # This method can be customized to handle rule specifications
+        nonterminal = ctx.TOKEN_REF().getText()
+        print(f"<{nonterminal}> ::= ", end='')
+        self.visitChildren(ctx)
+        print()
+
+    def visitRuleref(self, ctx: ANTLRv4Parser.RulerefContext):
+        # Handle rule references
+        rule_name = ctx.RULE_REF().getText()
+        print(f"<{rule_name}>", end='')
+        return self.visitChildren(ctx)
+
+    def visitTerminalDef(self, ctx: ANTLRv4Parser.TerminalDefContext):
+        if ctx.STRING_LITERAL():
+            terminal = ctx.STRING_LITERAL().getText()
+            print(f"{terminal}", end='')
+        elif ctx.TOKEN_REF():
+            token = ctx.TOKEN_REF().getText()
+            print(f"<{token}>", end='')
 
     def visitTerminal(self, node: TerminalNode):
         # Handle terminal nodes
-        print(f"Visiting terminal: {node.getText()}")
-        return node.getText()
+        # print(f"Visiting terminal: {node.getText()}")
+        return super().visitTerminal(node)
 
 def process(filename):
     g4content = open(filename, 'r').read()

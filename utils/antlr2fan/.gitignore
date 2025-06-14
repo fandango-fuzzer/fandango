@@ -5,3 +5,4 @@ ANTLRv4Lexer.tokens
 ANTLRv4Parser.interp
 ANTLRv4Parser.py
 ANTLRv4Parser.tokens
+ANTLRv4ParserVisitor.py
