@@ -61,17 +61,19 @@ class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
         self.notes = []
         return s
 
-    def visitChildren(self, ctx: Any):
-        # This method can be customized to handle children nodes
+    def visitChildren(self, ctx: Any, sep: str = "", altEmpty: str = "") -> str:
+        """Visit all children of a context `ctx`. Separate them with `sep`. If they evaluate to an empty string, use `altEmpty` instead."""
         if ctx is None or ctx.children is None:
             return ""
 
         children_s = []
         for child in ctx.children or []:
             s = self.visit(child)
+            if s == "":
+                s = altEmpty
             if s:
                 children_s.append(s)
-        return "".join(children_s)
+        return sep.join(children_s)
 
     def visitGrammarDecl(self, ctx: ANTLRv4Parser.GrammarDeclContext):
         return "# " + ctx.identifier().getText() + "\n"
@@ -96,67 +98,33 @@ class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
         )
 
     def visitRuleAltList(self, ctx: ANTLRv4Parser.RuleAltListContext):
-        # This method can be customized to handle alternative lists
-        children_s = []
-        for child in ctx.children or []:
-            s = self.visit(child)
-            if s == "":
-                s = "''"
-            if s is not None:
-                children_s.append(s)
-        return " | ".join(children_s)
+        return self.visitChildren(ctx, sep=" | ", altEmpty="''")
 
     def visitAltList(self, ctx: ANTLRv4Parser.AltListContext):
-        # This method can be customized to handle alternative lists
-        children_s = []
-        for child in ctx.children or []:
-            s = self.visit(child)
-            if s == "":
-                s = "''"
-            if s is not None:
-                children_s.append(s)
-        return " | ".join(children_s)
+        return self.visitChildren(ctx, sep=" | ", altEmpty="''")
 
     def visitAlternative(self, ctx: ANTLRv4Parser.AlternativeContext):
-        # This method can be customized to handle alternatives
-        children_s = []
-        for child in ctx.children or []:
-            s = self.visit(child)
-            if s is not None:
-                children_s.append(s)
-        return " ".join(children_s)
+        return self.visitChildren(ctx, sep=" ")
 
     def visitLexerAltList(self, ctx: ANTLRv4Parser.LexerAltListContext):
-        # This method can be customized to handle alternatives
-        children_s = []
-        for child in ctx.children or []:
-            s = self.visit(child)
-            if s is not None:
-                children_s.append(s)
-        return " | ".join(children_s)
+        return self.visitChildren(ctx, sep=" | ")
 
     def visitEbnf(self, ctx: ANTLRv4Parser.EbnfContext):
         if ctx.blockSuffix():
-            # Handle EBNF with block suffix
             return self.visit(ctx.block()) + self.visit(ctx.blockSuffix())
         return super().visitEbnf(ctx)
 
     def visitElement(self, ctx: ANTLRv4Parser.ElementContext):
         s = ""
         if ctx.labeledElement():
-            # Handle labeled elements
             s = self.visit(ctx.labeledElement())
         if ctx.atom():
-            # Handle atoms
             s = self.visit(ctx.atom())
         if ctx.ebnf():
-            # Handle EBNF constructs
             s = self.visit(ctx.ebnf())
         if ctx.actionBlock():
-            # Handle action blocks
             s = self.visit(ctx.actionBlock())
         if ctx.ebnfSuffix():
-            # Handle EBNF suffixes
             s += self.visit(ctx.ebnfSuffix())
         return s
 
@@ -179,7 +147,6 @@ class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
         )
 
     def visitRuleref(self, ctx: ANTLRv4Parser.RulerefContext):
-        # Handle rule references
         rule_name = ctx.RULE_REF().getText()
         return f"<{rule_name}>"
 
@@ -227,13 +194,7 @@ class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
         return super().visitElementOption(ctx)
 
     def visitLexerElements(self, ctx: ANTLRv4Parser.LexerElementsContext):
-        # This method can be customized to handle alternatives
-        children_s = []
-        for child in ctx.children or []:
-            s = self.visit(child)
-            if s is not None:
-                children_s.append(s)
-        return " ".join(children_s)
+        return self.visitChildren(ctx, sep=" ")
 
     def visitLexerBlock(self, ctx: ANTLRv4Parser.LexerBlockContext):
         return "(" + super().visitLexerBlock(ctx) + ")"
@@ -243,13 +204,11 @@ class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
 
     def visitBlock(self, ctx: ANTLRv4Parser.BlockSetContext):
         if ctx.ruleAction():
-            # Handle rule actions
             self.addNote(f"action was {ctx.ruleAction().getText()}")
         return "(" + super().visitBlock(ctx) + ")"
 
     def visitLexerAtom(self, ctx: ANTLRv4Parser.LexerAtomContext):
         if ctx.LEXER_CHAR_SET():
-            # Handle lexer character sets
             return self.rquote(ctx.LEXER_CHAR_SET().getText())
         return super().visitLexerAtom(ctx)
 
@@ -260,16 +219,12 @@ class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
 
     def visitNotSet(self, ctx: ANTLRv4Parser.NotSetContext):
         if ctx.setElement():
-            # Handle not set elements
             return self.rquote(self.invert_range(ctx.setElement().getText()))
         if ctx.blockSet():
-            # Handle not set elements
             return self.rquote(self.invert_range(ctx.blockSet().getText()))
         return super().visitChildren(ctx)
 
     def visitTerminal(self, node: TerminalNode):
-        # Handle terminal nodes
-        # print(f"Visiting terminal: {node.getText()}")
         return super().visitTerminal(node)
 
 

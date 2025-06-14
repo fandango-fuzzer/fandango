@@ -2,7 +2,7 @@ PYTHON = python3
 SED = sed
 ANTLR = antlr
 
-antlr2fan: ANTLRv4Lexer.py ANTLRv4Parser.py
+all: ANTLRv4Lexer.py ANTLRv4Parser.py
 
 ANTLRv4Lexer.g4: ANTLRv4LexerOrig.g4
 	echo '// Generated from $?. Do not edit.' > $@
