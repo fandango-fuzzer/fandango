@@ -39,7 +39,7 @@ from typing import TextIO
 # figure out how to pound Python into submision and just work
 # please fix.
 # Cannot import lexer so use parser instead.
-from ANTLRv4Parser import ANTLRv4Parser
+from fandango.converters.antlr.ANTLRv4Parser import ANTLRv4Parser
 
 
 class LexerAdaptor(Lexer):

@@ -33,8 +33,7 @@ class DTDFandangoConverter(FandangoConverter):
         self.attribute_types = {}
 
     def header(self):
-        s = f"""
-# This file contains a Fandango grammar for a DTD schema.
+        s = f"""# This file contains a Fandango grammar for a DTD schema input spec.
 # Automatically generated from {self.filename!r}. Do not edit.
 #
 <ws> ::= <whitespace>+ := ' '  # whitespace sequence

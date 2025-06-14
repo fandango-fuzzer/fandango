@@ -6,9 +6,9 @@ from typing import IO
 from fandango.converters.FandangoConverter import FandangoConverter
 
 from antlr4 import *
-from ANTLRv4Lexer import ANTLRv4Lexer
-from ANTLRv4Parser import ANTLRv4Parser
-from ANTLRv4ParserVisitor import ANTLRv4ParserVisitor
+from fandango.converters.antlr.ANTLRv4Lexer import ANTLRv4Lexer
+from fandango.converters.antlr.ANTLRv4Parser import ANTLRv4Parser
+from fandango.converters.antlr.ANTLRv4ParserVisitor import ANTLRv4ParserVisitor
 from typing import Any
 
 
@@ -293,8 +293,7 @@ class ANTLRFandangoConverter(FandangoConverter):
 
         # Create a visitor and evaluate the expression
         converter = ANTLRFandangoConverterVisitor()
-        header = f"""
-# This file contains a Fandango grammar for a 010 binary template.
+        header = f"""# This file contains a Fandango grammar for an ANTLR input spec.
 # Automatically generated from {self.filename!r}. Do not edit.
 #
 """

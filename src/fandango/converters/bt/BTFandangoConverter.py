@@ -506,8 +506,7 @@ class BTFandangoConverter(FandangoConverter):
             endianness=endianness,
         )
         visitor.visit(self.ast)
-        header = f"""
-# This file contains a Fandango grammar for a 010 binary template.
+        header = f"""# This file contains a Fandango grammar for a 010 binary template input spec.
 # Automatically generated from {self.filename!r}. Do not edit.
 #
 """

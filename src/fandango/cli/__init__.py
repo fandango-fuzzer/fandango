@@ -60,6 +60,10 @@ from fandango.language.grammar import Grammar
 from fandango.language.parse import parse, parse_spec, FandangoSpec
 from fandango.logger import LOGGER, print_exception
 
+from fandango.converters.antlr.ANTLRFandangoConverter import ANTLRFandangoConverter
+from fandango.converters.bt.BTFandangoConverter import BTFandangoConverter
+from fandango.converters.dtd.DTDFandangoConverter import DTDFandangoConverter
+
 from fandango import FandangoParseError, FandangoError
 import fandango
 
@@ -460,13 +464,20 @@ def get_parser(in_command_line=True):
         help="write output to OUTPUT (default: none). Use '-' for stdout",
     )
 
-    # Dump
-    dump_parser = commands.add_parser(
-        "dump",
-        help="parse and output .fan specs. For internal testing.",
+    # Convert
+    convert_parser = commands.add_parser(
+        "convert",
+        help="convert given external spec to .fan format",
         parents=[file_parser, settings_parser],
     )
-    dump_parser.add_argument(
+    convert_parser.add_argument(
+        "--from",
+        dest="from_format",
+        choices=["antlr", "g4", "dtd", "010", "bt", "fan", "auto"],
+        default="auto",
+        help="format of the external spec file: 'antlr'/'g4' (ANTLR), 'dtd' (XML DTD), '010'/'bt' (010 Editor Binary Template), 'fan' (Fandango spec), or 'auto' (default: try to guess from file extension)",
+    )
+    convert_parser.add_argument(
         "-o",
         "--output",
         type=argparse.FileType("w"),
@@ -474,13 +485,13 @@ def get_parser(in_command_line=True):
         default=None,
         help="write output to OUTPUT (default: stdout)",
     )
-    dump_parser.add_argument(
-        "dump_files",
-        type=argparse.FileType("r"),
-        metavar="FAN_FILE",
+    convert_parser.add_argument(
+        "convert_files",
+        type=str,
+        metavar="FILENAME",
         default=None,
-        nargs="*",
-        help=".fan files to be parsed. Use '-' for stdin",
+        nargs="+",
+        help="external spec file to be converted. Use '-' for stdin",
     )
 
     if not in_command_line:
@@ -1223,26 +1234,65 @@ def parse_command(args):
         raise FandangoParseError(f"{errors} error(s) during parsing")
 
 
-def dump_command(args):
-    """Dump Fandango spec, including code, grammar, and constraints"""
+def convert_command(args):
+    """Convert a given language spec into Fandango .fan format"""
 
     output = args.output
     if output is None:
         output = sys.stdout
 
-    for input_file in (args.fan_files or []) + args.dump_files:
-        contents = input_file.read()
+    for input_file in args.convert_files:
+        from_format = args.from_format
+        if from_format == "auto":
+            if input_file.lower().endswith(".g4") or input_file.lower().endswith(".antlr"):
+                from_format = "antlr"
+            elif input_file.lower().endswith(".dtd"):
+                from_format = "dtd"
+            elif input_file.lower().endswith(".bt") or input_file.lower().endswith(".010"):
+                from_format = "bt"
+            elif input_file.lower().endswith(".fan"):
+                from_format = "fan"
+            else:
+                raise FandangoError(f"{input_file!r}: unknown file extension; use --from=FORMAT to specify the format")
 
-        try:
-            spec = parse_spec(
-                contents, filename=input_file.name, use_cache=args.use_cache
+        temp_file = None
+        if input_file == "-":
+            # Read from stdin
+            with open_file(input_file, "text", mode="r") as fd:
+                contents = fd.read()
+            temp_file = tempfile.NamedTemporaryFile(
+                mode="w", delete=False, suffix=".tmp"
             )
-            print(repr(spec), file=output)
-        except FandangoError as e:
-            print_exception(e)
+            temp_file.write(contents)
+            temp_file.flush()
+            input_file = temp_file.name
 
-        if input_file != sys.stdin:
-            input_file.close()
+        match from_format:
+            case "antlr" | "g4":
+                converter = ANTLRFandangoConverter(input_file)
+                spec = converter.to_fan()
+            case "dtd":
+                converter = DTDFandangoConverter(input_file)
+                spec = converter.to_fan()
+            case "bt" | "010":
+                converter = BTFandangoConverter(input_file)
+                spec = converter.to_fan()
+            case "fan":
+                try:
+                    # .fan file
+                    contents = open(input_file, 'r').read()
+                    parsed_spec = parse_spec(
+                        contents, filename=input_file, use_cache=args.use_cache
+                    )
+                    spec = str(parsed_spec)
+                except FandangoError as e:
+                    print_exception(e)
+
+        print(spec, file=output, end="")
+        if temp_file:
+            # Remove temporary file
+            temp_file.close()
+            os.unlink(temp_file.name)
 
     if output != sys.stdout:
         output.close()
@@ -1271,7 +1321,7 @@ COMMANDS = {
     "reset": reset_command,
     "fuzz": fuzz_command,
     "parse": parse_command,
-    "dump": dump_command,
+    "convert": convert_command,
     "cd": cd_command,
     "help": help_command,
     "copyright": copyright_command,
