@@ -32,11 +32,11 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
             if s is not None:
                 children_s.append(s)
         return " | ".join(children_s)
-    
+
     def visitAlternative(self, ctx: ANTLRv4Parser.AlternativeContext):
         # This method can be customized to handle alternatives
         children_s = []
-        for child in ctx.children:
+        for child in ctx.children or []:
             s = self.visit(child)
             if s is not None:
                 children_s.append(s)
@@ -59,6 +59,23 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
         elif ctx.TOKEN_REF():
             token = ctx.TOKEN_REF().getText()
             return f"<{token}>"
+        elif ctx.LEXER_CHAR_SET():
+            char_set = ctx.LEXER_CHAR_SET().getText()
+            return f"{char_set}"
+        else:
+            elem = ctx.getText()
+            return f"{elem}"
+
+    def visitCharacterRange(self, ctx: ANTLRv4Parser.CharacterRangeContext):
+        print("Visiting character range:", ctx.getText())
+        return super().visitCharacterRange(ctx)
+
+    def visitLexerAtom(self, ctx: ANTLRv4Parser.LexerAtomContext):
+        token = ctx.getText()
+        if token.startswith("'") or token.startswith('"'):
+            # Handle string literals
+            return token
+        return f"r'{token}'"
 
     def visitTerminal(self, node: TerminalNode):
         # Handle terminal nodes
@@ -79,7 +96,7 @@ def process(filename):
     # Create a visitor and evaluate the expression
     converter = ANTLR2FanVisitor()
     result = converter.visit(tree)
-    print(result)
+    print(result, end="")
 
 if __name__ == "__main__":
     for filename in sys.argv[1:]:
