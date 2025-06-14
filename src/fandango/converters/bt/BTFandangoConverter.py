@@ -7,6 +7,8 @@ import platform
 import re
 import string
 import sys
+import os
+
 from enum import Enum
 from typing import Optional
 
@@ -491,6 +493,13 @@ class BTFandangoConverter(FandangoConverter):
         else:
             ast = parse_file(filename)
         self.ast = ast
+
+        # The 010 parser leaves behind some temporary files
+        try:
+            os.remove("lextab.py")
+            os.remove("yacctab.py")
+        except FileNotFoundError:
+            pass
 
     def to_fan(
         self,
