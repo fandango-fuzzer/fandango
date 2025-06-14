@@ -110,6 +110,9 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
             s += self.visit(ctx.ebnfSuffix())
         return s
 
+    def visitWildcard(self, ctx: ANTLRv4Parser.WildcardContext):
+        return rquote('.')
+
     def visitEbnfSuffix(self, ctx: ANTLRv4Parser.EbnfSuffixContext):
         return ctx.getText() if ctx else ""
 
