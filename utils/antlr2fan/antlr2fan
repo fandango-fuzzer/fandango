@@ -16,6 +16,28 @@ def strip_quotes(s: str) -> str:
         return s[1:-1]
     return s
 
+def invert_range(range_str: str) -> str:
+    """Invert a character range string."""
+    if range_str.startswith('[') and range_str.endswith(']'):
+        content = range_str[1:-1]
+        if content.startswith('^'):
+            content = content[1:]  # Remove the negation
+        else:
+            content = '^' + content  # Add negation
+        return f"[{content}]"
+    return "not " + range_str  # Cannot handle
+
+def quote(s: str) -> str:
+    """Quote a string if it is not already quoted."""
+    if "'" in s and '"' in s:
+        return f'"""{s}"""'
+    if "'" in s:
+        return f'"{s}"'
+    return f"'{s}'"
+
+def rquote(s: str) -> str:
+    return 'r' + quote(s)
+
 class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
     def visitChildren(self, ctx: Any):
         # This method can be customized to handle children nodes
@@ -37,8 +59,10 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
     def visitRuleAltList(self, ctx: ANTLRv4Parser.RuleAltListContext):
         # This method can be customized to handle alternative lists
         children_s = []
-        for child in ctx.children:
+        for child in ctx.children or []:
             s = self.visit(child)
+            if s == "":
+                s = "''"
             if s is not None:
                 children_s.append(s)
         return " | ".join(children_s)
@@ -60,6 +84,34 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
             if s is not None:
                 children_s.append(s)
         return " | ".join(children_s)
+
+    def visitEbnf(self, ctx: ANTLRv4Parser.EbnfContext):
+        if ctx.blockSuffix():
+            # Handle EBNF with block suffix
+            return self.visit(ctx.block()) + self.visit(ctx.blockSuffix())
+        return ctx.getText()
+
+    def visitElement(self, ctx: ANTLRv4Parser.ElementContext):
+        s = ""
+        if ctx.labeledElement():
+            # Handle labeled elements
+            s = self.visit(ctx.labeledElement())
+        if ctx.atom():
+            # Handle atoms
+            s = self.visit(ctx.atom())
+        if ctx.ebnf():
+            # Handle EBNF constructs
+            s = self.visit(ctx.ebnf())
+        if ctx.actionBlock():
+            # Handle action blocks
+            s = self.visit(ctx.actionBlock())
+        if ctx.ebnfSuffix():
+            # Handle EBNF suffixes
+            s += self.visit(ctx.ebnfSuffix())
+        return s
+
+    def visitEbnfSuffix(self, ctx: ANTLRv4Parser.EbnfSuffixContext):
+        return ctx.getText() if ctx else ""
 
     def visitLexerRuleSpec(self, ctx: ANTLRv4Parser.LexerRuleSpecContext):
         # This method can be customized to handle rule specifications
@@ -85,16 +137,41 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
             elem = ctx.getText()
             return f"{elem}"
 
+    def visitLexerElement(self, ctx: ANTLRv4Parser.LexerElementContext):
+        s = ""
+        if ctx.lexerAtom():
+            s = self.visit(ctx.lexerAtom())
+        if ctx.lexerBlock():
+            s = self.visit(ctx.lexerBlock())
+        if ctx.ebnfSuffix():
+            s += self.visit(ctx.ebnfSuffix())
+        return s
+
+    def visitLexerBlock(self, ctx: ANTLRv4Parser.LexerBlockContext):
+        return "(" + super().visitLexerBlock(ctx) + ")"
+
+    def visitBlockSet(self, ctx: ANTLRv4Parser.BlockSetContext):
+        return "(" + super().visitBlockSet(ctx) + ")"
+
     def visitLexerAtom(self, ctx: ANTLRv4Parser.LexerAtomContext):
         if ctx.LEXER_CHAR_SET():
             # Handle lexer character sets
-            return f"r'{ctx.LEXER_CHAR_SET().getText()}'"
+            return rquote(ctx.LEXER_CHAR_SET().getText())
         return super().visitLexerAtom(ctx)
 
     def visitCharacterRange(self, ctx: ANTLRv4Parser.CharacterRangeContext):
         range_start = strip_quotes(ctx.STRING_LITERAL(0).getText())
         range_end = strip_quotes(ctx.STRING_LITERAL(1).getText())
-        return f"r'[{range_start}-{range_end}]'"
+        return rquote(f'[{range_start}-{range_end}]')
+
+    def visitNotSet(self, ctx: ANTLRv4Parser.NotSetContext):
+        if ctx.setElement():
+            # Handle not set elements
+            return rquote(invert_range(ctx.setElement().getText()))
+        if ctx.blockSet():
+            # Handle not set elements
+            return rquote(invert_range(ctx.blockSet().getText()))
+        return super().visitChildren(ctx)
 
     def visitTerminal(self, node: TerminalNode):
         # Handle terminal nodes
