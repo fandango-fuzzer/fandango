@@ -70,6 +70,17 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
                 children_s.append(s)
         return " | ".join(children_s)
 
+    def visitAltList(self, ctx: ANTLRv4Parser.AltListContext):
+        # This method can be customized to handle alternative lists
+        children_s = []
+        for child in ctx.children or []:
+            s = self.visit(child)
+            if s == "":
+                s = "''"
+            if s is not None:
+                children_s.append(s)
+        return " | ".join(children_s)
+
     def visitAlternative(self, ctx: ANTLRv4Parser.AlternativeContext):
         # This method can be customized to handle alternatives
         children_s = []
@@ -92,7 +103,7 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
         if ctx.blockSuffix():
             # Handle EBNF with block suffix
             return self.visit(ctx.block()) + self.visit(ctx.blockSuffix())
-        return ctx.getText()
+        return super().visitEbnf(ctx)
 
     def visitElement(self, ctx: ANTLRv4Parser.ElementContext):
         s = ""
@@ -167,6 +178,9 @@ class ANTLR2FanVisitor(ANTLRv4ParserVisitor):
 
     def visitBlockSet(self, ctx: ANTLRv4Parser.BlockSetContext):
         return "(" + super().visitBlockSet(ctx) + ")"
+
+    def visitBlock(self, ctx: ANTLRv4Parser.BlockSetContext):
+        return "(" + super().visitBlock(ctx) + ")"
 
     def visitLexerAtom(self, ctx: ANTLRv4Parser.LexerAtomContext):
         if ctx.LEXER_CHAR_SET():
