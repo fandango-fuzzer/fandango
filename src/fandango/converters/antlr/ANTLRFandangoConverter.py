@@ -248,8 +248,7 @@ class ANTLRFandangoConverter(FandangoConverter):
 
         # Create a visitor and evaluate the expression
         converter = ANTLRFandangoConverterVisitor()
-        header = f"""# This file contains a Fandango grammar for an ANTLR input spec.
-# Automatically generated from {self.filename!r}. Do not edit.
+        header = f"""# Automatically generated from {self.filename!r}.
 #
 """
         return header + converter.visit(tree)
