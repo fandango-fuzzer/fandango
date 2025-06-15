@@ -70,6 +70,7 @@ test = [
     "speedy-antlr-tool>=1.4.3",
     "jupyter-book>=1.0.4",
     "sphinxcontrib-mermaid>=1.0.0",
+    "pagelabels>=1.2.1",
 ]
 
 [tool.black]
