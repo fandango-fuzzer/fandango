@@ -488,18 +488,20 @@ class BTFandangoConverter(FandangoConverter):
 
     def __init__(self, filename: str):
         super().__init__(filename)
-        if platform.system() == "Darwin":
-            ast = parse_file(filename, cpp_args="-xc++")
-        else:
-            ast = parse_file(filename)
-        self.ast = ast
 
-        # The 010 parser leaves behind some temporary files
         try:
-            os.remove("lextab.py")
-            os.remove("yacctab.py")
-        except FileNotFoundError:
-            pass
+            if platform.system() == "Darwin":
+                ast = parse_file(filename, cpp_args="-xc++")
+            else:
+                ast = parse_file(filename)
+            self.ast = ast
+        finally:
+            try:
+                # The 010 parser leaves behind some temporary files
+                os.remove("lextab.py")
+                os.remove("yacctab.py")
+            except FileNotFoundError:
+                pass
 
     def to_fan(
         self,
