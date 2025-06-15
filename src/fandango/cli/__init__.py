@@ -472,7 +472,7 @@ def get_parser(in_command_line=True):
     convert_parser = commands.add_parser(
         "convert",
         help="convert given external spec to .fan format",
-        parents=[file_parser, settings_parser],
+        # parents=[settings_parser],
     )
     convert_parser.add_argument(
         "--from",
