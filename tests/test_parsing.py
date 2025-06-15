@@ -519,7 +519,8 @@ class TestBitstreamParsing(TestCLIParsing):
         self.assertEqual("import\n", out)
 
     def test_parse_iso8601(self):
-        command = shlex.split("fandango parse -f docs/iso8601.fan tests/resources/iso8601.txt")
+        command = shlex.split(
+            "fandango parse -f docs/iso8601.fan tests/resources/iso8601.txt"
+        )
         out, err, code = self.run_command(command)
         self.assertEqual(0, code)
-
