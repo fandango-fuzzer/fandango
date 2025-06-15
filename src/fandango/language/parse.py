@@ -754,6 +754,7 @@ def check_grammar_definitions(
             symbol not in used_symbols
             and symbol not in given_used_symbols
             and symbol != start_symbol
+            and symbol != "<start>"  # Allow <start> to be defined but not used
         ):
             LOGGER.warning(f"Symbol {symbol!s} defined, but not used")
 
