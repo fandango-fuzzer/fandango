@@ -10,11 +10,10 @@ kernelspec:
   name: python3
 ---
 
-(sec:distributions)=
-# Statistical Distributions
+(sec:outputs)=
+# Checking Outputs
 
 ```{admonition} Under Construction}
 This chapter is still in construction.
 ```
 
-When introducing [generators](Generators.md), we have seen a first method on how to create distributions.

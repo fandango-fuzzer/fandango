@@ -28,7 +28,9 @@ parts:
     - file: Bits
     - file: Gif
 #    - file: Distributions
-#    - file: Whitebox
+    - file: Outputs
+    - file: Protocols
+    - file: Whitebox
     - file: Hatching
   - caption: Fandango Reference
     chapters:
