@@ -68,7 +68,8 @@ test = [
     "ordered-set>=4.0.2",
     "cryptography>=44.0.1",
     "speedy-antlr-tool>=1.4.3",
-    "jupyter-book>=1.0.4"
+    "jupyter-book>=1.0.4",
+    "sphinxcontrib-mermaid>=1.0.0",
 ]
 
 [tool.black]
