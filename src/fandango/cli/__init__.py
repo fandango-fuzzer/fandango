@@ -895,7 +895,13 @@ def output_solution_to_directory(solution, args, solution_index: int, file_mode=
 def output_solution_to_file(solution, args, file_mode=None):
     LOGGER.debug(f"Storing solution in file {args.output!r}")
     with open_file(args.output, file_mode, mode="a") as fd:
-        if fd.tell() > 0:
+        try:
+            position = fd.tell()
+        except (UnsupportedOperation, OSError):
+            # If we're writing to stdout, tell() may not be supported
+            position = 0
+
+        if position > 0:
             fd.write(
                 args.separator.encode("utf-8")
                 if file_mode == "binary"
