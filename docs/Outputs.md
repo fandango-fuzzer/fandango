@@ -13,7 +13,9 @@ kernelspec:
 (sec:outputs)=
 # Checking Outputs
 
-```{admonition} Under Construction}
-This chapter is still in construction.
+```{admonition} Under Construction
+:class: attention
+This chapter is still under construction.
 ```
+
 
