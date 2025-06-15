@@ -151,9 +151,9 @@ Example 1 - in
 
 `<foo>.value()` will be the byte string `b"barfoo"`.
 
-:::{warning}
+```{note}
 If you mix byte strings and Unicode strings a grammar, Fandango will issue a warning.
-:::
+```
 
 Example 2 - in
 ```python
@@ -163,9 +163,9 @@ Example 2 - in
 
 `<foo>.value()` will be the byte string `b"foo\xff"`.
 
-:::{warning}
+```{note}
 If you mix bits and Unicode strings in a grammar, Fandango will issue a warning.
-:::
+```
 
 
 ## General `DerivationTree` Functions
@@ -231,16 +231,16 @@ Since any `<SYMBOL>` has the type `DerivationTree`, one must convert it first in
 `len(<SYMBOL>) -> int`
 : Return the number of children of `<SYMBOL>`.
 
-:::{note}
+```{important}
 To access the length of the _string_ represented by `<SYMBOL>`, use `len(str(<SYMBOL>))`.
-:::
+```
 
 `<SYMBOL>[n] -> DerivationTree`
 : Access the `n`th child of `<SYMBOL>`, as a `DerivationTree`. `<SYMBOL>[0]` is the first child; `<SYMBOL>[-1]` is the last child.
 
-:::{note}
+```{important}
 To access the `n`th _character_ of `<SYMBOL>`, use `str(<SYMBOL>)[n]`.
-:::
+```
 
 `<SYMBOL>[start:stop] -> DerivationTree`
 : Return a new `DerivationTree` which has the children `<SYMBOL>[start]` to `<SYMBOL>[stop-1]` as children. If `start` is omitted, children start from the beginning; if `stop` is omitted, children go up to the end, including the last one.
@@ -251,9 +251,9 @@ To access the `n`th _character_ of `<SYMBOL>`, use `str(<SYMBOL>)[n]`.
 `<SYMBOL>.children_values() -> list[str | int | bytes]`
 : Return a list containing the values of all children of `<SYMBOL>`.
 
-:::{note}
+```{note}
 Each element of the list can have a different type, depending on the type the `value()` method returns.
-:::
+```
 
 `<SYMBOL_1> in <SYMBOL_2>`
 : Return True if `<SYMBOL_1> == CHILD` for any of the children of `<SYMBOL_2>`.
@@ -269,9 +269,9 @@ Each element of the list can have a different type, depending on the type the `v
 `<SYMBOL>.descendant_values() -> list[str | int | bytes]`
 : Return a list containing the values of all descendants of `<SYMBOL>`; that is, the values of all children and their transitive children.
 
-:::{note}
+```{note}
 Each element of the list can have a different type, depending on the type the `value()` method returns.
-:::
+```
 
 ### Accessing Parents
 

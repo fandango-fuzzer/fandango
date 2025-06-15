@@ -44,9 +44,7 @@
 
 <comment> ::= <_>{2} '#' <_> r'[^\r\n\f]'* <newline>
 
-# :::{note}
 # The actual implementation allows a comment at any end of a line.
-# :::
 
 
 
@@ -73,9 +71,7 @@
 
 # Like Python, Fandango allows all Unicode letters and digits in identifiers.
 
-# :::{note}
 # For portability, we recommend to use only ASCII letters `a`..`z`, `A`..`Z`, digits `0`..`9`, and underscores `_` in identifiers.
-# :::
 
 
 
@@ -122,10 +118,8 @@
 # * Omitting `M` creates an infinite upper bound (i.e, any number of repetitions).
 # * The comma may not be omitted, as this would create confusion with `{N}` (see below).
 
-# :::{tip}
 # In Fandango, the number of repetitions is limited.
 # Use the `--max-repetitions M` flag to change the limit.
-# :::
 
 # Fandango supports a number of abbreviations for repetitions:
 

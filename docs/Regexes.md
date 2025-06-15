@@ -70,9 +70,9 @@ The expression `r'\\d'` would actually match a backslash, followed by a `d` char
 <any_digit> ::= r'\d'
 ```
 
-:::{warning}
+```{important}
 Be aware of the specific syntax of `r`-strings as it comes to backslashes.
-:::
+```
 
 One consequence of backslashes being interpreted literally is that you cannot escape quote characters in a regular expression.
 This causes a problem if you need two kinds of quotes (`"` and `'`) in the same regular expression – say, a rule that checks for forbidden characters.
@@ -191,10 +191,10 @@ Here are some points to help you decide.
 * Prefer grammars and constraints over overly complex regular expressions.
 
 
-:::{warning}
+```{important}
 Do not use regular expressions for inputs that are [recursive](Recursive.md).
 Languages like HTML, XML, even e-mail addresses or URLs, are much easier to capture as grammars.
-:::
+```
 
 
 ## Regular Expressions as Equivalence Classes
@@ -218,8 +218,8 @@ If, however, you specify `<digits>` as
 
 then Fandango will treat this as a _single_ alternative (with all expansions considered semantically equivalent), which once expanded into (some) digit will be considered as covered.
 
-:::{tip}
+```{tip}
 * If you do want or need to _differentiate_ between individual elements of a set (because they would be treated differently), consider _grammar alternatives_.
 * If you do _not_ want or need to differentiate between individual elements of a set (because they would all be treated the same), consider a _regular expression_.
-:::
+```
 
