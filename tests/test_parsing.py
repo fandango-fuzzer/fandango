@@ -512,15 +512,20 @@ class TestBitstreamParsing(TestCLIParsing):
         self.assertEqual("", out)
         self.assertEqual("", err)
 
+
+class TestImportParsing(TestCLIParsing):
     def test_local_import(self):
         command = shlex.split("fandango fuzz -f tests/resources/import.fan -n 1")
         out, err, code = self.run_command(command)
         self.assertEqual(0, code)
         self.assertEqual("import\n", out)
 
+
+class TestISO8601Parsing(TestCLIParsing):
     def test_parse_iso8601(self):
         command = shlex.split(
             "fandango parse -f docs/iso8601.fan tests/resources/iso8601.txt"
         )
         out, err, code = self.run_command(command)
         self.assertEqual(0, code)
+        self.assertEqual("", err)
