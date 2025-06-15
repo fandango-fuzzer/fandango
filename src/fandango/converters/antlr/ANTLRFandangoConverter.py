@@ -9,6 +9,9 @@ from antlr4 import *
 from fandango.converters.antlr.ANTLRv4Lexer import ANTLRv4Lexer
 from fandango.converters.antlr.ANTLRv4Parser import ANTLRv4Parser
 from fandango.converters.antlr.ANTLRv4ParserVisitor import ANTLRv4ParserVisitor
+from fandango.language.parse import PythonAntlrErrorListener
+
+
 from typing import Any
 
 
@@ -239,19 +242,28 @@ class ANTLRFandangoConverter(FandangoConverter):
         """Convert the grammar spec to Fandango format"""
         # Read the grammar spec
         input_stream = FileStream(self.filename)
+        error_listener = PythonAntlrErrorListener(self.filename)
+
         lexer = ANTLRv4Lexer(input_stream)
+        lexer.removeErrorListeners()
+        lexer.addErrorListener(error_listener)
+
         stream = CommonTokenStream(lexer)
         parser = ANTLRv4Parser(stream)
+        parser.removeErrorListeners()
+        parser.addErrorListener(error_listener)
 
         # Start parsing at the 'grammarSpec' rule
         tree = parser.grammarSpec()
 
         # Create a visitor and evaluate the expression
         converter = ANTLRFandangoConverterVisitor()
+        spec = converter.visit(tree)
+
         header = f"""# Automatically generated from {self.filename!r}.
 #
 """
-        return header + converter.visit(tree)
+        return header + spec
 
 
 if __name__ == "__main__":
