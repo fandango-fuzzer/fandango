@@ -1258,13 +1258,11 @@ def convert_command(args):
         from_format = args.from_format
         input_file_lower = input_file.lower()
         if from_format == "auto":
-            if (input_file_lower.endswith(".g4") or 
-                input_file_lower.endswith(".antlr")):
+            if input_file_lower.endswith(".g4") or input_file_lower.endswith(".antlr"):
                 from_format = "antlr"
             elif input_file_lower.endswith(".dtd"):
                 from_format = "dtd"
-            elif (input_file_lower.endswith(".bt") or 
-                  input_file_lower.endswith(".010")):
+            elif input_file_lower.endswith(".bt") or input_file_lower.endswith(".010"):
                 from_format = "bt"
             elif input_file_lower.endswith(".fan"):
                 from_format = "fan"
