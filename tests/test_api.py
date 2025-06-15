@@ -6,6 +6,7 @@ import logging
 
 from fandango import Fandango, FandangoParseError
 
+
 class APITest(unittest.TestCase):
     SPEC_abc = """
     <start> ::= ('a' | 'b' | 'c')+
@@ -17,9 +18,8 @@ class APITest(unittest.TestCase):
     where str(<start>) != 'd'
     """
 
-
     def test_fuzz(self):
-        with open('docs/persons-faker.fan') as persons:
+        with open("docs/persons-faker.fan") as persons:
             fan = Fandango(persons)
 
         random.seed(0)
@@ -34,7 +34,7 @@ class APITest(unittest.TestCase):
 
     def test_parse(self):
         fan = Fandango(self.SPEC_abc)
-        word = 'abc'
+        word = "abc"
 
         for tree in fan.parse(word):
             print(f"tree = {repr(str(tree))}")
@@ -42,7 +42,7 @@ class APITest(unittest.TestCase):
 
     def test_incomplete_parse(self):
         fan = Fandango(self.SPEC_abcd)
-        word = 'ab'
+        word = "ab"
 
         for tree in fan.parse(word, prefix=True):
             print(f"tree = {repr(str(tree))}")
@@ -50,7 +50,7 @@ class APITest(unittest.TestCase):
 
     def test_failing_incomplete_parse(self):
         fan = Fandango(self.SPEC_abcd)
-        invalid_word = 'ab'
+        invalid_word = "ab"
 
         try:
             fan.parse(invalid_word)
@@ -60,7 +60,7 @@ class APITest(unittest.TestCase):
 
     def test_failing_parse(self):
         fan = Fandango(self.SPEC_abcd)
-        invalid_word = 'abcdef'
+        invalid_word = "abcdef"
 
         try:
             fan.parse(invalid_word)
@@ -68,5 +68,6 @@ class APITest(unittest.TestCase):
         except FandangoParseError as exc:
             print(f"Syntax error at {exc.position} in word {invalid_word!r}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
