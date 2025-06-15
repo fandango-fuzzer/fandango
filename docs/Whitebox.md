@@ -13,7 +13,8 @@ kernelspec:
 (sec:whitebox)=
 # Coverage-Guided Fuzzing
 
-```{admonition} Under Construction}
-This chapter is still in construction.
+```{admonition} Under Construction
+:class: attention
+This chapter is still under construction.
 ```
 

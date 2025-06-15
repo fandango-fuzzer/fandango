@@ -13,8 +13,9 @@ kernelspec:
 (sec:distributions)=
 # Statistical Distributions
 
-```{admonition} Under Construction}
-This chapter is still in construction.
+```{admonition} Under Construction
+:class: attention
+This chapter is still under construction.
 ```
 
 When introducing [generators](Generators.md), we have seen a first method on how to create distributions.
