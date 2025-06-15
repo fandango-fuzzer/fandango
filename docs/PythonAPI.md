@@ -221,7 +221,7 @@ spec = """
 """
 
 fan = Fandango(spec, logging_level=logging.INFO)
-for tree in fan.fuzz(population_size=3):
+for tree in fan.fuzz(desired_solutions=10):
     print(str(tree))
 ```
 
