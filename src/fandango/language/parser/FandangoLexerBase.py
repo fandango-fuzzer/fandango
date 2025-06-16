@@ -8,7 +8,7 @@ from antlr4 import Lexer, InputStream
 from antlr4.Token import CommonToken
 
 # Current lexer instance, set by the generated lexer code
-lexer = None
+lexer: "FandangoLexerBase" = None
 
 
 class FandangoLexerBase(Lexer):
@@ -21,6 +21,7 @@ class FandangoLexerBase(Lexer):
         self.indents = []
         self.opened = 0
         self.in_python = 0
+        self.in_fstring = False
 
         # Set the global lexer instance to this one
         global lexer
@@ -31,6 +32,7 @@ class FandangoLexerBase(Lexer):
         self.indents = []
         self.opened = 0
         self.in_python = 0
+        self.in_fstring = False
         super().reset()
 
     def emitToken(self, token):
@@ -98,6 +100,16 @@ class FandangoLexerBase(Lexer):
     def python_end(self):
         self.in_python = 0
 
+    # while f-string do not consider the string token
+    def fstring_start(self):
+        self.in_fstring = True
+
+    def fstring_end(self):
+        self.in_fstring = False
+
+    def is_not_fstring(self):
+        return not self.in_fstring
+
     def on_newline(self):
         if self.in_python > 0:
             new_line = self.NEW_LINE_PATTERN.sub("", self.text)
@@ -156,3 +168,18 @@ def python_end():
 def on_newline():
     global lexer
     return lexer.on_newline()
+
+
+def fstring_start():
+    global lexer
+    return lexer.fstring_start()
+
+
+def fstring_end():
+    global lexer
+    return lexer.fstring_end()
+
+
+def is_not_fstring():
+    global lexer
+    return lexer.is_not_fstring()
