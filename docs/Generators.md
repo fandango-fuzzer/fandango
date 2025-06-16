@@ -59,9 +59,9 @@ assert _exit_code == 0
 Note that we still get a few "random" names; this comes as specified by our rules.
 By default, Fandango picks each alternative with equal likelihood, so there is a 20% chance for the first name and a 25% chance for the last name to be completely random.
 
-:::{note}
+```{note}
 Future Fandango versions will have means to control these likelihoods.
-:::
+```
 
 
 ## Using Fakers
@@ -101,9 +101,9 @@ A generator applies to _all_ alternatives, not just the last one.
 
 The _generator_ `:= EXPR` _assigns_ the value produced by the expression `EXPR` (in our case, `fake.first_name()`) to the symbol on the left-hand side of the rule (in our case, `<first_name>`).
 
-:::{caution}
+```{important}
 Whatever value the generator returns, it must be _parseable_ by at least one of the alternatives in the rule. Our example works because `<first_name>` matches the format of `fake.first_name()`.
-:::
+```
 
 :::{tip}
 If your generator returns a string, a "match-all" rule such as
@@ -120,17 +120,17 @@ We can do the same for the last name, too; and then this is the full Fandango sp
 !cat persons-faker.fan
 ```
 
-:::{note}
+```{note}
 The [Fandango `include()` function](sec:including) _includes_ the Fandango definitions of the given file.
 This way, we need not repeat the definitions from `persons.fan` and only focus on the differences.
-:::
+```
 
-:::{note}
+```{note}
 Python code (from Python files) that you use in a generator (or in a constraint, for that matter) needs to be imported.
 Use the Python `import` features to do that.
-:::
+```
 
-:::{attention}
+:::{important}
 `include(FILE)` is for Fandango files, `import MODULE` is for Python modules.
 :::
 
@@ -164,12 +164,12 @@ To obtain a range of ages between 25 and 35, we can thus write:
 <age> ::= <digit>+ := str(random.randint(25, 35));
 ```
 
-:::{warning}
+```{important}
 All Fandango generators must return strings or byte strings.
 
 * Use `str(N)` to convert a number N into a string
 * Use `bytes([N])` to convert numbers N into bytes.
-:::
+```
 
 The resulting [Fandango spec file](persons-faker-age.fan) produces the desired range of ages:
 

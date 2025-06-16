@@ -64,9 +64,9 @@ What we have here is a case of _infinite recursion_ – the string would keep o
 
 
 % TODO
-:::{warning}
+```{important}
 At this time, Fandango does not detect infinite recursions; it keeps running until manually stopped.
-:::
+```
 
 In order to avoid infinite recursion, we need to provide a _non-recursive alternative_, as in:
 
@@ -88,9 +88,9 @@ assert _exit_code == 0
 
 We see that the above rules yield nice (recursive) chains of additions.
 
-:::{warning}
+```{important}
 For each recursion in the grammar, there must be a non-recursive alternative.
-:::
+```
 
 
 ## More Repetitions
@@ -123,9 +123,9 @@ Here's an equivalent `<number>` definition that comes without `+`:
 
 Indeed, we can define a `<number>` as a `<digit>` that is followed by another "number".
 
-:::{hint}
+```{tip}
 Using shorthands such as `*`, `+`, and `?` can make Fandango parsers more efficient.
-:::
+```
 
 
 ## Arithmetic Expressions

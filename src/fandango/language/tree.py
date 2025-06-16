@@ -7,6 +7,10 @@ from fandango.language.symbol import NonTerminal, Slice, Symbol, Terminal
 
 
 class ProtocolMessage:
+    """
+    Holds information about a message in a protocol.
+    """
+
     def __init__(self, sender: str, recipient: str | None, msg: "DerivationTree"):
         self.msg = msg
         self.sender = sender
@@ -174,7 +178,11 @@ class DerivationTree:
             current = current.parent
         return path
 
-    def set_all_read_only(self, read_only: bool):
+    def set_all_read_only(self, read_only: bool) -> None:
+        """
+        Sets self as well as all children and sources to read-only.
+        This signals other classes, that this subtree should not be modified.
+        """
         self.read_only = read_only
         for child in self._children:
             child.set_all_read_only(read_only)
@@ -182,6 +190,9 @@ class DerivationTree:
             child.set_all_read_only(read_only)
 
     def protocol_msgs(self) -> list[ProtocolMessage]:
+        """
+        Returns a list of all protocol messages present in the current DerivationTree and children.
+        """
         if not isinstance(self.symbol, NonTerminal):
             return []
         if self.sender is not None:
@@ -192,25 +203,22 @@ class DerivationTree:
         return subtrees
 
     def append(
-        self, hookin_path: tuple[(NonTerminal, bool), ...], tree: "DerivationTree"
-    ):
+        self, hookin_path: tuple[tuple[NonTerminal, bool], ...], tree: "DerivationTree"
+    ) -> None:
+        """
+        Appends a given DerivationTree to the current subtree at the specified hookin_path.
+
+        :param hookin_path: A tuple of (NonTerminal, bool) pairs indicating the path to append the tree. If the bool
+        is set to true, a new node is created for the NonTerminal.
+        :param tree: The DerivationTree to append.
+        """
         if len(hookin_path) == 0:
             self.add_child(tree)
             return
         next_nt, add_new_node = hookin_path[0]
         if add_new_node:
             self.add_child(DerivationTree(next_nt))
-        elif (
-            len(self.children) == 0
-            or (
-                not next_nt.symbol.startswith("<__")
-                and str(self.children[-1].symbol) != next_nt.symbol
-            )
-            or (
-                next_nt.symbol.startswith("<__")
-                and not str(self.children[-1].symbol).startswith(next_nt.symbol)
-            )
-        ):
+        elif len(self.children) == 0 or str(self.children[-1].symbol) != next_nt.symbol:
             raise ValueError("Invalid hookin_path!")
         self.children[-1].append(hookin_path[1:], tree)
 
@@ -854,7 +862,7 @@ class DerivationTree:
         return nodes
 
     @property
-    def children(self) -> Optional[list["DerivationTree"]]:
+    def children(self) -> list["DerivationTree"]:
         """
         Return the children of the current node.
         """

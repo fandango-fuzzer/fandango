@@ -70,7 +70,7 @@ class GrammarProcessor(FandangoParserVisitor):
         self,
         local_variables: Optional[dict[str, Any]] = None,
         global_variables: Optional[dict[str, Any]] = None,
-        id_prefix: str = None,
+        id_prefix: Optional[str] = None,
         max_repetitions: int = 5,
     ):
         self.local_variables = local_variables
@@ -80,6 +80,8 @@ class GrammarProcessor(FandangoParserVisitor):
         self.seenParties = set[str]()
         self.additionalRules = dict[NonTerminal, Node]()
         self.max_repetitions = max_repetitions
+        if self.id_prefix is None:
+            self.id_prefix = ""
 
         self.seenAlternatives = 0
         self.seenConcatenations = 0
@@ -127,36 +129,36 @@ class GrammarProcessor(FandangoParserVisitor):
         if len(nodes) == 1:
             return nodes[0]
         self.seenAlternatives += 1
-        return Alternative(nodes, f"{self.seenAlternatives}_{self.id_prefix}")
+        nid = self.seenAlternatives
+        return Alternative(nodes, f"{nid}_{self.id_prefix}")
 
     def visitConcatenation(self, ctx: FandangoParser.ConcatenationContext):
         nodes = [self.visitOperator(child) for child in ctx.operator()]
         if len(nodes) == 1:
             return nodes[0]
         self.seenConcatenations += 1
-        return Concatenation(nodes, f"{self.seenConcatenations}_{self.id_prefix}")
+        nid = self.seenConcatenations
+        return Concatenation(nodes, f"{nid}_{self.id_prefix}")
 
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
         self.seenStars += 1
-        return Star(
-            self.visitSymbol(ctx.symbol()), f"{self.seenStars}_{self.id_prefix}"
-        )
+        nid = self.seenStars
+        return Star(self.visit(ctx.symbol()), f"{nid}_{self.id_prefix}")
 
     def visitPlus(self, ctx: FandangoParser.PlusContext):
         self.seenPluses += 1
-        return Plus(
-            self.visitSymbol(ctx.symbol()), f"{self.seenPluses}_{self.id_prefix}"
-        )
+        nid = self.seenPluses
+        return Plus(self.visit(ctx.symbol()), f"{nid}_{self.id_prefix}")
 
     def visitOption(self, ctx: FandangoParser.OptionContext):
         self.seenOptions += 1
-        return Option(
-            self.visitSymbol(ctx.symbol()), f"{self.seenOptions}_{self.id_prefix}"
-        )
+        nid = self.seenOptions
+        return Option(self.visit(ctx.symbol()), f"{nid}_{self.id_prefix}")
 
     def visitRepeat(self, ctx: FandangoParser.RepeatContext):
         node = self.visitSymbol(ctx.symbol())
         self.seenRepetitions += 1
+        nid = self.seenRepetitions
         if ctx.COMMA():
             bounds = [None, None]
             bounds_index = 0
@@ -178,26 +180,22 @@ class GrammarProcessor(FandangoParserVisitor):
 
             min_, max_ = bounds
             if min_ is None and max_ is None:
-                return Repetition(node, f"{self.seenRepetitions}_{self.id_prefix}")
+                return Repetition(node, f"{nid}_{self.id_prefix}")
             elif min_ is None:
-                return Repetition(
-                    node, f"{self.seenRepetitions}_{self.id_prefix}", max_=max_
-                )
+                return Repetition(node, f"{nid}_{self.id_prefix}", max_=max_)
             elif max_ is None:
                 return Repetition(
                     node,
-                    f"{self.seenRepetitions}_{self.id_prefix}",
+                    f"{nid}_{self.id_prefix}",
                     min_=min_,
                     max_=(f"{self.max_repetitions}", [], {}),
                 )
-            return Repetition(
-                node, f"{self.seenRepetitions}_{self.id_prefix}", min_, max_
-            )
+            return Repetition(node, f"{nid}_{self.id_prefix}", min_, max_)
         reps = self.searches.visit(ctx.expression(0))
         reps = (ast.unparse(reps[0]), *reps[1:])
 
-        node = self.visitSymbol(ctx.symbol())
-        return Repetition(node, f"{self.seenRepetitions}_{self.id_prefix}", reps, reps)
+        node = self.visit(ctx.symbol())
+        return Repetition(node, f"{nid}_{self.id_prefix}", reps, reps)
 
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
         if ctx.nonterminal_right():
@@ -1188,7 +1186,7 @@ class SearchProcessor(FandangoParserVisitor):
         if ctx.kwargs() and not ctx.arg():
             return self.visitKwargs(ctx.kwargs())
 
-        result = list(), list(), dict()
+        result: tuple[list, Any, dict] = list(), list(), dict()
         for arg in ctx.arg():
             result = self.aggregateResult(result, self.visitArg(arg))
         if ctx.kwargs():
@@ -1208,7 +1206,7 @@ class SearchProcessor(FandangoParserVisitor):
             raise FandangoValueError(f"Unknown argument: {ctx.getText()}")
 
     def visitKwargs(self, ctx: FandangoParser.KwargsContext):
-        result = list(), list(), dict()
+        result: tuple[list, Any, dict] = list(), list(), dict()
 
         for kwarg in ctx.kwarg_or_starred():
             result = self.aggregateResult(result, self.visitKwarg_or_starred(kwarg))
@@ -1220,7 +1218,7 @@ class SearchProcessor(FandangoParserVisitor):
         return result
 
     def visitFor_if_clauses(self, ctx: FandangoParser.For_if_clausesContext):
-        result = list(), list(), dict()
+        result: tuple[list, Any, dict] = list(), list(), dict()
         for clause in ctx.for_if_clause():
             result = self.aggregateResult(result, self.visitFor_if_clause(clause))
         return result
@@ -1384,7 +1382,7 @@ class SearchProcessor(FandangoParserVisitor):
         for param in ctx.param_with_default():
             arg, d, s, m = self.visitParam_with_default(param)
             if ctx.slash_with_default():
-                args.append(arg),
+                args.append(arg)
                 defaults.append(d)
             else:
                 kwonlyargs.append(arg)
@@ -1897,7 +1895,7 @@ class PythonProcessor(FandangoParserVisitor):
                     "Nonterminals can only be used in grammars and constraints, "
                     f"not in regular Python code: {ctx.getText()}"
                 )
-            decorators.append(expression)
+            decorators.append(tree)
         return decorators
 
     def visitBlock(self, ctx: FandangoParser.BlockContext):

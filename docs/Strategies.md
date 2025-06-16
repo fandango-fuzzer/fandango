@@ -29,10 +29,13 @@ assert _exit_code == 0
 Despite clearly looking non-natural to humans, the strings we generated so far are unlikely to trigger errors in a program, because programs typically treat all letters equally.
 So let us bring a bit more _weirdness_ into our inputs.
 
-:::{danger}
-Don't feed such fuzz inputs into other people's systems.
-In most countries, even _trying_ will get you into jail.
-:::
+```{danger}
+Don't feed such fuzz inputs into other people's systems; this can have unpredictable consequences.
+```
+
+```{warning}
+In most countries, even _trying_ to feed such inputs into other people's systems will get you into jail.
+```
 
 
 
@@ -73,13 +76,13 @@ assert _exit_code == 0
 We see that the names are now much longer.
 For real-world fuzzing, we may try even longer fields (say, 1,000) to test the limits of our system.
 
-:::{note}
+```{tip}
 Programmers often make "off-by-one" errors, so if an input is specified to have at most `N` characters, you should test this exact boundary - say, by giving `N` and `N`+1 characters.
-:::
+```
 
-:::{danger}
-Don't try this with other people's systems.
-:::
+```{danger}
+Don't try this with other people's systems; the consequences are unpredictable.
+```
 
 
 ## Unusual Inputs
@@ -133,9 +136,9 @@ Any computation involving this value would also become a `NaN`, so in our exampl
 The `NaN` could even go viral across Excel sheets, companies, shareholder reports, and eventually the stock market.
 Luckily, programs are prepared against that - or are they?
 
-:::{danger}
-Don't try this with other people's systems.
-:::
+```{danger}
+Don't try this with other people's systems; the consequences are unpredictable.
+```
 
 
 ## String Injections
@@ -183,6 +186,6 @@ Here's how one could change the `<age>` rule:
 
 Try adding such alternatives to _all_ data fields processed by a system; feed the Fandango-generated inputs to it; and if you then find a `PWNED` table on your system, you know that you have a vulnerability.
 
-:::{danger}
-Don't try this with other people's systems.
-:::
+```{danger}
+Don't try this with other people's systems; the consequences are unpredictable.
+```

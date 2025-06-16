@@ -1,9 +1,12 @@
 import enum
 import select
+import shlex
 import socket
+import subprocess
 import sys
 import threading
 import time
+from typing import Optional
 
 from fandango import FandangoError
 from fandango.language.tree import DerivationTree
@@ -56,7 +59,7 @@ class FandangoParty(object):
     :message: The message to send.
     """
 
-    def on_send(self, message: DerivationTree, recipient: str):
+    def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
         print(f"({self.class_name}): {message.to_string()}")
 
     """
@@ -80,14 +83,14 @@ class SocketParty(FandangoParty):
     ):
         super().__init__(ownership)
         self.running = False
-        self._ip_type = ip_type
-        self._protocol_type = protocol_type
-        self._ip = ip
-        self._port = port
-        self._endpoint_type = endpoint_type
-        self.sock = None
-        self.connection = None
-        self.send_thread = None
+        self._ip_type: IpType = ip_type
+        self._protocol_type: Protocol = protocol_type
+        self._ip: str = ip
+        self._port: int = port
+        self._endpoint_type: EndpointType = endpoint_type
+        self.sock: Optional[socket.socket] = None
+        self.connection: Optional[socket.socket] = None
+        self.send_thread: Optional[threading.Thread] = None
         self.lock = threading.Lock()
 
     @property
@@ -161,6 +164,7 @@ class SocketParty(FandangoParty):
 
     def _connect(self):
         if self.endpoint_type == EndpointType.SERVER:
+            assert self.sock is not None
             self.sock.bind((self.ip, self.port))
             self.sock.listen(1)
         self.running = True
@@ -198,12 +202,14 @@ class SocketParty(FandangoParty):
         with self.lock:
             if self.connection is None:
                 if self.endpoint_type == EndpointType.SERVER:
+                    assert self.sock is not None
                     while self.running:
                         rlist, _, _ = select.select([self.sock], [], [], 0.1)
                         if rlist:
                             self.connection, _ = self.sock.accept()
                             break
                 else:
+                    assert self.sock is not None
                     self.sock.setblocking(False)
                     try:
                         self.sock.connect((self._ip, self._port))
@@ -223,6 +229,7 @@ class SocketParty(FandangoParty):
 
         while self.running:
             try:
+                assert self.connection is not None
                 rlist, _, _ = select.select([self.connection], [], [], 0.1)
                 if rlist and self.running:
                     data = self.connection.recv(1024)
@@ -233,13 +240,14 @@ class SocketParty(FandangoParty):
                 self.running = False
                 break
 
-    def on_send(self, message: DerivationTree, recipient: str):
+    def on_send(self, message: DerivationTree, recipient: Optional[str]):
         if not self.running:
             raise FandangoError("Socket not running!")
         self.wait_accept()
         self.transmit(message, recipient)
 
-    def transmit(self, message: DerivationTree, recipient: str):
+    def transmit(self, message: DerivationTree, recipient: Optional[str]):
+        assert self.connection is not None
         if message.contains_bits():
             self.connection.sendall(message.to_bytes())
         else:
@@ -294,21 +302,24 @@ class STDOUT(FandangoParty):
 
     def __init__(self):
         super().__init__(Ownership.FUZZER)
+        self.stream = sys.stdout
 
-    def on_send(self, message: DerivationTree, recipient: str):
-        print({message.to_string()})
+    def on_send(self, message: DerivationTree, recipient: Optional[str]):
+        self.stream.write(message.to_string())
+        # print(message.to_string())
 
 
 class STDIN(FandangoParty):
     def __init__(self):
         super().__init__(Ownership.EXTERNAL)
         self.running = True
+        self.stream = sys.stdin
         self.listen_thread = threading.Thread(target=self.listen_loop, daemon=True)
         self.listen_thread.start()
 
     def listen_loop(self):
         while self.running:
-            rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
+            rlist, _, _ = select.select([self.stream], [], [], 0.1)
             if rlist:
                 read = sys.stdin.readline()
                 if read == "":
@@ -319,20 +330,56 @@ class STDIN(FandangoParty):
                 time.sleep(0.1)
 
 
+class ProgOut(FandangoParty):
+    def __init__(self):
+        super().__init__(Ownership.EXTERNAL)
+        self.proc = ProcessManager.instance().get_process()
+        threading.Thread(target=self.listen_loop, daemon=True).start()
+
+    def listen_loop(self):
+        while True:
+            line = self.proc.stdout.readline()
+            self.receive_msg("ProgOut", line)
+
+
+class ProgIn(FandangoParty):
+    def __init__(self):
+        super().__init__(Ownership.FUZZER)
+        self.proc = ProcessManager.instance().get_process()
+        self._close_post_transmit = False
+
+    @property
+    def close_post_transmit(self) -> bool:
+        return self._close_post_transmit
+
+    @close_post_transmit.setter
+    def close_post_transmit(self, value: bool):
+        if self._close_post_transmit == value:
+            return
+        self._close_post_transmit = value
+
+    def on_send(self, message: DerivationTree, recipient: Optional[str]):
+        self.proc.stdin.write(message.to_string())
+        self.proc.stdin.flush()
+        if self.close_post_transmit:
+            self.proc.stdin.close()
+
+
 class FandangoIO:
-    __instance = None
+    __instance: Optional["FandangoIO"] = None
 
     @classmethod
     def instance(cls) -> "FandangoIO":
         if cls.__instance is None:
             FandangoIO()
+        assert cls.__instance is not None
         return cls.__instance
 
     def __init__(self):
         if FandangoIO.__instance is not None:
             raise Exception("Singleton already created!")
         FandangoIO.__instance = self
-        self.receive = list[(str, str, str)]()
+        self.receive = list[tuple[str, str, str]]()
         self.parties = dict[str, FandangoParty]()
         self.receive_lock = threading.Lock()
 
@@ -340,24 +387,80 @@ class FandangoIO:
         with self.receive_lock:
             self.receive.append((sender, receiver, message))
 
-    def received_msg(self):
+    def received_msg(self) -> bool:
         with self.receive_lock:
             return len(self.receive) != 0
 
-    def get_received_msgs(self):
+    def get_received_msgs(self) -> list[tuple[str, str, str]]:
         with self.receive_lock:
             return list(self.receive)
 
-    def clear_received_msg(self, idx: int):
+    def clear_received_msg(self, idx: int) -> None:
         with self.receive_lock:
             del self.receive[idx]
 
-    def clear_received_msgs(self):
+    def clear_received_msgs(self) -> None:
         with self.receive_lock:
             self.receive.clear()
 
     def transmit(
-        self, sender: str, recipient: str | None, message: DerivationTree
+        self, sender: str, recipient: Optional[str], message: DerivationTree
     ) -> None:
         if sender in self.parties.keys():
             self.parties[sender].on_send(message, recipient)
+
+
+class ProcessManager:
+    __instance: Optional["ProcessManager"] = None
+
+    def __init__(self):
+        if ProcessManager.__instance is not None:
+            raise Exception("Singleton already created!")
+        ProcessManager.__instance = self
+        self._command = None
+        self.lock = threading.Lock()
+        self.proc = None
+
+    @classmethod
+    def instance(cls) -> "ProcessManager":
+        if cls.__instance is None:
+            ProcessManager()
+        assert cls.__instance is not None
+        return cls.__instance
+
+    def get_process(self):
+        with self.lock:
+            if not self.proc:
+                self.start_process()
+            return self.proc
+
+    @property
+    def command(self):
+        return self._command
+
+    @command.setter
+    def command(self, value: str):
+        with self.lock:
+            if self._command == value:
+                return
+            self._command = value
+
+    def start_process(self):
+        command = self.command
+        if command is None:
+            return
+        self.proc = subprocess.Popen(
+            shlex.split(command),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+
+
+def set_program_command(command: str):
+    """
+    Set the command to be executed by the ProcessManager.
+    :param command: The command to execute.
+    """
+    ProcessManager.instance().command = command

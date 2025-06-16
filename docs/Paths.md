@@ -214,14 +214,14 @@ The comments (after `#`) show the individual positions into the input, as well a
 
 What is the full string represented by the above derivation tree?
 
-:::{admonition} Solution
+```{admonition} Solution
 :class: tip, dropdown
 It's `'Pl Seov,5150'`, as you can find on the right-hand side of the first line.
-:::
+```
 
-:::{tip}
+```{tip}
 The `--format=grammar` option is great for debugging, especially [binary formats](sec:binary).
-:::
+```
 
 
 
@@ -273,15 +273,15 @@ $ fandango fuzz -f persons.fan -n 10 -c '<first_name>[0].endswith("x")'
 assert _exit_code == 0
 ```
 
-:::{note}
+```{tip}
 As in Python, you can use _negative_ indexes to refer to the last elements.
 `<age>[-1]`, for instance, gives you the _last_ child of an `<age>` subtree.
-:::
+```
 
-:::{warning}
+```{important}
 While symbols act as strings in many contexts, this is where they differ.
 To access the first _character_ of a symbol `<foo>`, you need to explicitly convert it to a string first, as in `str(<foo>)[0]`.
-:::
+```
 
 ### Slices
 
@@ -374,9 +374,9 @@ assert _exit_code == 0
 ```
 
 % TODO: Is that so? -- AZ
-:::{note}
+```{note}
 You can only access _nonterminal_ children this way; `<person_name>." "` (the space in the `<person_name>`) gives an error.
-:::
+```
 
 
 
@@ -430,14 +430,14 @@ assert _exit_code == 0
 You can freely combine `[]`, `.`, and `..` into _chains_ that select subtrees.
 What would the expression `<start>[0].<last_name>..<ascii_lowercase_letter>` refer to, for instance?
 
-:::{admonition} Solution
+```{admonition} Solution
 :class: tip, dropdown
 This is easy:
 
 * `<start>[0]` is the first element of start, hence a `<person_name>`.
 * `.<last_name>` refers to the child of type `<last_name>`
 * `..<ascii_lowercase_letter>` refers to all descendants of type `<ascii_lowercase_letter>`
-:::
+```
 
 Let's use this in a constraint:
 
@@ -459,7 +459,8 @@ This is why Fandango allows expressing _quantification_ in constraints.
 
 ### Star Expressions
 
-```{error}
+```{admonition} Under Construction
+:class: attention
 The `*` syntax is not operational yet.
 ```
 
