@@ -1082,7 +1082,9 @@ class SearchProcessor(FandangoParserVisitor):
         return result
 
     def visitArg(self, ctx: FandangoParser.ArgContext):
-        if ctx.starred_expression():
+        if ctx.star_selection():
+            return self.visitStar_selection(ctx.star_selection())
+        elif ctx.starred_expression():
             return self.visitStarred_expression(ctx.starred_expression())
         elif ctx.assignment_expression():
             return self.visitAssignment_expression(ctx.assignment_expression())

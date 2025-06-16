@@ -3777,6 +3777,7 @@ public:
   public:
     ArgContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
+    Star_selectionContext *star_selection();
     Starred_expressionContext *starred_expression();
     Assignment_expressionContext *assignment_expression();
     ExpressionContext *expression();

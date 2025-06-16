@@ -1173,7 +1173,8 @@ args
     ;
 
 arg
-    : starred_expression
+    : star_selection
+    | starred_expression
     | assignment_expression
     | expression
     ;

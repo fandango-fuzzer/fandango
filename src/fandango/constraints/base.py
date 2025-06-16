@@ -871,7 +871,7 @@ class ExistsConstraint(Constraint):
         fitness_values = list()
         scope = scope or dict()
         # Iterate over all containers found by the search
-        for container in self.search.find(tree, scope=scope, population=population):
+        for container in self.search.quantify(tree, scope=scope, population=population):
             # Update the scope with the bound variable
             scope[self.bound] = container.evaluate()
             # Evaluate the statement
@@ -970,7 +970,7 @@ class ForallConstraint(Constraint):
         fitness_values = list()
         scope = scope or dict()
         # Iterate over all containers found by the search
-        for container in self.search.find(tree, scope=scope, population=population):
+        for container in self.search.quantify(tree, scope=scope, population=population):
             # Update the scope with the bound variable
             scope[self.bound] = container.evaluate()
             # Evaluate the statement
