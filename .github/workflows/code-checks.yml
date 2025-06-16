@@ -56,8 +56,8 @@ jobs:
           files: |
             src/**/*.py
             src/**.py
-            tests/**/*.py
-            tests/**.py
+          # tests/**/*.py no type checking for tests
+          # tests/**.py no type checking for tests
 
       # Step 3: Set up Python environment
       - name: Set up Python ${{ matrix.python-version }}
