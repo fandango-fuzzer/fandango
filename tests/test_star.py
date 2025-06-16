@@ -1,5 +1,7 @@
 import unittest
 
+import fandango
+
 from fandango import parse
 from fandango.constraints.base import (
     ExistsConstraint,
@@ -7,8 +9,9 @@ from fandango.constraints.base import (
     ComparisonConstraint,
 )
 from fandango.constraints.fitness import Comparison
-from fandango.language import NonTerminal
-from fandango.language.search import StarSearch, RuleSearch
+from fandango.language import NonTerminal, DerivationTree, Symbol, Terminal
+from fandango.language.parser import sa_fandango
+from fandango.language.search import StarSearch, RuleSearch, PopulationSearch
 
 
 class TestStar(unittest.TestCase):
@@ -20,11 +23,51 @@ class TestStar(unittest.TestCase):
 
 where any(<x> == "a" for <x> in *<a>)
 where all(<x> == "c" for <x> in *<b>)
-where *<c> == ["a", "b"]
+where {str(x) for x in *<c>} == {"e", "f"}
 """
+
+    VALID = DerivationTree(
+        NonTerminal("<start>"),
+        [
+            DerivationTree(NonTerminal("<a>"), [DerivationTree(Terminal("a"))]),
+            DerivationTree(NonTerminal("<b>"), [DerivationTree(Terminal("c"))]),
+            DerivationTree(NonTerminal("<c>"), [DerivationTree(Terminal("f"))]),
+            DerivationTree(NonTerminal("<c>"), [DerivationTree(Terminal("e"))]),
+        ],
+    )
+
+    INVALID_A = DerivationTree(
+        NonTerminal("<start>"),
+        [
+            DerivationTree(NonTerminal("<a>"), [DerivationTree(Terminal("b"))]),
+            DerivationTree(NonTerminal("<b>"), [DerivationTree(Terminal("c"))]),
+            DerivationTree(NonTerminal("<c>"), [DerivationTree(Terminal("f"))]),
+            DerivationTree(NonTerminal("<c>"), [DerivationTree(Terminal("e"))]),
+        ],
+    )
+    INVALID_B = DerivationTree(
+        NonTerminal("<start>"),
+        [
+            DerivationTree(NonTerminal("<a>"), [DerivationTree(Terminal("a"))]),
+            DerivationTree(NonTerminal("<b>"), [DerivationTree(Terminal("d"))]),
+            DerivationTree(NonTerminal("<c>"), [DerivationTree(Terminal("f"))]),
+            DerivationTree(NonTerminal("<c>"), [DerivationTree(Terminal("e"))]),
+        ],
+    )
+    INVALID_C = DerivationTree(
+        NonTerminal("<start>"),
+        [
+            DerivationTree(NonTerminal("<a>"), [DerivationTree(Terminal("a"))]),
+            DerivationTree(NonTerminal("<b>"), [DerivationTree(Terminal("c"))]),
+            DerivationTree(NonTerminal("<c>"), [DerivationTree(Terminal("e"))]),
+            DerivationTree(NonTerminal("<c>"), [DerivationTree(Terminal("e"))]),
+        ],
+    )
 
     @classmethod
     def setUpClass(cls):
+        # set parser to python
+        # fandango.Fandango.parser = "python"
         cls.grammar, cls.constraints = parse(
             TestStar.EXAMPLE, use_stdlib=False, use_cache=False
         )
@@ -82,9 +125,274 @@ where *<c> == ["a", "b"]
         self.assertIsInstance(self.expression_constraint, ComparisonConstraint)
         self.assertEqual(self.expression_constraint.operator, Comparison.EQUAL)
         tmp_var = self.expression_constraint.left
+        self.assertTrue(tmp_var.startswith("set("))
+        self.assertTrue(tmp_var.endswith(")"))
+        tmp_var = tmp_var[4:-1]
         self.assertIn(tmp_var, self.expression_constraint.searches)
         search = self.expression_constraint.searches[tmp_var]
         self.assertIsInstance(search, StarSearch)
         self.assertIsInstance(search.base, RuleSearch)
         self.assertEqual(search.base.symbol, NonTerminal("<c>"))
-        self.assertEqual(eval(self.expression_constraint.right), ["a", "b"])
+        self.assertEqual(eval(self.expression_constraint.right), {"e", "f"})
+
+    def test_star_constraint_valid(self):
+        for constraint in self.constraints:
+            self.assertTrue(constraint.check(self.VALID), constraint)
+
+    def test_invalid_a(self):
+        self.assertFalse(
+            self.any_constraint.check(self.INVALID_A),
+            "Invalid <a> should not satisfy the exists constraint",
+        )
+        self.assertTrue(
+            self.all_constraint.check(self.INVALID_A),
+            "Invalid <a> should satisfy the forall constraint",
+        )
+        self.assertTrue(
+            self.expression_constraint.check(self.INVALID_A),
+            "Invalid <a> should satisfy the expression constraint",
+        )
+
+    def test_invalid_b(self):
+        self.assertTrue(
+            self.any_constraint.check(self.INVALID_B),
+            "Invalid <b> should satisfy the exists constraint",
+        )
+        self.assertFalse(
+            self.all_constraint.check(self.INVALID_B),
+            "Invalid <b> should not satisfy the forall constraint",
+        )
+        self.assertTrue(
+            self.expression_constraint.check(self.INVALID_B),
+            "Invalid <b> should satisfy the expression constraint",
+        )
+
+    def test_invalid_c(self):
+        self.assertTrue(
+            self.any_constraint.check(self.INVALID_C),
+            "Invalid <c> should satisfy the exists constraint",
+        )
+        self.assertTrue(
+            self.all_constraint.check(self.INVALID_C),
+            "Invalid <c> should satisfy the forall constraint",
+        )
+        self.assertFalse(
+            self.expression_constraint.check(self.INVALID_C),
+            "Invalid <c> should not satisfy the expression constraint",
+        )
+
+
+class TestPopulation(unittest.TestCase):
+    EXAMPLE = """
+<start> ::= <a> <b> <c>
+<a> ::= "a" | "b"
+<b> ::= "c" | "d"
+<c> ::= "e" | "f" | "g" | "h"
+
+where any(<x> == "a" for <x> in **<a>)
+where all(<x> == "c" for <x> in **<b>)
+where {str(x) for x in **<c>} == {"e", "f"}
+"""
+
+    VALID_POPULATION = [
+        DerivationTree(
+            NonTerminal("<start>"),
+            [
+                DerivationTree(NonTerminal("<a>"), [DerivationTree(Terminal("a"))]),
+                DerivationTree(NonTerminal("<b>"), [DerivationTree(Terminal("c"))]),
+                DerivationTree(NonTerminal("<c>"), [DerivationTree(Terminal("f"))]),
+            ],
+        ),
+        DerivationTree(
+            NonTerminal("<start>"),
+            [
+                DerivationTree(NonTerminal("<a>"), [DerivationTree(Terminal("b"))]),
+                DerivationTree(NonTerminal("<b>"), [DerivationTree(Terminal("c"))]),
+                DerivationTree(NonTerminal("<c>"), [DerivationTree(Terminal("e"))]),
+            ],
+        ),
+    ]
+
+    INVALID_POPULATION_A = [
+        DerivationTree(
+            NonTerminal("<start>"),
+            [
+                DerivationTree(NonTerminal("<a>"), [DerivationTree(Terminal("b"))]),
+                DerivationTree(NonTerminal("<b>"), [DerivationTree(Terminal("c"))]),
+                DerivationTree(NonTerminal("<c>"), [DerivationTree(Terminal("f"))]),
+            ],
+        ),
+        DerivationTree(
+            NonTerminal("<start>"),
+            [
+                DerivationTree(NonTerminal("<a>"), [DerivationTree(Terminal("b"))]),
+                DerivationTree(NonTerminal("<b>"), [DerivationTree(Terminal("c"))]),
+                DerivationTree(NonTerminal("<c>"), [DerivationTree(Terminal("e"))]),
+            ],
+        ),
+    ]
+
+    INVALID_POPULATION_B = [
+        DerivationTree(
+            NonTerminal("<start>"),
+            [
+                DerivationTree(NonTerminal("<a>"), [DerivationTree(Terminal("a"))]),
+                DerivationTree(NonTerminal("<b>"), [DerivationTree(Terminal("d"))]),
+                DerivationTree(NonTerminal("<c>"), [DerivationTree(Terminal("f"))]),
+            ],
+        ),
+        DerivationTree(
+            NonTerminal("<start>"),
+            [
+                DerivationTree(NonTerminal("<a>"), [DerivationTree(Terminal("b"))]),
+                DerivationTree(NonTerminal("<b>"), [DerivationTree(Terminal("c"))]),
+                DerivationTree(NonTerminal("<c>"), [DerivationTree(Terminal("e"))]),
+            ],
+        ),
+    ]
+
+    INVALID_POPULATION_C = [
+        DerivationTree(
+            NonTerminal("<start>"),
+            [
+                DerivationTree(NonTerminal("<a>"), [DerivationTree(Terminal("a"))]),
+                DerivationTree(NonTerminal("<b>"), [DerivationTree(Terminal("c"))]),
+                DerivationTree(NonTerminal("<c>"), [DerivationTree(Terminal("e"))]),
+            ],
+        ),
+        DerivationTree(
+            NonTerminal("<start>"),
+            [
+                DerivationTree(NonTerminal("<a>"), [DerivationTree(Terminal("b"))]),
+                DerivationTree(NonTerminal("<b>"), [DerivationTree(Terminal("c"))]),
+                DerivationTree(NonTerminal("<c>"), [DerivationTree(Terminal("g"))]),
+            ],
+        ),
+    ]
+
+    @classmethod
+    def setUpClass(cls):
+        cls.grammar, cls.constraints = parse(
+            TestPopulation.EXAMPLE, use_stdlib=False, use_cache=False
+        )
+        cls.any_constraint = cls.constraints[0]
+        cls.all_constraint = cls.constraints[1]
+        cls.expression_constraint = cls.constraints[2]
+
+    def test_parse_population_star(self):
+        self.assertIsNotNone(self.grammar)
+        self.assertIsNotNone(self.constraints)
+        self.assertEqual(len(self.grammar.rules), 4)
+        self.assertEqual(len(self.constraints), 3)
+        self.assertIn("<start>", self.grammar)
+        self.assertIn("<a>", self.grammar)
+        self.assertIn("<b>", self.grammar)
+        self.assertIn("<c>", self.grammar)
+        # Check constraints
+        # Check exists constraint
+        self.assertIsInstance(self.any_constraint, ExistsConstraint)
+        self.assertIsInstance(self.any_constraint.statement, ComparisonConstraint)
+        self.assertEqual(self.any_constraint.statement.operator, Comparison.EQUAL)
+        tmp_var = self.any_constraint.statement.left
+        self.assertIn(tmp_var, self.any_constraint.statement.searches)
+        self.assertIsInstance(
+            self.any_constraint.statement.searches[tmp_var], RuleSearch
+        )
+        self.assertEqual(
+            self.any_constraint.statement.searches[tmp_var].symbol, NonTerminal("<x>")
+        )
+        self.assertEqual(eval(self.any_constraint.statement.right), "a")
+        self.assertEqual(self.any_constraint.bound, NonTerminal("<x>"))
+        self.assertIsInstance(self.any_constraint.search, PopulationSearch)
+        self.assertIsInstance(self.any_constraint.search.base, RuleSearch)
+        self.assertEqual(self.any_constraint.search.base.symbol, NonTerminal("<a>"))
+
+        # Check forall constraint
+        self.assertIsInstance(self.all_constraint, ForallConstraint)
+        self.assertIsInstance(self.all_constraint.statement, ComparisonConstraint)
+        self.assertEqual(self.all_constraint.statement.operator, Comparison.EQUAL)
+        tmp_var = self.all_constraint.statement.left
+        self.assertIn(tmp_var, self.all_constraint.statement.searches)
+        self.assertIsInstance(
+            self.all_constraint.statement.searches[tmp_var], RuleSearch
+        )
+        self.assertEqual(
+            self.all_constraint.statement.searches[tmp_var].symbol, NonTerminal("<x>")
+        )
+        self.assertEqual(eval(self.all_constraint.statement.right), "c")
+        self.assertEqual(self.all_constraint.bound, NonTerminal("<x>"))
+        self.assertIsInstance(self.all_constraint.search, PopulationSearch)
+        self.assertIsInstance(self.all_constraint.search.base, RuleSearch)
+        self.assertEqual(self.all_constraint.search.base.symbol, NonTerminal("<b>"))
+
+        # Check expression constraint
+        self.assertIsInstance(self.expression_constraint, ComparisonConstraint)
+        self.assertEqual(self.expression_constraint.operator, Comparison.EQUAL)
+        tmp_var = self.expression_constraint.left
+        self.assertTrue(tmp_var.startswith("set("))
+        self.assertTrue(tmp_var.endswith(")"))
+        tmp_var = tmp_var[4:-1]
+        self.assertIn(tmp_var, self.expression_constraint.searches)
+        search = self.expression_constraint.searches[tmp_var]
+        self.assertIsInstance(search, PopulationSearch)
+        self.assertIsInstance(search.base, RuleSearch)
+        self.assertEqual(search.base.symbol, NonTerminal("<c>"))
+        self.assertEqual(eval(self.expression_constraint.right), {"e", "f"})
+
+    def test_population_star_constraint_valid(self):
+        for constraint in self.constraints:
+            for tree in self.VALID_POPULATION:
+                self.assertTrue(
+                    constraint.check(tree, population=self.VALID_POPULATION), constraint
+                )
+
+    def test_invalid_population_a(self):
+        for tree in self.INVALID_POPULATION_A:
+            self.assertFalse(
+                self.any_constraint.check(tree, population=self.INVALID_POPULATION_A),
+                "Invalid <a> should not satisfy the exists constraint",
+            )
+            self.assertTrue(
+                self.all_constraint.check(tree, population=self.INVALID_POPULATION_A),
+                "Invalid <a> should satisfy the forall constraint",
+            )
+            self.assertTrue(
+                self.expression_constraint.check(
+                    tree, population=self.INVALID_POPULATION_A
+                ),
+                "Invalid <a> should satisfy the expression constraint",
+            )
+
+    def test_invalid_population_b(self):
+        for tree in self.INVALID_POPULATION_B:
+            self.assertTrue(
+                self.any_constraint.check(tree, population=self.INVALID_POPULATION_B),
+                "Invalid <b> should satisfy the exists constraint",
+            )
+            self.assertFalse(
+                self.all_constraint.check(tree, population=self.INVALID_POPULATION_B),
+                "Invalid <b> should not satisfy the forall constraint",
+            )
+            self.assertTrue(
+                self.expression_constraint.check(
+                    tree, population=self.INVALID_POPULATION_B
+                ),
+                "Invalid <b> should satisfy the expression constraint",
+            )
+
+    def test_invalid_population_c(self):
+        for tree in self.INVALID_POPULATION_C:
+            self.assertTrue(
+                self.any_constraint.check(tree, population=self.INVALID_POPULATION_C),
+                "Invalid <c> should satisfy the exists constraint",
+            )
+            self.assertTrue(
+                self.all_constraint.check(tree, population=self.INVALID_POPULATION_C),
+                "Invalid <c> should satisfy the forall constraint",
+            )
+            self.assertFalse(
+                self.expression_constraint.check(
+                    tree, population=self.INVALID_POPULATION_C
+                ),
+                "Invalid <c> should not satisfy the expression constraint",
+            )

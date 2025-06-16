@@ -267,14 +267,16 @@ class GeneticBase(abc.ABC):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        population: Optional[list[DerivationTree]] = None,
     ) -> bool:
         """
         Check if the tree satisfies the genetic base.
         :param DerivationTree tree: The tree to check.
         :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of non-terminals matching to trees.
+        :param Optional[list[DerivationTree]] population: The population of trees to calculate the fitness.
         :return bool: True if the tree satisfies the genetic base, False otherwise.
         """
-        return self.fitness(tree, scope).success
+        return self.fitness(tree, scope, population).success
 
     def get_failing_nodes(self, tree: DerivationTree):
         """
