@@ -213,7 +213,7 @@ class Constraint(GeneticBase, ABC):
     def fitness(
         self,
         tree: DerivationTree,
-        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        scope: Optional[dict[str, DerivationTree]] = None,
         population: Optional[list[DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
