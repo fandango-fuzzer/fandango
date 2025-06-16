@@ -393,7 +393,25 @@ public:
 
     virtual std::any visitLambda_param(FandangoParser::Lambda_paramContext *context) = 0;
 
+    virtual std::any visitFstring_middle_no_quote(FandangoParser::Fstring_middle_no_quoteContext *context) = 0;
+
+    virtual std::any visitFstring_middle_no_single_quote(FandangoParser::Fstring_middle_no_single_quoteContext *context) = 0;
+
+    virtual std::any visitFstring_middle_breaks_no_triple_quote(FandangoParser::Fstring_middle_breaks_no_triple_quoteContext *context) = 0;
+
+    virtual std::any visitFstring_middle_breaks_no_triple_single_quote(FandangoParser::Fstring_middle_breaks_no_triple_single_quoteContext *context) = 0;
+
+    virtual std::any visitFstring_any_no_quote(FandangoParser::Fstring_any_no_quoteContext *context) = 0;
+
+    virtual std::any visitFstring_any_no_single_quote(FandangoParser::Fstring_any_no_single_quoteContext *context) = 0;
+
     virtual std::any visitFstring_middle(FandangoParser::Fstring_middleContext *context) = 0;
+
+    virtual std::any visitFstring_any_breaks_no_triple_quote(FandangoParser::Fstring_any_breaks_no_triple_quoteContext *context) = 0;
+
+    virtual std::any visitFstring_any_breaks_no_triple_single_quote(FandangoParser::Fstring_any_breaks_no_triple_single_quoteContext *context) = 0;
+
+    virtual std::any visitFstring_any(FandangoParser::Fstring_anyContext *context) = 0;
 
     virtual std::any visitFstring_replacement_field(FandangoParser::Fstring_replacement_fieldContext *context) = 0;
 

@@ -12,30 +12,33 @@
 class  FandangoParser : public antlr4::Parser {
 public:
   enum {
-    INDENT = 1, DEDENT = 2, STRING = 3, NUMBER = 4, INTEGER = 5, PYTHON_START = 6, 
-    PYTHON_END = 7, AND = 8, AS = 9, ASSERT = 10, ASYNC = 11, AWAIT = 12, 
-    BREAK = 13, CASE = 14, CLASS = 15, CONTINUE = 16, DEF = 17, DEL = 18, 
-    ELIF = 19, ELSE = 20, EXCEPT = 21, FALSE = 22, FINALLY = 23, FOR = 24, 
-    FROM = 25, GLOBAL = 26, IF = 27, IMPORT = 28, IN = 29, IS = 30, LAMBDA = 31, 
-    MATCH = 32, NONE = 33, NONLOCAL = 34, NOT = 35, OR = 36, PASS = 37, 
-    RAISE = 38, RETURN = 39, TRUE = 40, TRY = 41, TYPE = 42, WHILE = 43, 
-    WHERE = 44, WITH = 45, YIELD = 46, FORALL = 47, EXISTS = 48, MAXIMIZING = 49, 
-    MINIMIZING = 50, ANY = 51, ALL = 52, LEN = 53, NAME = 54, STRING_LITERAL = 55, 
-    BYTES_LITERAL = 56, DECIMAL_INTEGER = 57, OCT_INTEGER = 58, HEX_INTEGER = 59, 
-    BIN_INTEGER = 60, FLOAT_NUMBER = 61, IMAG_NUMBER = 62, GRAMMAR_ASSIGN = 63, 
-    QUESTION = 64, BACKSLASH = 65, DOT = 66, DOTDOT = 67, ELLIPSIS = 68, 
-    STAR = 69, OPEN_PAREN = 70, CLOSE_PAREN = 71, COMMA = 72, COLON = 73, 
-    SEMI_COLON = 74, POWER = 75, ASSIGN = 76, OPEN_BRACK = 77, CLOSE_BRACK = 78, 
-    OR_OP = 79, XOR = 80, AND_OP = 81, LEFT_SHIFT = 82, RIGHT_SHIFT = 83, 
-    ADD = 84, MINUS = 85, DIV = 86, MOD = 87, IDIV = 88, NOT_OP = 89, OPEN_BRACE = 90, 
-    CLOSE_BRACE = 91, LESS_THAN = 92, GREATER_THAN = 93, EQUALS = 94, GT_EQ = 95, 
-    LT_EQ = 96, NOT_EQ_1 = 97, NOT_EQ_2 = 98, AT = 99, ARROW = 100, ADD_ASSIGN = 101, 
-    SUB_ASSIGN = 102, MULT_ASSIGN = 103, AT_ASSIGN = 104, DIV_ASSIGN = 105, 
-    MOD_ASSIGN = 106, AND_ASSIGN = 107, OR_ASSIGN = 108, XOR_ASSIGN = 109, 
-    LEFT_SHIFT_ASSIGN = 110, RIGHT_SHIFT_ASSIGN = 111, POWER_ASSIGN = 112, 
-    IDIV_ASSIGN = 113, EXPR_ASSIGN = 114, EXCL = 115, NEWLINE = 116, SKIP_ = 117, 
-    UNKNOWN_CHAR = 118, UNDERSCORE = 119, FSTRING_MIDDLE = 120, FSTRING_START = 121, 
-    FSTRING_END = 122
+    INDENT = 1, DEDENT = 2, FSTRING_START_QUOTE = 3, FSTRING_START_SINGLE_QUOTE = 4, 
+    FSTRING_START_TRIPLE_QUOTE = 5, FSTRING_START_TRIPLE_SINGLE_QUOTE = 6, 
+    FSTRING_DOUBLE_QUOTE = 7, FSTRING_DOUBLE_SINGLE_QUOTE = 8, STRING = 9, 
+    NUMBER = 10, INTEGER = 11, PYTHON_START = 12, PYTHON_END = 13, AND = 14, 
+    AS = 15, ASSERT = 16, ASYNC = 17, AWAIT = 18, BREAK = 19, CASE = 20, 
+    CLASS = 21, CONTINUE = 22, DEF = 23, DEL = 24, ELIF = 25, ELSE = 26, 
+    EXCEPT = 27, FALSE = 28, FINALLY = 29, FOR = 30, FROM = 31, GLOBAL = 32, 
+    IF = 33, IMPORT = 34, IN = 35, IS = 36, LAMBDA = 37, MATCH = 38, NONE = 39, 
+    NONLOCAL = 40, NOT = 41, OR = 42, PASS = 43, RAISE = 44, RETURN = 45, 
+    TRUE = 46, TRY = 47, TYPE = 48, WHILE = 49, WHERE = 50, WITH = 51, YIELD = 52, 
+    FORALL = 53, EXISTS = 54, MAXIMIZING = 55, MINIMIZING = 56, ANY = 57, 
+    ALL = 58, LEN = 59, NAME = 60, STRING_LITERAL = 61, FSTRING_END_TRIPLE_QUOTE = 62, 
+    FSTRING_END_TRIPLE_SINGLE_QUOTE = 63, FSTRING_END_QUOTE = 64, FSTRING_END_SINGLE_QUOTE = 65, 
+    BYTES_LITERAL = 66, DECIMAL_INTEGER = 67, OCT_INTEGER = 68, HEX_INTEGER = 69, 
+    BIN_INTEGER = 70, FLOAT_NUMBER = 71, IMAG_NUMBER = 72, GRAMMAR_ASSIGN = 73, 
+    QUESTION = 74, BACKSLASH = 75, ELLIPSIS = 76, DOTDOT = 77, DOT = 78, 
+    STAR = 79, OPEN_PAREN = 80, CLOSE_PAREN = 81, COMMA = 82, COLON = 83, 
+    SEMI_COLON = 84, POWER = 85, ASSIGN = 86, OPEN_BRACK = 87, CLOSE_BRACK = 88, 
+    OR_OP = 89, XOR = 90, AND_OP = 91, LEFT_SHIFT = 92, RIGHT_SHIFT = 93, 
+    ADD = 94, MINUS = 95, DIV = 96, MOD = 97, IDIV = 98, NOT_OP = 99, OPEN_BRACE = 100, 
+    CLOSE_BRACE = 101, LESS_THAN = 102, GREATER_THAN = 103, EQUALS = 104, 
+    GT_EQ = 105, LT_EQ = 106, NOT_EQ_1 = 107, NOT_EQ_2 = 108, AT = 109, 
+    ARROW = 110, ADD_ASSIGN = 111, SUB_ASSIGN = 112, MULT_ASSIGN = 113, 
+    AT_ASSIGN = 114, DIV_ASSIGN = 115, MOD_ASSIGN = 116, AND_ASSIGN = 117, 
+    OR_ASSIGN = 118, XOR_ASSIGN = 119, LEFT_SHIFT_ASSIGN = 120, RIGHT_SHIFT_ASSIGN = 121, 
+    POWER_ASSIGN = 122, IDIV_ASSIGN = 123, EXPR_ASSIGN = 124, EXCL = 125, 
+    NEWLINE = 126, SKIP_ = 127, UNKNOWN_CHAR = 128, UNDERSCORE = 129
   };
 
   enum {
@@ -94,19 +97,24 @@ public:
     RuleLambda_slash_no_default = 179, RuleLambda_slash_with_default = 180, 
     RuleLambda_star_etc = 181, RuleLambda_kwds = 182, RuleLambda_param_no_default = 183, 
     RuleLambda_param_with_default = 184, RuleLambda_param_maybe_default = 185, 
-    RuleLambda_param = 186, RuleFstring_middle = 187, RuleFstring_replacement_field = 188, 
-    RuleFstring_conversion = 189, RuleFstring_full_format_spec = 190, RuleFstring_format_spec = 191, 
-    RuleFstring = 192, RuleString = 193, RuleStrings = 194, RuleList = 195, 
-    RuleTuple = 196, RuleSet = 197, RuleDict = 198, RuleDouble_starred_kvpairs = 199, 
-    RuleDouble_starred_kvpair = 200, RuleKvpair = 201, RuleFor_if_clauses = 202, 
-    RuleFor_if_clause = 203, RuleListcomp = 204, RuleSetcomp = 205, RuleGenexp = 206, 
-    RuleDictcomp = 207, RuleArguments = 208, RuleArgs = 209, RuleArg = 210, 
-    RuleKwargs = 211, RuleStarred_expression = 212, RuleKwarg_or_starred = 213, 
-    RuleKwarg_or_double_starred = 214, RuleStar_targets = 215, RuleStar_targets_list_seq = 216, 
-    RuleStar_targets_tuple_seq = 217, RuleStar_target = 218, RuleTarget_with_star_atom = 219, 
-    RuleStar_atom = 220, RuleSingle_target = 221, RuleSingle_subscript_attribute_target = 222, 
-    RuleT_primary = 223, RuleDel_targets = 224, RuleDel_target = 225, RuleDel_t_atom = 226, 
-    RuleType_expressions = 227, RuleFunc_type_comment = 228, RuleIdentifier = 229
+    RuleLambda_param = 186, RuleFstring_middle_no_quote = 187, RuleFstring_middle_no_single_quote = 188, 
+    RuleFstring_middle_breaks_no_triple_quote = 189, RuleFstring_middle_breaks_no_triple_single_quote = 190, 
+    RuleFstring_any_no_quote = 191, RuleFstring_any_no_single_quote = 192, 
+    RuleFstring_middle = 193, RuleFstring_any_breaks_no_triple_quote = 194, 
+    RuleFstring_any_breaks_no_triple_single_quote = 195, RuleFstring_any = 196, 
+    RuleFstring_replacement_field = 197, RuleFstring_conversion = 198, RuleFstring_full_format_spec = 199, 
+    RuleFstring_format_spec = 200, RuleFstring = 201, RuleString = 202, 
+    RuleStrings = 203, RuleList = 204, RuleTuple = 205, RuleSet = 206, RuleDict = 207, 
+    RuleDouble_starred_kvpairs = 208, RuleDouble_starred_kvpair = 209, RuleKvpair = 210, 
+    RuleFor_if_clauses = 211, RuleFor_if_clause = 212, RuleListcomp = 213, 
+    RuleSetcomp = 214, RuleGenexp = 215, RuleDictcomp = 216, RuleArguments = 217, 
+    RuleArgs = 218, RuleArg = 219, RuleKwargs = 220, RuleStarred_expression = 221, 
+    RuleKwarg_or_starred = 222, RuleKwarg_or_double_starred = 223, RuleStar_targets = 224, 
+    RuleStar_targets_list_seq = 225, RuleStar_targets_tuple_seq = 226, RuleStar_target = 227, 
+    RuleTarget_with_star_atom = 228, RuleStar_atom = 229, RuleSingle_target = 230, 
+    RuleSingle_subscript_attribute_target = 231, RuleT_primary = 232, RuleDel_targets = 233, 
+    RuleDel_target = 234, RuleDel_t_atom = 235, RuleType_expressions = 236, 
+    RuleFunc_type_comment = 237, RuleIdentifier = 238
   };
 
   explicit FandangoParser(antlr4::TokenStream *input);
@@ -313,7 +321,16 @@ public:
   class Lambda_param_with_defaultContext;
   class Lambda_param_maybe_defaultContext;
   class Lambda_paramContext;
+  class Fstring_middle_no_quoteContext;
+  class Fstring_middle_no_single_quoteContext;
+  class Fstring_middle_breaks_no_triple_quoteContext;
+  class Fstring_middle_breaks_no_triple_single_quoteContext;
+  class Fstring_any_no_quoteContext;
+  class Fstring_any_no_single_quoteContext;
   class Fstring_middleContext;
+  class Fstring_any_breaks_no_triple_quoteContext;
+  class Fstring_any_breaks_no_triple_single_quoteContext;
+  class Fstring_anyContext;
   class Fstring_replacement_fieldContext;
   class Fstring_conversionContext;
   class Fstring_full_format_specContext;
@@ -537,7 +554,7 @@ public:
     SymbolContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     Nonterminal_rightContext *nonterminal_right();
-    antlr4::tree::TerminalNode *STRING();
+    StringContext *string();
     antlr4::tree::TerminalNode *NUMBER();
     Generator_callContext *generator_call();
     Char_setContext *char_set();
@@ -614,7 +631,7 @@ public:
     Char_setContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *OPEN_BRACK();
-    antlr4::tree::TerminalNode *STRING();
+    StringContext *string();
     antlr4::tree::TerminalNode *CLOSE_BRACK();
     antlr4::tree::TerminalNode *XOR();
 
@@ -2701,6 +2718,7 @@ public:
   public:
     Star_expressionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
+    Star_selectionContext *star_selection();
     antlr4::tree::TerminalNode *STAR();
     Bitwise_orContext *bitwise_or();
     ExpressionContext *expression();
@@ -3414,12 +3432,101 @@ public:
 
   Lambda_paramContext* lambda_param();
 
+  class  Fstring_middle_no_quoteContext : public antlr4::ParserRuleContext {
+  public:
+    Fstring_middle_no_quoteContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    Fstring_replacement_fieldContext *fstring_replacement_field();
+    Fstring_any_no_quoteContext *fstring_any_no_quote();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Fstring_middle_no_quoteContext* fstring_middle_no_quote();
+
+  class  Fstring_middle_no_single_quoteContext : public antlr4::ParserRuleContext {
+  public:
+    Fstring_middle_no_single_quoteContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    Fstring_replacement_fieldContext *fstring_replacement_field();
+    Fstring_any_no_single_quoteContext *fstring_any_no_single_quote();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Fstring_middle_no_single_quoteContext* fstring_middle_no_single_quote();
+
+  class  Fstring_middle_breaks_no_triple_quoteContext : public antlr4::ParserRuleContext {
+  public:
+    Fstring_middle_breaks_no_triple_quoteContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    Fstring_replacement_fieldContext *fstring_replacement_field();
+    Fstring_any_breaks_no_triple_quoteContext *fstring_any_breaks_no_triple_quote();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Fstring_middle_breaks_no_triple_quoteContext* fstring_middle_breaks_no_triple_quote();
+
+  class  Fstring_middle_breaks_no_triple_single_quoteContext : public antlr4::ParserRuleContext {
+  public:
+    Fstring_middle_breaks_no_triple_single_quoteContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    Fstring_replacement_fieldContext *fstring_replacement_field();
+    Fstring_any_breaks_no_triple_single_quoteContext *fstring_any_breaks_no_triple_single_quote();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Fstring_middle_breaks_no_triple_single_quoteContext* fstring_middle_breaks_no_triple_single_quote();
+
+  class  Fstring_any_no_quoteContext : public antlr4::ParserRuleContext {
+  public:
+    Fstring_any_no_quoteContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    Fstring_anyContext *fstring_any();
+    antlr4::tree::TerminalNode *FSTRING_END_SINGLE_QUOTE();
+    antlr4::tree::TerminalNode *FSTRING_DOUBLE_SINGLE_QUOTE();
+    antlr4::tree::TerminalNode *FSTRING_END_TRIPLE_SINGLE_QUOTE();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Fstring_any_no_quoteContext* fstring_any_no_quote();
+
+  class  Fstring_any_no_single_quoteContext : public antlr4::ParserRuleContext {
+  public:
+    Fstring_any_no_single_quoteContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    Fstring_anyContext *fstring_any();
+    antlr4::tree::TerminalNode *FSTRING_END_QUOTE();
+    antlr4::tree::TerminalNode *FSTRING_DOUBLE_QUOTE();
+    antlr4::tree::TerminalNode *FSTRING_END_TRIPLE_QUOTE();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Fstring_any_no_single_quoteContext* fstring_any_no_single_quote();
+
   class  Fstring_middleContext : public antlr4::ParserRuleContext {
   public:
     Fstring_middleContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    Fstring_replacement_fieldContext *fstring_replacement_field();
-    antlr4::tree::TerminalNode *FSTRING_MIDDLE();
+    Fstring_anyContext *fstring_any();
+    antlr4::tree::TerminalNode *FSTRING_END_SINGLE_QUOTE();
+    antlr4::tree::TerminalNode *FSTRING_END_QUOTE();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -3427,6 +3534,258 @@ public:
   };
 
   Fstring_middleContext* fstring_middle();
+
+  class  Fstring_any_breaks_no_triple_quoteContext : public antlr4::ParserRuleContext {
+  public:
+    Fstring_any_breaks_no_triple_quoteContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    Fstring_anyContext *fstring_any();
+    antlr4::tree::TerminalNode *NEWLINE();
+    antlr4::tree::TerminalNode *FSTRING_END_SINGLE_QUOTE();
+    antlr4::tree::TerminalNode *FSTRING_DOUBLE_QUOTE();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Fstring_any_breaks_no_triple_quoteContext* fstring_any_breaks_no_triple_quote();
+
+  class  Fstring_any_breaks_no_triple_single_quoteContext : public antlr4::ParserRuleContext {
+  public:
+    Fstring_any_breaks_no_triple_single_quoteContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    Fstring_anyContext *fstring_any();
+    antlr4::tree::TerminalNode *NEWLINE();
+    antlr4::tree::TerminalNode *FSTRING_END_QUOTE();
+    antlr4::tree::TerminalNode *FSTRING_DOUBLE_QUOTE();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Fstring_any_breaks_no_triple_single_quoteContext* fstring_any_breaks_no_triple_single_quote();
+
+  class  Fstring_anyContext : public antlr4::ParserRuleContext {
+  public:
+    Fstring_anyContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<antlr4::tree::TerminalNode *> NUMBER();
+    antlr4::tree::TerminalNode* NUMBER(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> PYTHON_START();
+    antlr4::tree::TerminalNode* PYTHON_START(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> PYTHON_END();
+    antlr4::tree::TerminalNode* PYTHON_END(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> AND();
+    antlr4::tree::TerminalNode* AND(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> AS();
+    antlr4::tree::TerminalNode* AS(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> ASSERT();
+    antlr4::tree::TerminalNode* ASSERT(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> ASYNC();
+    antlr4::tree::TerminalNode* ASYNC(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> AWAIT();
+    antlr4::tree::TerminalNode* AWAIT(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> BREAK();
+    antlr4::tree::TerminalNode* BREAK(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> CASE();
+    antlr4::tree::TerminalNode* CASE(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> CLASS();
+    antlr4::tree::TerminalNode* CLASS(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> CONTINUE();
+    antlr4::tree::TerminalNode* CONTINUE(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> DEF();
+    antlr4::tree::TerminalNode* DEF(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> DEL();
+    antlr4::tree::TerminalNode* DEL(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> ELIF();
+    antlr4::tree::TerminalNode* ELIF(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> ELSE();
+    antlr4::tree::TerminalNode* ELSE(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> EXCEPT();
+    antlr4::tree::TerminalNode* EXCEPT(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> FALSE();
+    antlr4::tree::TerminalNode* FALSE(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> FINALLY();
+    antlr4::tree::TerminalNode* FINALLY(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> FOR();
+    antlr4::tree::TerminalNode* FOR(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> FROM();
+    antlr4::tree::TerminalNode* FROM(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> GLOBAL();
+    antlr4::tree::TerminalNode* GLOBAL(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> IF();
+    antlr4::tree::TerminalNode* IF(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> IMPORT();
+    antlr4::tree::TerminalNode* IMPORT(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> IN();
+    antlr4::tree::TerminalNode* IN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> IS();
+    antlr4::tree::TerminalNode* IS(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> LAMBDA();
+    antlr4::tree::TerminalNode* LAMBDA(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> MATCH();
+    antlr4::tree::TerminalNode* MATCH(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> NONE();
+    antlr4::tree::TerminalNode* NONE(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> NONLOCAL();
+    antlr4::tree::TerminalNode* NONLOCAL(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> NOT();
+    antlr4::tree::TerminalNode* NOT(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> OR();
+    antlr4::tree::TerminalNode* OR(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> PASS();
+    antlr4::tree::TerminalNode* PASS(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> RAISE();
+    antlr4::tree::TerminalNode* RAISE(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> RETURN();
+    antlr4::tree::TerminalNode* RETURN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> TRUE();
+    antlr4::tree::TerminalNode* TRUE(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> TRY();
+    antlr4::tree::TerminalNode* TRY(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> TYPE();
+    antlr4::tree::TerminalNode* TYPE(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> WHILE();
+    antlr4::tree::TerminalNode* WHILE(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> WHERE();
+    antlr4::tree::TerminalNode* WHERE(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> WITH();
+    antlr4::tree::TerminalNode* WITH(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> YIELD();
+    antlr4::tree::TerminalNode* YIELD(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> FORALL();
+    antlr4::tree::TerminalNode* FORALL(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> EXISTS();
+    antlr4::tree::TerminalNode* EXISTS(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> MAXIMIZING();
+    antlr4::tree::TerminalNode* MAXIMIZING(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> MINIMIZING();
+    antlr4::tree::TerminalNode* MINIMIZING(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> ANY();
+    antlr4::tree::TerminalNode* ANY(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> ALL();
+    antlr4::tree::TerminalNode* ALL(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> LEN();
+    antlr4::tree::TerminalNode* LEN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> NAME();
+    antlr4::tree::TerminalNode* NAME(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> GRAMMAR_ASSIGN();
+    antlr4::tree::TerminalNode* GRAMMAR_ASSIGN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> QUESTION();
+    antlr4::tree::TerminalNode* QUESTION(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> DOT();
+    antlr4::tree::TerminalNode* DOT(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> DOTDOT();
+    antlr4::tree::TerminalNode* DOTDOT(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> ELLIPSIS();
+    antlr4::tree::TerminalNode* ELLIPSIS(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> STAR();
+    antlr4::tree::TerminalNode* STAR(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> OPEN_PAREN();
+    antlr4::tree::TerminalNode* OPEN_PAREN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> CLOSE_PAREN();
+    antlr4::tree::TerminalNode* CLOSE_PAREN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> COLON();
+    antlr4::tree::TerminalNode* COLON(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> SEMI_COLON();
+    antlr4::tree::TerminalNode* SEMI_COLON(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> POWER();
+    antlr4::tree::TerminalNode* POWER(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> ASSIGN();
+    antlr4::tree::TerminalNode* ASSIGN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> OPEN_BRACK();
+    antlr4::tree::TerminalNode* OPEN_BRACK(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> CLOSE_BRACK();
+    antlr4::tree::TerminalNode* CLOSE_BRACK(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> OR_OP();
+    antlr4::tree::TerminalNode* OR_OP(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> XOR();
+    antlr4::tree::TerminalNode* XOR(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> AND_OP();
+    antlr4::tree::TerminalNode* AND_OP(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> LEFT_SHIFT();
+    antlr4::tree::TerminalNode* LEFT_SHIFT(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> RIGHT_SHIFT();
+    antlr4::tree::TerminalNode* RIGHT_SHIFT(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> ADD();
+    antlr4::tree::TerminalNode* ADD(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> MINUS();
+    antlr4::tree::TerminalNode* MINUS(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> DIV();
+    antlr4::tree::TerminalNode* DIV(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> MOD();
+    antlr4::tree::TerminalNode* MOD(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> IDIV();
+    antlr4::tree::TerminalNode* IDIV(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> NOT_OP();
+    antlr4::tree::TerminalNode* NOT_OP(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> OPEN_BRACE();
+    antlr4::tree::TerminalNode* OPEN_BRACE(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> CLOSE_BRACE();
+    antlr4::tree::TerminalNode* CLOSE_BRACE(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> LESS_THAN();
+    antlr4::tree::TerminalNode* LESS_THAN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> GREATER_THAN();
+    antlr4::tree::TerminalNode* GREATER_THAN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> EQUALS();
+    antlr4::tree::TerminalNode* EQUALS(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> GT_EQ();
+    antlr4::tree::TerminalNode* GT_EQ(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> LT_EQ();
+    antlr4::tree::TerminalNode* LT_EQ(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> NOT_EQ_1();
+    antlr4::tree::TerminalNode* NOT_EQ_1(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> NOT_EQ_2();
+    antlr4::tree::TerminalNode* NOT_EQ_2(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> AT();
+    antlr4::tree::TerminalNode* AT(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> ARROW();
+    antlr4::tree::TerminalNode* ARROW(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> ADD_ASSIGN();
+    antlr4::tree::TerminalNode* ADD_ASSIGN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> SUB_ASSIGN();
+    antlr4::tree::TerminalNode* SUB_ASSIGN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> MULT_ASSIGN();
+    antlr4::tree::TerminalNode* MULT_ASSIGN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> AT_ASSIGN();
+    antlr4::tree::TerminalNode* AT_ASSIGN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> DIV_ASSIGN();
+    antlr4::tree::TerminalNode* DIV_ASSIGN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> MOD_ASSIGN();
+    antlr4::tree::TerminalNode* MOD_ASSIGN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> AND_ASSIGN();
+    antlr4::tree::TerminalNode* AND_ASSIGN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> OR_ASSIGN();
+    antlr4::tree::TerminalNode* OR_ASSIGN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> XOR_ASSIGN();
+    antlr4::tree::TerminalNode* XOR_ASSIGN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> LEFT_SHIFT_ASSIGN();
+    antlr4::tree::TerminalNode* LEFT_SHIFT_ASSIGN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> RIGHT_SHIFT_ASSIGN();
+    antlr4::tree::TerminalNode* RIGHT_SHIFT_ASSIGN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> POWER_ASSIGN();
+    antlr4::tree::TerminalNode* POWER_ASSIGN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> IDIV_ASSIGN();
+    antlr4::tree::TerminalNode* IDIV_ASSIGN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> EXPR_ASSIGN();
+    antlr4::tree::TerminalNode* EXPR_ASSIGN(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> EXCL();
+    antlr4::tree::TerminalNode* EXCL(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> SKIP_();
+    antlr4::tree::TerminalNode* SKIP_(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> UNKNOWN_CHAR();
+    antlr4::tree::TerminalNode* UNKNOWN_CHAR(size_t i);
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Fstring_anyContext* fstring_any();
 
   class  Fstring_replacement_fieldContext : public antlr4::ParserRuleContext {
   public:
@@ -3480,8 +3839,8 @@ public:
   public:
     Fstring_format_specContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *FSTRING_MIDDLE();
     Fstring_replacement_fieldContext *fstring_replacement_field();
+    Fstring_middleContext *fstring_middle();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -3494,10 +3853,22 @@ public:
   public:
     FstringContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *FSTRING_START();
-    antlr4::tree::TerminalNode *FSTRING_END();
-    std::vector<Fstring_middleContext *> fstring_middle();
-    Fstring_middleContext* fstring_middle(size_t i);
+    antlr4::tree::TerminalNode *FSTRING_START_QUOTE();
+    antlr4::tree::TerminalNode *FSTRING_END_QUOTE();
+    std::vector<Fstring_middle_no_quoteContext *> fstring_middle_no_quote();
+    Fstring_middle_no_quoteContext* fstring_middle_no_quote(size_t i);
+    antlr4::tree::TerminalNode *FSTRING_START_SINGLE_QUOTE();
+    antlr4::tree::TerminalNode *FSTRING_END_SINGLE_QUOTE();
+    std::vector<Fstring_middle_no_single_quoteContext *> fstring_middle_no_single_quote();
+    Fstring_middle_no_single_quoteContext* fstring_middle_no_single_quote(size_t i);
+    antlr4::tree::TerminalNode *FSTRING_START_TRIPLE_QUOTE();
+    antlr4::tree::TerminalNode *FSTRING_END_TRIPLE_QUOTE();
+    std::vector<Fstring_middle_breaks_no_triple_quoteContext *> fstring_middle_breaks_no_triple_quote();
+    Fstring_middle_breaks_no_triple_quoteContext* fstring_middle_breaks_no_triple_quote(size_t i);
+    antlr4::tree::TerminalNode *FSTRING_START_TRIPLE_SINGLE_QUOTE();
+    antlr4::tree::TerminalNode *FSTRING_END_TRIPLE_SINGLE_QUOTE();
+    std::vector<Fstring_middle_breaks_no_triple_single_quoteContext *> fstring_middle_breaks_no_triple_single_quote();
+    Fstring_middle_breaks_no_triple_single_quoteContext* fstring_middle_breaks_no_triple_single_quote(size_t i);
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -3511,6 +3882,8 @@ public:
     StringContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *STRING();
+    antlr4::tree::TerminalNode *FSTRING_DOUBLE_QUOTE();
+    antlr4::tree::TerminalNode *FSTRING_DOUBLE_SINGLE_QUOTE();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
