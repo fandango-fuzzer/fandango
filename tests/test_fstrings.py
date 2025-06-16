@@ -77,7 +77,7 @@ def test_concreate_constraint():
     ), "Constraints should be a ComparisonConstraint"
     constraint: ComparisonConstraint = constraints[0]
     assert len(constraint.searches) == 1, "Constraint should have one search"
-    tmp_var = None
+    tmp_var: str = ""
     for search in constraint.searches:
         tmp_var = search
     assert (
