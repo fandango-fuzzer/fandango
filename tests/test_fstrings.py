@@ -1,7 +1,8 @@
 import pytest
 
-from fandango import parse, FandangoParseError
-from fandango.constraints.base import ExpressionConstraint
+from fandango import parse, FandangoParseError, DerivationTree
+from fandango.constraints.base import ExpressionConstraint, ComparisonConstraint
+from fandango.language import NonTerminal, Terminal
 
 
 @pytest.mark.parametrize(
@@ -28,6 +29,7 @@ from fandango.constraints.base import ExpressionConstraint
         'f"""\ntest\n{x} {y}\n"""',
         "f'''\ntest\n{x}\n'''",
         "f'''\ntest\n{x} {y}\n'''",
+        """f"{x}" 'test0' "test1" f'{y}' 'test2'""",
     ],
 )
 def test_fstrings(expression):
@@ -47,3 +49,42 @@ def test_fstrings(expression):
         assert isinstance(
             constraints[0], ExpressionConstraint
         ), f"Constraints should be an ExpressionConstraint for expression: {expression}"
+
+
+VALID = DerivationTree(
+    NonTerminal("<start>"),
+    [
+        DerivationTree(NonTerminal("<x>"), [DerivationTree(Terminal("1"))]),
+    ],
+)
+
+INVALID = DerivationTree(
+    NonTerminal("<start>"),
+    [
+        DerivationTree(NonTerminal("<x>"), [DerivationTree(Terminal("2"))]),
+    ],
+)
+
+
+def test_concreate_constraint():
+    grammar, constraints = parse(
+        '<start> ::= <x>\n<x> ::= "1" | "2" | "3" \nwhere f"{<x>!s:03}" == "100"',
+    )
+    assert grammar is not None, "Grammar should not be None"
+    assert len(constraints) == 1, "Constraints should contain one item"
+    assert isinstance(
+        constraints[0], ComparisonConstraint
+    ), "Constraints should be a ComparisonConstraint"
+    constraint: ComparisonConstraint = constraints[0]
+    assert len(constraint.searches) == 1, "Constraint should have one search"
+    tmp_var = None
+    for search in constraint.searches:
+        tmp_var = search
+    assert (
+        eval(constraint.left, {tmp_var: "25"}) == "250"
+    ), "Left side of comparison should evaluate to '250'"
+    assert (
+        eval(constraint.right) == "100"
+    ), "Right side of comparison should evaluate to '100'"
+    assert constraint.check(VALID), "Constraint should pass for VALID tree"
+    assert not constraint.check(INVALID), "Constraint should fail for INVALID tree"

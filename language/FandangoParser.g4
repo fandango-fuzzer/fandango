@@ -1091,14 +1091,12 @@ fstring_middle_breaks_no_triple_single_quote
 fstring_any_no_quote
     : fstring_any
     | '\''
-    | FSTRING_DOUBLE_SINGLE_QUOTE
     | '\'\'\''
     ;
 
 fstring_any_no_single_quote
     : fstring_any
     | '"'
-    | FSTRING_DOUBLE_QUOTE
     | '"""'
     ;
 
@@ -1113,14 +1111,12 @@ fstring_any_breaks_no_triple_quote
     : fstring_any
     | NEWLINE
     | '\''
-    | FSTRING_DOUBLE_QUOTE
     ;
 
 fstring_any_breaks_no_triple_single_quote
     : fstring_any
     | NEWLINE
     | '"'
-    | FSTRING_DOUBLE_QUOTE
     ;
 
 fstring_any
@@ -1258,8 +1254,6 @@ fstring
 
 string
     : STRING
-    | FSTRING_DOUBLE_QUOTE
-    | FSTRING_DOUBLE_SINGLE_QUOTE
     ;
 
 strings

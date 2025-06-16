@@ -10,12 +10,10 @@ options {
 }
 
 // constants
-FSTRING_START_QUOTE: ( [fF] | ( [fF] [rR]) | ( [rR] [fF])) '"';
-FSTRING_START_SINGLE_QUOTE: ( [fF] | ( [fF] [rR]) | ( [rR] [fF])) '\'';
-FSTRING_START_TRIPLE_QUOTE: ( [fF] | ( [fF] [rR]) | ( [rR] [fF])) '"""';
-FSTRING_START_TRIPLE_SINGLE_QUOTE: ( [fF] | ( [fF] [rR]) | ( [rR] [fF])) '\'\'\'';
-FSTRING_DOUBLE_QUOTE: ( [rR] | [uU] | [bB] | ( [bB] [rR]) | ( [rR] [bB]))? '""';
-FSTRING_DOUBLE_SINGLE_QUOTE: ( [rR] | [uU] | [bB] | ( [bB] [rR]) | ( [rR] [bB]))? '\'\'';
+FSTRING_START_QUOTE: ( [fF] | ( [fF] [rR]) | ( [rR] [fF])) '"' { fstring_start() };
+FSTRING_START_SINGLE_QUOTE: ( [fF] | ( [fF] [rR]) | ( [rR] [fF])) '\'' { fstring_start() };
+FSTRING_START_TRIPLE_QUOTE: ( [fF] | ( [fF] [rR]) | ( [rR] [fF])) '"""' { fstring_start() };
+FSTRING_START_TRIPLE_SINGLE_QUOTE: ( [fF] | ( [fF] [rR]) | ( [rR] [fF])) '\'\'\'' { fstring_start() };
 STRING: STRING_LITERAL | BYTES_LITERAL;
 
 NUMBER: INTEGER | FLOAT_NUMBER | IMAG_NUMBER;
@@ -78,11 +76,11 @@ LEN        : 'len';
 NAME: ID_START ID_CONTINUE*;
 
 // literals
-STRING_LITERAL: ( [rR] | [uU] )? ( SHORT_STRING | LONG_STRING);
-FSTRING_END_TRIPLE_QUOTE: '"""';
-FSTRING_END_TRIPLE_SINGLE_QUOTE: '\'\'\'';
-FSTRING_END_QUOTE: '"';
-FSTRING_END_SINGLE_QUOTE: '\'';
+STRING_LITERAL: {is_not_fstring()}? ( [rR] | [uU] )? ( SHORT_STRING | LONG_STRING);
+FSTRING_END_TRIPLE_QUOTE: '"""' { fstring_end() };
+FSTRING_END_TRIPLE_SINGLE_QUOTE: '\'\'\'' { fstring_end() };
+FSTRING_END_QUOTE: '"' { fstring_end() };
+FSTRING_END_SINGLE_QUOTE: '\'' { fstring_end() };
 BYTES_LITERAL: ( [bB] | ( [bB] [rR]) | ( [rR] [bB])) ( SHORT_BYTES | LONG_BYTES);
 DECIMAL_INTEGER: NON_ZERO_DIGIT DIGIT* | '0'+;
 OCT_INTEGER: '0' [oO] OCT_DIGIT+;
