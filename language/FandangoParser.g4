@@ -46,7 +46,7 @@ repeat
 symbol
     : NEWLINE*
         ( nonterminal_right
-        | STRING
+        | string
         | NUMBER  // for 0 and 1 bits
         | generator_call
         | char_set // deprecated
@@ -74,7 +74,7 @@ generator_call
     ;
 
 char_set
-    : OPEN_BRACK XOR? STRING CLOSE_BRACK
+    : OPEN_BRACK XOR? string CLOSE_BRACK
     ;
 
 // constraint part
@@ -813,7 +813,8 @@ star_expressions
     ;
 
 star_expression
-    : '*' bitwise_or
+    : star_selection
+    | '*' bitwise_or
     | expression
     ;
 
@@ -1067,17 +1068,176 @@ lambda_param
 // LITERALS
 // ========
 
-fstring_middle
+fstring_middle_no_quote
     : fstring_replacement_field
-    | FSTRING_MIDDLE
+    | fstring_any_no_quote
+    ;
+
+fstring_middle_no_single_quote
+    : fstring_replacement_field
+    | fstring_any_no_single_quote
+    ;
+
+fstring_middle_breaks_no_triple_quote
+    : fstring_replacement_field
+    | fstring_any_breaks_no_triple_quote
+    ;
+
+fstring_middle_breaks_no_triple_single_quote
+    : fstring_replacement_field
+    | fstring_any_breaks_no_triple_single_quote
+    ;
+
+fstring_any_no_quote
+    : fstring_any
+    | '\''
+    | FSTRING_DOUBLE_SINGLE_QUOTE
+    | '\'\'\''
+    ;
+
+fstring_any_no_single_quote
+    : fstring_any
+    | '"'
+    | FSTRING_DOUBLE_QUOTE
+    | '"""'
+    ;
+
+fstring_middle
+    : fstring_any
+    | '\''
+    | '"'
+    ;
+
+
+fstring_any_breaks_no_triple_quote
+    : fstring_any
+    | NEWLINE
+    | '\''
+    | FSTRING_DOUBLE_QUOTE
+    ;
+
+fstring_any_breaks_no_triple_single_quote
+    : fstring_any
+    | NEWLINE
+    | '"'
+    | FSTRING_DOUBLE_QUOTE
+    ;
+
+fstring_any
+    : (
+        NUMBER
+        | PYTHON_START
+        | PYTHON_END
+        | AND
+        | AS
+        | ASSERT
+        | ASYNC
+        | AWAIT
+        | BREAK
+        | CASE
+        | CLASS
+        | CONTINUE
+        | DEF
+        | DEL
+        | ELIF
+        | ELSE
+        | EXCEPT
+        | FALSE
+        | FINALLY
+        | FOR
+        | FROM
+        | GLOBAL
+        | IF
+        | IMPORT
+        | IN
+        | IS
+        | LAMBDA
+        | MATCH
+        | NONE
+        | NONLOCAL
+        | NOT
+        | OR
+        | PASS
+        | RAISE
+        | RETURN
+        | TRUE
+        | TRY
+        | TYPE
+        | WHILE
+        | WHERE
+        | WITH
+        | YIELD
+        | FORALL
+        | EXISTS
+        | MAXIMIZING
+        | MINIMIZING
+        | ANY
+        | ALL
+        | LEN
+        | NAME
+        | GRAMMAR_ASSIGN
+        | QUESTION
+        | DOT
+        | DOTDOT
+        | ELLIPSIS
+        | STAR
+        | OPEN_PAREN
+        | CLOSE_PAREN
+        | COMMA
+        | COLON
+        | SEMI_COLON
+        | POWER
+        | ASSIGN
+        | OPEN_BRACK
+        | CLOSE_BRACK
+        | OR_OP
+        | XOR
+        | AND_OP
+        | LEFT_SHIFT
+        | RIGHT_SHIFT
+        | ADD
+        | MINUS
+        | DIV
+        | MOD
+        | IDIV
+        | NOT_OP
+        | '{' '{'
+        | '}' '}'
+        | LESS_THAN
+        | GREATER_THAN
+        | EQUALS
+        | GT_EQ
+        | LT_EQ
+        | NOT_EQ_1
+        | NOT_EQ_2
+        | AT
+        | ARROW
+        | ADD_ASSIGN
+        | SUB_ASSIGN
+        | MULT_ASSIGN
+        | AT_ASSIGN
+        | DIV_ASSIGN
+        | MOD_ASSIGN
+        | AND_ASSIGN
+        | OR_ASSIGN
+        | XOR_ASSIGN
+        | LEFT_SHIFT_ASSIGN
+        | RIGHT_SHIFT_ASSIGN
+        | POWER_ASSIGN
+        | IDIV_ASSIGN
+        | EXPR_ASSIGN
+        | EXCL
+        | SKIP_
+        | UNKNOWN_CHAR
+    )+
     ;
 
 fstring_replacement_field
     : '{' (yield_expr | star_expressions) '='? fstring_conversion? fstring_full_format_spec? '}'
     ;
 
-fstring_conversion:
-    | '!' identifier
+fstring_conversion
+    : '!' identifier
     ;
 
 fstring_full_format_spec
@@ -1085,16 +1245,21 @@ fstring_full_format_spec
     ;
 
 fstring_format_spec
-    : FSTRING_MIDDLE
-    | fstring_replacement_field
+    : fstring_replacement_field
+    | fstring_middle
     ;
 
 fstring
-    : FSTRING_START fstring_middle* FSTRING_END
+    : FSTRING_START_QUOTE fstring_middle_no_quote* FSTRING_END_QUOTE
+    | FSTRING_START_SINGLE_QUOTE fstring_middle_no_single_quote* FSTRING_END_SINGLE_QUOTE
+    | FSTRING_START_TRIPLE_QUOTE fstring_middle_breaks_no_triple_quote* FSTRING_END_TRIPLE_QUOTE
+    | FSTRING_START_TRIPLE_SINGLE_QUOTE fstring_middle_breaks_no_triple_single_quote* FSTRING_END_TRIPLE_SINGLE_QUOTE
     ;
 
 string
     : STRING
+    | FSTRING_DOUBLE_QUOTE
+    | FSTRING_DOUBLE_SINGLE_QUOTE
     ;
 
 strings

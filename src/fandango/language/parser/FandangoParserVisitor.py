@@ -791,8 +791,60 @@ class FandangoParserVisitor(ParseTreeVisitor):
     def visitLambda_param(self, ctx: FandangoParser.Lambda_paramContext):
         return self.visitChildren(ctx)
 
+    # Visit a parse tree produced by FandangoParser#fstring_middle_no_quote.
+    def visitFstring_middle_no_quote(
+        self, ctx: FandangoParser.Fstring_middle_no_quoteContext
+    ):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#fstring_middle_no_single_quote.
+    def visitFstring_middle_no_single_quote(
+        self, ctx: FandangoParser.Fstring_middle_no_single_quoteContext
+    ):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#fstring_middle_breaks_no_triple_quote.
+    def visitFstring_middle_breaks_no_triple_quote(
+        self, ctx: FandangoParser.Fstring_middle_breaks_no_triple_quoteContext
+    ):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#fstring_middle_breaks_no_triple_single_quote.
+    def visitFstring_middle_breaks_no_triple_single_quote(
+        self, ctx: FandangoParser.Fstring_middle_breaks_no_triple_single_quoteContext
+    ):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#fstring_any_no_quote.
+    def visitFstring_any_no_quote(
+        self, ctx: FandangoParser.Fstring_any_no_quoteContext
+    ):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#fstring_any_no_single_quote.
+    def visitFstring_any_no_single_quote(
+        self, ctx: FandangoParser.Fstring_any_no_single_quoteContext
+    ):
+        return self.visitChildren(ctx)
+
     # Visit a parse tree produced by FandangoParser#fstring_middle.
     def visitFstring_middle(self, ctx: FandangoParser.Fstring_middleContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#fstring_any_breaks_no_triple_quote.
+    def visitFstring_any_breaks_no_triple_quote(
+        self, ctx: FandangoParser.Fstring_any_breaks_no_triple_quoteContext
+    ):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#fstring_any_breaks_no_triple_single_quote.
+    def visitFstring_any_breaks_no_triple_single_quote(
+        self, ctx: FandangoParser.Fstring_any_breaks_no_triple_single_quoteContext
+    ):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#fstring_any.
+    def visitFstring_any(self, ctx: FandangoParser.Fstring_anyContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by FandangoParser#fstring_replacement_field.

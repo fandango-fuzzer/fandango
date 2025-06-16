@@ -199,7 +199,16 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     PyObject *Lambda_param_with_defaultContext_cls = NULL;
     PyObject *Lambda_param_maybe_defaultContext_cls = NULL;
     PyObject *Lambda_paramContext_cls = NULL;
+    PyObject *Fstring_middle_no_quoteContext_cls = NULL;
+    PyObject *Fstring_middle_no_single_quoteContext_cls = NULL;
+    PyObject *Fstring_middle_breaks_no_triple_quoteContext_cls = NULL;
+    PyObject *Fstring_middle_breaks_no_triple_single_quoteContext_cls = NULL;
+    PyObject *Fstring_any_no_quoteContext_cls = NULL;
+    PyObject *Fstring_any_no_single_quoteContext_cls = NULL;
     PyObject *Fstring_middleContext_cls = NULL;
+    PyObject *Fstring_any_breaks_no_triple_quoteContext_cls = NULL;
+    PyObject *Fstring_any_breaks_no_triple_single_quoteContext_cls = NULL;
+    PyObject *Fstring_anyContext_cls = NULL;
     PyObject *Fstring_replacement_fieldContext_cls = NULL;
     PyObject *Fstring_conversionContext_cls = NULL;
     PyObject *Fstring_full_format_specContext_cls = NULL;
@@ -620,7 +629,25 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
 
     antlrcpp::Any visitLambda_param(FandangoParser::Lambda_paramContext *ctx);
 
+    antlrcpp::Any visitFstring_middle_no_quote(FandangoParser::Fstring_middle_no_quoteContext *ctx);
+
+    antlrcpp::Any visitFstring_middle_no_single_quote(FandangoParser::Fstring_middle_no_single_quoteContext *ctx);
+
+    antlrcpp::Any visitFstring_middle_breaks_no_triple_quote(FandangoParser::Fstring_middle_breaks_no_triple_quoteContext *ctx);
+
+    antlrcpp::Any visitFstring_middle_breaks_no_triple_single_quote(FandangoParser::Fstring_middle_breaks_no_triple_single_quoteContext *ctx);
+
+    antlrcpp::Any visitFstring_any_no_quote(FandangoParser::Fstring_any_no_quoteContext *ctx);
+
+    antlrcpp::Any visitFstring_any_no_single_quote(FandangoParser::Fstring_any_no_single_quoteContext *ctx);
+
     antlrcpp::Any visitFstring_middle(FandangoParser::Fstring_middleContext *ctx);
+
+    antlrcpp::Any visitFstring_any_breaks_no_triple_quote(FandangoParser::Fstring_any_breaks_no_triple_quoteContext *ctx);
+
+    antlrcpp::Any visitFstring_any_breaks_no_triple_single_quote(FandangoParser::Fstring_any_breaks_no_triple_single_quoteContext *ctx);
+
+    antlrcpp::Any visitFstring_any(FandangoParser::Fstring_anyContext *ctx);
 
     antlrcpp::Any visitFstring_replacement_field(FandangoParser::Fstring_replacement_fieldContext *ctx);
 

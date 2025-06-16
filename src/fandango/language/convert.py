@@ -202,8 +202,8 @@ class GrammarProcessor(FandangoParserVisitor):
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
         if ctx.nonterminal_right():
             return self.visitNonterminal_right(ctx.nonterminal_right())
-        elif ctx.STRING():
-            return TerminalNode(Terminal.from_symbol(ctx.STRING().getText()))
+        elif ctx.string():
+            return TerminalNode(Terminal.from_symbol(ctx.string().getText()))
         elif ctx.NUMBER():
             number = ctx.NUMBER().getText()
             if number not in ["0", "1"]:
@@ -934,19 +934,133 @@ class SearchProcessor(FandangoParserVisitor):
             return self.visitNamed_expression(ctx.named_expression())
 
     def visitStrings(self, ctx: FandangoParser.StringsContext):
-        if ctx.fstring():
-            raise UnsupportedOperation(
-                f"{ctx.getText()!r}: f-strings are currently not supported"
-            )
-        string = None
-        for child in ctx.string():
-            text = Terminal.clean(child.STRING().getText())
-            if string is None:
-                string = text
-            else:
-                string += text
+        trees, searches, search_map = self.visitChildren(ctx)
+        return ast.JoinedStr(values=trees), searches, search_map
 
-        return ast.Constant(value=string), [], {}
+    def visitString(self, ctx: FandangoParser.StringContext):
+        if ctx.STRING():
+            value = Terminal.clean(ctx.STRING().getText())
+        elif ctx.FSTRING_DOUBLE_QUOTE() or ctx.FSTRING_DOUBLE_SINGLE_QUOTE():
+            value = ""
+        else:
+            raise FandangoValueError(f"Unsupported string: {ctx.getText()}")
+        return ast.Constant(value=value), [], {}
+
+    def visitFstring(self, ctx: FandangoParser.FstringContext):
+        trees, searches, search_map = [], [], {}
+        if ctx.FSTRING_START_QUOTE():
+            for child in ctx.fstring_middle_no_quote():
+                trees, searches, search_map = self.aggregateResult(
+                    (trees, searches, search_map),
+                    self.visitFstring_middle_no_quote(child),
+                )
+        elif ctx.FSTRING_START_SINGLE_QUOTE():
+            for child in ctx.fstring_middle_no_single_quote():
+                trees, searches, search_map = self.aggregateResult(
+                    (trees, searches, search_map),
+                    self.visitFstring_middle_no_single_quote(child),
+                )
+        elif ctx.FSTRING_START_TRIPLE_QUOTE():
+            for child in ctx.fstring_middle_breaks_no_triple_quote():
+                trees, searches, search_map = self.aggregateResult(
+                    (trees, searches, search_map),
+                    self.visitFstring_middle_breaks_no_triple_quote(child),
+                )
+        elif ctx.FSTRING_START_TRIPLE_SINGLE_QUOTE():
+            for child in ctx.fstring_middle_breaks_no_triple_single_quote():
+                trees, searches, search_map = self.aggregateResult(
+                    (trees, searches, search_map),
+                    self.visitFstring_middle_breaks_no_triple_single_quote(child),
+                )
+        else:
+            raise FandangoValueError(f"Unsupported f-string: {ctx.getText()}")
+        return ast.JoinedStr(values=trees), searches, search_map
+
+    def visitFstring_middle_no_quote(
+        self, ctx: FandangoParser.Fstring_middle_no_quoteContext
+    ):
+        if ctx.fstring_replacement_field():
+            return self.visitFstring_replacement_field(ctx.fstring_replacement_field())
+        else:
+            return ast.Constant(value=ctx.getText()), [], {}
+
+    def visitFstring_middle_no_single_quote(
+        self, ctx: FandangoParser.Fstring_middle_no_single_quoteContext
+    ):
+        if ctx.fstring_replacement_field():
+            return self.visitFstring_replacement_field(ctx.fstring_replacement_field())
+        else:
+            return ast.Constant(value=ctx.getText()), [], {}
+
+    def visitFstring_middle_breaks_no_triple_quote(
+        self, ctx: FandangoParser.Fstring_middle_breaks_no_triple_quoteContext
+    ):
+        if ctx.fstring_replacement_field():
+            return self.visitFstring_replacement_field(ctx.fstring_replacement_field())
+        else:
+            return ast.Constant(value=ctx.getText()), [], {}
+
+    def visitFstring_middle_breaks_no_triple_single_quote(
+        self, ctx: FandangoParser.Fstring_middle_breaks_no_triple_single_quoteContext
+    ):
+        if ctx.fstring_replacement_field():
+            return self.visitFstring_replacement_field(ctx.fstring_replacement_field())
+        else:
+            return ast.Constant(value=ctx.getText()), [], {}
+
+    def visitFstring_replacement_field(
+        self, ctx: FandangoParser.Fstring_replacement_fieldContext
+    ):
+        if ctx.yield_expr():
+            tree, searches, search_map = self.visitYield_expr(ctx.yield_expr())
+        elif ctx.star_expressions():
+            tree, searches, search_map = self.visitStar_expressions(
+                ctx.star_expressions()
+            )
+        else:
+            raise FandangoValueError(f"Unsupported f-string: {ctx.getText()}")
+        if ctx.fstring_conversion():
+            conversion = ord(ctx.fstring_conversion().identifier().getText())
+        else:
+            conversion = -1
+        if ctx.fstring_full_format_spec():
+            format_spec, spec_searches, spec_search_map = (
+                self.visitFstring_full_format_spec(ctx.fstring_full_format_spec())
+            )
+            searches.extend(spec_searches)
+            search_map.update(spec_search_map)
+        else:
+            format_spec = None
+        return (
+            ast.FormattedValue(
+                value=tree,
+                conversion=conversion,
+                format_spec=format_spec,
+            ),
+            searches,
+            search_map,
+        )
+
+    def visitFstring_full_format_spec(
+        self, ctx: FandangoParser.Fstring_full_format_specContext
+    ):
+        trees, searches, search_map = [], [], {}
+        for child in ctx.fstring_format_spec():
+            trees, searches, search_map = self.aggregateResult(
+                (trees, searches, search_map),
+                self.visitFstring_format_spec(child),
+            )
+        return ast.JoinedStr(values=trees), searches, search_map
+
+    def visitFstring_format_spec(self, ctx: FandangoParser.Fstring_format_specContext):
+        if ctx.fstring_replacement_field():
+            return self.visitFstring_replacement_field(ctx.fstring_replacement_field())
+        elif ctx.fstring_middle():
+            return ast.Constant(value=ctx.getText()), [], {}
+        else:
+            raise FandangoValueError(
+                f"Unsupported f-string format spec: {ctx.getText()}"
+            )
 
     def visitTuple(self, ctx: FandangoParser.TupleContext):
         trees, searches, search_map = self.visitChildren(ctx)

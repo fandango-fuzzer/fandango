@@ -763,7 +763,43 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitFstring_middle_no_quote(FandangoParser::Fstring_middle_no_quoteContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitFstring_middle_no_single_quote(FandangoParser::Fstring_middle_no_single_quoteContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitFstring_middle_breaks_no_triple_quote(FandangoParser::Fstring_middle_breaks_no_triple_quoteContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitFstring_middle_breaks_no_triple_single_quote(FandangoParser::Fstring_middle_breaks_no_triple_single_quoteContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitFstring_any_no_quote(FandangoParser::Fstring_any_no_quoteContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitFstring_any_no_single_quote(FandangoParser::Fstring_any_no_single_quoteContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitFstring_middle(FandangoParser::Fstring_middleContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitFstring_any_breaks_no_triple_quote(FandangoParser::Fstring_any_breaks_no_triple_quoteContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitFstring_any_breaks_no_triple_single_quote(FandangoParser::Fstring_any_breaks_no_triple_single_quoteContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitFstring_any(FandangoParser::Fstring_anyContext *ctx) override {
     return visitChildren(ctx);
   }
 
