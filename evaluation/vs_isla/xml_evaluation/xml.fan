@@ -40,11 +40,11 @@
               | ":"
               | "+" ;
 
-forall <tree> in <xml_tree>:
+where forall <tree> in <xml_tree>:
     <tree>.<xml_open_tag>.<id> == <tree>.<xml_close_tag>.<id>
 ;
 
-forall <open_tag> in <xml_tree>.<xml_open_tag>:
+where forall <open_tag> in <xml_tree>.<xml_open_tag>:
     forall <xml_attribute_1> in <open_tag>..<xml_attribute>:
         forall <xml_attribute_2> in <open_tag>..<xml_attribute>:
             (not(<xml_attribute_1> != <xml_attribute_2>) or (str(<xml_attribute_1>.<id>) != str(<xml_attribute_2>.<id>)))

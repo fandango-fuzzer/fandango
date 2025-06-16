@@ -58,7 +58,7 @@ $ fandango fuzz --format=bits -f bits.fan -n 1 --start-symbol='<format_flag>'
 assert _exit_code == 0
 ```
 
-```{note}
+```{tip}
 The combination of `--format=bits` and `--start-symbol` is particularly useful to debug bit fields.
 ```
 
@@ -109,7 +109,7 @@ assert _exit_code == 0
 
 Note how the last four bits (the `<brightness>` field) are always set to `1111` - the number 15.
 
-```{warning}
+```{important}
 When implementing a format, be sure to follow its conventions regarding
 
 * _bit ordering_ (most or least significant bit first)
@@ -166,9 +166,9 @@ $ printf '\xf0' | fandango parse -f bits.fan -o - --format=grammar
 assert _exit_code == 0
 ```
 
-:::{warning}
+```{note}
 To parse bits properly, they must come in multiples of eight.
-:::
+```
 
 
 ## Bits and Padding

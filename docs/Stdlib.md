@@ -27,7 +27,7 @@ If you'd like to narrow the definition of, say, punctuation characters, you can 
 
 The original definition of `<_punctuation>`, however, must not be changed, as other definitions may depend on it.
 
-```{warning}
+```{important}
 Symbols starting with an underscore must _not_ be redefined.
 ```
 

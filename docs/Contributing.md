@@ -87,6 +87,7 @@ Install `pytest` and required files:
 $ make install-test
 ```
 
+(sec:pip-install)=
 ### Step 5: Install Fandango
 
 Install your local copy of Fandango:
@@ -126,6 +127,28 @@ or simply
 $ pytest
 ```
 
+To run tests in parallel, you can use [pytest-xdist](https://pytest-xdist.readthedocs.io/en/stable/):
+
+```shell
+pip install pytest-xdist
+pytest -n auto
+```
+
+### Pre-commit
+
+Fandango provides a config file for `pre-commit`. To install it, run the following:
+
+```shell
+pip install pre-commit
+pre-commit install
+```
+
+This will run code formatting and type checking before every commit.
+
+```{warning}
+The [tests](sec:running-tests)= aren't run as part of pre-commit, because they take significant time to complete. Run them manually.
+```
+
 (sec:first-time-contributors)=
 ## First Time Contributors
 
@@ -161,15 +184,27 @@ Standard advice about good pull requests for open-source projects applies.
 
 ### Changing Parser Files
 
-If your contribution involves changing the ANTLR `.g4` parser files, you need to recreate the parser code.
+If your contribution involves changing the ANTLR `.g4` parser files,
+you need to _regenerate_ and _recompile_ the parser code.
+For this, you need a C++ compiler such as `clang`.
 
-Use
+#### Step 1: Generate the parser code
+
+To (re)generate the parser code, use
 
 ```shell
 $ make parser
 ```
 
-to recreate the parser code.
+#### Step 2: Compile the parser code
+
+The `pip` command takes care of (re)compiling the parser code.
+Simply [reinstall Fandango](sec:pip-install).
+
+```{note}
+If compiling the C++ code for parsing fails,
+Fandango uses (slower) Python code instead.
+```
 
 
 ### Contributing to Documentation

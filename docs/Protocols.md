@@ -10,12 +10,11 @@ kernelspec:
   name: python3
 ---
 
-(sec:distributions)=
-# Statistical Distributions
+(sec:protocols)=
+# Protocol Testing
 
 ```{admonition} Under Construction
 :class: attention
 This chapter is still under construction.
 ```
 
-When introducing [generators](Generators.md), we have seen a first method on how to create distributions.
