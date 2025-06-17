@@ -199,8 +199,13 @@ TEST_SOURCES = $(wildcard $(TESTS)/*.py $(TESTS)/resources/* $(TESTS)/docs/*.fan
 TEST_MARKER = $(TESTS)/test-marker.txt
 
 .PHONY: test tests run-tests
-test tests $(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
+test: $(PYTHON_SOURCES) $(TEST_SOURCES)
 	$(PYTEST)
+	echo 'Success' > $(TEST_MARKER)
+
+# As above, but run tests in parallel
+tests $(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
+	$(PYTEST) -n auto
 	echo 'Success' > $(TEST_MARKER)
 
 run-tests: $(TEST_MARKER)
