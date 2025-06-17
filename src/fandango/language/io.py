@@ -495,6 +495,7 @@ if __name__ == "__main__":
     <input> ::= <string>
     <output> ::= <string>
     <string> ::= r'(.|\\n)*'
+    where <input> == <output>
 
     x = set_program_command("cat")
     """
