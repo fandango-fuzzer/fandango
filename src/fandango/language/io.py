@@ -6,6 +6,8 @@ import subprocess
 import sys
 import threading
 import time
+
+from abc import ABC
 from typing import Optional
 
 from fandango import FandangoError
@@ -13,38 +15,41 @@ from fandango.language.tree import DerivationTree
 
 
 class Protocol(enum.Enum):
-    TCP = ("TCP",)
+    TCP = "TCP"
     UDP = "UDP"
 
 
 class EndpointType(enum.Enum):
-    SERVER = ("Server",)
+    SERVER = "Server"
     CLIENT = "Client"
 
 
 class IpType(enum.Enum):
-    IPV4 = ("IPv4",)
+    IPV4 = "IPv4"
     IPV6 = "IPv6"
 
 
 class Ownership(enum.Enum):
-    FUZZER = ("Fuzzer",)
+    FUZZER = "Fuzzer"
     EXTERNAL = "External"
 
 
-class FandangoParty(object):
+class FandangoParty(ABC):
+    """Base class for all parties in Fandango."""
 
     def __init__(self, ownership: Ownership):
+        """Constructor.
+        :param ownership: Ownership of the party, either Ownership.FUZZER or Ownership.EXTERNAL. FUZZER means the party is controlled by Fandango, while EXTERNAL means it is an external party.
+        """
         self.class_name = type(self).__name__
         self._ownership = ownership
         FandangoIO.instance().parties[self.class_name] = self
 
-    """
-    :return: True, if the party is substituted by fandango.
-    """
-
     @property
     def ownership(self) -> Ownership:
+        """
+        :return: ownership of the party
+        """
         return self._ownership
 
     def is_fuzzer_controlled(self) -> bool:
@@ -53,24 +58,27 @@ class FandangoParty(object):
         """
         return self.ownership == Ownership.FUZZER
 
-    """
-    Called when fandango wants to send a message as this party.
-    
-    :message: The message to send.
-    """
-
     def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
+        """
+        Called when fandango wants to send a message as this party.
+        :param message: The message to send.
+        """
         print(f"({self.class_name}): {message.to_string()}")
 
-    """
-    Call if a message has been received by this party.
-    """
-
-    def receive_msg(self, sender: str, message: str) -> None:
+    def receive_msg(self, sender: str, message: str | bytes) -> None:
+        """
+        Called when a message has been received by this party.
+        :param sender: The sender of the message.
+        :param message: The sender of the message.
+        """
         FandangoIO.instance().add_receive(sender, self.class_name, message)
 
 
 class SocketParty(FandangoParty):
+    """Base class for communicating with parties via sockets."""
+
+    BUFFER_SIZE = 1024  # Size of the buffer for receiving data
+
     def __init__(
         self,
         *,
@@ -81,6 +89,13 @@ class SocketParty(FandangoParty):
         port: int = 8021,
         protocol_type: Protocol = Protocol.TCP,
     ):
+        """Constructor.
+        :param ownership: Ownership of the party, either Ownership.FUZZER or Ownership.EXTERNAL. FUZZER means the party is controlled by Fandango, while EXTERNAL means it is an external party.
+        :param endpoint_type: Type of the endpoint, either EndpointType.SERVER or EndpointType.CLIENT.
+        :param ip_type: Type of IP address, either IpType.IPV4 or IpType.IPV6.
+        :param ip: IP address (as a string) to bind to or connect to.
+        :param port: Port (integer) to bind to or connect to.
+        :param protocol_type: Protocol to use, either Protocol.TCP or Protocol.UDP."""
         super().__init__(ownership)
         self.running = False
         self._ip_type: IpType = ip_type
@@ -232,7 +247,7 @@ class SocketParty(FandangoParty):
                 assert self.connection is not None
                 rlist, _, _ = select.select([self.connection], [], [], 0.1)
                 if rlist and self.running:
-                    data = self.connection.recv(1024)
+                    data = self.connection.recv(self.BUFFER_SIZE)
                     if len(data) == 0:
                         continue  # Keep waiting if connection is open but no data
                     self.receive(data)
@@ -242,7 +257,7 @@ class SocketParty(FandangoParty):
 
     def on_send(self, message: DerivationTree, recipient: Optional[str]):
         if not self.running:
-            raise FandangoError("Socket not running!")
+            raise FandangoError("Socket not running. Invoke start() first.")
         self.wait_accept()
         self.transmit(message, recipient)
 
@@ -298,7 +313,7 @@ class SocketClient(SocketParty):
         )
 
 
-class STDOUT(FandangoParty):
+class StdOut(FandangoParty):
 
     def __init__(self):
         super().__init__(Ownership.FUZZER)
@@ -309,7 +324,7 @@ class STDOUT(FandangoParty):
         # print(message.to_string())
 
 
-class STDIN(FandangoParty):
+class StdIn(FandangoParty):
     def __init__(self):
         super().__init__(Ownership.EXTERNAL)
         self.running = True
@@ -330,7 +345,7 @@ class STDIN(FandangoParty):
                 time.sleep(0.1)
 
 
-class ProgOut(FandangoParty):
+class Out(FandangoParty):
     def __init__(self):
         super().__init__(Ownership.EXTERNAL)
         self.proc = ProcessManager.instance().get_process()
@@ -342,7 +357,11 @@ class ProgOut(FandangoParty):
             self.receive_msg("ProgOut", line)
 
 
-class ProgIn(FandangoParty):
+# Legacy
+ProgOut = Out
+
+
+class In(FandangoParty):
     def __init__(self):
         super().__init__(Ownership.FUZZER)
         self.proc = ProcessManager.instance().get_process()
@@ -365,25 +384,30 @@ class ProgIn(FandangoParty):
             self.proc.stdin.close()
 
 
-class FandangoIO:
-    __instance: Optional["FandangoIO"] = None
+# Legacy
+ProgIn = In
+
+
+class FandangoIO(object):
+    """Singleton class for managing Fandango's input/output operations."""
+
+    _instance: Optional["FandangoIO"] = None
 
     @classmethod
     def instance(cls) -> "FandangoIO":
-        if cls.__instance is None:
+        if cls._instance is None:
             FandangoIO()
-        assert cls.__instance is not None
-        return cls.__instance
+        assert cls._instance is not None
+        return cls._instance
 
     def __init__(self):
-        if FandangoIO.__instance is not None:
-            raise Exception("Singleton already created!")
-        FandangoIO.__instance = self
-        self.receive = list[tuple[str, str, str]]()
+        assert FandangoIO._instance is None, "FandangoIO singleton already created"
+        FandangoIO._instance = self
+        self.receive = list[tuple[str, str, str | bytes]]()
         self.parties = dict[str, FandangoParty]()
         self.receive_lock = threading.Lock()
 
-    def add_receive(self, sender: str, receiver: str, message: str) -> None:
+    def add_receive(self, sender: str, receiver: str, message: str | bytes) -> None:
         with self.receive_lock:
             self.receive.append((sender, receiver, message))
 
@@ -391,7 +415,7 @@ class FandangoIO:
         with self.receive_lock:
             return len(self.receive) != 0
 
-    def get_received_msgs(self) -> list[tuple[str, str, str]]:
+    def get_received_msgs(self) -> list[tuple[str, str, str | bytes]]:
         with self.receive_lock:
             return list(self.receive)
 
@@ -410,23 +434,24 @@ class FandangoIO:
             self.parties[sender].on_send(message, recipient)
 
 
-class ProcessManager:
-    __instance: Optional["ProcessManager"] = None
+class ProcessManager(object):
+    _instance: Optional["ProcessManager"] = None
 
     def __init__(self):
-        if ProcessManager.__instance is not None:
-            raise Exception("Singleton already created!")
-        ProcessManager.__instance = self
+        assert (
+            ProcessManager._instance is None
+        ), "ProcessManager singleton already created"
+        ProcessManager._instance = self
         self._command = None
         self.lock = threading.Lock()
         self.proc = None
 
     @classmethod
     def instance(cls) -> "ProcessManager":
-        if cls.__instance is None:
+        if cls._instance is None:
             ProcessManager()
-        assert cls.__instance is not None
-        return cls.__instance
+        assert cls._instance is not None
+        return cls._instance
 
     def get_process(self):
         with self.lock:
