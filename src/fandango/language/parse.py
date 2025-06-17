@@ -37,6 +37,7 @@ from fandango.language.grammar import (
     SymbolFinder,
     closest_match,
 )
+
 from fandango.io import FandangoIO, FandangoParty
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
@@ -495,6 +496,8 @@ def parse(
     global INCLUDE_DEPTH
     INCLUDE_DEPTH = 0
 
+    mode = FuzzingMode.COMPLETE
+
     while FILES_TO_PARSE:
         (file, depth) = FILES_TO_PARSE.pop(0)
         if isinstance(file, str):
@@ -512,6 +515,8 @@ def parse(
         )
         parsed_constraints += new_constraints
         assert new_grammar is not None
+        if new_grammar.fuzzing_mode == FuzzingMode.IO:
+            mode = FuzzingMode.IO
 
         if depth == 0:
             # Given file: process in order
@@ -544,10 +549,14 @@ def parse(
         for symbol in g.rules.keys():
             if symbol in grammar.rules:
                 LOGGER.info(f"Redefining {symbol}")
+
         grammar.update(g, prime=False)
         n += 1
 
     LOGGER.debug(f"Final grammar: {[str(key) for key in grammar.rules.keys()]}")
+
+    grammar.fuzzing_mode = mode
+    LOGGER.debug(f"Grammar fuzzing mode: {grammar.fuzzing_mode}")
 
     LOGGER.debug("Processing constraints")
     for constraint in constraints or []:
