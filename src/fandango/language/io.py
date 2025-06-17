@@ -113,55 +113,71 @@ class SocketParty(FandangoParty):
 
     @property
     def ip(self) -> str:
+        """Returns the IP address that this party is bound (endpoint_type == EndpointType.SERVER) to
+        or connected to (endpoint_type == EndpointType.CLIENT)."""
         return self._ip
 
     @ip.setter
     def ip(self, value: str):
+        """Sets the IP address that this party is bound (endpoint_type == EndpointType.SERVER) to
+        or connected to (endpoint_type == EndpointType.CLIENT)."""
         if self._ip == value:
             return
         self._ip = value
 
     @property
     def endpoint_type(self) -> EndpointType:
+        """Returns the type of endpoint, either EndpointType.SERVER or EndpointType.CLIENT."""
         return self._endpoint_type
 
     @endpoint_type.setter
     def endpoint_type(self, value: EndpointType):
+        """Sets the type of endpoint, either EndpointType.SERVER or EndpointType.CLIENT."""
         if self._endpoint_type == value:
             return
         self._endpoint_type = value
 
     @property
     def ip_type(self) -> IpType:
+        """Returns the type of IP address, either IpType.IPV4 or IpType.IPV6."""
         return self._ip_type
 
     @ip_type.setter
     def ip_type(self, value: IpType):
+        """Sets the type of IP address, either IpType.IPV4 or IpType.IPV6."""
         if self._ip_type == value:
             return
         self._ip_type = value
 
     @property
     def protocol_type(self) -> Protocol:
+        """Returns the protocol type, either Protocol.TCP or Protocol.UDP."""
         return self._protocol_type
 
     @protocol_type.setter
     def protocol_type(self, value: Protocol):
+        """Sets the protocol type, either Protocol.TCP or Protocol.UDP."""
         if self._protocol_type == value:
             return
         self._protocol_type = value
 
     @property
     def port(self) -> int:
+        """Returns the port that this party is bound (endpoint_type == EndpointType.SERVER) to
+        or connected to (endpoint_type == EndpointType.CLIENT)."""
         return self._port
 
     @port.setter
     def port(self, value: int):
+        """Sets the port that this party is bound (endpoint_type == EndpointType.SERVER) to
+        or connected to (endpoint_type == EndpointType.CLIENT)."""
         if self._port == value:
             return
         self._port = value
 
     def start(self):
+        """Starts the socket party according to the given configuration. If the party is already
+        running or ownership is not set to Ownership.FUZZER, it does nothing."""
         if self.running:
             return
         if not self.is_fuzzer_controlled():
@@ -191,6 +207,7 @@ class SocketParty(FandangoParty):
         self.send_thread.start()
 
     def stop(self):
+        """Stops the current socket."""
         self.running = False
         if self.send_thread is not None:
             self.send_thread.join()
@@ -216,7 +233,7 @@ class SocketParty(FandangoParty):
                 pass
             self.sock = None
 
-    def wait_accept(self):
+    def _wait_accept(self):
         with self.lock:
             if self.connection is None:
                 if self.endpoint_type == EndpointType.SERVER:
@@ -241,7 +258,7 @@ class SocketParty(FandangoParty):
                     self.sock.setblocking(True)
 
     def _listen(self):
-        self.wait_accept()
+        self._wait_accept()
         if not self.running:
             return
 
@@ -259,12 +276,21 @@ class SocketParty(FandangoParty):
                 break
 
     def on_send(self, message: DerivationTree, recipient: Optional[str]):
+        """Called when Fandango wants to send a message as this party.
+        :param message: The message to send.
+        :param recipient: The recipient of the message. Only present if the grammar specifies a recipient.
+        :raises FandangoError: If the socket is not running.
+        """
         if not self.running:
             raise FandangoError("Socket not running. Invoke start() first.")
-        self.wait_accept()
+        self._wait_accept()
         self.transmit(message, recipient)
 
     def transmit(self, message: DerivationTree, recipient: Optional[str]):
+        """Transmits a message using the configured socket.
+        :param message: The message to transmit.
+        :param recipient: The recipient of the message. Only present if the grammar specifies a recipient.
+        """
         assert self.connection is not None
         if message.contains_bits():
             self.connection.sendall(message.to_bytes())
@@ -272,11 +298,17 @@ class SocketParty(FandangoParty):
             self.connection.sendall(message.to_string().encode("utf-8"))
 
     def receive(self, data: bytes):
+        """Receives data from the socket and forwards it to fandango.
+        :param data: The data received from the socket.
+        """
         sender = "Client" if self.endpoint_type == EndpointType.SERVER else "Server"
         self.receive_msg(sender, data.decode("utf-8"))
 
 
 class SocketServer(SocketParty):
+    """Socket server class for handling incoming connections and exchanging messages.
+    Equivalent to the SocketParty class, but with the endpoint_type set to SERVER."""
+
     def __init__(
         self,
         *,
@@ -286,6 +318,12 @@ class SocketServer(SocketParty):
         port: int = 8021,
         protocol_type: Protocol = Protocol.TCP,
     ):
+        """Constructor.
+        :param ownership: Ownership of the party, either Ownership.FUZZER or Ownership.EXTERNAL. FUZZER means the party is controlled by Fandango, while EXTERNAL means it is an external party.
+        :param ip_type: Type of IP address, either IpType.IPV4 or IpType.IPV6.
+        :param ip: IP address (as a string) to bind to or connect to.
+        :param port: Port (integer) to bind to or connect to.
+        :param protocol_type: Protocol to use, either Protocol.TCP or Protocol.UDP."""
         super().__init__(
             ownership=ownership,
             endpoint_type=EndpointType.SERVER,
@@ -297,6 +335,9 @@ class SocketServer(SocketParty):
 
 
 class SocketClient(SocketParty):
+    """Socket client class for connecting to a server and exchanging messages.
+    Equivalent to the SocketParty class, but with the endpoint_type set to SERVER."""
+
     def __init__(
         self,
         *,
@@ -306,6 +347,12 @@ class SocketClient(SocketParty):
         port: int = 8021,
         protocol_type: Protocol = Protocol.TCP,
     ):
+        """Constructor.
+        :param ownership: Ownership of the party, either Ownership.FUZZER or Ownership.EXTERNAL. FUZZER means the party is controlled by Fandango, while EXTERNAL means it is an external party.
+        :param ip_type: Type of IP address, either IpType.IPV4 or IpType.IPV6.
+        :param ip: IP address (as a string) to bind to or connect to.
+        :param port: Port (integer) to bind to or connect to.
+        :param protocol_type: Protocol to use, either Protocol.TCP or Protocol.UDP."""
         super().__init__(
             ownership=ownership,
             endpoint_type=EndpointType.CLIENT,
@@ -317,25 +364,35 @@ class SocketClient(SocketParty):
 
 
 class StdOut(FandangoParty):
+    """Standard output party for sending messages to stdout. The party can only send messages, but not receive any.
+    The party is always owned by Fandango (Ownership.FUZZER), meaning it sends messages generated by Fandango.
+    """
 
     def __init__(self):
         super().__init__(Ownership.FUZZER)
         self.stream = sys.stdout
 
     def on_send(self, message: DerivationTree, recipient: Optional[str]):
+        """Called by Fandango, when it wants to write a message to StdOut.
+        :param message: The message to send.
+        :param recipient: The recipient of the message. Only present if the grammar specifies a recipient.
+        """
         self.stream.write(message.to_string())
-        # print(message.to_string())
 
 
 class StdIn(FandangoParty):
+    """Standard input party for reading messages from stdin. The party can only receive messages, but not send any.
+    The ownership of this party is always Ownership.EXTERNAL, meaning it is an external party.
+    """
+
     def __init__(self):
         super().__init__(Ownership.EXTERNAL)
         self.running = True
         self.stream = sys.stdin
-        self.listen_thread = threading.Thread(target=self.listen_loop, daemon=True)
+        self.listen_thread = threading.Thread(target=self._listen_loop, daemon=True)
         self.listen_thread.start()
 
-    def listen_loop(self):
+    def _listen_loop(self):
         while self.running:
             rlist, _, _ = select.select([self.stream], [], [], 0.1)
             if rlist:
@@ -349,18 +406,28 @@ class StdIn(FandangoParty):
 
 
 class Out(FandangoParty):
+    """Standard output party for receiving messages from an external process set using set_program_command(command: str).
+    The party can only receive messages, but not send any.
+    The ownership of this party is always Ownership.EXTERNAL, meaning it is an external party.
+    """
+
     def __init__(self):
         super().__init__(Ownership.EXTERNAL)
         self.proc = ProcessManager.instance().get_process()
-        threading.Thread(target=self.listen_loop, daemon=True).start()
+        threading.Thread(target=self._listen_loop, daemon=True).start()
 
-    def listen_loop(self):
+    def _listen_loop(self):
         while True:
             line = self.proc.stdout.readline()
             self.receive_msg(self.class_name, line)
 
 
 class In(FandangoParty):
+    """Standard input party for sending messages to an external process set using set_program_command(command: str).
+    The party can only send messages, but not receive any.
+    The ownership of this party is always Ownership.FUZZER, meaning it sends messages generated by Fandango.
+    """
+
     def __init__(self):
         super().__init__(Ownership.FUZZER)
         self.proc = ProcessManager.instance().get_process()
@@ -368,15 +435,22 @@ class In(FandangoParty):
 
     @property
     def close_post_transmit(self) -> bool:
+        """Returns whether the stdin of the process should be closed after transmitting a message."""
         return self._close_post_transmit
 
     @close_post_transmit.setter
     def close_post_transmit(self, value: bool):
+        """Sets whether the stdin of the process should be closed after transmitting a message."""
         if self._close_post_transmit == value:
             return
         self._close_post_transmit = value
 
     def on_send(self, message: DerivationTree, recipient: Optional[str]):
+        """Called by Fandango, when it wants to write a message to the external process.
+        :param message: The message to send.
+        :param recipient: The recipient of the message. Only present if the grammar specifies a recipient.
+        """
+
         self.proc.stdin.write(message.to_string())
         self.proc.stdin.flush()
         if self.close_post_transmit:
@@ -390,12 +464,16 @@ class FandangoIO(object):
 
     @classmethod
     def instance(cls) -> "FandangoIO":
+        """Returns the singleton instance of FandangoIO. If it does not exist, it creates one.
+        Only use this method to access the FandangoIO instance.
+        """
         if cls._instance is None:
             FandangoIO()
         assert cls._instance is not None
         return cls._instance
 
     def __init__(self):
+        """Constructor for the FandangoIO class. Singleton! Do not call this method directly. Call instance() instead."""
         assert FandangoIO._instance is None, "FandangoIO singleton already created"
         FandangoIO._instance = self
         self.receive = list[tuple[str, str, str | bytes]]()
@@ -403,28 +481,42 @@ class FandangoIO(object):
         self.receive_lock = threading.Lock()
 
     def add_receive(self, sender: str, receiver: str, message: str | bytes) -> None:
+        """Forwards an external, received message to Fandango for processing.
+        :param sender: The sender of the message.
+        :param receiver: The receiver of the message.
+        :param message: The message received from the sender.
+        """
         with self.receive_lock:
             self.receive.append((sender, receiver, message))
 
     def received_msg(self) -> bool:
+        """Checks if there are any received messages from external parties."""
         with self.receive_lock:
             return len(self.receive) != 0
 
     def get_received_msgs(self) -> list[tuple[str, str, str | bytes]]:
+        """Returns a list of all received messages from external parties."""
         with self.receive_lock:
             return list(self.receive)
 
     def clear_received_msg(self, idx: int) -> None:
+        """Clears a specific received message by its index."""
         with self.receive_lock:
             del self.receive[idx]
 
     def clear_received_msgs(self) -> None:
+        """Clears all received messages."""
         with self.receive_lock:
             self.receive.clear()
 
     def transmit(
         self, sender: str, recipient: Optional[str], message: DerivationTree
     ) -> None:
+        """Called by Fandango to transmit a message from a sender to a recipient using the sender's party definition.
+        :param sender: The sender of the message. Needs to be equal to the class name of the corresponding party definition.
+        :param recipient: The recipient of the message. Only present if the grammar specifies a recipient. Can be used by the party definition to send the message to the correct recipient.
+        :param message: The message to send.
+        """
         if sender in self.parties.keys():
             self.parties[sender].on_send(message, recipient)
 
@@ -433,6 +525,7 @@ class ProcessManager(object):
     _instance: Optional["ProcessManager"] = None
 
     def __init__(self):
+        """Constructor for the ProcessManager class. Singleton! Do not call this method directly. Call instance() instead."""
         assert (
             ProcessManager._instance is None
         ), "ProcessManager singleton already created"
@@ -443,29 +536,33 @@ class ProcessManager(object):
 
     @classmethod
     def instance(cls) -> "ProcessManager":
+        """Returns the singleton instance of ProcessManager. If it does not exist, it creates one."""
         if cls._instance is None:
             ProcessManager()
         assert cls._instance is not None
         return cls._instance
 
     def get_process(self):
+        """Returns the current process if it exists, otherwise starts a new one based on the command set."""
         with self.lock:
             if not self.proc:
-                self.start_process()
+                self._start_process()
             return self.proc
 
     @property
     def command(self):
+        """Returns the command to be executed to start the process."""
         return self._command
 
     @command.setter
     def command(self, value: str):
+        """Sets the command to be executed to start the process."""
         with self.lock:
             if self._command == value:
                 return
             self._command = value
 
-    def start_process(self):
+    def _start_process(self):
         command = self.command
         if command is None:
             return
