@@ -61,10 +61,10 @@ Hence, a nonterminal `<fandango:string>` refers to a `<string>` element that wou
 
 Fandango conveniently defines two standard parties:
 
-* `stdin` refers to the standard input of the program under test; and
-* `stdout` refers to the standard output of the program under test.
+* `In` refers to the standard input of the program under test; and
+* `Out` refers to the standard output of the program under test.
 
-Hence, in a Fandango spec, `<stdin:id>` refers to an `<id>` element that is _received_ (or input) by the program, and `<stdout:result>` is a `<result>` element that is _sent_ (or output) by the program.
+Hence, in a Fandango spec, `<In:id>` refers to an `<id>` element that is _received_ (or input) by the program, and `<Out:result>` is a `<result>` element that is _sent_ (or output) by the program.
 
 With this, we can already write a first specification.
 
