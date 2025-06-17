@@ -340,6 +340,22 @@ def get_parser(in_command_line=True):
         help="define an additional constraint MINCONSTRAINT to be minimized. Can be given multiple times.",
     )
     file_parser.add_argument(
+        "-I",
+        "--include-dir",
+        type=str,
+        dest="includes",
+        metavar="DIR",
+        default=None,
+        action="append",
+        help="specify a directory DIR to search for included Fandango files",
+    )
+    file_parser.add_argument(
+        "--file-mode",
+        choices=["text", "binary", "auto"],
+        default="auto",
+        help="mode in which to open and write files (default is 'auto': 'binary' if grammar has bits or bytes, 'text' otherwise)",
+    )
+    file_parser.add_argument(
         "--no-cache",
         default=True,
         dest="use_cache",
@@ -353,24 +369,16 @@ def get_parser(in_command_line=True):
         action="store_false",
         help="do not use standard library when parsing Fandango files.",
     )
-    file_parser.add_argument(
+
+    output_parser = argparse.ArgumentParser(add_help=False)
+    output_parser.add_argument(
         "-s",
         "--separator",
         type=str,
         default="\n",
         help="output SEPARATOR between individual inputs. (default: newline)",
     )
-    file_parser.add_argument(
-        "-I",
-        "--include-dir",
-        type=str,
-        dest="includes",
-        metavar="DIR",
-        default=None,
-        action="append",
-        help="specify a directory DIR to search for included Fandango files",
-    )
-    file_parser.add_argument(
+    output_parser.add_argument(
         "-d",
         "--directory",
         type=str,
@@ -378,24 +386,18 @@ def get_parser(in_command_line=True):
         default=None,
         help="create individual output files in DIRECTORY",
     )
-    file_parser.add_argument(
+    output_parser.add_argument(
         "-x",
         "--filename-extension",
         type=str,
         default=".txt",
         help="extension of generated file names (default: '.txt')",
     )
-    file_parser.add_argument(
+    output_parser.add_argument(
         "--format",
         choices=["string", "bits", "tree", "grammar", "value", "repr", "none"],
         default="string",
         help="produce output(s) as string (default), as a bit string, as a derivation tree, as a grammar, as a Python value, in internal representation, or none",
-    )
-    file_parser.add_argument(
-        "--file-mode",
-        choices=["text", "binary", "auto"],
-        default="auto",
-        help="mode in which to open and write files (default is 'auto': 'binary' if grammar has bits or bytes, 'text' otherwise)",
     )
     file_parser.add_argument(
         "--validate",
@@ -410,7 +412,7 @@ def get_parser(in_command_line=True):
     fuzz_parser = commands.add_parser(
         "fuzz",
         help="produce outputs from .fan files and test programs",
-        parents=[file_parser, settings_parser, algorithm_parser],
+        parents=[file_parser, output_parser, settings_parser, algorithm_parser],
     )
     fuzz_parser.add_argument(
         "-o",
@@ -448,7 +450,7 @@ def get_parser(in_command_line=True):
     parse_parser = commands.add_parser(
         "parse",
         help="parse input file(s) according to .fan spec",
-        parents=[file_parser, settings_parser],
+        parents=[file_parser, output_parser, settings_parser],
     )
     parse_parser.add_argument(
         "input_files",
@@ -515,7 +517,8 @@ def get_parser(in_command_line=True):
         set_parser = commands.add_parser(
             "set",
             help="set or print default arguments",
-            parents=[file_parser, settings_parser, algorithm_parser],
+            parents=[file_parser, output_parser,
+                     settings_parser, algorithm_parser],
         )
 
     if not in_command_line:
