@@ -13,7 +13,7 @@ import logging
 from abc import ABC
 from typing import Optional, List
 
-from fandango import FandangoError
+from fandango import FandangoError, FandangoValueError
 from fandango.language.tree import DerivationTree
 
 
@@ -549,7 +549,8 @@ class ProcessManager(object):
         with self.lock:
             if not self.proc:
                 self._start_process()
-        assert self.proc is not None
+        if self.proc is None:
+            raise FandangoValueError("This spec requires a party or a command")
         return self.proc
 
     @property
