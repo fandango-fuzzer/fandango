@@ -550,7 +550,7 @@ class ProcessManager(object):
             if not self.proc:
                 self._start_process()
         if self.proc is None:
-            raise FandangoValueError("This spec requires a party or a command")
+            raise FandangoValueError("This spec requires interaction. Use `fandango talk` with this spec.")
         return self.proc
 
     @property
