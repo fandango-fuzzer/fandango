@@ -121,7 +121,7 @@ sequenceDiagram
 
 ```{note}
 Once a communication party is set for a nonterminal, it need not be repeated for its constituents.
-In the above example, we can define `<input>` as `<string>` without restating the `stdin:` prefix; from the first line, it is clear that `<input>` comes from `stdin`.
+In the above example, we can define `<input>` as `<string>` without restating the `In:` prefix; from the first line, it is clear that `<input>` comes from `In`.
 Also, this allows multiple parties to share the same elements (such as `<string>`).
 ```
 
