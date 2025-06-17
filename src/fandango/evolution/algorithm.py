@@ -328,7 +328,7 @@ class Fandango:
 
             if len(forecast.get_msg_parties()) == 0:
                 if len(history_tree.protocol_msgs()) == 0:
-                    raise RuntimeError("Couldn't forecast next packet!")
+                    raise RuntimeError("Could not forecast next packet")
                 return [history_tree]
 
             msg_parties = list(
@@ -410,7 +410,7 @@ class Fandango:
                     self.evaluator.evaluate_individual(history_tree)
                 ).collect()
                 if fitness < 0.99:
-                    raise RuntimeError("Remote response doesn't match constraints!")
+                    raise RuntimeError("Remote response does not match constraints")
             history_tree.set_all_read_only(True)
 
     def generate(
