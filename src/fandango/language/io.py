@@ -592,9 +592,9 @@ if __name__ == "__main__":
     <input> ::= <string>
     <output> ::= <string>
     <string> ::= r'.*\n'
-    where <input> == <output>
+    where <input> + "" == <output>
 
-    x = set_program_command("cat")
+    set_program_command("cat")
     """
     fandango = Fandango(SPEC, logging_level=logging.INFO)
     fandango.fuzz()
