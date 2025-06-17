@@ -37,7 +37,7 @@ from fandango.language.grammar import (
     SymbolFinder,
     closest_match,
 )
-from fandango.language.io import FandangoIO, FandangoParty
+from fandango.io import FandangoIO, FandangoParty
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.stdlib import stdlib
