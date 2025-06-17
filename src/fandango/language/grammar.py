@@ -12,11 +12,10 @@ import exrex
 from copy import deepcopy
 from typing import Any, Iterator, Optional, Set, Union, Generator
 
-import regex
 
+from fandango.constraints.base import RepetitionBoundsConstraint
 from fandango.language.symbol import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree
-from fandango.logger import LOGGER
 
 from fandango import FandangoValueError, FandangoParseError
 
@@ -207,7 +206,7 @@ class Concatenation(Node):
 
 class Repetition(Node):
     def __init__(
-        self, node: Node, id: str, min_: int = 0, max_: int = 5
+        self, node: Node, id: str, min_: int = 0, max_: int = 5, bounds_constraint: Optional[RepetitionBoundsConstraint] = None
     ):
         super().__init__(NodeType.REPETITION)
         self.id = id

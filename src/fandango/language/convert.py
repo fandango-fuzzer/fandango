@@ -197,7 +197,7 @@ class GrammarProcessor(FandangoParserVisitor):
                                                 expr_data_max=expr_data_max)
                 if min_arg == 0:
                     min_arg = 1
-            return Repetition(node, repetition_id, min_=min_arg, max_=max_arg)
+            return Repetition(node, repetition_id, min_=min_arg, max_=max_arg, bounds_constraint=bounds_constraint)
         reps = self.searches.visit(ctx.expression(0))
         reps = (ast.unparse(reps[0]), *reps[1:])
         if reps[0].isDigit():
