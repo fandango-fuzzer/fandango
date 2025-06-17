@@ -456,12 +456,16 @@ class FandangoIO(object):
 
     @classmethod
     def instance(cls) -> "FandangoIO":
+        """Returns the singleton instance of FandangoIO. If it does not exist, it creates one.
+        Only use this method to access the FandangoIO instance.
+        """
         if cls._instance is None:
             FandangoIO()
         assert cls._instance is not None
         return cls._instance
 
     def __init__(self):
+        """Constructor for the FandangoIO class. Singleton! Do not call this method directly. Call instance() instead."""
         assert FandangoIO._instance is None, "FandangoIO singleton already created"
         FandangoIO._instance = self
         self.receive = list[tuple[str, str, str | bytes]]()
@@ -469,28 +473,42 @@ class FandangoIO(object):
         self.receive_lock = threading.Lock()
 
     def add_receive(self, sender: str, receiver: str, message: str | bytes) -> None:
+        """Forwards an external, received message to Fandango for processing.
+        :param sender: The sender of the message.
+        :param receiver: The receiver of the message.
+        :param message: The message received from the sender.
+        """
         with self.receive_lock:
             self.receive.append((sender, receiver, message))
 
     def received_msg(self) -> bool:
+        """Checks if there are any received messages from external parties."""
         with self.receive_lock:
             return len(self.receive) != 0
 
     def get_received_msgs(self) -> list[tuple[str, str, str | bytes]]:
+        """Returns a list of all received messages from external parties."""
         with self.receive_lock:
             return list(self.receive)
 
     def clear_received_msg(self, idx: int) -> None:
+        """Clears a specific received message by its index."""
         with self.receive_lock:
             del self.receive[idx]
 
     def clear_received_msgs(self) -> None:
+        """Clears all received messages."""
         with self.receive_lock:
             self.receive.clear()
 
     def transmit(
         self, sender: str, recipient: Optional[str], message: DerivationTree
     ) -> None:
+        """Called by Fandango to transmit a message from a sender to a recipient using the sender's party definition.
+        :param sender: The sender of the message. Needs to be equal to the class name of the corresponding party definition.
+        :param recipient: The recipient of the message. Only present if the grammar specifies a recipient. Can be used by the party definition to send the message to the correct recipient.
+        :param message: The message to send.
+        """
         if sender in self.parties.keys():
             self.parties[sender].on_send(message, recipient)
 
@@ -499,6 +517,7 @@ class ProcessManager(object):
     _instance: Optional["ProcessManager"] = None
 
     def __init__(self):
+        """Constructor for the ProcessManager class. Singleton! Do not call this method directly. Call instance() instead."""
         assert (
             ProcessManager._instance is None
         ), "ProcessManager singleton already created"
@@ -509,29 +528,33 @@ class ProcessManager(object):
 
     @classmethod
     def instance(cls) -> "ProcessManager":
+        """Returns the singleton instance of ProcessManager. If it does not exist, it creates one."""
         if cls._instance is None:
             ProcessManager()
         assert cls._instance is not None
         return cls._instance
 
     def get_process(self):
+        """Returns the current process if it exists, otherwise starts a new one based on the command set."""
         with self.lock:
             if not self.proc:
-                self.start_process()
+                self._start_process()
             return self.proc
 
     @property
     def command(self):
+        """Returns the command to be executed to start the process."""
         return self._command
 
     @command.setter
     def command(self, value: str):
+        """Sets the command to be executed to start the process."""
         with self.lock:
             if self._command == value:
                 return
             self._command = value
 
-    def start_process(self):
+    def _start_process(self):
         command = self.command
         if command is None:
             return
