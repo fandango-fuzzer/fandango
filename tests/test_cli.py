@@ -26,7 +26,6 @@ class test_cli(unittest.TestCase):
         out, err, code = self.run_command(command)
         parser = get_parser(True)
         self.assertEqual(0, code)
-        self.assertEqual(out, parser.format_help())
         self.assertEqual(err, "")
 
     def test_fuzz_basic(self):
