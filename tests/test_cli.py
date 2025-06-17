@@ -170,9 +170,9 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         command = shlex.split(
             "fandango fuzz -f tests/resources/gen_number.fan  -n 10 --population-size 10 --max-generations 30 --no-cache -c 'len(str(<start>)) > 60' --max-nodes 30"
         )
-        err_pattern = """fandango:ERROR: Population did not converge to a perfect population
+        err_pattern = r"""fandango:ERROR: Population did not converge to a perfect population
 fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
-        out_pattern = """(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.\d+\n)*"""
+        out_pattern = r"""(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.\d+\n)*"""
         out, err, code = self.run_command(command)
         self.assertRegex(out, out_pattern)
         self.assertRegex(err, err_pattern)
