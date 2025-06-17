@@ -314,7 +314,7 @@ class Fandango:
         elif self.grammar.fuzzing_mode == FuzzingMode.IO:
             return self._evolve_io(max_generations)
         else:
-            raise RuntimeError(f"Invalid mode: {self.grammar.fuzzing_mode}")
+            raise FandangoValueError(f"Invalid mode: {self.grammar.fuzzing_mode}")
 
     def _evolve_io(self, max_generations: Optional[int] = None) -> list[DerivationTree]:
         spec_env_global, _ = self.grammar.get_spec_env()
@@ -328,7 +328,7 @@ class Fandango:
 
             if len(forecast.get_msg_parties()) == 0:
                 if len(history_tree.protocol_msgs()) == 0:
-                    raise RuntimeError("Could not forecast next packet")
+                    raise FandangoFailedError("Could not forecast next packet")
                 return [history_tree]
 
             msg_parties = list(
@@ -367,7 +367,7 @@ class Fandango:
                         nonterminals_str = " | ".join(
                             map(lambda x: str(x.node.symbol), fuzzable_packets)
                         )
-                        raise RuntimeError(
+                        raise FandangoFailedError(
                             f"Couldn't find solution for any packet: {nonterminals_str}"
                         )
                     next_tree = evolve_result
@@ -410,7 +410,7 @@ class Fandango:
                     self.evaluator.evaluate_individual(history_tree)
                 ).collect()
                 if fitness < 0.99:
-                    raise RuntimeError("Remote response does not match constraints")
+                    raise FandangoParseError("Remote response does not match constraints")
             history_tree.set_all_read_only(True)
 
     def generate(
@@ -593,7 +593,7 @@ class Fandango:
         return list(io_instance.parties.values())
 
     def _parse_next_remote_packet(
-        self, forecast: PacketForecaster.ForcastingResult, io_instance: FandangoIO
+        self, forecast: PacketForecaster.ForecastingResult, io_instance: FandangoIO
     ):
         if len(io_instance.get_received_msgs()) == 0:
             return None, None
@@ -684,18 +684,18 @@ class Fandango:
 
                 # Check if there are still NonTerminals that can be parsed with received prefix
                 if len(available_non_terminals) == 0:
-                    raise RuntimeError(
-                        "Couldn't match remote message to any packet matching grammar! Expected nonterminal:",
+                    raise FandangoParseError(
+                        "Couldn't match remote message to any packet matching grammar. Expected nonterminal: " +
                         "|".join(
                             map(
                                 lambda x: str(x),
                                 forecast_non_terminals.get_non_terminals(),
                             )
-                        ),
-                        "Got message:",
-                        complete_msg,
-                        "\nUnprocessed messages: ",
-                        str(io_instance.get_received_msgs()),
+                        ) +
+                        "Got message: " +
+                        complete_msg +
+                        "\nUnprocessed messages: " +
+                        str(io_instance.get_received_msgs())
                     )
                 if parsed_packet_tree is not None:
                     nr_deleted = 0
@@ -717,11 +717,11 @@ class Fandango:
                         else:
                             applicable_nt = ", ".join(applicable_nt_list)
                         raise FandangoFailedError(
-                            f'Couldn\'t derive parameters for received packet or timed out while waiting for remaining packet. Applicable NT: {applicable_nt} Received part: "{complete_msg}". Exception: {str(parameter_parsing_exception)}'
+                            f"Couldn't derive parameters for received packet or timed out while waiting for remaining packet. Applicable nonterminal: {applicable_nt} Received part: {complete_msg!r}. Exception: {str(parameter_parsing_exception)}"
                         )
                     else:
                         raise FandangoFailedError(
-                            f"Incomplete packet received. Timed out while waiting for packet. Received part: {complete_msg}"
+                            f"Incomplete packet received. Timed out while waiting for packet. Received part: {complete_msg!r}"
                         )
                 time.sleep(0.025)
         return None
