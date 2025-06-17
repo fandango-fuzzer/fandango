@@ -177,7 +177,7 @@ class GrammarProcessor(FandangoParserVisitor):
             require_constraint = False
             bounds_constraint = None
             if expr_data_max is not None:
-                if expr_data_max[0].isDigit():
+                if expr_data_max[0].isdigit():
                     max_arg = int(expr_data_max[0])
                 else:
                     require_constraint = True
@@ -185,7 +185,7 @@ class GrammarProcessor(FandangoParserVisitor):
                 expr_data_max = (f"{self.max_repetitions}", [], {})
 
             if expr_data_min is not None:
-                if expr_data_min[0].isDigit():
+                if expr_data_min[0].isdigit():
                     min_arg = int(expr_data_min[0])
                 else:
                     require_constraint = True
@@ -202,7 +202,7 @@ class GrammarProcessor(FandangoParserVisitor):
             return Repetition(node, repetition_id, min_=min_arg, max_=max_arg, bounds_constraint=bounds_constraint)
         reps = self.searches.visit(ctx.expression(0))
         reps = (ast.unparse(reps[0]), *reps[1:])
-        if reps[0].isDigit():
+        if reps[0].isdigit():
             return Repetition(node, repetition_id, int(reps[0]), int(reps[0]))
         else:
             bounds_constraint = RepetitionBoundsConstraint(repetition_id, expr_data_min=reps, expr_data_max=reps)
