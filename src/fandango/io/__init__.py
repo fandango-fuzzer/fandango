@@ -9,12 +9,14 @@ import sys
 import threading
 import time
 import logging
+import re
 
 from abc import ABC
 from typing import Optional, List
 
 from fandango import FandangoError, FandangoValueError
 from fandango.language.tree import DerivationTree
+from fandango.logger import LOGGER
 
 
 class Protocol(enum.Enum):
@@ -35,6 +37,42 @@ class IpType(enum.Enum):
 class Ownership(enum.Enum):
     FUZZER = "Fuzzer"
     EXTERNAL = "External"
+
+
+RE_PARTY = re.compile(
+    r"""
+((?P<name>[a-zA-Z0-9_]+)=)?            # Optional party name followed by =
+((?P<protocol>([tT][Cc][pP]|[uU][dD][pP])):)?  # Optional protocol prefixed by :
+(//)?                                  # Optional // separator
+((?P<host>([^:]+|\[(?P<ipv6>.*)\])):)? # hostname(IPv6 in [...])
+(?P<port>[0-9]+)                       # Port
+""",
+    re.VERBOSE,
+)
+
+
+def split_party_spec(
+    spec: str,
+) -> tuple[Optional[str], Optional[str], Optional[str], int]:
+    """
+    Splits a party specification into the party name and the party definition.
+    :param spec: The party specification to split.
+    :return: A tuple containing
+        - The party name (str) or None if not specified
+        - The party protocol (str) or None if not specified
+        - The party host (str) or None if not specified
+        - The party port (int)
+    """
+    match = RE_PARTY.match(spec)
+    if not match:
+        raise FandangoValueError(f"Invalid party specification: {spec}")
+    name = match.group("name")
+    host = match.group("ipv6") or match.group("host")
+    port = int(match.group("port"))
+    protocol = match.group("protocol")
+    if protocol is not None:
+        protocol = protocol.upper()
+    return name, protocol, host, port
 
 
 class FandangoParty(ABC):
@@ -562,6 +600,9 @@ class ProcessManager(object):
 
     def set_command(self, value: str | List[str], text: bool = True):
         """Sets the command to be executed to start the process."""
+        assert isinstance(
+            value, (str, list)
+        ), "Command must be a string or a list of strings"
         with self.lock:
             if self._command == value:
                 return
@@ -574,6 +615,8 @@ class ProcessManager(object):
             return
         if isinstance(command, str):
             command = shlex.split(command)
+
+        LOGGER.info(f"Starting subprocess {command!r}")
         self.proc = subprocess.Popen(
             command,
             stdin=subprocess.PIPE,
@@ -588,10 +631,19 @@ def set_program_command(command: str | List[str], text: bool = True):
     Set the command to be executed by the ProcessManager.
     :param command: The command to execute.
     """
+    LOGGER.info(f"Setting command {command!r}")
     ProcessManager.instance().set_command(command, text)
 
 
 if __name__ == "__main__":
+    # Some tests for the split_party_spec function
+    assert split_party_spec("25") == (None, None, None, 25)
+    assert split_party_spec("tcp://localhost:25") == (None, "tcp", "localhost", 25)
+    assert split_party_spec("tcp:127.0.0.1:25") == (None, "tcp", "127.0.0.1", 25)
+    assert split_party_spec("udp://[::1]:25") == (None, "udp", "::1", 25)
+    assert split_party_spec("tcp://cispa.de:25") == (None, "tcp", "cispa.de", 25)
+    assert split_party_spec("SMTP=[::1]:25") == ("SMTP", None, "::1", 25)
+
     # Demonstrator code to show how to use the classes
     from fandango import Fandango
 
