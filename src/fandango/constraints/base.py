@@ -986,7 +986,7 @@ class RepetitionBoundsConstraint(Constraint):
     This is useful for ensuring that certain patterns do not occur too frequently or too infrequently.
     """
 
-    def __init__(self, repetition_id: str, expr_data_min=("0", [], {}), expr_data_max=(f"{None}", [], {}), *args, **kwargs):
+    def __init__(self, repetition_id: str, expr_data_min: tuple[str, list, dict], expr_data_max: tuple[str, list, dict], *args, **kwargs):
         """
         Initializes the repetition bounds constraint with the given pattern and repetition bounds.
         :param NonTerminalSearch pattern: The pattern to check for repetitions.
@@ -1001,9 +1001,14 @@ class RepetitionBoundsConstraint(Constraint):
         self.expr_data_max = expr_data_max
 
     def _compute_rep_bound(self, tree: "DerivationTree", expr_data):
+        trees = tree.find_by_origin(self.repetition_id)
+        if len(trees) == 0:
+            return ConstraintFitness(0, 1, True)
+        ref_tree = trees[0].split_end()
+        ref_tree = ref_tree.parent
+        ref_tree.children = ref_tree.children[:-1]
+
         expr, _, searches = expr_data
-        if expr == "None":
-            expr = f"{MAX_REPETITIONS}"
         local_cpy = self.local_variables.copy()
 
         if len(searches) == 0:
@@ -1017,7 +1022,7 @@ class RepetitionBoundsConstraint(Constraint):
 
         search_name, search = next(iter(searches.items()))
         nodes.extend(
-            [(search_name, container) for container in search.find(tree.get_root())]
+            [(search_name, container) for container in search.find(ref_tree.get_root())]
         )
         if len(nodes) == 0:
             raise FandangoValueError(
@@ -1046,14 +1051,28 @@ class RepetitionBoundsConstraint(Constraint):
         trees = tree.find_by_origin(self.repetition_id)
         if len(trees) == 0:
             return ConstraintFitness(0, 1, True)
-        ref_tree = trees[0].split_end()
-        ref_tree = ref_tree.parent
-        ref_tree.children = ref_tree.children[:-1]
-        bound_min = self.min(ref_tree)
-        bound_max = self.max(ref_tree)
-        if bound_min <= len(trees) <= bound_max:
-            return ConstraintFitness(1, 1, True)
-        return ConstraintFitness(0, 1, False, failing_trees=[])
+        reference_trees: dict[tuple[str, int], list[DerivationTree]] = {}
+        for tree in trees:
+            iteration_ids = list(filter(lambda x: x[0] == self.repetition_id, tree.origin_nodes))
+            for i_id in iteration_ids:
+                # Group by id
+                reference_trees[i_id] = [tree] if i_id not in reference_trees else reference_trees[i_id] + [tree]
+        failing_trees = []
+        solved = 0
+        total = len(reference_trees.keys())
+        for i_id in reference_trees.keys():
+            ref_tree = reference_trees[i_id][0].split_end()
+            ref_tree = ref_tree.parent
+            ref_tree.children = ref_tree.children[:-1]
+
+            bound_min = self.min(ref_tree)
+            bound_max = self.max(ref_tree)
+            if bound_min <= len(trees) <= bound_max:
+                solved += 1
+            else:
+                # todo add failing tree
+                pass
+        return ConstraintFitness(solved, total, solved == total, failing_trees=failing_trees)
 
 
     def __repr__(self):
