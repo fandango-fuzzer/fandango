@@ -201,12 +201,12 @@ class GrammarProcessor(FandangoParserVisitor):
                     max_arg = min_arg
             return Repetition(node, repetition_id, min_=min_arg, max_=max_arg, bounds_constraint=bounds_constraint)
         reps = self.searches.visit(ctx.expression(0))
-        reps = (ast.unparse(reps[0]), *reps[1:])
+        reps: tuple[str, list, dict] = (ast.unparse(reps[0]), *reps[1:])
         if reps[0].isdigit():
             return Repetition(node, repetition_id, int(reps[0]), int(reps[0]))
         else:
             bounds_constraint = RepetitionBoundsConstraint(repetition_id, expr_data_min=reps, expr_data_max=reps)
-            return Repetition(node, repetition_id, min_=1)
+            return Repetition(node, repetition_id, min_=1, bounds_constraint=bounds_constraint)
 
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
         if ctx.nonterminal_right():
