@@ -1129,7 +1129,7 @@ class Grammar(NodeVisitor):
             nt: Optional[tuple[NonTerminal, frozenset]] = None,
             tree: Optional[DerivationTree] = None,
         ):
-            is_context = len(node.get_access_points()) != 0
+            is_context = node.bounds_constraint is not None
             if nt is None:
                 alternatives = self.visit(node.node)
                 nt = self.set_implicit_rule(alternatives)
@@ -1141,8 +1141,12 @@ class Grammar(NodeVisitor):
                     return [[(repetition_nt, frozenset())]]
 
             prev = None
-            node_min = node.min(self.grammar, tree)
-            node_max = node.max(self.grammar, tree)
+            if node.bounds_constraint is not None:
+                node_min = node.bounds_constraint.min(tree)
+                node_max = node.bounds_constraint.max(tree)
+            else:
+                node_min = node.min
+                node_max = node.max
             for rep in range(node_min, node_max):
                 alts = [[nt]]
                 if prev is not None:
@@ -2288,7 +2292,7 @@ class Grammar(NodeVisitor):
                     nodes.append(node)
                 else:
                     try:
-                        min_rep = node.min(self, None)
+                        min_rep = node.min
                     except ValueError:
                         min_rep = 0
                     node.distance_to_completion = (

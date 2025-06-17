@@ -1012,7 +1012,7 @@ class RepetitionBoundsConstraint(Constraint):
         local_cpy = self.local_variables.copy()
 
         if len(searches) == 0:
-            return eval(expr, self.global_variables, local_cpy), True
+            return eval(expr, self.global_variables, local_cpy)
 
         nodes = []
         if len(searches) != 1:

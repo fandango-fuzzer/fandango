@@ -200,6 +200,7 @@ class PathFinder(NodeVisitor):
             continue_exploring = self.visit(node.node)
             self.current_tree.pop()
 
+        #TODO match new computed length repetitions
         rep_max = node.max(self.grammar, self.grammar.collapse(self.tree))
         if continue_exploring and tree_len < rep_max:
             self.current_tree.append(None)
@@ -207,6 +208,7 @@ class PathFinder(NodeVisitor):
             self.current_tree.pop()
             if continue_exploring:
                 return continue_exploring
+        #TODO match new computed length repetitions
         if tree_len >= node.min(self.grammar, self.grammar.collapse(self.tree)):
             return True
         return continue_exploring
