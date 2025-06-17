@@ -484,17 +484,20 @@ def get_parser(in_command_line=True):
         help="Interact with programs, clients, and servers.",
         parents=[file_parser, algorithm_parser, settings_parser],
     )
+    host_pattern = ("PORT on HOST (default: 127.0.0.1;" +
+                    " use '[...]' for IPv6 addresses)" +
+                    " using PROTOCOL ('tcp' (default)/'udp').")
     talk_parser.add_argument(
         "--client",
-        metavar="[NAME=][IP-ADDRESS:]PORT[:PROTOCOL]",
+        metavar="[NAME=][PROTOCOL:][HOST:]PORT",
         type=str,
-        help="Create a client NAME (default: 'Client') connecting to IP-ADDRESS (default: 127.0.0.1) and PORT using PROTOCOL (default: 'tcp').",
+        help="Create a client NAME (default: 'Client') connecting to " + host_pattern,
     )
     talk_parser.add_argument(
         "--server",
-        metavar="[NAME=][IP-ADDRESS:]PORT[:PROTOCOL]",
+        metavar="[NAME=][PROTOCOL:][HOST:]PORT",
         type=str,
-        help="Create a server NAME (default: 'Server') running at IP-ADDRESS (default: 127.0.0.1) and PORT using PROTOCOL (default: 'tcp').",
+        help="Create a server NAME (default: 'Server') running at " + host_pattern,
     )
     talk_parser.add_argument(
         "test_command",
@@ -711,6 +714,15 @@ def parse_contents_from_args(args, given_grammars=[], check=True):
     max_constraints = [f"maximizing {c}" for c in (args.maxconstraints or [])]
     min_constraints = [f"minimizing {c}" for c in (args.minconstraints or [])]
     constraints = (args.constraints or []) + max_constraints + min_constraints
+
+    extra_defs = ""
+    if "test_command" in args and args.test_command:
+        extra_defs += ("\nset_program_command(["
+            + ", ".join(repr(arg) for arg in [args.test_command] + args.test_args)
+            + "])\n")
+    LOGGER.debug("Extra definitions:" + extra_defs)
+    args.fan_files += [extra_defs]
+
     return parse(
         args.fan_files,
         constraints,
@@ -1042,6 +1054,8 @@ def output_solution(
 
     if args.format == "none":
         return
+    if not "output" in args:
+        return
 
     if args.directory:
         output_solution_to_directory(solution, args, solution_index, file_mode)
@@ -1295,6 +1309,38 @@ def parse_command(args):
         raise FandangoParseError(f"{errors} error(s) during parsing")
 
 
+def talk_command(args):
+    """Interact with a program, client, or server"""
+
+    LOGGER.info("---------- Parsing FANDANGO content ----------")
+    if args.fan_files:
+        # Override given default content (if any)
+        grammar, constraints = parse_contents_from_args(args)
+    else:
+        grammar = DEFAULT_FAN_CONTENT[0]
+        constraints = DEFAULT_FAN_CONTENT[1]
+
+    if grammar is None:
+        raise FandangoError("Use '-f FILE.fan' to open a Fandango spec")
+
+    # Avoid messing with default constraints
+    constraints = constraints.copy()
+
+    if DEFAULT_CONSTRAINTS:
+        constraints += DEFAULT_CONSTRAINTS
+
+    settings = make_fandango_settings(args, DEFAULT_SETTINGS)
+    LOGGER.debug(f"Settings: {settings}")
+
+    file_mode = get_file_mode(args, settings, grammar=grammar)
+    LOGGER.info(f"File mode: {file_mode}")
+
+    LOGGER.debug("Starting Fandango")
+    fandango = Fandango(grammar, constraints, **settings)
+    LOGGER.debug("Evolving population")
+    population = fandango.evolve(**make_evolve_settings(args, file_mode))
+
+
 def convert_command(args):
     """Convert a given language spec into Fandango .fan format"""
 
@@ -1389,6 +1435,7 @@ COMMANDS = {
     "reset": reset_command,
     "fuzz": fuzz_command,
     "parse": parse_command,
+    "talk": talk_command,
     "convert": convert_command,
     "cd": cd_command,
     "help": help_command,
