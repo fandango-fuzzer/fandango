@@ -997,9 +997,9 @@ def output_solution_with_test_command(
     base_cmd = [args["test_command"]] + args["test_args"]
 
     if args["input_method"] == "filename":
-        prefix = "fandango-"
-        suffix = args["filename_extension"]
-        mode = "wb" if file_mode == "binary" else "w"
+        prefix: str = "fandango-"
+        suffix: str = args["filename_extension"]
+        mode: str = "wb" if file_mode == "binary" else "w"
 
         def named_temp_file(*, mode, prefix, suffix):
             try:
