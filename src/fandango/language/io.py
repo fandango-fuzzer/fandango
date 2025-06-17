@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import enum
 import select
 import shlex
@@ -6,6 +8,7 @@ import subprocess
 import sys
 import threading
 import time
+import logging
 
 from abc import ABC
 from typing import Optional
@@ -340,7 +343,7 @@ class StdIn(FandangoParty):
                 if read == "":
                     self.running = False
                     break
-                self.receive_msg("STDIN", read)
+                self.receive_msg(self.class_name, read)
             else:
                 time.sleep(0.1)
 
@@ -354,11 +357,7 @@ class Out(FandangoParty):
     def listen_loop(self):
         while True:
             line = self.proc.stdout.readline()
-            self.receive_msg("ProgOut", line)
-
-
-# Legacy
-ProgOut = Out
+            self.receive_msg(self.class_name, line)
 
 
 class In(FandangoParty):
@@ -382,10 +381,6 @@ class In(FandangoParty):
         self.proc.stdin.flush()
         if self.close_post_transmit:
             self.proc.stdin.close()
-
-
-# Legacy
-ProgIn = In
 
 
 class FandangoIO(object):
@@ -489,3 +484,19 @@ def set_program_command(command: str):
     :param command: The command to execute.
     """
     ProcessManager.instance().command = command
+
+
+if __name__ == "__main__":
+    # Demonstrator code to show how to use the classes
+    from fandango import Fandango
+
+    SPEC = """
+    <start> ::= <In:input> <Out:output>
+    <input> ::= <string>
+    <output> ::= <string>
+    <string> ::= r'(.|\\n)*'
+
+    x = set_program_command("cat")
+    """
+    fandango = Fandango(SPEC, logging_level=logging.INFO)
+    fandango.fuzz()
