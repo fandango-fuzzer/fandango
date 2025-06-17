@@ -16,8 +16,12 @@ kernelspec:
 Often, you may already have an input format specification available, but not (yet) in Fandango `.fan` format.
 Fandango's `convert` command allows you automatically translate common input specifications into `.fan` files - at least most of it.
 
-```{warning}
-All these converters are _lossy_, as all the original specification formats have features that cannot be translated 1:1 into Fandango.
+```{margin}
+For instance, _executable code_ in ANTLR and 010 specs can only be partially converted at best.
+```
+
+```{important}
+All these converters are _lossy_ - that is, some features of the original specifications may not be converted into Fandango.
 Hence, the idea is that you use converted formats as a base for further manual editing and checking.
 ```
 
@@ -26,8 +30,9 @@ All these formats define the _syntax_ of input files, typically for the purpose 
 To _produce_ inputs that are also _semantically_ valid, you will often have to augment the `.fan` files with [constraints](sec:constraints) to make them semantically valid, too.
 ```
 
-```{note}
-These features are experimental.
+```{admonition} Under Construction
+:class: attention
+All these converters are experimental at this point.
 ```
 
 
