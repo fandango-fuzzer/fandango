@@ -87,7 +87,7 @@ In Fandango, this interaction can be described in a file [`cat.fan`](cat.fan) as
 
 In this specification,
 
-* `<input>` and `<output>` define the inputs and outputs of `cat`, respectively, as a `<string>; and
+* `<input>` and `<output>` define the inputs and outputs of `cat`, respectively, as a `<string>`; and
 * `<string>` defines a regular expression standing for any sequence of characters, including newlines.
 
 Let us use Fandango with this spec to test the `cat` program.
