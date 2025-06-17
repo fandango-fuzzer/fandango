@@ -11,7 +11,7 @@ import time
 import logging
 
 from abc import ABC
-from typing import Optional
+from typing import Optional, List
 
 from fandango import FandangoError
 from fandango.language.tree import DerivationTree
@@ -81,6 +81,8 @@ class SocketParty(FandangoParty):
     """Base class for communicating with parties via sockets."""
 
     BUFFER_SIZE = 1024  # Size of the buffer for receiving data
+    DEFAULT_IP = "127.0.0.1"
+    DEFAULT_PORT = 8000
 
     def __init__(
         self,
@@ -88,8 +90,8 @@ class SocketParty(FandangoParty):
         ownership: Ownership,
         endpoint_type: EndpointType,
         ip_type: IpType = IpType.IPV4,
-        ip: str = "127.0.0.1",
-        port: int = 8021,
+        ip: Optional[str] = None,
+        port: Optional[int] = None,
         protocol_type: Protocol = Protocol.TCP,
     ):
         """Constructor.
@@ -103,8 +105,8 @@ class SocketParty(FandangoParty):
         self.running = False
         self._ip_type: IpType = ip_type
         self._protocol_type: Protocol = protocol_type
-        self._ip: str = ip
-        self._port: int = port
+        self._ip: str = ip or self.DEFAULT_IP
+        self._port: int = port if port is not None else self.DEFAULT_PORT
         self._endpoint_type: EndpointType = endpoint_type
         self.sock: Optional[socket.socket] = None
         self.connection: Optional[socket.socket] = None
@@ -314,8 +316,8 @@ class SocketServer(SocketParty):
         *,
         ownership: Ownership,
         ip_type: IpType = IpType.IPV4,
-        ip: str = "127.0.0.1",
-        port: int = 8021,
+        ip: Optional[str] = None,
+        port: Optional[int] = None,
         protocol_type: Protocol = Protocol.TCP,
     ):
         """Constructor.
@@ -343,8 +345,8 @@ class SocketClient(SocketParty):
         *,
         ownership: Ownership,
         ip_type: IpType = IpType.IPV4,
-        ip: str = "127.0.0.1",
-        port: int = 8021,
+        ip: Optional[str],
+        port: Optional[int],
         protocol_type: Protocol = Protocol.TCP,
     ):
         """Constructor.
@@ -542,45 +544,48 @@ class ProcessManager(object):
         assert cls._instance is not None
         return cls._instance
 
-    def get_process(self):
+    def get_process(self) -> subprocess.Popen:
         """Returns the current process if it exists, otherwise starts a new one based on the command set."""
         with self.lock:
             if not self.proc:
                 self._start_process()
-            return self.proc
+        assert self.proc is not None
+        return self.proc
 
     @property
-    def command(self):
+    def command(self) -> str | List[str] | None:
         """Returns the command to be executed to start the process."""
         return self._command
 
-    @command.setter
-    def command(self, value: str):
+    def set_command(self, value: str | List[str], text: bool = True):
         """Sets the command to be executed to start the process."""
         with self.lock:
             if self._command == value:
                 return
             self._command = value
+        self.text = text
 
     def _start_process(self):
         command = self.command
         if command is None:
             return
+        if isinstance(command, str):
+            command = shlex.split(command)
         self.proc = subprocess.Popen(
-            shlex.split(command),
+            command,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True,
+            text=self.text,
         )
 
 
-def set_program_command(command: str):
+def set_program_command(command: str | List[str], text: bool = True):
     """
     Set the command to be executed by the ProcessManager.
     :param command: The command to execute.
     """
-    ProcessManager.instance().command = command
+    ProcessManager.instance().set_command(command, text)
 
 
 if __name__ == "__main__":
@@ -592,7 +597,7 @@ if __name__ == "__main__":
     <input> ::= <string>
     <output> ::= <string>
     <string> ::= r'.*\n'
-    where <input> + "" == <output>
+    where str(<input>) == str(<output>)
 
     set_program_command("cat")
     """
