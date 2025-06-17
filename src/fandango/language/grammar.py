@@ -206,7 +206,7 @@ class Concatenation(Node):
 
 class Repetition(Node):
     def __init__(
-        self, node: Node, id: str, min_: int = 0, max_: int = 5, bounds_constraint: Optional[RepetitionBoundsConstraint] = None
+        self, node: Node, id: str, min_: int = 0, max_: int = MAX_REPETITIONS, bounds_constraint: Optional[RepetitionBoundsConstraint] = None
     ):
         super().__init__(NodeType.REPETITION)
         self.id = id
@@ -224,6 +224,7 @@ class Repetition(Node):
         self.bounds_constraint = bounds_constraint
         self.min = min_
         self.max = max_
+        self.iteration = 0
 
     def get_access_points(self):
         _, _, searches_min = self.expr_data_min
@@ -246,6 +247,7 @@ class Repetition(Node):
         in_message: bool = False,
     ):
         prev_parent_size = parent.size()
+        self.iteration += 1
 
         for rep in range(random.randint(self.min, self.max)):
             if self.node.distance_to_completion >= max_nodes:
@@ -257,7 +259,7 @@ class Repetition(Node):
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
         for child in parent.children[prev_parent_size:]:
-            child.origin_nodes.insert(0, self.id)
+            child.origin_nodes.insert(0, (self.id, self.iteration))
 
     def __repr__(self):
 
@@ -289,7 +291,7 @@ class Repetition(Node):
 
 
 class Star(Repetition):
-    def __init__(self, node: Node, id: str, max_repetitions: int = 5):
+    def __init__(self, node: Node, id: str, max_repetitions: int = MAX_REPETITIONS):
         super().__init__(node, id, min_=0, max_=max_repetitions)
 
     def accept(self, visitor: "NodeVisitor"):
@@ -303,7 +305,7 @@ class Star(Repetition):
 
 
 class Plus(Repetition):
-    def __init__(self, node: Node, id: str, max_repetitions: int = 5):
+    def __init__(self, node: Node, id: str, max_repetitions: int = MAX_REPETITIONS):
         super().__init__(node, id, min_=1, max_=max_repetitions)
 
     def accept(self, visitor: "NodeVisitor"):

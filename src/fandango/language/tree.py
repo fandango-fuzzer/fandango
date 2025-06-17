@@ -92,7 +92,7 @@ class DerivationTree:
         self._sources: list["DerivationTree"] = []
         if sources is not None:
             self.sources = sources
-        self.origin_nodes: list[str] = []
+        self.origin_nodes: list[tuple[str, int]] = []
         self.read_only = read_only
         self._size = 1
         self.set_children(children or [])
@@ -283,8 +283,10 @@ class DerivationTree:
             ],
             [],
         )
-        if node_id in self.origin_nodes:
-            trees.append(self)
+        for o_node_id, o_iter_id in self.origin_nodes:
+            if o_node_id == node_id:
+                trees.append(self)
+                break
         return trees
 
     def __getitem__(self, item) -> "DerivationTree":
