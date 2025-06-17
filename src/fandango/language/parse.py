@@ -320,15 +320,22 @@ def parse_spec(
         if fandango.Fandango.parser != "legacy":
             if fandango.Fandango.parser == "cpp":
                 sa_fandango.USE_CPP_IMPLEMENTATION = True
+                try:
+                    from .parser import sa_fandango_cpp_parser
+                except ImportError:
+                    raise ImportError(
+                        "Requested C++ parser not available. "
+                        "Check your installation "
+                        "or use '--parser=python'")
             elif fandango.Fandango.parser == "python":
                 sa_fandango.USE_CPP_IMPLEMENTATION = False
             elif fandango.Fandango.parser == "auto":
                 pass  # let sa_fandango decide
 
             if sa_fandango.USE_CPP_IMPLEMENTATION:
-                LOGGER.debug(f"{filename}: setting up speedy C++ .fan parser")
+                LOGGER.debug(f"{filename}: setting up C++ .fan parser")
             else:
-                LOGGER.debug(f"{filename}: setting up python .fan parser")
+                LOGGER.debug(f"{filename}: setting up Python .fan parser")
 
             input_stream = InputStream(fan_contents)
             error_listener = SpeedyAntlrErrorListener(filename)
