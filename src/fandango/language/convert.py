@@ -172,43 +172,32 @@ class GrammarProcessor(FandangoParserVisitor):
                         )
 
             expr_data_min, expr_data_max = bounds
-            if expr_data_min is None and expr_data_max is None:
-                return Repetition(node, repetition_id)
-            elif expr_data_min is None:
+            max_arg = 5
+            min_arg = 0
+            require_constraint = False
+            bounds_constraint = None
+            if expr_data_max is not None:
                 if expr_data_max[0].isDigit():
-                    return Repetition(
-                        node, repetition_id, max_=int(expr_data_max[0])
-                    )
+                    max_arg = int(expr_data_max[0])
                 else:
-                    bounds_constraint = RepetitionBoundsConstraint(repetition_id, expr_data_max=expr_data_max)
-                    return Repetition(
-                        node, repetition_id, min_=1
-                    )
-            elif expr_data_max is None:
-                if expr_data_min[0].isDigit():
-                    return Repetition(
-                        node,
-                        repetition_id,
-                        min_=int(expr_data_min[0])
-                    )
-                else:
-                    bounds_constraint = RepetitionBoundsConstraint(repetition_id,
-                                                                   expr_data_min=expr_data_min,
-                                                                   expr_data_max=(f"{self.max_repetitions}", [], {}))
-                    return Repetition(
-                        node,
-                        repetition_id,
-                        min_=1
-                    )
-            if not expr_data_min[0].isDigit() or not expr_data_max[0].isDigit():
-                bounds_constraint = RepetitionBoundsConstraint(repetition_id, expr_data_min=expr_data_min, expr_data_max=expr_data_max)
-                return Repetition(
-                    node, repetition_id, min_=1
-                )
+                    require_constraint = True
             else:
-                return Repetition(
-                    node, repetition_id, int(expr_data_min[0]), int(expr_data_max[0])
-                )
+                expr_data_max = (f"{self.max_repetitions}", [], {})
+
+            if expr_data_min is not None:
+                if expr_data_min[0].isDigit():
+                    min_arg = int(expr_data_min[0])
+                else:
+                    require_constraint = True
+            else:
+                expr_data_min = (f"{min_arg}", [], {})
+            if require_constraint:
+                bounds_constraint = RepetitionBoundsConstraint(repetition_id,
+                                                expr_data_min=expr_data_min,
+                                                expr_data_max=expr_data_max)
+                if min_arg == 0:
+                    min_arg = 1
+            return Repetition(node, repetition_id, min_=min_arg, max_=max_arg)
         reps = self.searches.visit(ctx.expression(0))
         reps = (ast.unparse(reps[0]), *reps[1:])
         if reps[0].isDigit():
