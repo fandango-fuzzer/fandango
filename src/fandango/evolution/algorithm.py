@@ -410,7 +410,9 @@ class Fandango:
                     self.evaluator.evaluate_individual(history_tree)
                 ).collect()
                 if fitness < 0.99:
-                    raise FandangoParseError("Remote response does not match constraints")
+                    raise FandangoParseError(
+                        "Remote response does not match constraints"
+                    )
             history_tree.set_all_read_only(True)
 
     def generate(
@@ -685,17 +687,17 @@ class Fandango:
                 # Check if there are still NonTerminals that can be parsed with received prefix
                 if len(available_non_terminals) == 0:
                     raise FandangoParseError(
-                        "Couldn't match remote message to any packet matching grammar. Expected nonterminal: " +
-                        "|".join(
+                        "Couldn't match remote message to any packet matching grammar. Expected nonterminal: "
+                        + "|".join(
                             map(
                                 lambda x: str(x),
                                 forecast_non_terminals.get_non_terminals(),
                             )
-                        ) +
-                        "Got message: " +
-                        complete_msg +
-                        "\nUnprocessed messages: " +
-                        str(io_instance.get_received_msgs())
+                        )
+                        + "Got message: "
+                        + complete_msg
+                        + "\nUnprocessed messages: "
+                        + str(io_instance.get_received_msgs())
                     )
                 if parsed_packet_tree is not None:
                     nr_deleted = 0

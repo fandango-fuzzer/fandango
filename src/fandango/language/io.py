@@ -587,11 +587,11 @@ if __name__ == "__main__":
     # Demonstrator code to show how to use the classes
     from fandango import Fandango
 
-    SPEC = """
+    SPEC = r"""
     <start> ::= <In:input> <Out:output>
     <input> ::= <string>
     <output> ::= <string>
-    <string> ::= r'(.|\\n)*'
+    <string> ::= r'.*\n'
     where <input> == <output>
 
     x = set_program_command("cat")
