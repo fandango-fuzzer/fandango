@@ -35,7 +35,7 @@ from fandango.language.search import (
     ItemSearch,
     LengthSearch,
     RuleSearch,
-    SelectiveSearch,
+    SelectiveSearch, NonTerminalSearch,
 )
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.logger import LOGGER
@@ -164,6 +164,7 @@ class GrammarProcessor(FandangoParserVisitor):
                     if child.getText() == ",":
                         bounds_index += 1
                     else:
+                        # : tuple[ast.AST, list[AttributeSearch], dict[str, AttributeSearch]]
                         bounds[bounds_index] = self.searches.visit(child)
                         bounds[bounds_index] = (
                             ast.unparse(bounds[bounds_index][0]),
@@ -174,32 +175,47 @@ class GrammarProcessor(FandangoParserVisitor):
             if expr_data_min is None and expr_data_max is None:
                 return Repetition(node, repetition_id)
             elif expr_data_min is None:
-                if len(expr_data_max[2]) > 0:
+                if expr_data_max[0].isDigit():
+                    return Repetition(
+                        node, repetition_id, max_=int(expr_data_max[0])
+                    )
+                else:
                     bounds_constraint = RepetitionBoundsConstraint(repetition_id, expr_data_max=expr_data_max)
-                return Repetition(
-                    node, repetition_id, max_=expr_data_max
-                )
+                    return Repetition(
+                        node, repetition_id, min_=1
+                    )
             elif expr_data_max is None:
-                if len(expr_data_min[2]) > 0:
+                if expr_data_min[0].isDigit():
+                    return Repetition(
+                        node,
+                        repetition_id,
+                        min_=int(expr_data_min[0])
+                    )
+                else:
                     bounds_constraint = RepetitionBoundsConstraint(repetition_id,
                                                                    expr_data_min=expr_data_min,
                                                                    expr_data_max=(f"{self.max_repetitions}", [], {}))
-                return Repetition(
-                    node,
-                    repetition_id,
-                    min_=expr_data_min,
-                    max_=(f"{self.max_repetitions}", [], {}),
-                )
-            if len(expr_data_min[2]) > 0 or len(expr_data_max[2] > 0):
+                    return Repetition(
+                        node,
+                        repetition_id,
+                        min_=1
+                    )
+            if not expr_data_min[0].isDigit() or not expr_data_max[0].isDigit():
                 bounds_constraint = RepetitionBoundsConstraint(repetition_id, expr_data_min=expr_data_min, expr_data_max=expr_data_max)
-            return Repetition(
-                node, repetition_id, expr_data_min, expr_data_max
-            )
+                return Repetition(
+                    node, repetition_id, min_=1
+                )
+            else:
+                return Repetition(
+                    node, repetition_id, int(expr_data_min[0]), int(expr_data_max[0])
+                )
         reps = self.searches.visit(ctx.expression(0))
         reps = (ast.unparse(reps[0]), *reps[1:])
-        if len(reps[2]) > 0:
-                bounds_constraint = RepetitionBoundsConstraint(repetition_id, expr_data_min=reps, expr_data_max=reps)
-        return Repetition(node, repetition_id, reps, reps)
+        if reps[0].isDigit():
+            return Repetition(node, repetition_id, int(reps[0]), int(reps[0]))
+        else:
+            bounds_constraint = RepetitionBoundsConstraint(repetition_id, expr_data_min=reps, expr_data_max=reps)
+            return Repetition(node, repetition_id, min_=1)
 
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
         if ctx.nonterminal_right():

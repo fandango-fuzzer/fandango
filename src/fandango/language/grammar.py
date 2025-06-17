@@ -207,27 +207,23 @@ class Concatenation(Node):
 
 class Repetition(Node):
     def __init__(
-        self, node: Node, id: str, min_=("0", [], {}), max_=(f"{None}", [], {})
+        self, node: Node, id: str, min_: int = 0, max_: int = 5
     ):
         super().__init__(NodeType.REPETITION)
         self.id = id
-        # min_expr, min_nt, min_search = min_
-        # max_expr, max_nt, max_search = max_
 
-        # if min_ < 0:
-        #    raise FandangoValueError(
-        #        f"Minimum repetitions {min_} must be greater than or equal to 0"
-        #    )
-        # if max_ <= 0 or max_ < min_:
-        #    raise FandangoValueError(
-        #        f"Maximum repetitions {max_} must be greater than 0 or greater than min {min_}"
-        #    )
+        if min_ < 0:
+           raise FandangoValueError(
+                f"Minimum repetitions {min_} must be greater than or equal to 0"
+            )
+        if max_ <= 0 or max_ < min_:
+            raise FandangoValueError(
+                f"Maximum repetitions {max_} must be greater than 0 or greater than min {min_}"
+            )
 
         self.node = node
-        self.expr_data_min = min_
-        self.expr_data_max = max_
-        self.static_min = None
-        self.static_max = None
+        self.min = min_
+        self.max = max_
 
     def get_access_points(self):
         _, _, searches_min = self.expr_data_min
@@ -251,52 +247,40 @@ class Repetition(Node):
     ):
         prev_parent_size = parent.size()
 
-        current_min = self.min(grammar, parent)
-        current_max = self.max(grammar, parent)
-
-        for rep in range(random.randint(current_min, current_max)):
+        for rep in range(random.randint(self.min, self.max)):
             if self.node.distance_to_completion >= max_nodes:
-                if rep > current_min:
+                if rep > self.min:
                     break
                 self.node.fuzz(parent, grammar, 0, in_message)
             else:
                 self.node.fuzz(parent, grammar, max_nodes - 1, in_message)
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
-        if self.static_min is None:
-            for child in parent.children[prev_parent_size:]:
-                child.origin_nodes.insert(0, self.id)
+        for child in parent.children[prev_parent_size:]:
+            child.origin_nodes.insert(0, self.id)
 
     def __repr__(self):
-        # We use "f()" as a placeholder for some function
-        min_str = str(self.static_min) if self.static_min is not None else "f()"
-        max_str = str(self.static_max) if self.static_max is not None else "f()"
 
-        if min_str == max_str:
-            return f"{self.node}{{{min_str}}}"
-        return f"{self.node}{{{min_str},{max_str}}}"
+        if self.min == self.max:
+            return f"{self.node}{{{self.min}}}"
+        return f"{self.node}{{{self.min},{self.max}}}"
 
     def __str__(self):
-        # We use "f()" as a placeholder for some function
-        min_str = str(self.static_min) if self.static_min is not None else "f()"
-        max_str = str(self.static_max) if self.static_max is not None else "f()"
-
-        if min_str == max_str:
-            return f"{self.node!s}{{{min_str}}}"
-        return f"{self.node!s}{{{min_str},{max_str}}}"
+        if self.min == self.max:
+            return f"{self.node!s}{{{self.min}}}"
+        return f"{self.node!s}{{{self.min},{self.max}}}"
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         base = []
-        # Todo: Context from DerivationTree is missing. Repetitions that depend on a value within the tree will cause a crash.
-        if self.min(grammar) == 0:
+        if self.min == 0:
             base.append(TerminalNode(Terminal("")))
-        if self.min(grammar) <= 1 <= self.max(grammar):
+        if self.min <= 1 <= self.max:
             base.append(self.node)
         yield Alternative(
             base
             + [
                 Concatenation([self.node] * r)
-                for r in range(max(2, self.min(grammar)), self.max(grammar) + 1)
+                for r in range(max(2, self.min), self.max + 1)
             ]
         )
 
@@ -306,7 +290,7 @@ class Repetition(Node):
 
 class Star(Repetition):
     def __init__(self, node: Node, id: str, max_repetitions: int = 5):
-        super().__init__(node, id, ("0", [], {}))
+        super().__init__(node, id, min_=0, max_=max_repetitions)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitStar(self)
@@ -320,7 +304,7 @@ class Star(Repetition):
 
 class Plus(Repetition):
     def __init__(self, node: Node, id: str, max_repetitions: int = 5):
-        super().__init__(node, id, ("1", [], {}))
+        super().__init__(node, id, min_=1, max_=max_repetitions)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitPlus(self)
@@ -334,7 +318,7 @@ class Plus(Repetition):
 
 class Option(Repetition):
     def __init__(self, node: Node, id: str):
-        super().__init__(node, id, ("0", [], {}), ("1", [], {}))
+        super().__init__(node, id, min_=0, max_=1)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitOption(self)
