@@ -638,10 +638,10 @@ def set_program_command(command: str | List[str], text: bool = True):
 if __name__ == "__main__":
     # Some tests for the split_party_spec function
     assert split_party_spec("25") == (None, None, None, 25)
-    assert split_party_spec("tcp://localhost:25") == (None, "tcp", "localhost", 25)
-    assert split_party_spec("tcp:127.0.0.1:25") == (None, "tcp", "127.0.0.1", 25)
-    assert split_party_spec("udp://[::1]:25") == (None, "udp", "::1", 25)
-    assert split_party_spec("tcp://cispa.de:25") == (None, "tcp", "cispa.de", 25)
+    assert split_party_spec("tcp://localhost:25") == (None, "TCP", "localhost", 25)
+    assert split_party_spec("tcp:127.0.0.1:25") == (None, "TCP", "127.0.0.1", 25)
+    assert split_party_spec("udp://[::1]:25") == (None, "UDP", "::1", 25)
+    assert split_party_spec("tcp://cispa.de:25") == (None, "TCP", "cispa.de", 25)
     assert split_party_spec("SMTP=[::1]:25") == ("SMTP", None, "::1", 25)
 
     # Demonstrator code to show how to use the classes
