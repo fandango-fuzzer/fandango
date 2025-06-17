@@ -56,7 +56,7 @@ from pathlib import Path
 from ansi_styles import ansiStyles as styles
 
 from fandango.evolution.algorithm import Fandango
-from fandango.language.grammar import Grammar
+from fandango.language.grammar import Grammar, FuzzingMode
 from fandango.language.parse import parse
 from fandango.logger import LOGGER, print_exception
 
@@ -1315,6 +1315,11 @@ def parse_command(args):
 
 def talk_command(args):
     """Interact with a program, client, or server"""
+    if not args.test_command and not args.client and not args.server:
+        raise FandangoError(
+            "Use '--client' or '--server' to create a client or server, "
+            "or specify a command to interact with."
+        )
 
     LOGGER.info("---------- Parsing FANDANGO content ----------")
     if args.fan_files:
@@ -1326,6 +1331,9 @@ def talk_command(args):
 
     if grammar is None:
         raise FandangoError("Use '-f FILE.fan' to open a Fandango spec")
+
+    if grammar.fuzzing_mode != FuzzingMode.IO:
+        LOGGER.warning("Fandango spec does not specify interaction parties")
 
     # Avoid messing with default constraints
     constraints = constraints.copy()
