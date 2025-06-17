@@ -221,6 +221,7 @@ class Repetition(Node):
             )
 
         self.node = node
+        self.bounds_constraint = bounds_constraint
         self.min = min_
         self.max = max_
 
