@@ -3,8 +3,8 @@ from typing import Callable, Generator
 
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
 from fandango.language.grammar import DerivationTree, Grammar
-from fandango.language.packetforecaster import PacketForecaster
 from fandango.language.symbol import NonTerminal
+from fandango.io.packetforecaster import PacketForecaster
 from fandango.logger import LOGGER
 
 
