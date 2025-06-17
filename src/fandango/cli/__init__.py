@@ -86,6 +86,9 @@ def terminal_link(url: str, text: str | None = None):
 def homepage_as_link():
     """Return the Fandango homepage, formatted for terminals"""
     homepage = fandango.homepage()
+    if os.getenv("JUPYTER_BOOK") is not None:
+        return homepage  # Don't link in Jupyter Book
+
     if homepage.startswith("http") and sys.stdout.isatty():
         return terminal_link(homepage)
     else:
