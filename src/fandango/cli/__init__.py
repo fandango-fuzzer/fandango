@@ -1234,7 +1234,7 @@ def fuzz_command(args):
         # Ensure that every generated file can be parsed
         # and returns the same string as the original
         try:
-            temp_dir = tempfile.TemporaryDirectory(delete=False)
+            temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore
         except TypeError:
             # Python 3.11 does not know the `delete` argument
             temp_dir = tempfile.TemporaryDirectory()
