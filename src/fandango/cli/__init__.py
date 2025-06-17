@@ -997,11 +997,12 @@ def output_solution_with_test_command(
     base_cmd = [args["test_command"]] + args["test_args"]
 
     if args["input_method"] == "filename":
-        prefix: str = "fandango-"
-        suffix: str = args["filename_extension"]
-        mode: str = "wb" if file_mode == "binary" else "w"
+        prefix = "fandango-"
+        suffix = args["filename_extension"]
+        mode = "wb" if file_mode == "binary" else "w"
 
-        def named_temp_file(*, mode, prefix, suffix):
+        # The return type is private, so we need to use Any
+        def named_temp_file(*, mode: str, prefix: str, suffix: str) -> Any:
             try:
                 # Windows needs delete_on_close=False, so the subprocess
                 # can access the file by name
