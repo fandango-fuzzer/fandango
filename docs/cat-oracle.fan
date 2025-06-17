@@ -1,5 +1,5 @@
-<start> ::= <stdin:input> <stdout:output>
+<start> ::= <In:input> <Out:output>
 <input> ::= <string>
 <output> ::= <string>
-<string> ::= r'(.|\n)*'
-where <input> == <output>
+<string> ::= r'.*'
+where str(<input>) == str(<output>)
