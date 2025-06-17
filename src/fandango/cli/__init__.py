@@ -180,10 +180,7 @@ def get_parser(in_command_line=True):
         default=False,
     )
     algorithm_group.add_argument(
-        "--population-size",
-        type=int,
-        help="Size of the population.",
-        default=None
+        "--population-size", type=int, help="Size of the population.", default=None
     )
     algorithm_group.add_argument(
         "--elitism-rate",
@@ -513,7 +510,6 @@ def get_parser(in_command_line=True):
         nargs=argparse.REMAINDER,
         help="The arguments of the command.",
     )
-
 
     # Convert
     convert_parser = commands.add_parser(
