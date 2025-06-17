@@ -69,7 +69,7 @@ from fandango.converters.bt.BTFandangoConverter import (
 from fandango.converters.dtd.DTDFandangoConverter import DTDFandangoConverter
 from fandango.converters.fan.FandangoFandangoConverter import FandangoFandangoConverter
 
-from fandango import FandangoParseError, FandangoError
+from fandango import DerivationTree, FandangoParseError, FandangoError
 import fandango
 
 
@@ -990,13 +990,15 @@ def output_solution_to_file(solution, args, file_mode=None):
         fd.write(output(solution, args, file_mode))
 
 
-def output_solution_with_test_command(solution, args, file_mode):
-    LOGGER.info(f"Running {args.test_command}")
-    base_cmd = [args.test_command] + args.test_args
+def output_solution_with_test_command(
+    solution: DerivationTree, args: dict[str, Any], file_mode: str
+) -> None:
+    LOGGER.info(f"Running {args['test_command']}")
+    base_cmd = [args["test_command"]] + args["test_args"]
 
-    if args.input_method == "filename":
+    if args["input_method"] == "filename":
         prefix = "fandango-"
-        suffix = args.filename_extension
+        suffix = args["filename_extension"]
         mode = "wb" if file_mode == "binary" else "w"
 
         def named_temp_file(*, mode, prefix, suffix):
@@ -1021,7 +1023,7 @@ def output_solution_with_test_command(solution, args, file_mode):
             cmd = base_cmd + [fd.name]
             LOGGER.debug(f"Running {cmd}")
             subprocess.run(cmd, text=True)
-    elif args.input_method == "stdin":
+    elif args["input_method"] == "stdin":
         cmd = base_cmd
         LOGGER.debug(f"Running {cmd} with individual as stdin")
         subprocess.run(
@@ -1029,10 +1031,10 @@ def output_solution_with_test_command(solution, args, file_mode):
             input=output(solution, args, file_mode),
             text=(None if file_mode == "binary" else True),
         )
-    elif args.input_method == "libfuzzer":
-        if args.file_mode != "binary" or file_mode != "binary":
+    elif args["input_method"] == "libfuzzer":
+        if args["file_mode"] != "binary" or file_mode != "binary":
             raise NotImplementedError("LibFuzzer harnesses only support binary input")
-        harness = ctypes.CDLL(args.test_command).LLVMFuzzerTestOneInput
+        harness = ctypes.CDLL(args["test_command"]).LLVMFuzzerTestOneInput
 
         bytes = output(solution, args, file_mode)
         harness(bytes, len(bytes))
