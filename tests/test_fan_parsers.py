@@ -25,16 +25,12 @@ files = glob.glob("tests/resources/*.fan") + glob.glob("docs/*.fan")
 def test_file(fan_file):
     """Test the C++ and python .fan parsers for `fan_file`."""
 
-    command = shlex.split(
-        f"fandango --parser=python convert {fan_file}"
-    )
+    command = shlex.split(f"fandango --parser=python convert {fan_file}")
     python_out, err, return_code = run_command(command)
     assert return_code == 0
     assert err == ""
 
-    command = shlex.split(
-        f"fandango --parser=cpp convert {fan_file}"
-    )
+    command = shlex.split(f"fandango --parser=cpp convert {fan_file}")
     speedy_out, err, return_code = run_command(command)
     assert return_code == 0
     assert err == ""
