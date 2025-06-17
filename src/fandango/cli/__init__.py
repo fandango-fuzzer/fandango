@@ -517,8 +517,7 @@ def get_parser(in_command_line=True):
         set_parser = commands.add_parser(
             "set",
             help="set or print default arguments",
-            parents=[file_parser, output_parser,
-                     settings_parser, algorithm_parser],
+            parents=[file_parser, output_parser, settings_parser, algorithm_parser],
         )
 
     if not in_command_line:
