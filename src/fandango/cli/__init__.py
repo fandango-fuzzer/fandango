@@ -484,9 +484,11 @@ def get_parser(in_command_line=True):
         help="Interact with programs, clients, and servers.",
         parents=[file_parser, algorithm_parser, settings_parser],
     )
-    host_pattern = ("PORT on HOST (default: 127.0.0.1;" +
-                    " use '[...]' for IPv6 addresses)" +
-                    " using PROTOCOL ('tcp' (default)/'udp').")
+    host_pattern = (
+        "PORT on HOST (default: 127.0.0.1;"
+        + " use '[...]' for IPv6 addresses)"
+        + " using PROTOCOL ('tcp' (default)/'udp')."
+    )
     talk_parser.add_argument(
         "--client",
         metavar="[NAME=][PROTOCOL:][HOST:]PORT",
@@ -717,9 +719,11 @@ def parse_contents_from_args(args, given_grammars=[], check=True):
 
     extra_defs = ""
     if "test_command" in args and args.test_command:
-        extra_defs += ("\nset_program_command(["
+        extra_defs += (
+            "\nset_program_command(["
             + ", ".join(repr(arg) for arg in [args.test_command] + args.test_args)
-            + "])\n")
+            + "])\n"
+        )
     LOGGER.debug("Extra definitions:" + extra_defs)
     args.fan_files += [extra_defs]
 
