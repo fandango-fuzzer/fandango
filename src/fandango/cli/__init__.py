@@ -1002,12 +1002,11 @@ def output_solution_with_test_command(
         mode = "wb" if file_mode == "binary" else "w"
 
         # The return type is private, so we need to use Any
-        # The type for mode is a long list of possible values, so we use Any as a shortcut
-        def named_temp_file(*, mode: Any, prefix: str, suffix: str) -> Any:
+        def named_temp_file(*, mode: str, prefix: str, suffix: str) -> Any:
             try:
-                # Windows needs delete_on_close=False, so the subprocess
-                # can access the file by name
-                return tempfile.NamedTemporaryFile(
+                # Windows needs delete_on_close=False, so the subprocess can access the file by name
+                # mode needs to be one of a long list of possible values, and not available from the library. I don't want to add it here.
+                return tempfile.NamedTemporaryFile(  # type: ignore
                     mode=mode,
                     prefix=prefix,
                     suffix=suffix,
