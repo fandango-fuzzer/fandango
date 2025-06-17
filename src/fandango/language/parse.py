@@ -326,7 +326,8 @@ def parse_spec(
                     raise ImportError(
                         "Requested C++ parser not available. "
                         "Check your installation "
-                        "or use '--parser=python'")
+                        "or use '--parser=python'"
+                    )
             elif fandango.Fandango.parser == "python":
                 sa_fandango.USE_CPP_IMPLEMENTATION = False
             elif fandango.Fandango.parser == "auto":
