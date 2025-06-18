@@ -7,7 +7,7 @@ import enum
 import itertools
 from typing import Optional, Any
 
-from fandango.language.search import NonTerminalSearch
+from fandango.language.search import NonTerminalSearch, Container
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
 
@@ -251,7 +251,7 @@ class GeneticBase(abc.ABC):
         :param Optional[list[DerivationTree]] population: The population of trees to calculate the fitness.
         in the genetic base.
         """
-        nodes: list[list[tuple[str, DerivationTree]]] = []
+        nodes: list[list[tuple[str, Container]]] = []
         for name, search in self.searches.items():
             nodes.append(
                 [

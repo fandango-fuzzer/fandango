@@ -1,6 +1,7 @@
 import random
 from typing import Callable, Generator
 
+from fandango import FandangoValueError
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
 from fandango.language.grammar import DerivationTree, Grammar
 from fandango.language.symbol import NonTerminal
@@ -168,6 +169,10 @@ class IoPopulationManager(PopulationManager):
         mounting_option = random.choice(list(current_pck.paths))
 
         tree = self._grammar.collapse(mounting_option.tree)
+        if tree is None:
+            raise FandangoValueError(
+                f"Could not collapse tree for {mounting_option.path} in packet {current_pck.node}"
+            )
         tree.set_all_read_only(True)
         dummy = DerivationTree(NonTerminal("<hookin>"))
         tree.append(mounting_option.path[1:], dummy)

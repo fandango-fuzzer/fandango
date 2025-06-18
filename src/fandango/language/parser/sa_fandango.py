@@ -3,6 +3,7 @@
 
 import sys
 import types
+from typing import Optional
 
 import antlr4
 from antlr4 import InputStream, CommonTokenStream, Token
@@ -32,7 +33,7 @@ class SA_ErrorListener:
     def syntaxError(
         self,
         input_stream: InputStream,
-        offendingSymbol: Token,
+        offending_symbol: Token,
         char_index: int,
         line: int,
         column: int,
@@ -44,13 +45,13 @@ class SA_ErrorListener:
         Parameters
         ----------
         input_stream:InputStream
-            Reference to the original input stream that this error is from
+            Reference to the original input_ stream that this error is from
 
-        offendingSymbol:Token
+        offending_symbol:Token
             If available, denotes the erronous token
 
         char_index:int
-            Character offset of the error within the input stream
+            Character offset of the error within the input_ stream
 
         line:int
             Line number of the error
@@ -65,10 +66,12 @@ class SA_ErrorListener:
 
 
 def parse(
-    stream: InputStream, entry_rule_name: str, sa_err_listener: SA_ErrorListener = None
+    stream: InputStream,
+    entry_rule_name: str,
+    sa_err_listener: Optional[SA_ErrorListener] = None,
 ) -> ParseTree:
     """
-    Parse the input stream
+    Parse the input_ stream
 
     If C++ implementation of parser is not available, automatically falls back
     to Python implementation.
@@ -99,15 +102,17 @@ def parse(
 # -------------------------------------------------------------------------------
 
 try:
-    from . import sa_fandango_cpp_parser
+    from . import sa_fandango_cpp_parser  # type: ignore[attr-defined]
 except ImportError:
     USE_CPP_IMPLEMENTATION = False
 
 
 def _cpp_parse(
-    stream: InputStream, entry_rule_name: str, sa_err_listener: SA_ErrorListener = None
+    stream: InputStream,
+    entry_rule_name: str,
+    sa_err_listener: Optional[SA_ErrorListener] = None,
 ) -> ParseTree:
-    # Validate input types here before handing over to C++
+    # Validate input_ types here before handing over to C++
     if not isinstance(stream, InputStream):
         raise TypeError("'stream' shall be an Antlr InputStream")
     if not isinstance(entry_rule_name, str):
@@ -154,7 +159,9 @@ class _FallbackErrorTranslator(ErrorListener):
 
 
 def _py_parse(
-    stream: InputStream, entry_rule_name: str, sa_err_listener: SA_ErrorListener = None
+    stream: InputStream,
+    entry_rule_name: str,
+    sa_err_listener: Optional[SA_ErrorListener] = None,
 ) -> ParseTree:
     if sa_err_listener is not None:
         err_listener = _FallbackErrorTranslator(sa_err_listener, stream)

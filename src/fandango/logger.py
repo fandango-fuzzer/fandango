@@ -122,7 +122,7 @@ def clear_visualization(max_generations: Optional[int] = None):
 def log_message_transfer(
     sender: str,
     receiver: str | None,
-    msg: "DerivationTree",
+    msg,
     self_is_sender: bool,
 ):
     if receiver is None:

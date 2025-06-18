@@ -4,6 +4,7 @@ from typing import Any, Optional
 
 from fandango import FandangoValueError
 from fandango.constraints.base import (
+    Constraint,
     ComparisonConstraint,
     ConjunctionConstraint,
     DisjunctionConstraint,
@@ -13,6 +14,7 @@ from fandango.constraints.base import (
     SoftValue,
 )
 from fandango.constraints.fitness import Comparison
+from fandango.language import NonTerminalSearch
 from fandango.language.grammar import (
     Alternative,
     CharSet,
@@ -159,8 +161,9 @@ class GrammarProcessor(FandangoParserVisitor):
         node = self.visitSymbol(ctx.symbol())
         self.seenRepetitions += 1
         nid = self.seenRepetitions
+        min_ = None
+        max_ = None
         if ctx.COMMA():
-            bounds = [None, None]
             bounds_index = 0
             started = False
             for child in ctx.getChildren():
@@ -172,13 +175,19 @@ class GrammarProcessor(FandangoParserVisitor):
                     if child.getText() == ",":
                         bounds_index += 1
                     else:
-                        bounds[bounds_index] = self.searches.visit(child)
-                        bounds[bounds_index] = (
-                            ast.unparse(bounds[bounds_index][0]),
-                            *bounds[bounds_index][1:],
-                        )
-
-            min_, max_ = bounds
+                        search_bound = self.searches.visit(child)
+                        if bounds_index == 0:
+                            min_ = (
+                                ast.unparse(search_bound[0]),
+                                search_bound[1],
+                                search_bound[2],
+                            )
+                        else:
+                            max_ = (
+                                ast.unparse(search_bound[0]),
+                                search_bound[1],
+                                search_bound[2],
+                            )
             if min_ is None and max_ is None:
                 return Repetition(node, f"{nid}_{self.id_prefix}")
             elif min_ is None:
@@ -253,7 +262,7 @@ class ConstraintProcessor(FandangoParserVisitor):
 
     def get_constraints(
         self, constraints: list[FandangoParser.ConstraintContext]
-    ) -> list[str]:
+    ) -> list[Constraint | SoftValue]:
         return [self.visitConstraint(constraint) for constraint in constraints]
         # if len(constraints) == 1:
         #     return constraints[0]
@@ -565,6 +574,7 @@ class SearchProcessor(FandangoParserVisitor):
     def visitStar_selection(self, ctx: FandangoParser.Star_selectionContext):
         identifier = self.get_new_identifier()
         base = self.transform_selection(ctx.selection())
+        search: NonTerminalSearch
         if ctx.STAR():
             search = StarSearch(base)
         elif ctx.POWER():
@@ -945,6 +955,9 @@ class SearchProcessor(FandangoParserVisitor):
         return ast.Constant(value=value), [], {}
 
     def visitFstring(self, ctx: FandangoParser.FstringContext):
+        trees: list[ast.expr]
+        searches: list[AttributeSearch]
+        search_map: dict[str, AttributeSearch]
         trees, searches, search_map = [], [], {}
         if ctx.FSTRING_START_QUOTE():
             for child in ctx.fstring_middle_no_quote():
@@ -1042,6 +1055,9 @@ class SearchProcessor(FandangoParserVisitor):
     def visitFstring_full_format_spec(
         self, ctx: FandangoParser.Fstring_full_format_specContext
     ):
+        trees: list[ast.expr] = []
+        searches: list[AttributeSearch] = []
+        search_map: dict[str, AttributeSearch] = {}
         trees, searches, search_map = [], [], {}
         for child in ctx.fstring_format_spec():
             trees, searches, search_map = self.aggregateResult(
@@ -1073,13 +1089,15 @@ class SearchProcessor(FandangoParserVisitor):
         return ast.Set(elts=trees), searches, search_map
 
     def visitDict(self, ctx: FandangoParser.DictContext):
-        keys = list()
-        values = list()
+        keys: list[ast.expr | None] = list()
+        values: list[ast.expr] = list()
         if ctx.double_starred_kvpairs():
             kvpairs, searches, search_map = self.visitDouble_starred_kvpairs(
                 ctx.double_starred_kvpairs()
             )
-            keys, values = zip(*kvpairs)
+            keys_, values_ = zip(*kvpairs)
+            keys.extend(keys_)
+            values.extend(values_)
         else:
             searches, search_map = [], {}
         return ast.Dict(keys=keys, values=values), searches, search_map
@@ -1683,6 +1701,7 @@ class PythonProcessor(FandangoParserVisitor):
                     lineno=0,
                 )
             aug: FandangoParser.AugassignContext = ctx.augassign()
+            op: ast.operator
             if aug.ADD_ASSIGN():
                 op = ast.Add()
             elif aug.SUB_ASSIGN():
@@ -1853,7 +1872,7 @@ class PythonProcessor(FandangoParserVisitor):
             keywords=keywords,
             body=body,
             decorator_list=[],
-            type_params=None,
+            type_params=None,  # type: ignore
         )
 
     def visitFunction_def(self, ctx: FandangoParser.Function_defContext):
@@ -1872,11 +1891,12 @@ class PythonProcessor(FandangoParserVisitor):
         else:
             params = list()
         body = self.visitBlock(ctx.block())
+        class_: type[ast.FunctionDef | ast.AsyncFunctionDef]
         if ctx.ASYNC():
             class_ = ast.AsyncFunctionDef
         else:
             class_ = ast.FunctionDef
-        return class_(
+        return class_(  # type: ignore
             name=ctx.identifier().getText(),
             args=params,
             body=body,
@@ -1923,7 +1943,7 @@ class PythonProcessor(FandangoParserVisitor):
         return ast.If(
             test=test,
             body=body,
-            orelse=orelse,
+            orelse=orelse,  # type: ignore
         )
 
     def visitIf_stmt(self, ctx: FandangoParser.If_stmtContext):

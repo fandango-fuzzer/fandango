@@ -43,7 +43,7 @@ from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.search import DescendantAttributeSearch, ItemSearch
 from fandango.language.stdlib import stdlib
-from fandango.language.symbol import NonTerminal
+from fandango.language.symbol import NonTerminal, Symbol
 from fandango.logger import LOGGER, print_exception
 
 from fandango.language.parser import sa_fandango
@@ -62,9 +62,9 @@ class PythonAntlrErrorListener(ErrorListener):
         exc = FandangoSyntaxError(
             f"{self.filename!r}, line {line}, column {column}: {msg}"
         )
-        exc.line = line
-        exc.column = column
-        exc.messsage = msg
+        exc.lineno = line
+        exc.offset = column
+        exc.msg = msg
         raise exc
 
 
@@ -78,7 +78,7 @@ class SpeedyAntlrErrorListener(sa_fandango.SA_ErrorListener):
     def syntaxError(
         self,
         input_stream,
-        offendingSymbol,
+        offending_symbol,
         char_index: int,
         line: int,
         column: int,
@@ -87,9 +87,9 @@ class SpeedyAntlrErrorListener(sa_fandango.SA_ErrorListener):
         exc = FandangoSyntaxError(
             f"{self.filename!r}, line {line}, column {column}: {msg}"
         )
-        exc.line = line
-        exc.column = column
-        exc.message = msg
+        exc.lineno = line
+        exc.offset = column
+        exc.msg = msg
         raise exc
 
 
@@ -104,10 +104,10 @@ CURRENT_FILENAME: str = "<undefined>"
 INCLUDES: list[str] = []
 
 # The list of files to parse, with their include depth.
-# An include depth of 0 means the file was given as input.
+# An include depth of 0 means the file was given as input_.
 # A higher include depth means the file was included from another file;
 # hence its grammar and constraints should be processed _before_ the current file.
-FILES_TO_PARSE: list[tuple[IO, int]] = []
+FILES_TO_PARSE: list[tuple[IO | str, int]] = []
 
 # The current include depth
 INCLUDE_DEPTH: int = 0
@@ -124,7 +124,7 @@ def include(file_to_be_included: str):
 
     path = os.path.dirname(CURRENT_FILENAME)
     if not path:
-        path = "legacy"  # For strings and standard input
+        path = "legacy"  # For strings and standard input_
     if INCLUDES:
         path += ":" + ":".join(INCLUDES)
     if os.environ.get("FANDANGO_PATH"):
@@ -176,7 +176,7 @@ class FandangoSpec:
         tree: Any,
         fan_contents: str,
         lazy: bool = False,
-        filename: str = "<input>",
+        filename: str = "<input_>",
         max_repetitions: int = 5,
     ):
         self.version = fandango.version()
@@ -216,11 +216,11 @@ class FandangoSpec:
             global_variables=self.global_vars,
             lazy=self.lazy,
         )
-        self.constraints: list[str] = constraint_processor.get_constraints(
-            splitter.constraints
+        self.constraints: list[Constraint | SoftValue] = (
+            constraint_processor.get_constraints(splitter.constraints)
         )
 
-    def run_code(self, filename: str = "<input>"):
+    def run_code(self, filename: str = "<input_>"):
         global CURRENT_FILENAME
         CURRENT_FILENAME = filename
 
@@ -254,11 +254,11 @@ class FandangoSpec:
 def parse_spec(
     fan_contents: str,
     *,
-    filename: str = "<input>",
+    filename: str = "<input_>",
     use_cache: bool = True,
     lazy: bool = False,
     max_repetitions: int = 5,
-) -> tuple[Grammar, list[str]]:
+) -> FandangoSpec:
     """
     Parse given content into a grammar and constraints.
     This is a helper function; use `parse()` as the main entry point.
@@ -318,6 +318,7 @@ def parse_spec(
             os.remove(pickle_file)
             raise exc
 
+    error_listener: SpeedyAntlrErrorListener | PythonAntlrErrorListener
     if not spec:
         if fandango.Fandango.parser != "legacy":
             if fandango.Fandango.parser == "cpp":
@@ -398,7 +399,7 @@ def parse_spec(
 
 
 # Legacy interface
-def parse_content(*args, **kwargs) -> tuple[Grammar, list[str]]:
+def parse_content(*args, **kwargs) -> tuple[Grammar, list[Constraint | SoftValue]]:
     spec = parse_spec(*args, **kwargs)
     return spec.grammar, spec.constraints
 
@@ -408,7 +409,7 @@ USED_SYMBOLS: set[str] = set()
 
 # Save the standard library grammar and constraints
 STDLIB_GRAMMAR: Optional[Grammar] = None
-STDLIB_CONSTRAINTS: Optional[list[str]] = None
+STDLIB_CONSTRAINTS: Optional[list[Constraint | SoftValue]] = None
 
 
 def parse(
@@ -476,7 +477,7 @@ def parse(
     INCLUDES = includes
 
     grammars = []
-    parsed_constraints: list[str] = []
+    parsed_constraints: list[Constraint | SoftValue] = []
     if use_stdlib:
         assert STDLIB_GRAMMAR is not None
         assert STDLIB_CONSTRAINTS is not None
@@ -746,18 +747,18 @@ def check_grammar_definitions(
             f"Start symbol {start_symbol!s} not defined in grammar. Did you mean {closest!s}?"
         )
 
-    def collect_used_symbols(tree):
-        if tree.node_type == NodeType.NON_TERMINAL:
-            used_symbols.add(str(tree.symbol))
+    def collect_used_symbols(node):
+        if node.node_type == NodeType.NON_TERMINAL:
+            used_symbols.add(str(node.symbol))
         elif (
-            tree.node_type == NodeType.REPETITION
-            or tree.node_type == NodeType.STAR
-            or tree.node_type == NodeType.PLUS
-            or tree.node_type == NodeType.OPTION
+            node.node_type == NodeType.REPETITION
+            or node.node_type == NodeType.STAR
+            or node.node_type == NodeType.PLUS
+            or node.node_type == NodeType.OPTION
         ):
-            collect_used_symbols(tree.node)
+            collect_used_symbols(node.node)
 
-        for child in tree.children():
+        for child in node.children():
             collect_used_symbols(child)
 
     for tree in grammar.rules.values():
@@ -796,7 +797,7 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
 
     LOGGER.debug("Checking types")
 
-    symbol_types = {}
+    symbol_types: dict[Symbol, tuple[Optional[str], int, int, int]] = {}
 
     def compatible(tp1, tp2):
         if tp1 in ["int", "bytes"] and tp2 in ["int", "bytes"]:
@@ -807,6 +808,7 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
         # LOGGER.debug(f"Checking type of {tree!s} in {rule_symbol!s} ({tree.node_type!s})")
         nonlocal symbol_types, grammar
 
+        tp: Optional[str]
         if tree.node_type == NodeType.TERMINAL:
             tp = type(tree.symbol.symbol).__name__
             # LOGGER.debug(f"Type of {tree.symbol.symbol!r} is {tp!r}")
@@ -854,15 +856,19 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
         ):
             common_tp = None
             tp_child = None
-            min_bits = max_bits = step = None
+            first = True
+            min_bits = 0
+            max_bits = 0
+            step = 0
             for child in tree.children():
                 tp, min_child_bits, max_child_bits, child_step = get_type(
                     child, rule_symbol
                 )
-                if min_bits is None:
+                if first:
                     min_bits = min_child_bits
                     max_bits = max_child_bits
                     step = child_step
+                    first = False
                 elif tree.node_type == NodeType.CONCATENATION:
                     min_bits += min_child_bits
                     max_bits += max_child_bits
@@ -1009,10 +1015,10 @@ def check_constraints_existence_children(
 
 
 def assign_implicit_party(grammar, implicit_party: str):
-    seen_nts = set()
+    seen_nts: set[NonTerminal] = set()
     seen_nts.add(NonTerminal("<start>"))
-    processed_nts = set()
-    unprocessed_nts = seen_nts.difference(processed_nts)
+    processed_nts: set[NonTerminal] = set()
+    unprocessed_nts: set[NonTerminal] = seen_nts.difference(processed_nts)
 
     while len(unprocessed_nts) > 0:
         current_symbol = unprocessed_nts.pop()
@@ -1026,7 +1032,7 @@ def assign_implicit_party(grammar, implicit_party: str):
 
         if current_node in rule_nts and not isinstance(current_node, NonTerminalNode):
             rule_nts.remove(current_node)
-        child_party = set()
+        child_party: set[str] = set()
 
         for c_node in rule_nts:
             child_party = child_party.union(c_node.msg_parties(grammar, False))
