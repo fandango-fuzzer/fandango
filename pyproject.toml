@@ -27,14 +27,6 @@ classifiers = [
     "Topic :: Software Development :: Testing"
 ]
 
-[project.urls]
-homepage = "https://fandango-fuzzer.github.io/"
-repository = "https://github.com/fandango-fuzzer/fandango/"
-"Bug Tracker" = "https://github.com/fandango-fuzzer/fandango/issues"
-
-[project.scripts]
-fandango = "fandango.cli:main"
-
 dependencies = [
     "ansi_styles>=0.2.2",
     "antlr4-python3-runtime>=4.13",
@@ -76,6 +68,14 @@ test = [
     "sphinxcontrib-mermaid>=1.0.0",
     "tccbox",
 ]
+
+[project.urls]
+homepage = "https://fandango-fuzzer.github.io/"
+repository = "https://github.com/fandango-fuzzer/fandango/"
+"Bug Tracker" = "https://github.com/fandango-fuzzer/fandango/issues"
+
+[project.scripts]
+fandango = "fandango.cli:main"
 
 [tool.black]
 line-length = 88
