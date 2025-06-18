@@ -338,6 +338,7 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
 class ConnectParty(FandangoParty):
     DEFAULT_IP = "127.0.0.1"
     DEFAULT_PORT = 8000
+    DEFAULT_PROTOCOL = Protocol.TCP
 
     def __init__(
         self,
@@ -351,7 +352,7 @@ class ConnectParty(FandangoParty):
         self.protocol_impl = None
 
         if protocol is None:
-            protocol = Protocol.TCP.value
+            protocol = self.DEFAULT_PROTOCOL.value
         protocol = Protocol(protocol)
         if host is None:
             host = self.DEFAULT_IP
