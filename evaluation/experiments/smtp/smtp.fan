@@ -137,13 +137,11 @@ class Client(ConnectParty):
         )
         self.start()
 
-class Server(SocketServer):
+class Server(ConnectParty):
     def __init__(self):
         super().__init__(
-            ownership=Ownership.EXTERNAL if fandango_is_client else Ownership.FUZZER,
-            ip_type=IpType.IPV4,
-            ip="127.0.0.1",
-            port=9025,
-            protocol_type=Protocol.TCP
+            ownership=Ownership.EXTERNAL_PARTY if fandango_is_client else Ownership.FANDANGO_PARTY,
+            endpoint_type=EndpointType.OPEN
+            uri="tcp://localhost:9025"
         )
         self.start()
