@@ -208,6 +208,16 @@ tests $(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
 	$(PYTEST) -n auto
 	echo 'Success' > $(TEST_MARKER)
 
+COVERAGE = coverage.xml
+COVERAGERC = .coveragerc
+REPORT = report.html
+
+# Run tests and generate coverage report
+.PHONY: coverage
+coverage $(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
+	$(PYTEST) --html=$(REPORT) --self-contained-html --cov-report xml:$(COVERAGE) --cov-report term --cov-config=$(COVERAGERC) --cov=fandango -n auto
+	@echo 'Coverage report generated in htmlcov/index.html'
+
 run-tests: $(TEST_MARKER)
 
 ## Evaluation

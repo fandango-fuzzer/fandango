@@ -57,7 +57,7 @@ jobs:
       # Step 7: Run tests using pytest
       - name: Run tests with pytest
         run: |
-          python3 -m pytest --html=report.html --self-contained-html --cov-report xml:coverage.xml --cov-report term --cov-config=.coveragerc --cov=fandango tests/
+          make coverage
           python3 -m coverage lcov
       # Step 8: Upload test report
       - name: Upload test report
