@@ -324,7 +324,7 @@ def parse_spec(
             if fandango.Fandango.parser == "cpp":
                 sa_fandango.USE_CPP_IMPLEMENTATION = True
                 try:
-                    from .parser import sa_fandango_cpp_parser
+                    from .parser import sa_fandango_cpp_parser  # type: ignore[attr-defined]
                 except ImportError:
                     raise ImportError(
                         "Requested C++ parser not available. "

@@ -1389,6 +1389,12 @@ def convert_command(args):
             temp_file.flush()
             input_file = temp_file.name
 
+        converter: (
+            ANTLRFandangoConverter
+            | DTDFandangoConverter
+            | BTFandangoConverter
+            | FandangoFandangoConverter
+        )
         match from_format:
             case "antlr" | "g4":
                 converter = ANTLRFandangoConverter(input_file)

@@ -1161,7 +1161,7 @@ class Grammar(NodeVisitor):
             self, rule: list[list[tuple[NonTerminal, frozenset]]]
         ) -> tuple[NonTerminal, frozenset]:
             nonterminal = NonTerminal(f"<*{len(self._implicit_rules)}*>")
-            self._implicit_rules[nonterminal] = rule
+            self._implicit_rules[nonterminal] = rule  # type: ignore[assignment]
             return nonterminal, frozenset()
 
         def set_rule(
@@ -1304,9 +1304,14 @@ class Grammar(NodeVisitor):
             if tree is None:
                 return None
             if isinstance(tree.symbol, NonTerminal):
-                if tree.symbol.symbol.startswith("<__"):
+                if isinstance(tree.symbol.symbol, str):
+                    if tree.symbol.symbol.startswith("<__"):
+                        raise FandangoValueError(
+                            "Can't collapse a tree with an implicit root node"
+                        )
+                else:
                     raise FandangoValueError(
-                        "Can't collapse a tree with an implicit root node"
+                        "Can't collapse a tree with a non-terminal root node"
                     )
             return self._collapse(tree)[0]
 
@@ -1317,8 +1322,13 @@ class Grammar(NodeVisitor):
                 reduced.extend(rec_reduced)
 
             if isinstance(tree.symbol, NonTerminal):
-                if tree.symbol.symbol.startswith("<__"):
-                    return reduced
+                if isinstance(tree.symbol.symbol, str):
+                    if tree.symbol.symbol.startswith("<__"):
+                        return reduced
+                else:
+                    raise FandangoValueError(
+                        "Can't collapse a tree with a non-terminal root node"
+                    )
 
             return [
                 DerivationTree(
@@ -1693,7 +1703,7 @@ class Grammar(NodeVisitor):
                     )
                     origin_states = table[new_state.position].find_dot(new_state.dot)
                     if len(origin_states) != 1:
-                        new_state = None
+                        new_state = None  # type: ignore[assignment]
                         break
                     origin_state = origin_states[0]
 

@@ -458,8 +458,9 @@ class Out(FandangoParty):
 
     def _listen_loop(self):
         while True:
-            line = self.proc.stdout.readline()
-            self.receive_msg(self.class_name, line)
+            if self.proc.stdout is not None:
+                line = self.proc.stdout.readline()
+                self.receive_msg(self.class_name, line)
 
 
 class In(FandangoParty):
@@ -490,11 +491,11 @@ class In(FandangoParty):
         :param message: The message to send.
         :param recipient: The recipient of the message. Only present if the grammar specifies a recipient.
         """
-
-        self.proc.stdin.write(message.to_string())
-        self.proc.stdin.flush()
-        if self.close_post_transmit:
-            self.proc.stdin.close()
+        if self.proc.stdin is not None:
+            self.proc.stdin.write(message.to_string())
+            self.proc.stdin.flush()
+            if self.close_post_transmit:
+                self.proc.stdin.close()
 
 
 class FandangoIO(object):
