@@ -643,6 +643,8 @@ class Fandango:
 
                 if msg_sender != sender:
                     continue
+                if isinstance(msg_fragment, bytes):
+                    msg_fragment = msg_fragment.decode("utf-8", errors="ignore")
                 if complete_msg is None:
                     complete_msg = msg_fragment
                 else:
