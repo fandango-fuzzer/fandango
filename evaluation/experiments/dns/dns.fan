@@ -12,7 +12,7 @@ import threading
 
 fake = Faker()
 
-fandango_is_client = True
+fandango_is_client = False
 
 def gen_q_name():
     result = b''
@@ -268,7 +268,7 @@ class Client(ConnectParty):
         super().__init__(
             ownership=Ownership.FANDANGO_PARTY if fandango_is_client else Ownership.EXTERNAL_PARTY,
             endpoint_type=EndpointType.CONNECT,
-            uri="udp://1.1.1.1:53"
+            uri="udp://localhost:53"
         )
         self.start()
 
