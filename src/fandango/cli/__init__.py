@@ -1005,7 +1005,7 @@ def output_solution_with_test_command(solution, args, file_mode):
             try:
                 # Windows needs delete_on_close=False, so the subprocess
                 # can access the file by name
-                return tempfile.NamedTemporaryFile(
+                return tempfile.NamedTemporaryFile(  # type: ignore[call-overload]
                     mode=mode,
                     prefix=prefix,
                     suffix=suffix,
@@ -1233,7 +1233,7 @@ def fuzz_command(args):
         # Ensure that every generated file can be parsed
         # and returns the same string as the original
         try:
-            temp_dir = tempfile.TemporaryDirectory(delete=False)
+            temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore[call-overload]
         except TypeError:
             # Python 3.11 does not know the `delete` argument
             temp_dir = tempfile.TemporaryDirectory()
