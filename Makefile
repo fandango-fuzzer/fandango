@@ -270,8 +270,7 @@ credit:
 # We separate _installing_ from _running_ tests
 # so we can run 'make tests' quickly (see above)
 # without having to reinstall things
-install-test install-tests:
-	$(PIP) install pytest mypy pytest-xdist
+install-test install-tests: 
 	$(PIP) install -e ".[test]"
 
 uninstall:
