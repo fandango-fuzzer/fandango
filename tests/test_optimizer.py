@@ -10,7 +10,7 @@ from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.evolution.population import PopulationManager
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
-from utils import RESOURCES_ROOT
+from .utils import RESOURCES_ROOT
 
 
 class GeneticTest(unittest.TestCase):

@@ -60,7 +60,8 @@ jobs:
           python3 -m pytest --html=report.html --self-contained-html --cov-report xml:coverage.xml --cov-report term --cov-config=.coveragerc --cov=fandango tests/
           python3 -m coverage lcov
       # Step 8: Upload test report
-      - uses: actions/upload-artifact@v4
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
         with:
           name: Test Report
           path: report.html

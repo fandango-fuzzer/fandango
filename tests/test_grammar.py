@@ -3,12 +3,10 @@
 import random
 import unittest
 
-from scipy.linalg import solve_lyapunov
-
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
-from utils import RESOURCES_ROOT, DOCS_ROOT
+from .utils import RESOURCES_ROOT, DOCS_ROOT
 
 
 class ConstraintTest(unittest.TestCase):

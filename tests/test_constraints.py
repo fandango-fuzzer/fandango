@@ -6,7 +6,7 @@ import unittest
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 from fandango.language.parse import parse
-from utils import RESOURCES_ROOT
+from .utils import RESOURCES_ROOT
 
 
 class ConstraintTest(unittest.TestCase):

@@ -2,7 +2,7 @@
 from fandango import parse
 from fandango.evolution.algorithm import Fandango
 from fandango.language.tree import DerivationTree
-from utils import RESOURCES_ROOT
+from .utils import RESOURCES_ROOT
 
 
 def test_msg_exchange():

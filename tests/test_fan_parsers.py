@@ -7,7 +7,7 @@ import unittest
 
 import pytest
 
-from utils import RESOURCES_ROOT, DOCS_ROOT
+from .utils import RESOURCES_ROOT, DOCS_ROOT
 
 
 def run_command(command):
@@ -40,6 +40,7 @@ def test_file(fan_file):
     assert (
         python_out == cpp_out
     ), f"{fan_file} produced different outputs for Python and C++ parsers:\n\nPython output:\n{python_out}\n\nC++ output:\n{cpp_out}"
+
 
 if __name__ == "__main__":
     unittest.main()

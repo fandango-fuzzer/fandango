@@ -3,9 +3,8 @@
 import shlex
 import subprocess
 import unittest
-from pathlib import Path
 
-from utils import RESOURCES_ROOT
+from .utils import RESOURCES_ROOT
 
 
 class TestSlices(unittest.TestCase):

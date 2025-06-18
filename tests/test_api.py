@@ -5,7 +5,7 @@ import unittest
 import logging
 
 from fandango import Fandango, FandangoParseError
-from utils import DOCS_ROOT
+from .utils import DOCS_ROOT
 
 
 class APITest(unittest.TestCase):
