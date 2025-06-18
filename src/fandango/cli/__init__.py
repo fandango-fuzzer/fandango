@@ -10,6 +10,7 @@ import re
 from typing import IO, Any, Callable
 
 from fandango.constraints.base import Constraint, SoftValue
+from fandango.converters.FandangoConverter import FandangoConverter
 
 if not "readline" in globals():
     try:
@@ -1043,7 +1044,7 @@ def output_solution_with_test_command(
             try:
                 # Windows needs delete_on_close=False, so the subprocess can access the file by name
                 # mode needs to be one of a long list of possible values, and not available from the library. I don't want to add it here.
-                return tempfile.NamedTemporaryFile(
+                return tempfile.NamedTemporaryFile(  # type: ignore [call-overload]
                     mode=mode,
                     prefix=prefix,
                     suffix=suffix,
@@ -1305,7 +1306,8 @@ def fuzz_command(args: argparse.Namespace) -> None:
         # Ensure that every generated file can be parsed
         # and returns the same string as the original
         try:
-            temp_dir = tempfile.TemporaryDirectory(delete=False)
+            # mypy complains because delete is only valid for some OSs
+            temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore [call-overload]
         except TypeError:
             # Python 3.11 does not know the `delete` argument
             temp_dir = tempfile.TemporaryDirectory()
@@ -1385,7 +1387,7 @@ def parse_command(args: argparse.Namespace) -> None:
         raise FandangoParseError(f"{errors} error(s) during parsing")
 
 
-def talk_command(args):
+def talk_command(args: argparse.Namespace) -> None:
     """Interact with a program, client, or server"""
     if not args.test_command and not args.client and not args.server:
         raise FandangoError(
@@ -1422,10 +1424,10 @@ def talk_command(args):
     LOGGER.debug("Starting Fandango")
     fandango = Fandango(grammar, constraints, **settings)
     LOGGER.debug("Evolving population")
-    population = fandango.evolve(**make_evolve_settings(args, file_mode))
+    fandango.evolve(**make_evolve_settings(args, file_mode))
 
 
-def convert_command(args):
+def convert_command(args: argparse.Namespace) -> None:
     """Convert a given language spec into Fandango .fan format"""
 
     output = args.output
@@ -1463,7 +1465,7 @@ def convert_command(args):
 
         match from_format:
             case "antlr" | "g4":
-                converter = ANTLRFandangoConverter(input_file)
+                converter: FandangoConverter = ANTLRFandangoConverter(input_file)
                 spec = converter.to_fan()
             case "dtd":
                 converter = DTDFandangoConverter(input_file)
