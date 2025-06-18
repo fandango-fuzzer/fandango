@@ -126,7 +126,6 @@ class FandangoParty(ABC):
                     ),
                 )
             )
-            parties.remove(self.party_name)
             if len(parties) == 1:
                 sender = parties[0]
             else:
@@ -224,7 +223,8 @@ class SocketProtocolDecorator(ProtocolDecorator):
         if self.endpoint_type == EndpointType.OPEN:
             assert self._sock is not None
             self._sock.bind((self.ip, self.port))
-            self._sock.listen(1)
+            if self.protocol_type == Protocol.TCP:
+                self._sock.listen(1)
         self._running = True
         self._send_thread = threading.Thread(target=self._listen, daemon=True)
         self._send_thread.daemon = True
@@ -260,26 +260,31 @@ class SocketProtocolDecorator(ProtocolDecorator):
     def _wait_accept(self):
         with self._lock:
             if self._connection is None:
-                if self.endpoint_type == EndpointType.OPEN:
-                    assert self._sock is not None
-                    while self._running:
-                        rlist, _, _ = select.select([self._sock], [], [], 0.1)
-                        if rlist:
-                            self._connection, _ = self._sock.accept()
-                            break
+                if self.protocol_type == Protocol.TCP:
+                    if self.endpoint_type == EndpointType.OPEN:
+                        assert self._sock is not None
+                        while self._running:
+                            rlist, _, _ = select.select([self._sock], [], [], 0.1)
+                            if rlist:
+                                self._connection, _ = self._sock.accept()
+                                break
+                    else:
+                        assert self._sock is not None
+                        self._sock.setblocking(False)
+                        try:
+                            self._sock.connect((self.ip, self.port))
+                        except BlockingIOError as e:
+                            pass
+                        while self._running:
+                            _, wlist, _ = select.select([], [self._sock], [], 0.1)
+                            if wlist:
+                                self._connection = self._sock
+                                break
+                        self._sock.setblocking(True)
                 else:
+                    # For UDP, we do not need to accept a connection
                     assert self._sock is not None
-                    self._sock.setblocking(False)
-                    try:
-                        self._sock.connect((self.ip, self.port))
-                    except BlockingIOError as e:
-                        pass
-                    while self._running:
-                        _, wlist, _ = select.select([], [self._sock], [], 0.1)
-                        if wlist:
-                            self._connection = self._sock
-                            break
-                    self._sock.setblocking(True)
+                    self._connection = self._sock
 
     def _listen(self):
         self._wait_accept()
@@ -291,7 +296,10 @@ class SocketProtocolDecorator(ProtocolDecorator):
                 assert self._connection is not None
                 rlist, _, _ = select.select([self._connection], [], [], 0.1)
                 if rlist and self._running:
-                    data = self._connection.recv(self.BUFFER_SIZE)
+                    if self.protocol_type == Protocol.TCP:
+                        data = self._connection.recv(self.BUFFER_SIZE)
+                    else:
+                        data, addr = self._connection.recvfrom(self.BUFFER_SIZE)
                     if len(data) == 0:
                         continue  # Keep waiting if connection is open but no data
                     self._party_instance.receive_msg(None, data)
@@ -311,9 +319,16 @@ class SocketProtocolDecorator(ProtocolDecorator):
 
         assert self._connection is not None
         if message.contains_bits():
-            self._connection.sendall(message.to_bytes())
+            send_data = message.to_bytes()
         else:
-            self._connection.sendall(message.to_string().encode("utf-8"))
+            send_data = message.to_string().encode("utf-8")
+        if self.protocol_type == Protocol.TCP:
+            self._connection.sendall(send_data)
+        else:
+            if self.endpoint_type == EndpointType.OPEN:
+                pass
+            else:
+                self._connection.sendto(send_data, (self.ip, self.port))
 
 
 class ConnectParty(FandangoParty):
@@ -332,7 +347,8 @@ class ConnectParty(FandangoParty):
         self.protocol_impl = None
 
         if protocol is None:
-            protocol = Protocol.TCP
+            protocol = Protocol.TCP.value
+        protocol = Protocol(protocol)
         if host is None:
             host = self.DEFAULT_IP
         info = socket.getaddrinfo(host, None, socket.AF_INET)
