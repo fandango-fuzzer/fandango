@@ -12,7 +12,7 @@ import threading
 
 fake = Faker()
 
-fandango_is_client = False
+fandango_is_client = True
 
 def gen_q_name():
     result = b''
@@ -253,43 +253,30 @@ where forall <t> in <type_cname>:
     bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<q_name>)))
 
 
-import socket
-class Client(FandangoParty):
-        def __init__(self):
-            super().__init__(ownership=Ownership.FANDANGO_PARTY if fandango_is_client else Ownership.EXTERNAL_PARTY)
-            self.server_domain = "1.1.1.1"
+class SocketProtocolDecorator(ProtocolDecorator):
+    def on_send(self, message: DerivationTree, recipient: Optional[str]):
+        compress_msg(message.to_bytes())
+        super().on_send(message, recipient)
 
-        def on_send(self, message: DerivationTree, recipient: str):
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.sendto(compress_msg(message.to_bytes()), (self.server_domain, 53))
-            response, nothing = sock.recvfrom(1024)
-            self.receive_msg("Server", decompress_msg(response))
+class ConnectParty(ConnectParty):
+    def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
+        super().receive_msg(sender, decompress_msg(message))
 
-class Server(FandangoParty):
-        def __init__(self):
-            super().__init__(ownership=Ownership.FANDANGO_PARTY if not fandango_is_client else Ownership.EXTERNAL_PARTY)
-            if self.is_fuzzer_controlled():
-                self.id_addr = dict()
-                self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                server_thread = threading.Thread(target=self.server_loop)
-                server_thread.daemon = True
-                server_thread.start()
 
-        def server_loop(self):
-            bufferSize = 1024
-            localIP = "127.0.0.1"
-            localPort = 25565
-            self.server_socket.bind((localIP, localPort))
-            while(True):
-                message, addr = self.server_socket.recvfrom(bufferSize)
-                m_id = message[:2]
-                self.id_addr[m_id] = (addr, time.time())
-                self.receive_msg("Client", decompress_msg(message))
+class Client(ConnectParty):
+    def __init__(self):
+        super().__init__(
+            ownership=Ownership.FANDANGO_PARTY if fandango_is_client else Ownership.EXTERNAL_PARTY,
+            endpoint_type=EndpointType.CONNECT,
+            uri="udp://1.1.1.1:53"
+        )
+        self.start()
 
-        def on_send(self, message: DerivationTree, recipient: str):
-            m_id = message.to_bytes()[:2]
-            addr, receive_time = self.id_addr[m_id]
-            elapsed_time = time.time() - receive_time
-            elapsed_time *= 1000
-            print("Answered after: " + str(elapsed_time) + "ms")
-            self.server_socket.sendto(compress_msg(message.to_bytes()), addr)
+class Server(ConnectParty):
+    def __init__(self):
+        super().__init__(
+            ownership=Ownership.FANDANGO_PARTY if not fandango_is_client else Ownership.EXTERNAL_PARTY,
+            endpoint_type=EndpointType.OPEN,
+            uri="udp://localhost:25565"
+        )
+        self.start()
