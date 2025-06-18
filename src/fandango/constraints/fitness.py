@@ -99,6 +99,9 @@ class Fitness(abc.ABC):
     def __copy__(self) -> "Fitness":
         pass
 
+    def __repr__(self):
+        return f"Fitness(success={self.success})"
+
 
 class ValueFitness(Fitness):
     """
@@ -137,6 +140,9 @@ class ValueFitness(Fitness):
 
     def __copy__(self) -> Fitness:
         return ValueFitness(self.values[:])
+
+    def __repr__(self):
+        return f"ValueFitness(values={self.values})"
 
 
 class ConstraintFitness(Fitness):
@@ -182,6 +188,9 @@ class ConstraintFitness(Fitness):
             success=self.success,
             failing_trees=self.failing_trees[:],
         )
+
+    def __repr__(self):
+        return f"ConstraintFitness(solved={self.solved}, total={self.total}, success={self.success})"
 
 
 class GeneticBase(abc.ABC):

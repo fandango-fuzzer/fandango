@@ -517,12 +517,6 @@ class TestBitstreamParsing(TestCLIParsing):
             "fandango parse -f "
             f"{RESOURCES_ROOT / 'rgb.fan'} {RESOURCES_ROOT / 'rgb.txt'} --validate"
         )
-        with open(RESOURCES_ROOT / "rgb.fan") as f:
-            grammar, constraints = parse(f, use_stdlib=False, use_cache=False)
-        with open(RESOURCES_ROOT / "rgb.txt") as f:
-            example = f.read().strip().encode()
-        tree = grammar.parse(example, "<start>")
-        assert tree is not None, "Parsing failed for rgb.txt"
         out, err, code = self.run_command(command)
         self.assertEqual(0, code, f"Command failed with code {code}: {err}")
         self.assertEqual("", out)
