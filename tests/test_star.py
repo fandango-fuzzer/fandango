@@ -125,9 +125,9 @@ where {str(x) for x in *<c>} == {"e", "f"}
         self.assertIsInstance(self.expression_constraint, ComparisonConstraint)
         self.assertEqual(self.expression_constraint.operator, Comparison.EQUAL)
         tmp_var = self.expression_constraint.left
-        self.assertTrue(tmp_var.startswith("set("))
-        self.assertTrue(tmp_var.endswith(")"))
-        tmp_var = tmp_var[4:-1]
+        self.assertTrue(tmp_var.startswith("{str(x) for x in "))
+        self.assertTrue(tmp_var.endswith("}"))
+        tmp_var = tmp_var[17:-1]  # Remove the prefix and suffix
         self.assertIn(tmp_var, self.expression_constraint.searches)
         search = self.expression_constraint.searches[tmp_var]
         self.assertIsInstance(search, StarSearch)
@@ -329,9 +329,9 @@ where {str(x) for x in **<c>} == {"e", "f"}
         self.assertIsInstance(self.expression_constraint, ComparisonConstraint)
         self.assertEqual(self.expression_constraint.operator, Comparison.EQUAL)
         tmp_var = self.expression_constraint.left
-        self.assertTrue(tmp_var.startswith("set("))
-        self.assertTrue(tmp_var.endswith(")"))
-        tmp_var = tmp_var[4:-1]
+        self.assertTrue(tmp_var.startswith("{str(x) for x in "))
+        self.assertTrue(tmp_var.endswith("}"))
+        tmp_var = tmp_var[17:-1]  # Remove the prefix and suffix
         self.assertIn(tmp_var, self.expression_constraint.searches)
         search = self.expression_constraint.searches[tmp_var]
         self.assertIsInstance(search, PopulationSearch)

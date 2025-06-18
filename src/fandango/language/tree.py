@@ -130,7 +130,7 @@ class DerivationTree:
 
     # noinspection PyPropertyDefinition
     @symbol.setter  # type: ignore[attr-defined]
-    def set_symbol(self, symbol):
+    def symbol(self, symbol):
         self._symbol = symbol
         self.invalidate_hash()
 

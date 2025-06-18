@@ -1152,11 +1152,16 @@ class Grammar(NodeVisitor):
             for nonterminal in self.grammar_rules:
                 self.set_rule(nonterminal, self.visit(self.grammar_rules[nonterminal]))
 
+            for nonterminal in self._implicit_rules:
+                self._implicit_rules[nonterminal] = {
+                    tuple(a) for a in self._implicit_rules[nonterminal]
+                }
+
         def set_implicit_rule(
             self, rule: list[list[tuple[NonTerminal, frozenset]]]
         ) -> tuple[NonTerminal, frozenset]:
             nonterminal = NonTerminal(f"<*{len(self._implicit_rules)}*>")
-            self._implicit_rules[nonterminal] = {tuple(a) for a in rule}
+            self._implicit_rules[nonterminal] = rule
             return nonterminal, frozenset()
 
         def set_rule(
@@ -1299,15 +1304,7 @@ class Grammar(NodeVisitor):
             if tree is None:
                 return None
             if isinstance(tree.symbol, NonTerminal):
-                if isinstance(
-                    tree.symbol.symbol, str
-                ) and tree.symbol.symbol.startswith("<__"):
-                    raise FandangoValueError(
-                        "Can't collapse a tree with an implicit root node"
-                    )
-                elif isinstance(
-                    tree.symbol.symbol, bytes
-                ) and tree.symbol.symbol.startswith(b"<__"):
+                if tree.symbol.symbol.startswith("<__"):
                     raise FandangoValueError(
                         "Can't collapse a tree with an implicit root node"
                     )
@@ -1320,15 +1317,7 @@ class Grammar(NodeVisitor):
                 reduced.extend(rec_reduced)
 
             if isinstance(tree.symbol, NonTerminal):
-                if isinstance(
-                    tree.symbol.symbol, str
-                ) and tree.symbol.symbol.startswith("<__"):
-                    # Implicit nodes are not collapsed
-                    return reduced
-                elif isinstance(
-                    tree.symbol.symbol, bytes
-                ) and tree.symbol.symbol.startswith(b"<__"):
-                    # Implicit nodes are not collapsed
+                if tree.symbol.symbol.startswith("<__"):
                     return reduced
 
             return [
@@ -1465,7 +1454,7 @@ class Grammar(NodeVisitor):
             nr_bits_scanned: int,
         ) -> bool:
             """
-            Scan a bit from the input_ `word`.
+            Scan a bit from the input `word`.
             `table` is the parse table (may be modified by this function).
             `table[k]` is the current column.
             `word[w]` is the current byte.
@@ -1496,7 +1485,7 @@ class Grammar(NodeVisitor):
             # LOGGER.debug(f"Added tree {tree.to_string()!r} to state {next_state!r}")
             # Insert a new table entry with next state
             # This is necessary, as our initial table holds one entry
-            # per input_ byte, yet needs to be expanded to hold the bits, too.
+            # per input byte, yet needs to be expanded to hold the bits, too.
 
             # Add a new table row if the bit isn't already represented
             # by a row in the parsing table
@@ -1519,7 +1508,7 @@ class Grammar(NodeVisitor):
             mode: ParsingMode,
         ) -> bool:
             """
-            Scan a byte from the input_ `word`.
+            Scan a byte from the input `word`.
             `state` is the current parse state.
             `table` is the parse table.
             `table[k]` is the current column.
@@ -1564,7 +1553,7 @@ class Grammar(NodeVisitor):
             mode: ParsingMode,
         ) -> bool:
             """
-            Scan a byte from the input_ `word`.
+            Scan a byte from the input `word`.
             `state` is the current parse state.
             `table` is the parse table.
             `table[k]` is the current column.
@@ -1688,7 +1677,6 @@ class Grammar(NodeVisitor):
                 if len(origin_states) != 1:
                     continue
                 origin_state = origin_states[0]
-                broke = False
                 while not any(
                     map(
                         lambda b: origin_state.nonterminal.symbol.startswith(b),
@@ -1705,11 +1693,11 @@ class Grammar(NodeVisitor):
                     )
                     origin_states = table[new_state.position].find_dot(new_state.dot)
                     if len(origin_states) != 1:
-                        broke = True
+                        new_state = None
                         break
                     origin_state = origin_states[0]
 
-                if not broke:
+                if new_state is not None:
                     col.replace(current_col_state, new_state)
 
         def _parse_forest(
@@ -1722,9 +1710,9 @@ class Grammar(NodeVisitor):
             starter_bit=-1,
         ):
             """
-            Parse a forest of input_ trees from `word`.
+            Parse a forest of input trees from `word`.
             `start` is the start symbol (default: `<start>`).
-            if `allow_incomplete` is True, the function will return trees even if the input_ ends prematurely.
+            if `allow_incomplete` is True, the function will return trees even if the input ends prematurely.
             """
             if isinstance(start, str):
                 start = NonTerminal(start)
@@ -1741,11 +1729,11 @@ class Grammar(NodeVisitor):
             # Save the maximum scan position, so we can report errors
             self._max_position = -1
 
-            # Index into the input_ word
+            # Index into the input word
             w = 0
 
             # Index into the current table.
-            # Due to bits parsing, this may differ from the input_ position w.
+            # Due to bits parsing, this may differ from the input position w.
             k = 0
 
             # If >= 0, indicates the next bit to be scanned (7-0)
