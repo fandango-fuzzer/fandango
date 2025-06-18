@@ -247,6 +247,7 @@ class Repetition(Node):
         in_message: bool = False,
     ):
         prev_parent_size = parent.size()
+        prev_children_len = len(parent.children)
         self.iteration += 1
 
         for rep in range(random.randint(self.min, self.max)):
@@ -256,10 +257,11 @@ class Repetition(Node):
                 self.node.fuzz(parent, grammar, 0, in_message)
             else:
                 self.node.fuzz(parent, grammar, max_nodes - 1, in_message)
-            max_nodes -= parent.size() - prev_parent_size
-            for child in parent.children[prev_parent_size:]:
+            for child in parent.children[prev_children_len:]:
                 child.origin_nodes.insert(0, (self.id, self.iteration, rep))
+            max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
+            prev_children_len = len(parent.children)
 
     def __repr__(self):
 
