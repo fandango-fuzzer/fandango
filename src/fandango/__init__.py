@@ -64,12 +64,12 @@ import importlib.metadata
 DISTRIBUTION_NAME = "fandango-fuzzer"
 
 
-def version():
+def version() -> str:
     """Return the Fandango version number"""
     return importlib.metadata.version(DISTRIBUTION_NAME)
 
 
-def homepage():
+def homepage() -> str:
     """Return the Fandango homepage"""
     metadata = importlib.metadata.metadata(DISTRIBUTION_NAME)
     return [
