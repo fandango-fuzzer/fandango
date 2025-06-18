@@ -166,7 +166,6 @@ class ProtocolDecorator(ABC):
         raise NotImplementedError("Please Implement this method")
 
 
-
 class SocketProtocolDecorator(ProtocolDecorator):
     BUFFER_SIZE = 1024  # Size of the buffer for receiving data
 
