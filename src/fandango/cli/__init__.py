@@ -658,7 +658,6 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
 
 def help_command(args: argparse.Namespace, in_command_line: bool = True) -> None:
     parser = get_parser(in_command_line)
-    parser.exit_on_error = False
 
     help_issued = False
     for cmd in args.help_command:
@@ -1539,7 +1538,6 @@ def get_help(cmd: str) -> str:
     old_stdout = sys.stdout
     sys.stdout = mystdout = StringIO()
 
-    parser.exit_on_error = False
     try:
         parser.parse_args([cmd] + ["--help"])
     except SystemExit:
@@ -1751,7 +1749,6 @@ def shell_command(args: argparse.Namespace) -> None:
             break
 
         parser = get_parser(in_command_line=False)
-        parser.exit_on_error = False
         try:
             args = parser.parse_args(command)
         except argparse.ArgumentError:
