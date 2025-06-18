@@ -128,6 +128,16 @@ class DerivationTree:
             raise TypeError(f"Expected NonTerminal, got {type(self._symbol)}")
         return self._symbol
 
+    @property
+    def terminal(self) -> Terminal:
+        """
+        Returns the terminal symbol of this node.
+        Raises TypeError if the symbol is not a Terminal.
+        """
+        if not isinstance(self._symbol, Terminal):
+            raise TypeError(f"Expected Terminal, got {type(self._symbol)}")
+        return self._symbol
+
     # noinspection PyPropertyDefinition
     @symbol.setter  # type: ignore[attr-defined, no-redef]
     def symbol(self, symbol):
