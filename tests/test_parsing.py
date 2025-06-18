@@ -8,7 +8,7 @@ from fandango.language.grammar import NodeType, Grammar
 from fandango.language.parse import parse
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
-from utils import RESOURCES_ROOT, DOCS_ROOT
+from .utils import RESOURCES_ROOT, DOCS_ROOT
 
 
 class ParserTests(unittest.TestCase):

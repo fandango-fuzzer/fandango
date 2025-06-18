@@ -9,7 +9,7 @@ import unittest
 import time
 
 from fandango.cli import get_parser
-from utils import RESOURCES_ROOT, DOCS_ROOT
+from .utils import RESOURCES_ROOT, DOCS_ROOT
 
 
 class TestCLI(unittest.TestCase):

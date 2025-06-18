@@ -1,7 +1,5 @@
 import unittest
 
-import fandango
-
 from fandango import parse
 from fandango.constraints.base import (
     ExistsConstraint,
@@ -9,8 +7,7 @@ from fandango.constraints.base import (
     ComparisonConstraint,
 )
 from fandango.constraints.fitness import Comparison
-from fandango.language import NonTerminal, DerivationTree, Symbol, Terminal
-from fandango.language.parser import sa_fandango
+from fandango.language import NonTerminal, DerivationTree, Terminal
 from fandango.language.search import StarSearch, RuleSearch, PopulationSearch
 
 

@@ -7,7 +7,7 @@ import logging
 from fandango.language.parse import parse
 from fandango.constraints.base import *
 from fandango.logger import LOGGER
-from utils import RESOURCES_ROOT
+from .utils import RESOURCES_ROOT
 
 
 class CountingVisitor(ConstraintVisitor):

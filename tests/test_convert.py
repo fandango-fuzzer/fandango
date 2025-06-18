@@ -4,7 +4,7 @@ import shlex
 import subprocess
 import unittest
 
-from utils import DOCS_ROOT, PROJECT_ROOT
+from .utils import DOCS_ROOT, PROJECT_ROOT
 
 
 class test_convert(unittest.TestCase):
