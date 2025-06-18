@@ -517,17 +517,21 @@ class TestBitstreamParsing(TestCLIParsing):
             "fandango parse -f "
             f"{RESOURCES_ROOT / 'rgb.fan'} {RESOURCES_ROOT / 'rgb.txt'} --validate"
         )
+        with open(RESOURCES_ROOT / "rgb.fan") as f:
+            grammar, constraints = parse(f, use_stdlib=False, use_cache=False)
+        with open(RESOURCES_ROOT / "rgb.txt") as f:
+            example = f.read().strip().encode()
+        tree = grammar.parse(example, "<start>")
+        assert tree is not None, "Parsing failed for rgb.txt"
         out, err, code = self.run_command(command)
-        self.assertEqual(0, code)
+        self.assertEqual(0, code, f"Command failed with code {code}: {err}")
         self.assertEqual("", out)
         self.assertEqual("", err)
 
 
 class TestImportParsing(TestCLIParsing):
     def test_local_import(self):
-        command = shlex.split(
-            "fandango fuzz -f " f"{RESOURCES_ROOT / 'import.fan'} -n 1"
-        )
+        command = shlex.split(f"fandango fuzz -f {RESOURCES_ROOT / 'import.fan'} -n 1")
         out, err, code = self.run_command(command)
         self.assertEqual(0, code)
         self.assertEqual("import\n", out)
@@ -536,8 +540,8 @@ class TestImportParsing(TestCLIParsing):
 class TestISO8601Parsing(TestCLIParsing):
     def test_parse_iso8601(self):
         command = shlex.split(
-            "fandango parse -f docs/iso8601.fan tests/resources/iso8601.txt"
+            f"fandango parse -f {DOCS_ROOT / 'iso8601.fan'} {RESOURCES_ROOT / 'iso8601.txt'}"
         )
         out, err, code = self.run_command(command)
-        self.assertEqual(0, code)
+        self.assertEqual(0, code, err)
         self.assertEqual("", err)

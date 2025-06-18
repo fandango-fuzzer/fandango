@@ -943,6 +943,8 @@ class SearchProcessor(FandangoParserVisitor):
 
     def visitStrings(self, ctx: FandangoParser.StringsContext):
         trees, searches, search_map = self.visitChildren(ctx)
+        if len(trees) == 1 and isinstance(trees[0], ast.Constant):
+            return trees[0], searches, search_map
         return ast.JoinedStr(values=trees), searches, search_map
 
     def visitString(self, ctx: FandangoParser.StringContext):
