@@ -226,7 +226,7 @@ where eval(str(<input>)) == int(<output>)
 If we actually do this, we will find that there are a few differences between the way that Python and `bc` interpret expressions:
 
 ```shell
-$ fandango fuzz -f bc.fan -n 1 -c 'eval(str(<input>)) == int(<output>)' bc
+$ fandango fuzz -f bc.fan -n 1 -c 'eval(str(<input_>)) == int(<output>)' bc
 ```
 
 ```{code-cell}

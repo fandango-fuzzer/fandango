@@ -15,7 +15,7 @@ class SymbolType(enum.Enum):
 
 
 class Symbol(abc.ABC):
-    def __init__(self, symbol: str | bytes, type_: SymbolType):
+    def __init__(self, symbol: str | bytes | int, type_: SymbolType):
         self.symbol = symbol
         self.type = type_
         self._is_regex = False
@@ -69,8 +69,15 @@ class NonTerminal(Symbol):
         return isinstance(other, NonTerminal) and self.symbol == other.symbol
 
     def __lt__(self, other):
-        if isinstance(other, NonTerminal):
+        if (
+            isinstance(other, NonTerminal)
+            and isinstance(self.symbol, str)
+            and isinstance(other.symbol, str)
+        ):
             return self.symbol < other.symbol
+        raise TypeError(
+            f"Cannot compare NonTerminal with {type(other).__name__} or symbols are not bytes"
+        )
 
     def __hash__(self):
         return hash((self.symbol, self.type))
@@ -165,6 +172,8 @@ class Terminal(Symbol):
                 symbol = repr(self.symbol)
                 symbol = symbol.replace(r"\\", "\\")
                 return "r" + symbol
+            elif isinstance(self.symbol, int):
+                return "r'" + str(self.symbol) + "'"
 
             if "'" not in self.symbol:
                 return "r'" + str(self.symbol) + "'"

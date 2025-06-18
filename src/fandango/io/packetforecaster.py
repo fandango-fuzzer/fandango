@@ -33,8 +33,8 @@ class PathFinder(NodeVisitor):
 
     def __init__(self, grammar: Grammar):
         self.grammar = grammar
-        self.tree = None
-        self.collapsed_tree = None
+        self.tree: Optional[DerivationTree] = None
+        self.collapsed_tree: Optional[DerivationTree] = None
         self.current_tree: list[list[DerivationTree] | None] = []
         self.current_path: list[tuple[NonTerminal, bool]] = []
         self.result = PacketForecaster.ForecastingResult()
@@ -51,7 +51,9 @@ class PathFinder(NodeVisitor):
     def _collapsed_path(path: list[tuple[NonTerminal, bool]]):
         new_path = []
         for nt, new_node in path:
-            if nt.symbol.startswith("<__"):
+            if isinstance(nt.symbol, str) and nt.symbol.startswith("<__"):
+                continue
+            elif isinstance(nt.symbol, bytes) and nt.symbol.startswith(b"<__"):
                 continue
             new_path.append((nt, new_node))
         return tuple(new_path)
@@ -65,14 +67,15 @@ class PathFinder(NodeVisitor):
         as provided by the DerivationTree parser with the parsing option 'include_controlflow=True'
         """
         if tree is None:
-            tree = DerivationTree(NonTerminal("<start>"))
-        self.tree = tree
-        self.collapsed_tree = self.grammar.collapse(tree)
+            self.tree = DerivationTree(NonTerminal("<start>"))
+        else:
+            self.tree = tree
+        self.collapsed_tree = self.grammar.collapse(self.tree)
         self.current_path = []
         self.current_tree = []
 
         self.result = PacketForecaster.ForecastingResult()
-        self.current_path.append((self.tree.symbol, False))
+        self.current_path.append((self.tree.nonterminal, False))
         if len(self.tree.children) == 0:
             self.current_tree = [None]
         else:
@@ -233,7 +236,9 @@ class PathFinder(NodeVisitor):
 class PacketForecaster:
     class MountingPath:
         def __init__(
-            self, tree: DerivationTree, path: tuple[tuple[NonTerminal, bool], ...]
+            self,
+            tree: Optional[DerivationTree],
+            path: tuple[tuple[NonTerminal, bool], ...],
         ):
             """
             Represents a path in the given DerivationTree where a protocol message can be mounted.
@@ -291,11 +296,13 @@ class PacketForecaster:
             return self.parties_to_packets[item]
 
         def add_packet(
-            self, party: str, packet: "PacketForecaster.ForcastingPacket"
+            self, party: Optional[str], packet: "PacketForecaster.ForcastingPacket"
         ) -> None:
             """
             Adds a packet to the ForecastingResult under the specified party.
             """
+            if party is None:
+                raise FandangoValueError("Party cannot be None")
             if party not in self.parties_to_packets.keys():
                 self.parties_to_packets[party] = (
                     PacketForecaster.ForcastingNonTerminals()
@@ -385,7 +392,10 @@ class PacketForecaster:
                 self.seen_keys.add(node.symbol)
                 return node
 
-            symbol = NonTerminal("<_packet_" + node.symbol.symbol[1:])
+            if isinstance(node.symbol.symbol, str):
+                symbol = NonTerminal("<_packet_" + node.symbol.symbol[1:])
+            else:
+                raise FandangoValueError("NonTerminal symbol must be a string!")
             repl_node = NonTerminalNode(symbol, node.sender, node.recipient)
             self._reduced[symbol] = TerminalNode(Terminal(node.symbol.symbol))
             self.seen_keys.add(symbol)
@@ -396,19 +406,28 @@ class PacketForecaster:
 
         def __init__(self, grammar: Grammar):
             super().__init__(grammar)
-            self.reference_tree = None
+            self.reference_tree: Optional[DerivationTree] = None
+            self.detailed_tree: Optional[DerivationTree] = None
 
         def construct_incomplete_tree(
-            self, state: ParseState, table: list[Set[ParseState] | Column]
+            self, state: ParseState, table: list[Column]
         ) -> DerivationTree:
             i_tree = super().construct_incomplete_tree(state, table)
             i_cpy = deepcopy(i_tree)
+            if self.reference_tree is None:
+                raise FandangoValueError(
+                    "Reference tree must be set before constructing the incomplete tree!"
+                )
             for i_msg, r_msg in zip(
                 i_cpy.protocol_msgs(), self.reference_tree.protocol_msgs()
             ):
                 i_msg.msg.set_children(r_msg.msg.children)
                 i_msg.msg.sources = r_msg.msg.sources
-                i_msg.msg.symbol = NonTerminal("<" + str(r_msg.msg.symbol)[1:])
+                symbol = r_msg.msg.symbol.symbol
+                if isinstance(symbol, str):
+                    i_msg.msg.symbol = NonTerminal("<" + symbol[1:])  # type: ignore[misc]
+                else:
+                    raise FandangoValueError("NonTerminal symbol must be a string!")
             return i_cpy
 
     def __init__(self, grammar: Grammar):

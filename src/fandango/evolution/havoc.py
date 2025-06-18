@@ -76,19 +76,19 @@ def _wrapping_sub(a: int, b: int, byte_size: int = 1) -> int:
 
 def _get_random_index(input: bytearray) -> int:
     """
-    Returns a random index in the input.
+    Returns a random index in the input_.
 
-    :param input: The input to get the index from.
-    :return: A random index in the input, always valid as an index for the input.
+    :param input: The input_ to get the index from.
+    :return: A random index in the input_, always valid as an index for the input_.
     """
     return random.randint(0, len(input) - 1)
 
 
 def _get_random_range_of_length(input: bytearray, length: int) -> tuple[int, int]:
     """
-    Returns a random range of the given length in the input.
+    Returns a random range of the given length in the input_.
 
-    :param input: The input to get the range from.
+    :param input: The input_ to get the range from.
     :param length: The length of the range to get.
     :return: A tuple of the start (inclusive) and end (exclusive) of the range.
     """
@@ -96,7 +96,7 @@ def _get_random_range_of_length(input: bytearray, length: int) -> tuple[int, int
     if length == 0:
         raise ValueError("Length cannot be 0")
     if length > len(input):
-        raise ValueError("Length is greater than the input size")
+        raise ValueError("Length is greater than the input_ size")
     start = random.randint(0, len(input) - length)
     end = start + length
     return start, end
@@ -106,20 +106,20 @@ def _get_random_range_with_max_length(
     input: bytearray, max_length: int
 ) -> tuple[int, int]:
     """
-    Returns a random range of a length between 1 and the max length in the input.
+    Returns a random range of a length between 1 and the max length in the input_.
 
-    :param input: The input to get the range from.
+    :param input: The input_ to get the range from.
     :param max_length: The maximum length of the range to get.
     :return: A tuple of the start (inclusive) and end (exclusive) of the range.
     """
     if max_length > len(input):
-        raise ValueError("Max length is greater than the input size")
+        raise ValueError("Max length is greater than the input_ size")
     length = random.randint(1, max_length)
     return _get_random_range_of_length(input, length)
 
 
 class ByteLevelMutationOperator(ABC):
-    """Base class for all mutation operators that perform byte-level mutations on input data."""
+    """Base class for all mutation operators that perform byte-level mutations on input_ data."""
 
     @abstractmethod
     def mutate(
@@ -129,14 +129,14 @@ class ByteLevelMutationOperator(ABC):
         """
         Abstract method to perform byte-level mutation.
 
-        :param input: The input to mutate.
-        :return: True if the input was mutated, False otherwise.
+        :param input: The input_ to mutate.
+        :return: True if the input_ was mutated, False otherwise.
         """
         pass
 
 
 class BitFlipMutation(ByteLevelMutationOperator):
-    """Flips a random bit in a random byte of the input."""
+    """Flips a random bit in a random byte of the input_."""
 
     def mutate(self, input: bytearray) -> bool:
         if len(input) == 0:
@@ -148,7 +148,7 @@ class BitFlipMutation(ByteLevelMutationOperator):
 
 
 class ByteFlipMutation(ByteLevelMutationOperator):
-    """Flips all bits in a random byte of the input."""
+    """Flips all bits in a random byte of the input_."""
 
     def mutate(self, input: bytearray) -> bool:
         if len(input) == 0:
@@ -160,7 +160,7 @@ class ByteFlipMutation(ByteLevelMutationOperator):
 
 
 class ByteIncMutation(ByteLevelMutationOperator):
-    """Increments a random byte in the input by 1."""
+    """Increments a random byte in the input_ by 1."""
 
     def mutate(self, input: bytearray) -> bool:
         if len(input) == 0:
@@ -172,7 +172,7 @@ class ByteIncMutation(ByteLevelMutationOperator):
 
 
 class ByteDecMutation(ByteLevelMutationOperator):
-    """Decrements a random byte in the input by 1."""
+    """Decrements a random byte in the input_ by 1."""
 
     def mutate(self, input: bytearray) -> bool:
         if len(input) == 0:
@@ -184,7 +184,7 @@ class ByteDecMutation(ByteLevelMutationOperator):
 
 
 class ByteNegMutation(ByteLevelMutationOperator):
-    """Negates a random byte in the input."""
+    """Negates a random byte in the input_."""
 
     def mutate(self, input: bytearray) -> bool:
         if len(input) == 0:
@@ -199,7 +199,7 @@ class ByteNegMutation(ByteLevelMutationOperator):
 
 
 class ByteRandMutation(ByteLevelMutationOperator):
-    """Replaces a random byte in the input with a random value."""
+    """Replaces a random byte in the input_ with a random value."""
 
     def mutate(self, input: bytearray) -> bool:
         if len(input) == 0:
@@ -237,12 +237,14 @@ def _get_format_string(num_bytes: int, little_endian: bool) -> str:
 
 
 class MultiByteArithmeticMutation(ByteLevelMutationOperator):
-    """Performs an addition or subtraction on a random (multi-byte) value in the input, in either little or big endian."""
+    """Performs an addition or subtraction on a random (multi-byte) value in the input_, in either little or big endian."""
 
     def __init__(
         self, num_bytes: int, operation: ArithmeticOperation, little_endian: bool
     ):
         self.num_bytes = num_bytes
+        self.operation = operation
+        self.little_endian = little_endian
         self.format_string = _get_format_string(num_bytes, little_endian)
         match operation:
             case ArithmeticOperation.ADD:
@@ -267,11 +269,15 @@ class MultiByteArithmeticMutation(ByteLevelMutationOperator):
         return True
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(num_bytes={self.num_bytes}, operation={self.operation}, little_endian={self.little_endian})"
+        return (
+            f"{self.__class__.__name__}(num_bytes={self.num_bytes}, "
+            f"operation={self.operation}, "
+            f"little_endian={self.little_endian})"
+        )
 
 
 class MultiByteInterestingMutation(ByteLevelMutationOperator):
-    """Replaces a random (multi-byte) value in the input with a potentially interesting value."""
+    """Replaces a random (multi-byte) value in the input_ with a potentially interesting value."""
 
     def __init__(self, num_bytes: int):
         self.num_bytes = num_bytes
@@ -295,7 +301,7 @@ class MultiByteInterestingMutation(ByteLevelMutationOperator):
 
 
 class BytesDeleteMutation(ByteLevelMutationOperator):
-    """Deletes random bytes from the input."""
+    """Deletes random bytes from the input_."""
 
     def mutate(self, input: bytearray) -> bool:
         if len(input) < 2:
@@ -308,14 +314,14 @@ class BytesDeleteMutation(ByteLevelMutationOperator):
 
 
 class BytesExpandMutation(ByteLevelMutationOperator):
-    """Extends the input by a subslice of itself."""
+    """Extends the input_ by a subslice of itself."""
 
     def mutate(self, input: bytearray) -> bool:
         size = len(input)
         if size >= MAX_SIZE or size == 0:
             return False
 
-        # Don't let input grow beyond MAX_SIZE
+        # Don't let input_ grow beyond MAX_SIZE
         max_value = min(16, size, MAX_SIZE - size)
         if max_value <= 0:
             return False
@@ -327,7 +333,7 @@ class BytesExpandMutation(ByteLevelMutationOperator):
 
 
 class BytesInsertMutation(ByteLevelMutationOperator):
-    """Inserts a slice consisting of a random value from the input into a random position in the input."""
+    """Inserts a slice consisting of a random value from the input_ into a random position in the input_."""
 
     def mutate(self, input: bytearray) -> bool:
         size = len(input)
@@ -349,7 +355,7 @@ class BytesInsertMutation(ByteLevelMutationOperator):
 
 
 class BytesRandInsertMutation(ByteLevelMutationOperator):
-    """Inserts a slice consisting of a random value into a random position in the input."""
+    """Inserts a slice consisting of a random value into a random position in the input_."""
 
     def mutate(self, input: bytearray) -> bool:
         size = len(input)
@@ -371,7 +377,7 @@ class BytesRandInsertMutation(ByteLevelMutationOperator):
 
 
 class BytesSetMutation(ByteLevelMutationOperator):
-    """Sets a random range in the input to a random value from the input."""
+    """Sets a random range in the input_ to a random value from the input_."""
 
     def mutate(self, input: bytearray) -> bool:
         size = len(input)
@@ -388,7 +394,7 @@ class BytesSetMutation(ByteLevelMutationOperator):
 
 
 class BytesRandSetMutation(ByteLevelMutationOperator):
-    """Sets a random range in the input to a random value."""
+    """Sets a random range in the input_ to a random value."""
 
     def mutate(self, input: bytearray) -> bool:
         if len(input) == 0:
@@ -404,7 +410,7 @@ class BytesRandSetMutation(ByteLevelMutationOperator):
 
 
 class BytesCopyMutation(ByteLevelMutationOperator):
-    """Copies a random range in the input to a random position in the input."""
+    """Copies a random range in the input_ to a random position in the input_."""
 
     def mutate(self, input: bytearray) -> bool:
         size = len(input)
@@ -424,7 +430,7 @@ class BytesCopyMutation(ByteLevelMutationOperator):
 
 
 class BytesInsertCopyMutation(ByteLevelMutationOperator):
-    """Inserts a copy of a random range in the input into a random position in the input."""
+    """Inserts a copy of a random range in the input_ into a random position in the input_."""
 
     def mutate(self, input: bytearray) -> bool:
         size = len(input)
@@ -445,7 +451,7 @@ class BytesInsertCopyMutation(ByteLevelMutationOperator):
 
 
 class BytesSwapMutation(ByteLevelMutationOperator):
-    """Swaps a random range in the input with a random range in the input."""
+    """Swaps a random range in the input_ with a random range in the input_."""
 
     def mutate(self, input: bytearray) -> bool:
         size = len(input)
@@ -544,25 +550,27 @@ def havoc_mutations() -> tuple[ByteLevelMutationOperator, ...]:
 
 
 def havoc_mutate(
-    input: DerivationTree,
-    mutations: list[ByteLevelMutationOperator] = havoc_mutations(),
+    input_: DerivationTree,
+    mutations: (
+        list[ByteLevelMutationOperator] | tuple[ByteLevelMutationOperator, ...]
+    ) = havoc_mutations(),
     max_stack_pow=7,
     nop_probability=0,
 ) -> bytes:
     """
     Mutates the input using the given mutations, defaulting to a .
 
-    :param input: The input to mutate.
+    :param input_: The input to mutate.
     :param mutations: The mutations to use.
     :param max_stack_pow: The maximum power of 2 for the stack size.
     :return: The mutated input.
     """
     if random.random() < nop_probability:
-        return input.to_bytes()
+        return input_.to_bytes()
 
-    input = bytearray(input.to_bytes())
+    inp = bytearray(input_.to_bytes())
     for _ in range(1 << random.randint(0, max_stack_pow)):
         mutation = random.choice(mutations)
-        mutation.mutate(input)
-    fixed = bytes(input)
+        mutation.mutate(inp)
+    fixed = bytes(inp)
     return fixed

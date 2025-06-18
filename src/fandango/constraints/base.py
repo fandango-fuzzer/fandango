@@ -213,7 +213,7 @@ class Constraint(GeneticBase, ABC):
     def fitness(
         self,
         tree: DerivationTree,
-        scope: Optional[dict[str, DerivationTree]] = None,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
         population: Optional[list[DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
@@ -280,7 +280,7 @@ class ExpressionConstraint(Constraint):
     def fitness(
         self,
         tree: DerivationTree,
-        scope: Optional[dict[str, DerivationTree]] = None,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
         population: Optional[list[DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
@@ -391,7 +391,7 @@ class ComparisonConstraint(Constraint):
     def fitness(
         self,
         tree: DerivationTree,
-        scope: Optional[dict[str, DerivationTree]] = None,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
         population: Optional[list[DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
@@ -605,7 +605,7 @@ class ConjunctionConstraint(Constraint):
     def fitness(
         self,
         tree: DerivationTree,
-        scope: Optional[dict[str, DerivationTree]] = None,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
         population: Optional[list[DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
@@ -690,7 +690,7 @@ class DisjunctionConstraint(Constraint):
     def fitness(
         self,
         tree: DerivationTree,
-        scope: Optional[dict[str, DerivationTree]] = None,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
         population: Optional[list[DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
@@ -772,7 +772,7 @@ class ImplicationConstraint(Constraint):
     def fitness(
         self,
         tree: DerivationTree,
-        scope: Optional[dict[str, DerivationTree]] = None,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
         population: Optional[list[DerivationTree]] = None,
     ) -> ConstraintFitness:
         """

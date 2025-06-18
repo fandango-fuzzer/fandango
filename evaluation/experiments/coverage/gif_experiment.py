@@ -53,7 +53,7 @@ def evaluate_gif():
     end_time = time.time()
 
     valid_count = 0
-    # List to hold every binary input produced (to later review what was sent to gif.Reader)
+    # List to hold every binary input_ produced (to later review what was sent to gif.Reader)
     inputs_list = []
 
     for i, sol in enumerate(fandango.solution):
