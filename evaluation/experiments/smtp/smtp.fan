@@ -12,10 +12,10 @@ def str_to_unix_time(unix_time_formatted):
     return int(dt.timestamp())
 
 def encode64(input):
-    return base64.b64encode(input.encode('utf-8')).decode('utf-8')
+    return base64.b64encode(str(input).encode('utf-8')).decode('utf-8')
 
 def decode64(input):
-    return base64.b64decode(input.encode('utf-8')).decode('utf-8')
+    return base64.b64decode(str(input).encode('utf-8')).decode('utf-8')
 
 <start> ::= <state_setup>
 
@@ -126,13 +126,13 @@ where forall <mail> in <mail_data>:
     str(<mail>..<request_mail_from>.<email_address>) == str(<mail>..<mail_header_from>.<email_address>)
     and str(<mail>..<request_mail_to>.<email_address>) == str(<mail>..<mail_header_to>.<email_address>)
 
-fandango_is_client = True
+fandango_is_client = False
 
 class Client(ConnectParty):
     def __init__(self):
         super().__init__(
             ownership=Ownership.FANDANGO_PARTY if fandango_is_client else Ownership.EXTERNAL_PARTY,
-            endpoint_type=EndpointType.CONNECT
+            endpoint_type=EndpointType.CONNECT,
             uri="tcp://localhost:8025"
         )
         self.start()
@@ -141,7 +141,7 @@ class Server(ConnectParty):
     def __init__(self):
         super().__init__(
             ownership=Ownership.EXTERNAL_PARTY if fandango_is_client else Ownership.FANDANGO_PARTY,
-            endpoint_type=EndpointType.OPEN
+            endpoint_type=EndpointType.OPEN,
             uri="tcp://localhost:9025"
         )
         self.start()
