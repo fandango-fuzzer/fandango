@@ -320,15 +320,23 @@ def parse_spec(
         if fandango.Fandango.parser != "legacy":
             if fandango.Fandango.parser == "cpp":
                 sa_fandango.USE_CPP_IMPLEMENTATION = True
+                try:
+                    from .parser import sa_fandango_cpp_parser
+                except ImportError:
+                    raise ImportError(
+                        "Requested C++ parser not available. "
+                        "Check your installation "
+                        "or use '--parser=python'"
+                    )
             elif fandango.Fandango.parser == "python":
                 sa_fandango.USE_CPP_IMPLEMENTATION = False
             elif fandango.Fandango.parser == "auto":
                 pass  # let sa_fandango decide
 
             if sa_fandango.USE_CPP_IMPLEMENTATION:
-                LOGGER.debug(f"{filename}: setting up speedy C++ .fan parser")
+                LOGGER.debug(f"{filename}: setting up C++ .fan parser")
             else:
-                LOGGER.debug(f"{filename}: setting up python .fan parser")
+                LOGGER.debug(f"{filename}: setting up Python .fan parser")
 
             input_stream = InputStream(fan_contents)
             error_listener = SpeedyAntlrErrorListener(filename)
@@ -411,7 +419,7 @@ def parse(
     lazy: bool = False,
     given_grammars: list[Grammar] = [],
     start_symbol: Optional[str] = None,
-    includes: list[str] = [],
+    includes: Optional[list[str]] = [],
     max_repetitions: int = 5,
 ) -> tuple[Optional[Grammar], list[Constraint | SoftValue]]:
     """
@@ -754,6 +762,7 @@ def check_grammar_definitions(
             symbol not in used_symbols
             and symbol not in given_used_symbols
             and symbol != start_symbol
+            and symbol != "<start>"  # Allow <start> to be defined but not used
         ):
             LOGGER.warning(f"Symbol {symbol!s} defined, but not used")
 

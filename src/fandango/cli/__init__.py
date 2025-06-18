@@ -57,8 +57,17 @@ from ansi_styles import ansiStyles as styles
 
 from fandango.evolution.algorithm import Fandango
 from fandango.language.grammar import Grammar
-from fandango.language.parse import parse, parse_spec, FandangoSpec
+from fandango.language.parse import parse
 from fandango.logger import LOGGER, print_exception
+
+from fandango.converters.antlr.ANTLRFandangoConverter import ANTLRFandangoConverter
+from fandango.converters.bt.BTFandangoConverter import (
+    BTFandangoConverter,
+    Endianness,
+    BitfieldOrder,
+)
+from fandango.converters.dtd.DTDFandangoConverter import DTDFandangoConverter
+from fandango.converters.fan.FandangoFandangoConverter import FandangoFandangoConverter
 
 from fandango import FandangoParseError, FandangoError
 import fandango
@@ -77,6 +86,9 @@ def terminal_link(url: str, text: str | None = None):
 def homepage_as_link():
     """Return the Fandango homepage, formatted for terminals"""
     homepage = fandango.homepage()
+    if os.getenv("JUPYTER_BOOK") is not None:
+        return homepage  # Don't link in Jupyter Book
+
     if homepage.startswith("http") and sys.stdout.isatty():
         return terminal_link(homepage)
     else:
@@ -138,7 +150,7 @@ def get_parser(in_command_line=True):
             "--parser",
             choices=["python", "cpp", "legacy", "auto"],
             default="auto",
-            help="choose the parser implementation to use (default: 'auto': use cpp if available, otherwise python)",
+            help="choose the parser implementation to use (default: 'auto': use C++ parser code if available, otherwise Python)",
         )
 
     # The subparsers
@@ -460,13 +472,28 @@ def get_parser(in_command_line=True):
         help="write output to OUTPUT (default: none). Use '-' for stdout",
     )
 
-    # Dump
-    dump_parser = commands.add_parser(
-        "dump",
-        help="parse and output .fan specs. For internal testing.",
-        parents=[file_parser, settings_parser],
+    # Convert
+    convert_parser = commands.add_parser(
+        "convert",
+        help="convert given external spec to .fan format",
+        # parents=[settings_parser],
     )
-    dump_parser.add_argument(
+    convert_parser.add_argument(
+        "--from",
+        dest="from_format",
+        choices=["antlr", "g4", "dtd", "010", "bt", "fan", "auto"],
+        default="auto",
+        help="format of the external spec file: 'antlr'/'g4' (ANTLR), 'dtd' (XML DTD), '010'/'bt' (010 Editor Binary Template), 'fan' (Fandango spec), or 'auto' (default: try to guess from file extension)",
+    )
+    convert_parser.add_argument(
+        "--endianness", choices=["little", "big"], help="set endianness for .bt files"
+    )
+    convert_parser.add_argument(
+        "--bitfield-order",
+        choices=["left-to-right", "right-to-left"],
+        help="set bitfield order for .bt files",
+    )
+    convert_parser.add_argument(
         "-o",
         "--output",
         type=argparse.FileType("w"),
@@ -474,13 +501,13 @@ def get_parser(in_command_line=True):
         default=None,
         help="write output to OUTPUT (default: stdout)",
     )
-    dump_parser.add_argument(
-        "dump_files",
-        type=argparse.FileType("r"),
-        metavar="FAN_FILE",
+    convert_parser.add_argument(
+        "convert_files",
+        type=str,
+        metavar="FILENAME",
         default=None,
-        nargs="*",
-        help=".fan files to be parsed. Use '-' for stdin",
+        nargs="+",
+        help="external spec file to be converted. Use '-' for stdin",
     )
 
     if not in_command_line:
@@ -895,7 +922,13 @@ def output_solution_to_directory(solution, args, solution_index: int, file_mode=
 def output_solution_to_file(solution, args, file_mode=None):
     LOGGER.debug(f"Storing solution in file {args.output!r}")
     with open_file(args.output, file_mode, mode="a") as fd:
-        if fd.tell() > 0:
+        try:
+            position = fd.tell()
+        except (UnsupportedOperation, OSError):
+            # If we're writing to stdout, tell() may not be supported
+            position = 0
+
+        if position > 0:
             fd.write(
                 args.separator.encode("utf-8")
                 if file_mode == "binary"
@@ -1223,26 +1256,72 @@ def parse_command(args):
         raise FandangoParseError(f"{errors} error(s) during parsing")
 
 
-def dump_command(args):
-    """Dump Fandango spec, including code, grammar, and constraints"""
+def convert_command(args):
+    """Convert a given language spec into Fandango .fan format"""
 
     output = args.output
     if output is None:
         output = sys.stdout
 
-    for input_file in (args.fan_files or []) + args.dump_files:
-        contents = input_file.read()
+    for input_file in args.convert_files:
+        from_format = args.from_format
+        input_file_lower = input_file.lower()
+        if from_format == "auto":
+            if input_file_lower.endswith(".g4") or input_file_lower.endswith(".antlr"):
+                from_format = "antlr"
+            elif input_file_lower.endswith(".dtd"):
+                from_format = "dtd"
+            elif input_file_lower.endswith(".bt") or input_file_lower.endswith(".010"):
+                from_format = "bt"
+            elif input_file_lower.endswith(".fan"):
+                from_format = "fan"
+            else:
+                raise FandangoError(
+                    f"{input_file!r}: unknown file extension; use --from=FORMAT to specify the format"
+                )
 
-        try:
-            spec = parse_spec(
-                contents, filename=input_file.name, use_cache=args.use_cache
+        temp_file = None
+        if input_file == "-":
+            # Read from stdin
+            with open_file(input_file, "text", mode="r") as fd:
+                contents = fd.read()
+            temp_file = tempfile.NamedTemporaryFile(
+                mode="w", delete=False, suffix=".tmp"
             )
-            print(repr(spec), file=output)
-        except FandangoError as e:
-            print_exception(e)
+            temp_file.write(contents)
+            temp_file.flush()
+            input_file = temp_file.name
 
-        if input_file != sys.stdin:
-            input_file.close()
+        match from_format:
+            case "antlr" | "g4":
+                converter = ANTLRFandangoConverter(input_file)
+                spec = converter.to_fan()
+            case "dtd":
+                converter = DTDFandangoConverter(input_file)
+                spec = converter.to_fan()
+            case "bt" | "010":
+                if args.endianness == "little":
+                    endianness = Endianness.LittleEndian
+                else:
+                    endianness = Endianness.BigEndian
+                if args.bitfield_order == "left-to-right":
+                    bitfield_order = BitfieldOrder.LeftToRight
+                else:
+                    bitfield_order = BitfieldOrder.RightToLeft
+
+                converter = BTFandangoConverter(input_file)
+                spec = converter.to_fan(
+                    endianness=endianness, bitfield_order=bitfield_order
+                )
+            case "fan":
+                converter = FandangoFandangoConverter(input_file)
+                spec = converter.to_fan()
+
+        print(spec, file=output, end="")
+        if temp_file:
+            # Remove temporary file
+            temp_file.close()
+            os.unlink(temp_file.name)
 
     if output != sys.stdout:
         output.close()
@@ -1271,7 +1350,7 @@ COMMANDS = {
     "reset": reset_command,
     "fuzz": fuzz_command,
     "parse": parse_command,
-    "dump": dump_command,
+    "convert": convert_command,
     "cd": cd_command,
     "help": help_command,
     "copyright": copyright_command,

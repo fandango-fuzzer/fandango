@@ -119,11 +119,6 @@ def _cpp_parse(
             "'sa_err_listener' shall be an instance of SA_ErrorListener or None"
         )
 
-    if sa_fandango_cpp_parser is None:
-        raise ImportError(
-            "C++ parser not available but forced. Use `make install` to build it."
-        )
-
     return sa_fandango_cpp_parser.do_parse(
         FandangoParser, stream, entry_rule_name, sa_err_listener
     )

@@ -22,13 +22,16 @@ parts:
     - file: Recursive
     - file: Paths
     - file: ISO8601
+    - file: Converters
     - file: Parsing
     - file: Binary
     - file: Conversion
     - file: Bits
     - file: Gif
 #    - file: Distributions
-#    - file: Whitebox
+    - file: Outputs
+    - file: Protocols
+    - file: Whitebox
     - file: Hatching
   - caption: Fandango Reference
     chapters:

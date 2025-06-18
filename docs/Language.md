@@ -64,9 +64,9 @@ By convention, there are two spaces in front of the `#` and one space after.
 <comment> ::= <_>{2} '#' <_> r'[^\r\n\f]'* <newline>
 ```
 
-:::{note}
+```{note}
 The actual implementation allows a comment at any end of a line.
-:::
+```
 
 
 
@@ -99,9 +99,9 @@ It starts with a letter (regular expression `\w`) or an underscore (`_`), follow
 
 Like Python, Fandango allows all Unicode letters and digits in identifiers.
 
-:::{note}
+```{note}
 For portability, we recommend to use only ASCII letters `a`..`z`, `A`..`Z`, digits `0`..`9`, and underscores `_` in identifiers.
-:::
+```
 
 
 
@@ -160,10 +160,10 @@ Both `N` and `M` can be omitted:
 * Omitting `M` creates an infinite upper bound (i.e, any number of repetitions).
 * The comma may not be omitted, as this would create confusion with `{N}` (see below).
 
-:::{tip}
+```{tip}
 In Fandango, the number of repetitions is limited.
 Use the `--max-repetitions M` flag to change the limit.
-:::
+```
 
 Fandango supports a number of abbreviations for repetitions:
 

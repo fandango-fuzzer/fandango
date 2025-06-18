@@ -140,4 +140,4 @@ def log_message_transfer(
     else:
         msg = msg.to_string()
 
-    LOGGER.info(f"({sender} -> {receiver}): {msg}")
+    LOGGER.info(f"{sender} -> {receiver}: {msg!r}")
