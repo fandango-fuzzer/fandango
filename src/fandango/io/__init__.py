@@ -337,7 +337,7 @@ class ConnectParty(FandangoParty):
         if host is None:
             host = self.DEFAULT_IP
         info = socket.getaddrinfo(host, None, socket.AF_INET)
-        host = info[0][4][0]
+        ip = info[0][4][0]
         if port is None:
             protocol = self.DEFAULT_PORT
 
@@ -346,7 +346,7 @@ class ConnectParty(FandangoParty):
                 endpoint_type=endpoint_type,
                 protocol_type=protocol,
                 ip_type=IpType.IPV4,
-                ip=host,
+                ip=ip,
                 port=port,
                 party_instance=self,
             )
@@ -355,6 +355,32 @@ class ConnectParty(FandangoParty):
 
     def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
         self.protocol_impl.on_send(message, recipient)
+
+    def start(self):
+        self.protocol_impl.start()
+
+    def stop(self):
+        self.protocol_impl.stop()
+
+    @property
+    def ip(self):
+        return self.protocol_impl.ip
+
+    @ip.setter
+    def ip(self, host: str):
+        """Sets the ip for the connection. Applied after a (re)start of the connection party."""
+        info = socket.getaddrinfo(host, None, socket.AF_INET)
+        ip = info[0][4][0]
+        self.protocol_impl.ip = ip
+
+    @property
+    def port(self):
+        return self.protocol_impl.port
+
+    @port.setter
+    def port(self, port: int):
+        """Sets the port for the connection. Applied after a (re)start of the connection party."""
+        self.protocol_impl.port = port
 
 
 class StdOut(FandangoParty):
