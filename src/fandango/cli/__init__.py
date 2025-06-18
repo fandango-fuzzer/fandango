@@ -1001,7 +1001,7 @@ def output_solution_with_test_command(solution, args, file_mode):
         suffix = args.filename_extension
         mode = "wb" if file_mode == "binary" else "w"
 
-        def named_temp_file(*, mode: Literal["w", "wb"], prefix: str, suffix: str):
+        def named_temp_file(*, mode: str, prefix: str, suffix: str):
             try:
                 # Windows needs delete_on_close=False, so the subprocess
                 # can access the file by name
