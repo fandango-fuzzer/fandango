@@ -57,7 +57,13 @@ jobs:
       # Step 7: Run tests using pytest
       - name: Run tests with pytest
         run: |
-          make tests
+          python3 -m pytest --html=report.html --self-contained-html --cov-report xml:coverage.xml --cov-report term --cov-config=.coveragerc --cov=fandango tests/
+          python3 -m coverage lcov
+      # Step 8: Upload test report
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Test Report
+          path: report.html
 
       # Step 8: Cache installed packages for system dependencies
       - name: Cache pygraphviz dependencies
@@ -67,3 +73,10 @@ jobs:
           key: pygraphviz-${{ runner.os }}-python3.11
           restore-keys: |
             pygraphviz-${{ runner.os }}-
+
+      # Step 9: Upload coverage report
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: coverage.lcov
