@@ -1,8 +1,11 @@
 repos:
--   repo: https://github.com/psf/black
-    rev: 22.10.0
+-   repo: local
     hooks:
     -   id: black
+        name: black
+        entry: black .
+        language: system
+        files: ^(src|tests|evaluation)
 -   repo: local
     hooks:
     - id: mypy

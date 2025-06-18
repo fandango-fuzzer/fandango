@@ -15,21 +15,21 @@ from fandango.converters.FandangoConverter import FandangoConverter
 if not "readline" in globals():
     try:
         # Linux and Mac. This should do the trick.
-        import gnureadline as readline  # type: ignore
+        import gnureadline as readline  # type: ignore [import-not-found]
     except Exception:
         pass
 
 if not "readline" in globals():
     try:
         # Windows. This should do the trick.
-        import pyreadline3 as readline  # type: ignore
+        import pyreadline3 as readline  # type: ignore [import-not-found]
     except Exception:
         pass
 
 if not "readline" in globals():
     try:
         # Another Windows alternative
-        import pyreadline as readline  # type: ignore
+        import pyreadline as readline  # type: ignore [import-not-found]
     except Exception:
         pass
 
