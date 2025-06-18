@@ -1,4 +1,4 @@
-<start> ::= <stdin:input> <stdout:output>
-<input> ::= <string>
-<output> ::= <string>
-<string> ::= r'(.|\n)*'
+<start> ::= <In:input> <Out:output>
+<input> ::= <line>
+<output> ::= <line>
+<line> ::= r'.*\n'

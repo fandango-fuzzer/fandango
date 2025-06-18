@@ -101,7 +101,7 @@ format black:
 ## Documentation
 DOCS = docs
 DOCS_SOURCES = $(wildcard $(DOCS)/*.md $(DOCS)/*.fan $(DOCS)/*.ipynb $(DOCS)/*.yml $(DOCS)/*.bib)
-JB = jupyter-book
+JB = JUPYTER_BOOK=1 jupyter-book
 HTML_MARKER = $(DOCS)/_build/html/marker.txt
 ALL_HTML_MARKER = $(DOCS)/_build/html/all-marker.txt
 LATEX_MARKER = $(DOCS)/_build/latex/marker.txt
@@ -199,8 +199,13 @@ TEST_SOURCES = $(wildcard $(TESTS)/*.py $(TESTS)/resources/* $(TESTS)/docs/*.fan
 TEST_MARKER = $(TESTS)/test-marker.txt
 
 .PHONY: test tests run-tests
-test tests $(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
+test: $(PYTHON_SOURCES) $(TEST_SOURCES)
 	$(PYTEST)
+	echo 'Success' > $(TEST_MARKER)
+
+# As above, but run tests in parallel
+tests $(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
+	$(PYTEST) -n auto
 	echo 'Success' > $(TEST_MARKER)
 
 run-tests: $(TEST_MARKER)
@@ -266,7 +271,7 @@ credit:
 # so we can run 'make tests' quickly (see above)
 # without having to reinstall things
 install-test install-tests:
-	$(PIP) install pytest mypy
+	$(PIP) install pytest mypy pytest-xdist
 	$(PIP) install -e ".[test]"
 
 uninstall:

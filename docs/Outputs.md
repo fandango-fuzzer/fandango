@@ -21,6 +21,12 @@ Since Fandango makes use of specifications both to [_produce_](sec:fuzzing) and 
 For this purpose, Fandango provides a means to combine both input and output in a _single specification_.
 Let us see how this works.
 
+```{admonition} Under Construction
+:class: attention
+Checking outputs is currently in beta.
+Check out [the list of open issues](https://github.com/fandango-fuzzer/fandango/issues).
+```
+
 
 ## Interaction Testing
 
@@ -61,10 +67,10 @@ Hence, a nonterminal `<fandango:string>` refers to a `<string>` element that wou
 
 Fandango conveniently defines two standard parties:
 
-* `stdin` refers to the standard input of the program under test; and
-* `stdout` refers to the standard output of the program under test.
+* `In` refers to the standard input of the program under test; and
+* `Out` refers to the standard output of the program under test.
 
-Hence, in a Fandango spec, `<stdin:id>` refers to an `<id>` element that is _received_ (or input) by the program, and `<stdout:result>` is a `<result>` element that is _sent_ (or output) by the program.
+Hence, in a Fandango spec, `<In:id>` refers to an `<id>` element that is _received_ (or input) by the program, and `<Out:result>` is a `<result>` element that is _sent_ (or output) by the program.
 
 With this, we can already write a first specification.
 
@@ -81,7 +87,7 @@ In Fandango, this interaction can be described in a file [`cat.fan`](cat.fan) as
 
 In this specification,
 
-* `<input>` and `<output>` define the inputs and outputs of `cat`, respectively, as a `<string>; and
+* `<input>` and `<output>` define the inputs and outputs of `cat`, respectively, as a `<string>`; and
 * `<string>` defines a regular expression standing for any sequence of characters, including newlines.
 
 Let us use Fandango with this spec to test the `cat` program.
@@ -115,7 +121,7 @@ sequenceDiagram
 
 ```{note}
 Once a communication party is set for a nonterminal, it need not be repeated for its constituents.
-In the above example, we can define `<input>` as `<string>` without restating the `stdin:` prefix; from the first line, it is clear that `<input>` comes from `stdin`.
+In the above example, we can define `<input>` as `<string>` without restating the `In:` prefix; from the first line, it is clear that `<input>` comes from `In`.
 Also, this allows multiple parties to share the same elements (such as `<string>`).
 ```
 

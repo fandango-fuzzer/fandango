@@ -37,7 +37,8 @@ from fandango.language.grammar import (
     SymbolFinder,
     closest_match,
 )
-from fandango.language.io import FandangoIO, FandangoParty
+
+from fandango.io import FandangoIO, FandangoParty
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.search import DescendantAttributeSearch, ItemSearch
@@ -321,15 +322,23 @@ def parse_spec(
         if fandango.Fandango.parser != "legacy":
             if fandango.Fandango.parser == "cpp":
                 sa_fandango.USE_CPP_IMPLEMENTATION = True
+                try:
+                    from .parser import sa_fandango_cpp_parser
+                except ImportError:
+                    raise ImportError(
+                        "Requested C++ parser not available. "
+                        "Check your installation "
+                        "or use '--parser=python'"
+                    )
             elif fandango.Fandango.parser == "python":
                 sa_fandango.USE_CPP_IMPLEMENTATION = False
             elif fandango.Fandango.parser == "auto":
                 pass  # let sa_fandango decide
 
             if sa_fandango.USE_CPP_IMPLEMENTATION:
-                LOGGER.debug(f"{filename}: setting up speedy C++ .fan parser")
+                LOGGER.debug(f"{filename}: setting up C++ .fan parser")
             else:
-                LOGGER.debug(f"{filename}: setting up python .fan parser")
+                LOGGER.debug(f"{filename}: setting up Python .fan parser")
 
             input_stream = InputStream(fan_contents)
             error_listener = SpeedyAntlrErrorListener(filename)
@@ -488,6 +497,8 @@ def parse(
     global INCLUDE_DEPTH
     INCLUDE_DEPTH = 0
 
+    mode = FuzzingMode.COMPLETE
+
     while FILES_TO_PARSE:
         (file, depth) = FILES_TO_PARSE.pop(0)
         if isinstance(file, str):
@@ -505,6 +516,8 @@ def parse(
         )
         parsed_constraints += new_constraints
         assert new_grammar is not None
+        if new_grammar.fuzzing_mode == FuzzingMode.IO:
+            mode = FuzzingMode.IO
 
         if depth == 0:
             # Given file: process in order
@@ -537,10 +550,14 @@ def parse(
         for symbol in g.rules.keys():
             if symbol in grammar.rules:
                 LOGGER.info(f"Redefining {symbol}")
+
         grammar.update(g, prime=False)
         n += 1
 
     LOGGER.debug(f"Final grammar: {[str(key) for key in grammar.rules.keys()]}")
+
+    grammar.fuzzing_mode = mode
+    LOGGER.debug(f"Grammar fuzzing mode: {grammar.fuzzing_mode}")
 
     LOGGER.debug("Processing constraints")
     for constraint in constraints or []:

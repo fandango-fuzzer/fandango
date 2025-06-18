@@ -27,25 +27,19 @@ files = glob.glob(str(RESOURCES_ROOT / "*.fan")) + glob.glob(str(DOCS_ROOT / "*.
 def test_file(fan_file):
     """Test the C++ and python .fan parsers for `fan_file`."""
 
-    command = shlex.split(
-        f"fandango --parser=python dump --no-cache --no-stdlib {fan_file}"
-    )
+    command = shlex.split(f"fandango --parser=python convert {fan_file}")
     python_out, err, return_code = run_command(command)
     assert return_code == 0, err
     assert err == ""
 
-    command = shlex.split(
-        f"fandango --parser=cpp dump --no-cache --no-stdlib {fan_file}"
-    )
-    speedy_out, err, return_code = run_command(command)
+    command = shlex.split(f"fandango --parser=cpp convert {fan_file}")
+    cpp_out, err, return_code = run_command(command)
     assert return_code == 0, err
     assert err == ""
 
-    assert python_out == speedy_out, (
-        f"{fan_file} produced different outputs for Python and Speedy parsers:\n\nPython output:\n{python_out}\n\n"
-        f"Speedy output:\n{speedy_out}"
-    )
-
+    assert (
+        python_out == cpp_out
+    ), f"{fan_file} produced different outputs for Python and C++ parsers:\n\nPython output:\n{python_out}\n\nC++ output:\n{cpp_out}"
 
 if __name__ == "__main__":
     unittest.main()
