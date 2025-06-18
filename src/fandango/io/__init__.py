@@ -165,7 +165,7 @@ class ProtocolDecorator(ABC):
         raise NotImplementedError("Please Implement this method")
 
 
-class SocketProtocolDecorator(ProtocolDecorator):
+class UdpTcpProtocolDecorator(ProtocolDecorator):
     BUFFER_SIZE = 1024  # Size of the buffer for receiving data
 
     def __init__(
@@ -361,7 +361,7 @@ class ConnectParty(FandangoParty):
             protocol = self.DEFAULT_PORT
 
         if protocol == Protocol.TCP or protocol == Protocol.UDP:
-            self.protocol_impl = SocketProtocolDecorator(
+            self.protocol_impl = UdpTcpProtocolDecorator(
                 endpoint_type=endpoint_type,
                 protocol_type=protocol,
                 ip_type=IpType.IPV4,

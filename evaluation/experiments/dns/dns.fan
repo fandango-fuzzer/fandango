@@ -253,7 +253,7 @@ where forall <t> in <type_cname>:
     bytes(<t>.<a_rd_length>) == pack('>H', len(bytes(<t>.<q_name>)))
 
 
-class SocketProtocolDecorator(ProtocolDecorator):
+class UdpTcpProtocolDecorator(UdpTcpProtocolDecorator):
     def on_send(self, message: DerivationTree, recipient: Optional[str]):
         compress_msg(message.to_bytes())
         super().on_send(message, recipient)
