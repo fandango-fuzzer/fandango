@@ -191,6 +191,7 @@ class SocketProtocolDecorator(ProtocolDecorator):
         self._sock: Optional[socket.socket] = None
         self._connection: Optional[socket.socket] = None
         self._send_thread: Optional[threading.Thread] = None
+        self.current_remote_addr = None
         self._lock = threading.Lock()
 
     @property
@@ -300,6 +301,7 @@ class SocketProtocolDecorator(ProtocolDecorator):
                         data = self._connection.recv(self.BUFFER_SIZE)
                     else:
                         data, addr = self._connection.recvfrom(self.BUFFER_SIZE)
+                        self.current_remote_addr = addr
                     if len(data) == 0:
                         continue  # Keep waiting if connection is open but no data
                     self._party_instance.receive_msg(None, data)
@@ -326,7 +328,9 @@ class SocketProtocolDecorator(ProtocolDecorator):
             self._connection.sendall(send_data)
         else:
             if self.endpoint_type == EndpointType.OPEN:
-                pass
+                if self.current_remote_addr is None:
+                    raise FandangoValueError("Client received no data yet. No address to send to.")
+                self._connection.sendto(send_data, self.current_remote_addr)
             else:
                 self._connection.sendto(send_data, (self.ip, self.port))
 
