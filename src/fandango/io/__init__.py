@@ -329,7 +329,9 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
         else:
             if self.endpoint_type == EndpointType.OPEN:
                 if self.current_remote_addr is None:
-                    raise FandangoValueError("Client received no data yet. No address to send to.")
+                    raise FandangoValueError(
+                        "Client received no data yet. No address to send to."
+                    )
                 self._connection.sendto(send_data, self.current_remote_addr)
             else:
                 self._connection.sendto(send_data, (self.ip, self.port))
