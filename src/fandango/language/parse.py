@@ -217,6 +217,7 @@ class FandangoSpec:
         self.constraints: list[str] = constraint_processor.get_constraints(
             splitter.constraints
         )
+        self.constraints.extend(grammar_processor.repetition_constraints)
 
     def run_code(self, filename: str = "<input>"):
         global CURRENT_FILENAME

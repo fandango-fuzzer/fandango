@@ -76,6 +76,7 @@ class GrammarProcessor(FandangoParserVisitor):
         self.global_variables = global_variables
         self.id_prefix = id_prefix
         self.searches = SearchProcessor(Grammar.dummy())
+        self.repetition_constraints = list()
         self.seenParties = set[str]()
         self.additionalRules = dict[NonTerminal, Node]()
         self.max_repetitions = max_repetitions
@@ -201,6 +202,7 @@ class GrammarProcessor(FandangoParserVisitor):
                 bounds_constraint = RepetitionBoundsConstraint(nid,
                                                 expr_data_min=expr_data_min,
                                                 expr_data_max=expr_data_max)
+                self.repetition_constraints.append(bounds_constraint)
                 if min_arg == 0:
                     min_arg = 1
                 if max_arg < min_arg:
@@ -212,6 +214,7 @@ class GrammarProcessor(FandangoParserVisitor):
             return Repetition(node, nid, int(reps[0]), int(reps[0]))
         else:
             bounds_constraint = RepetitionBoundsConstraint(nid, expr_data_min=reps, expr_data_max=reps)
+            self.repetition_constraints.append(bounds_constraint)
             return Repetition(node, nid, min_=1, bounds_constraint=bounds_constraint)
 
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
