@@ -1,6 +1,7 @@
 #!/bin/sh
 # Patch generated HTML output
 
+# Do not copy the prompt when copying code blocks
 patch -c -N _build/html/_static/copybutton.js <<EOF
 *** _build/html/_static/copybutton-orig.js	Fri Feb 28 22:16:14 2025
 --- _build/html/_static/copybutton.js	Fri Feb 28 22:16:56 2025
@@ -24,6 +25,9 @@ EOF
 rm -f _build/html/_static/copybutton.js.*
 
 for file in _build/html/[A-Z]*.html; do
+# Some sh variants also match lowercase files, so we filter them out
+echo $file | grep '/[A-Z]*.html' >/dev/null || continue
+# Patch the file to change the PDF download button
 patch -c -N $file <<EOF
 ***************
 *** 340,348 ****

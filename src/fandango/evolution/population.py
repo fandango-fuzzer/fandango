@@ -118,6 +118,7 @@ class PopulationManager:
                         )
                         suggested_tree.set_all_read_only(False)
                     else:
+                        assert isinstance(failing_tree.tree.symbol.symbol, str)
                         suggested_tree = self._grammar.parse(
                             value, start=failing_tree.tree.symbol.symbol
                         )
@@ -126,6 +127,23 @@ class PopulationManager:
                     replacements[failing_tree.tree] = suggested_tree
                     fixes_made += 1
         if len(replacements) > 0:
+            # Prevent circular replacements
+            deleted = set()
+            for value in set(replacements.values()):
+                if value in deleted:
+                    continue
+                if value in replacements.keys():
+                    if replacements[value] not in replacements.keys():
+                        deleted.add(replacements[value])
+                        del replacements[value]
+                        continue
+                    if random.random() < 0.5:
+                        deleted.add(replacements[value])
+                        del replacements[value]
+                    else:
+                        deleted.add(replacements[replacements[value]])
+                        del replacements[replacements[value]]
+
             individual = individual.replace_multiple(self._grammar, replacements)
         return individual, fixes_made
 
@@ -155,6 +173,7 @@ class IoPopulationManager(PopulationManager):
         tree.append(mounting_option.path[1:], dummy)
 
         fuzz_point = dummy.parent
+        assert fuzz_point is not None
         fuzz_point.set_children(fuzz_point.children[:-1])
         current_pck.node.fuzz(fuzz_point, self._grammar, max_nodes)
 

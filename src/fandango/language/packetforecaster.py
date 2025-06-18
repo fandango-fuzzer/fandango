@@ -37,7 +37,7 @@ class PathFinder(NodeVisitor):
         self.collapsed_tree = None
         self.current_tree: list[list[DerivationTree] | None] = []
         self.current_path: list[tuple[NonTerminal, bool]] = []
-        self.result = PacketForecaster.ForcastingResult()
+        self.result = PacketForecaster.ForecastingResult()
 
     def add_option(self, node: NonTerminalNode) -> None:
         mounting_path = PacketForecaster.MountingPath(
@@ -58,7 +58,7 @@ class PathFinder(NodeVisitor):
 
     def find(
         self, tree: Optional[DerivationTree] = None
-    ) -> "PacketForecaster.ForcastingResult":
+    ) -> "PacketForecaster.ForecastingResult":
         """
         Finds all possible protocol messages that can be mounted to the given DerivationTree.
         :param tree: The DerivationTree to base the search on. The DerivationTree must contain controlflow nodes
@@ -71,7 +71,7 @@ class PathFinder(NodeVisitor):
         self.current_path = []
         self.current_tree = []
 
-        self.result = PacketForecaster.ForcastingResult()
+        self.result = PacketForecaster.ForecastingResult()
         self.current_path.append((self.tree.symbol, False))
         if len(self.tree.children) == 0:
             self.current_tree = [None]
@@ -280,7 +280,7 @@ class PacketForecaster:
             else:
                 self.nt_to_packet[packet.node.symbol] = packet
 
-    class ForcastingResult:
+    class ForecastingResult:
         def __init__(self):
             self.parties_to_packets = dict[
                 str, PacketForecaster.ForcastingNonTerminals
@@ -296,7 +296,7 @@ class PacketForecaster:
             self, party: str, packet: "PacketForecaster.ForcastingPacket"
         ) -> None:
             """
-            Adds a packet to the ForcastingResult under the specified party.
+            Adds a packet to the ForecastingResult under the specified party.
             """
             if party not in self.parties_to_packets.keys():
                 self.parties_to_packets[party] = (
@@ -305,12 +305,12 @@ class PacketForecaster:
             self.parties_to_packets[party].add_packet(packet)
 
         def union(
-            self, other: "PacketForecaster.ForcastingResult"
-        ) -> "PacketForecaster.ForcastingResult":
+            self, other: "PacketForecaster.ForecastingResult"
+        ) -> "PacketForecaster.ForecastingResult":
             """
-            Combines two ForcastingResults by adding all packets from the other result.
-            Returns a copy of the current ForcastingResult with the combined packets.
-            :param other: The other ForcastingResult to combine with.
+            Combines two ForecastingResults by adding all packets from the other result.
+            Returns a copy of the current ForecastingResult with the combined packets.
+            :param other: The other ForecastingResult to combine with.
             """
             c_new = deepcopy(self)
             c_other = deepcopy(other)
@@ -422,7 +422,7 @@ class PacketForecaster:
         )
         self._parser = PacketForecaster.Parser(self.reduced_grammar)
 
-    def predict(self, tree: DerivationTree) -> "ForcastingResult":
+    def predict(self, tree: DerivationTree) -> "ForecastingResult":
         """
         Predicts the next possible message types based on the provided tree and the grammar,
         that the PacketForecaster was initialized with.
@@ -434,7 +434,7 @@ class PacketForecaster:
         self._parser.detailed_tree = tree
 
         finder = PathFinder(self.grammar)
-        options = PacketForecaster.ForcastingResult()
+        options = PacketForecaster.ForecastingResult()
         if history_nts == "":
             options = options.union(finder.find())
         else:
