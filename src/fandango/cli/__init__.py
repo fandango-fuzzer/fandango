@@ -7,7 +7,7 @@ import os
 import os.path
 import traceback
 import re
-from typing import Any
+from typing import IO, Any, Callable
 
 from fandango.constraints.base import Constraint, SoftValue
 
@@ -73,7 +73,7 @@ from fandango import DerivationTree, FandangoParseError, FandangoError
 import fandango
 
 
-def terminal_link(url: str, text: str | None = None):
+def terminal_link(url: str, text: str | None = None) -> str:
     """Output URL as a link"""
     if text is None:
         text = url
@@ -81,7 +81,7 @@ def terminal_link(url: str, text: str | None = None):
     return f"\x1b]8;;{url}\x1b\\{text}\x1b]8;;\x1b\\"
 
 
-def homepage_as_link():
+def homepage_as_link() -> str:
     """Return the Fandango homepage, formatted for terminals"""
     homepage = fandango.homepage()
     if os.getenv("JUPYTER_BOOK") is not None:
@@ -93,7 +93,7 @@ def homepage_as_link():
         return homepage
 
 
-def get_parser(in_command_line=True):
+def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
     # Main parser
     if in_command_line:
         prog = "fandango"
@@ -655,8 +655,8 @@ def get_parser(in_command_line=True):
     return main_parser
 
 
-def help_command(args, **kwargs):
-    parser = get_parser(**kwargs)
+def help_command(args: argparse.Namespace, in_command_line: bool = True) -> None:
+    parser = get_parser(in_command_line)
     parser.exit_on_error = False
 
     help_issued = False
@@ -674,11 +674,15 @@ def help_command(args, **kwargs):
         parser.print_help()
 
 
-def exit_command(args):
+def exit_command(args: argparse.Namespace) -> None:
     pass
 
 
-def parse_files_from_args(args, given_grammars=[], check=True):
+def parse_files_from_args(
+    args: argparse.Namespace,
+    given_grammars: list[Grammar] = [],
+    check: bool = True,
+) -> tuple[Grammar | None, list[Constraint | SoftValue]]:
     """Parse .fan files as given in args"""
     return parse(
         args.fan_files,
@@ -692,7 +696,11 @@ def parse_files_from_args(args, given_grammars=[], check=True):
     )
 
 
-def parse_constraints_from_args(args, given_grammars=[], check=True):
+def parse_constraints_from_args(
+    args: argparse.Namespace,
+    given_grammars: list[Grammar] = [],
+    check: bool = True,
+) -> tuple[Grammar | None, list[Constraint | SoftValue]]:
     """Parse .fan constraints as given in args"""
     max_constraints = [f"maximizing {c}" for c in (args.maxconstraints or [])]
     min_constraints = [f"minimizing {c}" for c in (args.minconstraints or [])]
@@ -709,7 +717,11 @@ def parse_constraints_from_args(args, given_grammars=[], check=True):
     )
 
 
-def parse_contents_from_args(args, given_grammars=[], check=True):
+def parse_contents_from_args(
+    args: argparse.Namespace,
+    given_grammars: list[Grammar] = [],
+    check: bool = True,
+) -> tuple[Grammar | None, list[Constraint | SoftValue]]:
     """Parse .fan content as given in args"""
     max_constraints = [f"maximizing {c}" for c in (args.maxconstraints or [])]
     min_constraints = [f"minimizing {c}" for c in (args.minconstraints or [])]
@@ -737,7 +749,13 @@ def parse_contents_from_args(args, given_grammars=[], check=True):
     )
 
 
-def _copy_setting(args, settings, name, *, args_name=None):
+def _copy_setting(
+    args: argparse.Namespace,
+    settings: dict[str, Any],
+    name: str,
+    *,
+    args_name: str | None = None,
+) -> None:
     if args_name is None:
         args_name = name
     if hasattr(args, args_name) and getattr(args, args_name) is not None:
@@ -745,7 +763,9 @@ def _copy_setting(args, settings, name, *, args_name=None):
         LOGGER.debug(f"Settings: {name} is {settings[name]}")
 
 
-def make_fandango_settings(args, initial_settings={}):
+def make_fandango_settings(
+    args: argparse.Namespace, initial_settings: dict[str, Any] = {}
+) -> dict[str, Any]:
     """Create keyword settings for Fandango() constructor"""
     settings = initial_settings.copy()
     _copy_setting(args, settings, "population_size")
@@ -784,7 +804,7 @@ def make_fandango_settings(args, initial_settings={}):
     return settings
 
 
-def make_evolve_settings(args, file_mode):
+def make_evolve_settings(args: argparse.Namespace, file_mode: str) -> dict[str, Any]:
     evolve_settings: dict[str, Any] = {}
     _copy_setting(args, evolve_settings, "desired_solutions", args_name="num_outputs")
     if args.infinite:
@@ -803,7 +823,7 @@ def make_evolve_settings(args, file_mode):
     return evolve_settings
 
 
-def extract_initial_population(path):
+def extract_initial_population(path: str) -> list[str]:
     try:
         initial_population = list()
         if path.strip().endswith(".zip"):
@@ -823,23 +843,23 @@ def extract_initial_population(path):
 
 
 # Default Fandango file content (grammar, constraints); set with `set`
-DEFAULT_FAN_CONTENT = (None, None)
+DEFAULT_FAN_CONTENT: tuple[Grammar | None, list[Constraint | SoftValue]] = (None, [])
 
 # Additional Fandango constraints; set with `set`
 DEFAULT_CONSTRAINTS: list[Constraint | SoftValue] = []
 
 # Default Fandango algorithm settings; set with `set`
-DEFAULT_SETTINGS = {}
+DEFAULT_SETTINGS: dict[str, Any] = {}
 
 
-def set_command(args):
+def set_command(args: argparse.Namespace) -> None:
     """Set global settings"""
     global DEFAULT_FAN_CONTENT
     global DEFAULT_CONSTRAINTS
     global DEFAULT_SETTINGS
 
     if args.fan_files:
-        DEFAULT_FAN_CONTENT = None, None
+        DEFAULT_FAN_CONTENT = None, []
         DEFAULT_CONSTRAINTS = []
         LOGGER.info("Parsing Fandango content")
         grammar, constraints = parse_contents_from_args(args)
@@ -882,7 +902,7 @@ def set_command(args):
             )
 
 
-def reset_command(args):
+def reset_command(args: argparse.Namespace) -> None:
     """Reset global settings"""
     global DEFAULT_SETTINGS
     DEFAULT_SETTINGS = {}
@@ -891,7 +911,7 @@ def reset_command(args):
     DEFAULT_CONSTRAINTS = []
 
 
-def cd_command(args):
+def cd_command(args: argparse.Namespace) -> None:
     """Change current directory"""
     if args.directory:
         os.chdir(args.directory)
@@ -902,7 +922,9 @@ def cd_command(args):
         print(os.getcwd())
 
 
-def output(tree, args, file_mode: str) -> str | bytes:
+def output(
+    tree: DerivationTree, args: argparse.Namespace, file_mode: str
+) -> str | bytes:
     assert file_mode == "binary" or file_mode == "text"
 
     if args.format == "string":
@@ -937,7 +959,7 @@ def output(tree, args, file_mode: str) -> str | bytes:
     raise NotImplementedError("Unsupported output format")
 
 
-def open_file(filename, file_mode, *, mode="r"):
+def open_file(filename: str, file_mode: str, *, mode: str = "r") -> IO[Any]:
     assert file_mode == "binary" or file_mode == "text"
 
     if file_mode == "binary":
@@ -954,7 +976,13 @@ def open_file(filename, file_mode, *, mode="r"):
     return open(filename, mode)
 
 
-def output_population(population, args, file_mode=None, *, output_on_stdout=True):
+def output_population(
+    population: list[DerivationTree],
+    args: argparse.Namespace,
+    file_mode: str,
+    *,
+    output_on_stdout: bool = True,
+) -> None:
     if args.format == "none":
         return
 
@@ -962,7 +990,12 @@ def output_population(population, args, file_mode=None, *, output_on_stdout=True
         output_solution(solution, args, i, file_mode, output_on_stdout=output_on_stdout)
 
 
-def output_solution_to_directory(solution, args, solution_index: int, file_mode=None):
+def output_solution_to_directory(
+    solution: DerivationTree,
+    args: argparse.Namespace,
+    solution_index: int,
+    file_mode: str,
+) -> None:
     LOGGER.debug(f"Storing solution in directory {args.directory!r}")
     os.makedirs(args.directory, exist_ok=True)
 
@@ -972,7 +1005,11 @@ def output_solution_to_directory(solution, args, solution_index: int, file_mode=
         fd.write(output(solution, args, file_mode))
 
 
-def output_solution_to_file(solution, args, file_mode=None):
+def output_solution_to_file(
+    solution: DerivationTree,
+    args: argparse.Namespace,
+    file_mode: str,
+) -> None:
     LOGGER.debug(f"Storing solution in file {args.output!r}")
     with open_file(args.output, file_mode, mode="a") as fd:
         try:
@@ -991,14 +1028,14 @@ def output_solution_to_file(solution, args, file_mode=None):
 
 
 def output_solution_with_test_command(
-    solution: DerivationTree, args: dict[str, Any], file_mode: str
+    solution: DerivationTree, args: argparse.Namespace, file_mode: str
 ) -> None:
-    LOGGER.info(f"Running {args['test_command']}")
-    base_cmd = [args["test_command"]] + args["test_args"]
+    LOGGER.info(f"Running {args.test_command}")
+    base_cmd = [args.test_command] + args.test_args
 
-    if args["input_method"] == "filename":
+    if args.input_method == "filename":
         prefix = "fandango-"
-        suffix = args["filename_extension"]
+        suffix = args.filename_extension
         mode = "wb" if file_mode == "binary" else "w"
 
         # The return type is private, so we need to use Any
@@ -1006,7 +1043,7 @@ def output_solution_with_test_command(
             try:
                 # Windows needs delete_on_close=False, so the subprocess can access the file by name
                 # mode needs to be one of a long list of possible values, and not available from the library. I don't want to add it here.
-                return tempfile.NamedTemporaryFile(  # type: ignore
+                return tempfile.NamedTemporaryFile(
                     mode=mode,
                     prefix=prefix,
                     suffix=suffix,
@@ -1024,7 +1061,7 @@ def output_solution_with_test_command(
             cmd = base_cmd + [fd.name]
             LOGGER.debug(f"Running {cmd}")
             subprocess.run(cmd, text=True)
-    elif args["input_method"] == "stdin":
+    elif args.input_method == "stdin":
         cmd = base_cmd
         LOGGER.debug(f"Running {cmd} with individual as stdin")
         subprocess.run(
@@ -1032,10 +1069,10 @@ def output_solution_with_test_command(
             input=output(solution, args, file_mode),
             text=(None if file_mode == "binary" else True),
         )
-    elif args["input_method"] == "libfuzzer":
-        if args["file_mode"] != "binary" or file_mode != "binary":
+    elif args.input_method == "libfuzzer":
+        if args.file_mode != "binary" or file_mode != "binary":
             raise NotImplementedError("LibFuzzer harnesses only support binary input")
-        harness = ctypes.CDLL(args["test_command"]).LLVMFuzzerTestOneInput
+        harness = ctypes.CDLL(args.test_command).LLVMFuzzerTestOneInput
 
         bytes = output(solution, args, file_mode)
         harness(bytes, len(bytes))
@@ -1043,7 +1080,11 @@ def output_solution_with_test_command(
         raise NotImplementedError("Unsupported input method")
 
 
-def output_solution_to_stdout(solution, args, file_mode):
+def output_solution_to_stdout(
+    solution: DerivationTree,
+    args: argparse.Namespace,
+    file_mode: str,
+) -> None:
     LOGGER.debug("Printing solution on stdout")
     out = output(solution, args, file_mode)
     if not isinstance(out, str):
@@ -1053,8 +1094,13 @@ def output_solution_to_stdout(solution, args, file_mode):
 
 
 def output_solution(
-    solution, args, solution_index: int, file_mode=None, *, output_on_stdout=True
-):
+    solution: DerivationTree,
+    args: argparse.Namespace,
+    solution_index: int,
+    file_mode: str,
+    *,
+    output_on_stdout: bool = True,
+) -> None:
     assert file_mode == "binary" or file_mode == "text"
 
     if args.format == "none":
@@ -1105,14 +1151,27 @@ def report_syntax_error(
     return f"{filename!r}, line {line}, column {column}: mismatched input {mismatch!r}"
 
 
-def validate(individual, tree, *, filename="<file>"):
-    if isinstance(individual, bytes) and tree.to_bytes() != individual:
-        raise FandangoError(f"{filename!r}: parsed tree does not match original")
-    if isinstance(individual, str) and tree.to_string() != individual:
+def validate(
+    individual: str | bytes | DerivationTree,
+    tree: DerivationTree,
+    *,
+    filename: str = "<file>",
+) -> None:
+    if (
+        (isinstance(individual, DerivationTree) and individual != tree)
+        or (isinstance(individual, bytes) and tree.to_bytes() != individual)
+        or (isinstance(individual, str) and tree.to_string() != individual)
+    ):
         raise FandangoError(f"{filename!r}: parsed tree does not match original")
 
 
-def parse_file(fd, args, grammar, constraints, settings):
+def parse_file(
+    fd: IO[Any],
+    args: argparse.Namespace,
+    grammar: Grammar,
+    constraints: list[Constraint | SoftValue],
+    settings: dict[str, Any],
+) -> DerivationTree:
     """
     Parse a single file `fd` according to `args`, `grammar`, `constraints`, and `settings`, and return the parse tree.
     """
@@ -1174,9 +1233,21 @@ def parse_file(fd, args, grammar, constraints, settings):
         if fitness == 0:
             raise FandangoError(f"{fd.name!r}: constraint {constraint} not satisfied")
 
+    raise FandangoError("This should not happen")
 
-def get_file_mode(args, settings, *, grammar=None, tree=None):
-    if hasattr(args, "file_mode") and args.file_mode != "auto":
+
+def get_file_mode(
+    args: argparse.Namespace,
+    settings: dict[str, Any],
+    *,
+    grammar: Grammar | None = None,
+    tree: DerivationTree | None = None,
+) -> str:
+    if (
+        hasattr(args, "file_mode")
+        and isinstance(args.file_mode, str)
+        and args.file_mode != "auto"
+    ):
         return args.file_mode
 
     if grammar is not None:
@@ -1197,7 +1268,7 @@ def get_file_mode(args, settings, *, grammar=None, tree=None):
     raise FandangoError("Cannot determine file mode")
 
 
-def fuzz_command(args):
+def fuzz_command(args: argparse.Namespace) -> None:
     """Invoke the fuzzer"""
 
     LOGGER.info("---------- Parsing FANDANGO content ----------")
@@ -1234,7 +1305,7 @@ def fuzz_command(args):
         # Ensure that every generated file can be parsed
         # and returns the same string as the original
         try:
-            temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore
+            temp_dir = tempfile.TemporaryDirectory(delete=False)
         except TypeError:
             # Python 3.11 does not know the `delete` argument
             temp_dir = tempfile.TemporaryDirectory()
@@ -1267,7 +1338,7 @@ def fuzz_command(args):
         shutil.rmtree(temp_dir.name)
 
 
-def parse_command(args):
+def parse_command(args: argparse.Namespace) -> None:
     """Parse given files"""
     if args.fan_files:
         # Override given default content (if any)
@@ -1425,17 +1496,17 @@ def convert_command(args):
         output.close()
 
 
-def nop_command(args):
+def nop_command(args: argparse.Namespace) -> None:
     # Dummy command such that we can list ! and / as commands. Never executed.
     pass
 
 
-def copyright_command(args):
+def copyright_command(args: argparse.Namespace) -> None:
     print("Copyright (c) 2024-2025 CISPA Helmholtz Center for Information Security.")
     print("All rights reserved.")
 
 
-def version_command(args):
+def version_command(args: argparse.Namespace) -> None:
     if sys.stdout.isatty():
         version_line = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango{styles.color.close} {fandango.version()}"
     else:
@@ -1443,7 +1514,7 @@ def version_command(args):
     print(version_line)
 
 
-COMMANDS = {
+COMMANDS: dict[str, Callable[[argparse.Namespace], None]] = {
     "set": set_command,
     "reset": reset_command,
     "fuzz": fuzz_command,
@@ -1460,7 +1531,7 @@ COMMANDS = {
 }
 
 
-def get_help(cmd):
+def get_help(cmd: str) -> str:
     """Return the help text for CMD"""
     parser = get_parser(in_command_line=False)
     old_stdout = sys.stdout
@@ -1476,10 +1547,10 @@ def get_help(cmd):
     return mystdout.getvalue()
 
 
-def get_options(cmd):
+def get_options(cmd: str) -> list[str]:
     """Return all --options for CMD"""
     if cmd == "help":
-        return COMMANDS.keys()
+        return list(COMMANDS.keys())
 
     help = get_help(cmd)
     options = []
@@ -1489,7 +1560,7 @@ def get_options(cmd):
     return options
 
 
-def get_filenames(prefix="", fan_only=True):
+def get_filenames(prefix: str = "", fan_only: bool = True) -> list[str]:
     """Return all files that match PREFIX"""
     filenames = []
     all_filenames = glob.glob(prefix + "*")
@@ -1506,7 +1577,7 @@ def get_filenames(prefix="", fan_only=True):
     return filenames
 
 
-def complete(text):
+def complete(text: str) -> list[str]:
     """Return possible completions for TEXT"""
     LOGGER.debug("Completing " + repr(text))
 
@@ -1568,7 +1639,9 @@ def complete(text):
 # print(complete("set -f do"))
 
 
-def exec_single(code, _globals={}, _locals={}):
+def exec_single(
+    code: str, _globals: dict[str, Any] = {}, _locals: dict[str, Any] = {}
+) -> None:
     """Execute CODE in 'single' mode, printing out results if any"""
     block = compile(code, "<input>", mode="single")
     exec(block, _globals, _locals)
@@ -1577,12 +1650,12 @@ def exec_single(code, _globals={}, _locals={}):
 MATCHES = []
 
 
-def shell_command(args):
+def shell_command(args: argparse.Namespace) -> None:
     """Interactive mode"""
 
     PROMPT = "(fandango)"
 
-    def _read_history():
+    def _read_history() -> None:
         if not "readline" in globals():
             return
 
@@ -1597,9 +1670,9 @@ def shell_command(args):
 
         atexit.register(readline.write_history_file, histfile)
 
-    def _complete(text, state):
+    def _complete(text: str, state: int) -> str | None:
         if not "readline" in globals():
-            return
+            return None
 
         global MATCHES
         if state == 0:  # first trigger
@@ -1617,7 +1690,7 @@ def shell_command(args):
             readline.set_completer(_complete)
             readline.parse_and_bind("tab: complete")
 
-        version_command([])
+        version_command(argparse.Namespace())
         print("Type a command, 'help', 'copyright', 'version', or 'exit'.")
 
     last_status = 0
@@ -1695,16 +1768,14 @@ def shell_command(args):
                 help_command(args, in_command_line=False)
             else:
                 command = COMMANDS[args.command]
-                last_status = run(command, args)
+                run(command, args)
         except SystemExit:
             pass
         except KeyboardInterrupt:
             pass
 
-    return last_status
 
-
-def run(command, args):
+def run(command: Callable[[argparse.Namespace], None], args: argparse.Namespace) -> int:
     try:
         command(args)
     except Exception as e:
@@ -1714,7 +1785,9 @@ def run(command, args):
     return 0
 
 
-def main(*argv: str, stdout=sys.stdout, stderr=sys.stderr):
+def main(
+    *argv: str, stdout: IO[Any] | None = sys.stdout, stderr: IO[Any] | None = sys.stderr
+) -> int:
     if "-O" in sys.argv:
         sys.argv.remove("-O")
         os.execl(sys.executable, sys.executable, "-O", *sys.argv)
