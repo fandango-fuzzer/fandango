@@ -12,10 +12,10 @@ def str_to_unix_time(unix_time_formatted):
     return int(dt.timestamp())
 
 def encode64(input):
-    return base64.b64encode(input.encode('utf-8')).decode('utf-8')
+    return base64.b64encode(str(input).encode('utf-8')).decode('utf-8')
 
 def decode64(input):
-    return base64.b64decode(input.encode('utf-8')).decode('utf-8')
+    return base64.b64decode(str(input).encode('utf-8')).decode('utf-8')
 
 <start> ::= <state_setup>
 
@@ -29,21 +29,21 @@ def decode64(input):
 <state_logged_in> ::= <exchange_quit> |  <exchange_mail>
 
 # A successful login consist of the correct username and password and leads to the logged in state.
-<exchange_login_valid> ::= <Client:request_auth><Server:response_auth_expect_user><Client:request_auth_user_correct><Server:response_auth_expect_pass>
+<exchange_login_valid> ::= <Client:request_auth><Server:response_auth_expect_user><Client:request_auth_user_correct><Server:response_auth_expect_pass> \
     <Client:request_auth_pass_correct><Server:response_auth_success><state_logged_in>
 
 # A failed login consist of incorrect username and incorrect password, incorrect username and correct
 # password or correct username and incorrect password. The rule ends with the fuzzer going back into the logged out state.
-<exchange_login_invalid> ::= <Client:request_auth><Server:response_auth_expect_user>
-                          ((<Client:request_auth_user_correct>
-                            <Server:response_auth_expect_pass>
-                            <Client:request_auth_pass_incorrect>
-                          )
-                               |
-                          (<Client:request_auth_user_incorrect>
-                            <Server:response_auth_expect_pass>
-                            (<Client:request_auth_pass_incorrect>|<Client:request_auth_pass_correct>)
-                          ))
+<exchange_login_invalid> ::= <Client:request_auth><Server:response_auth_expect_user> \
+                          ((<Client:request_auth_user_correct> \
+                            <Server:response_auth_expect_pass> \
+                            <Client:request_auth_pass_incorrect> \
+                          ) \
+                               | \
+                          (<Client:request_auth_user_incorrect> \
+                            <Server:response_auth_expect_pass> \
+                            (<Client:request_auth_pass_incorrect>|<Client:request_auth_pass_correct>) \
+                          )) \
                            <Server:response_auth_fail><state_logged_out>
 
 <request_auth> ::= 'AUTH LOGIN\r\n'
@@ -79,20 +79,20 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 
 # When sending a mail the client to the server, the client first tells the server who he is and where to send the mail
 # to, afterwards the client send mail headers and the mail body before finally submitting the mail and goind back to the logged in state.
-<exchange_mail> ::= <Client:request_mail_from><Server:response_mail_from>
-    <Client:request_mail_to><Server:response_mail_to>
-    <Client:request_mail_data><Server:response_mail_data>
+<exchange_mail> ::= <Client:request_mail_from><Server:response_mail_from> \
+    <Client:request_mail_to><Server:response_mail_to> \
+    <Client:request_mail_data><Server:response_mail_data> \
     <Client:Server:mail_data><Server:response_submit><state_logged_in>
 
 <mail_data> ::= <mail_header><mail_body>
-<mail_header> ::= <mail_header_subject>
-    <mail_header_from>
-    <mail_header_to>
-    <mail_header_date>
-    <mail_header_mailer>
-    <mail_header_mime>
-    <mail_header_content_type>
-    <mail_header_encoding>
+<mail_header> ::= <mail_header_subject> \
+    <mail_header_from> \
+    <mail_header_to> \
+    <mail_header_date> \
+    <mail_header_mailer> \
+    <mail_header_mime> \
+    <mail_header_content_type> \
+    <mail_header_encoding> \
     <mail_header_end>
 <mail_body> ::= <mail_contents_64><mail_body_end>
 
@@ -126,26 +126,22 @@ where forall <mail> in <mail_data>:
     str(<mail>..<request_mail_from>.<email_address>) == str(<mail>..<mail_header_from>.<email_address>)
     and str(<mail>..<request_mail_to>.<email_address>) == str(<mail>..<mail_header_to>.<email_address>)
 
-fandango_is_client = True
+fandango_is_client = False
 
-class Client(SocketClient):
+class Client(ConnectParty):
     def __init__(self):
         super().__init__(
-            ownership=Ownership.FUZZER if fandango_is_client else Ownership.EXTERNAL,
-            ip_type=IpType.IPV4,
-            ip="127.0.0.1",
-            port=8025,
-            protocol_type=Protocol.TCP
+            ownership=Ownership.FANDANGO_PARTY if fandango_is_client else Ownership.EXTERNAL_PARTY,
+            endpoint_type=EndpointType.CONNECT,
+            uri="tcp://localhost:8025"
         )
         self.start()
 
-class Server(SocketServer):
+class Server(ConnectParty):
     def __init__(self):
         super().__init__(
-            ownership=Ownership.EXTERNAL if fandango_is_client else Ownership.FUZZER,
-            ip_type=IpType.IPV4,
-            ip="127.0.0.1",
-            port=9025,
-            protocol_type=Protocol.TCP
+            ownership=Ownership.EXTERNAL_PARTY if fandango_is_client else Ownership.FANDANGO_PARTY,
+            endpoint_type=EndpointType.OPEN,
+            uri="tcp://localhost:9025"
         )
         self.start()
