@@ -1,12 +1,15 @@
 repos:
--   repo: https://github.com/psf/black
-    rev: 22.10.0
+-   repo: local
     hooks:
     -   id: black
+        name: black
+        entry: black .
+        language: system
+        files: ^(src|tests|evaluation).*\.py$
 -   repo: local
     hooks:
     - id: mypy
       name: mypy
-      files: (src|tests).*\.py$
+      files: ^(src|tests).*\.py$
       entry: bash -c "git diff --cached --name-only --diff-filter=ACMR | grep -E '(src|tests).*\.py$' | xargs mypy"
       language: system

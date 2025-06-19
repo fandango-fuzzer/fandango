@@ -11,6 +11,8 @@ __all__ = [
     "homepage",
 ]
 
+DEFAULT_MAX_GENERATIONS = 500
+
 
 class FandangoError(ValueError):
     """Generic Error"""
@@ -62,12 +64,12 @@ import importlib.metadata
 DISTRIBUTION_NAME = "fandango-fuzzer"
 
 
-def version():
+def version() -> str:
     """Return the Fandango version number"""
     return importlib.metadata.version(DISTRIBUTION_NAME)
 
 
-def homepage():
+def homepage() -> str:
     """Return the Fandango homepage"""
     metadata = importlib.metadata.metadata(DISTRIBUTION_NAME)
     return [
@@ -226,6 +228,12 @@ class Fandango(FandangoBase):
             if evolve_setting_key in settings:
                 evolve_settings[evolve_setting_key] = settings[evolve_setting_key]
                 del settings[evolve_setting_key]
+
+        if (
+            "desired_solutions" not in evolve_settings
+            and "max_generations" not in evolve_settings
+        ):
+            evolve_settings["max_generations"] = DEFAULT_MAX_GENERATIONS
 
         fandango = FandangoStrategy(
             self.grammar, constraints, start_symbol=self.start_symbol, **settings
