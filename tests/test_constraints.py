@@ -345,9 +345,9 @@ class ConstraintTest(unittest.TestCase):
 
     def test_complex_constraint(self):
         constraint = """
-int(<number>) % 2 == 0;
-int(<number>) > 10000;
-int(<number>) < 100000;
+where int(<number>) % 2 == 0
+where int(<number>) > 10000
+where int(<number>) < 100000
 """
 
         file = open("tests/resources/complex_constraints.fan", "r")
