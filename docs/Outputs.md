@@ -94,17 +94,16 @@ Let us use Fandango with this spec to test the `cat` program.
 We specify the program to be tested on the command line:
 
 ```shell
-$ fandango fuzz -f cat.fan -n 20 cat
+$ fandango talk -f cat.fan cat
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f cat.fan -n 20 cat
+!fandango talk -f cat.fan -n cat
 ```
 
 This command does not issue any outputs (all of them are being sent to `cat`), but here is what is happening behind the scenes:
 
-* Fandango invokes `cat` 20 times (as specified by `-n`), each time with a different input
 * The `cat` command sends back the input via its output;
 * Fandango receives and parses the `cat` output.
 
@@ -135,7 +134,7 @@ For this, [constraints](sec:constraints) are the ideal tool, as they allow us to
 In our case, this simple constraint would suffice:
 
 ```python
-<input> == <output>
+str(<input>) == str(<output>)
 ```
 
 This constraint defines the full behavior of `cat`; it acts as an _oracle_ that determines whether the behavior of the program under test is correct or not.
@@ -150,12 +149,12 @@ Let us add this constraint using a `where` clause to `cat.fan`, resulting in [`c
 Again, we can test, and normally, nothing should happen.
 
 ```shell
-$ fandango fuzz -f cat-oracle.fan -n 20 cat
+$ fandango talk -f cat-oracle.fan cat
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f cat-oracle.fan -n 20 cat
+!fandango talk -f cat-oracle.fan cat
 ```
 
 ```{margin}
@@ -204,12 +203,12 @@ We see that the `<input>` now is an expression; and the expected `<output>` is a
 This is how we can test `bc`:
 
 ```shell
-$ fandango fuzz -f bc.fan -n 1 bc
+$ fandango talk -f bc.fan -n 1 bc
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f bc.fan -n 1 bc
+!fandango talk -f bc.fan -n 1 bc
 ```
 
 Our `.fan` spec checks that the `bc` indeed produces integers, but it does not check whether the result is correct, too.
@@ -226,12 +225,12 @@ where eval(str(<input>)) == int(<output>)
 If we actually do this, we will find that there are a few differences between the way that Python and `bc` interpret expressions:
 
 ```shell
-$ fandango fuzz -f bc.fan -n 1 -c 'eval(str(<input>)) == int(<output>)' bc
+$ fandango talk -f bc.fan -n 1 -c 'eval(str(<input>)) == int(<output>)' bc
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f bc.fan -n 1 -c 'eval(str(<input>)) == int(<output>)' bc
+!fandango talk -f bc.fan -n 1 -c 'eval(str(<input>)) == int(<output>)' bc
 ```
 
 To ensure complete testing, we need to
