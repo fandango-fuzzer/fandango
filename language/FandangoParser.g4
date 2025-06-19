@@ -18,10 +18,12 @@ statement
 // grammar part
 
 production
-    : nonterminal '::=' alternative (':=' expression)? (';' | NEWLINE | EOF)
-    | nonterminal '::=' alternative ('=' expression)? (';' | NEWLINE | EOF)   // deprecated
-    | nonterminal '::=' alternative (':' ':' expression)? (';' | NEWLINE | EOF)  // deprecated
+    : opt_indentation nonterminal '::=' alternative (':=' expression)? (';' | NEWLINE | EOF) DEDENT*
+    | opt_indentation nonterminal '::=' alternative ('=' expression)? (';' | NEWLINE | EOF) DEDENT*   // deprecated
+    | opt_indentation nonterminal '::=' alternative (':' ':' expression)? (';' | NEWLINE | EOF) DEDENT* // deprecated
     ;
+
+opt_indentation: INDENT* | DEDENT*;
 
 alternative: concatenation ('|' concatenation)*;
 
@@ -44,15 +46,12 @@ repeat
     ;
 
 symbol
-    : NEWLINE*
-        ( nonterminal_right
-        | STRING
-        | NUMBER  // for 0 and 1 bits
-        | generator_call
-        | char_set // deprecated
-        | OPEN_PAREN alternative CLOSE_PAREN
-        )
-      NEWLINE*
+    : nonterminal_right
+    | STRING
+    | NUMBER  // for 0 and 1 bits
+    | generator_call
+    | char_set // deprecated
+    | OPEN_PAREN alternative CLOSE_PAREN
     ;
 
 nonterminal_right
@@ -62,8 +61,6 @@ nonterminal_right
 nonterminal
     : '<' NAME '>'
     ;
-
-
 
 generator_call
     : NAME
@@ -85,58 +82,37 @@ constraint
     | implies ';' // deprecated
     ;
 
-implies:
-    NEWLINE*
-    (
-        quantifier ARROW implies // deprecated
-        | quantifier
-    )
-    NEWLINE*
+implies
+    : quantifier ARROW implies // deprecated
+    | quantifier
     ;
 
-quantifier:
-    NEWLINE*
-    (
-        FORALL nonterminal IN selector COLON quantifier
-        | EXISTS nonterminal IN selector COLON quantifier
-        | formula_disjunction
-    )
-    NEWLINE*
+quantifier
+    : FORALL nonterminal IN selector ':' (NEWLINE INDENT quantifier NEWLINE* DEDENT | quantifier)
+    | EXISTS nonterminal IN selector ':' (NEWLINE INDENT quantifier NEWLINE* DEDENT | quantifier)
+    | formula_disjunction
     ;
 
-formula_disjunction:
-    NEWLINE*
-    (
-        formula_conjunction (OR formula_conjunction)*
-    )
-    NEWLINE*
+formula_disjunction
+    : formula_conjunction (OR formula_conjunction)*
     ;
 
-formula_conjunction:
-    NEWLINE*
-    (
-        formula_atom (AND formula_atom)*
-    )
-    NEWLINE*
+formula_conjunction
+    : formula_atom (AND formula_atom)*
     ;
 
 formula_atom
-    :
-    NEWLINE*
-    (
-        formula_comparison
-        | OPEN_PAREN implies CLOSE_PAREN
-        | expr
-    )
-    NEWLINE*
+    : formula_comparison
+    | OPEN_PAREN implies CLOSE_PAREN
+    | expr
     ;
 
 formula_comparison:
     expr (LESS_THAN | GREATER_THAN | EQUALS | GT_EQ | LT_EQ | NOT_EQ_1 | NOT_EQ_2) expr
     ;
 
-expr:
-    selector_length
+expr
+    : selector_length
     | inversion
     | inversion 'if' inversion 'else' inversion
     ;
@@ -146,8 +122,8 @@ selector_length
     | selector
     ;
 
-selector:
-    selection
+selector
+    : selection
     | selector '.' selection
     | selector '..' selection
     ;

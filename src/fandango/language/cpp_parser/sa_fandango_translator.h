@@ -16,6 +16,7 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     PyObject *ProgramContext_cls = NULL;
     PyObject *StatementContext_cls = NULL;
     PyObject *ProductionContext_cls = NULL;
+    PyObject *Opt_indentationContext_cls = NULL;
     PyObject *AlternativeContext_cls = NULL;
     PyObject *ConcatenationContext_cls = NULL;
     PyObject *OperatorContext_cls = NULL;
@@ -250,6 +251,8 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     antlrcpp::Any visitStatement(FandangoParser::StatementContext *ctx);
 
     antlrcpp::Any visitProduction(FandangoParser::ProductionContext *ctx);
+
+    antlrcpp::Any visitOpt_indentation(FandangoParser::Opt_indentationContext *ctx);
 
     antlrcpp::Any visitAlternative(FandangoParser::AlternativeContext *ctx);
 

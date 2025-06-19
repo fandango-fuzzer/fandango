@@ -36,6 +36,9 @@ class FandangoLexerBase(Lexer):
     def emitToken(self, token):
         self._token = token
         self.tokens.append(token)
+        # print(
+        #     f"emitToken(): {token.text!r} ({token.type}) at {token.start}..{token.stop}"
+        # )
 
     def nextToken(self):
         # Check if the end-of-file is ahead and there are still some DEDENTS expected.
@@ -57,21 +60,27 @@ class FandangoLexerBase(Lexer):
             self.emitToken(self.commonToken(FandangoParser.EOF, "<EOF>"))
 
         next_ = super().nextToken()
-        return next_ if len(self.tokens) == 0 else self.tokens.pop(0)
+        token = next_ if len(self.tokens) == 0 else self.tokens.pop(0)
+        print(
+            f"nextToken(): {token.text!r} ({token.type}) at {token.start}..{token.stop}"
+        )
+        return token
 
     def createDedent(self):
-        return self.commonToken(FandangoParser.DEDENT, "")
+        return self.commonToken(FandangoParser.DEDENT, "<DEDENT>")
 
     def commonToken(self, type_: int, text: str):
         stop = self.getCharIndex() - 1
         start = stop if text == "" else stop - len(text) + 1
-        return CommonToken(
+        token = CommonToken(
             self._tokenFactorySourcePair,
             type_,
             Lexer.DEFAULT_TOKEN_CHANNEL,
             start,
             stop,
         )
+        token.text = text
+        return token
 
     @staticmethod
     def get_indentation_count(whitespace: str):
@@ -99,30 +108,29 @@ class FandangoLexerBase(Lexer):
         self.in_python = 0
 
     def on_newline(self):
-        if self.in_python > 0:
-            new_line = self.NEW_LINE_PATTERN.sub("", self.text)
-            spaces = self.SPACES_PATTERN.sub("", self.text)
+        new_line = self.NEW_LINE_PATTERN.sub("", self.text)
+        spaces = self.SPACES_PATTERN.sub("", self.text)
 
-            next_ = self._input.LA(1)
-            next_next = self._input.LA(2)
+        next_ = self._input.LA(1)
+        next_next = self._input.LA(2)
 
-            if self.opened > 0 or (next_next != -1 and next_ in (10, 13, 35)):
+        if self.opened > 0 or (next_next != -1 and next_ in (10, 13, 35)):
+            self.skip()
+        else:
+            self.emitToken(self.commonToken(FandangoParser.NEWLINE, new_line))
+            indent = self.get_indentation_count(spaces)
+            previous = 0 if len(self.indents) == 0 else self.indents[-1]
+
+            if indent == previous:
                 self.skip()
+            elif indent > previous:
+                self.indents.append(indent)
+                self.emitToken(self.commonToken(FandangoParser.INDENT, spaces))
             else:
-                self.emitToken(self.commonToken(FandangoParser.NEWLINE, new_line))
-                indent = self.get_indentation_count(spaces)
-                previous = 0 if len(self.indents) == 0 else self.indents[-1]
-
-                if indent == previous:
-                    self.skip()
-                elif indent > previous:
-                    self.indents.append(indent)
-                    self.emitToken(self.commonToken(FandangoParser.INDENT, spaces))
-                else:
-                    while len(self.indents) > 0 and self.indents[-1] > indent:
-                        self.in_python -= 1
-                        self.emitToken(self.createDedent())
-                        self.indents.pop()
+                while len(self.indents) > 0 and self.indents[-1] > indent:
+                    self.in_python -= 1
+                    self.emitToken(self.createDedent())
+                    self.indents.pop()
 
 
 # These are called from the generated lexer code

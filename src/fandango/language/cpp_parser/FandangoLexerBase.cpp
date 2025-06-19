@@ -150,39 +150,35 @@ void FandangoLexerBase::_python_end() {
 void FandangoLexerBase::_on_newline() {
     // std::clog << "FandangoLexerBase::on_newline" << std::endl;
 
-    if (inPython > 0) {
-        // std::clog << "FandangoLexerBase::on_newline: Handling Python" << std::endl;
+    int next = _input->LA(1);
+    int nextNext = _input->LA(2);
 
-        int next = _input->LA(1);
-        int nextNext = _input->LA(2);
+    if (opened > 0 || (nextNext != -1 && (next == '\n' || next == '\r' || next == '#'))) {
+        // std::clog << "FandangoLexerBase::on_newline: Skipping " << next << std::endl;
+        skip();
+    } else {
+        std::string newLine = std::regex_replace(getText(), NEW_LINE_PATTERN, "");
+        std::string spaces = std::regex_replace(getText(), SPACES_PATTERN, "");
+        // std::clog << "FandangoLexerBase::on_newline: newLine = '" << newLine << "', spaces = '" << spaces << "'" << std::endl;
 
-        if (opened > 0 || (nextNext != -1 && (next == '\n' || next == '\r' || next == '#'))) {
-            // std::clog << "FandangoLexerBase::on_newline: Skipping " << next << std::endl;
+        emitToken(commonToken(FandangoParser::NEWLINE, newLine));
+        int indent = getIndentationCount(spaces);
+        int previous = indents.empty() ? 0 : indents.back();
+        // std::clog << "FandangoLexerBase::on_newline: indent = " << indent << ", previous = " << previous << std::endl;
+
+        if (indent == previous) {
+            // std::clog << "FandangoLexerBase::on_newline: Skipping identical indent " << next << std::endl;
             skip();
+        } else if (indent > previous) {
+            indents.push_back(indent);
+            emitToken(commonToken(FandangoParser::INDENT, spaces));
         } else {
-            std::string newLine = std::regex_replace(getText(), NEW_LINE_PATTERN, "");
-            std::string spaces = std::regex_replace(getText(), SPACES_PATTERN, "");
-            // std::clog << "FandangoLexerBase::on_newline: newLine = '" << newLine << "', spaces = '" << spaces << "'" << std::endl;
-
-            emitToken(commonToken(FandangoParser::NEWLINE, newLine));
-            int indent = getIndentationCount(spaces);
-            int previous = indents.empty() ? 0 : indents.back();
-            // std::clog << "FandangoLexerBase::on_newline: indent = " << indent << ", previous = " << previous << std::endl;
-
-            if (indent == previous) {
-                // std::clog << "FandangoLexerBase::on_newline: Skipping identical indent " << next << std::endl;
-                skip();
-            } else if (indent > previous) {
-                indents.push_back(indent);
-                emitToken(commonToken(FandangoParser::INDENT, spaces));
-            } else {
-                while (!indents.empty() && indents.back() > indent) {
-                    inPython--;
-                    emitToken(commonToken(FandangoParser::DEDENT, "<DEDENT>"));
-                    indents.pop_back();
-                }
-                skipLexer++;
+            while (!indents.empty() && indents.back() > indent) {
+                inPython--;
+                emitToken(commonToken(FandangoParser::DEDENT, "<DEDENT>"));
+                indents.pop_back();
             }
+            skipLexer++;
         }
     }
 
