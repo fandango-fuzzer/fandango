@@ -7,7 +7,7 @@
 
 class Fuzzer(FandangoParty):
     def __init__(self):
-        super().__init__(ownership=Ownership.FUZZER)
+        super().__init__(ownership=Ownership.FANDANGO_PARTY)
 
     def on_send(
         self,
@@ -21,4 +21,4 @@ class Fuzzer(FandangoParty):
 
 class Extern(FandangoParty):
     def __init__(self):
-        super().__init__(ownership=Ownership.EXTERNAL)
+        super().__init__(ownership=Ownership.EXTERNAL_PARTY)

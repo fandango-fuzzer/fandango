@@ -86,6 +86,7 @@ class PopulationManager:
                 individual,
                 failing_trees,
             )
+            _new_fitness, _new_failing_trees = yield from eval_individual(candidate)
             if not PopulationManager.add_unique_individual(
                 current_population, candidate, unique_hashes
             ):
@@ -175,7 +176,7 @@ class IoPopulationManager(PopulationManager):
         fuzz_point = dummy.parent
         assert fuzz_point is not None
         fuzz_point.set_children(fuzz_point.children[:-1])
-        current_pck.node.fuzz(fuzz_point, self._grammar, max_nodes)
+        current_pck.node.fuzz(fuzz_point, self._grammar, 9999)
 
         self._prev_packet_idx = current_idx
         return tree

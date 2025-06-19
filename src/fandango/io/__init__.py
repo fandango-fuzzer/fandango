@@ -25,8 +25,8 @@ class Protocol(enum.Enum):
 
 
 class EndpointType(enum.Enum):
-    SERVER = "Server"
-    CLIENT = "Client"
+    OPEN = "Open"
+    CONNECT = "Connect"
 
 
 class IpType(enum.Enum):
@@ -35,8 +35,8 @@ class IpType(enum.Enum):
 
 
 class Ownership(enum.Enum):
-    FUZZER = "Fuzzer"
-    EXTERNAL = "External"
+    FANDANGO_PARTY = "FandangoParty"
+    EXTERNAL_PARTY = "ExternalParty"
 
 
 RE_PARTY = re.compile(
@@ -78,13 +78,16 @@ def split_party_spec(
 class FandangoParty(ABC):
     """Base class for all parties in Fandango."""
 
-    def __init__(self, ownership: Ownership):
+    def __init__(self, *, ownership: Ownership, party_name: Optional[str] = None):
         """Constructor.
         :param ownership: Ownership of the party, either Ownership.FUZZER or Ownership.EXTERNAL. FUZZER means the party is controlled by Fandango, while EXTERNAL means it is an external party.
         """
-        self.class_name = type(self).__name__
+        if party_name is None:
+            self.party_name = type(self).__name__
+        else:
+            self.party_name = party_name
         self._ownership = ownership
-        FandangoIO.instance().parties[self.class_name] = self
+        FandangoIO.instance().parties[self.party_name] = self
 
     @property
     def ownership(self) -> Ownership:
@@ -97,130 +100,111 @@ class FandangoParty(ABC):
         """
         Returns True if this party is owned by Fandango, False if it is an external party.
         """
-        return self.ownership == Ownership.FUZZER
+        return self.ownership == Ownership.FANDANGO_PARTY
 
     def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
         """
         Called when fandango wants to send a message as this party.
         :param message: The message to send.
+        :param recipient: The recipient of the message. Only present if the grammar specifies a recipient.
         """
-        print(f"({self.class_name}): {message.to_string()}")
+        print(f"({self.party_name}): {message.to_string()}")
 
-    def receive_msg(self, sender: str, message: str | bytes) -> None:
+    def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
         """
         Called when a message has been received by this party.
         :param sender: The sender of the message.
         :param message: The sender of the message.
         """
-        FandangoIO.instance().add_receive(sender, self.class_name, message)
+        if sender is None:
+            parties = list(
+                map(
+                    lambda x: x.party_name,
+                    filter(
+                        lambda party: not party.is_fuzzer_controlled(),
+                        FandangoIO.instance().parties.values(),
+                    ),
+                )
+            )
+            if len(parties) == 1:
+                sender = parties[0]
+            else:
+                raise FandangoValueError(
+                    f"Could not determine sender of message received by {self.party_name}. Please explicitly provide the sender to the receive_msg method."
+                )
+        FandangoIO.instance().add_receive(sender, self.party_name, message)
 
 
-class SocketParty(FandangoParty):
-    """Base class for communicating with parties via sockets."""
+class ProtocolDecorator(ABC):
+    def __init__(
+        self,
+        *,
+        endpoint_type: EndpointType = EndpointType.CONNECT,
+        ip_type: IpType = IpType.IPV4,
+        ip: Optional[str],
+        port: Optional[int],
+        party_instance: FandangoParty,
+    ):
+        self.endpoint_type = endpoint_type
+        self.ip = ip
+        self.port = port
+        self.ip_type = ip_type
+        self._party_instance = party_instance
 
+    def on_send(self, message: DerivationTree, recipient: Optional[str]):
+        raise NotImplementedError("Please Implement this method")
+
+    def start(self):
+        raise NotImplementedError("Please Implement this method")
+
+    def stop(self):
+        raise NotImplementedError("Please Implement this method")
+
+    @property
+    def protocol_type(self) -> Protocol:
+        raise NotImplementedError("Please Implement this method")
+
+
+class UdpTcpProtocolDecorator(ProtocolDecorator):
     BUFFER_SIZE = 1024  # Size of the buffer for receiving data
-    DEFAULT_IP = "127.0.0.1"
-    DEFAULT_PORT = 8000
 
     def __init__(
         self,
         *,
-        ownership: Ownership,
-        endpoint_type: EndpointType,
+        endpoint_type: EndpointType = EndpointType.CONNECT,
+        protocol_type: Protocol,
         ip_type: IpType = IpType.IPV4,
         ip: Optional[str] = None,
         port: Optional[int] = None,
-        protocol_type: Protocol = Protocol.TCP,
+        party_instance: FandangoParty = None,
     ):
-        """Constructor.
-        :param ownership: Ownership of the party, either Ownership.FUZZER or Ownership.EXTERNAL. FUZZER means the party is controlled by Fandango, while EXTERNAL means it is an external party.
-        :param endpoint_type: Type of the endpoint, either EndpointType.SERVER or EndpointType.CLIENT.
-        :param ip_type: Type of IP address, either IpType.IPV4 or IpType.IPV6.
-        :param ip: IP address (as a string) to bind to or connect to.
-        :param port: Port (integer) to bind to or connect to.
-        :param protocol_type: Protocol to use, either Protocol.TCP or Protocol.UDP."""
-        super().__init__(ownership)
-        self.running = False
-        self._ip_type: IpType = ip_type
-        self._protocol_type: Protocol = protocol_type
-        self._ip: str = ip or self.DEFAULT_IP
-        self._port: int = port if port is not None else self.DEFAULT_PORT
-        self._endpoint_type: EndpointType = endpoint_type
-        self.sock: Optional[socket.socket] = None
-        self.connection: Optional[socket.socket] = None
-        self.send_thread: Optional[threading.Thread] = None
-        self.lock = threading.Lock()
-
-    @property
-    def ip(self) -> str:
-        """Returns the IP address that this party is bound (endpoint_type == EndpointType.SERVER) to
-        or connected to (endpoint_type == EndpointType.CLIENT)."""
-        return self._ip
-
-    @ip.setter
-    def ip(self, value: str):
-        """Sets the IP address that this party is bound (endpoint_type == EndpointType.SERVER) to
-        or connected to (endpoint_type == EndpointType.CLIENT)."""
-        if self._ip == value:
-            return
-        self._ip = value
-
-    @property
-    def endpoint_type(self) -> EndpointType:
-        """Returns the type of endpoint, either EndpointType.SERVER or EndpointType.CLIENT."""
-        return self._endpoint_type
-
-    @endpoint_type.setter
-    def endpoint_type(self, value: EndpointType):
-        """Sets the type of endpoint, either EndpointType.SERVER or EndpointType.CLIENT."""
-        if self._endpoint_type == value:
-            return
-        self._endpoint_type = value
-
-    @property
-    def ip_type(self) -> IpType:
-        """Returns the type of IP address, either IpType.IPV4 or IpType.IPV6."""
-        return self._ip_type
-
-    @ip_type.setter
-    def ip_type(self, value: IpType):
-        """Sets the type of IP address, either IpType.IPV4 or IpType.IPV6."""
-        if self._ip_type == value:
-            return
-        self._ip_type = value
+        super().__init__(
+            endpoint_type=endpoint_type,
+            ip_type=ip_type,
+            ip=ip,
+            port=port,
+            party_instance=party_instance,
+        )
+        self._running = False
+        assert protocol_type == Protocol.TCP or protocol_type == Protocol.UDP
+        self._protocol_type = protocol_type
+        self._sock: Optional[socket.socket] = None
+        self._connection: Optional[socket.socket] = None
+        self._send_thread: Optional[threading.Thread] = None
+        self.current_remote_addr = None
+        self._lock = threading.Lock()
 
     @property
     def protocol_type(self) -> Protocol:
-        """Returns the protocol type, either Protocol.TCP or Protocol.UDP."""
+        """Returns the protocol type of this socket."""
         return self._protocol_type
-
-    @protocol_type.setter
-    def protocol_type(self, value: Protocol):
-        """Sets the protocol type, either Protocol.TCP or Protocol.UDP."""
-        if self._protocol_type == value:
-            return
-        self._protocol_type = value
-
-    @property
-    def port(self) -> int:
-        """Returns the port that this party is bound (endpoint_type == EndpointType.SERVER) to
-        or connected to (endpoint_type == EndpointType.CLIENT)."""
-        return self._port
-
-    @port.setter
-    def port(self, value: int):
-        """Sets the port that this party is bound (endpoint_type == EndpointType.SERVER) to
-        or connected to (endpoint_type == EndpointType.CLIENT)."""
-        if self._port == value:
-            return
-        self._port = value
 
     def start(self):
         """Starts the socket party according to the given configuration. If the party is already
         running or ownership is not set to Ownership.FUZZER, it does nothing."""
-        if self.running:
+        if self._running:
             return
-        if not self.is_fuzzer_controlled():
+        if not self._party_instance.is_fuzzer_controlled():
             return
         self.stop()
         self._create_socket()
@@ -233,86 +217,96 @@ class SocketParty(FandangoParty):
             else socket.SOCK_DGRAM
         )
         ip_type = socket.AF_INET if self.ip_type == IpType.IPV4 else socket.AF_INET6
-        self.sock = socket.socket(ip_type, protocol)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self._sock = socket.socket(ip_type, protocol)
+        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     def _connect(self):
-        if self.endpoint_type == EndpointType.SERVER:
-            assert self.sock is not None
-            self.sock.bind((self.ip, self.port))
-            self.sock.listen(1)
-        self.running = True
-        self.send_thread = threading.Thread(target=self._listen, daemon=True)
-        self.send_thread.daemon = True
-        self.send_thread.start()
+        if self.endpoint_type == EndpointType.OPEN:
+            assert self._sock is not None
+            self._sock.bind((self.ip, self.port))
+            if self.protocol_type == Protocol.TCP:
+                self._sock.listen(1)
+        self._running = True
+        self._send_thread = threading.Thread(target=self._listen, daemon=True)
+        self._send_thread.daemon = True
+        self._send_thread.start()
 
     def stop(self):
         """Stops the current socket."""
-        self.running = False
-        if self.send_thread is not None:
-            self.send_thread.join()
-            self.send_thread = None
-        if self.connection is not None:
+        self._running = False
+        if self._send_thread is not None:
+            self._send_thread.join()
+            self._send_thread = None
+        if self._connection is not None:
             try:
-                self.connection.shutdown(socket.SHUT_RDWR)
+                self._connection.shutdown(socket.SHUT_RDWR)
             except OSError:
                 pass
             try:
-                self.connection.close()
+                self._connection.close()
             except OSError:
                 pass
-            self.connection = None
-        if self.sock is not None:
+            self._connection = None
+        if self._sock is not None:
             try:
-                self.sock.shutdown(socket.SHUT_RDWR)
+                self._sock.shutdown(socket.SHUT_RDWR)
             except OSError:
                 pass
             try:
-                self.sock.close()
+                self._sock.close()
             except OSError:
                 pass
-            self.sock = None
+            self._sock = None
 
     def _wait_accept(self):
-        with self.lock:
-            if self.connection is None:
-                if self.endpoint_type == EndpointType.SERVER:
-                    assert self.sock is not None
-                    while self.running:
-                        rlist, _, _ = select.select([self.sock], [], [], 0.1)
-                        if rlist:
-                            self.connection, _ = self.sock.accept()
-                            break
+        with self._lock:
+            if self._connection is None:
+                if self.protocol_type == Protocol.TCP:
+                    if self.endpoint_type == EndpointType.OPEN:
+                        assert self._sock is not None
+                        while self._running:
+                            rlist, _, _ = select.select([self._sock], [], [], 0.1)
+                            if rlist:
+                                self._connection, _ = self._sock.accept()
+                                break
+                    else:
+                        assert self._sock is not None
+                        self._sock.setblocking(False)
+                        try:
+                            self._sock.connect((self.ip, self.port))
+                        except BlockingIOError as e:
+                            pass
+                        while self._running:
+                            _, wlist, _ = select.select([], [self._sock], [], 0.1)
+                            if wlist:
+                                self._connection = self._sock
+                                break
+                        self._sock.setblocking(True)
                 else:
-                    assert self.sock is not None
-                    self.sock.setblocking(False)
-                    try:
-                        self.sock.connect((self._ip, self._port))
-                    except BlockingIOError as e:
-                        pass
-                    while self.running:
-                        _, wlist, _ = select.select([], [self.sock], [], 0.1)
-                        if wlist:
-                            self.connection = self.sock
-                            break
-                    self.sock.setblocking(True)
+                    # For UDP, we do not need to accept a connection
+                    assert self._sock is not None
+                    self._connection = self._sock
 
     def _listen(self):
         self._wait_accept()
-        if not self.running:
+        if not self._running:
             return
 
-        while self.running:
+        while self._running:
             try:
-                assert self.connection is not None
-                rlist, _, _ = select.select([self.connection], [], [], 0.1)
-                if rlist and self.running:
-                    data = self.connection.recv(self.BUFFER_SIZE)
+                assert self._connection is not None
+                rlist, _, _ = select.select([self._connection], [], [], 0.1)
+                if rlist and self._running:
+                    if self.protocol_type == Protocol.TCP:
+                        data = self._connection.recv(self.BUFFER_SIZE)
+                    else:
+                        data, addr = self._connection.recvfrom(self.BUFFER_SIZE)
+                        self.current_remote_addr = addr
                     if len(data) == 0:
                         continue  # Keep waiting if connection is open but no data
-                    self.receive(data)
+                    self._party_instance.receive_msg(None, data)
             except Exception:
-                self.running = False
+                self._running = False
                 break
 
     def on_send(self, message: DerivationTree, recipient: Optional[str]):
@@ -321,86 +315,94 @@ class SocketParty(FandangoParty):
         :param recipient: The recipient of the message. Only present if the grammar specifies a recipient.
         :raises FandangoError: If the socket is not running.
         """
-        if not self.running:
+        if not self._running:
             raise FandangoError("Socket not running. Invoke start() first.")
         self._wait_accept()
-        self.transmit(message, recipient)
 
-    def transmit(self, message: DerivationTree, recipient: Optional[str]):
-        """Transmits a message using the configured socket.
-        :param message: The message to transmit.
-        :param recipient: The recipient of the message. Only present if the grammar specifies a recipient.
-        """
-        assert self.connection is not None
+        assert self._connection is not None
         if message.contains_bits():
-            self.connection.sendall(message.to_bytes())
+            send_data = message.to_bytes()
         else:
-            self.connection.sendall(message.to_string().encode("utf-8"))
-
-    def receive(self, data: bytes):
-        """Receives data from the socket and forwards it to fandango.
-        :param data: The data received from the socket.
-        """
-        sender = "Client" if self.endpoint_type == EndpointType.SERVER else "Server"
-        self.receive_msg(sender, data.decode("utf-8"))
-
-
-class SocketServer(SocketParty):
-    """Socket server class for handling incoming connections and exchanging messages.
-    Equivalent to the SocketParty class, but with the endpoint_type set to SERVER."""
-
-    def __init__(
-        self,
-        *,
-        ownership: Ownership,
-        ip_type: IpType = IpType.IPV4,
-        ip: Optional[str] = None,
-        port: Optional[int] = None,
-        protocol_type: Protocol = Protocol.TCP,
-    ):
-        """Constructor.
-        :param ownership: Ownership of the party, either Ownership.FUZZER or Ownership.EXTERNAL. FUZZER means the party is controlled by Fandango, while EXTERNAL means it is an external party.
-        :param ip_type: Type of IP address, either IpType.IPV4 or IpType.IPV6.
-        :param ip: IP address (as a string) to bind to or connect to.
-        :param port: Port (integer) to bind to or connect to.
-        :param protocol_type: Protocol to use, either Protocol.TCP or Protocol.UDP."""
-        super().__init__(
-            ownership=ownership,
-            endpoint_type=EndpointType.SERVER,
-            ip_type=ip_type,
-            ip=ip,
-            port=port,
-            protocol_type=protocol_type,
-        )
+            send_data = message.to_string().encode("utf-8")
+        if self.protocol_type == Protocol.TCP:
+            self._connection.sendall(send_data)
+        else:
+            if self.endpoint_type == EndpointType.OPEN:
+                if self.current_remote_addr is None:
+                    raise FandangoValueError(
+                        "Client received no data yet. No address to send to."
+                    )
+                self._connection.sendto(send_data, self.current_remote_addr)
+            else:
+                self._connection.sendto(send_data, (self.ip, self.port))
 
 
-class SocketClient(SocketParty):
-    """Socket client class for connecting to a server and exchanging messages.
-    Equivalent to the SocketParty class, but with the endpoint_type set to SERVER."""
+class ConnectParty(FandangoParty):
+    DEFAULT_IP = "127.0.0.1"
+    DEFAULT_PORT = 8000
+    DEFAULT_PROTOCOL = Protocol.TCP
 
     def __init__(
         self,
         *,
-        ownership: Ownership,
-        ip_type: IpType = IpType.IPV4,
-        ip: Optional[str],
-        port: Optional[int],
-        protocol_type: Protocol = Protocol.TCP,
+        uri: str,
+        ownership: Ownership = Ownership.FANDANGO_PARTY,
+        endpoint_type: EndpointType = EndpointType.CONNECT,
     ):
-        """Constructor.
-        :param ownership: Ownership of the party, either Ownership.FUZZER or Ownership.EXTERNAL. FUZZER means the party is controlled by Fandango, while EXTERNAL means it is an external party.
-        :param ip_type: Type of IP address, either IpType.IPV4 or IpType.IPV6.
-        :param ip: IP address (as a string) to bind to or connect to.
-        :param port: Port (integer) to bind to or connect to.
-        :param protocol_type: Protocol to use, either Protocol.TCP or Protocol.UDP."""
-        super().__init__(
-            ownership=ownership,
-            endpoint_type=EndpointType.CLIENT,
-            ip_type=ip_type,
-            ip=ip,
-            port=port,
-            protocol_type=protocol_type,
-        )
+        party_name, protocol, host, port = split_party_spec(uri)
+        super().__init__(ownership=ownership, party_name=party_name)
+        self.protocol_impl = None
+
+        if protocol is None:
+            protocol = self.DEFAULT_PROTOCOL.value
+        protocol = Protocol(protocol)
+        if host is None:
+            host = self.DEFAULT_IP
+        info = socket.getaddrinfo(host, None, socket.AF_INET)
+        ip = info[0][4][0]
+        if port is None:
+            protocol = self.DEFAULT_PORT
+
+        if protocol == Protocol.TCP or protocol == Protocol.UDP:
+            self.protocol_impl = UdpTcpProtocolDecorator(
+                endpoint_type=endpoint_type,
+                protocol_type=protocol,
+                ip_type=IpType.IPV4,
+                ip=ip,
+                port=port,
+                party_instance=self,
+            )
+        else:
+            raise FandangoValueError(f"Unsupported protocol: {protocol}")
+
+    def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
+        self.protocol_impl.on_send(message, recipient)
+
+    def start(self):
+        self.protocol_impl.start()
+
+    def stop(self):
+        self.protocol_impl.stop()
+
+    @property
+    def ip(self):
+        return self.protocol_impl.ip
+
+    @ip.setter
+    def ip(self, host: str):
+        """Sets the ip for the connection. Applied after a (re)start of the connection party."""
+        info = socket.getaddrinfo(host, None, socket.AF_INET)
+        ip = info[0][4][0]
+        self.protocol_impl.ip = ip
+
+    @property
+    def port(self):
+        return self.protocol_impl.port
+
+    @port.setter
+    def port(self, port: int):
+        """Sets the port for the connection. Applied after a (re)start of the connection party."""
+        self.protocol_impl.port = port
 
 
 class StdOut(FandangoParty):
@@ -409,7 +411,7 @@ class StdOut(FandangoParty):
     """
 
     def __init__(self):
-        super().__init__(Ownership.FUZZER)
+        super().__init__(ownership=Ownership.FANDANGO_PARTY)
         self.stream = sys.stdout
 
     def on_send(self, message: DerivationTree, recipient: Optional[str]):
@@ -426,7 +428,7 @@ class StdIn(FandangoParty):
     """
 
     def __init__(self):
-        super().__init__(Ownership.EXTERNAL)
+        super().__init__(ownership=Ownership.EXTERNAL_PARTY)
         self.running = True
         self.stream = sys.stdin
         self.listen_thread = threading.Thread(target=self._listen_loop, daemon=True)
@@ -440,7 +442,7 @@ class StdIn(FandangoParty):
                 if read == "":
                     self.running = False
                     break
-                self.receive_msg(self.class_name, read)
+                self.receive_msg(self.party_name, read)
             else:
                 time.sleep(0.1)
 
@@ -452,14 +454,14 @@ class Out(FandangoParty):
     """
 
     def __init__(self):
-        super().__init__(Ownership.EXTERNAL)
+        super().__init__(ownership=Ownership.EXTERNAL_PARTY)
         self.proc = ProcessManager.instance().get_process()
         threading.Thread(target=self._listen_loop, daemon=True).start()
 
     def _listen_loop(self):
         while True:
             line = self.proc.stdout.readline()
-            self.receive_msg(self.class_name, line)
+            self.receive_msg(self.party_name, line)
 
 
 class In(FandangoParty):
@@ -469,7 +471,7 @@ class In(FandangoParty):
     """
 
     def __init__(self):
-        super().__init__(Ownership.FUZZER)
+        super().__init__(ownership=Ownership.FANDANGO_PARTY)
         self.proc = ProcessManager.instance().get_process()
         self._close_post_transmit = False
 
