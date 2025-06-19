@@ -7,7 +7,10 @@ from fandango.language.parse import parse
 def main():
     # Parse grammar and constraints
     with open("smtp.fan") as f:
-        grammar, constraints = parse(f, use_stdlib=False, )
+        grammar, constraints = parse(
+            f,
+            use_stdlib=False,
+        )
 
     time_start = time.time()
     fandango = Fandango(
