@@ -67,7 +67,7 @@ class FandangoLexerBase(Lexer):
         return token
 
     def createDedent(self) -> Token:
-        return self.commonToken(FandangoParser.DEDENT, "<DEDENT>")
+        return self.commonToken(FandangoParser.DEDENT, "")
 
     def commonToken(self, type_: int, text: str) -> Token:
         stop = self.getCharIndex() - 1
