@@ -629,6 +629,10 @@ public:
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *WHERE();
     ImpliesContext *implies();
+    std::vector<antlr4::tree::TerminalNode *> INDENT();
+    antlr4::tree::TerminalNode* INDENT(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> DEDENT();
+    antlr4::tree::TerminalNode* DEDENT(size_t i);
     antlr4::tree::TerminalNode *MINIMIZING();
     ExprContext *expr();
     antlr4::tree::TerminalNode *SEMI_COLON();

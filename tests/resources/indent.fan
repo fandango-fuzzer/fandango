@@ -1,5 +1,8 @@
 # Various indentation tests
 
+<start> ::= ('a' | 'b' | 'c')+
+    where str(<start>) != 'd'
+
 <a> ::= <b>
     <b> ::= <c>
 

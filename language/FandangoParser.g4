@@ -74,9 +74,9 @@ char_set
 
 // constraint part
 constraint
-    : WHERE implies
-    | MINIMIZING expr (';' | NEWLINE | EOF)
-    | MAXIMIZING expr (';' | NEWLINE | EOF)
+    : INDENT* WHERE implies DEDENT*
+    | INDENT* MINIMIZING expr (';' | NEWLINE | EOF) DEDENT*
+    | INDENT* MAXIMIZING expr (';' | NEWLINE | EOF) DEDENT*
     | implies ';' // deprecated
     ;
 
