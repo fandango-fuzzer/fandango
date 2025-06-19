@@ -406,7 +406,6 @@ public:
     antlr4::tree::TerminalNode *GRAMMAR_ASSIGN();
     AlternativeContext *alternative();
     antlr4::tree::TerminalNode *SEMI_COLON();
-    antlr4::tree::TerminalNode *NEWLINE();
     antlr4::tree::TerminalNode *EOF();
     std::vector<antlr4::tree::TerminalNode *> INDENT();
     antlr4::tree::TerminalNode* INDENT(size_t i);
@@ -414,6 +413,8 @@ public:
     ExpressionContext *expression();
     std::vector<antlr4::tree::TerminalNode *> DEDENT();
     antlr4::tree::TerminalNode* DEDENT(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> NEWLINE();
+    antlr4::tree::TerminalNode* NEWLINE(size_t i);
     antlr4::tree::TerminalNode *ASSIGN();
     std::vector<antlr4::tree::TerminalNode *> COLON();
     antlr4::tree::TerminalNode* COLON(size_t i);
@@ -636,8 +637,9 @@ public:
     antlr4::tree::TerminalNode *MINIMIZING();
     ExprContext *expr();
     antlr4::tree::TerminalNode *SEMI_COLON();
-    antlr4::tree::TerminalNode *NEWLINE();
     antlr4::tree::TerminalNode *EOF();
+    std::vector<antlr4::tree::TerminalNode *> NEWLINE();
+    antlr4::tree::TerminalNode* NEWLINE(size_t i);
     antlr4::tree::TerminalNode *MAXIMIZING();
 
 
@@ -675,7 +677,8 @@ public:
     antlr4::tree::TerminalNode *IN();
     SelectorContext *selector();
     antlr4::tree::TerminalNode *COLON();
-    antlr4::tree::TerminalNode *NEWLINE();
+    std::vector<antlr4::tree::TerminalNode *> NEWLINE();
+    antlr4::tree::TerminalNode* NEWLINE(size_t i);
     antlr4::tree::TerminalNode *INDENT();
     QuantifierContext *quantifier();
     antlr4::tree::TerminalNode *DEDENT();

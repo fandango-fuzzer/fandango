@@ -37,7 +37,7 @@ class FandangoLexerBase(Lexer):
         self._token = token  # type: ignore[assignment]
         self.tokens.append(token)
         # print(
-        #     f"emitToken(): {token.text!r} ({token.type}) at {token.start}..{token.stop}"
+        #     f"emitToken(): {token.text!r} ({token.type}) at {token.start}..{token.stop}", file=sys.stderr
         # )
 
     def nextToken(self) -> Token:

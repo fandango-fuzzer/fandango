@@ -20,4 +20,4 @@ where str(<start>) != 'd'
 
     <start> ::= ('a' | 'b' | 'c')+ 'd'
     where str(<start>) != 'd'
-
+    

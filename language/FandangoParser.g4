@@ -18,9 +18,9 @@ statement
 // grammar part
 
 production
-    : INDENT* nonterminal '::=' alternative (':=' expression)? (';' | NEWLINE | EOF) DEDENT*
-    | INDENT* nonterminal '::=' alternative ('=' expression)? (';' | NEWLINE | EOF) DEDENT* // deprecated
-    | INDENT* nonterminal '::=' alternative (':' ':' expression)? (';' | NEWLINE | EOF) DEDENT* // deprecated
+    : INDENT* nonterminal '::=' alternative (':=' expression)? (';' | NEWLINE+ | EOF) DEDENT*
+    | INDENT* nonterminal '::=' alternative ('=' expression)? (';' | NEWLINE+ | EOF) DEDENT* // deprecated
+    | INDENT* nonterminal '::=' alternative (':' ':' expression)? (';' | NEWLINE+ | EOF) DEDENT* // deprecated
     ;
 
 alternative: concatenation ('|' concatenation)*;
@@ -75,8 +75,8 @@ char_set
 // constraint part
 constraint
     : INDENT* WHERE implies DEDENT*
-    | INDENT* MINIMIZING expr (';' | NEWLINE | EOF) DEDENT*
-    | INDENT* MAXIMIZING expr (';' | NEWLINE | EOF) DEDENT*
+    | INDENT* MINIMIZING expr (';' | NEWLINE+ | EOF) DEDENT*
+    | INDENT* MAXIMIZING expr (';' | NEWLINE+ | EOF) DEDENT*
     | implies ';' // deprecated
     ;
 
@@ -88,7 +88,7 @@ implies
 quantifier
     : FORALL nonterminal IN selector ':' (NEWLINE INDENT quantifier DEDENT | quantifier) // deprecated
     | EXISTS nonterminal IN selector ':' (NEWLINE INDENT quantifier DEDENT | quantifier) // deprecated
-    | formula_disjunction (';' | NEWLINE | EOF)
+    | formula_disjunction (';' | NEWLINE+ | EOF)
     ;
 
 formula_disjunction
