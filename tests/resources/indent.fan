@@ -1,8 +1,4 @@
 # Various indentation tests
-
-<start> ::= ('a' | 'b' | 'c')+
-    where str(<start>) != 'd'
-
 <a> ::= <b>
     <b> ::= <c>
 
@@ -15,3 +11,13 @@ def foo():
         pass
     elif 2:
         pass
+
+<start> ::= ('a' | 'b' | 'c')+
+where str(<start>) != 'd'
+
+<start> ::= ('a' | 'b' | 'c')+
+    where str(<start>) != 'd'
+
+    <start> ::= ('a' | 'b' | 'c')+ 'd'
+    where str(<start>) != 'd'
+

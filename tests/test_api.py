@@ -8,15 +8,15 @@ from fandango import Fandango, FandangoParseError
 
 
 class APITest(unittest.TestCase):
-    SPEC_abc = """
+    SPEC_abc = r"""
     <start> ::= ('a' | 'b' | 'c')+
     where str(<start>) != 'd'
-    """
+"""
 
-    SPEC_abcd = """
+    SPEC_abcd = r"""
     <start> ::= ('a' | 'b' | 'c')+ 'd'
     where str(<start>) != 'd'
-    """
+"""
 
     def test_fuzz(self):
         with open("docs/persons-faker.fan") as persons:
