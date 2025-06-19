@@ -1,14 +1,14 @@
 import re
 import sys
-from typing import TextIO
+from typing import TextIO, Optional
 
 # noinspection PyUnresolvedReferences
 from fandango.language.parser.FandangoParser import FandangoParser
-from antlr4 import Lexer, InputStream
+from antlr4 import Lexer, InputStream, Token
 from antlr4.Token import CommonToken
 
 # Current lexer instance, set by the generated lexer code
-lexer = None
+lexer: Optional["FandangoLexerBase"] = None
 
 
 class FandangoLexerBase(Lexer):
@@ -17,8 +17,8 @@ class FandangoLexerBase(Lexer):
 
     def __init__(self, input_: InputStream, output: TextIO = sys.stdout):
         super().__init__(input_, output)
-        self.tokens = []
-        self.indents = []
+        self.tokens: list[Token] = []
+        self.indents: list[int] = []
         self.opened = 0
         self.in_python = 0
 
@@ -33,14 +33,14 @@ class FandangoLexerBase(Lexer):
         self.in_python = 0
         super().reset()
 
-    def emitToken(self, token):
-        self._token = token
+    def emitToken(self, token: Token):
+        self._token = token  # type: ignore[assignment]
         self.tokens.append(token)
         # print(
         #     f"emitToken(): {token.text!r} ({token.type}) at {token.start}..{token.stop}"
         # )
 
-    def nextToken(self):
+    def nextToken(self) -> Token:
         # Check if the end-of-file is ahead and there are still some DEDENTS expected.
         if self._input.LA(1) == FandangoParser.EOF and len(self.indents) != 0:
             # Remove any trailing EOF tokens from our buffer.
@@ -66,10 +66,10 @@ class FandangoLexerBase(Lexer):
         # )
         return token
 
-    def createDedent(self):
+    def createDedent(self) -> Token:
         return self.commonToken(FandangoParser.DEDENT, "<DEDENT>")
 
-    def commonToken(self, type_: int, text: str):
+    def commonToken(self, type_: int, text: str) -> Token:
         stop = self.getCharIndex() - 1
         start = stop if text == "" else stop - len(text) + 1
         token = CommonToken(
@@ -83,7 +83,7 @@ class FandangoLexerBase(Lexer):
         return token
 
     @staticmethod
-    def get_indentation_count(whitespace: str):
+    def get_indentation_count(whitespace: str) -> int:
         count = 0
         for c in whitespace:
             if c == "\t":
@@ -92,22 +92,22 @@ class FandangoLexerBase(Lexer):
                 count += 1
         return count
 
-    def at_start_of_input(self):
+    def at_start_of_input(self) -> bool:
         return self.getCharIndex() == 0
 
-    def open_brace(self):
+    def open_brace(self) -> None:
         self.opened += 1
 
-    def close_brace(self):
+    def close_brace(self) -> None:
         self.opened -= 1
 
-    def python_start(self):
+    def python_start(self) -> None:
         self.in_python += 1
 
-    def python_end(self):
+    def python_end(self) -> None:
         self.in_python = 0
 
-    def on_newline(self):
+    def on_newline(self) -> None:
         new_line = self.NEW_LINE_PATTERN.sub("", self.text)
         spaces = self.SPACES_PATTERN.sub("", self.text)
 
@@ -136,31 +136,37 @@ class FandangoLexerBase(Lexer):
 # These are called from the generated lexer code
 
 
-def at_start_of_input():
+def at_start_of_input() -> None:
     global lexer
-    return lexer.at_start_of_input()
+    assert lexer is not None
+    lexer.at_start_of_input()
 
 
-def open_brace():
+def open_brace() -> None:
     global lexer
-    return lexer.open_brace()
+    assert lexer is not None
+    lexer.open_brace()
 
 
-def close_brace():
+def close_brace() -> None:
     global lexer
-    return lexer.close_brace()
+    assert lexer is not None
+    lexer.close_brace()
 
 
-def python_start():
+def python_start() -> None:
     global lexer
-    return lexer.python_start()
+    assert lexer is not None
+    lexer.python_start()
 
 
-def python_end():
+def python_end() -> None:
     global lexer
-    return lexer.python_end()
+    assert lexer is not None
+    lexer.python_end()
 
 
-def on_newline():
+def on_newline() -> None:
     global lexer
-    return lexer.on_newline()
+    assert lexer is not None
+    lexer.on_newline()
