@@ -15,7 +15,6 @@ SA_FandangoTranslator::~SA_FandangoTranslator() {
     Py_XDECREF(ProgramContext_cls);
     Py_XDECREF(StatementContext_cls);
     Py_XDECREF(ProductionContext_cls);
-    Py_XDECREF(Opt_indentationContext_cls);
     Py_XDECREF(AlternativeContext_cls);
     Py_XDECREF(ConcatenationContext_cls);
     Py_XDECREF(OperatorContext_cls);
@@ -263,12 +262,6 @@ antlrcpp::Any SA_FandangoTranslator::visitStatement(FandangoParser::StatementCon
 antlrcpp::Any SA_FandangoTranslator::visitProduction(FandangoParser::ProductionContext *ctx){
     if(!ProductionContext_cls) ProductionContext_cls = PyObject_GetAttrString(translator->parser_cls, "ProductionContext");
     PyObject *py_ctx = translator->convert_ctx(this, ctx, ProductionContext_cls);
-    return py_ctx;
-}
-
-antlrcpp::Any SA_FandangoTranslator::visitOpt_indentation(FandangoParser::Opt_indentationContext *ctx){
-    if(!Opt_indentationContext_cls) Opt_indentationContext_cls = PyObject_GetAttrString(translator->parser_cls, "Opt_indentationContext");
-    PyObject *py_ctx = translator->convert_ctx(this, ctx, Opt_indentationContext_cls);
     return py_ctx;
 }
 

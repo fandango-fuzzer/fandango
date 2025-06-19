@@ -27,10 +27,6 @@ class FandangoParserVisitor(ParseTreeVisitor):
     def visitProduction(self, ctx: FandangoParser.ProductionContext):
         return self.visitChildren(ctx)
 
-    # Visit a parse tree produced by FandangoParser#opt_indentation.
-    def visitOpt_indentation(self, ctx: FandangoParser.Opt_indentationContext):
-        return self.visitChildren(ctx)
-
     # Visit a parse tree produced by FandangoParser#alternative.
     def visitAlternative(self, ctx: FandangoParser.AlternativeContext):
         return self.visitChildren(ctx)

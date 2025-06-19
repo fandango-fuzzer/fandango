@@ -31,10 +31,6 @@ public:
     return visitChildren(ctx);
   }
 
-  virtual std::any visitOpt_indentation(FandangoParser::Opt_indentationContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
   virtual std::any visitAlternative(FandangoParser::AlternativeContext *ctx) override {
     return visitChildren(ctx);
   }
