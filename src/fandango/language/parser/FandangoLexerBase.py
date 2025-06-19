@@ -61,9 +61,9 @@ class FandangoLexerBase(Lexer):
 
         next_ = super().nextToken()
         token = next_ if len(self.tokens) == 0 else self.tokens.pop(0)
-        print(
-            f"nextToken(): {token.text!r} ({token.type}) at {token.start}..{token.stop}"
-        )
+        # print(
+        #     f"nextToken(): {token.text!r} ({token.type}) at {token.start}..{token.stop}", file=sys.stderr
+        # )
         return token
 
     def createDedent(self):
