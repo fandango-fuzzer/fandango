@@ -96,7 +96,7 @@ std::unique_ptr<antlr4::Token> FandangoLexerBase::nextToken() {
     std::unique_ptr<antlr4::Token> token = std::move(tokens.front());
     tokens.pop_front();
 
-    // std::clog << "FandangoLexerBase::nextToken: returning " << token->toString() << std::endl;
+    std::clog << "FandangoLexerBase::nextToken: returning " << token->toString() << std::endl;
 
     return std::move(token);
 }

@@ -27,8 +27,6 @@ public:
 
     virtual std::any visitProduction(FandangoParser::ProductionContext *context) = 0;
 
-    virtual std::any visitOpt_indentation(FandangoParser::Opt_indentationContext *context) = 0;
-
     virtual std::any visitAlternative(FandangoParser::AlternativeContext *context) = 0;
 
     virtual std::any visitConcatenation(FandangoParser::ConcatenationContext *context) = 0;
