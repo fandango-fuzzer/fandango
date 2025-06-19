@@ -42,6 +42,14 @@ class FandangoParserListener(ParseTreeListener):
     def exitProduction(self, ctx: FandangoParser.ProductionContext):
         pass
 
+    # Enter a parse tree produced by FandangoParser#opt_indentation.
+    def enterOpt_indentation(self, ctx: FandangoParser.Opt_indentationContext):
+        pass
+
+    # Exit a parse tree produced by FandangoParser#opt_indentation.
+    def exitOpt_indentation(self, ctx: FandangoParser.Opt_indentationContext):
+        pass
+
     # Enter a parse tree produced by FandangoParser#alternative.
     def enterAlternative(self, ctx: FandangoParser.AlternativeContext):
         pass
