@@ -37,7 +37,7 @@ dependencies = [
     "gnureadline>=8.2.13 ; platform_system != 'Windows' and implementation_name != 'pypy'",
     "lxml>=5.3.2",
     "py010parser>=0.1.18",
-    "pygls>=1.0.0",
+    "pygls>=2.0.0a4",
     "pyreadline3>=3.5.4; platform_system == 'Windows'",
     "tdigest>=0.5.2.2",
     "thefuzz>=0.22",

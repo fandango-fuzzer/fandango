@@ -1,11 +1,9 @@
 import logging
 from typing import Optional
 
+from pygls.lsp.server import LanguageServer
 import lsprotocol.types as lsp
 from antlr4 import InputStream, Token
-from lsprotocol.types import TextDocumentItem, TextDocumentIdentifier
-from pygls.server import LanguageServer
-from pygls.workspace import TextDocument
 
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.server.semantic_tokens import (
@@ -42,31 +40,23 @@ class FandangoLanguageServer(LanguageServer):
         super().__init__(*args, **kwargs)
         self.files: dict[str, FileAssets] = {}
 
-    def get_text_document(
-        self, document: lsp.VersionedTextDocumentIdentifier | TextDocumentItem
-    ) -> TextDocument:
-        return self.workspace.get_text_document(document.uri)
-
-    def parse(self, document: lsp.VersionedTextDocumentIdentifier | TextDocumentItem):
-        document_text = self.get_text_document(document).source
+    def parse(self, uri: str):
+        document = self.workspace.get_text_document(uri)
+        document_text = document.source
         lexer = FandangoLexer(InputStream(document_text))
         self.files[document.uri] = FileAssets(lexer)
 
-    def get_file_assets(
-        self, document: lsp.VersionedTextDocumentIdentifier | TextDocumentIdentifier
-    ):
+    def get_file_assets(self, document: lsp.TextDocumentIdentifier):
         return self.files[document.uri]
 
-    def get_nonterminals(
-        self, document: lsp.VersionedTextDocumentIdentifier | TextDocumentIdentifier
-    ):
+    def get_nonterminals(self, document: lsp.TextDocumentIdentifier):
         tokens = self.get_file_assets(document).tokens
         nonterminals = [t for t in tokens if t.type == FandangoLexer.NAME]
         return nonterminals
 
     def get_references(
         self,
-        document: lsp.VersionedTextDocumentIdentifier | TextDocumentIdentifier,
+        document: lsp.TextDocumentIdentifier,
         position: lsp.Position,
     ):
         non_terminals = self.get_nonterminals(document)
@@ -91,13 +81,13 @@ server = FandangoLanguageServer("fandango-language-server", "v0.1")
 @server.feature(lsp.TEXT_DOCUMENT_DID_OPEN)
 def did_open(ls: FandangoLanguageServer, params: lsp.DidOpenTextDocumentParams):
     """Parse each document when it is opened"""
-    ls.parse(params.text_document)
+    ls.parse(params.text_document.uri)
 
 
 @server.feature(lsp.TEXT_DOCUMENT_DID_CHANGE)
 def did_change(ls: FandangoLanguageServer, params: lsp.DidChangeTextDocumentParams):
     """Parse each document when it is changed"""
-    ls.parse(params.text_document)
+    ls.parse(params.text_document.uri)
 
 
 # COMPLETION
@@ -111,7 +101,7 @@ def completions(params: Optional[lsp.CompletionParams] = None) -> lsp.Completion
         raise ValueError("params must not be None")
 
     texts = set(t.text for t in server.get_nonterminals(params.text_document))
-    items = [lsp.CompletionItem(label=t, insert_text=t[1:]) for t in texts]
+    items = [lsp.CompletionItem(label=f"<{t}>", insert_text=f"{t}>") for t in texts]
 
     return lsp.CompletionList(is_incomplete=False, items=items)
 
@@ -172,7 +162,7 @@ def prepare_rename(ls: FandangoLanguageServer, params: lsp.PrepareRenameParams):
     if len(ls.get_references(params.text_document, params.position)) == 0:
         return None
 
-    return lsp.PrepareRenameDefaultBehavior(default_behavior=True)  # type: ignore[attr-defined]
+    return lsp.PrepareRenameDefaultBehavior(default_behavior=True)
 
 
 @server.feature(
