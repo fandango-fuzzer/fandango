@@ -94,7 +94,7 @@ class Value(GeneticBase):
         :param Optional[list[DerivationTree]] population: The population of trees.
         :return ValueFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope)
+        tree_hash = self.get_hash(tree, scope, population)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return self.cache[tree_hash]
@@ -289,7 +289,7 @@ class ExpressionConstraint(Constraint):
         :param Optional[dict[str, DerivationTree]] scope: The scope of the tree.
         :param Optional[list[DerivationTree]] population: The population of trees.
         """
-        tree_hash = self.get_hash(tree, scope)
+        tree_hash = self.get_hash(tree, scope, population)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
@@ -397,7 +397,7 @@ class ComparisonConstraint(Constraint):
         """
         Calculate the fitness of the tree based on the given comparison.
         """
-        tree_hash = self.get_hash(tree, scope)
+        tree_hash = self.get_hash(tree, scope, population)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
@@ -615,7 +615,7 @@ class ConjunctionConstraint(Constraint):
         :param Optional[list[DerivationTree]] population: The population of trees.
         :return ConstraintFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope)
+        tree_hash = self.get_hash(tree, scope, population)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
@@ -700,7 +700,7 @@ class DisjunctionConstraint(Constraint):
         :param Optional[list[DerivationTree]] population: The population of trees.
         :return ConstraintFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope)
+        tree_hash = self.get_hash(tree, scope, population)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
@@ -782,7 +782,7 @@ class ImplicationConstraint(Constraint):
         :param Optional[list[DerivationTree]] population: The population of trees.
         :return ConstraintFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope)
+        tree_hash = self.get_hash(tree, scope, population)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
@@ -864,7 +864,7 @@ class ExistsConstraint(Constraint):
         :param Optional[list[DerivationTree]] population: The population of trees.
         :return ConstraintFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope)
+        tree_hash = self.get_hash(tree, scope, population)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
@@ -963,7 +963,7 @@ class ForallConstraint(Constraint):
         :param Optional[list[DerivationTree]] population: The population of trees.
         :return ConstraintFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope)
+        tree_hash = self.get_hash(tree, scope, population)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
