@@ -780,8 +780,6 @@ def make_fandango_settings(
     _copy_setting(args, settings, "max_repetitions")
     _copy_setting(args, settings, "max_nodes")
     _copy_setting(args, settings, "max_node_rate")
-    _copy_setting(args, settings, "max_generations")
-    _copy_setting(args, settings, "desired_solutions")
 
     if hasattr(args, "start_symbol") and args.start_symbol is not None:
         if args.start_symbol.startswith("<"):
@@ -865,6 +863,7 @@ def set_command(args: argparse.Namespace) -> None:
 
     if no_args:
         # Report current settings
+        LOGGER.info("Did not receive an arg for set, printing settings")
         grammar, constraints = DEFAULT_FAN_CONTENT
         if grammar:
             for symbol in grammar.rules:
@@ -1293,14 +1292,27 @@ def fuzz_command(args: argparse.Namespace) -> None:
 
     LOGGER.debug("Starting Fandango")
     fandango = Fandango._with_parsed(
-        grammar, constraints, start_symbol=args.start_symbol
+        grammar,
+        constraints,
+        start_symbol=args.start_symbol,
+        logging_level=LOGGER.getEffectiveLevel(),
     )
     LOGGER.debug("Evolving population")
 
     def solutions_callback(sol, i):
         return output_solution(sol, args, i, file_mode)
 
-    population = fandango.fuzz(solution_callback=solutions_callback, **settings)
+    max_generations = args.max_generations
+    desired_solutions = args.desired_solutions
+    infinite = args.infinite
+
+    population = fandango.fuzz(
+        solution_callback=solutions_callback,
+        max_generations=max_generations,
+        desired_solutions=desired_solutions,
+        infinite=infinite,
+        **settings,
+    )
 
     if args.validate:
         LOGGER.debug("Validating population")
@@ -1425,14 +1437,27 @@ def talk_command(args: argparse.Namespace) -> None:
 
     LOGGER.debug("Starting Fandango")
     fandango = Fandango._with_parsed(
-        grammar, constraints, start_symbol=args.start_symbol
+        grammar,
+        constraints,
+        start_symbol=args.start_symbol,
+        logging_level=LOGGER.getEffectiveLevel(),
     )
     LOGGER.debug("Evolving population")
 
     def solutions_callback(sol, i):
         return output_solution(sol, args, i, file_mode)
 
-    fandango.fuzz(solution_callback=solutions_callback, **settings)
+    max_generations = args.max_generations
+    desired_solutions = args.desired_solutions
+    infinite = args.infinite
+
+    fandango.fuzz(
+        solution_callback=solutions_callback,
+        max_generations=max_generations,
+        desired_solutions=desired_solutions,
+        infinite=infinite,
+        **settings,
+    )
 
 
 def convert_command(args: argparse.Namespace) -> None:
