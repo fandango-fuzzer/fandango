@@ -3,11 +3,12 @@ This module contains the base classes for constraints in the fandango library.
 """
 
 import itertools
+import math
 from abc import ABC, abstractmethod
 from copy import copy
 from typing import Any, Optional
+
 from tdigest import TDigest as BaseTDigest
-import math
 
 from fandango.constraints.fitness import (
     ConstraintFitness,
@@ -21,6 +22,8 @@ from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import print_exception, LOGGER
+
+LEGACY = False
 
 
 class TDigest(BaseTDigest):
@@ -82,14 +85,16 @@ class Value(GeneticBase):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        population: Optional[list[DerivationTree]] = None,
     ) -> ValueFitness:
         """
         Calculate the fitness of the tree based on the given expression.
         :param DerivationTree tree: The tree to evaluate.
         :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
+        :param Optional[list[DerivationTree]] population: The population of trees.
         :return ValueFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope)
+        tree_hash = self.get_hash(tree, scope, population)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return self.cache[tree_hash]
@@ -100,7 +105,7 @@ class Value(GeneticBase):
             trees = []
             values = []
             # Iterate over all combinations of the tree and the scope
-            for combination in self.combinations(tree, scope):
+            for combination in self.combinations(tree, scope, population):
                 # Update the local variables to initialize the placeholders with the values of the combination
                 local_variables = self.local_variables.copy()
                 local_variables.update(
@@ -174,6 +179,7 @@ class SoftValue(Value):
                 identifier, str(self.searches[identifier])
             )
 
+        # noinspection PyUnreachableCode
         match self.optimization_goal:
             case "min":
                 return f"minimizing {representation}"
@@ -185,7 +191,7 @@ class SoftValue(Value):
 
 class Constraint(GeneticBase, ABC):
     """
-    Abstract class to represents a constraint that can be used for fitness evaluation.
+    Abstract class to represent a constraint that can be used for fitness evaluation.
     """
 
     def __init__(
@@ -208,6 +214,7 @@ class Constraint(GeneticBase, ABC):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        population: Optional[list[DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
         Abstract method to calculate the fitness of the tree.
@@ -234,7 +241,8 @@ class Constraint(GeneticBase, ABC):
         """
         return self.searches.values()
 
-    def eval(self, expression: str, global_variables, local_variables):
+    @staticmethod
+    def eval(expression: str, global_variables, local_variables):
         """
         Evaluate the tree in the context of local and global variables.
         """
@@ -270,14 +278,18 @@ class ExpressionConstraint(Constraint):
         self.expression = expression
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[dict[str, DerivationTree]] = None
+        self,
+        tree: DerivationTree,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        population: Optional[list[DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on whether the given expression evaluates to True.
         :param DerivationTree tree: The tree to evaluate.
         :param Optional[dict[str, DerivationTree]] scope: The scope of the tree.
+        :param Optional[list[DerivationTree]] population: The population of trees.
         """
-        tree_hash = self.get_hash(tree, scope)
+        tree_hash = self.get_hash(tree, scope, population)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
@@ -290,7 +302,7 @@ class ExpressionConstraint(Constraint):
             return ConstraintFitness(0, 0, False)
         has_combinations = False
         # Iterate over all combinations of the tree and the scope
-        for combination in self.combinations(tree, scope):
+        for combination in self.combinations(tree, scope, population):
             has_combinations = True
             # Update the local variables to initialize the placeholders with the values of the combination
             local_variables = self.local_variables.copy()
@@ -377,12 +389,15 @@ class ComparisonConstraint(Constraint):
         self.types_checked = False
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[dict[str, DerivationTree]] = None
+        self,
+        tree: DerivationTree,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        population: Optional[list[DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given comparison.
         """
-        tree_hash = self.get_hash(tree, scope)
+        tree_hash = self.get_hash(tree, scope, population)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
@@ -395,7 +410,7 @@ class ComparisonConstraint(Constraint):
         if tree is None:
             return ConstraintFitness(0, 0, False)
         # Iterate over all combinations of the tree and the scope
-        for combination in self.combinations(tree, scope):
+        for combination in self.combinations(tree, scope, population):
             total += 1
             has_combinations = True
             # Update the local variables to initialize the placeholders with the values of the combination
@@ -588,15 +603,19 @@ class ConjunctionConstraint(Constraint):
         self.lazy = lazy
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[dict[str, DerivationTree]] = None
+        self,
+        tree: DerivationTree,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        population: Optional[list[DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given conjunction.
         :param DerivationTree tree: The tree to evaluate.
         :param Optional[dict[str, DerivationTree]] scope: The scope of the tree.
+        :param Optional[list[DerivationTree]] population: The population of trees.
         :return ConstraintFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope)
+        tree_hash = self.get_hash(tree, scope, population)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
@@ -604,14 +623,15 @@ class ConjunctionConstraint(Constraint):
             # If the conjunction is lazy, evaluate the constraints one by one and stop if one fails
             fitness_values = list()
             for constraint in self.constraints:
-                fitness = constraint.fitness(tree, scope)
+                fitness = constraint.fitness(tree, scope, population)
                 fitness_values.append(fitness)
                 if not fitness.success:
                     break
         else:
             # If the conjunction is not lazy, evaluate all constraints at once
             fitness_values = [
-                constraint.fitness(tree, scope) for constraint in self.constraints
+                constraint.fitness(tree, scope, population)
+                for constraint in self.constraints
             ]
         # Aggregate the fitness values
         solved = sum(fitness.solved for fitness in fitness_values)
@@ -668,15 +688,19 @@ class DisjunctionConstraint(Constraint):
         self.lazy = lazy
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[dict[str, DerivationTree]] = None
+        self,
+        tree: DerivationTree,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        population: Optional[list[DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given disjunction.
         :param DerivationTree tree: The tree to evaluate.
         :param Optional[dict[str, DerivationTree]] scope: The scope of the tree.
+        :param Optional[list[DerivationTree]] population: The population of trees.
         :return ConstraintFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope)
+        tree_hash = self.get_hash(tree, scope, population)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
@@ -684,14 +708,15 @@ class DisjunctionConstraint(Constraint):
             # If the disjunction is lazy, evaluate the constraints one by one and stop if one succeeds
             fitness_values = list()
             for constraint in self.constraints:
-                fitness = constraint.fitness(tree, scope)
+                fitness = constraint.fitness(tree, scope, population)
                 fitness_values.append(fitness)
                 if fitness.success:
                     break
         else:
             # If the disjunction is not lazy, evaluate all constraints at once
             fitness_values = [
-                constraint.fitness(tree, scope) for constraint in self.constraints
+                constraint.fitness(tree, scope, population)
+                for constraint in self.constraints
             ]
         # Aggregate the fitness values
         solved = sum(fitness.solved for fitness in fitness_values)
@@ -745,23 +770,27 @@ class ImplicationConstraint(Constraint):
         self.consequent = consequent
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[dict[str, DerivationTree]] = None
+        self,
+        tree: DerivationTree,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        population: Optional[list[DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given implication.
         :param DerivationTree tree: The tree to evaluate.
         :param Optional[dict[str, DerivationTree]] scope: The scope of the tree.
+        :param Optional[list[DerivationTree]] population: The population of trees.
         :return ConstraintFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope)
+        tree_hash = self.get_hash(tree, scope, population)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
         # Evaluate the antecedent
-        antecedent_fitness = self.antecedent.fitness(tree, scope)
+        antecedent_fitness = self.antecedent.fitness(tree, scope, population)
         if antecedent_fitness.success:
             # If the antecedent is true, evaluate the consequent
-            fitness = copy(self.consequent.fitness(tree, scope))
+            fitness = copy(self.consequent.fitness(tree, scope, population))
             fitness.total += 1
             if fitness.success:
                 fitness.solved += 1
@@ -826,25 +855,27 @@ class ExistsConstraint(Constraint):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        population: Optional[list[DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given exists constraint.
         :param DerivationTree tree: The tree to evaluate.
         :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
+        :param Optional[list[DerivationTree]] population: The population of trees.
         :return ConstraintFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope)
+        tree_hash = self.get_hash(tree, scope, population)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
         fitness_values = list()
         scope = scope or dict()
         # Iterate over all containers found by the search
-        for container in self.search.find(tree, scope=scope):
+        for container in self.search.quantify(tree, scope=scope, population=population):
             # Update the scope with the bound variable
             scope[self.bound] = container.evaluate()
             # Evaluate the statement
-            fitness = self.statement.fitness(tree, scope)
+            fitness = self.statement.fitness(tree, scope, population)
             # Add the fitness to the list
             fitness_values.append(fitness)
             # If the exists constraint is lazy and the statement is successful, stop
@@ -869,12 +900,16 @@ class ExistsConstraint(Constraint):
         return fitness
 
     def __repr__(self):
-        return f"(exists {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
+        if LEGACY:
+            return f"(exists {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
+        else:
+            return f"any({repr(self.statement)} for {repr(self.bound)} in {repr(self.search)})"
 
     def __str__(self):
-        return (
-            f"(exists {str(self.bound)} in {str(self.search)}: {str(self.statement)})"
-        )
+        if LEGACY:
+            return f"(exists {str(self.bound)} in {str(self.search)}: {str(self.statement)})"
+        else:
+            return f"any({str(self.statement)} for {str(self.bound)} in {str(self.search)})"
 
     def accept(self, visitor: "ConstraintVisitor"):
         """
@@ -919,25 +954,27 @@ class ForallConstraint(Constraint):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        population: Optional[list[DerivationTree]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given forall constraint.
         :param DerivationTree tree: The tree to evaluate.
         :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
+        :param Optional[list[DerivationTree]] population: The population of trees.
         :return ConstraintFitness: The fitness of the tree.
         """
-        tree_hash = self.get_hash(tree, scope)
+        tree_hash = self.get_hash(tree, scope, population)
         # If the fitness has already been calculated, return the cached value
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
         fitness_values = list()
         scope = scope or dict()
         # Iterate over all containers found by the search
-        for container in self.search.find(tree, scope=scope):
+        for container in self.search.quantify(tree, scope=scope, population=population):
             # Update the scope with the bound variable
             scope[self.bound] = container.evaluate()
             # Evaluate the statement
-            fitness = self.statement.fitness(tree, scope)
+            fitness = self.statement.fitness(tree, scope, population)
             # Add the fitness to the list
             fitness_values.append(fitness)
             # If the forall constraint is lazy and the statement is not successful, stop
@@ -962,12 +999,16 @@ class ForallConstraint(Constraint):
         return fitness
 
     def __repr__(self):
-        return f"(forall {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
+        if LEGACY:
+            return f"forall {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
+        else:
+            return f"all({repr(self.statement)}) for {repr(self.bound)} in {repr(self.search)})"
 
     def __str__(self):
-        return (
-            f"(forall {str(self.bound)} in {str(self.search)}: {str(self.statement)})"
-        )
+        if LEGACY:
+            return f"forall {str(self.bound)} in {str(self.search)}: {str(self.statement)})"
+        else:
+            return f"all({str(self.statement)}) for {str(self.bound)} in {str(self.search)})"
 
     def accept(self, visitor: "ConstraintVisitor"):
         """

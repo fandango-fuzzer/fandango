@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
 import argparse
-import sys
 import re
-import io
+import sys
+from typing import Any
 
-from lxml import etree
+from lxml import etree  # type: ignore[attr-defined]
+
 from fandango.converters.FandangoConverter import FandangoConverter
 
 
@@ -30,7 +31,7 @@ class DTDFandangoConverter(FandangoConverter):
             # print(f"name = {entity.name}, orig = {entity.orig}, content = {entity.content}")
             self.entities[entity.name] = entity.content
 
-        self.attribute_types = {}
+        self.attribute_types: dict[str, str] = {}
 
     def header(self):
         s = f"""# Automatically generated from {self.filename!r}.
@@ -117,7 +118,7 @@ class DTDFandangoConverter(FandangoConverter):
 
         return s
 
-    def convert_attributes(self, element) -> tuple[str, list[str], list["Attribute"]]:
+    def convert_attributes(self, element) -> tuple[str, list[str], list[Any]]:
         s = f"<{fan(element.name)}_attribute> ::= "
 
         attrs = []
@@ -139,7 +140,7 @@ class DTDFandangoConverter(FandangoConverter):
         s = f"'{fan(attribute.name)}='"
         if attribute.default == "fixed":
             s += f" <q> {attribute.default_value!r} <q>"
-            return s, None, []
+            return s, None, False
 
         match attribute.type:
             case "enumeration":

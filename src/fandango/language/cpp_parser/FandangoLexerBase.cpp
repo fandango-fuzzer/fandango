@@ -12,6 +12,7 @@ FandangoLexerBase::FandangoLexerBase(antlr4::CharStream *input)
     indents.clear();
     opened = 0;
     inPython = 0;
+    isFstring = false;
     skipLexer = 0;
 
     lexer = this;
@@ -22,6 +23,7 @@ void FandangoLexerBase::reset() {
     indents.clear();
     opened = 0;
     inPython = 0;
+    isFstring = false;
     skipLexer = 0;
 
     Lexer::reset();
@@ -145,6 +147,18 @@ void FandangoLexerBase::_python_start() {
 
 void FandangoLexerBase::_python_end() {
     inPython = 0;
+}
+
+void FandangoLexerBase::_fstring_start() {
+    isFstring = true;
+}
+
+void FandangoLexerBase::_fstring_end() {
+    isFstring = false;
+}
+
+bool FandangoLexerBase::_is_not_fstring() {
+    return !isFstring;
 }
 
 void FandangoLexerBase::_on_newline() {

@@ -74,12 +74,12 @@ parser: \
 
 $(PARSER)/FandangoLexer.py: $(LEXER_G4) Makefile
 	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
-		-visitor -listener $(LEXER_G4)
+		-visitor -no-listener $(LEXER_G4)
 	sed 's/import FandangoLexerBase/import */' $@ > $@~ && mv $@~ $@
 
 $(PARSER)/FandangoParser.py: $(LEXER_G4) $(PARSER_G4) Makefile
 	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
-		-visitor -listener $(PARSER_G4)
+		-visitor -no-listener $(PARSER_G4)
 	$(BLACK) $(SRC)/language
 
 $(CPP_PARSER)/FandangoLexer.cpp: $(LEXER_G4) Makefile
@@ -207,6 +207,16 @@ test: $(PYTHON_SOURCES) $(TEST_SOURCES)
 tests $(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
 	$(PYTEST) -n auto
 	echo 'Success' > $(TEST_MARKER)
+
+COVERAGE = coverage.xml
+COVERAGERC = .coveragerc
+REPORT = report.html
+
+# Run tests and generate coverage report
+.PHONY: coverage
+coverage $(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
+	$(PYTEST) --html=$(REPORT) --self-contained-html --cov-report xml:$(COVERAGE) --cov-report term --cov-config=$(COVERAGERC) --cov=fandango -n auto
+	@echo 'Coverage report generated in htmlcov/index.html'
 
 run-tests: $(TEST_MARKER)
 

@@ -6,10 +6,10 @@ name: Tests
 on:
   push:
     branches:
-      - dev   # Run tests on pushes to the dev branch
+      - main   # Run tests on pushes to the dev branch
   pull_request:
     branches:
-      - dev   # Run tests on pull requests targeting the dev branch
+      - main  # Run tests on pull requests targeting the main branch
   workflow_dispatch: # Enables manual execution from the Actions tab
 
 jobs:
@@ -56,7 +56,14 @@ jobs:
       # Step 7: Run tests using pytest
       - name: Run tests with pytest
         run: |
-          make tests
+          make coverage
+          python3 -m coverage lcov
+      # Step 8: Upload test report
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        with:
+          name: Test Report
+          path: report.html
 
       # Step 8: Cache installed packages for system dependencies
       - name: Cache pygraphviz dependencies
@@ -66,3 +73,10 @@ jobs:
           key: pygraphviz-${{ runner.os }}-python3.11
           restore-keys: |
             pygraphviz-${{ runner.os }}-
+
+      # Step 9: Upload coverage report
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: coverage.lcov
