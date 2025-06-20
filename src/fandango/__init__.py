@@ -110,7 +110,7 @@ class FandangoBase(ABC):
         use_cache: bool = True,
         use_stdlib: bool = True,
         lazy: bool = False,
-        start_symbol: str = "<start>",
+        start_symbol: Optional[str] = None,
         includes: Optional[list[str]] = None,
     ):
         """
@@ -123,7 +123,7 @@ class FandangoBase(ABC):
         :param start_symbol: The grammar start symbol (default: "<start>")
         :param includes: A list of directories to search for include files
         """
-        self._start_symbol = start_symbol
+        self._start_symbol = start_symbol if start_symbol is not None else "<start>"
         LOGGER.setLevel(logging_level if logging_level is not None else logging.WARNING)
         self._grammar, self._constraints = parse(
             fan_files,
