@@ -122,7 +122,8 @@ def include(file_to_be_included: str):
 
     path = os.path.dirname(CURRENT_FILENAME)
     if not path:
-        path = "legacy"  # For strings and standard input_
+        # If the current file has no path, use the current directory
+        path = "."
     if INCLUDES:
         path += ":" + ":".join(INCLUDES)
     if os.environ.get("FANDANGO_PATH"):
