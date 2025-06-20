@@ -11,12 +11,15 @@ kernelspec:
 ---
 
 (sec:parsing)=
-# Parsing and Checking Inputs
+# Parsing Inputs
 
 Fandango can also use its specifications to _parse_ given inputs and to _check_ if they conform to the specification - both
 
 * _syntactically_ (according to the grammar); and
 * _semantically_ (according to the constraints).
+
+Fandango uses this ability extensively for [checking outputs](sec:outputs) and [protocol testing](sec:protocols).
+In this section, we cover the basics of parsing.
 
 
 ## The `parse` command
