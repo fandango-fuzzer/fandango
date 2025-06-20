@@ -13,7 +13,6 @@ from .utils import RESOURCES_ROOT, DOCS_ROOT
 
 
 class TestCLI(unittest.TestCase):
-
     def tearDown(self):
         if os.path.exists(RESOURCES_ROOT / "test.txt"):
             os.remove(RESOURCES_ROOT / "test.txt")
@@ -32,7 +31,7 @@ class TestCLI(unittest.TestCase):
     def test_help(self):
         command = shlex.split("fandango --help")
         out, err, code = self.run_command(command)
-        parser = get_parser(True)
+        _parser = get_parser(True)
         self.assertEqual(0, code)
         self.assertEqual(err, "")
 
@@ -202,7 +201,7 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
         # We unparse the standard library as well as docs/persons.fan
         command = shlex.split(
             f"""
-                              sh -c 'printf "set -f {DOCS_ROOT / 'persons.fan'}\nset" | fandango shell'
+                              sh -c 'printf "set -f {DOCS_ROOT / "persons.fan"}\nset" | fandango shell'
                               """
         )
         out, err, code = self.run_command(command)
