@@ -11,6 +11,7 @@ from typing import IO, Any, Callable
 
 from fandango.constraints.base import Constraint, SoftValue
 from fandango.converters.FandangoConverter import FandangoConverter
+from fandango.language.tree import DerivationTree
 
 if not "readline" in globals():
     try:
@@ -68,7 +69,7 @@ from fandango.converters.bt.BTFandangoConverter import (
 from fandango.converters.dtd.DTDFandangoConverter import DTDFandangoConverter
 from fandango.converters.fan.FandangoFandangoConverter import FandangoFandangoConverter
 
-from fandango import DerivationTree, FandangoParseError, FandangoError
+from fandango.errors import FandangoParseError, FandangoError
 import fandango
 
 
@@ -168,7 +169,7 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
         "--max-generations",
         type=int,
         help="Maximum number of generations to run the algorithm (ignored if --infinite is set).",
-        default=fandango.DEFAULT_MAX_GENERATIONS,
+        default=fandango.api.DEFAULT_MAX_GENERATIONS,
     )
     algorithm_group.add_argument(
         "--infinite",

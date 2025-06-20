@@ -11,7 +11,7 @@ from typing import Any, Iterator, Optional, Union, Generator
 import exrex
 from thefuzz import process as thefuzz_process
 
-from fandango import FandangoValueError, FandangoParseError
+from fandango.errors import FandangoValueError, FandangoParseError
 from fandango.language.symbol import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree
 
@@ -1077,7 +1077,6 @@ class Grammar(NodeVisitor):
     """Represent a grammar."""
 
     class ParserDerivationTree(DerivationTree):
-
         def __init__(
             self,
             symbol: Symbol,
@@ -1145,7 +1144,8 @@ class Grammar(NodeVisitor):
 
             for nonterminal in self._implicit_rules:
                 self._implicit_rules[nonterminal] = {
-                    tuple(a) for a in self._implicit_rules[nonterminal]  # type: ignore[misc]
+                    tuple(a)  # type: ignore[misc]
+                    for a in self._implicit_rules[nonterminal]
                 }
 
         def set_implicit_rule(
@@ -1730,7 +1730,6 @@ class Grammar(NodeVisitor):
                 # (or some bits of the last character)
                 at_end = w >= len(word)  # or (bit_count > 0 and w == len(word) - 1)
                 for state in table[k]:
-
                     if state.finished():
                         # LOGGER.debug(f"Finished")
                         if state.nonterminal == self.implicit_start:

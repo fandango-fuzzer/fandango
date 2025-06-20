@@ -7,7 +7,7 @@ import time
 from typing import Callable, Generator, Iterable, Optional, Union
 from warnings import deprecated
 
-from fandango import FandangoFailedError, FandangoParseError, FandangoValueError
+from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.constraints.base import Constraint, SoftValue
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.adaptation import AdaptiveTuner

@@ -1,7 +1,7 @@
 import random
 from typing import Callable, Generator
 
-from fandango import FandangoValueError
+from fandango.errors import FandangoValueError
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
 from fandango.io.packetforecaster import PacketForecaster
 from fandango.language.grammar import DerivationTree, Grammar
