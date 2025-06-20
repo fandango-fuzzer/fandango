@@ -1038,9 +1038,12 @@ def slice_parties(grammar: "Grammar", parties: list[str]) -> None:
     for party in parties:
         if party not in defined_parties:
             closest = closest_match(party, defined_parties)
-            raise FandangoValueError(f"Party {party!r} not defined in the grammar. Did you mean {closest!r}?")
+            raise FandangoValueError(
+                f"Party {party!r} not defined in the grammar. Did you mean {closest!r}?"
+            )
 
     grammar.slice_parties(parties)
+
 
 def assign_implicit_party(grammar, implicit_party: str):
     seen_nts: set[NonTerminal] = set()
