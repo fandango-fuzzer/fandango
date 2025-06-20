@@ -83,6 +83,10 @@ jobs:
               echo "Skipping $file"
               continue
             fi
+            if [[ "$file" == src/fandango/language/parser/sa_fandango.py ]]; then
+              echo "Skipping $file"
+              continue
+            fi
             if [[ "$file" == src/fandango/converters/antlr/ANTLRv4*.py ]]; then
               echo "Skipping $file"
               continue
