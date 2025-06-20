@@ -9,6 +9,6 @@ class FandangoConverter(ABC):
         self.filename = filename
 
     @abstractmethod
-    def to_fan(self, **kw_args) -> str:
+    def to_fan(self, *args, **kw_args) -> str:
         """Convert the grammar spec to Fandango format"""
         pass

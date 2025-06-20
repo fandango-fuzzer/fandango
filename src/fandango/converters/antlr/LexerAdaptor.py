@@ -28,9 +28,10 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # --------------------------------------------------------------------------------
 
-from antlr4 import *
 import sys
 from typing import TextIO
+
+from antlr4 import *
 
 # NB!!!!!!!!!:
 # Python3 is a terrible language. You cannot import ANTLRv4Lexer

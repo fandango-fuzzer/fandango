@@ -1,18 +1,15 @@
 #!/usr/bin/env python
 
 import sys
-
-from typing import IO
-from fandango.converters.FandangoConverter import FandangoConverter
+from typing import Any
 
 from antlr4 import *
+
+from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.converters.antlr.ANTLRv4Lexer import ANTLRv4Lexer
 from fandango.converters.antlr.ANTLRv4Parser import ANTLRv4Parser
 from fandango.converters.antlr.ANTLRv4ParserVisitor import ANTLRv4ParserVisitor
 from fandango.language.parse import PythonAntlrErrorListener
-
-
-from typing import Any
 
 
 class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):

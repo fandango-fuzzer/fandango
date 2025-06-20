@@ -7,6 +7,7 @@ import pytest
 from antlr4 import InputStream, CommonTokenStream, BailErrorStrategy
 from antlr4.error.Errors import ParseCancellationException
 
+from fandango.constraints import predicates
 from fandango.constraints.base import ComparisonConstraint
 from fandango.constraints.fitness import Comparison
 from fandango.language.convert import (
@@ -18,18 +19,13 @@ from fandango.language.convert import (
 from fandango.language.grammar import (
     Alternative,
     Grammar,
-    NonTerminalNode,
-    NodeType,
-    Concatenation,
 )
 from fandango.language.parse import parse
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.search import RuleSearch
 from fandango.language.symbol import NonTerminal
-
-from fandango.constraints import predicates
-
+from .utils import RESOURCES_ROOT
 
 FUZZINGBOOK_GRAMMAR = {
     "<start>": ["<number>"],
@@ -288,9 +284,8 @@ def test_conversion_statement(stmt, value, is_global):
 
 
 def test_parsing():
-    file = open("tests/resources/fandango.fan", "r")
-
-    grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
+    with open(RESOURCES_ROOT / "fandango.fan", "r") as file:
+        grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
     assert isinstance(grammar, Grammar)
     assert len(grammar.rules) == 4
     assert "<start>" in grammar

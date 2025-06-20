@@ -10,6 +10,10 @@ options {
 }
 
 // constants
+FSTRING_START_QUOTE: ( [fF] | ( [fF] [rR]) | ( [rR] [fF])) '"' { fstring_start() };
+FSTRING_START_SINGLE_QUOTE: ( [fF] | ( [fF] [rR]) | ( [rR] [fF])) '\'' { fstring_start() };
+FSTRING_START_TRIPLE_QUOTE: ( [fF] | ( [fF] [rR]) | ( [rR] [fF])) '"""' { fstring_start() };
+FSTRING_START_TRIPLE_SINGLE_QUOTE: ( [fF] | ( [fF] [rR]) | ( [rR] [fF])) '\'\'\'' { fstring_start() };
 STRING: STRING_LITERAL | BYTES_LITERAL;
 
 NUMBER: INTEGER | FLOAT_NUMBER | IMAG_NUMBER;
@@ -64,12 +68,19 @@ FORALL     : 'forall';
 EXISTS     : 'exists';
 MAXIMIZING : 'maximizing';
 MINIMIZING : 'minimizing';
+ANY        : 'any';
+ALL        : 'all';
+LEN        : 'len';
 
 // identifiers
 NAME: ID_START ID_CONTINUE*;
 
 // literals
-STRING_LITERAL: ( [rR] | [uU] | [fF] | ( [fF] [rR]) | ( [rR] [fF]))? ( SHORT_STRING | LONG_STRING);
+STRING_LITERAL: {is_not_fstring()}? ( [rR] | [uU] )? ( SHORT_STRING | LONG_STRING);
+FSTRING_END_TRIPLE_QUOTE: '"""' { fstring_end() };
+FSTRING_END_TRIPLE_SINGLE_QUOTE: '\'\'\'' { fstring_end() };
+FSTRING_END_QUOTE: '"' { fstring_end() };
+FSTRING_END_SINGLE_QUOTE: '\'' { fstring_end() };
 BYTES_LITERAL: ( [bB] | ( [bB] [rR]) | ( [rR] [bB])) ( SHORT_BYTES | LONG_BYTES);
 DECIMAL_INTEGER: NON_ZERO_DIGIT DIGIT* | '0'+;
 OCT_INTEGER: '0' [oO] OCT_DIGIT+;
@@ -82,9 +93,9 @@ IMAG_NUMBER: ( FLOAT_NUMBER | INT_PART) [jJ];
 GRAMMAR_ASSIGN     : '::=';
 QUESTION           : '?';
 BACKSLASH          : '\\';
-DOT                : '.';
-DOTDOT             : '..';
 ELLIPSIS           : '...';
+DOTDOT             : '..';
+DOT                : '.';
 STAR               : '*';
 OPEN_PAREN         : '(' { open_brace(); };
 CLOSE_PAREN        : ')' { close_brace(); };
@@ -137,7 +148,7 @@ EXCL               : '!';
 NEWLINE: (('\r'? '\n' | '\r' | '\f') SPACES?) { on_newline(); };
 SKIP_: ( SPACES | COMMENT | LINE_JOINING) -> channel(HIDDEN);
 
-UNKNOWN_CHAR: .;
+UNKNOWN_CHAR: . | STRING_ESCAPE_SEQ;
 
 /*
  * fragments

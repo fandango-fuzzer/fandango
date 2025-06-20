@@ -7,6 +7,9 @@ from fandango.language.parser.FandangoParser import FandangoParser
 from antlr4 import Lexer, InputStream, Token
 from antlr4.Token import CommonToken
 
+# noinspection PyUnresolvedReferences
+from fandango.language.parser.FandangoParser import FandangoParser
+
 # Current lexer instance, set by the generated lexer code
 lexer: Optional["FandangoLexerBase"] = None
 
@@ -21,6 +24,7 @@ class FandangoLexerBase(Lexer):
         self.indents: list[int] = []
         self.opened = 0
         self.in_python = 0
+        self.in_fstring = False
 
         # Set the global lexer instance to this one
         global lexer
@@ -31,6 +35,7 @@ class FandangoLexerBase(Lexer):
         self.indents = []
         self.opened = 0
         self.in_python = 0
+        self.in_fstring = False
         super().reset()
 
     def emitToken(self, token: Token):
@@ -107,6 +112,16 @@ class FandangoLexerBase(Lexer):
     def python_end(self) -> None:
         self.in_python = 0
 
+    # while f-string do not consider the string token
+    def fstring_start(self):
+        self.in_fstring = True
+
+    def fstring_end(self):
+        self.in_fstring = False
+
+    def is_not_fstring(self):
+        return not self.in_fstring
+
     def on_newline(self) -> None:
         new_line = self.NEW_LINE_PATTERN.sub("", self.text)
         spaces = self.SPACES_PATTERN.sub("", self.text)
@@ -170,3 +185,21 @@ def on_newline() -> None:
     global lexer
     assert lexer is not None
     lexer.on_newline()
+
+
+def fstring_start() -> None:
+    global lexer
+    assert lexer is not None
+    return lexer.fstring_start()
+
+
+def fstring_end() -> None:
+    global lexer
+    assert lexer is not None
+    return lexer.fstring_end()
+
+
+def is_not_fstring() -> None:
+    global lexer
+    assert lexer is not None
+    return lexer.is_not_fstring()

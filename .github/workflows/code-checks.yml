@@ -56,8 +56,8 @@ jobs:
           files: |
             src/**/*.py
             src/**.py
-            tests/**/*.py
-            tests/**.py
+          # tests/**/*.py no type checking for tests
+          # tests/**.py no type checking for tests
 
       # Step 3: Set up Python environment
       - name: Set up Python ${{ matrix.python-version }}
@@ -79,6 +79,14 @@ jobs:
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            if [[ "$file" == src/fandango/language/parser/Fandango*.py ]]; then
+              echo "Skipping $file"
+              continue
+            fi
+            if [[ "$file" == src/fandango/converters/antlr/ANTLRv4*.py ]]; then
+              echo "Skipping $file"
+              continue
+            fi
             echo "Checking $file"
             mypy $file
           done

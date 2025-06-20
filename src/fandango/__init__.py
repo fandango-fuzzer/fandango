@@ -296,6 +296,6 @@ if __name__ == "__main__":
     population = fan.fuzz(extra_constraints=["<my_start> != 'e'"], population_size=3)
     print("Fuzzed:", ", ".join(str(individual) for individual in population))
 
-    # Parse a single input into a derivation tree
+    # Parse a single input_ into a derivation tree
     trees = fan.parse("a")
     print("Parsed:", ", ".join(str(individual) for individual in trees))

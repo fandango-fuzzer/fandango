@@ -6,14 +6,15 @@ import unittest
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 from fandango.language.parse import parse
+from .utils import RESOURCES_ROOT
 
 
 class ConstraintTest(unittest.TestCase):
     def get_constraint(self, constraint):
-        file = open("tests/resources/constraints.fan", "r")
-        _, constraints = parse(
-            file, constraints=[constraint], use_stdlib=False, use_cache=False
-        )
+        with open(RESOURCES_ROOT / "constraints.fan", "r") as file:
+            _, constraints = parse(
+                file, constraints=[constraint], use_stdlib=False, use_cache=False
+            )
         self.assertEqual(1, len(constraints))
         return constraints[0]
 
@@ -309,8 +310,8 @@ class ConstraintTest(unittest.TestCase):
         self.assertTrue(constraint.check(example))
 
     def test_indirect_children(self):
-        file = open("tests/resources/indirect_children.fan", "r")
-        grammar, constraint = parse(file, use_stdlib=False, use_cache=False)
+        with open(RESOURCES_ROOT / "indirect_children.fan", "r") as file:
+            grammar, constraint = parse(file, use_stdlib=False, use_cache=False)
 
         self.assertEqual(1, len(constraint))
         constraint = constraint[0]
@@ -322,8 +323,8 @@ class ConstraintTest(unittest.TestCase):
         self.assertTrue(constraint.check(example))
 
     def test_accessing_children(self):
-        file = open("tests/resources/children.fan", "r")
-        grammar, constraint = parse(file, use_stdlib=False, use_cache=False)
+        with open(RESOURCES_ROOT / "children.fan", "r") as file:
+            grammar, constraint = parse(file, use_stdlib=False, use_cache=False)
         constraint = constraint[0]
 
         counter_example = grammar.parse("11")
@@ -333,8 +334,8 @@ class ConstraintTest(unittest.TestCase):
         self.assertTrue(constraint.check(example))
 
     def test_eval_constraint(self):
-        file = open("tests/resources/eval.fan")
-        grammar, constraints = parse(file, use_stdlib=True, use_cache=False)
+        with open(RESOURCES_ROOT / "eval.fan") as file:
+            grammar, constraints = parse(file, use_stdlib=True, use_cache=False)
         constraint = constraints[0]
 
         counter_example = grammar.parse("+05 * 0 / 96 + 10")
@@ -350,10 +351,10 @@ where int(<number>) > 10000
 where int(<number>) < 100000
 """
 
-        file = open("tests/resources/complex_constraints.fan", "r")
-        _, constraints = parse(
-            file, constraints=[constraint], use_stdlib=False, use_cache=False
-        )
+        with open(RESOURCES_ROOT / "complex_constraints.fan", "r") as file:
+            _, constraints = parse(
+                file, constraints=[constraint], use_stdlib=False, use_cache=False
+            )
         self.assertEqual(3, len(constraints))
 
         def get_tree(x):
