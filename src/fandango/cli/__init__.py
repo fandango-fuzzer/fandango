@@ -572,7 +572,13 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
         set_parser = commands.add_parser(
             "set",
             help="Set or print default arguments.",
-            parents=[file_parser, output_parser, algorithm_parser, settings_parser],
+            parents=[
+                file_parser,
+                output_parser,
+                algorithm_parser,
+                settings_parser,
+                parties_parser,
+            ],
         )
 
     if not in_command_line:
