@@ -407,13 +407,24 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
         help="Run internal consistency checks for debugging.",
     )
 
+    parties_parser = argparse.ArgumentParser(add_help=False)
+    parties_group = parties_parser.add_argument_group("Party settings")
+    parties_group.add_argument(
+        "--party",
+        action="append",
+        dest="parties",
+        metavar="PARTY",
+        help="Only consider the PARTY part of the interaction in the .fan file.",
+    )
+
     # Commands
 
     # Fuzz
     fuzz_parser = commands.add_parser(
         "fuzz",
         help="Produce outputs from .fan files and test programs.",
-        parents=[file_parser, output_parser, algorithm_parser, settings_parser],
+        parents=[file_parser, output_parser, algorithm_parser,
+                 settings_parser, parties_parser],
     )
     fuzz_parser.add_argument(
         "-o",
@@ -451,7 +462,8 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
     parse_parser = commands.add_parser(
         "parse",
         help="Parse input file(s) according to .fan spec.",
-        parents=[file_parser, output_parser, settings_parser],
+        parents=[file_parser, output_parser,
+                 settings_parser, parties_parser],
     )
     parse_parser.add_argument(
         "input_files",
@@ -479,7 +491,8 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
     talk_parser = commands.add_parser(
         "talk",
         help="Interact with programs, clients, and servers.",
-        parents=[file_parser, algorithm_parser, settings_parser],
+        parents=[file_parser, algorithm_parser,
+                 settings_parser, parties_parser],
     )
     host_pattern = (
         "PORT on HOST (default: 127.0.0.1;"
@@ -517,7 +530,7 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
     convert_parser = commands.add_parser(
         "convert",
         help="Convert given external spec to .fan format.",
-        # parents=[settings_parser],
+        parents=[parties_parser],
     )
     convert_parser.add_argument(
         "--from",
@@ -690,6 +703,7 @@ def parse_files_from_args(
         use_cache=args.use_cache,
         use_stdlib=args.use_stdlib,
         start_symbol=args.start_symbol,
+        parties=args.parties,
         check=check,
     )
 
@@ -711,6 +725,7 @@ def parse_constraints_from_args(
         use_cache=args.use_cache,
         use_stdlib=args.use_stdlib,
         start_symbol=args.start_symbol,
+        parties=args.parties,
         check=check,
     )
 
@@ -743,6 +758,7 @@ def parse_contents_from_args(
         use_cache=args.use_cache,
         use_stdlib=args.use_stdlib,
         start_symbol=args.start_symbol,
+        parties=args.parties,
         check=check,
     )
 
@@ -1504,7 +1520,8 @@ def convert_command(args: argparse.Namespace) -> None:
                     endianness=endianness, bitfield_order=bitfield_order
                 )
             case "fan":
-                converter = FandangoFandangoConverter(input_file)
+                converter = FandangoFandangoConverter(input_file,
+                                                      parties=args.parties)
                 spec = converter.to_fan()
 
         print(spec, file=output, end="")

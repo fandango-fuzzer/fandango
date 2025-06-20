@@ -85,6 +85,14 @@ class Node(abc.ABC):
             )
         return parties
 
+    def slice_parties(self, parties: list[str]) -> None:
+        """Remove all nodes whose party is not in `parties`."""
+        for child in self.children():
+            child.slice_parties(parties)
+
+    def in_parties(self, parties: list[str]) -> bool:
+        return False
+
     def children(self):
         return []
 
@@ -137,6 +145,10 @@ class Alternative(Node):
     def children(self):
         return self.alternatives
 
+    def slice_parties(self, parties: list[str]) -> None:
+        self.alternatives = [node for node in self.alternatives
+                             if not node.in_parties(parties)]
+
     def __getitem__(self, item):
         return self.alternatives.__getitem__(item)
 
@@ -151,6 +163,7 @@ class Alternative(Node):
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         yield from self.alternatives
+
 
 
 class Concatenation(Node):
@@ -180,6 +193,10 @@ class Concatenation(Node):
 
     def children(self):
         return self.nodes
+
+    def slice_parties(self, parties: list[str]) -> None:
+        self.nodes = [node for node in self.nodes
+                      if not node.in_parties(parties)]
 
     def __getitem__(self, item):
         return self.nodes.__getitem__(item)
@@ -364,6 +381,9 @@ class Repetition(Node):
     def children(self):
         return [self.node]
 
+    def in_parties(self, parties: list[str]) -> bool:
+        return self.node.in_parties(parties)
+
 
 class Star(Repetition):
     def __init__(self, node: Node, id: str = "", max_repetitions: int = 5):
@@ -483,7 +503,13 @@ class NonTerminalNode(Node):
             return self.symbol.__repr__()
 
     def __str__(self):
-        return self.symbol._repr()
+        if self.sender is not None:
+            if self.recipient is None:
+                return f"<{self.sender}:{self.symbol._repr()[1:-1]}>"
+            else:
+                return f"<{self.sender}:{self.recipient}:{self.symbol._repr()[1:-1]}>"
+        else:
+            return self.symbol._repr()
 
     def __eq__(self, other):
         return isinstance(other, NonTerminalNode) and self.symbol == other.symbol
@@ -512,6 +538,9 @@ class NonTerminalNode(Node):
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         yield grammar.rules[self.symbol]
+
+    def in_parties(self, parties: list[str]) -> bool:
+        return self.sender in parties
 
 
 class TerminalNode(Node):
@@ -2387,6 +2416,15 @@ class Grammar(NodeVisitor):
                     )
             else:
                 raise FandangoValueError(f"Unknown node type {node.node_type}")
+
+    def slice_parties(self, parties: list[str]) -> None:
+        """
+        Returns a new grammar that only contains the rules that are relevant to the given parties.
+        """
+        print("Slicing grammar for parties:", parties)
+        for expansion in self.rules.values():
+            expansion.slice_parties(parties)
+        self.fuzzing_mode = FuzzingMode.COMPLETE
 
     def default_result(self):
         return []
