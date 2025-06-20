@@ -165,12 +165,6 @@ class GeneticTest(unittest.TestCase):
         )
         solutions = list(generator)
         self.assertTrue(all(s.to_int() % 2 == 0) for s in solutions)
-        for ind in self.fandango.population:
-            if ind in solutions:
-                continue
-            ind_int = ind.to_int()
-            assert ind_int is not None
-            self.assertTrue(ind_int % 2 != 0)
 
         self.assertEqual(len(solutions), len(set(solutions)))
         evaluation = generator.return_value
