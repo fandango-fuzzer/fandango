@@ -1874,7 +1874,7 @@ class PythonProcessor(FandangoParserVisitor):
             keywords=keywords,
             body=body,
             decorator_list=[],
-            type_params=None,  # type: ignore
+            type_params=None,  # type: ignore[arg-type]
         )
 
     def visitFunction_def(self, ctx: FandangoParser.Function_defContext):
@@ -1898,7 +1898,7 @@ class PythonProcessor(FandangoParserVisitor):
             class_ = ast.AsyncFunctionDef
         else:
             class_ = ast.FunctionDef
-        return class_(  # type: ignore
+        return class_(  # type: ignore[call-overload]
             name=ctx.identifier().getText(),
             args=params,
             body=body,
@@ -1945,7 +1945,7 @@ class PythonProcessor(FandangoParserVisitor):
         return ast.If(
             test=test,
             body=body,
-            orelse=orelse,  # type: ignore
+            orelse=orelse,  # type: ignore[arg-type]
         )
 
     def visitIf_stmt(self, ctx: FandangoParser.If_stmtContext):
