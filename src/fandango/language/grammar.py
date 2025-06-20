@@ -1145,14 +1145,14 @@ class Grammar(NodeVisitor):
 
             for nonterminal in self._implicit_rules:
                 self._implicit_rules[nonterminal] = {
-                    tuple(a) for a in self._implicit_rules[nonterminal]
+                    tuple(a) for a in self._implicit_rules[nonterminal]  # type: ignore[misc]
                 }
 
         def set_implicit_rule(
             self, rule: list[list[tuple[NonTerminal, frozenset]]]
         ) -> tuple[NonTerminal, frozenset]:
             nonterminal = NonTerminal(f"<*{len(self._implicit_rules)}*>")
-            self._implicit_rules[nonterminal] = rule
+            self._implicit_rules[nonterminal] = rule  # type: ignore[assignment]
             return (nonterminal, frozenset())
 
         def set_rule(
@@ -1160,7 +1160,7 @@ class Grammar(NodeVisitor):
             nonterminal: NonTerminal,
             rule: list[list[tuple[NonTerminal, frozenset]]],
         ):
-            self._rules[nonterminal] = {tuple(a) for a in rule}
+            self._rules[nonterminal] = {tuple(a) for a in rule}  # type: ignore[misc]
 
         def set_context_rule(
             self, node: Node, non_terminal: tuple[NonTerminal, frozenset]
@@ -1176,8 +1176,8 @@ class Grammar(NodeVisitor):
         ):
             if nonterminal is None:
                 nonterminal = NonTerminal(f"<*tmp_{len(self._tmp_rules)}*>")
-            rule_id = nonterminal.symbol[2:-2]
-            self._tmp_rules[nonterminal] = {tuple(a) for a in rule}
+            rule_id = nonterminal.symbol[2:-2]  # type: ignore[index]
+            self._tmp_rules[nonterminal] = {tuple(a) for a in rule}  # type: ignore[misc]
             return (nonterminal, frozenset()), rule_id
 
         def _clear_tmp(self):
@@ -1197,7 +1197,7 @@ class Grammar(NodeVisitor):
             return [[(intermediate_nt, frozenset())]]
 
         def visitConcatenation(self, node: Concatenation):
-            result = [[]]
+            result: list[list[tuple[NonTerminal, frozenset]]] = [[]]
             for child in node.children():
                 to_add = self.visit(child)
                 new_result = []
@@ -1249,7 +1249,7 @@ class Grammar(NodeVisitor):
             return [[(intermediate_nt, frozenset())]]
 
         def visitStar(self, node: Star):
-            alternatives = [[]]
+            alternatives: list[list[tuple[NonTerminal, frozenset]]] = [[]]
             nt = self.set_implicit_rule(alternatives)
             for r in self.visit(node.node):
                 alternatives.append(r + [nt])
@@ -1259,7 +1259,7 @@ class Grammar(NodeVisitor):
             return [[(intermediate_nt, frozenset())]]
 
         def visitPlus(self, node: Plus):
-            alternatives = []
+            alternatives: list[list[tuple[NonTerminal, frozenset]]] = []
             nt = self.set_implicit_rule(alternatives)
             for r in self.visit(node.node):
                 alternatives.append(r)
@@ -1270,7 +1270,9 @@ class Grammar(NodeVisitor):
             return [[(intermediate_nt, frozenset())]]
 
         def visitOption(self, node: Option):
-            result = [[]] + self.visit(node.node)
+            result: list[list[tuple[NonTerminal, frozenset]]] = [[]] + self.visit(
+                node.node
+            )
             intermediate_nt = NonTerminal(f"<__{NodeType.OPTION}:{node.id}>")
             self.set_rule(intermediate_nt, result)
             return [[(intermediate_nt, frozenset())]]
@@ -1281,8 +1283,8 @@ class Grammar(NodeVisitor):
                 params["sender"] = node.sender
             if node.recipient is not None:
                 params["recipient"] = node.recipient
-            params = frozenset(params.items())
-            return [[(node.symbol, params)]]
+            parameters = frozenset(params.items())
+            return [[(node.symbol, parameters)]]
 
         def visitTerminalNode(self, node: TerminalNode):
             return [[(node.symbol, frozenset())]]
@@ -1291,7 +1293,7 @@ class Grammar(NodeVisitor):
             if tree is None:
                 return None
             if isinstance(tree.symbol, NonTerminal):
-                if tree.symbol.symbol.startswith("<__"):
+                if tree.symbol.symbol.startswith("<__"):  # type: ignore[union-attr, arg-type]
                     raise FandangoValueError(
                         "Can't collapse a tree with an implicit root node"
                     )
@@ -1304,7 +1306,7 @@ class Grammar(NodeVisitor):
                 reduced.extend(rec_reduced)
 
             if isinstance(tree.symbol, NonTerminal):
-                if tree.symbol.symbol.startswith("<__"):
+                if tree.symbol.symbol.startswith("<__"):  # type: ignore[union-attr, arg-type]
                     return reduced
 
             return [
@@ -1328,21 +1330,21 @@ class Grammar(NodeVisitor):
             if state.dot in self._rules:
                 table[k].update(
                     {
-                        ParseState(state.dot, k, rule, 0)
+                        ParseState(state.dot, k, rule, 0)  # type: ignore[arg-type]
                         for rule in self._rules[state.dot]
                     }
                 )
             elif state.dot in self._implicit_rules:
                 table[k].update(
                     {
-                        ParseState(state.dot, k, rule, 0)
+                        ParseState(state.dot, k, rule, 0)  # type: ignore[arg-type]
                         for rule in self._implicit_rules[state.dot]
                     }
                 )
             elif state.dot in self._tmp_rules:
                 table[k].update(
                     {
-                        ParseState(state.dot, k, rule, 0)
+                        ParseState(state.dot, k, rule, 0)  # type: ignore[arg-type]
                         for rule in self._tmp_rules[state.dot]
                     }
                 )
@@ -1351,7 +1353,7 @@ class Grammar(NodeVisitor):
                 self.predict_ctx_rule(state, table, k, node, nt, hookin_parent)
 
         def construct_incomplete_tree(
-            self, state: ParseState, table: list[set[ParseState] | Column]
+            self, state: ParseState, table: list[Column]
         ) -> DerivationTree:
             current_tree = Grammar.ParserDerivationTree(
                 state.nonterminal, state.children
@@ -1369,13 +1371,13 @@ class Grammar(NodeVisitor):
                     current_tree = Grammar.ParserDerivationTree(
                         current_state.nonterminal,
                         [*current_state.children, *current_tree.children],
-                        **dict(current_state.dot_params),
+                        **dict(current_state.dot_params or {}),
                     )
                 else:
                     current_tree = Grammar.ParserDerivationTree(
                         current_state.nonterminal,
                         [*current_state.children, current_tree],
-                        **dict(current_state.dot_params),
+                        **dict(current_state.dot_params or {}),
                     )
 
             return current_tree.children[0]
@@ -1383,11 +1385,11 @@ class Grammar(NodeVisitor):
         def predict_ctx_rule(
             self,
             state: ParseState,
-            table: list[set[ParseState] | Column],
+            table: list[Column],
             k: int,
             node: Node,
             nt_rule,
-            hookin_parent: DerivationTree = None,
+            hookin_parent: Optional[DerivationTree] = None,
         ):
             if not isinstance(node, Repetition):
                 raise FandangoValueError(f"Node {node} needs to be a Repetition")
@@ -1571,7 +1573,7 @@ class Grammar(NodeVisitor):
         def _rec_to_derivation_tree(self, tree: list["Grammar.ParserDerivationTree"]):
             ret = []
             for child in tree:
-                children = self._rec_to_derivation_tree(child.children)
+                children = self._rec_to_derivation_tree(child.children)  # type: ignore[arg-type]
                 ret.append(
                     DerivationTree(
                         child.symbol,
@@ -1588,7 +1590,7 @@ class Grammar(NodeVisitor):
         def to_derivation_tree(self, tree: "Grammar.ParserDerivationTree"):
             if tree is None:
                 return None
-            children = self._rec_to_derivation_tree(tree.children)
+            children = self._rec_to_derivation_tree(tree.children)  # type: ignore[arg-type]
             return DerivationTree(
                 tree.symbol,
                 children,
@@ -1674,7 +1676,7 @@ class Grammar(NodeVisitor):
                     )
                     origin_states = table[new_state.position].find_dot(new_state.dot)
                     if len(origin_states) != 1:
-                        new_state = None
+                        new_state = None  # type: ignore[assignment]
                         break
                     origin_state = origin_states[0]
 
