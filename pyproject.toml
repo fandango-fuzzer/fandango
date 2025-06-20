@@ -46,7 +46,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-    "beartype>=1.0.4",
+    "beartype>=0.21.0",
     "cryptography>=44.0.1",
     "deap>=1.4.1",
     "docutils>=0.20.1",  # Jupyter-book needs docutils<=0.20
