@@ -15,7 +15,6 @@ for known in PLATFORMS:
 
 def run_setup(with_binary):
     if with_binary:
-
         extra_compile_args = {
             "windows": ["/DANTLR4CPP_STATIC", "/Zc:__cplusplus", "/std:c++17"],
             "linux": ["-std=c++17"],
@@ -104,16 +103,17 @@ class ve_build_ext(build_ext):
 # Detect if an alternate interpreter is being used
 is_jython = "java" in sys.platform
 is_pypy = hasattr(sys, "pypy_version_info")
+skip_cpp = os.environ.get("FANDANGO_SKIP_CPP_PARSER", "") == "1"
+
 
 # Force using fallback if using an alternate interpreter
-using_fallback = is_jython or is_pypy
+using_fallback = is_jython or is_pypy or skip_cpp
 
 if not using_fallback:
     try:
         run_setup(with_binary=True)
     except BuildFailed:
-        if "FANDANGO_REQUIRE_CI_BINARY_BUILD" in os.environ:
-            # Require build to pass if running in travis-ci
+        if "FANDANGO_REQUIRE_BINARY_BUILD" in os.environ:
             raise
         else:
             using_fallback = True

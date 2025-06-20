@@ -20,6 +20,9 @@ sphinx:
     latex_engine: xelatex
     latex_show_pagerefs: true
     latex_show_urls: footnote
+  extra_extensions:
+    - sphinxcontrib.mermaid
+
 
 execute:
   execute_notebooks: cache

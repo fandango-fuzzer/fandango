@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-import time
 import os
 import random
+import time
+
 from ansi_styles import ansiStyles as styles
 
-FITNESS = []
+FITNESS: list[float] = []
 
 COLUMNS, LINES = os.get_terminal_size()
 
@@ -14,7 +15,7 @@ def progress():
     columns = COLUMNS
     s = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango {styles.color.close}"
     columns -= len("   Fandango ")
-    columns /= 3.0
+    columns //= 3
     for column in range(0, int(columns)):
         individual = int(column / columns * len(FITNESS))
         fitness = FITNESS[individual]

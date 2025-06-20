@@ -34,7 +34,18 @@
 ## Physical and Logical Lines
 
 # [As in Python](https://docs.python.org/3/reference/lexical_analysis.html#explicit-line-joining), one can join two physical lines into a logical by adding a backslash `\` at the end of the first line.
+# For example:
 
+# <element> := <a_very_long_line> \
+#     <continued_on_the_next_line>
+
+# [As in Python](https://docs.python.org/3/reference/lexical_analysis.html#implicit-line-joining), expressions in parentheses can be split over more than one physical line without using backslashes.
+# For example:
+
+# <element> := (<an_alternative> |
+#               <another_alternative>)
+
+# Grammar rules can be indented; this has no effect on semantics.
 
 
 ## Comments
@@ -44,9 +55,11 @@
 
 <comment> ::= <_>{2} '#' <_> r'[^\r\n\f]'* <newline>
 
-# :::{note}
+# For example:
+
+# <element> := <another_element>    # a comment
+
 # The actual implementation allows a comment at any end of a line.
-# :::
 
 
 
@@ -57,7 +70,7 @@
 
 # An optional [_generator_](sec:generator) can define a Python function to produce a value during fuzzing.
 
-# Productions end with a newline or a `;` character.
+# Productions end with a _newline_ or a _`;` character_.
 
 <production> ::= (
     <nonterminal> <_> '::=' <_> <alternatives> 
@@ -73,9 +86,7 @@
 
 # Like Python, Fandango allows all Unicode letters and digits in identifiers.
 
-# :::{note}
 # For portability, we recommend to use only ASCII letters `a`..`z`, `A`..`Z`, digits `0`..`9`, and underscores `_` in identifiers.
-# :::
 
 
 
@@ -122,10 +133,8 @@
 # * Omitting `M` creates an infinite upper bound (i.e, any number of repetitions).
 # * The comma may not be omitted, as this would create confusion with `{N}` (see below).
 
-# :::{tip}
 # In Fandango, the number of repetitions is limited.
 # Use the `--max-repetitions M` flag to change the limit.
-# :::
 
 # Fandango supports a number of abbreviations for repetitions:
 
@@ -329,7 +338,6 @@
 # $ fandango fuzz -f fandango.fan -n 1
 
 
-# % FIXME: Implement this
 # Note that such generated files satisfy the Fandango syntax, but not its _semantics_.
 # For instance, one would have to add extra constraints such that all used nonterminals are defined.
 

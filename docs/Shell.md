@@ -51,9 +51,9 @@ At the `(fandango)` prompt, you can enter the same commands you already know fro
 (fandango) fuzz -f persons.fan -n 10
 ```
 
-:::{hint}
+```{tip}
 Use TAB to complete commands, options, and file names.
-:::
+```
 
 and you will get the same results:
 
@@ -76,10 +76,10 @@ You can, for instance, specify a `.fan` file with
 (fandango) set -f persons.fan -n 10
 ```
 
-:::{note}
+```{note}
 A big advantage of the `set` command is that the `.fan` file is read only _once_,
 and then available for all later commands.
-:::
+```
 
 After options for resources and settings are set, you can omit them from later `fuzz` commands:
 
@@ -87,10 +87,10 @@ After options for resources and settings are set, you can omit them from later `
 (fandango) fuzz
 ```
 
-:::{note}
+```{note}
 If you give `fuzz` additional options, these temporarily _override_ the settings given with `set` earlier.
 As an exception, _constraints_ (`-c`) are _added_ to those already set.
-:::
+```
 
 The options for the `set` command are roughly the same as for the `fuzz` command and include
 
@@ -100,10 +100,10 @@ The options for the `set` command are roughly the same as for the `fuzz` command
 
 To get a full list of options, try `help set`.
 
-:::{note}
+```{note}
 Some command-specific options like `-o` or `-d` (controlling the output of the `fuzz` command)
 are not available for setting with `set`.
-:::
+```
 
 
 ## Retrieving Settings
@@ -142,9 +142,9 @@ This will
 
 The current `.fan` file stays unchanged.
 
-:::{attention}
+```{note}
 Loading a new `.fan` file also clears all `set` constraints.
-:::
+```
 
 
 ## Quotes and Escapes
@@ -186,9 +186,9 @@ Makefile		language		src
 README.md		pyproject.toml		tests
 ```
 
-:::{hint}
+```{tip}
 Use TAB to complete file names.
-:::
+```
 
 You can also invoke and evaluate _Python commands_ by prefixing them with `/`:
 
@@ -200,9 +200,9 @@ You can also invoke and evaluate _Python commands_ by prefixing them with `/`:
 
 If the command you enter has a value, the value is automatically printed.
 
-:::{note}
+```{note}
 Invoking system and Python commands is only available when the input is a terminal.
-:::
+```
 
 
 ## Changing the Current Directory
@@ -219,9 +219,9 @@ The alternative `!cd` does not work, as this changes the directory of the invoke
 
 Without arguments, `cd` switches to the home directory.
 
-:::{attention}
+```{important}
 This is different from Windows, where `cd` reports the current directory.
-:::
+```
 
 
 ## Getting Shell Commands from a File
@@ -245,13 +245,13 @@ $ echo 'fuzz -n 10 -f persons.fan' | fandango
 !echo 'fuzz -n 10 -f persons.fan' | fandango
 ```
 
-```{hint}
+```{tip}
 The input file can contain blank lines as well as comments prefixed with `#`.
 ```
 
-:::{note}
+```{note}
 System commands (`!`) and Python commands (`/`) are not available when reading from a file.
-:::
+```
 
 
 ## Exiting the Fandango Shell

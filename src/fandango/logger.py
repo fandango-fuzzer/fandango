@@ -1,8 +1,9 @@
 import logging
-import traceback
-import sys
 import os
+import sys
 import time
+import traceback
+from typing import Optional
 
 from ansi_styles import ansiStyles as styles
 
@@ -72,21 +73,23 @@ def use_visualization():
     return True
 
 
-def visualize_evaluation(generation, max_generations, evaluation):
+def visualize_evaluation(
+    generation: int,
+    max_generations: Optional[int],
+    evaluation: list[tuple],
+):
     """Visualize current evolution while Fandango is running"""
-    if not use_visualization():
+    if not use_visualization() or max_generations is None:
         return
 
-    fitnesses = []
-    for _, fitness, _ in evaluation:
-        fitnesses.append(fitness)
+    fitnesses = [fitness for _ind, fitness, _failing_trees in evaluation]
     fitnesses.sort(reverse=True)
-
+    assert COLUMNS is not None
     columns = COLUMNS
     s = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango {styles.color.close} {generation}/{max_generations} "
     columns -= len(f"   Fandango {generation}/{max_generations} ") + 1
-    columns /= 3.0
-    for column in range(0, int(columns)):
+    columns = int(columns / 3.0)
+    for column in range(0, columns):
         individual = int(column / columns * len(fitnesses))
         fitness = fitnesses[individual]
 
@@ -105,12 +108,13 @@ def visualize_evaluation(generation, max_generations, evaluation):
     return
 
 
-def clear_visualization():
+def clear_visualization(max_generations: Optional[int] = None):
     """Clear Fandango visualization"""
-    if not use_visualization():
+    if not use_visualization() or max_generations is None:
         return
 
     time.sleep(0.5)
+    assert COLUMNS is not None
     s = " " * (COLUMNS - 1)
     print(f"\r{s}\r", end="", file=sys.stderr)
 
@@ -118,7 +122,7 @@ def clear_visualization():
 def log_message_transfer(
     sender: str,
     receiver: str | None,
-    msg: "DerivationTree",
+    msg,
     self_is_sender: bool,
 ):
     if receiver is None:
@@ -136,4 +140,4 @@ def log_message_transfer(
     else:
         msg = msg.to_string()
 
-    LOGGER.info(f"({sender} -> {receiver}): {msg}")
+    LOGGER.info(f"{sender} -> {receiver}: {msg!r}")

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import os
 import platform
 import re
 import string
@@ -9,6 +10,8 @@ from enum import Enum
 from typing import Optional
 
 from py010parser import c_ast, parse_file
+
+from fandango.converters.FandangoConverter import FandangoConverter
 
 
 class BitfieldOrder(Enum):
@@ -21,7 +24,7 @@ class Endianness(Enum):
     BigEndian = 1
 
 
-class BT2FandangoVisitor(c_ast.NodeVisitor):
+class BTFandangoConverterVisitor(c_ast.NodeVisitor):
     def __init__(
         self,
         *,
@@ -35,16 +38,16 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
         self.start_symbol = start_symbol
         self.use_regexes = use_regexes
 
-        self.defs = {}
-        self.forced_elems = []
-        self.forced_complements = []
-        self.forced_vars = []
-        self.seen = set()
-        self.context = []
-        self.constraints = []
-        self.not_handled = []
-        self.vars = {}
-        self.renames = {}
+        self.defs: dict[str, str] = {}
+        self.forced_elems: list[str] = []
+        self.forced_complements: list[str] = []
+        self.forced_vars: list[str] = []
+        self.seen: set[str] = set()
+        self.context: list[str] = []
+        self.constraints: list[str] = []
+        self.not_handled: list[str] = []
+        self.vars: dict[Optional[str], str] = {}
+        self.renames: dict[str, str] = {}
         self.in_code = False
 
     def cond(self):
@@ -237,7 +240,7 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
 
         for _, child in node.children():
             value = None
-            var = None
+            var: Optional[str] = None
             if self.forced_elems and self.forced_complements:
                 value = self.forced_elems[0]
                 self.forced_elems = self.forced_elems[1:]
@@ -429,7 +432,7 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
                     self.char(next_bytes[1]),
                 ]
 
-    def visit_While(self, node: c_ast.While) -> str:
+    def visit_While(self, node: c_ast.While | c_ast.For) -> str:
         if self.in_code:
             return ""
 
@@ -479,6 +482,46 @@ class BT2FandangoVisitor(c_ast.NodeVisitor):
         return ""
 
 
+class BTFandangoConverter(FandangoConverter):
+    """Convert a binary template to a Fandango specification."""
+
+    def __init__(self, filename: str):
+        super().__init__(filename)
+
+        try:
+            if platform.system() == "Darwin":
+                ast = parse_file(filename, cpp_args="-xc++")
+            else:
+                ast = parse_file(filename)
+            self.ast = ast
+        finally:
+            try:
+                # The 010 parser leaves behind some temporary files
+                os.remove("lextab.py")
+                os.remove("yacctab.py")
+            except FileNotFoundError:
+                pass
+
+    def to_fan(
+        self,
+        start_symbol: str = "<start>",
+        use_regexes: bool = True,
+        bitfield_order: BitfieldOrder = BitfieldOrder.LeftToRight,
+        endianness: Endianness = Endianness.BigEndian,
+    ) -> str:
+        visitor = BTFandangoConverterVisitor(
+            start_symbol=start_symbol,
+            use_regexes=use_regexes,
+            bitfield_order=bitfield_order,
+            endianness=endianness,
+        )
+        visitor.visit(self.ast)
+        header = f"""# Automatically generated from {self.filename!r}.
+#
+"""
+        return header + visitor.spec()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Convert a binary template to a Fandango specification"
@@ -498,7 +541,9 @@ if __name__ == "__main__":
         choices=["left-to-right", "right-to-left"],
         help="set bitfield order",
     )
-    parser.add_argument("filename", nargs="+", help=".bt binary template file")
+    parser.add_argument(
+        "filename", nargs="+", type=str, help=".bt binary template file"
+    )
 
     args = parser.parse_args(sys.argv[1:])
     if args.endianness == "little":
@@ -511,16 +556,11 @@ if __name__ == "__main__":
         bitfield_order = BitfieldOrder.RightToLeft
 
     for filename in args.filename:
-        if platform.system() == "Darwin":
-            ast = parse_file(filename, cpp_args="-xc++")
-        else:
-            ast = parse_file(filename)
-
-        visitor = BT2FandangoVisitor(
+        converter = BTFandangoConverter(filename)
+        fan = converter.to_fan(
+            start_symbol="<start>",
             use_regexes=args.use_regexes,
-            endianness=endianness,
             bitfield_order=bitfield_order,
+            endianness=endianness,
         )
-        visitor.visit(ast)
-        print(f"# Automatically generated from {filename!r} by bt2fan. Do not edit.")
-        print(visitor.spec())
+        print(fan)

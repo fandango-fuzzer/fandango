@@ -88,7 +88,7 @@
 
 ## File Size Constraint "file_size_constr" (generator in grammar)
 
-forall <entr> in <entry>:
+where forall <entr> in <entry>:
     int(str(<entr>.<header>.<file_size>), 8) >= 10 and
     int(str(<entr>.<header>.<file_size>), 8) <= 100
 ;
@@ -176,7 +176,7 @@ def produce_valid_checksum(header):
     checksum_value = str(oct(sum(header_bytes)))[2:].rjust(6, "0")
     return checksum_value + "\0 "
 
-forall <entr> in <entry>:
+where forall <entr> in <entry>:
     str(<entr>.<header>.<checksum>) == produce_valid_checksum(<entr>.<header>)
 ;
 
@@ -305,7 +305,7 @@ def generate_content():
 
 ## 16. Content Size Constraint "content_size_constr" (constraint for the fuzzer)
 
-forall <entr> in <entry>:
+where forall <entr> in <entry>:
     str(<entr>.<content>.<content_chars>) == str(<entr>.<content>.<content_chars>).ljust(int(str(<entr>.<header>.<file_size>), 8), " ");
 
 ## 17. Final Entry Length Constraint "final_entry_length_constraint" (generator in grammar)

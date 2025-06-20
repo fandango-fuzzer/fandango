@@ -1,7 +1,6 @@
 import time
 import xml.etree.ElementTree as ET
 
-
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.parse import parse
 
@@ -25,17 +24,12 @@ def evaluate_xml(
 
     time_in_an_hour = time.time() + seconds
 
-    while time.time() < time_in_an_hour:
-        fandango = Fandango(
-            grammar,
-            constraints,
-            desired_solutions=100,
-            logger_level=LoggerLevel.ERROR,
-            profiling=True,
-        )
-        fandango.evolve()
-        solutions.extend(fandango.solution)
-
+    fandango = Fandango(grammar, constraints, logger_level=LoggerLevel.ERROR)
+    fan_gen = fandango.generate()
+    for solution in fan_gen:
+        solutions.append(solution)
+        if time.time() >= time_in_an_hour:
+            break
     coverage = grammar.compute_grammar_coverage(solutions, 4)
 
     valid = []
@@ -58,4 +52,13 @@ def evaluate_xml(
 
 
 if __name__ == "__main__":
-    print(evaluate_xml(1))
+    result = evaluate_xml(seconds=10)
+    print(
+        f"Type: {result[0]}, "
+        f"Solutions: {result[1]}, "
+        f"Valid: {result[2]}, "
+        f"Valid Percentage: {result[3]:.2f}%, "
+        f"Coverage: {result[4]}, "
+        f"Mean Length: {result[5]:.2f}, "
+        f"Medium Length: {result[6]:.2f}"
+    )

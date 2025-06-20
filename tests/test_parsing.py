@@ -1,22 +1,22 @@
 #!/usr/bin/env pytest
 
-import unittest
 import shlex
 import subprocess
+import unittest
 
-from fandango.language.convert import GrammarProcessor
-from fandango.language.grammar import ParseState, NodeType, Grammar
+from fandango.language.grammar import NodeType, Grammar
 from fandango.language.parse import parse
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
+from .utils import RESOURCES_ROOT, DOCS_ROOT
 
 
 class ParserTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.file = open("tests/resources/fandango.fan")
-        cls.grammar, _ = parse(cls.file, use_stdlib=False, use_cache=False)
+        with open(RESOURCES_ROOT / "fandango.fan") as file:
+            cls.grammar, _ = parse(file, use_stdlib=False, use_cache=False)
 
     def test_rules(self):
         self.assertEqual(len(self.grammar._parser._rules), 9)
@@ -119,8 +119,8 @@ class ParserTests(unittest.TestCase):
 class TestComplexParsing(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.file = open("tests/resources/constraints.fan", "r")
-        cls.grammar, _ = parse(cls.file, use_stdlib=False, use_cache=False)
+        with open(RESOURCES_ROOT / "constraints.fan") as file:
+            cls.grammar, _ = parse(file, use_stdlib=False, use_cache=False)
 
     def _test(self, example, tree):
         actual_tree = self.grammar.parse(example, "<ab>")
@@ -195,8 +195,8 @@ class TestIncompleteParsing(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.file = open("tests/resources/incomplete.fan", "r")
-        cls.grammar, _ = parse(cls.file, use_stdlib=False, use_cache=False)
+        with open(RESOURCES_ROOT / "incomplete.fan") as file:
+            cls.grammar, _ = parse(file, use_stdlib=False, use_cache=False)
 
     def _test(self, example, tree):
         parsed = False
@@ -226,8 +226,8 @@ class TestIncompleteParsing(unittest.TestCase):
 class TestDynamicRepetitionParsing(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.file = open("tests/resources/dynamic_repetition.fan", "r")
-        cls.grammar, _ = parse(cls.file, use_stdlib=False, use_cache=False)
+        with open(RESOURCES_ROOT / "dynamic_repetition.fan") as file:
+            cls.grammar, _ = parse(file, use_stdlib=False, use_cache=False)
 
     def _test(self, example, tree):
         parsed = False
@@ -322,8 +322,8 @@ class TestDynamicRepetitionParsing(unittest.TestCase):
 class TestEmptyParsing(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.file = open("tests/resources/empty.fan", "r")
-        cls.grammar, _ = parse(cls.file, use_stdlib=False, use_cache=False)
+        with open(RESOURCES_ROOT / "empty.fan") as file:
+            cls.grammar, _ = parse(file, use_stdlib=False, use_cache=False)
 
     def _test(self, example, tree):
         actual_tree = self.grammar.parse(example)
@@ -360,7 +360,8 @@ class TestEmptyParsing(unittest.TestCase):
 
 
 class TestCLIParsing(unittest.TestCase):
-    def run_command(self, command):
+    @staticmethod
+    def run_command(command):
         proc = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
@@ -373,7 +374,8 @@ class TestCLIParsing(unittest.TestCase):
 class TestRegexParsing(TestCLIParsing):
     def test_infinity_abc(self):
         command = shlex.split(
-            "fandango parse -f docs/infinity.fan --validate tests/resources/abc.txt --validate"
+            "fandango parse -f "
+            f"{DOCS_ROOT / 'infinity.fan'} --validate {RESOURCES_ROOT / 'abc.txt'} --validate"
         )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
@@ -382,7 +384,8 @@ class TestRegexParsing(TestCLIParsing):
 
     def test_infinity_abcabc(self):
         command = shlex.split(
-            "fandango parse -f docs/infinity.fan --validate tests/resources/abcabc.txt --validate"
+            "fandango parse -f "
+            f"{DOCS_ROOT / 'infinity.fan'} --validate {RESOURCES_ROOT / 'abcabc.txt'} --validate"
         )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
@@ -392,7 +395,8 @@ class TestRegexParsing(TestCLIParsing):
     def test_infinity_abcd(self):
         # This should be rejected by the grammar
         command = shlex.split(
-            "fandango parse -f docs/infinity.fan tests/resources/abcd.txt --validate"
+            "fandango parse -f "
+            f"{DOCS_ROOT / 'infinity.fan'} {RESOURCES_ROOT / 'abcd.txt'} --validate"
         )
         out, err, code = self.run_command(command)
         self.assertEqual(1, code)
@@ -415,7 +419,8 @@ class TestBitParsing(TestCLIParsing):
 
     def test_bits_a(self):
         command = shlex.split(
-            "fandango parse -f docs/bits.fan tests/resources/a.txt --validate"
+            "fandango parse -f "
+            f"{DOCS_ROOT / 'bits.fan'} {RESOURCES_ROOT / 'a.txt'} --validate"
         )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
@@ -423,8 +428,8 @@ class TestBitParsing(TestCLIParsing):
         self.assertEqual(0, code)
 
     def test_alternative_bits(self):
-        file = open("tests/resources/byte_alternative.fan", "r")
-        grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+        with open(RESOURCES_ROOT / "byte_alternative.fan", "r") as file:
+            grammar, _ = parse(file, use_stdlib=False, use_cache=False)
         self._test(b"\x00", None, grammar)
         self._test(
             b"\x01",
@@ -465,7 +470,8 @@ class TestBitParsing(TestCLIParsing):
 class TestGIFParsing(TestCLIParsing):
     def test_gif(self):
         command = shlex.split(
-            "fandango parse -f docs/gif89a.fan docs/tinytrans.gif --validate"
+            "fandango parse -f "
+            f"{DOCS_ROOT / 'gif89a.fan'} {DOCS_ROOT / 'tinytrans.gif'} --validate"
         )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
@@ -476,7 +482,8 @@ class TestGIFParsing(TestCLIParsing):
 class TestBitstreamParsing(TestCLIParsing):
     def test_bitstream(self):
         command = shlex.split(
-            "fandango parse -f tests/resources/bitstream.fan tests/resources/abcd.txt --validate"
+            "fandango parse -f "
+            f"{RESOURCES_ROOT / 'bitstream.fan'} {RESOURCES_ROOT / 'abcd.txt'} --validate"
         )
         out, err, code = self.run_command(command)
         # Warns that the number of bits (1..5) may not be a multiple of eight, # which is correct
@@ -486,7 +493,8 @@ class TestBitstreamParsing(TestCLIParsing):
 
     def test_bitstream_a(self):
         command = shlex.split(
-            "fandango parse -f tests/resources/bitstream-a.fan tests/resources/a.txt --validate"
+            "fandango parse -f "
+            f"{RESOURCES_ROOT / 'bitstream-a.fan'} {RESOURCES_ROOT / 'a.txt'} --validate"
         )
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
@@ -495,7 +503,8 @@ class TestBitstreamParsing(TestCLIParsing):
 
     def test_bitstream_b(self):
         command = shlex.split(
-            "fandango parse -f tests/resources/bitstream-a.fan tests/resources/b.txt --validate"
+            "fandango parse -f "
+            f"{RESOURCES_ROOT / 'bitstream-a.fan'} {RESOURCES_ROOT / 'b.txt'} --validate"
         )
         out, err, code = self.run_command(command)
         # This should fail
@@ -505,15 +514,28 @@ class TestBitstreamParsing(TestCLIParsing):
 
     def test_rgb(self):
         command = shlex.split(
-            "fandango parse -f tests/resources/rgb.fan tests/resources/rgb.txt  --validate"
+            "fandango parse -f "
+            f"{RESOURCES_ROOT / 'rgb.fan'} {RESOURCES_ROOT / 'rgb.txt'} --validate"
         )
         out, err, code = self.run_command(command)
-        self.assertEqual(0, code)
+        self.assertEqual(0, code, f"Command failed with code {code}: {err}")
         self.assertEqual("", out)
         self.assertEqual("", err)
 
+
+class TestImportParsing(TestCLIParsing):
     def test_local_import(self):
-        command = shlex.split("fandango fuzz -f tests/resources/import.fan -n 1")
+        command = shlex.split(f"fandango fuzz -f {RESOURCES_ROOT / 'import.fan'} -n 1")
         out, err, code = self.run_command(command)
         self.assertEqual(0, code)
         self.assertEqual("import\n", out)
+
+
+class TestISO8601Parsing(TestCLIParsing):
+    def test_parse_iso8601(self):
+        command = shlex.split(
+            f"fandango parse -f {DOCS_ROOT / 'iso8601.fan'} {RESOURCES_ROOT / 'iso8601.txt'}"
+        )
+        out, err, code = self.run_command(command)
+        self.assertEqual(0, code, err)
+        self.assertEqual("", err)
