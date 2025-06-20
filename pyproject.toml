@@ -89,3 +89,10 @@ target-version = ['py311']
 follow_untyped_imports = true
 check_untyped_defs = true
 enable_error_code = ['ignore-without-code']
+# See https://mypy.readthedocs.io/en/stable/config_file.html#confval-exclude
+exclude = [
+    'src/fandango/language/parser/Fandango[^.]*\.py$',
+    'src/fandango/language/parser/sa_fandango\.py$',
+    'src/fandango/converters/antlr/ANTLRv4[^.]*\.py$',
+    'src/fandango/converters/antlr/LexerAdaptor[^.]*\.py$',
+]
