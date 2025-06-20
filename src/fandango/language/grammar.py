@@ -2301,7 +2301,7 @@ class Grammar(NodeVisitor):
         """
 
         initial = set()
-        initial_work: [Node] = [NonTerminalNode(name) for name in self.rules.keys()]  # type: ignore
+        initial_work: [Node] = [NonTerminalNode(name) for name in self.rules.keys()]  # type: ignore[misc, valid-type]
         while initial_work:
             node = initial_work.pop(0)
             if node in initial:
