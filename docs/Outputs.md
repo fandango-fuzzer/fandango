@@ -18,7 +18,7 @@ Since Fandango makes use of specifications both to [_produce_](sec:fuzzing) and 
 1. first send an input to a program under test; and
 2. then parse its output to check if it produced the correct result.
 
-For this purpose, Fandango provides a means to combine both input and output in a _single specification_.
+For this purpose, Fandango provides a means to combine both input and output in a _single specification_, used by the Fandango `talk` command.
 Let us see how this works.
 
 ```{admonition} Under Construction
