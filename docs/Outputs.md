@@ -91,7 +91,15 @@ In this specification,
 * `<string>` defines a regular expression standing for any sequence of characters, including newlines.
 
 Let us use Fandango with this spec to test the `cat` program.
-We specify the program to be tested on the command line:
+
+
+## The Fandango `talk` command
+
+Fandango provides a `talk` command that allows testing interactions.
+Like `fuzz` and `parse`, it takes as argument a `-f` option, followed by a `.fan` file; however, this one must contain party specifications.
+The remainder of the command line is the program to be tested (possibly with arguments).
+
+In our case, this is how the invocation of Fandango looks like:
 
 ```shell
 $ fandango talk -f cat.fan cat
@@ -108,7 +116,14 @@ This command does not issue any outputs (all of them are being sent to `cat`), b
 * The `cat` command sends back the input via its output;
 * Fandango receives and parses the `cat` output.
 
-Note that each time, `cat` is started anew, as shown in this diagram:
+
+We can also specify multiple interactions, as in
+
+```shell
+$ fandango talk -f cat.fan -n 10 cat
+```
+
+Now, each time, `cat` is started anew, as shown in this diagram:
 ```{mermaid}
 sequenceDiagram
     Fandango->>cat: "eroih&^%^32"
