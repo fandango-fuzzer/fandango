@@ -256,6 +256,7 @@ def parse_spec(
     filename: str = "<input_>",
     use_cache: bool = True,
     lazy: bool = False,
+    parties: list[str] | None = None,
     max_repetitions: int = 5,
 ) -> FandangoSpec:
     """
@@ -263,7 +264,8 @@ def parse_spec(
     This is a helper function; use `parse()` as the main entry point.
     :param fan_contents: Fandango specification text
     :param filename: The file name of the content (for error messages)
-    :param use_cache: If True (default), cache parsing results.
+    :param use_cache: If True (default), cache parsing results
+    :param parties: If given, list of parties to consider in the grammar
     :param lazy: If True, the constraints are evaluated lazily
     :return: A FandangoSpec object containing the parsed grammar, constraints, and code text.
     """
@@ -393,6 +395,9 @@ def parse_spec(
             except Exception:
                 pass
 
+    if parties:
+        spec.grammar.slice_parties(parties)
+
     LOGGER.debug(f"{filename}: parsing complete")
     return spec
 
@@ -422,6 +427,7 @@ def parse(
     given_grammars: list[Grammar] = [],
     start_symbol: Optional[str] = None,
     includes: Optional[list[str]] = [],
+    parties: Optional[list[str]] = None,
     max_repetitions: int = 5,
 ) -> tuple[Optional[Grammar], list[Constraint | SoftValue]]:
     """
@@ -435,6 +441,7 @@ def parse(
     :param given_grammars: Grammars to use in addition to the standard library
     :param start_symbol: The grammar start symbol (default: "<start>")
     :param includes: A list of directories to search for include files; default: []
+    :param parties: If given, list of parties to consider in the grammar
     :param max_repetitions: The maximal number of repetitions
     :return: A tuple of the grammar and constraints
     """
@@ -589,7 +596,8 @@ def parse(
             check_constraints_existence(grammar, parsed_constraints)
 
     global_env, local_env = grammar.get_spec_env()
-    if grammar.fuzzing_mode == FuzzingMode.IO:
+    if not parties and grammar.fuzzing_mode == FuzzingMode.IO:
+        # Prepare for interaction
         if "FandangoIO" not in global_env.keys():
             exec("FandangoIO.instance()", global_env, local_env)
         io_instance: FandangoIO = global_env["FandangoIO"].instance()
@@ -609,6 +617,9 @@ def parse(
     grammar.update(grammar, prime=check)
     if check:
         grammar.prime()
+
+    if parties:
+        grammar.slice_parties(parties)
 
     LOGGER.debug("All contents parsed")
     return grammar, parsed_constraints
