@@ -273,7 +273,13 @@ GIT_LS_FILES = git ls-files --exclude-standard | \
 	grep ".*$$pattern"'$$' | \
 	grep -v 'src/fandango/language/parser/' | \
 	grep -v 'src/fandango/language/cpp_parser/' | \
-	grep -v 'src/fandango/converters/dtd/.*\.fan'
+	grep -v 'src/fandango/converters/dtd/[^.]*\.fan' | \
+	grep -v 'src/fandango/converters/antlr/ANTLRv4[^.]*\.py'
+
+.PHONY: ls-files
+ls-files:
+	@echo 'Listing files in the repository...'
+	@$(GIT_LS_FILES) | sort
 
 ## Statistics
 .PHONY: stats statistics
@@ -288,8 +294,8 @@ stats statistics:
 	grep -E '(\.py|\.g4|\.md|\.fan|\.yml|file)$$' | xargs wc -l | grep ' total$$'
 
 ## Credit - from https://gist.github.com/Alpha59/4e9cd6c65f7aa2711b79
-.PHONY: credit
-credit:
+.PHONY: credit credits
+credit credits:
 	@echo "Lines contributed"
 	@for pattern in .py .g4 .md .fan .toml .yml file; do \
 		echo "*$$pattern files:"; \
