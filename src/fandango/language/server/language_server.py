@@ -8,7 +8,6 @@ from pygls.server import LanguageServer
 from pygls.workspace import TextDocument
 
 from fandango.language.parser.FandangoLexer import FandangoLexer
-from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.server.semantic_tokens import (
     SemanticTokenModifiers,
     SemanticTokenTypes,
@@ -18,25 +17,19 @@ logger = logging.getLogger(__name__)
 
 
 def map_to_ranges(references: list[Token], uri: str):
-    return [
-        lsp.Range(
-            start=lsp.Position(line=t.line - 1, character=t.column),  # type: ignore[operator, arg-type]
-            end=lsp.Position(line=t.line - 1, character=t.column + len(t.text)),  # type: ignore[operator]
+    def mapper(t: Token):
+        assert isinstance(t.line, int), f"Token {t} has no line"
+        assert isinstance(t.column, int), f"Token {t} has no column"
+        return lsp.Range(
+            start=lsp.Position(line=t.line - 1, character=t.column),
+            end=lsp.Position(line=t.line - 1, character=t.column + len(t.text)),
         )
-        for t in references
-    ]
+
+    return list(map(mapper, references))
 
 
 def map_to_locations(references: list[Token], uri: str):
-    locations = [
-        lsp.Location(
-            uri=uri,
-            range=range,
-        )
-        for range in map_to_ranges(references, uri)
-    ]
-
-    return locations
+    return [lsp.Location(uri, range) for range in map_to_ranges(references, uri)]
 
 
 class FileAssets:
@@ -68,9 +61,7 @@ class FandangoLanguageServer(LanguageServer):
         self, document: lsp.VersionedTextDocumentIdentifier | TextDocumentIdentifier
     ):
         tokens = self.get_file_assets(document).tokens
-        nonterminals = [
-            t for t in tokens if t.type == FandangoParser.NonterminalContext
-        ]
+        nonterminals = [t for t in tokens if t.type == FandangoLexer.NAME]
         return nonterminals
 
     def get_references(
@@ -119,10 +110,8 @@ def completions(params: Optional[lsp.CompletionParams] = None) -> lsp.Completion
     if params is None:
         raise ValueError("params must not be None")
 
-    items = [
-        lsp.CompletionItem(label=t.text, insert_text=t.text[1:])
-        for t in server.get_nonterminals(params.text_document)
-    ]
+    texts = set(t.text for t in server.get_nonterminals(params.text_document))
+    items = [lsp.CompletionItem(label=t, insert_text=t[1:]) for t in texts]
 
     return lsp.CompletionList(is_incomplete=False, items=items)
 
@@ -146,22 +135,18 @@ def goto_definition(server: FandangoLanguageServer, params: lsp.DefinitionParams
 
     for r in references:
         tokens_i = tokens.index(r)
+        is_definition = False
+        # continue until either newline (is not definition) or grammar assign (is definition)
+        for i in range(tokens_i, len(tokens)):
+            if tokens[i].type == FandangoLexer.NEWLINE:
+                break
+            elif tokens[i].type == FandangoLexer.GRAMMAR_ASSIGN:
+                is_definition = True
+                break
 
-        next_grammar_assign_i = [
-            i + tokens_i
-            for i, t in enumerate(tokens[tokens_i:])
-            if t.type == FandangoLexer.GRAMMAR_ASSIGN
-        ]
-
-        if len(next_grammar_assign_i) == 0:  # no definition after the nonterminal
-            continue
-        next_grammar_assign_i = next_grammar_assign_i[0]
-
-        diff = tokens[tokens_i + 1 : next_grammar_assign_i]
-
-        if all(t.type == FandangoLexer.SKIP_ for t in diff):
+        if is_definition:
             return map_to_locations(
-                [r],
+                [tokens[tokens_i]],
                 params.text_document.uri,
             )[0]
 
@@ -172,10 +157,7 @@ def rename(ls: FandangoLanguageServer, params: lsp.RenameParams):
 
     references = ls.get_references(params.text_document, params.position)
     edits = [
-        lsp.TextEdit(
-            new_text=f"<{params.new_name}>",
-            range=range,
-        )
+        lsp.TextEdit(range=range, new_text=params.new_name)
         for range in map_to_ranges(references, params.text_document.uri)
     ]
 
@@ -246,27 +228,25 @@ def code_actions(params: lsp.CodeActionParams):
 
     tokens = server.get_file_assets(params.text_document).tokens
 
-    current_token = None
-    for t in tokens:
-        # only work if no range is selected for now
-        if (
-            t.line - 1 == line
+    current_token = next(
+        (
+            t
+            for t in tokens
+            if t.line - 1 == line
             and t.column <= column
             and t.column + len(t.text) >= column
-        ):
-            current_token = t
-            break
+        ),
+        None,
+    )
 
-    if current_token == None:
+    if current_token is None:
         return []
 
     defined_tokens = set()
     for i, t in enumerate(tokens):
         if t.type != FandangoLexer.GRAMMAR_ASSIGN:
             continue
-        non_terminals = [
-            nt for nt in tokens[i:0:-1] if nt.type == FandangoParser.NonterminalContext
-        ]
+        non_terminals = [nt for nt in tokens[i:0:-1] if nt.type == FandangoLexer.NAME]
         if len(non_terminals) == 0:
             continue
         defined_tokens.add(non_terminals[0].text)
@@ -278,7 +258,7 @@ def code_actions(params: lsp.CodeActionParams):
     range = lsp.Range(start=position, end=position)  # start == end means insert
     text_edit = lsp.TextEdit(
         range=range,
-        new_text=f"{current_token.text} ::= # TODO: Implement\n",
+        new_text=f"<{current_token.text}> ::= # TODO: Implement\n",
     )
 
     return [
