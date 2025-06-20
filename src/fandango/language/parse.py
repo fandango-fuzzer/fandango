@@ -754,7 +754,7 @@ def check_grammar_definitions(
             )
         closest = closest_match(start_symbol, defined_symbols)
         raise FandangoValueError(
-            f"Start symbol {start_symbol!s} not defined in grammar. Did you mean {closest!s}?"
+            f"Start symbol {start_symbol!r} not defined in grammar. Did you mean {closest!r}?"
         )
 
     def collect_used_symbols(node):
@@ -963,14 +963,14 @@ def check_constraints_existence(grammar, constraints):
                     ["<" + str(symbol) + ">" for symbol in missing]
                 )
                 error = FandangoValueError(
-                    f"{constraint}: undefined symbols {missing_symbols}. Did you mean {closest!s}?"
+                    f"{constraint}: undefined symbols {missing_symbols}. Did you mean {closest!r}?"
                 )
                 raise error
 
             if len(missing) == 1:
                 missing_symbol = missing[0]
                 error = FandangoValueError(
-                    f"{constraint}: undefined symbol <{missing_symbol!s}>. Did you mean {closest!s}?"
+                    f"{constraint}: undefined symbol <{missing_symbol!r}>. Did you mean {closest!r}?"
                 )
                 raise error
 
