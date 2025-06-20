@@ -1,10 +1,10 @@
+import logging
+from typing import Optional
+
+import lsprotocol.types as lsp
 from antlr4 import InputStream, Token
 from lsprotocol.types import TextDocumentItem, TextDocumentIdentifier
 from pygls.server import LanguageServer
-import lsprotocol.types as lsp
-from typing import Optional
-import logging
-
 from pygls.workspace import TextDocument
 
 from fandango.language.parser.FandangoLexer import FandangoLexer

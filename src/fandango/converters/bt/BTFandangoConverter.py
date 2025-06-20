@@ -1,18 +1,17 @@
 #!/usr/bin/env python
 
-from fandango.converters.FandangoConverter import FandangoConverter
-
 import argparse
+import os
 import platform
 import re
 import string
 import sys
-import os
-
 from enum import Enum
 from typing import Optional
 
-from py010parser import c_ast, parse_file, parse_string
+from py010parser import c_ast, parse_file
+
+from fandango.converters.FandangoConverter import FandangoConverter
 
 
 class BitfieldOrder(Enum):

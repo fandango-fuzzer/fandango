@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import enum
+import logging
+import re
 import select
 import shlex
 import socket
@@ -8,9 +10,6 @@ import subprocess
 import sys
 import threading
 import time
-import logging
-import re
-
 from abc import ABC
 from typing import Optional, List
 

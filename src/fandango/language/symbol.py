@@ -1,11 +1,9 @@
 import abc
 import enum
 import re
+from io import UnsupportedOperation
 
 import regex
-
-from fandango.logger import LOGGER
-from io import UnsupportedOperation
 
 
 class SymbolType(enum.Enum):

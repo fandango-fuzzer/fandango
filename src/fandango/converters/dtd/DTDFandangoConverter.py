@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
 import argparse
-import sys
 import re
-import io
+import sys
 
 from lxml import etree
+
 from fandango.converters.FandangoConverter import FandangoConverter
 
 

@@ -1,8 +1,7 @@
-from abc import ABC, abstractmethod
-from enum import Enum, auto
 import random
 import struct
-from typing import Callable
+from abc import ABC, abstractmethod
+from enum import Enum, auto
 
 from fandango import DerivationTree
 

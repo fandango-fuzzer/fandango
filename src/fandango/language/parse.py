@@ -20,6 +20,7 @@ import fandango
 from fandango import FandangoSyntaxError, FandangoValueError
 from fandango.constraints import predicates
 from fandango.constraints.base import Constraint, SoftValue
+from fandango.io import FandangoIO, FandangoParty
 from fandango.language.convert import (
     ConstraintProcessor,
     FandangoSplitter,
@@ -37,16 +38,13 @@ from fandango.language.grammar import (
     SymbolFinder,
     closest_match,
 )
-
-from fandango.io import FandangoIO, FandangoParty
+from fandango.language.parser import sa_fandango
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.search import DescendantAttributeSearch, ItemSearch
 from fandango.language.stdlib import stdlib
 from fandango.language.symbol import NonTerminal, Symbol
 from fandango.logger import LOGGER, print_exception
-
-from fandango.language.parser import sa_fandango
 
 
 class PythonAntlrErrorListener(ErrorListener):

@@ -1,6 +1,7 @@
 # from https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#semanticTokenTypes
 
 import enum
+
 from antlr4 import Token
 
 

@@ -1,4 +1,5 @@
 from typing import Optional
+
 from fandango.constraints.fitness import FailingTree
 from fandango.evolution.evaluation import Evaluator
 from fandango.language import DerivationTree

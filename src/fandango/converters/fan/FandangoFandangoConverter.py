@@ -2,8 +2,8 @@
 
 import sys
 
-from fandango.language.parse import parse_spec
 from fandango.converters.FandangoConverter import FandangoConverter
+from fandango.language.parse import parse_spec
 
 
 class FandangoFandangoConverter(FandangoConverter):
