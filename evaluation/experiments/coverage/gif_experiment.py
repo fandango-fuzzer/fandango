@@ -47,15 +47,13 @@ def evaluate_gif():
         grammar,
         constraints,
         logger_level=LoggerLevel.DEBUG,
-        max_generations=100,
-        desired_solutions=1000,
         population_size=1000,
     )
-    fandango.evolve()
+    fandango.evolve(max_generations=100, desired_solutions=1000)
     end_time = time.time()
 
     valid_count = 0
-    # List to hold every binary input produced (to later review what was sent to gif.Reader)
+    # List to hold every binary input_ produced (to later review what was sent to gif.Reader)
     inputs_list = []
 
     for i, sol in enumerate(fandango.solution):

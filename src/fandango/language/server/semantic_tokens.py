@@ -1,6 +1,7 @@
 # from https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#semanticTokenTypes
 
 import enum
+
 from antlr4 import Token
 
 
@@ -49,7 +50,7 @@ class SemanticTokenTypes(enum.Enum):
         :return: The semantic token type
         """
         match token.type:
-            case "NONTERMINAL":
+            case "NAME":
                 return SemanticTokenTypes.variable
             case "STRING_LITERAL" | "BYTES_LITERAL":
                 return SemanticTokenTypes.string

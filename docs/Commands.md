@@ -41,6 +41,17 @@ To [parse inputs with `fandango`](sec:parsing), use `fandango parse`:
 !fandango parse --help
 ```
 
+
+## Converting
+
+To [convert existing language specs with `fandango`](sec:converters), use `fandango convert`:
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango convert --help
+```
+
+
 ## Shell
 
 To [enter commands in `fandango`](sec:shell), use `fandango shell` or just `fandango`:

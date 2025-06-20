@@ -13,7 +13,7 @@ def main():
     fandango = Fandango(
         grammar=grammar,
         constraints=constraints,
-        population_size=100,
+        population_size=10,
         logger_level=LoggerLevel.INFO,
     )
 

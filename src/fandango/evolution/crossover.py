@@ -1,7 +1,5 @@
-import copy
 import random
 from abc import ABC, abstractmethod
-
 
 from fandango.language.grammar import Grammar
 from fandango.language.tree import DerivationTree

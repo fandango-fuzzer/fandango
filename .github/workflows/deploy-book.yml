@@ -49,7 +49,7 @@ jobs:
     # (Consider 'make html' as an alternative that also checks for errors)
     - name: Build the book
       run: |
-        jupyter-book build docs
+        JUPYTER_BOOK=1 jupyter-book build docs
         (cd docs; sh ./patch-html.sh)
 
     # Step 7: Clone the target repository

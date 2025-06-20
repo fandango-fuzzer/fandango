@@ -44,7 +44,7 @@ assert _exit_code == 0
 
 Success! We have created 10 random sequences of digits.
 
-```{danger}
+```{warning}
 Be aware that `.fan` files can contain Python code that is _executed when being loaded_. This code can execute arbitrary commands.
 ```
 
@@ -61,9 +61,9 @@ To find out which commands Fandango supports, try
 $ fandango --help
 ```
 
-:::{warning}
+```{important}
 Fandango commands not detailed in this documentation are _experimental_ – do not rely on them.
-:::
+```
 
 To find out which option a particular command supports, invoke the command with `--help`.
 For instance, these are all the options supported by `fandango fuzz`:

@@ -134,15 +134,15 @@ For now, you can use `DerivationTree` objects almost as if they were strings:
 One thing you _cannot_ do, though, is _passing them directly as arguments to functions_ that do not expect a `DerivationTree` type.
 This applies to the vast majority of Python functions.
 
-:::{warning}
+```{important}
 If you want to pass a symbol as a function argument, convert it to the proper type (`int(<age>)`, `float(<age>)`, `str(<age>)`) first.
 Otherwise, you will likely raise an internal error in that very function.
-:::
+```
 
-:::{warning}
+```{important}
 On symbols, the `[...]` operator operates differently from strings - it returns a _subtree_ (a substring) of the produced output: `<name>[0]` returns the `<first_name>` element, not the first character.
 If you want to access a character (or a range of characters) of a symbol, convert it into a string first, as in `str(<name>)[0]`.
-:::
+```
 
 We will learn more about derivation trees, `DerivationTree` types, and their operators in {ref}`sec:paths`.
 
@@ -165,9 +165,9 @@ Constraints can be given multiple times, so the above can also be obtained as
 $ fandango fuzz -f persons.fan -n 10 -c '25 <= int(<age>)' -c 'int(<age>) <= 45'
 ```
 
-:::{note}
+```{important}
 On the command line, always put constraints in single quotes (`'...'`), as the angle brackets might otherwise be interpreted as I/O redirection.
-:::
+```
 
 When do constraints belong in a `.fan` file, and when on the command line?
 As a rule of thumb:

@@ -17,9 +17,10 @@ from antlr4.error.ErrorListener import ErrorListener
 from xdg_base_dirs import xdg_cache_home, xdg_data_dirs, xdg_data_home
 
 import fandango
-from fandango import FandangoSyntaxError, FandangoValueError
+from fandango.errors import FandangoSyntaxError, FandangoValueError
 from fandango.constraints import predicates
-from fandango.constraints.base import Constraint
+from fandango.constraints.base import Constraint, SoftValue
+from fandango.io import FandangoIO, FandangoParty
 from fandango.language.convert import (
     ConstraintProcessor,
     FandangoSplitter,
@@ -37,14 +38,13 @@ from fandango.language.grammar import (
     SymbolFinder,
     closest_match,
 )
-from fandango.language.io import FandangoIO, FandangoParty
+from fandango.language.parser import sa_fandango
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
+from fandango.language.search import DescendantAttributeSearch, ItemSearch
 from fandango.language.stdlib import stdlib
-from fandango.language.symbol import NonTerminal
+from fandango.language.symbol import NonTerminal, Symbol
 from fandango.logger import LOGGER, print_exception
-
-from .parser import sa_fandango
 
 
 class PythonAntlrErrorListener(ErrorListener):
@@ -60,9 +60,9 @@ class PythonAntlrErrorListener(ErrorListener):
         exc = FandangoSyntaxError(
             f"{self.filename!r}, line {line}, column {column}: {msg}"
         )
-        exc.line = line
-        exc.column = column
-        exc.messsage = msg
+        exc.lineno = line
+        exc.offset = column
+        exc.msg = msg
         raise exc
 
 
@@ -76,7 +76,7 @@ class SpeedyAntlrErrorListener(sa_fandango.SA_ErrorListener):
     def syntaxError(
         self,
         input_stream,
-        offendingSymbol,
+        offending_symbol,
         char_index: int,
         line: int,
         column: int,
@@ -85,9 +85,9 @@ class SpeedyAntlrErrorListener(sa_fandango.SA_ErrorListener):
         exc = FandangoSyntaxError(
             f"{self.filename!r}, line {line}, column {column}: {msg}"
         )
-        exc.line = line
-        exc.column = column
-        exc.messsage = msg
+        exc.lineno = line
+        exc.offset = column
+        exc.msg = msg
         raise exc
 
 
@@ -102,10 +102,10 @@ CURRENT_FILENAME: str = "<undefined>"
 INCLUDES: list[str] = []
 
 # The list of files to parse, with their include depth.
-# An include depth of 0 means the file was given as input.
+# An include depth of 0 means the file was given as input_.
 # A higher include depth means the file was included from another file;
 # hence its grammar and constraints should be processed _before_ the current file.
-FILES_TO_PARSE: list[tuple[IO, int]] = []
+FILES_TO_PARSE: list[tuple[IO | str, int]] = []
 
 # The current include depth
 INCLUDE_DEPTH: int = 0
@@ -122,7 +122,8 @@ def include(file_to_be_included: str):
 
     path = os.path.dirname(CURRENT_FILENAME)
     if not path:
-        path = "."  # For strings and standard input
+        # If the current file has no path, use the current directory
+        path = "."
     if INCLUDES:
         path += ":" + ":".join(INCLUDES)
     if os.environ.get("FANDANGO_PATH"):
@@ -174,7 +175,7 @@ class FandangoSpec:
         tree: Any,
         fan_contents: str,
         lazy: bool = False,
-        filename: str = "<input>",
+        filename: str = "<input_>",
         max_repetitions: int = 5,
     ):
         self.version = fandango.version()
@@ -214,11 +215,11 @@ class FandangoSpec:
             global_variables=self.global_vars,
             lazy=self.lazy,
         )
-        self.constraints: list[str] = constraint_processor.get_constraints(
-            splitter.constraints
+        self.constraints: list[Constraint | SoftValue] = (
+            constraint_processor.get_constraints(splitter.constraints)
         )
 
-    def run_code(self, filename: str = "<input>"):
+    def run_code(self, filename: str = "<input_>"):
         global CURRENT_FILENAME
         CURRENT_FILENAME = filename
 
@@ -252,17 +253,19 @@ class FandangoSpec:
 def parse_spec(
     fan_contents: str,
     *,
-    filename: str = "<input>",
+    filename: str = "<input_>",
     use_cache: bool = True,
     lazy: bool = False,
+    parties: list[str] | None = None,
     max_repetitions: int = 5,
-) -> tuple[Grammar, list[str]]:
+) -> FandangoSpec:
     """
     Parse given content into a grammar and constraints.
     This is a helper function; use `parse()` as the main entry point.
     :param fan_contents: Fandango specification text
     :param filename: The file name of the content (for error messages)
-    :param use_cache: If True (default), cache parsing results.
+    :param use_cache: If True (default), cache parsing results
+    :param parties: If given, list of parties to consider in the grammar
     :param lazy: If True, the constraints are evaluated lazily
     :return: A FandangoSpec object containing the parsed grammar, constraints, and code text.
     """
@@ -316,19 +319,28 @@ def parse_spec(
             os.remove(pickle_file)
             raise exc
 
+    error_listener: SpeedyAntlrErrorListener | PythonAntlrErrorListener
     if not spec:
         if fandango.Fandango.parser != "legacy":
             if fandango.Fandango.parser == "cpp":
                 sa_fandango.USE_CPP_IMPLEMENTATION = True
+                try:
+                    from .parser import sa_fandango_cpp_parser  # type: ignore[attr-defined]
+                except ImportError:
+                    raise ImportError(
+                        "Requested C++ parser not available. "
+                        "Check your installation "
+                        "or use '--parser=python'"
+                    )
             elif fandango.Fandango.parser == "python":
                 sa_fandango.USE_CPP_IMPLEMENTATION = False
             elif fandango.Fandango.parser == "auto":
                 pass  # let sa_fandango decide
 
             if sa_fandango.USE_CPP_IMPLEMENTATION:
-                LOGGER.debug(f"{filename}: setting up speedy C++ .fan parser")
+                LOGGER.debug(f"{filename}: setting up C++ .fan parser")
             else:
-                LOGGER.debug(f"{filename}: setting up python .fan parser")
+                LOGGER.debug(f"{filename}: setting up Python .fan parser")
 
             input_stream = InputStream(fan_contents)
             error_listener = SpeedyAntlrErrorListener(filename)
@@ -383,12 +395,15 @@ def parse_spec(
             except Exception:
                 pass
 
+    if parties:
+        slice_parties(spec.grammar, parties)
+
     LOGGER.debug(f"{filename}: parsing complete")
     return spec
 
 
 # Legacy interface
-def parse_content(*args, **kwargs) -> tuple[Grammar, list[str]]:
+def parse_content(*args, **kwargs) -> tuple[Grammar, list[Constraint | SoftValue]]:
     spec = parse_spec(*args, **kwargs)
     return spec.grammar, spec.constraints
 
@@ -398,7 +413,7 @@ USED_SYMBOLS: set[str] = set()
 
 # Save the standard library grammar and constraints
 STDLIB_GRAMMAR: Optional[Grammar] = None
-STDLIB_CONSTRAINTS: Optional[list[str]] = None
+STDLIB_CONSTRAINTS: Optional[list[Constraint | SoftValue]] = None
 
 
 def parse(
@@ -411,9 +426,10 @@ def parse(
     lazy: bool = False,
     given_grammars: list[Grammar] = [],
     start_symbol: Optional[str] = None,
-    includes: list[str] = [],
+    includes: Optional[list[str]] = [],
+    parties: Optional[list[str]] = None,
     max_repetitions: int = 5,
-) -> tuple[Optional[Grammar], list[Constraint]]:
+) -> tuple[Optional[Grammar], list[Constraint | SoftValue]]:
     """
     Parse .fan content, handling multiple files, standard library, and includes.
     :param fan_files: One (open) .fan file, one string, or a list of these
@@ -425,6 +441,7 @@ def parse(
     :param given_grammars: Grammars to use in addition to the standard library
     :param start_symbol: The grammar start symbol (default: "<start>")
     :param includes: A list of directories to search for include files; default: []
+    :param parties: If given, list of parties to consider in the grammar
     :param max_repetitions: The maximal number of repetitions
     :return: A tuple of the grammar and constraints
     """
@@ -466,7 +483,7 @@ def parse(
     INCLUDES = includes
 
     grammars = []
-    parsed_constraints: list[str] = []
+    parsed_constraints: list[Constraint | SoftValue] = []
     if use_stdlib:
         assert STDLIB_GRAMMAR is not None
         assert STDLIB_CONSTRAINTS is not None
@@ -487,6 +504,8 @@ def parse(
     global INCLUDE_DEPTH
     INCLUDE_DEPTH = 0
 
+    mode = FuzzingMode.COMPLETE
+
     while FILES_TO_PARSE:
         (file, depth) = FILES_TO_PARSE.pop(0)
         if isinstance(file, str):
@@ -504,6 +523,8 @@ def parse(
         )
         parsed_constraints += new_constraints
         assert new_grammar is not None
+        if new_grammar.fuzzing_mode == FuzzingMode.IO:
+            mode = FuzzingMode.IO
 
         if depth == 0:
             # Given file: process in order
@@ -536,10 +557,14 @@ def parse(
         for symbol in g.rules.keys():
             if symbol in grammar.rules:
                 LOGGER.info(f"Redefining {symbol}")
+
         grammar.update(g, prime=False)
         n += 1
 
     LOGGER.debug(f"Final grammar: {[str(key) for key in grammar.rules.keys()]}")
+
+    grammar.fuzzing_mode = mode
+    LOGGER.debug(f"Grammar fuzzing mode: {grammar.fuzzing_mode}")
 
     LOGGER.debug("Processing constraints")
     for constraint in constraints or []:
@@ -571,12 +596,13 @@ def parse(
             check_constraints_existence(grammar, parsed_constraints)
 
     global_env, local_env = grammar.get_spec_env()
-    if grammar.fuzzing_mode == FuzzingMode.IO:
+    if not parties and grammar.fuzzing_mode == FuzzingMode.IO:
+        # Prepare for interaction
         if "FandangoIO" not in global_env.keys():
             exec("FandangoIO.instance()", global_env, local_env)
         io_instance: FandangoIO = global_env["FandangoIO"].instance()
 
-        assign_implicit_party(grammar, "STDOUT")
+        assign_implicit_party(grammar, "StdOut")
         init_msg_parties(grammar)
         remap_to_std_party(grammar, io_instance)
 
@@ -591,6 +617,9 @@ def parse(
     grammar.update(grammar, prime=check)
     if check:
         grammar.prime()
+
+    if parties:
+        slice_parties(grammar, parties)
 
     LOGGER.debug("All contents parsed")
     return grammar, parsed_constraints
@@ -640,7 +669,7 @@ def is_party_reachable(grammar, node):
 
 def init_msg_parties(grammar: "Grammar"):
     party_names = set()
-    grammar_msg_parties = grammar.msg_parties(True)
+    grammar_msg_parties = grammar.msg_parties(include_recipients=True)
     global_env, local_env = grammar.get_spec_env()
 
     # Initialize FandangoParty instances
@@ -670,7 +699,7 @@ def remap_to_std_party(grammar: "Grammar", io_instance: FandangoIO):
             if nt.sender is not None:
                 if nt.sender not in io_instance.parties.keys():
                     remapped_parties.add(nt.sender)
-                    nt.sender = "STDOUT"
+                    nt.sender = "StdOut"
             if nt.recipient is not None:
                 if nt.recipient not in io_instance.parties.keys():
                     unknown_recipients.add(nt.recipient)
@@ -684,7 +713,7 @@ def remap_to_std_party(grammar: "Grammar", io_instance: FandangoIO):
 
 
 def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) -> None:
-    keep_parties = grammar.msg_parties(True)
+    keep_parties = grammar.msg_parties(include_recipients=True)
     io_instance.parties.keys()
     for existing_party in list(keep_parties):
         if not io_instance.parties[existing_party].is_fuzzer_controlled():
@@ -725,21 +754,21 @@ def check_grammar_definitions(
             )
         closest = closest_match(start_symbol, defined_symbols)
         raise FandangoValueError(
-            f"Start symbol {start_symbol!s} not defined in grammar. Did you mean {closest!s}?"
+            f"Start symbol {start_symbol!r} not defined in grammar. Did you mean {closest!r}?"
         )
 
-    def collect_used_symbols(tree):
-        if tree.node_type == NodeType.NON_TERMINAL:
-            used_symbols.add(str(tree.symbol))
+    def collect_used_symbols(node):
+        if node.node_type == NodeType.NON_TERMINAL:
+            used_symbols.add(str(node.symbol))
         elif (
-            tree.node_type == NodeType.REPETITION
-            or tree.node_type == NodeType.STAR
-            or tree.node_type == NodeType.PLUS
-            or tree.node_type == NodeType.OPTION
+            node.node_type == NodeType.REPETITION
+            or node.node_type == NodeType.STAR
+            or node.node_type == NodeType.PLUS
+            or node.node_type == NodeType.OPTION
         ):
-            collect_used_symbols(tree.node)
+            collect_used_symbols(node.node)
 
-        for child in tree.children():
+        for child in node.children():
             collect_used_symbols(child)
 
     for tree in grammar.rules.values():
@@ -754,6 +783,7 @@ def check_grammar_definitions(
             symbol not in used_symbols
             and symbol not in given_used_symbols
             and symbol != start_symbol
+            and symbol != "<start>"  # Allow <start> to be defined but not used
         ):
             LOGGER.warning(f"Symbol {symbol!s} defined, but not used")
 
@@ -777,7 +807,7 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
 
     LOGGER.debug("Checking types")
 
-    symbol_types = {}
+    symbol_types: dict[Symbol, tuple[Optional[str], int, int, int]] = {}
 
     def compatible(tp1, tp2):
         if tp1 in ["int", "bytes"] and tp2 in ["int", "bytes"]:
@@ -788,6 +818,7 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
         # LOGGER.debug(f"Checking type of {tree!s} in {rule_symbol!s} ({tree.node_type!s})")
         nonlocal symbol_types, grammar
 
+        tp: Optional[str]
         if tree.node_type == NodeType.TERMINAL:
             tp = type(tree.symbol.symbol).__name__
             # LOGGER.debug(f"Type of {tree.symbol.symbol!r} is {tp!r}")
@@ -835,15 +866,19 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
         ):
             common_tp = None
             tp_child = None
-            min_bits = max_bits = step = None
+            first = True
+            min_bits = 0
+            max_bits = 0
+            step = 0
             for child in tree.children():
                 tp, min_child_bits, max_child_bits, child_step = get_type(
                     child, rule_symbol
                 )
-                if min_bits is None:
+                if first:
                     min_bits = min_child_bits
                     max_bits = max_child_bits
                     step = child_step
+                    first = False
                 elif tree.node_type == NodeType.CONCATENATION:
                     min_bits += min_child_bits
                     max_bits += max_child_bits
@@ -928,14 +963,14 @@ def check_constraints_existence(grammar, constraints):
                     ["<" + str(symbol) + ">" for symbol in missing]
                 )
                 error = FandangoValueError(
-                    f"{constraint}: undefined symbols {missing_symbols}. Did you mean {closest!s}?"
+                    f"{constraint}: undefined symbols {missing_symbols}. Did you mean {closest!r}?"
                 )
                 raise error
 
             if len(missing) == 1:
                 missing_symbol = missing[0]
                 error = FandangoValueError(
-                    f"{constraint}: undefined symbol <{missing_symbol!s}>. Did you mean {closest!s}?"
+                    f"{constraint}: undefined symbol <{missing_symbol!r}>. Did you mean {closest!r}?"
                 )
                 raise error
 
@@ -945,8 +980,8 @@ def check_constraints_existence(grammar, constraints):
                 # This handles <parent>[...].<symbol> as <parent>..<symbol>.
                 # We could also interpret the actual [...] contents here,
                 # but slices and chains could make this hard -- AZ
-                recurse = f"<{parent!s}>[" in str(value) or f"..<{symbol!s}>" in str(
-                    value
+                recurse = isinstance(value, DescendantAttributeSearch) or isinstance(
+                    value, ItemSearch
                 )
                 if not check_constraints_existence_children(
                     grammar, parent, symbol, recurse, indirect_child
@@ -989,11 +1024,32 @@ def check_constraints_existence_children(
     return is_child
 
 
+def slice_parties(grammar: "Grammar", parties: list[str]) -> None:
+    """
+    Slice the given parties from the grammar.
+    :param grammar: The grammar to check
+    :param parties: List of party names to check
+    :raises FandangoValueError: If a party is not defined in the grammar
+    """
+    if not parties:
+        return
+
+    defined_parties = set(grammar.msg_parties(include_recipients=True))
+    for party in parties:
+        if party not in defined_parties:
+            closest = closest_match(party, defined_parties)
+            raise FandangoValueError(
+                f"Party {party!r} not defined in the grammar. Did you mean {closest!r}?"
+            )
+
+    grammar.slice_parties(parties)
+
+
 def assign_implicit_party(grammar, implicit_party: str):
-    seen_nts = set()
+    seen_nts: set[NonTerminal] = set()
     seen_nts.add(NonTerminal("<start>"))
-    processed_nts = set()
-    unprocessed_nts = seen_nts.difference(processed_nts)
+    processed_nts: set[NonTerminal] = set()
+    unprocessed_nts: set[NonTerminal] = seen_nts.difference(processed_nts)
 
     while len(unprocessed_nts) > 0:
         current_symbol = unprocessed_nts.pop()
@@ -1007,10 +1063,10 @@ def assign_implicit_party(grammar, implicit_party: str):
 
         if current_node in rule_nts and not isinstance(current_node, NonTerminalNode):
             rule_nts.remove(current_node)
-        child_party = set()
+        child_party: set[str] = set()
 
         for c_node in rule_nts:
-            child_party = child_party.union(c_node.msg_parties(grammar, False))
+            child_party |= c_node.msg_parties(include_recipients=False)
 
         if len(child_party) == 0:
             processed_nts.add(current_symbol)
@@ -1018,7 +1074,7 @@ def assign_implicit_party(grammar, implicit_party: str):
             continue
         for c_node in rule_nts:
             seen_nts.add(c_node.symbol)
-            if len(c_node.msg_parties(grammar, False)) != 0:
+            if len(c_node.msg_parties(include_recipients=False)) != 0:
                 continue
             c_node.sender = implicit_party
         for t_node in symbol_finder.terminalNodes:
