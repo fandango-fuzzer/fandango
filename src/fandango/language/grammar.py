@@ -146,8 +146,9 @@ class Alternative(Node):
         return self.alternatives
 
     def slice_parties(self, parties: list[str]) -> None:
-        self.alternatives = [node for node in self.alternatives
-                             if not node.in_parties(parties)]
+        self.alternatives = [
+            node for node in self.alternatives if not node.in_parties(parties)
+        ]
 
     def __getitem__(self, item):
         return self.alternatives.__getitem__(item)
@@ -163,7 +164,6 @@ class Alternative(Node):
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         yield from self.alternatives
-
 
 
 class Concatenation(Node):
@@ -195,8 +195,7 @@ class Concatenation(Node):
         return self.nodes
 
     def slice_parties(self, parties: list[str]) -> None:
-        self.nodes = [node for node in self.nodes
-                      if not node.in_parties(parties)]
+        self.nodes = [node for node in self.nodes if not node.in_parties(parties)]
 
     def __getitem__(self, item):
         return self.nodes.__getitem__(item)
