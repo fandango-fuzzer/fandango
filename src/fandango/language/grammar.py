@@ -2420,7 +2420,6 @@ class Grammar(NodeVisitor):
         """
         Returns a new grammar that only contains the rules that are relevant to the given parties.
         """
-        print("Slicing grammar for parties:", parties)
         for expansion in self.rules.values():
             expansion.slice_parties(parties)
         self.fuzzing_mode = FuzzingMode.COMPLETE
