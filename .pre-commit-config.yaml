@@ -6,10 +6,22 @@ repos:
         entry: black .
         language: system
         files: ^(src|tests|evaluation).*\.py$
+        exclude: |
+            (?x)^(
+                src/fandango/language/parser/Parser.*\.py|
+                src/fandango/language/parser/sa_fandango\.py|
+                src/fandango/converters/antlr/ANTLRv4.*\.py
+            )$
 -   repo: local
     hooks:
-    - id: mypy
-      name: mypy
-      files: ^(src|tests).*\.py$
-      entry: bash -c "git diff --cached --name-only --diff-filter=ACMR | grep -E '(src|tests).*\.py$' | xargs mypy"
-      language: system
+    -   id: mypy
+        name: mypy
+        files: ^(src|tests).*\.py$
+        exclude: |
+            (?x)^(
+                src/fandango/language/parser/Parser.*\.py|
+                src/fandango/language/parser/sa_fandango\.py|
+                src/fandango/converters/antlr/ANTLRv4.*\.py
+            )$
+        entry: mypy
+        language: system
