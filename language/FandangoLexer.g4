@@ -197,7 +197,7 @@ fragment BYTES_ESCAPE_SEQ: '\\' [\u0000-\u007F];
 
 fragment SPACES: [ \t]+;
 fragment COMMENT: '#' ~[\r\n\f]*;
-fragment LINE_JOINING: '\\' SPACES? ( '\r'? '\n' | '\r' | '\f');
+fragment LINE_JOINING: '\\' SPACES? ( '\r'? '\n' | '\r' | '\f') SPACES?;
 
 fragment UNICODE_OIDS: '\u1885' ..'\u1886' | '\u2118' | '\u212e' | '\u309b' ..'\u309c';
 fragment UNICODE_OIDC: '\u00b7' | '\u0387' | '\u1369' ..'\u1371' | '\u19da';
