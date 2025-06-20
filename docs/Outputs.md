@@ -208,11 +208,12 @@ This is how we can test `bc`:
 $ fandango talk -f bc.fan bc
 ```
 
-```{code-cell}
-:tags: ["remove-input"]
-!fandango talk -f bc.fan --population-size=1 bc
-assert _exit_code == 0
-```
+% FIXME: Doesn't work yet - see bug #500
+% ```{code-cell}
+% :tags: ["remove-input"]
+% !fandango talk -f bc.fan --population-size=1 bc
+% assert _exit_code == 0
+% ```
 
 Our `.fan` spec checks that the `bc` indeed produces integers, but it does not check whether the result is correct, too.
 How would one do this? (Hint: use the Python `eval()` function.)

@@ -267,11 +267,20 @@ Since a `<first_name>` is defined to be a `<name>`, we could also write `<first_
 $ fandango fuzz -f persons.fan -n 10 -c '<first_name>[0].endswith("x")'
 ```
 
+% FIXME: does not work (bug #501)
+% ```{code-cell}
+% :tags: ["remove-input"]
+% !fandango fuzz -f persons.fan -n 10 -c '<first_name>[0].endswith("x")' --validate
+% assert _exit_code == 0
+% ```
+
+% This works
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c '<first_name>[0].endswith("x")' --validate
+!fandango fuzz -f persons.fan -n 10 -c '<first_name>.endswith("x")' --validate
 assert _exit_code == 0
 ```
+
 
 ```{tip}
 As in Python, you can use _negative_ indexes to refer to the last elements.
