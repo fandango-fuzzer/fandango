@@ -337,7 +337,10 @@ class ConstraintProcessor(FandangoParserVisitor):
                 raise FandangoValueError(f"Unknown quantifier: {ctx.getText()}")
         elif ctx.ANY() or ctx.ALL():
             constraint = self.visitQuantifier(ctx.quantifier())
-            bound = NonTerminal(ctx.nonterminal().getText())
+            if ctx.nonterminal():
+                bound = NonTerminal(ctx.nonterminal().getText())
+            else:
+                bound = ctx.identifier().getText()
             search = self.searches.visitStar_selection(ctx.star_selection())[1][0]
             if ctx.ANY():
                 return ExistsConstraint(
