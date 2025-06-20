@@ -838,7 +838,7 @@ void FandangoLexer::FSTRING_START_TRIPLE_SINGLE_QUOTEAction(antlr4::RuleContext 
 
 void FandangoLexer::PYTHON_STARTAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 4:  python_start()  break;
+    case 4:  python_start();  break;
 
   default:
     break;
@@ -847,7 +847,7 @@ void FandangoLexer::PYTHON_STARTAction(antlr4::RuleContext *context, size_t acti
 
 void FandangoLexer::PYTHON_ENDAction(antlr4::RuleContext *context, size_t actionIndex) {
   switch (actionIndex) {
-    case 5:  python_end()  break;
+    case 5:  python_end();  break;
 
   default:
     break;
