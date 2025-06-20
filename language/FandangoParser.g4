@@ -46,7 +46,7 @@ repeat
 symbol
     : NEWLINE*
         ( nonterminal_right
-        | STRING
+        | string
         | NUMBER  // for 0 and 1 bits
         | generator_call
         | char_set // deprecated
@@ -56,25 +56,25 @@ symbol
     ;
 
 nonterminal_right
-    : '<' ((NAME ':')? NAME ':')? NAME '>'
+    : '<' ((identifier ':')? identifier ':')? identifier '>'
     ;
 
 nonterminal
-    : '<' NAME '>'
+    : '<' identifier '>'
     ;
 
 
 
 generator_call
-    : NAME
-    | generator_call '.' NAME
+    : identifier
+    | generator_call '.' identifier
     | generator_call '[' slices ']'
     | generator_call genexp
     | generator_call '(' arguments? ')'
     ;
 
 char_set
-    : OPEN_BRACK XOR? STRING CLOSE_BRACK
+    : OPEN_BRACK XOR? string CLOSE_BRACK
     ;
 
 // constraint part
@@ -97,8 +97,10 @@ implies:
 quantifier:
     NEWLINE*
     (
-        FORALL nonterminal IN selector COLON quantifier
-        | EXISTS nonterminal IN selector COLON quantifier
+        FORALL nonterminal IN dot_selection COLON quantifier
+        | EXISTS nonterminal IN dot_selection COLON quantifier
+        | 'any' '(' quantifier 'for' nonterminal IN star_selection ')'
+        | 'all' '(' quantifier 'for' nonterminal IN star_selection ')'
         | formula_disjunction
     )
     NEWLINE*
@@ -142,14 +144,25 @@ expr:
     ;
 
 selector_length
-    : '|' selector '|'
-    | selector
+    : '|' dot_selection '|' // deprecated
+    | 'len' '(' star_selection ')'
+    | star_selection_or_dot_selection
     ;
 
-selector:
+star_selection_or_dot_selection
+    : star_selection
+    | dot_selection
+    ;
+
+star_selection
+    : '*' selection
+    | '**' selection
+    ;
+
+dot_selection:
     selection
-    | selector '.' selection
-    | selector '..' selection
+    | dot_selection '.' selection
+    | dot_selection '..' selection
     ;
 
 selection
@@ -160,7 +173,7 @@ selection
 
 base_selection
     : nonterminal
-    | '(' selector ')'
+    | '(' dot_selection ')'
     ;
 
 rs_pairs
@@ -266,7 +279,7 @@ compound_stmt
 // =================
 
 assignment
-    : NAME ':' expression ('=' annotated_rhs)?
+    : identifier ':' expression ('=' annotated_rhs)?
     | ('(' single_target ')'
          | single_subscript_attribute_target) ':' expression ('=' annotated_rhs)?
     | (star_targets '=' )+ (yield_expr | star_expressions)
@@ -304,11 +317,11 @@ raise_stmt
     ;
 
 global_stmt
-    : 'global' NAME (',' NAME)*
+    : 'global' identifier (',' identifier)*
     ;
 
 nonlocal_stmt
-    : 'nonlocal' NAME (',' NAME)*
+    : 'nonlocal' identifier (',' identifier)*
     ;
 
 del_stmt
@@ -351,7 +364,7 @@ import_from_as_names
     ;
 
 import_from_as_name
-    : NAME ('as' NAME)?
+    : identifier ('as' identifier)?
     ;
 
 dotted_as_names
@@ -359,12 +372,12 @@ dotted_as_names
     ;
 
 dotted_as_name
-    : dotted_name ('as' NAME)?
+    : dotted_name ('as' identifier)?
     ;
 
 dotted_name
-    : dotted_name '.' NAME
-    | NAME
+    : dotted_name '.' identifier
+    | identifier
     ;
 
 // COMPOUND STATEMENTS
@@ -390,7 +403,7 @@ class_def
     ;
 
 class_def_raw
-    : 'class' NAME type_params? ('(' arguments? ')')? ':' block
+    : 'class' identifier type_params? ('(' arguments? ')')? ':' block
     ;
 
 // Function definitions
@@ -401,7 +414,7 @@ function_def
     ;
 
 function_def_raw
-    : 'async'? 'def' NAME type_params? '(' params? ')' ('->' expression)? ':' func_type_comment? block
+    : 'async'? 'def' identifier type_params? '(' params? ')' ('->' expression)? ':' func_type_comment? block
     ;
 
 // Function parameters
@@ -475,11 +488,11 @@ param_maybe_default
     ;
 
 param
-    : NAME annotation?
+    : identifier annotation?
     ;
 
 param_star_annotation
-    : NAME star_annotation
+    : identifier star_annotation
     ;
 
 annotation
@@ -555,12 +568,12 @@ try_stmt
 // ----------------
 
 except_block
-    : 'except' expression ('as' NAME)? ':' block
+    : 'except' expression ('as' identifier)? ':' block
     | 'except' ':' block
     ;
 
 except_star_block
-    : 'except' '*' expression ('as' NAME)? ':' block
+    : 'except' '*' expression ('as' identifier)? ':' block
     ;
 
 finally_block
@@ -664,7 +677,7 @@ capture_pattern
     ;
 
 pattern_capture_target
-    : NAME
+    : identifier
     ;
 
 wildcard_pattern
@@ -676,12 +689,12 @@ value_pattern
     ;
 
 attr
-    : name_or_attr '.' NAME
+    : name_or_attr '.' identifier
     ;
 
 name_or_attr
-    : name_or_attr '.' NAME
-    | NAME
+    : name_or_attr '.' identifier
+    | identifier
     ;
 
 group_pattern
@@ -746,14 +759,14 @@ keyword_patterns
     ;
 
 keyword_pattern
-    : NAME '=' pattern
+    : identifier '=' pattern
     ;
 
 // Type statement
 // ---------------
 
 type_alias
-    : 'type' NAME type_params? '=' expression
+    : 'type' identifier type_params? '=' expression
     ;
 
 // Type parameter declaration
@@ -768,9 +781,9 @@ type_param_seq
     ;
 
 type_param
-    : NAME type_param_bound?
-    | '*' NAME
-    | '**' NAME
+    : identifier type_param_bound?
+    | '*' identifier
+    | '**' identifier
     ;
 
 type_param_bound
@@ -800,7 +813,8 @@ star_expressions
     ;
 
 star_expression
-    : '*' bitwise_or
+    : star_selection
+    | '*' bitwise_or
     | expression
     ;
 
@@ -814,7 +828,7 @@ star_named_expression
     ;
 
 assignment_expression
-    : NAME ':=' expression
+    : identifier ':=' expression
     ;
 
 named_expression
@@ -960,7 +974,7 @@ await_primary
     ;
 
 primary
-    : primary '.' NAME
+    : primary '.' identifier
     | primary genexp
     | primary '(' arguments? ')'
     | primary '[' slices ']'
@@ -978,7 +992,7 @@ slice
 
 atom
     : selector_length
-    | NAME
+    | identifier
     | 'True'
     | 'False'
     | 'None'
@@ -1048,23 +1062,178 @@ lambda_param_maybe_default
     ;
 
 lambda_param
-    : NAME
+    : identifier
     ;
 
 // LITERALS
 // ========
 
-fstring_middle
+fstring_middle_no_quote
     : fstring_replacement_field
-    | FSTRING_MIDDLE
+    | fstring_any_no_quote
+    ;
+
+fstring_middle_no_single_quote
+    : fstring_replacement_field
+    | fstring_any_no_single_quote
+    ;
+
+fstring_middle_breaks_no_triple_quote
+    : fstring_replacement_field
+    | fstring_any_breaks_no_triple_quote
+    ;
+
+fstring_middle_breaks_no_triple_single_quote
+    : fstring_replacement_field
+    | fstring_any_breaks_no_triple_single_quote
+    ;
+
+fstring_any_no_quote
+    : fstring_any
+    | '\''
+    | '\'\'\''
+    ;
+
+fstring_any_no_single_quote
+    : fstring_any
+    | '"'
+    | '"""'
+    ;
+
+fstring_middle
+    : fstring_any
+    | '\''
+    | '"'
+    ;
+
+
+fstring_any_breaks_no_triple_quote
+    : fstring_any
+    | NEWLINE
+    | '\''
+    ;
+
+fstring_any_breaks_no_triple_single_quote
+    : fstring_any
+    | NEWLINE
+    | '"'
+    ;
+
+fstring_any
+    : (
+        NUMBER
+        | PYTHON_START
+        | PYTHON_END
+        | AND
+        | AS
+        | ASSERT
+        | ASYNC
+        | AWAIT
+        | BREAK
+        | CASE
+        | CLASS
+        | CONTINUE
+        | DEF
+        | DEL
+        | ELIF
+        | ELSE
+        | EXCEPT
+        | FALSE
+        | FINALLY
+        | FOR
+        | FROM
+        | GLOBAL
+        | IF
+        | IMPORT
+        | IN
+        | IS
+        | LAMBDA
+        | MATCH
+        | NONE
+        | NONLOCAL
+        | NOT
+        | OR
+        | PASS
+        | RAISE
+        | RETURN
+        | TRUE
+        | TRY
+        | TYPE
+        | WHILE
+        | WHERE
+        | WITH
+        | YIELD
+        | FORALL
+        | EXISTS
+        | MAXIMIZING
+        | MINIMIZING
+        | ANY
+        | ALL
+        | LEN
+        | NAME
+        | GRAMMAR_ASSIGN
+        | QUESTION
+        | DOT
+        | DOTDOT
+        | ELLIPSIS
+        | STAR
+        | OPEN_PAREN
+        | CLOSE_PAREN
+        | COMMA
+        | COLON
+        | SEMI_COLON
+        | POWER
+        | ASSIGN
+        | OPEN_BRACK
+        | CLOSE_BRACK
+        | OR_OP
+        | XOR
+        | AND_OP
+        | LEFT_SHIFT
+        | RIGHT_SHIFT
+        | ADD
+        | MINUS
+        | DIV
+        | MOD
+        | IDIV
+        | NOT_OP
+        | '{' '{'
+        | '}' '}'
+        | LESS_THAN
+        | GREATER_THAN
+        | EQUALS
+        | GT_EQ
+        | LT_EQ
+        | NOT_EQ_1
+        | NOT_EQ_2
+        | AT
+        | ARROW
+        | ADD_ASSIGN
+        | SUB_ASSIGN
+        | MULT_ASSIGN
+        | AT_ASSIGN
+        | DIV_ASSIGN
+        | MOD_ASSIGN
+        | AND_ASSIGN
+        | OR_ASSIGN
+        | XOR_ASSIGN
+        | LEFT_SHIFT_ASSIGN
+        | RIGHT_SHIFT_ASSIGN
+        | POWER_ASSIGN
+        | IDIV_ASSIGN
+        | EXPR_ASSIGN
+        | EXCL
+        | SKIP_
+        | UNKNOWN_CHAR
+    )+
     ;
 
 fstring_replacement_field
     : '{' (yield_expr | star_expressions) '='? fstring_conversion? fstring_full_format_spec? '}'
     ;
 
-fstring_conversion:
-    | '!' NAME
+fstring_conversion
+    : '!' identifier
     ;
 
 fstring_full_format_spec
@@ -1072,12 +1241,15 @@ fstring_full_format_spec
     ;
 
 fstring_format_spec
-    : FSTRING_MIDDLE
-    | fstring_replacement_field
+    : fstring_replacement_field
+    | fstring_middle
     ;
 
 fstring
-    : FSTRING_START fstring_middle* FSTRING_END
+    : FSTRING_START_QUOTE fstring_middle_no_quote* FSTRING_END_QUOTE
+    | FSTRING_START_SINGLE_QUOTE fstring_middle_no_single_quote* FSTRING_END_SINGLE_QUOTE
+    | FSTRING_START_TRIPLE_QUOTE fstring_middle_breaks_no_triple_quote* FSTRING_END_TRIPLE_QUOTE
+    | FSTRING_START_TRIPLE_SINGLE_QUOTE fstring_middle_breaks_no_triple_single_quote* FSTRING_END_TRIPLE_SINGLE_QUOTE
     ;
 
 string
@@ -1160,7 +1332,8 @@ args
     ;
 
 arg
-    : starred_expression
+    : star_selection
+    | starred_expression
     | assignment_expression
     | expression
     ;
@@ -1176,12 +1349,12 @@ starred_expression
     ;
 
 kwarg_or_starred
-    : NAME '=' expression
+    : identifier '=' expression
     | starred_expression
     ;
 
 kwarg_or_double_starred
-    : NAME '=' expression
+    : identifier '=' expression
     | '**' expression
     ;
 
@@ -1211,13 +1384,13 @@ star_target
     ;
 
 target_with_star_atom
-    : t_primary '.' NAME
+    : t_primary '.' identifier
     | t_primary '[' slices ']'
     | star_atom
     ;
 
 star_atom
-    : NAME
+    : identifier
     | '(' target_with_star_atom ')'
     | '(' star_targets_tuple_seq? ')'
     | '[' star_targets_list_seq? ']'
@@ -1225,17 +1398,17 @@ star_atom
 
 single_target
     : single_subscript_attribute_target
-    | NAME
+    | identifier
     | '(' single_target ')'
     ;
 
 single_subscript_attribute_target
-    : t_primary '.' NAME
+    : t_primary '.' identifier
     | t_primary '[' slices ']'
     ;
 
 t_primary
-    : t_primary '.' NAME
+    : t_primary '.' identifier
     | t_primary '[' slices ']'
     | t_primary genexp
     | t_primary '(' arguments? ')'
@@ -1250,13 +1423,13 @@ del_targets
     ;
 
 del_target
-    : t_primary '.' NAME
+    : t_primary '.' identifier
     | t_primary '[' slices ']'
     | del_t_atom
     ;
 
 del_t_atom
-    : NAME
+    : identifier
     | '(' del_targets? ')'
     | '[' del_targets? ']'
     ;
@@ -1277,6 +1450,13 @@ type_expressions
 
 func_type_comment
     : NEWLINE
+    ;
+
+identifier
+    : NAME
+    | ANY
+    | ALL
+    | LEN
     ;
 
 // ========================= END OF THE GRAMMAR ===========================

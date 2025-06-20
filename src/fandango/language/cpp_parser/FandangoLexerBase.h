@@ -21,6 +21,9 @@ public:
     void _python_start();
     void _python_end();
     void _on_newline();
+    void _fstring_start();
+    void _fstring_end();
+    bool _is_not_fstring();
     static FandangoLexerBase *lexer;
 
 private:
@@ -28,6 +31,7 @@ private:
     std::vector<int> indents;
     int opened = 0;
     int inPython = 0;
+    bool isFstring = false;
     int skipLexer = 0;
 
     static const std::regex NEW_LINE_PATTERN;
@@ -43,3 +47,6 @@ private:
 #define python_start() FandangoLexerBase::lexer->_python_start();
 #define python_end() FandangoLexerBase::lexer->_python_end();
 #define on_newline() FandangoLexerBase::lexer->_on_newline();
+#define fstring_start() FandangoLexerBase::lexer->_fstring_start();
+#define fstring_end() FandangoLexerBase::lexer->_fstring_end();
+#define is_not_fstring() FandangoLexerBase::lexer->_is_not_fstring();

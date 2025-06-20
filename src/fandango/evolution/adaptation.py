@@ -1,7 +1,8 @@
 from typing import Optional
+
 from fandango.constraints.fitness import FailingTree
 from fandango.evolution.evaluation import Evaluator
-from fandango.language.grammar import DerivationTree
+from fandango.language import DerivationTree
 from fandango.logger import LOGGER
 
 

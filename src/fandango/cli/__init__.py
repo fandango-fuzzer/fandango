@@ -1,13 +1,12 @@
 import argparse
 import atexit
 import ctypes
+import difflib
 import glob
 import logging
 import os
 import os.path
-import traceback
 import re
-import difflib
 from typing import IO, Any, Callable
 
 from fandango.constraints.base import Constraint, SoftValue
@@ -41,12 +40,10 @@ if not "readline" in globals():
     except Exception:
         pass
 
-import time
 import shlex
 import subprocess
 import sys
 import tempfile
-import textwrap
 import zipfile
 import shutil
 import textwrap
@@ -1479,9 +1476,15 @@ def convert_command(args: argparse.Namespace) -> None:
             temp_file.flush()
             input_file = temp_file.name
 
+        converter: (
+            ANTLRFandangoConverter
+            | DTDFandangoConverter
+            | BTFandangoConverter
+            | FandangoFandangoConverter
+        )
         match from_format:
             case "antlr" | "g4":
-                converter: FandangoConverter = ANTLRFandangoConverter(input_file)
+                converter = ANTLRFandangoConverter(input_file)
                 spec = converter.to_fan()
             case "dtd":
                 converter = DTDFandangoConverter(input_file)

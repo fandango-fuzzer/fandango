@@ -7,7 +7,7 @@ import enum
 import itertools
 from typing import Optional, Any
 
-from fandango.language.search import NonTerminalSearch
+from fandango.language.search import NonTerminalSearch, Container
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
 
@@ -99,6 +99,9 @@ class Fitness(abc.ABC):
     def __copy__(self) -> "Fitness":
         pass
 
+    def __repr__(self):
+        return f"Fitness(success={self.success})"
+
 
 class ValueFitness(Fitness):
     """
@@ -137,6 +140,9 @@ class ValueFitness(Fitness):
 
     def __copy__(self) -> Fitness:
         return ValueFitness(self.values[:])
+
+    def __repr__(self):
+        return f"ValueFitness(values={self.values})"
 
 
 class ConstraintFitness(Fitness):
@@ -183,6 +189,9 @@ class ConstraintFitness(Fitness):
             failing_trees=self.failing_trees[:],
         )
 
+    def __repr__(self):
+        return f"ConstraintFitness(solved={self.solved}, total={self.total}, success={self.success})"
+
 
 class GeneticBase(abc.ABC):
     """
@@ -219,11 +228,13 @@ class GeneticBase(abc.ABC):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        population: Optional[list[DerivationTree]] = None,
     ) -> Fitness:
         """
         Abstract method to calculate the fitness of the tree.
         :param DerivationTree tree: The tree to calculate the fitness.
         :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of non-terminals matching to trees.
+        :param Optional[list[DerivationTree]] population: The population of trees to calculate the fitness.
         :return Fitness: The fitness of the tree.
         """
         raise NotImplementedError("Fitness function not implemented")
@@ -232,25 +243,33 @@ class GeneticBase(abc.ABC):
     def get_hash(
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        population: Optional[list[DerivationTree]] = None,
     ):
-        return hash((tree, tuple((scope or {}).items())))
+        return hash((tree, tuple((scope or {}).items()), tuple(population or [])))
 
     def combinations(
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        population: Optional[list[DerivationTree]] = None,
     ):
         """
         Get all possible combinations of trees that satisfy the searches.
         :param DerivationTree tree: The tree to calculate the fitness.
         :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of non-terminals matching to trees.
         :return list[list[tuple[str, DerivationTree]]]: The list of combinations of trees that fill all non-terminals
+        :param Optional[list[DerivationTree]] population: The population of trees to calculate the fitness.
         in the genetic base.
         """
-        nodes: list[list[tuple[str, DerivationTree]]] = []
+        nodes: list[list[tuple[str, Container]]] = []
         for name, search in self.searches.items():
             nodes.append(
-                [(name, container) for container in search.find(tree, scope=scope)]
+                [
+                    (name, container)
+                    for container in search.find(
+                        tree, scope=scope, population=population
+                    )
+                ]
             )
         return itertools.product(*nodes)
 
@@ -258,14 +277,16 @@ class GeneticBase(abc.ABC):
         self,
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        population: Optional[list[DerivationTree]] = None,
     ) -> bool:
         """
         Check if the tree satisfies the genetic base.
         :param DerivationTree tree: The tree to check.
         :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of non-terminals matching to trees.
+        :param Optional[list[DerivationTree]] population: The population of trees to calculate the fitness.
         :return bool: True if the tree satisfies the genetic base, False otherwise.
         """
-        return self.fitness(tree, scope).success
+        return self.fitness(tree, scope, population).success
 
     def get_failing_nodes(self, tree: DerivationTree):
         """

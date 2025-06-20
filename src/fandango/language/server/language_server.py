@@ -1,9 +1,14 @@
-from antlr4 import InputStream, Token
-from pygls.server import LanguageServer
-import lsprotocol.types as lsp
-from typing import Optional
 import logging
+from typing import Optional
+
+import lsprotocol.types as lsp
+from antlr4 import InputStream, Token
+from lsprotocol.types import TextDocumentItem, TextDocumentIdentifier
+from pygls.server import LanguageServer
+from pygls.workspace import TextDocument
+
 from fandango.language.parser.FandangoLexer import FandangoLexer
+from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.server.semantic_tokens import (
     SemanticTokenModifiers,
     SemanticTokenTypes,
@@ -15,8 +20,8 @@ logger = logging.getLogger(__name__)
 def map_to_ranges(references: list[Token], uri: str):
     return [
         lsp.Range(
-            start=lsp.Position(line=t.line - 1, character=t.column),
-            end=lsp.Position(line=t.line - 1, character=t.column + len(t.text)),
+            start=lsp.Position(line=t.line - 1, character=t.column),  # type: ignore[operator, arg-type]
+            end=lsp.Position(line=t.line - 1, character=t.column + len(t.text)),  # type: ignore[operator]
         )
         for t in references
     ]
@@ -44,24 +49,34 @@ class FandangoLanguageServer(LanguageServer):
         super().__init__(*args, **kwargs)
         self.files: dict[str, FileAssets] = {}
 
-    def get_text_document(self, document: lsp.VersionedTextDocumentIdentifier):
+    def get_text_document(
+        self, document: lsp.VersionedTextDocumentIdentifier | TextDocumentItem
+    ) -> TextDocument:
         return self.workspace.get_text_document(document.uri)
 
-    def parse(self, document: lsp.VersionedTextDocumentIdentifier):
+    def parse(self, document: lsp.VersionedTextDocumentIdentifier | TextDocumentItem):
         document_text = self.get_text_document(document).source
         lexer = FandangoLexer(InputStream(document_text))
         self.files[document.uri] = FileAssets(lexer)
 
-    def get_file_assets(self, document: lsp.VersionedTextDocumentIdentifier):
+    def get_file_assets(
+        self, document: lsp.VersionedTextDocumentIdentifier | TextDocumentIdentifier
+    ):
         return self.files[document.uri]
 
-    def get_nonterminals(self, document: lsp.VersionedTextDocumentIdentifier):
+    def get_nonterminals(
+        self, document: lsp.VersionedTextDocumentIdentifier | TextDocumentIdentifier
+    ):
         tokens = self.get_file_assets(document).tokens
-        nonterminals = [t for t in tokens if t.type == FandangoLexer.NONTERMINAL]
+        nonterminals = [
+            t for t in tokens if t.type == FandangoParser.NonterminalContext
+        ]
         return nonterminals
 
     def get_references(
-        self, document: lsp.VersionedTextDocumentIdentifier, position: lsp.Position
+        self,
+        document: lsp.VersionedTextDocumentIdentifier | TextDocumentIdentifier,
+        position: lsp.Position,
     ):
         non_terminals = self.get_nonterminals(document)
         current_token = [
@@ -101,6 +116,8 @@ def did_change(ls: FandangoLanguageServer, params: lsp.DidChangeTextDocumentPara
 )
 def completions(params: Optional[lsp.CompletionParams] = None) -> lsp.CompletionList:
     """Returns completion items."""
+    if params is None:
+        raise ValueError("params must not be None")
 
     items = [
         lsp.CompletionItem(label=t.text, insert_text=t.text[1:])
@@ -173,7 +190,7 @@ def prepare_rename(ls: FandangoLanguageServer, params: lsp.PrepareRenameParams):
     if len(ls.get_references(params.text_document, params.position)) == 0:
         return None
 
-    return lsp.PrepareRenameDefaultBehavior(default_behavior=True)
+    return lsp.PrepareRenameDefaultBehavior(default_behavior=True)  # type: ignore[attr-defined]
 
 
 @server.feature(
@@ -248,7 +265,7 @@ def code_actions(params: lsp.CodeActionParams):
         if t.type != FandangoLexer.GRAMMAR_ASSIGN:
             continue
         non_terminals = [
-            nt for nt in tokens[i:0:-1] if nt.type == FandangoLexer.NONTERMINAL
+            nt for nt in tokens[i:0:-1] if nt.type == FandangoParser.NonterminalContext
         ]
         if len(non_terminals) == 0:
             continue
