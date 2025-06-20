@@ -88,7 +88,7 @@ For example:
 ```
 
 ```{note}
-The actual implementation allows a comment at any end of a line.
+Extending beyond this grammar, the actual implementation allows a comment at any end of a line.
 ```
 
 
