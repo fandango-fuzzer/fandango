@@ -9,9 +9,9 @@ from fandango.language.parse import parse_spec
 class FandangoFandangoConverter(FandangoConverter):
     """Convert (normalize) Fandango grammar to Fandango format"""
 
-    def __init__(self, filename: str, parties: list[str] = None):
+    def __init__(self, filename: str, parties: list[str] | None = None):
         super().__init__(filename)
-        self.parties = parties
+        self.parties = parties or []
 
     def to_fan(self, **kw_args) -> str:
         """Convert the grammar spec to Fandango format"""
