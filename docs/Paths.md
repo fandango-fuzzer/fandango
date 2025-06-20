@@ -468,10 +468,10 @@ This is why Fandango allows expressing _quantification_ in constraints.
 
 ### Star Expressions
 
-```{admonition} Under Construction
-:class: attention
-The `*` syntax is not operational yet.
-```
+% ```{admonition} Under Construction
+% :class: attention
+% The `*` syntax is not operational yet.
+% ```
 
 In Fandango, you can prefix an element with `*` to obtain a collection of _all_ these elements within an individual string.
 Hence, `*<name>` is a collection of _all_ `<name>` elements within the generated string.
@@ -523,13 +523,12 @@ So, what we get is existential quantification:
 $ fandango fuzz -f persons.fan -n 10 -c 'any(n.startswith("A") for n in *<name>)'
 ```
 
-% FIXME: Old syntax
-
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c 'exists <name> in <start>: <name>.startswith("A")' --validate
+!fandango fuzz -f persons.fan -n 10 -c 'any(n.startswith("A") for n in *<name>)' --validate
 assert _exit_code == 0
 ```
+
 
 ### Universal Quantification
 
@@ -562,6 +561,7 @@ So, what we get is universal quantification:
 $ fandango fuzz -f persons.fan -n 10 -c 'all(c == "a" for c in *<first_name>..<ascii_lowercase_letter>)'
 ```
 
+% FIXME: Not star syntax yet - see bug #503
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10 -c '<first_name>..<ascii_lowercase_letter> == "a"' --validate
