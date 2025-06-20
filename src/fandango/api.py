@@ -193,6 +193,7 @@ class Fandango(FandangoBase):
         self.fandango = FandangoStrategy(
             self.grammar, constraints, start_symbol=self._start_symbol, **settings
         )
+        LOGGER.info("---------- Done initializing base population ----------")
 
     def generate_solutions(
         self,
@@ -212,10 +213,13 @@ class Fandango(FandangoBase):
             assert self.fandango is not None
 
         LOGGER.info(
-            f"---------- Generating {'' if max_generations is None else f' {max_generations} solutions'}----------"
+            f"---------- Generating {'' if max_generations is None else f' for {max_generations} generations'}----------"
         )
         start_time = time.time()
         yield from self.fandango.generate(max_generations=max_generations)
+        LOGGER.info(
+            f"---------- Done generating {'' if max_generations is None else f' for {max_generations} generations'}----------"
+        )
         LOGGER.info(f"Time taken: {(time.time() - start_time):.2f} seconds")
 
     def fuzz(
@@ -223,6 +227,9 @@ class Fandango(FandangoBase):
         *,
         extra_constraints: Optional[list[str]] = None,
         solution_callback: Callable[[DerivationTree, int], None] = lambda _a, _b: None,
+        desired_solutions: Optional[int] = None,
+        max_generations: Optional[int] = None,
+        infinite: bool = False,
         **settings,
     ) -> list[DerivationTree]:
         """
@@ -233,19 +240,24 @@ class Fandango(FandangoBase):
         :return: A list of derivation trees
         """
 
-        max_generations = settings.pop("max_generations", None)
-        desired_solutions = settings.pop("desired_solutions", None)
-        infinite = settings.pop("infinite", False)
-
         # initialize if not initialized or settings changed
         if self.fandango is None or extra_constraints or settings:
             self.init_population(extra_constraints=extra_constraints, **settings)
         assert self.fandango is not None
 
-        if max_generations is None and desired_solutions is None:
+        if max_generations is None and desired_solutions is None and not infinite:
+            LOGGER.info(
+                f"Infinite is not set and neither max_generations nor desired_solutions are specified. Limiting to default max_generations of {DEFAULT_MAX_GENERATIONS}"
+            )
             max_generations = DEFAULT_MAX_GENERATIONS
+        else:
+            LOGGER.debug(
+                f"Limiting fuzzing to max_generations: {max_generations} and desired_solutions: {desired_solutions}"
+            )
 
         if infinite:
+            if max_generations is not None:
+                LOGGER.warn("Infinite mode is activated, overriding max_generations")
             max_generations = None  # infinite overrides max_generations
 
         generator: Iterable[DerivationTree] = self.generate_solutions(max_generations)
