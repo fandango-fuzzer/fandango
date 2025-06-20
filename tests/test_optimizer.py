@@ -71,7 +71,7 @@ class GeneticTest(unittest.TestCase):
             start_symbol=self.fandango.start_symbol,
             warnings_are_errors=True,
         )
-        population = []
+        population: list[DerivationTree] = []
         expected_count = 10
         generator = manager.refill_population(
             current_population=population,
@@ -99,7 +99,7 @@ class GeneticTest(unittest.TestCase):
         )
 
         initial_count = 10
-        population = []
+        population: list[DerivationTree] = []
 
         # add some initial individuals
         manager.refill_population(
@@ -290,9 +290,9 @@ class GeneticTest(unittest.TestCase):
         for individual in [mutant1, mutant2]:
             self.assertTrue(self.fandango.grammar.parse(str(individual)))
 
-    def test_evolve(self):
+    def test_generate(self):
         # Run the evolution process
-        self.fandango.evolve(max_generations=100)
+        solutions = list(self.fandango.generate(max_generations=100))
 
         # Check that the population has been updated
         self.assertIsNotNone(self.fandango.population)
@@ -300,6 +300,9 @@ class GeneticTest(unittest.TestCase):
 
         # Check that the population is valid
         for individual in self.fandango.population:
+            self.assertTrue(self.fandango.grammar.parse(str(individual)))
+
+        for individual in solutions:
             self.assertTrue(self.fandango.grammar.parse(str(individual)))
 
 
@@ -321,10 +324,7 @@ class DeterminismTests(unittest.TestCase):
             constraints=constraints_int,
             random_seed=random_seed,
         )
-        solutions: list[DerivationTree] = fandango.evolve(
-            desired_solutions=desired_solutions,
-            max_generations=100,
-        )
+        solutions = list(fandango.generate(max_generations=100))[:desired_solutions]
         return [s.to_string() for s in solutions]
 
     def test_deterministic_solutions(self):
@@ -347,15 +347,13 @@ class TargetedMutations(unittest.TestCase):
             grammar_int, constraints_int = parse(
                 file, use_stdlib=False, use_cache=False
             )
+        assert grammar_int is not None
         fandango = Fandango(
             grammar=grammar_int,
             constraints=constraints_int,
             random_seed=random_seed,
         )
-        solutions: list[DerivationTree] = fandango.evolve(
-            desired_solutions=desired_solutions,
-            max_generations=100,
-        )
+        solutions = list(fandango.generate(max_generations=100))[:desired_solutions]
         return [s.to_string() for s in solutions]
 
     def test_targeted_mutation_1(self):

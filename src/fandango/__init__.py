@@ -1,5 +1,20 @@
 #!/usr/bin/env python3
 
+from abc import ABC, abstractmethod
+import importlib.metadata
+import itertools
+import logging
+import sys
+import time
+from typing import IO, Callable, Iterable, Optional, Generator
+
+from fandango.constraints.base import Constraint, SoftValue
+from fandango.evolution.algorithm import Fandango as FandangoStrategy
+from fandango.language.parse import parse
+from fandango.language.grammar import Grammar
+import fandango.language.tree
+from fandango.logger import LOGGER
+
 __all__ = [
     "FandangoError",
     "FandangoParseError",
@@ -59,8 +74,6 @@ class FandangoFailedError(FandangoError):
         super().__init__(self, message)
 
 
-import importlib.metadata
-
 DISTRIBUTION_NAME = "fandango-fuzzer"
 
 
@@ -78,18 +91,6 @@ def homepage() -> str:
         if e.startswith("homepage,")
     ].pop(0) or "the Fandango homepage"
 
-
-from abc import ABC, abstractmethod
-from typing import IO, Optional, Generator
-import sys
-import logging
-
-from fandango.language.parse import parse
-from fandango.evolution.algorithm import Fandango as FandangoStrategy
-import fandango.language.tree
-from fandango.language.grammar import Grammar
-from fandango.logger import LOGGER
-import itertools
 
 DerivationTree = fandango.language.tree.DerivationTree
 
@@ -109,7 +110,7 @@ class FandangoBase(ABC):
         use_cache: bool = True,
         use_stdlib: bool = True,
         lazy: bool = False,
-        start_symbol: Optional[str] = None,
+        start_symbol: str = "<start>",
         includes: Optional[list[str]] = None,
     ):
         """
@@ -122,14 +123,8 @@ class FandangoBase(ABC):
         :param start_symbol: The grammar start symbol (default: "<start>")
         :param includes: A list of directories to search for include files
         """
-        if start_symbol is None:
-            start_symbol = "<start>"
         self._start_symbol = start_symbol
-
-        if logging_level is None:
-            logging_level = logging.WARNING
-        LOGGER.setLevel(logging_level)
-
+        LOGGER.setLevel(logging_level if logging_level is not None else logging.WARNING)
         self._grammar, self._constraints = parse(
             fan_files,
             constraints,
@@ -173,12 +168,45 @@ class FandangoBase(ABC):
         LOGGER.setLevel(value)
 
     @abstractmethod
-    def fuzz(
+    def init_population(
         self, *, extra_constraints: Optional[list[str]] = None, **settings
+    ) -> None:
+        """
+        Initialize a Fandango population.
+        :param extra_constraints: Additional constraints to apply
+        :param settings: Additional settings for the evolution algorithm
+        :return: A list of derivation trees
+        """
+        pass
+
+    @abstractmethod
+    def generate_solutions(
+        self,
+        max_generations=None,
+    ) -> Generator[DerivationTree, None, None]:
+        """
+        Generate trees that conform to the language.
+
+        Will initialize a population with default settings if none has been initialized before.
+        Initialization can be done manually with `init_population` for more flexibility.
+
+        :param max_generations: Maximum number of generations to evolve through
+        :return: A generator for solutions to the language
+        """
+        pass
+
+    @abstractmethod
+    def fuzz(
+        self,
+        *,
+        extra_constraints: Optional[list[str]] = None,
+        solution_callback: Callable[[DerivationTree, int], None] = lambda _a, _b: None,
+        **settings,
     ) -> list[DerivationTree]:
         """
         Create a Fandango population.
         :param extra_constraints: Additional constraints to apply
+        :param solution_callback: What to do with each solution; receives the solution and a unique index
         :param settings: Additional settings for the evolution algorithm
         :return: A list of derivation trees
         """
@@ -203,43 +231,138 @@ class Fandango(FandangoBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fandango = None
 
-    def fuzz(
+    @classmethod
+    def _with_parsed(
+        cls,
+        grammar: Grammar,
+        constraints: list[Constraint | SoftValue],
+        *,
+        start_symbol: Optional[str] = None,
+        logging_level: Optional[int] = None,
+    ) -> "FandangoBase":
+        LOGGER.setLevel(logging_level if logging_level is not None else logging.WARNING)
+        obj = cls.__new__(cls)  # bypass __init__ to prevent the need for double parsing
+        obj._grammar = grammar
+        obj._constraints = constraints
+        obj.fandango = None
+        obj._start_symbol = start_symbol if start_symbol is not None else "<start>"
+        return obj
+
+    def init_population(
         self, *, extra_constraints: Optional[list[str]] = None, **settings
-    ) -> list[DerivationTree]:
+    ) -> None:
         """
-        Create a Fandango population.
+        Initialize a Fandango population.
         :param extra_constraints: Additional constraints to apply
         :param settings: Additional settings for the evolution algorithm
         :return: A list of derivation trees
         """
+        LOGGER.info("---------- Initializing base population ----------")
+
         constraints = self.constraints[:]
         if extra_constraints:
             _, extra_constraints_parsed = parse(
                 [],
                 extra_constraints,
                 given_grammars=[self.grammar],
-                start_symbol=self.start_symbol,
+                start_symbol=self._start_symbol,
             )
             constraints += extra_constraints_parsed
 
-        evolve_settings = {}
-        for evolve_setting_key in ["max_generations", "desired_solutions"]:
-            if evolve_setting_key in settings:
-                evolve_settings[evolve_setting_key] = settings[evolve_setting_key]
-                del settings[evolve_setting_key]
-
-        if (
-            "desired_solutions" not in evolve_settings
-            and "max_generations" not in evolve_settings
-        ):
-            evolve_settings["max_generations"] = DEFAULT_MAX_GENERATIONS
-
-        fandango = FandangoStrategy(
-            self.grammar, constraints, start_symbol=self.start_symbol, **settings
+        self.fandango = FandangoStrategy(
+            self.grammar, constraints, start_symbol=self._start_symbol, **settings
         )
-        population = fandango.evolve(**evolve_settings)
-        return population
+
+    def generate_solutions(
+        self,
+        max_generations=None,
+    ) -> Generator[DerivationTree, None, None]:
+        """
+        Generate trees that conform to the language.
+
+        Will initialize a population with default settings if none has been initialized before.
+        Initialization can be done manually with `init_population` for more flexibility.
+
+        :param max_generations: Maximum number of generations to evolve through
+        :return: A generator for solutions to the language
+        """
+        if self.fandango is None:
+            self.init_population()
+            assert self.fandango is not None
+
+        LOGGER.info(
+            f"---------- Generating {'' if max_generations is None else f' {max_generations} solutions'}----------"
+        )
+        start_time = time.time()
+        yield from self.fandango.generate(max_generations=max_generations)
+        LOGGER.info(f"Time taken: {(time.time() - start_time):.2f} seconds")
+
+    def fuzz(
+        self,
+        *,
+        extra_constraints: Optional[list[str]] = None,
+        solution_callback: Callable[[DerivationTree, int], None] = lambda _a, _b: None,
+        **settings,
+    ) -> list[DerivationTree]:
+        """
+        Create a Fandango population.
+        :param extra_constraints: Additional constraints to apply
+        :param solution_callback: What to do with each solution; receives the solution and a unique index
+        :param settings: Additional settings for the evolution algorithm
+        :return: A list of derivation trees
+        """
+
+        max_generations = settings.pop("max_generations", None)
+        desired_solutions = settings.pop("desired_solutions", None)
+        infinite = settings.pop("infinite", False)
+
+        # initialize if not initialized or settings changed
+        if self.fandango is None or extra_constraints or settings:
+            self.init_population(extra_constraints=extra_constraints, **settings)
+        assert self.fandango is not None
+
+        if max_generations is None and desired_solutions is None:
+            max_generations = DEFAULT_MAX_GENERATIONS
+
+        if infinite:
+            max_generations = None  # infinite overrides max_generations
+
+        generator: Iterable[DerivationTree] = self.generate_solutions(max_generations)
+        if desired_solutions is not None:
+            LOGGER.info(f"Generating {desired_solutions} solutions")
+            generator = itertools.islice(generator, desired_solutions)
+
+        solutions = []
+        for i, s in enumerate(generator):
+            solutions.append(s)
+            solution_callback(s, i)
+
+        if desired_solutions is not None and len(solutions) < desired_solutions:
+            warnings_are_errors = settings.get("warnings_are_errors", False)
+            best_effort = settings.get("best_effort", False)
+            if (
+                self.fandango.average_population_fitness
+                < self.fandango.evaluator.expected_fitness
+            ):
+                LOGGER.error("Population did not converge to a perfect population")
+                if warnings_are_errors:
+                    raise FandangoFailedError("Failed to find a perfect solution")
+                elif best_effort:
+                    return self.fandango.population
+
+            LOGGER.error(
+                f"Only found {len(solutions)} perfect solutions, instead of the required {desired_solutions}"
+            )
+            if warnings_are_errors:
+                raise FandangoFailedError(
+                    "Failed to find the required number of perfect solutions"
+                )
+            elif best_effort:
+                return self.fandango.population[:desired_solutions]
+
+        return solutions
 
     def parse(
         self, word: str | bytes | DerivationTree, *, prefix: bool = False, **settings
@@ -257,7 +380,7 @@ class Fandango(FandangoBase):
             mode = Grammar.Parser.ParsingMode.COMPLETE
 
         tree_generator = self.grammar.parse_forest(
-            word, mode=mode, start=self.start_symbol, **settings
+            word, mode=mode, start=self._start_symbol, **settings
         )
         try:
             peek = next(tree_generator)

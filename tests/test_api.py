@@ -1,5 +1,6 @@
 #!/usr/bin/env pytest
 
+import itertools
 import random
 import unittest
 import logging
@@ -24,13 +25,13 @@ class APITest(unittest.TestCase):
             fan = Fandango(persons)
 
         random.seed(0)
-        for tree in fan.fuzz(desired_solutions=10):
+        for tree in itertools.islice(fan.generate_solutions(), 10):
             print(str(tree))
 
     def test_fuzz_from_string(self):
         fan = Fandango(self.SPEC_abc, logging_level=logging.INFO)
         random.seed(0)
-        for tree in fan.fuzz(desired_solutions=10):
+        for tree in itertools.islice(fan.generate_solutions(), 10):
             print(str(tree))
 
     def test_parse(self):

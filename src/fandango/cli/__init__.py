@@ -54,7 +54,7 @@ from pathlib import Path
 
 from ansi_styles import ansiStyles as styles
 
-from fandango.evolution.algorithm import Fandango
+from fandango import Fandango
 from fandango.language.grammar import Grammar, FuzzingMode
 from fandango.language.parse import parse
 from fandango.logger import LOGGER, print_exception
@@ -235,10 +235,10 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
     )
     algorithm_group.add_argument(
         "-n",
-        "--num-outputs",
         "--desired-solutions",
+        "--num-outputs",
         type=int,
-        help="Number of outputs to produce (default: 100).",
+        help="Number of outputs to produce.",
         default=None,
     )
     algorithm_group.add_argument(
@@ -765,6 +765,7 @@ def make_fandango_settings(
     args: argparse.Namespace, initial_settings: dict[str, Any] = {}
 ) -> dict[str, Any]:
     """Create keyword settings for Fandango() constructor"""
+    LOGGER.debug(f"Pre-sanitized settings: {args}")
     settings = initial_settings.copy()
     _copy_setting(args, settings, "population_size")
     _copy_setting(args, settings, "mutation_rate")
@@ -778,6 +779,8 @@ def make_fandango_settings(
     _copy_setting(args, settings, "max_repetitions")
     _copy_setting(args, settings, "max_nodes")
     _copy_setting(args, settings, "max_node_rate")
+    _copy_setting(args, settings, "max_generations")
+    _copy_setting(args, settings, "desired_solutions")
 
     if hasattr(args, "start_symbol") and args.start_symbol is not None:
         if args.start_symbol.startswith("<"):
@@ -800,25 +803,6 @@ def make_fandango_settings(
             args.initial_population
         )
     return settings
-
-
-def make_evolve_settings(args: argparse.Namespace, file_mode: str) -> dict[str, Any]:
-    evolve_settings: dict[str, Any] = {}
-    _copy_setting(args, evolve_settings, "desired_solutions", args_name="num_outputs")
-    if args.infinite:
-        if args.max_generations != fandango.DEFAULT_MAX_GENERATIONS:
-            LOGGER.warning("Ignoring --max-generations because --infinite is set")
-        evolve_settings["max_generations"] = None
-    else:
-        _copy_setting(args, evolve_settings, "max_generations")
-
-    evolve_settings["solution_callback"] = (
-        lambda solution, solution_index: output_solution(
-            solution, args, solution_index, file_mode
-        )
-    )
-
-    return evolve_settings
 
 
 def extract_initial_population(path: str) -> list[str]:
@@ -857,8 +841,6 @@ def set_command(args: argparse.Namespace) -> None:
     global DEFAULT_SETTINGS
 
     if args.fan_files:
-        DEFAULT_FAN_CONTENT = None, []
-        DEFAULT_CONSTRAINTS = []
         LOGGER.info("Parsing Fandango content")
         grammar, constraints = parse_contents_from_args(args)
         DEFAULT_FAN_CONTENT = (grammar, constraints)
@@ -1103,7 +1085,7 @@ def output_solution(
 
     if args.format == "none":
         return
-    if not "output" in args:
+    if "output" not in args:
         return
 
     if args.directory:
@@ -1309,9 +1291,15 @@ def fuzz_command(args: argparse.Namespace) -> None:
     LOGGER.info(f"File mode: {file_mode}")
 
     LOGGER.debug("Starting Fandango")
-    fandango = Fandango(grammar, constraints, **settings)
+    fandango = Fandango._with_parsed(
+        grammar, constraints, start_symbol=args.start_symbol
+    )
     LOGGER.debug("Evolving population")
-    population = fandango.evolve(**make_evolve_settings(args, file_mode))
+
+    def solutions_callback(sol, i):
+        return output_solution(sol, args, i, file_mode)
+
+    population = fandango.fuzz(solution_callback=solutions_callback, **settings)
 
     if args.validate:
         LOGGER.debug("Validating population")
@@ -1435,9 +1423,15 @@ def talk_command(args: argparse.Namespace) -> None:
     LOGGER.info(f"File mode: {file_mode}")
 
     LOGGER.debug("Starting Fandango")
-    fandango = Fandango(grammar, constraints, **settings)
+    fandango = Fandango._with_parsed(
+        grammar, constraints, start_symbol=args.start_symbol
+    )
     LOGGER.debug("Evolving population")
-    fandango.evolve(**make_evolve_settings(args, file_mode))
+
+    def solutions_callback(sol, i):
+        return output_solution(sol, args, i, file_mode)
+
+    fandango.fuzz(solution_callback=solutions_callback, **settings)
 
 
 def convert_command(args: argparse.Namespace) -> None:
