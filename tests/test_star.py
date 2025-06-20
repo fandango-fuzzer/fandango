@@ -339,8 +339,6 @@ where {str(x) for x in **<c>} == {"e", "f"}
     def test_population_star_constraint_valid(self):
         for constraint in self.constraints:
             for tree in self.VALID_POPULATION:
-                print(tree)
-                print(constraint)
                 self.assertTrue(
                     constraint.check(tree, population=self.VALID_POPULATION), constraint
                 )
