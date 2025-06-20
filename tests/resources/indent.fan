@@ -2,6 +2,14 @@
 <a> ::= <b>
     <b> ::= <c>
 
+<a> ::= (
+    "a"
+    | "a" <a>)
+
+<a> ::= \
+    "a" \
+    | "a" <a>
+
 where forall <a> in <b>:
     forall <c> in <d>:
         True
