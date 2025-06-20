@@ -1,7 +1,7 @@
 # mutation.py
 import random
 from abc import ABC, abstractmethod
-from typing import Callable, Generator
+from collections.abc import Callable, Generator
 
 from fandango.constraints.fitness import FailingTree
 from fandango.language import DerivationTree, Grammar
