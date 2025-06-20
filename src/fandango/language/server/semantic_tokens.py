@@ -50,7 +50,7 @@ class SemanticTokenTypes(enum.Enum):
         :return: The semantic token type
         """
         match token.type:
-            case "NONTERMINAL":
+            case "NAME":
                 return SemanticTokenTypes.variable
             case "STRING_LITERAL" | "BYTES_LITERAL":
                 return SemanticTokenTypes.string
