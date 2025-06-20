@@ -90,8 +90,14 @@ implies
 quantifier
     : FORALL nonterminal IN dot_selection ':' (NEWLINE INDENT quantifier DEDENT | quantifier) // deprecated
     | EXISTS nonterminal IN dot_selection ':' (NEWLINE INDENT quantifier DEDENT | quantifier) // deprecated
-    | 'any' '(' quantifier 'for' nonterminal IN star_selection ')' (';' | NEWLINE+ | EOF)?
-    | 'all' '(' quantifier 'for' nonterminal IN star_selection ')' (';' | NEWLINE+ | EOF)?
+    | 'any' '(' quantifier 'for' (nonterminal | identifier) IN star_selection ')' (';' | NEWLINE+ | EOF)?
+    | 'any' '(' '[' quantifier 'for' (nonterminal | identifier) IN star_selection ']' ')' (';' | NEWLINE+ | EOF)?
+    | 'any' '(' '(' quantifier 'for' (nonterminal | identifier) IN star_selection ']' ')' (';' | NEWLINE+ | EOF)?
+    | 'any' '(' '{' quantifier 'for' (nonterminal | identifier) IN star_selection '}' ')' (';' | NEWLINE+ | EOF)?
+    | 'all' '(' quantifier 'for' (nonterminal | identifier) IN star_selection ')' (';' | NEWLINE+ | EOF)?
+    | 'all' '(' '(' quantifier 'for' (nonterminal | identifier) IN star_selection ')' ')' (';' | NEWLINE+ | EOF)?
+    | 'all' '(' '[' quantifier 'for' (nonterminal | identifier) IN star_selection ']' ')' (';' | NEWLINE+ | EOF)?
+    | 'all' '(' '{' quantifier 'for' (nonterminal | identifier) IN star_selection '}' ')' (';' | NEWLINE+ | EOF)?
     | formula_disjunction (';' | NEWLINE+ | EOF)?
     ;
 
