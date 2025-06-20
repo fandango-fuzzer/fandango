@@ -38,16 +38,16 @@ class BTFandangoConverterVisitor(c_ast.NodeVisitor):
         self.start_symbol = start_symbol
         self.use_regexes = use_regexes
 
-        self.defs = {}
-        self.forced_elems = []
-        self.forced_complements = []
-        self.forced_vars = []
-        self.seen = set()
-        self.context = []
-        self.constraints = []
-        self.not_handled = []
-        self.vars = {}
-        self.renames = {}
+        self.defs: dict[str, str] = {}
+        self.forced_elems: list[str] = []
+        self.forced_complements: list[str] = []
+        self.forced_vars: list[str] = []
+        self.seen: set[str] = set()
+        self.context: list[str] = []
+        self.constraints: list[str] = []
+        self.not_handled: list[str] = []
+        self.vars: dict[Optional[str], str] = {}
+        self.renames: dict[str, str] = {}
         self.in_code = False
 
     def cond(self):
@@ -240,7 +240,7 @@ class BTFandangoConverterVisitor(c_ast.NodeVisitor):
 
         for _, child in node.children():
             value = None
-            var = None
+            var: Optional[str] = None
             if self.forced_elems and self.forced_complements:
                 value = self.forced_elems[0]
                 self.forced_elems = self.forced_elems[1:]
@@ -432,7 +432,7 @@ class BTFandangoConverterVisitor(c_ast.NodeVisitor):
                     self.char(next_bytes[1]),
                 ]
 
-    def visit_While(self, node: c_ast.While) -> str:
+    def visit_While(self, node: c_ast.While | c_ast.For) -> str:
         if self.in_code:
             return ""
 
