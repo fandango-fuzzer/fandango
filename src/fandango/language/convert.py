@@ -1874,7 +1874,7 @@ class PythonProcessor(FandangoParserVisitor):
             keywords=keywords,
             body=body,
             decorator_list=[],
-            type_params=None,  # type: ignore[arg-type]
+            type_params=None,  # type: ignore[arg-type, call-arg]
         )
 
     def visitFunction_def(self, ctx: FandangoParser.Function_defContext):
