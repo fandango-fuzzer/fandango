@@ -90,9 +90,9 @@ implies
 quantifier
     : FORALL nonterminal IN dot_selection ':' (NEWLINE INDENT quantifier DEDENT | quantifier) // deprecated
     | EXISTS nonterminal IN dot_selection ':' (NEWLINE INDENT quantifier DEDENT | quantifier) // deprecated
-    | 'any' '(' quantifier 'for' nonterminal IN star_selection ')' (';' | NEWLINE+ | EOF)
-    | 'all' '(' quantifier 'for' nonterminal IN star_selection ')' (';' | NEWLINE+ | EOF)
-    | formula_disjunction (';' | NEWLINE+ | EOF)
+    | 'any' '(' quantifier 'for' nonterminal IN star_selection ')' (';' | NEWLINE+ | EOF)?
+    | 'all' '(' quantifier 'for' nonterminal IN star_selection ')' (';' | NEWLINE+ | EOF)?
+    | formula_disjunction (';' | NEWLINE+ | EOF)?
     ;
 
 formula_disjunction
@@ -851,6 +851,7 @@ eq_bitwise_or
 
 noteq_bitwise_or
     : '!=' bitwise_or
+    | '<>' bitwise_or
     ;
 
 lte_bitwise_or

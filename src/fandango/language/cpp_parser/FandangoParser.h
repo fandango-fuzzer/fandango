@@ -2901,6 +2901,7 @@ public:
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *NOT_EQ_2();
     Bitwise_orContext *bitwise_or();
+    antlr4::tree::TerminalNode *NOT_EQ_1();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
