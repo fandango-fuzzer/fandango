@@ -704,12 +704,19 @@ public:
     antlr4::tree::TerminalNode *DEDENT();
     antlr4::tree::TerminalNode *EXISTS();
     antlr4::tree::TerminalNode *ANY();
-    antlr4::tree::TerminalNode *OPEN_PAREN();
+    std::vector<antlr4::tree::TerminalNode *> OPEN_PAREN();
+    antlr4::tree::TerminalNode* OPEN_PAREN(size_t i);
     antlr4::tree::TerminalNode *FOR();
     Star_selectionContext *star_selection();
-    antlr4::tree::TerminalNode *CLOSE_PAREN();
+    std::vector<antlr4::tree::TerminalNode *> CLOSE_PAREN();
+    antlr4::tree::TerminalNode* CLOSE_PAREN(size_t i);
+    IdentifierContext *identifier();
     antlr4::tree::TerminalNode *SEMI_COLON();
     antlr4::tree::TerminalNode *EOF();
+    antlr4::tree::TerminalNode *OPEN_BRACK();
+    antlr4::tree::TerminalNode *CLOSE_BRACK();
+    antlr4::tree::TerminalNode *OPEN_BRACE();
+    antlr4::tree::TerminalNode *CLOSE_BRACE();
     antlr4::tree::TerminalNode *ALL();
     Formula_disjunctionContext *formula_disjunction();
 
