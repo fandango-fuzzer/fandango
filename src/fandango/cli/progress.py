@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
-import time
 import os
 import random
+import time
+
 from ansi_styles import ansiStyles as styles
 
 FITNESS: list[float] = []

@@ -1,8 +1,8 @@
 import logging
-import traceback
-import sys
 import os
+import sys
 import time
+import traceback
 from typing import Optional
 
 from ansi_styles import ansiStyles as styles

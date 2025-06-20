@@ -2,10 +2,11 @@ import re
 import sys
 from typing import TextIO
 
-# noinspection PyUnresolvedReferences
-from fandango.language.parser.FandangoParser import FandangoParser
 from antlr4 import Lexer, InputStream
 from antlr4.Token import CommonToken
+
+# noinspection PyUnresolvedReferences
+from fandango.language.parser.FandangoParser import FandangoParser
 
 # Current lexer instance, set by the generated lexer code
 lexer: "FandangoLexerBase" = None

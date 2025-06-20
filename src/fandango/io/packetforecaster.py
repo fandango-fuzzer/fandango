@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import List, Set, Tuple, Optional
+from typing import Optional
 
 from fandango import FandangoValueError
 from fandango.language.grammar import (

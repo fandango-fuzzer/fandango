@@ -3,11 +3,12 @@ This module contains the base classes for constraints in the fandango library.
 """
 
 import itertools
+import math
 from abc import ABC, abstractmethod
 from copy import copy
 from typing import Any, Optional
+
 from tdigest import TDigest as BaseTDigest
-import math
 
 from fandango.constraints.fitness import (
     ConstraintFitness,
@@ -21,7 +22,6 @@ from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import print_exception, LOGGER
-
 
 LEGACY = False
 

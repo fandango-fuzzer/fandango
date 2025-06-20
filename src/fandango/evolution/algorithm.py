@@ -14,9 +14,9 @@ from fandango.evolution.evaluation import Evaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import PopulationManager, IoPopulationManager
 from fandango.evolution.profiler import Profiler
-from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode
 from fandango.io import FandangoIO, FandangoParty
 from fandango.io.packetforecaster import PacketForecaster
+from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode
 from fandango.logger import (
     LOGGER,
     clear_visualization,
