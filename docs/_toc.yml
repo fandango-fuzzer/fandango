@@ -24,14 +24,14 @@ parts:
     - file: ISO8601
     - file: Converters
     - file: Parsing
+    - file: Outputs
     - file: Binary
-    - file: Conversion
     - file: Bits
     - file: Gif
-#    - file: Distributions
-    - file: Outputs
+    - file: Conversion
+    # - file: Distributions
     - file: Protocols
-    - file: Whitebox
+    # - file: Whitebox
     - file: Hatching
   - caption: Fandango Reference
     chapters:
