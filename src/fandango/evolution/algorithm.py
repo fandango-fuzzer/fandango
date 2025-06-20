@@ -5,7 +5,7 @@ import logging
 import random
 import time
 from typing import Callable, Generator, Iterable, Optional, Union
-from warnings import deprecated
+import warnings
 
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.constraints.base import Constraint, SoftValue
@@ -291,7 +291,6 @@ class Fandango:
         random.shuffle(new_population)
         return new_population[: int(self.population_size * (1 - self.destruction_rate))]
 
-    @deprecated("Use .generate instead")
     def evolve(
         self,
         max_generations: Optional[int] = None,
@@ -310,6 +309,7 @@ class Fandango:
         :param solution_callback: A callback function to be called for each solution.
         :return: A list of DerivationTree objects, all of which are valid solutions to the grammar (or satisify the minimum fitness threshold). The function may run indefinitely if neither max_generations nor desired_solutions are provided.
         """
+        warnings.warn("Use .generate instead", DeprecationWarning)
         if self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
             return self._evolve_single(
                 max_generations, desired_solutions, solution_callback
