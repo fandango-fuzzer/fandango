@@ -1,7 +1,7 @@
 from copy import deepcopy
 from typing import Optional
 
-from fandango import FandangoValueError
+from fandango.errors import FandangoValueError
 from fandango.language.grammar import (
     Grammar,
     NodeVisitor,
@@ -403,7 +403,6 @@ class PacketForecaster:
             return repl_node
 
     class Parser(Grammar.Parser):
-
         def __init__(self, grammar: Grammar):
             super().__init__(grammar)
             self.reference_tree: Optional[DerivationTree] = None

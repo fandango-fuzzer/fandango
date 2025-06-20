@@ -13,7 +13,7 @@ import time
 from abc import ABC
 from typing import Optional, List
 
-from fandango import FandangoError, FandangoValueError
+from fandango.errors import FandangoError, FandangoValueError
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
