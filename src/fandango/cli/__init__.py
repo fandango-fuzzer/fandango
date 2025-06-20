@@ -7,7 +7,8 @@ import logging
 import os
 import os.path
 import re
-from typing import IO, Any, Callable
+from typing import IO, Any
+from collections.abc import Callable
 
 from fandango.constraints.base import Constraint, SoftValue
 from fandango.converters.FandangoConverter import FandangoConverter

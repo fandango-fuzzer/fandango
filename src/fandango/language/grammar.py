@@ -6,7 +6,8 @@ import time
 import typing
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Iterator, Optional, Union, Generator
+from typing import Any, Iterator, Optional, Union
+from collections.abc import Generator
 
 import exrex
 from thefuzz import process as thefuzz_process

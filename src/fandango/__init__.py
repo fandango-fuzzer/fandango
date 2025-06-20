@@ -25,6 +25,13 @@ __all__ = [
     "homepage",
 ]
 
+if "pytest" in sys.modules:
+    from beartype.claw import beartype_this_package
+    from beartype import BeartypeConf
+
+    beartype_this_package(conf=BeartypeConf(claw_skip_package_names=("fandango",)))
+
+
 DISTRIBUTION_NAME = "fandango-fuzzer"
 
 

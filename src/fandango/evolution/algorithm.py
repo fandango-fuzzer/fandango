@@ -4,7 +4,8 @@ import itertools
 import logging
 import random
 import time
-from typing import Callable, Generator, Iterable, Optional, Union
+from typing import Iterable, Optional, Union
+from collections.abc import Callable, Generator
 import warnings
 
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError

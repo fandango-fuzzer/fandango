@@ -46,6 +46,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+    "beartype>=1.0.4",
     "cryptography>=44.0.1",
     "deap>=1.4.1",
     "docutils>=0.20.1",  # Jupyter-book needs docutils<=0.20
@@ -57,11 +58,11 @@ test = [
     "ordered-set>=4.0.2",
     "pagelabels>=1.2.1",
     "parameterized>=0.8.1",
+    "pytest>=8.3.5",
     "pytest-cov>=4.1.0",
     "pytest-html>=3.2.0",
     "pytest-rerunfailures>=11.1.2",
     "pytest-xdist>=3.7.0",
-    "pytest>=8.3.5",
     "python-dateutil>=2.9.0.post0",
     "scipy>=1.14.1",
     "speedy-antlr-tool>=1.4.3",
