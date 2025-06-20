@@ -426,10 +426,15 @@ public:
     antlr4::tree::TerminalNode *GRAMMAR_ASSIGN();
     AlternativeContext *alternative();
     antlr4::tree::TerminalNode *SEMI_COLON();
-    antlr4::tree::TerminalNode *NEWLINE();
     antlr4::tree::TerminalNode *EOF();
+    std::vector<antlr4::tree::TerminalNode *> INDENT();
+    antlr4::tree::TerminalNode* INDENT(size_t i);
     antlr4::tree::TerminalNode *EXPR_ASSIGN();
     ExpressionContext *expression();
+    std::vector<antlr4::tree::TerminalNode *> DEDENT();
+    antlr4::tree::TerminalNode* DEDENT(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> NEWLINE();
+    antlr4::tree::TerminalNode* NEWLINE(size_t i);
     antlr4::tree::TerminalNode *ASSIGN();
     std::vector<antlr4::tree::TerminalNode *> COLON();
     antlr4::tree::TerminalNode* COLON(size_t i);
@@ -560,8 +565,6 @@ public:
     antlr4::tree::TerminalNode *OPEN_PAREN();
     AlternativeContext *alternative();
     antlr4::tree::TerminalNode *CLOSE_PAREN();
-    std::vector<antlr4::tree::TerminalNode *> NEWLINE();
-    antlr4::tree::TerminalNode* NEWLINE(size_t i);
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -647,11 +650,16 @@ public:
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *WHERE();
     ImpliesContext *implies();
-    antlr4::tree::TerminalNode *SEMI_COLON();
-    antlr4::tree::TerminalNode *NEWLINE();
-    antlr4::tree::TerminalNode *EOF();
+    std::vector<antlr4::tree::TerminalNode *> INDENT();
+    antlr4::tree::TerminalNode* INDENT(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> DEDENT();
+    antlr4::tree::TerminalNode* DEDENT(size_t i);
     antlr4::tree::TerminalNode *MINIMIZING();
     ExprContext *expr();
+    antlr4::tree::TerminalNode *SEMI_COLON();
+    antlr4::tree::TerminalNode *EOF();
+    std::vector<antlr4::tree::TerminalNode *> NEWLINE();
+    antlr4::tree::TerminalNode* NEWLINE(size_t i);
     antlr4::tree::TerminalNode *MAXIMIZING();
 
 
@@ -665,11 +673,13 @@ public:
   public:
     ImpliesContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    QuantifierContext *quantifier();
+    std::vector<Formula_disjunctionContext *> formula_disjunction();
+    Formula_disjunctionContext* formula_disjunction(size_t i);
     antlr4::tree::TerminalNode *ARROW();
-    ImpliesContext *implies();
-    std::vector<antlr4::tree::TerminalNode *> NEWLINE();
-    antlr4::tree::TerminalNode* NEWLINE(size_t i);
+    antlr4::tree::TerminalNode *SEMI_COLON();
+    antlr4::tree::TerminalNode *NEWLINE();
+    antlr4::tree::TerminalNode *EOF();
+    QuantifierContext *quantifier();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -687,17 +697,21 @@ public:
     antlr4::tree::TerminalNode *IN();
     Dot_selectionContext *dot_selection();
     antlr4::tree::TerminalNode *COLON();
+    std::vector<antlr4::tree::TerminalNode *> NEWLINE();
+    antlr4::tree::TerminalNode* NEWLINE(size_t i);
+    antlr4::tree::TerminalNode *INDENT();
     QuantifierContext *quantifier();
+    antlr4::tree::TerminalNode *DEDENT();
     antlr4::tree::TerminalNode *EXISTS();
     antlr4::tree::TerminalNode *ANY();
     antlr4::tree::TerminalNode *OPEN_PAREN();
     antlr4::tree::TerminalNode *FOR();
     Star_selectionContext *star_selection();
     antlr4::tree::TerminalNode *CLOSE_PAREN();
+    antlr4::tree::TerminalNode *SEMI_COLON();
+    antlr4::tree::TerminalNode *EOF();
     antlr4::tree::TerminalNode *ALL();
     Formula_disjunctionContext *formula_disjunction();
-    std::vector<antlr4::tree::TerminalNode *> NEWLINE();
-    antlr4::tree::TerminalNode* NEWLINE(size_t i);
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -712,8 +726,6 @@ public:
     virtual size_t getRuleIndex() const override;
     std::vector<Formula_conjunctionContext *> formula_conjunction();
     Formula_conjunctionContext* formula_conjunction(size_t i);
-    std::vector<antlr4::tree::TerminalNode *> NEWLINE();
-    antlr4::tree::TerminalNode* NEWLINE(size_t i);
     std::vector<antlr4::tree::TerminalNode *> OR();
     antlr4::tree::TerminalNode* OR(size_t i);
 
@@ -730,8 +742,6 @@ public:
     virtual size_t getRuleIndex() const override;
     std::vector<Formula_atomContext *> formula_atom();
     Formula_atomContext* formula_atom(size_t i);
-    std::vector<antlr4::tree::TerminalNode *> NEWLINE();
-    antlr4::tree::TerminalNode* NEWLINE(size_t i);
     std::vector<antlr4::tree::TerminalNode *> AND();
     antlr4::tree::TerminalNode* AND(size_t i);
 
@@ -751,8 +761,6 @@ public:
     ImpliesContext *implies();
     antlr4::tree::TerminalNode *CLOSE_PAREN();
     ExprContext *expr();
-    std::vector<antlr4::tree::TerminalNode *> NEWLINE();
-    antlr4::tree::TerminalNode* NEWLINE(size_t i);
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -2893,6 +2901,7 @@ public:
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *NOT_EQ_2();
     Bitwise_orContext *bitwise_or();
+    antlr4::tree::TerminalNode *NOT_EQ_1();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;

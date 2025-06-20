@@ -18,9 +18,9 @@ statement
 // grammar part
 
 production
-    : nonterminal '::=' alternative (':=' expression)? (';' | NEWLINE | EOF)
-    | nonterminal '::=' alternative ('=' expression)? (';' | NEWLINE | EOF)   // deprecated
-    | nonterminal '::=' alternative (':' ':' expression)? (';' | NEWLINE | EOF)  // deprecated
+    : INDENT* nonterminal '::=' alternative (':=' expression)? (';' | NEWLINE+ | EOF) DEDENT*
+    | INDENT* nonterminal '::=' alternative ('=' expression)? (';' | NEWLINE+ | EOF) DEDENT* // deprecated
+    | INDENT* nonterminal '::=' alternative (':' ':' expression)? (';' | NEWLINE+ | EOF) DEDENT* // deprecated
     ;
 
 alternative: concatenation ('|' concatenation)*;
@@ -44,15 +44,12 @@ repeat
     ;
 
 symbol
-    : NEWLINE*
-        ( nonterminal_right
-        | string
-        | NUMBER  // for 0 and 1 bits
-        | generator_call
-        | char_set // deprecated
-        | OPEN_PAREN alternative CLOSE_PAREN
-        )
-      NEWLINE*
+    : nonterminal_right
+    | string
+    | NUMBER  // for 0 and 1 bits
+    | generator_call
+    | char_set // deprecated
+    | OPEN_PAREN alternative CLOSE_PAREN
     ;
 
 nonterminal_right
@@ -79,66 +76,45 @@ char_set
 
 // constraint part
 constraint
-    : WHERE implies (';' | NEWLINE | EOF)
-    | MINIMIZING expr (';' | NEWLINE | EOF)
-    | MAXIMIZING expr (';' | NEWLINE | EOF)
+    : INDENT* WHERE implies DEDENT*
+    | INDENT* MINIMIZING expr (';' | NEWLINE+ | EOF) DEDENT*
+    | INDENT* MAXIMIZING expr (';' | NEWLINE+ | EOF) DEDENT*
     | implies ';' // deprecated
     ;
 
-implies:
-    NEWLINE*
-    (
-        quantifier ARROW implies // deprecated
-        | quantifier
-    )
-    NEWLINE*
+implies
+    : formula_disjunction ARROW formula_disjunction (';' | NEWLINE | EOF) // deprecated
+    | quantifier
     ;
 
-quantifier:
-    NEWLINE*
-    (
-        FORALL nonterminal IN dot_selection COLON quantifier
-        | EXISTS nonterminal IN dot_selection COLON quantifier
-        | 'any' '(' quantifier 'for' nonterminal IN star_selection ')'
-        | 'all' '(' quantifier 'for' nonterminal IN star_selection ')'
-        | formula_disjunction
-    )
-    NEWLINE*
+quantifier
+    : FORALL nonterminal IN dot_selection ':' (NEWLINE INDENT quantifier DEDENT | quantifier) // deprecated
+    | EXISTS nonterminal IN dot_selection ':' (NEWLINE INDENT quantifier DEDENT | quantifier) // deprecated
+    | 'any' '(' quantifier 'for' nonterminal IN star_selection ')' (';' | NEWLINE+ | EOF)?
+    | 'all' '(' quantifier 'for' nonterminal IN star_selection ')' (';' | NEWLINE+ | EOF)?
+    | formula_disjunction (';' | NEWLINE+ | EOF)?
     ;
 
-formula_disjunction:
-    NEWLINE*
-    (
-        formula_conjunction (OR formula_conjunction)*
-    )
-    NEWLINE*
+formula_disjunction
+    : formula_conjunction (OR formula_conjunction)*
     ;
 
-formula_conjunction:
-    NEWLINE*
-    (
-        formula_atom (AND formula_atom)*
-    )
-    NEWLINE*
+formula_conjunction
+    : formula_atom (AND formula_atom)*
     ;
 
 formula_atom
-    :
-    NEWLINE*
-    (
-        formula_comparison
-        | OPEN_PAREN implies CLOSE_PAREN
-        | expr
-    )
-    NEWLINE*
+    : formula_comparison
+    | OPEN_PAREN implies CLOSE_PAREN
+    | expr
     ;
 
 formula_comparison:
     expr (LESS_THAN | GREATER_THAN | EQUALS | GT_EQ | LT_EQ | NOT_EQ_1 | NOT_EQ_2) expr
     ;
 
-expr:
-    selector_length
+expr
+    : selector_length
     | inversion
     | inversion 'if' inversion 'else' inversion
     ;
@@ -159,8 +135,8 @@ star_selection
     | '**' selection
     ;
 
-dot_selection:
-    selection
+dot_selection
+    : selection
     | dot_selection '.' selection
     | dot_selection '..' selection
     ;
@@ -875,6 +851,7 @@ eq_bitwise_or
 
 noteq_bitwise_or
     : '!=' bitwise_or
+    | '<>' bitwise_or
     ;
 
 lte_bitwise_or
