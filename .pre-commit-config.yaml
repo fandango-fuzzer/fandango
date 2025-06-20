@@ -8,8 +8,9 @@ repos:
         files: ^(src|tests|evaluation).*\.py$
         exclude: |
             (?x)^(
-                src/fandango/language/parser/Parser.*\.py|
+                src/fandango/language/parser/FandangoLexer.py|
                 src/fandango/language/parser/sa_fandango\.py|
+                src/fandango/language/parser/.*Parser.*\.py|
                 src/fandango/converters/antlr/ANTLRv4.*\.py
             )$
 -   repo: local
@@ -19,8 +20,9 @@ repos:
         files: ^(src|tests).*\.py$
         exclude: |
             (?x)^(
-                src/fandango/language/parser/Parser.*\.py|
+                src/fandango/language/parser/FandangoLexer.py|
                 src/fandango/language/parser/sa_fandango\.py|
+                src/fandango/language/parser/.*Parser.*\.py|
                 src/fandango/converters/antlr/ANTLRv4.*\.py
             )$
         entry: mypy
