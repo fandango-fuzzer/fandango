@@ -274,7 +274,8 @@ GIT_LS_FILES = git ls-files --exclude-standard | \
 	grep -v 'src/fandango/language/parser/' | \
 	grep -v 'src/fandango/language/cpp_parser/' | \
 	grep -v 'src/fandango/converters/dtd/[^.]*\.fan' | \
-	grep -v 'src/fandango/converters/antlr/ANTLRv4[^.]*\.py'
+	grep -v 'src/fandango/converters/antlr/ANTLRv4[^.]*\.py' | \
+	grep -v 'src/fandango/converters/antlr/LexerAdaptor[^.]*\.py'
 
 .PHONY: ls-files
 ls-files:
