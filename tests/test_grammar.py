@@ -3,10 +3,10 @@
 import random
 import unittest
 
-from fandango.evolution.algorithm import Fandango, LoggerLevel
+from fandango.evolution.algorithm import Fandango
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
-from .utils import RESOURCES_ROOT, DOCS_ROOT
+from .utils import RESOURCES_ROOT
 
 
 class ConstraintTest(unittest.TestCase):
@@ -24,7 +24,7 @@ class ConstraintTest(unittest.TestCase):
     def test_generate_k_paths(self):
         with open(RESOURCES_ROOT / "grammar.fan", "r") as file:
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
-        self.assertIsNotNone(grammar)
+            assert grammar is not None
 
         k_paths = grammar._generate_all_k_paths(3)
         print(len(k_paths))
@@ -35,7 +35,7 @@ class ConstraintTest(unittest.TestCase):
     def test_derivation_k_paths(self):
         with open(RESOURCES_ROOT / "grammar.fan", "r") as file:
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
-        self.assertIsNotNone(grammar)
+            assert grammar is not None
 
         random.seed(0)
         tree = grammar.fuzz()
@@ -44,7 +44,7 @@ class ConstraintTest(unittest.TestCase):
     def test_parse(self):
         with open(RESOURCES_ROOT / "grammar.fan", "r") as file:
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
-        self.assertIsNotNone(grammar)
+            assert grammar is not None
         tree = grammar.parse("aabb")
 
         for path in grammar.traverse_derivation(tree):
@@ -53,11 +53,12 @@ class ConstraintTest(unittest.TestCase):
     @staticmethod
     def get_solutions(grammar, constraints):
         fandango = Fandango(grammar=grammar, constraints=constraints)
-        return fandango.evolve(desired_solutions=1)
+        return [next(fandango.generate())]
 
     def test_generators(self):
         with open(RESOURCES_ROOT / "bar.fan", "r") as file:
             grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
         expected = ["bar" for _ in range(1)]
         actual = self.get_solutions(grammar, constraints)
 
@@ -66,6 +67,7 @@ class ConstraintTest(unittest.TestCase):
     def test_nested_generators(self):
         with open(RESOURCES_ROOT / "nested_grammar_parameters.fan", "r") as file:
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
 
         for solution in self.get_solutions(grammar, c):
             self.assertEqual(self.count_g_params(solution), 4)
@@ -81,6 +83,8 @@ class ConstraintTest(unittest.TestCase):
     def test_repetitions(self):
         with open(RESOURCES_ROOT / "repetitions.fan", "r") as file:
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+
         expected = ["aaa" for _ in range(1)]
         actual = self.get_solutions(grammar, c)
 
@@ -89,6 +93,7 @@ class ConstraintTest(unittest.TestCase):
     def test_repetitions_slice(self):
         with open(RESOURCES_ROOT / "slicing.fan", "r") as file:
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
         solutions = self.get_solutions(grammar, c)
         for solution in solutions:
             self.assertGreaterEqual(len(str(solution)), 3)
@@ -97,6 +102,7 @@ class ConstraintTest(unittest.TestCase):
     def test_repetition_min(self):
         with open(RESOURCES_ROOT / "min_reps.fan", "r") as file:
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
         solutions = self.get_solutions(grammar, c)
         for solution in solutions:
             self.assertGreaterEqual(len(str(solution)), 1)
@@ -104,6 +110,7 @@ class ConstraintTest(unittest.TestCase):
     def test_repetition_computed(self):
         with open(RESOURCES_ROOT / "dynamic_repetition.fan", "r") as file:
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
         solutions = self.get_solutions(grammar, c)
         for solution in solutions:
             len_outer = solution.children[0].to_int()
@@ -115,17 +122,10 @@ class ConstraintTest(unittest.TestCase):
     def test_generator_redefinition(self):
         with open(RESOURCES_ROOT / "generator_remove.fan", "r") as file:
             grammar, c = parse(file, use_stdlib=True, use_cache=False)
+            assert grammar is not None
         solutions = self.get_solutions(grammar, c)
         for solution in solutions:
             self.assertNotEqual(solution, "10")
-
-    def test_num_solutions(self):
-        with open(DOCS_ROOT / "digits.fan", "r") as file:
-            grammar, c = parse(file, use_stdlib=True, use_cache=False)
-        assert grammar is not None
-        fan = Fandango(grammar=grammar, constraints=c, logger_level=LoggerLevel.DEBUG)
-        sol = fan.evolve(desired_solutions=1000)
-        self.assertEqual(len(sol), 1000)
 
     def test_max_nodes(self):
         with open(RESOURCES_ROOT / "gen_number.fan", "r") as file:

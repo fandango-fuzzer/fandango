@@ -17,7 +17,7 @@ from antlr4.error.ErrorListener import ErrorListener
 from xdg_base_dirs import xdg_cache_home, xdg_data_dirs, xdg_data_home
 
 import fandango
-from fandango import FandangoSyntaxError, FandangoValueError
+from fandango.errors import FandangoSyntaxError, FandangoValueError
 from fandango.constraints import predicates
 from fandango.constraints.base import Constraint, SoftValue
 from fandango.io import FandangoIO, FandangoParty

@@ -6,7 +6,6 @@ import shlex
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 
 from fandango.language.parse import parse
-from fandango.language.tree import DerivationTree
 from .utils import RESOURCES_ROOT
 
 
@@ -27,9 +26,9 @@ class TestSoft(unittest.TestCase):
             random_seed=random_seed,
             logger_level=LoggerLevel.DEBUG,
         )
-        solutions: list[DerivationTree] = fandango.evolve(
-            max_generations=max_generations, desired_solutions=desired_solutions
-        )
+        solutions = list(fandango.generate(max_generations=max_generations))[
+            :desired_solutions
+        ]
         return [s.to_string() for s in solutions]
 
     @staticmethod

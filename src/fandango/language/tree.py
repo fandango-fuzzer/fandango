@@ -2,7 +2,7 @@ import copy
 from io import BytesIO, StringIO
 from typing import Any, Optional, Union
 
-from fandango import FandangoValueError
+from fandango.errors import FandangoValueError
 from fandango.language.symbol import NonTerminal, Slice, Symbol, Terminal
 
 

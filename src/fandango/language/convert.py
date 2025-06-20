@@ -2,7 +2,7 @@ import ast
 from io import UnsupportedOperation
 from typing import Any, Optional
 
-from fandango import FandangoValueError
+from fandango.errors import FandangoValueError
 from fandango.constraints.base import (
     Constraint,
     ComparisonConstraint,
