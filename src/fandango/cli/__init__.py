@@ -423,8 +423,13 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
     fuzz_parser = commands.add_parser(
         "fuzz",
         help="Produce outputs from .fan files and test programs.",
-        parents=[file_parser, output_parser, algorithm_parser,
-                 settings_parser, parties_parser],
+        parents=[
+            file_parser,
+            output_parser,
+            algorithm_parser,
+            settings_parser,
+            parties_parser,
+        ],
     )
     fuzz_parser.add_argument(
         "-o",
@@ -462,8 +467,7 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
     parse_parser = commands.add_parser(
         "parse",
         help="Parse input file(s) according to .fan spec.",
-        parents=[file_parser, output_parser,
-                 settings_parser, parties_parser],
+        parents=[file_parser, output_parser, settings_parser, parties_parser],
     )
     parse_parser.add_argument(
         "input_files",
@@ -491,8 +495,7 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
     talk_parser = commands.add_parser(
         "talk",
         help="Interact with programs, clients, and servers.",
-        parents=[file_parser, algorithm_parser,
-                 settings_parser, parties_parser],
+        parents=[file_parser, algorithm_parser, settings_parser, parties_parser],
     )
     host_pattern = (
         "PORT on HOST (default: 127.0.0.1;"
@@ -1520,8 +1523,7 @@ def convert_command(args: argparse.Namespace) -> None:
                     endianness=endianness, bitfield_order=bitfield_order
                 )
             case "fan":
-                converter = FandangoFandangoConverter(input_file,
-                                                      parties=args.parties)
+                converter = FandangoFandangoConverter(input_file, parties=args.parties)
                 spec = converter.to_fan()
 
         print(spec, file=output, end="")

@@ -16,10 +16,9 @@ class FandangoFandangoConverter(FandangoConverter):
     def to_fan(self, **kw_args) -> str:
         """Convert the grammar spec to Fandango format"""
         contents = open(self.filename, "r").read()
-        parsed_spec = parse_spec(contents,
-                                 filename=self.filename,
-                                 use_cache=False,
-                                 parties=self.parties)
+        parsed_spec = parse_spec(
+            contents, filename=self.filename, use_cache=False, parties=self.parties
+        )
         header = f"""# Automatically generated from {self.filename!r}.
 #
 """
