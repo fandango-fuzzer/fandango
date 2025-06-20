@@ -69,6 +69,15 @@ class APITest(unittest.TestCase):
         except FandangoParseError as exc:
             print(f"Syntax error at {exc.position} in word {invalid_word!r}")
 
+    def ensure_capped_generation(self):
+        fan = Fandango(self.SPEC_abcd, logging_level=logging.INFO)
+        solutions = fan.fuzz()
+        self.assertLess(
+            100,
+            len(solutions),
+            f"Expected more than 100 trees, only received {len(solutions)}",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

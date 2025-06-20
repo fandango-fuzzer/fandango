@@ -21,8 +21,8 @@ NUMBER: INTEGER | FLOAT_NUMBER | IMAG_NUMBER;
 INTEGER: DECIMAL_INTEGER | OCT_INTEGER | HEX_INTEGER | BIN_INTEGER;
 
 // These calls `python_start()`, `python_end()`, etc. work in Python and in C++
-PYTHON_START: '<py>' { python_start() };
-PYTHON_END  : '</py>' { python_end() };
+PYTHON_START: '<py>' { python_start(); };
+PYTHON_END  : '</py>' { python_end(); };
 
 // python keywords
 AND        : 'and';
