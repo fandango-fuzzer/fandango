@@ -99,7 +99,8 @@ $ fandango talk -f cat.fan cat
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango talk -f cat.fan -n cat
+!fandango talk -f cat.fan --population-size 1 cat
+assert _exit_code == 0
 ```
 
 This command does not issue any outputs (all of them are being sent to `cat`), but here is what is happening behind the scenes:
@@ -154,7 +155,8 @@ $ fandango talk -f cat-oracle.fan cat
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango talk -f cat-oracle.fan cat
+!fandango talk -f cat-oracle.fan --population-size=1 cat
+assert _exit_code == 0
 ```
 
 ```{margin}
@@ -203,12 +205,13 @@ We see that the `<input>` now is an expression; and the expected `<output>` is a
 This is how we can test `bc`:
 
 ```shell
-$ fandango talk -f bc.fan -n 1 bc
+$ fandango talk -f bc.fan bc
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango talk -f bc.fan -n 1 bc
+!fandango talk -f bc.fan --population-size=1 bc
+assert _exit_code == 0
 ```
 
 Our `.fan` spec checks that the `bc` indeed produces integers, but it does not check whether the result is correct, too.

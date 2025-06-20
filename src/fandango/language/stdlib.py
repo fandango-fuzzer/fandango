@@ -131,7 +131,7 @@ for i in range(len(ASCII_CONTROL)):
     ascii_control += make_def(ASCII_CONTROL[i], chr(i), force_binary=True)
 ascii_control += make_def("DEL", chr(127), force_binary=True)
 ascii_control += make_rule(
-    "ascii_control", (f"<{symbol}>" for symbol in ASCII_CONTROL + ["DEL"])
+    "ascii_control", [f"<{symbol}>" for symbol in ASCII_CONTROL + ["DEL"]]
 )
 stdlib += ascii_control
 

@@ -69,7 +69,11 @@ public:
 
     virtual std::any visitSelector_length(FandangoParser::Selector_lengthContext *context) = 0;
 
-    virtual std::any visitSelector(FandangoParser::SelectorContext *context) = 0;
+    virtual std::any visitStar_selection_or_dot_selection(FandangoParser::Star_selection_or_dot_selectionContext *context) = 0;
+
+    virtual std::any visitStar_selection(FandangoParser::Star_selectionContext *context) = 0;
+
+    virtual std::any visitDot_selection(FandangoParser::Dot_selectionContext *context) = 0;
 
     virtual std::any visitSelection(FandangoParser::SelectionContext *context) = 0;
 
@@ -389,7 +393,25 @@ public:
 
     virtual std::any visitLambda_param(FandangoParser::Lambda_paramContext *context) = 0;
 
+    virtual std::any visitFstring_middle_no_quote(FandangoParser::Fstring_middle_no_quoteContext *context) = 0;
+
+    virtual std::any visitFstring_middle_no_single_quote(FandangoParser::Fstring_middle_no_single_quoteContext *context) = 0;
+
+    virtual std::any visitFstring_middle_breaks_no_triple_quote(FandangoParser::Fstring_middle_breaks_no_triple_quoteContext *context) = 0;
+
+    virtual std::any visitFstring_middle_breaks_no_triple_single_quote(FandangoParser::Fstring_middle_breaks_no_triple_single_quoteContext *context) = 0;
+
+    virtual std::any visitFstring_any_no_quote(FandangoParser::Fstring_any_no_quoteContext *context) = 0;
+
+    virtual std::any visitFstring_any_no_single_quote(FandangoParser::Fstring_any_no_single_quoteContext *context) = 0;
+
     virtual std::any visitFstring_middle(FandangoParser::Fstring_middleContext *context) = 0;
+
+    virtual std::any visitFstring_any_breaks_no_triple_quote(FandangoParser::Fstring_any_breaks_no_triple_quoteContext *context) = 0;
+
+    virtual std::any visitFstring_any_breaks_no_triple_single_quote(FandangoParser::Fstring_any_breaks_no_triple_single_quoteContext *context) = 0;
+
+    virtual std::any visitFstring_any(FandangoParser::Fstring_anyContext *context) = 0;
 
     virtual std::any visitFstring_replacement_field(FandangoParser::Fstring_replacement_fieldContext *context) = 0;
 
@@ -472,6 +494,8 @@ public:
     virtual std::any visitType_expressions(FandangoParser::Type_expressionsContext *context) = 0;
 
     virtual std::any visitFunc_type_comment(FandangoParser::Func_type_commentContext *context) = 0;
+
+    virtual std::any visitIdentifier(FandangoParser::IdentifierContext *context) = 0;
 
 
 };

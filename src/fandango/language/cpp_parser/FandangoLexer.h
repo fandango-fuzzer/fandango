@@ -13,29 +13,32 @@
 class  FandangoLexer : public FandangoLexerBase {
 public:
   enum {
-    INDENT = 1, DEDENT = 2, STRING = 3, NUMBER = 4, INTEGER = 5, PYTHON_START = 6, 
-    PYTHON_END = 7, AND = 8, AS = 9, ASSERT = 10, ASYNC = 11, AWAIT = 12, 
-    BREAK = 13, CASE = 14, CLASS = 15, CONTINUE = 16, DEF = 17, DEL = 18, 
-    ELIF = 19, ELSE = 20, EXCEPT = 21, FALSE = 22, FINALLY = 23, FOR = 24, 
-    FROM = 25, GLOBAL = 26, IF = 27, IMPORT = 28, IN = 29, IS = 30, LAMBDA = 31, 
-    MATCH = 32, NONE = 33, NONLOCAL = 34, NOT = 35, OR = 36, PASS = 37, 
-    RAISE = 38, RETURN = 39, TRUE = 40, TRY = 41, TYPE = 42, WHILE = 43, 
-    WHERE = 44, WITH = 45, YIELD = 46, FORALL = 47, EXISTS = 48, MAXIMIZING = 49, 
-    MINIMIZING = 50, NAME = 51, STRING_LITERAL = 52, BYTES_LITERAL = 53, 
-    DECIMAL_INTEGER = 54, OCT_INTEGER = 55, HEX_INTEGER = 56, BIN_INTEGER = 57, 
-    FLOAT_NUMBER = 58, IMAG_NUMBER = 59, GRAMMAR_ASSIGN = 60, QUESTION = 61, 
-    BACKSLASH = 62, DOT = 63, DOTDOT = 64, ELLIPSIS = 65, STAR = 66, OPEN_PAREN = 67, 
-    CLOSE_PAREN = 68, COMMA = 69, COLON = 70, SEMI_COLON = 71, POWER = 72, 
-    ASSIGN = 73, OPEN_BRACK = 74, CLOSE_BRACK = 75, OR_OP = 76, XOR = 77, 
-    AND_OP = 78, LEFT_SHIFT = 79, RIGHT_SHIFT = 80, ADD = 81, MINUS = 82, 
-    DIV = 83, MOD = 84, IDIV = 85, NOT_OP = 86, OPEN_BRACE = 87, CLOSE_BRACE = 88, 
-    LESS_THAN = 89, GREATER_THAN = 90, EQUALS = 91, GT_EQ = 92, LT_EQ = 93, 
-    NOT_EQ_1 = 94, NOT_EQ_2 = 95, AT = 96, ARROW = 97, ADD_ASSIGN = 98, 
-    SUB_ASSIGN = 99, MULT_ASSIGN = 100, AT_ASSIGN = 101, DIV_ASSIGN = 102, 
-    MOD_ASSIGN = 103, AND_ASSIGN = 104, OR_ASSIGN = 105, XOR_ASSIGN = 106, 
-    LEFT_SHIFT_ASSIGN = 107, RIGHT_SHIFT_ASSIGN = 108, POWER_ASSIGN = 109, 
-    IDIV_ASSIGN = 110, EXPR_ASSIGN = 111, EXCL = 112, NEWLINE = 113, SKIP_ = 114, 
-    UNKNOWN_CHAR = 115
+    INDENT = 1, DEDENT = 2, FSTRING_START_QUOTE = 3, FSTRING_START_SINGLE_QUOTE = 4, 
+    FSTRING_START_TRIPLE_QUOTE = 5, FSTRING_START_TRIPLE_SINGLE_QUOTE = 6, 
+    STRING = 7, NUMBER = 8, INTEGER = 9, PYTHON_START = 10, PYTHON_END = 11, 
+    AND = 12, AS = 13, ASSERT = 14, ASYNC = 15, AWAIT = 16, BREAK = 17, 
+    CASE = 18, CLASS = 19, CONTINUE = 20, DEF = 21, DEL = 22, ELIF = 23, 
+    ELSE = 24, EXCEPT = 25, FALSE = 26, FINALLY = 27, FOR = 28, FROM = 29, 
+    GLOBAL = 30, IF = 31, IMPORT = 32, IN = 33, IS = 34, LAMBDA = 35, MATCH = 36, 
+    NONE = 37, NONLOCAL = 38, NOT = 39, OR = 40, PASS = 41, RAISE = 42, 
+    RETURN = 43, TRUE = 44, TRY = 45, TYPE = 46, WHILE = 47, WHERE = 48, 
+    WITH = 49, YIELD = 50, FORALL = 51, EXISTS = 52, MAXIMIZING = 53, MINIMIZING = 54, 
+    ANY = 55, ALL = 56, LEN = 57, NAME = 58, STRING_LITERAL = 59, FSTRING_END_TRIPLE_QUOTE = 60, 
+    FSTRING_END_TRIPLE_SINGLE_QUOTE = 61, FSTRING_END_QUOTE = 62, FSTRING_END_SINGLE_QUOTE = 63, 
+    BYTES_LITERAL = 64, DECIMAL_INTEGER = 65, OCT_INTEGER = 66, HEX_INTEGER = 67, 
+    BIN_INTEGER = 68, FLOAT_NUMBER = 69, IMAG_NUMBER = 70, GRAMMAR_ASSIGN = 71, 
+    QUESTION = 72, BACKSLASH = 73, ELLIPSIS = 74, DOTDOT = 75, DOT = 76, 
+    STAR = 77, OPEN_PAREN = 78, CLOSE_PAREN = 79, COMMA = 80, COLON = 81, 
+    SEMI_COLON = 82, POWER = 83, ASSIGN = 84, OPEN_BRACK = 85, CLOSE_BRACK = 86, 
+    OR_OP = 87, XOR = 88, AND_OP = 89, LEFT_SHIFT = 90, RIGHT_SHIFT = 91, 
+    ADD = 92, MINUS = 93, DIV = 94, MOD = 95, IDIV = 96, NOT_OP = 97, OPEN_BRACE = 98, 
+    CLOSE_BRACE = 99, LESS_THAN = 100, GREATER_THAN = 101, EQUALS = 102, 
+    GT_EQ = 103, LT_EQ = 104, NOT_EQ_1 = 105, NOT_EQ_2 = 106, AT = 107, 
+    ARROW = 108, ADD_ASSIGN = 109, SUB_ASSIGN = 110, MULT_ASSIGN = 111, 
+    AT_ASSIGN = 112, DIV_ASSIGN = 113, MOD_ASSIGN = 114, AND_ASSIGN = 115, 
+    OR_ASSIGN = 116, XOR_ASSIGN = 117, LEFT_SHIFT_ASSIGN = 118, RIGHT_SHIFT_ASSIGN = 119, 
+    POWER_ASSIGN = 120, IDIV_ASSIGN = 121, EXPR_ASSIGN = 122, EXCL = 123, 
+    NEWLINE = 124, SKIP_ = 125, UNKNOWN_CHAR = 126
   };
 
   explicit FandangoLexer(antlr4::CharStream *input);
@@ -59,6 +62,8 @@ public:
 
   void action(antlr4::RuleContext *context, size_t ruleIndex, size_t actionIndex) override;
 
+  bool sempred(antlr4::RuleContext *_localctx, size_t ruleIndex, size_t predicateIndex) override;
+
   // By default the static state used to implement the lexer is lazily initialized during the first
   // call to the constructor. You can call this function if you wish to initialize the static state
   // ahead of time.
@@ -67,6 +72,10 @@ public:
 private:
 
   // Individual action functions triggered by action() above.
+  void FSTRING_START_QUOTEAction(antlr4::RuleContext *context, size_t actionIndex);
+  void FSTRING_START_SINGLE_QUOTEAction(antlr4::RuleContext *context, size_t actionIndex);
+  void FSTRING_START_TRIPLE_QUOTEAction(antlr4::RuleContext *context, size_t actionIndex);
+  void FSTRING_START_TRIPLE_SINGLE_QUOTEAction(antlr4::RuleContext *context, size_t actionIndex);
   void PYTHON_STARTAction(antlr4::RuleContext *context, size_t actionIndex);
   void PYTHON_ENDAction(antlr4::RuleContext *context, size_t actionIndex);
   void CASEAction(antlr4::RuleContext *context, size_t actionIndex);
@@ -82,6 +91,10 @@ private:
   void TRYAction(antlr4::RuleContext *context, size_t actionIndex);
   void WHILEAction(antlr4::RuleContext *context, size_t actionIndex);
   void WITHAction(antlr4::RuleContext *context, size_t actionIndex);
+  void FSTRING_END_TRIPLE_QUOTEAction(antlr4::RuleContext *context, size_t actionIndex);
+  void FSTRING_END_TRIPLE_SINGLE_QUOTEAction(antlr4::RuleContext *context, size_t actionIndex);
+  void FSTRING_END_QUOTEAction(antlr4::RuleContext *context, size_t actionIndex);
+  void FSTRING_END_SINGLE_QUOTEAction(antlr4::RuleContext *context, size_t actionIndex);
   void OPEN_PARENAction(antlr4::RuleContext *context, size_t actionIndex);
   void CLOSE_PARENAction(antlr4::RuleContext *context, size_t actionIndex);
   void OPEN_BRACKAction(antlr4::RuleContext *context, size_t actionIndex);
@@ -91,6 +104,7 @@ private:
   void NEWLINEAction(antlr4::RuleContext *context, size_t actionIndex);
 
   // Individual semantic predicate functions triggered by sempred() above.
+  bool STRING_LITERALSempred(antlr4::RuleContext *_localctx, size_t predicateIndex);
 
 };
 

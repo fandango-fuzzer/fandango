@@ -5,6 +5,7 @@ import unittest
 import logging
 
 from fandango import Fandango, FandangoParseError
+from .utils import DOCS_ROOT
 
 
 class APITest(unittest.TestCase):
@@ -19,7 +20,7 @@ class APITest(unittest.TestCase):
     """
 
     def test_fuzz(self):
-        with open("docs/persons-faker.fan") as persons:
+        with open(DOCS_ROOT / "persons-faker.fan") as persons:
             fan = Fandango(persons)
 
         random.seed(0)

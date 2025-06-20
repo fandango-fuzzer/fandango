@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import enum
+import logging
+import re
 import select
 import shlex
 import socket
@@ -8,9 +10,6 @@ import subprocess
 import sys
 import threading
 import time
-import logging
-import re
-
 from abc import ABC
 from typing import Optional, List
 
@@ -176,8 +175,10 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
         ip_type: IpType = IpType.IPV4,
         ip: Optional[str] = None,
         port: Optional[int] = None,
-        party_instance: FandangoParty = None,
+        party_instance: Optional[FandangoParty] = None,
     ):
+        if party_instance is None:
+            raise FandangoValueError("party_instance must not be None")
         super().__init__(
             endpoint_type=endpoint_type,
             ip_type=ip_type,
@@ -349,17 +350,19 @@ class ConnectParty(FandangoParty):
         ownership: Ownership = Ownership.FANDANGO_PARTY,
         endpoint_type: EndpointType = EndpointType.CONNECT,
     ):
-        party_name, protocol, host, port = split_party_spec(uri)
+        party_name, prot, host, port = split_party_spec(uri)
         super().__init__(ownership=ownership, party_name=party_name)
         self.protocol_impl = None
 
-        if protocol is None:
-            protocol = self.DEFAULT_PROTOCOL.value
-        protocol = Protocol(protocol)
+        if prot is None:
+            prot = self.DEFAULT_PROTOCOL.value
+        protocol = Protocol(prot)
         if host is None:
             host = self.DEFAULT_IP
         info = socket.getaddrinfo(host, None, socket.AF_INET)
         ip = info[0][4][0]
+        if isinstance(ip, int):
+            raise FandangoValueError(f"Invalid IP address: {ip}")
         if port is None:
             protocol = self.DEFAULT_PORT
 
@@ -376,32 +379,48 @@ class ConnectParty(FandangoParty):
             raise FandangoValueError(f"Unsupported protocol: {protocol}")
 
     def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
+        if self.protocol_impl is None:
+            raise FandangoError("Protocol implementation not initialized.")
         self.protocol_impl.on_send(message, recipient)
 
     def start(self):
+        if self.protocol_impl is None:
+            raise FandangoError("Protocol implementation not initialized.")
         self.protocol_impl.start()
 
     def stop(self):
+        if self.protocol_impl is None:
+            raise FandangoError("Protocol implementation not initialized.")
         self.protocol_impl.stop()
 
     @property
     def ip(self):
+        if self.protocol_impl is None:
+            raise FandangoError("Protocol implementation not initialized.")
         return self.protocol_impl.ip
 
     @ip.setter
     def ip(self, host: str):
         """Sets the ip for the connection. Applied after a (re)start of the connection party."""
+        if self.protocol_impl is None:
+            raise FandangoError("Protocol implementation not initialized.")
         info = socket.getaddrinfo(host, None, socket.AF_INET)
         ip = info[0][4][0]
+        if isinstance(ip, int):
+            raise FandangoValueError(f"Invalid IP address: {ip}")
         self.protocol_impl.ip = ip
 
     @property
     def port(self):
+        if self.protocol_impl is None:
+            raise FandangoError("Protocol implementation not initialized.")
         return self.protocol_impl.port
 
     @port.setter
     def port(self, port: int):
         """Sets the port for the connection. Applied after a (re)start of the connection party."""
+        if self.protocol_impl is None:
+            raise FandangoError("Protocol implementation not initialized.")
         self.protocol_impl.port = port
 
 
@@ -460,8 +479,9 @@ class Out(FandangoParty):
 
     def _listen_loop(self):
         while True:
-            line = self.proc.stdout.readline()
-            self.receive_msg(self.party_name, line)
+            if self.proc.stdout is not None:
+                line = self.proc.stdout.readline()
+                self.receive_msg(self.party_name, line)
 
 
 class In(FandangoParty):
@@ -492,11 +512,11 @@ class In(FandangoParty):
         :param message: The message to send.
         :param recipient: The recipient of the message. Only present if the grammar specifies a recipient.
         """
-
-        self.proc.stdin.write(message.to_string())
-        self.proc.stdin.flush()
-        if self.close_post_transmit:
-            self.proc.stdin.close()
+        if self.proc.stdin is not None:
+            self.proc.stdin.write(message.to_string())
+            self.proc.stdin.flush()
+            if self.close_post_transmit:
+                self.proc.stdin.close()
 
 
 class FandangoIO(object):
