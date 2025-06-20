@@ -1289,7 +1289,7 @@ class Grammar(NodeVisitor):
         def visitTerminalNode(self, node: TerminalNode):
             return [[(node.symbol, frozenset())]]
 
-        def collapse(self, tree: DerivationTree):
+        def collapse(self, tree: Optional[DerivationTree]):
             if tree is None:
                 return None
             if isinstance(tree.symbol, NonTerminal):
@@ -2094,7 +2094,7 @@ class Grammar(NodeVisitor):
         tree.sources = [p.deepcopy(copy_parent=False) for p in sources]
         return tree
 
-    def collapse(self, tree: DerivationTree) -> DerivationTree:
+    def collapse(self, tree: Optional[DerivationTree]) -> DerivationTree:
         return self._parser.collapse(tree)
 
     def fuzz(
