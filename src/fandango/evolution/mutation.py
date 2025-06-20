@@ -5,6 +5,7 @@ from typing import Callable, Generator
 
 from fandango.constraints.fitness import FailingTree
 from fandango.language import DerivationTree, Grammar
+from fandango.language.symbol import NonTerminal
 
 
 class MutationOperator(ABC):
@@ -69,16 +70,17 @@ class SimpleMutation(MutationOperator):
             )
         )
         node_to_mutate = random.choice(subtrees)
+        assert isinstance(node_to_mutate.symbol, NonTerminal)
 
         # Get a truncated tree that contains all nodes left from the selected node.
         ctx_tree = node_to_mutate.split_end()
         if ctx_tree.parent is not None:
-            ctx_tree = ctx_tree.parent
-            ctx_tree.set_children(ctx_tree.children[:-1])
+            prefix_node = ctx_tree.parent
+            prefix_node.set_children(ctx_tree.children[:-1])
         else:
-            ctx_tree = None
+            prefix_node = None
         new_subtree = grammar.fuzz(
-            node_to_mutate.symbol, prefix_node=ctx_tree, max_nodes=max_nodes
+            node_to_mutate.symbol, prefix_node=prefix_node, max_nodes=max_nodes
         )
         mutated = individual.replace(grammar, node_to_mutate, new_subtree)
         return mutated

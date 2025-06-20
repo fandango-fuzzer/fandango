@@ -16,21 +16,21 @@ from fandango.language.tree import DerivationTree
 if not "readline" in globals():
     try:
         # Linux and Mac. This should do the trick.
-        import gnureadline as readline  # type: ignore [import-not-found]
+        import gnureadline as readline  # type: ignore [import-not-found] # types not always available
     except Exception:
         pass
 
 if not "readline" in globals():
     try:
         # Windows. This should do the trick.
-        import pyreadline3 as readline  # type: ignore [import-not-found]
+        import pyreadline3 as readline  # type: ignore [import-not-found] # types not always available
     except Exception:
         pass
 
 if not "readline" in globals():
     try:
         # Another Windows alternative
-        import pyreadline as readline  # type: ignore [import-not-found]
+        import pyreadline as readline  # type: ignore [import-not-found] # types not always available
     except Exception:
         pass
 
@@ -1047,8 +1047,7 @@ def output_solution_with_test_command(
         def named_temp_file(*, mode: str, prefix: str, suffix: str) -> Any:
             try:
                 # Windows needs delete_on_close=False, so the subprocess can access the file by name
-                # mode needs to be one of a long list of possible values, and not available from the library. I don't want to add it here.
-                return tempfile.NamedTemporaryFile(  # type: ignore [call-overload]
+                return tempfile.NamedTemporaryFile(  # type: ignore [call-overload] # the mode type is not available from the library
                     mode=mode,
                     prefix=prefix,
                     suffix=suffix,
@@ -1345,8 +1344,7 @@ def fuzz_command(args: argparse.Namespace) -> None:
         # Ensure that every generated file can be parsed
         # and returns the same string as the original
         try:
-            # mypy complains because delete is only valid for some OSs
-            temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore [call-overload]
+            temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore [call-overload] # delete is only available on some OSs
         except TypeError:
             # Python 3.11 does not know the `delete` argument
             temp_dir = tempfile.TemporaryDirectory()
