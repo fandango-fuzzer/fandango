@@ -396,7 +396,7 @@ def parse_spec(
                 pass
 
     if parties:
-        spec.grammar.slice_parties(parties)
+        slice_parties(spec.grammar, parties)
 
     LOGGER.debug(f"{filename}: parsing complete")
     return spec
@@ -619,7 +619,7 @@ def parse(
         grammar.prime()
 
     if parties:
-        grammar.slice_parties(parties)
+        slice_parties(grammar, parties)
 
     LOGGER.debug("All contents parsed")
     return grammar, parsed_constraints
@@ -669,7 +669,7 @@ def is_party_reachable(grammar, node):
 
 def init_msg_parties(grammar: "Grammar"):
     party_names = set()
-    grammar_msg_parties = grammar.msg_parties(True)
+    grammar_msg_parties = grammar.msg_parties(include_recipients=True)
     global_env, local_env = grammar.get_spec_env()
 
     # Initialize FandangoParty instances
@@ -713,7 +713,7 @@ def remap_to_std_party(grammar: "Grammar", io_instance: FandangoIO):
 
 
 def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) -> None:
-    keep_parties = grammar.msg_parties(True)
+    keep_parties = grammar.msg_parties(include_recipients=True)
     io_instance.parties.keys()
     for existing_party in list(keep_parties):
         if not io_instance.parties[existing_party].is_fuzzer_controlled():
@@ -1024,6 +1024,24 @@ def check_constraints_existence_children(
     return is_child
 
 
+def slice_parties(grammar: "Grammar", parties: list[str]) -> None:
+    """
+    Slice the given parties from the grammar.
+    :param grammar: The grammar to check
+    :param parties: List of party names to check
+    :raises FandangoValueError: If a party is not defined in the grammar
+    """
+    if not parties:
+        return
+
+    defined_parties = set(grammar.msg_parties(include_recipients=True))
+    for party in parties:
+        if party not in defined_parties:
+            closest = closest_match(party, defined_parties)
+            raise FandangoValueError(f"Party {party!r} not defined in the grammar. Did you mean {closest!r}?")
+
+    grammar.slice_parties(parties)
+
 def assign_implicit_party(grammar, implicit_party: str):
     seen_nts: set[NonTerminal] = set()
     seen_nts.add(NonTerminal("<start>"))
@@ -1045,7 +1063,7 @@ def assign_implicit_party(grammar, implicit_party: str):
         child_party: set[str] = set()
 
         for c_node in rule_nts:
-            child_party = child_party.union(c_node.msg_parties(grammar, False))
+            child_party |= c_node.msg_parties(include_recipients=False)
 
         if len(child_party) == 0:
             processed_nts.add(current_symbol)
@@ -1053,7 +1071,7 @@ def assign_implicit_party(grammar, implicit_party: str):
             continue
         for c_node in rule_nts:
             seen_nts.add(c_node.symbol)
-            if len(c_node.msg_parties(grammar, False)) != 0:
+            if len(c_node.msg_parties(include_recipients=False)) != 0:
                 continue
             c_node.sender = implicit_party
         for t_node in symbol_finder.terminalNodes:

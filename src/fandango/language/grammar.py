@@ -69,20 +69,10 @@ class Node(abc.ABC):
     def accept(self, visitor: "NodeVisitor"):
         raise NotImplementedError("accept method not implemented")
 
-    def msg_parties(self, grammar: "Grammar", include_recipients: bool = True):
-        return self._msg_parties(grammar, set(), include_recipients)
-
-    def _msg_parties(
-        self,
-        grammar: "Grammar",
-        seen_nonterminals: set[NonTerminal],
-        include_recipients: bool,
-    ):
+    def msg_parties(self, *, include_recipients: bool = False) -> set[str]:
         parties: set[str] = set()
         for child in self.children():
-            parties = parties.union(
-                child._msg_parties(grammar, seen_nonterminals, include_recipients)
-            )
+            parties |= child.msg_parties(include_recipients=include_recipients)
         return parties
 
     def slice_parties(self, parties: list[str]) -> None:
@@ -516,23 +506,12 @@ class NonTerminalNode(Node):
     def __hash__(self):
         return hash(self.symbol)
 
-    def _msg_parties(
-        self,
-        grammar: "Grammar",
-        seen_nonterminals: set[NonTerminal],
-        include_recipients: bool,
-    ):
-        parties = set()
+    def msg_parties(self, *, include_recipients: bool = False) -> set[str]:
+        parties: set[str] = super().msg_parties(include_recipients=include_recipients)
         if self.sender is not None:
             parties.add(self.sender)
             if self.recipient is not None and include_recipients:
                 parties.add(self.recipient)
-        if self.symbol not in seen_nonterminals:
-            seen_nonterminals.add(self.symbol)
-            for party in grammar[self.symbol]._msg_parties(
-                grammar, seen_nonterminals, include_recipients
-            ):
-                parties.add(party)
         return parties
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
@@ -915,7 +894,7 @@ class MessageNestingDetector(NodeVisitor):
             return
 
         if node.sender is not None:
-            parties = self.grammar[node.symbol].msg_parties(self.grammar, False)
+            parties = self.grammar[node.symbol].msg_parties(self.grammar, include_recipients=False)
             if len(parties) != 0:
                 raise RuntimeError(
                     f"Found illegal packet-definitions within packet-definition of non_terminal {node.symbol}: "
@@ -2253,13 +2232,11 @@ class Grammar(NodeVisitor):
             ]
         )
 
-    def msg_parties(self, include_recipients: bool = True):
-        found_parties: set[str] = set()
-        for nt, rule in self.rules.items():
-            found_parties = found_parties.union(
-                rule.msg_parties(self, include_recipients)
-            )
-        return found_parties
+    def msg_parties(self, *, include_recipients: bool = True) -> set:
+        parties: set[str] = set()
+        for rule in self.rules.values():
+            parties |= rule.msg_parties(include_recipients=include_recipients)
+        return parties
 
     def get_repr_for_rule(self, symbol: str | NonTerminal):
         if isinstance(symbol, str):
