@@ -243,8 +243,9 @@ class GeneticBase(abc.ABC):
     def get_hash(
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        population: Optional[list[DerivationTree]] = None,
     ):
-        return hash((tree, tuple((scope or {}).items())))
+        return hash((tree, tuple((scope or {}).items()), tuple(population or [])))
 
     def combinations(
         self,
