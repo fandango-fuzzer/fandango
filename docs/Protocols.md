@@ -11,7 +11,7 @@ kernelspec:
 ---
 
 (sec:protocols)=
-# Protocol Testing
+# Testing Protocols
 
 ```{admonition} Under Construction
 :class: attention
