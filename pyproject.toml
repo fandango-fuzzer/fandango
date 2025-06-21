@@ -46,6 +46,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+    "aiosmtpd>=1.4.6",  # example server for protocol testing
     "cryptography>=44.0.1",
     "deap>=1.4.1",
     "docutils>=0.20.1",  # Jupyter-book needs docutils<=0.20
