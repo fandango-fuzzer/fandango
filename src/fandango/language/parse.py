@@ -266,7 +266,7 @@ def clear_cache() -> None:
     """Clear the Fandango parser cache"""
     CACHE_DIR = cache_dir()
     if os.path.exists(CACHE_DIR):
-        print(f"Clearing {CACHE_DIR}")
+        print(f"Clearing {CACHE_DIR}", file=sys.stderr)
         shutil.rmtree(CACHE_DIR, ignore_errors=True)
 
 

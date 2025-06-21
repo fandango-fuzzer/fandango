@@ -568,9 +568,9 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
         help="External spec file to be converted. Use '-' for stdin.",
     )
 
-    clear_parser = commands.add_parser(
-        "clear",
-        help="Clear the Fandango parsing caches.",
+    clear_cache_parser = commands.add_parser(
+        "clear-cache",
+        help="Clear the Fandango parsing cache.",
     )
 
     if not in_command_line:
@@ -1596,7 +1596,7 @@ COMMANDS: dict[str, Callable[[argparse.Namespace], None]] = {
     "parse": parse_command,
     "talk": talk_command,
     "convert": convert_command,
-    "clear": clear_command,
+    "clear-cache": clear_command,
     "cd": cd_command,
     "help": help_command,
     "copyright": copyright_command,
