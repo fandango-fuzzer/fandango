@@ -290,7 +290,7 @@ Future versions of this tutorial will further detail these strategies and how to
 Since interactions are always being sent to some party, and since the party outputs are being processed by Fandango, it may not always be easy to track which data is being sent, and where.
 
 However, you can also make use of interaction specs in the regular `fuzz` and `parse` commands.
-The special `--party PARTY` option allows you to produce outputs or parse inputs for just one given party `PARTY` in the interaction.
+The special `--party=PARTY` option allows you to produce outputs or parse inputs for just one given party `PARTY` in the interaction.
 The effect of `--party` is that it _excludes_ all other parties from the interaction, allowing to produce or parse strings for just one party.
 
 As an example, consider again our [`bc.fan`](bc.fan) example:
@@ -300,8 +300,8 @@ As an example, consider again our [`bc.fan`](bc.fan) example:
 !cat bc.fan
 ```
 
-This is the effect of `--party In`.
-See how the `Out:` part of the interaction has been excluded:
+This is the effect of `--party=In`.
+See how the `Out:` part of the interaction has been excluded, also excluding `<output>` from production:
 
 ```{margin}
 These are actually produced using [`fandango convert`](sec:fan2fan) with the `--party` option.
@@ -309,35 +309,39 @@ These are actually produced using [`fandango convert`](sec:fan2fan) with the `--
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango convert --party In bc.fan
+!fandango convert --party=In bc.fan
 ```
 
-This is the effect of `--party Out`, excluding the `In` part:
+This is the effect of `--party=Out`, excluding the `In` part, and consequently, `<input>`:
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango convert --party Out bc.fan
+!fandango convert --party=Out bc.fan
 ```
 
 Typically, you provide such a `--party` option directly as part of some `fuzz` or `parse` command.
 To see what typical inputs to `bc` look like, use:
 
+```{margin}
+The `--format=value` option makes the strings readable.
+```
+
 ```shell
-$ fandango fuzz -f bc.fan --party In -n 10
+$ fandango fuzz -f bc.fan --party=In -n 10 --format=value
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f bc.fan --party In -n 10
+!fandango fuzz -f bc.fan --party=In -n 10 --format=value
 ```
 
-Conversely, yo see what typical outputs from `bc` would be expected, use:
+Conversely, to see what typical outputs from `bc` would be expected, use:
 
 ```shell
-$ fandango fuzz -f bc.fan --party Out -n 10
+$ fandango fuzz -f bc.fan --party=Out -n 10 --format=value
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f bc.fan --party Out -n 10
+!fandango fuzz -f bc.fan --party=Out -n 10 --format=value
 ```
