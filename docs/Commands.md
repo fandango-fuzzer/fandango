@@ -52,6 +52,16 @@ To [convert existing language specs with `fandango`](sec:converters), use `fanda
 ```
 
 
+## Interacting
+
+To [have Fandango interact with programs](sec:outputs) and [other parties](sec:protocols), use `fandango talk`:
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango talk --help
+```
+
+
 ## Shell
 
 To [enter commands in `fandango`](sec:shell), use `fandango shell` or just `fandango`:
@@ -59,4 +69,14 @@ To [enter commands in `fandango`](sec:shell), use `fandango shell` or just `fand
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango shell --help
+```
+
+
+## Clearing
+
+To [have Fandango clear its parser cache](sec:outputs), use `fandango clear-cache`:
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango clear-cache --help
 ```
