@@ -57,7 +57,7 @@ from ansi_styles import ansiStyles as styles
 
 from fandango import Fandango
 from fandango.language.grammar import Grammar, FuzzingMode
-from fandango.language.parse import parse, clear_cache
+from fandango.language.parse import parse, clear_cache, cache_dir
 from fandango.logger import LOGGER, print_exception
 
 from fandango.converters.antlr.ANTLRFandangoConverter import ANTLRFandangoConverter
@@ -571,6 +571,14 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
     clear_cache_parser = commands.add_parser(
         "clear-cache",
         help="Clear the Fandango parsing cache.",
+    )
+    clear_cache_parser.add_argument(
+        "-n",
+        "--dry-run",
+        action="store_true",
+        dest="dry_run",
+        default=False,
+        help="Just output the action to be performed; do not actually clear the cache.",
     )
 
     if not in_command_line:
@@ -1568,7 +1576,13 @@ def convert_command(args: argparse.Namespace) -> None:
 
 
 def clear_command(args: argparse.Namespace) -> None:
-    clear_cache()
+    CACHE_DIR = cache_dir()
+    if args.dry_run:
+        print(f"Would clear {CACHE_DIR}", file=sys.stderr)
+    elif os.path.exists(CACHE_DIR):
+        print(f"Clearing {CACHE_DIR}...", file=sys.stderr, end="")
+        clear_cache()
+        print(f"done", file=sys.stderr)
 
 
 def nop_command(args: argparse.Namespace) -> None:
