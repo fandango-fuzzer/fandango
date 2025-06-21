@@ -59,7 +59,7 @@
 
 # <element> := <another_element>    # a comment
 
-# The actual implementation allows a comment at any end of a line.
+# Extending beyond this grammar, the actual implementation allows a comment at any end of a line.
 
 
 
