@@ -57,7 +57,7 @@ from ansi_styles import ansiStyles as styles
 
 from fandango import Fandango
 from fandango.language.grammar import Grammar, FuzzingMode
-from fandango.language.parse import parse
+from fandango.language.parse import parse, clear_cache
 from fandango.logger import LOGGER, print_exception
 
 from fandango.converters.antlr.ANTLRFandangoConverter import ANTLRFandangoConverter
@@ -566,6 +566,11 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
         default=None,
         nargs="+",
         help="External spec file to be converted. Use '-' for stdin.",
+    )
+
+    clear_parser = commands.add_parser(
+        "clear",
+        help="Clear the Fandango parsing caches.",
     )
 
     if not in_command_line:
@@ -1562,6 +1567,9 @@ def convert_command(args: argparse.Namespace) -> None:
         output.close()
 
 
+def clear_command(args: argparse.Namespace) -> None:
+    clear_cache()
+
 def nop_command(args: argparse.Namespace) -> None:
     # Dummy command such that we can list ! and / as commands. Never executed.
     pass
@@ -1587,6 +1595,7 @@ COMMANDS: dict[str, Callable[[argparse.Namespace], None]] = {
     "parse": parse_command,
     "talk": talk_command,
     "convert": convert_command,
+    "clear": clear_command,
     "cd": cd_command,
     "help": help_command,
     "copyright": copyright_command,
