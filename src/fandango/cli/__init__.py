@@ -1570,6 +1570,7 @@ def convert_command(args: argparse.Namespace) -> None:
 def clear_command(args: argparse.Namespace) -> None:
     clear_cache()
 
+
 def nop_command(args: argparse.Namespace) -> None:
     # Dummy command such that we can list ! and / as commands. Never executed.
     pass
