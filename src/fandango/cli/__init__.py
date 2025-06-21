@@ -496,7 +496,7 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
     talk_parser = commands.add_parser(
         "talk",
         help="Interact with programs, clients, and servers.",
-        parents=[file_parser, algorithm_parser, settings_parser, parties_parser],
+        parents=[file_parser, algorithm_parser, settings_parser],
     )
     host_pattern = (
         "PORT on HOST (default: 127.0.0.1;"
@@ -1441,11 +1441,12 @@ def parse_command(args: argparse.Namespace) -> None:
 
 def talk_command(args: argparse.Namespace) -> None:
     """Interact with a program, client, or server"""
-    if not args.test_command and not args.client and not args.server:
-        raise FandangoError(
-            "Use '--client' or '--server' to create a client or server, "
-            "or specify a command to interact with."
-        )
+    # if not args.test_command and not args.client and not args.server:
+    #     raise FandangoError(
+    #         "Use '--client' or '--server' to create a client or server, "
+    #         "or specify a command to interact with."
+    #     )
+    args.parties = []
 
     LOGGER.info("---------- Parsing FANDANGO content ----------")
     if args.fan_files:
