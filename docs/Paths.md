@@ -561,7 +561,14 @@ So, what we get is universal quantification:
 $ fandango fuzz -f persons.fan -n 10 -c 'all(c == "a" for c in *<first_name>..<ascii_lowercase_letter>)'
 ```
 
-% FIXME: Not star syntax yet - see bug #503
+% FIXME: Not star syntax yet - see bug #502
+% ```{code-cell}
+% :tags: ["remove-input"]
+% !fandango fuzz -f persons.fan -n 10 -c 'all(c == "a" for c in *<first_name>..<ascii_lowercase_letter>)'
+% assert _exit_code == 0
+% ```
+
+% This works
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10 -c '<first_name>..<ascii_lowercase_letter> == "a"' --validate
