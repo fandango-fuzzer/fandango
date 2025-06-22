@@ -719,11 +719,11 @@ def remap_to_std_party(grammar: "Grammar", io_instance: FandangoIO):
                     unknown_recipients.add(nt.recipient)
 
     for name in remapped_parties:
-        LOGGER.warn(
-            f"No class has been specified for party: {name}! Party gets mapped to STD!"
+        LOGGER.warning(
+            f"Party {name!r} unspecified; will use 'StdOut' instead"
         )
-    for name in unknown_recipients:
-        f"No class has been specified for recipient: {name}!"
+    if unknown_recipients:
+        raise FandangoValueError(f"Recipients {unknown_recipients!r} unspecified")
 
 
 def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) -> None:
