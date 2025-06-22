@@ -127,6 +127,6 @@ def log_message_transfer(
 ):
     info = sender
     if receiver:
-        info += f' -> {receiver}'
+        info += f" -> {receiver}"
 
     LOGGER.info(f"{info}: {msg.value()!r}")
