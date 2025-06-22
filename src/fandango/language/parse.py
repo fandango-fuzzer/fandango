@@ -719,9 +719,7 @@ def remap_to_std_party(grammar: "Grammar", io_instance: FandangoIO):
                     unknown_recipients.add(nt.recipient)
 
     for name in remapped_parties:
-        LOGGER.warning(
-            f"Party {name!r} unspecified; will use 'StdOut' instead"
-        )
+        LOGGER.warning(f"Party {name!r} unspecified; will use 'StdOut' instead")
     if unknown_recipients:
         raise FandangoValueError(f"Recipients {unknown_recipients!r} unspecified")
 
