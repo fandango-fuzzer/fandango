@@ -661,19 +661,21 @@ class Fandango:
 
                 # Check if there are still NonTerminals that can be parsed with received prefix
                 if len(available_non_terminals) == 0:
-                    raise FandangoParseError(
-                        "Couldn't match remote message to any packet matching grammar. Expected nonterminal: "
-                        + "|".join(
-                            map(
-                                lambda x: str(x),
-                                forecast_non_terminals.get_non_terminals(),
-                            )
+                    expected = "|".join(
+                        map(
+                            lambda x: str(x),
+                            forecast_non_terminals.get_non_terminals(),
                         )
-                        + "Got message: "
-                        + complete_msg
-                        + "\nUnprocessed messages: "
-                        + str(io_instance.get_received_msgs())
                     )
+
+                    exc = FandangoParseError(
+                        f"Expected {expected}, got {complete_msg!r}"
+                    )
+                    if getattr(Exception, "add_note", None):
+                        unprocessed = io_instance.get_received_msgs()
+                        exc.add_note(f"Unprocessed messages: {unprocessed!s}")
+                    raise exc
+
                 if parsed_packet_tree is not None:
                     nr_deleted = 0
                     used_fragments_idx.sort()
