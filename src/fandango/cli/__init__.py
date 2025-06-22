@@ -69,6 +69,8 @@ from fandango.converters.bt.BTFandangoConverter import (
 from fandango.converters.dtd.DTDFandangoConverter import DTDFandangoConverter
 from fandango.converters.fan.FandangoFandangoConverter import FandangoFandangoConverter
 
+from fandango.evolution.algorithm import Fandango as FandangoStrategy
+
 from fandango.errors import FandangoParseError, FandangoError
 import fandango
 
@@ -1475,28 +1477,31 @@ def talk_command(args: argparse.Namespace) -> None:
     LOGGER.info(f"File mode: {file_mode}")
 
     LOGGER.debug("Starting Fandango")
-    fandango = Fandango._with_parsed(
-        grammar,
-        constraints,
-        start_symbol=args.start_symbol,
-        logging_level=LOGGER.getEffectiveLevel(),
-    )
-    LOGGER.debug("Evolving population")
+    fandango_strategy = FandangoStrategy(grammar=grammar, constraints=constraints)
+    fandango_strategy.evolve()
 
-    def solutions_callback(sol, i):
-        return output_solution(sol, args, i, file_mode)
+    # fandango = Fandango._with_parsed(
+    #     grammar,
+    #     constraints,
+    #     start_symbol=args.start_symbol,
+    #     logging_level=LOGGER.getEffectiveLevel(),
+    # )
+    # LOGGER.debug("Evolving population")
 
-    max_generations = args.max_generations
-    desired_solutions = args.desired_solutions
-    infinite = args.infinite
+    # def solutions_callback(sol, i):
+    #     return output_solution(sol, args, i, file_mode)
 
-    fandango.fuzz(
-        solution_callback=solutions_callback,
-        max_generations=max_generations,
-        desired_solutions=desired_solutions,
-        infinite=infinite,
-        **settings,
-    )
+    # max_generations = args.max_generations
+    # desired_solutions = args.desired_solutions
+    # infinite = args.infinite
+
+    # fandango.fuzz(
+    #     solution_callback=solutions_callback,
+    #     max_generations=max_generations,
+    #     desired_solutions=desired_solutions,
+    #     infinite=infinite,
+    #     **settings,
+    # )
 
 
 def convert_command(args: argparse.Namespace) -> None:
