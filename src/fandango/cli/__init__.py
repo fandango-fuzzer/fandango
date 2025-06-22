@@ -509,13 +509,13 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
         "--client",
         metavar="[NAME=][PROTOCOL:][HOST:]PORT",
         type=str,
-        help="Create a client NAME (default: 'Client') connecting to " + host_pattern,
+        help="Act as a client NAME (default: 'Client') connecting to " + host_pattern,
     )
     talk_parser.add_argument(
         "--server",
         metavar="[NAME=][PROTOCOL:][HOST:]PORT",
         type=str,
-        help="Create a server NAME (default: 'Server') running at " + host_pattern,
+        help="Act as a server NAME (default: 'Server') running at " + host_pattern,
     )
     talk_parser.add_argument(
         "test_command",
@@ -767,11 +767,55 @@ def parse_contents_from_args(
 
     extra_defs = ""
     if "test_command" in args and args.test_command:
-        extra_defs += (
-            "\nset_program_command(["
-            + ", ".join(repr(arg) for arg in [args.test_command] + args.test_args)
-            + "])\n"
+        arg_list = ", ".join(repr(arg) for arg in [args.test_command] + args.test_args)
+        extra_defs += f"""
+set_program_command([{arg_list}])
+"""
+
+    if "client" in args and args.client:
+        # Act as client
+        extra_defs += f"""
+class Client(ConnectParty):
+    def __init__(self):
+        super().__init__(
+            "{args.client}",
+            ownership=Ownership.FANDANGO_PARTY,
+            endpoint_type=EndpointType.CONNECT,
         )
+        self.start()
+
+class Server(ConnectParty):
+    def __init__(self):
+        super().__init__(
+            "{args.client}",
+            ownership=Ownership.EXTERNAL_PARTY,
+            endpoint_type=EndpointType.OPEN,
+        )
+        self.start()
+"""
+
+    if "server" in args and args.server:
+        # Act as server
+        extra_defs += f"""
+class Client(ConnectParty):
+    def __init__(self):
+        super().__init__(
+            "{args.server}",
+            ownership=Ownership.EXTERNAL_PARTY,
+            endpoint_type=EndpointType.CONNECT,
+        )
+        self.start()
+
+class Server(ConnectParty):
+    def __init__(self):
+        super().__init__(
+            "{args.server}",
+            ownership=Ownership.FANDANGO_PARTY,
+            endpoint_type=EndpointType.OPEN,
+        )
+        self.start()
+"""
+
     LOGGER.debug("Extra definitions:" + extra_defs)
     args.fan_files += [extra_defs]
 
