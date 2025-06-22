@@ -123,10 +123,10 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 <unix_time_number> ::= r'[1-9][0-9]+' := str(random.randint(0, 2147483647))
 
 where forall <mail> in <mail_data>:
-    str(<mail>..<request_mail_from>.<email_address>) == str(<mail>..<mail_header_from>.<email_address>)
-    and str(<mail>..<request_mail_to>.<email_address>) == str(<mail>..<mail_header_to>.<email_address>)
+    (str(<mail>..<request_mail_from>.<email_address>) == str(<mail>..<mail_header_from>.<email_address>)
+    and str(<mail>..<request_mail_to>.<email_address>) == str(<mail>..<mail_header_to>.<email_address>))
 
-fandango_is_client = False
+fandango_is_client = True
 
 class Client(ConnectParty):
     def __init__(self):
@@ -142,6 +142,6 @@ class Server(ConnectParty):
         super().__init__(
             ownership=Ownership.EXTERNAL_PARTY if fandango_is_client else Ownership.FANDANGO_PARTY,
             endpoint_type=EndpointType.OPEN,
-            uri="tcp://localhost:9025"
+            uri="tcp://localhost:8025"
         )
         self.start()
