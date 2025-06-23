@@ -1158,6 +1158,16 @@ class DerivationTree:
             return other in self._children
         return other in self.value()  # type: ignore[operator]
 
+    def endswith(self, other: Union["DerivationTree", Any]) -> bool:
+        if isinstance(other, DerivationTree):
+            return self.endswith(other.value())
+        return self.value().endswith(other)  # type: ignore[arg-type]
+
+    def startswith(self, other: Union["DerivationTree", Any]) -> bool:
+        if isinstance(other, DerivationTree):
+            return self.startswith(other.value())
+        return self.value().startswith(other)  # type: ignore[arg-type]
+
     def __iter__(self):
         return iter(self._children)
 
