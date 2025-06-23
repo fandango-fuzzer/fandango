@@ -1937,7 +1937,7 @@ class PythonProcessor(FandangoParserVisitor):
             class_ = ast.AsyncFunctionDef
         else:
             class_ = ast.FunctionDef
-        return class_(  # type: ignore[call-overload]
+        return class_(  # type: ignore[call-overload,call-arg]
             name=ctx.identifier().getText(),
             args=params,
             body=body,
