@@ -4,13 +4,14 @@ This module contains the base classes for constraints in the fandango library.
 
 import itertools
 import math
+import random
 from abc import ABC, abstractmethod
 from copy import copy
 from typing import Any, Optional
 
 from tdigest import TDigest as BaseTDigest
 
-from fandango import FandangoValueError
+from fandango.errors import FandangoValueError
 from fandango.constraints.fitness import (
     ConstraintFitness,
     ValueFitness,
@@ -1072,15 +1073,9 @@ class RepetitionBoundsConstraint(Constraint):
         self.repetition_id = repetition_id
         self.expr_data_min = expr_data_min
         self.expr_data_max = expr_data_max
+        self.rep_node = None
 
     def _compute_rep_bound(self, tree: "DerivationTree", expr_data):
-        trees = tree.find_by_origin(self.repetition_id)
-        if len(trees) == 0:
-            return ConstraintFitness(0, 1, True)
-        ref_tree = trees[0].split_end()
-        ref_tree = ref_tree.parent
-        ref_tree.children = ref_tree.children[:-1]
-
         expr, _, searches = expr_data
         local_cpy = self.local_variables.copy()
 
@@ -1095,7 +1090,7 @@ class RepetitionBoundsConstraint(Constraint):
 
         search_name, search = next(iter(searches.items()))
         nodes.extend(
-            [(search_name, container) for container in search.find(ref_tree.get_root())]
+            [(search_name, container) for container in search.find(tree.get_root())]
         )
         if len(nodes) == 0:
             raise FandangoValueError(
@@ -1113,38 +1108,55 @@ class RepetitionBoundsConstraint(Constraint):
         return self._compute_rep_bound(tree, self.expr_data_max)
 
     def fitness(
-        self, tree: DerivationTree, scope: Optional[dict[NonTerminal, DerivationTree]] = None
+        self,
+        tree: DerivationTree,
+        scope: Optional[dict[NonTerminal, DerivationTree]] = None,
+        population: Optional[list[DerivationTree]] = None,
+        local_variables: Optional[dict[str, Any]] = None,
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the number of repetitions of the pattern.
         :param DerivationTree tree: The tree to evaluate.
         :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
+        :param Optional[list[DerivationTree]] population: The population of trees.
+        :param Optional[dict[str, Any]] local_variables: Local variables to use in the evaluation.
         :return ConstraintFitness: The fitness of the tree.
         """
         trees = tree.find_by_origin(self.repetition_id)
         if len(trees) == 0:
             return ConstraintFitness(0, 1, True)
-        reference_trees: dict[tuple[str, int], list[DerivationTree]] = {}
+        reference_trees: dict[tuple[str, int], list[list[DerivationTree]]] = {}
         for tree in trees:
-            iteration_ids = list(filter(lambda x: x[0] == self.repetition_id, tree.origin_nodes))
+            iteration_ids: list[tuple[str, int, int]] = list(filter(lambda x: x[0] == self.repetition_id, tree.origin_nodes))
             for i_id in iteration_ids:
-                # Group by id
-                reference_trees[i_id] = [tree] if i_id not in reference_trees else reference_trees[i_id] + [tree]
+                call_id = tuple[str, int](i_id[:2])
+                rep_round = i_id[2]
+                # Group by id and repetition round
+
+                if call_id not in reference_trees:
+                    reference_trees[call_id] = []
+                iter_list = reference_trees[call_id]
+                if len(iter_list) <= rep_round:
+                    iter_list.insert(rep_round, [])
+                iter_list[rep_round].append(tree)
         failing_trees = []
         solved = 0
         total = len(reference_trees.keys())
-        for i_id in reference_trees.keys():
-            ref_tree = reference_trees[i_id][0].split_end()
-            ref_tree = ref_tree.parent
-            ref_tree.children = ref_tree.children[:-1]
+        for call_id in reference_trees.keys():
+            ref_tree = reference_trees[call_id][0]
+            ref_tree = ref_tree[0].prefix()
 
             bound_min = self.min(ref_tree)
             bound_max = self.max(ref_tree)
-            if bound_min <= len(trees) <= bound_max:
+            bound_len = len(reference_trees[call_id])
+            if bound_min <= bound_len <= bound_max:
                 solved += 1
             else:
-                # todo add failing tree
-                pass
+                suggestions: list[tuple[Comparison, Any, ComparisonSide]] = []
+                missing_trees = random.randint(bound_min - bound_len, bound_max - bound_len)
+                #suggestions.append((Comparison.EQUAL, missing_trees, ComparisonSide.RIGHT))
+                #suggestions.append((Comparison.EQUAL, missing_trees, ComparisonSide.LEFT))
+                failing_trees.append(FailingTree(reference_trees[call_id][0][0], self, suggestions=suggestions))
         return ConstraintFitness(solved, total, solved == total, failing_trees=failing_trees)
 
 
