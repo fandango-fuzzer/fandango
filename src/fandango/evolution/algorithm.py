@@ -85,6 +85,7 @@ class Fandango:
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
         self.current_max_nodes = 50
+        self.remote_response_timeout = 15.0
 
         # Instantiate managers
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
@@ -394,7 +395,12 @@ class Fandango:
                     )
                 history_tree = next_tree
             else:
+                wait_start = time.time()
                 while not io_instance.received_msg():
+                    if time.time() - wait_start > self.remote_response_timeout:
+                        raise FandangoFailedError(
+                            f"Timed out while waiting for message remote party. Expected message from party: {', '.join(forecast.get_msg_parties())}"
+                        )
                     time.sleep(0.025)
                 forecast, packet_tree = self._parse_next_remote_packet(
                     forecast, io_instance
