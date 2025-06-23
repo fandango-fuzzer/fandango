@@ -51,13 +51,14 @@ jobs:
       - name: Install dependencies with Makefile
         run: |
           python -m pip install --upgrade pip
-          make install-test
+          pip install -e ".[test]"
 
       # Step 7: Run tests using pytest
       - name: Run tests with pytest
         run: |
           make coverage
           python3 -m coverage lcov
+
       # Step 8: Upload test report
       - name: Upload test report
         uses: actions/upload-artifact@v4
