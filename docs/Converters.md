@@ -35,7 +35,7 @@ To _produce_ inputs that are also _semantically_ valid, you will often have to a
 All these converters are experimental at this point.
 ```
 
-
+(sec:antlr2fan)=
 ## Converting ANTLR Specs
 
 Fandango allows you to automatically convert ANTLR grammar specifications (`.g4`, `.antlr`) into Fandango `.fan` files.
@@ -108,6 +108,7 @@ These include
 !rm Calculator.fan
 ```
 
+(sec:bt2fan)=
 ## Converting 010 Binary Templates
 
 Fandango provides some basic support for converting Binary Templates (`.bt`, `.010`) for the 010 Editor.
@@ -132,6 +133,7 @@ The `fandango convert` command provides two options to specify _bit orderings_, 
 * `--bitfield-order=(left-to-right|right-to-left)` 
 ```
 
+(sec:dtd2fan)=
 ## Converting DTDs
 
 A Document Type Definition (DTD, `.dtd`) specifies the format of an XML file.
@@ -163,6 +165,7 @@ Once this is all set, we can use this to test SVGs with extreme values, as in th
 !expand -t4 ../src/fandango/converters/dtd/svgextreme.fan
 ```
 
+(sec:fan2fan)=
 ## Converting `.fan` files
 
 With `fandango convert`, you can also "convert" `.fan` files.

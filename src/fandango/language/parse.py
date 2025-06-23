@@ -5,6 +5,8 @@ import platform
 import re
 import sys
 import time
+import shutil
+
 from copy import deepcopy
 from io import StringIO
 from pathlib import Path
@@ -250,6 +252,23 @@ class FandangoSpec:
         return s
 
 
+def cache_dir() -> Path:
+    """Return the parser cache directory"""
+    CACHE_DIR = xdg_cache_home() / "fandango"
+    if platform.system() == "Darwin":
+        cache_path = Path.home() / "Library" / "Caches"
+        if os.path.exists(cache_path):
+            CACHE_DIR = cache_path / "Fandango"
+    return CACHE_DIR
+
+
+def clear_cache() -> None:
+    """Clear the Fandango parser cache"""
+    CACHE_DIR = cache_dir()
+    if os.path.exists(CACHE_DIR):
+        shutil.rmtree(CACHE_DIR, ignore_errors=True)
+
+
 def parse_spec(
     fan_contents: str,
     *,
@@ -272,12 +291,7 @@ def parse_spec(
     spec: Optional[FandangoSpec] = None
     from_cache = False
 
-    CACHE_DIR = xdg_cache_home() / "fandango"
-    if platform.system() == "Darwin":
-        cache_path = Path.home() / "Library" / "Caches"
-        if os.path.exists(cache_path):
-            CACHE_DIR = cache_path / "Fandango"
-
+    CACHE_DIR = cache_dir()
     if use_cache:
         if not os.path.exists(CACHE_DIR):
             os.makedirs(CACHE_DIR, mode=0o700)
@@ -705,11 +719,9 @@ def remap_to_std_party(grammar: "Grammar", io_instance: FandangoIO):
                     unknown_recipients.add(nt.recipient)
 
     for name in remapped_parties:
-        LOGGER.warn(
-            f"No class has been specified for party: {name}! Party gets mapped to STD!"
-        )
-    for name in unknown_recipients:
-        f"No class has been specified for recipient: {name}!"
+        LOGGER.warning(f"Party {name!r} unspecified; will use 'StdOut' instead")
+    if unknown_recipients:
+        raise FandangoValueError(f"Recipients {unknown_recipients!r} unspecified")
 
 
 def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) -> None:

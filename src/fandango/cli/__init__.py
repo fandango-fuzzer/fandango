@@ -57,7 +57,7 @@ from ansi_styles import ansiStyles as styles
 
 from fandango import Fandango
 from fandango.language.grammar import Grammar, FuzzingMode
-from fandango.language.parse import parse
+from fandango.language.parse import parse, clear_cache, cache_dir
 from fandango.logger import LOGGER, print_exception
 
 from fandango.converters.antlr.ANTLRFandangoConverter import ANTLRFandangoConverter
@@ -68,6 +68,8 @@ from fandango.converters.bt.BTFandangoConverter import (
 )
 from fandango.converters.dtd.DTDFandangoConverter import DTDFandangoConverter
 from fandango.converters.fan.FandangoFandangoConverter import FandangoFandangoConverter
+
+from fandango.evolution.algorithm import Fandango as FandangoStrategy
 
 from fandango.errors import FandangoParseError, FandangoError
 import fandango
@@ -496,7 +498,7 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
     talk_parser = commands.add_parser(
         "talk",
         help="Interact with programs, clients, and servers.",
-        parents=[file_parser, algorithm_parser, settings_parser, parties_parser],
+        parents=[file_parser, algorithm_parser, settings_parser],
     )
     host_pattern = (
         "PORT on HOST (default: 127.0.0.1;"
@@ -507,13 +509,13 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
         "--client",
         metavar="[NAME=][PROTOCOL:][HOST:]PORT",
         type=str,
-        help="Create a client NAME (default: 'Client') connecting to " + host_pattern,
+        help="Act as a client NAME (default: 'Client') connecting to " + host_pattern,
     )
     talk_parser.add_argument(
         "--server",
         metavar="[NAME=][PROTOCOL:][HOST:]PORT",
         type=str,
-        help="Create a server NAME (default: 'Server') running at " + host_pattern,
+        help="Act as a server NAME (default: 'Server') running at " + host_pattern,
     )
     talk_parser.add_argument(
         "test_command",
@@ -566,6 +568,19 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
         default=None,
         nargs="+",
         help="External spec file to be converted. Use '-' for stdin.",
+    )
+
+    clear_cache_parser = commands.add_parser(
+        "clear-cache",
+        help="Clear the Fandango parsing cache.",
+    )
+    clear_cache_parser.add_argument(
+        "-n",
+        "--dry-run",
+        action="store_true",
+        dest="dry_run",
+        default=False,
+        help="Just output the action to be performed; do not actually clear the cache.",
     )
 
     if not in_command_line:
@@ -752,11 +767,55 @@ def parse_contents_from_args(
 
     extra_defs = ""
     if "test_command" in args and args.test_command:
-        extra_defs += (
-            "\nset_program_command(["
-            + ", ".join(repr(arg) for arg in [args.test_command] + args.test_args)
-            + "])\n"
+        arg_list = ", ".join(repr(arg) for arg in [args.test_command] + args.test_args)
+        extra_defs += f"""
+set_program_command([{arg_list}])
+"""
+
+    if "client" in args and args.client:
+        # Act as client
+        extra_defs += f"""
+class Client(ConnectParty):
+    def __init__(self):
+        super().__init__(
+            "{args.client}",
+            ownership=Ownership.FANDANGO_PARTY,
+            endpoint_type=EndpointType.CONNECT,
         )
+        self.start()
+
+class Server(ConnectParty):
+    def __init__(self):
+        super().__init__(
+            "{args.client}",
+            ownership=Ownership.EXTERNAL_PARTY,
+            endpoint_type=EndpointType.OPEN,
+        )
+        self.start()
+"""
+
+    if "server" in args and args.server:
+        # Act as server
+        extra_defs += f"""
+class Client(ConnectParty):
+    def __init__(self):
+        super().__init__(
+            "{args.server}",
+            ownership=Ownership.EXTERNAL_PARTY,
+            endpoint_type=EndpointType.CONNECT,
+        )
+        self.start()
+
+class Server(ConnectParty):
+    def __init__(self):
+        super().__init__(
+            "{args.server}",
+            ownership=Ownership.FANDANGO_PARTY,
+            endpoint_type=EndpointType.OPEN,
+        )
+        self.start()
+"""
+
     LOGGER.debug("Extra definitions:" + extra_defs)
     args.fan_files += [extra_defs]
 
@@ -1428,11 +1487,12 @@ def parse_command(args: argparse.Namespace) -> None:
 
 def talk_command(args: argparse.Namespace) -> None:
     """Interact with a program, client, or server"""
-    if not args.test_command and not args.client and not args.server:
-        raise FandangoError(
-            "Use '--client' or '--server' to create a client or server, "
-            "or specify a command to interact with."
-        )
+    # if not args.test_command and not args.client and not args.server:
+    #     raise FandangoError(
+    #         "Use '--client' or '--server' to create a client or server, "
+    #         "or specify a command to interact with."
+    #     )
+    args.parties = []
 
     LOGGER.info("---------- Parsing FANDANGO content ----------")
     if args.fan_files:
@@ -1461,28 +1521,31 @@ def talk_command(args: argparse.Namespace) -> None:
     LOGGER.info(f"File mode: {file_mode}")
 
     LOGGER.debug("Starting Fandango")
-    fandango = Fandango._with_parsed(
-        grammar,
-        constraints,
-        start_symbol=args.start_symbol,
-        logging_level=LOGGER.getEffectiveLevel(),
-    )
-    LOGGER.debug("Evolving population")
+    fandango_strategy = FandangoStrategy(grammar=grammar, constraints=constraints)
+    fandango_strategy.evolve()
 
-    def solutions_callback(sol, i):
-        return output_solution(sol, args, i, file_mode)
+    # fandango = Fandango._with_parsed(
+    #     grammar,
+    #     constraints,
+    #     start_symbol=args.start_symbol,
+    #     logging_level=LOGGER.getEffectiveLevel(),
+    # )
+    # LOGGER.debug("Evolving population")
 
-    max_generations = args.max_generations
-    desired_solutions = args.desired_solutions
-    infinite = args.infinite
+    # def solutions_callback(sol, i):
+    #     return output_solution(sol, args, i, file_mode)
 
-    fandango.fuzz(
-        solution_callback=solutions_callback,
-        max_generations=max_generations,
-        desired_solutions=desired_solutions,
-        infinite=infinite,
-        **settings,
-    )
+    # max_generations = args.max_generations
+    # desired_solutions = args.desired_solutions
+    # infinite = args.infinite
+
+    # fandango.fuzz(
+    #     solution_callback=solutions_callback,
+    #     max_generations=max_generations,
+    #     desired_solutions=desired_solutions,
+    #     infinite=infinite,
+    #     **settings,
+    # )
 
 
 def convert_command(args: argparse.Namespace) -> None:
@@ -1562,6 +1625,16 @@ def convert_command(args: argparse.Namespace) -> None:
         output.close()
 
 
+def clear_command(args: argparse.Namespace) -> None:
+    CACHE_DIR = cache_dir()
+    if args.dry_run:
+        print(f"Would clear {CACHE_DIR}", file=sys.stderr)
+    elif os.path.exists(CACHE_DIR):
+        print(f"Clearing {CACHE_DIR}...", file=sys.stderr, end="")
+        clear_cache()
+        print(f"done", file=sys.stderr)
+
+
 def nop_command(args: argparse.Namespace) -> None:
     # Dummy command such that we can list ! and / as commands. Never executed.
     pass
@@ -1587,6 +1660,7 @@ COMMANDS: dict[str, Callable[[argparse.Namespace], None]] = {
     "parse": parse_command,
     "talk": talk_command,
     "convert": convert_command,
+    "clear-cache": clear_command,
     "cd": cd_command,
     "help": help_command,
     "copyright": copyright_command,
