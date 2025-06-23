@@ -682,7 +682,9 @@ def is_party_reachable(grammar, node):
     return None
 
 
-def init_msg_parties(grammar: "Grammar", io_instance: FandangoIO, ignore_existing: bool = True):
+def init_msg_parties(
+    grammar: "Grammar", io_instance: FandangoIO, ignore_existing: bool = True
+):
     party_names = set()
     grammar_msg_parties = grammar.msg_parties(include_recipients=True)
     global_env, local_env = grammar.get_spec_env()
