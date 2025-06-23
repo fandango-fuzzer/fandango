@@ -1,34 +1,36 @@
 import argparse
 import atexit
 import ctypes
+import difflib
 import glob
 import logging
 import os
 import os.path
-import traceback
 import re
-from typing import Any
+from typing import IO, Any, Callable
 
 from fandango.constraints.base import Constraint, SoftValue
+from fandango.converters.FandangoConverter import FandangoConverter
+from fandango.language.tree import DerivationTree
 
 if not "readline" in globals():
     try:
         # Linux and Mac. This should do the trick.
-        import gnureadline as readline  # type: ignore
+        import gnureadline as readline  # type: ignore [import-not-found]
     except Exception:
         pass
 
 if not "readline" in globals():
     try:
         # Windows. This should do the trick.
-        import pyreadline3 as readline  # type: ignore
+        import pyreadline3 as readline  # type: ignore [import-not-found]
     except Exception:
         pass
 
 if not "readline" in globals():
     try:
         # Another Windows alternative
-        import pyreadline as readline  # type: ignore
+        import pyreadline as readline  # type: ignore [import-not-found]
     except Exception:
         pass
 
@@ -39,12 +41,10 @@ if not "readline" in globals():
     except Exception:
         pass
 
-import time
 import shlex
 import subprocess
 import sys
 import tempfile
-import textwrap
 import zipfile
 import shutil
 import textwrap
@@ -55,9 +55,9 @@ from pathlib import Path
 
 from ansi_styles import ansiStyles as styles
 
-from fandango.evolution.algorithm import Fandango
-from fandango.language.grammar import Grammar
-from fandango.language.parse import parse
+from fandango import Fandango
+from fandango.language.grammar import Grammar, FuzzingMode
+from fandango.language.parse import parse, clear_cache, cache_dir
 from fandango.logger import LOGGER, print_exception
 
 from fandango.converters.antlr.ANTLRFandangoConverter import ANTLRFandangoConverter
@@ -69,13 +69,13 @@ from fandango.converters.bt.BTFandangoConverter import (
 from fandango.converters.dtd.DTDFandangoConverter import DTDFandangoConverter
 from fandango.converters.fan.FandangoFandangoConverter import FandangoFandangoConverter
 
-from fandango import FandangoParseError, FandangoError
+from fandango.evolution.algorithm import Fandango as FandangoStrategy
+
+from fandango.errors import FandangoParseError, FandangoError
 import fandango
 
-DEFAULT_MAX_GENERATIONS = 500
 
-
-def terminal_link(url: str, text: str | None = None):
+def terminal_link(url: str, text: str | None = None) -> str:
     """Output URL as a link"""
     if text is None:
         text = url
@@ -83,7 +83,7 @@ def terminal_link(url: str, text: str | None = None):
     return f"\x1b]8;;{url}\x1b\\{text}\x1b]8;;\x1b\\"
 
 
-def homepage_as_link():
+def homepage_as_link() -> str:
     """Return the Fandango homepage, formatted for terminals"""
     homepage = fandango.homepage()
     if os.getenv("JUPYTER_BOOK") is not None:
@@ -95,7 +95,7 @@ def homepage_as_link():
         return homepage
 
 
-def get_parser(in_command_line=True):
+def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
     # Main parser
     if in_command_line:
         prog = "fandango"
@@ -127,7 +127,7 @@ def get_parser(in_command_line=True):
             "--version",
             action="version",
             version=f"Fandango {fandango.version()}",
-            help="show version number",
+            help="Show version number.",
         )
 
         verbosity_option = main_parser.add_mutually_exclusive_group()
@@ -136,145 +136,138 @@ def get_parser(in_command_line=True):
             "-v",
             dest="verbose",
             action="count",
-            help="increase verbosity. Can be given multiple times (-vv)",
+            help="Increase verbosity. Can be given multiple times (-vv).",
         )
         verbosity_option.add_argument(
             "--quiet",
             "-q",
             dest="quiet",
             action="count",
-            help="decrease verbosity. Can be given multiple times (-qq)",
+            help="Decrease verbosity. Can be given multiple times (-qq).",
         )
 
         main_parser.add_argument(
             "--parser",
             choices=["python", "cpp", "legacy", "auto"],
             default="auto",
-            help="choose the parser implementation to use (default: 'auto': use C++ parser code if available, otherwise Python)",
+            help="Parser implementation to use (default: 'auto': use C++ parser code if available, otherwise Python).",
         )
 
     # The subparsers
     commands = main_parser.add_subparsers(
         title="commands",
         # description="Valid commands",
-        help="the command to execute",
+        help="The command to execute.",
         dest="command",
         # required=True,
     )
 
     # Algorithm Settings
     algorithm_parser = argparse.ArgumentParser(add_help=False)
-    algorithm_group = algorithm_parser.add_argument_group("algorithm settings")
+    algorithm_group = algorithm_parser.add_argument_group("Generation settings")
 
     algorithm_group.add_argument(
         "-N",
         "--max-generations",
         type=int,
-        help="the maximum number of generations to run the algorithm (ignored if --infinite is set)",
-        default=DEFAULT_MAX_GENERATIONS,
+        help="Maximum number of generations to run the algorithm (ignored if --infinite is set).",
+        default=fandango.api.DEFAULT_MAX_GENERATIONS,
     )
     algorithm_group.add_argument(
         "--infinite",
         action="store_true",
-        help="run the algorithm indefinitely",
+        help="Run the algorithm indefinitely.",
         default=False,
     )
     algorithm_group.add_argument(
-        "--population-size", type=int, help="the size of the population", default=None
+        "--population-size", type=int, help="Size of the population.", default=None
     )
     algorithm_group.add_argument(
         "--elitism-rate",
         type=float,
-        help="the rate of individuals preserved in the next generation",
+        help="Rate of individuals preserved in the next generation.",
         default=None,
     )
     algorithm_group.add_argument(
         "--crossover-rate",
         type=float,
-        help="the rate of individuals that will undergo crossover",
+        help="Rate of individuals that will undergo crossover.",
         default=None,
     )
     algorithm_group.add_argument(
         "--mutation-rate",
         type=float,
-        help="the rate of individuals that will undergo mutation",
+        help="Rate of individuals that will undergo mutation.",
         default=None,
     )
     algorithm_group.add_argument(
         "--random-seed",
         type=int,
-        help="the random seed to use for the algorithm",
+        help="Random seed to use for the algorithm.",
         default=None,
     )
     algorithm_group.add_argument(
         "--destruction-rate",
         type=float,
-        help="the rate of individuals that will be randomly destroyed in every generation",
+        help="Rate of individuals that will be randomly destroyed in every generation.",
         default=None,
     )
     algorithm_group.add_argument(
         "--max-repetition-rate",
         type=float,
-        help="rate at which the number of maximal repetitions should be increased",
+        help="Rate at which the number of maximal repetitions should be increased.",
         default=None,
     )
     algorithm_group.add_argument(
         "--max-repetitions",
         type=int,
-        help="Maximal value, the number of repetitions can be increased to",
+        help="Maximal value the number of repetitions can be increased to.",
         default=None,
     )
     algorithm_group.add_argument(
         "--max-node-rate",
         type=float,
-        help="rate at which the maximal number of nodes in a tree is increased",
+        help="Rate at which the maximal number of nodes in a tree is increased.",
         default=None,
     )
     algorithm_group.add_argument(
         "--max-nodes",
         type=int,
-        help="Maximal value, the number of nodes in a tree can be increased to",
+        help="Maximal value, the number of nodes in a tree can be increased to.",
         default=None,
     )
     algorithm_group.add_argument(
         "-n",
-        "--num-outputs",
         "--desired-solutions",
+        "--num-outputs",
         type=int,
-        help="the number of outputs to produce (default: 100)",
+        help="Number of outputs to produce.",
         default=None,
     )
     algorithm_group.add_argument(
         "--best-effort",
         dest="best_effort",
         action="store_true",
-        help="produce a 'best effort' population (may not satisfy all constraints)",
+        help="Produce a 'best effort' population (may not satisfy all constraints).",
         default=None,
     )
     algorithm_group.add_argument(
         "-i",
         "--initial-population",
         type=str,
-        help="directory or ZIP archive with initial population",
+        help="Directory or ZIP archive with initial population.",
         default=None,
     )
 
     # Shared Settings
     settings_parser = argparse.ArgumentParser(add_help=False)
-    settings_group = settings_parser.add_argument_group("general settings")
+    settings_group = settings_parser.add_argument_group("General settings")
 
-    settings_group.add_argument(
-        "-S",
-        "--start-symbol",
-        type=str,
-        help="the grammar start symbol (default: `<start>`)",
-        default=None,
-    )
     settings_group.add_argument(
         "--warnings-are-errors",
         dest="warnings_are_errors",
         action="store_true",
-        help="treat warnings as errors",
+        help="Treat warnings as errors.",
         default=None,
     )
 
@@ -286,19 +279,21 @@ def get_parser(in_command_line=True):
             "-v",
             dest="verbose",
             action="count",
-            help="increase verbosity. Can be given multiple times (-vv)",
+            help="Increase verbosity. Can be given multiple times (-vv).",
         )
         verbosity_option.add_argument(
             "--quiet",
             "-q",
             dest="quiet",
             action="store_true",
-            help="decrease verbosity. Can be given multiple times (-qq)",
+            help="Decrease verbosity. Can be given multiple times (-qq).",
         )
 
     # Shared file options
     file_parser = argparse.ArgumentParser(add_help=False)
-    file_parser.add_argument(
+    file_group = file_parser.add_argument_group("Fandango file settings")
+
+    file_group.add_argument(
         "-f",
         "--fandango-file",
         type=argparse.FileType("r"),
@@ -307,9 +302,9 @@ def get_parser(in_command_line=True):
         default=None,
         # required=True,
         action="append",
-        help="Fandango file (.fan, .py) to be processed. Can be given multiple times. Use '-' for stdin",
+        help="Fandango file (.fan, .py) to be processed. Can be given multiple times. Use '-' for stdin.",
     )
-    file_parser.add_argument(
+    file_group.add_argument(
         "-c",
         "--constraint",
         type=str,
@@ -317,9 +312,16 @@ def get_parser(in_command_line=True):
         metavar="CONSTRAINT",
         default=None,
         action="append",
-        help="define an additional constraint CONSTRAINT. Can be given multiple times.",
+        help="Define an additional constraint CONSTRAINT. Can be given multiple times.",
     )
-    file_parser.add_argument(
+    file_group.add_argument(
+        "-S",
+        "--start-symbol",
+        type=str,
+        help="The grammar start symbol (default: '<start>').",
+        default=None,
+    )
+    file_group.add_argument(
         "--max",
         "--maximize",
         type=str,
@@ -327,9 +329,9 @@ def get_parser(in_command_line=True):
         metavar="MAXCONSTRAINT",
         default=None,
         action="append",
-        help="define an additional constraint MAXCONSTRAINT to be maximized. Can be given multiple times.",
+        help="Define an additional constraint MAXCONSTRAINT to be maximized. Can be given multiple times.",
     )
-    file_parser.add_argument(
+    file_group.add_argument(
         "--min",
         "--minimize",
         type=str,
@@ -337,30 +339,9 @@ def get_parser(in_command_line=True):
         metavar="MINCONSTRAINTS",
         default=None,
         action="append",
-        help="define an additional constraint MINCONSTRAINT to be minimized. Can be given multiple times.",
+        help="Define an additional constraint MINCONSTRAINT to be minimized. Can be given multiple times.",
     )
-    file_parser.add_argument(
-        "--no-cache",
-        default=True,
-        dest="use_cache",
-        action="store_false",
-        help="do not cache parsed Fandango files.",
-    )
-    file_parser.add_argument(
-        "--no-stdlib",
-        default=True,
-        dest="use_stdlib",
-        action="store_false",
-        help="do not use standard library when parsing Fandango files.",
-    )
-    file_parser.add_argument(
-        "-s",
-        "--separator",
-        type=str,
-        default="\n",
-        help="output SEPARATOR between individual inputs. (default: newline)",
-    )
-    file_parser.add_argument(
+    file_group.add_argument(
         "-I",
         "--include-dir",
         type=str,
@@ -368,40 +349,75 @@ def get_parser(in_command_line=True):
         metavar="DIR",
         default=None,
         action="append",
-        help="specify a directory DIR to search for included Fandango files",
+        help="Specify a directory DIR to search for included Fandango files.",
     )
-    file_parser.add_argument(
+    file_group.add_argument(
+        "--file-mode",
+        choices=["text", "binary", "auto"],
+        default="auto",
+        help="Mode in which to open and write files (default is 'auto': 'binary' if grammar has bits or bytes, 'text' otherwise).",
+    )
+    file_group.add_argument(
+        "--no-cache",
+        default=True,
+        dest="use_cache",
+        action="store_false",
+        help="Do not cache parsed Fandango files.",
+    )
+    file_group.add_argument(
+        "--no-stdlib",
+        default=True,
+        dest="use_stdlib",
+        action="store_false",
+        help="Do not include the standard Fandango library.",
+    )
+
+    output_parser = argparse.ArgumentParser(add_help=False)
+    output_group = file_parser.add_argument_group("Output settings")
+
+    output_group.add_argument(
+        "-s",
+        "--separator",
+        type=str,
+        default="\n",
+        help="Output SEPARATOR between individual inputs. (default: newline).",
+    )
+    output_group.add_argument(
         "-d",
         "--directory",
         type=str,
         dest="directory",
         default=None,
-        help="create individual output files in DIRECTORY",
+        help="Create individual output files in DIRECTORY.",
     )
-    file_parser.add_argument(
+    output_group.add_argument(
         "-x",
         "--filename-extension",
         type=str,
         default=".txt",
-        help="extension of generated file names (default: '.txt')",
+        help="Extension of generated file names (default: '.txt').",
     )
-    file_parser.add_argument(
+    output_group.add_argument(
         "--format",
         choices=["string", "bits", "tree", "grammar", "value", "repr", "none"],
         default="string",
-        help="produce output(s) as string (default), as a bit string, as a derivation tree, as a grammar, as a Python value, in internal representation, or none",
+        help="Produce output(s) as string (default), as a bit string, as a derivation tree, as a grammar, as a Python value, in internal representation, or none.",
     )
-    file_parser.add_argument(
-        "--file-mode",
-        choices=["text", "binary", "auto"],
-        default="auto",
-        help="mode in which to open and write files (default is 'auto': 'binary' if grammar has bits or bytes, 'text' otherwise)",
-    )
-    file_parser.add_argument(
+    output_group.add_argument(
         "--validate",
         default=False,
         action="store_true",
-        help="run internal consistency checks for debugging",
+        help="Run internal consistency checks for debugging.",
+    )
+
+    parties_parser = argparse.ArgumentParser(add_help=False)
+    parties_group = parties_parser.add_argument_group("Party settings")
+    parties_group.add_argument(
+        "--party",
+        action="append",
+        dest="parties",
+        metavar="PARTY",
+        help="Only consider the PARTY part of the interaction in the .fan file.",
     )
 
     # Commands
@@ -409,8 +425,14 @@ def get_parser(in_command_line=True):
     # Fuzz
     fuzz_parser = commands.add_parser(
         "fuzz",
-        help="produce outputs from .fan files and test programs",
-        parents=[file_parser, settings_parser, algorithm_parser],
+        help="Produce outputs from .fan files and test programs.",
+        parents=[
+            file_parser,
+            output_parser,
+            algorithm_parser,
+            settings_parser,
+            parties_parser,
+        ],
     )
     fuzz_parser.add_argument(
         "-o",
@@ -418,7 +440,7 @@ def get_parser(in_command_line=True):
         type=str,
         dest="output",
         default=None,
-        help="write output to OUTPUT (default: stdout)",
+        help="Write output to OUTPUT (default: stdout).",
     )
 
     command_group = fuzz_parser.add_argument_group("command invocation settings")
@@ -427,41 +449,41 @@ def get_parser(in_command_line=True):
         "--input-method",
         choices=["stdin", "filename", "libfuzzer"],
         default="filename",
-        help="when invoking COMMAND, choose whether Fandango input will be passed as standard input (`stdin`), as last argument on the command line (`filename`) (default), or to a libFuzzer style harness compiled to a shared .so/.dylib object (`libfuzzer`)",
+        help="When invoking COMMAND, choose whether Fandango input will be passed as standard input (`stdin`), as last argument on the command line (`filename`) (default), or to a libFuzzer style harness compiled to a shared .so/.dylib object (`libfuzzer`).",
     )
     command_group.add_argument(
         "test_command",
         metavar="command",
         type=str,
         nargs="?",
-        help="command to be invoked with a Fandango input",
+        help="Command to be invoked with a Fandango input.",
     )
     command_group.add_argument(
         "test_args",
         metavar="args",
         type=str,
         nargs=argparse.REMAINDER,
-        help="the arguments of the command",
+        help="The arguments of the command.",
     )
 
     # Parse
     parse_parser = commands.add_parser(
         "parse",
-        help="parse input file(s) according to .fan spec",
-        parents=[file_parser, settings_parser],
+        help="Parse input file(s) according to .fan spec.",
+        parents=[file_parser, output_parser, settings_parser, parties_parser],
     )
     parse_parser.add_argument(
         "input_files",
         metavar="files",
         type=str,
         nargs="*",
-        help="files to be parsed. Use '-' for stdin",
+        help="Files to be parsed. Use '-' for stdin.",
     )
     parse_parser.add_argument(
         "--prefix",
         action="store_true",
         default=False,
-        help="parse a prefix only",
+        help="Parse a prefix only.",
     )
     parse_parser.add_argument(
         "-o",
@@ -469,29 +491,67 @@ def get_parser(in_command_line=True):
         type=str,
         dest="output",
         default=None,
-        help="write output to OUTPUT (default: none). Use '-' for stdout",
+        help="Write output to OUTPUT (default: none). Use '-' for stdout.",
+    )
+
+    # Talk
+    talk_parser = commands.add_parser(
+        "talk",
+        help="Interact with programs, clients, and servers.",
+        parents=[file_parser, algorithm_parser, settings_parser],
+    )
+    host_pattern = (
+        "PORT on HOST (default: 127.0.0.1;"
+        + " use '[...]' for IPv6 addresses)"
+        + " using PROTOCOL ('tcp' (default)/'udp')."
+    )
+    talk_parser.add_argument(
+        "--client",
+        metavar="[NAME=][PROTOCOL:][HOST:]PORT",
+        type=str,
+        help="Act as a client NAME (default: 'Client') connecting to " + host_pattern,
+    )
+    talk_parser.add_argument(
+        "--server",
+        metavar="[NAME=][PROTOCOL:][HOST:]PORT",
+        type=str,
+        help="Act as a server NAME (default: 'Server') running at " + host_pattern,
+    )
+    talk_parser.add_argument(
+        "test_command",
+        metavar="command",
+        type=str,
+        nargs="?",
+        help="Optional command to be interacted with.",
+    )
+    talk_parser.add_argument(
+        "test_args",
+        metavar="args",
+        type=str,
+        nargs=argparse.REMAINDER,
+        help="The arguments of the command.",
     )
 
     # Convert
     convert_parser = commands.add_parser(
         "convert",
-        help="convert given external spec to .fan format",
-        # parents=[settings_parser],
+        help="Convert given external spec to .fan format.",
+        parents=[parties_parser],
     )
     convert_parser.add_argument(
         "--from",
         dest="from_format",
         choices=["antlr", "g4", "dtd", "010", "bt", "fan", "auto"],
         default="auto",
-        help="format of the external spec file: 'antlr'/'g4' (ANTLR), 'dtd' (XML DTD), '010'/'bt' (010 Editor Binary Template), 'fan' (Fandango spec), or 'auto' (default: try to guess from file extension)",
+        help="Format of the external spec file: 'antlr'/'g4' (ANTLR), 'dtd' (XML DTD), '010'/'bt' (010 Editor Binary Template), 'fan' (Fandango spec), or 'auto' (default: try to guess from file extension).",
     )
     convert_parser.add_argument(
-        "--endianness", choices=["little", "big"], help="set endianness for .bt files"
+        "--endianness", choices=["little", "big"], help="Set endianness for .bt files."
     )
     convert_parser.add_argument(
         "--bitfield-order",
         choices=["left-to-right", "right-to-left"],
-        help="set bitfield order for .bt files",
+        help="Set bitfield order for .bt files.",
     )
     convert_parser.add_argument(
         "-o",
@@ -499,7 +559,7 @@ def get_parser(in_command_line=True):
         type=argparse.FileType("w"),
         dest="output",
         default=None,
-        help="write output to OUTPUT (default: stdout)",
+        help="Write output to OUTPUT (default: stdout).",
     )
     convert_parser.add_argument(
         "convert_files",
@@ -507,50 +567,69 @@ def get_parser(in_command_line=True):
         metavar="FILENAME",
         default=None,
         nargs="+",
-        help="external spec file to be converted. Use '-' for stdin",
+        help="External spec file to be converted. Use '-' for stdin.",
+    )
+
+    clear_cache_parser = commands.add_parser(
+        "clear-cache",
+        help="Clear the Fandango parsing cache.",
+    )
+    clear_cache_parser.add_argument(
+        "-n",
+        "--dry-run",
+        action="store_true",
+        dest="dry_run",
+        default=False,
+        help="Just output the action to be performed; do not actually clear the cache.",
     )
 
     if not in_command_line:
         # Set
         set_parser = commands.add_parser(
             "set",
-            help="set or print default arguments",
-            parents=[file_parser, settings_parser, algorithm_parser],
+            help="Set or print default arguments.",
+            parents=[
+                file_parser,
+                output_parser,
+                algorithm_parser,
+                settings_parser,
+                parties_parser,
+            ],
         )
 
     if not in_command_line:
         # Reset
         reset_parser = commands.add_parser(
             "reset",
-            help="reset defaults",
+            help="Reset defaults.",
         )
 
     if not in_command_line:
         # cd
         cd_parser = commands.add_parser(
             "cd",
-            help="change directory",
+            help="Change directory.",
         )
         cd_parser.add_argument(
             "directory",
             type=str,
             nargs="?",
             default=None,
-            help="the directory to change into",
+            help="The directory to change into.",
         )
 
     if not in_command_line:
         # Exit
         exit_parser = commands.add_parser(
             "exit",
-            help="exit Fandango",
+            help="Exit Fandango.",
         )
 
     if in_command_line:
         # Shell
         shell_parser = commands.add_parser(
             "shell",
-            help="run an interactive shell (default)",
+            help="Run an interactive shell (default).",
         )
 
     if not in_command_line:
@@ -559,14 +638,14 @@ def get_parser(in_command_line=True):
         # but we have it here so that it is listed in help
         shell_parser = commands.add_parser(
             "!",
-            help="execute shell command",
+            help="Execute shell command.",
         )
         shell_parser.add_argument(
             dest="shell_command",
             metavar="command",
             nargs=argparse.REMAINDER,
             default=None,
-            help="the shell command to execute",
+            help="The shell command to execute.",
         )
 
         # Python escape
@@ -574,20 +653,20 @@ def get_parser(in_command_line=True):
         # but we have it here so that it is listed in help
         python_parser = commands.add_parser(
             "/",
-            help="execute Python command",
+            help="Execute Python command.",
         )
         python_parser.add_argument(
             dest="python_command",
             metavar="command",
             nargs=argparse.REMAINDER,
             default=None,
-            help="the Python command to execute",
+            help="The Python command to execute.",
         )
 
     # Help
     help_parser = commands.add_parser(
         "help",
-        help="show this help and exit",
+        help="Show this help and exit.",
     )
     help_parser.add_argument(
         "help_command",
@@ -595,27 +674,26 @@ def get_parser(in_command_line=True):
         metavar="command",
         nargs="*",
         default=None,
-        help="command to get help on",
+        help="Command to get help on.",
     )
 
     # Copyright
     copyright_parser = commands.add_parser(
         "copyright",
-        help="show copyright",
+        help="Show copyright.",
     )
 
     # Version
     version_parser = commands.add_parser(
         "version",
-        help="show version",
+        help="Show version.",
     )
 
     return main_parser
 
 
-def help_command(args, **kwargs):
-    parser = get_parser(**kwargs)
-    parser.exit_on_error = False
+def help_command(args: argparse.Namespace, in_command_line: bool = True) -> None:
+    parser = get_parser(in_command_line)
 
     help_issued = False
     for cmd in args.help_command:
@@ -632,11 +710,15 @@ def help_command(args, **kwargs):
         parser.print_help()
 
 
-def exit_command(args):
+def exit_command(args: argparse.Namespace) -> None:
     pass
 
 
-def parse_files_from_args(args, given_grammars=[], check=True):
+def parse_files_from_args(
+    args: argparse.Namespace,
+    given_grammars: list[Grammar] = [],
+    check: bool = True,
+) -> tuple[Grammar | None, list[Constraint | SoftValue]]:
     """Parse .fan files as given in args"""
     return parse(
         args.fan_files,
@@ -646,11 +728,16 @@ def parse_files_from_args(args, given_grammars=[], check=True):
         use_cache=args.use_cache,
         use_stdlib=args.use_stdlib,
         start_symbol=args.start_symbol,
+        parties=args.parties,
         check=check,
     )
 
 
-def parse_constraints_from_args(args, given_grammars=[], check=True):
+def parse_constraints_from_args(
+    args: argparse.Namespace,
+    given_grammars: list[Grammar] = [],
+    check: bool = True,
+) -> tuple[Grammar | None, list[Constraint | SoftValue]]:
     """Parse .fan constraints as given in args"""
     max_constraints = [f"maximizing {c}" for c in (args.maxconstraints or [])]
     min_constraints = [f"minimizing {c}" for c in (args.minconstraints or [])]
@@ -663,15 +750,75 @@ def parse_constraints_from_args(args, given_grammars=[], check=True):
         use_cache=args.use_cache,
         use_stdlib=args.use_stdlib,
         start_symbol=args.start_symbol,
+        parties=args.parties,
         check=check,
     )
 
 
-def parse_contents_from_args(args, given_grammars=[], check=True):
+def parse_contents_from_args(
+    args: argparse.Namespace,
+    given_grammars: list[Grammar] = [],
+    check: bool = True,
+) -> tuple[Grammar | None, list[Constraint | SoftValue]]:
     """Parse .fan content as given in args"""
     max_constraints = [f"maximizing {c}" for c in (args.maxconstraints or [])]
     min_constraints = [f"minimizing {c}" for c in (args.minconstraints or [])]
     constraints = (args.constraints or []) + max_constraints + min_constraints
+
+    extra_defs = ""
+    if "test_command" in args and args.test_command:
+        arg_list = ", ".join(repr(arg) for arg in [args.test_command] + args.test_args)
+        extra_defs += f"""
+set_program_command([{arg_list}])
+"""
+
+    if "client" in args and args.client:
+        # Act as client
+        extra_defs += f"""
+class Client(ConnectParty):
+    def __init__(self):
+        super().__init__(
+            "{args.client}",
+            ownership=Ownership.FANDANGO_PARTY,
+            endpoint_type=EndpointType.CONNECT,
+        )
+        self.start()
+
+class Server(ConnectParty):
+    def __init__(self):
+        super().__init__(
+            "{args.client}",
+            ownership=Ownership.EXTERNAL_PARTY,
+            endpoint_type=EndpointType.OPEN,
+        )
+        self.start()
+"""
+
+    if "server" in args and args.server:
+        # Act as server
+        extra_defs += f"""
+class Client(ConnectParty):
+    def __init__(self):
+        super().__init__(
+            "{args.server}",
+            ownership=Ownership.EXTERNAL_PARTY,
+            endpoint_type=EndpointType.CONNECT,
+        )
+        self.start()
+
+class Server(ConnectParty):
+    def __init__(self):
+        super().__init__(
+            "{args.server}",
+            ownership=Ownership.FANDANGO_PARTY,
+            endpoint_type=EndpointType.OPEN,
+        )
+        self.start()
+"""
+
+    LOGGER.debug("Extra definitions:" + extra_defs)
+    args.fan_files += [extra_defs]
+
     return parse(
         args.fan_files,
         constraints,
@@ -680,11 +827,18 @@ def parse_contents_from_args(args, given_grammars=[], check=True):
         use_cache=args.use_cache,
         use_stdlib=args.use_stdlib,
         start_symbol=args.start_symbol,
+        parties=args.parties,
         check=check,
     )
 
 
-def _copy_setting(args, settings, name, *, args_name=None):
+def _copy_setting(
+    args: argparse.Namespace,
+    settings: dict[str, Any],
+    name: str,
+    *,
+    args_name: str | None = None,
+) -> None:
     if args_name is None:
         args_name = name
     if hasattr(args, args_name) and getattr(args, args_name) is not None:
@@ -692,8 +846,11 @@ def _copy_setting(args, settings, name, *, args_name=None):
         LOGGER.debug(f"Settings: {name} is {settings[name]}")
 
 
-def make_fandango_settings(args, initial_settings={}):
+def make_fandango_settings(
+    args: argparse.Namespace, initial_settings: dict[str, Any] = {}
+) -> dict[str, Any]:
     """Create keyword settings for Fandango() constructor"""
+    LOGGER.debug(f"Pre-sanitized settings: {args}")
     settings = initial_settings.copy()
     _copy_setting(args, settings, "population_size")
     _copy_setting(args, settings, "mutation_rate")
@@ -731,26 +888,7 @@ def make_fandango_settings(args, initial_settings={}):
     return settings
 
 
-def make_evolve_settings(args, file_mode):
-    evolve_settings: dict[str, Any] = {}
-    _copy_setting(args, evolve_settings, "desired_solutions", args_name="num_outputs")
-    if args.infinite:
-        if args.max_generations != DEFAULT_MAX_GENERATIONS:
-            LOGGER.warning("Ignoring --max-generations because --infinite is set")
-        evolve_settings["max_generations"] = None
-    else:
-        _copy_setting(args, evolve_settings, "max_generations")
-
-    evolve_settings["solution_callback"] = (
-        lambda solution, solution_index: output_solution(
-            solution, args, solution_index, file_mode
-        )
-    )
-
-    return evolve_settings
-
-
-def extract_initial_population(path):
+def extract_initial_population(path: str) -> list[str]:
     try:
         initial_population = list()
         if path.strip().endswith(".zip"):
@@ -770,24 +908,22 @@ def extract_initial_population(path):
 
 
 # Default Fandango file content (grammar, constraints); set with `set`
-DEFAULT_FAN_CONTENT = (None, None)
+DEFAULT_FAN_CONTENT: tuple[Grammar | None, list[Constraint | SoftValue]] = (None, [])
 
 # Additional Fandango constraints; set with `set`
 DEFAULT_CONSTRAINTS: list[Constraint | SoftValue] = []
 
 # Default Fandango algorithm settings; set with `set`
-DEFAULT_SETTINGS = {}
+DEFAULT_SETTINGS: dict[str, Any] = {}
 
 
-def set_command(args):
+def set_command(args: argparse.Namespace) -> None:
     """Set global settings"""
     global DEFAULT_FAN_CONTENT
     global DEFAULT_CONSTRAINTS
     global DEFAULT_SETTINGS
 
     if args.fan_files:
-        DEFAULT_FAN_CONTENT = None, None
-        DEFAULT_CONSTRAINTS = []
         LOGGER.info("Parsing Fandango content")
         grammar, constraints = parse_contents_from_args(args)
         DEFAULT_FAN_CONTENT = (grammar, constraints)
@@ -811,6 +947,7 @@ def set_command(args):
 
     if no_args:
         # Report current settings
+        LOGGER.info("Did not receive an arg for set, printing settings")
         grammar, constraints = DEFAULT_FAN_CONTENT
         if grammar:
             for symbol in grammar.rules:
@@ -829,7 +966,7 @@ def set_command(args):
             )
 
 
-def reset_command(args):
+def reset_command(args: argparse.Namespace) -> None:
     """Reset global settings"""
     global DEFAULT_SETTINGS
     DEFAULT_SETTINGS = {}
@@ -838,7 +975,7 @@ def reset_command(args):
     DEFAULT_CONSTRAINTS = []
 
 
-def cd_command(args):
+def cd_command(args: argparse.Namespace) -> None:
     """Change current directory"""
     if args.directory:
         os.chdir(args.directory)
@@ -849,7 +986,9 @@ def cd_command(args):
         print(os.getcwd())
 
 
-def output(tree, args, file_mode: str) -> str | bytes:
+def output(
+    tree: DerivationTree, args: argparse.Namespace, file_mode: str
+) -> str | bytes:
     assert file_mode == "binary" or file_mode == "text"
 
     if args.format == "string":
@@ -884,7 +1023,7 @@ def output(tree, args, file_mode: str) -> str | bytes:
     raise NotImplementedError("Unsupported output format")
 
 
-def open_file(filename, file_mode, *, mode="r"):
+def open_file(filename: str, file_mode: str, *, mode: str = "r") -> IO[Any]:
     assert file_mode == "binary" or file_mode == "text"
 
     if file_mode == "binary":
@@ -901,7 +1040,13 @@ def open_file(filename, file_mode, *, mode="r"):
     return open(filename, mode)
 
 
-def output_population(population, args, file_mode=None, *, output_on_stdout=True):
+def output_population(
+    population: list[DerivationTree],
+    args: argparse.Namespace,
+    file_mode: str,
+    *,
+    output_on_stdout: bool = True,
+) -> None:
     if args.format == "none":
         return
 
@@ -909,7 +1054,12 @@ def output_population(population, args, file_mode=None, *, output_on_stdout=True
         output_solution(solution, args, i, file_mode, output_on_stdout=output_on_stdout)
 
 
-def output_solution_to_directory(solution, args, solution_index: int, file_mode=None):
+def output_solution_to_directory(
+    solution: DerivationTree,
+    args: argparse.Namespace,
+    solution_index: int,
+    file_mode: str,
+) -> None:
     LOGGER.debug(f"Storing solution in directory {args.directory!r}")
     os.makedirs(args.directory, exist_ok=True)
 
@@ -919,7 +1069,11 @@ def output_solution_to_directory(solution, args, solution_index: int, file_mode=
         fd.write(output(solution, args, file_mode))
 
 
-def output_solution_to_file(solution, args, file_mode=None):
+def output_solution_to_file(
+    solution: DerivationTree,
+    args: argparse.Namespace,
+    file_mode: str,
+) -> None:
     LOGGER.debug(f"Storing solution in file {args.output!r}")
     with open_file(args.output, file_mode, mode="a") as fd:
         try:
@@ -937,7 +1091,9 @@ def output_solution_to_file(solution, args, file_mode=None):
         fd.write(output(solution, args, file_mode))
 
 
-def output_solution_with_test_command(solution, args, file_mode):
+def output_solution_with_test_command(
+    solution: DerivationTree, args: argparse.Namespace, file_mode: str
+) -> None:
     LOGGER.info(f"Running {args.test_command}")
     base_cmd = [args.test_command] + args.test_args
 
@@ -946,11 +1102,12 @@ def output_solution_with_test_command(solution, args, file_mode):
         suffix = args.filename_extension
         mode = "wb" if file_mode == "binary" else "w"
 
-        def named_temp_file(*, mode, prefix, suffix):
+        # The return type is private, so we need to use Any
+        def named_temp_file(*, mode: str, prefix: str, suffix: str) -> Any:
             try:
-                # Windows needs delete_on_close=False, so the subprocess
-                # can access the file by name
-                return tempfile.NamedTemporaryFile(
+                # Windows needs delete_on_close=False, so the subprocess can access the file by name
+                # mode needs to be one of a long list of possible values, and not available from the library. I don't want to add it here.
+                return tempfile.NamedTemporaryFile(  # type: ignore [call-overload]
                     mode=mode,
                     prefix=prefix,
                     suffix=suffix,
@@ -987,7 +1144,11 @@ def output_solution_with_test_command(solution, args, file_mode):
         raise NotImplementedError("Unsupported input method")
 
 
-def output_solution_to_stdout(solution, args, file_mode):
+def output_solution_to_stdout(
+    solution: DerivationTree,
+    args: argparse.Namespace,
+    file_mode: str,
+) -> None:
     LOGGER.debug("Printing solution on stdout")
     out = output(solution, args, file_mode)
     if not isinstance(out, str):
@@ -997,11 +1158,18 @@ def output_solution_to_stdout(solution, args, file_mode):
 
 
 def output_solution(
-    solution, args, solution_index: int, file_mode=None, *, output_on_stdout=True
-):
+    solution: DerivationTree,
+    args: argparse.Namespace,
+    solution_index: int,
+    file_mode: str,
+    *,
+    output_on_stdout: bool = True,
+) -> None:
     assert file_mode == "binary" or file_mode == "text"
 
     if args.format == "none":
+        return
+    if "output" not in args:
         return
 
     if args.directory:
@@ -1047,14 +1215,43 @@ def report_syntax_error(
     return f"{filename!r}, line {line}, column {column}: mismatched input {mismatch!r}"
 
 
-def validate(individual, tree, *, filename="<file>"):
-    if isinstance(individual, bytes) and tree.to_bytes() != individual:
-        raise FandangoError(f"{filename!r}: parsed tree does not match original")
-    if isinstance(individual, str) and tree.to_string() != individual:
-        raise FandangoError(f"{filename!r}: parsed tree does not match original")
+def validate(
+    original: str | bytes | DerivationTree,
+    parsed: DerivationTree,
+    *,
+    filename: str = "<file>",
+) -> None:
+    if (
+        (isinstance(original, DerivationTree) and original.value() != parsed.value())
+        or (isinstance(original, bytes) and original != parsed.to_bytes())
+        or (isinstance(original, str) and original != parsed.to_string())
+    ):
+        exc = FandangoError(f"{filename!r}: parsed tree does not match original")
+        if getattr(Exception, "add_note", None):
+            # Python 3.11+ has add_note() method
+            if isinstance(original, DerivationTree) and isinstance(
+                parsed, DerivationTree
+            ):
+                original_grammar = original.to_grammar()
+                parsed_grammar = parsed.to_grammar()
+                diff = difflib.context_diff(
+                    original_grammar.split("\n"),
+                    parsed_grammar.split("\n"),
+                    fromfile="original",
+                    tofile="parsed",
+                )
+                out = "\n".join(line for line in diff)
+                exc.add_note(out)
+        raise exc
 
 
-def parse_file(fd, args, grammar, constraints, settings):
+def parse_file(
+    fd: IO[Any],
+    args: argparse.Namespace,
+    grammar: Grammar,
+    constraints: list[Constraint | SoftValue],
+    settings: dict[str, Any],
+) -> DerivationTree:
     """
     Parse a single file `fd` according to `args`, `grammar`, `constraints`, and `settings`, and return the parse tree.
     """
@@ -1116,9 +1313,21 @@ def parse_file(fd, args, grammar, constraints, settings):
         if fitness == 0:
             raise FandangoError(f"{fd.name!r}: constraint {constraint} not satisfied")
 
+    raise FandangoError("This should not happen")
 
-def get_file_mode(args, settings, *, grammar=None, tree=None):
-    if hasattr(args, "file_mode") and args.file_mode != "auto":
+
+def get_file_mode(
+    args: argparse.Namespace,
+    settings: dict[str, Any],
+    *,
+    grammar: Grammar | None = None,
+    tree: DerivationTree | None = None,
+) -> str:
+    if (
+        hasattr(args, "file_mode")
+        and isinstance(args.file_mode, str)
+        and args.file_mode != "auto"
+    ):
         return args.file_mode
 
     if grammar is not None:
@@ -1139,7 +1348,7 @@ def get_file_mode(args, settings, *, grammar=None, tree=None):
     raise FandangoError("Cannot determine file mode")
 
 
-def fuzz_command(args):
+def fuzz_command(args: argparse.Namespace) -> None:
     """Invoke the fuzzer"""
 
     LOGGER.info("---------- Parsing FANDANGO content ----------")
@@ -1166,9 +1375,28 @@ def fuzz_command(args):
     LOGGER.info(f"File mode: {file_mode}")
 
     LOGGER.debug("Starting Fandango")
-    fandango = Fandango(grammar, constraints, **settings)
+    fandango = Fandango._with_parsed(
+        grammar,
+        constraints,
+        start_symbol=args.start_symbol,
+        logging_level=LOGGER.getEffectiveLevel(),
+    )
     LOGGER.debug("Evolving population")
-    population = fandango.evolve(**make_evolve_settings(args, file_mode))
+
+    def solutions_callback(sol, i):
+        return output_solution(sol, args, i, file_mode)
+
+    max_generations = args.max_generations
+    desired_solutions = args.desired_solutions
+    infinite = args.infinite
+
+    population = fandango.fuzz(
+        solution_callback=solutions_callback,
+        max_generations=max_generations,
+        desired_solutions=desired_solutions,
+        infinite=infinite,
+        **settings,
+    )
 
     if args.validate:
         LOGGER.debug("Validating population")
@@ -1176,7 +1404,8 @@ def fuzz_command(args):
         # Ensure that every generated file can be parsed
         # and returns the same string as the original
         try:
-            temp_dir = tempfile.TemporaryDirectory(delete=False)
+            # mypy complains because delete is only valid for some OSs
+            temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore [call-overload]
         except TypeError:
             # Python 3.11 does not know the `delete` argument
             temp_dir = tempfile.TemporaryDirectory()
@@ -1209,7 +1438,7 @@ def fuzz_command(args):
         shutil.rmtree(temp_dir.name)
 
 
-def parse_command(args):
+def parse_command(args: argparse.Namespace) -> None:
     """Parse given files"""
     if args.fan_files:
         # Override given default content (if any)
@@ -1256,7 +1485,70 @@ def parse_command(args):
         raise FandangoParseError(f"{errors} error(s) during parsing")
 
 
-def convert_command(args):
+def talk_command(args: argparse.Namespace) -> None:
+    """Interact with a program, client, or server"""
+    # if not args.test_command and not args.client and not args.server:
+    #     raise FandangoError(
+    #         "Use '--client' or '--server' to create a client or server, "
+    #         "or specify a command to interact with."
+    #     )
+    args.parties = []
+
+    LOGGER.info("---------- Parsing FANDANGO content ----------")
+    if args.fan_files:
+        # Override given default content (if any)
+        grammar, constraints = parse_contents_from_args(args)
+    else:
+        grammar = DEFAULT_FAN_CONTENT[0]
+        constraints = DEFAULT_FAN_CONTENT[1]
+
+    if grammar is None:
+        raise FandangoError("Use '-f FILE.fan' to open a Fandango spec")
+
+    if grammar.fuzzing_mode != FuzzingMode.IO:
+        LOGGER.warning("Fandango spec does not specify interaction parties")
+
+    # Avoid messing with default constraints
+    constraints = constraints.copy()
+
+    if DEFAULT_CONSTRAINTS:
+        constraints += DEFAULT_CONSTRAINTS
+
+    settings = make_fandango_settings(args, DEFAULT_SETTINGS)
+    LOGGER.debug(f"Settings: {settings}")
+
+    file_mode = get_file_mode(args, settings, grammar=grammar)
+    LOGGER.info(f"File mode: {file_mode}")
+
+    LOGGER.debug("Starting Fandango")
+    fandango_strategy = FandangoStrategy(grammar=grammar, constraints=constraints)
+    fandango_strategy.evolve()
+
+    # fandango = Fandango._with_parsed(
+    #     grammar,
+    #     constraints,
+    #     start_symbol=args.start_symbol,
+    #     logging_level=LOGGER.getEffectiveLevel(),
+    # )
+    # LOGGER.debug("Evolving population")
+
+    # def solutions_callback(sol, i):
+    #     return output_solution(sol, args, i, file_mode)
+
+    # max_generations = args.max_generations
+    # desired_solutions = args.desired_solutions
+    # infinite = args.infinite
+
+    # fandango.fuzz(
+    #     solution_callback=solutions_callback,
+    #     max_generations=max_generations,
+    #     desired_solutions=desired_solutions,
+    #     infinite=infinite,
+    #     **settings,
+    # )
+
+
+def convert_command(args: argparse.Namespace) -> None:
     """Convert a given language spec into Fandango .fan format"""
 
     output = args.output
@@ -1292,6 +1584,12 @@ def convert_command(args):
             temp_file.flush()
             input_file = temp_file.name
 
+        converter: (
+            ANTLRFandangoConverter
+            | DTDFandangoConverter
+            | BTFandangoConverter
+            | FandangoFandangoConverter
+        )
         match from_format:
             case "antlr" | "g4":
                 converter = ANTLRFandangoConverter(input_file)
@@ -1314,7 +1612,7 @@ def convert_command(args):
                     endianness=endianness, bitfield_order=bitfield_order
                 )
             case "fan":
-                converter = FandangoFandangoConverter(input_file)
+                converter = FandangoFandangoConverter(input_file, parties=args.parties)
                 spec = converter.to_fan()
 
         print(spec, file=output, end="")
@@ -1327,17 +1625,27 @@ def convert_command(args):
         output.close()
 
 
-def nop_command(args):
+def clear_command(args: argparse.Namespace) -> None:
+    CACHE_DIR = cache_dir()
+    if args.dry_run:
+        print(f"Would clear {CACHE_DIR}", file=sys.stderr)
+    elif os.path.exists(CACHE_DIR):
+        print(f"Clearing {CACHE_DIR}...", file=sys.stderr, end="")
+        clear_cache()
+        print(f"done", file=sys.stderr)
+
+
+def nop_command(args: argparse.Namespace) -> None:
     # Dummy command such that we can list ! and / as commands. Never executed.
     pass
 
 
-def copyright_command(args):
+def copyright_command(args: argparse.Namespace) -> None:
     print("Copyright (c) 2024-2025 CISPA Helmholtz Center for Information Security.")
     print("All rights reserved.")
 
 
-def version_command(args):
+def version_command(args: argparse.Namespace) -> None:
     if sys.stdout.isatty():
         version_line = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango{styles.color.close} {fandango.version()}"
     else:
@@ -1345,12 +1653,14 @@ def version_command(args):
     print(version_line)
 
 
-COMMANDS = {
+COMMANDS: dict[str, Callable[[argparse.Namespace], None]] = {
     "set": set_command,
     "reset": reset_command,
     "fuzz": fuzz_command,
     "parse": parse_command,
+    "talk": talk_command,
     "convert": convert_command,
+    "clear-cache": clear_command,
     "cd": cd_command,
     "help": help_command,
     "copyright": copyright_command,
@@ -1361,13 +1671,12 @@ COMMANDS = {
 }
 
 
-def get_help(cmd):
+def get_help(cmd: str) -> str:
     """Return the help text for CMD"""
     parser = get_parser(in_command_line=False)
     old_stdout = sys.stdout
     sys.stdout = mystdout = StringIO()
 
-    parser.exit_on_error = False
     try:
         parser.parse_args([cmd] + ["--help"])
     except SystemExit:
@@ -1377,10 +1686,10 @@ def get_help(cmd):
     return mystdout.getvalue()
 
 
-def get_options(cmd):
+def get_options(cmd: str) -> list[str]:
     """Return all --options for CMD"""
     if cmd == "help":
-        return COMMANDS.keys()
+        return list(COMMANDS.keys())
 
     help = get_help(cmd)
     options = []
@@ -1390,7 +1699,7 @@ def get_options(cmd):
     return options
 
 
-def get_filenames(prefix="", fan_only=True):
+def get_filenames(prefix: str = "", fan_only: bool = True) -> list[str]:
     """Return all files that match PREFIX"""
     filenames = []
     all_filenames = glob.glob(prefix + "*")
@@ -1407,7 +1716,7 @@ def get_filenames(prefix="", fan_only=True):
     return filenames
 
 
-def complete(text):
+def complete(text: str) -> list[str]:
     """Return possible completions for TEXT"""
     LOGGER.debug("Completing " + repr(text))
 
@@ -1469,7 +1778,9 @@ def complete(text):
 # print(complete("set -f do"))
 
 
-def exec_single(code, _globals={}, _locals={}):
+def exec_single(
+    code: str, _globals: dict[str, Any] = {}, _locals: dict[str, Any] = {}
+) -> None:
     """Execute CODE in 'single' mode, printing out results if any"""
     block = compile(code, "<input>", mode="single")
     exec(block, _globals, _locals)
@@ -1478,12 +1789,12 @@ def exec_single(code, _globals={}, _locals={}):
 MATCHES = []
 
 
-def shell_command(args):
+def shell_command(args: argparse.Namespace) -> None:
     """Interactive mode"""
 
     PROMPT = "(fandango)"
 
-    def _read_history():
+    def _read_history() -> None:
         if not "readline" in globals():
             return
 
@@ -1498,9 +1809,9 @@ def shell_command(args):
 
         atexit.register(readline.write_history_file, histfile)
 
-    def _complete(text, state):
+    def _complete(text: str, state: int) -> str | None:
         if not "readline" in globals():
-            return
+            return None
 
         global MATCHES
         if state == 0:  # first trigger
@@ -1518,7 +1829,7 @@ def shell_command(args):
             readline.set_completer(_complete)
             readline.parse_and_bind("tab: complete")
 
-        version_command([])
+        version_command(argparse.Namespace())
         print("Type a command, 'help', 'copyright', 'version', or 'exit'.")
 
     last_status = 0
@@ -1577,7 +1888,6 @@ def shell_command(args):
             break
 
         parser = get_parser(in_command_line=False)
-        parser.exit_on_error = False
         try:
             args = parser.parse_args(command)
         except argparse.ArgumentError:
@@ -1596,16 +1906,14 @@ def shell_command(args):
                 help_command(args, in_command_line=False)
             else:
                 command = COMMANDS[args.command]
-                last_status = run(command, args)
+                run(command, args)
         except SystemExit:
             pass
         except KeyboardInterrupt:
             pass
 
-    return last_status
 
-
-def run(command, args):
+def run(command: Callable[[argparse.Namespace], None], args: argparse.Namespace) -> int:
     try:
         command(args)
     except Exception as e:
@@ -1615,7 +1923,9 @@ def run(command, args):
     return 0
 
 
-def main(*argv: str, stdout=sys.stdout, stderr=sys.stderr):
+def main(
+    *argv: str, stdout: IO[Any] | None = sys.stdout, stderr: IO[Any] | None = sys.stderr
+) -> int:
     if "-O" in sys.argv:
         sys.argv.remove("-O")
         os.execl(sys.executable, sys.executable, "-O", *sys.argv)

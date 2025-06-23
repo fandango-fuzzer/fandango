@@ -53,14 +53,20 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@v46
         with:
+          # exclude auto-generated files
           files: |
             src/**/*.py
             src/**.py
-            tests/**/*.py
-            tests/**.py
+            !src/fandango/language/parser/FandangoLexer.py|
+            !src/fandango/language/parser/sa_fandango.py|
+            !src/fandango/language/parser/*Parser*.py|
+            !src/fandango/converters/antlr/ANTLRv4*.py
+            tests/**/*.py no type checking for tests
+            tests/**.py no type checking for tests
 
       # Step 3: Set up Python environment
       - name: Set up Python ${{ matrix.python-version }}
+        if: steps.changed-files.outputs.any_changed == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -68,6 +74,7 @@ jobs:
 
       # Step 4: Install mypy
       - name: Install dependencies
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           FANDANGO_SKIP_CPP_PARSER=1 pip install -e .
           pip install mypy

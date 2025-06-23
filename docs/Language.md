@@ -51,7 +51,24 @@ The _generators_ (`:= '\n'` and `:= ' '`) specify useful default values when fuz
 ## Physical and Logical Lines
 
 [As in Python](https://docs.python.org/3/reference/lexical_analysis.html#explicit-line-joining), one can join two physical lines into a logical by adding a backslash `\` at the end of the first line.
+For example:
 
+% We don't put ```python here as this is not part of `fandango.fan`
+```
+<element> := <a_very_long_line> \
+    <continued_on_the_next_line>
+```
+
+[As in Python](https://docs.python.org/3/reference/lexical_analysis.html#implicit-line-joining), expressions in parentheses can be split over more than one physical line without using backslashes.
+For example:
+
+% We don't put ```python here as this is not part of `fandango.fan`
+```
+<element> := (<an_alternative> |
+              <another_alternative>)
+```
+
+Grammar rules can be indented; this has no effect on semantics.
 
 
 (sec:comment)=
@@ -64,8 +81,14 @@ By convention, there are two spaces in front of the `#` and one space after.
 <comment> ::= <_>{2} '#' <_> r'[^\r\n\f]'* <newline>
 ```
 
+For example:
+
+```
+<element> := <another_element>    # a comment
+```
+
 ```{note}
-The actual implementation allows a comment at any end of a line.
+Extending beyond this grammar, the actual implementation allows a comment at any end of a line.
 ```
 
 
@@ -78,7 +101,7 @@ Each production defines a [_nonterminal_](sec:nonterminal) followed by `::=` and
 
 An optional [_generator_](sec:generator) can define a Python function to produce a value during fuzzing.
 
-Productions end with a newline or a `;` character.
+Productions end with a _newline_ or a _`;` character_.
 
 ```python
 <production> ::= (
@@ -409,6 +432,8 @@ with open(TARGET, 'w') as target:
         # print(f'code={code}, ignore={ignore}, {line!r}')
         if line.startswith('---'):
             ignore = not ignore
+        elif line.startswith('% '):
+            pass
         elif line.startswith('```{code-cell}'):
             ignore = True
         elif line.startswith('```shell'):

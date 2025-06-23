@@ -1,9 +1,10 @@
 import random
 from typing import Callable, Generator
 
+from fandango.errors import FandangoValueError
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
+from fandango.io.packetforecaster import PacketForecaster
 from fandango.language.grammar import DerivationTree, Grammar
-from fandango.language.packetforecaster import PacketForecaster
 from fandango.language.symbol import NonTerminal
 from fandango.logger import LOGGER
 
@@ -86,6 +87,7 @@ class PopulationManager:
                 individual,
                 failing_trees,
             )
+            _new_fitness, _new_failing_trees = yield from eval_individual(candidate)
             if not PopulationManager.add_unique_individual(
                 current_population, candidate, unique_hashes
             ):
@@ -168,6 +170,10 @@ class IoPopulationManager(PopulationManager):
         mounting_option = random.choice(list(current_pck.paths))
 
         tree = self._grammar.collapse(mounting_option.tree)
+        if tree is None:
+            raise FandangoValueError(
+                f"Could not collapse tree for {mounting_option.path} in packet {current_pck.node}"
+            )
         tree.set_all_read_only(True)
         dummy = DerivationTree(NonTerminal("<hookin>"))
         tree.append(mounting_option.path[1:], dummy)
@@ -175,7 +181,7 @@ class IoPopulationManager(PopulationManager):
         fuzz_point = dummy.parent
         assert fuzz_point is not None
         fuzz_point.set_children(fuzz_point.children[:-1])
-        current_pck.node.fuzz(fuzz_point, self._grammar, max_nodes)
+        current_pck.node.fuzz(fuzz_point, self._grammar, 9999)
 
         self._prev_packet_idx = current_idx
         return tree

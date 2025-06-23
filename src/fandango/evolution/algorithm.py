@@ -1,11 +1,13 @@
 # fandango/evolution/algorithm.py
 import enum
+import itertools
 import logging
 import random
 import time
-from typing import Callable, Generator, Optional, Union
+from typing import Callable, Generator, Iterable, Optional, Union
+import warnings
 
-from fandango import FandangoFailedError, FandangoParseError, FandangoValueError
+from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.constraints.base import Constraint, SoftValue
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.adaptation import AdaptiveTuner
@@ -14,9 +16,9 @@ from fandango.evolution.evaluation import Evaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import PopulationManager, IoPopulationManager
 from fandango.evolution.profiler import Profiler
+from fandango.io import FandangoIO, FandangoParty
+from fandango.io.packetforecaster import PacketForecaster
 from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode
-from fandango.language.io import FandangoIO, FandangoParty
-from fandango.language.packetforecaster import PacketForecaster
 from fandango.logger import (
     LOGGER,
     clear_visualization,
@@ -307,16 +309,17 @@ class Fandango:
         :param solution_callback: A callback function to be called for each solution.
         :return: A list of DerivationTree objects, all of which are valid solutions to the grammar (or satisify the minimum fitness threshold). The function may run indefinitely if neither max_generations nor desired_solutions are provided.
         """
+        warnings.warn("Use .generate instead", DeprecationWarning)
         if self.grammar.fuzzing_mode == FuzzingMode.COMPLETE:
             return self._evolve_single(
                 max_generations, desired_solutions, solution_callback
             )
         elif self.grammar.fuzzing_mode == FuzzingMode.IO:
-            return self._evolve_io(max_generations)
+            return self.evolve_io(max_generations)
         else:
             raise FandangoValueError(f"Invalid mode: {self.grammar.fuzzing_mode}")
 
-    def _evolve_io(self, max_generations: Optional[int] = None) -> list[DerivationTree]:
+    def evolve_io(self, max_generations: Optional[int] = None) -> list[DerivationTree]:
         spec_env_global, _ = self.grammar.get_spec_env()
         io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
         history_tree: DerivationTree = random.choice(self.population)
@@ -516,6 +519,23 @@ class Fandango:
                 generation, self.evaluation, self.population, self.evaluator
             )
             visualize_evaluation(generation, max_generations, self.evaluation)
+        clear_visualization()
+        self.log_statistics()
+
+    @property
+    def average_population_fitness(self) -> float:
+        return sum(e[1] for e in self.evaluation) / self.population_size
+
+    def log_statistics(self) -> None:
+        LOGGER.debug("---------- FANDANGO statistics ----------")
+        LOGGER.info(
+            f"Average fitness of population: {self.average_population_fitness:.2f}"
+        )
+        LOGGER.debug(f"Fixes made: {self.fixes_made}")
+        LOGGER.debug(f"Fitness checks: {self.evaluator.get_fitness_check_count()}")
+        LOGGER.debug(f"Crossovers made: {self.crossovers_made}")
+        LOGGER.debug(f"Mutations made: {self.mutations_made}")
+        self.profiler.log_results()
 
     def _evolve_single(
         self,
@@ -524,65 +544,18 @@ class Fandango:
         solution_callback: Callable[[DerivationTree, int], None] = lambda _a, _b: None,
     ) -> list[DerivationTree]:
         LOGGER.info("---------- Starting evolution ----------")
-        start_time = time.time()
 
-        # Take only the first desired_solutions entries from the generator
         solutions: list[DerivationTree] = []
-        found_enough_solutions = False
-        for solution in self.generate(max_generations=max_generations):
-            solution_callback(solution, len(solutions))
+
+        start_time = time.time()
+        gen: Iterable[DerivationTree] = self.generate(max_generations)
+        if desired_solutions is not None:
+            gen = itertools.islice(gen, desired_solutions)
+
+        for solution in gen:
             solutions.append(solution)
-            if desired_solutions is not None and len(solutions) >= desired_solutions:
-                found_enough_solutions = True
-                break
-        if solutions:
-            average_solutions_fitness = sum(
-                e[1] for e in self.evaluator.evaluate_population(solutions)
-            ) / len(solutions)
-        else:
-            average_solutions_fitness = 0.0
-
-        average_population_fitness = (
-            sum(e[1] for e in self.evaluation) / self.population_size
-        )
-
-        clear_visualization()
-        self.time_taken = time.time() - start_time
-        LOGGER.info("---------- Evolution finished ----------")
-        LOGGER.info(f"Perfect solutions found: ({len(solutions)})")
-        LOGGER.info(f"Average fitness of solutions: {average_solutions_fitness:.2f}")
-        LOGGER.info(
-            f"Average fitness of final population: {average_population_fitness:.2f}"
-        )
-        LOGGER.info(f"Time taken: {self.time_taken:.2f} seconds")
-        LOGGER.debug("---------- FANDANGO statistics ----------")
-        LOGGER.debug(f"Fixes made: {self.fixes_made}")
-        LOGGER.debug(f"Fitness checks: {self.evaluator.get_fitness_check_count()}")
-        LOGGER.debug(f"Crossovers made: {self.crossovers_made}")
-        LOGGER.debug(f"Mutations made: {self.mutations_made}")
-
-        self.profiler.log_results()
-
-        if (
-            not found_enough_solutions
-            and average_population_fitness < self.evaluator.expected_fitness
-        ):
-            LOGGER.error("Population did not converge to a perfect population")
-            if self.warnings_are_errors:
-                raise FandangoFailedError("Failed to find a perfect solution")
-            elif self.best_effort:
-                return self.population
-
-        if desired_solutions is not None and len(solutions) < desired_solutions:
-            LOGGER.error(
-                f"Only found {len(solutions)} perfect solutions, instead of the required {desired_solutions}"
-            )
-            if self.warnings_are_errors:
-                raise FandangoFailedError(
-                    "Failed to find the required number of perfect solutions"
-                )
-            elif self.best_effort:
-                return self.population[:desired_solutions]
+            solution_callback(solution, len(solutions))
+        LOGGER.info(f"Time taken: {(time.time() - start_time):.2f} seconds")
 
         return solutions
 
@@ -643,6 +616,8 @@ class Fandango:
 
                 if msg_sender != sender:
                     continue
+                if isinstance(msg_fragment, bytes):
+                    msg_fragment = msg_fragment.decode("utf-8", errors="ignore")
                 if complete_msg is None:
                     complete_msg = msg_fragment
                 else:
@@ -686,19 +661,21 @@ class Fandango:
 
                 # Check if there are still NonTerminals that can be parsed with received prefix
                 if len(available_non_terminals) == 0:
-                    raise FandangoParseError(
-                        "Couldn't match remote message to any packet matching grammar. Expected nonterminal: "
-                        + "|".join(
-                            map(
-                                lambda x: str(x),
-                                forecast_non_terminals.get_non_terminals(),
-                            )
+                    expected = "|".join(
+                        map(
+                            lambda x: str(x),
+                            forecast_non_terminals.get_non_terminals(),
                         )
-                        + "Got message: "
-                        + complete_msg
-                        + "\nUnprocessed messages: "
-                        + str(io_instance.get_received_msgs())
                     )
+
+                    exc = FandangoParseError(
+                        f"Expected {expected}, got {complete_msg!r}"
+                    )
+                    if getattr(Exception, "add_note", None):
+                        unprocessed = io_instance.get_received_msgs()
+                        exc.add_note(f"Unprocessed messages: {unprocessed!s}")
+                    raise exc
+
                 if parsed_packet_tree is not None:
                     nr_deleted = 0
                     used_fragments_idx.sort()

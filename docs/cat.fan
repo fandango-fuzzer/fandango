@@ -1,4 +1,4 @@
 <start> ::= <In:input> <Out:output>
-<input> ::= <string>
-<output> ::= <string>
-<string> ::= r'.*'
+<input> ::= <line>
+<output> ::= <line>
+<line> ::= r'.*\n'

@@ -29,7 +29,7 @@ python3 src/fandango/language/server/language_server.py
 
 ## Visual Studio Code Extension
 
-A simple extension for Visual Studio Code (based on the one provided by the `pygls` project) is provided in `.vscode/extensions/fandango-language-server`. To compile it, run the following:
+A simple extension for Visual Studio Code (based on the one provided by the `pygls` project) is provided in the source repository in `.vscode/extensions/fandango-language-server`. To use it, clone the source repository, and compile it by running the following:
 
 ```bash
 cd .vscode/extensions/fandango-language-server
@@ -37,9 +37,11 @@ npm install --no-save
 npm run compile
 ```
 
-You can then install it from the workspace-recommended extension section in the extension manager. For additional documentation, refer to `.vscode/extensions/fandango-language-server/README.md`.
+You can then install it from the workspace-recommended extension section in the extension manager. The extension will automatically start the language server and interface with it once you start editing `.fan` files in this workspace. For additional documentation, refer to `.vscode/extensions/fandango-language-server/README.md`.
+
 
 ## IntelliJ / Pycharm Code Extension
+
 To integrate the Fandango language server into IntelliJ or PyCharm, follow these steps:
 
 1. Download and install the [LSP4IJ plugin](https://plugins.jetbrains.com/plugin/23257-lsp4ij) for IntelliJ / Pycharm.
@@ -50,3 +52,14 @@ To integrate the Fandango language server into IntelliJ or PyCharm, follow these
    1. For `Template`, select `Import from custom template...`
    2. A file browser will appear. Select the previously downloaded language server configuration.
    3. If necessary, adjust the command in the Server tab to ensure the correct Python executable is used (matching your desired Python version and virtual environment).
+
+The extension will automatically start and interface with the language server.
+
+
+## Running the Language Server Manually
+
+To manually run the language server, run the following python script:
+
+```bash
+python3 [fandango-source-repository]/src/fandango/language/server/language_server.py
+```
