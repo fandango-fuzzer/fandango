@@ -609,7 +609,7 @@ class SearchProcessor(FandangoParserVisitor):
 
     def visitStar_selection(self, ctx: FandangoParser.Star_selectionContext):
         identifier = self.get_new_identifier()
-        base = self.transform_selection(ctx.selection())
+        base = self.get_attribute_searches(ctx.dot_selection())
         search: NonTerminalSearch
         if ctx.STAR():
             search = StarSearch(base)
