@@ -576,7 +576,7 @@ class SearchProcessor(FandangoParserVisitor):
 
     def visitStar_selection(self, ctx: FandangoParser.Star_selectionContext):
         identifier = self.get_new_identifier()
-        base = self.transform_selection(ctx.selection())
+        base = self.get_attribute_searches(ctx.dot_selection())
         search: NonTerminalSearch
         if ctx.STAR():
             search = StarSearch(base)
@@ -937,6 +937,10 @@ class SearchProcessor(FandangoParserVisitor):
                     lower=lower,
                     upper=upper,
                     step=step,
+                    lineno=0,
+                    end_lineno=0,
+                    col_offset=0,
+                    end_col_offset=0,
                 ),
                 searches,
                 search_map,
@@ -953,8 +957,6 @@ class SearchProcessor(FandangoParserVisitor):
     def visitString(self, ctx: FandangoParser.StringContext):
         if ctx.STRING():
             value = Terminal.clean(ctx.STRING().getText())
-        elif ctx.FSTRING_DOUBLE_QUOTE() or ctx.FSTRING_DOUBLE_SINGLE_QUOTE():
-            value = ""
         else:
             raise FandangoValueError(f"Unsupported string: {ctx.getText()}")
         return ast.Constant(value=value), [], {}
