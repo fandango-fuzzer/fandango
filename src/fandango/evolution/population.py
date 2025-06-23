@@ -115,22 +115,45 @@ class PopulationManager:
                     if isinstance(failing_tree.cause, RepetitionBoundsConstraint):
                         iter_id, bound_len, goal_len = value
                         bounds_constraint = failing_tree.cause
-                        prefix = failing_tree.tree.prefix()
-                        prev_children_len = len(failing_tree.tree.children)
+                        if goal_len > bound_len:
+                            prefix = failing_tree.tree.prefix()
+                            prev_children_len = len(failing_tree.tree.children)
 
-                        bounds_constraint.rep_node.fuzz(prefix, self._grammar,
-                                                        override_starting_repetition=bound_len,
-                                                        override_current_iteration=iter_id,
-                                                        override_iterations_to_perform=goal_len
-                                                        )
-                        insert_children = prefix.children[prev_children_len:]
-                        copy_parent = failing_tree.tree.parent.deepcopy(copy_children=True, copy_parent=False, copy_params=False)
-                        copy_parent.set_children(
-                            copy_parent.children[:prev_children_len]
-                            + insert_children
-                            + copy_parent.children[prev_children_len:]
-                        )
-                        replacements[failing_tree.tree.parent] = copy_parent
+                            bounds_constraint.rep_node.fuzz(prefix, self._grammar,
+                                                            override_starting_repetition=bound_len,
+                                                            override_current_iteration=iter_id,
+                                                            override_iterations_to_perform=goal_len
+                                                            )
+                            insert_children = prefix.children[prev_children_len:]
+                            copy_parent = failing_tree.tree.parent.deepcopy(copy_children=True, copy_parent=False, copy_params=False)
+                            copy_parent.set_children(
+                                copy_parent.children[:prev_children_len]
+                                + insert_children
+                                + copy_parent.children[prev_children_len:]
+                            )
+                            replacements[failing_tree.tree.parent] = copy_parent
+                        else:
+                            copy_parent = failing_tree.tree.parent.deepcopy(copy_children=True, copy_parent=False, copy_params=False)
+                            curr_rep_id = None
+                            reps_deleted = 0
+                            new_children = []
+                            for child in copy_parent.children[::-1]:
+                                repetition_node_id = bounds_constraint.repetition_id
+                                matching_o_nodes = list(filter(lambda x: x[0] == repetition_node_id and x[1] == iter_id, child.origin_nodes))
+                                if len(matching_o_nodes) == 0:
+                                    new_children.insert(0, child)
+                                    continue
+                                matching_o_node = matching_o_nodes[0]
+                                rep_id = matching_o_node[2]
+                                if curr_rep_id != rep_id and reps_deleted >= (bound_len - goal_len):
+                                    # We have deleted enough repetitions iteratively add all remaining children
+                                    new_children.insert(0, child)
+                                    continue
+                                curr_rep_id = rep_id
+                                reps_deleted += 1
+
+                            copy_parent.set_children(new_children)
+                            replacements[failing_tree.tree.parent] = copy_parent
                         continue
                     if (
                         isinstance(value, DerivationTree)
