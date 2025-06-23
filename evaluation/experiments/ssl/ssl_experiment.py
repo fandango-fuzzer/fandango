@@ -6,7 +6,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-from fandango.language.grammar import DerivationTree
+from fandango.language import DerivationTree
 from fandango.language.parse import parse
 from fandango.language.symbol import NonTerminal, Terminal
 

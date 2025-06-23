@@ -2,20 +2,23 @@
 
 import sys
 
-from fandango.language.parse import parse_spec
 from fandango.converters.FandangoConverter import FandangoConverter
+from fandango.language.parse import parse_spec
 
 
 class FandangoFandangoConverter(FandangoConverter):
     """Convert (normalize) Fandango grammar to Fandango format"""
 
-    def __init__(self, filename: str):
+    def __init__(self, filename: str, parties: list[str] | None = None):
         super().__init__(filename)
+        self.parties = parties or []
 
     def to_fan(self, **kw_args) -> str:
         """Convert the grammar spec to Fandango format"""
         contents = open(self.filename, "r").read()
-        parsed_spec = parse_spec(contents, filename=self.filename, use_cache=False)
+        parsed_spec = parse_spec(
+            contents, filename=self.filename, use_cache=False, parties=self.parties
+        )
         header = f"""# Automatically generated from {self.filename!r}.
 #
 """

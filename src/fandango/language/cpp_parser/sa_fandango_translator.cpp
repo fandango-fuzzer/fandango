@@ -36,7 +36,9 @@ SA_FandangoTranslator::~SA_FandangoTranslator() {
     Py_XDECREF(Formula_comparisonContext_cls);
     Py_XDECREF(ExprContext_cls);
     Py_XDECREF(Selector_lengthContext_cls);
-    Py_XDECREF(SelectorContext_cls);
+    Py_XDECREF(Star_selection_or_dot_selectionContext_cls);
+    Py_XDECREF(Star_selectionContext_cls);
+    Py_XDECREF(Dot_selectionContext_cls);
     Py_XDECREF(SelectionContext_cls);
     Py_XDECREF(Base_selectionContext_cls);
     Py_XDECREF(Rs_pairsContext_cls);
@@ -196,7 +198,16 @@ SA_FandangoTranslator::~SA_FandangoTranslator() {
     Py_XDECREF(Lambda_param_with_defaultContext_cls);
     Py_XDECREF(Lambda_param_maybe_defaultContext_cls);
     Py_XDECREF(Lambda_paramContext_cls);
+    Py_XDECREF(Fstring_middle_no_quoteContext_cls);
+    Py_XDECREF(Fstring_middle_no_single_quoteContext_cls);
+    Py_XDECREF(Fstring_middle_breaks_no_triple_quoteContext_cls);
+    Py_XDECREF(Fstring_middle_breaks_no_triple_single_quoteContext_cls);
+    Py_XDECREF(Fstring_any_no_quoteContext_cls);
+    Py_XDECREF(Fstring_any_no_single_quoteContext_cls);
     Py_XDECREF(Fstring_middleContext_cls);
+    Py_XDECREF(Fstring_any_breaks_no_triple_quoteContext_cls);
+    Py_XDECREF(Fstring_any_breaks_no_triple_single_quoteContext_cls);
+    Py_XDECREF(Fstring_anyContext_cls);
     Py_XDECREF(Fstring_replacement_fieldContext_cls);
     Py_XDECREF(Fstring_conversionContext_cls);
     Py_XDECREF(Fstring_full_format_specContext_cls);
@@ -238,6 +249,7 @@ SA_FandangoTranslator::~SA_FandangoTranslator() {
     Py_XDECREF(Del_t_atomContext_cls);
     Py_XDECREF(Type_expressionsContext_cls);
     Py_XDECREF(Func_type_commentContext_cls);
+    Py_XDECREF(IdentifierContext_cls);
 }
 
 
@@ -391,9 +403,21 @@ antlrcpp::Any SA_FandangoTranslator::visitSelector_length(FandangoParser::Select
     return py_ctx;
 }
 
-antlrcpp::Any SA_FandangoTranslator::visitSelector(FandangoParser::SelectorContext *ctx){
-    if(!SelectorContext_cls) SelectorContext_cls = PyObject_GetAttrString(translator->parser_cls, "SelectorContext");
-    PyObject *py_ctx = translator->convert_ctx(this, ctx, SelectorContext_cls);
+antlrcpp::Any SA_FandangoTranslator::visitStar_selection_or_dot_selection(FandangoParser::Star_selection_or_dot_selectionContext *ctx){
+    if(!Star_selection_or_dot_selectionContext_cls) Star_selection_or_dot_selectionContext_cls = PyObject_GetAttrString(translator->parser_cls, "Star_selection_or_dot_selectionContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Star_selection_or_dot_selectionContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitStar_selection(FandangoParser::Star_selectionContext *ctx){
+    if(!Star_selectionContext_cls) Star_selectionContext_cls = PyObject_GetAttrString(translator->parser_cls, "Star_selectionContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Star_selectionContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitDot_selection(FandangoParser::Dot_selectionContext *ctx){
+    if(!Dot_selectionContext_cls) Dot_selectionContext_cls = PyObject_GetAttrString(translator->parser_cls, "Dot_selectionContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Dot_selectionContext_cls);
     return py_ctx;
 }
 
@@ -1351,9 +1375,63 @@ antlrcpp::Any SA_FandangoTranslator::visitLambda_param(FandangoParser::Lambda_pa
     return py_ctx;
 }
 
+antlrcpp::Any SA_FandangoTranslator::visitFstring_middle_no_quote(FandangoParser::Fstring_middle_no_quoteContext *ctx){
+    if(!Fstring_middle_no_quoteContext_cls) Fstring_middle_no_quoteContext_cls = PyObject_GetAttrString(translator->parser_cls, "Fstring_middle_no_quoteContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Fstring_middle_no_quoteContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitFstring_middle_no_single_quote(FandangoParser::Fstring_middle_no_single_quoteContext *ctx){
+    if(!Fstring_middle_no_single_quoteContext_cls) Fstring_middle_no_single_quoteContext_cls = PyObject_GetAttrString(translator->parser_cls, "Fstring_middle_no_single_quoteContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Fstring_middle_no_single_quoteContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitFstring_middle_breaks_no_triple_quote(FandangoParser::Fstring_middle_breaks_no_triple_quoteContext *ctx){
+    if(!Fstring_middle_breaks_no_triple_quoteContext_cls) Fstring_middle_breaks_no_triple_quoteContext_cls = PyObject_GetAttrString(translator->parser_cls, "Fstring_middle_breaks_no_triple_quoteContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Fstring_middle_breaks_no_triple_quoteContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitFstring_middle_breaks_no_triple_single_quote(FandangoParser::Fstring_middle_breaks_no_triple_single_quoteContext *ctx){
+    if(!Fstring_middle_breaks_no_triple_single_quoteContext_cls) Fstring_middle_breaks_no_triple_single_quoteContext_cls = PyObject_GetAttrString(translator->parser_cls, "Fstring_middle_breaks_no_triple_single_quoteContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Fstring_middle_breaks_no_triple_single_quoteContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitFstring_any_no_quote(FandangoParser::Fstring_any_no_quoteContext *ctx){
+    if(!Fstring_any_no_quoteContext_cls) Fstring_any_no_quoteContext_cls = PyObject_GetAttrString(translator->parser_cls, "Fstring_any_no_quoteContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Fstring_any_no_quoteContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitFstring_any_no_single_quote(FandangoParser::Fstring_any_no_single_quoteContext *ctx){
+    if(!Fstring_any_no_single_quoteContext_cls) Fstring_any_no_single_quoteContext_cls = PyObject_GetAttrString(translator->parser_cls, "Fstring_any_no_single_quoteContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Fstring_any_no_single_quoteContext_cls);
+    return py_ctx;
+}
+
 antlrcpp::Any SA_FandangoTranslator::visitFstring_middle(FandangoParser::Fstring_middleContext *ctx){
     if(!Fstring_middleContext_cls) Fstring_middleContext_cls = PyObject_GetAttrString(translator->parser_cls, "Fstring_middleContext");
     PyObject *py_ctx = translator->convert_ctx(this, ctx, Fstring_middleContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitFstring_any_breaks_no_triple_quote(FandangoParser::Fstring_any_breaks_no_triple_quoteContext *ctx){
+    if(!Fstring_any_breaks_no_triple_quoteContext_cls) Fstring_any_breaks_no_triple_quoteContext_cls = PyObject_GetAttrString(translator->parser_cls, "Fstring_any_breaks_no_triple_quoteContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Fstring_any_breaks_no_triple_quoteContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitFstring_any_breaks_no_triple_single_quote(FandangoParser::Fstring_any_breaks_no_triple_single_quoteContext *ctx){
+    if(!Fstring_any_breaks_no_triple_single_quoteContext_cls) Fstring_any_breaks_no_triple_single_quoteContext_cls = PyObject_GetAttrString(translator->parser_cls, "Fstring_any_breaks_no_triple_single_quoteContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Fstring_any_breaks_no_triple_single_quoteContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitFstring_any(FandangoParser::Fstring_anyContext *ctx){
+    if(!Fstring_anyContext_cls) Fstring_anyContext_cls = PyObject_GetAttrString(translator->parser_cls, "Fstring_anyContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Fstring_anyContext_cls);
     return py_ctx;
 }
 
@@ -1600,5 +1678,11 @@ antlrcpp::Any SA_FandangoTranslator::visitType_expressions(FandangoParser::Type_
 antlrcpp::Any SA_FandangoTranslator::visitFunc_type_comment(FandangoParser::Func_type_commentContext *ctx){
     if(!Func_type_commentContext_cls) Func_type_commentContext_cls = PyObject_GetAttrString(translator->parser_cls, "Func_type_commentContext");
     PyObject *py_ctx = translator->convert_ctx(this, ctx, Func_type_commentContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitIdentifier(FandangoParser::IdentifierContext *ctx){
+    if(!IdentifierContext_cls) IdentifierContext_cls = PyObject_GetAttrString(translator->parser_cls, "IdentifierContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, IdentifierContext_cls);
     return py_ctx;
 }

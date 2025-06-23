@@ -18,7 +18,7 @@ Since Fandango makes use of specifications both to [_produce_](sec:fuzzing) and 
 1. first send an input to a program under test; and
 2. then parse its output to check if it produced the correct result.
 
-For this purpose, Fandango provides a means to combine both input and output in a _single specification_.
+For this purpose, Fandango provides a means to combine both input and output in a _single specification_, used by the Fandango `talk` command.
 Let us see how this works.
 
 ```{admonition} Under Construction
@@ -87,28 +87,43 @@ In Fandango, this interaction can be described in a file [`cat.fan`](cat.fan) as
 
 In this specification,
 
-* `<input>` and `<output>` define the inputs and outputs of `cat`, respectively, as a `<string>; and
+* `<input>` and `<output>` define the inputs and outputs of `cat`, respectively, as a `<string>`; and
 * `<string>` defines a regular expression standing for any sequence of characters, including newlines.
 
 Let us use Fandango with this spec to test the `cat` program.
-We specify the program to be tested on the command line:
+
+
+## The Fandango `talk` command
+
+Fandango provides a `talk` command that allows testing interactions.
+Like `fuzz` and `parse`, it takes as argument a `-f` option, followed by a `.fan` file; however, this one must contain party specifications.
+The remainder of the command line is the program to be tested (possibly with arguments).
+
+In our case, this is how the invocation of Fandango looks like:
 
 ```shell
-$ fandango fuzz -f cat.fan -n 20 cat
+$ fandango talk -f cat.fan cat
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f cat.fan -n 20 cat
+!fandango talk -f cat.fan --population-size 1 cat
+assert _exit_code == 0
 ```
 
 This command does not issue any outputs (all of them are being sent to `cat`), but here is what is happening behind the scenes:
 
-* Fandango invokes `cat` 20 times (as specified by `-n`), each time with a different input
 * The `cat` command sends back the input via its output;
 * Fandango receives and parses the `cat` output.
 
-Note that each time, `cat` is started anew, as shown in this diagram:
+
+We can also specify multiple interactions, as in
+
+```shell
+$ fandango talk -f cat.fan -n 10 cat
+```
+
+Now, each time, `cat` is started anew, as shown in this diagram:
 ```{mermaid}
 sequenceDiagram
     Fandango->>cat: "eroih&^%^32"
@@ -135,7 +150,7 @@ For this, [constraints](sec:constraints) are the ideal tool, as they allow us to
 In our case, this simple constraint would suffice:
 
 ```python
-<input> == <output>
+str(<input>) == str(<output>)
 ```
 
 This constraint defines the full behavior of `cat`; it acts as an _oracle_ that determines whether the behavior of the program under test is correct or not.
@@ -150,12 +165,13 @@ Let us add this constraint using a `where` clause to `cat.fan`, resulting in [`c
 Again, we can test, and normally, nothing should happen.
 
 ```shell
-$ fandango fuzz -f cat-oracle.fan -n 20 cat
+$ fandango talk -f cat-oracle.fan cat
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f cat-oracle.fan -n 20 cat
+!fandango talk -f cat-oracle.fan --population-size=1 cat
+assert _exit_code == 0
 ```
 
 ```{margin}
@@ -204,13 +220,15 @@ We see that the `<input>` now is an expression; and the expected `<output>` is a
 This is how we can test `bc`:
 
 ```shell
-$ fandango fuzz -f bc.fan -n 1 bc
+$ fandango talk -f bc.fan bc
 ```
 
-```{code-cell}
-:tags: ["remove-input"]
-!fandango fuzz -f bc.fan -n 1 bc
-```
+% FIXME: Doesn't work yet - see bug #500
+% ```{code-cell}
+% :tags: ["remove-input"]
+% !fandango talk -f bc.fan --population-size=1 bc
+% assert _exit_code == 0
+% ```
 
 Our `.fan` spec checks that the `bc` indeed produces integers, but it does not check whether the result is correct, too.
 How would one do this? (Hint: use the Python `eval()` function.)
@@ -226,12 +244,12 @@ where eval(str(<input>)) == int(<output>)
 If we actually do this, we will find that there are a few differences between the way that Python and `bc` interpret expressions:
 
 ```shell
-$ fandango fuzz -f bc.fan -n 1 -c 'eval(str(<input>)) == int(<output>)' bc
+$ fandango talk -f bc.fan -n 1 -c 'eval(str(<input>)) == int(<output>)' bc
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f bc.fan -n 1 -c 'eval(str(<input>)) == int(<output>)' bc
+!fandango talk -f bc.fan -n 1 -c 'eval(str(<input>)) == int(<output>)' bc
 ```
 
 To ensure complete testing, we need to
@@ -241,6 +259,7 @@ To ensure complete testing, we need to
 * allow small differences between floating point numbers, or restrict ourselves to integer operations.
 
 Right now, we leave this as an exercise to the reader :-)
+
 
 
 ## Testing Strategies
@@ -263,4 +282,66 @@ Compare the result of equivalent inputs.
 ```{admonition} Under Construction
 :class: attention
 Future versions of this tutorial will further detail these strategies and how to integrate them into Fandango.
+```
+
+
+## Troubleshooting Interactions
+
+Since interactions are always being sent to some party, and since the party outputs are being processed by Fandango, it may not always be easy to track which data is being sent, and where.
+
+However, you can also make use of interaction specs in the regular `fuzz` and `parse` commands.
+The special `--party=PARTY` option allows you to produce outputs or parse inputs for just one given party `PARTY` in the interaction.
+The effect of `--party` is that it _excludes_ all other parties from the interaction, allowing to produce or parse strings for just one party.
+
+As an example, consider again our [`bc.fan`](bc.fan) example:
+
+```{code-cell}
+:tags: ["remove-input"]
+!cat bc.fan
+```
+
+This is the effect of `--party=In`.
+See how the `Out:` part of the interaction has been excluded, also excluding `<output>` from production:
+
+```{margin}
+These are actually produced using [`fandango convert`](sec:fan2fan) with the `--party` option.
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango convert --party=In bc.fan
+```
+
+This is the effect of `--party=Out`, excluding the `In` part, and consequently, `<input>`:
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango convert --party=Out bc.fan
+```
+
+Typically, you provide such a `--party` option directly as part of some `fuzz` or `parse` command.
+To see what typical inputs to `bc` look like, use:
+
+```{margin}
+The `--format=value` option makes the strings readable.
+```
+
+```shell
+$ fandango fuzz -f bc.fan --party=In -n 10 --format=value
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f bc.fan --party=In -n 10 --format=value
+```
+
+Conversely, to see what typical outputs from `bc` would be expected, use:
+
+```shell
+$ fandango fuzz -f bc.fan --party=Out -n 10 --format=value
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f bc.fan --party=Out -n 10 --format=value
 ```

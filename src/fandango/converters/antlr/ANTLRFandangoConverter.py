@@ -1,18 +1,15 @@
 #!/usr/bin/env python
 
 import sys
-
-from typing import IO
-from fandango.converters.FandangoConverter import FandangoConverter
+from typing import Any
 
 from antlr4 import *
+
+from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.converters.antlr.ANTLRv4Lexer import ANTLRv4Lexer
 from fandango.converters.antlr.ANTLRv4Parser import ANTLRv4Parser
 from fandango.converters.antlr.ANTLRv4ParserVisitor import ANTLRv4ParserVisitor
 from fandango.language.parse import PythonAntlrErrorListener
-
-
-from typing import Any
 
 
 class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
@@ -160,9 +157,9 @@ class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
         elif ctx.TOKEN_REF():
             token = ctx.TOKEN_REF().getText()
             return f"<{token}>"
-        elif ctx.LEXER_CHAR_SET():
-            char_set = ctx.LEXER_CHAR_SET().getText()
-            return f"{char_set}"
+        # elif ctx.LEXER_CHAR_SET():
+        #     char_set = ctx.LEXER_CHAR_SET().getText()
+        #     return f"{char_set}"
         else:
             elem = ctx.getText()
             return f"{elem}"
@@ -205,7 +202,7 @@ class ANTLRFandangoConverterVisitor(ANTLRv4ParserVisitor):
     def visitBlockSet(self, ctx: ANTLRv4Parser.BlockSetContext):
         return "(" + super().visitBlockSet(ctx) + ")"
 
-    def visitBlock(self, ctx: ANTLRv4Parser.BlockSetContext):
+    def visitBlock(self, ctx: ANTLRv4Parser.BlockContext):
         if ctx.ruleAction():
             self.addNote(f"action was {ctx.ruleAction().getText()}")
         return "(" + super().visitBlock(ctx) + ")"

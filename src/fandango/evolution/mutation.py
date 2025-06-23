@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Callable, Generator
 
 from fandango.constraints.fitness import FailingTree
-from fandango.language.grammar import DerivationTree, Grammar
+from fandango.language import DerivationTree, Grammar
 
 
 class MutationOperator(ABC):

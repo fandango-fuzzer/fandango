@@ -3,7 +3,7 @@ from typing import Counter, Generator, Union
 
 from fandango.constraints.base import Constraint, SoftValue
 from fandango.constraints.fitness import FailingTree
-from fandango.language.grammar import DerivationTree, Grammar
+from fandango.language import DerivationTree, Grammar
 from fandango.logger import LOGGER
 
 

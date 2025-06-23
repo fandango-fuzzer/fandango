@@ -74,12 +74,12 @@ parser: \
 
 $(PARSER)/FandangoLexer.py: $(LEXER_G4) Makefile
 	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
-		-visitor -listener $(LEXER_G4)
+		-visitor -no-listener $(LEXER_G4)
 	sed 's/import FandangoLexerBase/import */' $@ > $@~ && mv $@~ $@
 
 $(PARSER)/FandangoParser.py: $(LEXER_G4) $(PARSER_G4) Makefile
 	$(ANTLR) -Dlanguage=Python3 -Xexact-output-dir -o $(PARSER) \
-		-visitor -listener $(PARSER_G4)
+		-visitor -no-listener $(PARSER_G4)
 	$(BLACK) $(SRC)/language
 
 $(CPP_PARSER)/FandangoLexer.cpp: $(LEXER_G4) Makefile
@@ -118,7 +118,7 @@ osascript -e 'tell application "Safari" to set URL of document of window 1 to UR
 VIEW_PDF = open $(PDF_TARGET)
 
 # Command to check docs for failed assertions
-CHECK_DOCS = grep -l AssertionError $(DOCS)/_build/html/*.html; if [ $$? == 0 ]; then echo 'Check the above files for failed assertions'; false; else true; fi
+CHECK_DOCS = grep -l AssertionError $(DOCS)/_build/html/*.html; if [ $$? == 0 ]; then echo '*** Check the above files for failed assertions'; false; else true; fi
 
 # Command to patch HTML output
 PATCH_HTML = cd $(DOCS); sh ./patch-html.sh
@@ -208,6 +208,17 @@ tests $(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
 	$(PYTEST) -n auto
 	echo 'Success' > $(TEST_MARKER)
 
+COVERAGE = coverage.xml
+COVERAGERC = .coveragerc
+REPORT = report.html
+COVERAGE_REPORT = htmlcov/index.html
+
+# Run tests and generate coverage report
+.PHONY: coverage
+coverage $(COVERAGE_REPORT): $(PYTHON_SOURCES) $(TEST_SOURCES)
+	$(PYTEST) --html=$(REPORT) --self-contained-html --cov-report xml:$(COVERAGE) --cov-report term --cov-config=$(COVERAGERC) --cov=fandango -n auto
+	@echo 'Coverage report generated in $(COVERAGE_REPORT)'
+
 run-tests: $(TEST_MARKER)
 
 ## Evaluation
@@ -245,18 +256,54 @@ run-all: $(TEST_MARKER) $(EVALUATION_MARKER) $(EXPERIMENTS_MARKER)
 install:
 	$(PIP) install -e .
 
+
+# We separate _installing_ from _running_ tests
+# so we can run 'make tests' quickly (see above)
+# without having to reinstall things
+install-test install-tests:
+	$(PIP) install -e ".[test]"
+
+uninstall:
+	$(PIP) uninstall fandango-fuzzer -y
+
+remove cache:
+	rm -rf ~/Library/Caches/Fandango
+
+GIT_LS_FILES = git ls-files --exclude-standard | \
+	grep ".*$$pattern"'$$' | \
+	grep -v 'src/fandango/language/parser/' | \
+	grep -v 'src/fandango/language/cpp_parser/' | \
+	grep -v 'src/fandango/converters/dtd/[^.]*\.fan' | \
+	grep -v 'src/fandango/converters/antlr/ANTLRv4[^.]*\.py' | \
+	grep -v 'src/fandango/converters/antlr/LexerAdaptor[^.]*\.py'
+
+.PHONY: ls-files
+ls-files:
+	@echo 'Listing files in the repository...'
+	@$(GIT_LS_FILES) | sort
+
+## Statistics
+.PHONY: stats statistics
+stats statistics:
+	@for pattern in .py .g4 .md .fan .yml file; do \
+		printf "%12s" "*$$pattern lines:"; \
+		$(GIT_LS_FILES) | \
+		xargs wc -l | grep ' total$$'; \
+	done
+	@printf '  All lines:'
+	@$(GIT_LS_FILES) | \
+	grep -E '(\.py|\.g4|\.md|\.fan|\.yml|file)$$' | xargs wc -l | grep ' total$$'
+
 ## Credit - from https://gist.github.com/Alpha59/4e9cd6c65f7aa2711b79
-.PHONY: credit
-credit:
+.PHONY: credit credits
+credit credits:
 	@echo "Lines contributed"
 	@for pattern in .py .g4 .md .fan .toml .yml file; do \
 		echo "*$$pattern files:"; \
-		git ls-files | \
-		grep "$$pattern"'$$' | \
-		grep -v 'src/fandango/language/parser/' | \
-		grep -v 'utils/dtd2fan/.*\.fan' | \
+		$(GIT_LS_FILES) | \
 		xargs -n1 git blame -wfn | \
 		sed 's/joszamama/José Antonio/g' | \
+		sed 's/Leon/Leon Bettscheider/g' | \
 		sed 's/alex9849/Alexander Liggesmeyer/g' | \
 		perl -n -e '/\((.*)\s[\d]{4}\-/ && print $$1."\n"' | \
 		awk '{print $$1" "$$2}' | \
@@ -266,16 +313,3 @@ credit:
 		sort -nr; \
 		echo; \
 	done
-
-# We separate _installing_ from _running_ tests
-# so we can run 'make tests' quickly (see above)
-# without having to reinstall things
-install-test install-tests:
-	$(PIP) install pytest mypy pytest-xdist
-	$(PIP) install -e ".[test]"
-
-uninstall:
-	$(PIP) uninstall fandango-fuzzer -y
-
-remove cache:
-	rm -rf ~/Library/Caches/Fandango

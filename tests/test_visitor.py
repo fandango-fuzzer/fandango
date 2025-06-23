@@ -7,6 +7,7 @@ import logging
 from fandango.language.parse import parse
 from fandango.constraints.base import *
 from fandango.logger import LOGGER
+from .utils import RESOURCES_ROOT
 
 
 class CountingVisitor(ConstraintVisitor):
@@ -81,10 +82,10 @@ class LoggingVisitor(ConstraintVisitor):
 class TestConstraintVisitor(unittest.TestCase):
 
     def get_constraint(self, constraint):
-        file = open("tests/resources/constraints.fan", "r")
-        _, constraints = parse(
-            file, constraints=[constraint], use_stdlib=False, use_cache=False
-        )
+        with open(RESOURCES_ROOT / "constraints.fan", "r") as file:
+            _, constraints = parse(
+                file, constraints=[constraint], use_stdlib=False, use_cache=False
+            )
         self.assertEqual(1, len(constraints))
         return constraints[0]
 

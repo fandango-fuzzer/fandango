@@ -1,10 +1,9 @@
+# wildcard import required for usage in spec files
+from fandango.io import *  # noqa: F403
 from fandango.language.symbol import NonTerminal
 
-# Importing '*' here, because all functions, and classes existing in the io file, need to be available within spec files
-from fandango.language.io import *
 
-# wildcard import required for usage in spec files
-from fandango.language.io import *  # noqa: F403
+# Importing '*' here, because all functions, and classes existing in the io file, need to be available within spec files
 
 
 def is_int(x):
