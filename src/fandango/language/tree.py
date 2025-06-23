@@ -400,6 +400,7 @@ class DerivationTree:
             sources=[],
             read_only=self.read_only,
         )
+        copied.origin_nodes = list(self.origin_nodes)
         memo[id(self)] = copied
 
         # Deepcopy the children
