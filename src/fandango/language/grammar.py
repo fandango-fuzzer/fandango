@@ -9,15 +9,11 @@ from copy import deepcopy
 from typing import Any, Iterator, Optional, Union, Generator
 
 import exrex
-from thefuzz import process as thefuzz_process
 
-
-from fandango.constraints.base import RepetitionBoundsConstraint
-from fandango.errors import FandangoValueError, FandangoParseError
 from fandango.language.symbol import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree
 
-from fandango import FandangoValueError, FandangoParseError
+from fandango.errors import FandangoValueError, FandangoParseError
 
 from thefuzz import process as thefuzz_process
 
@@ -212,7 +208,7 @@ class Concatenation(Node):
 
 class Repetition(Node):
     def __init__(
-        self, node: Node, id: str = "", min_: int = 0, max_: int = MAX_REPETITIONS, bounds_constraint: Optional[RepetitionBoundsConstraint] = None
+        self, node: Node, id: str = "", min_: int = 0, max_: int = MAX_REPETITIONS, bounds_constraint: Optional['RepetitionBoundsConstraint'] = None
     ):
         super().__init__(NodeType.REPETITION)
         self.id = id
@@ -255,6 +251,7 @@ class Repetition(Node):
         prev_parent_size = parent.size()
         prev_children_len = len(parent.children)
         self.iteration += 1
+        current_iteration = self.iteration
 
         for rep in range(random.randint(self.min, self.max)):
             if self.node.distance_to_completion >= max_nodes:
@@ -264,7 +261,7 @@ class Repetition(Node):
             else:
                 self.node.fuzz(parent, grammar, max_nodes - 1, in_message)
             for child in parent.children[prev_children_len:]:
-                child.origin_nodes.insert(0, (self.id, self.iteration, rep))
+                child.origin_nodes.insert(0, (self.id, current_iteration, rep))
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
             prev_children_len = len(parent.children)

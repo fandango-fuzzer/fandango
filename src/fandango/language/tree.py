@@ -728,6 +728,12 @@ class DerivationTree:
         cpy = copy.deepcopy(self)
         return cpy._split_end()
 
+    def prefix(self):
+        ref_tree = self.split_end()
+        ref_tree = ref_tree.parent
+        ref_tree.set_children(ref_tree.children[:-1])
+        return ref_tree
+
     def get_root(self, stop_at_argument_begin=False):
         root = self
         while root.parent is not None and not (
