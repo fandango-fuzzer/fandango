@@ -16,11 +16,10 @@ authors = [
 ]
 description = "Fandango produces myriads of high-quality random inputs to test programs, giving users unprecedented control over format and shape of the inputs."
 readme = "README.md"
-license = { file = "LICENSE.md" }
+license = "EUPL-1.2"
 requires-python = ">=3.10,<4.0"
 classifiers = [
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: European Union Public Licence 1.2 (EUPL 1.2)",
     "Programming Language :: Python :: 3.11",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering",
