@@ -671,7 +671,7 @@ void fandangoparserParserInitialize() {
   	1,0,0,0,1030,1032,3,50,25,0,1031,1021,1,0,0,0,1031,1025,1,0,0,0,1031,
   	1030,1,0,0,0,1032,49,1,0,0,0,1033,1036,3,52,26,0,1034,1036,3,54,27,0,
   	1035,1033,1,0,0,0,1035,1034,1,0,0,0,1036,51,1,0,0,0,1037,1038,5,77,0,
-  	0,1038,1042,3,56,28,0,1039,1040,5,83,0,0,1040,1042,3,56,28,0,1041,1037,
+  	0,1038,1042,3,54,27,0,1039,1040,5,83,0,0,1040,1042,3,54,27,0,1041,1037,
   	1,0,0,0,1041,1039,1,0,0,0,1042,53,1,0,0,0,1043,1044,6,27,-1,0,1044,1045,
   	3,56,28,0,1045,1054,1,0,0,0,1046,1047,10,2,0,0,1047,1048,5,76,0,0,1048,
   	1053,3,56,28,0,1049,1050,10,1,0,0,1050,1051,5,75,0,0,1051,1053,3,56,28,
@@ -5149,8 +5149,8 @@ tree::TerminalNode* FandangoParser::Star_selectionContext::STAR() {
   return getToken(FandangoParser::STAR, 0);
 }
 
-FandangoParser::SelectionContext* FandangoParser::Star_selectionContext::selection() {
-  return getRuleContext<FandangoParser::SelectionContext>(0);
+FandangoParser::Dot_selectionContext* FandangoParser::Star_selectionContext::dot_selection() {
+  return getRuleContext<FandangoParser::Dot_selectionContext>(0);
 }
 
 tree::TerminalNode* FandangoParser::Star_selectionContext::POWER() {
@@ -5190,7 +5190,7 @@ FandangoParser::Star_selectionContext* FandangoParser::star_selection() {
         setState(1037);
         match(FandangoParser::STAR);
         setState(1038);
-        selection();
+        dot_selection(0);
         break;
       }
 
@@ -5199,7 +5199,7 @@ FandangoParser::Star_selectionContext* FandangoParser::star_selection() {
         setState(1039);
         match(FandangoParser::POWER);
         setState(1040);
-        selection();
+        dot_selection(0);
         break;
       }
 

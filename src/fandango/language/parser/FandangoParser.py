@@ -12777,8 +12777,8 @@ def serializedATN():
         1038,
         1042,
         3,
-        56,
-        28,
+        54,
+        27,
         0,
         1039,
         1040,
@@ -12789,8 +12789,8 @@ def serializedATN():
         1040,
         1042,
         3,
-        56,
-        28,
+        54,
+        27,
         0,
         1041,
         1037,
@@ -33087,8 +33087,8 @@ class FandangoParser(Parser):
         def STAR(self):
             return self.getToken(FandangoParser.STAR, 0)
 
-        def selection(self):
-            return self.getTypedRuleContext(FandangoParser.SelectionContext, 0)
+        def dot_selection(self):
+            return self.getTypedRuleContext(FandangoParser.Dot_selectionContext, 0)
 
         def POWER(self):
             return self.getToken(FandangoParser.POWER, 0)
@@ -33115,14 +33115,14 @@ class FandangoParser(Parser):
                 self.state = 1037
                 self.match(FandangoParser.STAR)
                 self.state = 1038
-                self.selection()
+                self.dot_selection(0)
                 pass
             elif token in [83]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 1039
                 self.match(FandangoParser.POWER)
                 self.state = 1040
-                self.selection()
+                self.dot_selection(0)
                 pass
             else:
                 raise NoViableAltException(self)
