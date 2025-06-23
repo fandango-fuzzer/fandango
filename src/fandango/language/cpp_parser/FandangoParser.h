@@ -884,7 +884,7 @@ public:
     Star_selectionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *STAR();
-    SelectionContext *selection();
+    Dot_selectionContext *dot_selection();
     antlr4::tree::TerminalNode *POWER();
 
 

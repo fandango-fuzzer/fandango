@@ -8,7 +8,13 @@ from fandango.constraints.base import (
 )
 from fandango.constraints.fitness import Comparison
 from fandango.language import NonTerminal, DerivationTree, Terminal
-from fandango.language.search import StarSearch, RuleSearch, PopulationSearch
+from fandango.language.search import (
+    StarSearch,
+    RuleSearch,
+    PopulationSearch,
+    AttributeSearch,
+    DescendantAttributeSearch,
+)
 
 
 class TestStar(unittest.TestCase):
@@ -656,3 +662,226 @@ where {str(x) for x in **<c>} == {"e", "f"}
                 ),
                 "Invalid <c> should not satisfy the expression constraint",
             )
+
+
+class TestStarInCombination(unittest.TestCase):
+    EXAMPLE = "\n".join(
+        [
+            "<start> ::= <a>",
+            "<a> ::= <b> | <c>",
+            "<b> ::= <d> | <e>",
+            "<c> ::= <e> <d>",
+            '<d> ::= "d"',
+            '<e> ::= "e"',
+        ]
+    )
+
+    CONSTRAINT_DOT = "where all(str(x) == 'd' for x in *<a>.<b>)"
+    CONSTRAINT_DOT_DOT = "where all(str(x) == 'd' for x in *<start>..<b>)"
+    CONSTRAINT_POPULATION_DOT = "where all(str(x) == 'd' for x in **<a>.<b>)"
+    CONSTRAINT_POPULATION_DOT_DOT = "where all(str(x) == 'd' for x in **<start>..<b>)"
+
+    EXAMPLE_1 = DerivationTree(
+        NonTerminal("<start>"),
+        [
+            DerivationTree(
+                NonTerminal("<a>"),
+                [
+                    DerivationTree(
+                        NonTerminal("<b>"),
+                        [
+                            DerivationTree(
+                                NonTerminal("<d>"),
+                                [
+                                    DerivationTree(Terminal("d")),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ],
+    )
+
+    EXAMPLE_2 = DerivationTree(
+        NonTerminal("<start>"),
+        [
+            DerivationTree(
+                NonTerminal("<a>"),
+                [
+                    DerivationTree(
+                        NonTerminal("<b>"),
+                        [
+                            DerivationTree(
+                                NonTerminal("<e>"),
+                                [
+                                    DerivationTree(
+                                        Terminal("e"),
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ],
+    )
+
+    EXAMPLE_3 = DerivationTree(
+        NonTerminal("<start>"),
+        [
+            DerivationTree(
+                NonTerminal("<a>"),
+                [
+                    DerivationTree(
+                        NonTerminal("<c>"),
+                        [
+                            DerivationTree(
+                                NonTerminal("<e>"),
+                                [
+                                    DerivationTree(
+                                        Terminal("e"),
+                                    )
+                                ],
+                            ),
+                            DerivationTree(
+                                NonTerminal("<d>"),
+                                [
+                                    DerivationTree(
+                                        Terminal("d"),
+                                    )
+                                ],
+                            ),
+                        ],
+                    )
+                ],
+            )
+        ],
+    )
+
+    @classmethod
+    def setUpClass(cls):
+        cls.grammar, _ = parse(cls.EXAMPLE, use_cache=False, use_stdlib=False)
+
+    def test_dot(self):
+        _, constraints = parse(self.CONSTRAINT_DOT, use_cache=False, use_stdlib=False)
+        self.assertEqual(len(constraints), 1)
+        constraint = constraints[0]
+        self.assertIsInstance(constraint, ForallConstraint)
+        self.assertEqual(constraint.bound, "x")
+        statement = constraint.statement
+        self.assertIsInstance(statement, ComparisonConstraint)
+        self.assertEqual(statement.left, "str(x)")
+        self.assertEqual(eval(statement.right), "d")
+        star = constraint.search
+        self.assertIsInstance(star, StarSearch)
+        base = star.base
+        self.assertIsInstance(base, AttributeSearch)
+        parent = base.base
+        self.assertIsInstance(parent, RuleSearch)
+        self.assertEqual(parent.symbol, NonTerminal("<a>"))
+        attribute = base.attribute
+        self.assertIsInstance(attribute, RuleSearch)
+        self.assertEqual(attribute.symbol, NonTerminal("<b>"))
+
+        self.assertTrue(constraint.check(self.EXAMPLE_1))
+        self.assertFalse(constraint.check(self.EXAMPLE_2))
+        self.assertTrue(constraint.check(self.EXAMPLE_3))
+
+    def test_dot_dot(self):
+        _, constraints = parse(
+            self.CONSTRAINT_DOT_DOT, use_cache=False, use_stdlib=False
+        )
+        self.assertEqual(len(constraints), 1)
+        constraint = constraints[0]
+        self.assertIsInstance(constraint, ForallConstraint)
+        self.assertEqual(constraint.bound, "x")
+        statement = constraint.statement
+        self.assertIsInstance(statement, ComparisonConstraint)
+        self.assertEqual(statement.left, "str(x)")
+        self.assertEqual(eval(statement.right), "d")
+        star = constraint.search
+        self.assertIsInstance(star, StarSearch)
+        base = star.base
+        self.assertIsInstance(base, DescendantAttributeSearch)
+        parent = base.base
+        self.assertIsInstance(parent, RuleSearch)
+        self.assertEqual(parent.symbol, NonTerminal("<start>"))
+        attribute = base.attribute
+        self.assertIsInstance(attribute, RuleSearch)
+        self.assertEqual(attribute.symbol, NonTerminal("<b>"))
+
+        self.assertTrue(constraint.check(self.EXAMPLE_1))
+        self.assertFalse(constraint.check(self.EXAMPLE_2))
+        self.assertTrue(constraint.check(self.EXAMPLE_3))
+
+    def test_population_dot(self):
+        _, constraints = parse(
+            self.CONSTRAINT_POPULATION_DOT, use_cache=False, use_stdlib=False
+        )
+        self.assertEqual(len(constraints), 1)
+        constraint = constraints[0]
+        self.assertIsInstance(constraint, ForallConstraint)
+        self.assertEqual(constraint.bound, "x")
+        statement = constraint.statement
+        self.assertIsInstance(statement, ComparisonConstraint)
+        self.assertEqual(statement.left, "str(x)")
+        self.assertEqual(eval(statement.right), "d")
+        star = constraint.search
+        self.assertIsInstance(star, PopulationSearch)
+        base = star.base
+        self.assertIsInstance(base, AttributeSearch)
+        parent = base.base
+        self.assertIsInstance(parent, RuleSearch)
+        self.assertEqual(parent.symbol, NonTerminal("<a>"))
+        attribute = base.attribute
+        self.assertIsInstance(attribute, RuleSearch)
+        self.assertEqual(attribute.symbol, NonTerminal("<b>"))
+
+        self.assertFalse(
+            constraint.check(
+                self.EXAMPLE_1,
+                population=[self.EXAMPLE_1, self.EXAMPLE_2, self.EXAMPLE_3],
+            )
+        )
+        self.assertTrue(
+            constraint.check(
+                self.EXAMPLE_1,
+                population=[self.EXAMPLE_1, self.EXAMPLE_1, self.EXAMPLE_3],
+            )
+        )
+
+    def test_population_dot_dot(self):
+        _, constraints = parse(
+            self.CONSTRAINT_POPULATION_DOT_DOT, use_cache=False, use_stdlib=False
+        )
+        self.assertEqual(len(constraints), 1)
+        constraint = constraints[0]
+        self.assertIsInstance(constraint, ForallConstraint)
+        self.assertEqual(constraint.bound, "x")
+        statement = constraint.statement
+        self.assertIsInstance(statement, ComparisonConstraint)
+        self.assertEqual(statement.left, "str(x)")
+        self.assertEqual(eval(statement.right), "d")
+        star = constraint.search
+        self.assertIsInstance(star, PopulationSearch)
+        base = star.base
+        self.assertIsInstance(base, DescendantAttributeSearch)
+        parent = base.base
+        self.assertIsInstance(parent, RuleSearch)
+        self.assertEqual(parent.symbol, NonTerminal("<start>"))
+        attribute = base.attribute
+        self.assertIsInstance(attribute, RuleSearch)
+        self.assertEqual(attribute.symbol, NonTerminal("<b>"))
+
+        self.assertFalse(
+            constraint.check(
+                self.EXAMPLE_1,
+                population=[self.EXAMPLE_1, self.EXAMPLE_2, self.EXAMPLE_3],
+            )
+        )
+        self.assertTrue(
+            constraint.check(
+                self.EXAMPLE_1, population=[self.EXAMPLE_1, self.EXAMPLE_3]
+            )
+        )
