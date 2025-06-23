@@ -87,6 +87,10 @@ class FandangoParserVisitor(ParseTreeVisitor):
     def visitQuantifier(self, ctx: FandangoParser.QuantifierContext):
         return self.visitChildren(ctx)
 
+    # Visit a parse tree produced by FandangoParser#quantifier_in_line.
+    def visitQuantifier_in_line(self, ctx: FandangoParser.Quantifier_in_lineContext):
+        return self.visitChildren(ctx)
+
     # Visit a parse tree produced by FandangoParser#formula_disjunction.
     def visitFormula_disjunction(self, ctx: FandangoParser.Formula_disjunctionContext):
         return self.visitChildren(ctx)

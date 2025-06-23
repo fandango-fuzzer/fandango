@@ -90,16 +90,29 @@ implies
 quantifier
     : FORALL nonterminal IN dot_selection ':' (NEWLINE INDENT quantifier DEDENT | quantifier) // deprecated
     | EXISTS nonterminal IN dot_selection ':' (NEWLINE INDENT quantifier DEDENT | quantifier) // deprecated
-    | 'any' '(' quantifier 'for' (nonterminal | identifier) IN star_selection ')' (';' | NEWLINE+ | EOF)?
-    | 'any' '(' '[' quantifier 'for' (nonterminal | identifier) IN star_selection ']' ')' (';' | NEWLINE+ | EOF)?
-    | 'any' '(' '(' quantifier 'for' (nonterminal | identifier) IN star_selection ']' ')' (';' | NEWLINE+ | EOF)?
-    | 'any' '(' '{' quantifier 'for' (nonterminal | identifier) IN star_selection '}' ')' (';' | NEWLINE+ | EOF)?
-    | 'all' '(' quantifier 'for' (nonterminal | identifier) IN star_selection ')' (';' | NEWLINE+ | EOF)?
-    | 'all' '(' '(' quantifier 'for' (nonterminal | identifier) IN star_selection ')' ')' (';' | NEWLINE+ | EOF)?
-    | 'all' '(' '[' quantifier 'for' (nonterminal | identifier) IN star_selection ']' ')' (';' | NEWLINE+ | EOF)?
-    | 'all' '(' '{' quantifier 'for' (nonterminal | identifier) IN star_selection '}' ')' (';' | NEWLINE+ | EOF)?
-    | formula_disjunction (';' | NEWLINE+ | EOF)?
+    | 'any' '(' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection ')' (';' | NEWLINE+ | EOF)
+    | 'any' '(' '[' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection ']' ')' (';' | NEWLINE+ | EOF)
+    | 'any' '(' '(' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection ']' ')' (';' | NEWLINE+ | EOF)
+    | 'any' '(' '{' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection '}' ')' (';' | NEWLINE+ | EOF)
+    | 'all' '(' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection ')' (';' | NEWLINE+ | EOF)
+    | 'all' '(' '(' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection ')' ')' (';' | NEWLINE+ | EOF)
+    | 'all' '(' '[' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection ']' ')' (';' | NEWLINE+ | EOF)
+    | 'all' '(' '{' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection '}' ')' (';' | NEWLINE+ | EOF)
+    | formula_disjunction (';' | NEWLINE+ | EOF)
     ;
+
+quantifier_in_line
+    : 'any' '(' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection ')'
+    | 'any' '(' '[' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection ']' ')'
+    | 'any' '(' '(' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection ']' ')'
+    | 'any' '(' '{' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection '}' ')'
+    | 'all' '(' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection ')'
+    | 'all' '(' '(' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection ')' ')'
+    | 'all' '(' '[' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection ']' ')'
+    | 'all' '(' '{' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection '}' ')'
+    | formula_disjunction
+    ;
+
 
 formula_disjunction
     : formula_conjunction (OR formula_conjunction)*
@@ -148,9 +161,9 @@ dot_selection
     ;
 
 selection
-    : base_selection
-    | base_selection '[' rs_slices ']'
+    : base_selection '[' rs_slices ']'
     | base_selection '{' rs_pairs '}'
+    | base_selection
     ;
 
 base_selection
