@@ -247,21 +247,32 @@ class Repetition(Node):
         grammar: "Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
+        override_current_iteration: Optional[int] = None,
+        override_starting_repetition: int = 0,
+        override_iterations_to_perform: Optional[int] = None,
     ):
         prev_parent_size = parent.size()
         prev_children_len = len(parent.children)
-        self.iteration += 1
-        current_iteration = self.iteration
+        if override_current_iteration is None:
+            self.iteration += 1
+            current_iteration = self.iteration
+        else:
+            current_iteration = override_current_iteration
 
-        for rep in range(random.randint(self.min, self.max)):
+        rep_goal = random.randint(self.min, self.max)
+        if override_iterations_to_perform is not None:
+            rep_goal = override_iterations_to_perform - override_starting_repetition
+
+        for rep in range(rep_goal):
+            current_rep = rep + override_starting_repetition
             if self.node.distance_to_completion >= max_nodes:
-                if rep > self.min:
+                if rep > self.min and override_starting_repetition is None:
                     break
                 self.node.fuzz(parent, grammar, 0, in_message)
             else:
                 self.node.fuzz(parent, grammar, max_nodes - 1, in_message)
             for child in parent.children[prev_children_len:]:
-                child.origin_nodes.insert(0, (self.id, current_iteration, rep))
+                child.origin_nodes.insert(0, (self.id, current_iteration, current_rep))
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
             prev_children_len = len(parent.children)
