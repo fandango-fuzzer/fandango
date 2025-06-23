@@ -1,6 +1,7 @@
 import random
 from typing import Callable, Generator
 
+from fandango.constraints.base import RepetitionBoundsConstraint
 from fandango.errors import FandangoValueError
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
 from fandango.io.packetforecaster import PacketForecaster
@@ -111,6 +112,26 @@ class PopulationManager:
             for operator, value, side in failing_tree.suggestions:
                 if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
                     # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
+                    if isinstance(failing_tree.cause, RepetitionBoundsConstraint):
+                        iter_id, bound_len, goal_len = value
+                        bounds_constraint = failing_tree.cause
+                        prefix = failing_tree.tree.prefix()
+                        prev_children_len = len(failing_tree.tree.children)
+
+                        bounds_constraint.rep_node.fuzz(prefix, self._grammar,
+                                                        override_starting_repetition=bound_len,
+                                                        override_current_iteration=iter_id,
+                                                        override_iterations_to_perform=goal_len
+                                                        )
+                        insert_children = prefix.children[prev_children_len:]
+                        copy_parent = failing_tree.tree.parent.deepcopy(copy_children=True, copy_parent=False, copy_params=False)
+                        copy_parent.set_children(
+                            copy_parent.children[:prev_children_len]
+                            + insert_children
+                            + copy_parent.children[prev_children_len:]
+                        )
+                        replacements[failing_tree.tree.parent] = copy_parent
+                        continue
                     if (
                         isinstance(value, DerivationTree)
                         and failing_tree.tree.symbol == value.symbol

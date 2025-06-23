@@ -20,6 +20,7 @@ from fandango.constraints.fitness import (
     Comparison,
     ComparisonSide,
 )
+from fandango.language.grammar import Repetition
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -1073,7 +1074,7 @@ class RepetitionBoundsConstraint(Constraint):
         self.repetition_id = repetition_id
         self.expr_data_min = expr_data_min
         self.expr_data_max = expr_data_max
-        self.rep_node = None
+        self.rep_node: "Repetition" = None
 
     def _compute_rep_bound(self, tree: "DerivationTree", expr_data):
         expr, _, searches = expr_data
@@ -1143,7 +1144,7 @@ class RepetitionBoundsConstraint(Constraint):
         solved = 0
         total = len(reference_trees.keys())
         for call_id in reference_trees.keys():
-            ref_tree = reference_trees[call_id][0]
+            ref_tree = reference_trees[call_id][-1]
             ref_tree = ref_tree[0].prefix()
 
             bound_min = self.min(ref_tree)
@@ -1153,9 +1154,9 @@ class RepetitionBoundsConstraint(Constraint):
                 solved += 1
             else:
                 suggestions: list[tuple[Comparison, Any, ComparisonSide]] = []
-                missing_trees = random.randint(bound_min - bound_len, bound_max - bound_len)
-                #suggestions.append((Comparison.EQUAL, missing_trees, ComparisonSide.RIGHT))
-                #suggestions.append((Comparison.EQUAL, missing_trees, ComparisonSide.LEFT))
+                goal_len = random.randint(bound_min, bound_max)
+                suggestions.append((Comparison.EQUAL, (call_id[1], bound_len, goal_len), ComparisonSide.RIGHT))
+                suggestions.append((Comparison.EQUAL, (call_id[1], bound_len, goal_len), ComparisonSide.LEFT))
                 failing_trees.append(FailingTree(reference_trees[call_id][0][0], self, suggestions=suggestions))
         return ConstraintFitness(solved, total, solved == total, failing_trees=failing_trees)
 
