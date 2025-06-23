@@ -35,8 +35,7 @@ jobs:
     # Step 4: Install dependencies
     - name: Install dependencies
       run: |
-        pip install -e ".[test]"
-        pip install jupyter-book pyppeteer ghp-import black graphviz
+        pip install -e ".[book]"
 
     # Step 5: Locate Fandango and add to PATH
     - name: Locate Fandango and add to PATH

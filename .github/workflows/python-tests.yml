@@ -51,7 +51,7 @@ jobs:
       - name: Install dependencies with Makefile
         run: |
           python -m pip install --upgrade pip
-          make install-test
+          pip install -e ".[test]"
 
       # Step 7: Run tests using pytest
       - name: Run tests with pytest
