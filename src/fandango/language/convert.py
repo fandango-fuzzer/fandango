@@ -336,7 +336,40 @@ class ConstraintProcessor(FandangoParserVisitor):
             else:
                 raise FandangoValueError(f"Unknown quantifier: {ctx.getText()}")
         elif ctx.ANY() or ctx.ALL():
-            constraint = self.visitQuantifier(ctx.quantifier())
+            constraint = self.visitQuantifier_in_line(ctx.quantifier_in_line())
+            if ctx.nonterminal():
+                bound = NonTerminal(ctx.nonterminal().getText())
+            else:
+                bound = ctx.identifier().getText()
+            search = self.searches.visitStar_selection(ctx.star_selection())[1][0]
+            if ctx.ANY():
+                return ExistsConstraint(
+                    constraint,
+                    bound,
+                    search,
+                    local_variables=self.local_variables,
+                    global_variables=self.global_variables,
+                    lazy=self.lazy,
+                )
+            elif ctx.ALL():
+                return ForallConstraint(
+                    constraint,
+                    bound,
+                    search,
+                    local_variables=self.local_variables,
+                    global_variables=self.global_variables,
+                    lazy=self.lazy,
+                )
+            else:
+                raise FandangoValueError(f"Unknown quantifier: {ctx.getText()}")
+        else:
+            raise FandangoValueError(f"Unknown quantifier: {ctx.getText()}")
+
+    def visitQuantifier_in_line(self, ctx: FandangoParser.Quantifier_in_lineContext):
+        if ctx.formula_disjunction():
+            return self.visitFormula_disjunction(ctx.formula_disjunction())
+        elif ctx.ANY() or ctx.ALL():
+            constraint = self.visitQuantifier_in_line(ctx.quantifier_in_line())
             if ctx.nonterminal():
                 bound = NonTerminal(ctx.nonterminal().getText())
             else:
@@ -992,6 +1025,7 @@ class SearchProcessor(FandangoParserVisitor):
                 )
         else:
             raise FandangoValueError(f"Unsupported f-string: {ctx.getText()}")
+        # noinspection PyUnreachableCode
         return ast.JoinedStr(values=trees), searches, search_map
 
     def visitFstring_middle_no_quote(
@@ -1903,7 +1937,7 @@ class PythonProcessor(FandangoParserVisitor):
             class_ = ast.AsyncFunctionDef
         else:
             class_ = ast.FunctionDef
-        return class_(  # type: ignore[call-overload]
+        return class_(  # type: ignore[call-overload,call-arg]
             name=ctx.identifier().getText(),
             args=params,
             body=body,
@@ -1911,6 +1945,9 @@ class PythonProcessor(FandangoParserVisitor):
             returns=self.get_expression(ctx.expression()),
             type_comment=None,
             lineno=0,
+            end_lineno=0,
+            col_offset=0,
+            end_col_offset=0,
         )
 
     def visitDecorators(self, ctx: FandangoParser.DecoratorsContext):
