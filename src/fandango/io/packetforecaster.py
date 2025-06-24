@@ -374,17 +374,17 @@ class PacketForecaster:
 
         def visitRepetition(self, node: Repetition):
             return Repetition(
-                self.visit(node.node), node.id, node.expr_data_min, node.expr_data_max
+                self.visit(node.node), node.id, node.min, node.internal_max
             )
 
         def visitOption(self, node: Option):
             return Option(self.visit(node.node), node.id)
 
         def visitPlus(self, node: Plus):
-            return Plus(self.visit(node.node), node.id, node.expr_data_max)
+            return Plus(self.visit(node.node), node.id)
 
         def visitStar(self, node: Star):
-            return Star(self.visit(node.node), node.id, node.expr_data_max)
+            return Star(self.visit(node.node), node.id)
 
         def visitCharSet(self, node: CharSet):
             return CharSet(node.chars)
