@@ -13,28 +13,28 @@ from fandango.constraints.base import Constraint, SoftValue
 from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.language.tree import DerivationTree
 
-if not "readline" in globals():
+if "readline" not in globals():
     try:
         # Linux and Mac. This should do the trick.
         import gnureadline as readline  # type: ignore [import-not-found]
     except Exception:
         pass
 
-if not "readline" in globals():
+if "readline" not in globals():
     try:
         # Windows. This should do the trick.
         import pyreadline3 as readline  # type: ignore [import-not-found]
     except Exception:
         pass
 
-if not "readline" in globals():
+if "readline" not in globals():
     try:
         # Another Windows alternative
         import pyreadline as readline  # type: ignore [import-not-found]
     except Exception:
         pass
 
-if not "readline" in globals():
+if "readline" not in globals():
     try:
         # A Hail Mary Pass
         import readline
@@ -68,8 +68,6 @@ from fandango.converters.bt.BTFandangoConverter import (
 )
 from fandango.converters.dtd.DTDFandangoConverter import DTDFandangoConverter
 from fandango.converters.fan.FandangoFandangoConverter import FandangoFandangoConverter
-
-from fandango.evolution.algorithm import Fandango as FandangoStrategy
 
 from fandango.errors import FandangoParseError, FandangoError
 import fandango
@@ -585,7 +583,7 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
 
     if not in_command_line:
         # Set
-        set_parser = commands.add_parser(
+        _set_parser = commands.add_parser(
             "set",
             help="Set or print default arguments.",
             parents=[
@@ -599,7 +597,7 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
 
     if not in_command_line:
         # Reset
-        reset_parser = commands.add_parser(
+        _reset_parser = commands.add_parser(
             "reset",
             help="Reset defaults.",
         )
@@ -620,7 +618,7 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
 
     if not in_command_line:
         # Exit
-        exit_parser = commands.add_parser(
+        _exit_parser = commands.add_parser(
             "exit",
             help="Exit Fandango.",
         )
@@ -678,13 +676,13 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
     )
 
     # Copyright
-    copyright_parser = commands.add_parser(
+    _copyright_parser = commands.add_parser(
         "copyright",
         help="Show copyright.",
     )
 
     # Version
-    version_parser = commands.add_parser(
+    _version_parser = commands.add_parser(
         "version",
         help="Show version.",
     )
@@ -1521,31 +1519,29 @@ def talk_command(args: argparse.Namespace) -> None:
     LOGGER.info(f"File mode: {file_mode}")
 
     LOGGER.debug("Starting Fandango")
-    fandango_strategy = FandangoStrategy(grammar=grammar, constraints=constraints)
-    fandango_strategy.evolve()
 
-    # fandango = Fandango._with_parsed(
-    #     grammar,
-    #     constraints,
-    #     start_symbol=args.start_symbol,
-    #     logging_level=LOGGER.getEffectiveLevel(),
-    # )
-    # LOGGER.debug("Evolving population")
+    fandango = Fandango._with_parsed(
+        grammar=grammar,
+        constraints=constraints,
+        start_symbol=args.start_symbol,
+        logging_level=LOGGER.getEffectiveLevel(),
+    )
+    LOGGER.debug("Evolving population")
 
-    # def solutions_callback(sol, i):
-    #     return output_solution(sol, args, i, file_mode)
+    def solutions_callback(sol, i):
+        return output_solution(sol, args, i, file_mode)
 
-    # max_generations = args.max_generations
-    # desired_solutions = args.desired_solutions
-    # infinite = args.infinite
+    max_generations = args.max_generations
+    desired_solutions = args.desired_solutions
+    infinite = args.infinite
 
-    # fandango.fuzz(
-    #     solution_callback=solutions_callback,
-    #     max_generations=max_generations,
-    #     desired_solutions=desired_solutions,
-    #     infinite=infinite,
-    #     **settings,
-    # )
+    fandango.fuzz(
+        solution_callback=solutions_callback,
+        max_generations=max_generations,
+        desired_solutions=desired_solutions,
+        infinite=infinite,
+        **settings,
+    )
 
 
 def convert_command(args: argparse.Namespace) -> None:
@@ -1584,12 +1580,7 @@ def convert_command(args: argparse.Namespace) -> None:
             temp_file.flush()
             input_file = temp_file.name
 
-        converter: (
-            ANTLRFandangoConverter
-            | DTDFandangoConverter
-            | BTFandangoConverter
-            | FandangoFandangoConverter
-        )
+        converter: FandangoConverter
         match from_format:
             case "antlr" | "g4":
                 converter = ANTLRFandangoConverter(input_file)
@@ -1632,7 +1623,7 @@ def clear_command(args: argparse.Namespace) -> None:
     elif os.path.exists(CACHE_DIR):
         print(f"Clearing {CACHE_DIR}...", file=sys.stderr, end="")
         clear_cache()
-        print(f"done", file=sys.stderr)
+        print("done", file=sys.stderr)
 
 
 def nop_command(args: argparse.Namespace) -> None:
@@ -1795,7 +1786,7 @@ def shell_command(args: argparse.Namespace) -> None:
     PROMPT = "(fandango)"
 
     def _read_history() -> None:
-        if not "readline" in globals():
+        if "readline" not in globals():
             return
 
         histfile = os.path.join(os.path.expanduser("~"), ".fandango_history")
@@ -1810,7 +1801,7 @@ def shell_command(args: argparse.Namespace) -> None:
         atexit.register(readline.write_history_file, histfile)
 
     def _complete(text: str, state: int) -> str | None:
-        if not "readline" in globals():
+        if "readline" not in globals():
             return None
 
         global MATCHES
@@ -1831,8 +1822,6 @@ def shell_command(args: argparse.Namespace) -> None:
 
         version_command(argparse.Namespace())
         print("Type a command, 'help', 'copyright', 'version', or 'exit'.")
-
-    last_status = 0
 
     while True:
         if sys.stdin.isatty():
