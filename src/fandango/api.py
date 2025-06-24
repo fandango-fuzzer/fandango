@@ -257,13 +257,13 @@ class Fandango(FandangoBase):
         if mode == FuzzingMode.IO:
             match desired_solutions:
                 case None:
-                    LOGGER.warn(
+                    LOGGER.warning(
                         "Fandango IO will only return a single solution for now, manually set with -n 1 to hide this warning"
                     )
                 case 1:
                     pass
                 case _:
-                    LOGGER.warn(
+                    LOGGER.warning(
                         "Fandango IO only supports desired-solution values of 1 for now, overriding value"
                     )
             desired_solutions = 1
