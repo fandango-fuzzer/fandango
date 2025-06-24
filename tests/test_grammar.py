@@ -52,7 +52,7 @@ class ConstraintTest(unittest.TestCase):
 
     @staticmethod
     def get_solutions(grammar, constraints):
-        fandango = Fandango(grammar=grammar, constraints=constraints)
+        fandango = Fandango(grammar=grammar, constraints=constraints, population_size=1, elitism_rate=1.0)
         return [next(fandango.generate())]
 
     def test_generators(self):

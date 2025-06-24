@@ -1117,39 +1117,41 @@ class RepetitionBoundsConstraint(Constraint):
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the number of repetitions of the pattern.
-        :param DerivationTree tree: The tree to evaluate.
+        :param DerivationTree id_tree: The tree to evaluate.
         :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
         :param Optional[list[DerivationTree]] population: The population of trees.
         :param Optional[dict[str, Any]] local_variables: Local variables to use in the evaluation.
         :return ConstraintFitness: The fitness of the tree.
         """
-        trees = tree.find_by_origin(self.repetition_id)
-        if len(trees) == 0:
+        id_trees = tree.find_by_origin(self.repetition_id)
+        if len(id_trees) == 0:
             return ConstraintFitness(0, 1, True)
-        reference_trees: dict[tuple[str, int], list[list[DerivationTree]]] = {}
-        for tree in trees:
-            iteration_ids: list[tuple[str, int, int]] = list(filter(lambda x: x[0] == self.repetition_id, tree.origin_nodes))
+        reference_trees: dict[tuple[str, int], dict[int, list[DerivationTree]]] = {}
+        for id_tree in id_trees:
+            iteration_ids: list[tuple[str, int, int]] = list(filter(lambda x: x[0] == self.repetition_id, id_tree.origin_nodes))
             for i_id in iteration_ids:
                 call_id = tuple[str, int](i_id[:2])
                 rep_round = i_id[2]
                 # Group by id and repetition round
 
                 if call_id not in reference_trees:
-                    reference_trees[call_id] = []
+                    reference_trees[call_id] = dict()
                 iter_list = reference_trees[call_id]
-                if len(iter_list) <= rep_round:
-                    iter_list.insert(rep_round, [])
-                iter_list[rep_round].append(tree)
+                if rep_round not in iter_list:
+                    iter_list[rep_round] = []
+                iter_list[rep_round].append(id_tree)
         failing_trees = []
         solved = 0
         total = len(reference_trees.keys())
         for call_id in reference_trees.keys():
-            ref_tree = reference_trees[call_id][-1]
-            ref_tree = ref_tree[0].prefix()
+            iter_list = reference_trees[call_id]
+            smallest_rep = min(iter_list.keys())
+            ref_tree = iter_list[smallest_rep]
+            prefix_tree = ref_tree[0].prefix()
 
-            bound_min = self.min(ref_tree)
-            bound_max = self.max(ref_tree)
-            bound_len = len(reference_trees[call_id])
+            bound_min = self.min(prefix_tree)
+            bound_max = self.max(prefix_tree)
+            bound_len = len(iter_list)
             if bound_min <= bound_len <= bound_max:
                 solved += 1
             else:
@@ -1157,7 +1159,7 @@ class RepetitionBoundsConstraint(Constraint):
                 goal_len = random.randint(bound_min, bound_max)
                 suggestions.append((Comparison.EQUAL, (call_id[1], bound_len, goal_len), ComparisonSide.RIGHT))
                 suggestions.append((Comparison.EQUAL, (call_id[1], bound_len, goal_len), ComparisonSide.LEFT))
-                failing_trees.append(FailingTree(reference_trees[call_id][0][0], self, suggestions=suggestions))
+                failing_trees.append(FailingTree(ref_tree[0], self, suggestions=suggestions))
         return ConstraintFitness(solved, total, solved == total, failing_trees=failing_trees)
 
 
