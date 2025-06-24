@@ -120,6 +120,7 @@ Fandango will overwrite files `Fandango-0001.txt`, `Fandango-0002.txt`, etc., bu
 If you want a different file extension (for instance, because `.txt` is not suitable), Fandango provides a `--filename-extension` option to set a different one.
 
 
+(sec:invoke-targets)=
 ## Invoking Programs Directly
 
 You can have Fandango invoke _programs directly_, and have Fandango feed them the generated inputs.
@@ -211,3 +212,18 @@ If the above does not work on your system, try skipping the `-S` option, such th
 #!/usr/bin/env fandango fuzz -f
 ```
 :::
+
+## Running Fuzzing Campaigns
+
+So far, we have only produced a limited number of outputs. This can be done in two ways: By limiting the number of generations for the evaluation or by capping the number of solutions:
+
+```bash
+$ fandango fuzz -f persons.fan -n 10 # to limit the number of solutions
+$ fandango fuzz -f persons.fan -N 10 # to limit the number of generations
+```
+
+To run fuzzing continuously, consider specifying `--infinite` to keep Fandango producing inputs indefinitely. You likely want to combine this with one of the configurations where Fandango [executes your target directly](sec:invoke-targets) like so:
+
+```bash
+$ fandango fuzz -f persons.fan --infinite --input-method=libfuzzer --file-mode=binary ./harness.{so,dylib}
+```
