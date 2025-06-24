@@ -102,11 +102,6 @@ These include
 * Negations (`~`) over complex expressions
 ```
 
-<!-- Let's do some cleanup -->
-```{code-cell}
-:tags: ["remove-input"]
-!rm Calculator.fan
-```
 
 (sec:bt2fan)=
 ## Converting 010 Binary Templates
