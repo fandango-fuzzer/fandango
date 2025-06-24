@@ -254,6 +254,16 @@ class Fandango(FandangoBase):
             self.init_population(extra_constraints=extra_constraints, **settings)
         assert self.fandango is not None
 
+        if (
+            mode == FuzzingMode.IO
+            and desired_solutions is not None
+            and desired_solutions != 1
+        ):
+            LOGGER.warn(
+                "Fandango IO only supports desired_solution values of 1 for now, overriding value"
+            )
+            desired_solutions = 1
+
         if max_generations is None and desired_solutions is None and not infinite:
             LOGGER.info(
                 f"Infinite is not set and neither max_generations nor desired_solutions are specified. Limiting to default max_generations of {DEFAULT_MAX_GENERATIONS}"
