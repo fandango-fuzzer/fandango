@@ -208,7 +208,7 @@ class Concatenation(Node):
 
 class Repetition(Node):
     def __init__(
-        self, node: Node, id: str = "", min_: int = 0, max_: int = MAX_REPETITIONS, bounds_constraint: Optional['RepetitionBoundsConstraint'] = None
+        self, node: Node, id: str = "", min_: int = 0, max_: int = None, bounds_constraint: Optional['RepetitionBoundsConstraint'] = None
     ):
         super().__init__(NodeType.REPETITION)
         self.id = id
@@ -225,18 +225,18 @@ class Repetition(Node):
         self.node = node
         self.bounds_constraint = bounds_constraint
         self.min = min_
-        self.max = max_
+        self._max = max_
         self.iteration = 0
 
-    def get_access_points(self):
-        _, _, searches_min = self.expr_data_min
-        _, _, searches_max = self.expr_data_max
-        non_terminals = set[NonTerminal]()
-        for search_list in [searches_min, searches_max]:
-            for search in search_list.values():
-                for nt in search.get_access_points():
-                    non_terminals.add(nt)
-        return non_terminals
+    @property
+    def internal_max(self):
+        return self._max
+
+    @property
+    def max(self):
+        if self._max is None:
+            return MAX_REPETITIONS
+        return self._max
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitRepetition(self)
@@ -278,7 +278,6 @@ class Repetition(Node):
             prev_children_len = len(parent.children)
 
     def __repr__(self):
-
         if self.min == self.max:
             return f"{self.node}{{{self.min}}}"
         return f"{self.node}{{{self.min},{self.max}}}"
@@ -310,8 +309,8 @@ class Repetition(Node):
 
 
 class Star(Repetition):
-    def __init__(self, node: Node, id: str = "", max_repetitions: int = MAX_REPETITIONS):
-        super().__init__(node, id, min_=0, max_=max_repetitions)
+    def __init__(self, node: Node, id: str = ""):
+        super().__init__(node, id, min_=0)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitStar(self)
@@ -324,8 +323,8 @@ class Star(Repetition):
 
 
 class Plus(Repetition):
-    def __init__(self, node: Node, id: str = "", max_repetitions: int = MAX_REPETITIONS):
-        super().__init__(node, id, min_=1, max_=max_repetitions)
+    def __init__(self, node: Node, id: str = ""):
+        super().__init__(node, id, min_=1)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitPlus(self)

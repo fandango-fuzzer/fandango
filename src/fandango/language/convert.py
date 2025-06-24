@@ -191,7 +191,7 @@ class GrammarProcessor(FandangoParserVisitor):
                                 search_bound[2],
                             )
 
-            max_arg = self.max_repetitions
+            max_arg = None
             min_arg = 0
             require_constraint = False
             bounds_constraint = None
