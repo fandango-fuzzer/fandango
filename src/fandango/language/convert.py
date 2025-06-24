@@ -14,7 +14,7 @@ from fandango.constraints.base import (
     SoftValue, RepetitionBoundsConstraint,
 )
 from fandango.constraints.fitness import Comparison
-from fandango.language import NonTerminalSearch
+from fandango.language import NonTerminalSearch, NodeType
 from fandango.language.grammar import (
     Alternative,
     CharSet,
@@ -134,7 +134,7 @@ class GrammarProcessor(FandangoParserVisitor):
             return nodes[0]
         self.seenAlternatives += 1
         nid = self.seenAlternatives
-        return Alternative(nodes, f"{nid}_{self.id_prefix}")
+        return Alternative(nodes, f"{NodeType.ALTERNATIVE}:{nid}_{self.id_prefix}")
 
     def visitConcatenation(self, ctx: FandangoParser.ConcatenationContext):
         nodes = [self.visitOperator(child) for child in ctx.operator()]
@@ -142,27 +142,27 @@ class GrammarProcessor(FandangoParserVisitor):
             return nodes[0]
         self.seenConcatenations += 1
         nid = self.seenConcatenations
-        return Concatenation(nodes, f"{nid}_{self.id_prefix}")
+        return Concatenation(nodes, f"{NodeType.CONCATENATION}:{nid}_{self.id_prefix}")
 
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
         self.seenStars += 1
         nid = self.seenStars
-        return Star(self.visit(ctx.symbol()), f"{nid}_{self.id_prefix}")
+        return Star(self.visit(ctx.symbol()), f"{NodeType.STAR}:{nid}_{self.id_prefix}")
 
     def visitPlus(self, ctx: FandangoParser.PlusContext):
         self.seenPluses += 1
         nid = self.seenPluses
-        return Plus(self.visit(ctx.symbol()), f"{nid}_{self.id_prefix}")
+        return Plus(self.visit(ctx.symbol()), f"{NodeType.PLUS}:{nid}_{self.id_prefix}")
 
     def visitOption(self, ctx: FandangoParser.OptionContext):
         self.seenOptions += 1
         nid = self.seenOptions
-        return Option(self.visit(ctx.symbol()), f"{nid}_{self.id_prefix}")
+        return Option(self.visit(ctx.symbol()), f"{NodeType.OPTION}:{nid}_{self.id_prefix}")
 
     def visitRepeat(self, ctx: FandangoParser.RepeatContext):
         node = self.visitSymbol(ctx.symbol())
         self.seenRepetitions += 1
-        nid = f"{self.seenRepetitions}_{self.id_prefix}"
+        nid = f"{NodeType.REPETITION}:{self.seenRepetitions}_{self.id_prefix}"
         min_ = None
         max_ = None
         if ctx.COMMA():

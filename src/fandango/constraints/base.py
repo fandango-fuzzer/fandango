@@ -1075,6 +1075,26 @@ class RepetitionBoundsConstraint(Constraint):
         self.repetition_id = repetition_id
         self.expr_data_min = expr_data_min
         self.expr_data_max = expr_data_max
+        self.search_min = expr_data_min[1]
+        self.search_max = expr_data_max[1]
+        if len(self.search_min) == 0:
+            self.search_min = None
+        elif len(self.search_min) == 1:
+            self.search_min = self.search_min[0]
+        else:
+            raise FandangoValueError(
+                "RepetitionBoundsConstraint requires exactly one or zero searches for expr_data_max bound"
+            )
+
+        if len(self.search_max) == 0:
+            self.search_max = None
+        elif len(self.search_max) == 1:
+            self.search_max = self.search_max[0]
+        else:
+            raise FandangoValueError(
+                "RepetitionBoundsConstraint requires exactly one or zero searches for expr_data_max bound"
+            )
+
         self.rep_node: "Repetition" = None
 
     def _compute_rep_bound(self, tree: "DerivationTree", expr_data):
@@ -1166,9 +1186,13 @@ class RepetitionBoundsConstraint(Constraint):
 
 
     def __repr__(self):
-        expr_min, _, _ = self.expr_data_min
-        expr_max, _, _ = self.expr_data_max
-        return f"RepetitionBounds({expr_min} <= |{self.repetition_id}| <= {expr_max})"
+        print_min = self.search_min
+        if print_min is None:
+            print_min, _, _ = self.expr_data_min
+        print_max = self.search_max
+        if print_max is None:
+            print_max, _, _ = self.expr_data_max
+        return f"RepetitionBounds({print_min} <= |{repr(self.rep_node.node)}| <= {print_max})"
 
     def __str__(self):
         return repr(self)
