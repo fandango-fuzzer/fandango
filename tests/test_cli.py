@@ -209,3 +209,22 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
         self.assertEqual("", err)
         self.assertTrue(out.startswith("<_char> ::= r'(.|\\n)'\n"))
         self.assertTrue(out.endswith("<age> ::= <digit>+\n"))
+
+    def test_talk_cat(self):
+        command = shlex.split(
+            f"fandango -v talk -n 1 -f {DOCS_ROOT / "cat.fan"} cat"
+        )
+        out, err, code = self.run_command(command)
+        err = err.split("\n")
+
+        filter_prefixes = [
+            'fandango:INFO: In:',
+            'fandango:INFO: Out:'
+        ]
+        io_logs = list(filter(lambda x: any(filter(lambda b: x.startswith(b), filter_prefixes)), err))
+        self.assertEqual(2, len(io_logs))
+        result_a = io_logs[0].split(": ", 2)[2]
+        result_b = io_logs[0].split(": ", 2)[2]
+        self.assertEqual(result_a, result_b)
+        self.assertEqual(0, code)
+        self.assertEqual("", out)
