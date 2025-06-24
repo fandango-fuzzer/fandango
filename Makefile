@@ -34,18 +34,18 @@ $(EGG_INFO)/PKG-INFO: pyproject.toml
 UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 # Mac
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz # clang is installed by default on Mac
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli # clang is installed by default on Mac
 SYSTEM_DEV_INSTALL = brew install
 else
 # Linux
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz clang
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz clang mermaid-cli
 SYSTEM_DEV_INSTALL = apt-get install
 endif
 
 
 dev-tools: system-dev-tools
 	$(PIP) install -e ".[development]"
-	
+
 system-dev-tools:
 	$(SYSTEM_DEV_INSTALL) $(SYSTEM_DEV_TOOLS)
 
