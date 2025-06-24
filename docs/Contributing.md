@@ -75,18 +75,6 @@ Install `antlr` and other system-level tools:
 $ make system-dev-tools
 ```
 
-Install `jupyter-book` and other Python tools:
-
-```shell
-$ make dev-tools
-```
-
-Install `pytest` and required files:
-
-```shell
-$ make install-test
-```
-
 (sec:pip-install)=
 ### Step 5: Install Fandango
 
@@ -94,6 +82,18 @@ Install your local copy of Fandango:
 
 ```shell
 $ python -m pip install -e .
+```
+
+To install additional dependencies for unit tests, code checks, running the evaluation, and building the Fandango book, install Fandango like this (or with the subsection of dependencies you need):
+
+```shell
+$ python -m pip install -e ".[test,development,evaluation,book]"
+```
+
+If you don't need the (much faster) C++ parser, build Fandango without:
+
+```shell
+$ FANDANGO_SKIP_CPP_PARSER=1 python -m pip install -e .
 ```
 
 Reset the shell PATH cache (not necessary on Windows):
@@ -127,11 +127,10 @@ or simply
 $ pytest
 ```
 
-To run tests in parallel, you can use [pytest-xdist](https://pytest-xdist.readthedocs.io/en/stable/):
+To run tests in parallel, you can use [pytest-xdist](https://pytest-xdist.readthedocs.io/en/stable/) (installed with the `test` depenendencies):
 
 ```shell
-pip install pytest-xdist
-pytest -n auto
+$ pytest -n auto
 ```
 
 ### Pre-commit
@@ -139,8 +138,8 @@ pytest -n auto
 Fandango provides a config file for `pre-commit`. To install it, run the following:
 
 ```shell
-pip install pre-commit
-pre-commit install
+$ pip install pre-commit
+$ pre-commit install
 ```
 
 This will run code formatting and type checking before every commit.

@@ -109,7 +109,7 @@ class GeneticTest(unittest.TestCase):
             target_population_size=initial_count,
         )
 
-        list(generator)  # drain solutions found in the first generation
+        _initial_solutions = list(generator)  # drain initial solutions
 
         copy_of_initial_population = deepcopy(population)
 

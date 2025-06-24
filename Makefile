@@ -22,13 +22,6 @@ all: package-info parser html web pdf
 
 .PHONY: web all parser install dev-tools docs html latex pdf
 
-
-## Requirements (no longer used)
-
-# requirements.txt:	pyproject.toml
-# 	pip-compile $<
-
-
 ## Package info
 EGG_INFO = src/fandango_fuzzer.egg-info
 
@@ -41,20 +34,18 @@ $(EGG_INFO)/PKG-INFO: pyproject.toml
 UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 # Mac
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz # clang is installed by default on Mac
 SYSTEM_DEV_INSTALL = brew install
 else
 # Linux
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz clang
 SYSTEM_DEV_INSTALL = apt-get install
 endif
 
 
 dev-tools: system-dev-tools
-	pip install -U black
-	pip install -U jupyter-book pyppeteer ghp-import pagelabels 
-	pip install -U graphviz
-
+	$(PIP) install -e ".[development]"
+	
 system-dev-tools:
 	$(SYSTEM_DEV_INSTALL) $(SYSTEM_DEV_TOOLS)
 
@@ -252,16 +243,9 @@ run-all: $(TEST_MARKER) $(EVALUATION_MARKER) $(EXPERIMENTS_MARKER)
 	@echo 'All tests passed.'
 
 ## Installation
-.PHONY: install install-test install-tests
+.PHONY: install
 install:
 	$(PIP) install -e .
-
-
-# We separate _installing_ from _running_ tests
-# so we can run 'make tests' quickly (see above)
-# without having to reinstall things
-install-test install-tests:
-	$(PIP) install -e ".[test]"
 
 uninstall:
 	$(PIP) uninstall fandango-fuzzer -y

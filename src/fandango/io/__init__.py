@@ -345,8 +345,8 @@ class ConnectParty(FandangoParty):
 
     def __init__(
         self,
-        *,
         uri: str,
+        *,
         ownership: Ownership = Ownership.FANDANGO_PARTY,
         endpoint_type: EndpointType = EndpointType.CONNECT,
     ):
