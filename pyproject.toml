@@ -70,9 +70,8 @@ test = [
     "tccbox",
 ]
 
-[tool.setuptools]
-package-dir = {"" = "src"}
-packages = ["fandango"]
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [project.urls]
 homepage = "https://fandango-fuzzer.github.io/"
