@@ -53,13 +53,9 @@ test = [
     "python-dateutil>=2.9.0.post0",
 ]
 
-black = [
-    "black>=25.1.0",
-]
-
 development = [
     "fandango-fuzzer[test]",
-    "fandango-fuzzer[black]",
+    "black>=25.1.0",
     "mypy>=1.16.0",
     "pygls>=2.0.0a4", # language server
     "speedy-antlr-tool>=1.4.3",
@@ -71,7 +67,7 @@ evaluation = [
 ]
 
 book = [
-    "fandango-fuzzer[black]",
+    "fandango-fuzzer[development]", # need black and faker
     "aiosmtpd>=1.4.6",  # example server for protocol testing
     "docutils>=0.20.1",  # Jupyter-book needs docutils<=0.20
     "ghp-import>=2.1.0",
