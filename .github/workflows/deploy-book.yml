@@ -25,6 +25,7 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: 3.13
+        cache: "pip"
 
     # Step 3: Ensure Graphviz system package is installed
     - name: Install Graphviz system package
@@ -45,11 +46,9 @@ jobs:
         fandango --help
 
     # Step 6: Build the documentation
-    # (Consider 'make html' as an alternative that also checks for errors)
     - name: Build the book
       run: |
-        JUPYTER_BOOK=1 jupyter-book build docs
-        (cd docs; sh ./patch-html.sh)
+        make html
 
     # Step 7: Clone the target repository
     - name: Clone the target repository
