@@ -71,6 +71,7 @@ class DerivationTree:
         sender: Optional[str] = None,
         recipient: Optional[str] = None,
         read_only: Optional[bool] = False,
+        origin_nodes: Optional[list[tuple[str, int, int]]] = None,
     ):
         """
         Create a new derivation tree node.
@@ -92,7 +93,9 @@ class DerivationTree:
         self._sources: list["DerivationTree"] = []
         if sources is not None:
             self.sources = sources
-        self.origin_nodes: list[tuple[str, int, int]] = []
+        if origin_nodes is None:
+            origin_nodes = []
+        self.origin_nodes: list[tuple[str, int, int]] = origin_nodes
         self.read_only = read_only
         self._size = 1
         self.set_children(children or [])
@@ -399,8 +402,8 @@ class DerivationTree:
             recipient=self.recipient,
             sources=[],
             read_only=self.read_only,
+            origin_nodes=list(self.origin_nodes),
         )
-        copied.origin_nodes = list(self.origin_nodes)
         memo[id(self)] = copied
 
         # Deepcopy the children
@@ -839,6 +842,7 @@ class DerivationTree:
             recipient=self.recipient,
             sources=sources,
             read_only=self.read_only,
+            origin_nodes=list(self.origin_nodes),
         )
 
         # Update children match generator parameters, if parameters updated
