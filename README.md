@@ -3,7 +3,7 @@
 [![Python Tests](https://github.com/fandango-fuzzer/fandango/actions/workflows/python-tests.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/python-tests.yml)
 [![GitHub Pages](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-book.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-book.yml)
 [![CodeQL](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql)
-<!-- [![PyPI](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-pypi.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-pypi.yml) -→
+<!-- [![PyPI](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-pypi.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-pypi.yml) -->
 [![Docker Image](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-docker.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-docker.yml)
 [![Socket Badge](https://socket.dev/api/badge/pypi/package/fandango-fuzzer/0.1.0?artifact_id=tar-gz)](https://socket.dev/pypi/package/fandango-fuzzer/overview/0.1.0/tar-gz)
 
