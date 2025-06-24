@@ -196,7 +196,7 @@ test: $(PYTHON_SOURCES) $(TEST_SOURCES)
 
 # As above, but run tests in parallel
 tests $(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
-	$(PYTEST) -n auto
+	$(PYTEST) -n auto --timeout 180
 	echo 'Success' > $(TEST_MARKER)
 
 COVERAGE = coverage.xml
