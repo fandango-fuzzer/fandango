@@ -51,10 +51,8 @@ endif
 
 
 dev-tools: system-dev-tools
-	pip install -U black
-	pip install -U jupyter-book pyppeteer ghp-import pagelabels 
-	pip install -U graphviz
-
+	$(PIP) install -e ".[development]"
+	
 system-dev-tools:
 	$(SYSTEM_DEV_INSTALL) $(SYSTEM_DEV_TOOLS)
 
