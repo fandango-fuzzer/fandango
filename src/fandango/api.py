@@ -180,7 +180,7 @@ class Fandango(FandangoBase):
         """
         LOGGER.info("---------- Initializing base population ----------")
 
-        start_symbol = settings.pop("start_symbol") or self._start_symbol
+        start_symbol = settings.pop("start_symbol", self._start_symbol)
 
         constraints = self.constraints[:]
         if extra_constraints:
