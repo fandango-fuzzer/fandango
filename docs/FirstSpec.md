@@ -13,10 +13,6 @@ kernelspec:
 (sec:first-spec)=
 # A First Fandango Spec
 
-```{tip}
-To write extended Fandango Specs, you may want to use the [Fandango language server and an IDE extension](sec:language-server).
-```
-
 To create test inputs, Fandango needs a _Fandango spec_ – a file that describes how the input should be structured.
 
 A Fandango specification contains three types of elements:
@@ -26,6 +22,11 @@ A Fandango specification contains three types of elements:
 * Optionally, _definitions_ of functions and constants within these constraints.
 
 Only the first of these (the _grammar_) is actually required.
+
+```{margin}
+For writing extended Fandango Specs, check out our [Fandango language server and an IDE extension](sec:language-server).
+```
+
 Here is a very simple Fandango grammar that will get us started:
 
 ```{code-cell}
@@ -59,4 +60,4 @@ So,
 * each `<digit>` becomes a digit from zero to nine;
 * and in the end, we get a string such as `8347`, `66`, `2`, or others.
 
-Let us try this right away by [_invoking Fandango_](sec:Invoking).
+Let us try generating inputs with this right away by [_invoking Fandango_](sec:Invoking).
