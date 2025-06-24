@@ -117,19 +117,20 @@ class PopulationManager:
                         bounds_constraint = failing_tree.cause
                         if goal_len > bound_len:
                             prefix = failing_tree.tree.prefix()
-                            prev_children_len = len(failing_tree.tree.children)
+                            prev_prefix_children_len = len(prefix.children)
+                            insertion_index = len(failing_tree.tree.split_end().parent.children)
 
                             bounds_constraint.rep_node.fuzz(prefix, self._grammar,
                                                             override_starting_repetition=bound_len,
                                                             override_current_iteration=iter_id,
                                                             override_iterations_to_perform=goal_len
                                                             )
-                            insert_children = prefix.children[prev_children_len:]
+                            insert_children = prefix.children[prev_prefix_children_len:]
                             copy_parent = failing_tree.tree.parent.deepcopy(copy_children=True, copy_parent=False, copy_params=False)
                             copy_parent.set_children(
-                                copy_parent.children[:prev_children_len]
+                                copy_parent.children[:insertion_index]
                                 + insert_children
-                                + copy_parent.children[prev_children_len:]
+                                + copy_parent.children[insertion_index:]
                             )
                             replacements[failing_tree.tree.parent] = copy_parent
                         else:
