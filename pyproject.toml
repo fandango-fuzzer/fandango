@@ -31,14 +31,13 @@ dependencies = [
     "ansi_styles>=0.2.2",
     "antlr4-python3-runtime>=4.13",
     "cachedir_tag>=0.0.3",
-    "deprecation>=2.1.0",
     "dill>=0.3.7",
     "exrex>=0.12.0",
     "gnureadline>=8.2.13 ; platform_system != 'Windows' and implementation_name != 'pypy'",
     "lxml>=5.3.2",
     "py010parser>=0.1.18",
-    "pygls>=2.0.0a4",
     "pyreadline3>=3.5.4; platform_system == 'Windows'",
+    "regex>=2024.11.6",
     "tdigest>=0.5.2.2",
     "thefuzz>=0.22",
     "xdg-base-dirs>=6.0.2",
@@ -46,28 +45,36 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-    "aiosmtpd>=1.4.6",  # example server for protocol testing
-    "cryptography>=44.0.1",
-    "deap>=1.4.1",
-    "docutils>=0.20.1",  # Jupyter-book needs docutils<=0.20
     "Faker>=30.4.0",
-    "jupyter-book>=1.0.4",
-    "matplotlib>=3.9.2",
-    "mypy>=1.16.0",
-    "numpy>=2.2.1",  # Avoid conflict with pandas
-    "ordered-set>=4.0.2",
-    "pagelabels>=1.2.1",
-    "parameterized>=0.8.1",
+    "pytest>=8.3.5",
     "pytest-cov>=4.1.0",
     "pytest-html>=3.2.0",
     "pytest-rerunfailures>=11.1.2",
     "pytest-xdist>=3.7.0",
-    "pytest>=8.3.5",
     "python-dateutil>=2.9.0.post0",
-    "scipy>=1.14.1",
+]
+
+development = [
+    "black>=25.1.0",
+    "mypy>=1.16.0",
+    "pygls>=2.0.0a4", # language server
     "speedy-antlr-tool>=1.4.3",
+]
+
+evaluation = [
+    "cryptography>=44.0.1",
+    "tccbox>=2025.6.6",
+]
+
+book = [
+    "aiosmtpd>=1.4.6",  # example server for protocol testing
+    "docutils>=0.20.1",  # Jupyter-book needs docutils<=0.20
+    "ghp-import>=2.1.0",
+    "graphviz>=0.20.3",
+    "jupyter-book>=1.0.4",
+    "pagelabels>=1.2.1",
+    "pyppeteer>=2.0.0",
     "sphinxcontrib-mermaid>=1.0.0",
-    "tccbox",
 ]
 
 [tool.setuptools.packages.find]

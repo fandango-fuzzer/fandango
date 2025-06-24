@@ -102,12 +102,14 @@ class GeneticTest(unittest.TestCase):
         population: list[DerivationTree] = []
 
         # add some initial individuals
-        manager.refill_population(
+        generator = manager.refill_population(
             current_population=population,
             eval_individual=self.fandango.evaluator.evaluate_individual,
             max_nodes=self.fandango.current_max_nodes,
             target_population_size=initial_count,
         )
+
+        _initial_solutions = list(generator)  # drain initial solutions
 
         copy_of_initial_population = deepcopy(population)
 
