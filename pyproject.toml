@@ -44,6 +44,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+    "beartype>=0.21.0",
     "Faker>=30.4.0",
     "pytest>=8.3.5",
     "pytest-cov>=4.1.0",
@@ -55,9 +56,9 @@ test = [
 
 development = [
     "fandango-fuzzer[test]",
-    "beartype>=0.21.0",
     "black>=25.1.0",
     "mypy>=1.16.0",
+    "pre-commit>=4.2.0"
     "pygls>=2.0.0a4", # language server
     "speedy-antlr-tool>=1.4.3",
 ]
