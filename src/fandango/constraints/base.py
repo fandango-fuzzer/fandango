@@ -531,8 +531,9 @@ class ComparisonConstraint(Constraint):
                 for _, container in combination:
                     for node in container.get_trees():
                         ft = FailingTree(node, self, suggestions=suggestions)
-                        if ft not in failing_trees:
-                            failing_trees.append(ft)
+                        #if ft not in failing_trees:
+                            #failing_trees.append(ft)
+                        failing_trees.append(ft)
 
         if not has_combinations:
             solved += 1
@@ -1155,10 +1156,11 @@ class RepetitionBoundsConstraint(Constraint):
             if bound_min <= bound_len <= bound_max:
                 solved += 1
             else:
+                iter_id = call_id[1]
                 suggestions: list[tuple[Comparison, Any, ComparisonSide]] = []
                 goal_len = random.randint(bound_min, bound_max)
-                suggestions.append((Comparison.EQUAL, (call_id[1], bound_len, goal_len), ComparisonSide.RIGHT))
-                suggestions.append((Comparison.EQUAL, (call_id[1], bound_len, goal_len), ComparisonSide.LEFT))
+                suggestions.append((Comparison.EQUAL, (iter_id, bound_len, goal_len), ComparisonSide.RIGHT))
+                suggestions.append((Comparison.EQUAL, (iter_id, bound_len, goal_len), ComparisonSide.LEFT))
                 failing_trees.append(FailingTree(ref_tree[0], self, suggestions=suggestions))
         return ConstraintFitness(solved, total, solved == total, failing_trees=failing_trees)
 
