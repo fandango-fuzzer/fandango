@@ -86,7 +86,7 @@ class Node(abc.ABC):
             child.slice_parties(parties)
 
     def in_parties(self, parties: list[str]) -> bool:
-        return False
+        return True
 
     def children(self):
         return []
@@ -142,7 +142,7 @@ class Alternative(Node):
 
     def slice_parties(self, parties: list[str]) -> None:
         self.alternatives = [
-            node for node in self.alternatives if not node.in_parties(parties)
+            node for node in self.alternatives if node.in_parties(parties)
         ]
 
     def __getitem__(self, item):
@@ -190,7 +190,7 @@ class Concatenation(Node):
         return self.nodes
 
     def slice_parties(self, parties: list[str]) -> None:
-        self.nodes = [node for node in self.nodes if not node.in_parties(parties)]
+        self.nodes = [node for node in self.nodes if node.in_parties(parties)]
 
     def __getitem__(self, item):
         return self.nodes.__getitem__(item)
@@ -523,7 +523,7 @@ class NonTerminalNode(Node):
         yield grammar.rules[self.symbol]
 
     def in_parties(self, parties: list[str]) -> bool:
-        return self.sender in parties
+        return not self.sender or self.sender in parties
 
 
 class TerminalNode(Node):

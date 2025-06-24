@@ -76,7 +76,7 @@ jobs:
       - name: Install dependencies
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
-          FANDANGO_SKIP_CPP_PARSER=1 pip install -e ".[test]"
+          FANDANGO_SKIP_CPP_PARSER=1 pip install mypy -e .
 
       # Step 5: Run mypy on changed files
       - name: Run mypy on changed files

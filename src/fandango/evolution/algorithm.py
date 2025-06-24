@@ -86,6 +86,7 @@ class Fandango:
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
         self.current_max_nodes = 50
+        self.remote_response_timeout = 15.0
 
         # Instantiate managers
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
@@ -395,7 +396,12 @@ class Fandango:
                     )
                 history_tree = next_tree
             else:
+                wait_start = time.time()
                 while not io_instance.received_msg():
+                    if time.time() - wait_start > self.remote_response_timeout:
+                        raise FandangoFailedError(
+                            f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(forecast.get_msg_parties())}"
+                        )
                     time.sleep(0.025)
                 forecast, packet_tree = self._parse_next_remote_packet(
                     forecast, io_instance
@@ -662,19 +668,21 @@ class Fandango:
 
                 # Check if there are still NonTerminals that can be parsed with received prefix
                 if len(available_non_terminals) == 0:
-                    raise FandangoParseError(
-                        "Couldn't match remote message to any packet matching grammar. Expected nonterminal: "
-                        + "|".join(
-                            map(
-                                lambda x: str(x),
-                                forecast_non_terminals.get_non_terminals(),
-                            )
+                    expected = "|".join(
+                        map(
+                            lambda x: str(x),
+                            forecast_non_terminals.get_non_terminals(),
                         )
-                        + "Got message: "
-                        + complete_msg
-                        + "\nUnprocessed messages: "
-                        + str(io_instance.get_received_msgs())
                     )
+
+                    exc = FandangoParseError(
+                        f"Expected {expected}, got {complete_msg!r}"
+                    )
+                    if getattr(Exception, "add_note", None):
+                        unprocessed = io_instance.get_received_msgs()
+                        exc.add_note(f"Unprocessed messages: {unprocessed!s}")
+                    raise exc
+
                 if parsed_packet_tree is not None:
                     nr_deleted = 0
                     used_fragments_idx.sort()

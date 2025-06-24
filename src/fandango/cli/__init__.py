@@ -14,28 +14,28 @@ from fandango.constraints.base import Constraint, SoftValue
 from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.language.tree import DerivationTree
 
-if not "readline" in globals():
+if "readline" not in globals():
     try:
         # Linux and Mac. This should do the trick.
         import gnureadline as readline  # type: ignore [import-not-found] # types not always available
     except Exception:
         pass
 
-if not "readline" in globals():
+if "readline" not in globals():
     try:
         # Windows. This should do the trick.
         import pyreadline3 as readline  # type: ignore [import-not-found] # types not always available
     except Exception:
         pass
 
-if not "readline" in globals():
+if "readline" not in globals():
     try:
         # Another Windows alternative
         import pyreadline as readline  # type: ignore [import-not-found] # types not always available
     except Exception:
         pass
 
-if not "readline" in globals():
+if "readline" not in globals():
     try:
         # A Hail Mary Pass
         import readline
@@ -58,7 +58,7 @@ from ansi_styles import ansiStyles as styles
 
 from fandango import Fandango
 from fandango.language.grammar import Grammar, FuzzingMode
-from fandango.language.parse import parse
+from fandango.language.parse import parse, clear_cache, cache_dir
 from fandango.logger import LOGGER, print_exception
 
 from fandango.converters.antlr.ANTLRFandangoConverter import ANTLRFandangoConverter
@@ -497,7 +497,7 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
     talk_parser = commands.add_parser(
         "talk",
         help="Interact with programs, clients, and servers.",
-        parents=[file_parser, algorithm_parser, settings_parser, parties_parser],
+        parents=[file_parser, algorithm_parser, settings_parser],
     )
     host_pattern = (
         "PORT on HOST (default: 127.0.0.1;"
@@ -508,13 +508,13 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
         "--client",
         metavar="[NAME=][PROTOCOL:][HOST:]PORT",
         type=str,
-        help="Create a client NAME (default: 'Client') connecting to " + host_pattern,
+        help="Act as a client NAME (default: 'Client') connecting to " + host_pattern,
     )
     talk_parser.add_argument(
         "--server",
         metavar="[NAME=][PROTOCOL:][HOST:]PORT",
         type=str,
-        help="Create a server NAME (default: 'Server') running at " + host_pattern,
+        help="Act as a server NAME (default: 'Server') running at " + host_pattern,
     )
     talk_parser.add_argument(
         "test_command",
@@ -569,9 +569,22 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
         help="External spec file to be converted. Use '-' for stdin.",
     )
 
+    clear_cache_parser = commands.add_parser(
+        "clear-cache",
+        help="Clear the Fandango parsing cache.",
+    )
+    clear_cache_parser.add_argument(
+        "-n",
+        "--dry-run",
+        action="store_true",
+        dest="dry_run",
+        default=False,
+        help="Just output the action to be performed; do not actually clear the cache.",
+    )
+
     if not in_command_line:
         # Set
-        set_parser = commands.add_parser(
+        _set_parser = commands.add_parser(
             "set",
             help="Set or print default arguments.",
             parents=[
@@ -585,7 +598,7 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
 
     if not in_command_line:
         # Reset
-        reset_parser = commands.add_parser(
+        _reset_parser = commands.add_parser(
             "reset",
             help="Reset defaults.",
         )
@@ -606,7 +619,7 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
 
     if not in_command_line:
         # Exit
-        exit_parser = commands.add_parser(
+        _exit_parser = commands.add_parser(
             "exit",
             help="Exit Fandango.",
         )
@@ -664,13 +677,13 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
     )
 
     # Copyright
-    copyright_parser = commands.add_parser(
+    _copyright_parser = commands.add_parser(
         "copyright",
         help="Show copyright.",
     )
 
     # Version
-    version_parser = commands.add_parser(
+    _version_parser = commands.add_parser(
         "version",
         help="Show version.",
     )
@@ -753,11 +766,55 @@ def parse_contents_from_args(
 
     extra_defs = ""
     if "test_command" in args and args.test_command:
-        extra_defs += (
-            "\nset_program_command(["
-            + ", ".join(repr(arg) for arg in [args.test_command] + args.test_args)
-            + "])\n"
+        arg_list = ", ".join(repr(arg) for arg in [args.test_command] + args.test_args)
+        extra_defs += f"""
+set_program_command([{arg_list}])
+"""
+
+    if "client" in args and args.client:
+        # Act as client
+        extra_defs += f"""
+class Client(ConnectParty):
+    def __init__(self):
+        super().__init__(
+            "{args.client}",
+            ownership=Ownership.FANDANGO_PARTY,
+            endpoint_type=EndpointType.CONNECT,
         )
+        self.start()
+
+class Server(ConnectParty):
+    def __init__(self):
+        super().__init__(
+            "{args.client}",
+            ownership=Ownership.EXTERNAL_PARTY,
+            endpoint_type=EndpointType.OPEN,
+        )
+        self.start()
+"""
+
+    if "server" in args and args.server:
+        # Act as server
+        extra_defs += f"""
+class Client(ConnectParty):
+    def __init__(self):
+        super().__init__(
+            "{args.server}",
+            ownership=Ownership.EXTERNAL_PARTY,
+            endpoint_type=EndpointType.CONNECT,
+        )
+        self.start()
+
+class Server(ConnectParty):
+    def __init__(self):
+        super().__init__(
+            "{args.server}",
+            ownership=Ownership.FANDANGO_PARTY,
+            endpoint_type=EndpointType.OPEN,
+        )
+        self.start()
+"""
+
     LOGGER.debug("Extra definitions:" + extra_defs)
     args.fan_files += [extra_defs]
 
@@ -1427,11 +1484,12 @@ def parse_command(args: argparse.Namespace) -> None:
 
 def talk_command(args: argparse.Namespace) -> None:
     """Interact with a program, client, or server"""
-    if not args.test_command and not args.client and not args.server:
-        raise FandangoError(
-            "Use '--client' or '--server' to create a client or server, "
-            "or specify a command to interact with."
-        )
+    # if not args.test_command and not args.client and not args.server:
+    #     raise FandangoError(
+    #         "Use '--client' or '--server' to create a client or server, "
+    #         "or specify a command to interact with."
+    #     )
+    args.parties = []
 
     LOGGER.info("---------- Parsing FANDANGO content ----------")
     if args.fan_files:
@@ -1460,9 +1518,10 @@ def talk_command(args: argparse.Namespace) -> None:
     LOGGER.info(f"File mode: {file_mode}")
 
     LOGGER.debug("Starting Fandango")
+
     fandango = Fandango._with_parsed(
-        grammar,
-        constraints,
+        grammar=grammar,
+        constraints=constraints,
         start_symbol=args.start_symbol,
         logging_level=LOGGER.getEffectiveLevel(),
     )
@@ -1520,12 +1579,7 @@ def convert_command(args: argparse.Namespace) -> None:
             temp_file.flush()
             input_file = temp_file.name
 
-        converter: (
-            ANTLRFandangoConverter
-            | DTDFandangoConverter
-            | BTFandangoConverter
-            | FandangoFandangoConverter
-        )
+        converter: FandangoConverter
         match from_format:
             case "antlr" | "g4":
                 converter = ANTLRFandangoConverter(input_file)
@@ -1561,6 +1615,16 @@ def convert_command(args: argparse.Namespace) -> None:
         output.close()
 
 
+def clear_command(args: argparse.Namespace) -> None:
+    CACHE_DIR = cache_dir()
+    if args.dry_run:
+        print(f"Would clear {CACHE_DIR}", file=sys.stderr)
+    elif os.path.exists(CACHE_DIR):
+        print(f"Clearing {CACHE_DIR}...", file=sys.stderr, end="")
+        clear_cache()
+        print("done", file=sys.stderr)
+
+
 def nop_command(args: argparse.Namespace) -> None:
     # Dummy command such that we can list ! and / as commands. Never executed.
     pass
@@ -1586,6 +1650,7 @@ COMMANDS: dict[str, Callable[[argparse.Namespace], None]] = {
     "parse": parse_command,
     "talk": talk_command,
     "convert": convert_command,
+    "clear-cache": clear_command,
     "cd": cd_command,
     "help": help_command,
     "copyright": copyright_command,
@@ -1720,7 +1785,7 @@ def shell_command(args: argparse.Namespace) -> None:
     PROMPT = "(fandango)"
 
     def _read_history() -> None:
-        if not "readline" in globals():
+        if "readline" not in globals():
             return
 
         histfile = os.path.join(os.path.expanduser("~"), ".fandango_history")
@@ -1735,7 +1800,7 @@ def shell_command(args: argparse.Namespace) -> None:
         atexit.register(readline.write_history_file, histfile)
 
     def _complete(text: str, state: int) -> str | None:
-        if not "readline" in globals():
+        if "readline" not in globals():
             return None
 
         global MATCHES
@@ -1756,8 +1821,6 @@ def shell_command(args: argparse.Namespace) -> None:
 
         version_command(argparse.Namespace())
         print("Type a command, 'help', 'copyright', 'version', or 'exit'.")
-
-    last_status = 0
 
     while True:
         if sys.stdin.isatty():
