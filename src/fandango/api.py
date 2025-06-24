@@ -180,18 +180,20 @@ class Fandango(FandangoBase):
         """
         LOGGER.info("---------- Initializing base population ----------")
 
+        start_symbol = settings.pop("start_symbol") or self._start_symbol
+
         constraints = self.constraints[:]
         if extra_constraints:
             _, extra_constraints_parsed = parse(
                 [],
                 extra_constraints,
                 given_grammars=[self.grammar],
-                start_symbol=self._start_symbol,
+                start_symbol=start_symbol,
             )
             constraints += extra_constraints_parsed
 
         self.fandango = FandangoStrategy(
-            self.grammar, constraints, start_symbol=self._start_symbol, **settings
+            self.grammar, constraints, start_symbol=start_symbol, **settings
         )
         LOGGER.info("---------- Done initializing base population ----------")
 
