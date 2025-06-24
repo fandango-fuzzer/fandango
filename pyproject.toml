@@ -58,7 +58,7 @@ development = [
     "fandango-fuzzer[test]",
     "black>=25.1.0",
     "mypy>=1.16.0",
-    "pre-commit>=4.2.0"
+    "pre-commit>=4.2.0",
     "pygls>=2.0.0a4", # language server
     "speedy-antlr-tool>=1.4.3",
 ]
