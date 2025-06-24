@@ -22,7 +22,7 @@ This includes:
 
 ```{admonition} Under Construction
 :class: attention
-Checking outputs is currently in beta.
+Protocol testing is currently in beta.
 Check out [the list of open issues](https://github.com/fandango-fuzzer/fandango/issues).
 ```
 
@@ -122,6 +122,10 @@ QUIT
 
 ## A simple SMTP grammar
 
+```{margin}
+We use `telnet` only for illustrative purposes here; later in this chapter, you will see how to have Fandango directly connect to servers (and clients!)
+```
+
 With [`fandango talk`](sec:outputs), we have seen a Fandango facility that allows us to connect to the standard input and output channels of a given program and interact with it.
 The idea would now be to use the `telnet` program for this very purpose.
 By invoking
@@ -184,3 +188,178 @@ $ fandango -v talk -f smtp-telnet.fan telnet 8025
 
 % FIXME: Add output
 
+
+## Interacting as Network Client
+
+Using `telnet` to communicate with servers generally works, but it has a number of drawbacks.
+Most importantly, `telnet` is meant for _human_ interaction.
+Hence, our I/O grammars have to reflect the `telnet` output (which actually might change depending on operating system and configuration); also, `telnet` is not suited for transmitting binary data.
+
+Fortunately, Fandango offers a means to be invoked _directly as a network client_, not requiring external programs such as `telnet`.
+The `fandango talk` option `--client` allows Fandango to be used as a network client.
+The argument to `--client` is a network address to connect to.
+In the simplest form, it is just a port number on the local machine.
+
+Hence, to have Fandango act as an SMTP client for the local server, we can enter
+
+```shell
+$ fandango talk -f SPEC.fan --client 8025
+```
+
+Since Fandango directly talks to the SMTP server now, we can also simplify the grammar by removing the `<telnet_intro>` part.
+Also, there is no more `In` and `Out` parties, since we do not interact with the standard input and output of an invoked program.
+Instead,
+
+* `Client` is the party representing the _client_, connecting to an external server on the network.
+* `Server` is the party representing a _server_ on the network, accepting connections from clients.
+
+Consequently,
+
+* all outputs produced by the _client_ (and processed by the server) are prefixed with `Client:` in the respective nonterminals; and
+* all outputs produced by the _server_ (and processed by the client) are prefixed with `Server:`.
+
+With this, we can reframe and simplify our SMTP grammar, using `Client` and `Server` to describe the respective interactions.
+The spec [`smtp-simple.fan`](smtp-simple.fan) reads as follows:
+
+```{code-cell}
+:tags: ["remove-input"]
+!cat smtp-simple.fan
+```
+
+Note how we added `<hostname>` as additional specification of the hostname that is typically part of the initial server message.
+
+With this, we have Fandango act as client and connect to the (hopefully still running) server on port 8025:
+
+```shell
+$ fandango talk -f smtp-simple.fan --client 8025
+```
+
+% FIXME: Describe output
+
+```{mermaid}
+sequenceDiagram
+    Fandango->>SMTP Server: (connect)
+    SMTP Server->>Fandango: 220 host.example.com <more data>
+    Fandango->>SMTP Server: QUIT
+    SMTP Server->>Fandango: 221 <more data>
+    SMTP Server->>Fandango: (closes connection)
+```
+
+From here on, we can have Fandango directly "talk" to network components such as servers.
+
+
+## Interacting as Network Server
+
+Obviously, our SMTP specification is still very limited.
+Before we go and extend it, let us first highlight a particular Fandango feature.
+From the same specification, Fandango can act as a _client_ and as a _server_.
+When invoked with the `--server` option, Fandango will _create_ a server at the given port and accept client connections.
+So if we invoke
+
+```shell
+$ fandango talk -f smtp-simple.fan --server 8125
+```
+
+we can then connect to our running Fandango "SMTP Server" and interact with it according to the `smtp-simple.fan` spec:
+
+```shell
+$ telnet localhost 8125
+Trying ::1...
+Connected to localhost.
+Escape character is '^]'.
+220 host.example.com 26%
+QUIT
+221 26yn
+```
+
+As server, Fandango produces its own `220` and `221` messages, effectively _fuzzing the client_.
+Note how the interaction diagram reflects how Fandango is now taking the role of the client:
+
+```{mermaid}
+sequenceDiagram
+    SMTP Client (or telnet)->>Fandango: (connect)
+    Fandango->>SMTP Client (or telnet): 220 host.example.com <random data>
+    SMTP Client (or telnet)->>Fandango: QUIT
+    Fandango->>SMTP Client (or telnet): 221 <random data>
+    Fandango->>SMTP Client (or telnet): (closes connection)
+```
+
+```{admonition} Under Construction
+:class: attention
+Fandango can actually create and mock an arbitrary number of clients and servers, all interacting with each other.
+The interface for this is currently under construction.
+```
+
+
+## A Bigger Protocol Spec
+
+So far, our SMTP server is not great at testing SMTP clients – all it can handle is a single `QUIT` command.
+Let us extend it a bit with a few more commands, reflecting the interaction in the introduction:
+
+```{code-cell}
+:tags: ["remove-input"]
+!cat smtp-extended.fan
+```
+
+This spec can actually handle the initial interaction (check it!).
+You may note the following points:
+
+First, the commands (and replies) follow a particular _order_, implying the _state_ the server and client are in.
+In the "happy" path (assuming no errors), this is the order of possible commands:
+
+% Can't have <...> here, as they'd render as HTML tags
+```{mermaid}
+stateDiagram
+    [*] --> 1: ‹connect›
+    1 --> 2: ‹helo›
+    2 --> 3: ‹mail_from›
+    3 --> 3: ‹mail_to›
+    3 --> 4: ‹mail_to›
+    4 --> 5: ‹data›
+    5 --> [*]: ‹quit›
+```
+
+Note how the I/O grammar (and the above state diagram) accepts multiple `<mail_to>` interactions, allowing mails to be sent to multiple destinations.
+
+Second, the spec actually accounts for errors, always entering an `<error>` state if the client command received cannot be parsed properly.
+Hence, the state diagram induced in the above grammar actually looks like this:
+
+% Can't have <...> here, as they'd render as HTML tags
+```{mermaid}
+stateDiagram
+    [*] --> 1: ‹connect›
+    1 --> 2: ‹helo›
+    2 --> [*]: ‹error›
+    2 --> 3: ‹mail_from›
+    3 --> [*]: ‹error›
+    3 --> 3: ‹mail_to›
+    3 --> 4: ‹mail_to›
+    4 --> 5: ‹data›
+    4 --> [*]: ‹error›
+    5 --> [*]: ‹quit›
+    5 --> [*]: ‹error›
+```
+
+As described in the [chapter on checking outputs](sec:outputs), we can use the `fuzz` command to actually show generated outputs of individual parties:
+
+```shell
+$ fandango fuzz --party=Client -f smtp-extended.fan
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz --party=Client -f smtp-extended.fan -n 1
+assert _exit_code == 0 
+```
+
+```shell
+$ fandango fuzz --party=Server -f smtp-extended.fan
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz --party=Server -f smtp-extended.fan -n 1
+assert _exit_code == 0 
+```
+
+That's it for now. GO and thoroughly test your programs!
