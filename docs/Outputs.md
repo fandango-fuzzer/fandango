@@ -72,6 +72,10 @@ Fandango conveniently defines two standard parties:
 
 Hence, in a Fandango spec, `<In:id>` refers to an `<id>` element that is _received_ (or input) by the program, and `<Out:result>` is a `<result>` element that is _sent_ (or output) by the program.
 
+```{important}
+Remember that `In` and `Out` describe the interaction from the _perspective of the program under test_.
+```
+
 With this, we can already write a first specification.
 
 ```{margin}

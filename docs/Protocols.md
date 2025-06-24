@@ -132,3 +132,55 @@ $ fandango talk -f smtp-telnet.fan telnet 8025
 
 we could interact with the `telnet` program as described above.
 All we now need is a grammar that describes the `telnet` interaction.
+
+The following grammar has two parts:
+
+1. First, we expect some output from the `telnet` program.
+2. Then, we interact with the SMTP server - just sending a `QUIT` command and then exiting.
+
+A typical interaction thus would be:
+
+```{mermaid}
+sequenceDiagram
+    Fandango->>telnet: (invoke)
+    telnet->>Fandango: Trying ::1...
+    telnet->>Fandango: Connected to localhost.
+    telnet->>Fandango: Escape character is '^]'.
+    SMTP Server (via telnet)->>Fandango: 220 localhost.example.com Python SMTP 1.4.6
+    Fandango->>SMTP Server (via telnet): QUIT
+    SMTP Server (via telnet)->>Fandango: 221 Bye
+    SMTP Server (via telnet)->>telnet: (closes connection)
+    telnet->>Fandango: (ends execution)
+```
+
+The following I/O grammar [smtp-telnet.fan](smtp-telnet.fan) implements this interaction via `telnet`:
+
+1. First, `<telnet-intro>` lets Fandango expect the `telnet` introduction;
+2. Then, `<smtp>` takes care of the actual SMTP interaction.
+
+```{code-cell}
+:tags: ["remove-input"]
+!cat smtp-telnet.fan
+```
+
+```{note}
+Again, note that `In` and `Out` describe the interaction from the _perspective of the program under test_; hence, `Out` is what `telnet` and the SMTP server produce, whereas `In` is what the SMTP server (and telnet) get as input.
+```
+
+With this, we can now connect to our (hopefully still running) SMTP server and actually send it a `QUIT` command:
+
+```shell
+$ fandango talk -f smtp-telnet.fan telnet 8025
+```
+
+% FIXME: Add output
+
+To track the data that is actually exchanged, use the verbose `-v` flag.
+The `In:` and `Out:` log messages show the data that is being exchanged.
+
+```shell
+$ fandango -v talk -f smtp-telnet.fan telnet 8025
+```
+
+% FIXME: Add output
+
