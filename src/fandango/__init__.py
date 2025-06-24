@@ -26,8 +26,8 @@ __all__ = [
 ]
 
 if "pytest" in sys.modules:
-    from beartype.claw import beartype_this_package  #  type: ignore [import-not-found]
-    from beartype import BeartypeConf  #  type: ignore [import-not-found]
+    from beartype.claw import beartype_this_package  # type: ignore [import-not-found]
+    from beartype import BeartypeConf  # type: ignore [import-not-found]
 
     beartype_this_package(conf=BeartypeConf(claw_skip_package_names=("fandango",)))
 
