@@ -100,8 +100,7 @@ class FandangoBase(ABC):
 
     @abstractmethod
     def generate_solutions(
-        self,
-        max_generations=None,
+        self, max_generations: Optional[int] = None, io: bool = False
     ) -> Generator[DerivationTree, None, None]:
         """
         Generate trees that conform to the language.
@@ -120,6 +119,10 @@ class FandangoBase(ABC):
         *,
         extra_constraints: Optional[list[str]] = None,
         solution_callback: Callable[[DerivationTree, int], None] = lambda _a, _b: None,
+        desired_solutions: Optional[int] = None,
+        max_generations: Optional[int] = None,
+        infinite: bool = False,
+        io: bool = False,
         **settings,
     ) -> list[DerivationTree]:
         """
@@ -198,8 +201,7 @@ class Fandango(FandangoBase):
         LOGGER.info("---------- Done initializing base population ----------")
 
     def generate_solutions(
-        self,
-        max_generations=None,
+        self, max_generations: Optional[int] = None, io: bool = False
     ) -> Generator[DerivationTree, None, None]:
         """
         Generate trees that conform to the language.
@@ -218,7 +220,7 @@ class Fandango(FandangoBase):
             f"---------- Generating {'' if max_generations is None else f' for {max_generations} generations'}----------"
         )
         start_time = time.time()
-        yield from self.fandango.generate(max_generations=max_generations)
+        yield from self.fandango.generate(max_generations=max_generations, io=io)
         LOGGER.info(
             f"---------- Done generating {'' if max_generations is None else f' for {max_generations} generations'}----------"
         )
@@ -232,6 +234,7 @@ class Fandango(FandangoBase):
         desired_solutions: Optional[int] = None,
         max_generations: Optional[int] = None,
         infinite: bool = False,
+        io: bool = False,
         **settings,
     ) -> list[DerivationTree]:
         """
@@ -242,8 +245,8 @@ class Fandango(FandangoBase):
         :return: A list of derivation trees
         """
 
-        # initialize if not initialized or settings changed
-        if self.fandango is None or extra_constraints or settings:
+        # force-(re-)initialize if settings changed
+        if extra_constraints is not None or settings is not None:
             self.init_population(extra_constraints=extra_constraints, **settings)
         assert self.fandango is not None
 
@@ -262,7 +265,9 @@ class Fandango(FandangoBase):
                 LOGGER.warn("Infinite mode is activated, overriding max_generations")
             max_generations = None  # infinite overrides max_generations
 
-        generator: Iterable[DerivationTree] = self.generate_solutions(max_generations)
+        generator: Iterable[DerivationTree] = self.generate_solutions(
+            max_generations=max_generations, io=io
+        )
         if desired_solutions is not None:
             LOGGER.info(f"Generating {desired_solutions} solutions")
             generator = itertools.islice(generator, desired_solutions)
