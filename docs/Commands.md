@@ -74,7 +74,7 @@ To [enter commands in `fandango`](sec:shell), use `fandango shell` or just `fand
 
 ## Clearing
 
-To [have Fandango clear its parser cache](sec:caches), use `fandango clear-cache`:
+To [have Fandango clear its parser cache](sec:caching), use `fandango clear-cache`:
 
 ```{code-cell}
 :tags: ["remove-input"]
