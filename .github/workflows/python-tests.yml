@@ -45,13 +45,11 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config libarchive-tools llvm
-          pip install pygraphviz
 
-      # Step 6: Install Python dependencies using make
-      - name: Install dependencies with Makefile
+      # Step 6: Install Python dependencies
+      - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[test]"
+          pip install pygraphviz -e ".[test]"
 
       # Step 7: Run tests using pytest
       - name: Run tests with pytest
