@@ -1,5 +1,6 @@
 import random
-from typing import Counter, Generator, Union
+from typing import Counter, Union
+from collections.abc import Generator
 
 from fandango.constraints.base import Constraint, SoftValue
 from fandango.constraints.fitness import FailingTree
