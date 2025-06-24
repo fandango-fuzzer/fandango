@@ -1393,6 +1393,7 @@ def fuzz_command(args: argparse.Namespace) -> None:
         max_generations=max_generations,
         desired_solutions=desired_solutions,
         infinite=infinite,
+        mode=FuzzingMode.COMPLETE,
         **settings,
     )
 
@@ -1540,7 +1541,7 @@ def talk_command(args: argparse.Namespace) -> None:
         max_generations=max_generations,
         desired_solutions=desired_solutions,
         infinite=infinite,
-        io=True,
+        mode=FuzzingMode.IO,
         **settings,
     )
 

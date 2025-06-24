@@ -325,12 +325,17 @@ class Fandango:
         return list(self._generate_io(max_generations=max_generations))
 
     def generate(
-        self, max_generations: Optional[int] = None, io: bool = False
+        self,
+        max_generations: Optional[int] = None,
+        mode: FuzzingMode = FuzzingMode.COMPLETE,
     ) -> Generator[DerivationTree, None, None]:
-        if io:
-            yield from self._generate_io(max_generations=max_generations)
-        else:
-            yield from self._generate_simple(max_generations=max_generations)
+        match mode:
+            case FuzzingMode.COMPLETE:
+                yield from self._generate_simple(max_generations=max_generations)
+            case FuzzingMode.IO:
+                yield from self._generate_io(max_generations=max_generations)
+            case _:
+                raise RuntimeError(f"Fuzzing Mode {mode} is not implemented")
 
     def _generate_simple(
         self, max_generations: Optional[int] = None
