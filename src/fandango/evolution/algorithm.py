@@ -399,7 +399,7 @@ class Fandango:
                 while not io_instance.received_msg():
                     if time.time() - wait_start > self.remote_response_timeout:
                         raise FandangoFailedError(
-                            f"Timed out while waiting for message remote party. Expected message from party: {', '.join(forecast.get_msg_parties())}"
+                            f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(forecast.get_msg_parties())}"
                         )
                     time.sleep(0.025)
                 forecast, packet_tree = self._parse_next_remote_packet(
