@@ -16,11 +16,10 @@ authors = [
 ]
 description = "Fandango produces myriads of high-quality random inputs to test programs, giving users unprecedented control over format and shape of the inputs."
 readme = "README.md"
-license = { file = "LICENSE.md" }
+license = "EUPL-1.2"
 requires-python = ">=3.10,<4.0"
 classifiers = [
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: European Union Public Licence 1.2 (EUPL 1.2)",
     "Programming Language :: Python :: 3.11",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering",
@@ -55,6 +54,7 @@ test = [
 ]
 
 development = [
+    "fandango-fuzzer[test]",
     "black>=25.1.0",
     "mypy>=1.16.0",
     "pygls>=2.0.0a4", # language server
@@ -67,6 +67,7 @@ evaluation = [
 ]
 
 book = [
+    "fandango-fuzzer[development]", # need black and faker
     "aiosmtpd>=1.4.6",  # example server for protocol testing
     "docutils>=0.20.1",  # Jupyter-book needs docutils<=0.20
     "ghp-import>=2.1.0",
