@@ -617,15 +617,16 @@ def parse(
         io_instance: FandangoIO = global_env["FandangoIO"].instance()
 
         assign_implicit_party(grammar, "StdOut")
-        init_msg_parties(grammar)
+        init_msg_parties(grammar, io_instance)
         remap_to_std_party(grammar, io_instance)
+        init_msg_parties(grammar, io_instance)
 
         # Detect illegally nested data packets.
         rir_detector = MessageNestingDetector(grammar)
         rir_detector.fail_on_nested_packet(NonTerminal(start_symbol))
         fail_on_party_in_generator(grammar)
 
-        truncate_non_visible_packets(grammar, io_instance)
+        truncate_invisible_packets(grammar, io_instance)
 
     # We invoke this at the very end, now that all data is there
     grammar.update(grammar, prime=check)
@@ -681,7 +682,9 @@ def is_party_reachable(grammar, node):
     return None
 
 
-def init_msg_parties(grammar: "Grammar"):
+def init_msg_parties(
+    grammar: "Grammar", io_instance: FandangoIO, ignore_existing: bool = True
+):
     party_names = set()
     grammar_msg_parties = grammar.msg_parties(include_recipients=True)
     global_env, local_env = grammar.get_spec_env()
@@ -696,6 +699,8 @@ def init_msg_parties(grammar: "Grammar"):
                 party_names.add(key)
     # Call constructor
     for party in party_names:
+        if party in io_instance.parties.keys() and ignore_existing:
+            continue
         exec(f"{party}()", global_env, local_env)
         grammar_msg_parties.remove(party)
 
@@ -724,7 +729,7 @@ def remap_to_std_party(grammar: "Grammar", io_instance: FandangoIO):
         raise FandangoValueError(f"Recipients {unknown_recipients!r} unspecified")
 
 
-def truncate_non_visible_packets(grammar: "Grammar", io_instance: FandangoIO) -> None:
+def truncate_invisible_packets(grammar: "Grammar", io_instance: FandangoIO) -> None:
     keep_parties = grammar.msg_parties(include_recipients=True)
     io_instance.parties.keys()
     for existing_party in list(keep_parties):
