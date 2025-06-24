@@ -32,12 +32,13 @@ $(EGG_INFO)/PKG-INFO: pyproject.toml
 
 # Install tools for development
 UNAME := $(shell uname)
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz clang
 ifeq ($(UNAME), Darwin)
 # Mac
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz # clang is installed by default on Mac
 SYSTEM_DEV_INSTALL = brew install
 else
 # Linux
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz clang
 SYSTEM_DEV_INSTALL = apt-get install
 endif
 
