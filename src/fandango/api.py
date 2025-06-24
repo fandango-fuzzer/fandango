@@ -254,14 +254,18 @@ class Fandango(FandangoBase):
             self.init_population(extra_constraints=extra_constraints, **settings)
         assert self.fandango is not None
 
-        if (
-            mode == FuzzingMode.IO
-            and desired_solutions is not None
-            and desired_solutions != 1
-        ):
-            LOGGER.warn(
-                "Fandango IO only supports desired_solution values of 1 for now, overriding value"
-            )
+        if mode == FuzzingMode.IO:
+            match desired_solutions:
+                case None:
+                    LOGGER.warn(
+                        "Fandango IO will only return a single solution for now, manually set with -n 1 to hide this warning"
+                    )
+                case 1:
+                    pass
+                case _:
+                    LOGGER.warn(
+                        "Fandango IO only supports desired-solution values of 1 for now, overriding value"
+                    )
             desired_solutions = 1
 
         if max_generations is None and desired_solutions is None and not infinite:
