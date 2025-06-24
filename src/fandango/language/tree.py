@@ -781,12 +781,12 @@ class DerivationTree:
         return tuple(path[::-1])
 
     def replace(self, grammar, tree_to_replace, new_subtree):
-        return self.replace_multiple(grammar, {tree_to_replace: new_subtree})
+        return self.replace_multiple(grammar,  [(tree_to_replace, new_subtree)])
 
     def replace_multiple(
         self,
         grammar,
-        replacements: dict["DerivationTree", "DerivationTree"],
+        replacements: list[tuple["DerivationTree", "DerivationTree"]],
         path_to_replacement: Optional[dict[tuple, "DerivationTree"]] = None,
         current_path: Optional[tuple] = None,
     ):
@@ -795,7 +795,7 @@ class DerivationTree:
         """
         if path_to_replacement is None:
             path_to_replacement = dict()
-            for replacee, replacement in replacements.items():
+            for replacee, replacement in replacements:
                 path_to_replacement[replacee.get_choices_path()] = replacement
 
         if current_path is None:

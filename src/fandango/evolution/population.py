@@ -105,7 +105,7 @@ class PopulationManager:
         failing_trees: list[FailingTree],
     ) -> tuple[DerivationTree, int]:
         fixes_made = 0
-        replacements = dict()
+        replacements: list[tuple[DerivationTree, DerivationTree]] = list()
         for failing_tree in failing_trees:
             if failing_tree.tree.read_only:
                 continue
@@ -132,7 +132,7 @@ class PopulationManager:
                                 + insert_children
                                 + copy_parent.children[insertion_index:]
                             )
-                            replacements[failing_tree.tree.parent] = copy_parent
+                            replacements.append((failing_tree.tree.parent, copy_parent))
                         else:
                             copy_parent = failing_tree.tree.parent.deepcopy(copy_children=True, copy_parent=False, copy_params=False)
                             curr_rep_id = None
@@ -154,7 +154,7 @@ class PopulationManager:
                                 reps_deleted += 1
 
                             copy_parent.set_children(new_children)
-                            replacements[failing_tree.tree.parent] = copy_parent
+                            replacements.append((failing_tree.tree.parent, copy_parent))
                         continue
                     if (
                         isinstance(value, DerivationTree)
@@ -171,25 +171,25 @@ class PopulationManager:
                         )
                     if suggested_tree is None:
                         continue
-                    replacements[failing_tree.tree] = suggested_tree
+                    replacements.append((failing_tree.tree, suggested_tree))
                     fixes_made += 1
         if len(replacements) > 0:
             # Prevent circular replacements
-            deleted = set()
-            for value in set(replacements.values()):
-                if value in deleted:
-                    continue
-                if value in replacements.keys():
-                    if replacements[value] not in replacements.keys():
-                        deleted.add(replacements[value])
-                        del replacements[value]
-                        continue
-                    if random.random() < 0.5:
-                        deleted.add(replacements[value])
-                        del replacements[value]
-                    else:
-                        deleted.add(replacements[replacements[value]])
-                        del replacements[replacements[value]]
+            #deleted = set()
+            #for value in set(replacements.values()):
+            #    if value in deleted:
+            #        continue
+            #    if value in replacements.keys():
+            #        if replacements[value] not in replacements.keys():
+            #            deleted.add(replacements[value])
+            #            del replacements[value]
+            #            continue
+            #        if random.random() < 0.5:
+            #            deleted.add(replacements[value])
+            #            del replacements[value]
+            #        else:
+            #            deleted.add(replacements[replacements[value]])
+            #            del replacements[replacements[value]]
 
             individual = individual.replace_multiple(self._grammar, replacements)
         return individual, fixes_made
