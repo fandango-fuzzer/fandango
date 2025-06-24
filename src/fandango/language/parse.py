@@ -59,13 +59,9 @@ class PythonAntlrErrorListener(ErrorListener):
     def syntaxError(
         self, recognizer, offendingSymbol, line: int, column: int, msg: str, e
     ):
-        exc = FandangoSyntaxError(
+        raise FandangoSyntaxError(
             f"{self.filename!r}, line {line}, column {column}: {msg}"
         )
-        exc.lineno = line
-        exc.offset = column
-        exc.msg = msg
-        raise exc
 
 
 class SpeedyAntlrErrorListener(sa_fandango.SA_ErrorListener):
@@ -84,13 +80,9 @@ class SpeedyAntlrErrorListener(sa_fandango.SA_ErrorListener):
         column: int,
         msg,
     ):
-        exc = FandangoSyntaxError(
+        raise FandangoSyntaxError(
             f"{self.filename!r}, line {line}, column {column}: {msg}"
         )
-        exc.lineno = line
-        exc.offset = column
-        exc.msg = msg
-        raise exc
 
 
 ### Including Files
