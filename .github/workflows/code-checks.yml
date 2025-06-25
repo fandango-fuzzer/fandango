@@ -84,13 +84,26 @@ jobs:
           FANDANGO_SKIP_CPP_PARSER: 1
 
       # Step 5: Run mypy on changed files
-      - name: Run mypy on changed files
-        if: steps.changed-files.outputs.any_changed == 'true'
+      - name: Run mypy on changed files (Unix)
+        if: steps.changed-files.outputs.any_changed == 'true' && matrix.os != 'windows-latest'
+        shell: bash
         run: |
           files="${{ steps.changed-files.outputs.all_changed_files }}"
-          
           for file in $files; do
             echo "Checking $file"
             mypy "$file"
           done
+
+      - name: Run mypy on changed files (Windows)
+        if: steps.changed-files.outputs.any_changed == 'true' && matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $files = "${{ steps.changed-files.outputs.all_changed_files }}"
+          $fileArray = $files -split ' '
+          foreach ($file in $fileArray) {
+            if (Test-Path $file) {
+              Write-Host "Checking $file"
+              mypy $file
+            }
+          }
 
