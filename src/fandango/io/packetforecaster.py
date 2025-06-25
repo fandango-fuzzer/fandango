@@ -197,7 +197,7 @@ class PathFinder(NodeVisitor):
         tree = self.current_tree[-1]
         continue_exploring = True
         tree_len = 0
-        if tree is not None:
+        if tree is not None and len(tree) != 0:
             tree_len = len(tree)
             self.current_tree.append([tree[-1]])
             continue_exploring = self.visit(node.node)
@@ -294,6 +294,9 @@ class PacketForecaster:
 
         def __getitem__(self, item: str):
             return self.parties_to_packets[item]
+
+        def __contains__(self, item: str) -> bool:
+            return item in self.parties_to_packets
 
         def add_packet(
             self, party: Optional[str], packet: "PacketForecaster.ForcastingPacket"

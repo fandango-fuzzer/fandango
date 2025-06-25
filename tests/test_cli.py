@@ -1,5 +1,5 @@
 #!/usr/bin/env pytest
-
+import asyncio
 import os
 import re
 import shlex
@@ -209,3 +209,50 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
         self.assertEqual("", err)
         self.assertTrue(out.startswith("<_char> ::= r'(.|\\n)'\n"))
         self.assertTrue(out.endswith("<age> ::= <digit>+\n"))
+
+    def test_talk_cat(self):
+        command = shlex.split(
+            f"fandango -v talk -n 1 -f {DOCS_ROOT / 'cat.fan'} cat"
+        )
+        out, err, code = self.run_command(command)
+        err = err.split("\n")
+
+        filter_prefixes = [
+            'fandango:INFO: In:',
+            'fandango:INFO: Out:'
+        ]
+        io_logs = list(filter(lambda x: any(filter(lambda b: x.startswith(b), filter_prefixes)), err))
+        self.assertEqual(2, len(io_logs))
+        result_a = io_logs[0].split(": ", 2)[2]
+        result_b = io_logs[0].split(": ", 2)[2]
+        self.assertEqual(result_a, result_b)
+        self.assertEqual(0, code)
+        self.assertEqual("", out)
+
+    def test_soliloquy(self):
+        async def async_run():
+            def run_server():
+                server_cmd = shlex.split(
+                    f"fandango -v talk -n 1 -f {DOCS_ROOT / 'smtp-extended.fan'} --server tcp://localhost:9025"
+                )
+                out, err, code = self.run_command(server_cmd)
+                return out, err, code
+
+            def run_client():
+                import time
+                time.sleep(2)  # delay to let server start. We should find a better method for this
+                client_cmd = shlex.split(
+                    f"fandango -v talk -n 1 -f {DOCS_ROOT / 'smtp-extended.fan'} --client tcp://localhost:9025"
+                )
+                out, err, code = self.run_command(client_cmd)
+                return out, err, code
+
+            # Run both in threads (since self.run_command is sync)
+            server_future = asyncio.to_thread(run_server)
+            client_future = asyncio.to_thread(run_client)
+            return await asyncio.gather(server_future, client_future)
+
+        (server_out, server_err, server_code), (client_out, client_err, client_code) = asyncio.run(async_run())
+        self.assertEqual(0, server_code)
+        self.assertEqual(0, client_code)
+
