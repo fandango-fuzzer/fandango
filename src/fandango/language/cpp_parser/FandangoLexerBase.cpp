@@ -1,10 +1,6 @@
 #include "FandangoLexerBase.h"
 #include <assert.h>
 
-
-#include <chrono>
-using namespace std::chrono; // Windows doens't have high_resolution_clock visible by default
-
 const std::regex FandangoLexerBase::NEW_LINE_PATTERN("[^\r\n\f]+");
 const std::regex FandangoLexerBase::SPACES_PATTERN("[\r\n\f]+");
 
