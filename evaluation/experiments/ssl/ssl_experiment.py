@@ -1,4 +1,3 @@
-import shlex
 import subprocess
 import time
 
@@ -15,10 +14,8 @@ def is_syntactically_valid_ssl(tree):
     with open("evaluation/experiments/ssl/certificates/tmp.der", "wb") as fd:
         fd.write(tree.to_bytes("latin1"))
 
-    command = shlex.split("openssl verify -CAfile tmp.der tmp.der")
-
     proc = subprocess.Popen(
-        command,
+        "openssl verify -CAfile tmp.der tmp.der",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
@@ -108,7 +105,6 @@ def ins_key(children, tree):
 
 
 def insert_key(i, tree):
-
     privkey = rsa.generate_private_key(
         public_exponent=65537,
         key_size=2048,

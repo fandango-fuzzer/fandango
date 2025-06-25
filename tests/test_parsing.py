@@ -1,10 +1,9 @@
 #!/usr/bin/env pytest
 
-import shlex
 import subprocess
 import unittest
 
-from fandango.language.grammar import NodeType, Grammar
+from fandango.language.grammar import Alternative, NodeType, Grammar
 from fandango.language.parse import parse
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
@@ -12,11 +11,14 @@ from .utils import RESOURCES_ROOT, DOCS_ROOT
 
 
 class ParserTests(unittest.TestCase):
+    # Type annotation for instance attribute set in setUp
+    grammar: Grammar
 
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         with open(RESOURCES_ROOT / "fandango.fan") as file:
-            cls.grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+            grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+            self.grammar = grammar
 
     def test_rules(self):
         self.assertEqual(len(self.grammar._parser._rules), 9)
@@ -26,8 +28,11 @@ class ParserTests(unittest.TestCase):
             self.grammar._parser._rules[NonTerminal("<start>")],
         )
         alt_1 = self.grammar.rules[NonTerminal("<number>")]
+        assert isinstance(alt_1, Alternative)
         alt_2 = self.grammar.rules[NonTerminal("<non_zero>")]
+        assert isinstance(alt_2, Alternative)
         alt_3 = self.grammar.rules[NonTerminal("<digit>")]
+        assert isinstance(alt_3, Alternative)
         concat_1 = alt_1.children()[0]
         star_1 = concat_1.children()[1]
 
@@ -117,10 +122,14 @@ class ParserTests(unittest.TestCase):
 
 
 class TestComplexParsing(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
+    # Type annotation for instance attribute set in setUp
+    grammar: Grammar
+
+    def setUp(self):
         with open(RESOURCES_ROOT / "constraints.fan") as file:
-            cls.grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+            grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+            self.grammar = grammar
 
     def _test(self, example, tree):
         actual_tree = self.grammar.parse(example, "<ab>")
@@ -192,11 +201,14 @@ class TestComplexParsing(unittest.TestCase):
 
 
 class TestIncompleteParsing(unittest.TestCase):
+    # Type annotation for instance attribute set in setUp
+    grammar: Grammar
 
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         with open(RESOURCES_ROOT / "incomplete.fan") as file:
-            cls.grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+            grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+            self.grammar = grammar
 
     def _test(self, example, tree):
         parsed = False
@@ -224,10 +236,14 @@ class TestIncompleteParsing(unittest.TestCase):
 
 
 class TestDynamicRepetitionParsing(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
+    # Type annotation for instance attribute set in setUp
+    grammar: Grammar
+
+    def setUp(self):
         with open(RESOURCES_ROOT / "dynamic_repetition.fan") as file:
-            cls.grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+            grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+            self.grammar = grammar
 
     def _test(self, example, tree):
         parsed = False
@@ -320,10 +336,14 @@ class TestDynamicRepetitionParsing(unittest.TestCase):
 
 
 class TestEmptyParsing(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
+    # Type annotation for instance attribute set in setUp
+    grammar: Grammar
+
+    def setUp(self):
         with open(RESOURCES_ROOT / "empty.fan") as file:
-            cls.grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+            grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+            self.grammar = grammar
 
     def _test(self, example, tree):
         actual_tree = self.grammar.parse(example)
@@ -361,9 +381,9 @@ class TestEmptyParsing(unittest.TestCase):
 
 class TestCLIParsing(unittest.TestCase):
     @staticmethod
-    def run_command(command):
+    def run_command(command_list):
         proc = subprocess.Popen(
-            command,
+            command_list,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
@@ -373,20 +393,30 @@ class TestCLIParsing(unittest.TestCase):
 
 class TestRegexParsing(TestCLIParsing):
     def test_infinity_abc(self):
-        command = shlex.split(
-            "fandango parse -f "
-            f"{DOCS_ROOT / 'infinity.fan'} --validate {RESOURCES_ROOT / 'abc.txt'} --validate"
-        )
+        command = [
+            "fandango",
+            "parse",
+            "-f",
+            str(DOCS_ROOT / "infinity.fan"),
+            "--validate",
+            str(RESOURCES_ROOT / "abc.txt"),
+            "--validate",
+        ]
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
 
     def test_infinity_abcabc(self):
-        command = shlex.split(
-            "fandango parse -f "
-            f"{DOCS_ROOT / 'infinity.fan'} --validate {RESOURCES_ROOT / 'abcabc.txt'} --validate"
-        )
+        command = [
+            "fandango",
+            "parse",
+            "-f",
+            str(DOCS_ROOT / "infinity.fan"),
+            "--validate",
+            str(RESOURCES_ROOT / "abcabc.txt"),
+            "--validate",
+        ]
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
@@ -394,16 +424,19 @@ class TestRegexParsing(TestCLIParsing):
 
     def test_infinity_abcd(self):
         # This should be rejected by the grammar
-        command = shlex.split(
-            "fandango parse -f "
-            f"{DOCS_ROOT / 'infinity.fan'} {RESOURCES_ROOT / 'abcd.txt'} --validate"
-        )
+        command = [
+            "fandango",
+            "parse",
+            "-f",
+            str(DOCS_ROOT / "infinity.fan"),
+            str(RESOURCES_ROOT / "abcd.txt"),
+            "--validate",
+        ]
         out, err, code = self.run_command(command)
         self.assertEqual(1, code)
 
 
 class TestBitParsing(TestCLIParsing):
-
     def _test(self, example, tree, grammar):
         parsed = False
         for actual_tree in grammar.parse_multiple(example, "<start>"):
@@ -418,10 +451,14 @@ class TestBitParsing(TestCLIParsing):
         self.assertTrue(parsed)
 
     def test_bits_a(self):
-        command = shlex.split(
-            "fandango parse -f "
-            f"{DOCS_ROOT / 'bits.fan'} {RESOURCES_ROOT / 'a.txt'} --validate"
-        )
+        command = [
+            "fandango",
+            "parse",
+            "-f",
+            str(DOCS_ROOT / "bits.fan"),
+            str(RESOURCES_ROOT / "a.txt"),
+            "--validate",
+        ]
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
@@ -469,10 +506,14 @@ class TestBitParsing(TestCLIParsing):
 
 class TestGIFParsing(TestCLIParsing):
     def test_gif(self):
-        command = shlex.split(
-            "fandango parse -f "
-            f"{DOCS_ROOT / 'gif89a.fan'} {DOCS_ROOT / 'tinytrans.gif'} --validate"
-        )
+        command = [
+            "fandango",
+            "parse",
+            "-f",
+            str(DOCS_ROOT / "gif89a.fan"),
+            str(DOCS_ROOT / "tinytrans.gif"),
+            "--validate",
+        ]
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
@@ -481,10 +522,14 @@ class TestGIFParsing(TestCLIParsing):
 
 class TestBitstreamParsing(TestCLIParsing):
     def test_bitstream(self):
-        command = shlex.split(
-            "fandango parse -f "
-            f"{RESOURCES_ROOT / 'bitstream.fan'} {RESOURCES_ROOT / 'abcd.txt'} --validate"
-        )
+        command = [
+            "fandango",
+            "parse",
+            "-f",
+            str(RESOURCES_ROOT / "bitstream.fan"),
+            str(RESOURCES_ROOT / "abcd.txt"),
+            "--validate",
+        ]
         out, err, code = self.run_command(command)
         # Warns that the number of bits (1..5) may not be a multiple of eight, # which is correct
         # self.assertEqual("", err)
@@ -492,20 +537,28 @@ class TestBitstreamParsing(TestCLIParsing):
         self.assertEqual(0, code)
 
     def test_bitstream_a(self):
-        command = shlex.split(
-            "fandango parse -f "
-            f"{RESOURCES_ROOT / 'bitstream-a.fan'} {RESOURCES_ROOT / 'a.txt'} --validate"
-        )
+        command = [
+            "fandango",
+            "parse",
+            "-f",
+            str(RESOURCES_ROOT / "bitstream-a.fan"),
+            str(RESOURCES_ROOT / "a.txt"),
+            "--validate",
+        ]
         out, err, code = self.run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
 
     def test_bitstream_b(self):
-        command = shlex.split(
-            "fandango parse -f "
-            f"{RESOURCES_ROOT / 'bitstream-a.fan'} {RESOURCES_ROOT / 'b.txt'} --validate"
-        )
+        command = [
+            "fandango",
+            "parse",
+            "-f",
+            str(RESOURCES_ROOT / "bitstream-a.fan"),
+            str(RESOURCES_ROOT / "b.txt"),
+            "--validate",
+        ]
         out, err, code = self.run_command(command)
         # This should fail
         self.assertNotEqual("", err)
@@ -513,10 +566,14 @@ class TestBitstreamParsing(TestCLIParsing):
         self.assertEqual(1, code)
 
     def test_rgb(self):
-        command = shlex.split(
-            "fandango parse -f "
-            f"{RESOURCES_ROOT / 'rgb.fan'} {RESOURCES_ROOT / 'rgb.txt'} --validate"
-        )
+        command = [
+            "fandango",
+            "parse",
+            "-f",
+            str(RESOURCES_ROOT / "rgb.fan"),
+            str(RESOURCES_ROOT / "rgb.txt"),
+            "--validate",
+        ]
         out, err, code = self.run_command(command)
         self.assertEqual(0, code, f"Command failed with code {code}: {err}")
         self.assertEqual("", out)
@@ -525,7 +582,14 @@ class TestBitstreamParsing(TestCLIParsing):
 
 class TestImportParsing(TestCLIParsing):
     def test_local_import(self):
-        command = shlex.split(f"fandango fuzz -f {RESOURCES_ROOT / 'import.fan'} -n 1")
+        command = [
+            "fandango",
+            "fuzz",
+            "-f",
+            str(RESOURCES_ROOT / "import.fan"),
+            "-n",
+            "1",
+        ]
         out, err, code = self.run_command(command)
         self.assertEqual(0, code)
         self.assertEqual("import\n", out)
@@ -533,9 +597,13 @@ class TestImportParsing(TestCLIParsing):
 
 class TestISO8601Parsing(TestCLIParsing):
     def test_parse_iso8601(self):
-        command = shlex.split(
-            f"fandango parse -f {DOCS_ROOT / 'iso8601.fan'} {RESOURCES_ROOT / 'iso8601.txt'}"
-        )
+        command = [
+            "fandango",
+            "parse",
+            "-f",
+            str(DOCS_ROOT / "iso8601.fan"),
+            str(RESOURCES_ROOT / "iso8601.txt"),
+        ]
         out, err, code = self.run_command(command)
         self.assertEqual(0, code, err)
         self.assertEqual("", err)
