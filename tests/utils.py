@@ -17,26 +17,24 @@ def run_command(command_list, input=None):
         tuple: (stdout, stderr, return_code) with line endings normalized to \n
     """
     stdin = subprocess.PIPE if input else None
+
     proc = subprocess.Popen(
         command_list,
         stdin=stdin,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        encoding="utf-8",
+        errors="replace",
     )
-    if input is None:
-        input_bytes = None
-    elif isinstance(input, str):
-        input_bytes = input.encode("utf-8")
-    else:
-        input_bytes = input
 
-    out, err = proc.communicate(input=input_bytes)
+    # When using encoding, pass text input directly
+    input_text = (
+        input if input is None or isinstance(input, str) else input.decode("utf-8")
+    )
 
-    # Decode bytes to str with UTF-8 encoding and error handling
-    out_normalized = out.decode("utf-8") if isinstance(out, bytes) else out
-    err_normalized = err.decode("utf-8") if isinstance(err, bytes) else err
+    out, err = proc.communicate(input=input_text)
 
     # Normalize line endings for cross-platform compatibility
-    out_normalized = out_normalized.replace("\r\n", "\n")
-    err_normalized = err_normalized.replace("\r\n", "\n")
+    out_normalized = out.replace("\r\n", "\n")
+    err_normalized = err.replace("\r\n", "\n")
     return out_normalized, err_normalized, proc.returncode
