@@ -65,6 +65,7 @@ jobs:
             !src/fandango/converters/antlr/ANTLRv4*.py
             tests/**/*.py no type checking for tests
             tests/**.py no type checking for tests
+          separator: ' '
 
       # Step 3: Set up Python environment
       - name: Set up Python ${{ matrix.python-version }}
@@ -85,10 +86,11 @@ jobs:
       # Step 5: Run mypy on changed files
       - name: Run mypy on changed files
         if: steps.changed-files.outputs.any_changed == 'true'
-        shell: bash
         run: |
-          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+          files="${{ steps.changed-files.outputs.all_changed_files }}"
+          
+          for file in $files; do
             echo "Checking $file"
-            mypy $file
+            mypy "$file"
           done
 
