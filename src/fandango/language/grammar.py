@@ -120,7 +120,9 @@ class Alternative(Node):
         max_nodes: int = 100,
         in_message: bool = False,
     ):
-        in_range_nodes = list(filter(lambda x: x.distance_to_completion < max_nodes, self.alternatives))
+        in_range_nodes = list(
+            filter(lambda x: x.distance_to_completion < max_nodes, self.alternatives)
+        )
         if len(in_range_nodes) == 0:
             min_ = min(self.alternatives, key=lambda x: x.distance_to_completion)
             random.choice(
@@ -131,9 +133,7 @@ class Alternative(Node):
                 ]
             ).fuzz(parent, grammar, 0, in_message)
             return
-        random.choice(in_range_nodes).fuzz(
-            parent, grammar, max_nodes, in_message
-        )
+        random.choice(in_range_nodes).fuzz(parent, grammar, max_nodes, in_message)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitAlternative(self)
@@ -346,7 +346,9 @@ class Repetition(Node):
                 self.node.fuzz(parent, grammar, 0, in_message)
             else:
                 reserved_max_nodes -= self.node.distance_to_completion
-                self.node.fuzz(parent, grammar, max_nodes - reserved_max_nodes, in_message)
+                self.node.fuzz(
+                    parent, grammar, max_nodes - reserved_max_nodes, in_message
+                )
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
 
