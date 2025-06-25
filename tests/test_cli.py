@@ -106,16 +106,14 @@ class TestCLI(unittest.TestCase):
         shutil.rmtree(RESOURCES_ROOT / "test", ignore_errors=True)
 
     def test_output_with_libfuzzer_harness(self):
-        is_win = sys.platform.startswith("win")
-        platform_specific_flags = [] if is_win else ["-fPIC"]
-        output_file = str(
-            RESOURCES_ROOT / f"test_libfuzzer_interface{'.dll' if is_win else ''}"
-        )
+        if sys.platform.startswith("win"):
+            self.skipTest("LibFuzzer interface not supported on Windows")
+        output_file = str(RESOURCES_ROOT / "test_libfuzzer_interface")
         compile_ = [
             "clang",
             "-g",
             "-O2",
-            *platform_specific_flags,
+            "-fPIC",
             "-shared",
             "-o",
             output_file,
