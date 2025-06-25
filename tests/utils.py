@@ -1,5 +1,7 @@
+import os
 import subprocess
 from pathlib import Path
+import sys
 
 TEST_ROOT = Path(__file__).parent
 RESOURCES_ROOT = TEST_ROOT / "resources"
@@ -12,11 +14,17 @@ def run_command(command_list, input=None):
 
     Args:
         command_list: List of command arguments
+        input: Optional input to pass to stdin
 
     Returns:
         tuple: (stdout, stderr, return_code) with line endings normalized to \n
     """
     stdin = subprocess.PIPE if input else None
+
+    env = os.environ.copy()
+    if sys.platform.startswith("win"):
+        env["PYTHONIOENCODING"] = "utf-8"
+        env["PYTHONUTF8"] = "1"
 
     proc = subprocess.Popen(
         command_list,
@@ -25,6 +33,7 @@ def run_command(command_list, input=None):
         stderr=subprocess.PIPE,
         encoding="utf-8",
         errors="replace",
+        env=env,
     )
 
     # When using encoding, pass text input directly
