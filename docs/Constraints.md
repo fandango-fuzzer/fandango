@@ -209,6 +209,82 @@ assert _exit_code == 0
 The `-v` option comes right after `fandango` (and not after `fandango fuzz`), as `-v` affects all commands (and not just `fuzz`).
 ```
 
+(sec:soft-constraints)=
+## Soft Constraints and Optimization
+
+So far, we have seen constraints that _have_ to be satisfied for Fandango to produce a string.
+On top, Fandango also supports so-called "soft" constraints that Fandango _aims_ to satisfy as good as it can.
+These "soft" constraints come in two forms:
+
+* **maximizing** constraints: These constraints specify an _expression_ whose value should be as _high_ as possible
+* **minimizing** constraints: These constraints specify an expression whose value should be as _low_ as possible.
+
+Such soft constraints are specified
+
+* on the command line, using `--maximizing EXPR` and `--minimizing EXPR`, respectively; or
+* in the `.fan` file, introducing them with `minimizing` and `maximizing` (instead of `where`), respectively.
+
+If, for instance, you want Fandango to maximize the `<age>` field, you write
+
+```shell
+$ fandango fuzz -f persons.fan --maximize 'int(<age>)'
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons.fan -n 10 --maximize 'int(<age>)'
+assert _exit_code == 0
+```
+
+Conversely, minimizing the `<age>` field yields
+
+```shell
+$ fandango fuzz -f persons.fan --maximize 'int(<age>)'
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons.fan -n 10 --minimize 'int(<age>)'
+assert _exit_code == 0
+```
+
+Alternatively, you could also add to the `.fan` file:
+
+```python
+maximizing int(<age>)
+```
+
+or
+
+```python
+minimizing int(<age>)
+```
+
+respectively.
+
+To express optional goals (i.e., real "soft" constraints), simply use a _Boolean_ expressions as the expressions for `--maximize` or `--minimize`.
+Then, Fandango will aim to maximize (or minimize) its value.
+
+```{note}
+Remember that in Python `True` is equivalent to 1, and `False` is equivalent to 0; therefore, "maximizing" a Boolean value means that Fandango will aim to solve it.
+```
+
+Here is an example of a "soft" Boolean constraints, aiming to obtain names that start with "F":
+
+```shell
+$ fandango fuzz -f persons.fan --maximize '<name>.startswith("A")' -n 10
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango fuzz -f persons.fan --maximize '<name>.startswith("A")' -n 10
+assert _exit_code == 0
+```
+
+As you see, "soft" constraints are truly optional :-)
+
+
+
 ## When Constraints Cannot be Solved
 
 Normally, Fandango continues evolving the population until all inputs satisfy the constraints.
