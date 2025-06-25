@@ -42,8 +42,8 @@ else ifeq ($(UNAME), Linux)
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli
 TEST_TOOLS = clang
 SYSTEM_DEV_INSTALL = apt-get install
-else ifeq ($(or $(findstring MSYS_NT,$(UNAME)),$(findstring MINGW,$(UNAME)),$(UNAME),Windows),)
-# Windows (MSYS2/Git Bash)
+else ifneq (,$(findstring NT,$(UNAME)))
+# Windows (all variants): Windows_NT, MINGW64_NT-10.0-20348, MSYS_NT-10.0-20348
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli
 TEST_TOOLS = clang
 SYSTEM_DEV_INSTALL = choco install
