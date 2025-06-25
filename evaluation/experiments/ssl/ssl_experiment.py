@@ -8,19 +8,15 @@ from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language import DerivationTree
 from fandango.language.parse import parse
 from fandango.language.symbol import NonTerminal, Terminal
+from tests.utils import run_command
 
 
 def is_syntactically_valid_ssl(tree):
     with open("evaluation/experiments/ssl/certificates/tmp.der", "wb") as fd:
         fd.write(tree.to_bytes("latin1"))
-
-    proc = subprocess.Popen(
-        "openssl verify -CAfile tmp.der tmp.der",
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    proc.communicate()
-    return proc.returncode == 0
+    command = ["openssl", "verify", "-CAfile", "tmp.der", "tmp.der"]
+    _out, _err, code = run_command(command)
+    return code == 0
 
 
 def evaluate_ssl():
