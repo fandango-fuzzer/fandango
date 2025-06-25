@@ -424,7 +424,7 @@ class PacketForecaster:
                 i_msg.msg.sources = r_msg.msg.sources
                 symbol = r_msg.msg.symbol.symbol
                 if isinstance(symbol, str):
-                    i_msg.msg.symbol = NonTerminal("<" + symbol[1:])  # type: ignore[misc]
+                    i_msg.msg.symbol = NonTerminal("<" + symbol[1:])
                 else:
                     raise FandangoValueError("NonTerminal symbol must be a string!")
             return i_cpy

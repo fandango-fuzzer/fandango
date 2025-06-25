@@ -39,8 +39,8 @@ parts:
     - file: Installing
     - file: Commands
     - file: Language
-    - file: LanguageServer
     - file: Stdlib
     - file: DerivationTree
     - file: PythonAPI
     - file: Including
+    - file: LanguageServer
