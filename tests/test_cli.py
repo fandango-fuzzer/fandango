@@ -4,7 +4,6 @@ import os
 import re
 import shutil
 import subprocess
-import sys
 import unittest
 import time
 
@@ -297,13 +296,12 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
 
     def test_unparse_grammar(self):
         # We unparse the standard library as well as docs/persons.fan
-        # Use cross-platform approach instead of sh/printf
         input_data = f"set -f {DOCS_ROOT / 'persons.fan'}\nset\n"
         out, err, code = run_command(["fandango", "shell"], input=input_data)
         self.assertEqual(0, code)
         self.assertEqual("", err)
-        self.assertTrue(out.startswith("<_char> ::= r'(.|\\n)'\n"))
-        self.assertTrue(out.endswith("<age> ::= <digit>+\n"))
+        self.assertTrue(out.startswith("<_char> ::= r'(.|\\n)'\n"), out)
+        self.assertTrue(out.endswith("<age> ::= <digit>+\n"), out)
 
     def test_talk_cat(self):
         command = [
