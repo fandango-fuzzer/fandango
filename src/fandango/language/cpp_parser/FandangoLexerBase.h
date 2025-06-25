@@ -1,11 +1,9 @@
 
 #pragma once
 
-#include <chrono>
-using namespace std::chrono; // Windows doens't have high_resolution_clock visible by default
-
 #include "antlr4-runtime.h"
 #include "FandangoParser.h"
+#include <chrono>
 #include <regex>
 #include <vector>
 #include <deque>
