@@ -41,12 +41,11 @@ where both first and last name would be a sequence of letters - first, an upperc
 The full definition looks like this:
 
 :::{margin}
-In Fandango specs, symbol names are formed as identifiers in Python - that is, they consist of letters, underscores, and digits.
+In Fandango specs, symbol names are formed like identifiers in Python - that is, they consist of letters, underscores, and digits.
 :::
 
-% TODO
 :::{margin}
-Future Fandango versions will have shortcuts for specifying character ranges.
+Use [regular expressions](sec:regexes) to specifying character ranges.
 :::
 
 ```{code-cell}
@@ -157,6 +156,7 @@ $ fandango fuzz -f persons.fan -n 10 --input_-method=stdin cat -n
 
 The `cat` program is then invoked repeatedly, each time passing a new Fandango-generated input as its standard input.
 
+(sec:libfuzzer)=
 ### Calling a libFuzzer style harness directly
 
 Fandango further supports calling a libFuzzer style harness directly. If you are able to compile your binary to a shared object (`.so` on Linux or `.dylib` on macOS), Fandango can load the binary and directly call the function. This requires some extra work initially but removes the need to start a new process for each input evaluation, thus improving performance significantly. Fandango will exit on the first crashing input. `--input-method=libfuzzer` is only supported in combination with `--file-mode=binary`, since libFuzzer style harnesses expect binary data.

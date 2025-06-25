@@ -140,10 +140,14 @@ class GeneticTest(unittest.TestCase):
                 self.fandango.evaluator.evaluate_individual(individual)
             )
             solutions = list(generator)  # extract all solutions
+            if individual not in unique:
+                individual_possibly_int = individual.to_int()
+                assert individual_possibly_int is not None
+                individual_int = individual_possibly_int % 2
+            else:
+                individual_int = 0
             self.assertEqual(
-                len(solutions),
-                individual.to_int() % 2 if individual not in unique else 0,
-                f"Individual: {individual}",
+                len(solutions), individual_int, f"Individual: {individual}"
             )
             fitness, failing_trees = generator.return_value
             self.assertIsInstance(fitness, float)
@@ -161,11 +165,7 @@ class GeneticTest(unittest.TestCase):
         )
         solutions = list(generator)
         self.assertTrue(all(s.to_int() % 2 == 0) for s in solutions)
-        self.assertTrue(
-            all(ind.to_int() % 2 != 0)
-            for ind in self.fandango.population
-            if ind not in solutions
-        )
+
         self.assertEqual(len(solutions), len(set(solutions)))
         evaluation = generator.return_value
         self.assertEqual(len(evaluation), len(self.fandango.population))
