@@ -33,6 +33,7 @@ from fandango.language.grammar import (
     FuzzingMode,
     Grammar,
     MessageNestingDetector,
+    Node,
     NodeReplacer,
     NodeType,
     NonTerminalNode,
@@ -766,16 +767,16 @@ def check_grammar_definitions(
             f"Start symbol {start_symbol!r} not defined in grammar. Did you mean {closest!r}?"
         )
 
-    def collect_used_symbols(node):
+    def collect_used_symbols(node: Node):
         if node.node_type == NodeType.NON_TERMINAL:
-            used_symbols.add(str(node.symbol))
+            used_symbols.add(str(node.symbol))  # type: ignore[attr-defined] # We're checking types manually
         elif (
             node.node_type == NodeType.REPETITION
             or node.node_type == NodeType.STAR
             or node.node_type == NodeType.PLUS
             or node.node_type == NodeType.OPTION
         ):
-            collect_used_symbols(node.node)
+            collect_used_symbols(node.node)  # type: ignore[attr-defined] # We're checking types manually
 
         for child in node.children():
             collect_used_symbols(child)
