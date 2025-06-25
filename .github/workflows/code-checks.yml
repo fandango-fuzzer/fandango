@@ -37,10 +37,11 @@ jobs:
           black --check src
 
   mypy-check:
-    runs-on: ubuntu-latest  # Use the latest Ubuntu runner provided by GitHub
-
+    runs-on: ${{ matrix.os }}
+    
     strategy:
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: [ 3.11 ]  # Python version to run
 
     steps:
