@@ -31,6 +31,7 @@ jobs:
       - name: Install system dependencies
         env:
           NEEDS_SUDO: ${{ matrix.os == 'ubuntu-latest' }}
+        shell: bash
         run: |
           if [ "$NEEDS_SUDO" = "true" ]; then
             sudo make test-tools
