@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import unittest
 import time
 
@@ -105,14 +106,19 @@ class TestCLI(unittest.TestCase):
         shutil.rmtree(RESOURCES_ROOT / "test", ignore_errors=True)
 
     def test_output_with_libfuzzer_harness(self):
+        is_win = sys.platform.startswith("win")
+        platform_specific_flags = [] if is_win else ["-fPIC"]
+        output_file = str(
+            RESOURCES_ROOT / f"test_libfuzzer_interface{'.dll' if is_win else ''}"
+        )
         compile_ = [
             "clang",
             "-g",
             "-O2",
-            "-fPIC",
+            *platform_specific_flags,
             "-shared",
             "-o",
-            str(RESOURCES_ROOT / "test_libfuzzer_interface"),
+            output_file,
             str(RESOURCES_ROOT / "test_libfuzzer_interface.c"),
         ]
         out, err, code = run_command(compile_)
@@ -135,7 +141,7 @@ class TestCLI(unittest.TestCase):
             "--no-cache",
             "--input-method",
             "libfuzzer",
-            str(RESOURCES_ROOT / "test_libfuzzer_interface"),
+            output_file,
         ]
         expected = ["35716", "4", "9768", "30", "5658", "5", "9", "649", "20", "41"]
         expected_output = "\n".join([f"data: {value}" for value in expected]) + "\n"
