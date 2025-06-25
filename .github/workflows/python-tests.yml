@@ -11,8 +11,9 @@ jobs:
   test:
     name: Run Tests
     runs-on: ${{ matrix.os }}
-
+    
     strategy:
+      fail-fast: false
       matrix:
         python-version: [3.11]
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -30,15 +31,12 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install -e ".[test]"
-          fail-fast: false
-
 
       # Run tests or coverage depending on branch and OS
       - name: Run tests (dev or non-Ubuntu)
         if: github.ref != 'refs/heads/main' || matrix.os != 'ubuntu-latest'
         run: |
           make tests
-          fail-fast: false
 
       - name: Install system dependencies for coverage (main + Ubuntu only)
         if: github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
