@@ -186,7 +186,7 @@ class Concatenation(Node):
                     reserved_distance -= dist_node.distance_to_completion
                     if dist_node == node:
                         break
-                node.fuzz(parent, grammar, max_nodes - reserved_distance, in_message)
+                node.fuzz(parent, grammar, int(max_nodes - reserved_distance), in_message)
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
 
@@ -347,7 +347,7 @@ class Repetition(Node):
             else:
                 reserved_max_nodes -= self.node.distance_to_completion
                 self.node.fuzz(
-                    parent, grammar, max_nodes - reserved_max_nodes, in_message
+                    parent, grammar, int(max_nodes - reserved_max_nodes), in_message
                 )
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
