@@ -233,16 +233,16 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
         async def async_run():
             def run_server():
                 server_cmd = shlex.split(
-                    f"fandango -v talk -n 1 -f {DOCS_ROOT / 'smtp.fan'} --server tcp://localhost:9025"
+                    f"fandango -v talk -n 1 -f {DOCS_ROOT / 'smtp-extended.fan'} --server tcp://localhost:9025"
                 )
                 out, err, code = self.run_command(server_cmd)
                 return out, err, code
 
             def run_client():
                 import time
-                time.sleep(4)  # delay to let server start. We should find a better method for this
+                time.sleep(2)  # delay to let server start. We should find a better method for this
                 client_cmd = shlex.split(
-                    f"fandango -v talk -n 1 -f {DOCS_ROOT / 'smtp.fan'} --client tcp://localhost:9025"
+                    f"fandango -v talk -n 1 -f {DOCS_ROOT / 'smtp-extended.fan'} --client tcp://localhost:9025"
                 )
                 out, err, code = self.run_command(client_cmd)
                 return out, err, code
