@@ -117,10 +117,6 @@ class TestCLI(unittest.TestCase):
         ]
         out, err, code = run_command(compile_)
 
-        # Skip test if clang compilation fails (e.g., on Windows without clang)
-        if code != 0:
-            self.skipTest(f"Clang compilation failed: {err}")
-
         self.assertEqual("", out)
         self.assertEqual("", err)
         self.assertEqual(0, code)
