@@ -375,5 +375,13 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
         (server_out, server_err, server_code), (client_out, client_err, client_code) = (
             asyncio.run(async_run())
         )
-        self.assertEqual(0, server_code)
-        self.assertEqual(0, client_code)
+        self.assertEqual(
+            0,
+            server_code,
+            f"Server error: {server_err}\n\nServer output: {server_out}",
+        )
+        self.assertEqual(
+            0,
+            client_code,
+            f"Client error: {client_err}\n\nClient output: {client_out}",
+        )
