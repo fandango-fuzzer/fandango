@@ -1,11 +1,10 @@
 #!/usr/bin/env pytest
 
 import unittest
-import subprocess
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 
 from fandango.language.parse import parse
-from .utils import RESOURCES_ROOT
+from .utils import RESOURCES_ROOT, run_command
 
 
 class TestSoft(unittest.TestCase):
@@ -29,16 +28,6 @@ class TestSoft(unittest.TestCase):
             :desired_solutions
         ]
         return [s.to_string() for s in solutions]
-
-    @staticmethod
-    def run_command(command_list):
-        proc = subprocess.Popen(
-            command_list,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        out, err = proc.communicate()
-        return out.decode(), err.decode(), proc.returncode
 
 
 class TestSoftValue(TestSoft):
@@ -75,7 +64,7 @@ class TestSoftValue(TestSoft):
             "--random-seed",
             "1",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         lines = [line for line in out.split("\n") if line.strip()]
         last_age = int(lines[-1].split(",")[1])  # e.g., 9999999999999599999999
         self.assertGreater(last_age, 9999999999999)
@@ -93,7 +82,7 @@ class TestSoftValue(TestSoft):
             "--random-seed",
             "1",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         lines = [line for line in out.split("\n") if line.strip()]
         last_age = int(lines[-1].split(",")[1])  # e.g., 9999999999999599999999
         self.assertGreater(last_age, 9999999999999)
@@ -111,7 +100,7 @@ class TestSoftValue(TestSoft):
             "--random-seed",
             "1",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         lines = [line for line in out.split("\n") if line.strip()]
         last_age = int(lines[-1].split(",")[1])
         self.assertEqual(last_age, 0)
@@ -129,7 +118,7 @@ class TestSoftValue(TestSoft):
             "--random-seed",
             "1",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         lines = [line for line in out.split("\n") if line.strip()]
         last_age = int(lines[-1].split(",")[1])
         self.assertEqual(last_age, 0)

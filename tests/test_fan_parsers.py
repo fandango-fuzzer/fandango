@@ -1,22 +1,11 @@
 #!/usr/bin/env pytest
 
 import glob
-import subprocess
 import unittest
 
 import pytest
 
-from .utils import RESOURCES_ROOT, DOCS_ROOT
-
-
-def run_command(command_list):
-    proc = subprocess.Popen(
-        command_list,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    out, err = proc.communicate()
-    return out.decode(), err.decode(), proc.returncode
+from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command
 
 
 files = glob.glob(str(RESOURCES_ROOT / "*.fan")) + glob.glob(str(DOCS_ROOT / "*.fan"))

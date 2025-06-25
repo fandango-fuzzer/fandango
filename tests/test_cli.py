@@ -4,11 +4,13 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import unittest
 import time
+import tempfile
 
 from fandango.cli import get_parser
-from .utils import RESOURCES_ROOT, DOCS_ROOT
+from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command
 
 
 class TestCLI(unittest.TestCase):
@@ -17,19 +19,9 @@ class TestCLI(unittest.TestCase):
             os.remove(RESOURCES_ROOT / "test.txt")
         shutil.rmtree(RESOURCES_ROOT / "test", ignore_errors=True)
 
-    @staticmethod
-    def run_command(command_list):
-        proc = subprocess.Popen(
-            command_list,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        out, err = proc.communicate()
-        return out.decode(), err.decode(), proc.returncode
-
     def test_help(self):
         command = ["fandango", "--help"]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         _parser = get_parser(True)
         self.assertEqual(0, code)
         self.assertEqual(err, "")
@@ -56,10 +48,10 @@ class TestCLI(unittest.TestCase):
 649
 20
 41"""
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual(0, code)
+        self.assertEqual(err, "")
         self.assertEqual(expected, out.strip())
-        self.assertEqual("", err)
 
     def test_output_to_file(self):
         command = [
@@ -78,7 +70,7 @@ class TestCLI(unittest.TestCase):
             "--no-cache",
         ]
         expected = "35716;4;9768;30;5658;5;9;649;20;41"
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual(0, code)
         self.assertEqual("", out)
         self.assertEqual("", err)
@@ -105,7 +97,7 @@ class TestCLI(unittest.TestCase):
             out,
             err,
             code,
-        ) = self.run_command(command)
+        ) = run_command(command)
         self.assertEqual(0, code)
         self.assertEqual("", out)
         self.assertEqual("", err)
@@ -126,7 +118,12 @@ class TestCLI(unittest.TestCase):
             str(RESOURCES_ROOT / "test_libfuzzer_interface"),
             str(RESOURCES_ROOT / "test_libfuzzer_interface.c"),
         ]
-        out, err, code = self.run_command(compile_)
+        out, err, code = run_command(compile_)
+
+        # Skip test if clang compilation fails (e.g., on Windows without clang)
+        if code != 0:
+            self.skipTest(f"Clang compilation failed: {err}")
+
         self.assertEqual("", out)
         self.assertEqual("", err)
         self.assertEqual(0, code)
@@ -149,7 +146,7 @@ class TestCLI(unittest.TestCase):
         ]
         expected = ["35716", "4", "9768", "30", "5658", "5", "9", "649", "20", "41"]
         expected_output = "\n".join([f"data: {value}" for value in expected]) + "\n"
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual("", err)
         self.assertEqual(expected_output, out)
         self.assertEqual(0, code)
@@ -198,7 +195,7 @@ class TestCLI(unittest.TestCase):
         expected = """fandango:ERROR: Population did not converge to a perfect population
 fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
 """
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual(0, code)
         self.assertEqual("", out)
         self.assertEqual(expected, err)
@@ -216,7 +213,7 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             "--random-seed",
             "426912",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
@@ -238,7 +235,7 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             "--population-size",
             "10",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
@@ -262,7 +259,7 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         expected = """fandango:ERROR: Population did not converge to a perfect population
 fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
 """
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual(0, code)
         self.assertEqual("", out)
         self.assertEqual(expected, err)
@@ -290,7 +287,7 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
         out_pattern = (
             r"""(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.\d+\n)*"""
         )
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertRegex(out, out_pattern)
         self.assertRegex(err, err_pattern)
         self.assertEqual(0, code)
@@ -300,12 +297,13 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
 
     def test_unparse_grammar(self):
         # We unparse the standard library as well as docs/persons.fan
+        newline = "\\n\\r" if "win" in sys.platform else "\\n"
         command = [
             "sh",
             "-c",
-            f'printf "set -f {DOCS_ROOT / "persons.fan"}\\nset" | fandango shell',
+            f'printf "set -f {DOCS_ROOT / "persons.fan"}{newline}set" | fandango shell',
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual(0, code)
         self.assertEqual("", err)
         self.assertTrue(out.startswith("<_char> ::= r'(.|\\n)'\n"))
@@ -322,7 +320,7 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
             str(DOCS_ROOT / "cat.fan"),
             "cat",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         err = err.split("\n")
 
         filter_prefixes = ["fandango:INFO: In:", "fandango:INFO: Out:"]
@@ -352,7 +350,7 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
                     "--server",
                     "tcp://localhost:9025",
                 ]
-                out, err, code = self.run_command(server_cmd)
+                out, err, code = run_command(server_cmd)
                 return out, err, code
 
             def run_client():
@@ -372,7 +370,7 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
                     "--client",
                     "tcp://localhost:9025",
                 ]
-                out, err, code = self.run_command(client_cmd)
+                out, err, code = run_command(client_cmd)
                 return out, err, code
 
             # Run both in threads (since self.run_command is sync)
