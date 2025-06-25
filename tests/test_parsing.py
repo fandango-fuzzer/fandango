@@ -1,13 +1,12 @@
 #!/usr/bin/env pytest
 
-import subprocess
 import unittest
 
 from fandango.language.grammar import Alternative, NodeType, Grammar
 from fandango.language.parse import parse
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
-from .utils import RESOURCES_ROOT, DOCS_ROOT
+from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command
 
 
 class ParserTests(unittest.TestCase):
@@ -380,15 +379,7 @@ class TestEmptyParsing(unittest.TestCase):
 
 
 class TestCLIParsing(unittest.TestCase):
-    @staticmethod
-    def run_command(command_list):
-        proc = subprocess.Popen(
-            command_list,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        out, err = proc.communicate()
-        return out.decode(), err.decode(), proc.returncode
+    pass
 
 
 class TestRegexParsing(TestCLIParsing):
@@ -402,7 +393,7 @@ class TestRegexParsing(TestCLIParsing):
             str(RESOURCES_ROOT / "abc.txt"),
             "--validate",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
@@ -417,7 +408,7 @@ class TestRegexParsing(TestCLIParsing):
             str(RESOURCES_ROOT / "abcabc.txt"),
             "--validate",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
@@ -432,7 +423,7 @@ class TestRegexParsing(TestCLIParsing):
             str(RESOURCES_ROOT / "abcd.txt"),
             "--validate",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual(1, code)
 
 
@@ -459,7 +450,7 @@ class TestBitParsing(TestCLIParsing):
             str(RESOURCES_ROOT / "a.txt"),
             "--validate",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
@@ -514,7 +505,7 @@ class TestGIFParsing(TestCLIParsing):
             str(DOCS_ROOT / "tinytrans.gif"),
             "--validate",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
@@ -530,7 +521,7 @@ class TestBitstreamParsing(TestCLIParsing):
             str(RESOURCES_ROOT / "abcd.txt"),
             "--validate",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         # Warns that the number of bits (1..5) may not be a multiple of eight, # which is correct
         # self.assertEqual("", err)
         self.assertEqual("", out)
@@ -545,7 +536,7 @@ class TestBitstreamParsing(TestCLIParsing):
             str(RESOURCES_ROOT / "a.txt"),
             "--validate",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
@@ -559,7 +550,7 @@ class TestBitstreamParsing(TestCLIParsing):
             str(RESOURCES_ROOT / "b.txt"),
             "--validate",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         # This should fail
         self.assertNotEqual("", err)
         self.assertEqual("", out)
@@ -574,7 +565,7 @@ class TestBitstreamParsing(TestCLIParsing):
             str(RESOURCES_ROOT / "rgb.txt"),
             "--validate",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual(0, code, f"Command failed with code {code}: {err}")
         self.assertEqual("", out)
         self.assertEqual("", err)
@@ -590,7 +581,7 @@ class TestImportParsing(TestCLIParsing):
             "-n",
             "1",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual(0, code)
         self.assertEqual("import\n", out)
 
@@ -604,6 +595,6 @@ class TestISO8601Parsing(TestCLIParsing):
             str(DOCS_ROOT / "iso8601.fan"),
             str(RESOURCES_ROOT / "iso8601.txt"),
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual(0, code, err)
         self.assertEqual("", err)

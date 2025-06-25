@@ -1,24 +1,14 @@
 #!/usr/bin/env pytest
 
-import subprocess
 import unittest
 
-from .utils import DOCS_ROOT, PROJECT_ROOT
+from .utils import DOCS_ROOT, PROJECT_ROOT, run_command
 
 
 class test_convert(unittest.TestCase):
-    def run_command(self, command_list):
-        proc = subprocess.Popen(
-            command_list,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        out, err = proc.communicate()
-        return out.decode(), err.decode(), proc.returncode
-
     def test_convert_fan(self):
         command = ["fandango", "convert", str(DOCS_ROOT / "persons.fan")]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual(0, code, f"Command failed with code {code}: {err}")
         self.assertEqual(err, "")
 
@@ -31,7 +21,7 @@ class test_convert(unittest.TestCase):
             "convert",
             str(calculator),
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual(0, code)
         self.assertEqual(err, "")
 
@@ -49,7 +39,7 @@ class test_convert(unittest.TestCase):
             "convert",
             str(svg),
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual(0, code, f"Command failed with code {code}: {err}")
         self.assertEqual(err, "")
 
@@ -62,7 +52,7 @@ class test_convert(unittest.TestCase):
             "--bitfield-order=left-to-right",
             str(gif),
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual(0, code)
         self.assertEqual(err, "")
 
@@ -75,6 +65,6 @@ class test_convert(unittest.TestCase):
             "--bitfield-order=right-to-left",
             str(gif),
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual(0, code)
         self.assertEqual(err, "")
