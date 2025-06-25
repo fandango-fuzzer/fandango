@@ -19,7 +19,7 @@ This document lists major changes across releases.
 * New command `fandango talk` for [checking outputs](sec:outputs) and [testing protocols](sec:protocols) (beta).
 * Much faster parser for `.fan` files, using C++ code.
 * Support for [regular expressions](sec:regexes) for producing and parsing.
-* Support for soft constraints (`maximizing` / `minimizing`).
+* Support for [soft constraints and optimization](sec:soft-constraints) (`maximizing` / `minimizing`).
 * Using `*`/`**` expressions for Python-style [quantifiers](sec:quantifiers) is now operational.
 * f-strings in Python code are now supported.
 * Support for [`libfuzzer` harnesses](sec:libfuzzer).
