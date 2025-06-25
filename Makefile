@@ -35,15 +35,20 @@ UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 # Mac
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli
-TEST_TOOLS =  # clang is installed by default on Mac
+TEST_TOOLS =  # clang is installed by default on Mac
 SYSTEM_DEV_INSTALL = brew install
 else ifeq ($(UNAME), Linux)
 # Linux
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli
 TEST_TOOLS = clang
 SYSTEM_DEV_INSTALL = apt-get install
+else ifeq ($(findstring MSYS_NT,$(UNAME)),MSYS_NT)
+# Windows (MSYS2/Git Bash)
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli
+TEST_TOOLS = clang
+SYSTEM_DEV_INSTALL = choco install
 else ifeq ($(UNAME), Windows)
-# Windows
+# Windows (native)
 SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli
 TEST_TOOLS = clang
 SYSTEM_DEV_INSTALL = choco install
@@ -59,7 +64,9 @@ system-dev-tools:
 	$(SYSTEM_DEV_INSTALL) $(SYSTEM_DEV_TOOLS) $(TEST_TOOLS)
 
 test-tools:
+ifneq ($(TEST_TOOLS),)
 	$(SYSTEM_DEV_INSTALL) $(TEST_TOOLS)
+endif
 
 ## Parser
 
