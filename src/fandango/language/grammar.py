@@ -186,7 +186,9 @@ class Concatenation(Node):
                     reserved_distance -= dist_node.distance_to_completion
                     if dist_node == node:
                         break
-                node.fuzz(parent, grammar, int(max_nodes - reserved_distance), in_message)
+                node.fuzz(
+                    parent, grammar, int(max_nodes - reserved_distance), in_message
+                )
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
 
