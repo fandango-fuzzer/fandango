@@ -28,13 +28,19 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
+      - name: Install system dependencies
+        env:
+          NEEDS_SUDO: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          if [ "$NEEDS_SUDO" = "true" ]; then
+            sudo make test-tools
+          else
+            make test-tools
+          fi
+
       - name: Install Python dependencies
         run: |
           pip install -e ".[test]"
-
-      - name: Install system dependencies
-        run: |
-          sudo make test-tools
 
       # Run tests or coverage depending on branch and OS
       - name: Run tests (dev or non-Ubuntu)
