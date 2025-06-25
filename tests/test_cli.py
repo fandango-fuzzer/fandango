@@ -163,6 +163,8 @@ class TestCLI(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            bufsize=0,  # Unbuffered
+            env={**os.environ, "PYTHONUNBUFFERED": "1"},  # Force Python unbuffered
         )
         time.sleep(20)
         self.assertIsNone(proc.poll(), "Process terminated before 20 seconds")
@@ -295,13 +297,9 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
 
     def test_unparse_grammar(self):
         # We unparse the standard library as well as docs/persons.fan
-        newline = "\\n\\r" if "win" in sys.platform else "\\n"
-        command = [
-            "sh",
-            "-c",
-            f'printf "set -f {DOCS_ROOT / "persons.fan"}{newline}set" | fandango shell',
-        ]
-        out, err, code = run_command(command)
+        # Use cross-platform approach instead of sh/printf
+        input_data = f"set -f {DOCS_ROOT / 'persons.fan'}\nset\n"
+        out, err, code = run_command(["fandango", "shell"], input=input_data)
         self.assertEqual(0, code)
         self.assertEqual("", err)
         self.assertTrue(out.startswith("<_char> ::= r'(.|\\n)'\n"))

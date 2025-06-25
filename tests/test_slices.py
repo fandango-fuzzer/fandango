@@ -1,6 +1,5 @@
 #!/usr/bin/env pytest
 
-import subprocess
 import unittest
 
 from fandango import parse, DerivationTree
@@ -8,21 +7,11 @@ from fandango.constraints.base import ExpressionConstraint
 from fandango.language import NonTerminal, Terminal
 from fandango.language.grammar import Grammar
 from fandango.language.search import ItemSearch, RuleSearch
-from .utils import RESOURCES_ROOT
+from .utils import RESOURCES_ROOT, run_command
 
 
 class TestSlices(unittest.TestCase):
     TEST_DIR = RESOURCES_ROOT
-
-    @staticmethod
-    def run_command(command_list):
-        proc = subprocess.Popen(
-            command_list,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        out, err = proc.communicate()
-        return out.decode(), err.decode(), proc.returncode
 
     def test_startswith(self):
         command = [
@@ -41,7 +30,7 @@ class TestSlices(unittest.TestCase):
             "--population-size",
             "10",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
@@ -63,7 +52,7 @@ class TestSlices(unittest.TestCase):
             "--population-size",
             "10",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
@@ -85,7 +74,7 @@ class TestSlices(unittest.TestCase):
             "--population-size",
             "10",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
@@ -107,7 +96,7 @@ class TestSlices(unittest.TestCase):
             "--population-size",
             "10",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
@@ -129,7 +118,7 @@ class TestSlices(unittest.TestCase):
             "--population-size",
             "10",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
@@ -151,7 +140,7 @@ class TestSlices(unittest.TestCase):
             "--population-size",
             "10",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
@@ -173,7 +162,7 @@ class TestSlices(unittest.TestCase):
             "--population-size",
             "10",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
@@ -195,7 +184,7 @@ class TestSlices(unittest.TestCase):
             "--population-size",
             "10",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)
@@ -217,7 +206,7 @@ class TestSlices(unittest.TestCase):
             "--population-size",
             "10",
         ]
-        out, err, code = self.run_command(command)
+        out, err, code = run_command(command)
         self.assertEqual("", err)
         self.assertEqual("", out)
         self.assertEqual(0, code)

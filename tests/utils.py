@@ -7,7 +7,7 @@ PROJECT_ROOT = TEST_ROOT.parent
 DOCS_ROOT = PROJECT_ROOT / "docs"
 
 
-def run_command(command_list):
+def run_command(command_list, input=None):
     """Run a command and return normalized output with consistent line endings.
 
     Args:
@@ -21,9 +21,9 @@ def run_command(command_list):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    out, err = proc.communicate()
+    out, err = proc.communicate(input=input)
+
     # Normalize line endings for cross-platform compatibility
-    # Use errors='replace' to handle encoding issues gracefully
-    out_normalized = out.decode(errors="replace").replace("\r\n", "\n")
-    err_normalized = err.decode(errors="replace").replace("\r\n", "\n")
+    out_normalized = out.decode().replace("\r\n", "\n")
+    err_normalized = err.decode().replace("\r\n", "\n")
     return out_normalized, err_normalized, proc.returncode
