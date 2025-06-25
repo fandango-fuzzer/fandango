@@ -123,12 +123,12 @@ Fandango also supports [parsing](sec:parsing) inputs with bits.
 This is what happens if we send a byte `\xf0` (the upper four bits set) to the parser:
 
 ```shell
-$ echo -n '\xf0' | fandango parse -f bits.fan -o - --format=bits
+$ printf "\xf0" | fandango parse -f bits.fan -o - --format=bits
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!echo -n '\xf0' | fandango parse -f bits.fan -o - --format=bits --validate
+!printf "\xf0" | fandango parse -f bits.fan -o - --format=bits --validate
 assert _exit_code == 0
 ```
 

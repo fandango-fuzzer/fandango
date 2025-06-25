@@ -1,6 +1,6 @@
 include('expr.fan')
 
-<start> ::= <interaction>{10}
+<start> ::= <interaction>
 <interaction> ::= <In:input> <Out:output>
 <input> ::= <expr> '\n'
 <output> ::= <int> '\n'

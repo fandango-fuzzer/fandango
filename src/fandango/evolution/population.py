@@ -1,5 +1,5 @@
 import random
-from typing import Callable, Generator
+from collections.abc import Callable, Generator
 
 from fandango.errors import FandangoValueError
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree

@@ -39,11 +39,8 @@ class FandangoLexerBase(Lexer):
         super().reset()
 
     def emitToken(self, token: Token):
-        self._token = token  # type: ignore[assignment]
+        self._token = token  # type: ignore[assignment] # library seems to be wrong here?
         self.tokens.append(token)
-        # print(
-        #     f"emitToken(): {token.text!r} ({token.type}) at {token.start}..{token.stop}", file=sys.stderr
-        # )
 
     def nextToken(self) -> Token:
         # Check if the end-of-file is ahead and there are still some DEDENTS expected.

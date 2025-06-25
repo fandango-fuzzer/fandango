@@ -336,7 +336,40 @@ class ConstraintProcessor(FandangoParserVisitor):
             else:
                 raise FandangoValueError(f"Unknown quantifier: {ctx.getText()}")
         elif ctx.ANY() or ctx.ALL():
-            constraint = self.visitQuantifier(ctx.quantifier())
+            constraint = self.visitQuantifier_in_line(ctx.quantifier_in_line())
+            if ctx.nonterminal():
+                bound = NonTerminal(ctx.nonterminal().getText())
+            else:
+                bound = ctx.identifier().getText()
+            search = self.searches.visitStar_selection(ctx.star_selection())[1][0]
+            if ctx.ANY():
+                return ExistsConstraint(
+                    constraint,
+                    bound,
+                    search,
+                    local_variables=self.local_variables,
+                    global_variables=self.global_variables,
+                    lazy=self.lazy,
+                )
+            elif ctx.ALL():
+                return ForallConstraint(
+                    constraint,
+                    bound,
+                    search,
+                    local_variables=self.local_variables,
+                    global_variables=self.global_variables,
+                    lazy=self.lazy,
+                )
+            else:
+                raise FandangoValueError(f"Unknown quantifier: {ctx.getText()}")
+        else:
+            raise FandangoValueError(f"Unknown quantifier: {ctx.getText()}")
+
+    def visitQuantifier_in_line(self, ctx: FandangoParser.Quantifier_in_lineContext):
+        if ctx.formula_disjunction():
+            return self.visitFormula_disjunction(ctx.formula_disjunction())
+        elif ctx.ANY() or ctx.ALL():
+            constraint = self.visitQuantifier_in_line(ctx.quantifier_in_line())
             if ctx.nonterminal():
                 bound = NonTerminal(ctx.nonterminal().getText())
             else:
@@ -576,7 +609,7 @@ class SearchProcessor(FandangoParserVisitor):
 
     def visitStar_selection(self, ctx: FandangoParser.Star_selectionContext):
         identifier = self.get_new_identifier()
-        base = self.transform_selection(ctx.selection())
+        base = self.get_attribute_searches(ctx.dot_selection())
         search: NonTerminalSearch
         if ctx.STAR():
             search = StarSearch(base)
@@ -937,6 +970,10 @@ class SearchProcessor(FandangoParserVisitor):
                     lower=lower,
                     upper=upper,
                     step=step,
+                    lineno=0,
+                    end_lineno=0,
+                    col_offset=0,
+                    end_col_offset=0,
                 ),
                 searches,
                 search_map,
@@ -953,8 +990,6 @@ class SearchProcessor(FandangoParserVisitor):
     def visitString(self, ctx: FandangoParser.StringContext):
         if ctx.STRING():
             value = Terminal.clean(ctx.STRING().getText())
-        elif ctx.FSTRING_DOUBLE_QUOTE() or ctx.FSTRING_DOUBLE_SINGLE_QUOTE():
-            value = ""
         else:
             raise FandangoValueError(f"Unsupported string: {ctx.getText()}")
         return ast.Constant(value=value), [], {}
@@ -990,6 +1025,7 @@ class SearchProcessor(FandangoParserVisitor):
                 )
         else:
             raise FandangoValueError(f"Unsupported f-string: {ctx.getText()}")
+        # noinspection PyUnreachableCode
         return ast.JoinedStr(values=trees), searches, search_map
 
     def visitFstring_middle_no_quote(
@@ -1877,7 +1913,6 @@ class PythonProcessor(FandangoParserVisitor):
             keywords=keywords,
             body=body,
             decorator_list=[],
-            type_params=None,  # type: ignore[arg-type, call-arg]
         )
 
     def visitFunction_def(self, ctx: FandangoParser.Function_defContext):
@@ -1901,7 +1936,7 @@ class PythonProcessor(FandangoParserVisitor):
             class_ = ast.AsyncFunctionDef
         else:
             class_ = ast.FunctionDef
-        return class_(  # type: ignore[call-overload]
+        return class_(
             name=ctx.identifier().getText(),
             args=params,
             body=body,
@@ -1909,6 +1944,9 @@ class PythonProcessor(FandangoParserVisitor):
             returns=self.get_expression(ctx.expression()),
             type_comment=None,
             lineno=0,
+            end_lineno=0,
+            col_offset=0,
+            end_col_offset=0,
         )
 
     def visitDecorators(self, ctx: FandangoParser.DecoratorsContext):
@@ -1944,11 +1982,11 @@ class PythonProcessor(FandangoParserVisitor):
         elif ctx.else_block():
             orelse = self.visitBlock(ctx.else_block().block())
         else:
-            orelse = None
+            orelse = []
         return ast.If(
             test=test,
             body=body,
-            orelse=orelse,  # type: ignore[arg-type]
+            orelse=orelse,
         )
 
     def visitIf_stmt(self, ctx: FandangoParser.If_stmtContext):
