@@ -1,4 +1,4 @@
-name: Code checks
+name: Code Checks
 
 on:
   push:

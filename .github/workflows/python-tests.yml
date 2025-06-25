@@ -45,7 +45,7 @@ jobs:
 
       # Run tests or coverage depending on branch
       - name: Run tests (dev)
-        if: github.ref == 'refs/heads/dev'
+        if: github.ref != 'refs/heads/main'
         run: |
           make tests
 
