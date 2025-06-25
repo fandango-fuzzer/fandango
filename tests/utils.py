@@ -32,9 +32,9 @@ def run_command(command_list, input=None):
 
     out, err = proc.communicate(input=input_bytes)
 
-    # Decode bytes to str
-    out_normalized = out if not isinstance(out, bytes) else out.decode()
-    err_normalized = err if not isinstance(err, bytes) else err.decode()
+    # Decode bytes to str with UTF-8 encoding and error handling
+    out_normalized = out.decode("utf-8") if isinstance(out, bytes) else out
+    err_normalized = err.decode("utf-8") if isinstance(err, bytes) else err
 
     # Normalize line endings for cross-platform compatibility
     out_normalized = out_normalized.replace("\r\n", "\n")
