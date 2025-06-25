@@ -26,7 +26,7 @@ def run_command(command_list, input=None):
     if input is None:
         input_bytes = None
     elif isinstance(input, str):
-        input_bytes = input.encode()
+        input_bytes = input.encode("utf-8")
     else:
         input_bytes = input
 

@@ -34,12 +34,21 @@ $(EGG_INFO)/PKG-INFO: pyproject.toml
 UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 # Mac
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli # clang is installed by default on Mac
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli
+TEST_TOOLS =  # clang is installed by default on Mac
 SYSTEM_DEV_INSTALL = brew install
-else
+else ifeq ($(UNAME), Linux)
 # Linux
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz clang mermaid-cli
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli
+TEST_TOOLS = clang
 SYSTEM_DEV_INSTALL = apt-get install
+else ifeq ($(UNAME), Windows)
+# Windows
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli
+TEST_TOOLS = clang
+SYSTEM_DEV_INSTALL = choco install
+else
+$(error Unsupported OS: $(UNAME))
 endif
 
 
@@ -47,8 +56,10 @@ dev-tools: system-dev-tools
 	$(PIP) install -e ".[development]"
 
 system-dev-tools:
-	$(SYSTEM_DEV_INSTALL) $(SYSTEM_DEV_TOOLS)
+	$(SYSTEM_DEV_INSTALL) $(SYSTEM_DEV_TOOLS) $(TEST_TOOLS)
 
+test-tools:
+	$(SYSTEM_DEV_INSTALL) $(TEST_TOOLS)
 
 ## Parser
 
