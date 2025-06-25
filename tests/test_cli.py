@@ -212,7 +212,7 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
 
     def test_talk_cat(self):
         command = shlex.split(
-            f"fandango -v talk -n 1 -f {DOCS_ROOT / "cat.fan"} cat"
+            f"fandango -v talk -n 1 -f {DOCS_ROOT / 'cat.fan'} cat"
         )
         out, err, code = self.run_command(command)
         err = err.split("\n")
