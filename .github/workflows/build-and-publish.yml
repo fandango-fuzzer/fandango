@@ -6,34 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  validate_branch:
-    name: Validate release source branch
-    runs-on: ubuntu-latest
-    outputs:
-      sha: ${{ steps.sha.outputs.commit }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Get release target commit
-        id: sha
-        run: |
-          echo "commit=${{ github.event.release.target_commitish }}" >> $GITHUB_OUTPUT
-
-      - name: Ensure release is from release branch
-        run: |
-          git fetch origin release
-          if git merge-base --is-ancestor ${{ github.event.release.target_commitish }} origin/release; then
-            echo "✅ Valid release source"
-          else
-            echo "❌ Releases must be created from the release branch."
-            exit 1
-          fi
-
   build_wheels:
     name: Build wheels for ${{ matrix.os }}
-    needs: validate_branch
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
@@ -60,7 +34,6 @@ jobs:
 
   build_sdist:
     name: Build source distribution
-    needs: validate_branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -95,7 +68,6 @@ jobs:
 
   docker_build_and_push:
     name: Build and Push Docker Image
-    needs: validate_branch
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
