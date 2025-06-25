@@ -85,6 +85,7 @@ jobs:
       # Step 5: Run mypy on changed files
       - name: Run mypy on changed files
         if: steps.changed-files.outputs.any_changed == 'true'
+        shell: bash
         run: |
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
             echo "Checking $file"
