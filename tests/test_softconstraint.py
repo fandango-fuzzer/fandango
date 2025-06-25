@@ -2,7 +2,6 @@
 
 import unittest
 import subprocess
-import shlex
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 
 from fandango.language.parse import parse
@@ -32,9 +31,9 @@ class TestSoft(unittest.TestCase):
         return [s.to_string() for s in solutions]
 
     @staticmethod
-    def run_command(command):
+    def run_command(command_list):
         proc = subprocess.Popen(
-            command,
+            command_list,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
@@ -64,44 +63,72 @@ class TestSoftValue(TestSoft):
         self.assertEqual(len(last_name), 2)
 
     def test_cli_max_1(self):
-        command = shlex.split(
-            "fandango fuzz -f "
-            f"{RESOURCES_ROOT / 'persons.fan'} "
-            "-c 'maximizing int(<age>)' -n 50 --random-seed 1"
-        )
+        command = [
+            "fandango",
+            "fuzz",
+            "-f",
+            str(RESOURCES_ROOT / "persons.fan"),
+            "-c",
+            "maximizing int(<age>)",
+            "-n",
+            "50",
+            "--random-seed",
+            "1",
+        ]
         out, err, code = self.run_command(command)
         lines = [line for line in out.split("\n") if line.strip()]
         last_age = int(lines[-1].split(",")[1])  # e.g., 9999999999999599999999
         self.assertGreater(last_age, 9999999999999)
 
     def test_cli_max_2(self):
-        command = shlex.split(
-            "fandango fuzz -f "
-            f"{RESOURCES_ROOT / 'persons.fan'} "
-            "--maximize 'int(<age>)' -n 50 --random-seed 1"
-        )
+        command = [
+            "fandango",
+            "fuzz",
+            "-f",
+            str(RESOURCES_ROOT / "persons.fan"),
+            "--maximize",
+            "int(<age>)",
+            "-n",
+            "50",
+            "--random-seed",
+            "1",
+        ]
         out, err, code = self.run_command(command)
         lines = [line for line in out.split("\n") if line.strip()]
         last_age = int(lines[-1].split(",")[1])  # e.g., 9999999999999599999999
         self.assertGreater(last_age, 9999999999999)
 
     def test_cli_min_1(self):
-        command = shlex.split(
-            "fandango fuzz -f "
-            f"{RESOURCES_ROOT / 'persons.fan'} "
-            "-c 'minimizing int(<age>)' -n 100 --random-seed 1"
-        )
+        command = [
+            "fandango",
+            "fuzz",
+            "-f",
+            str(RESOURCES_ROOT / "persons.fan"),
+            "-c",
+            "minimizing int(<age>)",
+            "-n",
+            "100",
+            "--random-seed",
+            "1",
+        ]
         out, err, code = self.run_command(command)
         lines = [line for line in out.split("\n") if line.strip()]
         last_age = int(lines[-1].split(",")[1])
         self.assertEqual(last_age, 0)
 
     def test_cli_min_2(self):
-        command = shlex.split(
-            "fandango fuzz -f "
-            f"{RESOURCES_ROOT / 'persons.fan'} "
-            "--minimize 'int(<age>)' -n 100 --random-seed 1"
-        )
+        command = [
+            "fandango",
+            "fuzz",
+            "-f",
+            str(RESOURCES_ROOT / "persons.fan"),
+            "--minimize",
+            "int(<age>)",
+            "-n",
+            "100",
+            "--random-seed",
+            "1",
+        ]
         out, err, code = self.run_command(command)
         lines = [line for line in out.split("\n") if line.strip()]
         last_age = int(lines[-1].split(",")[1])
