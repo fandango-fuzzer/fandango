@@ -120,7 +120,8 @@ class Alternative(Node):
         max_nodes: int = 100,
         in_message: bool = False,
     ):
-        if self.distance_to_completion >= max_nodes:
+        in_range_nodes = list(filter(lambda x: x.distance_to_completion < max_nodes, self.alternatives))
+        if len(in_range_nodes) == 0:
             min_ = min(self.alternatives, key=lambda x: x.distance_to_completion)
             random.choice(
                 [
@@ -130,8 +131,8 @@ class Alternative(Node):
                 ]
             ).fuzz(parent, grammar, 0, in_message)
             return
-        random.choice(self.alternatives).fuzz(
-            parent, grammar, max_nodes - 1, in_message
+        random.choice(in_range_nodes).fuzz(
+            parent, grammar, max_nodes, in_message
         )
 
     def accept(self, visitor: "NodeVisitor"):
@@ -180,7 +181,12 @@ class Concatenation(Node):
             if node.distance_to_completion >= max_nodes:
                 node.fuzz(parent, grammar, 0, in_message)
             else:
-                node.fuzz(parent, grammar, max_nodes - 1, in_message)
+                reserved_distance = self.distance_to_completion
+                for dist_node in self.nodes:
+                    reserved_distance -= dist_node.distance_to_completion
+                    if dist_node == node:
+                        break
+                node.fuzz(parent, grammar, max_nodes - reserved_distance, in_message)
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
 
@@ -330,13 +336,17 @@ class Repetition(Node):
         current_min = self.min(grammar, parent)
         current_max = self.max(grammar, parent)
 
-        for rep in range(random.randint(current_min, current_max)):
+        goal_range = random.randint(current_min, current_max)
+        reserved_max_nodes = self.distance_to_completion
+
+        for rep in range(goal_range):
             if self.node.distance_to_completion >= max_nodes:
                 if rep > current_min:
                     break
                 self.node.fuzz(parent, grammar, 0, in_message)
             else:
-                self.node.fuzz(parent, grammar, max_nodes - 1, in_message)
+                reserved_max_nodes -= self.node.distance_to_completion
+                self.node.fuzz(parent, grammar, max_nodes - reserved_max_nodes, in_message)
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
 
@@ -530,7 +540,7 @@ class NonTerminalNode(Node):
 
 class TerminalNode(Node):
     def __init__(self, symbol: Terminal):
-        super().__init__(NodeType.TERMINAL, 0)
+        super().__init__(NodeType.TERMINAL, 1)
         self.symbol = symbol
 
     def fuzz(
