@@ -91,8 +91,7 @@ def test_forecast_7():
     tree = grammar.parse("dccg", mode=Grammar.Parser.ParsingMode.INCOMPLETE)
 
     prediction: PacketForecaster.ForecastingResult = forecaster.predict(tree)
-    expected = {
-    }
+    expected: dict[str, list[str]] = {}
     assert_prediction(prediction, expected)
 
 def test_forecast_8():
@@ -101,8 +100,7 @@ def test_forecast_8():
     tree = grammar.parse("dcch", mode=Grammar.Parser.ParsingMode.INCOMPLETE)
 
     prediction: PacketForecaster.ForecastingResult = forecaster.predict(tree)
-    expected = {
-    }
+    expected: dict[str, list[str]] = {}
     assert_prediction(prediction, expected)
 
 
