@@ -7,18 +7,12 @@ import subprocess
 import sys
 import unittest
 import time
-import tempfile
 
 from fandango.cli import get_parser
 from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command
 
 
 class TestCLI(unittest.TestCase):
-    def tearDown(self):
-        if os.path.exists(RESOURCES_ROOT / "test.txt"):
-            os.remove(RESOURCES_ROOT / "test.txt")
-        shutil.rmtree(RESOURCES_ROOT / "test", ignore_errors=True)
-
     def test_help(self):
         command = ["fandango", "--help"]
         out, err, code = run_command(command)
@@ -54,6 +48,7 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(expected, out.strip())
 
     def test_output_to_file(self):
+        out_file = RESOURCES_ROOT / "test.txt"
         command = [
             "fandango",
             "fuzz",
@@ -64,7 +59,7 @@ class TestCLI(unittest.TestCase):
             "--random-seed",
             "426912",
             "-o",
-            str(RESOURCES_ROOT / "test.txt"),
+            str(out_file),
             "-s",
             ";",
             "--no-cache",
@@ -74,9 +69,10 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(0, code)
         self.assertEqual("", out)
         self.assertEqual("", err)
-        with open(RESOURCES_ROOT / "test.txt", "r") as fd:
+        with open(out_file, "r") as fd:
             actual = fd.read()
         self.assertEqual(expected, actual)
+        os.remove(RESOURCES_ROOT / "test.txt")
 
     def test_output_multiple_files(self):
         command = [
@@ -106,6 +102,8 @@ class TestCLI(unittest.TestCase):
             with open(filename, "r") as fd:
                 actual = fd.read()
             self.assertEqual(expected_value, actual)
+
+        shutil.rmtree(RESOURCES_ROOT / "test", ignore_errors=True)
 
     def test_output_with_libfuzzer_harness(self):
         compile_ = [
