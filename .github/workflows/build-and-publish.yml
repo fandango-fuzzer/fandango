@@ -10,7 +10,7 @@ jobs:
     name: Build wheels for ${{ matrix.os }}
     runs-on: ${{ matrix.runs-on }}
     strategy:
-      fail-fast: false
+      fail-fast: false  # Ensures all builds run even if some fail
       matrix:
         include:
           - os: linux-intel
@@ -19,6 +19,8 @@ jobs:
             runs-on: ubuntu-24.04-arm
           - os: macos-arm
             runs-on: macos-latest
+          - os: windows
+            runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 

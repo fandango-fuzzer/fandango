@@ -167,6 +167,9 @@ Fandango is invoked as follows:
 $ fandango fuzz -f persons.fan -n 10 --input-method=libfuzzer --file-mode=binary ./harness.{so,dylib}
 ```
 
+```{note}
+The libFuzzer interface is untested on Windows so far due to a lack of hardware. If you would like to test it, try un-skipping `test_output_with_libfuzzer_harness` in `test_cli.py`. You may need to adjust how the C file is compiled.
+```
 
 ## Executable `.fan` files
 
