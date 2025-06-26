@@ -8,16 +8,24 @@ on:
 jobs:
   build_wheels:
     name: Build wheels for ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false  # Ensures all builds run even if some fail
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-13, macos-14]
+        include:
+          - os: linux-intel
+            runs-on: ubuntu-latest
+          - os: linux-arm
+            runs-on: ubuntu-24.04-arm
+          - os: macos-arm
+            runs-on: macos-latest
+          - os: windows
+            runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.0.0
+        uses: pypa/cibuildwheel@v2.11.2
         env:
           FANDANGO_REQUIRE_BINARY_BUILD: "1"
 
