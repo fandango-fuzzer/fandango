@@ -12,7 +12,7 @@
     <mail_from>
 
 <error> ::= '5' <digit> <digit> ' ' <error_message> '\r\n'
-<error_message> ::= r'.*' := "Error"
+<error_message> ::= r'[^\r]*' := "Error"
 
 <mail_from> ::= <Client:MAIL_FROM> \
     (<Server:ok> <mail_to> | <Server:error>)
