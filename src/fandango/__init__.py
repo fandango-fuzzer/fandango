@@ -2,6 +2,7 @@
 
 import importlib.metadata
 import logging
+import os
 import sys
 
 from fandango.api import Fandango
@@ -13,6 +14,7 @@ from fandango.errors import (
 )
 import fandango.language.tree
 import fandango.language.parse
+from fandango.logger import LOGGER
 
 __all__ = [
     "FandangoError",
@@ -25,11 +27,19 @@ __all__ = [
     "homepage",
 ]
 
-if "pytest" in sys.modules:
+if "pytest" in sys.modules or os.environ.get("FANDANGO_RUN_BEARTYPE", False):
     from beartype.claw import beartype_this_package  # type: ignore [import-not-found]
     from beartype import BeartypeConf  # type: ignore [import-not-found]
 
-    beartype_this_package(conf=BeartypeConf(claw_skip_package_names=("fandango",)))
+    LOGGER.info("Running with dynamic type checking via beartype")
+    beartype_this_package(
+        conf=BeartypeConf(
+            claw_skip_package_names=(
+                "fandango.converters.antlr.ANTLRv4Parser",  # auto-generated
+                "fandango.converters.antlr.ANTLRv4Lexer",  # auto-generated
+            )
+        )
+    )
 
 
 DISTRIBUTION_NAME = "fandango-fuzzer"
