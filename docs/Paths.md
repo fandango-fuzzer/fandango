@@ -460,6 +460,7 @@ $ fandango fuzz -f persons.fan -n 10 -c '<start>[0].<last_name>..<ascii_lowercas
 assert _exit_code == 0
 ```
 
+(sec:quantifiers)=
 ## Quantifiers
 
 By default, whenever you use a symbol `<foo>` in a constraint, this constraint applies to _all_ occurrences of `<foo>` in the produced output string.
@@ -561,7 +562,14 @@ So, what we get is universal quantification:
 $ fandango fuzz -f persons.fan -n 10 -c 'all(c == "a" for c in *<first_name>..<ascii_lowercase_letter>)'
 ```
 
-% FIXME: Not star syntax yet - see bug #503
+% FIXME: Not star syntax yet - see bug #502
+% ```{code-cell}
+% :tags: ["remove-input"]
+% !fandango fuzz -f persons.fan -n 10 -c 'all(c == "a" for c in *<first_name>..<ascii_lowercase_letter>)'
+% assert _exit_code == 0
+% ```
+
+% This works
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango fuzz -f persons.fan -n 10 -c '<first_name>..<ascii_lowercase_letter> == "a"' --validate

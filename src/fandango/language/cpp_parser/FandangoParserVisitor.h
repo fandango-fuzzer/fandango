@@ -57,6 +57,8 @@ public:
 
     virtual std::any visitQuantifier(FandangoParser::QuantifierContext *context) = 0;
 
+    virtual std::any visitQuantifier_in_line(FandangoParser::Quantifier_in_lineContext *context) = 0;
+
     virtual std::any visitFormula_disjunction(FandangoParser::Formula_disjunctionContext *context) = 0;
 
     virtual std::any visitFormula_conjunction(FandangoParser::Formula_conjunctionContext *context) = 0;
