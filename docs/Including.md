@@ -54,12 +54,12 @@ Use `fandango clear-cache -n` to retrieve its location:
 
 ```shell
 $ fandango clear-cache -n
-assert _exit_code == 0
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
 !fandango clear-cache -n
+assert _exit_code == 0
 ```
 
 If you want to reclaim space, or if there is some incompatibility between parsed and cached files, use `fandango clear-cache` to clear the cache:

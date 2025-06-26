@@ -11,7 +11,7 @@ import sys
 import threading
 import time
 from abc import ABC
-from typing import Optional, List
+from typing import Optional
 
 from fandango.errors import FandangoError, FandangoValueError
 from fandango.language.tree import DerivationTree
@@ -275,7 +275,7 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
                         self._sock.setblocking(False)
                         try:
                             self._sock.connect((self.ip, self.port))
-                        except BlockingIOError as e:
+                        except BlockingIOError:
                             pass
                         while self._running:
                             _, wlist, _ = select.select([], [self._sock], [], 0.1)
@@ -616,11 +616,11 @@ class ProcessManager(object):
         return self.proc
 
     @property
-    def command(self) -> str | List[str] | None:
+    def command(self) -> str | list[str] | None:
         """Returns the command to be executed to start the process."""
         return self._command
 
-    def set_command(self, value: str | List[str], text: bool = True):
+    def set_command(self, value: str | list[str], text: bool = True):
         """Sets the command to be executed to start the process."""
         assert isinstance(
             value, (str, list)
@@ -648,7 +648,7 @@ class ProcessManager(object):
         )
 
 
-def set_program_command(command: str | List[str], text: bool = True):
+def set_program_command(command: str | list[str], text: bool = True):
     """
     Set the command to be executed by the ProcessManager.
     :param command: The command to execute.

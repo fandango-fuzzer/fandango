@@ -6,7 +6,8 @@ import time
 import typing
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Iterator, Optional, Union, Generator
+from typing import Any, Iterator, Optional, Union
+from collections.abc import Generator
 
 import exrex
 
@@ -56,8 +57,12 @@ class Node(abc.ABC):
     def __init__(
         self, node_type: NodeType, distance_to_completion: float = float("inf")
     ):
-        self.node_type = node_type
+        self._node_type = node_type
         self.distance_to_completion = distance_to_completion
+
+    @property
+    def node_type(self):
+        return self._node_type
 
     def fuzz(
         self,
@@ -118,7 +123,10 @@ class Alternative(Node):
         max_nodes: int = 100,
         in_message: bool = False,
     ):
-        if self.distance_to_completion >= max_nodes:
+        in_range_nodes = list(
+            filter(lambda x: x.distance_to_completion < max_nodes, self.alternatives)
+        )
+        if len(in_range_nodes) == 0:
             min_ = min(self.alternatives, key=lambda x: x.distance_to_completion)
             random.choice(
                 [
@@ -128,9 +136,7 @@ class Alternative(Node):
                 ]
             ).fuzz(parent, grammar, 0, in_message)
             return
-        random.choice(self.alternatives).fuzz(
-            parent, grammar, max_nodes - 1, in_message
-        )
+        random.choice(in_range_nodes).fuzz(parent, grammar, max_nodes, in_message)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitAlternative(self)
@@ -142,6 +148,7 @@ class Alternative(Node):
         self.alternatives = [
             node for node in self.alternatives if node.in_parties(parties)
         ]
+        super().slice_parties(parties)
 
     def __getitem__(self, item):
         return self.alternatives.__getitem__(item)
@@ -177,7 +184,14 @@ class Concatenation(Node):
             if node.distance_to_completion >= max_nodes:
                 node.fuzz(parent, grammar, 0, in_message)
             else:
-                node.fuzz(parent, grammar, max_nodes - 1, in_message)
+                reserved_distance = self.distance_to_completion
+                for dist_node in self.nodes:
+                    reserved_distance -= dist_node.distance_to_completion
+                    if dist_node == node:
+                        break
+                node.fuzz(
+                    parent, grammar, int(max_nodes - reserved_distance), in_message
+                )
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
 
@@ -189,6 +203,7 @@ class Concatenation(Node):
 
     def slice_parties(self, parties: list[str]) -> None:
         self.nodes = [node for node in self.nodes if node.in_parties(parties)]
+        super().slice_parties(parties)
 
     def __getitem__(self, item):
         return self.nodes.__getitem__(item)
@@ -263,6 +278,8 @@ class Repetition(Node):
         if override_iterations_to_perform is not None:
             rep_goal = override_iterations_to_perform - override_starting_repetition
 
+        reserved_max_nodes = self.distance_to_completion
+
         for rep in range(rep_goal):
             current_rep = rep + override_starting_repetition
             if self.node.distance_to_completion >= max_nodes:
@@ -270,7 +287,8 @@ class Repetition(Node):
                     break
                 self.node.fuzz(parent, grammar, 0, in_message)
             else:
-                self.node.fuzz(parent, grammar, max_nodes - 1, in_message)
+                reserved_max_nodes -= self.node.distance_to_completion
+                self.node.fuzz(parent, grammar, int(max_nodes - reserved_max_nodes), in_message)
             for child in parent.children[prev_children_len:]:
                 child.origin_nodes.insert(0, (self.id, current_iteration, current_rep))
             max_nodes -= parent.size() - prev_parent_size
@@ -457,7 +475,7 @@ class NonTerminalNode(Node):
 
 class TerminalNode(Node):
     def __init__(self, symbol: Terminal):
-        super().__init__(NodeType.TERMINAL, 0)
+        super().__init__(NodeType.TERMINAL, 1)
         self.symbol = symbol
 
     def fuzz(
@@ -554,7 +572,7 @@ class NodeVisitor(abc.ABC):
     def aggregate_results(self, aggregate, result):
         pass
 
-    def visitChildren(self, node: Node) -> Any:
+    def visitChildren(self, node: Node):
         # noinspection PyNoneFunctionAssignment
         result = self.default_result()
         for child in node.children():
@@ -2293,31 +2311,31 @@ class Grammar(NodeVisitor):
             if node.node_type == NodeType.TERMINAL:
                 continue
             elif node.node_type == NodeType.NON_TERMINAL:
-                if node.symbol not in self.rules:  # type: ignore[attr-defined]
+                if node.symbol not in self.rules:  # type: ignore[attr-defined] # We're checking types manually
                     raise FandangoValueError(
-                        f"Symbol {node.symbol} not found in grammar"  # type: ignore[attr-defined]
+                        f"Symbol {node.symbol} not found in grammar"  # type: ignore[attr-defined] # We're checking types manually
                     )
-                if self.rules[node.symbol].distance_to_completion == float("inf"):  # type: ignore[attr-defined]
+                if self.rules[node.symbol].distance_to_completion == float("inf"):  # type: ignore[attr-defined] # We're checking types manually
                     nodes.append(node)
                 else:
                     node.distance_to_completion = (
-                        self.rules[node.symbol].distance_to_completion + 1  # type: ignore[attr-defined]
+                        self.rules[node.symbol].distance_to_completion + 1  # type: ignore[attr-defined] # We're checking types manually
                     )
             elif node.node_type == NodeType.ALTERNATIVE:
                 node.distance_to_completion = (
-                    min([n.distance_to_completion for n in node.alternatives]) + 1  # type: ignore[attr-defined]
+                    min([n.distance_to_completion for n in node.alternatives]) + 1  # type: ignore[attr-defined] # We're checking types manually
                 )
                 if node.distance_to_completion == float("inf"):
                     nodes.append(node)
             elif node.node_type == NodeType.CONCATENATION:
-                if any([n.distance_to_completion == float("inf") for n in node.nodes]):  # type: ignore[attr-defined]
+                if any([n.distance_to_completion == float("inf") for n in node.nodes]):  # type: ignore[attr-defined] # We're checking types manually
                     nodes.append(node)
                 else:
                     node.distance_to_completion = (
-                        sum([n.distance_to_completion for n in node.nodes]) + 1  # type: ignore[attr-defined]
+                        sum([n.distance_to_completion for n in node.nodes]) + 1  # type: ignore[attr-defined] # We're checking types manually
                     )
             elif node.node_type == NodeType.REPETITION:
-                if node.node.distance_to_completion == float("inf"):  # type: ignore[attr-defined]
+                if node.node.distance_to_completion == float("inf"):  # type: ignore[attr-defined] # We're checking types manually
                     nodes.append(node)
                 else:
                     try:
@@ -2325,7 +2343,7 @@ class Grammar(NodeVisitor):
                     except ValueError:
                         min_rep = 0
                     node.distance_to_completion = (
-                        node.node.distance_to_completion * min_rep + 1  # type: ignore[attr-defined]
+                        node.node.distance_to_completion * min_rep + 1  # type: ignore[attr-defined] # We're checking types manually
                     )
             else:
                 raise FandangoValueError(f"Unknown node type {node.node_type}")

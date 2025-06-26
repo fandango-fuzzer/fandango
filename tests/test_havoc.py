@@ -47,13 +47,13 @@ def test_get_random_range_of_length():
 
     # testing edge cases of length values
     with pytest.raises(ValueError):
-        _get_random_range_of_length([0] * INPUT_SIZE, 0)
+        _get_random_range_of_length(bytearray([0] * INPUT_SIZE), 0)
     with pytest.raises(ValueError):
-        _get_random_range_of_length([0] * INPUT_SIZE, INPUT_SIZE + 1)
+        _get_random_range_of_length(bytearray([0] * INPUT_SIZE), INPUT_SIZE + 1)
 
     # testing edge cases of input_ size
     with pytest.raises(ValueError):
-        _get_random_range_of_length([], 1)
+        _get_random_range_of_length(bytearray([]), 1)
 
     input = bytearray([0] * INPUT_SIZE)
     for _ in range(ITERS):
@@ -69,13 +69,13 @@ def test_get_random_range_with_max_length():
 
     # testing edge cases of length values
     with pytest.raises(ValueError):
-        _get_random_range_with_max_length([0] * INPUT_SIZE, 0)
+        _get_random_range_with_max_length(bytearray([0] * INPUT_SIZE), 0)
     with pytest.raises(ValueError):
-        _get_random_range_with_max_length([0] * INPUT_SIZE, INPUT_SIZE + 1)
+        _get_random_range_with_max_length(bytearray([0] * INPUT_SIZE), INPUT_SIZE + 1)
 
     # testing edge cases of input_ size
     with pytest.raises(ValueError):
-        _get_random_range_with_max_length([], 1)
+        _get_random_range_with_max_length(bytearray([]), 1)
 
     input = bytearray([0] * INPUT_SIZE)
     for _ in range(1, ITERS):
@@ -97,8 +97,8 @@ def test_return_value(mutation, input_size):
         expected = mutation.mutate(input)
         actual = input != input_copy
         assert expected == actual, (
-            f"Mutator {mutation} reported to {'not 'if not expected else ''}have mutated, "
-            f"but the input was {'not 'if not actual else ''}mutated.\n"
+            f"Mutator {mutation} reported to {'not ' if not expected else ''}have mutated, "
+            f"but the input was {'not ' if not actual else ''}mutated.\n"
             f"Original input: {input_copy}\nMutated input: {input}"
         )
 
@@ -223,11 +223,11 @@ def test_byte_rand_mutation():
     [(havoc.ArithmeticOperation.ADD, 0xFF), (havoc.ArithmeticOperation.SUB, 0x00)],
 )
 @pytest.mark.parametrize("num_bytes", [1, 2, 4, 8])
-@pytest.mark.parametrize("endianness", ["little", "big"])
-def test_multi_byte_arithmetic_mutation(mode, num_bytes, endianness):
+@pytest.mark.parametrize("little_endian", [True, False])
+def test_multi_byte_arithmetic_mutation(mode, num_bytes, little_endian):
     from fandango.evolution.havoc import MultiByteArithmeticMutation
 
-    mutation = MultiByteArithmeticMutation(num_bytes, mode[0], endianness)
+    mutation = MultiByteArithmeticMutation(num_bytes, mode[0], little_endian)
     for _ in range(ITERS):
         input = bytearray([mode[1]] * INPUT_SIZE)
         has_mutated = mutation.mutate(input)
@@ -521,7 +521,7 @@ def test_bytes_swap_mutation():
             assert input == input_copy
             return
 
-        assert input != input_copy, f"Input is not mutated"
+        assert input != input_copy, "Input is not mutated"
         assert (
             bytearray(sorted(input)) == input_copy
-        ), f"Input does not contain all elements anymore"
+        ), "Input does not contain all elements anymore"

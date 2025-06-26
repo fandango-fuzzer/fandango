@@ -5,7 +5,7 @@ import re
 import sys
 from typing import Any
 
-from lxml import etree  # type: ignore[attr-defined]
+from lxml import etree  # type: ignore[attr-defined] # types not available
 
 from fandango.converters.FandangoConverter import FandangoConverter
 

@@ -1,9 +1,12 @@
 import copy
 from io import BytesIO, StringIO
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, TYPE_CHECKING
 
 from fandango.errors import FandangoValueError
 from fandango.language.symbol import NonTerminal, Slice, Symbol, Terminal
+
+if TYPE_CHECKING:
+    from fandango.language.grammar import Grammar
 
 
 class ProtocolMessage:
@@ -122,6 +125,11 @@ class DerivationTree:
     def symbol(self) -> Symbol:
         return self._symbol
 
+    @symbol.setter
+    def symbol(self, symbol):
+        self._symbol = symbol
+        self.invalidate_hash()
+
     @property
     def nonterminal(self) -> NonTerminal:
         """
@@ -141,12 +149,6 @@ class DerivationTree:
         if not isinstance(self._symbol, Terminal):
             raise TypeError(f"Expected Terminal, got {type(self._symbol)}")
         return self._symbol
-
-    # noinspection PyPropertyDefinition
-    @symbol.setter  # type: ignore[attr-defined, no-redef]
-    def symbol(self, symbol):
-        self._symbol = symbol
-        self.invalidate_hash()
 
     def is_terminal(self):
         """
@@ -686,46 +688,64 @@ class DerivationTree:
     def __repr__(self):
         return self.to_repr()
 
-    def to_int(self, *args, **kwargs):
+    def to_int(self, *args, **kwargs) -> Optional[int]:
+        val = self.value()
+        if val is None:
+            return None
         try:
-            return int(self.value(), *args, **kwargs)  # type: ignore[arg-type]
+            return int(val, *args, **kwargs)
         except ValueError:
             return None
 
-    def to_float(self):
+    def to_float(self) -> Optional[float]:
+        val = self.value()
+        if val is None:
+            return None
         try:
-            return float(self.value())  # type: ignore[arg-type]
+            return float(val)
         except ValueError:
             return None
 
-    def to_complex(self, *args, **kwargs):
+    def to_complex(self, *args, **kwargs) -> Optional[complex]:
+        val = self.value()
+        if val is None or isinstance(val, bytes):
+            return None
         try:
-            return complex(self.value(), *args, **kwargs)  # type: ignore[arg-type]
+            return complex(val, *args, **kwargs)
         except ValueError:
             return None
 
-    def is_int(self, *args, **kwargs):
+    def is_int(self, *args, **kwargs) -> bool:
+        val = self.value()
+        if val is None:
+            return False
         try:
-            int(self.value(), *args, **kwargs)  # type: ignore[arg-type]
+            int(val, *args, **kwargs)
         except ValueError:
             return False
         return True
 
-    def is_float(self):
+    def is_float(self) -> bool:
+        val = self.value()
+        if val is None:
+            return False
         try:
-            float(self.value())  # type: ignore[arg-type]
+            float(val)
         except ValueError:
             return False
         return True
 
-    def is_complex(self, *args, **kwargs):
+    def is_complex(self, *args, **kwargs) -> bool:
+        val = self.value()
+        if val is None or isinstance(val, bytes):
+            return False
         try:
-            complex(self.value(), *args, **kwargs)  # type: ignore[arg-type]
+            complex(val, *args, **kwargs)
         except ValueError:
             return False
         return True
 
-    def is_num(self):
+    def is_num(self) -> bool:
         return self.is_float()
 
     def split_end(self) -> "DerivationTree":
@@ -738,7 +758,7 @@ class DerivationTree:
         ref_tree.set_children(ref_tree.children[:-1])
         return ref_tree
 
-    def get_root(self, stop_at_argument_begin=False):
+    def get_root(self, stop_at_argument_begin=False) -> "DerivationTree":
         root = self
         while root.parent is not None and not (
             root in root.parent.sources and stop_at_argument_begin
@@ -746,7 +766,7 @@ class DerivationTree:
             root = root.parent
         return root
 
-    def _split_end(self):
+    def _split_end(self) -> "DerivationTree":
         if self.parent is None or self in self.parent.sources:
             if self.parent is not None:
                 self._parent = None
@@ -757,7 +777,7 @@ class DerivationTree:
         parent.set_children(keep_children)
         return self
 
-    def get_choices_path(self) -> tuple:
+    def get_choices_path(self) -> tuple[PathStep, ...]:
         current = self
         path: list[PathStep] = []
         while current.parent is not None:
@@ -780,16 +800,21 @@ class DerivationTree:
             current = parent
         return tuple(path[::-1])
 
-    def replace(self, grammar, tree_to_replace, new_subtree):
-        return self.replace_multiple(grammar,  [(tree_to_replace, new_subtree)])
+    def replace(
+        self,
+        grammar: "Grammar",
+        tree_to_replace: "DerivationTree",
+        new_subtree: "DerivationTree",
+    ) -> "DerivationTree":
+        return self.replace_multiple(grammar, [(tree_to_replace, new_subtree)])
 
     def replace_multiple(
         self,
-        grammar,
+        grammar: "Grammar",
         replacements: list[tuple["DerivationTree", "DerivationTree"]],
         path_to_replacement: Optional[dict[tuple, "DerivationTree"]] = None,
         current_path: Optional[tuple] = None,
-    ):
+    ) -> "DerivationTree":
         """
         Replace the subtree rooted at the given node with the new subtree.
         """
@@ -875,7 +900,9 @@ class DerivationTree:
 
         return new_tree
 
-    def get_non_terminal_symbols(self, exclude_read_only=True) -> set[NonTerminal]:
+    def get_non_terminal_symbols(
+        self, exclude_read_only: bool = True
+    ) -> set[NonTerminal]:
         """
         Retrieve all non-terminal symbols present in the derivation tree.
         """
@@ -889,7 +916,7 @@ class DerivationTree:
         return symbols
 
     def find_all_nodes(
-        self, symbol: NonTerminal, exclude_read_only=True
+        self, symbol: NonTerminal, exclude_read_only: bool = True
     ) -> list["DerivationTree"]:
         """
         Find all nodes in the derivation tree with the given non-terminal symbol.
@@ -919,13 +946,13 @@ class DerivationTree:
         """
         return self._parent
 
-    def children_values(self):
+    def children_values(self) -> list[int | str | bytes | None]:
         """
         Return values of all direct children
         """
         return [node.value() for node in self.children]
 
-    def flatten(self):
+    def flatten(self) -> list["DerivationTree"]:
         """
         Flatten the derivation tree into a list of DerivationTrees.
         """
@@ -934,13 +961,13 @@ class DerivationTree:
             flat.extend(child.flatten())
         return flat
 
-    def descendants(self):
+    def descendants(self) -> list["DerivationTree"]:
         """
         Return all descendants of the current node
         """
         return self.flatten()[1:]
 
-    def descendant_values(self):
+    def descendant_values(self) -> list[int | str | bytes | None]:
         """
         Return all descendants of the current node
         """
@@ -948,7 +975,7 @@ class DerivationTree:
         # LOGGER.debug(f"descendant_values(): {values}")
         return values
 
-    def get_index(self, target):
+    def get_index(self, target: "DerivationTree") -> int:
         """
         Get the index of the target node in the tree.
         """
@@ -1044,24 +1071,24 @@ class DerivationTree:
         return self.value() == other
 
     def __le__(self, other):
-        if isinstance(other, DerivationTree):
-            return self.value() <= other.value()  # type: ignore[operator]
-        return self.value() <= other  # type: ignore[operator]
+        left = self.value()
+        right = other.value() if isinstance(other, DerivationTree) else other
+        return left <= right  # type: ignore[operator]
 
     def __lt__(self, other):
-        if isinstance(other, DerivationTree):
-            return self.value() < other.value()  # type: ignore[operator]
-        return self.value() < other  # type: ignore[operator]
+        left = self.value()
+        right = other.value() if isinstance(other, DerivationTree) else other
+        return left < right  # type: ignore[operator]
 
     def __ge__(self, other):
-        if isinstance(other, DerivationTree):
-            return self.value() >= other.value()  # type: ignore[operator]
-        return self.value() >= other  # type: ignore[operator]
+        left = self.value()
+        right = other.value() if isinstance(other, DerivationTree) else other
+        return left >= right  # type: ignore[operator]
 
     def __gt__(self, other):
-        if isinstance(other, DerivationTree):
-            return self.value() > other.value()  # type: ignore[operator]
-        return self.value() > other  # type: ignore[operator]
+        left = self.value()
+        right = other.value() if isinstance(other, DerivationTree) else other
+        return left > right  # type: ignore[operator]
 
     def __ne__(self, other):
         return not self.__eq__(other)  # type: ignore[operator]
@@ -1184,6 +1211,16 @@ class DerivationTree:
         if isinstance(other, DerivationTree):
             return other in self._children
         return other in self.value()  # type: ignore[operator]
+
+    def endswith(self, other: Union["DerivationTree", Any]) -> bool:
+        if isinstance(other, DerivationTree):
+            return self.endswith(other.value())
+        return self.value().endswith(other)  # type: ignore[arg-type, union-attr]
+
+    def startswith(self, other: Union["DerivationTree", Any]) -> bool:
+        if isinstance(other, DerivationTree):
+            return self.startswith(other.value())
+        return self.value().startswith(other)  # type: ignore[arg-type, union-attr]
 
     def __iter__(self):
         return iter(self._children)
