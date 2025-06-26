@@ -4,7 +4,7 @@ on:
   release:
     types: [published]
   pull_request:
-    branches: [main, dev] # Trigger the workflow when a pull request on main is opened, publishing is disabled for PRs
+    branches: [release]
   workflow_dispatch:
 
 jobs:
@@ -54,6 +54,7 @@ jobs:
     name: Upload to PyPI
     needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published'
     environment:
       name: pypi
       url: https://pypi.org/p/fandango-fuzzer
@@ -73,7 +74,7 @@ jobs:
   docker_build_and_push:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
-    if: (github.event_name == 'release' && github.event.action == 'published') || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
