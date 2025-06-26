@@ -10,9 +10,10 @@ kernelspec:
   name: python3
 ---
 
-(sec:including)=
-# Fandango Include Reference
+(sec:file_locations)=
+# Fandango File Locations
 
+(sec:including)=
 ## Where Does Fandango Look for Included Specs?
 
 In a Fandango spec, [the `include()` function](sec:hatching) searches for Fandango files in a number of locations.
@@ -42,3 +43,50 @@ We recommend to store included Fandango specs either
 
 Finally, keep in mind that `include()` is a Python function, so in principle, your spec can compute the file name and location in any way you like.
 The simplest solution, however, is to use one of the "standard" locations as listed above.
+
+
+(sec:caching)=
+## Where Does Fandango Store Parsed Files?
+
+Fandango maintains a _cache_ for parsed `.fan` files in order to retrieve them faster.
+
+Use `fandango clear-cache -n` to retrieve its location:
+
+```shell
+$ fandango clear-cache -n
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango clear-cache -n
+assert _exit_code == 0
+```
+
+If you want to reclaim space, or if there is some incompatibility between parsed and cached files, use `fandango clear-cache` to clear the cache:
+
+```shell
+$ fandango clear-cache
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!fandango clear-cache -n 2>&1 | sed 's/Would clear/Clearing/'
+assert _exit_code == 0
+```
+
+
+(sec:fandango_location)=
+## Where is Fandango installed?
+
+This depends on your Python installation.
+You can query the location using
+
+```shell
+$ pip show fandango-fuzzer | grep Location
+```
+
+```{code-cell}
+:tags: ["remove-input"]
+!pip show fandango-fuzzer | grep Location
+assert _exit_code == 0
+```

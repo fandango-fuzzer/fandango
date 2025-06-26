@@ -41,12 +41,11 @@ where both first and last name would be a sequence of letters - first, an upperc
 The full definition looks like this:
 
 :::{margin}
-In Fandango specs, symbol names are formed as identifiers in Python - that is, they consist of letters, underscores, and digits.
+In Fandango specs, symbol names are formed like identifiers in Python - that is, they consist of letters, underscores, and digits.
 :::
 
-% TODO
 :::{margin}
-Future Fandango versions will have shortcuts for specifying character ranges.
+Use [regular expressions](sec:regexes) to specifying character ranges.
 :::
 
 ```{code-cell}
@@ -120,6 +119,7 @@ Fandango will overwrite files `Fandango-0001.txt`, `Fandango-0002.txt`, etc., bu
 If you want a different file extension (for instance, because `.txt` is not suitable), Fandango provides a `--filename-extension` option to set a different one.
 
 
+(sec:invoke-targets)=
 ## Invoking Programs Directly
 
 You can have Fandango invoke _programs directly_, and have Fandango feed them the generated inputs.
@@ -156,6 +156,7 @@ $ fandango fuzz -f persons.fan -n 10 --input_-method=stdin cat -n
 
 The `cat` program is then invoked repeatedly, each time passing a new Fandango-generated input as its standard input.
 
+(sec:libfuzzer)=
 ### Calling a libFuzzer style harness directly
 
 Fandango further supports calling a libFuzzer style harness directly. If you are able to compile your binary to a shared object (`.so` on Linux or `.dylib` on macOS), Fandango can load the binary and directly call the function. This requires some extra work initially but removes the need to start a new process for each input evaluation, thus improving performance significantly. Fandango will exit on the first crashing input. `--input-method=libfuzzer` is only supported in combination with `--file-mode=binary`, since libFuzzer style harnesses expect binary data.
@@ -211,3 +212,18 @@ If the above does not work on your system, try skipping the `-S` option, such th
 #!/usr/bin/env fandango fuzz -f
 ```
 :::
+
+## Running Fuzzing Campaigns
+
+So far, we have only produced a limited number of outputs. This can be done in two ways: By limiting the number of generations for the evaluation or by capping the number of solutions:
+
+```bash
+$ fandango fuzz -f persons.fan -n 10 # to limit the number of solutions
+$ fandango fuzz -f persons.fan -N 10 # to limit the number of generations
+```
+
+To run fuzzing continuously, consider specifying `--infinite` to keep Fandango producing inputs indefinitely. You likely want to combine this with one of the configurations where Fandango [executes your target directly](sec:invoke-targets) like so:
+
+```bash
+$ fandango fuzz -f persons.fan --infinite --input-method=libfuzzer --file-mode=binary ./harness.{so,dylib}
+```
