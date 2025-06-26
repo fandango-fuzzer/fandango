@@ -857,24 +857,6 @@ class MessageNestingDetector(NodeVisitor):
         self.current_path.pop()
 
 
-class ParseRule:
-    def __init__(self, symbols: list[str], parameters: list[tuple[str, Any]], node: Node):
-        self._symbols = list(symbols)
-        self._parameters = list(parameters)
-        self._node = node
-        assert len(self._symbols) == len(self._parameters)
-
-    @property
-    def symbols(self) -> list[str]:
-        return self._symbols
-    @property
-    def parameters(self) -> list[tuple[str, Any]]:
-        return self._parameters
-    @property
-    def node(self) -> Node:
-        return self._node
-
-
 class ParseState:
     def __init__(
         self,
@@ -1062,6 +1044,7 @@ class Grammar(NodeVisitor):
             sender: Optional[str] = None,
             recipient=None,
             read_only: bool = False,
+            origin_nodes: list[tuple[str, int, int]] | None = None
         ):
             super().__init__(
                 symbol,
@@ -1071,6 +1054,7 @@ class Grammar(NodeVisitor):
                 sender=sender,
                 recipient=recipient,
                 read_only=read_only,
+                origin_nodes=origin_nodes
             )
 
         def set_children(self, children: list["DerivationTree"]):
@@ -1107,6 +1091,7 @@ class Grammar(NodeVisitor):
                 list[DerivationTree],
             ] = {}
             self._incomplete: set[DerivationTree] = set()
+            self._nodes: dict[str, Node] = {}
             self._max_position = -1
             self.elapsed_time: float = 0
             self._process()
@@ -1167,12 +1152,15 @@ class Grammar(NodeVisitor):
             return aggregate
 
         def visitAlternative(self, node: Alternative):
-            result = self.visitChildren(node)
             intermediate_nt = NonTerminal(f"<__{node.id}>")
+            self._nodes[intermediate_nt.symbol] = node
+            result = self.visitChildren(node)
             self.set_rule(intermediate_nt, result)
             return [[(intermediate_nt, frozenset())]]
 
         def visitConcatenation(self, node: Concatenation):
+            intermediate_nt = NonTerminal(f"<__{node.id}>")
+            self._nodes[intermediate_nt.symbol] = node
             result: list[list[tuple[NonTerminal, frozenset]]] = [[]]
             for child in node.children():
                 to_add = self.visit(child)
@@ -1181,7 +1169,6 @@ class Grammar(NodeVisitor):
                     for a in to_add:
                         new_result.append(r + a)
                 result = new_result
-            intermediate_nt = NonTerminal(f"<__{node.id}>")
             self.set_rule(intermediate_nt, result)
             return [[(intermediate_nt, frozenset())]]
 
@@ -1191,8 +1178,9 @@ class Grammar(NodeVisitor):
             nt: Optional[tuple[NonTerminal, frozenset]] = None,
             tree: Optional[DerivationTree] = None,
         ):
-            is_context = node.bounds_constraint is not None
             repetition_nt = NonTerminal(f"<__{node.id}>")
+            self._nodes[repetition_nt.symbol] = node
+            is_context = node.bounds_constraint is not None
 
             if nt is None:
                 alternatives = self.visit(node.node)
@@ -1229,31 +1217,34 @@ class Grammar(NodeVisitor):
             return [[(repetition_nt, frozenset())]]
 
         def visitStar(self, node: Star):
+            intermediate_nt = NonTerminal(f"<__{node.id}>")
+            self._nodes[intermediate_nt.symbol] = node
             alternatives: list[list[tuple[NonTerminal, frozenset]]] = [[]]
             nt = self.set_implicit_rule(alternatives)
             for r in self.visit(node.node):
                 alternatives.append(r + [nt])
             result = [[nt]]
-            intermediate_nt = NonTerminal(f"<__{node.id}>")
             self.set_rule(intermediate_nt, result)
             return [[(intermediate_nt, frozenset())]]
 
         def visitPlus(self, node: Plus):
+            intermediate_nt = NonTerminal(f"<__{node.id}>")
+            self._nodes[intermediate_nt.symbol] = node
             alternatives: list[list[tuple[NonTerminal, frozenset]]] = []
             nt = self.set_implicit_rule(alternatives)
             for r in self.visit(node.node):
                 alternatives.append(r)
                 alternatives.append(r + [nt])
             result = [[nt]]
-            intermediate_nt = NonTerminal(f"<__{node.id}>")
             self.set_rule(intermediate_nt, result)
             return [[(intermediate_nt, frozenset())]]
 
         def visitOption(self, node: Option):
+            intermediate_nt = NonTerminal(f"<__{node.id}>")
+            self._nodes[intermediate_nt.symbol] = node
             result: list[list[tuple[NonTerminal, frozenset]]] = [[]] + self.visit(
                 node.node
             )
-            intermediate_nt = NonTerminal(f"<__{node.id}>")
             self.set_rule(intermediate_nt, result)
             return [[(intermediate_nt, frozenset())]]
 
@@ -1297,6 +1288,7 @@ class Grammar(NodeVisitor):
                     read_only=tree.read_only,
                     recipient=tree.recipient,
                     sender=tree.sender,
+                    origin_nodes=tree.origin_nodes,
                 )
             ]
 
@@ -1563,6 +1555,7 @@ class Grammar(NodeVisitor):
                         sender=child.sender,
                         recipient=child.recipient,
                         read_only=child.read_only,
+                        origin_nodes=child.origin_nodes,
                     )
                 )
             return ret
@@ -1579,6 +1572,7 @@ class Grammar(NodeVisitor):
                 sender=tree.sender,
                 recipient=tree.recipient,
                 read_only=tree.read_only,
+                origin_nodes=tree.origin_nodes,
             )
 
         def complete(
@@ -1588,13 +1582,21 @@ class Grammar(NodeVisitor):
             k: int,
             use_implicit: bool = False,
         ):
+
+            if state.nonterminal.symbol in self._nodes:
+                node = self._nodes[state.nonterminal.symbol]
+                if isinstance(node, Repetition):
+                    node.iteration += 1
+                    for i, c in enumerate(state.children):
+                        c.origin_nodes.append((node.id, node.iteration, i))
+
             for s in table[state.position].find_dot(state.nonterminal):
-                dot_params = s.dot_params
+                dot_params = dict(s.dot_params)
                 s = s.next()
                 if state.nonterminal in self._rules:
                     s.append_child(
                         Grammar.ParserDerivationTree(
-                            state.nonterminal, state.children, **dict(dot_params)
+                            state.nonterminal, state.children, **dot_params
                         )
                     )
                 else:
@@ -1603,7 +1605,7 @@ class Grammar(NodeVisitor):
                             Grammar.ParserDerivationTree(
                                 NonTerminal(state.nonterminal.symbol),
                                 state.children,
-                                **dict(s.dot_params),
+                                **s.dot_params,
                             )
                         )
                     else:
