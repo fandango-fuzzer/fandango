@@ -116,9 +116,10 @@ class PopulationManager:
                         iter_id, bound_len, goal_len = value
                         bounds_constraint = failing_tree.cause
                         if goal_len > bound_len:
-                            prefix = failing_tree.tree.prefix()
+                            split_point = failing_tree.tree.split_end()
+                            insertion_index = len(split_point.parent.children)
+                            prefix = split_point.prefix(False)
                             prev_prefix_children_len = len(prefix.children)
-                            insertion_index = len(failing_tree.tree.split_end().parent.children)
 
                             bounds_constraint.rep_node.fuzz(prefix, self._grammar,
                                                             override_starting_repetition=bound_len,
