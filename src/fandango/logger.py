@@ -125,19 +125,8 @@ def log_message_transfer(
     msg,
     self_is_sender: bool,
 ):
-    if receiver is None:
-        if self_is_sender:
-            receiver = "Unknown"
-        else:
-            receiver = "Fandango"
-    if self_is_sender:
-        sender = "*" + sender
-    else:
-        receiver = "*" + receiver
+    info = sender
+    if receiver:
+        info += f" -> {receiver}"
 
-    if msg.contains_bytes():
-        msg = msg.to_bytes()
-    else:
-        msg = msg.to_string()
-
-    LOGGER.info(f"{sender} -> {receiver}: {msg!r}")
+    LOGGER.info(f"{info}: {msg.value()!r}")

@@ -4,7 +4,7 @@ import logging
 import time
 from typing import IO, Callable, Generator, Iterable, Optional
 from fandango.constraints.base import Constraint, SoftValue
-from fandango.language.grammar import Grammar
+from fandango.language.grammar import FuzzingMode, Grammar
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
@@ -101,7 +101,8 @@ class FandangoBase(ABC):
     @abstractmethod
     def generate_solutions(
         self,
-        max_generations=None,
+        max_generations: Optional[int] = None,
+        mode: FuzzingMode = FuzzingMode.COMPLETE,
     ) -> Generator[DerivationTree, None, None]:
         """
         Generate trees that conform to the language.
@@ -120,6 +121,10 @@ class FandangoBase(ABC):
         *,
         extra_constraints: Optional[list[str]] = None,
         solution_callback: Callable[[DerivationTree, int], None] = lambda _a, _b: None,
+        desired_solutions: Optional[int] = None,
+        max_generations: Optional[int] = None,
+        infinite: bool = False,
+        mode: FuzzingMode = FuzzingMode.COMPLETE,
         **settings,
     ) -> list[DerivationTree]:
         """
@@ -180,24 +185,27 @@ class Fandango(FandangoBase):
         """
         LOGGER.info("---------- Initializing base population ----------")
 
+        start_symbol = settings.pop("start_symbol", self._start_symbol)
+
         constraints = self.constraints[:]
         if extra_constraints:
             _, extra_constraints_parsed = parse(
                 [],
                 extra_constraints,
                 given_grammars=[self.grammar],
-                start_symbol=self._start_symbol,
+                start_symbol=start_symbol,
             )
             constraints += extra_constraints_parsed
 
         self.fandango = FandangoStrategy(
-            self.grammar, constraints, start_symbol=self._start_symbol, **settings
+            self.grammar, constraints, start_symbol=start_symbol, **settings
         )
         LOGGER.info("---------- Done initializing base population ----------")
 
     def generate_solutions(
         self,
-        max_generations=None,
+        max_generations: Optional[int] = None,
+        mode: FuzzingMode = FuzzingMode.COMPLETE,
     ) -> Generator[DerivationTree, None, None]:
         """
         Generate trees that conform to the language.
@@ -216,7 +224,7 @@ class Fandango(FandangoBase):
             f"---------- Generating {'' if max_generations is None else f' for {max_generations} generations'}----------"
         )
         start_time = time.time()
-        yield from self.fandango.generate(max_generations=max_generations)
+        yield from self.fandango.generate(max_generations=max_generations, mode=mode)
         LOGGER.info(
             f"---------- Done generating {'' if max_generations is None else f' for {max_generations} generations'}----------"
         )
@@ -230,6 +238,7 @@ class Fandango(FandangoBase):
         desired_solutions: Optional[int] = None,
         max_generations: Optional[int] = None,
         infinite: bool = False,
+        mode: FuzzingMode = FuzzingMode.COMPLETE,
         **settings,
     ) -> list[DerivationTree]:
         """
@@ -240,10 +249,24 @@ class Fandango(FandangoBase):
         :return: A list of derivation trees
         """
 
-        # initialize if not initialized or settings changed
-        if self.fandango is None or extra_constraints or settings:
+        # force-(re-)initialize if settings changed
+        if extra_constraints is not None or settings is not None:
             self.init_population(extra_constraints=extra_constraints, **settings)
         assert self.fandango is not None
+
+        if mode == FuzzingMode.IO:
+            match desired_solutions:
+                case None:
+                    LOGGER.warning(
+                        "Fandango IO will only return a single solution for now, manually set with -n 1 to hide this warning"
+                    )
+                case 1:
+                    pass
+                case _:
+                    LOGGER.warning(
+                        "Fandango IO only supports desired-solution values of 1 for now, overriding value"
+                    )
+            desired_solutions = 1
 
         if max_generations is None and desired_solutions is None and not infinite:
             LOGGER.info(
@@ -260,7 +283,9 @@ class Fandango(FandangoBase):
                 LOGGER.warn("Infinite mode is activated, overriding max_generations")
             max_generations = None  # infinite overrides max_generations
 
-        generator: Iterable[DerivationTree] = self.generate_solutions(max_generations)
+        generator: Iterable[DerivationTree] = self.generate_solutions(
+            max_generations=max_generations, mode=mode
+        )
         if desired_solutions is not None:
             LOGGER.info(f"Generating {desired_solutions} solutions")
             generator = itertools.islice(generator, desired_solutions)

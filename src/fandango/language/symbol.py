@@ -199,7 +199,6 @@ class Terminal(Symbol):
 
 
 class Slice(Symbol):
-
     def __init__(self):
         super().__init__("", SymbolType.SLICE)
 
