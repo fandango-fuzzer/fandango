@@ -43,11 +43,11 @@ dependencies = [
     "tdigest>=0.5.2.2",
     "thefuzz>=0.22",
     "xdg-base-dirs>=6.0.2",
+    "beartype>=0.21.0",
 ]
 
 [project.optional-dependencies]
 test = [
-    "beartype>=0.21.0",
     "Faker>=30.4.0",
     "pytest>=8.3.5",
     "pytest-cov>=4.1.0",
