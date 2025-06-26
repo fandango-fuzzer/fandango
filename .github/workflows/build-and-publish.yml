@@ -3,8 +3,6 @@ name: Build & Upload to PyPI and Docker Hub
 on:
   release:
     types: [published]
-  pull_request:
-    branches: [release]
   workflow_dispatch:
 
 jobs:
@@ -54,7 +52,6 @@ jobs:
     name: Upload to PyPI
     needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
     environment:
       name: pypi
       url: https://pypi.org/p/fandango-fuzzer
@@ -74,7 +71,6 @@ jobs:
   docker_build_and_push:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
