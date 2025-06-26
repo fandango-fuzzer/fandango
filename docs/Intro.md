@@ -97,9 +97,10 @@ Use [regular expressions](sec:regexes) for quick and easy specifications.
 
 ::::
 
-<iframe width="560" height="315"
-src="https://www.youtube.com/embed/JXMk-XhuKPY">
-</iframe>
+<div style="display: flex; justify-content: center;">
+<iframe style="aspect-ratio: 16 / 9; width: 100% !important;" src="https://www.youtube.com/embed/JXMk-XhuKPY"></iframe>
+</div>
+
 
 ----------------
 
