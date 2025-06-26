@@ -7,34 +7,35 @@ import logging
 import os
 import os.path
 import re
-from typing import IO, Any, Callable
+from typing import IO, Any
+from collections.abc import Callable
 
 from fandango.constraints.base import Constraint, SoftValue
 from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.language.tree import DerivationTree
 
-if not "readline" in globals():
+if "readline" not in globals():
     try:
         # Linux and Mac. This should do the trick.
-        import gnureadline as readline  # type: ignore [import-not-found]
+        import gnureadline as readline  # type: ignore [import-not-found] # types not always available
     except Exception:
         pass
 
-if not "readline" in globals():
+if "readline" not in globals():
     try:
         # Windows. This should do the trick.
-        import pyreadline3 as readline  # type: ignore [import-not-found]
+        import pyreadline3 as readline  # type: ignore [import-not-found] # types not always available
     except Exception:
         pass
 
-if not "readline" in globals():
+if "readline" not in globals():
     try:
         # Another Windows alternative
-        import pyreadline as readline  # type: ignore [import-not-found]
+        import pyreadline as readline  # type: ignore [import-not-found] # types not always available
     except Exception:
         pass
 
-if not "readline" in globals():
+if "readline" not in globals():
     try:
         # A Hail Mary Pass
         import readline
@@ -68,8 +69,6 @@ from fandango.converters.bt.BTFandangoConverter import (
 )
 from fandango.converters.dtd.DTDFandangoConverter import DTDFandangoConverter
 from fandango.converters.fan.FandangoFandangoConverter import FandangoFandangoConverter
-
-from fandango.evolution.algorithm import Fandango as FandangoStrategy
 
 from fandango.errors import FandangoParseError, FandangoError
 import fandango
@@ -585,7 +584,7 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
 
     if not in_command_line:
         # Set
-        set_parser = commands.add_parser(
+        _set_parser = commands.add_parser(
             "set",
             help="Set or print default arguments.",
             parents=[
@@ -599,7 +598,7 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
 
     if not in_command_line:
         # Reset
-        reset_parser = commands.add_parser(
+        _reset_parser = commands.add_parser(
             "reset",
             help="Reset defaults.",
         )
@@ -620,7 +619,7 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
 
     if not in_command_line:
         # Exit
-        exit_parser = commands.add_parser(
+        _exit_parser = commands.add_parser(
             "exit",
             help="Exit Fandango.",
         )
@@ -678,13 +677,13 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
     )
 
     # Copyright
-    copyright_parser = commands.add_parser(
+    _copyright_parser = commands.add_parser(
         "copyright",
         help="Show copyright.",
     )
 
     # Version
-    version_parser = commands.add_parser(
+    _version_parser = commands.add_parser(
         "version",
         help="Show version.",
     )
@@ -1106,8 +1105,7 @@ def output_solution_with_test_command(
         def named_temp_file(*, mode: str, prefix: str, suffix: str) -> Any:
             try:
                 # Windows needs delete_on_close=False, so the subprocess can access the file by name
-                # mode needs to be one of a long list of possible values, and not available from the library. I don't want to add it here.
-                return tempfile.NamedTemporaryFile(  # type: ignore [call-overload]
+                return tempfile.NamedTemporaryFile(  # type: ignore [call-overload] # the mode type is not available from the library
                     mode=mode,
                     prefix=prefix,
                     suffix=suffix,
@@ -1395,6 +1393,7 @@ def fuzz_command(args: argparse.Namespace) -> None:
         max_generations=max_generations,
         desired_solutions=desired_solutions,
         infinite=infinite,
+        mode=FuzzingMode.COMPLETE,
         **settings,
     )
 
@@ -1404,8 +1403,7 @@ def fuzz_command(args: argparse.Namespace) -> None:
         # Ensure that every generated file can be parsed
         # and returns the same string as the original
         try:
-            # mypy complains because delete is only valid for some OSs
-            temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore [call-overload]
+            temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore [call-overload] # delete is only available on some OSs
         except TypeError:
             # Python 3.11 does not know the `delete` argument
             temp_dir = tempfile.TemporaryDirectory()
@@ -1521,31 +1519,30 @@ def talk_command(args: argparse.Namespace) -> None:
     LOGGER.info(f"File mode: {file_mode}")
 
     LOGGER.debug("Starting Fandango")
-    fandango_strategy = FandangoStrategy(grammar=grammar, constraints=constraints)
-    fandango_strategy.evolve()
 
-    # fandango = Fandango._with_parsed(
-    #     grammar,
-    #     constraints,
-    #     start_symbol=args.start_symbol,
-    #     logging_level=LOGGER.getEffectiveLevel(),
-    # )
-    # LOGGER.debug("Evolving population")
+    fandango = Fandango._with_parsed(
+        grammar=grammar,
+        constraints=constraints,
+        start_symbol=args.start_symbol,
+        logging_level=LOGGER.getEffectiveLevel(),
+    )
+    LOGGER.debug("Evolving population")
 
-    # def solutions_callback(sol, i):
-    #     return output_solution(sol, args, i, file_mode)
+    def solutions_callback(sol, i):
+        return output_solution(sol, args, i, file_mode)
 
-    # max_generations = args.max_generations
-    # desired_solutions = args.desired_solutions
-    # infinite = args.infinite
+    max_generations = args.max_generations
+    desired_solutions = args.desired_solutions
+    infinite = args.infinite
 
-    # fandango.fuzz(
-    #     solution_callback=solutions_callback,
-    #     max_generations=max_generations,
-    #     desired_solutions=desired_solutions,
-    #     infinite=infinite,
-    #     **settings,
-    # )
+    fandango.fuzz(
+        solution_callback=solutions_callback,
+        max_generations=max_generations,
+        desired_solutions=desired_solutions,
+        infinite=infinite,
+        mode=FuzzingMode.IO,
+        **settings,
+    )
 
 
 def convert_command(args: argparse.Namespace) -> None:
@@ -1584,12 +1581,7 @@ def convert_command(args: argparse.Namespace) -> None:
             temp_file.flush()
             input_file = temp_file.name
 
-        converter: (
-            ANTLRFandangoConverter
-            | DTDFandangoConverter
-            | BTFandangoConverter
-            | FandangoFandangoConverter
-        )
+        converter: FandangoConverter
         match from_format:
             case "antlr" | "g4":
                 converter = ANTLRFandangoConverter(input_file)
@@ -1632,7 +1624,7 @@ def clear_command(args: argparse.Namespace) -> None:
     elif os.path.exists(CACHE_DIR):
         print(f"Clearing {CACHE_DIR}...", file=sys.stderr, end="")
         clear_cache()
-        print(f"done", file=sys.stderr)
+        print("done", file=sys.stderr)
 
 
 def nop_command(args: argparse.Namespace) -> None:
@@ -1795,7 +1787,7 @@ def shell_command(args: argparse.Namespace) -> None:
     PROMPT = "(fandango)"
 
     def _read_history() -> None:
-        if not "readline" in globals():
+        if "readline" not in globals():
             return
 
         histfile = os.path.join(os.path.expanduser("~"), ".fandango_history")
@@ -1810,7 +1802,7 @@ def shell_command(args: argparse.Namespace) -> None:
         atexit.register(readline.write_history_file, histfile)
 
     def _complete(text: str, state: int) -> str | None:
-        if not "readline" in globals():
+        if "readline" not in globals():
             return None
 
         global MATCHES
@@ -1831,8 +1823,6 @@ def shell_command(args: argparse.Namespace) -> None:
 
         version_command(argparse.Namespace())
         print("Type a command, 'help', 'copyright', 'version', or 'exit'.")
-
-    last_status = 0
 
     while True:
         if sys.stdin.isatty():

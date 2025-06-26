@@ -44,7 +44,7 @@ parse:
     - deflist
 
 html:
-  announcement: '<p>💃 Fandango is currently in public beta; please check the <a href="https://github.com/fandango-fuzzer/fandango/issues"  style="color:white;">list of open issues</a>. A 1.0&nbsp;release is scheduled for June&nbsp;2025.</p>'
+  announcement: '<p>💃 Fandango is currently in public beta; please check the <a href="https://github.com/fandango-fuzzer/fandango/issues"  style="color:white;">list of open issues</a>.  Fandango&nbsp;1.0 will be released on 26&nbsp;June&nbsp;2025.</p>'
   use_issues_button: true
   use_repository_button: true
 
