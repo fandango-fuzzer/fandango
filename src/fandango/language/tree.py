@@ -831,6 +831,7 @@ class DerivationTree:
                 copy_children=True, copy_params=False, copy_parent=False
             )
             new_subtree._parent = self.parent
+            new_subtree.origin_nodes = list(self.origin_nodes)
             grammar.populate_sources(new_subtree)
             return new_subtree
 
