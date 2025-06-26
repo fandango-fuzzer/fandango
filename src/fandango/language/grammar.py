@@ -227,21 +227,20 @@ class Repetition(Node):
     ):
         super().__init__(NodeType.REPETITION)
         self.id = id
-
+        self.min = min_
+        self._max = max_
+        self.node = node
+        self.bounds_constraint = bounds_constraint
+        self.iteration = 0
         if min_ < 0:
            raise FandangoValueError(
                 f"Minimum repetitions {min_} must be greater than or equal to 0"
             )
-        if max_ <= 0 or max_ < min_:
+        if self.max <= 0 or self.max < min_:
             raise FandangoValueError(
-                f"Maximum repetitions {max_} must be greater than 0 or greater than min {min_}"
+                f"Maximum repetitions {self.max} must be greater than 0 or greater than min {min_}"
             )
 
-        self.node = node
-        self.bounds_constraint = bounds_constraint
-        self.min = min_
-        self._max = max_
-        self.iteration = 0
 
     @property
     def internal_max(self):
@@ -858,6 +857,24 @@ class MessageNestingDetector(NodeVisitor):
         self.current_path.pop()
 
 
+class ParseRule:
+    def __init__(self, symbols: list[str], parameters: list[tuple[str, Any]], node: Node):
+        self._symbols = list(symbols)
+        self._parameters = list(parameters)
+        self._node = node
+        assert len(self._symbols) == len(self._parameters)
+
+    @property
+    def symbols(self) -> list[str]:
+        return self._symbols
+    @property
+    def parameters(self) -> list[tuple[str, Any]]:
+        return self._parameters
+    @property
+    def node(self) -> Node:
+        return self._node
+
+
 class ParseState:
     def __init__(
         self,
@@ -1175,13 +1192,14 @@ class Grammar(NodeVisitor):
             tree: Optional[DerivationTree] = None,
         ):
             is_context = node.bounds_constraint is not None
+            repetition_nt = NonTerminal(f"<__{NodeType.REPETITION}:{node.id}>")
+
             if nt is None:
                 alternatives = self.visit(node.node)
                 nt = self.set_implicit_rule(alternatives)
 
                 if is_context:
                     i_nt = self.set_context_rule(node, nt)
-                    repetition_nt = NonTerminal(f"<__{NodeType.REPETITION}:{node.id}>")
                     self.set_rule(repetition_nt, [[(i_nt, frozenset())]])
                     return [[(repetition_nt, frozenset())]]
 
@@ -1207,9 +1225,8 @@ class Grammar(NodeVisitor):
                 tmp_nt, rule_id = self.set_tmp_rule(alts)
                 return [[tmp_nt]]
             min_nt = self.set_implicit_rule(alts)
-            intermediate_nt = NonTerminal(f"<__{NodeType.REPETITION}:{node.id}>")
-            self.set_rule(intermediate_nt, [[min_nt]])
-            return [[(intermediate_nt, frozenset())]]
+            self.set_rule(repetition_nt, [[min_nt]])
+            return [[(repetition_nt, frozenset())]]
 
         def visitStar(self, node: Star):
             alternatives: list[list[tuple[NonTerminal, frozenset]]] = [[]]
