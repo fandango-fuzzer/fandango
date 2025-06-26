@@ -748,12 +748,14 @@ class DerivationTree:
     def is_num(self) -> bool:
         return self.is_float()
 
-    def split_end(self) -> "DerivationTree":
-        cpy = copy.deepcopy(self)
-        return cpy._split_end()
+    def split_end(self, copy_tree: bool = True) -> "DerivationTree":
+        inst = self
+        if copy_tree:
+            inst = copy.deepcopy(self)
+        return inst._split_end()
 
-    def prefix(self):
-        ref_tree = self.split_end()
+    def prefix(self, copy_tree: bool = True) -> "DerivationTree":
+        ref_tree = self.split_end(copy_tree)
         ref_tree = ref_tree.parent
         ref_tree.set_children(ref_tree.children[:-1])
         return ref_tree
