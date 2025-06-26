@@ -3,6 +3,8 @@ name: Build & Upload to PyPI and Docker Hub
 on:
   release:
     types: [published]
+  pull_request:
+    branches: [main, dev] # Trigger the workflow when a pull request on main is opened, publishing is disabled for PRs
   workflow_dispatch:
 
 jobs:
@@ -10,7 +12,7 @@ jobs:
     name: Build wheels for ${{ matrix.os }}
     runs-on: ${{ matrix.runs-on }}
     strategy:
-      fail-fast: false
+      fail-fast: false  # Ensures all builds run even if some fail
       matrix:
         include:
           - os: linux-intel
@@ -19,6 +21,8 @@ jobs:
             runs-on: ubuntu-24.04-arm
           - os: macos-arm
             runs-on: macos-latest
+          - os: windows
+            runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -69,6 +73,7 @@ jobs:
   docker_build_and_push:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
+    if: (github.event_name == 'release' && github.event.action == 'published') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
