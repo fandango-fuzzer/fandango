@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 # If you update this info, please also update the version in setup.py
 [project]
 name = "fandango-fuzzer"
-version = "1.0"
+version = "1.0.1"
 authors = [
     { name = "José Antonio Zamudio Amaya", email = "jose.zamudio@cispa.de" },
     { name = "Marius Smytzek", email = "marius.smytzek@cispa.de" },
