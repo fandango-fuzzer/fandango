@@ -1168,7 +1168,7 @@ class Grammar(NodeVisitor):
 
         def visitAlternative(self, node: Alternative):
             result = self.visitChildren(node)
-            intermediate_nt = NonTerminal(f"<__{NodeType.ALTERNATIVE}:{node.id}>")
+            intermediate_nt = NonTerminal(f"<__{node.id}>")
             self.set_rule(intermediate_nt, result)
             return [[(intermediate_nt, frozenset())]]
 
@@ -1181,7 +1181,7 @@ class Grammar(NodeVisitor):
                     for a in to_add:
                         new_result.append(r + a)
                 result = new_result
-            intermediate_nt = NonTerminal(f"<__{NodeType.CONCATENATION}:{node.id}>")
+            intermediate_nt = NonTerminal(f"<__{node.id}>")
             self.set_rule(intermediate_nt, result)
             return [[(intermediate_nt, frozenset())]]
 
@@ -1192,7 +1192,7 @@ class Grammar(NodeVisitor):
             tree: Optional[DerivationTree] = None,
         ):
             is_context = node.bounds_constraint is not None
-            repetition_nt = NonTerminal(f"<__{NodeType.REPETITION}:{node.id}>")
+            repetition_nt = NonTerminal(f"<__{node.id}>")
 
             if nt is None:
                 alternatives = self.visit(node.node)
@@ -1234,7 +1234,7 @@ class Grammar(NodeVisitor):
             for r in self.visit(node.node):
                 alternatives.append(r + [nt])
             result = [[nt]]
-            intermediate_nt = NonTerminal(f"<__{NodeType.STAR}:{node.id}>")
+            intermediate_nt = NonTerminal(f"<__{node.id}>")
             self.set_rule(intermediate_nt, result)
             return [[(intermediate_nt, frozenset())]]
 
@@ -1245,7 +1245,7 @@ class Grammar(NodeVisitor):
                 alternatives.append(r)
                 alternatives.append(r + [nt])
             result = [[nt]]
-            intermediate_nt = NonTerminal(f"<__{NodeType.PLUS}:{node.id}>")
+            intermediate_nt = NonTerminal(f"<__{node.id}>")
             self.set_rule(intermediate_nt, result)
             return [[(intermediate_nt, frozenset())]]
 
@@ -1253,7 +1253,7 @@ class Grammar(NodeVisitor):
             result: list[list[tuple[NonTerminal, frozenset]]] = [[]] + self.visit(
                 node.node
             )
-            intermediate_nt = NonTerminal(f"<__{NodeType.OPTION}:{node.id}>")
+            intermediate_nt = NonTerminal(f"<__{node.id}>")
             self.set_rule(intermediate_nt, result)
             return [[(intermediate_nt, frozenset())]]
 
@@ -1613,7 +1613,7 @@ class Grammar(NodeVisitor):
         def place_repetition_shortcut(self, table: list[Column], k: int):
             col = table[k]
             states = col.states
-            beginner_nts = ["<__plus:", "<__star:"]
+            beginner_nts = [f"<__{NodeType.PLUS}:", f"<__{NodeType.STAR}:"]
 
             found_beginners = set()
             for state in states:
