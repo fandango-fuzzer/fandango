@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
+from collections.abc import Callable, Generator, Iterable
 import itertools
 import logging
 import time
-from typing import IO, Callable, Generator, Iterable, Optional
+from typing import IO, Optional
 from fandango.constraints.base import Constraint, SoftValue
 from fandango.language.grammar import FuzzingMode, Grammar
 from fandango.language.parse import parse
