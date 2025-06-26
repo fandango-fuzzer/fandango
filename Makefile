@@ -22,13 +22,6 @@ all: package-info parser html web pdf
 
 .PHONY: web all parser install dev-tools docs html latex pdf
 
-
-## Requirements (no longer used)
-
-# requirements.txt:	pyproject.toml
-# 	pip-compile $<
-
-
 ## Package info
 EGG_INFO = src/fandango_fuzzer.egg-info
 
@@ -41,23 +34,34 @@ $(EGG_INFO)/PKG-INFO: pyproject.toml
 UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 # Mac
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli
+TEST_TOOLS =  # clang is installed by default on Mac
 SYSTEM_DEV_INSTALL = brew install
-else
+else ifeq ($(UNAME), Linux)
 # Linux
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli
+TEST_TOOLS = clang
 SYSTEM_DEV_INSTALL = apt-get install
+else ifneq (,$(findstring NT,$(UNAME)))
+# Windows (all variants): Windows_NT, MINGW64_NT-10.0-20348, MSYS_NT-10.0-20348
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli
+TEST_TOOLS = llvm # this is the easiest way to install clang on windows
+SYSTEM_DEV_INSTALL = choco install
+else
+$(error Unsupported OS: $(UNAME))
 endif
 
 
 dev-tools: system-dev-tools
-	pip install -U black
-	pip install -U jupyter-book pyppeteer ghp-import pagelabels 
-	pip install -U graphviz
+	$(PIP) install -e ".[development]"
 
 system-dev-tools:
-	$(SYSTEM_DEV_INSTALL) $(SYSTEM_DEV_TOOLS)
+	$(SYSTEM_DEV_INSTALL) $(SYSTEM_DEV_TOOLS) $(TEST_TOOLS)
 
+test-tools:
+ifneq ($(TEST_TOOLS),)
+	$(SYSTEM_DEV_INSTALL) $(TEST_TOOLS)
+endif
 
 ## Parser
 
@@ -205,7 +209,7 @@ test: $(PYTHON_SOURCES) $(TEST_SOURCES)
 
 # As above, but run tests in parallel
 tests $(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
-	$(PYTEST) -n auto
+	$(PYTEST) -n auto --timeout 180
 	echo 'Success' > $(TEST_MARKER)
 
 COVERAGE = coverage.xml
@@ -252,16 +256,9 @@ run-all: $(TEST_MARKER) $(EVALUATION_MARKER) $(EXPERIMENTS_MARKER)
 	@echo 'All tests passed.'
 
 ## Installation
-.PHONY: install install-test install-tests
+.PHONY: install
 install:
 	$(PIP) install -e .
-
-
-# We separate _installing_ from _running_ tests
-# so we can run 'make tests' quickly (see above)
-# without having to reinstall things
-install-test install-tests:
-	$(PIP) install -e ".[test]"
 
 uninstall:
 	$(PIP) uninstall fandango-fuzzer -y

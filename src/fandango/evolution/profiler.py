@@ -1,7 +1,8 @@
 import time
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
-from typing import Any, Generator, Union
+from typing import Any, Union
+from collections.abc import Generator
 
 
 class Timer(ABC):

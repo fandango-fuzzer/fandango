@@ -91,6 +91,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitQuantifier_in_line(FandangoParser::Quantifier_in_lineContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitFormula_disjunction(FandangoParser::Formula_disjunctionContext *ctx) override {
     return visitChildren(ctx);
   }

@@ -1,5 +1,5 @@
 import random
-from typing import Callable, Generator
+from collections.abc import Callable, Generator
 
 from fandango.errors import FandangoValueError
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
@@ -181,7 +181,7 @@ class IoPopulationManager(PopulationManager):
         fuzz_point = dummy.parent
         assert fuzz_point is not None
         fuzz_point.set_children(fuzz_point.children[:-1])
-        current_pck.node.fuzz(fuzz_point, self._grammar, 9999)
+        current_pck.node.fuzz(fuzz_point, self._grammar, max_nodes)
 
         self._prev_packet_idx = current_idx
         return tree
