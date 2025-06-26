@@ -4,7 +4,6 @@ import enum
 import logging
 import re
 import select
-import shlex
 import socket
 import subprocess
 import sys
@@ -635,10 +634,8 @@ class ProcessManager(object):
         command = self.command
         if command is None:
             return
-        if isinstance(command, str):
-            command = shlex.split(command)
 
-        LOGGER.info(f"Starting subprocess {command!r}")
+        LOGGER.info(f"Starting subprocess with command {command}")
         self.proc = subprocess.Popen(
             command,
             stdin=subprocess.PIPE,

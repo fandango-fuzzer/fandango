@@ -1866,7 +1866,9 @@ def shell_command(args: argparse.Namespace) -> None:
 
         command: Any = None
         try:
-            command = shlex.split(command_line, comments=True)
+            # hack to get this working for now — posix mode doesn't work with windows paths, non-posix mode doesn't do proper escaping
+            posix = "win" not in sys.platform
+            command = shlex.split(command_line, comments=True, posix=posix)
         except Exception as e:
             print_exception(e)
             continue
