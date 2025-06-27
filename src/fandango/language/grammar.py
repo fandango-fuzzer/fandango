@@ -282,7 +282,7 @@ class Repetition(Node):
         for rep in range(rep_goal):
             current_rep = rep + override_starting_repetition
             if self.node.distance_to_completion >= max_nodes:
-                if rep > self.min and override_starting_repetition is None:
+                if rep > self.min and override_iterations_to_perform is None:
                     break
                 self.node.fuzz(parent, grammar, 0, in_message)
             else:
