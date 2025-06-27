@@ -203,7 +203,7 @@ class PathFinder(NodeVisitor):
             continue_exploring = self.visit(node.node)
             self.current_tree.pop()
 
-        #TODO match new computed length repetitions
+        # TODO match new computed length repetitions
         rep_min = node.min
         rep_max = node.max
         if node.bounds_constraint:
@@ -222,7 +222,7 @@ class PathFinder(NodeVisitor):
             self.current_tree.pop()
             if continue_exploring:
                 return continue_exploring
-        #TODO match new computed length repetitions
+        # TODO match new computed length repetitions
         if tree_len >= rep_min:
             return True
         return continue_exploring

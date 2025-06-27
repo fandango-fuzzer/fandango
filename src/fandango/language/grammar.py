@@ -223,7 +223,12 @@ class Concatenation(Node):
 
 class Repetition(Node):
     def __init__(
-        self, node: Node, id: str = "", min_: int = 0, max_: int = None, bounds_constraint: Optional['RepetitionBoundsConstraint'] = None
+        self,
+        node: Node,
+        id: str = "",
+        min_: int = 0,
+        max_: int = None,
+        bounds_constraint: Optional["RepetitionBoundsConstraint"] = None,
     ):
         super().__init__(NodeType.REPETITION)
         self.id = id
@@ -233,14 +238,13 @@ class Repetition(Node):
         self.bounds_constraint = bounds_constraint
         self.iteration = 0
         if min_ < 0:
-           raise FandangoValueError(
+            raise FandangoValueError(
                 f"Minimum repetitions {min_} must be greater than or equal to 0"
             )
         if self.max <= 0 or self.max < min_:
             raise FandangoValueError(
                 f"Maximum repetitions {self.max} must be greater than 0 or greater than min {min_}"
             )
-
 
     @property
     def internal_max(self):
@@ -287,7 +291,9 @@ class Repetition(Node):
                 self.node.fuzz(parent, grammar, 0, in_message)
             else:
                 reserved_max_nodes -= self.node.distance_to_completion
-                self.node.fuzz(parent, grammar, int(max_nodes - reserved_max_nodes), in_message)
+                self.node.fuzz(
+                    parent, grammar, int(max_nodes - reserved_max_nodes), in_message
+                )
             for child in parent.children[prev_children_len:]:
                 child.origin_nodes.insert(0, (self.id, current_iteration, current_rep))
             max_nodes -= parent.size() - prev_parent_size
@@ -1044,7 +1050,7 @@ class Grammar(NodeVisitor):
             sender: Optional[str] = None,
             recipient=None,
             read_only: bool = False,
-            origin_nodes: list[tuple[str, int, int]] | None = None
+            origin_nodes: list[tuple[str, int, int]] | None = None,
         ):
             super().__init__(
                 symbol,
@@ -1054,7 +1060,7 @@ class Grammar(NodeVisitor):
                 sender=sender,
                 recipient=recipient,
                 read_only=read_only,
-                origin_nodes=origin_nodes
+                origin_nodes=origin_nodes,
             )
 
         def set_children(self, children: list["DerivationTree"]):

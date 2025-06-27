@@ -106,57 +106,39 @@ class PopulationManager:
     ) -> tuple[DerivationTree, int]:
         fixes_made = 0
         replacements: list[tuple[DerivationTree, DerivationTree]] = list()
+
+        allow_repetition_full_delete = (
+            len(
+                list(
+                    filter(
+                        lambda x: not isinstance(x.cause, RepetitionBoundsConstraint),
+                        failing_trees,
+                    )
+                )
+            )
+            == 0
+        )
+        # We only allow BoundsConstraints to delete all iterations of a repetition if all other non-boundconstraints constraints are satisfied.
+        # Otherwise, we would lose the reference point to re-add the repetitions in the tree, which might be needed,
+        # if the referenced length field changes its value.
+
         for failing_tree in failing_trees:
             if failing_tree.tree.read_only:
                 continue
+
+            if isinstance(failing_tree.cause, RepetitionBoundsConstraint):
+                bounds_constraint = failing_tree.cause
+                replacements.extend(
+                    bounds_constraint.fix_individual(
+                        self._grammar,
+                        failing_tree,
+                        allow_repetition_full_delete=allow_repetition_full_delete,
+                    )
+                )
+                continue
+
             for operator, value, side in failing_tree.suggestions:
                 if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
-                    # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
-                    if isinstance(failing_tree.cause, RepetitionBoundsConstraint):
-                        iter_id, bound_len, goal_len = value
-                        bounds_constraint = failing_tree.cause
-                        if goal_len > bound_len:
-                            split_point = failing_tree.tree.split_end()
-                            insertion_index = len(split_point.parent.children)
-                            prefix = split_point.prefix(False)
-                            prev_prefix_children_len = len(prefix.children)
-
-                            bounds_constraint.rep_node.fuzz(prefix, self._grammar,
-                                                            override_starting_repetition=bound_len,
-                                                            override_current_iteration=iter_id,
-                                                            override_iterations_to_perform=goal_len
-                                                            )
-                            insert_children = prefix.children[prev_prefix_children_len:]
-                            copy_parent = failing_tree.tree.parent.deepcopy(copy_children=True, copy_parent=False, copy_params=False)
-                            copy_parent.set_children(
-                                copy_parent.children[:insertion_index]
-                                + insert_children
-                                + copy_parent.children[insertion_index:]
-                            )
-                            replacements.append((failing_tree.tree.parent, copy_parent))
-                        else:
-                            copy_parent = failing_tree.tree.parent.deepcopy(copy_children=True, copy_parent=False, copy_params=False)
-                            curr_rep_id = None
-                            reps_deleted = 0
-                            new_children = []
-                            for child in copy_parent.children[::-1]:
-                                repetition_node_id = bounds_constraint.repetition_id
-                                matching_o_nodes = list(filter(lambda x: x[0] == repetition_node_id and x[1] == iter_id, child.origin_nodes))
-                                if len(matching_o_nodes) == 0:
-                                    new_children.insert(0, child)
-                                    continue
-                                matching_o_node = matching_o_nodes[0]
-                                rep_id = matching_o_node[2]
-                                if curr_rep_id != rep_id and reps_deleted >= (bound_len - goal_len):
-                                    # We have deleted enough repetitions iteratively add all remaining children
-                                    new_children.insert(0, child)
-                                    continue
-                                curr_rep_id = rep_id
-                                reps_deleted += 1
-
-                            copy_parent.set_children(new_children)
-                            replacements.append((failing_tree.tree.parent, copy_parent))
-                        continue
                     if (
                         isinstance(value, DerivationTree)
                         and failing_tree.tree.symbol == value.symbol
@@ -176,8 +158,8 @@ class PopulationManager:
                     fixes_made += 1
         if len(replacements) > 0:
             # Prevent circular replacements
-            #deleted = set()
-            #for value in set(replacements.values()):
+            # deleted = set()
+            # for value in set(replacements.values()):
             #    if value in deleted:
             #        continue
             #    if value in replacements.keys():
