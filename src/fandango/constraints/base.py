@@ -531,8 +531,8 @@ class ComparisonConstraint(Constraint):
                 for _, container in combination:
                     for node in container.get_trees():
                         ft = FailingTree(node, self, suggestions=suggestions)
-                        #if ft not in failing_trees:
-                            #failing_trees.append(ft)
+                        # if ft not in failing_trees:
+                        # failing_trees.append(ft)
                         failing_trees.append(ft)
 
         if not has_combinations:
@@ -1062,7 +1062,14 @@ class RepetitionBoundsConstraint(Constraint):
     This is useful for ensuring that certain patterns do not occur too frequently or too infrequently.
     """
 
-    def __init__(self, repetition_id: str, expr_data_min: tuple[str, list, dict], expr_data_max: tuple[str, list, dict], *args, **kwargs):
+    def __init__(
+        self,
+        repetition_id: str,
+        expr_data_min: tuple[str, list, dict],
+        expr_data_max: tuple[str, list, dict],
+        *args,
+        **kwargs,
+    ):
         """
         Initializes the repetition bounds constraint with the given pattern and repetition bounds.
         :param NonTerminalSearch pattern: The pattern to check for repetitions.
@@ -1138,7 +1145,7 @@ class RepetitionBoundsConstraint(Constraint):
     ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the number of repetitions of the pattern.
-        :param DerivationTree id_tree: The tree to evaluate.
+        :param DerivationTree tree: The tree to evaluate.
         :param Optional[dict[NonTerminal, DerivationTree]] scope: The scope of the tree.
         :param Optional[list[DerivationTree]] population: The population of trees.
         :param Optional[dict[str, Any]] local_variables: Local variables to use in the evaluation.
@@ -1149,7 +1156,9 @@ class RepetitionBoundsConstraint(Constraint):
             return ConstraintFitness(0, 1, True)
         reference_trees: dict[tuple[str, int], dict[int, list[DerivationTree]]] = {}
         for id_tree in id_trees:
-            iteration_ids: list[tuple[str, int, int]] = list(filter(lambda x: x[0] == self.repetition_id, id_tree.origin_nodes))
+            iteration_ids: list[tuple[str, int, int]] = list(
+                filter(lambda x: x[0] == self.repetition_id, id_tree.origin_nodes)
+            )
             for i_id in iteration_ids:
                 call_id = tuple[str, int](i_id[:2])
                 rep_round = i_id[2]
@@ -1179,11 +1188,101 @@ class RepetitionBoundsConstraint(Constraint):
                 iter_id = call_id[1]
                 suggestions: list[tuple[Comparison, Any, ComparisonSide]] = []
                 goal_len = random.randint(bound_min, bound_max)
-                suggestions.append((Comparison.EQUAL, (iter_id, bound_len, goal_len), ComparisonSide.RIGHT))
-                suggestions.append((Comparison.EQUAL, (iter_id, bound_len, goal_len), ComparisonSide.LEFT))
-                failing_trees.append(FailingTree(ref_tree[0], self, suggestions=suggestions))
-        return ConstraintFitness(solved, total, solved == total, failing_trees=failing_trees)
+                suggestions.append(
+                    (
+                        Comparison.EQUAL,
+                        (iter_id, bound_len, goal_len),
+                        ComparisonSide.RIGHT,
+                    )
+                )
+                suggestions.append(
+                    (
+                        Comparison.EQUAL,
+                        (iter_id, bound_len, goal_len),
+                        ComparisonSide.LEFT,
+                    )
+                )
+                failing_trees.append(
+                    FailingTree(ref_tree[0], self, suggestions=suggestions)
+                )
+        return ConstraintFitness(
+            solved, total, solved == total, failing_trees=failing_trees
+        )
 
+    def fix_individual(
+        self,
+        grammar: "Grammar",
+        failing_tree: FailingTree,
+        allow_repetition_full_delete: bool,
+    ) -> list[tuple[DerivationTree, DerivationTree]]:
+        if failing_tree.tree.read_only:
+            return []
+        replacements: list[tuple[DerivationTree, DerivationTree]] = list()
+        for operator, value, side in failing_tree.suggestions:
+            if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
+                # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
+                if isinstance(failing_tree.cause, RepetitionBoundsConstraint):
+                    iter_id, bound_len, goal_len = value
+                    bounds_constraint = failing_tree.cause
+                    if goal_len > bound_len:
+                        split_point = failing_tree.tree.split_end()
+                        insertion_index = len(split_point.parent.children)
+                        prefix = split_point.prefix(False)
+                        prev_prefix_children_len = len(prefix.children)
+
+                        bounds_constraint.rep_node.fuzz(
+                            prefix,
+                            grammar,
+                            override_starting_repetition=bound_len,
+                            override_current_iteration=iter_id,
+                            override_iterations_to_perform=goal_len,
+                        )
+                        insert_children = prefix.children[prev_prefix_children_len:]
+                        copy_parent = failing_tree.tree.parent.deepcopy(
+                            copy_children=True, copy_parent=False, copy_params=False
+                        )
+                        copy_parent.set_children(
+                            copy_parent.children[:insertion_index]
+                            + insert_children
+                            + copy_parent.children[insertion_index:]
+                        )
+                        replacements.append((failing_tree.tree.parent, copy_parent))
+                    else:
+                        if goal_len == 0 and not allow_repetition_full_delete:
+                            goal_len = 1
+                        copy_parent = failing_tree.tree.parent.deepcopy(
+                            copy_children=True, copy_parent=False, copy_params=False
+                        )
+                        curr_rep_id = None
+                        reps_deleted = 0
+                        new_children = []
+                        for child in copy_parent.children[::-1]:
+                            repetition_node_id = bounds_constraint.repetition_id
+                            matching_o_nodes = list(
+                                filter(
+                                    lambda x: x[0] == repetition_node_id
+                                    and x[1] == iter_id,
+                                    child.origin_nodes,
+                                )
+                            )
+                            if len(matching_o_nodes) == 0:
+                                new_children.insert(0, child)
+                                continue
+                            matching_o_node = matching_o_nodes[0]
+                            rep_id = matching_o_node[2]
+                            if curr_rep_id != rep_id and reps_deleted >= (
+                                bound_len - goal_len
+                            ):
+                                # We have deleted enough repetitions iteratively add all remaining children
+                                new_children.insert(0, child)
+                                continue
+                            curr_rep_id = rep_id
+                            reps_deleted += 1
+
+                        copy_parent.set_children(new_children)
+                        replacements.append((failing_tree.tree.parent, copy_parent))
+                    continue
+        return replacements
 
     def __repr__(self):
         print_min = self.search_min
@@ -1251,6 +1350,8 @@ class ConstraintVisitor:
         """Visits an implication constraint."""
         pass
 
-    def visit_repetition_bounds_constraint(self, constraint: "RepetitionBoundsConstraint"):
+    def visit_repetition_bounds_constraint(
+        self, constraint: "RepetitionBoundsConstraint"
+    ):
         """Visits a repetition bounds constraint."""
         pass

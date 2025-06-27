@@ -11,7 +11,8 @@ from fandango.constraints.base import (
     ExistsConstraint,
     ExpressionConstraint,
     ForallConstraint,
-    SoftValue, RepetitionBoundsConstraint,
+    SoftValue,
+    RepetitionBoundsConstraint,
 )
 from fandango.constraints.fitness import Comparison
 from fandango.language import NonTerminalSearch, NodeType
@@ -157,7 +158,9 @@ class GrammarProcessor(FandangoParserVisitor):
     def visitOption(self, ctx: FandangoParser.OptionContext):
         self.seenOptions += 1
         nid = self.seenOptions
-        return Option(self.visit(ctx.symbol()), f"{NodeType.OPTION}:{nid}_{self.id_prefix}")
+        return Option(
+            self.visit(ctx.symbol()), f"{NodeType.OPTION}:{nid}_{self.id_prefix}"
+        )
 
     def visitRepeat(self, ctx: FandangoParser.RepeatContext):
         node = self.visitSymbol(ctx.symbol())
@@ -211,15 +214,21 @@ class GrammarProcessor(FandangoParserVisitor):
             else:
                 min_ = (f"{min_arg}", [], {})
             if require_constraint:
-                bounds_constraint = RepetitionBoundsConstraint(nid,
-                                                expr_data_min=min_,
-                                                expr_data_max=max_)
+                bounds_constraint = RepetitionBoundsConstraint(
+                    nid, expr_data_min=min_, expr_data_max=max_
+                )
                 self.repetition_constraints.append(bounds_constraint)
                 if min_arg == 0:
                     min_arg = 1
                 if max_arg < min_arg:
                     max_arg = min_arg
-            rep_node = Repetition(node, nid, min_=min_arg, max_=max_arg, bounds_constraint=bounds_constraint)
+            rep_node = Repetition(
+                node,
+                nid,
+                min_=min_arg,
+                max_=max_arg,
+                bounds_constraint=bounds_constraint,
+            )
             if bounds_constraint is not None:
                 bounds_constraint.rep_node = rep_node
             return rep_node
@@ -228,9 +237,13 @@ class GrammarProcessor(FandangoParserVisitor):
         if reps[0].isdigit():
             return Repetition(node, nid, int(reps[0]), int(reps[0]))
         else:
-            bounds_constraint = RepetitionBoundsConstraint(nid, expr_data_min=reps, expr_data_max=reps)
+            bounds_constraint = RepetitionBoundsConstraint(
+                nid, expr_data_min=reps, expr_data_max=reps
+            )
             self.repetition_constraints.append(bounds_constraint)
-            rep_node = Repetition(node, nid, min_=1, bounds_constraint=bounds_constraint)
+            rep_node = Repetition(
+                node, nid, min_=1, bounds_constraint=bounds_constraint
+            )
             bounds_constraint.rep_node = rep_node
             return rep_node
 
