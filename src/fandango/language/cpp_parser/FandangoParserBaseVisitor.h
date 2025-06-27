@@ -87,6 +87,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitImplies_in_line(FandangoParser::Implies_in_lineContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitQuantifier(FandangoParser::QuantifierContext *ctx) override {
     return visitChildren(ctx);
   }
