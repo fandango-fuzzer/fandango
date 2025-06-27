@@ -1153,7 +1153,9 @@ class RepetitionBoundsConstraint(Constraint):
         """
         id_trees = tree.find_by_origin(self.repetition_id)
         if len(id_trees) == 0:
-            return ConstraintFitness(0, 1, True)
+            # Assume that the field containing the nr of repetitions is zero. This is the case where me might
+            # have deleted all repetitions from the tree.
+            return ConstraintFitness(1, 1, True)
         reference_trees: dict[tuple[str, int], dict[int, list[DerivationTree]]] = {}
         for id_tree in id_trees:
             iteration_ids: list[tuple[str, int, int]] = list(
@@ -1250,6 +1252,8 @@ class RepetitionBoundsConstraint(Constraint):
                     else:
                         if goal_len == 0 and not allow_repetition_full_delete:
                             goal_len = 1
+                            if goal_len == bound_len:
+                                continue
                         copy_parent = failing_tree.tree.parent.deepcopy(
                             copy_children=True, copy_parent=False, copy_params=False
                         )
