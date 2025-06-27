@@ -83,6 +83,10 @@ class FandangoParserVisitor(ParseTreeVisitor):
     def visitImplies(self, ctx: FandangoParser.ImpliesContext):
         return self.visitChildren(ctx)
 
+    # Visit a parse tree produced by FandangoParser#implies_in_line.
+    def visitImplies_in_line(self, ctx: FandangoParser.Implies_in_lineContext):
+        return self.visitChildren(ctx)
+
     # Visit a parse tree produced by FandangoParser#quantifier.
     def visitQuantifier(self, ctx: FandangoParser.QuantifierContext):
         return self.visitChildren(ctx)

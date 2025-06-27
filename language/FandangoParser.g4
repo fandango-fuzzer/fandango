@@ -87,6 +87,11 @@ implies
     | quantifier
     ;
 
+implies_in_line
+    : formula_disjunction ARROW formula_disjunction
+    | quantifier_in_line
+    ;
+
 quantifier
     : FORALL nonterminal IN dot_selection ':' (NEWLINE INDENT quantifier DEDENT | quantifier) // deprecated
     | EXISTS nonterminal IN dot_selection ':' (NEWLINE INDENT quantifier DEDENT | quantifier) // deprecated
@@ -102,7 +107,9 @@ quantifier
     ;
 
 quantifier_in_line
-    : 'any' '(' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection ')'
+    : FORALL nonterminal IN dot_selection ':' (NEWLINE INDENT quantifier_in_line DEDENT | quantifier) // deprecated
+    | EXISTS nonterminal IN dot_selection ':' (NEWLINE INDENT quantifier_in_line DEDENT | quantifier) // deprecated
+    | 'any' '(' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection ')'
     | 'any' '(' '[' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection ']' ')'
     | 'any' '(' '(' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection ']' ')'
     | 'any' '(' '{' quantifier_in_line 'for' (nonterminal | identifier) IN star_selection '}' ')'
@@ -124,7 +131,7 @@ formula_conjunction
 
 formula_atom
     : formula_comparison
-    | OPEN_PAREN implies CLOSE_PAREN
+    | OPEN_PAREN implies_in_line CLOSE_PAREN
     | expr
     ;
 

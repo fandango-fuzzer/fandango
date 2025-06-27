@@ -55,6 +55,8 @@ public:
 
     virtual std::any visitImplies(FandangoParser::ImpliesContext *context) = 0;
 
+    virtual std::any visitImplies_in_line(FandangoParser::Implies_in_lineContext *context) = 0;
+
     virtual std::any visitQuantifier(FandangoParser::QuantifierContext *context) = 0;
 
     virtual std::any visitQuantifier_in_line(FandangoParser::Quantifier_in_lineContext *context) = 0;
