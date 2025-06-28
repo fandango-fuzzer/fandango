@@ -3,7 +3,6 @@
 [![Python Tests](https://github.com/fandango-fuzzer/fandango/actions/workflows/python-tests.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/python-tests.yml)
 [![GitHub Pages](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-book.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-book.yml)
 [![CodeQL](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql)
-[![Deployment](https://github.com/fandango-fuzzer/fandango/actions/workflows/build-and-publish.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/build-and-publish.yml)
 [![Code Checks](https://github.com/fandango-fuzzer/fandango/actions/workflows/code-checks.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/code-checks.yml)
 [![Socket Badge](https://socket.dev/api/badge/pypi/package/fandango-fuzzer/0.1.0?artifact_id=tar-gz)](https://socket.dev/pypi/package/fandango-fuzzer/overview/0.1.0/tar-gz)
 
