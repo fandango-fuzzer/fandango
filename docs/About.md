@@ -78,6 +78,16 @@ print_reference('zamudio2025fandango')
 
 To learn more about how Fandango works, start with the ISSTA 2025 paper by {cite:ts}`zamudio2025fandango`.
 
+The core idea of Fandango, namely combining grammars and constraints, was introduced as _language-based software testing_ by {cite:ts}`steinhoefel2024language` and first implemented in the _ISLa_ framework {cite}`steinhoefel2022isla`. Both of these laid the foundation for Fandango.
+
+The work on Fandango is funded by the ERC S3 project ["Semantics of Software Systems"](https://cispa.de/s3); the S3 grant proposal (available via the above link) lists several ideas that have been realized in Fandango (and a few more).
+
+The work on Fandango is also related to _mining grammars_ from programs and inputs. Important works in the field include
+{cite:ts}`bettscheider2024mining`,
+{cite:ts}`gopinath2020mining`,
+{cite:ts}`schroeder2022mining`, and
+{cite:ts}`kulkarni2022arvada`.
+
 ```{bibliography}
 ```
 
