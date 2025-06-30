@@ -12,7 +12,6 @@ def activate_beartype() -> None:
         "fandango.constraints.fitness",  # ValueFitness sometimes receives a list of ints in the constructor
         "fandango.api",  # at least `parse` is broken
         "fandango.io.packetforecaster",  # broken
-        "fandango.language.tree",  # broken, I think it's at least cyclical imports with grammar
     )
 
     beartype_this_package(conf=BeartypeConf(claw_skip_package_names=skip_packages))
