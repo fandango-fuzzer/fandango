@@ -8,6 +8,8 @@ RESOURCES_ROOT = TEST_ROOT / "resources"
 PROJECT_ROOT = TEST_ROOT.parent
 DOCS_ROOT = PROJECT_ROOT / "docs"
 
+IS_BEARTYPE_ACTIVE = os.environ.get("FANDANGO_RUN_BEARTYPE", False)
+
 
 def run_command(command_list, input=None):
     """Run a command and return normalized output with consistent line endings.
@@ -25,6 +27,9 @@ def run_command(command_list, input=None):
     if sys.platform.startswith("win"):
         env["PYTHONIOENCODING"] = "utf-8"
         env["PYTHONUTF8"] = "1"
+
+    if IS_BEARTYPE_ACTIVE:
+        env["FANDANGO_RUN_BEARTYPE"] = "1"
 
     proc = subprocess.Popen(
         command_list,
