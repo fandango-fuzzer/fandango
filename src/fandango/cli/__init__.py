@@ -1338,10 +1338,9 @@ def get_file_mode(
             return "text"
 
     if tree is not None:
-        if tree.contains_bits() or tree.contains_bytes():
+        if tree.should_be_serialized_to_bytes():
             return "binary"
-        else:
-            return "text"
+        return "text"
 
     raise FandangoError("Cannot determine file mode")
 

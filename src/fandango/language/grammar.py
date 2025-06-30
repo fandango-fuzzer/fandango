@@ -1856,9 +1856,7 @@ class Grammar(NodeVisitor):
             if isinstance(word, DerivationTree):
                 if word.contains_bytes():
                     starter_bit = (word.count_terminals() - 1) % 8
-                    word = word.to_bytes()
-                else:
-                    word = word.to_string()
+                word = word.serialize()
             if isinstance(word, int):
                 word = str(word)
             assert isinstance(word, str) or isinstance(word, bytes)
