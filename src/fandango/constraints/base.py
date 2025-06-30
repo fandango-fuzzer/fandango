@@ -19,7 +19,8 @@ from fandango.constraints.fitness import (
     GeneticBase,
     FailingTree,
     Comparison,
-    ComparisonSide, BoundsFailingTree,
+    ComparisonSide,
+    BoundsFailingTree,
 )
 from fandango.language.grammar import Repetition
 from fandango.language.search import NonTerminalSearch
@@ -1123,7 +1124,9 @@ class RepetitionBoundsConstraint(Constraint):
         for container in search.find(prefix_tree.get_root()):
             container_tree: DerivationTree = container.evaluate()
             is_prefix = True
-            for step_tree, step_search in zip_longest(prefix_path, container_tree.get_choices_path()):
+            for step_tree, step_search in zip_longest(
+                prefix_path, container_tree.get_choices_path()
+            ):
                 if step_tree is None:
                     break
                 if step_search is None or step_tree.index < step_search.index:
@@ -1148,7 +1151,9 @@ class RepetitionBoundsConstraint(Constraint):
     def max(self, tree: DerivationTree):
         return self._compute_rep_bound(tree, self.expr_data_max)
 
-    def group_by_repetition_id(self, id_trees: list[DerivationTree]) -> dict[tuple[str, int], dict[int, list[DerivationTree]]]:
+    def group_by_repetition_id(
+        self, id_trees: list[DerivationTree]
+    ) -> dict[tuple[str, int], dict[int, list[DerivationTree]]]:
         reference_trees: dict[tuple[str, int], dict[int, list[DerivationTree]]] = {}
         for id_tree in id_trees:
             iteration_ids: list[tuple[str, int, int]] = list(
@@ -1222,32 +1227,40 @@ class RepetitionBoundsConstraint(Constraint):
                     )
                 )
                 failing_trees.append(
-                    BoundsFailingTree(first_iteration.get_root(True), min_ref_tree, max_ref_tree, first_iteration, last_iteration, self, suggestions=suggestions)
+                    BoundsFailingTree(
+                        first_iteration.parent,
+                        first_iteration,
+                        last_iteration,
+                        min_ref_tree,
+                        max_ref_tree,
+                        self,
+                        suggestions=suggestions,
+                    )
                 )
         return ConstraintFitness(
             solved, total, solved == total, failing_trees=failing_trees
         )
 
-#    def set_read_only(self):
-#        if isinstance(target, DerivationTree):
-#            target.set_all_read_only(True)
-#            first_uncommon_idx = 0
-#            for idx, (target_parent, tree_parent) in enumerate(
-#                zip(target.get_path(), tree.get_path())
-#            ):
-#                if target_parent.symbol == tree_parent.symbol:
-#                    first_uncommon_idx = idx + 1
-#                else:
-#                    break
-#            for parent in target.get_path()[first_uncommon_idx:]:
-#                parent.read_only = True
-#            for parent in tree.get_path()[first_uncommon_idx:]:
-#                parent.read_only = True
-#
+    def set_read_only_diverging_path(
+        self, tree_a: DerivationTree, tree_b: DerivationTree
+    ):
+        first_uncommon_idx = 0
+        for idx, (target_parent, tree_parent) in enumerate(
+            zip(tree_a.get_path(), tree_b.get_path())
+        ):
+            if target_parent.symbol == tree_parent.symbol:
+                first_uncommon_idx = idx + 1
+            else:
+                break
+        for parent in tree_a.get_path()[first_uncommon_idx:]:
+            parent.read_only = True
+        for parent in tree_b.get_path()[first_uncommon_idx:]:
+            parent.read_only = True
+
     def fix_individual(
         self,
         grammar: "Grammar",
-        failing_tree: FailingTree,
+        failing_tree: BoundsFailingTree,
         allow_repetition_full_delete: bool,
     ) -> list[tuple[DerivationTree, DerivationTree]]:
         if failing_tree.tree.read_only:
@@ -1255,71 +1268,93 @@ class RepetitionBoundsConstraint(Constraint):
         replacements: list[tuple[DerivationTree, DerivationTree]] = list()
         for operator, value, side in failing_tree.suggestions:
             if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
-                # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
-                if isinstance(failing_tree.cause, RepetitionBoundsConstraint):
-                    iter_id, bound_len, goal_len = value
-                    bounds_constraint = failing_tree.cause
-                    if goal_len > bound_len:
-                        split_point = failing_tree.tree.split_end()
-                        insertion_index = len(split_point.parent.children)
-                        prefix = split_point.prefix(False)
-                        prev_prefix_children_len = len(prefix.children)
-
-                        bounds_constraint.rep_node.fuzz(
-                            prefix,
-                            grammar,
-                            override_starting_repetition=bound_len,
-                            override_current_iteration=iter_id,
-                            override_iterations_to_perform=goal_len,
-                        )
-                        insert_children = prefix.children[prev_prefix_children_len:]
-                        copy_parent = failing_tree.tree.parent.deepcopy(
-                            copy_children=True, copy_parent=False, copy_params=False
-                        )
-                        copy_parent.set_children(
-                            copy_parent.children[:insertion_index]
-                            + insert_children
-                            + copy_parent.children[insertion_index:]
-                        )
-                        replacements.append((failing_tree.tree.parent, copy_parent))
-                    else:
-                        if goal_len == 0 and not allow_repetition_full_delete:
+                iter_id, bound_len, goal_len = value
+                if goal_len > bound_len:
+                    replacement = self.insert_repetitions(
+                        nr_to_insert=goal_len - bound_len,
+                        starting_rep=bound_len,
+                        rep_iteration=iter_id,
+                        grammar=grammar,
+                        tree=failing_tree.tree,
+                        first_rep=failing_tree.starting_rep_tree,
+                    )
+                    replacements.append((failing_tree.tree, replacement))
+                else:
+                    if goal_len == 0 and not allow_repetition_full_delete:
+                        if not allow_repetition_full_delete:
                             goal_len = 1
-                        if goal_len == bound_len:
-                            continue
-                        copy_parent = failing_tree.tree.parent.deepcopy(
-                            copy_children=True, copy_parent=False, copy_params=False
-                        )
-                        curr_rep_id = None
-                        reps_deleted = 0
-                        new_children = []
-                        for child in copy_parent.children[::-1]:
-                            repetition_node_id = bounds_constraint.repetition_id
-                            matching_o_nodes = list(
-                                filter(
-                                    lambda x: x[0] == repetition_node_id
-                                    and x[1] == iter_id,
-                                    child.origin_nodes,
-                                )
-                            )
-                            if len(matching_o_nodes) == 0:
-                                new_children.insert(0, child)
-                                continue
-                            matching_o_node = matching_o_nodes[0]
-                            rep_id = matching_o_node[2]
-                            if curr_rep_id != rep_id and reps_deleted >= (
-                                bound_len - goal_len
-                            ):
-                                # We have deleted enough repetitions iteratively add all remaining children
-                                new_children.insert(0, child)
-                                continue
-                            curr_rep_id = rep_id
-                            reps_deleted += 1
-
-                        copy_parent.set_children(new_children)
-                        replacements.append((failing_tree.tree.parent, copy_parent))
-                    continue
+                        else:
+                            failing_tree.ending_rep_value.set_all_read_only(True)
+                            failing_tree.starting_rep_value.set_all_read_only(False)
+                    if goal_len == bound_len:
+                        continue
+                    replacement = self.delete_repetitions(
+                        nr_to_delete=bound_len - goal_len, rep_iteration=iter_id, tree=failing_tree.tree
+                    )
+                    replacements.append((failing_tree.tree, replacement))
+                continue
         return replacements
+
+    def insert_repetitions(
+        self,
+        *,
+        nr_to_insert: int,
+        starting_rep: int,
+        rep_iteration: int,
+        grammar: "Grammar",
+        tree: DerivationTree,
+        first_rep: DerivationTree
+    ):
+        split_point = first_rep.split_end(True)
+        insertion_index = len(split_point.parent.children)
+        prefix = split_point.prefix(False)
+        prev_children_len = len(prefix)
+        self.rep_node.fuzz(
+            prefix,
+            grammar,
+            override_starting_repetition=starting_rep,
+            override_current_iteration=rep_iteration,
+            override_iterations_to_perform=starting_rep + nr_to_insert,
+        )
+        insert_children = prefix.children[prev_children_len:]
+        copy_parent = tree.deepcopy(
+            copy_children=True, copy_parent=False, copy_params=False
+        )
+        copy_parent.set_children(
+            copy_parent.children[:insertion_index]
+            + insert_children
+            + copy_parent.children[insertion_index:]
+        )
+        return copy_parent
+
+    def delete_repetitions(self, *, nr_to_delete: int, rep_iteration: int, tree: DerivationTree):
+        copy_parent = tree.deepcopy(
+            copy_children=True, copy_parent=False, copy_params=False
+        )
+        curr_rep_id = None
+        reps_deleted = 0
+        new_children = []
+        for child in copy_parent.children[::-1]:
+            repetition_node_id = self.repetition_id
+            matching_o_nodes = list(
+                filter(
+                    lambda x: x[0] == repetition_node_id and x[1] == rep_iteration,
+                    child.origin_nodes,
+                )
+            )
+            if len(matching_o_nodes) == 0:
+                new_children.insert(0, child)
+                continue
+            matching_o_node = matching_o_nodes[0]
+            rep_id = matching_o_node[2]
+            if curr_rep_id != rep_id and reps_deleted >= nr_to_delete:
+                # We have deleted enough repetitions iteratively add all remaining children
+                new_children.insert(0, child)
+                continue
+            curr_rep_id = rep_id
+            reps_deleted += 1
+        copy_parent.set_children(new_children)
+        return copy_parent
 
     def __repr__(self):
         print_min = self.search_min
