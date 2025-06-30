@@ -1119,17 +1119,8 @@ class RepetitionBoundsConstraint(Constraint):
             )
 
         search_name, search = next(iter(searches.items()))
-        nodes.extend(
-            [(search_name, container) for container in search.find(prefix_tree.get_root())]
-        )
-        if len(nodes) == 0:
-            raise FandangoValueError(
-                f"Couldn't find search target ({search}) in prefixed DerivationTree for computed repetition"
-            )
         prefix_path = prefix_tree.get_choices_path()
-        target_name = None
-        target = None
-        for name, container in nodes:
+        for container in search.find(prefix_tree.get_root()):
             container_tree: DerivationTree = container.evaluate()
             is_prefix = True
             for step_tree, step_search in zip_longest(prefix_path, container_tree.get_choices_path()):
@@ -1140,9 +1131,15 @@ class RepetitionBoundsConstraint(Constraint):
                     break
             if not is_prefix:
                 continue
-            target_name = name
-            target = container_tree
-        local_cpy[target_name] = target
+            nodes.append(container_tree)
+
+        if len(nodes) == 0:
+            raise FandangoValueError(
+                f"Couldn't find search target ({search}) in prefixed DerivationTree for computed repetition"
+            )
+
+        target = nodes[-1]
+        local_cpy[search_name] = target
         return eval(expr, self.global_variables, local_cpy)
 
     def min(self, tree: DerivationTree):
