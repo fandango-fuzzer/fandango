@@ -110,3 +110,6 @@ exclude = [
     'src/fandango/converters/antlr/ANTLRv4[^.]*\.py$',
     'src/fandango/converters/antlr/LexerAdaptor[^.]*\.py$',
 ]
+
+[tool.pytest.ini_options]
+addopts = "-n auto --timeout 180"
