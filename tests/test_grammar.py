@@ -1,5 +1,6 @@
 #!/usr/bin/env pytest
 
+import itertools
 import random
 import unittest
 
@@ -51,25 +52,25 @@ class ConstraintTest(unittest.TestCase):
             print(path)
 
     @staticmethod
-    def get_solutions(grammar, constraints):
+    def get_solutions(grammar, constraints, desired_solutions=1):
         fandango = Fandango(grammar=grammar, constraints=constraints)
-        return [next(fandango.generate())]
+        return list(itertools.islice(fandango.generate(), desired_solutions))
 
     def test_generators(self):
         with open(RESOURCES_ROOT / "bar.fan", "r") as file:
             grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
-        expected = ["bar" for _ in range(1)]
-        actual = self.get_solutions(grammar, constraints)
 
-        self.assertEqual(expected, actual)
+        # grammar produces 1 output
+        actual = self.get_solutions(grammar, constraints, desired_solutions=1)
+        self.assertListEqual(actual, ["bar"])
 
     def test_nested_generators(self):
         with open(RESOURCES_ROOT / "nested_grammar_parameters.fan", "r") as file:
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
 
-        for solution in self.get_solutions(grammar, c):
+        for solution in self.get_solutions(grammar, c, desired_solutions=10):
             self.assertEqual(self.count_g_params(solution), 4)
             converted_inner = solution.children[0].sources[0]
             self.assertEqual(self.count_g_params(converted_inner), 3)
@@ -85,16 +86,18 @@ class ConstraintTest(unittest.TestCase):
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
 
-        expected = ["aaa" for _ in range(1)]
-        actual = self.get_solutions(grammar, c)
+        expected = ["aaa"]
+        actual = self.get_solutions(grammar, c, desired_solutions=1)
 
-        self.assertEqual(expected, actual)
+        self.assertListEqual(expected, actual)
 
     def test_repetitions_slice(self):
         with open(RESOURCES_ROOT / "slicing.fan", "r") as file:
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
-        solutions = self.get_solutions(grammar, c)
+
+        # grammar produces 7 outputs
+        solutions = self.get_solutions(grammar, c, desired_solutions=7)
         for solution in solutions:
             self.assertGreaterEqual(len(str(solution)), 3)
             self.assertLessEqual(len(str(solution)), 10)
@@ -103,15 +106,17 @@ class ConstraintTest(unittest.TestCase):
         with open(RESOURCES_ROOT / "min_reps.fan", "r") as file:
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
-        solutions = self.get_solutions(grammar, c)
+
+        # TODO: increase desired_solutions, see https://github.com/fandango-fuzzer/fandango/issues/581
+        solutions = self.get_solutions(grammar, c, desired_solutions=3)
         for solution in solutions:
-            self.assertGreaterEqual(len(str(solution)), 1)
+            self.assertGreaterEqual(len(str(solution)), 3)
 
     def test_repetition_computed(self):
         with open(RESOURCES_ROOT / "dynamic_repetition.fan", "r") as file:
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
-        solutions = self.get_solutions(grammar, c)
+        solutions = self.get_solutions(grammar, c, desired_solutions=10)
         for solution in solutions:
             len_outer = solution.children[0].to_int()
             self.assertEqual(len_outer, len(solution.children) - 3)
@@ -123,14 +128,14 @@ class ConstraintTest(unittest.TestCase):
         with open(RESOURCES_ROOT / "generator_remove.fan", "r") as file:
             grammar, c = parse(file, use_stdlib=True, use_cache=False)
             assert grammar is not None
-        solutions = self.get_solutions(grammar, c)
+        solutions = self.get_solutions(grammar, c, desired_solutions=10)
         for solution in solutions:
             self.assertNotEqual(solution, "10")
 
     def test_max_nodes(self):
         with open(RESOURCES_ROOT / "gen_number.fan", "r") as file:
             grammar, c = parse(file, use_cache=False, use_stdlib=True)
-        solution = self.get_solutions(grammar, c)
+        solution = self.get_solutions(grammar, c, desired_solutions=10)
         for sol in solution:
             s = str(sol).split(".")
             self.assertEqual(s[0], "a" * 50)
