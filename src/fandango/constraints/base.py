@@ -7,6 +7,7 @@ import math
 import random
 from abc import ABC, abstractmethod
 from copy import copy
+from itertools import zip_longest
 from typing import Any, Optional
 
 from tdigest import TDigest as BaseTDigest
@@ -1104,7 +1105,7 @@ class RepetitionBoundsConstraint(Constraint):
 
         self.rep_node: "Repetition" = None
 
-    def _compute_rep_bound(self, tree: "DerivationTree", expr_data):
+    def _compute_rep_bound(self, prefix_tree: "DerivationTree", expr_data):
         expr, _, searches = expr_data
         local_cpy = self.local_variables.copy()
 
@@ -1119,14 +1120,28 @@ class RepetitionBoundsConstraint(Constraint):
 
         search_name, search = next(iter(searches.items()))
         nodes.extend(
-            [(search_name, container) for container in search.find(tree.get_root())]
+            [(search_name, container) for container in search.find(prefix_tree.get_root())]
         )
         if len(nodes) == 0:
             raise FandangoValueError(
                 f"Couldn't find search target ({search}) in prefixed DerivationTree for computed repetition"
             )
-        target_name, target_container = nodes[-1]
-        target = target_container.evaluate()
+        prefix_path = prefix_tree.get_choices_path()
+        target_name = None
+        target = None
+        for name, container in nodes:
+            container_tree: DerivationTree = container.evaluate()
+            is_prefix = True
+            for step_tree, step_search in zip_longest(prefix_path, container_tree.get_choices_path()):
+                if step_tree is None:
+                    break
+                if step_search is None or step_tree.index < step_search.index:
+                    is_prefix = False
+                    break
+            if not is_prefix:
+                continue
+            target_name = name
+            target = container_tree
         local_cpy[target_name] = target
         return eval(expr, self.global_variables, local_cpy)
 
@@ -1179,7 +1194,7 @@ class RepetitionBoundsConstraint(Constraint):
             iter_list = reference_trees[call_id]
             smallest_rep = min(iter_list.keys())
             ref_tree = iter_list[smallest_rep]
-            prefix_tree = ref_tree[0].prefix()
+            prefix_tree = ref_tree[0]
 
             bound_min = self.min(prefix_tree)
             bound_max = self.max(prefix_tree)
@@ -1211,6 +1226,22 @@ class RepetitionBoundsConstraint(Constraint):
             solved, total, solved == total, failing_trees=failing_trees
         )
 
+#    def set_read_only(self):
+#        if isinstance(target, DerivationTree):
+#            target.set_all_read_only(True)
+#            first_uncommon_idx = 0
+#            for idx, (target_parent, tree_parent) in enumerate(
+#                zip(target.get_path(), tree.get_path())
+#            ):
+#                if target_parent.symbol == tree_parent.symbol:
+#                    first_uncommon_idx = idx + 1
+#                else:
+#                    break
+#            for parent in target.get_path()[first_uncommon_idx:]:
+#                parent.read_only = True
+#            for parent in tree.get_path()[first_uncommon_idx:]:
+#                parent.read_only = True
+#
     def fix_individual(
         self,
         grammar: "Grammar",
@@ -1252,8 +1283,8 @@ class RepetitionBoundsConstraint(Constraint):
                     else:
                         if goal_len == 0 and not allow_repetition_full_delete:
                             goal_len = 1
-                            if goal_len == bound_len:
-                                continue
+                        if goal_len == bound_len:
+                            continue
                         copy_parent = failing_tree.tree.parent.deepcopy(
                             copy_children=True, copy_parent=False, copy_params=False
                         )
