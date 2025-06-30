@@ -3,7 +3,12 @@ from collections.abc import Callable, Generator
 
 from fandango.constraints.base import RepetitionBoundsConstraint
 from fandango.errors import FandangoValueError
-from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
+from fandango.constraints.fitness import (
+    Comparison,
+    ComparisonSide,
+    FailingTree,
+    BoundsFailingTree,
+)
 from fandango.io.packetforecaster import PacketForecaster
 from fandango.language.grammar import DerivationTree, Grammar
 from fandango.language.symbol import NonTerminal
@@ -121,13 +126,14 @@ class PopulationManager:
         # We only allow BoundsConstraints to delete all iterations of a repetition if all other non-boundconstraints constraints are satisfied.
         # Otherwise, we would lose the reference point to re-add the repetitions in the tree, which might be needed,
         # if the referenced length field changes its value.
+        # This is a workaround for the fact that we cannot delete all repetitions in a tree, if there
 
         for failing_tree in failing_trees:
             if failing_tree.tree.read_only:
                 continue
 
-            if isinstance(failing_tree.cause, RepetitionBoundsConstraint):
-                bounds_constraint = failing_tree.cause
+            if isinstance(failing_tree, BoundsFailingTree):
+                bounds_constraint: RepetitionBoundsConstraint = failing_tree.cause
                 replacements.extend(
                     bounds_constraint.fix_individual(
                         self._grammar,
