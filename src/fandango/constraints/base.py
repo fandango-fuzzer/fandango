@@ -19,7 +19,7 @@ from fandango.constraints.fitness import (
     GeneticBase,
     FailingTree,
     Comparison,
-    ComparisonSide,
+    ComparisonSide, BoundsFailingTree,
 )
 from fandango.language.grammar import Repetition
 from fandango.language.search import NonTerminalSearch
@@ -1140,13 +1140,32 @@ class RepetitionBoundsConstraint(Constraint):
 
         target = nodes[-1]
         local_cpy[search_name] = target
-        return eval(expr, self.global_variables, local_cpy)
+        return eval(expr, self.global_variables, local_cpy), target
 
     def min(self, tree: DerivationTree):
         return self._compute_rep_bound(tree, self.expr_data_min)
 
     def max(self, tree: DerivationTree):
         return self._compute_rep_bound(tree, self.expr_data_max)
+
+    def group_by_repetition_id(self, id_trees: list[DerivationTree]) -> dict[tuple[str, int], dict[int, list[DerivationTree]]]:
+        reference_trees: dict[tuple[str, int], dict[int, list[DerivationTree]]] = {}
+        for id_tree in id_trees:
+            iteration_ids: list[tuple[str, int, int]] = list(
+                filter(lambda x: x[0] == self.repetition_id, id_tree.origin_nodes)
+            )
+            for i_id in iteration_ids:
+                call_id = tuple[str, int](i_id[:2])
+                rep_round = i_id[2]
+                # Group by id and repetition round
+
+                if call_id not in reference_trees:
+                    reference_trees[call_id] = dict()
+                iter_list = reference_trees[call_id]
+                if rep_round not in iter_list:
+                    iter_list[rep_round] = []
+                iter_list[rep_round].append(id_tree)
+        return reference_trees
 
     def fitness(
         self,
@@ -1168,33 +1187,19 @@ class RepetitionBoundsConstraint(Constraint):
             # Assume that the field containing the nr of repetitions is zero. This is the case where me might
             # have deleted all repetitions from the tree.
             return ConstraintFitness(1, 1, True)
-        reference_trees: dict[tuple[str, int], dict[int, list[DerivationTree]]] = {}
-        for id_tree in id_trees:
-            iteration_ids: list[tuple[str, int, int]] = list(
-                filter(lambda x: x[0] == self.repetition_id, id_tree.origin_nodes)
-            )
-            for i_id in iteration_ids:
-                call_id = tuple[str, int](i_id[:2])
-                rep_round = i_id[2]
-                # Group by id and repetition round
-
-                if call_id not in reference_trees:
-                    reference_trees[call_id] = dict()
-                iter_list = reference_trees[call_id]
-                if rep_round not in iter_list:
-                    iter_list[rep_round] = []
-                iter_list[rep_round].append(id_tree)
+        reference_trees = self.group_by_repetition_id(id_trees)
         failing_trees = []
         solved = 0
         total = len(reference_trees.keys())
         for call_id in reference_trees.keys():
             iter_list = reference_trees[call_id]
             smallest_rep = min(iter_list.keys())
-            ref_tree = iter_list[smallest_rep]
-            prefix_tree = ref_tree[0]
+            highest_rep = max(iter_list.keys())
+            first_iteration = iter_list[smallest_rep][0]
+            last_iteration = iter_list[highest_rep][-1]
 
-            bound_min = self.min(prefix_tree)
-            bound_max = self.max(prefix_tree)
+            bound_min, min_ref_tree = self.min(first_iteration)
+            bound_max, max_ref_tree = self.max(first_iteration)
             bound_len = len(iter_list)
             if bound_min <= bound_len <= bound_max:
                 solved += 1
@@ -1217,7 +1222,7 @@ class RepetitionBoundsConstraint(Constraint):
                     )
                 )
                 failing_trees.append(
-                    FailingTree(ref_tree[0], self, suggestions=suggestions)
+                    BoundsFailingTree(first_iteration.get_root(True), min_ref_tree, max_ref_tree, first_iteration, last_iteration, self, suggestions=suggestions)
                 )
         return ConstraintFitness(
             solved, total, solved == total, failing_trees=failing_trees
