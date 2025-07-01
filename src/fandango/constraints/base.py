@@ -1164,7 +1164,7 @@ class RepetitionBoundsConstraint(Constraint):
         reference_trees: dict[tuple[str, int], dict[int, list[DerivationTree]]] = {}
         for id_tree in id_trees:
             iteration_ids: list[tuple[str, int, int]] = list(
-                filter(lambda x: x[0] == self.repetition_id, id_tree.origin_nodes)
+                filter(lambda x: x[0] == self.repetition_id, id_tree.origin_repetitions)
             )
             for i_id in iteration_ids:
                 call_id = tuple[str, int](i_id[:2])
@@ -1368,7 +1368,7 @@ class RepetitionBoundsConstraint(Constraint):
             matching_o_nodes = list(
                 filter(
                     lambda x: x[0] == repetition_node_id and x[1] == rep_iteration,
-                    child.origin_nodes,
+                    child.origin_repetitions,
                 )
             )
             if len(matching_o_nodes) == 0:
