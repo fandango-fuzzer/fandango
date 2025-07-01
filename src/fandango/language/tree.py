@@ -35,6 +35,9 @@ class StepException(Exception):
 
 
 class PathStep:
+    def __init__(self, index):
+        self.index = index
+
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
 
@@ -44,12 +47,12 @@ class PathStep:
 
 class SourceStep(PathStep):
     def __init__(self, index):
-        self.index = index
+        super().__init__(index)
 
 
 class ChildStep(PathStep):
     def __init__(self, index):
-        self.index = index
+        super().__init__(index)
 
 
 def index_by_reference(lst, target):
