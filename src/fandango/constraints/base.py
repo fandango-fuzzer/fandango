@@ -1124,12 +1124,12 @@ class RepetitionBoundsConstraint(Constraint):
         for container in search.find(prefix_tree.get_root()):
             container_tree: DerivationTree = container.evaluate()
             is_prefix = True
-            for step_tree, step_search in zip_longest(
+            for tree_step, search_step in zip_longest(
                 prefix_path, container_tree.get_choices_path()
             ):
-                if step_tree is None:
+                if tree_step is None:
                     break
-                if step_search is None or step_tree.index < step_search.index:
+                if search_step is None or tree_step.index < search_step.index:
                     is_prefix = False
                     break
             if not is_prefix:
@@ -1203,8 +1203,8 @@ class RepetitionBoundsConstraint(Constraint):
             first_iteration = iter_list[smallest_rep][0]
             last_iteration = iter_list[highest_rep][-1]
 
-            bound_min, min_ref_tree = self.min(first_iteration)
-            bound_max, max_ref_tree = self.max(first_iteration)
+            bound_min, min_ref_tree = self.min(first_iteration.prefix(True))
+            bound_max, max_ref_tree = self.max(first_iteration.prefix(True))
             bound_len = len(iter_list)
             if bound_min <= bound_len <= bound_max:
                 solved += 1
@@ -1241,21 +1241,14 @@ class RepetitionBoundsConstraint(Constraint):
             solved, total, solved == total, failing_trees=failing_trees
         )
 
-    def set_read_only_diverging_path(
-        self, tree_a: DerivationTree, tree_b: DerivationTree
-    ):
-        first_uncommon_idx = 0
-        for idx, (target_parent, tree_parent) in enumerate(
-            zip(tree_a.get_path(), tree_b.get_path())
-        ):
-            if target_parent.symbol == tree_parent.symbol:
-                first_uncommon_idx = idx + 1
+    def get_first_common_node(self, tree_a: DerivationTree, tree_b: DerivationTree) -> DerivationTree:
+        common_node = tree_a.get_root(True)
+        for a_path, b_path in zip(tree_a.get_choices_path(), tree_b.get_choices_path()):
+            if a_path.index == b_path.index:
+                common_node = common_node.children[a_path.index]
             else:
                 break
-        for parent in tree_a.get_path()[first_uncommon_idx:]:
-            parent.read_only = True
-        for parent in tree_b.get_path()[first_uncommon_idx:]:
-            parent.read_only = True
+        return common_node
 
     def fix_individual(
         self,
@@ -1270,28 +1263,55 @@ class RepetitionBoundsConstraint(Constraint):
             if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
                 iter_id, bound_len, goal_len = value
                 if goal_len > bound_len:
-                    replacement = self.insert_repetitions(
-                        nr_to_insert=goal_len - bound_len,
-                        starting_rep=bound_len,
-                        rep_iteration=iter_id,
-                        grammar=grammar,
-                        tree=failing_tree.tree,
-                        first_rep=failing_tree.starting_rep_tree,
+                    replacements.append(
+                        self.insert_repetitions(
+                            nr_to_insert=goal_len - bound_len,
+                            starting_rep=bound_len,
+                            rep_iteration=iter_id,
+                            grammar=grammar,
+                            tree=failing_tree.tree,
+                            first_rep=failing_tree.starting_rep_tree,
+                        )
                     )
-                    replacements.append((failing_tree.tree, replacement))
                 else:
                     if goal_len == 0 and not allow_repetition_full_delete:
                         if not allow_repetition_full_delete:
                             goal_len = 1
-                        else:
-                            failing_tree.ending_rep_value.set_all_read_only(True)
-                            failing_tree.starting_rep_value.set_all_read_only(False)
                     if goal_len == bound_len:
                         continue
-                    replacement = self.delete_repetitions(
-                        nr_to_delete=bound_len - goal_len, rep_iteration=iter_id, tree=failing_tree.tree
-                    )
-                    replacements.append((failing_tree.tree, replacement))
+                    delete_replacement = self.delete_repetitions(
+                            nr_to_delete=bound_len - goal_len,
+                            rep_iteration=iter_id,
+                            tree=failing_tree.tree,
+                        )
+                    if goal_len == 0:
+                        delete_replacement = delete_replacement[1]
+                        node_a = self.get_first_common_node(failing_tree.tree, failing_tree.starting_rep_value)
+                        node_b = self.get_first_common_node(failing_tree.tree, failing_tree.ending_rep_value)
+                        node_c = self.get_first_common_node(failing_tree.starting_rep_value, failing_tree.ending_rep_value)
+                        # Get the node that is closest to root
+                        first_node = sorted([node_a, node_b, node_c], key=lambda x: len(x.get_path()))[0]
+                        replacement = first_node.deepcopy(copy_children=True, copy_params=False, copy_parent=False)
+                        replacement = replacement.replace(grammar=grammar, tree_to_replace=failing_tree.tree, new_subtree=delete_replacement)
+
+                        read_only_start_idx = len(first_node.get_path()) - 1
+                        current_node = replacement
+                        for path_node in failing_tree.tree.get_choices_path()[read_only_start_idx:]:
+                            current_node = current_node.children[path_node.index]
+                            current_node.read_only = True
+                        current_node = replacement
+                        for path_node in failing_tree.starting_rep_value.get_choices_path()[read_only_start_idx:]:
+                            current_node = current_node.children[path_node.index]
+                            current_node.read_only = True
+                        current_node.set_all_read_only(True)
+                        current_node = replacement
+                        for path_node in failing_tree.ending_rep_value.get_choices_path()[read_only_start_idx:]:
+                            current_node = current_node.children[path_node.index]
+                            current_node.read_only = True
+                        current_node.set_all_read_only(True)
+                        replacements.append((first_node, replacement))
+                    else:
+                        replacements.append(delete_replacement)
                 continue
         return replacements
 
@@ -1303,8 +1323,8 @@ class RepetitionBoundsConstraint(Constraint):
         rep_iteration: int,
         grammar: "Grammar",
         tree: DerivationTree,
-        first_rep: DerivationTree
-    ):
+        first_rep: DerivationTree,
+    ) -> tuple[DerivationTree, DerivationTree]:
         split_point = first_rep.split_end(True)
         insertion_index = len(split_point.parent.children)
         prefix = split_point.prefix(False)
@@ -1325,9 +1345,11 @@ class RepetitionBoundsConstraint(Constraint):
             + insert_children
             + copy_parent.children[insertion_index:]
         )
-        return copy_parent
+        return tree, copy_parent
 
-    def delete_repetitions(self, *, nr_to_delete: int, rep_iteration: int, tree: DerivationTree):
+    def delete_repetitions(
+        self, *, nr_to_delete: int, rep_iteration: int, tree: DerivationTree
+    ) -> tuple[DerivationTree, DerivationTree]:
         copy_parent = tree.deepcopy(
             copy_children=True, copy_parent=False, copy_params=False
         )
@@ -1354,7 +1376,7 @@ class RepetitionBoundsConstraint(Constraint):
             curr_rep_id = rep_id
             reps_deleted += 1
         copy_parent.set_children(new_children)
-        return copy_parent
+        return tree, copy_parent
 
     def __repr__(self):
         print_min = self.search_min
