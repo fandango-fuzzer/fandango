@@ -1199,8 +1199,8 @@ class Grammar(NodeVisitor):
 
             prev = None
             if node.bounds_constraint is not None:
-                node_min = node.bounds_constraint.min(tree)
-                node_max = node.bounds_constraint.max(tree)
+                node_min, _ = node.bounds_constraint.min(tree)
+                node_max, _ = node.bounds_constraint.max(tree)
             else:
                 node_min = node.min
                 node_max = node.max

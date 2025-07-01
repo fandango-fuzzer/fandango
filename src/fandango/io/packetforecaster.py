@@ -214,8 +214,8 @@ class PathFinder(NodeVisitor):
                 prefix_tree = tree_list[-1].prefix()
                 prefix_tree = self.grammar.collapse(prefix_tree.get_root())
                 break
-            rep_min = node.bounds_constraint.min(prefix_tree)
-            rep_max = node.bounds_constraint.max(prefix_tree)
+            rep_min, _ = node.bounds_constraint.min(prefix_tree)
+            rep_max, _ = node.bounds_constraint.max(prefix_tree)
         if continue_exploring and tree_len < rep_max:
             self.current_tree.append(None)
             continue_exploring = self.visit(node.node)
