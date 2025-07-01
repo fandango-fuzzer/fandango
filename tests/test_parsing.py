@@ -201,7 +201,7 @@ class TestIncompleteParsing(unittest.TestCase):
     def _test(self, example, tree):
         parsed = False
         for actual_tree in self.grammar.parse_multiple(
-            example, "<ab>", mode=Grammar.Parser.ParsingMode.INCOMPLETE
+            example, "<start>", mode=Grammar.Parser.ParsingMode.INCOMPLETE
         ):
             self.assertEqual(tree, actual_tree)
             parsed = True
@@ -212,13 +212,32 @@ class TestIncompleteParsing(unittest.TestCase):
         self._test(
             "aa",
             DerivationTree(
-                NonTerminal("<ab>"),
+                NonTerminal("<start>"),
+                [DerivationTree(
+                    NonTerminal("<ab>"),
+                    [
+                        DerivationTree(Terminal("a")),
+                        DerivationTree(
+                            NonTerminal("<ab>"), [DerivationTree(Terminal("a"))]
+                        ),
+                    ],
+                )],
+            ),
+        )
+
+    def test_regex(self):
+        self._test(
+            "ii",
+            DerivationTree(
+                NonTerminal("<start>"),
                 [
-                    DerivationTree(Terminal("a")),
                     DerivationTree(
-                        NonTerminal("<ab>"), [DerivationTree(Terminal("a"))]
+                        NonTerminal("<c>"),
+                        [
+                            DerivationTree(Terminal("ii")),
+                        ],
                     ),
-                ],
+                ]
             ),
         )
 
