@@ -1273,7 +1273,6 @@ class RepetitionBoundsConstraint(Constraint):
                     replacements.append(
                         self.insert_repetitions(
                             nr_to_insert=goal_len - bound_len,
-                            starting_rep=bound_len,
                             rep_iteration=iter_id,
                             grammar=grammar,
                             tree=failing_tree.tree,
@@ -1326,23 +1325,27 @@ class RepetitionBoundsConstraint(Constraint):
         self,
         *,
         nr_to_insert: int,
-        starting_rep: int,
         rep_iteration: int,
         grammar: "Grammar",
         tree: DerivationTree,
         end_rep: DerivationTree,
     ) -> tuple[DerivationTree, DerivationTree]:
-        prefix = end_rep.split_end(True)
-        insert_dummy = prefix.parent
-        insertion_index = len(insert_dummy.children)
+        insertion_index = index_by_reference(end_rep.parent, end_rep) + 1
+        starting_rep = 0
+        for ref in end_rep.origin_repetitions:
+            if ref[0] == self.repetition_id and ref[1] == rep_iteration:
+                starting_rep = ref[2] + 1
+        old_tree_children = tree.children
+        tree.set_children([])
         self.rep_node.fuzz(
-            insert_dummy,
+            tree,
             grammar,
             override_starting_repetition=starting_rep,
             override_current_iteration=rep_iteration,
             override_iterations_to_perform=starting_rep + nr_to_insert,
         )
-        insert_children = insert_dummy.children[insertion_index:]
+        insert_children = tree.children
+        tree.set_children(old_tree_children)
         copy_parent = tree.deepcopy(
             copy_children=True, copy_parent=False, copy_params=False
         )
