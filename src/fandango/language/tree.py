@@ -773,7 +773,7 @@ class DerivationTree:
             if self.parent is not None:
                 self._parent = None
             return self
-        me_idx = self.parent.children.index(self)
+        me_idx = index_by_reference(self.parent.children, self)
         keep_children = self.parent.children[: (me_idx + 1)]
         parent = self.parent._split_end()
         parent.set_children(keep_children)
