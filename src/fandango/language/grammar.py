@@ -295,7 +295,7 @@ class Repetition(Node):
                     parent, grammar, int(max_nodes - reserved_max_nodes), in_message
                 )
             for child in parent.children[prev_children_len:]:
-                child.origin_nodes.insert(0, (self.id, current_iteration, current_rep))
+                child.origin_repetitions.insert(0, (self.id, current_iteration, current_rep))
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
             prev_children_len = len(parent.children)
@@ -1050,7 +1050,7 @@ class Grammar(NodeVisitor):
             sender: Optional[str] = None,
             recipient=None,
             read_only: bool = False,
-            origin_nodes: list[tuple[str, int, int]] | None = None,
+            origin_repetitions: list[tuple[str, int, int]] | None = None,
         ):
             super().__init__(
                 symbol,
@@ -1060,7 +1060,7 @@ class Grammar(NodeVisitor):
                 sender=sender,
                 recipient=recipient,
                 read_only=read_only,
-                origin_nodes=origin_nodes,
+                origin_repetitions=origin_repetitions,
             )
 
         def set_children(self, children: list["DerivationTree"]):
@@ -1294,7 +1294,7 @@ class Grammar(NodeVisitor):
                     read_only=tree.read_only,
                     recipient=tree.recipient,
                     sender=tree.sender,
-                    origin_nodes=tree.origin_nodes,
+                    origin_repetitions=tree.origin_repetitions,
                 )
             ]
 
@@ -1561,7 +1561,7 @@ class Grammar(NodeVisitor):
                         sender=child.sender,
                         recipient=child.recipient,
                         read_only=child.read_only,
-                        origin_nodes=child.origin_nodes,
+                        origin_repetitions=child.origin_repetitions,
                     )
                 )
             return ret
@@ -1578,7 +1578,7 @@ class Grammar(NodeVisitor):
                 sender=tree.sender,
                 recipient=tree.recipient,
                 read_only=tree.read_only,
-                origin_nodes=tree.origin_nodes,
+                origin_repetitions=tree.origin_repetitions,
             )
 
         def complete(
@@ -1594,7 +1594,7 @@ class Grammar(NodeVisitor):
                 if isinstance(node, Repetition):
                     node.iteration += 1
                     for i, c in enumerate(state.children):
-                        c.origin_nodes.append((node.id, node.iteration, i))
+                        c.origin_repetitions.append((node.id, node.iteration, i))
 
             for s in table[state.position].find_dot(state.nonterminal):
                 dot_params = dict(s.dot_params)

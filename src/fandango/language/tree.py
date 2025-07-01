@@ -77,7 +77,7 @@ class DerivationTree:
         sender: Optional[str] = None,
         recipient: Optional[str] = None,
         read_only: Optional[bool] = False,
-        origin_nodes: Optional[list[tuple[str, int, int]]] = None,
+        origin_repetitions: Optional[list[tuple[str, int, int]]] = None,
     ):
         """
         Create a new derivation tree node.
@@ -99,9 +99,9 @@ class DerivationTree:
         self._sources: list["DerivationTree"] = []
         if sources is not None:
             self.sources = sources
-        if origin_nodes is None:
-            origin_nodes = []
-        self.origin_nodes: list[tuple[str, int, int]] = origin_nodes
+        if origin_repetitions is None:
+            origin_repetitions = []
+        self.origin_repetitions: list[tuple[str, int, int]] = origin_repetitions
         self.read_only = read_only
         self._size = 1
         self.set_children(children or [])
@@ -312,7 +312,7 @@ class DerivationTree:
             ],
             [],
         )
-        for o_node_id, o_iter_id, rep in self.origin_nodes:
+        for o_node_id, o_iter_id, rep in self.origin_repetitions:
             if o_node_id == node_id:
                 trees.append(self)
                 break
@@ -407,7 +407,7 @@ class DerivationTree:
             recipient=self.recipient,
             sources=[],
             read_only=self.read_only,
-            origin_nodes=list(self.origin_nodes),
+            origin_repetitions=list(self.origin_repetitions),
         )
         memo[id(self)] = copied
 
@@ -836,7 +836,7 @@ class DerivationTree:
                 copy_children=True, copy_params=False, copy_parent=False
             )
             new_subtree._parent = self.parent
-            new_subtree.origin_nodes = list(self.origin_nodes)
+            new_subtree.origin_repetitions = list(self.origin_repetitions)
             grammar.populate_sources(new_subtree)
             return new_subtree
 
@@ -873,7 +873,7 @@ class DerivationTree:
             recipient=self.recipient,
             sources=sources,
             read_only=self.read_only,
-            origin_nodes=list(self.origin_nodes),
+            origin_repetitions=list(self.origin_repetitions),
         )
 
         # Update children match generator parameters, if parameters updated
