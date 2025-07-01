@@ -25,7 +25,7 @@ from fandango.constraints.fitness import (
 from fandango.language.grammar import Repetition
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
-from fandango.language.tree import DerivationTree
+from fandango.language.tree import DerivationTree, index_by_reference
 from fandango.logger import print_exception, LOGGER
 
 LEGACY = False
@@ -1277,7 +1277,7 @@ class RepetitionBoundsConstraint(Constraint):
                             rep_iteration=iter_id,
                             grammar=grammar,
                             tree=failing_tree.tree,
-                            first_rep=failing_tree.starting_rep_tree,
+                            end_rep=failing_tree.ending_rep_tree,
                         )
                     )
                 else:
@@ -1330,20 +1330,19 @@ class RepetitionBoundsConstraint(Constraint):
         rep_iteration: int,
         grammar: "Grammar",
         tree: DerivationTree,
-        first_rep: DerivationTree,
+        end_rep: DerivationTree,
     ) -> tuple[DerivationTree, DerivationTree]:
-        split_point = first_rep.split_end(True)
-        insertion_index = len(split_point.parent.children)
-        prefix = split_point.prefix(False)
-        prev_children_len = len(prefix)
+        prefix = end_rep.split_end(True)
+        insert_dummy = prefix.parent
+        insertion_index = len(insert_dummy.children)
         self.rep_node.fuzz(
-            prefix,
+            insert_dummy,
             grammar,
             override_starting_repetition=starting_rep,
             override_current_iteration=rep_iteration,
             override_iterations_to_perform=starting_rep + nr_to_insert,
         )
-        insert_children = prefix.children[prev_children_len:]
+        insert_children = insert_dummy.children[insertion_index:]
         copy_parent = tree.deepcopy(
             copy_children=True, copy_parent=False, copy_params=False
         )
