@@ -1106,7 +1106,7 @@ class RepetitionBoundsConstraint(Constraint):
 
         self.rep_node: "Repetition" = None
 
-    def _compute_rep_bound(self, prefix_tree: "DerivationTree", expr_data):
+    def _compute_rep_bound(self, tree_stop_before: "DerivationTree", expr_data):
         expr, _, searches = expr_data
         local_cpy = self.local_variables.copy()
 
@@ -1120,16 +1120,23 @@ class RepetitionBoundsConstraint(Constraint):
             )
 
         search_name, search = next(iter(searches.items()))
-        prefix_path = prefix_tree.get_choices_path()
-        for container in search.find(prefix_tree.get_root()):
+        prefix_path = tree_stop_before.get_choices_path()
+        for container in search.find(tree_stop_before.get_root()):
             container_tree: DerivationTree = container.evaluate()
             is_prefix = True
-            for tree_step, search_step in zip_longest(
+            zip_var = list(zip_longest(
                 prefix_path, container_tree.get_choices_path()
-            ):
+            ))
+            for i, (tree_step, search_step) in enumerate(zip_var):
                 if tree_step is None:
                     break
-                if search_step is None or tree_step.index < search_step.index:
+                if search_step is None:
+                    is_prefix = False
+                    break
+                if tree_step.index < search_step.index:
+                    is_prefix = False
+                    break
+                if tree_step.index == search_step.index and len(zip_var) > (i+1) and zip_var[i+1][0] is None:
                     is_prefix = False
                     break
             if not is_prefix:
@@ -1145,11 +1152,11 @@ class RepetitionBoundsConstraint(Constraint):
         local_cpy[search_name] = target
         return eval(expr, self.global_variables, local_cpy), target
 
-    def min(self, tree: DerivationTree):
-        return self._compute_rep_bound(tree, self.expr_data_min)
+    def min(self, tree_stop_before: DerivationTree):
+        return self._compute_rep_bound(tree_stop_before, self.expr_data_min)
 
-    def max(self, tree: DerivationTree):
-        return self._compute_rep_bound(tree, self.expr_data_max)
+    def max(self, tree_stop_before: DerivationTree):
+        return self._compute_rep_bound(tree_stop_before, self.expr_data_max)
 
     def group_by_repetition_id(
         self, id_trees: list[DerivationTree]
@@ -1203,8 +1210,8 @@ class RepetitionBoundsConstraint(Constraint):
             first_iteration = iter_list[smallest_rep][0]
             last_iteration = iter_list[highest_rep][-1]
 
-            bound_min, min_ref_tree = self.min(first_iteration.prefix(True))
-            bound_max, max_ref_tree = self.max(first_iteration.prefix(True))
+            bound_min, min_ref_tree = self.min(first_iteration)
+            bound_max, max_ref_tree = self.max(first_iteration)
             bound_len = len(iter_list)
             if bound_min <= bound_len <= bound_max:
                 solved += 1
