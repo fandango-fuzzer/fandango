@@ -295,7 +295,9 @@ class Repetition(Node):
                     parent, grammar, int(max_nodes - reserved_max_nodes), in_message
                 )
             for child in parent.children[prev_children_len:]:
-                child.origin_repetitions.insert(0, (self.id, current_iteration, current_rep))
+                child.origin_repetitions.insert(
+                    0, (self.id, current_iteration, current_rep)
+                )
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
             prev_children_len = len(parent.children)

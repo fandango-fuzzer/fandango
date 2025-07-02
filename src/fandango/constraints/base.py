@@ -1124,9 +1124,7 @@ class RepetitionBoundsConstraint(Constraint):
         for container in search.find(tree_stop_before.get_root()):
             container_tree: DerivationTree = container.evaluate()
             is_prefix = True
-            zip_var = list(zip_longest(
-                prefix_path, container_tree.get_choices_path()
-            ))
+            zip_var = list(zip_longest(prefix_path, container_tree.get_choices_path()))
             for i, (tree_step, search_step) in enumerate(zip_var):
                 if tree_step is None:
                     break
@@ -1136,7 +1134,11 @@ class RepetitionBoundsConstraint(Constraint):
                 if tree_step.index < search_step.index:
                     is_prefix = False
                     break
-                if tree_step.index == search_step.index and len(zip_var) > (i+1) and zip_var[i+1][0] is None:
+                if (
+                    tree_step.index == search_step.index
+                    and len(zip_var) > (i + 1)
+                    and zip_var[i + 1][0] is None
+                ):
                     is_prefix = False
                     break
             if not is_prefix:
@@ -1248,7 +1250,9 @@ class RepetitionBoundsConstraint(Constraint):
             solved, total, solved == total, failing_trees=failing_trees
         )
 
-    def get_first_common_node(self, tree_a: DerivationTree, tree_b: DerivationTree) -> DerivationTree:
+    def get_first_common_node(
+        self, tree_a: DerivationTree, tree_b: DerivationTree
+    ) -> DerivationTree:
         common_node = tree_a.get_root(True)
         for a_path, b_path in zip(tree_a.get_choices_path(), tree_b.get_choices_path()):
             if a_path.index == b_path.index:
@@ -1286,32 +1290,57 @@ class RepetitionBoundsConstraint(Constraint):
                     if goal_len == bound_len:
                         continue
                     delete_replacement = self.delete_repetitions(
-                            nr_to_delete=bound_len - goal_len,
-                            rep_iteration=iter_id,
-                            tree=failing_tree.tree,
-                        )
+                        nr_to_delete=bound_len - goal_len,
+                        rep_iteration=iter_id,
+                        tree=failing_tree.tree,
+                    )
                     if goal_len == 0:
                         delete_replacement = delete_replacement[1]
-                        node_a = self.get_first_common_node(failing_tree.tree, failing_tree.starting_rep_value)
-                        node_b = self.get_first_common_node(failing_tree.tree, failing_tree.ending_rep_value)
-                        node_c = self.get_first_common_node(failing_tree.starting_rep_value, failing_tree.ending_rep_value)
+                        node_a = self.get_first_common_node(
+                            failing_tree.tree, failing_tree.starting_rep_value
+                        )
+                        node_b = self.get_first_common_node(
+                            failing_tree.tree, failing_tree.ending_rep_value
+                        )
+                        node_c = self.get_first_common_node(
+                            failing_tree.starting_rep_value,
+                            failing_tree.ending_rep_value,
+                        )
                         # Get the node that is closest to root
-                        first_node = sorted([node_a, node_b, node_c], key=lambda x: len(x.get_path()))[0]
-                        replacement = first_node.deepcopy(copy_children=True, copy_params=False, copy_parent=False)
-                        replacement = replacement.replace(grammar=grammar, tree_to_replace=failing_tree.tree, new_subtree=delete_replacement)
+                        first_node = sorted(
+                            [node_a, node_b, node_c], key=lambda x: len(x.get_path())
+                        )[0]
+                        replacement = first_node.deepcopy(
+                            copy_children=True, copy_params=False, copy_parent=False
+                        )
+                        replacement = replacement.replace(
+                            grammar=grammar,
+                            tree_to_replace=failing_tree.tree,
+                            new_subtree=delete_replacement,
+                        )
 
                         read_only_start_idx = len(first_node.get_path()) - 1
                         current_node = replacement
-                        for path_node in failing_tree.tree.get_choices_path()[read_only_start_idx:]:
+                        for path_node in failing_tree.tree.get_choices_path()[
+                            read_only_start_idx:
+                        ]:
                             current_node = current_node.children[path_node.index]
                             current_node.read_only = True
                         current_node = replacement
-                        for path_node in failing_tree.starting_rep_value.get_choices_path()[read_only_start_idx:]:
+                        for (
+                            path_node
+                        ) in failing_tree.starting_rep_value.get_choices_path()[
+                            read_only_start_idx:
+                        ]:
                             current_node = current_node.children[path_node.index]
                             current_node.read_only = True
                         current_node.set_all_read_only(True)
                         current_node = replacement
-                        for path_node in failing_tree.ending_rep_value.get_choices_path()[read_only_start_idx:]:
+                        for (
+                            path_node
+                        ) in failing_tree.ending_rep_value.get_choices_path()[
+                            read_only_start_idx:
+                        ]:
                             current_node = current_node.children[path_node.index]
                             current_node.read_only = True
                         current_node.set_all_read_only(True)

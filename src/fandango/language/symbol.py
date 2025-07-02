@@ -146,9 +146,7 @@ class Terminal(Symbol):
             else:
                 compiled = regex.compile(symbol)
                 match = compiled.match(word, partial=True)
-                if match is not None and (
-                    match.partial or match.end() == len(word)
-                ):
+                if match is not None and (match.partial or match.end() == len(word)):
                     return True, len(match.group(0))
                 else:
                     return False, 0
