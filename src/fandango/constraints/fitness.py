@@ -82,7 +82,7 @@ class BoundsFailingTree(FailingTree):
         ending_rep_tree: DerivationTree,
         starting_rep_value: DerivationTree,
         ending_rep_value: DerivationTree,
-        cause: "RepetitionBoundsConstraint",
+        cause: "GeneticBase",
         suggestions: Optional[list[tuple[Comparison, Any, ComparisonSide]]] = None,
     ):
         """
