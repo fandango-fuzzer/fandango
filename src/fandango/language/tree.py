@@ -831,7 +831,11 @@ class DerivationTree:
         if current_path is None:
             current_path = self.get_choices_path()
 
-        if current_path in path_to_replacement and self.symbol == path_to_replacement[current_path].symbol and not self.read_only:
+        if (
+            current_path in path_to_replacement
+            and self.symbol == path_to_replacement[current_path].symbol
+            and not self.read_only
+        ):
             new_subtree = path_to_replacement[current_path].deepcopy(
                 copy_children=True, copy_params=False, copy_parent=False
             )
