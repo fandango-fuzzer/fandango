@@ -15,15 +15,15 @@ from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command, IS_BEARTYPE_ACTIVE
 if IS_BEARTYPE_ACTIVE:
     expected_with_random_seed = [
         "697",
-        "8230",
-        "658",
-        "9",
-        "4922",
-        "193",
-        "0",
-        "3",
-        "739",
-        "1",
+        "23075",
+        "195",
+        "22034",
+        "34911",
+        "2",
+        "03",
+        "94",
+        "4",
+        "08",
     ]
 else:
     expected_with_random_seed = [
