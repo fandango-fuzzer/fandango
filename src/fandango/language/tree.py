@@ -831,12 +831,23 @@ class DerivationTree:
         if current_path is None:
             current_path = self.get_choices_path()
 
-        if current_path in path_to_replacement and not self.read_only:
+        if current_path in path_to_replacement and self.symbol == path_to_replacement[current_path].symbol and not self.read_only:
             new_subtree = path_to_replacement[current_path].deepcopy(
                 copy_children=True, copy_params=False, copy_parent=False
             )
             new_subtree._parent = self.parent
             new_subtree.origin_repetitions = list(self.origin_repetitions)
+            new_children = []
+            for i, child in enumerate(new_subtree._children):
+                new_children.append(
+                    child.replace_multiple(
+                        grammar,
+                        replacements,
+                        path_to_replacement,
+                        current_path + (ChildStep(i),),
+                    )
+                )
+            new_subtree.set_children(new_children)
             grammar.populate_sources(new_subtree)
             return new_subtree
 
