@@ -22,7 +22,7 @@ from fandango.constraints.fitness import (
     ComparisonSide,
     BoundsFailingTree,
 )
-from fandango.language.grammar import Repetition
+from fandango.language.grammar import Repetition, Grammar
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree, index_by_reference
@@ -1069,6 +1069,7 @@ class RepetitionBoundsConstraint(Constraint):
         repetition_id: str,
         expr_data_min: tuple[str, list, dict],
         expr_data_max: tuple[str, list, dict],
+        repetition_node: Repetition,
         *args,
         **kwargs,
     ):
@@ -1084,27 +1085,26 @@ class RepetitionBoundsConstraint(Constraint):
         self.repetition_id = repetition_id
         self.expr_data_min = expr_data_min
         self.expr_data_max = expr_data_max
-        self.search_min = expr_data_min[1]
-        self.search_max = expr_data_max[1]
-        if len(self.search_min) == 0:
+        self.search_min: Optional[NonTerminalSearch] = None
+        self.search_max: Optional[NonTerminalSearch] = None
+        if len(expr_data_min[1]) == 0:
             self.search_min = None
-        elif len(self.search_min) == 1:
-            self.search_min = self.search_min[0]
+        elif len(expr_data_min[1]) == 1:
+            self.search_min = expr_data_min[1][0]
         else:
             raise FandangoValueError(
                 "RepetitionBoundsConstraint requires exactly one or zero searches for expr_data_max bound"
             )
 
-        if len(self.search_max) == 0:
+        if len(expr_data_max[1]) == 0:
             self.search_max = None
-        elif len(self.search_max) == 1:
-            self.search_max = self.search_max[0]
+        elif len(expr_data_max[1]) == 1:
+            self.search_max = expr_data_max[1][0]
         else:
             raise FandangoValueError(
                 "RepetitionBoundsConstraint requires exactly one or zero searches for expr_data_max bound"
             )
-
-        self.rep_node: "Repetition" = None
+        self.repetition_node = repetition_node
 
     def _compute_rep_bound(self, tree_stop_before: "DerivationTree", expr_data):
         expr, _, searches = expr_data
@@ -1202,7 +1202,7 @@ class RepetitionBoundsConstraint(Constraint):
             # have deleted all repetitions from the tree.
             return ConstraintFitness(1, 1, True)
         reference_trees = self.group_by_repetition_id(id_trees)
-        failing_trees = []
+        failing_trees: list[FailingTree] = []
         solved = 0
         total = len(reference_trees.keys())
         for call_id in reference_trees.keys():
@@ -1235,6 +1235,7 @@ class RepetitionBoundsConstraint(Constraint):
                         ComparisonSide.LEFT,
                     )
                 )
+                assert first_iteration.parent is not None
                 failing_trees.append(
                     BoundsFailingTree(
                         first_iteration.parent,
@@ -1263,7 +1264,7 @@ class RepetitionBoundsConstraint(Constraint):
 
     def fix_individual(
         self,
-        grammar: "Grammar",
+        grammar: Grammar,
         failing_tree: BoundsFailingTree,
         allow_repetition_full_delete: bool,
     ) -> list[tuple[DerivationTree, DerivationTree]]:
@@ -1289,13 +1290,13 @@ class RepetitionBoundsConstraint(Constraint):
                             goal_len = 1
                     if goal_len == bound_len:
                         continue
-                    delete_replacement = self.delete_repetitions(
+                    delete_replace_pair = self.delete_repetitions(
                         nr_to_delete=bound_len - goal_len,
                         rep_iteration=iter_id,
                         tree=failing_tree.tree,
                     )
                     if goal_len == 0:
-                        delete_replacement = delete_replacement[1]
+                        delete_replacement: DerivationTree = delete_replace_pair[1]
                         node_a = self.get_first_common_node(
                             failing_tree.tree, failing_tree.starting_rep_value
                         )
@@ -1346,7 +1347,7 @@ class RepetitionBoundsConstraint(Constraint):
                         current_node.set_all_read_only(True)
                         replacements.append((first_node, replacement))
                     else:
-                        replacements.append(delete_replacement)
+                        replacements.append(delete_replace_pair)
                 continue
         return replacements
 
@@ -1366,7 +1367,7 @@ class RepetitionBoundsConstraint(Constraint):
                 starting_rep = ref[2] + 1
         old_tree_children = tree.children
         tree.set_children([])
-        self.rep_node.fuzz(
+        self.repetition_node.fuzz(
             tree,
             grammar,
             override_starting_repetition=starting_rep,
@@ -1393,7 +1394,7 @@ class RepetitionBoundsConstraint(Constraint):
         )
         curr_rep_id = None
         reps_deleted = 0
-        new_children = []
+        new_children: list[DerivationTree] = []
         for child in copy_parent.children[::-1]:
             repetition_node_id = self.repetition_id
             matching_o_nodes = list(
@@ -1417,13 +1418,15 @@ class RepetitionBoundsConstraint(Constraint):
         return tree, copy_parent
 
     def __repr__(self):
-        print_min = self.search_min
-        if print_min is None:
+        if self.search_min is None:
             print_min, _, _ = self.expr_data_min
-        print_max = self.search_max
-        if print_max is None:
+        else:
+            print_min = str(self.search_min)
+        if self.search_max is None:
             print_max, _, _ = self.expr_data_max
-        return f"RepetitionBounds({print_min} <= |{repr(self.rep_node.node)}| <= {print_max})"
+        else:
+            print_max = str(self.search_max)
+        return f"RepetitionBounds({print_min} <= |{repr(self.repetition_node.node)}| <= {print_max})"
 
     def __str__(self):
         return repr(self)

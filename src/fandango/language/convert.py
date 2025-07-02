@@ -214,37 +214,34 @@ class GrammarProcessor(FandangoParserVisitor):
             else:
                 min_ = (f"{min_arg}", [], {})
             if require_constraint:
-                bounds_constraint = RepetitionBoundsConstraint(
-                    nid, expr_data_min=min_, expr_data_max=max_
-                )
-                self.repetition_constraints.append(bounds_constraint)
                 if min_arg == 0:
                     min_arg = 1
                 if max_arg < min_arg:
                     max_arg = min_arg
-            rep_node = Repetition(
-                node,
-                nid,
-                min_=min_arg,
-                max_=max_arg,
-                bounds_constraint=bounds_constraint,
-            )
+            rep_node = Repetition(node, nid, min_=min_arg, max_=max_arg)
+            if require_constraint:
+                bounds_constraint = RepetitionBoundsConstraint(
+                    nid,
+                    expr_data_min=min_,
+                    expr_data_max=max_,
+                    repetition_node=rep_node,
+                )
+                self.repetition_constraints.append(bounds_constraint)
             if bounds_constraint is not None:
-                bounds_constraint.rep_node = rep_node
+                bounds_constraint.repetition_node = rep_node
             return rep_node
         reps = self.searches.visit(ctx.expression(0))
         reps: tuple[str, list, dict] = (ast.unparse(reps[0]), *reps[1:])
         if reps[0].isdigit():
             return Repetition(node, nid, int(reps[0]), int(reps[0]))
         else:
+            rep_node = Repetition(node, nid, min_=1)
             bounds_constraint = RepetitionBoundsConstraint(
-                nid, expr_data_min=reps, expr_data_max=reps
+                nid, expr_data_min=reps, expr_data_max=reps, repetition_node=rep_node
             )
             self.repetition_constraints.append(bounds_constraint)
-            rep_node = Repetition(
-                node, nid, min_=1, bounds_constraint=bounds_constraint
-            )
-            bounds_constraint.rep_node = rep_node
+            rep_node.bounds_constraint = bounds_constraint
+
             return rep_node
 
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
