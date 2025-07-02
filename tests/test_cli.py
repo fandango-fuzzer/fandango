@@ -67,6 +67,8 @@ class TestCLI(unittest.TestCase):
 
     def test_output_to_file(self):
         out_file = RESOURCES_ROOT / "test.txt"
+        if os.path.exists(out_file):
+            os.remove(out_file)
         command = [
             "fandango",
             "fuzz",
