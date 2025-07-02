@@ -91,10 +91,10 @@ class DerivationTree:
             raise TypeError(f"Expected Symbol, got {type(symbol)}")
 
         self.hash_cache: Optional[int] = None
-        self._parent: Optional["DerivationTree"] = parent
+        self._parent = parent
         self._sender = sender
         self._recipient = recipient
-        self._symbol: Symbol = symbol
+        self._symbol = symbol
         self._children: list["DerivationTree"] = []
         self._sources: list["DerivationTree"] = []
         if sources is not None:

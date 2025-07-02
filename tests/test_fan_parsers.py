@@ -1,23 +1,11 @@
 #!/usr/bin/env pytest
 
 import glob
-import shlex
-import subprocess
 import unittest
 
 import pytest
 
-from .utils import RESOURCES_ROOT, DOCS_ROOT
-
-
-def run_command(command):
-    proc = subprocess.Popen(
-        command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    out, err = proc.communicate()
-    return out.decode(), err.decode(), proc.returncode
+from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command
 
 
 files = glob.glob(str(RESOURCES_ROOT / "*.fan")) + glob.glob(str(DOCS_ROOT / "*.fan"))
@@ -27,12 +15,12 @@ files = glob.glob(str(RESOURCES_ROOT / "*.fan")) + glob.glob(str(DOCS_ROOT / "*.
 def test_file(fan_file):
     """Test the C++ and python .fan parsers for `fan_file`."""
 
-    command = shlex.split(f"fandango --parser=python convert {fan_file}")
+    command = ["fandango", "--parser=python", "convert", fan_file]
     python_out, err, return_code = run_command(command)
     assert return_code == 0, err
     assert err == ""
 
-    command = shlex.split(f"fandango --parser=cpp convert {fan_file}")
+    command = ["fandango", "--parser=cpp", "convert", fan_file]
     cpp_out, err, return_code = run_command(command)
     assert return_code == 0, err
     assert err == ""

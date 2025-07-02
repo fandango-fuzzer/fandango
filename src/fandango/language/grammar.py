@@ -6,8 +6,8 @@ import time
 import typing
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Iterator, Optional, Union
-from collections.abc import Generator
+from typing import Any, Optional, Union
+from collections.abc import Generator, Iterator
 
 import exrex
 
@@ -68,7 +68,7 @@ class Node(abc.ABC):
 
     def fuzz(
         self,
-        parent: "DerivationTree",
+        parent: DerivationTree,
         grammar: "Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
@@ -120,7 +120,7 @@ class Alternative(Node):
 
     def fuzz(
         self,
-        parent: "DerivationTree",
+        parent: DerivationTree,
         grammar: "Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
@@ -176,7 +176,7 @@ class Concatenation(Node):
 
     def fuzz(
         self,
-        parent: "DerivationTree",
+        parent: DerivationTree,
         grammar: "Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
@@ -258,7 +258,7 @@ class Repetition(Node):
 
     def fuzz(
         self,
-        parent: "DerivationTree",
+        parent: DerivationTree,
         grammar: "Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
@@ -389,7 +389,7 @@ class NonTerminalNode(Node):
 
     def fuzz(
         self,
-        parent: "DerivationTree",
+        parent: DerivationTree,
         grammar: "Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
@@ -484,7 +484,7 @@ class TerminalNode(Node):
 
     def fuzz(
         self,
-        parent: "DerivationTree",
+        parent: DerivationTree,
         grammar: "Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
@@ -551,7 +551,7 @@ class CharSet(Node):
 
     def fuzz(
         self,
-        parent: "DerivationTree",
+        parent: DerivationTree,
         grammar: "Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
@@ -1043,9 +1043,9 @@ class Grammar(NodeVisitor):
         def __init__(
             self,
             symbol: Symbol,
-            children: Optional[list["DerivationTree"]] = None,
+            children: Optional[list[DerivationTree]] = None,
             *,
-            parent: Optional["DerivationTree"] = None,
+            parent: Optional[DerivationTree] = None,
             sender: Optional[str] = None,
             recipient=None,
             read_only: bool = False,
@@ -1062,7 +1062,7 @@ class Grammar(NodeVisitor):
                 origin_repetitions=origin_repetitions,
             )
 
-        def set_children(self, children: list["DerivationTree"]):
+        def set_children(self, children: list[DerivationTree]):
             self._children = children
             self.invalidate_hash()
 
@@ -1098,7 +1098,7 @@ class Grammar(NodeVisitor):
             self._incomplete: set[DerivationTree] = set()
             self._nodes: dict[str | bytes | int, Node] = {}
             self._max_position = -1
-            self.elapsed_time: float = 0
+            self.elapsed_time: float = 0.0
             self._process()
 
         def _process(self):
@@ -1941,7 +1941,7 @@ class Grammar(NodeVisitor):
             print("Cycle exists")
         return topological_order[::-1]
 
-    def is_use_generator(self, tree: "DerivationTree"):
+    def is_use_generator(self, tree: DerivationTree):
         symbol = tree.symbol
         if not isinstance(symbol, NonTerminal):
             return False
@@ -1955,7 +1955,7 @@ class Grammar(NodeVisitor):
         intersection = path.intersection(set(generator_dependencies))
         return len(intersection) == 0
 
-    def derive_sources(self, tree: "DerivationTree"):
+    def derive_sources(self, tree: DerivationTree):
         gen_symbol = tree.symbol
         if not isinstance(gen_symbol, NonTerminal):
             raise FandangoValueError(f"Tree {tree.symbol} is not a nonterminal")
@@ -1993,15 +1993,15 @@ class Grammar(NodeVisitor):
         args.pop(0)
         return args
 
-    def derive_generator_output(self, tree: "DerivationTree"):
+    def derive_generator_output(self, tree: DerivationTree):
         generated = self.generate(tree.nonterminal, tree.sources)
         return generated.children
 
-    def populate_sources(self, tree: "DerivationTree"):
+    def populate_sources(self, tree: DerivationTree):
         self._rec_remove_sources(tree)
         self._populate_sources(tree)
 
-    def _populate_sources(self, tree: "DerivationTree"):
+    def _populate_sources(self, tree: DerivationTree):
         if self.is_use_generator(tree):
             tree.sources = self.derive_sources(tree)
             for child in tree.children:
@@ -2010,7 +2010,7 @@ class Grammar(NodeVisitor):
         for child in tree.children:
             self._populate_sources(child)
 
-    def _rec_remove_sources(self, tree: "DerivationTree"):
+    def _rec_remove_sources(self, tree: DerivationTree):
         tree.sources = []
         for child in tree.children:
             self._rec_remove_sources(child)
