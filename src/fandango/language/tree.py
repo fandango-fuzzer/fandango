@@ -759,6 +759,7 @@ class DerivationTree:
 
     def prefix(self, copy_tree: bool = True) -> "DerivationTree":
         ref_tree = self.split_end(copy_tree)
+        assert ref_tree.parent is not None
         ref_tree = ref_tree.parent
         ref_tree.set_children(ref_tree.children[:-1])
         return ref_tree

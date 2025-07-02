@@ -81,7 +81,7 @@ class GrammarProcessor(FandangoParserVisitor):
         self.global_variables = global_variables
         self.id_prefix = id_prefix
         self.searches = SearchProcessor(Grammar.dummy())
-        self.repetition_constraints = list()
+        self.repetition_constraints: list[RepetitionBoundsConstraint] = list()
         self.seenParties = set[str]()
         self.additionalRules = dict[NonTerminal, Node]()
         self.max_repetitions = max_repetitions
@@ -216,7 +216,7 @@ class GrammarProcessor(FandangoParserVisitor):
             if require_constraint:
                 if min_arg == 0:
                     min_arg = 1
-                if max_arg < min_arg:
+                if max_arg is not None and max_arg < min_arg:
                     max_arg = min_arg
             rep_node = Repetition(node, nid, min_=min_arg, max_=max_arg)
             if require_constraint:
@@ -230,8 +230,8 @@ class GrammarProcessor(FandangoParserVisitor):
             if bounds_constraint is not None:
                 bounds_constraint.repetition_node = rep_node
             return rep_node
-        reps = self.searches.visit(ctx.expression(0))
-        reps: tuple[str, list, dict] = (ast.unparse(reps[0]), *reps[1:])
+        reps_visit = self.searches.visit(ctx.expression(0))
+        reps: tuple[str, list, dict] = (ast.unparse(reps_visit[0]), *reps_visit[1:])
         if reps[0].isdigit():
             return Repetition(node, nid, int(reps[0]), int(reps[0]))
         else:

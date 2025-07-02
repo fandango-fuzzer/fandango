@@ -133,6 +133,7 @@ class PopulationManager:
                 continue
 
             if isinstance(failing_tree, BoundsFailingTree):
+                assert isinstance(failing_tree.cause, RepetitionBoundsConstraint)
                 bounds_constraint: RepetitionBoundsConstraint = failing_tree.cause
                 replacements.extend(
                     bounds_constraint.fix_individual(

@@ -11,6 +11,8 @@ from collections.abc import Generator
 
 import exrex
 
+if typing.TYPE_CHECKING:
+    from fandango.constraints.base import RepetitionBoundsConstraint
 from fandango.language.symbol import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree
 
@@ -222,13 +224,15 @@ class Concatenation(Node):
 
 
 class Repetition(Node):
-    def __init__(self, node: Node, id: str = "", min_: int = 0, max_: int = None):
+    def __init__(
+        self, node: Node, id: str = "", min_: int = 0, max_: Optional[int] = None
+    ):
         super().__init__(NodeType.REPETITION)
         self.id = id
         self.min = min_
         self._max = max_
         self.node = node
-        self.bounds_constraint = None
+        self.bounds_constraint: Optional["RepetitionBoundsConstraint"] = None
         self.iteration = 0
         if min_ < 0:
             raise FandangoValueError(
@@ -1092,7 +1096,7 @@ class Grammar(NodeVisitor):
                 list[DerivationTree],
             ] = {}
             self._incomplete: set[DerivationTree] = set()
-            self._nodes: dict[str, Node] = {}
+            self._nodes: dict[str | bytes | int, Node] = {}
             self._max_position = -1
             self.elapsed_time: float = 0
             self._process()
@@ -1194,6 +1198,7 @@ class Grammar(NodeVisitor):
 
             prev = None
             if node.bounds_constraint is not None:
+                assert tree is not None
                 node_min, _ = node.bounds_constraint.min(tree)
                 node_max, _ = node.bounds_constraint.max(tree)
             else:
@@ -2328,9 +2333,9 @@ class Grammar(NodeVisitor):
         )
         while nodes:
             node = nodes.pop(0)
-            if node.node_type == NodeType.TERMINAL:
+            if isinstance(node, TerminalNode):
                 continue
-            elif node.node_type == NodeType.NON_TERMINAL:
+            elif isinstance(node, NonTerminalNode):
                 if node.symbol not in self.rules:  # type: ignore[attr-defined] # We're checking types manually
                     raise FandangoValueError(
                         f"Symbol {node.symbol} not found in grammar"  # type: ignore[attr-defined] # We're checking types manually
@@ -2341,20 +2346,20 @@ class Grammar(NodeVisitor):
                     node.distance_to_completion = (
                         self.rules[node.symbol].distance_to_completion + 1  # type: ignore[attr-defined] # We're checking types manually
                     )
-            elif node.node_type == NodeType.ALTERNATIVE:
+            elif isinstance(node, Alternative):
                 node.distance_to_completion = (
                     min([n.distance_to_completion for n in node.alternatives]) + 1  # type: ignore[attr-defined] # We're checking types manually
                 )
                 if node.distance_to_completion == float("inf"):
                     nodes.append(node)
-            elif node.node_type == NodeType.CONCATENATION:
+            elif isinstance(node, Concatenation):
                 if any([n.distance_to_completion == float("inf") for n in node.nodes]):  # type: ignore[attr-defined] # We're checking types manually
                     nodes.append(node)
                 else:
                     node.distance_to_completion = (
                         sum([n.distance_to_completion for n in node.nodes]) + 1  # type: ignore[attr-defined] # We're checking types manually
                     )
-            elif node.node_type == NodeType.REPETITION:
+            elif isinstance(node, Repetition):
                 if node.node.distance_to_completion == float("inf"):  # type: ignore[attr-defined] # We're checking types manually
                     nodes.append(node)
                 else:
