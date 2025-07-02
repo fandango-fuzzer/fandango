@@ -222,20 +222,13 @@ class Concatenation(Node):
 
 
 class Repetition(Node):
-    def __init__(
-        self,
-        node: Node,
-        id: str = "",
-        min_: int = 0,
-        max_: int = None,
-        bounds_constraint: Optional["RepetitionBoundsConstraint"] = None,
-    ):
+    def __init__(self, node: Node, id: str = "", min_: int = 0, max_: int = None):
         super().__init__(NodeType.REPETITION)
         self.id = id
         self.min = min_
         self._max = max_
         self.node = node
-        self.bounds_constraint = bounds_constraint
+        self.bounds_constraint = None
         self.iteration = 0
         if min_ < 0:
             raise FandangoValueError(
