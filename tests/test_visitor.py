@@ -41,6 +41,9 @@ class CountingVisitor(ConstraintVisitor):
     def visit_implication_constraint(self, constraint: "ImplicationConstraint"):
         self.counts["ImplicationConstraint"] += 1
 
+    def visit_repetition_bounds_constraint(self, constraint: "RepetitionBoundsConstraint"):
+        self.counts["RepetitionBoundsConstraint"] += 1
+
 
 class LoggingVisitor(ConstraintVisitor):
 
@@ -71,6 +74,9 @@ class LoggingVisitor(ConstraintVisitor):
 
     def visit_implication_constraint(self, constraint: "ImplicationConstraint"):
         LOGGER.info("Visiting implication constraint")
+
+    def visit_repetition_bounds_constraint(self, constraint: "RepetitionBoundsConstraint"):
+        LOGGER.info("Visiting repetition bounds constraint")
 
 
 class TestConstraintVisitor(unittest.TestCase):
@@ -107,6 +113,7 @@ class TestConstraintVisitor(unittest.TestCase):
         self.assertEqual(visitor.counts["ComparisonConstraint"], 0)
         self.assertEqual(visitor.counts["ExistsConstraint"], 0)
         self.assertEqual(visitor.counts["ConjunctionConstraint"], 0)
+        self.assertEqual(visitor.counts["RepetitionBoundsConstraint"], 0)
 
     def test_nested_constraints(self):
         """

@@ -458,7 +458,7 @@ class Fandango:
                 if len(history_tree.protocol_msgs()) == 0:
                     raise FandangoFailedError("Could not forecast next packet")
                 yield history_tree
-                continue
+                return
                 # TODO: Reset for next iteration
 
             msg_parties = list(
@@ -644,12 +644,21 @@ class Fandango:
 
                 if msg_sender != sender:
                     continue
-                if isinstance(msg_fragment, bytes):
+                if isinstance(msg_fragment, bytes) and not self.grammar.contains_bits():
                     msg_fragment = msg_fragment.decode("utf-8", errors="ignore")
                 if complete_msg is None:
                     complete_msg = msg_fragment
                 else:
-                    complete_msg += msg_fragment
+                    if isinstance(complete_msg, str) and isinstance(msg_fragment, str):
+                        complete_msg += msg_fragment
+                    elif isinstance(complete_msg, bytes) and isinstance(
+                        msg_fragment, bytes
+                    ):
+                        complete_msg += msg_fragment
+                    else:
+                        raise TypeError(
+                            "complete_msg and msg_fragment must be of the same type"
+                        )
                 used_fragments_idx.append(abs_msg_idx)
 
                 parsed_packet_tree = None

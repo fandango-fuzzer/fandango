@@ -10,11 +10,16 @@ from typing import Any, Optional, Union
 from collections.abc import Generator, Iterator
 
 import exrex
-from thefuzz import process as thefuzz_process
 
-from fandango.errors import FandangoValueError, FandangoParseError
+if typing.TYPE_CHECKING:
+    from fandango.constraints.base import RepetitionBoundsConstraint
 from fandango.language.symbol import NonTerminal, Symbol, Terminal
 from fandango.language.tree import DerivationTree
+
+from fandango.errors import FandangoValueError, FandangoParseError
+
+from thefuzz import process as thefuzz_process
+
 
 MAX_REPETITIONS = 5
 
@@ -220,108 +225,33 @@ class Concatenation(Node):
 
 class Repetition(Node):
     def __init__(
-        self, node: Node, id: str = "", min_=("0", [], {}), max_=(f"{None}", [], {})
+        self, node: Node, id: str = "", min_: int = 0, max_: Optional[int] = None
     ):
         super().__init__(NodeType.REPETITION)
         self.id = id
-        # min_expr, min_nt, min_search = min_
-        # max_expr, max_nt, max_search = max_
-
-        # if min_ < 0:
-        #    raise FandangoValueError(
-        #        f"Minimum repetitions {min_} must be greater than or equal to 0"
-        #    )
-        # if max_ <= 0 or max_ < min_:
-        #    raise FandangoValueError(
-        #        f"Maximum repetitions {max_} must be greater than 0 or greater than min {min_}"
-        #    )
-
+        self.min = min_
+        self._max = max_
         self.node = node
-        self.expr_data_min = min_
-        self.expr_data_max = max_
-        self.static_min = None
-        self.static_max = None
-
-    def get_access_points(self):
-        _, _, searches_min = self.expr_data_min
-        _, _, searches_max = self.expr_data_max
-        non_terminals = set[NonTerminal]()
-        for search_list in [searches_min, searches_max]:
-            for search in search_list.values():
-                for nt in search.get_access_points():
-                    non_terminals.add(nt)
-        return non_terminals
-
-    def _compute_rep_bound(
-        self, grammar: "Grammar", tree: Optional[DerivationTree], expr_data
-    ):
-        expr, _, searches = expr_data
-        if expr == "None":
-            expr = f"{MAX_REPETITIONS}"
-        local_cpy = grammar._local_variables.copy()
-
-        if len(searches) == 0:
-            return eval(expr, grammar._global_variables, local_cpy), True
-        if tree is None:
-            raise FandangoValueError("Need `tree` argument if symbols present")
-
-        nodes = []
-        if len(searches) != 1:
+        self.bounds_constraint: Optional["RepetitionBoundsConstraint"] = None
+        self.iteration = 0
+        if min_ < 0:
             raise FandangoValueError(
-                "Computed repetition requires exactly one or zero searches"
+                f"Minimum repetitions {min_} must be greater than or equal to 0"
             )
-
-        search_name, search = next(iter(searches.items()))
-        nodes.extend(
-            [(search_name, container) for container in search.find(tree.get_root())]
-        )
-        if len(nodes) == 0:
+        if self.max <= 0 or self.max < min_:
             raise FandangoValueError(
-                f"Couldn't find search target ({search}) in prefixed DerivationTree for computed repetition"
+                f"Maximum repetitions {self.max} must be greater than 0 or greater than min {min_}"
             )
 
-        target_name, target_container = nodes[-1]
-        target = target_container.evaluate()
-        local_cpy[target_name] = target
-        if isinstance(target, DerivationTree):
-            target.set_all_read_only(True)
-            first_uncommon_idx = 0
-            for idx, (target_parent, tree_parent) in enumerate(
-                zip(target.get_path(), tree.get_path())
-            ):
-                if target_parent.symbol == tree_parent.symbol:
-                    first_uncommon_idx = idx + 1
-                else:
-                    break
-            for parent in target.get_path()[first_uncommon_idx:]:
-                parent.read_only = True
-            for parent in tree.get_path()[first_uncommon_idx:]:
-                parent.read_only = True
+    @property
+    def internal_max(self):
+        return self._max
 
-        return eval(expr, grammar._global_variables, local_cpy), False
-
-    def min(self, grammar: "Grammar", tree: Optional[DerivationTree] = None):
-        if self.static_min is None:
-            current_min, is_static = self._compute_rep_bound(
-                grammar, tree, self.expr_data_min
-            )
-            if is_static:
-                self.static_min = current_min
-            return current_min
-        else:
-            return self.static_min
-
-    def max(self, grammar: "Grammar", tree: Optional[DerivationTree] = None):
-        if self.static_max is None:
-            current_max, is_static = self._compute_rep_bound(
-                grammar, tree, self.expr_data_max
-            )
-
-            # if is_static:
-            #    self.static_max = current_max
-            return current_max
-        else:
-            return self.static_max
+    @property
+    def max(self):
+        if self._max is None:
+            return MAX_REPETITIONS
+        return self._max
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitRepetition(self)
@@ -332,18 +262,28 @@ class Repetition(Node):
         grammar: "Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
+        override_current_iteration: Optional[int] = None,
+        override_starting_repetition: int = 0,
+        override_iterations_to_perform: Optional[int] = None,
     ):
         prev_parent_size = parent.size()
+        prev_children_len = len(parent.children)
+        if override_current_iteration is None:
+            self.iteration += 1
+            current_iteration = self.iteration
+        else:
+            current_iteration = override_current_iteration
 
-        current_min = self.min(grammar, parent)
-        current_max = self.max(grammar, parent)
+        rep_goal = random.randint(self.min, self.max)
+        if override_iterations_to_perform is not None:
+            rep_goal = override_iterations_to_perform - override_starting_repetition
 
-        goal_range = random.randint(current_min, current_max)
         reserved_max_nodes = self.distance_to_completion
 
-        for rep in range(goal_range):
+        for rep in range(rep_goal):
+            current_rep = rep + override_starting_repetition
             if self.node.distance_to_completion >= max_nodes:
-                if rep > current_min:
+                if rep > self.min and override_iterations_to_perform is None:
                     break
                 self.node.fuzz(parent, grammar, 0, in_message)
             else:
@@ -351,40 +291,35 @@ class Repetition(Node):
                 self.node.fuzz(
                     parent, grammar, int(max_nodes - reserved_max_nodes), in_message
                 )
+            for child in parent.children[prev_children_len:]:
+                child.origin_repetitions.insert(
+                    0, (self.id, current_iteration, current_rep)
+                )
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
+            prev_children_len = len(parent.children)
 
     def __repr__(self):
-        # We use "f()" as a placeholder for some function
-        min_str = str(self.static_min) if self.static_min is not None else "f()"
-        max_str = str(self.static_max) if self.static_max is not None else "f()"
-
-        if min_str == max_str:
-            return f"{self.node}{{{min_str}}}"
-        return f"{self.node}{{{min_str},{max_str}}}"
+        if self.min == self.max:
+            return f"{self.node}{{{self.min}}}"
+        return f"{self.node}{{{self.min},{self.max}}}"
 
     def __str__(self):
-        # We use "f()" as a placeholder for some function
-        min_str = str(self.static_min) if self.static_min is not None else "f()"
-        max_str = str(self.static_max) if self.static_max is not None else "f()"
-
-        if min_str == max_str:
-            return f"{self.node!s}{{{min_str}}}"
-        return f"{self.node!s}{{{min_str},{max_str}}}"
+        if self.min == self.max:
+            return f"{self.node!s}{{{self.min}}}"
+        return f"{self.node!s}{{{self.min},{self.max}}}"
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
-        base: list[Node] = []
-        # Todo: Context from DerivationTree is missing.
-        #  Repetitions that depend on a value within the tree will cause a crash.
-        if self.min(grammar) == 0:
+        base: list = []
+        if self.min == 0:
             base.append(TerminalNode(Terminal("")))
-        if self.min(grammar) <= 1 <= self.max(grammar):
+        if self.min <= 1 <= self.max:
             base.append(self.node)
         yield Alternative(
             base
             + [
                 Concatenation([self.node] * r)
-                for r in range(max(2, self.min(grammar)), self.max(grammar) + 1)
+                for r in range(max(2, self.min), self.max + 1)
             ]
         )
 
@@ -396,8 +331,8 @@ class Repetition(Node):
 
 
 class Star(Repetition):
-    def __init__(self, node: Node, id: str = "", max_repetitions: int = 5):
-        super().__init__(node, id, ("0", [], {}))
+    def __init__(self, node: Node, id: str = ""):
+        super().__init__(node, id, min_=0)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitStar(self)
@@ -410,8 +345,8 @@ class Star(Repetition):
 
 
 class Plus(Repetition):
-    def __init__(self, node: Node, id: str = "", max_repetitions: int = 5):
-        super().__init__(node, id, ("1", [], {}))
+    def __init__(self, node: Node, id: str = ""):
+        super().__init__(node, id, min_=1)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitPlus(self)
@@ -425,7 +360,7 @@ class Plus(Repetition):
 
 class Option(Repetition):
     def __init__(self, node: Node, id: str = ""):
-        super().__init__(node, id, ("0", [], {}), ("1", [], {}))
+        super().__init__(node, id, min_=0, max_=1)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitOption(self)
@@ -1114,6 +1049,7 @@ class Grammar(NodeVisitor):
             sender: Optional[str] = None,
             recipient=None,
             read_only: bool = False,
+            origin_repetitions: list[tuple[str, int, int]] | None = None,
         ):
             super().__init__(
                 symbol,
@@ -1123,6 +1059,7 @@ class Grammar(NodeVisitor):
                 sender=sender,
                 recipient=recipient,
                 read_only=read_only,
+                origin_repetitions=origin_repetitions,
             )
 
         def set_children(self, children: list[DerivationTree]):
@@ -1159,6 +1096,7 @@ class Grammar(NodeVisitor):
                 list[DerivationTree],
             ] = {}
             self._incomplete: set[DerivationTree] = set()
+            self._nodes: dict[str | bytes | int, Node] = {}
             self._max_position = -1
             self.elapsed_time: float = 0.0
             self._process()
@@ -1219,12 +1157,15 @@ class Grammar(NodeVisitor):
             return aggregate
 
         def visitAlternative(self, node: Alternative):
+            intermediate_nt = NonTerminal(f"<__{node.id}>")
+            self._nodes[intermediate_nt.symbol] = node
             result = self.visitChildren(node)
-            intermediate_nt = NonTerminal(f"<__{NodeType.ALTERNATIVE}:{node.id}>")
             self.set_rule(intermediate_nt, result)
             return [[(intermediate_nt, frozenset())]]
 
         def visitConcatenation(self, node: Concatenation):
+            intermediate_nt = NonTerminal(f"<__{node.id}>")
+            self._nodes[intermediate_nt.symbol] = node
             result: list[list[tuple[NonTerminal, frozenset]]] = [[]]
             for child in node.children():
                 to_add = self.visit(child)
@@ -1233,7 +1174,6 @@ class Grammar(NodeVisitor):
                     for a in to_add:
                         new_result.append(r + a)
                 result = new_result
-            intermediate_nt = NonTerminal(f"<__{NodeType.CONCATENATION}:{node.id}>")
             self.set_rule(intermediate_nt, result)
             return [[(intermediate_nt, frozenset())]]
 
@@ -1243,20 +1183,30 @@ class Grammar(NodeVisitor):
             nt: Optional[tuple[NonTerminal, frozenset]] = None,
             tree: Optional[DerivationTree] = None,
         ):
-            is_context = len(node.get_access_points()) != 0
+            repetition_nt = NonTerminal(f"<__{node.id}>")
+            self._nodes[repetition_nt.symbol] = node
+            is_context = node.bounds_constraint is not None
+
             if nt is None:
                 alternatives = self.visit(node.node)
                 nt = self.set_implicit_rule(alternatives)
 
                 if is_context:
                     i_nt = self.set_context_rule(node, nt)
-                    repetition_nt = NonTerminal(f"<__{NodeType.REPETITION}:{node.id}>")
                     self.set_rule(repetition_nt, [[(i_nt, frozenset())]])
                     return [[(repetition_nt, frozenset())]]
 
             prev = None
-            node_min = node.min(self.grammar, tree)
-            node_max = node.max(self.grammar, tree)
+            if node.bounds_constraint is not None:
+                assert tree is not None
+                right_most_node = tree
+                while len(right_most_node.children) != 0:
+                    right_most_node = right_most_node.children[-1]
+                node_min, _ = node.bounds_constraint.min(right_most_node)
+                node_max, _ = node.bounds_constraint.max(right_most_node)
+            else:
+                node_min = node.min
+                node_max = node.max
             for rep in range(node_min, node_max):
                 alts = [[nt]]
                 if prev is not None:
@@ -1272,36 +1222,38 @@ class Grammar(NodeVisitor):
                 tmp_nt, rule_id = self.set_tmp_rule(alts)
                 return [[tmp_nt]]
             min_nt = self.set_implicit_rule(alts)
-            intermediate_nt = NonTerminal(f"<__{NodeType.REPETITION}:{node.id}>")
-            self.set_rule(intermediate_nt, [[min_nt]])
-            return [[(intermediate_nt, frozenset())]]
+            self.set_rule(repetition_nt, [[min_nt]])
+            return [[(repetition_nt, frozenset())]]
 
         def visitStar(self, node: Star):
+            intermediate_nt = NonTerminal(f"<__{node.id}>")
+            self._nodes[intermediate_nt.symbol] = node
             alternatives: list[list[tuple[NonTerminal, frozenset]]] = [[]]
             nt = self.set_implicit_rule(alternatives)
             for r in self.visit(node.node):
                 alternatives.append(r + [nt])
             result = [[nt]]
-            intermediate_nt = NonTerminal(f"<__{NodeType.STAR}:{node.id}>")
             self.set_rule(intermediate_nt, result)
             return [[(intermediate_nt, frozenset())]]
 
         def visitPlus(self, node: Plus):
+            intermediate_nt = NonTerminal(f"<__{node.id}>")
+            self._nodes[intermediate_nt.symbol] = node
             alternatives: list[list[tuple[NonTerminal, frozenset]]] = []
             nt = self.set_implicit_rule(alternatives)
             for r in self.visit(node.node):
                 alternatives.append(r)
                 alternatives.append(r + [nt])
             result = [[nt]]
-            intermediate_nt = NonTerminal(f"<__{NodeType.PLUS}:{node.id}>")
             self.set_rule(intermediate_nt, result)
             return [[(intermediate_nt, frozenset())]]
 
         def visitOption(self, node: Option):
+            intermediate_nt = NonTerminal(f"<__{node.id}>")
+            self._nodes[intermediate_nt.symbol] = node
             result: list[list[tuple[NonTerminal, frozenset]]] = [[]] + self.visit(
                 node.node
             )
-            intermediate_nt = NonTerminal(f"<__{NodeType.OPTION}:{node.id}>")
             self.set_rule(intermediate_nt, result)
             return [[(intermediate_nt, frozenset())]]
 
@@ -1345,6 +1297,7 @@ class Grammar(NodeVisitor):
                     read_only=tree.read_only,
                     recipient=tree.recipient,
                     sender=tree.sender,
+                    origin_repetitions=tree.origin_repetitions,
                 )
             ]
 
@@ -1611,6 +1564,7 @@ class Grammar(NodeVisitor):
                         sender=child.sender,
                         recipient=child.recipient,
                         read_only=child.read_only,
+                        origin_repetitions=child.origin_repetitions,
                     )
                 )
             return ret
@@ -1627,6 +1581,7 @@ class Grammar(NodeVisitor):
                 sender=tree.sender,
                 recipient=tree.recipient,
                 read_only=tree.read_only,
+                origin_repetitions=tree.origin_repetitions,
             )
 
         def complete(
@@ -1636,13 +1591,21 @@ class Grammar(NodeVisitor):
             k: int,
             use_implicit: bool = False,
         ):
+
+            if state.nonterminal.symbol in self._nodes:
+                node = self._nodes[state.nonterminal.symbol]
+                if isinstance(node, Repetition):
+                    node.iteration += 1
+                    for i, c in enumerate(state.children):
+                        c.origin_repetitions.append((node.id, node.iteration, i))
+
             for s in table[state.position].find_dot(state.nonterminal):
-                dot_params = s.dot_params
+                dot_params = dict(s.dot_params)
                 s = s.next()
                 if state.nonterminal in self._rules:
                     s.append_child(
                         Grammar.ParserDerivationTree(
-                            state.nonterminal, state.children, **dict(dot_params)
+                            state.nonterminal, state.children, **dot_params
                         )
                     )
                 else:
@@ -1651,7 +1614,7 @@ class Grammar(NodeVisitor):
                             Grammar.ParserDerivationTree(
                                 NonTerminal(state.nonterminal.symbol),
                                 state.children,
-                                **dict(s.dot_params),
+                                **s.dot_params,
                             )
                         )
                     else:
@@ -1661,7 +1624,7 @@ class Grammar(NodeVisitor):
         def place_repetition_shortcut(self, table: list[Column], k: int):
             col = table[k]
             states = col.states
-            beginner_nts = ["<__plus:", "<__star:"]
+            beginner_nts = [f"<__{NodeType.PLUS}:", f"<__{NodeType.STAR}:"]
 
             found_beginners = set()
             for state in states:
@@ -2373,9 +2336,9 @@ class Grammar(NodeVisitor):
         )
         while nodes:
             node = nodes.pop(0)
-            if node.node_type == NodeType.TERMINAL:
+            if isinstance(node, TerminalNode):
                 continue
-            elif node.node_type == NodeType.NON_TERMINAL:
+            elif isinstance(node, NonTerminalNode):
                 if node.symbol not in self.rules:  # type: ignore[attr-defined] # We're checking types manually
                     raise FandangoValueError(
                         f"Symbol {node.symbol} not found in grammar"  # type: ignore[attr-defined] # We're checking types manually
@@ -2386,25 +2349,25 @@ class Grammar(NodeVisitor):
                     node.distance_to_completion = (
                         self.rules[node.symbol].distance_to_completion + 1  # type: ignore[attr-defined] # We're checking types manually
                     )
-            elif node.node_type == NodeType.ALTERNATIVE:
+            elif isinstance(node, Alternative):
                 node.distance_to_completion = (
                     min([n.distance_to_completion for n in node.alternatives]) + 1  # type: ignore[attr-defined] # We're checking types manually
                 )
                 if node.distance_to_completion == float("inf"):
                     nodes.append(node)
-            elif node.node_type == NodeType.CONCATENATION:
+            elif isinstance(node, Concatenation):
                 if any([n.distance_to_completion == float("inf") for n in node.nodes]):  # type: ignore[attr-defined] # We're checking types manually
                     nodes.append(node)
                 else:
                     node.distance_to_completion = (
                         sum([n.distance_to_completion for n in node.nodes]) + 1  # type: ignore[attr-defined] # We're checking types manually
                     )
-            elif node.node_type == NodeType.REPETITION:
+            elif isinstance(node, Repetition):
                 if node.node.distance_to_completion == float("inf"):  # type: ignore[attr-defined] # We're checking types manually
                     nodes.append(node)
                 else:
                     try:
-                        min_rep = node.min(self, None)  # type: ignore[attr-defined] # We're checking types manually
+                        min_rep = node.min
                     except ValueError:
                         min_rep = 0
                     node.distance_to_completion = (
