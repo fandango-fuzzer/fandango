@@ -10,7 +10,6 @@
 [![Coverage Status](https://coveralls.io/repos/github/fandango-fuzzer/fandango/badge.svg?branch=main)](https://coveralls.io/github/fandango-fuzzer/fandango?branch=main)
 [![Security (Socket)](https://socket.dev/api/badge/pypi/package/fandango-fuzzer/1.0.2?artifact_id=tar-gz)](https://socket.dev/pypi/package/fandango-fuzzer/overview/1.0.2/tar-gz)
 
-
 ### 🚀 Release
 
 [![PyPI Release](https://img.shields.io/pypi/v/fandango-fuzzer)](https://pypi.org/project/fandango-fuzzer/)
@@ -19,8 +18,6 @@
 [![Python Versions](https://img.shields.io/pypi/pyversions/fandango-fuzzer)](https://pypi.org/project/fandango-fuzzer/)
 [![License](https://img.shields.io/github/license/fandango-fuzzer/fandango)](https://github.com/fandango-fuzzer/fandango/blob/main/LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-online-blue)](https://fandango-fuzzer.github.io/fandango/)
-
-
 
 FANDANGO is a language-based fuzzer that leverages formal input specifications (grammars) combined with constraints to generate diverse sets of valid inputs for programs under test. Unlike traditional symbolic constraint solvers, FANDANGO uses a search-based approach to systematically evolve a population of inputs through syntactically valid mutations until semantic input constraints are satisfied.
 
