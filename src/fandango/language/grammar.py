@@ -1554,7 +1554,7 @@ class Grammar(NodeVisitor):
         def _rec_to_derivation_tree(
             self,
             tree: "Grammar.ParserDerivationTree",
-            origin_repetitions: list[tuple[str, int, int]] = None,
+            origin_repetitions: Optional[list[tuple[str, int, int]]] = None,
         ):
             if origin_repetitions is None:
                 origin_repetitions = []
