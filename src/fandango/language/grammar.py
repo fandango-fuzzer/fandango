@@ -1560,7 +1560,8 @@ class Grammar(NodeVisitor):
                 origin_repetitions = []
 
             rep_option = None
-            if str(tree.symbol) in self._nodes:
+            is_controlflow_node = str(tree.symbol) in self._nodes
+            if is_controlflow_node:
                 node = self._nodes[str(tree.symbol)]
                 if isinstance(node, Repetition):
                     node.iteration += 1
@@ -1568,11 +1569,16 @@ class Grammar(NodeVisitor):
 
             children = []
             for child in tree.children:
-                if rep_option is not None:
-                    rep_option = (rep_option[0], rep_option[1], rep_option[2] + 1)
-                    current_origin_repetitions = list(origin_repetitions) + [rep_option]
+                if is_controlflow_node:
+                    if rep_option is not None:
+                        current_origin_repetitions = list(origin_repetitions) + [
+                            rep_option
+                        ]
+                        rep_option = (rep_option[0], rep_option[1], rep_option[2] + 1)
+                    else:
+                        current_origin_repetitions = list(origin_repetitions)
                 else:
-                    current_origin_repetitions = list(origin_repetitions)
+                    current_origin_repetitions = []
 
                 children.append(self._rec_to_derivation_tree(child, current_origin_repetitions))  # type: ignore[arg-type]
 
