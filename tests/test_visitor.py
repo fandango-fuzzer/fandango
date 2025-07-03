@@ -41,7 +41,9 @@ class CountingVisitor(ConstraintVisitor):
     def visit_implication_constraint(self, constraint: "ImplicationConstraint"):
         self.counts["ImplicationConstraint"] += 1
 
-    def visit_repetition_bounds_constraint(self, constraint: "RepetitionBoundsConstraint"):
+    def visit_repetition_bounds_constraint(
+        self, constraint: "RepetitionBoundsConstraint"
+    ):
         self.counts["RepetitionBoundsConstraint"] += 1
 
 
@@ -75,7 +77,9 @@ class LoggingVisitor(ConstraintVisitor):
     def visit_implication_constraint(self, constraint: "ImplicationConstraint"):
         LOGGER.info("Visiting implication constraint")
 
-    def visit_repetition_bounds_constraint(self, constraint: "RepetitionBoundsConstraint"):
+    def visit_repetition_bounds_constraint(
+        self, constraint: "RepetitionBoundsConstraint"
+    ):
         LOGGER.info("Visiting repetition bounds constraint")
 
 
