@@ -132,10 +132,10 @@ def log_message_transfer(
         info += f" -> {receiver}"
 
     if msg.contains_bits():
-        print_msg = msg.to_bytes()
+        print_msg = str(msg.to_bytes())
     elif msg.contains_strings():
         print_msg = msg.to_string()
     else:
-        print_msg = msg.value()
+        print_msg = str(msg.value())
 
     LOGGER.info(f"{info}: {print_msg!r}")
