@@ -7,6 +7,8 @@ from typing import Optional
 
 from ansi_styles import ansiStyles as styles
 
+from fandango.language import DerivationTree
+
 LOGGER = logging.getLogger("fandango")
 logging.basicConfig(
     level=logging.WARNING,
@@ -122,11 +124,18 @@ def clear_visualization(max_generations: Optional[int] = None):
 def log_message_transfer(
     sender: str,
     receiver: str | None,
-    msg,
+    msg: DerivationTree,
     self_is_sender: bool,
 ):
     info = sender
     if receiver:
         info += f" -> {receiver}"
 
-    LOGGER.info(f"{info}: {msg.value()!r}")
+    if msg.contains_bits():
+        print_msg = msg.to_bytes()
+    elif msg.contains_strings():
+        print_msg = msg.to_string()
+    else:
+        print_msg = msg.value()
+
+    LOGGER.info(f"{info}: {print_msg!r}")
