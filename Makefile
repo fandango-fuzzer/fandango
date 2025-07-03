@@ -209,7 +209,7 @@ test: $(PYTHON_SOURCES) $(TEST_SOURCES)
 
 # As above, but run tests in parallel
 tests $(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
-	$(PYTEST) -n auto --timeout 180
+	$(PYTEST)
 	echo 'Success' > $(TEST_MARKER)
 
 COVERAGE = coverage.xml
@@ -220,7 +220,7 @@ COVERAGE_REPORT = htmlcov/index.html
 # Run tests and generate coverage report
 .PHONY: coverage
 coverage $(COVERAGE_REPORT): $(PYTHON_SOURCES) $(TEST_SOURCES)
-	$(PYTEST) --html=$(REPORT) --self-contained-html --cov-report xml:$(COVERAGE) --cov-report term --cov-config=$(COVERAGERC) --cov=fandango -n auto
+	$(PYTEST) --html=$(REPORT) --self-contained-html --cov-report xml:$(COVERAGE) --cov-report term --cov-config=$(COVERAGERC) --cov=fandango
 	@echo 'Coverage report generated in $(COVERAGE_REPORT)'
 
 run-tests: $(TEST_MARKER)
