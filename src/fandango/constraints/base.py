@@ -1106,7 +1106,9 @@ class RepetitionBoundsConstraint(Constraint):
             )
         self.repetition_node = repetition_node
 
-    def _compute_rep_bound(self, tree_rightmost_relevant_node: "DerivationTree", expr_data):
+    def _compute_rep_bound(
+        self, tree_rightmost_relevant_node: "DerivationTree", expr_data
+    ):
         expr, _, searches = expr_data
         local_cpy = self.local_variables.copy()
 
@@ -1207,9 +1209,15 @@ class RepetitionBoundsConstraint(Constraint):
             last_iteration = iter_list[highest_rep][-1]
 
             max_bounds_search = first_iteration
-            while index_by_reference(max_bounds_search.parent.children, max_bounds_search) == 0:
+            while (
+                index_by_reference(max_bounds_search.parent.children, max_bounds_search)
+                == 0
+            ):
                 max_bounds_search = max_bounds_search.parent
-            max_bounds_search = max_bounds_search.parent.children[index_by_reference(max_bounds_search.parent.children, max_bounds_search) - 1]
+            max_bounds_search = max_bounds_search.parent.children[
+                index_by_reference(max_bounds_search.parent.children, max_bounds_search)
+                - 1
+            ]
 
             bound_min, min_ref_tree = self.min(max_bounds_search)
             bound_max, max_ref_tree = self.max(max_bounds_search)
@@ -1316,7 +1324,7 @@ class RepetitionBoundsConstraint(Constraint):
                         replacement = replacement.replace_multiple(
                             grammar=grammar,
                             replacements=[(failing_tree.tree, delete_replacement)],
-                            current_path=first_node.get_choices_path()
+                            current_path=first_node.get_choices_path(),
                         )
 
                         read_only_start_idx = len(first_node.get_path()) - 1
