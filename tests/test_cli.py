@@ -5,25 +5,26 @@ import re
 import shutil
 import subprocess
 import sys
-import unittest
 import time
+import unittest
 
 from fandango.cli import get_parser
-from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command, IS_BEARTYPE_ACTIVE
+
+from .utils import DOCS_ROOT, IS_BEARTYPE_ACTIVE, RESOURCES_ROOT, run_command
 
 # beartype somehow scrambles the fixed rng
 if IS_BEARTYPE_ACTIVE:
     expected_with_random_seed = [
-        "697",
-        "23075",
-        "195",
-        "22034",
-        "34911",
-        "2",
-        "03",
-        "94",
-        "4",
-        "08",
+        "50099",
+        "761",
+        "4241",
+        "72",
+        "5",
+        "72772",
+        "96688",
+        "85",
+        "88",
+        "6",
     ]
 else:
     expected_with_random_seed = [
