@@ -1551,28 +1551,27 @@ class Grammar(NodeVisitor):
             self._max_position = max(self._max_position, w + match_length)
             return True
 
-        def _rec_to_derivation_tree(self, tree: list["Grammar.ParserDerivationTree"]):
-            ret = []
-            for child in tree:
-                children = self._rec_to_derivation_tree(child.children)  # type: ignore[arg-type]
-                ret.append(
-                    DerivationTree(
-                        child.symbol,
-                        children,
-                        parent=child.parent,
-                        sources=child.sources,
-                        sender=child.sender,
-                        recipient=child.recipient,
-                        read_only=child.read_only,
-                        origin_repetitions=child.origin_repetitions,
-                    )
-                )
-            return ret
+        def _rec_to_derivation_tree(self, tree: "Grammar.ParserDerivationTree", origin_repetitions: list[tuple[str, int, int]] = None):
+            if origin_repetitions is None:
+                origin_repetitions = []
 
-        def to_derivation_tree(self, tree: "Grammar.ParserDerivationTree"):
-            if tree is None:
-                return None
-            children = self._rec_to_derivation_tree(tree.children)  # type: ignore[arg-type]
+            rep_option = None
+            if str(tree.symbol) in self._nodes:
+                node = self._nodes[str(tree.symbol)]
+                if isinstance(node, Repetition):
+                    node.iteration += 1
+                    rep_option = (node.id, node.iteration, 0)
+
+            children = []
+            for child in tree.children:
+                if rep_option is not None:
+                    rep_option = (rep_option[0], rep_option[1], rep_option[2] + 1)
+                    current_origin_repetitions = list(origin_repetitions) + [rep_option]
+                else:
+                    current_origin_repetitions = list(origin_repetitions)
+
+                children.append(self._rec_to_derivation_tree(child, current_origin_repetitions)) # type: ignore[arg-type]
+
             return DerivationTree(
                 tree.symbol,
                 children,
@@ -1581,8 +1580,13 @@ class Grammar(NodeVisitor):
                 sender=tree.sender,
                 recipient=tree.recipient,
                 read_only=tree.read_only,
-                origin_repetitions=tree.origin_repetitions,
+                origin_repetitions=origin_repetitions,
             )
+
+        def to_derivation_tree(self, tree: "Grammar.ParserDerivationTree"):
+            if tree is None:
+                return None
+            return self._rec_to_derivation_tree(tree)  # type: ignore[arg-type]
 
         def complete(
             self,
@@ -1591,14 +1595,6 @@ class Grammar(NodeVisitor):
             k: int,
             use_implicit: bool = False,
         ):
-
-            if state.nonterminal.symbol in self._nodes:
-                node = self._nodes[state.nonterminal.symbol]
-                if isinstance(node, Repetition):
-                    node.iteration += 1
-                    for i, c in enumerate(state.children):
-                        c.origin_repetitions.append((node.id, node.iteration, i))
-
             for s in table[state.position].find_dot(state.nonterminal):
                 dot_params = dict(s.dot_params)
                 s = s.next()
