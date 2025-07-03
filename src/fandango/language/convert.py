@@ -12,9 +12,10 @@ from fandango.constraints.base import (
     ExpressionConstraint,
     ForallConstraint,
     SoftValue,
+    RepetitionBoundsConstraint,
 )
 from fandango.constraints.fitness import Comparison
-from fandango.language import NonTerminalSearch
+from fandango.language import NonTerminalSearch, NodeType
 from fandango.language.grammar import (
     Alternative,
     CharSet,
@@ -40,6 +41,7 @@ from fandango.language.search import (
     SelectiveSearch,
     StarSearch,
     PopulationSearch,
+    NonTerminalSearch,
 )
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.logger import LOGGER
@@ -79,6 +81,7 @@ class GrammarProcessor(FandangoParserVisitor):
         self.global_variables = global_variables
         self.id_prefix = id_prefix
         self.searches = SearchProcessor(Grammar.dummy())
+        self.repetition_constraints: list[RepetitionBoundsConstraint] = list()
         self.seenParties = set[str]()
         self.additionalRules = dict[NonTerminal, Node]()
         self.max_repetitions = max_repetitions
@@ -132,7 +135,7 @@ class GrammarProcessor(FandangoParserVisitor):
             return nodes[0]
         self.seenAlternatives += 1
         nid = self.seenAlternatives
-        return Alternative(nodes, f"{nid}_{self.id_prefix}")
+        return Alternative(nodes, f"{NodeType.ALTERNATIVE}:{nid}_{self.id_prefix}")
 
     def visitConcatenation(self, ctx: FandangoParser.ConcatenationContext):
         nodes = [self.visitOperator(child) for child in ctx.operator()]
@@ -140,27 +143,29 @@ class GrammarProcessor(FandangoParserVisitor):
             return nodes[0]
         self.seenConcatenations += 1
         nid = self.seenConcatenations
-        return Concatenation(nodes, f"{nid}_{self.id_prefix}")
+        return Concatenation(nodes, f"{NodeType.CONCATENATION}:{nid}_{self.id_prefix}")
 
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
         self.seenStars += 1
         nid = self.seenStars
-        return Star(self.visit(ctx.symbol()), f"{nid}_{self.id_prefix}")
+        return Star(self.visit(ctx.symbol()), f"{NodeType.STAR}:{nid}_{self.id_prefix}")
 
     def visitPlus(self, ctx: FandangoParser.PlusContext):
         self.seenPluses += 1
         nid = self.seenPluses
-        return Plus(self.visit(ctx.symbol()), f"{nid}_{self.id_prefix}")
+        return Plus(self.visit(ctx.symbol()), f"{NodeType.PLUS}:{nid}_{self.id_prefix}")
 
     def visitOption(self, ctx: FandangoParser.OptionContext):
         self.seenOptions += 1
         nid = self.seenOptions
-        return Option(self.visit(ctx.symbol()), f"{nid}_{self.id_prefix}")
+        return Option(
+            self.visit(ctx.symbol()), f"{NodeType.OPTION}:{nid}_{self.id_prefix}"
+        )
 
     def visitRepeat(self, ctx: FandangoParser.RepeatContext):
         node = self.visitSymbol(ctx.symbol())
         self.seenRepetitions += 1
-        nid = self.seenRepetitions
+        nid = f"{NodeType.REPETITION}:{self.seenRepetitions}_{self.id_prefix}"
         min_ = None
         max_ = None
         if ctx.COMMA():
@@ -188,23 +193,63 @@ class GrammarProcessor(FandangoParserVisitor):
                                 search_bound[1],
                                 search_bound[2],
                             )
-            if min_ is None and max_ is None:
-                return Repetition(node, f"{nid}_{self.id_prefix}")
-            elif min_ is None:
-                return Repetition(node, f"{nid}_{self.id_prefix}", max_=max_)
-            elif max_ is None:
-                return Repetition(
-                    node,
-                    f"{nid}_{self.id_prefix}",
-                    min_=min_,
-                    max_=(f"{self.max_repetitions}", [], {}),
-                )
-            return Repetition(node, f"{nid}_{self.id_prefix}", min_, max_)
-        reps = self.searches.visit(ctx.expression(0))
-        reps = (ast.unparse(reps[0]), *reps[1:])
 
-        node = self.visit(ctx.symbol())
-        return Repetition(node, f"{nid}_{self.id_prefix}", reps, reps)
+            max_arg = None
+            min_arg = 0
+            require_constraint = False
+            bounds_constraint = None
+            if max_ is not None:
+                if max_[0].isdigit():
+                    max_arg = int(max_[0])
+                else:
+                    require_constraint = True
+            else:
+                max_ = (f"{self.max_repetitions}", [], {})
+
+            if min_ is not None:
+                if min_[0].isdigit():
+                    min_arg = int(min_[0])
+                else:
+                    require_constraint = True
+            else:
+                min_ = (f"{min_arg}", [], {})
+            if require_constraint:
+                if min_arg == 0:
+                    min_arg = 1
+                if max_arg is not None and max_arg < min_arg:
+                    max_arg = min_arg
+            rep_node = Repetition(node, nid, min_=min_arg, max_=max_arg)
+            if require_constraint:
+                bounds_constraint = RepetitionBoundsConstraint(
+                    nid,
+                    expr_data_min=min_,
+                    expr_data_max=max_,
+                    repetition_node=rep_node,
+                    local_variables=self.local_variables,
+                    global_variables=self.global_variables,
+                )
+                self.repetition_constraints.append(bounds_constraint)
+            if bounds_constraint is not None:
+                bounds_constraint.repetition_node = rep_node
+            return rep_node
+        reps_visit = self.searches.visit(ctx.expression(0))
+        reps: tuple[str, list, dict] = (ast.unparse(reps_visit[0]), *reps_visit[1:])
+        if reps[0].isdigit():
+            return Repetition(node, nid, int(reps[0]), int(reps[0]))
+        else:
+            rep_node = Repetition(node, nid, min_=1)
+            bounds_constraint = RepetitionBoundsConstraint(
+                nid,
+                expr_data_min=reps,
+                expr_data_max=reps,
+                repetition_node=rep_node,
+                local_variables=self.local_variables,
+                global_variables=self.global_variables,
+            )
+            self.repetition_constraints.append(bounds_constraint)
+            rep_node.bounds_constraint = bounds_constraint
+
+            return rep_node
 
     def visitSymbol(self, ctx: FandangoParser.SymbolContext):
         if ctx.nonterminal_right():
