@@ -1106,7 +1106,7 @@ class RepetitionBoundsConstraint(Constraint):
             )
         self.repetition_node = repetition_node
 
-    def _compute_rep_bound(self, tree_stop_before: "DerivationTree", expr_data):
+    def _compute_rep_bound(self, tree_rightmost_relevant_node: "DerivationTree", expr_data):
         expr, _, searches = expr_data
         local_cpy = self.local_variables.copy()
 
@@ -1120,28 +1120,22 @@ class RepetitionBoundsConstraint(Constraint):
             )
 
         search_name, search = next(iter(searches.items()))
-        prefix_path = tree_stop_before.get_choices_path()
-        for container in search.find(tree_stop_before.get_root()):
+        max_path = tree_rightmost_relevant_node.get_choices_path()
+        for container in search.find(tree_rightmost_relevant_node.get_root()):
             container_tree: DerivationTree = container.evaluate()
-            is_prefix = True
-            zip_var = list(zip_longest(prefix_path, container_tree.get_choices_path()))
-            for i, (tree_step, search_step) in enumerate(zip_var):
-                if tree_step is None:
+            search_in_bounds = True
+            zip_var = list(zip_longest(max_path, container_tree.get_choices_path()))
+            for i, (max_step, search_step) in enumerate(zip_var):
+                if max_step is None:
                     break
                 if search_step is None:
-                    is_prefix = False
                     break
-                if tree_step.index < search_step.index:
-                    is_prefix = False
+                if max_step.index > search_step.index:
                     break
-                if (
-                    tree_step.index == search_step.index
-                    and len(zip_var) > (i + 1)
-                    and zip_var[i + 1][0] is None
-                ):
-                    is_prefix = False
+                if max_step.index < search_step.index:
+                    search_in_bounds = False
                     break
-            if not is_prefix:
+            if not search_in_bounds:
                 continue
             nodes.append(container_tree)
 
@@ -1212,8 +1206,13 @@ class RepetitionBoundsConstraint(Constraint):
             first_iteration = iter_list[smallest_rep][0]
             last_iteration = iter_list[highest_rep][-1]
 
-            bound_min, min_ref_tree = self.min(first_iteration)
-            bound_max, max_ref_tree = self.max(first_iteration)
+            max_bounds_search = first_iteration
+            while index_by_reference(max_bounds_search.parent.children, max_bounds_search) == 0:
+                max_bounds_search = max_bounds_search.parent
+            max_bounds_search = max_bounds_search.parent.children[index_by_reference(max_bounds_search.parent.children, max_bounds_search) - 1]
+
+            bound_min, min_ref_tree = self.min(max_bounds_search)
+            bound_max, max_ref_tree = self.max(max_bounds_search)
             bound_len = len(iter_list)
             if bound_min <= bound_len <= bound_max:
                 solved += 1
