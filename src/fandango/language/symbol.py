@@ -2,6 +2,7 @@ import abc
 import enum
 import re
 from io import UnsupportedOperation
+from typing import Any
 
 import regex
 
@@ -27,46 +28,46 @@ class Symbol(abc.ABC):
         return False
 
     @property
-    def is_terminal(self):
+    def is_terminal(self) -> bool:
         return self.type == SymbolType.TERMINAL
 
     @property
-    def is_non_terminal(self):
+    def is_non_terminal(self) -> bool:
         return self.type == SymbolType.NON_TERMINAL
 
     @property
-    def is_slice(self):
+    def is_slice(self) -> bool:
         return self.type == SymbolType.SLICE
 
     @property
-    def is_regex(self):
+    def is_regex(self) -> bool:
         try:
             return self._is_regex
         except AttributeError:
             return False  # for cached grammars
 
     @abc.abstractmethod
-    def __hash__(self):
+    def __hash__(self) -> int:
         return NotImplemented
 
-    def _repr(self):
+    def _repr(self) -> str:
         return str(self.symbol)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.symbol)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Symbol(" + repr(self.symbol) + ")"
 
 
 class NonTerminal(Symbol):
-    def __init__(self, symbol: str):
+    def __init__(self, symbol: str) -> None:
         super().__init__(symbol, SymbolType.NON_TERMINAL)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, NonTerminal) and self.symbol == other.symbol
 
-    def __lt__(self, other):
+    def __lt__(self, other: Any) -> bool:
         if (
             isinstance(other, NonTerminal)
             and isinstance(self.symbol, str)
@@ -77,18 +78,18 @@ class NonTerminal(Symbol):
             f"Cannot compare NonTerminal with {type(other).__name__} or symbols are not bytes"
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.symbol, self.type))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "NonTerminal(" + repr(self.symbol) + ")"
 
 
 class Terminal(Symbol):
-    def __init__(self, symbol: str | bytes | int):
+    def __init__(self, symbol: str | bytes | int) -> None:
         super().__init__(symbol, SymbolType.TERMINAL)
 
-    def __len__(self):
+    def __len__(self) -> int:
         if isinstance(self.symbol, int):
             return 1
         return len(self.symbol)
@@ -144,11 +145,12 @@ class Terminal(Symbol):
                     # LOGGER.debug(f"It's a match: {match.group(0)!r}")
                     return True, len(match.group(0))
             else:
-                compiled = regex.compile("")
+                compiled = regex.compile(symbol)
                 match = compiled.match(word, partial=True)
-                return match is not None and (
-                    match.partial or match.end() == len(word)
-                ), len(match.group(0))
+                if match is not None and (match.partial or match.end() == len(word)):
+                    return True, len(match.group(0))
+                else:
+                    return False, 0
         else:
             if not incomplete:
                 if word.startswith(symbol):
@@ -164,7 +166,7 @@ class Terminal(Symbol):
     def check_all(self, word: str | int) -> bool:
         return word == self.symbol
 
-    def _repr(self):
+    def _repr(self) -> str:
         if self.is_regex:
             if isinstance(self.symbol, bytes):
                 symbol = repr(self.symbol)
@@ -185,22 +187,22 @@ class Terminal(Symbol):
         # Not a regex
         return repr(self.symbol)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, Terminal) and self.symbol == other.symbol
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.symbol, self.type))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Terminal(" + self._repr() + ")"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self._repr()
 
 
 class Slice(Symbol):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("", SymbolType.SLICE)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.type)

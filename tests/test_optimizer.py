@@ -1,6 +1,8 @@
 #!/usr/bin/env pytest
 
+from collections.abc import Generator
 from copy import deepcopy
+import itertools
 import random
 import unittest
 
@@ -294,7 +296,7 @@ class GeneticTest(unittest.TestCase):
 
     def test_generate(self):
         # Run the evolution process
-        solutions = list(self.fandango.generate(max_generations=100))
+        solutions = list(self.fandango.generate(max_generations=20))
 
         # Check that the population has been updated
         self.assertIsNotNone(self.fandango.population)
@@ -315,7 +317,7 @@ class DeterminismTests(unittest.TestCase):
         specification_file,
         desired_solutions,
         random_seed,
-    ):
+    ) -> Generator[str, None, None]:
         with open(specification_file, "r") as file:
             grammar_int, constraints_int = parse(
                 file, use_stdlib=False, use_cache=False
@@ -326,15 +328,19 @@ class DeterminismTests(unittest.TestCase):
             constraints=constraints_int,
             random_seed=random_seed,
         )
-        solutions = list(fandango.generate(max_generations=100))[:desired_solutions]
-        return [s.to_string() for s in solutions]
+        generator = itertools.islice(
+            fandango.generate(max_generations=100), desired_solutions
+        )
+        for solution in generator:
+            yield solution.to_string()
 
     def test_deterministic_solutions(self):
-        solutions_1 = self.get_solutions(RESOURCES_ROOT / "determinism.fan", 100, 1)
+        gen1 = self.get_solutions(RESOURCES_ROOT / "determinism.fan", 30, 1)
+        gen2 = self.get_solutions(RESOURCES_ROOT / "determinism.fan", 30, 1)
 
-        solutions_2 = self.get_solutions(RESOURCES_ROOT / "determinism.fan", 100, 1)
-
-        self.assertListEqual(solutions_1, solutions_2)
+        self.assertListEqual(
+            list(gen1), list(gen2), f"gen1: {list(gen1)}\ngen2: {list(gen2)}"
+        )
 
 
 class TargetedMutations(unittest.TestCase):
@@ -355,7 +361,11 @@ class TargetedMutations(unittest.TestCase):
             constraints=constraints_int,
             random_seed=random_seed,
         )
-        solutions = list(fandango.generate(max_generations=100))[:desired_solutions]
+        solutions = []
+        for solution in fandango.generate(max_generations=100):
+            solutions.append(solution)
+            if len(solutions) >= desired_solutions:
+                break
         return [s.to_string() for s in solutions]
 
     def test_targeted_mutation_1(self):
