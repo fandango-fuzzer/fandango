@@ -1377,8 +1377,10 @@ class RepetitionBoundsConstraint(Constraint):
         tree: DerivationTree,
         end_rep: DerivationTree,
     ) -> tuple[DerivationTree, DerivationTree]:
-        assert end_rep.parent is not None, "end_rep must have a parent"
-        insertion_index = index_by_reference(end_rep.parent.children, end_rep) + 1
+        index = index_by_reference(end_rep.parent.children, end_rep)
+        if index is None:
+            raise ValueError("end_rep not found in its parent's children")
+        insertion_index = index + 1
 
         starting_rep = 0
         for ref in end_rep.origin_repetitions:
