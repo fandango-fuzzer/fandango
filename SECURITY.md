@@ -6,11 +6,11 @@ We actively maintain and provide security updates for the following versions of 
 
 | Version   | Supported          |
 |-----------|--------------------|
-| 0.0.5     | ✅ Fully supported |
-| 0.0.4     | ❌ No longer supported |
-| 0.0.3     | ❌ No longer supported |
-| 0.0.2     | ❌ No longer supported |
-| 0.0.1     | ❌ No longer supported |
+| 1.0.3     | ✅ Fully supported |
+| 1.0.2     | ✅ Fully supported |
+| 1.0.1     | ✅ Fully supported |
+| 1.0       | ✅ Fully supported |
+| 0.9.6     | ❌ No longer supported |
 
 Please update to the latest version to ensure you receive security fixes and improvements.
 
