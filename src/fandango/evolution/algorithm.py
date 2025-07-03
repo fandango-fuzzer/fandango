@@ -458,7 +458,7 @@ class Fandango:
                 if len(history_tree.protocol_msgs()) == 0:
                     raise FandangoFailedError("Could not forecast next packet")
                 yield history_tree
-                continue
+                return
                 # TODO: Reset for next iteration
 
             msg_parties = list(
@@ -644,7 +644,7 @@ class Fandango:
 
                 if msg_sender != sender:
                     continue
-                if isinstance(msg_fragment, bytes):
+                if isinstance(msg_fragment, bytes) and not self.grammar.contains_bits():
                     msg_fragment = msg_fragment.decode("utf-8", errors="ignore")
                 if complete_msg is None:
                     complete_msg = msg_fragment
