@@ -1,23 +1,11 @@
 # FANDANGO: Evolving Language-Based Testing
 
-### 🔨 Build Status
+<div style="text-align: center;">
 
-[![Tests](https://github.com/fandango-fuzzer/fandango/actions/workflows/python-tests.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/python-tests.yml)
-[![Code Quality Checks](https://github.com/fandango-fuzzer/fandango/actions/workflows/code-checks.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/code-checks.yml)
-[![CodeQL Analysis](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql)
-[![Docs Deployment](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-book.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-book.yml)
-[![Build & Publish](https://github.com/fandango-fuzzer/fandango/actions/workflows/build-and-publish.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/build-and-publish.yml)
-[![Coverage Status](https://coveralls.io/repos/github/fandango-fuzzer/fandango/badge.svg?branch=main)](https://coveralls.io/github/fandango-fuzzer/fandango?branch=main)
-[![Security (Socket)](https://socket.dev/api/badge/pypi/package/fandango-fuzzer/1.0.2?artifact_id=tar-gz)](https://socket.dev/pypi/package/fandango-fuzzer/overview/1.0.2/tar-gz)
+[![Tests](https://github.com/fandango-fuzzer/fandango/actions/workflows/python-tests.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/python-tests.yml) [![Code Quality Checks](https://github.com/fandango-fuzzer/fandango/actions/workflows/code-checks.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/code-checks.yml) [![CodeQL Analysis](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql) [![Docs Deployment](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-book.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-book.yml) [![Build & Publish](https://github.com/fandango-fuzzer/fandango/actions/workflows/build-and-publish.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/build-and-publish.yml) [![Coverage Status](https://coveralls.io/repos/github/fandango-fuzzer/fandango/badge.svg?branch=main)](https://coveralls.io/github/fandango-fuzzer/fandango?branch=main) [![Security (Socket)](https://socket.dev/api/badge/pypi/package/fandango-fuzzer/1.0.2?artifact_id=tar-gz)](https://socket.dev/pypi/package/fandango-fuzzer/overview/1.0.2/tar-gz)
+[![PyPI Release](https://img.shields.io/pypi/v/fandango-fuzzer)](https://pypi.org/project/fandango-fuzzer/) [![Last Release](https://img.shields.io/github/release-date/fandango-fuzzer/fandango)](https://github.com/fandango-fuzzer/fandango/releases) [![PyPI Downloads](https://img.shields.io/pypi/dm/fandango-fuzzer)](https://pypi.org/project/fandango-fuzzer/) [![GitHub stars](https://img.shields.io/github/stars/fandango-fuzzer/fandango?style=social)](https://github.com/fandango-fuzzer/fandango/stargazers) [![Python Versions](https://img.shields.io/pypi/pyversions/fandango-fuzzer)](https://pypi.org/project/fandango-fuzzer/) [![License](https://img.shields.io/github/license/fandango-fuzzer/fandango)](https://github.com/fandango-fuzzer/fandango/blob/main/LICENSE)
 
-### 🚀 Release
-
-[![PyPI Release](https://img.shields.io/pypi/v/fandango-fuzzer)](https://pypi.org/project/fandango-fuzzer/)
-[![Last Release](https://img.shields.io/github/release-date/fandango-fuzzer/fandango)](https://github.com/fandango-fuzzer/fandango/releases)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/fandango-fuzzer)](https://pypi.org/project/fandango-fuzzer/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/fandango-fuzzer)](https://pypi.org/project/fandango-fuzzer/)
-[![License](https://img.shields.io/github/license/fandango-fuzzer/fandango)](https://github.com/fandango-fuzzer/fandango/blob/main/LICENSE)
-[![Documentation](https://img.shields.io/badge/docs-online-blue)](https://fandango-fuzzer.github.io/fandango/)
+</div>
 
 FANDANGO is a language-based fuzzer that leverages formal input specifications (grammars) combined with constraints to generate diverse sets of valid inputs for programs under test. Unlike traditional symbolic constraint solvers, FANDANGO uses a search-based approach to systematically evolve a population of inputs through syntactically valid mutations until semantic input constraints are satisfied.
 
