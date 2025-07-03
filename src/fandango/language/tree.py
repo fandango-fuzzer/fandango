@@ -793,6 +793,9 @@ class DerivationTree:
                 self._parent = None
             return self
         me_idx = index_by_reference(self.parent.children, self)
+        if me_idx is None:
+            # Handle error or fallback — for example:
+            raise ValueError("self not found in parent's children")
         keep_children = self.parent.children[: (me_idx + 1)]
         parent = self.parent._split_end()
         parent.set_children(keep_children)
