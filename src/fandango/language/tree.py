@@ -1,12 +1,29 @@
 import copy
+from collections.abc import Iterator
 from io import BytesIO, StringIO
-from typing import Any, Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 from fandango.errors import FandangoValueError
 from fandango.language.symbol import NonTerminal, Slice, Symbol, Terminal
 
 if TYPE_CHECKING:
-    from fandango.language.grammar import Grammar
+    import fandango
+
+TreeValue = int | str | bytes | None
+
+
+def check_tree_value(input: Any) -> TreeValue:
+    if isinstance(input, int | str | bytes | None):
+        return input
+    raise TypeError(f"Expected int, str, bytes, or None, got {type(input)}")
+
+
+# Recursive type for tree structure
+T = TypeVar("T")
+if TYPE_CHECKING:
+    TreeTuple = tuple[T, list["TreeTuple[T]"]]
+else:
+    TreeTuple = tuple  # beartype falls over with recursive types
 
 
 class ProtocolMessage:
@@ -14,15 +31,17 @@ class ProtocolMessage:
     Holds information about a message in a protocol.
     """
 
-    def __init__(self, sender: str, recipient: str | None, msg: "DerivationTree"):
+    def __init__(
+        self, sender: str, recipient: str | None, msg: "DerivationTree"
+    ) -> None:
         self.msg = msg
         self.sender = sender
         self.recipient = recipient
 
-    def __repr__(self):
-        return self.__str__()
+    def __repr__(self) -> str:
+        return str(self)
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.recipient is None:
             return f"({self.sender} -> {self.recipient}): {str(self.msg)}"
         else:
@@ -30,34 +49,34 @@ class ProtocolMessage:
 
 
 class StepException(Exception):
-    def __init__(self, message):
+    def __init__(self, message: str) -> None:
         super().__init__(f"StepException: {message}")
 
 
 class PathStep:
-    def __init__(self, index):
+    def __init__(self, index: int):
         self.index = index
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(tuple(sorted(self.__dict__.items())))
 
 
 class SourceStep(PathStep):
-    def __init__(self, index):
+    def __init__(self, index: int) -> None:
         super().__init__(index)
 
 
 class ChildStep(PathStep):
-    def __init__(self, index):
+    def __init__(self, index: int) -> None:
         super().__init__(index)
 
 
-def index_by_reference(lst, target):
+def index_by_reference(lst: list[T], target: T) -> Optional[int]:
     for i, item in enumerate(lst):
-        if item is target:
+        if item is target:  # compare reference, not data
             return i
     return None
 
@@ -78,7 +97,7 @@ class DerivationTree:
         recipient: Optional[str] = None,
         read_only: Optional[bool] = False,
         origin_repetitions: Optional[list[tuple[str, int, int]]] = None,
-    ):
+    ) -> None:
         """
         Create a new derivation tree node.
         :param symbol: The symbol for this node (type Symbol)
@@ -95,10 +114,10 @@ class DerivationTree:
         self._sender = sender
         self._recipient = recipient
         self._symbol = symbol
-        self._children: list["DerivationTree"] = []
-        self._sources: list["DerivationTree"] = []
+        self._children: list[DerivationTree] = []
+        self._sources: list[DerivationTree] = []  # init first
         if sources is not None:
-            self.sources = sources
+            self.sources = sources  # use setter
         if origin_repetitions is None:
             origin_repetitions = []
         self.origin_repetitions: list[tuple[str, int, int]] = origin_repetitions
@@ -107,10 +126,10 @@ class DerivationTree:
         self.set_children(children or [])
         self.invalidate_hash()
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._children)
 
-    def count_terminals(self):
+    def count_terminals(self) -> int:
         if self.symbol.is_terminal:
             return 1
         count = 0
@@ -118,10 +137,10 @@ class DerivationTree:
             count += child.count_terminals()
         return count
 
-    def size(self):
+    def size(self) -> int:
         return self._size
 
-    def __bytes__(self):
+    def __bytes__(self) -> bytes:
         return self.to_bytes()
 
     @property
@@ -129,7 +148,7 @@ class DerivationTree:
         return self._symbol
 
     @symbol.setter
-    def symbol(self, symbol):
+    def symbol(self, symbol: Symbol) -> None:
         self._symbol = symbol
         self.invalidate_hash()
 
@@ -153,54 +172,48 @@ class DerivationTree:
             raise TypeError(f"Expected Terminal, got {type(self._symbol)}")
         return self._symbol
 
-    def is_terminal(self):
+    def is_terminal(self) -> bool:
         """
         True is the node represents a terminal symbol.
         """
         return self.symbol.is_terminal
 
-    def is_nonterminal(self):
+    def is_nonterminal(self) -> bool:
         """
         True is the node represents a nonterminal symbol.
         """
         return self.symbol.is_non_terminal
 
-    def is_regex(self):
+    def is_regex(self) -> bool:
         """
         True is the node represents a regex symbol.
         """
         return self.symbol.is_regex
 
-    def sym(self):
-        """
-        Return the symbol
-        """
-        return self.symbol.symbol
-
-    def invalidate_hash(self):
+    def invalidate_hash(self) -> None:
         self.hash_cache = None
         if self._parent is not None:
             self._parent.invalidate_hash()
 
     @property
-    def sender(self):
+    def sender(self) -> Optional[str]:
         return self._sender
 
     @sender.setter
-    def sender(self, sender: Optional[str]):
+    def sender(self, sender: Optional[str]) -> None:
         self._sender = sender
         self.invalidate_hash()
 
     @property
-    def recipient(self):
+    def recipient(self) -> Optional[str]:
         return self._recipient
 
     @recipient.setter
-    def recipient(self, recipient: Optional[str]):
+    def recipient(self, recipient: Optional[str]) -> None:
         self._recipient = recipient
         self.invalidate_hash()
 
-    def get_path(self):
+    def get_path(self) -> list["DerivationTree"]:
         path: list[DerivationTree] = []
         current: Optional[DerivationTree] = self
         while current is not None:
@@ -252,7 +265,7 @@ class DerivationTree:
             raise ValueError("Invalid hookin_path!")
         self.children[-1].append(hookin_path[1:], tree)
 
-    def set_children(self, children: list["DerivationTree"]):
+    def set_children(self, children: list["DerivationTree"]) -> None:
         self._children = children
         self._update_size(1 + sum(child.size() for child in self._children))
         for child in self._children:
@@ -264,7 +277,7 @@ class DerivationTree:
         return self._sources
 
     @sources.setter
-    def sources(self, source: list["DerivationTree"]):
+    def sources(self, source: list["DerivationTree"]) -> None:
         if source is None:
             self._sources = []
         else:
@@ -272,13 +285,13 @@ class DerivationTree:
         for param in self._sources:
             param._parent = self
 
-    def add_child(self, child: "DerivationTree"):
+    def add_child(self, child: "DerivationTree") -> None:
         self._children.append(child)
         self._update_size(self.size() + child.size())
         child._parent = self
         self.invalidate_hash()
 
-    def _update_size(self, new_val: int):
+    def _update_size(self, new_val: int) -> None:
         if self._parent is not None:
             self._parent._update_size(self._parent.size() + new_val - self._size)
         self._size = new_val
@@ -318,7 +331,7 @@ class DerivationTree:
                 break
         return trees
 
-    def __getitem__(self, item) -> "DerivationTree":
+    def __getitem__(self, item: Any) -> "DerivationTree":
         if isinstance(item, list) and len(item) == 1:
             item = item[0]
         items = self._children.__getitem__(item)
@@ -327,7 +340,7 @@ class DerivationTree:
         else:
             return items
 
-    def get_last_by_path(self, path: list[NonTerminal]):
+    def get_last_by_path(self, path: list[NonTerminal]) -> "DerivationTree":
         symbol = path[0]
         if self.symbol == symbol:
             if len(path) == 1:
@@ -348,10 +361,10 @@ class DerivationTree:
             f"No such path in tree: {path} Tree: {self.get_root(stop_at_argument_begin=True)}"
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.to_string()
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         """
         Computes a hash of the derivation tree based on its structure and symbols.
         """
@@ -366,11 +379,11 @@ class DerivationTree:
             )
         return self.hash_cache
 
-    def __tree__(self):
+    def __tree__(self) -> TreeTuple[Symbol]:
         return self.symbol, [child.__tree__() for child in self._children]
 
     @staticmethod
-    def from_tree(tree: tuple[str, list[tuple[str, list]]]) -> "DerivationTree":
+    def from_tree(tree: TreeTuple[str]) -> "DerivationTree":
         symbol, children = tree
         if not isinstance(symbol, str):
             raise TypeError(f"{symbol} must be a string")
@@ -383,7 +396,13 @@ class DerivationTree:
             new_symbol, [DerivationTree.from_tree(child) for child in children]
         )
 
-    def deepcopy(self, *, copy_children=True, copy_params=True, copy_parent=True):
+    def deepcopy(
+        self,
+        *,
+        copy_children: bool = True,
+        copy_params: bool = True,
+        copy_parent: bool = True,
+    ) -> "DerivationTree":
         return self.__deepcopy__(
             None,
             copy_children=copy_children,
@@ -392,12 +411,18 @@ class DerivationTree:
         )
 
     def __deepcopy__(
-        self, memo, copy_children=True, copy_params=True, copy_parent=True
-    ):
+        self,
+        memo: Optional[dict[int, Any]],
+        copy_children: bool = True,
+        copy_params: bool = True,
+        copy_parent: bool = True,
+    ) -> "DerivationTree":
         if memo is None:
             memo = {}
         if id(self) in memo:
-            return memo[id(self)]
+            res = memo[id(self)]
+            assert isinstance(res, DerivationTree)
+            return res
 
         # Create a new instance without copying the parent
         copied = DerivationTree(
@@ -425,7 +450,7 @@ class DerivationTree:
 
         return copied
 
-    def _write_to_stream(self, stream: BytesIO, *, encoding="utf-8"):
+    def _write_to_stream(self, stream: BytesIO, *, encoding: str = "utf-8") -> None:
         """
         Write the derivation tree to a (byte) stream
         (e.g., a file or BytesIO).
@@ -442,7 +467,7 @@ class DerivationTree:
         else:
             raise FandangoValueError("Invalid symbol type")
 
-    def _write_to_bitstream(self, stream: StringIO, *, encoding="utf-8"):
+    def _write_to_bitstream(self, stream: StringIO, *, encoding: str = "utf-8") -> None:
         """
         Write the derivation tree to a bit stream of 0's and 1's
         (e.g., a file or StringIO).
@@ -466,40 +491,42 @@ class DerivationTree:
         else:
             raise FandangoValueError("Invalid symbol type")
 
-    def contains_type(self, tp: type) -> bool:
+    def should_be_serialized_to_bytes(self) -> bool:
+        """
+        Return true if the derivation tree should be serialized to bytes.
+        """
+        return self._contains_type(int) or self._contains_type(bytes)
+
+    def serialize(self) -> bytes | str:
+        if self.should_be_serialized_to_bytes():
+            return self.to_bytes()
+        return self.to_string()
+
+    def _contains_type(self, tp: type) -> bool:
         """
         Return true if the derivation tree contains any terminal symbols of type `tp` (say, `int` or `bytes`).
         """
         if self.symbol.is_terminal and isinstance(self.symbol.symbol, tp):
             return True
-        for child in self._children:
-            if child.contains_bits():
-                return True
-        return False  # No bits found
+        return any(child._contains_type(tp) for child in self._children)
 
     def contains_bits(self) -> bool:
         """
         Return true iff the derivation tree contains any bits (0 or 1).
         """
-        return self.contains_type(int)
+        return self._contains_type(int)
 
     def contains_bytes(self) -> bool:
         """
         Return true iff the derivation tree contains any byte strings.
         """
-        return self.contains_type(bytes)
-
-    def contains_strings(self) -> bool:
-        """
-        Return true iff the derivation tree contains any (UTF-8) strings.
-        """
-        return self.contains_type(str)
+        return self._contains_type(bytes)
 
     def to_string(self) -> str:
         """
         Convert the derivation tree to a string.
         """
-        val: Any = self.value()
+        val: TreeValue = self.value()
 
         if val is None:
             return ""
@@ -527,7 +554,7 @@ class DerivationTree:
 
         raise FandangoValueError(f"Cannot convert {val!r} to string")
 
-    def to_bits(self, *, encoding="utf-8") -> str:
+    def to_bits(self, *, encoding: str = "utf-8") -> str:
         """
         Convert the derivation tree to a sequence of bits (0s and 1s).
         """
@@ -536,7 +563,7 @@ class DerivationTree:
         stream.seek(0)
         return stream.read()
 
-    def to_bytes(self, encoding="utf-8") -> bytes:
+    def to_bytes(self, encoding: str = "utf-8") -> bytes:
         """
         Convert the derivation tree to a string.
         String elements are encoded according to `encoding`.
@@ -557,7 +584,7 @@ class DerivationTree:
         stream.seek(0)
         return stream.read()
 
-    def to_tree(self, indent=0, start_indent=0) -> str:
+    def to_tree(self, indent: int = 0, start_indent: int = 0) -> str:
         """
         Pretty-print the derivation tree (for visualization).
         """
@@ -580,7 +607,7 @@ class DerivationTree:
         s += ")"
         return s
 
-    def to_repr(self, indent=0, start_indent=0) -> str:
+    def to_repr(self, indent: int = 0, start_indent: int = 0) -> str:
         """
         Output the derivation tree in internal representation.
         """
@@ -604,13 +631,19 @@ class DerivationTree:
             s += ")"
         return s
 
-    def to_grammar(self, include_position=True, include_value=True) -> str:
+    def to_grammar(
+        self, include_position: bool = True, include_value: bool = True
+    ) -> str:
         """
         Output the derivation tree as (specialized) grammar
         """
 
         def _to_grammar(
-            node, indent=0, start_indent=0, bit_count=-1, byte_count=0
+            node: "DerivationTree",
+            indent: int = 0,
+            start_indent: int = 0,
+            bit_count: int = -1,
+            byte_count: int = 0,
         ) -> tuple[str, int, int]:
             """
             Output the derivation tree as (specialized) grammar
@@ -626,7 +659,7 @@ class DerivationTree:
 
             for child in node._children:
                 if child.symbol.is_non_terminal:
-                    s += f" {child.symbol.symbol}"
+                    s += f" {child.symbol.symbol!r}"
                 else:
                     s += " " + repr(child.symbol.symbol)
                     terminal_symbols += 1
@@ -649,7 +682,7 @@ class DerivationTree:
                 # We don't know the grammar, so we report a symbolic generator
                 s += (
                     " := f("
-                    + ", ".join([param.symbol.symbol for param in node._sources])
+                    + ", ".join([repr(param.symbol.symbol) for param in node._sources])
                     + ")"
                 )
 
@@ -688,10 +721,10 @@ class DerivationTree:
 
         return _to_grammar(self)[0]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.to_repr()
 
-    def to_int(self, *args, **kwargs) -> Optional[int]:
+    def to_int(self, *args: Any, **kwargs: Any) -> Optional[int]:
         val = self.value()
         if val is None:
             return None
@@ -709,7 +742,7 @@ class DerivationTree:
         except ValueError:
             return None
 
-    def to_complex(self, *args, **kwargs) -> Optional[complex]:
+    def to_complex(self, *args: Any, **kwargs: Any) -> Optional[complex]:
         val = self.value()
         if val is None or isinstance(val, bytes):
             return None
@@ -718,35 +751,14 @@ class DerivationTree:
         except ValueError:
             return None
 
-    def is_int(self, *args, **kwargs) -> bool:
-        val = self.value()
-        if val is None:
-            return False
-        try:
-            int(val, *args, **kwargs)
-        except ValueError:
-            return False
-        return True
+    def is_int(self, *args: Any, **kwargs: Any) -> bool:
+        return self.to_int(*args, **kwargs) is not None
 
     def is_float(self) -> bool:
-        val = self.value()
-        if val is None:
-            return False
-        try:
-            float(val)
-        except ValueError:
-            return False
-        return True
+        return self.to_float() is not None
 
-    def is_complex(self, *args, **kwargs) -> bool:
-        val = self.value()
-        if val is None or isinstance(val, bytes):
-            return False
-        try:
-            complex(val, *args, **kwargs)
-        except ValueError:
-            return False
-        return True
+    def is_complex(self, *args: Any, **kwargs: Any) -> bool:
+        return self.to_complex(*args, **kwargs) is not None
 
     def is_num(self) -> bool:
         return self.is_float()
@@ -764,7 +776,7 @@ class DerivationTree:
         ref_tree.set_children(ref_tree.children[:-1])
         return ref_tree
 
-    def get_root(self, stop_at_argument_begin=False) -> "DerivationTree":
+    def get_root(self, stop_at_argument_begin: bool = False) -> "DerivationTree":
         root = self
         while root.parent is not None and not (
             root in root.parent.sources and stop_at_argument_begin
@@ -778,6 +790,9 @@ class DerivationTree:
                 self._parent = None
             return self
         me_idx = index_by_reference(self.parent.children, self)
+        if me_idx is None:
+            # Handle error or fallback — for example:
+            raise ValueError("self not found in parent's children")
         keep_children = self.parent.children[: (me_idx + 1)]
         parent = self.parent._split_end()
         parent.set_children(keep_children)
@@ -808,7 +823,7 @@ class DerivationTree:
 
     def replace(
         self,
-        grammar: "Grammar",
+        grammar: "fandango.language.grammar.Grammar",  # has to be full path, otherwise beartype complains because of a circular import with grammar
         tree_to_replace: "DerivationTree",
         new_subtree: "DerivationTree",
     ) -> "DerivationTree":
@@ -816,7 +831,7 @@ class DerivationTree:
 
     def replace_multiple(
         self,
-        grammar: "Grammar",
+        grammar: "fandango.language.grammar.Grammar",  # full path to avoid circular import
         replacements: list[tuple["DerivationTree", "DerivationTree"]],
         path_to_replacement: Optional[dict[tuple, "DerivationTree"]] = None,
         current_path: Optional[tuple] = None,
@@ -968,7 +983,7 @@ class DerivationTree:
         """
         return self._parent
 
-    def children_values(self) -> list[int | str | bytes | None]:
+    def children_values(self) -> list[TreeValue]:
         """
         Return values of all direct children
         """
@@ -989,7 +1004,7 @@ class DerivationTree:
         """
         return self.flatten()[1:]
 
-    def descendant_values(self) -> list[int | str | bytes | None]:
+    def descendant_values(self) -> list[TreeValue]:
         """
         Return all descendants of the current node
         """
@@ -1008,7 +1023,7 @@ class DerivationTree:
             return -1
 
     ## General purpose converters
-    def _value(self) -> tuple[int | str | bytes | None, int]:
+    def _value(self) -> tuple[TreeValue, int]:
         """
         Convert the derivation tree into a standard Python value.
         Returns the value and the number of bits used.
@@ -1076,7 +1091,7 @@ class DerivationTree:
 
         return aggregate, bits
 
-    def value(self) -> int | str | bytes | None:
+    def value(self) -> TreeValue:
         aggregate, bits = self._value()
         return aggregate
 
@@ -1087,145 +1102,148 @@ class DerivationTree:
         return repr(self.value())
 
     ## Comparison operations
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, DerivationTree):
-            return self.__hash__() == other.__hash__()
+            return hash(self) == hash(other)
+        assert isinstance(other, TreeValue)
         return self.value() == other
 
-    def __le__(self, other):
+    def __le__(self, other: Any) -> bool:
         left = self.value()
         right = other.value() if isinstance(other, DerivationTree) else other
         return left <= right  # type: ignore[operator]
 
-    def __lt__(self, other):
+    def __lt__(self, other: Any) -> bool:
         left = self.value()
         right = other.value() if isinstance(other, DerivationTree) else other
         return left < right  # type: ignore[operator]
 
-    def __ge__(self, other):
+    def __ge__(self, other: Any) -> bool:
         left = self.value()
         right = other.value() if isinstance(other, DerivationTree) else other
         return left >= right  # type: ignore[operator]
 
-    def __gt__(self, other):
+    def __gt__(self, other: Any) -> bool:
         left = self.value()
         right = other.value() if isinstance(other, DerivationTree) else other
         return left > right  # type: ignore[operator]
 
-    def __ne__(self, other):
-        return not self.__eq__(other)  # type: ignore[operator]
+    def __ne__(self, other: Any) -> bool:
+        return not self.__eq__(other)
 
     # Boolean operations
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self.value())
 
     ## Arithmetic operators
-    def __add__(self, other):
-        return self.value() + other
+    def __add__(self, other: Any) -> TreeValue:
+        return check_tree_value(self.value() + other)
 
-    def __sub__(self, other):
-        return self.value() - other
+    def __sub__(self, other: Any) -> TreeValue:
+        return check_tree_value(self.value() - other)
 
-    def __mul__(self, other):
-        return self.value() * other
+    def __mul__(self, other: Any) -> TreeValue:
+        return check_tree_value(self.value() * other)
 
-    def __matmul__(self, other):
-        return self.value() @ other
+    def __matmul__(self, other: Any) -> TreeValue:
+        return check_tree_value(self.value() @ other)
 
-    def __truediv__(self, other):
-        return self.value() / other
+    def __truediv__(self, other: Any) -> TreeValue:
+        return check_tree_value(self.value() / other)
 
-    def __floordiv__(self, other):
-        return self.value() // other
+    def __floordiv__(self, other: Any) -> TreeValue:
+        return check_tree_value(self.value() // other)
 
-    def __mod__(self, other):
-        return self.value() % other
+    def __mod__(self, other: Any) -> TreeValue:
+        return check_tree_value(self.value() % other)
 
-    def __divmod__(self, other):
-        return divmod(self.value(), other)
+    def __divmod__(self, other: Any) -> tuple[TreeValue, TreeValue]:
+        res = divmod(self.value(), other)
+        return check_tree_value(res[0]), check_tree_value(res[1])
 
-    def __pow__(self, other, modulo=None):
-        return pow(self.value(), other, modulo)  # type: ignore[arg-type]
+    def __pow__(self, other: Any, modulo: Any = None) -> TreeValue:
+        return check_tree_value(pow(self.value(), other, modulo))  # type: ignore[arg-type]
 
-    def __radd__(self, other):
-        return other + self.value()
+    def __radd__(self, other: Any) -> TreeValue:
+        return check_tree_value(other + self.value())
 
-    def __rsub__(self, other):
-        return other - self.value()
+    def __rsub__(self, other: Any) -> TreeValue:
+        return check_tree_value(other - self.value())
 
-    def __rmul__(self, other):
-        return other * self.value()
+    def __rmul__(self, other: Any) -> TreeValue:
+        return check_tree_value(other * self.value())
 
-    def __rmatmul__(self, other):
-        return other @ self.value()
+    def __rmatmul__(self, other: Any) -> TreeValue:
+        return check_tree_value(other @ self.value())
 
-    def __rtruediv__(self, other):
-        return other / self.value()
+    def __rtruediv__(self, other: Any) -> TreeValue:
+        return check_tree_value(other / self.value())
 
-    def __rfloordiv__(self, other):
-        return other // self.value()
+    def __rfloordiv__(self, other: Any) -> TreeValue:
+        return check_tree_value(other // self.value())
 
-    def __rmod__(self, other):
-        return other % self.value()
+    def __rmod__(self, other: Any) -> TreeValue:
+        return check_tree_value(other % self.value())
 
-    def __rdivmod__(self, other):
-        return divmod(other, self.value())
+    def __rdivmod__(self, other: Any) -> tuple[TreeValue, TreeValue]:
+        res = divmod(other, self.value())
+        return check_tree_value(res[0]), check_tree_value(res[1])
 
-    def __rpow__(self, other, modulo=None):
-        return pow(other, self.value(), modulo)
+    def __rpow__(self, other: Any, modulo: Any = None) -> TreeValue:
+        return check_tree_value(pow(other, self.value(), modulo))
 
     ## Bit operators
-    def __lshift__(self, other):
-        return self.value() << other
+    def __lshift__(self, other: Any) -> TreeValue:
+        return check_tree_value(self.value() << other)
 
-    def __rshift__(self, other):
-        return self.value() >> other
+    def __rshift__(self, other: Any) -> TreeValue:
+        return check_tree_value(self.value() >> other)
 
-    def __and__(self, other):
-        return self.value() & other
+    def __and__(self, other: Any) -> TreeValue:
+        return check_tree_value(self.value() & other)
 
-    def __xor__(self, other):
-        return self.value() ^ other
+    def __xor__(self, other: Any) -> TreeValue:
+        return check_tree_value(self.value() ^ other)
 
-    def __or__(self, other):
-        return self.value() | other
+    def __or__(self, other: Any) -> TreeValue:
+        return check_tree_value(self.value() | other)
 
-    def __rlshift__(self, other):
-        return other << self.value()
+    def __rlshift__(self, other: Any) -> TreeValue:
+        return check_tree_value(other << self.value())
 
-    def __rrshift__(self, other):
-        return other >> self.value()
+    def __rrshift__(self, other: Any) -> TreeValue:
+        return check_tree_value(other >> self.value())
 
-    def __rand__(self, other):
-        return other & self.value()
+    def __rand__(self, other: Any) -> TreeValue:
+        return check_tree_value(other & self.value())
 
-    def __rxor__(self, other):
-        return other ^ self.value()
+    def __rxor__(self, other: Any) -> TreeValue:
+        return check_tree_value(other ^ self.value())
 
-    def __ror__(self, other):
-        return other | self.value()
+    def __ror__(self, other: Any) -> TreeValue:
+        return check_tree_value(other | self.value())
 
     # Unary operators
-    def __neg__(self):
+    def __neg__(self) -> TreeValue:
         return -self.value()  # type: ignore[operator]
 
-    def __pos__(self):
+    def __pos__(self) -> TreeValue:
         return +self.value()  # type: ignore[operator]
 
-    def __abs__(self):
+    def __abs__(self) -> TreeValue:
         return abs(self.value())  # type: ignore[arg-type]
 
-    def __invert__(self):
+    def __invert__(self) -> TreeValue:
         return ~self.value()  # type: ignore[operator]
 
     # Converters
-    def __int__(self):
+    def __int__(self) -> int:
         return int(self.value())  # type: ignore[arg-type]
 
-    def __float__(self):
+    def __float__(self) -> float:
         return float(self.value())  # type: ignore[arg-type]
 
-    def __complex__(self):
+    def __complex__(self) -> complex:
         return complex(self.value())  # type: ignore[arg-type]
 
     # Iterators
@@ -1237,18 +1255,18 @@ class DerivationTree:
     def endswith(self, other: Union["DerivationTree", Any]) -> bool:
         if isinstance(other, DerivationTree):
             return self.endswith(other.value())
-        return self.value().endswith(other)  # type: ignore[arg-type, union-attr]
+        return self.value().endswith(other)  # type: ignore[union-attr]
 
     def startswith(self, other: Union["DerivationTree", Any]) -> bool:
         if isinstance(other, DerivationTree):
             return self.startswith(other.value())
-        return self.value().startswith(other)  # type: ignore[arg-type, union-attr]
+        return self.value().startswith(other)  # type: ignore[union-attr]
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator["DerivationTree"]:
         return iter(self._children)
 
     # Everything else
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         """
         Catch-all: All other attributes and methods apply to the representation of the respective type (str, bytes, int).
         """
@@ -1256,7 +1274,7 @@ class DerivationTree:
         tp = type(value)
         if name in tp.__dict__:
 
-            def fn(*args, **kwargs):
+            def fn(*args: Any, **kwargs: Any) -> Any:
                 return tp.__dict__[name](value, *args, **kwargs)
 
             return fn
@@ -1265,5 +1283,5 @@ class DerivationTree:
 
 
 class SliceTree(DerivationTree):
-    def __init__(self, children: list["DerivationTree"], read_only: bool = False):
+    def __init__(self, children: list[DerivationTree], read_only: bool = False) -> None:
         super().__init__(Slice(), children, read_only=read_only)
