@@ -1,7 +1,7 @@
-from collections.abc import Iterator
 import copy
+from collections.abc import Iterator
 from io import BytesIO, StringIO
-from typing import Any, Optional, Union, TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 from fandango.errors import FandangoValueError
 from fandango.language.symbol import NonTerminal, Slice, Symbol, Terminal
@@ -54,6 +54,7 @@ class StepException(Exception):
 
 
 from typing import Any
+
 
 class PathStep:
     def __init__(self, index: int):
@@ -325,22 +326,22 @@ class DerivationTree:
             if child.symbol == symbol
         ]
 
-def find_by_origin(self, node_id: str) -> list["DerivationTree"]:
-    trees = sum(
-        [
-            child.find_by_origin(node_id)
-            for child in [*self._children, *self._sources]
-            if child.symbol.is_non_terminal
-        ],
-        [],
-    )
-    for o_node_id, o_iter_id, rep in self.origin_repetitions:
-        if o_node_id == node_id:
-            trees.append(self)
-            break
-    return trees
+    def find_by_origin(self, node_id: str) -> list["DerivationTree"]:
+        trees = sum(
+            [
+                child.find_by_origin(node_id)
+                for child in [*self._children, *self._sources]
+                if child.symbol.is_non_terminal
+            ],
+            [],
+        )
+        for o_node_id, o_iter_id, rep in self.origin_repetitions:
+            if o_node_id == node_id:
+                trees.append(self)
+                break
+        return trees
 
-def __getitem__(self, item: Any) -> "DerivationTree":
+    def __getitem__(self, item: Any) -> "DerivationTree":
         if isinstance(item, list) and len(item) == 1:
             item = item[0]
         items = self._children.__getitem__(item)
