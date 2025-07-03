@@ -170,7 +170,7 @@ class PathFinder(NodeVisitor):
                     continue_exploring = self.visit(alt)
                     found = True
                     break
-                except GrammarKeyError as e:
+                except GrammarKeyError:
                     self.current_tree = fallback_tree
                     self.current_path = fallback_path
             self.current_tree.pop()
