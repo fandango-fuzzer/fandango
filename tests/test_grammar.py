@@ -108,8 +108,7 @@ class ConstraintTest(unittest.TestCase):
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
 
-        # TODO: increase desired_solutions, see https://github.com/fandango-fuzzer/fandango/issues/581
-        solutions = self.get_solutions(grammar, c, desired_solutions=3)
+        solutions = self.get_solutions(grammar, c, desired_solutions=20)
         for solution in solutions:
             self.assertGreaterEqual(len(str(solution)), 3)
 
