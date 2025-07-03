@@ -36,32 +36,32 @@ class ParserTests(unittest.TestCase):
         star_1 = concat_1.children()[1]
 
         self.assertEqual(
-            {((NonTerminal(f"<__{NodeType.ALTERNATIVE}:{alt_1.id}>"), frozenset()),)},
+            {((NonTerminal(f"<__{alt_1.id}>"), frozenset()),)},
             self.grammar._parser._rules[NonTerminal("<number>")],
         )
         self.assertEqual(
-            {((NonTerminal(f"<__{NodeType.ALTERNATIVE}:{alt_2.id}>"), frozenset()),)},
+            {((NonTerminal(f"<__{alt_2.id}>"), frozenset()),)},
             self.grammar._parser._rules[NonTerminal("<non_zero>")],
         )
         self.assertEqual(
-            {((NonTerminal(f"<__{NodeType.ALTERNATIVE}:{alt_3.id}>"), frozenset()),)},
+            {((NonTerminal(f"<__{alt_3.id}>"), frozenset()),)},
             self.grammar._parser._rules[NonTerminal("<digit>")],
         )
         self.assertEqual(
             {((NonTerminal("<*0*>"), frozenset()),)},
             self.grammar._parser._rules[
-                NonTerminal(f"<__{NodeType.STAR}:{star_1.id}>")
+                NonTerminal(f"<__{star_1.id}>")
             ],
         )
         self.assertEqual(
             {
                 (
                     (NonTerminal("<non_zero>"), frozenset()),
-                    (NonTerminal(f"<__{NodeType.STAR}:{star_1.id}>"), frozenset()),
+                    (NonTerminal(f"<__{star_1.id}>"), frozenset()),
                 )
             },
             self.grammar._parser._rules[
-                NonTerminal(f"<__{NodeType.CONCATENATION}:{concat_1.id}>")
+                NonTerminal(f"<__{concat_1.id}>")
             ],
         )
         self.assertEqual(
@@ -69,13 +69,13 @@ class ParserTests(unittest.TestCase):
                 ((Terminal("0"), frozenset()),),
                 (
                     (
-                        NonTerminal(f"<__{NodeType.CONCATENATION}:{concat_1.id}>"),
+                        NonTerminal(f"<__{concat_1.id}>"),
                         frozenset(),
                     ),
                 ),
             },
             self.grammar._parser._rules[
-                NonTerminal(f"<__{NodeType.ALTERNATIVE}:{alt_1.id}>")
+                NonTerminal(f"<__{alt_1.id}>")
             ],
         )
         self.assertEqual(
@@ -91,7 +91,7 @@ class ParserTests(unittest.TestCase):
                 ((Terminal("9"), frozenset()),),
             },
             self.grammar._parser._rules[
-                NonTerminal(f"<__{NodeType.ALTERNATIVE}:{alt_2.id}>")
+                NonTerminal(f"<__{alt_2.id}>")
             ],
         )
         self.assertEqual(
@@ -108,7 +108,7 @@ class ParserTests(unittest.TestCase):
                 ((Terminal("9"), frozenset()),),
             },
             self.grammar._parser._rules[
-                NonTerminal(f"<__{NodeType.ALTERNATIVE}:{alt_3.id}>")
+                NonTerminal(f"<__{alt_3.id}>")
             ],
         )
 
@@ -212,7 +212,7 @@ class TestIncompleteParsing(unittest.TestCase):
     def _test(self, example, tree):
         parsed = False
         for actual_tree in self.grammar.parse_multiple(
-            example, "<ab>", mode=Grammar.Parser.ParsingMode.INCOMPLETE
+            example, "<start>", mode=Grammar.Parser.ParsingMode.INCOMPLETE
         ):
             self.assertEqual(tree, actual_tree)
             parsed = True
@@ -223,13 +223,32 @@ class TestIncompleteParsing(unittest.TestCase):
         self._test(
             "aa",
             DerivationTree(
-                NonTerminal("<ab>"),
+                NonTerminal("<start>"),
+                [DerivationTree(
+                    NonTerminal("<ab>"),
+                    [
+                        DerivationTree(Terminal("a")),
+                        DerivationTree(
+                            NonTerminal("<ab>"), [DerivationTree(Terminal("a"))]
+                        ),
+                    ],
+                )],
+            ),
+        )
+
+    def test_regex(self):
+        self._test(
+            "ii",
+            DerivationTree(
+                NonTerminal("<start>"),
                 [
-                    DerivationTree(Terminal("a")),
                     DerivationTree(
-                        NonTerminal("<ab>"), [DerivationTree(Terminal("a"))]
+                        NonTerminal("<c>"),
+                        [
+                            DerivationTree(Terminal("ii")),
+                        ],
                     ),
-                ],
+                ]
             ),
         )
 
