@@ -12,21 +12,21 @@ from typing import Any, Optional
 
 from tdigest import TDigest as BaseTDigest
 
-from fandango.errors import FandangoValueError
 from fandango.constraints.fitness import (
-    ConstraintFitness,
-    ValueFitness,
-    GeneticBase,
-    FailingTree,
+    BoundsFailingTree,
     Comparison,
     ComparisonSide,
-    BoundsFailingTree,
+    ConstraintFitness,
+    FailingTree,
+    GeneticBase,
+    ValueFitness,
 )
-from fandango.language.grammar import Repetition, Grammar
+from fandango.errors import FandangoValueError
+from fandango.language.grammar import Grammar, Repetition
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree, index_by_reference
-from fandango.logger import print_exception, LOGGER
+from fandango.logger import LOGGER, print_exception
 
 LEGACY = False
 
@@ -1370,7 +1370,7 @@ class RepetitionBoundsConstraint(Constraint):
         tree: DerivationTree,
         end_rep: DerivationTree,
     ) -> tuple[DerivationTree, DerivationTree]:
-        insertion_index = index_by_reference(end_rep.parent, end_rep) + 1
+        insertion_index = index_by_reference(end_rep.parent.children, end_rep) + 1
         starting_rep = 0
         for ref in end_rep.origin_repetitions:
             if ref[0] == self.repetition_id and ref[1] == rep_iteration:
