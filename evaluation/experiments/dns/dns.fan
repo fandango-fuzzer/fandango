@@ -12,7 +12,7 @@ import threading
 
 fake = Faker()
 
-fandango_is_client = False
+fandango_is_client = True
 
 def gen_q_name():
     result = b''
@@ -182,10 +182,7 @@ def decompress_msg(compressed):
 # aa=1 if server has authority over domain
 
 where forall <ex> in <start>.<exchange>:
-    <ex>.<dns_resp>.<header_resp>.<h_rd> == <ex>.<dns_req>.<header_req>.<h_rd>
-    and <ex>.<dns_resp>.<header_resp>.<h_id> == <ex>.<dns_req>.<header_req>.<h_id>
-    and <ex>.<dns_resp>.<question> == <ex>.<dns_req>.<question>
-    and bytes(<ex>.<dns_resp>.<header_resp>.<resp_qd_count>) == bytes(<ex>.<dns_req>.<header_req>.<req_qd_count>)
+    <ex>.<dns_resp>.<header_resp>.<h_rd> == <ex>.<dns_req>.<header_req>.<h_rd> and <ex>.<dns_resp>.<header_resp>.<h_id> == <ex>.<dns_req>.<header_req>.<h_id> and <ex>.<dns_resp>.<question> == <ex>.<dns_req>.<question> and bytes(<ex>.<dns_resp>.<header_resp>.<resp_qd_count>) == bytes(<ex>.<dns_req>.<header_req>.<req_qd_count>)
 
 
 <req_qd_count> ::= <byte>{2} := pack(">H", 1)
@@ -224,8 +221,7 @@ where forall <ex> in <start>.<exchange>:
 where forall <ex> in <start>.<exchange>:
     forall <q> in <ex>.<dns_req>.<question>:
         forall <a> in <ex>.<dns_resp>.<answer_an>:
-            (bytes(<a>.children[1])[0:2] == bytes(<q>.<q_type>) and bytes(<a>.<q_name_optional>) == bytes(<q>.<q_name>))
-            or get_index_within(<a>, <ex>.<dns_resp>, ['<answer_an>']) != get_index_within(<q>, <ex>.<dns_req>, ['<question>'])
+            (bytes(<a>.children[1])[0:2] == bytes(<q>.<q_type>) and bytes(<a>.<q_name_optional>) == bytes(<q>.<q_name>)) or get_index_within(<a>, <ex>.<dns_resp>, ['<answer_an>']) != get_index_within(<q>, <ex>.<dns_req>, ['<question>'])
 
 
 
@@ -268,7 +264,7 @@ class Client(ConnectParty):
         super().__init__(
             ownership=Ownership.FANDANGO_PARTY if fandango_is_client else Ownership.EXTERNAL_PARTY,
             endpoint_type=EndpointType.CONNECT,
-            uri="udp://localhost:53"
+            uri="udp://1.1.1.1:53"
         )
         self.start()
 
