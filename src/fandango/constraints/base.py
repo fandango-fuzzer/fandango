@@ -1314,10 +1314,10 @@ class RepetitionBoundsConstraint(Constraint):
                         replacement = first_node.deepcopy(
                             copy_children=True, copy_params=False, copy_parent=False
                         )
-                        replacement = replacement.replace(
+                        replacement = replacement.replace_multiple(
                             grammar=grammar,
-                            tree_to_replace=failing_tree.tree,
-                            new_subtree=delete_replacement,
+                            replacements=[(failing_tree.tree, delete_replacement)],
+                            current_path=first_node.get_choices_path()
                         )
 
                         read_only_start_idx = len(first_node.get_path()) - 1

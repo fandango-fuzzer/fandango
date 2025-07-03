@@ -225,6 +225,8 @@ class GrammarProcessor(FandangoParserVisitor):
                     expr_data_min=min_,
                     expr_data_max=max_,
                     repetition_node=rep_node,
+                    local_variables = self.local_variables,
+                    global_variables = self.global_variables
                 )
                 self.repetition_constraints.append(bounds_constraint)
             if bounds_constraint is not None:
@@ -237,7 +239,7 @@ class GrammarProcessor(FandangoParserVisitor):
         else:
             rep_node = Repetition(node, nid, min_=1)
             bounds_constraint = RepetitionBoundsConstraint(
-                nid, expr_data_min=reps, expr_data_max=reps, repetition_node=rep_node
+                nid, expr_data_min=reps, expr_data_max=reps, repetition_node=rep_node, local_variables=self.local_variables, global_variables=self.global_variables
             )
             self.repetition_constraints.append(bounds_constraint)
             rep_node.bounds_constraint = bounds_constraint
