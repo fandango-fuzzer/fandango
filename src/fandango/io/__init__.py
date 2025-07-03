@@ -106,7 +106,7 @@ class FandangoParty(ABC):
         :param message: The message to send.
         :param recipient: The recipient of the message. Only present if the grammar specifies a recipient.
         """
-        print(f"({self.party_name}): {message.to_string()}")
+        print(f"({self.party_name}): {message}")
 
     def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
         """
@@ -320,10 +320,9 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
         self._wait_accept()
 
         assert self._connection is not None
-        if message.contains_bits():
-            send_data = message.to_bytes()
-        else:
-            send_data = message.to_string().encode("utf-8")
+        send_data = message.serialize()
+        if isinstance(send_data, str):
+            send_data = send_data.encode("utf-8")
         if self.protocol_type == Protocol.TCP:
             self._connection.sendall(send_data)
         else:

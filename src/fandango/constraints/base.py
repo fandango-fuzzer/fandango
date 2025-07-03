@@ -12,21 +12,21 @@ from typing import Any, Optional
 
 from tdigest import TDigest as BaseTDigest
 
-from fandango.errors import FandangoValueError
 from fandango.constraints.fitness import (
-    ConstraintFitness,
-    ValueFitness,
-    GeneticBase,
-    FailingTree,
+    BoundsFailingTree,
     Comparison,
     ComparisonSide,
-    BoundsFailingTree,
+    ConstraintFitness,
+    FailingTree,
+    GeneticBase,
+    ValueFitness,
 )
-from fandango.language.grammar import Repetition, Grammar
+from fandango.errors import FandangoValueError
+from fandango.language.grammar import Grammar, Repetition
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbol import NonTerminal
 from fandango.language.tree import DerivationTree, index_by_reference
-from fandango.logger import print_exception, LOGGER
+from fandango.logger import LOGGER, print_exception
 
 LEGACY = False
 
@@ -1194,13 +1194,15 @@ class RepetitionBoundsConstraint(Constraint):
         """
         id_trees = tree.find_by_origin(self.repetition_id)
         if len(id_trees) == 0:
-            # Assume that the field containing the nr of repetitions is zero. This is the case where me might
-            # have deleted all repetitions from the tree.
+            # Assume that the field containing the nr of repetitions is zero.
+            # This is the case where we might have deleted all repetitions from the tree.
             return ConstraintFitness(1, 1, True)
+
         reference_trees = self.group_by_repetition_id(id_trees)
         failing_trees: list[FailingTree] = []
         solved = 0
         total = len(reference_trees.keys())
+
         for call_id in reference_trees.keys():
             iter_list = reference_trees[call_id]
             smallest_rep = min(iter_list.keys())
@@ -1216,15 +1218,19 @@ class RepetitionBoundsConstraint(Constraint):
             ):
                 max_bounds_search = max_bounds_search.parent
                 assert max_bounds_search.parent is not None
-            assert max_bounds_search.parent is not None
-            max_bounds_search = max_bounds_search.parent.children[
-                index_by_reference(max_bounds_search.parent.children, max_bounds_search)
-                - 1
-            ]
+
+            parent = max_bounds_search.parent
+            assert parent is not None
+            index = index_by_reference(parent.children, max_bounds_search)
+            assert (
+                index is not None and index > 0
+            ), "Invalid child index for bounds search"
+            max_bounds_search = parent.children[index - 1]
 
             bound_min, min_ref_tree = self.min(max_bounds_search)
             bound_max, max_ref_tree = self.max(max_bounds_search)
             bound_len = len(iter_list)
+
             if bound_min <= bound_len <= bound_max:
                 solved += 1
             else:
@@ -1257,6 +1263,7 @@ class RepetitionBoundsConstraint(Constraint):
                         suggestions=suggestions,
                     )
                 )
+
         return ConstraintFitness(
             solved, total, solved == total, failing_trees=failing_trees
         )
@@ -1370,13 +1377,20 @@ class RepetitionBoundsConstraint(Constraint):
         tree: DerivationTree,
         end_rep: DerivationTree,
     ) -> tuple[DerivationTree, DerivationTree]:
-        insertion_index = index_by_reference(end_rep.parent, end_rep) + 1
+        index = index_by_reference(end_rep.parent.children, end_rep)
+        if index is None:
+            raise ValueError("end_rep not found in its parent's children")
+        insertion_index = index + 1
+
         starting_rep = 0
         for ref in end_rep.origin_repetitions:
             if ref[0] == self.repetition_id and ref[1] == rep_iteration:
+                assert ref[2] is not None, "repetition index (ref[2]) must not be None"
                 starting_rep = ref[2] + 1
+
         old_tree_children = tree.children
         tree.set_children([])
+
         self.repetition_node.fuzz(
             tree,
             grammar,
@@ -1384,16 +1398,21 @@ class RepetitionBoundsConstraint(Constraint):
             override_current_iteration=rep_iteration,
             override_iterations_to_perform=starting_rep + nr_to_insert,
         )
+
         insert_children = tree.children
         tree.set_children(old_tree_children)
+
         copy_parent = tree.deepcopy(
-            copy_children=True, copy_parent=False, copy_params=False
+            copy_children=True,
+            copy_parent=False,
+            copy_params=False,
         )
         copy_parent.set_children(
             copy_parent.children[:insertion_index]
             + insert_children
             + copy_parent.children[insertion_index:]
         )
+
         return tree, copy_parent
 
     def delete_repetitions(

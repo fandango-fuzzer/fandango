@@ -151,7 +151,7 @@ For this, use the `--input-method=stdin` option.
 For instance, to test the `cat` program with its own `-n` option and the inputs Fandango generates, use
 
 ```shell
-$ fandango fuzz -f persons.fan -n 10 --input_-method=stdin cat -n
+$ fandango fuzz -f persons.fan -n 10 --input-method=stdin cat -n
 ```
 
 The `cat` program is then invoked repeatedly, each time passing a new Fandango-generated input as its standard input.
