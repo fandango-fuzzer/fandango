@@ -49,9 +49,7 @@ class ParserTests(unittest.TestCase):
         )
         self.assertEqual(
             {((NonTerminal("<*0*>"), frozenset()),)},
-            self.grammar._parser._rules[
-                NonTerminal(f"<__{star_1.id}>")
-            ],
+            self.grammar._parser._rules[NonTerminal(f"<__{star_1.id}>")],
         )
         self.assertEqual(
             {
@@ -60,9 +58,7 @@ class ParserTests(unittest.TestCase):
                     (NonTerminal(f"<__{star_1.id}>"), frozenset()),
                 )
             },
-            self.grammar._parser._rules[
-                NonTerminal(f"<__{concat_1.id}>")
-            ],
+            self.grammar._parser._rules[NonTerminal(f"<__{concat_1.id}>")],
         )
         self.assertEqual(
             {
@@ -74,9 +70,7 @@ class ParserTests(unittest.TestCase):
                     ),
                 ),
             },
-            self.grammar._parser._rules[
-                NonTerminal(f"<__{alt_1.id}>")
-            ],
+            self.grammar._parser._rules[NonTerminal(f"<__{alt_1.id}>")],
         )
         self.assertEqual(
             {
@@ -90,9 +84,7 @@ class ParserTests(unittest.TestCase):
                 ((Terminal("8"), frozenset()),),
                 ((Terminal("9"), frozenset()),),
             },
-            self.grammar._parser._rules[
-                NonTerminal(f"<__{alt_2.id}>")
-            ],
+            self.grammar._parser._rules[NonTerminal(f"<__{alt_2.id}>")],
         )
         self.assertEqual(
             {
@@ -107,9 +99,7 @@ class ParserTests(unittest.TestCase):
                 ((Terminal("8"), frozenset()),),
                 ((Terminal("9"), frozenset()),),
             },
-            self.grammar._parser._rules[
-                NonTerminal(f"<__{alt_3.id}>")
-            ],
+            self.grammar._parser._rules[NonTerminal(f"<__{alt_3.id}>")],
         )
 
     # def test_parse_table(self):
@@ -224,15 +214,17 @@ class TestIncompleteParsing(unittest.TestCase):
             "aa",
             DerivationTree(
                 NonTerminal("<start>"),
-                [DerivationTree(
-                    NonTerminal("<ab>"),
-                    [
-                        DerivationTree(Terminal("a")),
-                        DerivationTree(
-                            NonTerminal("<ab>"), [DerivationTree(Terminal("a"))]
-                        ),
-                    ],
-                )],
+                [
+                    DerivationTree(
+                        NonTerminal("<ab>"),
+                        [
+                            DerivationTree(Terminal("a")),
+                            DerivationTree(
+                                NonTerminal("<ab>"), [DerivationTree(Terminal("a"))]
+                            ),
+                        ],
+                    )
+                ],
             ),
         )
 
@@ -248,7 +240,7 @@ class TestIncompleteParsing(unittest.TestCase):
                             DerivationTree(Terminal("ii")),
                         ],
                     ),
-                ]
+                ],
             ),
         )
 

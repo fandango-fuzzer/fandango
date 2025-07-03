@@ -133,13 +133,13 @@ class ConstraintTest(unittest.TestCase):
         for solution in solutions:
             len_a = solution.children[0].to_int()
             self.assertLessEqual(len_a + 2, len(solution.children))
-            for child in solution.children[1:len_a+1]:
+            for child in solution.children[1 : len_a + 1]:
                 self.assertTrue(child.symbol == NonTerminal("<a>"))
             len_b = solution.children[len_a + 1]
             self.assertTrue(len_b.symbol == NonTerminal("<len_b>"))
             len_b = len_b.to_int()
             self.assertEqual(len_a + len_b + 2, len(solution.children))
-            for child in solution.children[len_a + 4:]:
+            for child in solution.children[len_a + 4 :]:
                 self.assertTrue(child.symbol == NonTerminal("<b>"))
 
     def test_generator_redefinition(self):
