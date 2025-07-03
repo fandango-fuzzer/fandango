@@ -5,11 +5,40 @@ import re
 import shutil
 import subprocess
 import sys
-import unittest
 import time
+import unittest
 
 from fandango.cli import get_parser
-from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command
+
+from .utils import DOCS_ROOT, IS_BEARTYPE_ACTIVE, RESOURCES_ROOT, run_command
+
+# beartype somehow scrambles the fixed rng
+if IS_BEARTYPE_ACTIVE:
+    expected_with_random_seed = [
+        "50099",
+        "761",
+        "4241",
+        "72",
+        "5",
+        "72772",
+        "96688",
+        "85",
+        "88",
+        "6",
+    ]
+else:
+    expected_with_random_seed = [
+        "35716",
+        "4",
+        "9768",
+        "30",
+        "5658",
+        "5",
+        "9",
+        "649",
+        "20",
+        "41",
+    ]
 
 
 class TestCLI(unittest.TestCase):
@@ -32,23 +61,15 @@ class TestCLI(unittest.TestCase):
             "426912",
             "--no-cache",
         ]
-        expected = """35716
-4
-9768
-30
-5658
-5
-9
-649
-20
-41"""
         out, err, code = run_command(command)
         self.assertEqual(0, code)
         self.assertEqual(err, "")
-        self.assertEqual(expected, out.strip())
+        self.assertEqual(expected_with_random_seed, out.strip().split("\n"))
 
     def test_output_to_file(self):
         out_file = RESOURCES_ROOT / "test.txt"
+        if os.path.exists(out_file):
+            os.remove(out_file)
         command = [
             "fandango",
             "fuzz",
@@ -64,14 +85,13 @@ class TestCLI(unittest.TestCase):
             ";",
             "--no-cache",
         ]
-        expected = "35716;4;9768;30;5658;5;9;649;20;41"
         out, err, code = run_command(command)
         self.assertEqual(0, code)
         self.assertEqual("", out)
         self.assertEqual("", err)
         with open(out_file, "r") as fd:
             actual = fd.read()
-        self.assertEqual(expected, actual)
+        self.assertEqual(expected_with_random_seed, actual.split(";"))
         os.remove(RESOURCES_ROOT / "test.txt")
 
     def test_output_multiple_files(self):
@@ -88,7 +108,6 @@ class TestCLI(unittest.TestCase):
             str(RESOURCES_ROOT / "test"),
             "--no-cache",
         ]
-        expected = ["35716", "4", "9768", "30", "5658", "5", "9", "649", "20", "41"]
         (
             out,
             err,
@@ -97,7 +116,7 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(0, code)
         self.assertEqual("", out)
         self.assertEqual("", err)
-        for i, expected_value in enumerate(expected):
+        for i, expected_value in enumerate(expected_with_random_seed):
             filename = RESOURCES_ROOT / "test" / f"fandango-{i:04d}.txt"
             with open(filename, "r") as fd:
                 actual = fd.read()
@@ -141,8 +160,9 @@ class TestCLI(unittest.TestCase):
             "libfuzzer",
             output_file,
         ]
-        expected = ["35716", "4", "9768", "30", "5658", "5", "9", "649", "20", "41"]
-        expected_output = "\n".join([f"data: {value}" for value in expected]) + "\n"
+        expected_output = (
+            "\n".join([f"data: {value}" for value in expected_with_random_seed]) + "\n"
+        )
         out, err, code = run_command(command)
         self.assertEqual("", err)
         self.assertEqual(expected_output, out)

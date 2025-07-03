@@ -1,8 +1,14 @@
 import random
 from collections.abc import Callable, Generator
 
+from fandango.constraints.base import RepetitionBoundsConstraint
 from fandango.errors import FandangoValueError
-from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
+from fandango.constraints.fitness import (
+    Comparison,
+    ComparisonSide,
+    FailingTree,
+    BoundsFailingTree,
+)
 from fandango.io.packetforecaster import PacketForecaster
 from fandango.language.grammar import DerivationTree, Grammar
 from fandango.language.symbol import NonTerminal
@@ -104,13 +110,42 @@ class PopulationManager:
         failing_trees: list[FailingTree],
     ) -> tuple[DerivationTree, int]:
         fixes_made = 0
-        replacements = dict()
+        replacements: list[tuple[DerivationTree, DerivationTree]] = list()
+
+        allow_repetition_full_delete = (
+            len(
+                list(
+                    filter(
+                        lambda x: not isinstance(x.cause, RepetitionBoundsConstraint),
+                        failing_trees,
+                    )
+                )
+            )
+            == 0
+        )
+        # We only allow BoundsConstraints to delete all iterations of a repetition if all other non-boundconstraints constraints are satisfied.
+        # Otherwise, we would lose the reference point to re-add the repetitions in the tree, which might be needed,
+        # if the referenced length field changes its value.
+        # This is a workaround for the fact that we cannot delete all repetitions in a tree, if there
+
         for failing_tree in failing_trees:
             if failing_tree.tree.read_only:
                 continue
+
+            if isinstance(failing_tree, BoundsFailingTree):
+                assert isinstance(failing_tree.cause, RepetitionBoundsConstraint)
+                bounds_constraint: RepetitionBoundsConstraint = failing_tree.cause
+                replacements.extend(
+                    bounds_constraint.fix_individual(
+                        self._grammar,
+                        failing_tree,
+                        allow_repetition_full_delete=allow_repetition_full_delete,
+                    )
+                )
+                continue
+
             for operator, value, side in failing_tree.suggestions:
                 if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
-                    # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
                     if (
                         isinstance(value, DerivationTree)
                         and failing_tree.tree.symbol == value.symbol
@@ -126,25 +161,25 @@ class PopulationManager:
                         )
                     if suggested_tree is None:
                         continue
-                    replacements[failing_tree.tree] = suggested_tree
+                    replacements.append((failing_tree.tree, suggested_tree))
                     fixes_made += 1
         if len(replacements) > 0:
             # Prevent circular replacements
-            deleted = set()
-            for value in set(replacements.values()):
-                if value in deleted:
-                    continue
-                if value in replacements.keys():
-                    if replacements[value] not in replacements.keys():
-                        deleted.add(replacements[value])
-                        del replacements[value]
-                        continue
-                    if random.random() < 0.5:
-                        deleted.add(replacements[value])
-                        del replacements[value]
-                    else:
-                        deleted.add(replacements[replacements[value]])
-                        del replacements[replacements[value]]
+            # deleted = set()
+            # for value in set(replacements.values()):
+            #    if value in deleted:
+            #        continue
+            #    if value in replacements.keys():
+            #        if replacements[value] not in replacements.keys():
+            #            deleted.add(replacements[value])
+            #            del replacements[value]
+            #            continue
+            #        if random.random() < 0.5:
+            #            deleted.add(replacements[value])
+            #            del replacements[value]
+            #        else:
+            #            deleted.add(replacements[replacements[value]])
+            #            del replacements[replacements[value]]
 
             individual = individual.replace_multiple(self._grammar, replacements)
         return individual, fixes_made
