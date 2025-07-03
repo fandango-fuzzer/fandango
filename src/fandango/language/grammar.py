@@ -1551,7 +1551,11 @@ class Grammar(NodeVisitor):
             self._max_position = max(self._max_position, w + match_length)
             return True
 
-        def _rec_to_derivation_tree(self, tree: "Grammar.ParserDerivationTree", origin_repetitions: list[tuple[str, int, int]] = None):
+        def _rec_to_derivation_tree(
+            self,
+            tree: "Grammar.ParserDerivationTree",
+            origin_repetitions: list[tuple[str, int, int]] = None,
+        ):
             if origin_repetitions is None:
                 origin_repetitions = []
 
@@ -1570,7 +1574,7 @@ class Grammar(NodeVisitor):
                 else:
                     current_origin_repetitions = list(origin_repetitions)
 
-                children.append(self._rec_to_derivation_tree(child, current_origin_repetitions)) # type: ignore[arg-type]
+                children.append(self._rec_to_derivation_tree(child, current_origin_repetitions))  # type: ignore[arg-type]
 
             return DerivationTree(
                 tree.symbol,
