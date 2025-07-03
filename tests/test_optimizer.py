@@ -355,7 +355,11 @@ class TargetedMutations(unittest.TestCase):
             constraints=constraints_int,
             random_seed=random_seed,
         )
-        solutions = list(fandango.generate(max_generations=100))[:desired_solutions]
+        solutions = []
+        for solution in fandango.generate(max_generations=100):
+            solutions.append(solution)
+            if len(solutions) >= desired_solutions:
+                break
         return [s.to_string() for s in solutions]
 
     def test_targeted_mutation_1(self):
