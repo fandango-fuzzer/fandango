@@ -1,5 +1,5 @@
 import copy
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from io import BytesIO, StringIO
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
@@ -74,7 +74,7 @@ class ChildStep(PathStep):
         super().__init__(index)
 
 
-def index_by_reference(lst: list[T], target: T) -> Optional[int]:
+def index_by_reference(lst: Iterable[T], target: T) -> Optional[int]:
     for i, item in enumerate(lst):
         if item is target:  # compare reference, not data
             return i
