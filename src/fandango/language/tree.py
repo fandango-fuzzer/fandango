@@ -53,9 +53,6 @@ class StepException(Exception):
         super().__init__(f"StepException: {message}")
 
 
-from typing import Any
-
-
 class PathStep:
     def __init__(self, index: int):
         self.index = index
