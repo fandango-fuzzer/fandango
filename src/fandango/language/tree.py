@@ -84,13 +84,6 @@ def index_by_reference(lst: list[T], target: T) -> Optional[int]:
     return None
 
 
-def index_by_reference(lst: list[T], target: T) -> Optional[int]:
-    for i, item in enumerate(lst):
-        if item is target:  # compare reference, not data
-            return i
-    return None
-
-
 class DerivationTree:
     """
     This class is used to represent a node in the derivation tree.
