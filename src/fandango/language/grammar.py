@@ -1842,7 +1842,6 @@ class Grammar(NodeVisitor):
                 return
 
             self._incomplete = set()
-            forest = []
             for tree in self._parse_forest(
                 word,
                 start,
@@ -1851,12 +1850,13 @@ class Grammar(NodeVisitor):
                 starter_bit=starter_bit,
             ):
                 tree = self.to_derivation_tree(tree)
-                forest.append(tree)
+                if cache_key in self._cache:
+                    self._cache[cache_key].append(tree)
+                else:
+                    self._cache[cache_key] = [tree]
                 if not include_controlflow:
                     tree = self.collapse(tree)
                 yield tree
-            # Cache entire forest
-            self._cache[cache_key] = forest
 
         def parse_multiple(
             self,
