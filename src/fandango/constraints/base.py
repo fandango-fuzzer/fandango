@@ -1209,11 +1209,14 @@ class RepetitionBoundsConstraint(Constraint):
             last_iteration = iter_list[highest_rep][-1]
 
             max_bounds_search = first_iteration
+            assert max_bounds_search.parent is not None
             while (
                 index_by_reference(max_bounds_search.parent.children, max_bounds_search)
                 == 0
             ):
                 max_bounds_search = max_bounds_search.parent
+                assert max_bounds_search.parent is not None
+            assert max_bounds_search.parent is not None
             max_bounds_search = max_bounds_search.parent.children[
                 index_by_reference(max_bounds_search.parent.children, max_bounds_search)
                 - 1

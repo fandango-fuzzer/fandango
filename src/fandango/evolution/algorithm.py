@@ -649,7 +649,16 @@ class Fandango:
                 if complete_msg is None:
                     complete_msg = msg_fragment
                 else:
-                    complete_msg += msg_fragment
+                    if isinstance(complete_msg, str) and isinstance(msg_fragment, str):
+                        complete_msg += msg_fragment
+                    elif isinstance(complete_msg, bytes) and isinstance(
+                        msg_fragment, bytes
+                    ):
+                        complete_msg += msg_fragment
+                    else:
+                        raise TypeError(
+                            "complete_msg and msg_fragment must be of the same type"
+                        )
                 used_fragments_idx.append(abs_msg_idx)
 
                 parsed_packet_tree = None
