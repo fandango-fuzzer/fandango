@@ -29,6 +29,7 @@ SA_FandangoTranslator::~SA_FandangoTranslator() {
     Py_XDECREF(Char_setContext_cls);
     Py_XDECREF(ConstraintContext_cls);
     Py_XDECREF(ImpliesContext_cls);
+    Py_XDECREF(Implies_in_lineContext_cls);
     Py_XDECREF(QuantifierContext_cls);
     Py_XDECREF(Quantifier_in_lineContext_cls);
     Py_XDECREF(Formula_disjunctionContext_cls);
@@ -359,6 +360,12 @@ antlrcpp::Any SA_FandangoTranslator::visitConstraint(FandangoParser::ConstraintC
 antlrcpp::Any SA_FandangoTranslator::visitImplies(FandangoParser::ImpliesContext *ctx){
     if(!ImpliesContext_cls) ImpliesContext_cls = PyObject_GetAttrString(translator->parser_cls, "ImpliesContext");
     PyObject *py_ctx = translator->convert_ctx(this, ctx, ImpliesContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitImplies_in_line(FandangoParser::Implies_in_lineContext *ctx){
+    if(!Implies_in_lineContext_cls) Implies_in_lineContext_cls = PyObject_GetAttrString(translator->parser_cls, "Implies_in_lineContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Implies_in_lineContext_cls);
     return py_ctx;
 }
 

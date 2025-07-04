@@ -30,6 +30,7 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     PyObject *Char_setContext_cls = NULL;
     PyObject *ConstraintContext_cls = NULL;
     PyObject *ImpliesContext_cls = NULL;
+    PyObject *Implies_in_lineContext_cls = NULL;
     PyObject *QuantifierContext_cls = NULL;
     PyObject *Quantifier_in_lineContext_cls = NULL;
     PyObject *Formula_disjunctionContext_cls = NULL;
@@ -291,6 +292,8 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     antlrcpp::Any visitConstraint(FandangoParser::ConstraintContext *ctx);
 
     antlrcpp::Any visitImplies(FandangoParser::ImpliesContext *ctx);
+
+    antlrcpp::Any visitImplies_in_line(FandangoParser::Implies_in_lineContext *ctx);
 
     antlrcpp::Any visitQuantifier(FandangoParser::QuantifierContext *ctx);
 
