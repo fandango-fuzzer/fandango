@@ -5,6 +5,7 @@ import random
 import unittest
 
 from fandango.evolution.algorithm import Fandango
+from fandango.language import NonTerminal
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
 from .utils import RESOURCES_ROOT
@@ -110,8 +111,7 @@ class ConstraintTest(unittest.TestCase):
             grammar, c = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
 
-        # TODO: increase desired_solutions, see https://github.com/fandango-fuzzer/fandango/issues/581
-        solutions = self.get_solutions(grammar, c, desired_solutions=3)
+        solutions = self.get_solutions(grammar, c, desired_solutions=20)
         for solution in solutions:
             self.assertGreaterEqual(len(str(solution)), 3)
 
@@ -126,6 +126,23 @@ class ConstraintTest(unittest.TestCase):
             for tree in solution.children[2:-1]:
                 len_inner = tree.children[0].to_int()
                 self.assertEqual(len_inner, len(tree.children) - 1)
+
+    def test_repetition_computed_b(self):
+        with open(RESOURCES_ROOT / "dynamic_repetition_2.fan", "r") as file:
+            grammar, c = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+        solutions = self.get_solutions(grammar, c)
+        for solution in solutions:
+            len_a = solution.children[0].to_int()
+            self.assertLessEqual(len_a + 2, len(solution.children))
+            for child in solution.children[1 : len_a + 1]:
+                self.assertTrue(child.symbol == NonTerminal("<a>"))
+            len_b = solution.children[len_a + 1]
+            self.assertTrue(len_b.symbol == NonTerminal("<len_b>"))
+            len_b = len_b.to_int()
+            self.assertEqual(len_a + len_b + 2, len(solution.children))
+            for child in solution.children[len_a + 4 :]:
+                self.assertTrue(child.symbol == NonTerminal("<b>"))
 
     def test_generator_redefinition(self):
         with open(RESOURCES_ROOT / "generator_remove.fan", "r") as file:

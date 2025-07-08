@@ -5,25 +5,26 @@ import re
 import shutil
 import subprocess
 import sys
-import unittest
 import time
+import unittest
 
 from fandango.cli import get_parser
-from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command, IS_BEARTYPE_ACTIVE
+
+from .utils import DOCS_ROOT, IS_BEARTYPE_ACTIVE, RESOURCES_ROOT, run_command
 
 # beartype somehow scrambles the fixed rng
 if IS_BEARTYPE_ACTIVE:
     expected_with_random_seed = [
-        "5692",
-        "0",
-        "56",
-        "19986",
-        "892",
-        "52",
-        "940",
-        "1456",
-        "67",
-        "68219",
+        "80",
+        "99",
+        "761",
+        "4241",
+        "72963",
+        "47",
+        "2606",
+        "8",
+        "26869",
+        "4735",
     ]
 else:
     expected_with_random_seed = [
@@ -67,6 +68,8 @@ class TestCLI(unittest.TestCase):
 
     def test_output_to_file(self):
         out_file = RESOURCES_ROOT / "test.txt"
+        if os.path.exists(out_file):
+            os.remove(out_file)
         command = [
             "fandango",
             "fuzz",

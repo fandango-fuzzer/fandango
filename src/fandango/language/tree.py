@@ -1,7 +1,7 @@
-from collections.abc import Iterator
 import copy
 from types import NoneType
 from typing import Any, Optional, TYPE_CHECKING, TypeVar, cast
+from collections.abc import Iterable, Iterator
 
 from fandango.language.symbol import NonTerminal, Slice, Symbol, Terminal
 from fandango.language.tree_value import TreeValue
@@ -46,6 +46,9 @@ class StepException(Exception):
 
 
 class PathStep:
+    def __init__(self, index: int):
+        self.index = index
+
     def __eq__(self, other: Any) -> bool:
         return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
 
@@ -55,15 +58,15 @@ class PathStep:
 
 class SourceStep(PathStep):
     def __init__(self, index: int) -> None:
-        self.index = index
+        super().__init__(index)
 
 
 class ChildStep(PathStep):
     def __init__(self, index: int) -> None:
-        self.index = index
+        super().__init__(index)
 
 
-def index_by_reference(lst: list[T], target: T) -> Optional[int]:
+def index_by_reference(lst: Iterable[T], target: T) -> Optional[int]:
     for i, item in enumerate(lst):
         if item is target:  # compare reference, not data
             return i
@@ -85,6 +88,7 @@ class DerivationTree:
         sender: Optional[str] = None,
         recipient: Optional[str] = None,
         read_only: Optional[bool] = False,
+        origin_repetitions: Optional[list[tuple[str, int, int]]] = None,
     ) -> None:
         """
         Create a new derivation tree node.
@@ -109,7 +113,9 @@ class DerivationTree:
         self._sources: list[DerivationTree] = []  # init first
         if sources is not None:
             self.sources = sources  # use setter
-
+        if origin_repetitions is None:
+            origin_repetitions = []
+        self.origin_repetitions: list[tuple[str, int, int]] = origin_repetitions
         self.read_only = read_only
         self._size = 1
         self.set_children(children or [])
@@ -301,7 +307,22 @@ class DerivationTree:
             if child.symbol == symbol
         ]
 
-    def __getitem__(self, item: Any) -> Any:
+    def find_by_origin(self, node_id: str) -> list["DerivationTree"]:
+        trees = sum(
+            [
+                child.find_by_origin(node_id)
+                for child in [*self._children, *self._sources]
+                if child.symbol.is_non_terminal
+            ],
+            [],
+        )
+        for o_node_id, o_iter_id, rep in self.origin_repetitions:
+            if o_node_id == node_id:
+                trees.append(self)
+                break
+        return trees
+
+    def __getitem__(self, item: Any) -> "DerivationTree":
         if isinstance(item, list) and len(item) == 1:
             item = item[0]
         items = self._children.__getitem__(item)
@@ -408,6 +429,7 @@ class DerivationTree:
             recipient=self.recipient,
             sources=[],
             read_only=self.read_only,
+            origin_repetitions=list(self.origin_repetitions),
         )
         memo[id(self)] = copied
 
@@ -628,9 +650,18 @@ class DerivationTree:
     def is_int(self, *args: Any, **kwargs: Any) -> bool:
         return self.to_int(*args, **kwargs) is not None
 
-    def split_end(self) -> "DerivationTree":
-        cpy = copy.deepcopy(self)
-        return cpy._split_end()
+    def split_end(self, copy_tree: bool = True) -> "DerivationTree":
+        inst = self
+        if copy_tree:
+            inst = copy.deepcopy(self)
+        return inst._split_end()
+
+    def prefix(self, copy_tree: bool = True) -> "DerivationTree":
+        ref_tree = self.split_end(copy_tree)
+        assert ref_tree.parent is not None
+        ref_tree = ref_tree.parent
+        ref_tree.set_children(ref_tree.children[:-1])
+        return ref_tree
 
     def get_root(self, stop_at_argument_begin: bool = False) -> "DerivationTree":
         root = self
@@ -645,7 +676,10 @@ class DerivationTree:
             if self.parent is not None:
                 self._parent = None
             return self
-        me_idx = self.parent.children.index(self)
+        me_idx = index_by_reference(self.parent.children, self)
+        if me_idx is None:
+            # Handle error or fallback — for example:
+            raise ValueError("self not found in parent's children")
         keep_children = self.parent.children[: (me_idx + 1)]
         parent = self.parent._split_end()
         parent.set_children(keep_children)
@@ -680,33 +714,47 @@ class DerivationTree:
         tree_to_replace: "DerivationTree",
         new_subtree: "DerivationTree",
     ) -> "DerivationTree":
-        return self.replace_multiple(grammar, {tree_to_replace: new_subtree})
+        return self.replace_multiple(grammar, [(tree_to_replace, new_subtree)])
 
     def replace_multiple(
         self,
-        grammar: "fandango.language.grammar.Grammar",  # has to be full path, otherwise beartype complains because of a circular import with grammar
-        replacements: dict["DerivationTree", "DerivationTree"],
-        path_to_replacement: Optional[
-            dict[tuple[PathStep, ...], "DerivationTree"]
-        ] = None,
-        current_path: Optional[tuple[PathStep, ...]] = None,
+        grammar: "fandango.language.grammar.Grammar",  # full path to avoid circular import
+        replacements: list[tuple["DerivationTree", "DerivationTree"]],
+        path_to_replacement: Optional[dict[tuple, "DerivationTree"]] = None,
+        current_path: Optional[tuple] = None,
     ) -> "DerivationTree":
         """
         Replace the subtree rooted at the given node with the new subtree.
         """
         if path_to_replacement is None:
             path_to_replacement = dict()
-            for replacee, replacement in replacements.items():
+            for replacee, replacement in replacements:
                 path_to_replacement[replacee.get_choices_path()] = replacement
 
         if current_path is None:
             current_path = self.get_choices_path()
 
-        if current_path in path_to_replacement and not self.read_only:
+        if (
+            current_path in path_to_replacement
+            and self.symbol == path_to_replacement[current_path].symbol
+            and not self.read_only
+        ):
             new_subtree = path_to_replacement[current_path].deepcopy(
                 copy_children=True, copy_params=False, copy_parent=False
             )
             new_subtree._parent = self.parent
+            new_subtree.origin_repetitions = list(self.origin_repetitions)
+            new_children = []
+            for i, child in enumerate(new_subtree._children):
+                new_children.append(
+                    child.replace_multiple(
+                        grammar,
+                        replacements,
+                        path_to_replacement,
+                        current_path + (ChildStep(i),),
+                    )
+                )
+            new_subtree.set_children(new_children)
             grammar.populate_sources(new_subtree)
             return new_subtree
 
@@ -743,6 +791,7 @@ class DerivationTree:
             recipient=self.recipient,
             sources=sources,
             read_only=self.read_only,
+            origin_repetitions=list(self.origin_repetitions),
         )
 
         # Update children match generator parameters, if parameters updated

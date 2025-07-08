@@ -220,6 +220,7 @@ class FandangoSpec:
         self.constraints: list[Constraint | SoftValue] = (
             constraint_processor.get_constraints(splitter.constraints)
         )
+        self.constraints.extend(grammar_processor.repetition_constraints)
 
     def run_code(self, filename: str = "<input_>"):
         global CURRENT_FILENAME
@@ -853,11 +854,11 @@ def check_grammar_types(grammar: Optional[Grammar], *, start_symbol="<start>"):
             #     raise FandangoValueError(f"{rule_symbol!s}: Bits cannot be optional")
 
             try:
-                rep_min = tree.min(grammar, None)
+                rep_min = tree.min
             except ValueError:
                 rep_min = 0
             try:
-                rep_max = tree.max(grammar, None)
+                rep_max = tree.max
             except ValueError:
                 # Add 7 to min, such that there are 8 steps.
                 # If result is not dividable by 8 this will catch at least one case.
