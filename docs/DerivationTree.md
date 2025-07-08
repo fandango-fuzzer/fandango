@@ -181,7 +181,7 @@ Invoking methods (`<SYMBOL>.METHOD()`), as well as operators (say, `<SYMBOL> + .
 Since any `<SYMBOL>` has the type `DerivationTree`, one must convert it first into a standard Python type before passing it as argument to a standard Python function.
 
 `str(<SYMBOL>) -> str`
-: Convert `<SYMBOL>` into a Unicode string. Byte strings in `<SYMBOL>` are converted using `latin-1` encoding.
+: Convert `<SYMBOL>` into a Unicode string. Byte strings in `<SYMBOL>` are converted using `latin-1` encoding. Bits are converted to bytes and then returned.
 
 `bytes(<SYMBOL>) -> bytes`
 : Convert `<SYMBOL>` into a byte string. Unicode strings in `<SYMBOL>` are converted using `utf-8` encoding.

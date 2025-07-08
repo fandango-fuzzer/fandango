@@ -17,39 +17,6 @@ def is_int(x):
         return True
 
 
-def is_float(x):
-    if isinstance(x, DerivationTree):
-        return x.is_float()
-    try:
-        float(x)
-    except ValueError:
-        return False
-    else:
-        return True
-
-
-def is_num(x):
-    if isinstance(x, DerivationTree):
-        return x.is_num()
-    try:
-        float(x)
-    except ValueError:
-        return False
-    else:
-        return True
-
-
-def is_complex(x):
-    if isinstance(x, DerivationTree):
-        return x.is_complex()
-    try:
-        complex(x)
-    except ValueError:
-        return False
-    else:
-        return True
-
-
 def is_before(
     tree: DerivationTree, before_tree: DerivationTree, after_tree: DerivationTree
 ):

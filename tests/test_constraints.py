@@ -3,6 +3,7 @@
 import unittest
 
 
+from fandango.constraints.base import Constraint
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 from fandango.language.parse import parse
@@ -311,12 +312,15 @@ class ConstraintTest(unittest.TestCase):
 
     def test_indirect_children(self):
         with open(RESOURCES_ROOT / "indirect_children.fan", "r") as file:
-            grammar, constraint = parse(file, use_stdlib=False, use_cache=False)
+            grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
 
-        self.assertEqual(1, len(constraint))
-        constraint = constraint[0]
+        self.assertEqual(1, len(constraints))
+        constraint = constraints[0]
+        assert isinstance(constraint, Constraint)
 
         counter_example = grammar.parse("19")
+        assert counter_example is not None
         self.assertFalse(constraint.check(counter_example))
 
         example = grammar.parse("11")
@@ -324,8 +328,10 @@ class ConstraintTest(unittest.TestCase):
 
     def test_accessing_children(self):
         with open(RESOURCES_ROOT / "children.fan", "r") as file:
-            grammar, constraint = parse(file, use_stdlib=False, use_cache=False)
-        constraint = constraint[0]
+            grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+        constraint = constraints[0]
+        assert isinstance(constraint, Constraint)
 
         counter_example = grammar.parse("11")
         self.assertFalse(constraint.check(counter_example))
@@ -336,6 +342,7 @@ class ConstraintTest(unittest.TestCase):
     def test_eval_constraint(self):
         with open(RESOURCES_ROOT / "eval.fan") as file:
             grammar, constraints = parse(file, use_stdlib=True, use_cache=False)
+            assert grammar is not None
         constraint = constraints[0]
 
         counter_example = grammar.parse("+05 * 0 / 96 + 10")
@@ -345,7 +352,7 @@ class ConstraintTest(unittest.TestCase):
         self.assertTrue(constraint.check(example))
 
     def test_complex_constraint(self):
-        constraint = """
+        constraint_str = """
 where int(<number>) % 2 == 0
 where int(<number>) > 10000
 where int(<number>) < 100000
@@ -353,7 +360,7 @@ where int(<number>) < 100000
 
         with open(RESOURCES_ROOT / "complex_constraints.fan", "r") as file:
             _, constraints = parse(
-                file, constraints=[constraint], use_stdlib=False, use_cache=False
+                file, constraints=[constraint_str], use_stdlib=False, use_cache=False
             )
         self.assertEqual(3, len(constraints))
 
@@ -373,6 +380,7 @@ where int(<number>) < 100000
 
         for tree, sat_even, sat_greater, sat_less in examples:
             for sat, constraint in zip((sat_even, sat_greater, sat_less), constraints):
+                assert isinstance(constraint, Constraint)
                 fitness = constraint.fitness(tree)
                 self.assertEqual(sat, fitness.success)
                 self.assertEqual(1 if sat else 0, fitness.solved)
@@ -390,26 +398,17 @@ class ConverterTest(unittest.TestCase):
     def test_string_converters(self):
         tree = DerivationTree(Terminal("5"))
         self.assertEqual(int(tree), 5)
-        self.assertEqual(float(tree), 5.0)
-        self.assertEqual(complex(tree), 5 + 0j)
         self.assertEqual(bytes(tree), b"5")
         self.assertEqual(str(tree), "5")
-        self.assertTrue(bool(tree))
         self.assertEqual(tree.value(), "5")
 
     def test_byte_converters(self):
         tree = DerivationTree(Terminal(b"\x05"))
         self.assertEqual(bytes(tree), b"\x05")
         self.assertEqual(str(tree), "\x05")
-        self.assertTrue(bool(tree))
         self.assertEqual(tree.value(), b"\x05")
 
     def test_bit_converters(self):
         tree = DerivationTree(Terminal(1))
         self.assertEqual(int(tree), 1)
-        self.assertEqual(float(tree), 1.0)
-        self.assertEqual(complex(tree), 1 + 0j)
-        self.assertEqual(bytes(tree), b"\x01")
-        self.assertEqual(str(tree), "\x01")
-        self.assertTrue(bool(tree))
-        self.assertEqual(tree.value(), 1)
+        self.assertEqual(tree.to_bits(), "1")

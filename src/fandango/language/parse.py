@@ -10,12 +10,14 @@ import shutil
 from copy import deepcopy
 from io import StringIO
 from pathlib import Path
-from typing import IO, Any, Optional
+from types import NoneType
+from typing import IO, Optional
 
 import cachedir_tag
 import dill as pickle
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
+from antlr4.tree.Tree import ParseTree
 from xdg_base_dirs import xdg_cache_home, xdg_data_dirs, xdg_data_home
 
 import fandango
@@ -37,8 +39,13 @@ from fandango.language.grammar import (
     NodeReplacer,
     NodeType,
     NonTerminalNode,
+    Option,
     PacketTruncator,
+    Plus,
+    Repetition,
+    Star,
     SymbolFinder,
+    TerminalNode,
     closest_match,
 )
 from fandango.language.parser import sa_fandango
@@ -167,7 +174,7 @@ class FandangoSpec:
 
     def __init__(
         self,
-        tree: Any,
+        tree: ParseTree,
         fan_contents: str,
         lazy: bool = False,
         filename: str = "<input_>",
@@ -538,7 +545,7 @@ def parse(
             more_grammars.append(new_grammar)
             for generator in new_grammar.generators.values():
                 for nonterminal in generator.nonterminals.values():
-                    USED_SYMBOLS.add(nonterminal.symbol.symbol)
+                    USED_SYMBOLS.add(nonterminal)
         else:
             # Included file: process _before_ current grammar
             more_grammars = [new_grammar] + more_grammars
@@ -768,7 +775,7 @@ def check_grammar_definitions(
         )
 
     def collect_used_symbols(node: Node):
-        if node.node_type == NodeType.NON_TERMINAL:
+        if node.is_nonterminal:
             used_symbols.add(str(node.symbol))  # type: ignore[attr-defined] # We're checking types manually
         elif (
             node.node_type == NodeType.REPETITION
@@ -811,7 +818,7 @@ def check_grammar_definitions(
         raise error
 
 
-def check_grammar_types(grammar, *, start_symbol="<start>"):
+def check_grammar_types(grammar: Optional[Grammar], *, start_symbol="<start>"):
     if not grammar:
         return
 
@@ -824,22 +831,22 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
             return True
         return tp1 == tp2
 
-    def get_type(tree, rule_symbol) -> tuple[Optional[str], int, int, int]:
+    def get_type(tree: Node, rule_symbol: str) -> tuple[Optional[str], int, int, int]:
         # LOGGER.debug(f"Checking type of {tree!s} in {rule_symbol!s} ({tree.node_type!s})")
         nonlocal symbol_types, grammar
 
         tp: Optional[str]
-        if tree.node_type == NodeType.TERMINAL:
-            tp = type(tree.symbol.symbol).__name__
+        if isinstance(tree, TerminalNode):
+            tp = type(tree.symbol).__name__
             # LOGGER.debug(f"Type of {tree.symbol.symbol!r} is {tp!r}")
-            bits = 1 if isinstance(tree.symbol.symbol, int) else 0
+            bits = 1 if tree.symbol.is_type(NoneType) else 0
             return tp, bits, bits, 0
 
         elif (
-            tree.node_type == NodeType.REPETITION
-            or tree.node_type == NodeType.STAR
-            or tree.node_type == NodeType.PLUS
-            or tree.node_type == NodeType.OPTION
+            isinstance(tree, Repetition)
+            or isinstance(tree, Star)
+            or isinstance(tree, Plus)
+            or isinstance(tree, Option)
         ):
             tp, min_bits, max_bits, step = get_type(tree.node, rule_symbol)
             # if min_bits % 8 != 0 and tree.min == 0:
@@ -859,7 +866,7 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
             step = min(min_bits, max_bits)
             return tp, rep_min * min_bits, rep_max * max_bits, step
 
-        elif tree.node_type == NodeType.NON_TERMINAL:
+        elif isinstance(tree, NonTerminalNode):
             if tree.symbol in symbol_types:
                 return symbol_types[tree.symbol]
 
@@ -936,10 +943,12 @@ def check_grammar_types(grammar, *, start_symbol="<start>"):
             )
 
 
-def check_constraints_existence(grammar, constraints):
+def check_constraints_existence(
+    grammar: Grammar, constraints: list[Constraint | SoftValue]
+):
     LOGGER.debug("Checking constraints")
 
-    indirect_child = {
+    indirect_child: dict[str, dict[str, Optional[bool]]] = {
         str(k): {str(l): None for l in grammar.rules.keys()}
         for k in grammar.rules.keys()
     }
@@ -1001,7 +1010,11 @@ def check_constraints_existence(grammar, constraints):
 
 
 def check_constraints_existence_children(
-    grammar, parent, symbol, recurse, indirect_child
+    grammar: Grammar,
+    parent: str,
+    symbol: str,
+    recurse: bool,
+    indirect_child: dict[str, dict[str, Optional[bool]]],
 ):
     # LOGGER.debug(f"Checking if <{symbol}> is a child of <{parent}>")
 

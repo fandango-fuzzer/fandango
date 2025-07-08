@@ -94,7 +94,7 @@ class GrammarProcessor(FandangoParserVisitor):
 
     def get_grammar(
         self, productions: list[FandangoParser.ProductionContext], prime=True
-    ):
+    ) -> Grammar:
         grammar = Grammar(
             local_variables=self.local_variables,
             global_variables=self.global_variables,

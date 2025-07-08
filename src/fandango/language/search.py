@@ -202,8 +202,9 @@ class NonTerminalSearch(abc.ABC):
     def __repr__(self):
         pass
 
+    @abc.abstractmethod
     def __str__(self):
-        return self.__repr__()
+        pass
 
     @abc.abstractmethod
     def get_access_points(self) -> list[NonTerminal]:
@@ -268,6 +269,9 @@ class LengthSearch(NonTerminalSearch):
     def __repr__(self):
         return f"|{repr(self.value)}|"
 
+    def __str__(self):
+        return f"|{str(self.value)}|"
+
     def get_access_points(self):
         return self.value.get_access_points()
 
@@ -308,6 +312,9 @@ class RuleSearch(NonTerminalSearch):
 
     def __repr__(self):
         return repr(self.symbol)
+
+    def __str__(self):
+        return str(self.symbol)
 
     def get_access_points(self):
         return [self.symbol]
@@ -360,6 +367,9 @@ class AttributeSearch(NonTerminalSearch):
 
     def __repr__(self):
         return f"{repr(self.base)}.{repr(self.attribute)}"
+
+    def __str__(self):
+        return f"{str(self.base)}.{str(self.attribute)}"
 
     def get_access_points(self):
         return self.attribute.get_access_points()
@@ -425,7 +435,11 @@ class ItemSearch(NonTerminalSearch):
     Non-terminal search that finds the non-terminals that get the items from the base non-terminal.
     """
 
-    def __init__(self, base: NonTerminalSearch, slices: list[tuple[Any] | slice | int]):
+    def __init__(
+        self,
+        base: NonTerminalSearch,
+        slices: list[tuple[Any] | slice | int],
+    ):
         """
         Initialize the ItemSearch with the given base and slices.
         :param NonTerminalSearch base: The base non-terminal
@@ -580,6 +594,9 @@ class SelectiveSearch(NonTerminalSearch):
             slice_reprs.append(slice_repr)
         return f"{repr(self.base)}{{{', '.join(slice_reprs)}}}"
 
+    def __str__(self):
+        return repr(self)
+
     def get_access_points(self):
         return [symbol for symbol, _ in self.symbols]
 
@@ -654,6 +671,9 @@ class StarSearch(NonTerminalSearch):
 
     def __repr__(self):
         return f"*{repr(self.base)}"
+
+    def __str__(self):
+        return repr(self)
 
     def get_access_points(self) -> list[NonTerminal]:
         return self.base.get_access_points()
@@ -734,6 +754,9 @@ class PopulationSearch(NonTerminalSearch):
 
     def __repr__(self):
         return f"**{repr(self.base)}"
+
+    def __str__(self):
+        return repr(self)
 
     def get_access_points(self) -> list[NonTerminal]:
         return self.base.get_access_points()

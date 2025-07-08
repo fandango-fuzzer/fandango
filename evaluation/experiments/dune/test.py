@@ -3,7 +3,7 @@ import time
 from fandango import Grammar
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.parse import parse
-from fandango.language.symbol import NonTerminal
+from fandango.language.symbol.symbol import NonTerminal
 
 word = "USER the_user"
 
