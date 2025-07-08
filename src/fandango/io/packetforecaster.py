@@ -131,7 +131,7 @@ class PathFinder(NodeVisitor):
         )
 
     def visitConcatenation(self, node: Concatenation):
-        self.on_enter_controlflow(f"<__{NodeType.CONCATENATION}:{node.id}>")
+        self.on_enter_controlflow(f"<__{node.id}>")
         tree = self.current_tree[-1]
         child_idx = 0 if tree is None else (len(tree) - 1)
         continue_exploring = True
@@ -156,7 +156,7 @@ class PathFinder(NodeVisitor):
         return continue_exploring
 
     def visitAlternative(self, node: Alternative):
-        self.on_enter_controlflow(f"<__{NodeType.ALTERNATIVE}:{node.id}>")
+        self.on_enter_controlflow(f"<__{node.id}>")
         tree = self.current_tree[-1]
 
         if tree is not None:
@@ -188,7 +188,7 @@ class PathFinder(NodeVisitor):
             return continue_exploring
 
     def visitRepetition(self, node: Repetition):
-        self.on_enter_controlflow(f"<__{NodeType.REPETITION}:{node.id}>")
+        self.on_enter_controlflow(f"<__{node.id}>")
         ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
         return ret
@@ -203,31 +203,45 @@ class PathFinder(NodeVisitor):
             continue_exploring = self.visit(node.node)
             self.current_tree.pop()
 
-        rep_max = node.max(self.grammar, self.grammar.collapse(self.tree))
+        # TODO match new computed length repetitions
+        rep_min = node.min
+        rep_max = node.max
+        if node.bounds_constraint:
+            prefix_tree = None
+            for tree_list in self.current_tree[::-1]:
+                if tree_list is None or len(tree_list) != 0:
+                    continue
+                prefix_tree = tree_list[-1].prefix()
+                prefix_tree = self.grammar.collapse(prefix_tree.get_root())
+                break
+            assert prefix_tree is not None
+            rep_min, _ = node.bounds_constraint.min(prefix_tree)
+            rep_max, _ = node.bounds_constraint.max(prefix_tree)
         if continue_exploring and tree_len < rep_max:
             self.current_tree.append(None)
             continue_exploring = self.visit(node.node)
             self.current_tree.pop()
             if continue_exploring:
                 return continue_exploring
-        if tree_len >= node.min(self.grammar, self.grammar.collapse(self.tree)):
+        # TODO match new computed length repetitions
+        if tree_len >= rep_min:
             return True
         return continue_exploring
 
     def visitStar(self, node: Star):
-        self.on_enter_controlflow(f"<__{NodeType.STAR}:{node.id}>")
+        self.on_enter_controlflow(f"<__{node.id}>")
         ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
         return ret
 
     def visitPlus(self, node: Plus):
-        self.on_enter_controlflow(f"<__{NodeType.PLUS}:{node.id}>")
+        self.on_enter_controlflow(f"<__{node.id}>")
         ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
         return ret
 
     def visitOption(self, node: Option):
-        self.on_enter_controlflow(f"<__{NodeType.OPTION}:{node.id}>")
+        self.on_enter_controlflow(f"<__{node.id}>")
         ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
         return ret
@@ -375,17 +389,17 @@ class PacketForecaster:
 
         def visitRepetition(self, node: Repetition):
             return Repetition(
-                self.visit(node.node), node.id, node.expr_data_min, node.expr_data_max
+                self.visit(node.node), node.id, node.min, node.internal_max
             )
 
         def visitOption(self, node: Option):
             return Option(self.visit(node.node), node.id)
 
         def visitPlus(self, node: Plus):
-            return Plus(self.visit(node.node), node.id, node.expr_data_max)
+            return Plus(self.visit(node.node), node.id)
 
         def visitStar(self, node: Star):
-            return Star(self.visit(node.node), node.id, node.expr_data_max)
+            return Star(self.visit(node.node), node.id)
 
         def visitCharSet(self, node: CharSet):
             return CharSet(node.chars)
