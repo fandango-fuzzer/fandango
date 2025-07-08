@@ -550,8 +550,12 @@ class ComparisonConstraint(Constraint):
         """
         if isinstance(left, DerivationTree):
             left = left.value()
+            if left.can_compare_with(right):
+                return True
         if isinstance(right, DerivationTree):
             right = right.value()
+            if right.can_compare_with(left):
+                return True
 
         if left is None or right is None:
             # Cannot check - value does not exist

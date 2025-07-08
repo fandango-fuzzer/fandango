@@ -51,9 +51,9 @@ class PathFinder(NodeVisitor):
     def _collapsed_path(path: list[tuple[NonTerminal, bool]]):
         new_path = []
         for nt, new_node in path:
-            if isinstance(nt.symbol, str) and nt.symbol.startswith("<__"):
+            if nt.is_type(str) and str(nt.value()).startswith("<__"):
                 continue
-            elif isinstance(nt.symbol, bytes) and nt.symbol.startswith(b"<__"):
+            elif nt.is_type(bytes) and bytes(nt.value()).startswith(b"<__"):
                 continue
             new_path.append((nt, new_node))
         return tuple(new_path)
@@ -395,12 +395,12 @@ class PacketForecaster:
                 self.seen_keys.add(node.symbol)
                 return node
 
-            if isinstance(node.symbol.symbol, str):
-                symbol = NonTerminal("<_packet_" + node.symbol.symbol[1:])
+            if node.symbol.is_type(str):
+                symbol = NonTerminal("<_packet_" + node.symbol.name()[1:])
             else:
                 raise FandangoValueError("NonTerminal symbol must be a string!")
             repl_node = NonTerminalNode(symbol, node.sender, node.recipient)
-            self._reduced[symbol] = TerminalNode(Terminal(node.symbol.symbol))
+            self._reduced[symbol] = TerminalNode(Terminal(node.symbol.value()))
             self.seen_keys.add(symbol)
             self.processed_keys.add(symbol)
             return repl_node
@@ -425,9 +425,10 @@ class PacketForecaster:
             ):
                 i_msg.msg.set_children(r_msg.msg.children)
                 i_msg.msg.sources = r_msg.msg.sources
-                symbol = r_msg.msg.symbol.symbol
-                if isinstance(symbol, str):
-                    i_msg.msg.symbol = NonTerminal("<" + symbol[1:])
+                symbol = r_msg.msg.symbol
+                if symbol.is_type(str):
+                    # TODO: Is this just to create a new string?
+                    i_msg.msg.symbol = NonTerminal("<" + str(symbol)[1:])
                 else:
                     raise FandangoValueError("NonTerminal symbol must be a string!")
             return i_cpy

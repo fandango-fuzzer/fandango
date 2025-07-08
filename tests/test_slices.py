@@ -22,7 +22,7 @@ class TestSlices(unittest.TestCase):
             "-n",
             "1",
             "-c",
-            '<start>.startswith("6")',
+            'str(<start>).startswith("6")',
             "--format=none",
             "--validate",
             "--random-seed",
@@ -221,7 +221,7 @@ class TestExplicitSlices(unittest.TestCase):
             '<c> ::= "c"',
             '<d> ::= "d"',
             "",
-            "where <a>[0].endswith('b')",
+            "where str(<a>[0]).endswith('b')",
         ]
     )
 
@@ -324,6 +324,7 @@ class TestExplicitSlices(unittest.TestCase):
         self.assertEqual(0, search.slices[0])
 
     def test_valid(self):
+        print(self.CONSTRAINT, self.VALID_EXAMPLE)
         self.assertTrue(self.CONSTRAINT.check(self.VALID_EXAMPLE))
 
     def test_invalid(self):

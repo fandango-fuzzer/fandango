@@ -151,7 +151,7 @@ class TestSearches(unittest.TestCase):
         self.assertIn(self._C2, trees)
 
     def test_item_search(self):
-        search = ItemSearch(RuleSearch(NonTerminal("<c>")), 0)
+        search = ItemSearch(RuleSearch(NonTerminal("<c>")), [0])
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]
         self.assertEqual(2, len(trees))
         self.assertIn(self._0, trees)
@@ -159,7 +159,7 @@ class TestSearches(unittest.TestCase):
 
     def test_item_search_complex(self):
         search = AttributeSearch(
-            ItemSearch(RuleSearch(NonTerminal("<a>")), slice(0, 1)),
+            ItemSearch(RuleSearch(NonTerminal("<a>")), [slice(0, 1)]),
             RuleSearch(NonTerminal("<b>")),
         )
         trees = [c.evaluate() for c in search.find(self.EXAMPLE)]

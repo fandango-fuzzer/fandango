@@ -63,7 +63,10 @@ class ConstraintTest(unittest.TestCase):
 
         # grammar produces 1 output
         actual = self.get_solutions(grammar, constraints, desired_solutions=1)
-        self.assertListEqual(actual, ["bar"])
+        self.assertEqual(len(actual), 1)
+        res = actual[0]
+        self.assertIsInstance(res, DerivationTree)
+        self.assertEqual(str(res.value()), "bar")
 
     def test_nested_generators(self):
         with open(RESOURCES_ROOT / "nested_grammar_parameters.fan", "r") as file:
@@ -130,7 +133,7 @@ class ConstraintTest(unittest.TestCase):
             assert grammar is not None
         solutions = self.get_solutions(grammar, c, desired_solutions=10)
         for solution in solutions:
-            self.assertNotEqual(solution, "10")
+            self.assertNotEqual(str(solution.value()), "10")
 
     def test_max_nodes(self):
         with open(RESOURCES_ROOT / "gen_number.fan", "r") as file:

@@ -3,17 +3,21 @@ import enum
 import random
 import re
 import time
+from types import NoneType
 import typing
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 from collections.abc import Generator, Iterator
 
 import exrex
 from thefuzz import process as thefuzz_process
 
 from fandango.errors import FandangoValueError, FandangoParseError
-from fandango.language.symbol import NonTerminal, Symbol, Terminal
+from fandango.language.symbol.non_terminal import NonTerminal
+from fandango.language.symbol import Symbol
+from fandango.language.symbol.slice import Slice
+from fandango.language.symbol.terminal import Terminal
 from fandango.language.tree import DerivationTree
 
 MAX_REPETITIONS = 5
@@ -60,6 +64,14 @@ class Node(abc.ABC):
     @property
     def node_type(self):
         return self._node_type
+
+    @property
+    def is_terminal(self) -> bool:
+        return self.node_type == NodeType.TERMINAL
+
+    @property
+    def is_nonterminal(self) -> bool:
+        return self.node_type == NodeType.NON_TERMINAL
 
     def fuzz(
         self,
@@ -555,15 +567,22 @@ class TerminalNode(Node):
         in_message: bool = False,
     ):
         if self.symbol.is_regex:
-            if isinstance(self.symbol.symbol, bytes):
+            if self.symbol.is_type(bytes):
                 # Exrex can't do bytes, so we decode to str and back
-                instance = exrex.getone(self.symbol.symbol.decode("iso-8859-1"))
+                instance = exrex.getone(bytes(self.symbol.value()).decode("iso-8859-1"))
                 parent.add_child(
                     DerivationTree(Terminal(instance.encode("iso-8859-1")))
                 )
                 return
 
-            instance = exrex.getone(self.symbol.symbol)
+            if self.symbol.is_type(str):
+                instance = exrex.getone(str(self.symbol.value()))
+            elif self.symbol.is_type(NoneType):
+                instance = exrex.getone(int(self.symbol.value()))
+            else:
+                raise FandangoValueError(
+                    f"Unsupported type: {self.symbol.value().type_}"
+                )
             parent.add_child(DerivationTree(Terminal(instance)))
             return
         parent.add_child(DerivationTree(self.symbol))
@@ -683,11 +702,14 @@ class NodeVisitor(abc.ABC):
 class Disambiguator(NodeVisitor):
     def __init__(self, grammar: "Grammar"):
         self.known_disambiguations: dict[
-            Node, dict[tuple[Symbol, ...], list[tuple[Node, ...]]]
+            Node,
+            dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]],
         ] = {}
         self.grammar = grammar
 
-    def visit(self, node: Node) -> dict[tuple[Symbol, ...], list[tuple[Node, ...]]]:
+    def visit(
+        self, node: Node
+    ) -> dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]]:
         if node in self.known_disambiguations:
             return self.known_disambiguations[node]
         result = super().visit(node)
@@ -696,12 +718,12 @@ class Disambiguator(NodeVisitor):
 
     def visitAlternative(
         self, node: Alternative
-    ) -> dict[tuple[Symbol, ...], list[tuple[Node, ...]]]:
-        child_endpoints: dict[tuple[Symbol, ...], list[tuple[Node, ...]]] = {}
+    ) -> dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]]:
+        child_endpoints: dict[
+            tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]
+        ] = {}
         for child in node.children():
-            endpoints: dict[tuple[Symbol, ...], list[tuple[Node, ...]]] = self.visit(
-                child
-            )
+            endpoints = self.visit(child)
             for children in endpoints:
                 # prepend the alternative to all paths
                 if children not in child_endpoints:
@@ -715,13 +737,15 @@ class Disambiguator(NodeVisitor):
 
     def visitConcatenation(
         self, node: Concatenation
-    ) -> dict[tuple[Symbol, ...], list[tuple[Node, ...]]]:
-        child_endpoints: dict[tuple[Symbol, ...], list[tuple[Node, ...]]] = {(): []}
+    ) -> dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]]:
+        child_endpoints: dict[
+            tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]
+        ] = {(): []}
         for child in node.children():
-            next_endpoints: dict[tuple[Symbol, ...], list[tuple[Node, ...]]] = {}
-            endpoints: dict[tuple[Symbol, ...], list[tuple[Node, ...]]] = self.visit(
-                child
-            )
+            next_endpoints: dict[
+                tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]
+            ] = {}
+            endpoints = self.visit(child)
             for children in endpoints:
                 for existing in child_endpoints:
                     concatenation = existing + children
@@ -738,20 +762,24 @@ class Disambiguator(NodeVisitor):
 
     def visitRepetition(
         self, node: Repetition
-    ) -> dict[tuple[Symbol, ...], list[tuple[Node, ...]]]:
+    ) -> dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]]:
         # repetitions are alternatives over concatenations
         implicit_alternative = next(node.descendents(self.grammar))
         return self.visit(implicit_alternative)
 
-    def visitStar(self, node: Star) -> dict[tuple[Symbol, ...], list[tuple[Node, ...]]]:
+    def visitStar(
+        self, node: Star
+    ) -> dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]]:
         return self.visitRepetition(node)
 
-    def visitPlus(self, node: Plus) -> dict[tuple[Symbol, ...], list[tuple[Node, ...]]]:
+    def visitPlus(
+        self, node: Plus
+    ) -> dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]]:
         return self.visitRepetition(node)
 
     def visitOption(
         self, node: Option
-    ) -> dict[tuple[Symbol, ...], list[tuple[Node, ...]]]:
+    ) -> dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]]:
         implicit_alternative = Alternative(
             [Concatenation([]), Concatenation([node.node])]
         )
@@ -1204,7 +1232,7 @@ class Grammar(NodeVisitor):
         ):
             if nonterminal is None:
                 nonterminal = NonTerminal(f"<*tmp_{len(self._tmp_rules)}*>")
-            rule_id = nonterminal.symbol[2:-2]  # type: ignore[index]
+            rule_id = str(nonterminal.value())[2:-2]
             self._tmp_rules[nonterminal] = {tuple(a) for a in rule}  # type: ignore[misc]
             return (nonterminal, frozenset()), rule_id
 
@@ -1321,7 +1349,7 @@ class Grammar(NodeVisitor):
             if tree is None:
                 return None
             if isinstance(tree.symbol, NonTerminal):
-                if tree.symbol.symbol.startswith("<__"):  # type: ignore[union-attr, arg-type]
+                if str(tree.symbol.value()).startswith("<__"):
                     raise FandangoValueError(
                         "Can't collapse a tree with an implicit root node"
                     )
@@ -1334,7 +1362,7 @@ class Grammar(NodeVisitor):
                 reduced.extend(rec_reduced)
 
             if isinstance(tree.symbol, NonTerminal):
-                if tree.symbol.symbol.startswith("<__"):  # type: ignore[union-attr, arg-type]
+                if str(tree.symbol.value()).startswith("<__"):
                     return reduced
 
             return [
@@ -1473,7 +1501,7 @@ class Grammar(NodeVisitor):
             `bit_count` is the current bit position (7-0).
             Return True if a bit was matched, False otherwise.
             """
-            assert isinstance(state.dot.symbol, int)
+            assert state.dot.is_type(NoneType)
             assert 0 <= bit_count <= 7
 
             if w >= len(word):
@@ -1528,7 +1556,7 @@ class Grammar(NodeVisitor):
             Return True if a byte was matched, False otherwise.
             """
 
-            assert not isinstance(state.dot.symbol, int)
+            assert not state.dot.is_type(NoneType)
             assert not state.dot.is_regex
 
             # LOGGER.debug(f"Checking byte(s) {state.dot!r} at position {w:#06x} ({w}) {word[w:]!r}")
@@ -1573,7 +1601,7 @@ class Grammar(NodeVisitor):
             Return (True, #bytes) if bytes were matched, (False, 0) otherwise.
             """
 
-            assert not isinstance(state.dot.symbol, int)
+            assert not state.dot.is_type(NoneType)
             assert state.dot.is_regex
 
             # LOGGER.debug(f"Checking regex {state.dot!r} at position {w:#06x} ({w}) {word[w:]!r}")
@@ -1666,7 +1694,10 @@ class Grammar(NodeVisitor):
             found_beginners = set()
             for state in states:
                 if any(
-                    map(lambda b: state.nonterminal.symbol.startswith(b), beginner_nts)
+                    map(
+                        lambda b: str(state.nonterminal.value()).startswith(b),
+                        beginner_nts,
+                    )
                 ):
                     found_beginners.add(state.symbols[0][0])
 
@@ -1690,7 +1721,7 @@ class Grammar(NodeVisitor):
                 origin_state = origin_states[0]
                 while not any(
                     map(
-                        lambda b: origin_state.nonterminal.symbol.startswith(b),
+                        lambda b: str(origin_state.nonterminal.value()).startswith(b),
                         beginner_nts,
                     )
                 ):
@@ -1777,7 +1808,7 @@ class Grammar(NodeVisitor):
                             self.predict(state, table, k, hookin_parent)
                             # LOGGER.debug(f"Predicted {state} at position {w:#06x} ({w}) {word[w:]!r}")
                         else:
-                            if isinstance(state.dot.symbol, int):
+                            if state.dot.is_type(NoneType):
                                 # Scan a bit
                                 if bit_count < 0:
                                     bit_count = 7
@@ -1863,7 +1894,6 @@ class Grammar(NodeVisitor):
 
             if isinstance(start, str):
                 start = NonTerminal(start)
-            assert isinstance(start, NonTerminal)
 
             cache_key = (word, start, mode, hookin_parent)
             forest: list[DerivationTree]
@@ -1981,21 +2011,22 @@ class Grammar(NodeVisitor):
 
     def is_use_generator(self, tree: DerivationTree):
         symbol = tree.symbol
-        if not isinstance(symbol, NonTerminal):
+        if not symbol.is_non_terminal:
             return False
-        if symbol not in self.generators:
+        nt = cast(NonTerminal, symbol)
+        if nt not in self.generators:
             return False
         if tree is None:
             path = set()
         else:
             path = set(map(lambda x: x.symbol, tree.get_path()))
-        generator_dependencies = self.generator_dependencies(symbol)
+        generator_dependencies = self.generator_dependencies(nt)
         intersection = path.intersection(set(generator_dependencies))
         return len(intersection) == 0
 
-    def derive_sources(self, tree: DerivationTree):
+    def derive_sources(self, tree: DerivationTree) -> list[DerivationTree]:
         gen_symbol = tree.symbol
-        if not isinstance(gen_symbol, NonTerminal):
+        if not gen_symbol.is_non_terminal:
             raise FandangoValueError(f"Tree {tree.symbol} is not a nonterminal")
         if tree.symbol not in self.generators:
             raise FandangoValueError(f"No generator found for tree {tree.symbol}")
@@ -2003,6 +2034,7 @@ class Grammar(NodeVisitor):
         if not self.is_use_generator(tree):
             return []
 
+        assert isinstance(gen_symbol, NonTerminal)
         dependent_generators: dict[NonTerminal, set[NonTerminal]] = {gen_symbol: set()}
         for key, val in self.generators[gen_symbol].nonterminals.items():
             if val.symbol not in self.rules:
@@ -2347,14 +2379,14 @@ class Grammar(NodeVisitor):
     @staticmethod
     def _extract_k_paths_from_tree(
         tree: DerivationTree, k: int
-    ) -> set[tuple[str | bytes | int, ...]]:
+    ) -> set[tuple[Symbol, ...]]:
         """
         Extracts all k-length paths (k-paths) from a derivation tree.
         """
         paths = set()
 
-        def traverse(node: DerivationTree, current_path: tuple[str | bytes | int, ...]):
-            new_path = current_path + (node.symbol.symbol,)
+        def traverse(node: DerivationTree, current_path: tuple[Symbol, ...]):
+            new_path = current_path + (node.symbol,)
             if len(new_path) == k:
                 paths.add(new_path)
                 # Do not traverse further to keep path length at k
@@ -2477,7 +2509,7 @@ class Grammar(NodeVisitor):
             if cur_path is None:
                 cur_path = (TerminalNode(tree.terminal),)
             paths.add(cur_path)
-        else:
+        elif isinstance(tree.symbol, NonTerminal):
             if cur_path is None:
                 cur_path = (NonTerminalNode(tree.nonterminal),)
             assert tree.symbol == typing.cast(NonTerminalNode, cur_path[-1]).symbol
@@ -2486,6 +2518,10 @@ class Grammar(NodeVisitor):
                 tree.children, disambiguation[tuple(c.symbol for c in tree.children)]
             ):
                 self.traverse_derivation(tree, disambiguator, paths, cur_path + path)
+        else:
+            raise FandangoValueError(
+                f"Unknown symbol type: {type(tree.symbol)}: {tree.symbol}"
+            )
         return paths
 
     def compute_grammar_coverage(
@@ -2545,7 +2581,7 @@ class Grammar(NodeVisitor):
                 return False
             seen.add(node)
 
-            if isinstance(node, TerminalNode) and isinstance(node.symbol.symbol, tp):
+            if isinstance(node, TerminalNode) and node.symbol.is_type(tp):
                 return True
             if any(node_matches(child) for child in node.children()):
                 return True

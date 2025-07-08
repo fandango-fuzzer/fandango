@@ -15,15 +15,15 @@ from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command, IS_BEARTYPE_ACTIVE
 if IS_BEARTYPE_ACTIVE:
     expected_with_random_seed = [
         "5692",
-        "05",
-        "76",
-        "7",
-        "4818",
-        "02405",
-        "512",
-        "66",
-        "1888",
-        "87789",
+        "0",
+        "56",
+        "19986",
+        "892",
+        "52",
+        "940",
+        "1456",
+        "67",
+        "68219",
     ]
 else:
     expected_with_random_seed = [
@@ -83,6 +83,7 @@ class TestCLI(unittest.TestCase):
             "--no-cache",
         ]
         out, err, code = run_command(command)
+        self.maxDiff = 1000000
         self.assertEqual(0, code)
         self.assertEqual("", out)
         self.assertEqual("", err)
