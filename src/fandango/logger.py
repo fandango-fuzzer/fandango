@@ -41,13 +41,16 @@ def print_exception(e: Exception, exception_note: str | None = None):
 
 USE_VISUALIZATION: bool | None = None
 
+
 def set_visualization(use_visualization: bool | None):
     """Set whether to use visualization while Fandango is running"""
     global USE_VISUALIZATION
     USE_VISUALIZATION = use_visualization
 
+
 COLUMNS = None
 LINES = None
+
 
 def use_visualization():
     """Return True if we should use visualization while Fandango is running"""
@@ -91,6 +94,7 @@ def use_visualization():
 
 LINE_IS_CLEAR = True
 
+
 def visualize_evaluation(
     generation: int,
     max_generations: Optional[int],
@@ -130,7 +134,7 @@ def visualize_evaluation(
 
 def clear_visualization(max_generations: Optional[int] = None):
     """Clear Fandango visualization"""
-    if not use_visualization(): # or max_generations is None:
+    if not use_visualization():  # or max_generations is None:
         return
 
     global LINE_IS_CLEAR
