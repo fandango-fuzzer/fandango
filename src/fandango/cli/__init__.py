@@ -59,7 +59,12 @@ from ansi_styles import ansiStyles as styles
 from fandango import Fandango
 from fandango.language.grammar import Grammar, FuzzingMode
 from fandango.language.parse import parse, clear_cache, cache_dir
-from fandango.logger import LOGGER, print_exception, set_visualization, clear_visualization
+from fandango.logger import (
+    LOGGER,
+    print_exception,
+    set_visualization,
+    clear_visualization,
+)
 
 from fandango.converters.antlr.ANTLRFandangoConverter import ANTLRFandangoConverter
 from fandango.converters.bt.BTFandangoConverter import (
