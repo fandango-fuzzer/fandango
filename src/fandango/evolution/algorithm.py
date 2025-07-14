@@ -19,7 +19,7 @@ from fandango.evolution.population import PopulationManager, IoPopulationManager
 from fandango.evolution.profiler import Profiler
 from fandango.io import FandangoIO, FandangoParty
 from fandango.io.packetforecaster import PacketForecaster
-from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode
+from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode, ParsingMode
 from fandango.logger import (
     LOGGER,
     clear_visualization,
@@ -690,7 +690,7 @@ class Fandango:
                     incomplete_tree = self.grammar.parse(
                         complete_msg,
                         forecast_packet.node.symbol,
-                        mode=Grammar.Parser.ParsingMode.INCOMPLETE,
+                        mode=ParsingMode.INCOMPLETE,
                         hookin_parent=hookin_point,
                     )
                     if incomplete_tree is None:
