@@ -957,12 +957,17 @@ class ParseState:
             + ")"
         )
 
-    def next(self, position: Optional[int] = None):
+    def next(self):
+        next_state = self.copy()
+        next_state._dot += 1
+        return next_state
+
+    def copy(self):
         return ParseState(
             self.nonterminal,
-            position or self.position,
+            self.position,
             self.symbols,
-            self._dot + 1,
+            self._dot,
             self.children[:],
             self.is_incomplete,
             self.incomplete_idx,
@@ -1487,28 +1492,38 @@ class Grammar(NodeVisitor):
 
             # LOGGER.debug(f"Checking byte(s) {state.dot!r} at position {w:#06x} ({w}) {word[w:]!r}")
 
-            match, match_length = state.dot.check(word[w:])
+            check_word = word[w:]
+            if state.is_incomplete:
+                prev_terminal = state.children[-1]
+                check_word = prev_terminal.symbol.symbol + check_word
+
+
+            match, match_length = state.dot.check(check_word)
             if not match:
-                match, match_length = state.dot.check(word[w:], incomplete=True)
+                if (w + len(state.dot) - state.incomplete_idx) < len(word):
+                    return False
+                match, match_length = state.dot.check(check_word, incomplete=True)
                 if not match or match_length == 0:
                     return False
-                state.is_incomplete = True
 
-                if self._parsing_mode != ParsingMode.INCOMPLETE or (
-                    w + len(state.dot)
-                ) < len(word):
-                    return False
-                match, match_length = state.dot.check(word[w:], incomplete=True)
-                if not match or match_length == 0:
-                    return False
-                state.is_incomplete = True
-
-            # Found a match
-            # LOGGER.debug(f"Matched byte(s) {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w + match_length]!r}")
-            next_state = state.next()
-            tree = Grammar.ParserDerivationTree(Terminal(word[w : w + match_length]))
-            next_state.append_child(tree)
-            table[k + match_length].add(next_state)
+                next_state = state.copy()
+                next_state.incomplete_idx = match_length
+                next_state.is_incomplete = True
+                tree = Grammar.ParserDerivationTree(Terminal(check_word[:match_length]))
+                if state.is_incomplete:
+                    next_state.children[-1] = tree
+                else:
+                    next_state.append_child(tree)
+            else:
+                next_state = state.next()
+                next_state.is_incomplete = False
+                next_state.incomplete_idx = 0
+                tree = Grammar.ParserDerivationTree(Terminal(check_word[:match_length]))
+                if state.is_incomplete:
+                    next_state.children[-1] = tree
+                else:
+                    next_state.append_child(tree)
+            table[k + match_length - state.incomplete_idx].add(next_state)
             # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
             self._max_position = max(self._max_position, w + match_length)
 
@@ -1730,8 +1745,8 @@ class Grammar(NodeVisitor):
                                         yield child
 
                             self.complete(state, table, curr_table_idx)
-                        elif not state.is_incomplete:
-                            if state.next_symbol_is_nonterminal():
+                        else:
+                            if not state.is_incomplete and state.next_symbol_is_nonterminal():
                                 self.predict(state, table, curr_table_idx, self._hookin_parent)
                             else:
                                 if isinstance(state.dot.symbol, int):
@@ -1768,9 +1783,6 @@ class Grammar(NodeVisitor):
                                         match = self.scan_bytes(
                                             state, word, table, curr_table_idx, curr_word_idx
                                         )
-                        else:
-                            if state.next_symbol_is_nonterminal():
-                                self.predict(state, table, curr_table_idx)
 
                     if self._parsing_mode == ParsingMode.INCOMPLETE and at_end:
                         for state in table[curr_table_idx]:
@@ -1796,7 +1808,7 @@ class Grammar(NodeVisitor):
                     curr_table_idx += 1
             if save_parsing_state:
                 self._table = table
-                self._table_idx = curr_table_idx
+                self._table_idx = curr_table_idx - 1
                 self._bit_position = curr_bit_position
                 self._prefix_word = None
             else:
