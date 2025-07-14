@@ -3,9 +3,6 @@ from fandango.io import *  # noqa: F403
 from fandango.language.symbol import NonTerminal
 
 
-# Importing '*' here, because all functions, and classes existing in the io file, need to be available within spec files
-
-
 def is_int(x):
     if isinstance(x, DerivationTree):
         return x.is_int()

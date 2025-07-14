@@ -3,7 +3,7 @@
 import sys
 from typing import Any
 
-from antlr4 import *
+from antlr4 import CommonTokenStream, FileStream, TerminalNode
 
 from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.converters.antlr.ANTLRv4Lexer import ANTLRv4Lexer
