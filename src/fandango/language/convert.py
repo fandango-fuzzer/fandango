@@ -114,10 +114,12 @@ class GrammarProcessor(FandangoParserVisitor):
 
                 if not production.EXPR_ASSIGN():
                     LOGGER.warning(
-                        f"{symbol}: Using '=' and '::' for generators is deprecated. Use ':=' instead."
+                        f"{symbol.format_as_grammar()}: Using '=' and '::' for generators is deprecated. Use ':=' instead."
                     )
             if production.SEMI_COLON():
-                LOGGER.info(f"{symbol}: A final ';' is not required in grammar rules.")
+                LOGGER.info(
+                    f"{symbol.format_as_grammar()}: A final ';' is not required in grammar rules."
+                )
 
         grammar.rules.update(self.additionalRules)
         if len(self.seenParties) == 0:

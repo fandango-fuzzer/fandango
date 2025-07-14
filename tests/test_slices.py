@@ -1,5 +1,6 @@
 #!/usr/bin/env pytest
 
+import re
 import unittest
 
 from fandango import parse, DerivationTree
@@ -313,9 +314,14 @@ class TestExplicitSlices(unittest.TestCase):
             self.CONSTRAINT.expression.endswith(".endswith('b')")
             or self.CONSTRAINT.expression.endswith('.endswith("b")')
         )
-        tmp_var = self.CONSTRAINT.expression[:-14]
+        expr = self.CONSTRAINT.expression
+        pattern = r"___fandango.*___"
+        re_search = re.search(pattern, expr)
+        assert re_search is not None
+        tmp_var = str(re_search.group(0))
         self.assertIn(tmp_var, self.CONSTRAINT.searches)
         search = self.CONSTRAINT.searches[tmp_var]
+        assert search is not None
         assert isinstance(search, ItemSearch)
         base = search.base
         assert isinstance(base, RuleSearch)
@@ -324,7 +330,8 @@ class TestExplicitSlices(unittest.TestCase):
         self.assertEqual(0, search.slices[0])
 
     def test_valid(self):
-        print(self.CONSTRAINT, self.VALID_EXAMPLE)
+        print(self.CONSTRAINT.format_as_grammar())
+        print(self.VALID_EXAMPLE.to_tree())
         self.assertTrue(self.CONSTRAINT.check(self.VALID_EXAMPLE))
 
     def test_invalid(self):

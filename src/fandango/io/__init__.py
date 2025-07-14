@@ -320,9 +320,7 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
         self._wait_accept()
 
         assert self._connection is not None
-        send_data = message.serialize()
-        if isinstance(send_data, str):
-            send_data = send_data.encode("utf-8")
+        send_data = message.to_bytes(encoding="utf-8")
         if self.protocol_type == Protocol.TCP:
             self._connection.sendall(send_data)
         else:

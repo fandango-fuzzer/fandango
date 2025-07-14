@@ -15,5 +15,5 @@ class NonTerminal(Symbol):
     def __hash__(self) -> int:
         return hash((self._value, self._type))
 
-    def __repr__(self) -> str:
-        return "NonTerminal(" + repr(self._value) + ")"
+    def format_as_grammar(self) -> str:
+        return self.name()

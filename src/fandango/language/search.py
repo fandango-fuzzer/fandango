@@ -198,13 +198,21 @@ class NonTerminalSearch(abc.ABC):
             targets.extend(self.find(tree, scope=scope, population=population))
         return targets
 
-    @abc.abstractmethod
     def __repr__(self):
-        pass
+        raise NotImplementedError(
+            "Repr not implemented, use method specific to your usecase"
+        )
+
+    def __str__(self):
+        raise NotImplementedError(
+            "Repr not implemented, use method specific to your usecase"
+        )
 
     @abc.abstractmethod
-    def __str__(self):
-        pass
+    def format_as_grammar(self) -> str:
+        """
+        Format the search as a grammar.
+        """
 
     @abc.abstractmethod
     def get_access_points(self) -> list[NonTerminal]:
@@ -266,11 +274,8 @@ class LengthSearch(NonTerminalSearch):
             )
         ]
 
-    def __repr__(self):
-        return f"|{repr(self.value)}|"
-
-    def __str__(self):
-        return f"|{str(self.value)}|"
+    def format_as_grammar(self) -> str:
+        return f"|{self.value.format_as_grammar()}|"
 
     def get_access_points(self):
         return self.value.get_access_points()
@@ -310,14 +315,11 @@ class RuleSearch(NonTerminalSearch):
         else:
             return list(map(Tree, tree.find_direct_trees(self.symbol)))
 
-    def __repr__(self):
-        return repr(self.symbol)
-
-    def __str__(self):
-        return str(self.symbol)
-
     def get_access_points(self):
         return [self.symbol]
+
+    def format_as_grammar(self) -> str:
+        return repr(self.symbol)
 
 
 class AttributeSearch(NonTerminalSearch):
@@ -365,11 +367,8 @@ class AttributeSearch(NonTerminalSearch):
                 )
         return targets
 
-    def __repr__(self):
-        return f"{repr(self.base)}.{repr(self.attribute)}"
-
-    def __str__(self):
-        return f"{str(self.base)}.{str(self.attribute)}"
+    def format_as_grammar(self) -> str:
+        return f"{self.base.format_as_grammar()}.{self.attribute.format_as_grammar()}"
 
     def get_access_points(self):
         return self.attribute.get_access_points()
@@ -420,11 +419,8 @@ class DescendantAttributeSearch(NonTerminalSearch):
                 )
         return targets
 
-    def __repr__(self):
-        return f"{repr(self.base)}..{repr(self.attribute)}"
-
-    def __str__(self):
-        return f"{str(self.base)}..{str(self.attribute)}"
+    def format_as_grammar(self) -> str:
+        return f"{self.base.format_as_grammar()}..{self.attribute.format_as_grammar()}"
 
     def get_access_points(self):
         return self.attribute.get_access_points()
@@ -478,7 +474,7 @@ class ItemSearch(NonTerminalSearch):
             self.base.find_direct(tree, scope=scope, population=population)
         )
 
-    def __repr__(self):
+    def format_as_grammar(self) -> str:
         slice_reprs = []
         for slice_ in self.slices:
             if isinstance(slice_, slice):
@@ -493,24 +489,7 @@ class ItemSearch(NonTerminalSearch):
                 slice_reprs.append(slice_repr)
             else:
                 slice_reprs.append(repr(slice_))
-        return f"{repr(self.base)}[{', '.join(slice_reprs)}]"
-
-    def __str__(self):
-        slice_strs = []
-        for slice_ in self.slices:
-            if isinstance(slice_, slice):
-                slice_str = ""
-                if slice_.start is not None:
-                    slice_str += str(slice_.start)
-                slice_str += ":"
-                if slice_.stop is not None:
-                    slice_str += str(slice_.stop)
-                if slice_.step is not None:
-                    slice_str += ":" + str(slice_.step)
-                slice_strs.append(slice_str)
-            else:
-                slice_strs.append(str(slice_))
-        return f"{str(self.base)}[{', '.join(slice_strs)}]"
+        return f"{self.base.format_as_grammar()}[{', '.join(slice_reprs)}]"
 
     def get_access_points(self):
         return self.base.get_access_points()
@@ -575,7 +554,7 @@ class SelectiveSearch(NonTerminalSearch):
         ret = self._find(self.base.find_direct(tree, scope=scope, population=None))
         return ret
 
-    def __repr__(self):
+    def format_as_grammar(self) -> str:
         slice_reprs: list[str] = []
         for symbol, is_direct, items in zip(*self.symbols, self.slices):
             slice_repr = f"{'' if is_direct else '*'}{repr(symbol)}"
@@ -592,10 +571,7 @@ class SelectiveSearch(NonTerminalSearch):
                 else:
                     slice_reprs += repr(items)
             slice_reprs.append(slice_repr)
-        return f"{repr(self.base)}{{{', '.join(slice_reprs)}}}"
-
-    def __str__(self):
-        return repr(self)
+        return f"{self.base.format_as_grammar()}{{{', '.join(slice_reprs)}}}"
 
     def get_access_points(self):
         return [symbol for symbol, _ in self.symbols]
@@ -669,11 +645,8 @@ class StarSearch(NonTerminalSearch):
         )
         return [TreeList(trees)]
 
-    def __repr__(self):
-        return f"*{repr(self.base)}"
-
-    def __str__(self):
-        return repr(self)
+    def format_as_grammar(self) -> str:
+        return f"*{self.base.format_as_grammar()}"
 
     def get_access_points(self) -> list[NonTerminal]:
         return self.base.get_access_points()
@@ -752,11 +725,8 @@ class PopulationSearch(NonTerminalSearch):
         )
         return [TreeList(trees)]
 
-    def __repr__(self):
-        return f"**{repr(self.base)}"
-
-    def __str__(self):
-        return repr(self)
+    def format_as_grammar(self) -> str:
+        return f"**{self.base.format_as_grammar()}"
 
     def get_access_points(self) -> list[NonTerminal]:
         return self.base.get_access_points()

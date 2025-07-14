@@ -107,10 +107,21 @@ class Node(abc.ABC):
         return []
 
     def __repr__(self):
-        return ""
+        raise NotImplementedError(
+            "__repr__ not implemented, use method specific to your usecase"
+        )
 
     def __str__(self):
-        return self.__repr__()
+        raise NotImplementedError(
+            "__str__ not implemented, use method specific to your usecase"
+        )
+
+    @abc.abstractmethod
+    def format_as_grammar(self) -> str:
+        """
+        Format the node as a string that can be used in a grammar.
+        """
+        raise NotImplementedError("format_as_grammar not implemented")
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         """
@@ -168,11 +179,12 @@ class Alternative(Node):
     def __len__(self):
         return len(self.alternatives)
 
-    def __repr__(self):
-        return "(" + " | ".join(map(repr, self.alternatives)) + ")"
-
-    def __str__(self):
-        return "(" + " | ".join(map(str, self.alternatives)) + ")"
+    def format_as_grammar(self) -> str:
+        return (
+            "("
+            + " | ".join(map(lambda x: x.format_as_grammar(), self.alternatives))
+            + ")"
+        )
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         yield from self.alternatives
@@ -223,11 +235,8 @@ class Concatenation(Node):
     def __len__(self):
         return len(self.nodes)
 
-    def __repr__(self):
-        return " ".join(map(repr, self.nodes))
-
-    def __str__(self):
-        return " ".join(map(str, self.nodes))
+    def format_as_grammar(self) -> str:
+        return " ".join(map(lambda x: x.format_as_grammar(), self.nodes))
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         yield from self.nodes
@@ -309,15 +318,10 @@ class Repetition(Node):
             prev_parent_size = parent.size()
             prev_children_len = len(parent.children)
 
-    def __repr__(self):
+    def format_as_grammar(self) -> str:
         if self.min == self.max:
-            return f"{self.node}{{{self.min}}}"
-        return f"{self.node}{{{self.min},{self.max}}}"
-
-    def __str__(self):
-        if self.min == self.max:
-            return f"{self.node!s}{{{self.min}}}"
-        return f"{self.node!s}{{{self.min},{self.max}}}"
+            return f"{self.node.format_as_grammar()}{{{self.min}}}"
+        return f"{self.node.format_as_grammar()}{{{self.min},{self.max}}}"
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         base: list = []
@@ -347,11 +351,8 @@ class Star(Repetition):
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitStar(self)
 
-    def __repr__(self):
-        return f"{self.node}*"
-
-    def __str__(self):
-        return f"{self.node!s}*"
+    def format_as_grammar(self) -> str:
+        return self.node.format_as_grammar() + "*"
 
 
 class Plus(Repetition):
@@ -361,11 +362,8 @@ class Plus(Repetition):
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitPlus(self)
 
-    def __repr__(self):
-        return f"{self.node}+"
-
-    def __str__(self):
-        return f"{self.node!s}+"
+    def format_as_grammar(self) -> str:
+        return self.node.format_as_grammar() + "+"
 
 
 class Option(Repetition):
@@ -375,11 +373,8 @@ class Option(Repetition):
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitOption(self)
 
-    def __repr__(self):
-        return f"{self.node}?"
-
-    def __str__(self):
-        return f"{self.node!s}?"
+    def format_as_grammar(self) -> str:
+        return self.node.format_as_grammar() + "?"
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         yield from (self.node, TerminalNode(Terminal("")))
@@ -448,23 +443,14 @@ class NonTerminalNode(Node):
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitNonTerminalNode(self)
 
-    def __repr__(self):
+    def format_as_grammar(self) -> str:
         if self.sender is not None:
             if self.recipient is None:
-                return f"<{self.sender}:{self.symbol.__repr__()[:-1]}>"
+                return f"<{self.sender}:{(self.symbol.format_as_grammar())[:-1]}>"
             else:
-                return f"<{self.sender}:{self.recipient}:{self.symbol.__repr__()[:-1]}>"
+                return f"<{self.sender}:{self.recipient}:{(self.symbol.format_as_grammar())[:-1]}>"
         else:
-            return self.symbol.__repr__()
-
-    def __str__(self):
-        if self.sender is not None:
-            if self.recipient is None:
-                return f"<{self.sender}:{self.symbol._repr()[1:-1]}>"
-            else:
-                return f"<{self.sender}:{self.recipient}:{self.symbol._repr()[1:-1]}>"
-        else:
-            return self.symbol._repr()
+            return self.symbol.format_as_grammar()
 
     def __eq__(self, other):
         return isinstance(other, NonTerminalNode) and self.symbol == other.symbol
@@ -499,16 +485,15 @@ class TerminalNode(Node):
         max_nodes: int = 100,
         in_message: bool = False,
     ):
-        if self.symbol.is_regex:
+        if not self.symbol.is_regex:
+            parent.add_child(DerivationTree(self.symbol))
+        else:
             if self.symbol.is_type(bytes):
                 # Exrex can't do bytes, so we decode to str and back
-                instance = exrex.getone(bytes(self.symbol.value()).decode("iso-8859-1"))
-                parent.add_child(
-                    DerivationTree(Terminal(instance.encode("iso-8859-1")))
-                )
-                return
-
-            if self.symbol.is_type(str):
+                instance = exrex.getone(
+                    self.symbol.value().to_string(bytes_to_str_encoding="latin-1")
+                ).encode("latin-1")
+            elif self.symbol.is_type(str):
                 instance = exrex.getone(str(self.symbol.value()))
             elif self.symbol.is_type(NoneType):
                 instance = exrex.getone(int(self.symbol.value()))
@@ -517,17 +502,12 @@ class TerminalNode(Node):
                     f"Unsupported type: {self.symbol.value().type_}"
                 )
             parent.add_child(DerivationTree(Terminal(instance)))
-            return
-        parent.add_child(DerivationTree(self.symbol))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitTerminalNode(self)
 
-    def __repr__(self):
-        return self.symbol.__repr__()
-
-    def __str__(self):
-        return self.symbol.__str__()
+    def format_as_grammar(self) -> str:
+        return self.symbol.format_as_grammar()
 
     def __eq__(self, other):
         return isinstance(other, TerminalNode) and self.symbol == other.symbol
@@ -581,6 +561,9 @@ class CharSet(Node):
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         for char in self.chars:
             yield TerminalNode(Terminal(char))
+
+    def format_as_grammar(self) -> str:
+        return self.chars
 
 
 class NodeVisitor(abc.ABC):
@@ -1374,7 +1357,8 @@ class Grammar(NodeVisitor):
                         current_state = table_state
                         found_next_state = True
                         break
-                if str(current_tree.symbol).startswith("<*"):
+                assert isinstance(current_tree.symbol, NonTerminal)
+                if current_tree.symbol.name().startswith("<*"):
                     current_tree = Grammar.ParserDerivationTree(
                         current_state.nonterminal,
                         [*current_state.children, *current_tree.children],
@@ -1848,7 +1832,7 @@ class Grammar(NodeVisitor):
 
         def parse_forest(
             self,
-            word: str | bytes | DerivationTree,
+            word: str | bytes | int | DerivationTree,
             start: str | NonTerminal = "<start>",
             mode: ParsingMode = ParsingMode.COMPLETE,
             hookin_parent: Optional[DerivationTree] = None,
@@ -1861,10 +1845,13 @@ class Grammar(NodeVisitor):
             if isinstance(word, DerivationTree):
                 if word.contains_bytes():
                     starter_bit = (word.count_terminals() - 1) % 8
-                word = word.serialize()
+                if word.should_be_serialized_to_bytes():
+                    word = word.to_bytes()
+                else:
+                    word = word.to_string()
             if isinstance(word, int):
                 word = str(word)
-            assert isinstance(word, str) or isinstance(word, bytes)
+            assert isinstance(word, str) or isinstance(word, bytes), type(word)
 
             if isinstance(start, str):
                 start = NonTerminal(start)
@@ -2067,7 +2054,7 @@ class Grammar(NodeVisitor):
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         if self.generators[symbol] is None:
-            raise ValueError(f"{symbol}: no generator")
+            raise ValueError(f"{symbol.format_as_grammar()}: no generator")
 
         sources_: dict[Symbol, DerivationTree]
         if sources is None:
@@ -2251,7 +2238,7 @@ class Grammar(NodeVisitor):
     def __repr__(self):
         return "\n".join(
             [
-                f"{key} ::= {str(value)}{' := ' + str(self.generators[key]) if key in self.generators else ''}"
+                f"{key.name()} ::= {value.format_as_grammar()}{' := ' + str(self.generators[key]) if key in self.generators else ''}"
                 for key, value in self.rules.items()
             ]
         )
@@ -2266,7 +2253,7 @@ class Grammar(NodeVisitor):
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         return (
-            f"{symbol} ::= {self.rules[symbol]}"
+            f"{symbol.format_as_grammar()} ::= {self.rules[symbol].format_as_grammar()}"
             f"{' := ' + str(self.generators[symbol]) if symbol in self.generators else ''}"
         )
 
