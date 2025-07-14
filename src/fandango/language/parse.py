@@ -342,7 +342,7 @@ def parse_spec(
             if fandango.Fandango.parser == "cpp":
                 sa_fandango.USE_CPP_IMPLEMENTATION = True
                 try:
-                    from .parser import sa_fandango_cpp_parser  # type: ignore[attr-defined]
+                    from .parser import sa_fandango_cpp_parser  # type: ignore[attr-defined]  # noqa: F401
                 except ImportError:
                     raise ImportError(
                         "Requested C++ parser not available. "
@@ -952,7 +952,7 @@ def check_constraints_existence(
     LOGGER.debug("Checking constraints")
 
     indirect_child: dict[str, dict[str, Optional[bool]]] = {
-        k.name(): {l.name(): None for l in grammar.rules.keys()}
+        k.name(): {l.name(): None for l in grammar.rules.keys()}  # noqa: E741
         for k in grammar.rules.keys()
     }
 

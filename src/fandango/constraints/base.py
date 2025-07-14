@@ -171,14 +171,6 @@ class SoftValue(Value):
         self.optimization_goal = optimization_goal
         self.tdigest = TDigest(optimization_goal)
 
-    # def __repr__(self):
-    #     representation = repr(self.expression)
-    #     for identifier in self.searches:
-    #         representation = representation.replace(
-    #             identifier, repr(self.searches[identifier])
-    #         )
-    #     return f"SoftValue({self.optimization_goal!r}, {representation})"
-
     def format_as_grammar(self) -> str:
         representation = self.expression
         for identifier in self.searches:

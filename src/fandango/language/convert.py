@@ -41,7 +41,6 @@ from fandango.language.search import (
     SelectiveSearch,
     StarSearch,
     PopulationSearch,
-    NonTerminalSearch,
 )
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.logger import LOGGER
