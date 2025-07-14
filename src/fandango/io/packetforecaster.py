@@ -18,7 +18,7 @@ from fandango.language.grammar import (
     Star,
     CharSet,
     GrammarKeyError,
-    NodeType,
+    NodeType, ParsingMode,
 )
 from fandango.language.symbol import Terminal, NonTerminal
 from fandango.language.tree import DerivationTree
@@ -475,7 +475,7 @@ class PacketForecaster:
             for suggested_tree in self._parser.parse_multiple(
                 history_nts,
                 NonTerminal("<start>"),
-                Grammar.Parser.ParsingMode.INCOMPLETE,
+                ParsingMode.INCOMPLETE,
                 include_controlflow=True,
             ):
                 for orig_r_msg, r_msg in zip(
