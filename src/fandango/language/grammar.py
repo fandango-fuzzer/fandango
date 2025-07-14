@@ -871,6 +871,7 @@ class ParseState:
         dot: int = 0,
         children: Optional[list[DerivationTree]] = None,
         is_incomplete: bool = False,
+        incomplete_idx = 0,
     ):
         self._nonterminal = nonterminal
         self._position = position
@@ -878,6 +879,7 @@ class ParseState:
         self._dot = dot
         self.children = children or []
         self.is_incomplete = is_incomplete
+        self.incomplete_idx = incomplete_idx
         self._hash: Optional[int] = None
 
     @property
@@ -963,6 +965,7 @@ class ParseState:
             self._dot + 1,
             self.children[:],
             self.is_incomplete,
+            self.incomplete_idx,
         )
 
 
@@ -1486,6 +1489,11 @@ class Grammar(NodeVisitor):
 
             match, match_length = state.dot.check(word[w:])
             if not match:
+                match, match_length = state.dot.check(word[w:], incomplete=True)
+                if not match or match_length == 0:
+                    return False
+                state.is_incomplete = True
+
                 if self._parsing_mode != ParsingMode.INCOMPLETE or (
                     w + len(state.dot)
                 ) < len(word):
