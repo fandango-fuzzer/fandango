@@ -1513,7 +1513,7 @@ class Grammar(NodeVisitor):
             k: int,
             w: int,
             mode: ParsingMode,
-        ) -> bool:
+        ) -> tuple[bool, bool]:
             """
             Scan a byte from the input `word`.
             `state` is the current parse state.
@@ -1527,12 +1527,18 @@ class Grammar(NodeVisitor):
             assert state.dot.is_regex
 
             match, match_length = state.dot.check(word[w:])
+            incomplete_match, incomplete_match_length = state.dot.check(word[w:], incomplete=True)
+            match_could_continue = False
+            if incomplete_match and (incomplete_match_length + w) == len(word):
+                match_could_continue = True
+
             if not match:
                 if mode != self.ParsingMode.INCOMPLETE:
-                    return False
-                match, match_length = state.dot.check(word[w:], incomplete=True)
-                if not match or (match_length + w) < len(word):
-                    return False
+                    return False, match_could_continue
+                if not incomplete_match or (incomplete_match_length + w) < len(word):
+                    return False, False
+                match = incomplete_match
+                match_length = incomplete_match_length
                 state.is_incomplete = True
 
             # Found a match
@@ -1542,7 +1548,7 @@ class Grammar(NodeVisitor):
             )
             table[k + match_length].add(next_state)
             self._max_position = max(self._max_position, w + match_length)
-            return True
+            return True, match_could_continue
 
         def _rec_to_derivation_tree(
             self,
@@ -1698,7 +1704,7 @@ class Grammar(NodeVisitor):
             table = list(self._table)
             curr_table_idx = self._table_idx
             curr_word_idx = 0
-            regex_completed = True
+            save_parsing_state = True
 
             while curr_word_idx < len(word):
                 while curr_table_idx < len(table):
@@ -1742,10 +1748,11 @@ class Grammar(NodeVisitor):
                                         self._bit_position = -1
 
                                     if state.dot.is_regex:
-                                        match = self.scan_regex(
+                                        match, could_continue = self.scan_regex(
                                             state, word, table, curr_table_idx, curr_word_idx, self._parsing_mode
                                         )
-                                        # TODO: Handle case in which regex have a longer match then the current one
+                                        if could_continue:
+                                            save_parsing_state = False
                                     else:
                                         match = self.scan_bytes(
                                             state, word, table, curr_table_idx, curr_word_idx
@@ -1776,7 +1783,7 @@ class Grammar(NodeVisitor):
 
                     self.place_repetition_shortcut(table, curr_table_idx)
                     curr_table_idx += 1
-            if regex_completed:
+            if save_parsing_state:
                 self._table = table
                 self._table_idx = curr_table_idx
                 self._prefix_word = None
