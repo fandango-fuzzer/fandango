@@ -31,9 +31,6 @@ class ConstraintTest(unittest.TestCase):
         k_paths = grammar._generate_all_k_paths(3)
         print(len(k_paths))
 
-        for path in grammar._generate_all_k_paths(3):
-            print(tuple(path))
-
     def test_derivation_k_paths(self):
         with open(RESOURCES_ROOT / "grammar.fan", "r") as file:
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
@@ -50,7 +47,8 @@ class ConstraintTest(unittest.TestCase):
         tree = grammar.parse("aabb")
 
         for path in grammar.traverse_derivation(tree):
-            print(path)
+            for node in path:
+                print(node.format_as_grammar())
 
     @staticmethod
     def get_solutions(grammar, constraints, desired_solutions=1):

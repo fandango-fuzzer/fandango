@@ -252,7 +252,11 @@ class DerivationTree:
         next_nt, add_new_node = hookin_path[0]
         if add_new_node:
             self.add_child(DerivationTree(next_nt))
-        elif len(self.children) == 0 or str(self.children[-1].symbol) != next_nt.name():
+        elif (
+            len(self.children) == 0
+            or not isinstance(self.children[-1].symbol, NonTerminal)
+            or self.children[-1].symbol.name() != next_nt.name()
+        ):
             raise ValueError("Invalid hookin_path!")
         self.children[-1].append(hookin_path[1:], tree)
 
@@ -453,11 +457,6 @@ class DerivationTree:
         """
         return self._contains_type(int) or self._contains_type(bytes)
 
-    def serialize(self) -> bytes | str:
-        if self.should_be_serialized_to_bytes():
-            return self.to_bytes()
-        return self.to_string()
-
     def _contains_type(self, tp: type) -> bool:
         """
         Return true if the derivation tree contains any terminal symbols of type `tp` (say, `int` or `bytes`).
@@ -562,10 +561,10 @@ class DerivationTree:
             """
             Output the derivation tree as (specialized) grammar
             """
-            assert node.symbol.is_type(str)
             nonlocal include_position, include_value
+            assert isinstance(node.symbol, NonTerminal)
 
-            s = "  " * start_indent + f"{node.symbol} ::="
+            s = "  " * start_indent + f"{node.symbol.name()} ::="
             terminal_symbols = 0
 
             position = f"  # Position {byte_count:#06x} ({byte_count})"

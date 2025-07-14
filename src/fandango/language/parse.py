@@ -249,7 +249,9 @@ class FandangoSpec:
         s += str(self.grammar) + "\n"
         if self.constraints:
             s += "\n"
-        s += "\n".join("where " + str(constraint) for constraint in self.constraints)
+        s += "\n".join(
+            "where " + constraint.format_as_grammar() for constraint in self.constraints
+        )
         return s
 
 
@@ -492,7 +494,7 @@ def parse(
         assert STDLIB_GRAMMAR is not None
         for symbol in STDLIB_GRAMMAR.rules.keys():
             # Do not complain about unused symbols in the standard library
-            USED_SYMBOLS.add(str(symbol))
+            USED_SYMBOLS.add(symbol.name())
 
     global INCLUDES
     INCLUDES = includes
@@ -552,7 +554,7 @@ def parse(
             more_grammars = [new_grammar] + more_grammars
             # Do not complain about unused symbols in included files
             for symbol in new_grammar.rules.keys():
-                USED_SYMBOLS.add(str(symbol))
+                USED_SYMBOLS.add(symbol.name())
             for generator in new_grammar.generators.values():
                 for nonterminal in generator.nonterminals.values():
                     USED_SYMBOLS.add(nonterminal.symbol.symbol)
@@ -564,19 +566,19 @@ def parse(
 
     LOGGER.debug(f"Processing {len(grammars)} grammars")
     grammar = grammars[0]
-    LOGGER.debug(f"Grammar #1: {[str(key) for key in grammar.rules.keys()]}")
+    LOGGER.debug(f"Grammar #1: {[key.name() for key in grammar.rules.keys()]}")
     n = 2
     for g in grammars[1:]:
-        LOGGER.debug(f"Grammar #{n}: {[str(key) for key in g.rules.keys()]}")
+        LOGGER.debug(f"Grammar #{n}: {[key.name() for key in g.rules.keys()]}")
 
         for symbol in g.rules.keys():
             if symbol in grammar.rules:
-                LOGGER.info(f"Redefining {symbol}")
+                LOGGER.info(f"Redefining {symbol.name()}")
 
         grammar.update(g, prime=False)
         n += 1
 
-    LOGGER.debug(f"Final grammar: {[str(key) for key in grammar.rules.keys()]}")
+    LOGGER.debug(f"Final grammar: {[key.name() for key in grammar.rules.keys()]}")
 
     grammar.fuzzing_mode = mode
     LOGGER.debug(f"Grammar fuzzing mode: {grammar.fuzzing_mode}")
@@ -758,12 +760,12 @@ def check_grammar_definitions(
 
     LOGGER.debug("Checking grammar")
 
-    used_symbols = set()
-    undefined_symbols = set()
-    defined_symbols = set()
+    used_symbols: set[str] = set()
+    undefined_symbols: set[str] = set()
+    defined_symbols: set[str] = set()
 
     for symbol in grammar.rules.keys():
-        defined_symbols.add(str(symbol))
+        defined_symbols.add(symbol.name())
 
     if start_symbol not in defined_symbols:
         if start_symbol == "<start>":
@@ -777,7 +779,7 @@ def check_grammar_definitions(
 
     def collect_used_symbols(node: Node):
         if node.is_nonterminal:
-            used_symbols.add(str(node.symbol))  # type: ignore[attr-defined] # We're checking types manually
+            used_symbols.add(node.symbol.name())  # type: ignore[attr-defined] # We're checking types manually
         elif (
             node.node_type == NodeType.REPETITION
             or node.node_type == NodeType.STAR
@@ -814,12 +816,14 @@ def check_grammar_definitions(
             if getattr(Exception, "add_note", None):
                 # Python 3.11+ has add_note() method
                 error.add_note(
-                    f"Other undefined symbols: {', '.join(str(symbol) for symbol in undefined_symbols)}"
+                    f"Other undefined symbols: {', '.join(undefined_symbols)}"
                 )
         raise error
 
 
-def check_grammar_types(grammar: Optional[Grammar], *, start_symbol="<start>"):
+def check_grammar_types(
+    grammar: Optional[Grammar], *, start_symbol: str = "<start>"
+) -> None:
     if not grammar:
         return
 
@@ -873,7 +877,7 @@ def check_grammar_types(grammar: Optional[Grammar], *, start_symbol="<start>"):
 
             symbol_types[tree.symbol] = (None, 0, 0, 0)
             symbol_tree = grammar.rules[tree.symbol]
-            tp, min_bits, max_bits, step = get_type(symbol_tree, str(tree.symbol))
+            tp, min_bits, max_bits, step = get_type(symbol_tree, tree.symbol.name())
             symbol_types[tree.symbol] = tp, min_bits, max_bits, step
             # LOGGER.debug(f"Type of {tree.symbol!s} is {tp!r} with {min_bits}..{max_bits} bits")
             return tp, min_bits, max_bits, step
@@ -928,9 +932,7 @@ def check_grammar_types(grammar: Optional[Grammar], *, start_symbol="<start>"):
         raise FandangoValueError("Unknown node type")
 
     start_tree = grammar.rules[NonTerminal(start_symbol)]
-    _, min_start_bits, max_start_bits, start_step = get_type(
-        start_tree, str(start_symbol)
-    )
+    _, min_start_bits, max_start_bits, start_step = get_type(start_tree, start_symbol)
     if start_step > 0 and any(
         bits % 8 != 0 for bits in range(min_start_bits, max_start_bits + 1, start_step)
     ):
@@ -950,13 +952,13 @@ def check_constraints_existence(
     LOGGER.debug("Checking constraints")
 
     indirect_child: dict[str, dict[str, Optional[bool]]] = {
-        str(k): {str(l): None for l in grammar.rules.keys()}
+        k.name(): {l.name(): None for l in grammar.rules.keys()}
         for k in grammar.rules.keys()
     }
 
     defined_symbols = []
     for symbol in grammar.rules.keys():
-        defined_symbols.append(str(symbol))
+        defined_symbols.append(symbol.name())
 
     grammar_symbols = grammar.rules.keys()
     grammar_matches = re.findall(r"<([^>]*)>", str(grammar_symbols))
@@ -968,7 +970,9 @@ def check_constraints_existence(
         for value in constraint_symbols:
             # LOGGER.debug(f"Constraint {constraint}: Checking {value}")
 
-            constraint_matches = re.findall(r"<([^>]*)>", str(value))  # was <(.*?)>
+            constraint_matches = re.findall(
+                r"<([^>]*)>", value.format_as_grammar()
+            )  # was <(.*?)>
 
             missing = [
                 match for match in constraint_matches if match not in grammar_matches
@@ -1032,7 +1036,7 @@ def check_constraints_existence_children(
     # but that should not hurt us -- AZ
     finder = SymbolFinder()
     finder.visit(grammar_symbols)
-    non_terminals = [str(nt.symbol)[1:-1] for nt in finder.nonTerminalNodes]
+    non_terminals = [nt.symbol.name()[1:-1] for nt in finder.nonTerminalNodes]
 
     if symbol in non_terminals:
         indirect_child[f"<{parent}>"][f"<{symbol}>"] = True

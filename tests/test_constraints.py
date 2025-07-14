@@ -346,7 +346,7 @@ class ConstraintTest(unittest.TestCase):
         constraint = constraints[0]
 
         counter_example = grammar.parse("+05 * 0 / 96 + 10")
-        self.assertFalse(constraint.check(counter_example))
+        self.assertIsNone(counter_example)
 
         example = grammar.parse("+5 * 0 / 96 + 10")
         self.assertTrue(constraint.check(example))

@@ -320,6 +320,7 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
         input_data = f"set -f {DOCS_ROOT / 'persons.fan'}\nset\n"
         out, err, code = run_command(["fandango", "shell"], input=input_data)
         self.assertEqual(0, code)
+        self.maxDiff = 1000000
         self.assertEqual("", err)
         self.assertTrue(out.startswith("<_char> ::= r'(.|\\n)'\n"), out)
         self.assertTrue(out.endswith("<age> ::= <digit>+\n"), out)
