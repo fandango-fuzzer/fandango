@@ -34,7 +34,7 @@ def print_exception(e: Exception, exception_note: str | None = None):
 
     if "DerivationTree" in str(e):
         print(
-            "  Convert <symbol> to the expected type, say 'str(<symbol>)', 'int(<symbol>)', or 'float(<symbol>)'",
+            "  Convert <symbol> to the expected type, say 'str(<symbol>)', 'int(<symbol>)', or 'bytes(<symbol>)'",
             file=sys.stderr,
         )
 

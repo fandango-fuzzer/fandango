@@ -4,7 +4,11 @@ from typing import Any, Optional, TYPE_CHECKING, TypeVar, cast
 from collections.abc import Iterable, Iterator
 
 from fandango.language.symbol import NonTerminal, Slice, Symbol, Terminal
-from fandango.language.tree_value import TreeValue
+from fandango.language.tree_value import (
+    BYTES_TO_STRING_ENCODING,
+    STRING_TO_BYTES_ENCODING,
+    TreeValue,
+)
 
 if TYPE_CHECKING:
     import fandango
@@ -455,7 +459,7 @@ class DerivationTree:
         """
         Return true if the derivation tree should be serialized to bytes.
         """
-        return self._contains_type(int) or self._contains_type(bytes)
+        return self._contains_type(NoneType) or self._contains_type(bytes)
 
     def _contains_type(self, tp: type) -> bool:
         """
@@ -469,7 +473,7 @@ class DerivationTree:
         """
         Return true iff the derivation tree contains any bits (0 or 1).
         """
-        return self._contains_type(int)
+        return self._contains_type(NoneType)
 
     def contains_bytes(self) -> bool:
         """
@@ -477,25 +481,28 @@ class DerivationTree:
         """
         return self._contains_type(bytes)
 
-    def to_string(self, *, encoding: str = "utf-8") -> str:
+    def to_string(self, *, encoding: str = BYTES_TO_STRING_ENCODING) -> str:
         """
         Convert the derivation tree to a string.
         """
         return self.value().to_string(bytes_to_str_encoding=encoding)
 
-    def to_bits(self, *, encoding: str = "utf-8") -> str:
+    def to_bits(self, *, encoding: str = STRING_TO_BYTES_ENCODING) -> str:
         """
         Convert the derivation tree to a sequence of bits (0s and 1s).
 
         """
         return self.value().to_bits(str_to_bytes_encoding=encoding)
 
-    def to_bytes(self, encoding: str = "utf-8") -> bytes:
+    def to_bytes(self, encoding: str = STRING_TO_BYTES_ENCODING) -> bytes:
         """
         Convert the derivation tree to a sequence of bytes.
         String elements are encoded according to `encoding`.
         """
         return self.value().to_bytes(str_to_bytes_encoding=encoding)
+
+    def to_int(self, encoding: str = STRING_TO_BYTES_ENCODING) -> Optional[int]:
+        return self.value().to_int(str_to_bytes_encoding=encoding)
 
     def to_tree(self, indent: int = 0, start_indent: int = 0) -> str:
         """
@@ -636,15 +643,6 @@ class DerivationTree:
 
     def __repr__(self) -> str:
         return self.to_repr()
-
-    def to_int(self, *args: Any, **kwargs: Any) -> Optional[int]:
-        val = self.value()
-        if val is None:
-            return None
-        try:
-            return int(val, *args, **kwargs)
-        except ValueError:
-            return None
 
     def is_int(self, *args: Any, **kwargs: Any) -> bool:
         return self.to_int(*args, **kwargs) is not None
@@ -897,7 +895,6 @@ class DerivationTree:
         Return all descendants of the current node
         """
         values = [node.value() for node in self.descendants()]
-        # LOGGER.debug(f"descendant_values(): {values}")
         return values
 
     def get_index(self, target: "DerivationTree") -> int:

@@ -1,13 +1,10 @@
 from __future__ import annotations
-import re
-
-import regex
 
 from fandango.errors import FandangoValueError
 
 
-STRING_TO_BYTES_ENCODING = "latin-1"  # according to the docs
-BYTES_TO_STRING_ENCODING = "utf-8"  # according to the docs
+STRING_TO_BYTES_ENCODING = "utf-8"  # according to the docs
+BYTES_TO_STRING_ENCODING = "latin-1"  # according to the docs
 
 
 def trailing_bits_to_int(trailing_bits: list[int]) -> int:
