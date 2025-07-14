@@ -145,17 +145,6 @@ class Value(GeneticBase):
         """
         return self.searches.values()
 
-    def __str__(self):
-        representation = self.expression
-        for identifier in self.searches:
-            representation = representation.replace(
-                identifier, repr(self.searches[identifier])
-            )
-        return f"where {representation}"
-
-    def __repr__(self):
-        return self.expression
-
 
 class SoftValue(Value):
     """
