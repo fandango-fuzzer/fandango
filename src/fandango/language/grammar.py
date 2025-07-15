@@ -1461,8 +1461,8 @@ class Grammar(NodeVisitor):
 
             # Add a new table row if the bit isn't already represented
             # by a row in the parsing table
-            if bit_count != 7:
-                table.insert(k + 1, Column())
+            #if len(table) <= k + 1:
+            #    table.insert(k + 1, Column())
             table[k + 1].add(next_state)
 
             # Save the maximum position reached, so we can report errors
@@ -1740,7 +1740,10 @@ class Grammar(NodeVisitor):
             # If >= 0, indicates the next bit to be scanned (7-0)
             nr_bits_scanned = 0
             table = list(self._table)
-            table.extend([Column() for _ in range(len(char))])
+            if isinstance(char, bytes):
+                table.extend([Column() for _ in range(len(char) * 8)])
+            else:
+                table.extend([Column() for _ in range(len(char))])
             curr_table_idx = self._table_idx
             curr_word_idx = 0
             curr_bit_position = self._bit_position
