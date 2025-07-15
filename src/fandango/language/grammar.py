@@ -1461,7 +1461,7 @@ class Grammar(NodeVisitor):
 
             # Add a new table row if the bit isn't already represented
             # by a row in the parsing table
-            if len(table) <= len(word) + 1 + nr_bits_scanned:
+            if bit_count != 7:
                 table.insert(k + 1, Column())
             table[k + 1].add(next_state)
 
