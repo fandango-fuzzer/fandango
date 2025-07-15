@@ -117,11 +117,10 @@ class Node(abc.ABC):
         )
 
     @abc.abstractmethod
-    def format_as_grammar(self) -> str:
+    def format_as_spec(self) -> str:
         """
-        Format the node as a string that can be used in a grammar.
+        Format as a string that can be used in a spec file.
         """
-        raise NotImplementedError("format_as_grammar not implemented")
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         """
@@ -179,11 +178,9 @@ class Alternative(Node):
     def __len__(self):
         return len(self.alternatives)
 
-    def format_as_grammar(self) -> str:
+    def format_as_spec(self) -> str:
         return (
-            "("
-            + " | ".join(map(lambda x: x.format_as_grammar(), self.alternatives))
-            + ")"
+            "(" + " | ".join(map(lambda x: x.format_as_spec(), self.alternatives)) + ")"
         )
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
@@ -235,8 +232,8 @@ class Concatenation(Node):
     def __len__(self):
         return len(self.nodes)
 
-    def format_as_grammar(self) -> str:
-        return " ".join(map(lambda x: x.format_as_grammar(), self.nodes))
+    def format_as_spec(self) -> str:
+        return " ".join(map(lambda x: x.format_as_spec(), self.nodes))
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         yield from self.nodes
@@ -318,10 +315,10 @@ class Repetition(Node):
             prev_parent_size = parent.size()
             prev_children_len = len(parent.children)
 
-    def format_as_grammar(self) -> str:
+    def format_as_spec(self) -> str:
         if self.min == self.max:
-            return f"{self.node.format_as_grammar()}{{{self.min}}}"
-        return f"{self.node.format_as_grammar()}{{{self.min},{self.max}}}"
+            return f"{self.node.format_as_spec()}{{{self.min}}}"
+        return f"{self.node.format_as_spec()}{{{self.min},{self.max}}}"
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         base: list = []
@@ -351,8 +348,8 @@ class Star(Repetition):
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitStar(self)
 
-    def format_as_grammar(self) -> str:
-        return self.node.format_as_grammar() + "*"
+    def format_as_spec(self) -> str:
+        return self.node.format_as_spec() + "*"
 
 
 class Plus(Repetition):
@@ -362,8 +359,8 @@ class Plus(Repetition):
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitPlus(self)
 
-    def format_as_grammar(self) -> str:
-        return self.node.format_as_grammar() + "+"
+    def format_as_spec(self) -> str:
+        return self.node.format_as_spec() + "+"
 
 
 class Option(Repetition):
@@ -373,8 +370,8 @@ class Option(Repetition):
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitOption(self)
 
-    def format_as_grammar(self) -> str:
-        return self.node.format_as_grammar() + "?"
+    def format_as_spec(self) -> str:
+        return self.node.format_as_spec() + "?"
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         yield from (self.node, TerminalNode(Terminal("")))
@@ -443,14 +440,14 @@ class NonTerminalNode(Node):
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitNonTerminalNode(self)
 
-    def format_as_grammar(self) -> str:
+    def format_as_spec(self) -> str:
         if self.sender is not None:
             if self.recipient is None:
-                return f"<{self.sender}:{(self.symbol.format_as_grammar())[:-1]}>"
+                return f"<{self.sender}:{(self.symbol.format_as_spec())[:-1]}>"
             else:
-                return f"<{self.sender}:{self.recipient}:{(self.symbol.format_as_grammar())[:-1]}>"
+                return f"<{self.sender}:{self.recipient}:{(self.symbol.format_as_spec())[:-1]}>"
         else:
-            return self.symbol.format_as_grammar()
+            return self.symbol.format_as_spec()
 
     def __eq__(self, other):
         return isinstance(other, NonTerminalNode) and self.symbol == other.symbol
@@ -506,8 +503,8 @@ class TerminalNode(Node):
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitTerminalNode(self)
 
-    def format_as_grammar(self) -> str:
-        return self.symbol.format_as_grammar()
+    def format_as_spec(self) -> str:
+        return self.symbol.format_as_spec()
 
     def __eq__(self, other):
         return isinstance(other, TerminalNode) and self.symbol == other.symbol
@@ -562,7 +559,7 @@ class CharSet(Node):
         for char in self.chars:
             yield TerminalNode(Terminal(char))
 
-    def format_as_grammar(self) -> str:
+    def format_as_spec(self) -> str:
         return self.chars
 
 
@@ -2054,7 +2051,7 @@ class Grammar(NodeVisitor):
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         if self.generators[symbol] is None:
-            raise ValueError(f"{symbol.format_as_grammar()}: no generator")
+            raise ValueError(f"{symbol.format_as_spec()}: no generator")
 
         sources_: dict[Symbol, DerivationTree]
         if sources is None:
@@ -2238,7 +2235,7 @@ class Grammar(NodeVisitor):
     def __repr__(self):
         return "\n".join(
             [
-                f"{key.name()} ::= {value.format_as_grammar()}{' := ' + str(self.generators[key]) if key in self.generators else ''}"
+                f"{key.name()} ::= {value.format_as_spec()}{' := ' + str(self.generators[key]) if key in self.generators else ''}"
                 for key, value in self.rules.items()
             ]
         )
@@ -2253,7 +2250,7 @@ class Grammar(NodeVisitor):
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         return (
-            f"{symbol.format_as_grammar()} ::= {self.rules[symbol].format_as_grammar()}"
+            f"{symbol.format_as_spec()} ::= {self.rules[symbol].format_as_spec()}"
             f"{' := ' + str(self.generators[symbol]) if symbol in self.generators else ''}"
         )
 

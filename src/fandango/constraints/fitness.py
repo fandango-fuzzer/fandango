@@ -361,5 +361,7 @@ class GeneticBase(abc.ABC):
         raise RuntimeError("Not implemented, use method specific to your usecase")
 
     @abc.abstractmethod
-    def format_as_grammar(self) -> str:
-        pass
+    def format_as_spec(self) -> str:
+        """
+        Format as a string that can be used in a spec file.
+        """

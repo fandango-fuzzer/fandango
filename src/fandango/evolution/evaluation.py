@@ -108,7 +108,7 @@ class Evaluator:
                 self._checks_made += 1
             except Exception as e:
                 LOGGER.error(
-                    f"Error evaluating hard constraint {constraint.format_as_grammar()}"
+                    f"Error evaluating hard constraint {constraint.format_as_spec()}"
                 )
                 print_exception(e)
                 hard_fitness += 0.0
