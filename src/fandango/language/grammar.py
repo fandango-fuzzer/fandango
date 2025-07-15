@@ -1550,27 +1550,42 @@ class Grammar(NodeVisitor):
             assert not isinstance(state.dot.symbol, int)
             assert state.dot.is_regex
 
-            match, match_length = state.dot.check(word[w:])
-            incomplete_match, incomplete_match_length = state.dot.check(word[w:], incomplete=True)
+            check_word = word[w:]
+            if state.is_incomplete:
+                prev_terminal = state.children[-1]
+                check_word = prev_terminal.symbol.symbol + check_word
+
+            match, match_length = state.dot.check(check_word)
+            incomplete_match, incomplete_match_length = state.dot.check(check_word, incomplete=True)
             match_could_continue = False
             if incomplete_match and (incomplete_match_length + w) == len(word):
                 match_could_continue = True
 
             if not match:
-                if mode != ParsingMode.INCOMPLETE:
-                    return False, match_could_continue
                 if not incomplete_match or (incomplete_match_length + w) < len(word):
                     return False, False
-                match = incomplete_match
-                match_length = incomplete_match_length
-                state.is_incomplete = True
 
-            # Found a match
-            next_state = state.next()
-            next_state.append_child(
-                Grammar.ParserDerivationTree(Terminal(word[w : w + match_length]))
-            )
-            table[k + match_length].add(next_state)
+            if match:
+                next_state = state.next()
+                next_state.is_incomplete = False
+                next_state.incomplete_idx = 0
+                tree = Grammar.ParserDerivationTree(Terminal(check_word[:match_length]))
+                if state.is_incomplete:
+                    next_state.children[-1] = tree
+                else:
+                    next_state.append_child(tree)
+                table[k + match_length].add(next_state)
+            if incomplete_match:
+                next_state = state.copy()
+                next_state.is_incomplete = True
+                next_state.incomplete_idx = incomplete_match_length
+                tree = Grammar.ParserDerivationTree(Terminal(check_word[:incomplete_match_length]))
+                if state.is_incomplete:
+                    next_state.children[-1] = tree
+                else:
+                    next_state.append_child(tree)
+                table[k + incomplete_match_length - state.incomplete_idx].add(next_state)
+
             self._max_position = max(self._max_position, w + match_length)
             return True, match_could_continue
 
@@ -1714,14 +1729,10 @@ class Grammar(NodeVisitor):
             self._bit_position = starter_bit
             self._parsing_mode = mode
             self._hookin_parent = deepcopy(hookin_parent)
-            self._prefix_word = None
             self._clear_tmp()
 
         def consume(self, char: str | bytes):
-            if self._prefix_word is None:
-                word = char
-            else:
-                word = self._prefix_word + char
+            word = char
 
             # If >= 0, indicates the next bit to be scanned (7-0)
             nr_bits_scanned = 0
@@ -1730,17 +1741,14 @@ class Grammar(NodeVisitor):
             curr_table_idx = self._table_idx
             curr_word_idx = 0
             curr_bit_position = self._bit_position
-            save_parsing_state = True
 
             while curr_table_idx < len(table):
                 if curr_table_idx == len(table) - 1:
-                    if save_parsing_state:
-                        self._table = list(table)
-                        self._table_idx = curr_table_idx
-                        self._bit_position = curr_bit_position
-                        self._prefix_word = None
-                    else:
-                        self._prefix_word = word
+                    self._table = list(table)
+                    if len(table) > 0:
+                        self._table[-1] = deepcopy(table[-1])
+                    self._table_idx = curr_table_idx
+                    self._bit_position = curr_bit_position
                 # True iff we have processed all characters
                 # (or some bits of the last character)
                 at_end = curr_word_idx >= len(word)
@@ -1784,8 +1792,6 @@ class Grammar(NodeVisitor):
                                     match, could_continue = self.scan_regex(
                                         state, word, table, curr_table_idx, curr_word_idx, self._parsing_mode
                                     )
-                                    if could_continue:
-                                        save_parsing_state = False
                                 else:
                                     match = self.scan_bytes(
                                         state, word, table, curr_table_idx, curr_word_idx
@@ -1793,8 +1799,7 @@ class Grammar(NodeVisitor):
 
                 if self._parsing_mode == ParsingMode.INCOMPLETE and at_end:
                     for state in table[curr_table_idx]:
-                        state.is_incomplete = True
-                        if state.is_incomplete and state._dot == 0:
+                        if len(state.children) == 0:
                             continue
                         if state.nonterminal == self.implicit_start:
                             for child in state.children:
@@ -1851,7 +1856,7 @@ class Grammar(NodeVisitor):
             """
             self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
             for char in word[:-1]:
-                list(self._iter_parser.consume(char))
+                next(self._iter_parser.consume(char), None)
             yield from self._iter_parser.consume(word[-1])
 
 
