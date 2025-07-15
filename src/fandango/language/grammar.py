@@ -2151,7 +2151,6 @@ class Grammar(NodeVisitor):
         self,
         start: str | NonTerminal = "<start>",
         max_nodes: int = 50,
-        in_message: bool = False,
         prefix_node: Optional[DerivationTree] = None,
     ) -> DerivationTree:
         if isinstance(start, str):
