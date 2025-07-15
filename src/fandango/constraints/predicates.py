@@ -1,17 +1,7 @@
 # wildcard import required for usage in spec files
 from fandango.io import *  # noqa: F403
 from fandango.language.symbol import NonTerminal
-
-
-def is_int(x):
-    if isinstance(x, DerivationTree):
-        return x.is_int()
-    try:
-        int(x)
-    except ValueError:
-        return False
-    else:
-        return True
+from fandango.language.tree import DerivationTree
 
 
 def is_before(

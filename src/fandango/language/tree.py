@@ -644,9 +644,6 @@ class DerivationTree:
     def __repr__(self) -> str:
         return self.to_repr()
 
-    def is_int(self, *args: Any, **kwargs: Any) -> bool:
-        return self.to_int(*args, **kwargs) is not None
-
     def split_end(self, copy_tree: bool = True) -> "DerivationTree":
         inst = self
         if copy_tree:
