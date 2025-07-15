@@ -48,7 +48,7 @@ class ConstraintTest(unittest.TestCase):
 
         for path in grammar.traverse_derivation(tree):
             for node in path:
-                print(node.format_as_grammar())
+                print(node.format_as_spec())
 
     @staticmethod
     def get_solutions(grammar, constraints, desired_solutions=1):
