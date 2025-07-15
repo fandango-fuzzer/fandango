@@ -1499,10 +1499,14 @@ class Grammar(NodeVisitor):
 
 
             match, match_length = state.dot.check(check_word)
+            if isinstance(check_word, bytes):
+                match_length = match_length * 8
             if not match:
                 if (w + len(state.dot) - state.incomplete_idx) < len(word):
                     return False
                 match, match_length = state.dot.check(check_word, incomplete=True)
+                if isinstance(check_word, bytes):
+                    match_length = match_length * 8
                 if not match or match_length == 0:
                     return False
 
@@ -2141,7 +2145,7 @@ class Grammar(NodeVisitor):
         return tree
 
     def collapse(self, tree: Optional[DerivationTree]) -> DerivationTree:
-        return self._parser.collapse(tree)
+        return self._parser._iter_parser.collapse(tree)
 
     def fuzz(
         self,
