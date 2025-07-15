@@ -330,7 +330,7 @@ class TestExplicitSlices(unittest.TestCase):
         self.assertEqual(0, search.slices[0])
 
     def test_valid(self):
-        print(self.CONSTRAINT.format_as_grammar())
+        print(self.CONSTRAINT.format_as_spec())
         print(self.VALID_EXAMPLE.to_tree())
         self.assertTrue(self.CONSTRAINT.check(self.VALID_EXAMPLE))
 
