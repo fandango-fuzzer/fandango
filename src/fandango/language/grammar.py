@@ -1732,87 +1732,87 @@ class Grammar(NodeVisitor):
             curr_bit_position = self._bit_position
             save_parsing_state = True
 
-            while curr_word_idx < len(word):
-                while curr_table_idx < len(table):
-                    # True iff we have processed all characters
-                    # (or some bits of the last character)
-                    at_end = curr_word_idx >= len(word)
-                    for state in table[curr_table_idx]:
-                        if state.finished():
-                            if state.nonterminal == self.implicit_start:
-                                if at_end:
-                                    for child in state.children:
-                                        yield child
-
-                            self.complete(state, table, curr_table_idx)
-                        else:
-                            if not state.is_incomplete and state.next_symbol_is_nonterminal():
-                                self.predict(state, table, curr_table_idx, self._hookin_parent)
-                            else:
-                                if isinstance(state.dot.symbol, int):
-                                    # Scan a bit
-                                    if curr_bit_position < 0:
-                                        curr_bit_position = 7
-                                    match = self.scan_bit(
-                                        state, word, table, curr_table_idx, curr_word_idx, curr_bit_position,
-                                        nr_bits_scanned
-                                    )
-                                    if match:
-                                        pass
-                                else:
-                                    # Scan a regex or a byte
-                                    if 0 <= curr_bit_position <= 7:
-                                        # We are still expecting bits here:
-                                        #
-                                        # * we may have _peeked_ at a bit,
-                                        # without actually parsing it; or
-                                        # * we may have a grammar with bits
-                                        # that do not come in multiples of 8.
-                                        #
-                                        # In either case, we need to get back
-                                        # to scanning bytes here.
-                                        self._bit_position = -1
-
-                                    if state.dot.is_regex:
-                                        match, could_continue = self.scan_regex(
-                                            state, word, table, curr_table_idx, curr_word_idx, self._parsing_mode
-                                        )
-                                        if could_continue:
-                                            save_parsing_state = False
-                                    else:
-                                        match = self.scan_bytes(
-                                            state, word, table, curr_table_idx, curr_word_idx
-                                        )
-
-                    if self._parsing_mode == ParsingMode.INCOMPLETE and at_end:
-                        for state in table[curr_table_idx]:
-                            state.is_incomplete = True
-                            if state.is_incomplete and state._dot == 0:
-                                continue
-                            if state.nonterminal == self.implicit_start:
+            while curr_table_idx < len(table):
+                if curr_table_idx == len(table) - 1:
+                    if save_parsing_state:
+                        self._table = list(table)
+                        self._table_idx = curr_table_idx
+                        self._bit_position = curr_bit_position
+                        self._prefix_word = None
+                    else:
+                        self._prefix_word = word
+                # True iff we have processed all characters
+                # (or some bits of the last character)
+                at_end = curr_word_idx >= len(word)
+                for state in table[curr_table_idx]:
+                    if state.finished():
+                        if state.nonterminal == self.implicit_start:
+                            if at_end:
                                 for child in state.children:
-                                    if child not in self._incomplete:
-                                        self._incomplete.add(child)
-                                        yield child
-                            self.complete(state, table, curr_table_idx)
+                                    yield child
 
-                    if curr_bit_position >= 0:
-                        # Advance by one bit
-                        curr_bit_position -= 1
-                        nr_bits_scanned += 1
-                    if curr_bit_position < 0:
-                        # Advance to next byte
-                        curr_word_idx += 1
+                        self.complete(state, table, curr_table_idx)
+                    else:
+                        if not state.is_incomplete and state.next_symbol_is_nonterminal():
+                            self.predict(state, table, curr_table_idx, self._hookin_parent)
+                        else:
+                            if isinstance(state.dot.symbol, int):
+                                # Scan a bit
+                                if curr_bit_position < 0:
+                                    curr_bit_position = 7
+                                match = self.scan_bit(
+                                    state, word, table, curr_table_idx, curr_word_idx, curr_bit_position,
+                                    nr_bits_scanned
+                                )
+                                if match:
+                                    pass
+                            else:
+                                # Scan a regex or a byte
+                                if 0 <= curr_bit_position <= 7:
+                                    # We are still expecting bits here:
+                                    #
+                                    # * we may have _peeked_ at a bit,
+                                    # without actually parsing it; or
+                                    # * we may have a grammar with bits
+                                    # that do not come in multiples of 8.
+                                    #
+                                    # In either case, we need to get back
+                                    # to scanning bytes here.
+                                    self._bit_position = -1
 
-                    self.place_repetition_shortcut(table, curr_table_idx)
-                    curr_table_idx += 1
-            if save_parsing_state:
-                self._table = table
-                self._table_idx = curr_table_idx - 1
-                self._bit_position = curr_bit_position
-                self._prefix_word = None
-            else:
-                self._prefix_word = word
+                                if state.dot.is_regex:
+                                    match, could_continue = self.scan_regex(
+                                        state, word, table, curr_table_idx, curr_word_idx, self._parsing_mode
+                                    )
+                                    if could_continue:
+                                        save_parsing_state = False
+                                else:
+                                    match = self.scan_bytes(
+                                        state, word, table, curr_table_idx, curr_word_idx
+                                    )
+
+                if self._parsing_mode == ParsingMode.INCOMPLETE and at_end:
+                    for state in table[curr_table_idx]:
+                        state.is_incomplete = True
+                        if state.is_incomplete and state._dot == 0:
+                            continue
+                        if state.nonterminal == self.implicit_start:
+                            for child in state.children:
+                                if child not in self._incomplete:
+                                    self._incomplete.add(child)
+                                    yield child
+                        self.complete(state, table, curr_table_idx)
+
+                if curr_bit_position >= 0:
+                    # Advance by one bit
+                    curr_bit_position -= 1
+                    nr_bits_scanned += 1
+                if curr_bit_position < 0:
+                    # Advance to next byte
+                    curr_word_idx += 1
+
+                self.place_repetition_shortcut(table, curr_table_idx)
+                curr_table_idx += 1
 
         def max_position(self):
             """Return the maximum position reached during parsing."""
