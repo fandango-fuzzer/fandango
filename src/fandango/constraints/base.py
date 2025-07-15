@@ -160,11 +160,11 @@ class SoftValue(Value):
         self.optimization_goal = optimization_goal
         self.tdigest = TDigest(optimization_goal)
 
-    def format_as_grammar(self) -> str:
+    def format_as_spec(self) -> str:
         representation = self.expression
         for identifier in self.searches:
             representation = representation.replace(
-                identifier, self.searches[identifier].format_as_grammar()
+                identifier, self.searches[identifier].format_as_spec()
             )
 
         # noinspection PyUnreachableCode
@@ -251,11 +251,10 @@ class Constraint(GeneticBase, ABC):
         return result
 
     @abstractmethod
-    def format_as_grammar(self) -> str:
+    def format_as_spec(self) -> str:
         """
-        Format the constraint as a string that can be used in a grammar.
+        Format the constraint as a string that can be used in a spec file.
         """
-        raise NotImplementedError("Format as grammar not implemented")
 
     def __repr__(self):
         raise NotImplementedError(
@@ -348,11 +347,11 @@ class ExpressionConstraint(Constraint):
         self.cache[tree_hash] = fitness
         return fitness
 
-    def format_as_grammar(self) -> str:
+    def format_as_spec(self) -> str:
         representation = self.expression
         for identifier in self.searches:
             representation = representation.replace(
-                identifier, self.searches[identifier].format_as_grammar()
+                identifier, self.searches[identifier].format_as_spec()
             )
         return representation
 
@@ -560,15 +559,15 @@ class ComparisonConstraint(Constraint):
             return True
 
         LOGGER.warning(
-            f"{self.format_as_grammar()}: {self.operator.value!r}: Cannot compare {type(left).__name__!r} and {type(right).__name__!r}"
+            f"{self.format_as_spec()}: {self.operator.value!r}: Cannot compare {type(left).__name__!r} and {type(right).__name__!r}"
         )
         return True
 
-    def format_as_grammar(self) -> str:
+    def format_as_spec(self) -> str:
         representation = f"{self.left} {self.operator.value} {self.right}"
         for identifier in self.searches:
             representation = representation.replace(
-                identifier, self.searches[identifier].format_as_grammar()
+                identifier, self.searches[identifier].format_as_spec()
             )
         return representation
 
@@ -650,8 +649,8 @@ class ConjunctionConstraint(Constraint):
         self.cache[tree_hash] = fitness
         return fitness
 
-    def format_as_grammar(self) -> str:
-        return "(" + " and ".join(c.format_as_grammar() for c in self.constraints) + ")"
+    def format_as_spec(self) -> str:
+        return "(" + " and ".join(c.format_as_spec() for c in self.constraints) + ")"
 
     def accept(self, visitor: "ConstraintVisitor"):
         """
@@ -734,8 +733,8 @@ class DisjunctionConstraint(Constraint):
         self.cache[tree_hash] = fitness
         return fitness
 
-    def format_as_grammar(self) -> str:
-        return "(" + " or ".join(c.format_as_grammar() for c in self.constraints) + ")"
+    def format_as_spec(self) -> str:
+        return "(" + " or ".join(c.format_as_spec() for c in self.constraints) + ")"
 
     def accept(self, visitor: "ConstraintVisitor"):
         """
@@ -805,8 +804,8 @@ class ImplicationConstraint(Constraint):
         self.cache[tree_hash] = fitness
         return fitness
 
-    def format_as_grammar(self) -> str:
-        return f"({self.antecedent.format_as_grammar()} -> {self.consequent.format_as_grammar()})"
+    def format_as_spec(self) -> str:
+        return f"({self.antecedent.format_as_spec()} -> {self.consequent.format_as_spec()})"
 
     def accept(self, visitor: "ConstraintVisitor"):
         """
@@ -902,16 +901,14 @@ class ExistsConstraint(Constraint):
         self.cache[tree_hash] = fitness
         return fitness
 
-    def format_as_grammar(self) -> str:
+    def format_as_spec(self) -> str:
         bound = (
-            self.bound
-            if isinstance(self.bound, str)
-            else self.bound.format_as_grammar()
+            self.bound if isinstance(self.bound, str) else self.bound.format_as_spec()
         )
         if LEGACY:
-            return f"(exists {bound} in {self.search.format_as_grammar()}: {self.statement.format_as_grammar()})"
+            return f"(exists {bound} in {self.search.format_as_spec()}: {self.statement.format_as_spec()})"
         else:
-            return f"any({self.statement.format_as_grammar()} for {bound} in {self.search.format_as_grammar()})"
+            return f"any({self.statement.format_as_spec()} for {bound} in {self.search.format_as_spec()})"
 
     def accept(self, visitor: "ConstraintVisitor"):
         """
@@ -1007,16 +1004,14 @@ class ForallConstraint(Constraint):
         self.cache[tree_hash] = fitness
         return fitness
 
-    def format_as_grammar(self) -> str:
+    def format_as_spec(self) -> str:
         bound = (
-            self.bound
-            if isinstance(self.bound, str)
-            else self.bound.format_as_grammar()
+            self.bound if isinstance(self.bound, str) else self.bound.format_as_spec()
         )
         if LEGACY:
-            return f"(forall {bound} in {self.search.format_as_grammar()}: {self.statement.format_as_grammar()})"
+            return f"(forall {bound} in {self.search.format_as_spec()}: {self.statement.format_as_spec()})"
         else:
-            return f"all({self.statement.format_as_grammar()} for {bound} in {self.search.format_as_grammar()})"
+            return f"all({self.statement.format_as_spec()} for {bound} in {self.search.format_as_spec()})"
 
     def accept(self, visitor: "ConstraintVisitor"):
         """
@@ -1417,16 +1412,16 @@ class RepetitionBoundsConstraint(Constraint):
         copy_parent.set_children(new_children)
         return tree, copy_parent
 
-    def format_as_grammar(self) -> str:
+    def format_as_spec(self) -> str:
         if self.search_min is None:
             print_min, _, _ = self.expr_data_min
         else:
-            print_min = self.search_min.format_as_grammar()
+            print_min = self.search_min.format_as_spec()
         if self.search_max is None:
             print_max, _, _ = self.expr_data_max
         else:
-            print_max = self.search_max.format_as_grammar()
-        return f"RepetitionBounds({print_min} <= |{self.repetition_node.node.format_as_grammar()}| <= {print_max})"
+            print_max = self.search_max.format_as_spec()
+        return f"RepetitionBounds({print_min} <= |{self.repetition_node.node.format_as_spec()}| <= {print_max})"
 
     def accept(self, visitor: "ConstraintVisitor"):
         """Accepts a visitor to traverse the constraint structure."""

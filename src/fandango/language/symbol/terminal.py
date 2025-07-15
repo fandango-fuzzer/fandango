@@ -88,7 +88,7 @@ class Terminal(Symbol):
         else:
             return int(self._value) == word
 
-    def format_as_grammar(self) -> str:
+    def format_as_spec(self) -> str:
         if self.is_regex:
             if self.is_type(bytes):
                 symbol = repr(self._value)
@@ -113,7 +113,7 @@ class Terminal(Symbol):
         return hash((self._value, self._type))
 
     def __repr__(self) -> str:
-        return "Terminal(" + self.format_as_grammar() + ")"
+        return "Terminal(" + self.format_as_spec() + ")"
 
     def __len__(self) -> int:
         return self.count_bytes()

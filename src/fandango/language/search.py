@@ -209,9 +209,9 @@ class NonTerminalSearch(abc.ABC):
         )
 
     @abc.abstractmethod
-    def format_as_grammar(self) -> str:
+    def format_as_spec(self) -> str:
         """
-        Format the search as a grammar.
+        Format as a string that can be used in a spec file.
         """
 
     @abc.abstractmethod
@@ -274,8 +274,8 @@ class LengthSearch(NonTerminalSearch):
             )
         ]
 
-    def format_as_grammar(self) -> str:
-        return f"|{self.value.format_as_grammar()}|"
+    def format_as_spec(self) -> str:
+        return f"|{self.value.format_as_spec()}|"
 
     def get_access_points(self):
         return self.value.get_access_points()
@@ -318,7 +318,7 @@ class RuleSearch(NonTerminalSearch):
     def get_access_points(self):
         return [self.symbol]
 
-    def format_as_grammar(self) -> str:
+    def format_as_spec(self) -> str:
         return repr(self.symbol)
 
 
@@ -367,8 +367,8 @@ class AttributeSearch(NonTerminalSearch):
                 )
         return targets
 
-    def format_as_grammar(self) -> str:
-        return f"{self.base.format_as_grammar()}.{self.attribute.format_as_grammar()}"
+    def format_as_spec(self) -> str:
+        return f"{self.base.format_as_spec()}.{self.attribute.format_as_spec()}"
 
     def get_access_points(self):
         return self.attribute.get_access_points()
@@ -419,8 +419,8 @@ class DescendantAttributeSearch(NonTerminalSearch):
                 )
         return targets
 
-    def format_as_grammar(self) -> str:
-        return f"{self.base.format_as_grammar()}..{self.attribute.format_as_grammar()}"
+    def format_as_spec(self) -> str:
+        return f"{self.base.format_as_spec()}..{self.attribute.format_as_spec()}"
 
     def get_access_points(self):
         return self.attribute.get_access_points()
@@ -474,7 +474,7 @@ class ItemSearch(NonTerminalSearch):
             self.base.find_direct(tree, scope=scope, population=population)
         )
 
-    def format_as_grammar(self) -> str:
+    def format_as_spec(self) -> str:
         slice_reprs = []
         for slice_ in self.slices:
             if isinstance(slice_, slice):
@@ -489,7 +489,7 @@ class ItemSearch(NonTerminalSearch):
                 slice_reprs.append(slice_repr)
             else:
                 slice_reprs.append(repr(slice_))
-        return f"{self.base.format_as_grammar()}[{', '.join(slice_reprs)}]"
+        return f"{self.base.format_as_spec()}[{', '.join(slice_reprs)}]"
 
     def get_access_points(self):
         return self.base.get_access_points()
@@ -554,7 +554,7 @@ class SelectiveSearch(NonTerminalSearch):
         ret = self._find(self.base.find_direct(tree, scope=scope, population=None))
         return ret
 
-    def format_as_grammar(self) -> str:
+    def format_as_spec(self) -> str:
         slice_reprs: list[str] = []
         for symbol, is_direct, items in zip(*self.symbols, self.slices):
             slice_repr = f"{'' if is_direct else '*'}{repr(symbol)}"
@@ -571,7 +571,7 @@ class SelectiveSearch(NonTerminalSearch):
                 else:
                     slice_reprs += repr(items)
             slice_reprs.append(slice_repr)
-        return f"{self.base.format_as_grammar()}{{{', '.join(slice_reprs)}}}"
+        return f"{self.base.format_as_spec()}{{{', '.join(slice_reprs)}}}"
 
     def get_access_points(self):
         return [symbol for symbol, _ in self.symbols]
@@ -645,8 +645,8 @@ class StarSearch(NonTerminalSearch):
         )
         return [TreeList(trees)]
 
-    def format_as_grammar(self) -> str:
-        return f"*{self.base.format_as_grammar()}"
+    def format_as_spec(self) -> str:
+        return f"*{self.base.format_as_spec()}"
 
     def get_access_points(self) -> list[NonTerminal]:
         return self.base.get_access_points()
@@ -725,8 +725,8 @@ class PopulationSearch(NonTerminalSearch):
         )
         return [TreeList(trees)]
 
-    def format_as_grammar(self) -> str:
-        return f"**{self.base.format_as_grammar()}"
+    def format_as_spec(self) -> str:
+        return f"**{self.base.format_as_spec()}"
 
     def get_access_points(self) -> list[NonTerminal]:
         return self.base.get_access_points()

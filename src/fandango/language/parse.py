@@ -250,7 +250,7 @@ class FandangoSpec:
         if self.constraints:
             s += "\n"
         s += "\n".join(
-            "where " + constraint.format_as_grammar() for constraint in self.constraints
+            "where " + constraint.format_as_spec() for constraint in self.constraints
         )
         return s
 
@@ -971,7 +971,7 @@ def check_constraints_existence(
             # LOGGER.debug(f"Constraint {constraint}: Checking {value}")
 
             constraint_matches = re.findall(
-                r"<([^>]*)>", value.format_as_grammar()
+                r"<([^>]*)>", value.format_as_spec()
             )  # was <(.*?)>
 
             missing = [
