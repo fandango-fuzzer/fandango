@@ -1732,7 +1732,9 @@ class Grammar(NodeVisitor):
             self._hookin_parent = deepcopy(hookin_parent)
             self._clear_tmp()
 
-        def consume(self, char: str | bytes):
+        def consume(self, char: str | bytes | int):
+            if isinstance(char, int):
+                char = bytes([char])
             word = char
 
             # If >= 0, indicates the next bit to be scanned (7-0)
