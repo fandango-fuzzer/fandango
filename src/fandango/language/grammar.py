@@ -1537,7 +1537,7 @@ class Grammar(NodeVisitor):
             k: int,
             w: int,
             mode: ParsingMode,
-        ) -> tuple[bool, bool]:
+        ) -> bool:
             """
             Scan a byte from the input `word`.
             `state` is the current parse state.
@@ -1551,19 +1551,20 @@ class Grammar(NodeVisitor):
             assert state.dot.is_regex
 
             check_word = word[w:]
+            prev_terminal_word = None
             if state.is_incomplete:
-                prev_terminal = state.children[-1]
-                check_word = prev_terminal.symbol.symbol + check_word
+                prev_terminal_word = state.children[-1].symbol.symbol
+                check_word = prev_terminal_word + check_word
 
             match, match_length = state.dot.check(check_word)
+            if prev_terminal_word is not None and match and match_length <= len(prev_terminal_word):
+                match = False
+                match_length = 0
             incomplete_match, incomplete_match_length = state.dot.check(check_word, incomplete=True)
-            match_could_continue = False
-            if incomplete_match and (incomplete_match_length + w) == len(word):
-                match_could_continue = True
 
             if not match:
                 if not incomplete_match or (incomplete_match_length + w) < len(word):
-                    return False, False
+                    return False
 
             if match:
                 next_state = state.next()
@@ -1574,7 +1575,7 @@ class Grammar(NodeVisitor):
                     next_state.children[-1] = tree
                 else:
                     next_state.append_child(tree)
-                table[k + match_length].add(next_state)
+                table[k + match_length - state.incomplete_idx].add(next_state)
             if incomplete_match:
                 next_state = state.copy()
                 next_state.is_incomplete = True
@@ -1587,7 +1588,7 @@ class Grammar(NodeVisitor):
                 table[k + incomplete_match_length - state.incomplete_idx].add(next_state)
 
             self._max_position = max(self._max_position, w + match_length)
-            return True, match_could_continue
+            return True
 
         def _rec_to_derivation_tree(
             self,
@@ -1789,7 +1790,7 @@ class Grammar(NodeVisitor):
                                     self._bit_position = -1
 
                                 if state.dot.is_regex:
-                                    match, could_continue = self.scan_regex(
+                                    match = self.scan_regex(
                                         state, word, table, curr_table_idx, curr_word_idx, self._parsing_mode
                                     )
                                 else:
@@ -2229,7 +2230,7 @@ class Grammar(NodeVisitor):
 
     def max_position(self):
         """Return the maximum position reached during last parsing."""
-        return self._parser.max_position()
+        return self._parser._iter_parser.max_position()
 
     def __contains__(self, item: str | NonTerminal):
         if isinstance(item, str):
