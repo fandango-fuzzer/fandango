@@ -18,7 +18,8 @@ from fandango.language.grammar import (
     Star,
     CharSet,
     GrammarKeyError,
-    NodeType, ParsingMode,
+    NodeType,
+    ParsingMode,
 )
 from fandango.language.symbol import Terminal, NonTerminal
 from fandango.language.tree import DerivationTree
