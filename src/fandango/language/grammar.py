@@ -1913,10 +1913,7 @@ class Grammar(NodeVisitor):
             if `allow_incomplete` is True, the function will return trees even if the input ends prematurely.
             """
             self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
-            # yield from self._iter_parser.consume(word)
-            for char in word[:-1]:
-                next(self._iter_parser.consume(char), None)
-            yield from self._iter_parser.consume(word[-1])
+            yield from self._iter_parser.consume(word)
 
         def parse_forest(
             self,
