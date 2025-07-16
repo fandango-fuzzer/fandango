@@ -59,7 +59,12 @@ from ansi_styles import ansiStyles as styles
 from fandango import Fandango
 from fandango.language.grammar import Grammar, FuzzingMode
 from fandango.language.parse import parse, clear_cache, cache_dir
-from fandango.logger import LOGGER, print_exception
+from fandango.logger import (
+    LOGGER,
+    print_exception,
+    set_visualization,
+    clear_visualization,
+)
 
 from fandango.converters.antlr.ANTLRFandangoConverter import ANTLRFandangoConverter
 from fandango.converters.bt.BTFandangoConverter import (
@@ -256,6 +261,12 @@ def get_parser(in_command_line: bool = True) -> argparse.ArgumentParser:
         type=str,
         help="Directory or ZIP archive with initial population.",
         default=None,
+    )
+    algorithm_group.add_argument(
+        "--progress-bar",
+        choices=["on", "off", "auto"],
+        default="auto",
+        help="Whether to show the progress bar. 'auto' (default) shows the progress bar only if stderr is a terminal.",
     )
 
     # Shared Settings
@@ -880,6 +891,18 @@ def make_fandango_settings(
     elif args.verbose and args.verbose > 1:
         LOGGER.setLevel(logging.DEBUG)  # Even more info
 
+    if hasattr(args, "progress_bar") and args.progress_bar is not None:
+        match args.progress_bar:
+            case "on":
+                set_visualization(True)
+            case "off":
+                set_visualization(False)
+            case "auto":
+                if args.infinite:
+                    set_visualization(False)
+                else:
+                    set_visualization(None)
+
     if hasattr(args, "initial_population") and args.initial_population is not None:
         settings["initial_population"] = extract_initial_population(
             args.initial_population
@@ -1184,6 +1207,7 @@ def output_solution(
 
     # Default
     if output_on_stdout:
+        clear_visualization()
         output_solution_to_stdout(solution, args, file_mode)
 
 
