@@ -48,8 +48,9 @@ SA_FandangoTranslator::~SA_FandangoTranslator() {
     Py_XDECREF(Rs_sliceContext_cls);
     Py_XDECREF(PythonContext_cls);
     Py_XDECREF(Python_tagContext_cls);
-    Py_XDECREF(Grammar_selectorContext_cls);
     Py_XDECREF(Grammar_settingContext_cls);
+    Py_XDECREF(Grammar_selectorContext_cls);
+    Py_XDECREF(Grammar_setting_kv_pairContext_cls);
     Py_XDECREF(Grammar_setting_keyContext_cls);
     Py_XDECREF(Grammar_setting_valueContext_cls);
     Py_XDECREF(Python_fileContext_cls);
@@ -480,15 +481,21 @@ antlrcpp::Any SA_FandangoTranslator::visitPython_tag(FandangoParser::Python_tagC
     return py_ctx;
 }
 
+antlrcpp::Any SA_FandangoTranslator::visitGrammar_setting(FandangoParser::Grammar_settingContext *ctx){
+    if(!Grammar_settingContext_cls) Grammar_settingContext_cls = PyObject_GetAttrString(translator->parser_cls, "Grammar_settingContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Grammar_settingContext_cls);
+    return py_ctx;
+}
+
 antlrcpp::Any SA_FandangoTranslator::visitGrammar_selector(FandangoParser::Grammar_selectorContext *ctx){
     if(!Grammar_selectorContext_cls) Grammar_selectorContext_cls = PyObject_GetAttrString(translator->parser_cls, "Grammar_selectorContext");
     PyObject *py_ctx = translator->convert_ctx(this, ctx, Grammar_selectorContext_cls);
     return py_ctx;
 }
 
-antlrcpp::Any SA_FandangoTranslator::visitGrammar_setting(FandangoParser::Grammar_settingContext *ctx){
-    if(!Grammar_settingContext_cls) Grammar_settingContext_cls = PyObject_GetAttrString(translator->parser_cls, "Grammar_settingContext");
-    PyObject *py_ctx = translator->convert_ctx(this, ctx, Grammar_settingContext_cls);
+antlrcpp::Any SA_FandangoTranslator::visitGrammar_setting_kv_pair(FandangoParser::Grammar_setting_kv_pairContext *ctx){
+    if(!Grammar_setting_kv_pairContext_cls) Grammar_setting_kv_pairContext_cls = PyObject_GetAttrString(translator->parser_cls, "Grammar_setting_kv_pairContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Grammar_setting_kv_pairContext_cls);
     return py_ctx;
 }
 
