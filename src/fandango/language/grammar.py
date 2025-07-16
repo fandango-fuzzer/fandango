@@ -1423,7 +1423,6 @@ class Grammar(NodeVisitor):
             k: int,
             w: int,
             bit_count: int,
-            nr_bits_scanned: int,
         ) -> bool:
             """
             Scan a bit from the input `word`.
@@ -1746,7 +1745,6 @@ class Grammar(NodeVisitor):
             word = char
 
             # If >= 0, indicates the next bit to be scanned (7-0)
-            nr_bits_scanned = 0
             table = list(self._table)
             if isinstance(char, bytes):
                 table.extend([Column() for _ in range(len(char) * 8)])
@@ -1783,8 +1781,7 @@ class Grammar(NodeVisitor):
                                 if curr_bit_position < 0:
                                     curr_bit_position = 7
                                 match = self.scan_bit(
-                                    state, word, table, curr_table_idx, curr_word_idx, curr_bit_position,
-                                    nr_bits_scanned
+                                    state, word, table, curr_table_idx, curr_word_idx, curr_bit_position
                                 )
                                 if match:
                                     pass
@@ -1825,7 +1822,6 @@ class Grammar(NodeVisitor):
                 if curr_bit_position >= 0:
                     # Advance by one bit
                     curr_bit_position -= 1
-                    nr_bits_scanned += 1
                 if curr_bit_position < 0:
                     # Advance to next byte
                     curr_word_idx += 1
