@@ -1565,7 +1565,9 @@ class Grammar(NodeVisitor):
                 match = False
                 match_length = 0
             incomplete_match, incomplete_match_length = state.dot.check(check_word, incomplete=True)
-
+            if isinstance(check_word, bytes):
+                match_length = match_length * 8
+                incomplete_match_length = incomplete_match_length * 8
             if not match:
                 if not incomplete_match or (incomplete_match_length + w) < len(word):
                     return False
