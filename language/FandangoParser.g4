@@ -77,7 +77,7 @@ char_set
 // constraint part
 constraint
     : INDENT* WHERE implies DEDENT*
-    | INDENT* SETTING grammar_selector grammar_setting (SPACES grammar_setting)* DEDENT*
+    | INDENT* SETTING grammar_setting DEDENT*
     | INDENT* MINIMIZING expr (';' | NEWLINE+ | EOF) DEDENT*
     | INDENT* MAXIMIZING expr (';' | NEWLINE+ | EOF) DEDENT*
     | implies ';' // deprecated
@@ -202,11 +202,15 @@ python_tag:
     (NEWLINE* (stmt) NEWLINE*)
     ;
 
+grammar_setting:
+    grammar_selector grammar_setting_kv_pair (SPACES grammar_setting_kv_pair)*
+    ;
+
 grammar_selector:
     nonterminal
     ;
 
-grammar_setting:
+grammar_setting_kv_pair:
     grammar_setting_key '='? grammar_setting_value
     ;
 

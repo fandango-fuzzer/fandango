@@ -163,11 +163,15 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitGrammar_setting(FandangoParser::Grammar_settingContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitGrammar_selector(FandangoParser::Grammar_selectorContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual std::any visitGrammar_setting(FandangoParser::Grammar_settingContext *ctx) override {
+  virtual std::any visitGrammar_setting_kv_pair(FandangoParser::Grammar_setting_kv_pairContext *ctx) override {
     return visitChildren(ctx);
   }
 
