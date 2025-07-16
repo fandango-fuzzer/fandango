@@ -1499,14 +1499,13 @@ class Grammar(NodeVisitor):
 
 
             match, match_length = state.dot.check(check_word)
+            table_idx_multiplier = 1
             if isinstance(check_word, bytes):
-                match_length = match_length * 8
+                table_idx_multiplier = 8
             if not match:
                 if (w + len(state.dot) - state.incomplete_idx) < len(word):
                     return False
                 match, match_length = state.dot.check(check_word, incomplete=True)
-                if isinstance(check_word, bytes):
-                    match_length = match_length * 8
                 if not match or match_length == 0:
                     return False
 
@@ -1527,7 +1526,7 @@ class Grammar(NodeVisitor):
                     next_state.children[-1] = tree
                 else:
                     next_state.append_child(tree)
-            table[k + match_length - state.incomplete_idx].add(next_state)
+            table[k + ((match_length - state.incomplete_idx) * table_idx_multiplier)].add(next_state)
             # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
             self._max_position = max(self._max_position, w + match_length)
 
@@ -1560,14 +1559,17 @@ class Grammar(NodeVisitor):
                 prev_terminal_word = state.children[-1].symbol.symbol
                 check_word = prev_terminal_word + check_word
 
+            table_idx_multiplier = 1
+            if isinstance(check_word, bytes):
+                table_idx_multiplier = 8
+
             match, match_length = state.dot.check(check_word)
+            table_offset = match_length
             if prev_terminal_word is not None and match and match_length <= len(prev_terminal_word):
                 match = False
                 match_length = 0
             incomplete_match, incomplete_match_length = state.dot.check(check_word, incomplete=True)
-            if isinstance(check_word, bytes):
-                match_length = match_length * 8
-                incomplete_match_length = incomplete_match_length * 8
+            incomplete_table_offset = incomplete_match_length
             if not match:
                 if not incomplete_match or (incomplete_match_length + w) < len(word):
                     return False
@@ -1581,7 +1583,7 @@ class Grammar(NodeVisitor):
                     next_state.children[-1] = tree
                 else:
                     next_state.append_child(tree)
-                table[k + match_length - state.incomplete_idx].add(next_state)
+                table[k + ((table_offset - state.incomplete_idx) * table_idx_multiplier)].add(next_state)
             if incomplete_match:
                 next_state = state.copy()
                 next_state.is_incomplete = True
@@ -1591,7 +1593,7 @@ class Grammar(NodeVisitor):
                     next_state.children[-1] = tree
                 else:
                     next_state.append_child(tree)
-                table[k + incomplete_match_length - state.incomplete_idx].add(next_state)
+                table[k + ((incomplete_table_offset - state.incomplete_idx) * table_idx_multiplier)].add(next_state)
 
             self._max_position = max(self._max_position, w + match_length)
             return True
@@ -1829,7 +1831,14 @@ class Grammar(NodeVisitor):
                     curr_word_idx += 1
 
                 self.place_repetition_shortcut(table, curr_table_idx)
-                curr_table_idx += 1
+
+                if isinstance(char, bytes) and curr_bit_position < 0:
+                    if curr_table_idx % 8 == 0:
+                        curr_table_idx += 8
+                    else:
+                        curr_table_idx += -curr_table_idx % 8
+                else:
+                    curr_table_idx += 1
 
         def max_position(self):
             """Return the maximum position reached during parsing."""
@@ -1867,6 +1876,7 @@ class Grammar(NodeVisitor):
             if `allow_incomplete` is True, the function will return trees even if the input ends prematurely.
             """
             self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
+            #yield from self._iter_parser.consume(word)
             for char in word[:-1]:
                 next(self._iter_parser.consume(char), None)
             yield from self._iter_parser.consume(word[-1])
@@ -1964,6 +1974,9 @@ class Grammar(NodeVisitor):
                 include_controlflow=include_controlflow,
             )
             return next(tree_gen, None)
+
+        def collapse(self, tree: Optional[DerivationTree]) -> DerivationTree:
+            return self._iter_parser.collapse(tree)
 
     def __init__(
         self,
@@ -2147,7 +2160,7 @@ class Grammar(NodeVisitor):
         return tree
 
     def collapse(self, tree: Optional[DerivationTree]) -> DerivationTree:
-        return self._parser._iter_parser.collapse(tree)
+        return self._parser.collapse(tree)
 
     def fuzz(
         self,
