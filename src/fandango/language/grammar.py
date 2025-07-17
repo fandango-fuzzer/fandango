@@ -1308,6 +1308,19 @@ class Grammar(NodeVisitor):
                 )
             ]
 
+        def can_continue(self):
+            if len(self._table) <= 1:
+                # Assume that an unstarted parse can continue
+                return True
+            table = list(self._table)
+            table[self._table_idx] = deepcopy(table[self._table_idx])
+
+            for state in table[-1]:
+                if state.finished():
+                    self.complete(state, table, self._table_idx)
+
+            return any(filter(lambda state: state.is_incomplete or not state.finished(), table[self._table_idx]))
+
         def predict(
             self,
             state: ParseState,
