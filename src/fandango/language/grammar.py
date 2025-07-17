@@ -15,6 +15,7 @@ import exrex
 from fandango.errors import FandangoValueError, FandangoParseError
 from fandango.language.tree import DerivationTree
 from fandango.language.symbol import Symbol, NonTerminal, Terminal, Slice
+from fandango.language.tree_value import TreeValue
 
 if typing.TYPE_CHECKING:
     from fandango.constraints.base import RepetitionBoundsConstraint
@@ -909,7 +910,7 @@ class ParseState:
         return self._symbols
 
     @property
-    def dot(self):
+    def dot(self) -> Optional[Symbol]:
         return self.symbols[self._dot][0] if self._dot < len(self.symbols) else None
 
     @property
@@ -982,17 +983,14 @@ class ParseState:
 
 class Column:
     def __init__(self, states: Optional[list[ParseState]] = None):
-        self.states = states or []
+        self.states: list[ParseState] = states or []
         self.dot_map = dict[NonTerminal, list[ParseState]]()
         self.unique = set(self.states)
         for state in self.states:
             self.dot_map[state.nonterminal].append(state)
 
     def __iter__(self):
-        index = 0
-        while index < len(self.states):
-            yield self.states[index]
-            index += 1
+        yield from self.states
 
     def __len__(self):
         return len(self.states)
@@ -1318,7 +1316,7 @@ class Grammar(NodeVisitor):
             if len(self._table) <= 1:
                 # Assume that an unstarted parse can continue
                 return True
-            table = list(self._table)
+            table: list[Column] = list(self._table)
             table[self._table_idx] = deepcopy(table[self._table_idx])
 
             for state in table[-1]:
@@ -1326,7 +1324,7 @@ class Grammar(NodeVisitor):
                     self.complete(state, table, self._table_idx)
 
             return any(
-                filter(
+                map(
                     lambda state: state.is_incomplete or not state.finished(),
                     table[self._table_idx],
                 )
@@ -1511,7 +1509,7 @@ class Grammar(NodeVisitor):
             Return True if a byte was matched, False otherwise.
             """
 
-            assert not state.dot.is_type(NoneType)
+            assert not state.dot.is_type(int)
             assert not state.dot.is_regex
 
             # LOGGER.debug(f"Checking byte(s) {state.dot!r} at position {w:#06x} ({w}) {word[w:]!r}")
@@ -1519,14 +1517,26 @@ class Grammar(NodeVisitor):
             check_word = word[w:]
             if state.is_incomplete:
                 prev_terminal = state.children[-1]
-                check_word = prev_terminal.symbol.symbol + check_word
+                prev_val = prev_terminal.symbol.value()
+                prev_val_raw: str|bytes
+                if prev_val.is_type(bytes):
+                    prev_val_raw = bytes(prev_val)
+                    check_word = bytes(TreeValue(prev_val_raw).append(TreeValue(check_word)))
+                else:
+                    prev_val_raw = str(prev_val)
+                    check_word = str(TreeValue(prev_val_raw).append(TreeValue(check_word)))
+            if state.dot.is_type(bytes):
+                dot_len = len(bytes(state.dot.value()))
+            else:
+                dot_len = len(str(state.dot.value()))
 
             match, match_length = state.dot.check(check_word)
             table_idx_multiplier = 1
             if isinstance(check_word, bytes):
                 table_idx_multiplier = 8
+
             if not match:
-                if (w + len(state.dot) - state.incomplete_idx) < len(word):
+                if (w + dot_len - state.incomplete_idx) < len(word):
                     return False
                 match, match_length = state.dot.check(check_word, incomplete=True)
                 if not match or match_length == 0:
@@ -1579,10 +1589,18 @@ class Grammar(NodeVisitor):
             assert state.dot.is_regex
 
             check_word = word[w:]
-            prev_terminal_word = None
+            prev_match_length = 0
             if state.is_incomplete:
-                prev_terminal_word = state.children[-1].symbol.symbol
-                check_word = prev_terminal_word + check_word
+                prev_terminal = state.children[-1]
+                prev_val = prev_terminal.symbol.value()
+                prev_val_raw: str|bytes
+                if prev_val.is_type(bytes):
+                    prev_val_raw = bytes(prev_val)
+                    check_word = bytes(TreeValue(prev_val_raw).append(TreeValue(check_word)))
+                else:
+                    prev_val_raw = str(prev_val)
+                    check_word = str(TreeValue(prev_val_raw).append(TreeValue(check_word)))
+                prev_match_length = len(prev_val_raw)
 
             table_idx_multiplier = 1
             if isinstance(check_word, bytes):
@@ -1591,9 +1609,8 @@ class Grammar(NodeVisitor):
             match, match_length = state.dot.check(check_word)
             table_offset = match_length
             if (
-                prev_terminal_word is not None
-                and match
-                and match_length <= len(prev_terminal_word)
+                    match
+                and match_length <= prev_match_length
             ):
                 match = False
                 match_length = 0
