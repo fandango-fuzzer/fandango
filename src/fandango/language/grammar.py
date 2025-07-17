@@ -1,26 +1,27 @@
 import abc
+import copy
 import enum
 import random
 import re
 import time
-from types import NoneType
-import typing
+from collections.abc import Generator, Iterator
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Optional, Union, cast
-from collections.abc import Generator, Iterator
+from thefuzz import process as thefuzz_process
+from types import NoneType
+from typing import Any, Optional, Union, cast, TYPE_CHECKING
 
 import exrex
 
 from fandango.errors import FandangoValueError, FandangoParseError
 from fandango.language.tree import DerivationTree
 from fandango.language.symbol import Symbol, NonTerminal, Terminal, Slice
+from fandango.logger import LOGGER
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from fandango.constraints.base import RepetitionBoundsConstraint
-
-
-from thefuzz import process as thefuzz_process
+else:
+    RepetitionBoundsConstraint = object
 
 
 MAX_REPETITIONS = 5
@@ -57,12 +58,65 @@ class GeneratorParserValueError(ValueError):
     pass
 
 
+class NodeSettings:
+    def __init__(
+        self,
+        havoc_probability: Optional[float] = None,
+        max_stack_pow: Optional[int] = None,
+    ):
+        self._havoc_probability = havoc_probability
+        self._max_stack_pow = max_stack_pow
+
+    @property
+    def havoc_probability(self) -> float:
+        return self._havoc_probability or 0.0
+
+    @property
+    def max_stack_pow(self) -> int:
+        return self._max_stack_pow or 7
+
+    def update(self, other: "NodeSettings | None") -> "NodeSettings":
+        if other is None:
+            return self
+
+        if other._havoc_probability is not None:
+            if self._havoc_probability is not None:
+                LOGGER.warning("Overriding havoc_probability with a different value")
+            self._havoc_probability = other._havoc_probability
+        if other._max_stack_pow is not None:
+            if self._max_stack_pow is not None:
+                LOGGER.warning("Overriding max_stack_pow with a different value")
+            self._max_stack_pow = other._max_stack_pow
+
+        return self
+
+
+class GrammarSetting:
+    def __init__(self, selector: str, rules: dict[str, Any]):
+        self._selector = selector
+        self._node_settings = NodeSettings(**rules)
+
+    def _matches(self, node: "Node") -> bool:
+        return isinstance(node, NonTerminal) and self._selector == node.name()
+
+    def settings_for(self, node: "Node") -> Optional[NodeSettings]:
+        if not self._matches(node):
+            return None
+        return copy.deepcopy(self._node_settings)
+
+
 class Node(abc.ABC):
     def __init__(
-        self, node_type: NodeType, distance_to_completion: float = float("inf")
+        self,
+        node_type: NodeType,
+        grammar_settings: list[GrammarSetting],
+        distance_to_completion: float = float("inf"),
     ):
         self._node_type = node_type
         self.distance_to_completion = distance_to_completion
+        self._settings = NodeSettings()
+        for setting in grammar_settings:
+            self._settings.update(setting.settings_for(self))
 
     @property
     def node_type(self):
@@ -75,6 +129,10 @@ class Node(abc.ABC):
     @property
     def is_nonterminal(self) -> bool:
         return self.node_type == NodeType.NON_TERMINAL
+
+    @property
+    def settings(self) -> NodeSettings:
+        return self._settings
 
     def fuzz(
         self,
@@ -133,8 +191,13 @@ class Node(abc.ABC):
 
 
 class Alternative(Node):
-    def __init__(self, alternatives: list[Node], id: str = ""):
-        super().__init__(NodeType.ALTERNATIVE)
+    def __init__(
+        self,
+        alternatives: list[Node],
+        grammar_settings: list[GrammarSetting],
+        id: str = "",
+    ):
+        super().__init__(NodeType.ALTERNATIVE, grammar_settings)
         self.id = id
         self.alternatives = alternatives
 
@@ -188,8 +251,13 @@ class Alternative(Node):
 
 
 class Concatenation(Node):
-    def __init__(self, nodes: list[Node], id: str = ""):
-        super().__init__(NodeType.CONCATENATION)
+    def __init__(
+        self,
+        nodes: list[Node],
+        grammar_settings: list[GrammarSetting],
+        id: str = "",
+    ):
+        super().__init__(NodeType.CONCATENATION, grammar_settings)
         self.id = id
         self.nodes = nodes
 
@@ -241,14 +309,20 @@ class Concatenation(Node):
 
 class Repetition(Node):
     def __init__(
-        self, node: Node, id: str = "", min_: int = 0, max_: Optional[int] = None
+        self,
+        node: Node,
+        grammar_settings: list[GrammarSetting],
+        id: str = "",
+        min_: int = 0,
+        max_: Optional[int] = None,
     ):
-        super().__init__(NodeType.REPETITION)
+        super().__init__(NodeType.REPETITION, grammar_settings)
+        self._grammar_settings = grammar_settings
         self.id = id
         self.min = min_
         self._max = max_
         self.node = node
-        self.bounds_constraint: Optional["RepetitionBoundsConstraint"] = None
+        self.bounds_constraint: Optional[RepetitionBoundsConstraint] = None
         self.iteration = 0
         if min_ < 0:
             raise FandangoValueError(
@@ -323,15 +397,16 @@ class Repetition(Node):
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         base: list = []
         if self.min == 0:
-            base.append(TerminalNode(Terminal("")))
+            base.append(TerminalNode(Terminal(""), self._grammar_settings))
         if self.min <= 1 <= self.max:
             base.append(self.node)
         yield Alternative(
             base
             + [
-                Concatenation([self.node] * r)
+                Concatenation([self.node] * r, self._grammar_settings)
                 for r in range(max(2, self.min), self.max + 1)
-            ]
+            ],
+            self._grammar_settings,
         )
 
     def children(self):
@@ -342,8 +417,13 @@ class Repetition(Node):
 
 
 class Star(Repetition):
-    def __init__(self, node: Node, id: str = ""):
-        super().__init__(node, id, min_=0)
+    def __init__(
+        self,
+        node: Node,
+        grammar_settings: list[GrammarSetting],
+        id: str = "",
+    ):
+        super().__init__(node, grammar_settings, id, min_=0)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitStar(self)
@@ -353,8 +433,13 @@ class Star(Repetition):
 
 
 class Plus(Repetition):
-    def __init__(self, node: Node, id: str = ""):
-        super().__init__(node, id, min_=1)
+    def __init__(
+        self,
+        node: Node,
+        grammar_settings: list[GrammarSetting],
+        id: str = "",
+    ):
+        super().__init__(node, grammar_settings, id, min_=1)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitPlus(self)
@@ -364,8 +449,13 @@ class Plus(Repetition):
 
 
 class Option(Repetition):
-    def __init__(self, node: Node, id: str = ""):
-        super().__init__(node, id, min_=0, max_=1)
+    def __init__(
+        self,
+        node: Node,
+        grammar_settings: list[GrammarSetting],
+        id: str = "",
+    ):
+        super().__init__(node, grammar_settings, id, min_=0, max_=1)
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitOption(self)
@@ -374,17 +464,19 @@ class Option(Repetition):
         return self.node.format_as_spec() + "?"
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
-        yield from (self.node, TerminalNode(Terminal("")))
+        yield from (self.node, TerminalNode(Terminal(""), self._grammar_settings))
 
 
 class NonTerminalNode(Node):
     def __init__(
         self,
         symbol: NonTerminal,
+        grammar_settings: list[GrammarSetting],
         sender: Optional[str] = None,
         recipient: Optional[str] = None,
     ):
-        super().__init__(NodeType.NON_TERMINAL)
+        super().__init__(NodeType.NON_TERMINAL, grammar_settings)
+        self._grammar_settings = grammar_settings
         self.symbol = symbol
         self.sender = sender
         self.recipient = recipient
@@ -404,7 +496,9 @@ class NonTerminalNode(Node):
         if grammar.is_use_generator(dummy_current_tree):
             dependencies = grammar.generator_dependencies(self.symbol)
             for nt in dependencies:
-                NonTerminalNode(nt).fuzz(dummy_current_tree, grammar, max_nodes - 1)
+                NonTerminalNode(nt, self._grammar_settings).fuzz(
+                    dummy_current_tree, grammar, max_nodes - 1
+                )
             parameters = dummy_current_tree.children
             for p in parameters:
                 p._parent = None
@@ -471,8 +565,15 @@ class NonTerminalNode(Node):
 
 
 class TerminalNode(Node):
-    def __init__(self, symbol: Terminal):
-        super().__init__(NodeType.TERMINAL, 1)
+    def __init__(
+        self,
+        symbol: Terminal,
+        grammar_settings: list[GrammarSetting],
+    ):
+        super().__init__(
+            NodeType.TERMINAL, grammar_settings, distance_to_completion=1.0
+        )
+        self._grammar_settings = grammar_settings
         self.symbol = symbol
 
     def fuzz(
@@ -539,8 +640,13 @@ class LiteralGenerator:
 
 
 class CharSet(Node):
-    def __init__(self, chars: str):
-        super().__init__(NodeType.CHAR_SET, 0)
+    def __init__(
+        self,
+        chars: str,
+        grammar_settings: list[GrammarSetting],
+    ):
+        super().__init__(NodeType.CHAR_SET, grammar_settings)
+        self._grammar_settings = grammar_settings
         self.chars = chars
 
     def fuzz(
@@ -557,7 +663,7 @@ class CharSet(Node):
 
     def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
         for char in self.chars:
-            yield TerminalNode(Terminal(char))
+            yield TerminalNode(Terminal(char), self._grammar_settings)
 
     def format_as_spec(self) -> str:
         return self.chars
@@ -613,12 +719,13 @@ class NodeVisitor(abc.ABC):
 
 
 class Disambiguator(NodeVisitor):
-    def __init__(self, grammar: "Grammar"):
+    def __init__(self, grammar: "Grammar", grammar_settings: list[GrammarSetting]):
         self.known_disambiguations: dict[
             Node,
             dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]],
         ] = {}
         self.grammar = grammar
+        self._grammar_settings = grammar_settings
 
     def visit(
         self, node: Node
@@ -694,7 +801,11 @@ class Disambiguator(NodeVisitor):
         self, node: Option
     ) -> dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]]:
         implicit_alternative = Alternative(
-            [Concatenation([]), Concatenation([node.node])]
+            [
+                Concatenation([], self._grammar_settings),
+                Concatenation([node.node], self._grammar_settings),
+            ],
+            self._grammar_settings,
         )
         return self.visit(implicit_alternative)
 
@@ -711,7 +822,10 @@ class Disambiguator(NodeVisitor):
     def visitCharSet(
         self, node: CharSet
     ) -> dict[tuple[Symbol, ...], list[tuple[Node, ...]]]:
-        return {(Terminal(c),): [(node, TerminalNode(Terminal(c)))] for c in node.chars}
+        return {
+            (Terminal(c),): [(node, TerminalNode(Terminal(c), self._grammar_settings))]
+            for c in node.chars
+        }
 
 
 class SymbolFinder(NodeVisitor):
@@ -1928,17 +2042,23 @@ class Grammar(NodeVisitor):
 
     def __init__(
         self,
+        grammar_settings: list[GrammarSetting],
         rules: Optional[dict[NonTerminal, Node]] = None,
         fuzzing_mode: Optional[FuzzingMode] = FuzzingMode.COMPLETE,
         local_variables: Optional[dict[str, Any]] = None,
         global_variables: Optional[dict[str, Any]] = None,
     ):
-        self.rules = rules or {}
+        self._grammar_settings = grammar_settings
+        self.rules: dict[NonTerminal, Node] = rules or {}
         self.generators: dict[NonTerminal, LiteralGenerator] = {}
         self.fuzzing_mode = fuzzing_mode
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
         self._parser = Grammar.Parser(self)
+
+    @property
+    def grammar_settings(self) -> list[GrammarSetting]:
+        return self._grammar_settings
 
     @staticmethod
     def _topological_sort(graph: dict[NonTerminal, set[NonTerminal]]):
@@ -2104,7 +2224,7 @@ class Grammar(NodeVisitor):
         tree = self.parse(string, symbol)
         if tree is None:
             raise FandangoParseError(
-                f"Could not parse {string!r} (generated by {self.generators[symbol]}) into {symbol}"
+                f"Could not parse {string!r} (generated by {self.generators[symbol]}) into {symbol.format_as_spec()}"
             )
         tree.sources = [p.deepcopy(copy_parent=False) for p in sources]
         return tree
@@ -2126,7 +2246,9 @@ class Grammar(NodeVisitor):
         else:
             root = prefix_node
         fuzzed_idx = len(root.children)
-        NonTerminalNode(start).fuzz(root, self, max_nodes=max_nodes)
+        NonTerminalNode(start, self._grammar_settings).fuzz(
+            root, self, max_nodes=max_nodes
+        )
         root = root.children[fuzzed_idx]
         root._parent = None
         return root
@@ -2207,22 +2329,22 @@ class Grammar(NodeVisitor):
         return self._parser.max_position()
 
     def __contains__(self, item: str | NonTerminal):
-        if isinstance(item, str):
+        if not isinstance(item, NonTerminal):
             item = NonTerminal(item)
         return item in self.rules
 
     def __getitem__(self, item: str | NonTerminal):
-        if isinstance(item, str):
+        if not isinstance(item, NonTerminal):
             item = NonTerminal(item)
         return self.rules[item]
 
     def __setitem__(self, key: str | NonTerminal, value: Node):
-        if isinstance(key, str):
+        if not isinstance(key, NonTerminal):
             key = NonTerminal(key)
         self.rules[key] = value
 
     def __delitem__(self, key: str | NonTerminal):
-        if isinstance(key, str):
+        if not isinstance(key, NonTerminal):
             key = NonTerminal(key)
         del self.rules[key]
 
@@ -2256,7 +2378,7 @@ class Grammar(NodeVisitor):
 
     @staticmethod
     def dummy():
-        return Grammar({})
+        return Grammar(grammar_settings=[], rules={})
 
     def set_generator(
         self, symbol: str | NonTerminal, param: str, searches_map: dict = {}
@@ -2314,7 +2436,9 @@ class Grammar(NodeVisitor):
         """
 
         initial = set()
-        initial_work: [Node] = [NonTerminalNode(name) for name in self.rules.keys()]  # type: ignore[misc, valid-type]
+        initial_work: list[Node] = [
+            NonTerminalNode(name, self._grammar_settings) for name in self.rules.keys()
+        ]
         while initial_work:
             node = initial_work.pop(0)
             if node in initial:
@@ -2356,6 +2480,7 @@ class Grammar(NodeVisitor):
         return paths
 
     def prime(self):
+        LOGGER.debug("Priming grammar")
         nodes: list[Node] = sum(
             [self.visit(self.rules[symbol]) for symbol in self.rules], []
         )
@@ -2364,31 +2489,31 @@ class Grammar(NodeVisitor):
             if isinstance(node, TerminalNode):
                 continue
             elif isinstance(node, NonTerminalNode):
-                if node.symbol not in self.rules:  # type: ignore[attr-defined] # We're checking types manually
+                if node.symbol not in self.rules:
                     raise FandangoValueError(
-                        f"Symbol {node.symbol} not found in grammar"  # type: ignore[attr-defined] # We're checking types manually
+                        f"Symbol {node.symbol.format_as_spec()} not found in grammar"
                     )
-                if self.rules[node.symbol].distance_to_completion == float("inf"):  # type: ignore[attr-defined] # We're checking types manually
+                if self.rules[node.symbol].distance_to_completion == float("inf"):
                     nodes.append(node)
                 else:
                     node.distance_to_completion = (
-                        self.rules[node.symbol].distance_to_completion + 1  # type: ignore[attr-defined] # We're checking types manually
+                        self.rules[node.symbol].distance_to_completion + 1
                     )
             elif isinstance(node, Alternative):
                 node.distance_to_completion = (
-                    min([n.distance_to_completion for n in node.alternatives]) + 1  # type: ignore[attr-defined] # We're checking types manually
+                    min([n.distance_to_completion for n in node.alternatives]) + 1
                 )
                 if node.distance_to_completion == float("inf"):
                     nodes.append(node)
             elif isinstance(node, Concatenation):
-                if any([n.distance_to_completion == float("inf") for n in node.nodes]):  # type: ignore[attr-defined] # We're checking types manually
+                if any([n.distance_to_completion == float("inf") for n in node.nodes]):
                     nodes.append(node)
                 else:
                     node.distance_to_completion = (
-                        sum([n.distance_to_completion for n in node.nodes]) + 1  # type: ignore[attr-defined] # We're checking types manually
+                        sum([n.distance_to_completion for n in node.nodes]) + 1
                     )
             elif isinstance(node, Repetition):
-                if node.node.distance_to_completion == float("inf"):  # type: ignore[attr-defined] # We're checking types manually
+                if node.node.distance_to_completion == float("inf"):
                     nodes.append(node)
                 else:
                     try:
@@ -2396,7 +2521,7 @@ class Grammar(NodeVisitor):
                     except ValueError:
                         min_rep = 0
                     node.distance_to_completion = (
-                        node.node.distance_to_completion * min_rep + 1  # type: ignore[attr-defined] # We're checking types manually
+                        node.node.distance_to_completion * min_rep + 1
                     )
             else:
                 raise FandangoValueError(f"Unknown node type {node.node_type}")
@@ -2460,17 +2585,17 @@ class Grammar(NodeVisitor):
         cur_path: Optional[tuple[Node, ...]] = None,
     ) -> set[tuple[Node, ...]]:
         if disambiguator is None:
-            disambiguator = Disambiguator(self)
+            disambiguator = Disambiguator(self, self._grammar_settings)
         if paths is None:
             paths = set()
         if tree.symbol.is_terminal:
             if cur_path is None:
-                cur_path = (TerminalNode(tree.terminal),)
+                cur_path = (TerminalNode(tree.terminal, self._grammar_settings),)
             paths.add(cur_path)
         elif isinstance(tree.symbol, NonTerminal):
             if cur_path is None:
-                cur_path = (NonTerminalNode(tree.nonterminal),)
-            assert tree.symbol == typing.cast(NonTerminalNode, cur_path[-1]).symbol
+                cur_path = (NonTerminalNode(tree.nonterminal, self._grammar_settings),)
+            assert tree.symbol == cast(NonTerminalNode, cur_path[-1]).symbol
             disambiguation = disambiguator.visit(self.rules[tree.nonterminal])
             for tree, path in zip(
                 tree.children, disambiguation[tuple(c.symbol for c in tree.children)]
@@ -2496,7 +2621,7 @@ class Grammar(NodeVisitor):
         # Compute all possible k-paths in the grammar
         all_k_paths = self.compute_k_paths(k)
 
-        disambiguator = Disambiguator(self)
+        disambiguator = Disambiguator(self, self._grammar_settings)
 
         # Extract k-paths from the derivation trees
         covered_k_paths = set()
