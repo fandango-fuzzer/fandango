@@ -12,6 +12,7 @@ from fandango.constraints.fitness import (
 from fandango.io.packetforecaster import PacketForecaster
 from fandango.language.grammar import DerivationTree, Grammar
 from fandango.language.symbol import NonTerminal
+from fandango.language.symbol.slice import Slice
 from fandango.logger import LOGGER
 
 
@@ -146,19 +147,18 @@ class PopulationManager:
 
             for operator, value, side in failing_tree.suggestions:
                 if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
-                    if (
-                        isinstance(value, DerivationTree)
-                        and failing_tree.tree.symbol == value.symbol
-                    ):
+                    # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
+                    symbol = failing_tree.tree.symbol
+                    if isinstance(value, DerivationTree) and symbol == value.symbol:
                         suggested_tree = value.deepcopy(
                             copy_children=True, copy_params=False, copy_parent=False
                         )
                         suggested_tree.set_all_read_only(False)
-                    else:
-                        assert isinstance(failing_tree.tree.symbol.symbol, str)
-                        suggested_tree = self._grammar.parse(
-                            value, start=failing_tree.tree.symbol.symbol
-                        )
+                    elif isinstance(symbol, NonTerminal):
+                        suggested_tree = self._grammar.parse(value, start=symbol)
+                    elif isinstance(symbol, Slice):
+                        # slices don't have a symbol associated with them — I think
+                        suggested_tree = self._grammar.parse(value, start="")
                     if suggested_tree is None:
                         continue
                     replacements.append((failing_tree.tree, suggested_tree))

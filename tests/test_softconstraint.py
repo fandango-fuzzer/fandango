@@ -30,7 +30,7 @@ class TestSoft(unittest.TestCase):
             fandango.generate(max_generations=max_generations), desired_solutions
         )
         for solution in generator:
-            yield solution.to_string()
+            yield str(solution)
 
 
 class TestSoftValue(TestSoft):
