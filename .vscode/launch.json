@@ -28,5 +28,23 @@
                 "script": "watch"
             },
         },
+        {
+            "name": "fandango: Debug Persons Grammar",
+            "type": "debugpy",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "program": "src/fandango/cli/__init__.py",
+            "args": [
+                "-vv",
+                "fuzz",
+                "-n",
+                "10",
+                "-f",
+                "tests/resources/persons.fan",
+            ],
+            "env": {
+                "FANDANGO_RUN_BEARTYPE": "1"
+            },
+        }
     ]
 }
