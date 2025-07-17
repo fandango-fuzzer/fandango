@@ -430,6 +430,9 @@ class TestCanContinueParsing(unittest.TestCase):
         next(self.iter_parser.consume(b';'), None)
         self.assertFalse(self.iter_parser.can_continue())
 
+        self.iter_parser.new_parse()
+        next(self.iter_parser.consume(b'rgbd;'), None)
+
 
 class TestCLIParsing(unittest.TestCase):
     pass
