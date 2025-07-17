@@ -49,8 +49,9 @@ SA_FandangoTranslator::~SA_FandangoTranslator() {
     Py_XDECREF(PythonContext_cls);
     Py_XDECREF(Python_tagContext_cls);
     Py_XDECREF(Grammar_settingContext_cls);
+    Py_XDECREF(Grammar_setting_contentContext_cls);
     Py_XDECREF(Grammar_selectorContext_cls);
-    Py_XDECREF(Grammar_setting_kv_pairContext_cls);
+    Py_XDECREF(Grammar_ruleContext_cls);
     Py_XDECREF(Grammar_setting_keyContext_cls);
     Py_XDECREF(Grammar_setting_valueContext_cls);
     Py_XDECREF(Python_fileContext_cls);
@@ -487,15 +488,21 @@ antlrcpp::Any SA_FandangoTranslator::visitGrammar_setting(FandangoParser::Gramma
     return py_ctx;
 }
 
+antlrcpp::Any SA_FandangoTranslator::visitGrammar_setting_content(FandangoParser::Grammar_setting_contentContext *ctx){
+    if(!Grammar_setting_contentContext_cls) Grammar_setting_contentContext_cls = PyObject_GetAttrString(translator->parser_cls, "Grammar_setting_contentContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Grammar_setting_contentContext_cls);
+    return py_ctx;
+}
+
 antlrcpp::Any SA_FandangoTranslator::visitGrammar_selector(FandangoParser::Grammar_selectorContext *ctx){
     if(!Grammar_selectorContext_cls) Grammar_selectorContext_cls = PyObject_GetAttrString(translator->parser_cls, "Grammar_selectorContext");
     PyObject *py_ctx = translator->convert_ctx(this, ctx, Grammar_selectorContext_cls);
     return py_ctx;
 }
 
-antlrcpp::Any SA_FandangoTranslator::visitGrammar_setting_kv_pair(FandangoParser::Grammar_setting_kv_pairContext *ctx){
-    if(!Grammar_setting_kv_pairContext_cls) Grammar_setting_kv_pairContext_cls = PyObject_GetAttrString(translator->parser_cls, "Grammar_setting_kv_pairContext");
-    PyObject *py_ctx = translator->convert_ctx(this, ctx, Grammar_setting_kv_pairContext_cls);
+antlrcpp::Any SA_FandangoTranslator::visitGrammar_rule(FandangoParser::Grammar_ruleContext *ctx){
+    if(!Grammar_ruleContext_cls) Grammar_ruleContext_cls = PyObject_GetAttrString(translator->parser_cls, "Grammar_ruleContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Grammar_ruleContext_cls);
     return py_ctx;
 }
 

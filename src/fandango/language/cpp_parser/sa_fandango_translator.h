@@ -50,8 +50,9 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     PyObject *PythonContext_cls = NULL;
     PyObject *Python_tagContext_cls = NULL;
     PyObject *Grammar_settingContext_cls = NULL;
+    PyObject *Grammar_setting_contentContext_cls = NULL;
     PyObject *Grammar_selectorContext_cls = NULL;
-    PyObject *Grammar_setting_kv_pairContext_cls = NULL;
+    PyObject *Grammar_ruleContext_cls = NULL;
     PyObject *Grammar_setting_keyContext_cls = NULL;
     PyObject *Grammar_setting_valueContext_cls = NULL;
     PyObject *Python_fileContext_cls = NULL;
@@ -337,9 +338,11 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
 
     antlrcpp::Any visitGrammar_setting(FandangoParser::Grammar_settingContext *ctx);
 
+    antlrcpp::Any visitGrammar_setting_content(FandangoParser::Grammar_setting_contentContext *ctx);
+
     antlrcpp::Any visitGrammar_selector(FandangoParser::Grammar_selectorContext *ctx);
 
-    antlrcpp::Any visitGrammar_setting_kv_pair(FandangoParser::Grammar_setting_kv_pairContext *ctx);
+    antlrcpp::Any visitGrammar_rule(FandangoParser::Grammar_ruleContext *ctx);
 
     antlrcpp::Any visitGrammar_setting_key(FandangoParser::Grammar_setting_keyContext *ctx);
 

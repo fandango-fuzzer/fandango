@@ -95,9 +95,11 @@ public:
 
     virtual std::any visitGrammar_setting(FandangoParser::Grammar_settingContext *context) = 0;
 
+    virtual std::any visitGrammar_setting_content(FandangoParser::Grammar_setting_contentContext *context) = 0;
+
     virtual std::any visitGrammar_selector(FandangoParser::Grammar_selectorContext *context) = 0;
 
-    virtual std::any visitGrammar_setting_kv_pair(FandangoParser::Grammar_setting_kv_pairContext *context) = 0;
+    virtual std::any visitGrammar_rule(FandangoParser::Grammar_ruleContext *context) = 0;
 
     virtual std::any visitGrammar_setting_key(FandangoParser::Grammar_setting_keyContext *context) = 0;
 
