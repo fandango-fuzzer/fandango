@@ -449,8 +449,6 @@ class PacketForecaster:
                     raise FandangoValueError("NonTerminal symbol must be a string!")
             return i_cpy
 
-
-
     def __init__(self, grammar: Grammar):
         g_globals, g_locals = grammar.get_spec_env()
         reduced = PacketForecaster.GrammarReducer().process(grammar)
@@ -478,13 +476,8 @@ class PacketForecaster:
             options = options.union(finder.find())
         else:
             self._parser.reference_tree = tree
-            self._parser.new_parse(
-                NonTerminal("<start>"),
-                ParsingMode.INCOMPLETE
-            )
-            for suggested_tree in self._parser.consume(
-                history_nts
-            ):
+            self._parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
+            for suggested_tree in self._parser.consume(history_nts):
                 for orig_r_msg, r_msg in zip(
                     tree.protocol_msgs(), suggested_tree.protocol_msgs()
                 ):
