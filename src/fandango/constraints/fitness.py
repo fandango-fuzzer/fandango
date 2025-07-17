@@ -354,9 +354,14 @@ class GeneticBase(abc.ABC):
         """
         return self.fitness(tree, scope, population, local_variables).failing_trees
 
-    @abc.abstractmethod
-    def __repr__(self):
-        pass
+    def __str__(self) -> str:
+        raise RuntimeError("Not implemented, use method specific to your usecase")
 
-    def __str__(self):
-        return self.__repr__()
+    def __repr__(self) -> str:
+        raise RuntimeError("Not implemented, use method specific to your usecase")
+
+    @abc.abstractmethod
+    def format_as_spec(self) -> str:
+        """
+        Format as a string that can be used in a spec file.
+        """

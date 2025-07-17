@@ -279,7 +279,7 @@ def test_conversion_statement(stmt, value, is_global):
         assert value == global_vars["x"]
     else:
         assert "x" not in global_vars
-        assert local_vars is None or "x" in local_vars
+        assert local_vars is not None and "x" in local_vars
         assert value == local_vars["x"]
 
 
@@ -302,6 +302,6 @@ def test_parsing():
     assert constraint.left == f"f({placeholder}) % 2"
     assert "f" in constraint.global_variables
     assert eval("f('1')", constraint.global_variables, constraint.local_variables) == 1
-    assert isinstance(constraint.searches[placeholder], RuleSearch)
-    search: RuleSearch = constraint.searches[placeholder]
+    search = constraint.searches[placeholder]
+    assert isinstance(search, RuleSearch)
     assert NonTerminal("<number>") == search.symbol

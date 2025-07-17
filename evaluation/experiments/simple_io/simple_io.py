@@ -1,6 +1,6 @@
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language.grammar import *
-from fandango.language.symbol import *
+from fandango.language.symbol.symbol import *
 from fandango.language.parse import parse
 
 
