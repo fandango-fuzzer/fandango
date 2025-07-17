@@ -54,6 +54,8 @@ class Terminal(Symbol):
             word = word if isinstance(word, str) else word.decode("latin-1")
 
         if self.is_regex:
+            assert isinstance(symbol, str)
+            assert isinstance(word, str)
             if not incomplete:
                 match = re.match(symbol, word)
                 if match:
