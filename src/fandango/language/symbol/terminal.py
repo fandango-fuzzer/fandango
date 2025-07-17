@@ -60,7 +60,7 @@ class Terminal(Symbol):
 
         if self.is_regex:
             if not incomplete:
-                match = re.match(symbol, check_word)
+                match = re.match(symbol, check_word)  # type: ignore[arg-type]
                 if match:
                     # LOGGER.debug(f"It's a match: {match.group(0)!r}")
                     return True, len(match.group(0))
@@ -80,11 +80,11 @@ class Terminal(Symbol):
 
         else:
             if not incomplete:
-                if check_word.startswith(symbol):
+                if check_word.startswith(symbol):  # type: ignore[arg-type]
                     # LOGGER.debug(f"It's a match: {symbol!r}")
                     return True, len(symbol)
             else:
-                if symbol.startswith(check_word):
+                if symbol.startswith(check_word):  # type: ignore[arg-type]
                     return True, len(check_word)
 
         # LOGGER.debug(f"No match")
