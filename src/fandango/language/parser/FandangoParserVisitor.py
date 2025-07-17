@@ -165,14 +165,18 @@ class FandangoParserVisitor(ParseTreeVisitor):
     def visitGrammar_setting(self, ctx: FandangoParser.Grammar_settingContext):
         return self.visitChildren(ctx)
 
+    # Visit a parse tree produced by FandangoParser#grammar_setting_content.
+    def visitGrammar_setting_content(
+        self, ctx: FandangoParser.Grammar_setting_contentContext
+    ):
+        return self.visitChildren(ctx)
+
     # Visit a parse tree produced by FandangoParser#grammar_selector.
     def visitGrammar_selector(self, ctx: FandangoParser.Grammar_selectorContext):
         return self.visitChildren(ctx)
 
-    # Visit a parse tree produced by FandangoParser#grammar_setting_kv_pair.
-    def visitGrammar_setting_kv_pair(
-        self, ctx: FandangoParser.Grammar_setting_kv_pairContext
-    ):
+    # Visit a parse tree produced by FandangoParser#grammar_rule.
+    def visitGrammar_rule(self, ctx: FandangoParser.Grammar_ruleContext):
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by FandangoParser#grammar_setting_key.
