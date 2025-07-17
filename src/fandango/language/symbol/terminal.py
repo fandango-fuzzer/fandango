@@ -45,40 +45,47 @@ class Terminal(Symbol):
 
         if self._value.is_type(NoneType) or isinstance(word, int):
             return self.check_all(word), 1
+        check_word: str | bytes = word
 
         symbol: str | bytes
-        if self._value.is_type(bytes) and isinstance(word, bytes):
+        if self._value.is_type(bytes) and isinstance(check_word, bytes):
             symbol = self._value.to_bytes()
         else:
             symbol = self._value.to_string()
-            word = word if isinstance(word, str) else word.decode("latin-1")
+            check_word = (
+                check_word
+                if isinstance(check_word, str)
+                else check_word.decode("latin-1")
+            )
 
         if self.is_regex:
-            assert isinstance(symbol, str)
-            assert isinstance(word, str)
             if not incomplete:
-                match = re.match(symbol, word)
+                match = re.match(symbol, check_word)
                 if match:
                     # LOGGER.debug(f"It's a match: {match.group(0)!r}")
                     return True, len(match.group(0))
             else:
                 compiled = regex.compile(symbol)
-                match = compiled.match(word, partial=True)
-                if match is not None and (match.partial or match.end() == len(word)):
+                match = compiled.match(check_word, partial=True)
+                if match is not None and (
+                    match.partial or match.end() == len(check_word)
+                ):
                     return True, len(match.group(0))
-                match = compiled.fullmatch(word, partial=True)
-                if match is not None and (match.partial or match.end() == len(word)):
+                match = compiled.fullmatch(check_word, partial=True)
+                if match is not None and (
+                    match.partial or match.end() == len(check_word)
+                ):
                     return True, len(match.group(0))
                 return False, 0
 
         else:
             if not incomplete:
-                if word.startswith(symbol):
+                if check_word.startswith(symbol):
                     # LOGGER.debug(f"It's a match: {symbol!r}")
                     return True, len(symbol)
             else:
-                if symbol.startswith(word):
-                    return True, len(word)
+                if symbol.startswith(check_word):
+                    return True, len(check_word)
 
         # LOGGER.debug(f"No match")
         return False, 0
