@@ -2692,7 +2692,7 @@ class Grammar(NodeVisitor):
         Return true iff the grammar can produce a bit element (0 or 1).
         * `start`: a start symbol other than `<start>`.
         """
-        return self.contains_type(int, start=start)
+        return self.contains_type(NoneType, start=start)
 
     def contains_bytes(self, *, start="<start>") -> bool:
         """
