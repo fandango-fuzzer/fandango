@@ -984,7 +984,7 @@ class ParseState:
 class Column:
     def __init__(self, states: Optional[list[ParseState]] = None):
         self.states: list[ParseState] = states or []
-        self.dot_map = dict[NonTerminal, list[ParseState]]()
+        self.dot_map = dict[Symbol, list[ParseState]]()
         self.unique = set(self.states)
         for state in self.states:
             self.dot_map[state.nonterminal].append(state)
@@ -1003,7 +1003,11 @@ class Column:
             return False
         self.unique.remove(state)
         self.states.remove(state)
-        self.dot_map.get(state.dot, []).remove(state)
+        symbol = state.dot
+        assert symbol is not None
+        default_list: list[ParseState] = []
+        self.dot_map.get(symbol, default_list).remove(state)
+        return None
 
     def replace(self, old: ParseState, new: ParseState):
         self.unique.remove(old)
@@ -1011,10 +1015,16 @@ class Column:
         i_old = self.states.index(old)
         del self.states[i_old]
         self.states.insert(i_old, new)
-        self.dot_map[old.dot].remove(old)
-        dot_list = self.dot_map.get(new.dot, [])
+
+        old_symbol = old.dot
+        assert old_symbol is not None
+        self.dot_map[old_symbol].remove(old)
+
+        new_symbol = new.dot
+        assert new_symbol is not None
+        dot_list = self.dot_map.get(new_symbol, [])
         dot_list.append(new)
-        self.dot_map[new.dot] = dot_list
+        self.dot_map[new_symbol] = dot_list
 
     def __contains__(self, item):
         return item in self.unique
@@ -1026,9 +1036,11 @@ class Column:
         if state not in self.unique:
             self.states.append(state)
             self.unique.add(state)
-            state_list = self.dot_map.get(state.dot, [])
+            symbol = state.dot
+            assert symbol is not None
+            state_list = self.dot_map.get(symbol, [])
             state_list.append(state)
-            self.dot_map[state.dot] = state_list
+            self.dot_map[symbol] = state_list
             return True
         return False
 
@@ -1109,7 +1121,7 @@ class Grammar(NodeVisitor):
             self._table: list[Column] = []
             self._parsing_mode = ParsingMode.COMPLETE
             self._bit_position = -1
-            self._hookin_parent = None
+            self._hookin_parent: Optional[DerivationTree] = None
             self._prefix_word = None
 
         def _process(self):
@@ -1337,29 +1349,32 @@ class Grammar(NodeVisitor):
             k: int,
             hookin_parent: Optional[DerivationTree] = None,
         ):
+            symbol = state.dot
+            assert symbol is not None
+            assert isinstance(symbol, NonTerminal)
             if state.dot in self._rules:
                 table[k].update(
                     {
                         ParseState(state.dot, k, rule, 0)  # type: ignore[arg-type]
-                        for rule in self._rules[state.dot]
+                        for rule in self._rules[symbol]
                     }
                 )
             elif state.dot in self._implicit_rules:
                 table[k].update(
                     {
                         ParseState(state.dot, k, rule, 0)  # type: ignore[arg-type]
-                        for rule in self._implicit_rules[state.dot]
+                        for rule in self._implicit_rules[symbol]
                     }
                 )
             elif state.dot in self._tmp_rules:
                 table[k].update(
                     {
                         ParseState(state.dot, k, rule, 0)  # type: ignore[arg-type]
-                        for rule in self._tmp_rules[state.dot]
+                        for rule in self._tmp_rules[symbol]
                     }
                 )
             elif state.dot in self._context_rules:
-                node, nt = self._context_rules[state.dot]
+                node, nt = self._context_rules[symbol]
                 self.predict_ctx_rule(state, table, k, node, nt, hookin_parent)
 
         def construct_incomplete_tree(
@@ -1455,6 +1470,7 @@ class Grammar(NodeVisitor):
             `bit_count` is the current bit position (7-0).
             Return True if a bit was matched, False otherwise.
             """
+            assert state.dot is not None
             assert state.dot.is_type(NoneType)
             assert 0 <= bit_count <= 7
 
@@ -1509,7 +1525,8 @@ class Grammar(NodeVisitor):
             Return True if a byte was matched, False otherwise.
             """
 
-            assert not state.dot.is_type(int)
+            assert state.dot is not None
+            assert not state.dot.is_type(NoneType)
             assert not state.dot.is_regex
 
             # LOGGER.debug(f"Checking byte(s) {state.dot!r} at position {w:#06x} ({w}) {word[w:]!r}")
@@ -1518,13 +1535,17 @@ class Grammar(NodeVisitor):
             if state.is_incomplete:
                 prev_terminal = state.children[-1]
                 prev_val = prev_terminal.symbol.value()
-                prev_val_raw: str|bytes
+                prev_val_raw: str | bytes
                 if prev_val.is_type(bytes):
                     prev_val_raw = bytes(prev_val)
-                    check_word = bytes(TreeValue(prev_val_raw).append(TreeValue(check_word)))
+                    check_word = bytes(
+                        TreeValue(prev_val_raw).append(TreeValue(check_word))
+                    )
                 else:
                     prev_val_raw = str(prev_val)
-                    check_word = str(TreeValue(prev_val_raw).append(TreeValue(check_word)))
+                    check_word = str(
+                        TreeValue(prev_val_raw).append(TreeValue(check_word))
+                    )
             if state.dot.is_type(bytes):
                 dot_len = len(bytes(state.dot.value()))
             else:
@@ -1585,6 +1606,7 @@ class Grammar(NodeVisitor):
             Return (True, #bytes) if bytes were matched, (False, 0) otherwise.
             """
 
+            assert state.dot is not None
             assert not state.dot.is_type(NoneType)
             assert state.dot.is_regex
 
@@ -1593,13 +1615,17 @@ class Grammar(NodeVisitor):
             if state.is_incomplete:
                 prev_terminal = state.children[-1]
                 prev_val = prev_terminal.symbol.value()
-                prev_val_raw: str|bytes
+                prev_val_raw: str | bytes
                 if prev_val.is_type(bytes):
                     prev_val_raw = bytes(prev_val)
-                    check_word = bytes(TreeValue(prev_val_raw).append(TreeValue(check_word)))
+                    check_word = bytes(
+                        TreeValue(prev_val_raw).append(TreeValue(check_word))
+                    )
                 else:
                     prev_val_raw = str(prev_val)
-                    check_word = str(TreeValue(prev_val_raw).append(TreeValue(check_word)))
+                    check_word = str(
+                        TreeValue(prev_val_raw).append(TreeValue(check_word))
+                    )
                 prev_match_length = len(prev_val_raw)
 
             table_idx_multiplier = 1
@@ -1608,10 +1634,7 @@ class Grammar(NodeVisitor):
 
             match, match_length = state.dot.check(check_word)
             table_offset = match_length
-            if (
-                    match
-                and match_length <= prev_match_length
-            ):
+            if match and match_length <= prev_match_length:
                 match = False
                 match_length = 0
             incomplete_match, incomplete_match_length = state.dot.check(
@@ -2004,7 +2027,6 @@ class Grammar(NodeVisitor):
                         yield tree
                 return
 
-            self._incomplete = set()
             for tree in self._parse_forest(
                 word,
                 start,
