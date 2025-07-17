@@ -1017,11 +1017,9 @@ class Column:
         self.states.insert(i_old, new)
 
         old_symbol = old.dot
-        assert old_symbol is not None
         self.dot_map[old_symbol].remove(old)
 
         new_symbol = new.dot
-        assert new_symbol is not None
         dot_list = self.dot_map.get(new_symbol, [])
         dot_list.append(new)
         self.dot_map[new_symbol] = dot_list
@@ -1037,7 +1035,6 @@ class Column:
             self.states.append(state)
             self.unique.add(state)
             symbol = state.dot
-            assert symbol is not None
             state_list = self.dot_map.get(symbol, [])
             state_list.append(state)
             self.dot_map[symbol] = state_list
