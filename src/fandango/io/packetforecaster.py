@@ -421,7 +421,7 @@ class PacketForecaster:
             self.processed_keys.add(symbol)
             return repl_node
 
-    class Parser(Grammar.Parser):
+    class PacketIterativeParser(Grammar.IterativeParser):
         def __init__(self, grammar: Grammar):
             super().__init__(grammar)
             self.reference_tree: Optional[DerivationTree] = None
@@ -449,6 +449,8 @@ class PacketForecaster:
                     raise FandangoValueError("NonTerminal symbol must be a string!")
             return i_cpy
 
+
+
     def __init__(self, grammar: Grammar):
         g_globals, g_locals = grammar.get_spec_env()
         reduced = PacketForecaster.GrammarReducer().process(grammar)
@@ -456,7 +458,7 @@ class PacketForecaster:
         self.reduced_grammar = Grammar(
             reduced, grammar.fuzzing_mode, g_locals, g_globals
         )
-        self._parser = PacketForecaster.Parser(self.reduced_grammar)
+        self._parser = PacketForecaster.PacketIterativeParser(self.reduced_grammar)
 
     def predict(self, tree: DerivationTree) -> "ForecastingResult":
         """
@@ -476,11 +478,12 @@ class PacketForecaster:
             options = options.union(finder.find())
         else:
             self._parser.reference_tree = tree
-            for suggested_tree in self._parser.parse_multiple(
-                history_nts,
+            self._parser.new_parse(
                 NonTerminal("<start>"),
-                ParsingMode.INCOMPLETE,
-                include_controlflow=True,
+                ParsingMode.INCOMPLETE
+            )
+            for suggested_tree in self._parser.consume(
+                history_nts
             ):
                 for orig_r_msg, r_msg in zip(
                     tree.protocol_msgs(), suggested_tree.protocol_msgs()

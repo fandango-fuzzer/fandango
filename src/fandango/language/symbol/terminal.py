@@ -40,12 +40,13 @@ class Terminal(Symbol):
     def from_number(number: str) -> "Terminal":
         return Terminal(Terminal.clean(number))
 
-    def check(self, word: str | int, incomplete=False) -> tuple[bool, int]:
+    def check(self, word: str | int | bytes, incomplete=False) -> tuple[bool, int]:
         """Return (True, # characters matched by `word`), or (False, 0)"""
 
         if self._value.is_type(NoneType) or isinstance(word, int):
             return self.check_all(word), 1
 
+        symbol: str | bytes
         if self._value.is_type(bytes) and isinstance(word, bytes):
             symbol = self._value.to_bytes()
         else:
@@ -80,7 +81,7 @@ class Terminal(Symbol):
         # LOGGER.debug(f"No match")
         return False, 0
 
-    def check_all(self, word: str | int) -> bool:
+    def check_all(self, word: str | int | bytes) -> bool:
         if isinstance(word, str):
             if self._value.is_type(NoneType):
                 # cannot reasonably compare strings to partial bytes
