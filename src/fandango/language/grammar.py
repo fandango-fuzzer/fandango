@@ -1319,7 +1319,12 @@ class Grammar(NodeVisitor):
                 if state.finished():
                     self.complete(state, table, self._table_idx)
 
-            return any(filter(lambda state: state.is_incomplete or not state.finished(), table[self._table_idx]))
+            return any(
+                filter(
+                    lambda state: state.is_incomplete or not state.finished(),
+                    table[self._table_idx],
+                )
+            )
 
         def predict(
             self,

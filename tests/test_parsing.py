@@ -3,7 +3,7 @@
 import unittest
 from typing import Optional
 
-from fandango.language.grammar import Alternative, NodeType, Grammar, ParsingMode
+from fandango.language.grammar import Alternative, Grammar, ParsingMode
 from fandango.language.parse import parse
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
