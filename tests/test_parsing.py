@@ -408,6 +408,28 @@ class TestEmptyParsing(unittest.TestCase):
             ),
         )
 
+class TestCanContinueParsing(unittest.TestCase):
+
+    def setUp(self):
+        with open(RESOURCES_ROOT / "rgb.fan") as file:
+            grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+            self.grammar = grammar
+            self.iter_parser = Grammar.IterativeParser(self.grammar)
+
+    def test_1(self):
+        self.iter_parser.new_parse()
+        next(self.iter_parser.consume(b'r'), None)
+        self.assertTrue(self.iter_parser.can_continue())
+        next(self.iter_parser.consume(b'g'), None)
+        self.assertTrue(self.iter_parser.can_continue())
+        next(self.iter_parser.consume(b'b'), None)
+        self.assertTrue(self.iter_parser.can_continue())
+        next(self.iter_parser.consume(b'd'), None)
+        self.assertTrue(self.iter_parser.can_continue())
+        next(self.iter_parser.consume(b';'), None)
+        self.assertFalse(self.iter_parser.can_continue())
+
 
 class TestCLIParsing(unittest.TestCase):
     pass
