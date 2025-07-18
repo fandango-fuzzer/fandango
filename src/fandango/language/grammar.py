@@ -59,37 +59,42 @@ class GeneratorParserValueError(ValueError):
     pass
 
 
+NODE_SETTINGS_DEFAULTS = {
+    "havoc_probability": 0.0,
+    "max_stack_pow": 7,
+}
+
+
 class NodeSettings:
     def __init__(
         self,
-        havoc_probability: Optional[str] = None,
-        max_stack_pow: Optional[str] = None,
+        raw_settings: dict[str, str] = {},
     ):
-        self._havoc_probability = (
-            float(havoc_probability) if havoc_probability is not None else None
-        )
-        self._max_stack_pow = int(max_stack_pow) if max_stack_pow is not None else None
+        self._settings: dict[str, Any] = {}
 
-    @property
-    def havoc_probability(self) -> float:
-        return self._havoc_probability or 0.0
+        for k, v in NODE_SETTINGS_DEFAULTS.items():
+            if k in raw_settings:
+                self._settings[k] = type(v)(raw_settings[k])
 
-    @property
-    def max_stack_pow(self) -> int:
-        return self._max_stack_pow or 7
+    def __getattr__(self, name: str) -> Any:
+        if name in NODE_SETTINGS_DEFAULTS:
+            if name in self._settings:
+                return self._settings[name]
+            else:
+                return NODE_SETTINGS_DEFAULTS[name]
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> "NodeSettings":
+        return NodeSettings(deepcopy(self._settings))
 
     def update(self, other: "NodeSettings | None") -> "NodeSettings":
         if other is None:
             return self
 
-        if other._havoc_probability is not None:
-            if self._havoc_probability is not None:
-                LOGGER.warning("Overriding havoc_probability with a different value")
-            self._havoc_probability = other._havoc_probability
-        if other._max_stack_pow is not None:
-            if self._max_stack_pow is not None:
-                LOGGER.warning("Overriding max_stack_pow with a different value")
-            self._max_stack_pow = other._max_stack_pow
+        for k in NODE_SETTINGS_DEFAULTS:
+            if k in other._settings:
+                if k in self._settings:
+                    LOGGER.warning(f"Overriding {k} with a different value")
+                self._settings[k] = other._settings[k]
 
         return self
 
@@ -100,7 +105,7 @@ class GrammarSetting:
     def __init__(self, selector: str, rules: dict[str, str]):
 
         self._selector = selector
-        self._node_settings = NodeSettings(**rules)
+        self._node_settings = NodeSettings(rules)
 
     def _matches(self, node: "Node") -> bool:
         if self._selector == "*":
@@ -128,7 +133,7 @@ class Node(abc.ABC):
     ):
         self._node_type = node_type
         self.distance_to_completion = distance_to_completion
-        self._settings = NodeSettings()
+        self._settings = NodeSettings({})
         for setting in grammar_settings:
             self._settings.update(setting.settings_for(self))
 

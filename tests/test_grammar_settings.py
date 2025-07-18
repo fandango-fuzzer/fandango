@@ -1,7 +1,20 @@
 import random
 from typing import Any, Callable
-from fandango.language.grammar import Grammar, Node, NonTerminalNode, TerminalNode
+from fandango.language.grammar import (
+    NODE_SETTINGS_DEFAULTS,
+    Grammar,
+    Node,
+    NonTerminalNode,
+    TerminalNode,
+)
 from fandango.language.parse import parse
+
+FLOAT_KEY = next(
+    k for k in NODE_SETTINGS_DEFAULTS if isinstance(NODE_SETTINGS_DEFAULTS[k], float)
+)
+INT_KEY = next(
+    k for k in NODE_SETTINGS_DEFAULTS if isinstance(NODE_SETTINGS_DEFAULTS[k], int)
+)
 
 
 def get_grammar(
@@ -31,31 +44,34 @@ def get_grammar(
 
 def check_node(
     node: Node,
-    havoc_on_set: float,
-    max_stack_on_set: int | None,
+    float_key_on_set: float,
+    int_key_on_set: int | None,
     match_lambda: Callable[[Node], bool],
 ):
     if match_lambda(node):
-        assert node._settings._havoc_probability == havoc_on_set
-        assert node._settings._max_stack_pow == max_stack_on_set
+        assert node._settings._settings[FLOAT_KEY] == float_key_on_set
+        if int_key_on_set is not None:
+            assert node._settings._settings[INT_KEY] == int_key_on_set
+        else:
+            assert INT_KEY not in node._settings._settings
     else:
-        assert node._settings._havoc_probability == None
-        assert node._settings._max_stack_pow == None
+        assert FLOAT_KEY not in node._settings._settings
+        assert INT_KEY not in node._settings._settings
     for n in node.children():
-        check_node(n, havoc_on_set, max_stack_on_set, match_lambda)
+        check_node(n, float_key_on_set, int_key_on_set, match_lambda)
 
 
 def test_can_parse_grammar_settings():
-    grammar = get_grammar([("<start>", {"havoc_probability": 0.5})])
+    grammar = get_grammar([("<start>", {FLOAT_KEY: 0.5})])
     gss = grammar._grammar_settings
     assert len(gss) == 1
     gs = gss[0]
     assert gs._selector == "<start>"
     ns = gs._node_settings
-    assert ns._havoc_probability == 0.5
-    assert ns.havoc_probability == 0.5
-    assert ns._max_stack_pow == None
-    assert ns.max_stack_pow == 7
+    assert ns._settings[FLOAT_KEY] == 0.5
+    assert getattr(ns, FLOAT_KEY) == 0.5
+    assert INT_KEY not in ns._settings
+    assert getattr(ns, INT_KEY) == NODE_SETTINGS_DEFAULTS[INT_KEY]
 
     def match_start(node: Node) -> bool:
         return isinstance(node, NonTerminalNode) and node.symbol.name() == "<start>"
@@ -68,16 +84,16 @@ def test_can_parse_grammar_settings():
 
 
 def test_assign_to_all_nonterminals():
-    grammar = get_grammar(
-        [("all_with_type(NonTerminalNode)", {"havoc_probability": 0.5})]
-    )
+    grammar = get_grammar([("all_with_type(NonTerminalNode)", {FLOAT_KEY: 0.5})])
     gss = grammar._grammar_settings
     assert len(gss) == 1
     gs = gss[0]
     assert gs._selector == "all_with_type(NonTerminalNode)"
     ns = gs._node_settings
-    assert ns._havoc_probability == 0.5
-    assert ns._max_stack_pow == None
+    assert ns._settings[FLOAT_KEY] == 0.5
+    assert getattr(ns, FLOAT_KEY) == 0.5
+    assert INT_KEY not in ns._settings
+    assert getattr(ns, INT_KEY) == NODE_SETTINGS_DEFAULTS[INT_KEY]
 
     def match_nts(node: Node) -> bool:
         return isinstance(node, NonTerminalNode)
@@ -90,14 +106,16 @@ def test_assign_to_all_nonterminals():
 
 
 def test_assign_to_all_terminals():
-    grammar = get_grammar([("all_with_type(TerminalNode)", {"havoc_probability": 0.5})])
+    grammar = get_grammar([("all_with_type(TerminalNode)", {FLOAT_KEY: 0.5})])
     gss = grammar._grammar_settings
     assert len(gss) == 1
     gs = gss[0]
     assert gs._selector == "all_with_type(TerminalNode)"
     ns = gs._node_settings
-    assert ns._havoc_probability == 0.5
-    assert ns._max_stack_pow == None
+    assert ns._settings[FLOAT_KEY] == 0.5
+    assert getattr(ns, FLOAT_KEY) == 0.5
+    assert INT_KEY not in ns._settings
+    assert getattr(ns, INT_KEY) == NODE_SETTINGS_DEFAULTS[INT_KEY]
 
     def match_ts(node: Node) -> bool:
         return isinstance(node, TerminalNode)
@@ -110,12 +128,15 @@ def test_assign_to_all_terminals():
 
 
 def test_assign_to_all():
-    grammar = get_grammar([("*", {"havoc_probability": 0.5})])
+    grammar = get_grammar([("*", {FLOAT_KEY: 0.5})])
     gss = grammar._grammar_settings
     assert len(gss) == 1
     gs = gss[0]
     assert gs._selector == "*"
-    assert gs._node_settings._havoc_probability == 0.5
+    assert gs._node_settings._settings[FLOAT_KEY] == 0.5
+    assert getattr(gs._node_settings, FLOAT_KEY) == 0.5
+    assert INT_KEY not in gs._node_settings._settings
+    assert getattr(gs._node_settings, INT_KEY) == NODE_SETTINGS_DEFAULTS[INT_KEY]
 
     def match_all(node: Node) -> bool:
         return True
@@ -130,8 +151,8 @@ def test_assign_to_all():
 def test_multiple_settings_lines():
     grammar = get_grammar(
         [
-            ("all_with_type(NonTerminalNode)", {"havoc_probability": 0.5}),
-            ("all_with_type(TerminalNode)", {"havoc_probability": 0.5}),
+            ("all_with_type(NonTerminalNode)", {FLOAT_KEY: 0.5}),
+            ("all_with_type(TerminalNode)", {FLOAT_KEY: 0.5}),
         ]
     )
     gss = grammar._grammar_settings
@@ -141,8 +162,8 @@ def test_multiple_settings_lines():
             gs._selector == "all_with_type(NonTerminalNode)"
             or gs._selector == "all_with_type(TerminalNode)"
         )
-        assert gs._node_settings._havoc_probability == 0.5
-        assert gs._node_settings._max_stack_pow == None
+        assert gs._node_settings._settings[FLOAT_KEY] == 0.5
+        assert INT_KEY not in gs._node_settings._settings
 
     def match_ts_and_nts(node: Node) -> bool:
         return isinstance(node, NonTerminalNode) or isinstance(node, TerminalNode)
@@ -159,7 +180,7 @@ def test_multiple_key_value_pairs():
         [
             (
                 "all_with_type(NonTerminalNode)",
-                {"havoc_probability": 0.5, "max_stack_pow": 3},
+                {FLOAT_KEY: 0.5, INT_KEY: 3},
             )
         ]
     )
@@ -168,8 +189,10 @@ def test_multiple_key_value_pairs():
     gs = gss[0]
     assert gs._selector == "all_with_type(NonTerminalNode)"
     ns = gs._node_settings
-    assert ns._havoc_probability == 0.5
-    assert ns._max_stack_pow == 3
+    assert ns._settings[FLOAT_KEY] == 0.5
+    assert ns._settings[INT_KEY] == 3
+    assert getattr(ns, FLOAT_KEY) == 0.5
+    assert getattr(ns, INT_KEY) == 3
 
     def match_nts(node: Node) -> bool:
         return isinstance(node, NonTerminalNode)
