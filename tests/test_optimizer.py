@@ -18,6 +18,9 @@ from .utils import RESOURCES_ROOT
 class GeneticTest(unittest.TestCase):
     def is_this_art_or_can_it_be_deleted(self):
         # I just need to keep this part of the code to ensure such a piece of art is not lost in the ether
+        #
+        # From a fellow connoisseur of art: thank you for preserving this!
+        #
         # Define a simple grammar for testing
         file = open("tests/resources/example_number.fan", "r")
         try:
