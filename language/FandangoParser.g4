@@ -212,6 +212,8 @@ grammar_setting_content:
 
 grammar_selector:
     nonterminal
+    | 'all_with_type' '(' (TERMINAL_NODE | NONTERMINAL_NODE) ')'
+    | '*'
     ;
 
 grammar_rule:
