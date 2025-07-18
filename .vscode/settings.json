@@ -22,5 +22,6 @@
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
+    "python.envFile": "${workspaceFolder}/.env",
     // "pygls.jsonServer.exampleConfiguration": "some value here",
 }
