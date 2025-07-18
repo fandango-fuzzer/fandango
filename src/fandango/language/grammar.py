@@ -61,11 +61,13 @@ class GeneratorParserValueError(ValueError):
 class NodeSettings:
     def __init__(
         self,
-        havoc_probability: Optional[float] = None,
-        max_stack_pow: Optional[int] = None,
+        havoc_probability: Optional[str] = None,
+        max_stack_pow: Optional[str] = None,
     ):
-        self._havoc_probability = havoc_probability
-        self._max_stack_pow = max_stack_pow
+        self._havoc_probability = (
+            float(havoc_probability) if havoc_probability is not None else None
+        )
+        self._max_stack_pow = int(max_stack_pow) if max_stack_pow is not None else None
 
     @property
     def havoc_probability(self) -> float:
@@ -92,12 +94,23 @@ class NodeSettings:
 
 
 class GrammarSetting:
-    def __init__(self, selector: str, rules: dict[str, Any]):
+    ALL_WITH_TYPE_RE = re.compile(r"all_with_type\((.*?)\)")
+
+    def __init__(self, selector: str, rules: dict[str, str]):
+
         self._selector = selector
         self._node_settings = NodeSettings(**rules)
 
     def _matches(self, node: "Node") -> bool:
-        return isinstance(node, NonTerminal) and self._selector == node.name()
+        if self._selector == "*":
+            return True
+        if match := self.ALL_WITH_TYPE_RE.match(self._selector):
+            if type(node).__name__ == match.group(1):
+                return True
+        if isinstance(node, NonTerminalNode):
+            if node.symbol.name() == self._selector:
+                return True
+        return False
 
     def settings_for(self, node: "Node") -> Optional[NodeSettings]:
         if not self._matches(node):
@@ -197,9 +210,9 @@ class Alternative(Node):
         grammar_settings: list[GrammarSetting],
         id: str = "",
     ):
-        super().__init__(NodeType.ALTERNATIVE, grammar_settings)
         self.id = id
         self.alternatives = alternatives
+        super().__init__(NodeType.ALTERNATIVE, grammar_settings)
 
     def fuzz(
         self,
@@ -257,9 +270,9 @@ class Concatenation(Node):
         grammar_settings: list[GrammarSetting],
         id: str = "",
     ):
-        super().__init__(NodeType.CONCATENATION, grammar_settings)
         self.id = id
         self.nodes = nodes
+        super().__init__(NodeType.CONCATENATION, grammar_settings)
 
     def fuzz(
         self,
@@ -316,7 +329,6 @@ class Repetition(Node):
         min_: int = 0,
         max_: Optional[int] = None,
     ):
-        super().__init__(NodeType.REPETITION, grammar_settings)
         self._grammar_settings = grammar_settings
         self.id = id
         self.min = min_
@@ -332,6 +344,7 @@ class Repetition(Node):
             raise FandangoValueError(
                 f"Maximum repetitions {self.max} must be greater than 0 or greater than min {min_}"
             )
+        super().__init__(NodeType.REPETITION, grammar_settings)
 
     @property
     def internal_max(self):
@@ -475,11 +488,11 @@ class NonTerminalNode(Node):
         sender: Optional[str] = None,
         recipient: Optional[str] = None,
     ):
-        super().__init__(NodeType.NON_TERMINAL, grammar_settings)
         self._grammar_settings = grammar_settings
         self.symbol = symbol
         self.sender = sender
         self.recipient = recipient
+        super().__init__(NodeType.NON_TERMINAL, grammar_settings)
 
     def fuzz(
         self,
@@ -570,11 +583,11 @@ class TerminalNode(Node):
         symbol: Terminal,
         grammar_settings: list[GrammarSetting],
     ):
+        self._grammar_settings = grammar_settings
+        self.symbol = symbol
         super().__init__(
             NodeType.TERMINAL, grammar_settings, distance_to_completion=1.0
         )
-        self._grammar_settings = grammar_settings
-        self.symbol = symbol
 
     def fuzz(
         self,
@@ -645,9 +658,9 @@ class CharSet(Node):
         chars: str,
         grammar_settings: list[GrammarSetting],
     ):
-        super().__init__(NodeType.CHAR_SET, grammar_settings)
         self._grammar_settings = grammar_settings
         self.chars = chars
+        super().__init__(NodeType.CHAR_SET, grammar_settings)
 
     def fuzz(
         self,

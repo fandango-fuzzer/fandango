@@ -51,7 +51,7 @@ class FandangoSplitter(FandangoParserVisitor):
     def __init__(self):
         self.productions = []
         self.constraints = []
-        self.grammar_settings = []
+        self.grammar_settings: list[FandangoParser.Grammar_setting_contentContext] = []
         self.python_code = []
 
     def visitFandango(self, ctx: FandangoParser.FandangoContext):
@@ -148,10 +148,10 @@ class GrammarProcessor(FandangoParserVisitor):
     def visitGrammar_setting_content(
         self, ctx: FandangoParser.Grammar_setting_contentContext
     ) -> GrammarSetting:
-        selector = ctx.grammar_selector()
+        selector = ctx.grammar_selector().getText()
         unparsed_rules: list[FandangoParser.Grammar_ruleContext] = ctx.grammar_rule()
         rules = {
-            rule.grammar_setting_key().getText(): rule.grammar_setting_value()
+            rule.grammar_setting_key().getText(): rule.grammar_setting_value().getText()
             for rule in unparsed_rules
         }
         return GrammarSetting(selector, rules)
