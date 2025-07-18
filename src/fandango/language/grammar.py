@@ -1426,7 +1426,7 @@ class Grammar(NodeVisitor):
         def visitTerminalNode(self, node: TerminalNode):
             return [[(node.symbol, frozenset())]]
 
-        def collapse(self, tree: Optional[DerivationTree]):
+        def collapse(self, tree: Optional[DerivationTree]) -> Optional[DerivationTree]:
             if tree is None:
                 return None
             if isinstance(tree.symbol, NonTerminal):
@@ -1436,7 +1436,7 @@ class Grammar(NodeVisitor):
                     )
             return self._collapse(tree)[0]
 
-        def _collapse(self, tree: DerivationTree):
+        def _collapse(self, tree: DerivationTree) -> list[DerivationTree]:
             reduced = []
             for child in tree.children:
                 rec_reduced = self._collapse(child)
@@ -1555,7 +1555,9 @@ class Grammar(NodeVisitor):
                 raise FandangoValueError(f"Node {node} needs to be a Repetition")
 
             tree = self.construct_incomplete_tree(state, table)
-            tree = self.collapse(tree)
+            collapsed_tree = self.collapse(tree)
+            assert collapsed_tree is not None
+            tree = collapsed_tree
             if hookin_parent is not None:
                 hookin_parent.set_children(hookin_parent.children + [tree])
             try:
@@ -2142,7 +2144,7 @@ class Grammar(NodeVisitor):
             mode: ParsingMode = ParsingMode.COMPLETE,
             hookin_parent: Optional[DerivationTree] = None,
             include_controlflow: bool = False,
-        ) -> Generator[tuple[DerivationTree, Any] | DerivationTree, None, None]:
+        ) -> Generator[Optional[DerivationTree], None, None]:
             """
             Yield multiple parse alternatives, using a cache.
             """
@@ -2171,8 +2173,7 @@ class Grammar(NodeVisitor):
                 for tree in forest:
                     tree = deepcopy(tree)
                     if not include_controlflow:
-                        tree = self._iter_parser.collapse(tree)
-                        yield tree
+                        yield self.collapse(tree)
                 return
 
             for tree in self._parse_forest(
@@ -2187,9 +2188,7 @@ class Grammar(NodeVisitor):
                     self._cache[cache_key].append(tree)
                 else:
                     self._cache[cache_key] = [tree]
-                if not include_controlflow:
-                    tree = self._iter_parser.collapse(tree)
-                yield tree
+                yield self.collapse(tree) if not include_controlflow else tree
 
         def parse_multiple(
             self,
@@ -2424,7 +2423,7 @@ class Grammar(NodeVisitor):
         tree.sources = [p.deepcopy(copy_parent=False) for p in sources]
         return tree
 
-    def collapse(self, tree: Optional[DerivationTree]) -> DerivationTree:
+    def collapse(self, tree: Optional[DerivationTree]) -> Optional[DerivationTree]:
         return self._parser.collapse(tree)
 
     def fuzz(
@@ -2502,7 +2501,7 @@ class Grammar(NodeVisitor):
         start: str | NonTerminal = "<start>",
         mode: ParsingMode = ParsingMode.COMPLETE,
         include_controlflow: bool = False,
-    ):
+    ) -> Generator[Optional[DerivationTree], None, None]:
         return self._parser.parse_forest(
             word, start, mode=mode, include_controlflow=include_controlflow
         )

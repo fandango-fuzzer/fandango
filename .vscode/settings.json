@@ -23,5 +23,6 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "python.envFile": "${workspaceFolder}/.env",
+    "debugpy.debugJustMyCode": false,
     // "pygls.jsonServer.exampleConfiguration": "some value here",
 }
