@@ -146,13 +146,13 @@ class FandangoBase(ABC):
     @abstractmethod
     def parse(
         self, word: str | bytes | DerivationTree, *, prefix: bool = False, **settings
-    ) -> Iterable[DerivationTree]:
+    ) -> Generator[Optional[DerivationTree], None, None]:
         """
         Parse a string according to spec.
         :param word: The string to parse
         :param prefix: If True, allow incomplete parsing
         :param settings: Additional settings for the parse function
-        :return: An iterable of derivation trees
+        :return: A generator of derivation trees
         """
         pass
 
@@ -329,13 +329,13 @@ class Fandango(FandangoBase):
 
     def parse(
         self, word: str | bytes | DerivationTree, *, prefix: bool = False, **settings
-    ) -> Iterable[DerivationTree]:
+    ) -> Generator[Optional[DerivationTree], None, None]:
         """
         Parse a string according to spec.
         :param word: The string to parse
         :param prefix: If True, allow incomplete parsing
         :param settings: Additional settings for the parse function
-        :return: An iterable of derivation trees
+        :return: A generator of derivation trees
         """
         if prefix:
             mode = ParsingMode.INCOMPLETE
@@ -347,14 +347,13 @@ class Fandango(FandangoBase):
         )
         try:
             peek = next(tree_generator)
-            self.grammar.populate_sources(peek)
-            tree_generator = itertools.chain([peek], tree_generator)
-            have_tree = True
         except StopIteration:
-            have_tree = False
+            peek = None
 
-        if not have_tree:
+        if peek is None:
             position = self.grammar.max_position() + 1
             raise FandangoParseError(position=position)
 
-        return tree_generator
+        self.grammar.populate_sources(peek)
+        yield peek
+        yield from tree_generator
