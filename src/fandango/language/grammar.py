@@ -1084,10 +1084,10 @@ class ParseState:
 
     def __repr__(self):
         return (
-            f"({self.nonterminal} -> "
+            f"({repr(self.nonterminal)} -> "
             + "".join(
                 [
-                    f"{'•' if i == self._dot else ''}{s[0]!s}"
+                    f"{'•' if i == self._dot else ''}{repr(s[0])!s}"
                     for i, s in enumerate(self.symbols)
                 ]
             )
@@ -1965,6 +1965,7 @@ class Grammar(NodeVisitor):
             self._table[-1].add(
                 ParseState(self.implicit_start, 0, ((start, frozenset()),))
             )
+            self._incomplete.clear()
             self._max_position = -1
             self._bit_position = starter_bit
             self._parsing_mode = mode
