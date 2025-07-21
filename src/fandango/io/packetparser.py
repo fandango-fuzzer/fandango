@@ -107,10 +107,10 @@ def parse_next_remote_packet(
                     continue_parse = False
                     break
             time.sleep(0.025)
-        assert next_fragment is not None
         if not continue_parse:
             break
 
+        assert next_fragment is not None
         current_fragment_idx = next_fragment_idx
 
         for non_terminal in set(available_non_terminals):

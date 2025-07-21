@@ -48,7 +48,7 @@ class Terminal(Symbol):
         check_word: str | bytes = word
 
         symbol: str | bytes
-        if self._value.is_type(bytes) and isinstance(word, bytes):
+        if self._value.is_type(bytes) and isinstance(check_word, bytes):
             symbol = self._value.to_bytes()
         else:
             symbol = self._value.to_string()
@@ -60,7 +60,7 @@ class Terminal(Symbol):
 
         if self.is_regex:
             if not incomplete:
-                match = re.match(symbol, word)  # type: ignore [arg-type] # re actually does accept bytes
+                match = re.match(symbol, check_word)  # type: ignore [arg-type] # re actually does accept bytes
                 if match:
                     # LOGGER.debug(f"It's a match: {match.group(0)!r}")
                     return True, len(match.group(0))
@@ -80,25 +80,25 @@ class Terminal(Symbol):
 
         else:
             if not incomplete:
-                if isinstance(word, bytes):
+                if isinstance(check_word, bytes):
                     assert isinstance(symbol, bytes)
-                    if word.startswith(symbol):
+                    if check_word.startswith(symbol):
                         return True, len(symbol)
                 else:
                     assert isinstance(word, str)
                     assert isinstance(symbol, str)
-                    if word.startswith(symbol):
+                    if check_word.startswith(symbol):
                         return True, len(symbol)
             else:
-                if isinstance(word, bytes):
+                if isinstance(check_word, bytes):
                     assert isinstance(symbol, bytes)
-                    if word.startswith(symbol):
+                    if check_word.startswith(symbol):
                         return True, len(symbol)
                 else:
-                    assert isinstance(word, str)
+                    assert isinstance(check_word, str)
                     assert isinstance(symbol, str)
-                    if word.startswith(symbol):
-                        return True, len(symbol)
+                    if symbol.startswith(check_word):
+                        return True, len(check_word)
 
         # LOGGER.debug(f"No match")
         return False, 0
