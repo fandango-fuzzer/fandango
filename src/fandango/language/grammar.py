@@ -2003,7 +2003,7 @@ class Grammar(NodeVisitor):
             """
             starter_bit = -1
             if isinstance(word, DerivationTree):
-                if word.contains_bytes():
+                if word.contains_bits():
                     starter_bit = (word.count_terminals() - 1) % 8
                 if word.should_be_serialized_to_bytes():
                     word = word.to_bytes()
