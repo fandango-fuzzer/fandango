@@ -476,7 +476,7 @@ class Out(FandangoParty):
     def _listen_loop(self):
         while True:
             if self.proc.stdout is not None:
-                line = self.proc.stdout.readline()
+                line = self.proc.stdout.read(1)
                 self.receive_msg(self.party_name, line)
 
 
