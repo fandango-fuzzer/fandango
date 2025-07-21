@@ -179,7 +179,7 @@ class DerivationTree:
         return self.symbol.is_terminal
 
     @property
-    def is_nonterminal(self) -> bool:
+    def is_non_terminal(self) -> bool:
         """
         True is the node represents a nonterminal symbol.
         """
