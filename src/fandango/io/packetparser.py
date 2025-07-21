@@ -8,7 +8,10 @@ from fandango.io.packetforecaster import PacketForecaster
 from fandango.language import Grammar, NonTerminal, DerivationTree
 from fandango.language.grammar import ParsingMode
 
-def _find_next_fragment(role_sender: str, messages: list[tuple[str, str, str | bytes]], start_idx: int = 0) -> tuple[int, Optional[str | bytes]]:
+
+def _find_next_fragment(
+    role_sender: str, messages: list[tuple[str, str, str | bytes]], start_idx: int = 0
+) -> tuple[int, Optional[str | bytes]]:
     """
     Find the next message fragment sent by the specified sender in the list of messages.
     Returns the index of the message and the message fragment.
@@ -21,7 +24,9 @@ def _find_next_fragment(role_sender: str, messages: list[tuple[str, str, str | b
 
 
 def parse_next_remote_packet(
-        grammar: Grammar, forecast: PacketForecaster.ForecastingResult, io_instance: FandangoIO
+    grammar: Grammar,
+    forecast: PacketForecaster.ForecastingResult,
+    io_instance: FandangoIO,
 ):
     if len(io_instance.get_received_msgs()) == 0:
         return None, None
@@ -50,7 +55,7 @@ def parse_next_remote_packet(
     # We might have received messages from different parties. Select a party that sent a message and is
     # in the current forecast.
     for idx, (msg_sender, msg_recipient, _) in enumerate(
-            io_instance.get_received_msgs()
+        io_instance.get_received_msgs()
     ):
         if msg_sender in forecast.get_msg_parties():
             break
@@ -64,13 +69,12 @@ def parse_next_remote_packet(
         forecast_packet = forecast_non_terminals[non_terminal]
         hookin_data = random.choice(list(forecast_packet.paths))
         hookin_tree = hookin_data.tree
-        path = list(
-            map(lambda x: x[0], filter(lambda x: not x[1], hookin_data.path))
-        )
+        path = list(map(lambda x: x[0], filter(lambda x: not x[1], hookin_data.path)))
         hookin_point = hookin_tree.get_last_by_path(path)
         nt_parsers[non_terminal] = Grammar.IterativeParser(grammar=grammar)
-        nt_parsers[non_terminal].new_parse(start=non_terminal, mode=ParsingMode.COMPLETE,
-                                           hookin_parent=hookin_point)
+        nt_parsers[non_terminal].new_parse(
+            start=non_terminal, mode=ParsingMode.COMPLETE, hookin_parent=hookin_point
+        )
 
     continue_parse = True
     complete_parses: dict[NonTerminal, tuple[int, DerivationTree]] = dict()
@@ -81,9 +85,13 @@ def parse_next_remote_packet(
 
         # Find the next message fragment sent by the selected sender
         start_time = time.time()
-        next_fragment_idx, next_fragment = _find_next_fragment(msg_sender, io_instance.get_received_msgs(), current_fragment_idx + 1)
+        next_fragment_idx, next_fragment = _find_next_fragment(
+            msg_sender, io_instance.get_received_msgs(), current_fragment_idx + 1
+        )
         while next_fragment is None:
-            next_fragment_idx, next_fragment = _find_next_fragment(msg_sender, io_instance.get_received_msgs(), current_fragment_idx + 1)
+            next_fragment_idx, next_fragment = _find_next_fragment(
+                msg_sender, io_instance.get_received_msgs(), current_fragment_idx + 1
+            )
             if time.time() - start_time > wait_for_completion_time:
                 if len(complete_parses) == 0:
                     raise FandangoFailedError(
@@ -100,7 +108,6 @@ def parse_next_remote_packet(
             break
 
         current_fragment_idx = next_fragment_idx
-
 
         for non_terminal in set(available_non_terminals):
             parser = nt_parsers[non_terminal]
@@ -120,7 +127,9 @@ def parse_next_remote_packet(
 
     if len(complete_parses) == 0:
         if parameter_parsing_exception is not None:
-            applicable_nt, parameter_parsing_exception, complete_msg = parameter_parsing_exception
+            applicable_nt, parameter_parsing_exception, complete_msg = (
+                parameter_parsing_exception
+            )
             raise FandangoFailedError(
                 f"Couldn't derive parameters for received packet or timed out while waiting for remaining packet. Applicable NonTerminal: {applicable_nt} Received part: {complete_msg!r}. Exception: {str(parameter_parsing_exception)}"
             )
