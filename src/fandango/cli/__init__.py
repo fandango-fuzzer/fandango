@@ -57,7 +57,7 @@ from pathlib import Path
 from ansi_styles import ansiStyles as styles
 
 from fandango import Fandango
-from fandango.language.grammar import Grammar, FuzzingMode
+from fandango.language.grammar import Grammar, FuzzingMode, ParsingMode
 from fandango.language.parse import parse, clear_cache, cache_dir
 from fandango.logger import (
     LOGGER,
@@ -1285,9 +1285,9 @@ def parse_file(
         start_symbol = "<start>"
 
     allow_incomplete = hasattr(args, "prefix") and args.prefix
-    parsing_mode = Grammar.Parser.ParsingMode.COMPLETE
+    parsing_mode = ParsingMode.COMPLETE
     if allow_incomplete:
-        parsing_mode = Grammar.Parser.ParsingMode.INCOMPLETE
+        parsing_mode = ParsingMode.INCOMPLETE
     tree_gen = grammar.parse_forest(individual, start=start_symbol, mode=parsing_mode)
 
     alternative_counter = 1

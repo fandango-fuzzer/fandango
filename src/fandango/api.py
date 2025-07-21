@@ -5,7 +5,7 @@ import logging
 import time
 from typing import IO, Optional
 from fandango.constraints.base import Constraint, SoftValue
-from fandango.language.grammar import FuzzingMode, Grammar
+from fandango.language.grammar import FuzzingMode, Grammar, ParsingMode
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
@@ -332,9 +332,9 @@ class Fandango(FandangoBase):
         :return: A generator of derivation trees
         """
         if prefix:
-            mode = Grammar.Parser.ParsingMode.INCOMPLETE
+            mode = ParsingMode.INCOMPLETE
         else:
-            mode = Grammar.Parser.ParsingMode.COMPLETE
+            mode = ParsingMode.COMPLETE
 
         tree_generator = self.grammar.parse_forest(
             word, mode=mode, start=self._start_symbol, **settings

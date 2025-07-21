@@ -40,45 +40,57 @@ class Terminal(Symbol):
     def from_number(number: str) -> "Terminal":
         return Terminal(Terminal.clean(number))
 
-    def check(self, word: str | int, incomplete=False) -> tuple[bool, int]:
+    def check(self, word: str | int | bytes, incomplete=False) -> tuple[bool, int]:
         """Return (True, # characters matched by `word`), or (False, 0)"""
 
         if self._value.is_type(NoneType) or isinstance(word, int):
             return self.check_all(word), 1
+        check_word: str | bytes = word
 
-        if self._value.is_type(bytes) and isinstance(word, bytes):
+        symbol: str | bytes
+        if self._value.is_type(bytes) and isinstance(check_word, bytes):
             symbol = self._value.to_bytes()
         else:
             symbol = self._value.to_string()
-            word = word if isinstance(word, str) else word.decode("latin-1")
+            check_word = (
+                check_word
+                if isinstance(check_word, str)
+                else check_word.decode("latin-1")
+            )
 
         if self.is_regex:
             if not incomplete:
-                match = re.match(symbol, word)
+                match = re.match(symbol, check_word)  # type: ignore[arg-type]
                 if match:
                     # LOGGER.debug(f"It's a match: {match.group(0)!r}")
                     return True, len(match.group(0))
             else:
                 compiled = regex.compile(symbol)
-                match = compiled.match(word, partial=True)
-                if match is not None and (match.partial or match.end() == len(word)):
+                match = compiled.match(check_word, partial=True)
+                if match is not None and (
+                    match.partial or match.end() == len(check_word)
+                ):
                     return True, len(match.group(0))
-                else:
-                    return False, 0
+                match = compiled.fullmatch(check_word, partial=True)
+                if match is not None and (
+                    match.partial or match.end() == len(check_word)
+                ):
+                    return True, len(match.group(0))
+                return False, 0
 
         else:
             if not incomplete:
-                if word.startswith(symbol):
+                if check_word.startswith(symbol):  # type: ignore[arg-type]
                     # LOGGER.debug(f"It's a match: {symbol!r}")
                     return True, len(symbol)
             else:
-                if symbol.startswith(word):
-                    return True, len(word)
+                if symbol.startswith(check_word):  # type: ignore[arg-type]
+                    return True, len(check_word)
 
         # LOGGER.debug(f"No match")
         return False, 0
 
-    def check_all(self, word: str | int) -> bool:
+    def check_all(self, word: str | int | bytes) -> bool:
         if isinstance(word, str):
             if self._value.is_type(NoneType):
                 # cannot reasonably compare strings to partial bytes
