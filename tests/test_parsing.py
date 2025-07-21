@@ -376,9 +376,11 @@ class TestEmptyParsing(unittest.TestCase):
             self.parser = Grammar.Parser(grammar)
             self.iter_parser = IterParsingTester(self.grammar)
 
-    def _test(self, example, tree):
-        for parser in [self.parser, self.iter_parser]:
+    def _test(self, example: str, tree: DerivationTree):
+        parsers: list[Grammar.Parser] = [self.parser, self.iter_parser]
+        for parser in parsers:
             actual_tree = parser.parse(example)
+            print(type(parser), type(actual_tree))
             self.assertEqual(tree, actual_tree)
 
     def test_a(self):
@@ -518,6 +520,7 @@ class TestBitParsing(TestCLIParsing):
     def test_alternative_bits(self):
         with open(RESOURCES_ROOT / "byte_alternative.fan", "r") as file:
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
         parser = Grammar.Parser(grammar)
         iter_parser = IterParsingTester(grammar)
         self._test(b"\x00", None, [parser, iter_parser])
