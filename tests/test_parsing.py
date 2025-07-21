@@ -9,20 +9,22 @@ from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command
 
+
 class IterParsingTester(Grammar.Parser):
     def _parse_forest(
-            self,
-            word: str | bytes,
-            start: str | NonTerminal = "<start>",
-            *,
-            mode: ParsingMode = ParsingMode.COMPLETE,
-            hookin_parent: Optional[DerivationTree] = None,
-            starter_bit=-1,
+        self,
+        word: str | bytes,
+        start: str | NonTerminal = "<start>",
+        *,
+        mode: ParsingMode = ParsingMode.COMPLETE,
+        hookin_parent: Optional[DerivationTree] = None,
+        starter_bit=-1,
     ):
         self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
         for char in word[:-1]:
             next(self._iter_parser.consume(char), None)
         yield from self._iter_parser.consume(word[-1])
+
 
 class ParserTests(unittest.TestCase):
     # Type annotation for instance attribute set in setUp
@@ -408,6 +410,7 @@ class TestEmptyParsing(unittest.TestCase):
             ),
         )
 
+
 class TestCanContinueParsing(unittest.TestCase):
 
     def setUp(self):
@@ -419,19 +422,19 @@ class TestCanContinueParsing(unittest.TestCase):
 
     def test_1(self):
         self.iter_parser.new_parse()
-        next(self.iter_parser.consume(b'r'), None)
+        next(self.iter_parser.consume(b"r"), None)
         self.assertTrue(self.iter_parser.can_continue())
-        next(self.iter_parser.consume(b'g'), None)
+        next(self.iter_parser.consume(b"g"), None)
         self.assertTrue(self.iter_parser.can_continue())
-        next(self.iter_parser.consume(b'b'), None)
+        next(self.iter_parser.consume(b"b"), None)
         self.assertTrue(self.iter_parser.can_continue())
-        next(self.iter_parser.consume(b'd'), None)
+        next(self.iter_parser.consume(b"d"), None)
         self.assertTrue(self.iter_parser.can_continue())
-        next(self.iter_parser.consume(b';'), None)
+        next(self.iter_parser.consume(b";"), None)
         self.assertFalse(self.iter_parser.can_continue())
 
         self.iter_parser.new_parse()
-        next(self.iter_parser.consume(b'rgbd;'), None)
+        next(self.iter_parser.consume(b"rgbd;"), None)
 
 
 class TestCLIParsing(unittest.TestCase):

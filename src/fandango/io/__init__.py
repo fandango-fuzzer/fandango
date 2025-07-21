@@ -572,7 +572,9 @@ class FandangoIO(object):
 
         with self.receive_lock:
             self.receive = [
-                (sender, receiver, msg) for idx, (sender, receiver, msg) in enumerate(self.receive) if not (sender == party_name and idx <= to_idx)
+                (sender, receiver, msg)
+                for idx, (sender, receiver, msg) in enumerate(self.receive)
+                if not (sender == party_name and idx <= to_idx)
             ]
 
     def transmit(
