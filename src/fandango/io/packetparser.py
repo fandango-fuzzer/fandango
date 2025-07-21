@@ -138,7 +138,7 @@ def parse_next_remote_packet(
                 f"Couldn't derive parameters for received packet or timed out while waiting for remaining packet. Applicable NonTerminal: {applicable_nt} Received part: {complete_msg!r}. Exception: {str(parameter_parsing_exception)}"
             )
         else:
-            nt_list = map(lambda x: str(x.symbol), available_non_terminals)
+            nt_list = map(lambda x: str(x.symbol), forecast_non_terminals.get_non_terminals())
             raise FandangoValueError(
                 "Could not parse received message fragments into predicted NonTerminals. "
                 + "Predicted NonTerminals: "
