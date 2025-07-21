@@ -1,13 +1,14 @@
 import os
 from fandango.beartype import activate_beartype
+import pytest
 
 
-def pytest_configure(config):
+def pytest_configure(config: pytest.Config):
     os.environ["FANDANGO_RUN_BEARTYPE"] = "1"
     activate_beartype()
 
 
-def pytest_collection_modifyitems(items):
+def pytest_collection_modifyitems(items: list[pytest.Item]):
     # ensure long-running tests are run first to balance loading across cores
     # so we have to wait less for a single long test to finish running because it was scheduled last
     order = ["cli", "softconstraint", "optimizer", "fan_parsers"]

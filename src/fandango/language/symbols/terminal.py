@@ -4,7 +4,7 @@ from types import NoneType
 
 import regex
 
-from fandango.language.symbol import Symbol, SymbolType
+from fandango.language.symbols import Symbol, SymbolType
 from fandango.language.tree_value import TreeValue
 
 
