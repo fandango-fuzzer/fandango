@@ -228,27 +228,20 @@ run-tests: $(TEST_MARKER)
 ## Evaluation
 EVALUATION = evaluation
 EVALUATION_SOURCES = $(wildcard $(EVALUATION)/*.py $(EVALUATION)/*/*.py $(EVALUATION)/*/*/*.py $(EVALUATION)/*/*/*.fan $(EVALUATION)/*/*/*.txt)
-EVALUATION_MARKER = $(EVALUATION)/test-evaluation.txt
 
 # python -m evaluation.vs_isla.run_evaluation
-.PHONY: evaluation evaluate
-evaluation evaluate $(EVALUATION_MARKER): $(PYTHON_SOURCES) $(EVALUATION_SOURCES)
+.PHONY: evaluation
+evaluation $(EVALUATION_MARKER): $(PYTHON_SOURCES) $(EVALUATION_SOURCES)
 	$(PYTHON) -m evaluation.vs_isla.run_evaluation 1
-	echo 'Success' > $(EVALUATION_MARKER)
 
-run-evaluation: $(EVALUATION_MARKER)
 
 ## Experiments
 EXPERIMENTS = $(EVALUATION)/experiments
 EXPERIMENTS_SOURCES = $(wildcard $(EXPERIMENTS)/*/*.py $(EXPERIMENTS)/*/*.fan)
-EXPERIMENTS_MARKER = $(EXPERIMENTS)/test-experiments.txt
 
-.PHONY: experiment experiments
-experiment experiments $(EXPERIMENTS_MARKER): $(PYTHON_SOURCES) $(EXPERIMENTS_SOURCES)
+.PHONY: experiments
+experiments $(EXPERIMENTS_MARKER): $(PYTHON_SOURCES) $(EXPERIMENTS_SOURCES)
 	$(PYTHON) -m evaluation.experiments.run_experiments
-	echo 'Success' > $(EXPERIMENTS_MARKER)
-
-run-experiments: $(EXPERIMENTS_MARKER)
 
 ## All
 .PHONY: run-all
