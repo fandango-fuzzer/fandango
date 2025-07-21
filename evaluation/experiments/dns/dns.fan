@@ -1,7 +1,7 @@
 from struct import unpack, pack
 from faker import Faker
 import time
-from fandango.language.symbol import NonTerminal, Terminal
+from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 from copy import deepcopy
 from fandango.language.parse import parse

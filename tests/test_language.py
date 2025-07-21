@@ -24,7 +24,7 @@ from fandango.language.parse import parse
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.search import RuleSearch
-from fandango.language.symbol import NonTerminal
+from fandango.language.symbols import NonTerminal
 from .utils import RESOURCES_ROOT
 
 FUZZINGBOOK_GRAMMAR = {

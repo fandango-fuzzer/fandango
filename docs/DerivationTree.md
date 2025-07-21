@@ -17,7 +17,7 @@ kernelspec:
 :tags: ["remove-input", "remove-output"]
 from myst_nb import glue
 from fandango.language.tree import DerivationTree
-from fandango.language.symbol import NonTerminal
+from fandango.language.symbols import NonTerminal
 t = DerivationTree(NonTerminal('a string'))
 number_of_methods = len(dir(t)) + len(dir(str))
 glue("number_of_methods", number_of_methods)

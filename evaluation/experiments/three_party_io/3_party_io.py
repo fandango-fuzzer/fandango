@@ -1,6 +1,4 @@
 from fandango.evolution.algorithm import Fandango
-from fandango.language.grammar import *
-from fandango.language.symbol.symbol import *
 from fandango.language.parse import parse
 
 
@@ -8,6 +6,7 @@ def main():
     # Parse grammar and constraints
     with open("3_party_io.fan") as f:
         grammar, constraints = parse(f, use_stdlib=False)
+        assert grammar is not None
 
     fandango = Fandango(grammar=grammar, constraints=constraints, population_size=100)
 
