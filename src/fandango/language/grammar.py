@@ -17,6 +17,7 @@ from fandango.errors import FandangoValueError, FandangoParseError
 from fandango.language.tree import DerivationTree
 from fandango.language.symbol import Symbol, NonTerminal, Terminal, Slice
 from fandango.logger import LOGGER
+from fandango.language.tree_value import TreeValue
 
 if TYPE_CHECKING:
     from fandango.constraints.base import RepetitionBoundsConstraint
@@ -991,6 +992,7 @@ class ParseState:
         dot: int = 0,
         children: Optional[list[DerivationTree]] = None,
         is_incomplete: bool = False,
+        incomplete_idx=0,
     ):
         self._nonterminal = nonterminal
         self._position = position
@@ -998,6 +1000,7 @@ class ParseState:
         self._dot = dot
         self.children = children or []
         self.is_incomplete = is_incomplete
+        self.incomplete_idx = incomplete_idx
         self._hash: Optional[int] = None
 
     @property
@@ -1021,7 +1024,7 @@ class ParseState:
         return self._symbols
 
     @property
-    def dot(self):
+    def dot(self) -> Optional[Symbol]:
         return self.symbols[self._dot][0] if self._dot < len(self.symbols) else None
 
     @property
@@ -1075,30 +1078,33 @@ class ParseState:
             + ")"
         )
 
-    def next(self, position: Optional[int] = None):
+    def next(self):
+        next_state = self.copy()
+        next_state._dot += 1
+        return next_state
+
+    def copy(self):
         return ParseState(
             self.nonterminal,
-            position or self.position,
+            self.position,
             self.symbols,
-            self._dot + 1,
+            self._dot,
             self.children[:],
             self.is_incomplete,
+            self.incomplete_idx,
         )
 
 
 class Column:
     def __init__(self, states: Optional[list[ParseState]] = None):
-        self.states = states or []
-        self.dot_map = dict[NonTerminal, list[ParseState]]()
+        self.states: list[ParseState] = states or []
+        self.dot_map = dict[Symbol, list[ParseState]]()
         self.unique = set(self.states)
         for state in self.states:
             self.dot_map[state.nonterminal].append(state)
 
     def __iter__(self):
-        index = 0
-        while index < len(self.states):
-            yield self.states[index]
-            index += 1
+        yield from self.states
 
     def __len__(self):
         return len(self.states)
@@ -1111,7 +1117,11 @@ class Column:
             return False
         self.unique.remove(state)
         self.states.remove(state)
-        self.dot_map.get(state.dot, []).remove(state)
+        symbol = state.dot
+        assert symbol is not None
+        default_list: list[ParseState] = []
+        self.dot_map.get(symbol, default_list).remove(state)
+        return None
 
     def replace(self, old: ParseState, new: ParseState):
         self.unique.remove(old)
@@ -1119,10 +1129,16 @@ class Column:
         i_old = self.states.index(old)
         del self.states[i_old]
         self.states.insert(i_old, new)
-        self.dot_map[old.dot].remove(old)
-        dot_list = self.dot_map.get(new.dot, [])
-        dot_list.append(new)
-        self.dot_map[new.dot] = dot_list
+
+        old_symbol = old.dot
+        if old_symbol is not None:
+            self.dot_map[old_symbol].remove(old)
+
+        new_symbol = new.dot
+        if new_symbol is not None:
+            dot_list = self.dot_map.get(new_symbol, [])
+            dot_list.append(new)
+            self.dot_map[new_symbol] = dot_list
 
     def __contains__(self, item):
         return item in self.unique
@@ -1134,9 +1150,11 @@ class Column:
         if state not in self.unique:
             self.states.append(state)
             self.unique.add(state)
-            state_list = self.dot_map.get(state.dot, [])
-            state_list.append(state)
-            self.dot_map[state.dot] = state_list
+            symbol = state.dot
+            if symbol is not None:
+                state_list = self.dot_map.get(symbol, [])
+                state_list.append(state)
+                self.dot_map[symbol] = state_list
             return True
         return False
 
@@ -1154,6 +1172,11 @@ def closest_match(word, candidates):
     return alternate suggestion for `word` from `candidates`
     """
     return thefuzz_process.extractOne(word, candidates)[0]
+
+
+class ParsingMode(enum.Enum):
+    COMPLETE = 0
+    INCOMPLETE = 1
 
 
 class Grammar(NodeVisitor):
@@ -1186,10 +1209,7 @@ class Grammar(NodeVisitor):
             self._children = children
             self.invalidate_hash()
 
-    class Parser(NodeVisitor):
-        class ParsingMode(enum.Enum):
-            COMPLETE = 0
-            INCOMPLETE = 1
+    class IterativeParser(NodeVisitor):
 
         def __init__(
             self,
@@ -1206,20 +1226,17 @@ class Grammar(NodeVisitor):
                 NonTerminal, tuple[Node, tuple[NonTerminal, frozenset]]
             ] = dict()
             self._tmp_rules: dict[NonTerminal, set[tuple[NonTerminal, frozenset]]] = {}
-            self._cache: dict[
-                tuple[
-                    str | bytes,
-                    NonTerminal,
-                    Grammar.Parser.ParsingMode,
-                    Optional[DerivationTree],
-                ],
-                list[DerivationTree],
-            ] = {}
             self._incomplete: set[DerivationTree] = set()
             self._nodes: dict[str, Node] = {}
             self._max_position = -1
             self.elapsed_time: float = 0.0
             self._process()
+            self._table_idx = 0
+            self._table: list[Column] = []
+            self._parsing_mode = ParsingMode.COMPLETE
+            self._bit_position = -1
+            self._hookin_parent: Optional[DerivationTree] = None
+            self._prefix_word = None
 
         def _process(self):
             self._rules.clear()
@@ -1421,6 +1438,24 @@ class Grammar(NodeVisitor):
                 )
             ]
 
+        def can_continue(self):
+            if len(self._table) <= 1:
+                # Assume that an unstarted parse can continue
+                return True
+            table: list[Column] = list(self._table)
+            table[self._table_idx] = deepcopy(table[self._table_idx])
+
+            for state in table[-1]:
+                if state.finished():
+                    self.complete(state, table, self._table_idx)
+
+            return any(
+                map(
+                    lambda state: state.is_incomplete or not state.finished(),
+                    table[self._table_idx],
+                )
+            )
+
         def predict(
             self,
             state: ParseState,
@@ -1428,29 +1463,32 @@ class Grammar(NodeVisitor):
             k: int,
             hookin_parent: Optional[DerivationTree] = None,
         ):
+            symbol = state.dot
+            assert symbol is not None
+            assert isinstance(symbol, NonTerminal)
             if state.dot in self._rules:
                 table[k].update(
                     {
                         ParseState(state.dot, k, rule, 0)  # type: ignore[arg-type]
-                        for rule in self._rules[state.dot]
+                        for rule in self._rules[symbol]
                     }
                 )
             elif state.dot in self._implicit_rules:
                 table[k].update(
                     {
                         ParseState(state.dot, k, rule, 0)  # type: ignore[arg-type]
-                        for rule in self._implicit_rules[state.dot]
+                        for rule in self._implicit_rules[symbol]
                     }
                 )
             elif state.dot in self._tmp_rules:
                 table[k].update(
                     {
                         ParseState(state.dot, k, rule, 0)  # type: ignore[arg-type]
-                        for rule in self._tmp_rules[state.dot]
+                        for rule in self._tmp_rules[symbol]
                     }
                 )
             elif state.dot in self._context_rules:
-                node, nt = self._context_rules[state.dot]
+                node, nt = self._context_rules[symbol]
                 self.predict_ctx_rule(state, table, k, node, nt, hookin_parent)
 
         def construct_incomplete_tree(
@@ -1537,7 +1575,6 @@ class Grammar(NodeVisitor):
             k: int,
             w: int,
             bit_count: int,
-            nr_bits_scanned: int,
         ) -> bool:
             """
             Scan a bit from the input `word`.
@@ -1547,6 +1584,7 @@ class Grammar(NodeVisitor):
             `bit_count` is the current bit position (7-0).
             Return True if a bit was matched, False otherwise.
             """
+            assert state.dot is not None
             assert state.dot.is_type(NoneType)
             assert 0 <= bit_count <= 7
 
@@ -1575,8 +1613,8 @@ class Grammar(NodeVisitor):
 
             # Add a new table row if the bit isn't already represented
             # by a row in the parsing table
-            if len(table) <= len(word) + 1 + nr_bits_scanned:
-                table.insert(k + 1, Column())
+            # if len(table) <= k + 1:
+            #    table.insert(k + 1, Column())
             table[k + 1].add(next_state)
 
             # Save the maximum position reached, so we can report errors
@@ -1591,7 +1629,6 @@ class Grammar(NodeVisitor):
             table: list[Column],
             k: int,
             w: int,
-            mode: ParsingMode,
         ) -> bool:
             """
             Scan a byte from the input `word`.
@@ -1602,28 +1639,64 @@ class Grammar(NodeVisitor):
             Return True if a byte was matched, False otherwise.
             """
 
+            assert state.dot is not None
             assert not state.dot.is_type(NoneType)
             assert not state.dot.is_regex
 
             # LOGGER.debug(f"Checking byte(s) {state.dot!r} at position {w:#06x} ({w}) {word[w:]!r}")
 
-            match, match_length = state.dot.check(word[w:])
+            check_word = word[w:]
+            if state.is_incomplete:
+                prev_terminal = state.children[-1]
+                prev_val = prev_terminal.symbol.value()
+                prev_val_raw: str | bytes
+                if prev_val.is_type(bytes):
+                    prev_val_raw = bytes(prev_val)
+                    check_word = bytes(
+                        TreeValue(prev_val_raw).append(TreeValue(check_word))
+                    )
+                else:
+                    prev_val_raw = str(prev_val)
+                    check_word = str(
+                        TreeValue(prev_val_raw).append(TreeValue(check_word))
+                    )
+            if state.dot.is_type(bytes):
+                dot_len = len(bytes(state.dot.value()))
+            else:
+                dot_len = len(str(state.dot.value()))
+
+            match, match_length = state.dot.check(check_word)
+            table_idx_multiplier = 1
+            if isinstance(check_word, bytes):
+                table_idx_multiplier = 8
+
             if not match:
-                if mode != Grammar.Parser.ParsingMode.INCOMPLETE or (
-                    w + len(state.dot)
-                ) < len(word):
+                if (w + dot_len - state.incomplete_idx) < len(word):
                     return False
-                match, match_length = state.dot.check(word[w:], incomplete=True)
+                match, match_length = state.dot.check(check_word, incomplete=True)
                 if not match or match_length == 0:
                     return False
-                state.is_incomplete = True
 
-            # Found a match
-            # LOGGER.debug(f"Matched byte(s) {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w + match_length]!r}")
-            next_state = state.next()
-            tree = Grammar.ParserDerivationTree(Terminal(word[w : w + match_length]))
-            next_state.append_child(tree)
-            table[k + match_length].add(next_state)
+                next_state = state.copy()
+                next_state.incomplete_idx = match_length
+                next_state.is_incomplete = True
+                tree = Grammar.ParserDerivationTree(Terminal(check_word[:match_length]))
+                if state.is_incomplete:
+                    next_state.children[-1] = tree
+                else:
+                    next_state.append_child(tree)
+            else:
+                next_state = state.next()
+                next_state.is_incomplete = False
+                next_state.incomplete_idx = 0
+                tree = Grammar.ParserDerivationTree(Terminal(check_word[:match_length]))
+                if state.is_incomplete:
+                    next_state.children[-1] = tree
+                else:
+                    next_state.append_child(tree)
+            table[
+                k + ((match_length - state.incomplete_idx) * table_idx_multiplier)
+            ].add(next_state)
             # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
             self._max_position = max(self._max_position, w + match_length)
 
@@ -1647,28 +1720,76 @@ class Grammar(NodeVisitor):
             Return (True, #bytes) if bytes were matched, (False, 0) otherwise.
             """
 
+            assert state.dot is not None
             assert not state.dot.is_type(NoneType)
             assert state.dot.is_regex
 
-            # LOGGER.debug(f"Checking regex {state.dot!r} at position {w:#06x} ({w}) {word[w:]!r}")
+            check_word = word[w:]
+            prev_match_length = 0
+            if state.is_incomplete:
+                prev_terminal = state.children[-1]
+                prev_val = prev_terminal.symbol.value()
+                prev_val_raw: str | bytes
+                if prev_val.is_type(bytes):
+                    prev_val_raw = bytes(prev_val)
+                    check_word = bytes(
+                        TreeValue(prev_val_raw).append(TreeValue(check_word))
+                    )
+                else:
+                    prev_val_raw = str(prev_val)
+                    check_word = str(
+                        TreeValue(prev_val_raw).append(TreeValue(check_word))
+                    )
+                prev_match_length = len(prev_val_raw)
 
-            match, match_length = state.dot.check(word[w:])
-            if not match:
-                if mode != Grammar.Parser.ParsingMode.INCOMPLETE:
-                    return False
-                match, match_length = state.dot.check(word[w:], incomplete=True)
-                if not match or (match_length + w) < len(word):
-                    return False
-                state.is_incomplete = True
+            table_idx_multiplier = 1
+            if isinstance(check_word, bytes):
+                table_idx_multiplier = 8
 
-            # Found a match
-            # LOGGER.debug(f"Matched regex {state.dot!r} at position {w:#06x} ({w}) (len = {match_length}) {word[w:w+match_length]!r}")
-            next_state = state.next()
-            next_state.append_child(
-                Grammar.ParserDerivationTree(Terminal(word[w : w + match_length]))
+            match, match_length = state.dot.check(check_word)
+            table_offset = match_length
+            if match and match_length <= prev_match_length:
+                match = False
+                match_length = 0
+            incomplete_match, incomplete_match_length = state.dot.check(
+                check_word, incomplete=True
             )
-            table[k + match_length].add(next_state)
-            # LOGGER.debug(f"Next state: {next_state} at column {k + match_length}")
+            incomplete_table_offset = incomplete_match_length
+            if not match:
+                if not incomplete_match or (incomplete_match_length + w) < len(word):
+                    return False
+
+            if match:
+                next_state = state.next()
+                next_state.is_incomplete = False
+                next_state.incomplete_idx = 0
+                tree = Grammar.ParserDerivationTree(Terminal(check_word[:match_length]))
+                if state.is_incomplete:
+                    next_state.children[-1] = tree
+                else:
+                    next_state.append_child(tree)
+                table[
+                    k + ((table_offset - state.incomplete_idx) * table_idx_multiplier)
+                ].add(next_state)
+            if incomplete_match:
+                next_state = state.copy()
+                next_state.is_incomplete = True
+                next_state.incomplete_idx = incomplete_match_length
+                tree = Grammar.ParserDerivationTree(
+                    Terminal(check_word[:incomplete_match_length])
+                )
+                if state.is_incomplete:
+                    next_state.children[-1] = tree
+                else:
+                    next_state.append_child(tree)
+                table[
+                    k
+                    + (
+                        (incomplete_table_offset - state.incomplete_idx)
+                        * table_idx_multiplier
+                    )
+                ].add(next_state)
+
             self._max_position = max(self._max_position, w + match_length)
             return True
 
@@ -1811,6 +1932,161 @@ class Grammar(NodeVisitor):
                 if new_state is not None:
                     col.replace(current_col_state, new_state)
 
+        def new_parse(
+            self,
+            start: str | NonTerminal = "<start>",
+            mode: ParsingMode = ParsingMode.COMPLETE,
+            hookin_parent: Optional[DerivationTree] = None,
+            starter_bit=-1,
+        ):
+            if isinstance(start, str):
+                start = NonTerminal(start)
+            self._table_idx = 0
+            self._table = []
+            self._table.append(Column())
+            self._table[-1].add(
+                ParseState(self.implicit_start, 0, ((start, frozenset()),))
+            )
+            self._max_position = -1
+            self._bit_position = starter_bit
+            self._parsing_mode = mode
+            self._hookin_parent = deepcopy(hookin_parent)
+            self._clear_tmp()
+
+        def consume(self, char: str | bytes | int):
+            if isinstance(char, int):
+                char = bytes([char])
+            word = char
+
+            # If >= 0, indicates the next bit to be scanned (7-0)
+            table = list(self._table)
+            if isinstance(char, bytes):
+                table.extend([Column() for _ in range(len(char) * 8)])
+            else:
+                table.extend([Column() for _ in range(len(char))])
+            curr_table_idx = self._table_idx
+            curr_word_idx = 0
+            curr_bit_position = self._bit_position
+
+            while curr_table_idx < len(table):
+                if curr_table_idx == len(table) - 1:
+                    self._table = list(table)
+                    if len(table) > 0:
+                        self._table[-1] = deepcopy(table[-1])
+                    self._table_idx = curr_table_idx
+                    self._bit_position = curr_bit_position
+                # True iff we have processed all characters
+                # (or some bits of the last character)
+                at_end = curr_word_idx >= len(word)
+                for state in table[curr_table_idx]:
+                    if state.finished():
+                        if state.nonterminal == self.implicit_start:
+                            if at_end:
+                                for child in state.children:
+                                    yield child
+
+                        self.complete(state, table, curr_table_idx)
+                    else:
+                        if (
+                            not state.is_incomplete
+                            and state.next_symbol_is_nonterminal()
+                        ):
+                            self.predict(
+                                state, table, curr_table_idx, self._hookin_parent
+                            )
+                        else:
+                            if state.dot.is_type(NoneType):
+                                # Scan a bit
+                                if curr_bit_position < 0:
+                                    curr_bit_position = 7
+                                match = self.scan_bit(
+                                    state,
+                                    word,
+                                    table,
+                                    curr_table_idx,
+                                    curr_word_idx,
+                                    curr_bit_position,
+                                )
+                                if match:
+                                    pass
+                            else:
+                                # Scan a regex or a byte
+                                if 0 <= curr_bit_position <= 7:
+                                    # We are still expecting bits here:
+                                    #
+                                    # * we may have _peeked_ at a bit,
+                                    # without actually parsing it; or
+                                    # * we may have a grammar with bits
+                                    # that do not come in multiples of 8.
+                                    #
+                                    # In either case, we need to get back
+                                    # to scanning bytes here.
+                                    self._bit_position = -1
+
+                                if state.dot.is_regex:
+                                    match = self.scan_regex(
+                                        state,
+                                        word,
+                                        table,
+                                        curr_table_idx,
+                                        curr_word_idx,
+                                        self._parsing_mode,
+                                    )
+                                else:
+                                    match = self.scan_bytes(
+                                        state,
+                                        word,
+                                        table,
+                                        curr_table_idx,
+                                        curr_word_idx,
+                                    )
+
+                if self._parsing_mode == ParsingMode.INCOMPLETE and at_end:
+                    for state in table[curr_table_idx]:
+                        if len(state.children) == 0:
+                            continue
+                        if state.nonterminal == self.implicit_start:
+                            for child in state.children:
+                                if child not in self._incomplete:
+                                    self._incomplete.add(child)
+                                    yield child
+                        self.complete(state, table, curr_table_idx)
+
+                if curr_bit_position >= 0:
+                    # Advance by one bit
+                    curr_bit_position -= 1
+                if curr_bit_position < 0:
+                    # Advance to next byte
+                    curr_word_idx += 1
+
+                self.place_repetition_shortcut(table, curr_table_idx)
+
+                if isinstance(char, bytes) and curr_bit_position < 0:
+                    if curr_table_idx % 8 == 0:
+                        curr_table_idx += 8
+                    else:
+                        curr_table_idx += -curr_table_idx % 8
+                else:
+                    curr_table_idx += 1
+
+        def max_position(self):
+            """Return the maximum position reached during parsing."""
+            return self._max_position
+
+    class Parser:
+
+        def __init__(self, grammar: "Grammar"):
+            self._iter_parser = Grammar.IterativeParser(grammar)
+            self._cache: dict[
+                tuple[
+                    str | bytes,
+                    NonTerminal,
+                    ParsingMode,
+                    Optional[DerivationTree],
+                ],
+                list[DerivationTree],
+            ] = {}
+
         def _parse_forest(
             self,
             word: str | bytes,
@@ -1825,121 +2101,8 @@ class Grammar(NodeVisitor):
             `start` is the start symbol (default: `<start>`).
             if `allow_incomplete` is True, the function will return trees even if the input ends prematurely.
             """
-            if isinstance(start, str):
-                start = NonTerminal(start)
-            self._clear_tmp()
-            hookin_parent = deepcopy(hookin_parent)
-
-            # LOGGER.debug(f"Parsing {word} into {start!s}")
-
-            # Initialize the table
-            table: list[Column] = [Column() for _ in range(len(word) + 1)]
-            time_start = time.time()
-            table[0].add(ParseState(self.implicit_start, 0, ((start, frozenset()),)))
-
-            # Save the maximum scan position, so we can report errors
-            self._max_position = -1
-
-            # Index into the input word
-            w = 0
-
-            # Index into the current table.
-            # Due to bits parsing, this may differ from the input position w.
-            k = 0
-
-            # If >= 0, indicates the next bit to be scanned (7-0)
-            bit_count = starter_bit
-            nr_bits_scanned = 0
-
-            while k < len(table):
-                # LOGGER.debug(f"Processing {len(table[k])} states at column {k}")
-
-                # True iff we have processed all characters
-                # (or some bits of the last character)
-                at_end = w >= len(word)  # or (bit_count > 0 and w == len(word) - 1)
-                for state in table[k]:
-                    if state.finished():
-                        # LOGGER.debug(f"Finished")
-                        if state.nonterminal == self.implicit_start:
-                            if at_end:
-                                # LOGGER.debug(f"Found {len(state.children)} parse tree(s)")
-                                for child in state.children:
-                                    time_took = time.time() - time_start
-                                    time_took = time_took * 1000
-                                    self.elapsed_time += time_took
-                                    # print(f"Parser took {time_took:4.2f}ms/{self.elapsed_time:4.2f}ms: {start} {word}")
-                                    time_start = time.time()
-                                    yield child
-
-                        self.complete(state, table, k)
-                    elif not state.is_incomplete:
-                        if state.next_symbol_is_nonterminal():
-                            self.predict(state, table, k, hookin_parent)
-                            # LOGGER.debug(f"Predicted {state} at position {w:#06x} ({w}) {word[w:]!r}")
-                        else:
-                            if state.dot.is_type(NoneType):
-                                # Scan a bit
-                                if bit_count < 0:
-                                    bit_count = 7
-                                match = self.scan_bit(
-                                    state, word, table, k, w, bit_count, nr_bits_scanned
-                                )
-                                if match:
-                                    # LOGGER.debug(f"Matched bit {state} at position {w:#06x} ({w}) {word[w:]!r}")
-                                    pass
-                            else:
-                                # Scan a regex or a byte
-                                if 0 <= bit_count <= 7:
-                                    # LOGGER.warning(f"Position {w:#06x} ({w}): Parsing a byte while expecting bit {bit_count}. Check if bits come in multiples of eight")
-
-                                    # We are still expecting bits here:
-                                    #
-                                    # * we may have _peeked_ at a bit,
-                                    # without actually parsing it; or
-                                    # * we may have a grammar with bits
-                                    # that do not come in multiples of 8.
-                                    #
-                                    # In either case, we need to get back
-                                    # to scanning bytes here.
-                                    bit_count = -1
-
-                                # LOGGER.debug(f"Checking byte(s) {state} at position {w:#06x} ({w}) {word[w:]!r}")
-                                if state.dot.is_regex:
-                                    match = self.scan_regex(
-                                        state, word, table, k, w, mode
-                                    )
-                                else:
-                                    match = self.scan_bytes(
-                                        state, word, table, k, w, mode
-                                    )
-                    else:
-                        if state.next_symbol_is_nonterminal():
-                            self.predict(state, table, k)
-
-                if mode == Grammar.Parser.ParsingMode.INCOMPLETE and at_end:
-                    for state in table[k]:
-                        state.is_incomplete = True
-                        if state.is_incomplete and state._dot == 0:
-                            continue
-                        if state.nonterminal == self.implicit_start:
-                            for child in state.children:
-                                if child not in self._incomplete:
-                                    self._incomplete.add(child)
-                                    yield child
-                        self.complete(state, table, k)
-
-                # LOGGER.debug(f"Scanned byte at position {w:#06x} ({w}); bit_count = {bit_count}")
-                if bit_count >= 0:
-                    # Advance by one bit
-                    bit_count -= 1
-                    nr_bits_scanned += 1
-                if bit_count < 0:
-                    # Advance to next byte
-                    w += 1
-
-                self.place_repetition_shortcut(table, k)
-
-                k += 1
+            self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
+            yield from self._iter_parser.consume(word)
 
         def parse_forest(
             self,
@@ -1974,11 +2137,10 @@ class Grammar(NodeVisitor):
                 for tree in forest:
                     tree = deepcopy(tree)
                     if not include_controlflow:
-                        tree = self.collapse(tree)
+                        tree = self._iter_parser.collapse(tree)
                         yield tree
                 return
 
-            self._incomplete = set()
             for tree in self._parse_forest(
                 word,
                 start,
@@ -1986,13 +2148,13 @@ class Grammar(NodeVisitor):
                 hookin_parent=hookin_parent,
                 starter_bit=starter_bit,
             ):
-                tree = self.to_derivation_tree(tree)
+                tree = self._iter_parser.to_derivation_tree(tree)
                 if cache_key in self._cache:
                     self._cache[cache_key].append(tree)
                 else:
                     self._cache[cache_key] = [tree]
                 if not include_controlflow:
-                    tree = self.collapse(tree)
+                    tree = self._iter_parser.collapse(tree)
                 yield tree
 
         def parse_multiple(
@@ -2036,9 +2198,8 @@ class Grammar(NodeVisitor):
             )
             return next(tree_gen, None)
 
-        def max_position(self):
-            """Return the maximum position reached during parsing."""
-            return self._max_position
+        def collapse(self, tree: Optional[DerivationTree]) -> DerivationTree:
+            return self._iter_parser.collapse(tree)
 
     def __init__(
         self,
@@ -2236,7 +2397,6 @@ class Grammar(NodeVisitor):
         self,
         start: str | NonTerminal = "<start>",
         max_nodes: int = 50,
-        in_message: bool = False,
         prefix_node: Optional[DerivationTree] = None,
     ) -> DerivationTree:
         if isinstance(start, str):
@@ -2290,7 +2450,7 @@ class Grammar(NodeVisitor):
         self,
         word: str | bytes | DerivationTree,
         start: str | NonTerminal = "<start>",
-        mode: Parser.ParsingMode = Parser.ParsingMode.COMPLETE,
+        mode: ParsingMode = ParsingMode.COMPLETE,
         hookin_parent: Optional[DerivationTree] = None,
         include_controlflow: bool = False,
     ):
@@ -2306,7 +2466,7 @@ class Grammar(NodeVisitor):
         self,
         word: str | bytes | DerivationTree,
         start: str | NonTerminal = "<start>",
-        mode: Parser.ParsingMode = Parser.ParsingMode.COMPLETE,
+        mode: ParsingMode = ParsingMode.COMPLETE,
         include_controlflow: bool = False,
     ):
         return self._parser.parse_forest(
@@ -2317,7 +2477,7 @@ class Grammar(NodeVisitor):
         self,
         word: str | bytes | DerivationTree,
         start: str | NonTerminal = "<start>",
-        mode: Parser.ParsingMode = Parser.ParsingMode.COMPLETE,
+        mode: ParsingMode = ParsingMode.COMPLETE,
         include_controlflow: bool = False,
     ):
         return self._parser.parse_multiple(
@@ -2326,7 +2486,7 @@ class Grammar(NodeVisitor):
 
     def max_position(self):
         """Return the maximum position reached during last parsing."""
-        return self._parser.max_position()
+        return self._parser._iter_parser.max_position()
 
     def __contains__(self, item: str | NonTerminal):
         if not isinstance(item, NonTerminal):
@@ -2679,7 +2839,7 @@ class Grammar(NodeVisitor):
         Return true iff the grammar can produce a bit element (0 or 1).
         * `start`: a start symbol other than `<start>`.
         """
-        return self.contains_type(int, start=start)
+        return self.contains_type(NoneType, start=start)
 
     def contains_bytes(self, *, start="<start>") -> bool:
         """

@@ -1,13 +1,28 @@
 #!/usr/bin/env pytest
 
 import unittest
+from typing import Optional
 
-from fandango.language.grammar import Alternative, NodeType, Grammar
+from fandango.language.grammar import Alternative, Grammar, ParsingMode
 from fandango.language.parse import parse
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command
 
+class IterParsingTester(Grammar.Parser):
+    def _parse_forest(
+            self,
+            word: str | bytes,
+            start: str | NonTerminal = "<start>",
+            *,
+            mode: ParsingMode = ParsingMode.COMPLETE,
+            hookin_parent: Optional[DerivationTree] = None,
+            starter_bit=-1,
+    ):
+        self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
+        for char in word[:-1]:
+            next(self._iter_parser.consume(char), None)
+        yield from self._iter_parser.consume(word[-1])
 
 class ParserTests(unittest.TestCase):
     # Type annotation for instance attribute set in setUp
@@ -20,11 +35,11 @@ class ParserTests(unittest.TestCase):
             self.grammar = grammar
 
     def test_rules(self):
-        self.assertEqual(len(self.grammar._parser._rules), 9)
-        self.assertEqual(len(self.grammar._parser._implicit_rules), 1)
+        self.assertEqual(len(self.grammar._parser._iter_parser._rules), 9)
+        self.assertEqual(len(self.grammar._parser._iter_parser._implicit_rules), 1)
         self.assertEqual(
             {((NonTerminal("<number>"), frozenset()),)},
-            self.grammar._parser._rules[NonTerminal("<start>")],
+            self.grammar._parser._iter_parser._rules[NonTerminal("<start>")],
         )
         alt_1 = self.grammar.rules[NonTerminal("<number>")]
         assert isinstance(alt_1, Alternative)
@@ -37,19 +52,19 @@ class ParserTests(unittest.TestCase):
 
         self.assertEqual(
             {((NonTerminal(f"<__{alt_1.id}>"), frozenset()),)},
-            self.grammar._parser._rules[NonTerminal("<number>")],
+            self.grammar._parser._iter_parser._rules[NonTerminal("<number>")],
         )
         self.assertEqual(
             {((NonTerminal(f"<__{alt_2.id}>"), frozenset()),)},
-            self.grammar._parser._rules[NonTerminal("<non_zero>")],
+            self.grammar._parser._iter_parser._rules[NonTerminal("<non_zero>")],
         )
         self.assertEqual(
             {((NonTerminal(f"<__{alt_3.id}>"), frozenset()),)},
-            self.grammar._parser._rules[NonTerminal("<digit>")],
+            self.grammar._parser._iter_parser._rules[NonTerminal("<digit>")],
         )
         self.assertEqual(
             {((NonTerminal("<*0*>"), frozenset()),)},
-            self.grammar._parser._rules[NonTerminal(f"<__{star_1.id}>")],
+            self.grammar._parser._iter_parser._rules[NonTerminal(f"<__{star_1.id}>")],
         )
         self.assertEqual(
             {
@@ -58,7 +73,7 @@ class ParserTests(unittest.TestCase):
                     (NonTerminal(f"<__{star_1.id}>"), frozenset()),
                 )
             },
-            self.grammar._parser._rules[NonTerminal(f"<__{concat_1.id}>")],
+            self.grammar._parser._iter_parser._rules[NonTerminal(f"<__{concat_1.id}>")],
         )
         self.assertEqual(
             {
@@ -70,7 +85,7 @@ class ParserTests(unittest.TestCase):
                     ),
                 ),
             },
-            self.grammar._parser._rules[NonTerminal(f"<__{alt_1.id}>")],
+            self.grammar._parser._iter_parser._rules[NonTerminal(f"<__{alt_1.id}>")],
         )
         self.assertEqual(
             {
@@ -84,7 +99,7 @@ class ParserTests(unittest.TestCase):
                 ((Terminal("8"), frozenset()),),
                 ((Terminal("9"), frozenset()),),
             },
-            self.grammar._parser._rules[NonTerminal(f"<__{alt_2.id}>")],
+            self.grammar._parser._iter_parser._rules[NonTerminal(f"<__{alt_2.id}>")],
         )
         self.assertEqual(
             {
@@ -99,15 +114,8 @@ class ParserTests(unittest.TestCase):
                 ((Terminal("8"), frozenset()),),
                 ((Terminal("9"), frozenset()),),
             },
-            self.grammar._parser._rules[NonTerminal(f"<__{alt_3.id}>")],
+            self.grammar._parser._iter_parser._rules[NonTerminal(f"<__{alt_3.id}>")],
         )
-
-    # def test_parse_table(self):
-    #     table = self.grammar._parser.parse_table("1")
-    #     self.assertIn(
-    #         ParseState(NonTerminal("<*start*>"), 0, (NonTerminal("<start>"),), dot=1),
-    #         table[1],
-    #     )
 
 
 class TestComplexParsing(unittest.TestCase):
@@ -119,10 +127,13 @@ class TestComplexParsing(unittest.TestCase):
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
             self.grammar = grammar
+            self.parser = Grammar.Parser(grammar)
+            self.iter_parser = IterParsingTester(self.grammar)
 
     def _test(self, example, tree):
-        actual_tree = self.grammar.parse(example, "<ab>")
-        self.assertEqual(tree, actual_tree)
+        for parser in [self.parser, self.iter_parser]:
+            actual_tree = parser.parse(example, "<ab>")
+            self.assertEqual(tree, actual_tree)
 
     def test_bb(self):
         self._test(
@@ -198,16 +209,19 @@ class TestIncompleteParsing(unittest.TestCase):
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
             self.grammar = grammar
+            self.parser = Grammar.Parser(grammar)
+            self.iter_parser = IterParsingTester(self.grammar)
 
     def _test(self, example, tree):
-        parsed = False
-        for actual_tree in self.grammar.parse_multiple(
-            example, "<start>", mode=Grammar.Parser.ParsingMode.INCOMPLETE
-        ):
-            self.assertEqual(tree, actual_tree)
-            parsed = True
-            break
-        self.assertTrue(parsed)
+        for parser in [self.parser, self.iter_parser]:
+            parsed = False
+            for actual_tree in parser.parse_multiple(
+                example, "<start>", mode=ParsingMode.INCOMPLETE
+            ):
+                self.assertEqual(tree, actual_tree)
+                parsed = True
+                break
+            self.assertTrue(parsed)
 
     def test_a(self):
         self._test(
@@ -254,16 +268,19 @@ class TestDynamicRepetitionParsing(unittest.TestCase):
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
             self.grammar = grammar
+            self.parser = Grammar.Parser(grammar)
+            self.iter_parser = IterParsingTester(self.grammar)
 
     def _test(self, example, tree):
-        parsed = False
-        for actual_tree in self.grammar.parse_multiple(
-            example, mode=Grammar.Parser.ParsingMode.COMPLETE
-        ):
-            self.assertEqual(tree, actual_tree)
-            parsed = True
-            break
-        self.assertTrue(parsed)
+        for parser in [self.parser, self.iter_parser]:
+            parsed = False
+            for actual_tree in parser.parse_multiple(
+                example, mode=ParsingMode.COMPLETE
+            ):
+                self.assertEqual(tree, actual_tree)
+                parsed = True
+                break
+            self.assertTrue(parsed)
 
     def test_nested(self):
         self._test(
@@ -354,10 +371,13 @@ class TestEmptyParsing(unittest.TestCase):
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
             self.grammar = grammar
+            self.parser = Grammar.Parser(grammar)
+            self.iter_parser = IterParsingTester(self.grammar)
 
     def _test(self, example, tree):
-        actual_tree = self.grammar.parse(example)
-        self.assertEqual(tree, actual_tree)
+        for parser in [self.parser, self.iter_parser]:
+            actual_tree = parser.parse(example)
+            self.assertEqual(tree, actual_tree)
 
     def test_a(self):
         self._test(
@@ -387,6 +407,31 @@ class TestEmptyParsing(unittest.TestCase):
                 ],
             ),
         )
+
+class TestCanContinueParsing(unittest.TestCase):
+
+    def setUp(self):
+        with open(RESOURCES_ROOT / "rgb.fan") as file:
+            grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
+            self.grammar = grammar
+            self.iter_parser = Grammar.IterativeParser(self.grammar)
+
+    def test_1(self):
+        self.iter_parser.new_parse()
+        next(self.iter_parser.consume(b'r'), None)
+        self.assertTrue(self.iter_parser.can_continue())
+        next(self.iter_parser.consume(b'g'), None)
+        self.assertTrue(self.iter_parser.can_continue())
+        next(self.iter_parser.consume(b'b'), None)
+        self.assertTrue(self.iter_parser.can_continue())
+        next(self.iter_parser.consume(b'd'), None)
+        self.assertTrue(self.iter_parser.can_continue())
+        next(self.iter_parser.consume(b';'), None)
+        self.assertFalse(self.iter_parser.can_continue())
+
+        self.iter_parser.new_parse()
+        next(self.iter_parser.consume(b'rgbd;'), None)
 
 
 class TestCLIParsing(unittest.TestCase):
@@ -439,18 +484,19 @@ class TestRegexParsing(TestCLIParsing):
 
 
 class TestBitParsing(TestCLIParsing):
-    def _test(self, example, tree, grammar):
-        parsed = False
-        for actual_tree in grammar.parse_multiple(example, "<start>"):
+    def _test(self, example, tree, parsers):
+        for parser in parsers:
+            parsed = False
+            for actual_tree in parser.parse_multiple(example, "<start>"):
+                if tree is None:
+                    self.fail("Expected None")
+                self.assertEqual(tree, actual_tree)
+                parsed = True
+                break
             if tree is None:
-                self.fail("Expected None")
-            self.assertEqual(tree, actual_tree)
-            parsed = True
-            break
-        if tree is None:
-            self.assertTrue(True)
-            return
-        self.assertTrue(parsed)
+                self.assertTrue(True)
+                return
+            self.assertTrue(parsed)
 
     def test_bits_a(self):
         command = [
@@ -469,7 +515,9 @@ class TestBitParsing(TestCLIParsing):
     def test_alternative_bits(self):
         with open(RESOURCES_ROOT / "byte_alternative.fan", "r") as file:
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
-        self._test(b"\x00", None, grammar)
+        parser = Grammar.Parser(grammar)
+        iter_parser = IterParsingTester(grammar)
+        self._test(b"\x00", None, [parser, iter_parser])
         self._test(
             b"\x01",
             DerivationTree(
@@ -485,7 +533,7 @@ class TestBitParsing(TestCLIParsing):
                     DerivationTree(Terminal(1)),
                 ],
             ),
-            grammar,
+            [parser, iter_parser],
         )
         self._test(
             b"\x02",
@@ -502,7 +550,7 @@ class TestBitParsing(TestCLIParsing):
                     DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))]),
                 ],
             ),
-            grammar,
+            [parser, iter_parser],
         )
 
 

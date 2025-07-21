@@ -476,7 +476,7 @@ class Out(FandangoParty):
     def _listen_loop(self):
         while True:
             if self.proc.stdout is not None:
-                line = self.proc.stdout.readline()
+                line = self.proc.stdout.read(1)
                 self.receive_msg(self.party_name, line)
 
 
@@ -566,6 +566,14 @@ class FandangoIO(object):
         """Clears all received messages."""
         with self.receive_lock:
             self.receive.clear()
+
+    def clear_by_party(self, party_name: str, to_idx: int) -> None:
+        """Clears all received messages from a specific party up to a given index."""
+
+        with self.receive_lock:
+            self.receive = [
+                (sender, receiver, msg) for idx, (sender, receiver, msg) in enumerate(self.receive) if not (sender == party_name and idx <= to_idx)
+            ]
 
     def transmit(
         self, sender: str, recipient: Optional[str], message: DerivationTree
