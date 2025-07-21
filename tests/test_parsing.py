@@ -554,15 +554,28 @@ class TestBitParsing(TestCLIParsing):
         )
 
     def test_single_bit(self):
-        with open(RESOURCES_ROOT / "byte_alternative.fan", "r") as file:
+        with open(RESOURCES_ROOT / "bit_special.fan", "r") as file:
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
         parser = Grammar.Parser(grammar)
         iter_parser = IterParsingTester(grammar)
-        bit_tree = DerivationTree(
+        bit_tree_0 = DerivationTree(
             NonTerminal("<bit>"),
             [DerivationTree(Terminal(0))],
         )
-        self._test(bit_tree, bit_tree, [parser, iter_parser], "<bit>")
+        bit_tree_1 = DerivationTree(
+            NonTerminal("<bit>"),
+            [DerivationTree(Terminal(1))],
+        )
+        bit_tree_10 = DerivationTree(
+            NonTerminal("<start>"),
+            [
+                DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(1))]),
+                DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))])
+            ]
+        )
+        self._test(bit_tree_0, bit_tree_0, [parser, iter_parser], "<bit>")
+        self._test(bit_tree_1, bit_tree_1, [parser, iter_parser], "<bit>")
+        self._test(bit_tree_10, bit_tree_10, [parser, iter_parser], "<start>")
 
 
 class TestGIFParsing(TestCLIParsing):
