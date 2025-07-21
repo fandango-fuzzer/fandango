@@ -3,7 +3,7 @@ from types import NoneType
 from typing import Any, Optional, TYPE_CHECKING, TypeVar, cast
 from collections.abc import Iterable, Iterator
 
-from fandango.language.symbol import NonTerminal, Slice, Symbol, Terminal
+from fandango.language.symbols import NonTerminal, Slice, Symbol, Terminal
 from fandango.language.tree_value import (
     BYTES_TO_STRING_ENCODING,
     STRING_TO_BYTES_ENCODING,

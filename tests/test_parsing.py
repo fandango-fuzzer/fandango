@@ -5,7 +5,7 @@ from typing import Optional
 
 from fandango.language.grammar import Alternative, Grammar, ParsingMode
 from fandango.language.parse import parse
-from fandango.language.symbol import NonTerminal, Terminal
+from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command
 
