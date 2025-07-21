@@ -333,7 +333,7 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
             "-n",
             "1",
             "-f",
-            str(DOCS_ROOT / "cat.fan"),
+            str(DOCS_ROOT / "cat-oracle.fan"),
             "cat",
         ]
         out, err, code = run_command(command)
