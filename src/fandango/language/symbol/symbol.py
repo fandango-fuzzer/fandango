@@ -18,11 +18,11 @@ class Symbol(abc.ABC):
         self._type = type_
         self._is_regex = False
 
-    def check(self, word: str, incomplete=False) -> tuple[bool, int]:
+    def check(self, word: str | int | bytes, incomplete=False) -> tuple[bool, int]:
         """Return (True, # of characters matched by `word`), or (False, 0)"""
         return False, 0
 
-    def check_all(self, word: str) -> bool:
+    def check_all(self, word: str | int | bytes) -> bool:
         """Return True if `word` matches"""
         return False
 
