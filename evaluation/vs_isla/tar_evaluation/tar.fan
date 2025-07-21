@@ -105,16 +105,16 @@ def generate_file_name():
 
 def produce_valid_checksum(header):
     def replace_checksum(tree):
-        if tree.symbol.symbol == "<checksum>":
-            return " " * 8
         if tree.symbol.is_non_terminal:
+            if tree.symbol.name() == "<checksum>":
+                return " " * 8
             buf = ""
             for child in tree._children:
                 buf += replace_checksum(child)
             return buf
             # return "".join([replace_checksum(child) for child in tree._children])
         if tree.symbol.is_terminal:
-            return tree.symbol.symbol
+            return tree.value()
         raise ValueError("Invalid symbol type")
 
     header_bytes = list(replace_checksum(header).encode("ascii"))
