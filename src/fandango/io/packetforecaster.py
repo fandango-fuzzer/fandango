@@ -18,7 +18,6 @@ from fandango.language.grammar import (
     Star,
     CharSet,
     GrammarKeyError,
-    NodeType,
 )
 from fandango.language.symbol import Terminal, NonTerminal
 from fandango.language.tree import DerivationTree
@@ -51,9 +50,9 @@ class PathFinder(NodeVisitor):
     def _collapsed_path(path: list[tuple[NonTerminal, bool]]):
         new_path = []
         for nt, new_node in path:
-            if isinstance(nt.symbol, str) and nt.symbol.startswith("<__"):
+            if nt.is_type(str) and str(nt.value()).startswith("<__"):
                 continue
-            elif isinstance(nt.symbol, bytes) and nt.symbol.startswith(b"<__"):
+            elif nt.is_type(bytes) and bytes(nt.value()).startswith(b"<__"):
                 continue
             new_path.append((nt, new_node))
         return tuple(new_path)
@@ -94,9 +93,11 @@ class PathFinder(NodeVisitor):
                 raise GrammarKeyError(
                     "Expected len(tree) == 1 for controlflow entries!"
                 )
-            if str(tree[0].symbol) != expected_nt:
+            assert isinstance(tree[0].symbol, NonTerminal)
+            nt_name = tree[0].symbol.name()
+            if nt_name != expected_nt:
                 raise GrammarKeyError("Symbol mismatch!")
-            cf_nt = (NonTerminal(str(tree[0].symbol)), False)
+            cf_nt = (NonTerminal(nt_name), False)
         self.current_tree.append(None if tree is None else tree[0].children)
         self.current_path.append(cf_nt)
 
@@ -409,12 +410,12 @@ class PacketForecaster:
                 self.seen_keys.add(node.symbol)
                 return node
 
-            if isinstance(node.symbol.symbol, str):
-                symbol = NonTerminal("<_packet_" + node.symbol.symbol[1:])
+            if node.symbol.is_type(str):
+                symbol = NonTerminal("<_packet_" + node.symbol.name()[1:])
             else:
                 raise FandangoValueError("NonTerminal symbol must be a string!")
             repl_node = NonTerminalNode(symbol, node.sender, node.recipient)
-            self._reduced[symbol] = TerminalNode(Terminal(node.symbol.symbol))
+            self._reduced[symbol] = TerminalNode(Terminal(node.symbol.value()))
             self.seen_keys.add(symbol)
             self.processed_keys.add(symbol)
             return repl_node
@@ -439,9 +440,10 @@ class PacketForecaster:
             ):
                 i_msg.msg.set_children(r_msg.msg.children)
                 i_msg.msg.sources = r_msg.msg.sources
-                symbol = r_msg.msg.symbol.symbol
-                if isinstance(symbol, str):
-                    i_msg.msg.symbol = NonTerminal("<" + symbol[1:])
+                symbol = r_msg.msg.symbol
+                if isinstance(symbol, NonTerminal):
+                    # TODO: Is this just to create a new string?
+                    i_msg.msg.symbol = NonTerminal("<" + symbol.name()[1:])
                 else:
                     raise FandangoValueError("NonTerminal symbol must be a string!")
             return i_cpy
@@ -463,7 +465,8 @@ class PacketForecaster:
         """
         history_nts = ""
         for r_msg in tree.protocol_msgs():
-            history_nts += str(r_msg.msg.symbol)
+            assert isinstance(r_msg.msg.symbol, NonTerminal)
+            history_nts += r_msg.msg.symbol.name()
         self._parser.detailed_tree = tree
 
         finder = PathFinder(self.grammar)
@@ -481,15 +484,18 @@ class PacketForecaster:
                 for orig_r_msg, r_msg in zip(
                     tree.protocol_msgs(), suggested_tree.protocol_msgs()
                 ):
+                    assert isinstance(r_msg.msg.symbol, NonTerminal)
+                    assert isinstance(orig_r_msg.msg.symbol, NonTerminal)
                     if (
-                        str(r_msg.msg.symbol)[9:] == str(orig_r_msg.msg.symbol)[1:]
+                        r_msg.msg.symbol.name()[9:] == orig_r_msg.msg.symbol.name()[1:]
                         and r_msg.sender == orig_r_msg.sender
                         and r_msg.recipient == orig_r_msg.recipient
                     ):
                         cpy = orig_r_msg.msg.deepcopy(copy_parent=False)
+                        assert isinstance(cpy.symbol, NonTerminal)
                         r_msg.msg.set_children(cpy.children)
                         r_msg.msg.sources = deepcopy(cpy.sources)
-                        r_msg.msg.symbol = NonTerminal("<" + str(cpy.symbol)[1:])
+                        r_msg.msg.symbol = NonTerminal("<" + cpy.symbol.name()[1:])
                     else:
                         break
                 else:

@@ -7,7 +7,7 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from fandango.evolution.algorithm import Fandango, LoggerLevel
 from fandango.language import DerivationTree
 from fandango.language.parse import parse
-from fandango.language.symbol import NonTerminal, Terminal
+from fandango.language.symbol.symbol import NonTerminal, Terminal
 from tests.utils import run_command
 
 

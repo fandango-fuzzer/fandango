@@ -1,6 +1,7 @@
 # Various indentation tests
 <a> ::= <b>
     <b> ::= <c>
+<c> ::= "1"
 
 <a> ::= (
     "a"
