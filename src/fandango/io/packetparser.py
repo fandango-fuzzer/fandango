@@ -140,9 +140,9 @@ def parse_next_remote_packet(
         else:
             raise FandangoValueError(
                 "Could not parse received message fragments into predicted NonTerminals. "
-                + "Predicted NonTerminals:"
-                + str(" | ".join(forecast.get_msg_parties()))
-                + "Messages: "
+                + "Predicted NonTerminals: "
+                + str(" | ".join(forecast_non_terminals.get_non_terminals()))
+                + " Messages: "
                 + str(io_instance.get_received_msgs())
             )
 
