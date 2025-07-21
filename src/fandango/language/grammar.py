@@ -952,10 +952,10 @@ class ParseState:
 
     def __repr__(self):
         return (
-            f"({self.nonterminal} -> "
+            f"({repr(self.nonterminal)} -> "
             + "".join(
                 [
-                    f"{'•' if i == self._dot else ''}{s[0]!s}"
+                    f"{'•' if i == self._dot else ''}{repr(s[0])!s}"
                     for i, s in enumerate(self.symbols)
                 ]
             )
@@ -1121,6 +1121,8 @@ class Grammar(NodeVisitor):
             self._table: list[Column] = []
             self._parsing_mode = ParsingMode.COMPLETE
             self._bit_position = -1
+            self._start: Optional[NonTerminal] = None
+            self._first_consume = True
             self._hookin_parent: Optional[DerivationTree] = None
             self._prefix_word = None
 
@@ -1827,12 +1829,11 @@ class Grammar(NodeVisitor):
         ):
             if isinstance(start, str):
                 start = NonTerminal(start)
-            self._table_idx = 0
+            self._start = start
+            self._table_idx = (7 - starter_bit) % 8
             self._table = []
             self._table.append(Column())
-            self._table[-1].add(
-                ParseState(self.implicit_start, 0, ((start, frozenset()),))
-            )
+            self._first_consume = True
             self._max_position = -1
             self._bit_position = starter_bit
             self._parsing_mode = mode
@@ -1840,6 +1841,7 @@ class Grammar(NodeVisitor):
             self._clear_tmp()
 
         def consume(self, char: str | bytes | int):
+            assert self._start is not None, "Call new_parse() before consume()"
             if isinstance(char, int):
                 char = bytes([char])
             word = char
@@ -1850,6 +1852,12 @@ class Grammar(NodeVisitor):
                 table.extend([Column() for _ in range(len(char) * 8)])
             else:
                 table.extend([Column() for _ in range(len(char))])
+            # Add the start state at the first consume
+            if self._first_consume:
+                table[self._table_idx].add(
+                    ParseState(self.implicit_start, 0, ((self._start, frozenset()),))
+                )
+                self._first_consume = False
             curr_table_idx = self._table_idx
             curr_word_idx = 0
             curr_bit_position = self._bit_position
@@ -2006,7 +2014,8 @@ class Grammar(NodeVisitor):
                 if word.contains_bits():
                     starter_bit = (word.count_terminals() - 1) % 8
                 if word.should_be_serialized_to_bytes():
-                    word = word.to_bytes()
+                    bit_string = word.to_bits()
+                    word = int(bit_string, 2).to_bytes((len(bit_string) + 7) // 8, byteorder="big")
                 else:
                     word = word.to_string()
             if isinstance(word, int):
