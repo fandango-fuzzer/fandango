@@ -15,7 +15,7 @@ import exrex
 
 from fandango.errors import FandangoValueError, FandangoParseError
 from fandango.language.tree import DerivationTree
-from fandango.language.symbol import Symbol, NonTerminal, Terminal, Slice
+from fandango.language.symbols import Symbol, NonTerminal, Terminal, Slice
 from fandango.logger import LOGGER
 
 if TYPE_CHECKING:

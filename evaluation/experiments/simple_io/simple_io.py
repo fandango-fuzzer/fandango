@@ -1,6 +1,4 @@
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-from fandango.language.grammar import *
-from fandango.language.symbol.symbol import *
 from fandango.language.parse import parse
 
 
@@ -8,6 +6,7 @@ def main():
     # Parse grammar and constraints
     with open("simple_io.fan") as f:
         grammar, constraints = parse(f, use_stdlib=False)
+        assert grammar is not None
     # Initialize FANDANGO with desired parameters
 
     # tree = grammar.parse("{}{\"nr_high\":10,\"nr_low\":5}", mode=Grammar.Parser.ParsingMode.INCOMPLETE_ROLE)

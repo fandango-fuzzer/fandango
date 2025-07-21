@@ -2,7 +2,7 @@ import pytest
 
 from fandango import parse, FandangoParseError, DerivationTree
 from fandango.constraints.base import ExpressionConstraint, ComparisonConstraint
-from fandango.language import NonTerminal, Terminal
+from fandango.language.symbols import NonTerminal, Terminal
 
 
 @pytest.mark.parametrize(

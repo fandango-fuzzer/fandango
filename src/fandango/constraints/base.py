@@ -24,7 +24,7 @@ from fandango.constraints.fitness import (
 from fandango.errors import FandangoValueError
 from fandango.language.grammar import Grammar, Repetition
 from fandango.language.search import NonTerminalSearch
-from fandango.language.symbol import NonTerminal
+from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree, index_by_reference
 from fandango.logger import LOGGER, print_exception
 

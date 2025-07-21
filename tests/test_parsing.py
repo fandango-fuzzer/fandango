@@ -4,7 +4,7 @@ import unittest
 
 from fandango.language.grammar import Alternative, NodeType, Grammar
 from fandango.language.parse import parse
-from fandango.language.symbol import NonTerminal, Terminal
+from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command
 

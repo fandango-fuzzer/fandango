@@ -9,7 +9,8 @@ from fandango.constraints.base import (
     ComparisonConstraint,
 )
 from fandango.constraints.fitness import Comparison
-from fandango.language import NonTerminal, DerivationTree, Terminal
+from fandango.language.symbols import NonTerminal, Terminal
+from fandango.language.tree import DerivationTree
 from fandango.language.grammar import Grammar
 from fandango.language.search import (
     StarSearch,

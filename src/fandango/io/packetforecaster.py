@@ -20,7 +20,7 @@ from fandango.language.grammar import (
     CharSet,
     GrammarKeyError,
 )
-from fandango.language.symbol import Terminal, NonTerminal
+from fandango.language.symbols import Terminal, NonTerminal
 from fandango.language.tree import DerivationTree
 
 

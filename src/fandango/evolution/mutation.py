@@ -5,7 +5,7 @@ from collections.abc import Callable, Generator
 
 from fandango.constraints.fitness import FailingTree
 from fandango.language import DerivationTree, Grammar
-from fandango.language.symbol import NonTerminal
+from fandango.language.symbols import NonTerminal
 
 
 class MutationOperator(ABC):

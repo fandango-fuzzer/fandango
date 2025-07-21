@@ -8,7 +8,7 @@ import itertools
 from typing import Optional, Any
 
 from fandango.language.search import NonTerminalSearch, Container
-from fandango.language.symbol import NonTerminal
+from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 
 
