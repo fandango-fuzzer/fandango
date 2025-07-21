@@ -484,10 +484,10 @@ class TestRegexParsing(TestCLIParsing):
 
 
 class TestBitParsing(TestCLIParsing):
-    def _test(self, example, tree, parsers):
+    def _test(self, example, tree, parsers, start_symbol="<start>"):
         for parser in parsers:
             parsed = False
-            for actual_tree in parser.parse_multiple(example, "<start>"):
+            for actual_tree in parser.parse_multiple(example, start_symbol):
                 if tree is None:
                     self.fail("Expected None")
                 self.assertEqual(tree, actual_tree)
@@ -552,6 +552,17 @@ class TestBitParsing(TestCLIParsing):
             ),
             [parser, iter_parser],
         )
+
+    def test_single_bit(self):
+        with open(RESOURCES_ROOT / "byte_alternative.fan", "r") as file:
+            grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+        parser = Grammar.Parser(grammar)
+        iter_parser = IterParsingTester(grammar)
+        bit_tree = DerivationTree(
+            NonTerminal("<bit>"),
+            [DerivationTree(Terminal(0))],
+        )
+        self._test(bit_tree, bit_tree, [parser, iter_parser], "<bit>")
 
 
 class TestGIFParsing(TestCLIParsing):
