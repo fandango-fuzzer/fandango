@@ -11,7 +11,7 @@ from fandango.language.search import (
     PopulationSearch,
     StarSearch,
 )
-from fandango.language.symbol import NonTerminal, Terminal
+from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 
 

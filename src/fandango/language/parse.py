@@ -53,7 +53,7 @@ from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.search import DescendantAttributeSearch, ItemSearch
 from fandango.language.stdlib import stdlib
-from fandango.language.symbol import NonTerminal, Symbol
+from fandango.language.symbols import NonTerminal, Symbol
 from fandango.logger import LOGGER, print_exception
 
 

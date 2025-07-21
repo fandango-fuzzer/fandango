@@ -5,7 +5,7 @@ import random
 import unittest
 
 from fandango.evolution.algorithm import Fandango
-from fandango.language import NonTerminal
+from fandango.language.symbols import NonTerminal
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
 from .utils import RESOURCES_ROOT
@@ -45,7 +45,7 @@ class ConstraintTest(unittest.TestCase):
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
         tree = grammar.parse("aabb")
-
+        assert tree is not None
         for path in grammar.traverse_derivation(tree):
             for node in path:
                 print(node.format_as_spec())
@@ -132,12 +132,15 @@ class ConstraintTest(unittest.TestCase):
         solutions = self.get_solutions(grammar, c)
         for solution in solutions:
             len_a = solution.children[0].to_int()
+            assert len_a is not None
             self.assertLessEqual(len_a + 2, len(solution.children))
             for child in solution.children[1 : len_a + 1]:
                 self.assertTrue(child.symbol == NonTerminal("<a>"))
             len_b = solution.children[len_a + 1]
+            assert len_b is not None
             self.assertTrue(len_b.symbol == NonTerminal("<len_b>"))
             len_b = len_b.to_int()
+            assert len_b is not None
             self.assertEqual(len_a + len_b + 2, len(solution.children))
             for child in solution.children[len_a + 4 :]:
                 self.assertTrue(child.symbol == NonTerminal("<b>"))

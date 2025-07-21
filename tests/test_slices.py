@@ -3,11 +3,12 @@
 import re
 import unittest
 
-from fandango import parse, DerivationTree
 from fandango.constraints.base import ExpressionConstraint
-from fandango.language import NonTerminal, Terminal
 from fandango.language.grammar import Grammar
 from fandango.language.search import ItemSearch, RuleSearch
+from fandango.language.symbols import NonTerminal, Terminal
+from fandango.language.tree import DerivationTree
+from fandango.language.parse import parse
 from .utils import RESOURCES_ROOT, run_command
 
 
