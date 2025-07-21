@@ -19,6 +19,8 @@ from fandango.evolution.population import PopulationManager, IoPopulationManager
 from fandango.evolution.profiler import Profiler
 from fandango.io import FandangoIO, FandangoParty
 from fandango.io.packetforecaster import PacketForecaster
+from fandango.io.packetparser import parse_next_remote_packet
+from fandango.language import NonTerminal
 from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode, ParsingMode
 from fandango.logger import (
     LOGGER,
@@ -528,9 +530,7 @@ class Fandango:
                             f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(forecast.get_msg_parties())}"
                         )
                     time.sleep(0.025)
-                forecast, packet_tree = self._parse_next_remote_packet(
-                    forecast, io_instance
-                )
+                forecast, packet_tree = parse_next_remote_packet(self.grammar, forecast, io_instance)
                 log_message_transfer(
                     packet_tree.sender,
                     packet_tree.recipient,
@@ -594,150 +594,3 @@ class Fandango:
         spec_env_global, _ = self.grammar.get_spec_env()
         io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
         return list(io_instance.parties.values())
-
-    def _parse_next_remote_packet(
-        self, forecast: PacketForecaster.ForecastingResult, io_instance: FandangoIO
-    ):
-        if len(io_instance.get_received_msgs()) == 0:
-            return None, None
-
-        complete_msg = None
-        used_fragments_idx = []
-        next_fragment_idx = 0
-
-        found_start = False
-        selection_rounds = 0
-        msg_sender = "None"
-        while not found_start and selection_rounds < 20:
-            for start_idx, (msg_sender, msg_recipient, _) in enumerate(
-                io_instance.get_received_msgs()
-            ):
-                next_fragment_idx = start_idx
-                if msg_sender in forecast.get_msg_parties():
-                    found_start = True
-                    break
-
-            if not found_start and len(io_instance.get_received_msgs()) != 0:
-                raise FandangoValueError(
-                    "Unexpected party sent message. Expected: "
-                    + " | ".join(forecast.get_msg_parties())
-                    + f". Received: {msg_sender}."
-                    + f" Messages: {io_instance.get_received_msgs()}"
-                )
-            time.sleep(0.025)
-
-        forecast_non_terminals = forecast[msg_sender]
-        available_non_terminals = set(forecast_non_terminals.get_non_terminals())
-
-        is_msg_complete = False
-
-        elapsed_rounds = 0
-        max_rounds = 0.025 * 2000
-        failed_parameter_parsing = False
-        parameter_parsing_exception = None
-
-        while not is_msg_complete:
-            for idx, (sender, recipient, msg_fragment) in enumerate(
-                io_instance.get_received_msgs()[next_fragment_idx:]
-            ):
-                abs_msg_idx = next_fragment_idx + idx
-
-                if msg_sender != sender:
-                    continue
-                if isinstance(msg_fragment, bytes) and not self.grammar.contains_bits():
-                    msg_fragment = msg_fragment.decode("utf-8", errors="ignore")
-                if complete_msg is None:
-                    complete_msg = msg_fragment
-                else:
-                    if isinstance(complete_msg, str) and isinstance(msg_fragment, str):
-                        complete_msg += msg_fragment
-                    elif isinstance(complete_msg, bytes) and isinstance(
-                        msg_fragment, bytes
-                    ):
-                        complete_msg += msg_fragment
-                    else:
-                        raise TypeError(
-                            "complete_msg and msg_fragment must be of the same type"
-                        )
-                used_fragments_idx.append(abs_msg_idx)
-
-                parsed_packet_tree = None
-                forecast_packet = None
-                for non_terminal in set(available_non_terminals):
-                    forecast_packet = forecast_non_terminals[non_terminal]
-                    path = random.choice(list(forecast_packet.paths))
-                    hookin_tree = path.tree
-                    path = list(
-                        map(lambda x: x[0], filter(lambda x: not x[1], path.path))
-                    )
-                    hookin_point = hookin_tree.get_last_by_path(path)
-                    parsed_packet_tree = self.grammar.parse(
-                        complete_msg,
-                        forecast_packet.node.symbol,
-                        hookin_parent=hookin_point,
-                    )
-
-                    if parsed_packet_tree is not None:
-                        parsed_packet_tree.sender = forecast_packet.node.sender
-                        parsed_packet_tree.recipient = forecast_packet.node.recipient
-                        try:
-                            self.grammar.populate_sources(parsed_packet_tree)
-                            break
-                        except FandangoParseError as e:
-                            parsed_packet_tree = None
-                            failed_parameter_parsing = True
-                            parameter_parsing_exception = e
-                    incomplete_tree = self.grammar.parse(
-                        complete_msg,
-                        forecast_packet.node.symbol,
-                        mode=ParsingMode.INCOMPLETE,
-                        hookin_parent=hookin_point,
-                    )
-                    if incomplete_tree is None:
-                        available_non_terminals.remove(non_terminal)
-
-                # Check if there are still NonTerminals that can be parsed with received prefix
-                if len(available_non_terminals) == 0:
-                    expected = "|".join(
-                        map(
-                            lambda x: str(x),
-                            forecast_non_terminals.get_non_terminals(),
-                        )
-                    )
-
-                    exc = FandangoParseError(
-                        f"Expected {expected}, got {complete_msg!r}"
-                    )
-                    if getattr(Exception, "add_note", None):
-                        unprocessed = io_instance.get_received_msgs()
-                        exc.add_note(f"Unprocessed messages: {unprocessed!s}")
-                    raise exc
-
-                if parsed_packet_tree is not None:
-                    nr_deleted = 0
-                    used_fragments_idx.sort()
-                    for del_idx in used_fragments_idx:
-                        io_instance.clear_received_msg(del_idx - nr_deleted)
-                        nr_deleted += 1
-                    return forecast_packet, parsed_packet_tree
-
-            if not is_msg_complete:
-                elapsed_rounds += 1
-                if elapsed_rounds >= max_rounds:
-                    if failed_parameter_parsing:
-                        applicable_nt_list = list(
-                            map(lambda x: str(x.symbol), available_non_terminals)
-                        )
-                        if len(applicable_nt_list) == 0:
-                            applicable_nt = "None"
-                        else:
-                            applicable_nt = ", ".join(applicable_nt_list)
-                        raise FandangoFailedError(
-                            f"Couldn't derive parameters for received packet or timed out while waiting for remaining packet. Applicable nonterminal: {applicable_nt} Received part: {complete_msg!r}. Exception: {str(parameter_parsing_exception)}"
-                        )
-                    else:
-                        raise FandangoFailedError(
-                            f"Incomplete packet received. Timed out while waiting for packet. Received part: {complete_msg!r}"
-                        )
-                time.sleep(0.025)
-        return None
