@@ -79,26 +79,21 @@ class Terminal(Symbol):
                 return False, 0
 
         else:
-            if not incomplete:
-                if isinstance(check_word, bytes):
-                    assert isinstance(symbol, bytes)
-                    if check_word.startswith(symbol):
-                        return True, len(symbol)
-                else:
-                    assert isinstance(word, str)
-                    assert isinstance(symbol, str)
-                    if check_word.startswith(symbol):
-                        return True, len(symbol)
+            if incomplete:
+                prefix = check_word
+                full_word = symbol
             else:
-                if isinstance(check_word, bytes):
-                    assert isinstance(symbol, bytes)
-                    if check_word.startswith(symbol):
-                        return True, len(symbol)
-                else:
-                    assert isinstance(check_word, str)
-                    assert isinstance(symbol, str)
-                    if symbol.startswith(check_word):
-                        return True, len(check_word)
+                prefix = symbol
+                full_word = check_word
+            if isinstance(full_word, str):
+                assert isinstance(prefix, str)
+                if full_word.startswith(prefix):
+                    return True, len(prefix)
+            else:
+                assert isinstance(full_word, bytes)
+                assert isinstance(prefix, bytes)
+                if full_word.startswith(prefix):
+                    return True, len(prefix)
 
         # LOGGER.debug(f"No match")
         return False, 0
