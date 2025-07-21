@@ -56,6 +56,7 @@ test = [
     "pytest-timeout>=2.4.0",
     "pytest-xdist>=3.7.0",
     "python-dateutil>=2.9.0.post0",
+    "docutils==0.21.2",
 ]
 
 development = [
