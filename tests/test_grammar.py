@@ -31,9 +31,6 @@ class ConstraintTest(unittest.TestCase):
         k_paths = grammar._generate_all_k_paths(3)
         print(len(k_paths))
 
-        for path in grammar._generate_all_k_paths(3):
-            print(tuple(path))
-
     def test_derivation_k_paths(self):
         with open(RESOURCES_ROOT / "grammar.fan", "r") as file:
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
@@ -50,7 +47,8 @@ class ConstraintTest(unittest.TestCase):
         tree = grammar.parse("aabb")
 
         for path in grammar.traverse_derivation(tree):
-            print(path)
+            for node in path:
+                print(node.format_as_spec())
 
     @staticmethod
     def get_solutions(grammar, constraints, desired_solutions=1):
@@ -64,7 +62,10 @@ class ConstraintTest(unittest.TestCase):
 
         # grammar produces 1 output
         actual = self.get_solutions(grammar, constraints, desired_solutions=1)
-        self.assertListEqual(actual, ["bar"])
+        self.assertEqual(len(actual), 1)
+        res = actual[0]
+        self.assertIsInstance(res, DerivationTree)
+        self.assertEqual(str(res.value()), "bar")
 
     def test_nested_generators(self):
         with open(RESOURCES_ROOT / "nested_grammar_parameters.fan", "r") as file:
@@ -147,7 +148,7 @@ class ConstraintTest(unittest.TestCase):
             assert grammar is not None
         solutions = self.get_solutions(grammar, c, desired_solutions=10)
         for solution in solutions:
-            self.assertNotEqual(solution, "10")
+            self.assertNotEqual(str(solution.value()), "10")
 
     def test_max_nodes(self):
         with open(RESOURCES_ROOT / "gen_number.fan", "r") as file:

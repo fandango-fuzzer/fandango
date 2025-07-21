@@ -51,7 +51,7 @@ class DTDFandangoConverter(FandangoConverter):
         types = list(self.attribute_types)
         types.sort()
         if types:
-            s += f"\n\n# Attribute types, to be further refined"
+            s += "\n\n# Attribute types, to be further refined"
         for tp in types:
             s += f"\n<{tp}> ::= {self.attribute_types[tp]}"
 
@@ -67,7 +67,7 @@ class DTDFandangoConverter(FandangoConverter):
         s += attrs
 
         if required_attributes:
-            s += f"\nwhere ("
+            s += "\nwhere ("
             s += "\n   and ".join(
                 f"{fan(attribute.name) + '='!r} in <{fan(element.name)}>.descendant_values()"
                 for attribute in required_attributes

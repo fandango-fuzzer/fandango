@@ -41,7 +41,6 @@ from fandango.language.search import (
     SelectiveSearch,
     StarSearch,
     PopulationSearch,
-    NonTerminalSearch,
 )
 from fandango.language.symbol import NonTerminal, Terminal
 from fandango.logger import LOGGER
@@ -97,7 +96,7 @@ class GrammarProcessor(FandangoParserVisitor):
 
     def get_grammar(
         self, productions: list[FandangoParser.ProductionContext], prime=True
-    ):
+    ) -> Grammar:
         grammar = Grammar(
             local_variables=self.local_variables,
             global_variables=self.global_variables,
@@ -114,10 +113,12 @@ class GrammarProcessor(FandangoParserVisitor):
 
                 if not production.EXPR_ASSIGN():
                     LOGGER.warning(
-                        f"{symbol}: Using '=' and '::' for generators is deprecated. Use ':=' instead."
+                        f"{symbol.format_as_spec()}: Using '=' and '::' for generators is deprecated. Use ':=' instead."
                     )
             if production.SEMI_COLON():
-                LOGGER.info(f"{symbol}: A final ';' is not required in grammar rules.")
+                LOGGER.info(
+                    f"{symbol.format_as_spec()}: A final ';' is not required in grammar rules."
+                )
 
         grammar.rules.update(self.additionalRules)
         if len(self.seenParties) == 0:
