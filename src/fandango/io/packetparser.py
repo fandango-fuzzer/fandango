@@ -8,7 +8,7 @@ from fandango.io.packetforecaster import PacketForecaster
 from fandango.language import Grammar, NonTerminal, DerivationTree
 from fandango.language.grammar import ParsingMode
 
-def _find_next_fragment(role_sender: str, messages: list[tuple[str, str, str]], start_idx: int = 0) -> tuple[int, Optional[str]]:
+def _find_next_fragment(role_sender: str, messages: list[tuple[str, str, str | bytes]], start_idx: int = 0) -> tuple[int, Optional[str | bytes]]:
     """
     Find the next message fragment sent by the specified sender in the list of messages.
     Returns the index of the message and the message fragment.
@@ -112,7 +112,6 @@ def parse_next_remote_packet(
                 try:
                     grammar.populate_sources(parse_tree)
                     complete_parses[non_terminal] = (current_fragment_idx, parse_tree)
-                    break
                 except FandangoParseError as e:
                     parameter_parsing_exception = (non_terminal, e, parse_tree)
             if not parser.can_continue():
