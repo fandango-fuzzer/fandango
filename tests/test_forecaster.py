@@ -59,7 +59,7 @@ def test_forecast_4():
     tree = grammar.parse("dec", mode=ParsingMode.INCOMPLETE)
 
     prediction: PacketForecaster.ForecastingResult = forecaster.predict(tree)
-    expected = {"StdOut": ["<c>", "<g>", "<h>"]}
+    expected = {"StdOut": ["<c>", "<g>", "<i>"]}
     assert_prediction(prediction, expected)
 
 
@@ -69,7 +69,7 @@ def test_forecast_5():
     tree = grammar.parse("dc", mode=ParsingMode.INCOMPLETE)
 
     prediction: PacketForecaster.ForecastingResult = forecaster.predict(tree)
-    expected = {"StdOut": ["<c>", "<g>", "<h>"]}
+    expected = {"StdOut": ["<c>", "<g>", "<i>"]}
     assert_prediction(prediction, expected)
 
 
@@ -79,7 +79,7 @@ def test_forecast_6():
     tree = grammar.parse("dcc", mode=ParsingMode.INCOMPLETE)
 
     prediction: PacketForecaster.ForecastingResult = forecaster.predict(tree)
-    expected = {"StdOut": ["<g>", "<h>"]}
+    expected = {"StdOut": ["<g>", "<i>"]}
     assert_prediction(prediction, expected)
 
 
@@ -96,7 +96,7 @@ def test_forecast_7():
 def test_forecast_8():
     grammar = get_grammar()
     forecaster = PacketForecaster(grammar)
-    tree = grammar.parse("dcch", mode=ParsingMode.INCOMPLETE)
+    tree = grammar.parse("dcci", mode=ParsingMode.INCOMPLETE)
 
     prediction: PacketForecaster.ForecastingResult = forecaster.predict(tree)
     expected: dict[str, list[str]] = {}
