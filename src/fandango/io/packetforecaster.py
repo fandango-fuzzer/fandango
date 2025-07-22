@@ -1,10 +1,9 @@
 from copy import deepcopy
-from typing import Optional
+from typing import Optional, Sequence
 
 from fandango.errors import FandangoValueError
 from fandango.language.grammar import (
     Grammar,
-    GrammarSetting,
     NodeVisitor,
     NonTerminalNode,
     TerminalNode,
@@ -21,6 +20,7 @@ from fandango.language.grammar import (
     GrammarKeyError,
     ParsingMode,
 )
+from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.symbols import Terminal, NonTerminal
 from fandango.language.tree import DerivationTree
 
@@ -361,7 +361,7 @@ class PacketForecaster:
         protocol messages without parsing each protocol message again.
         """
 
-        def __init__(self, grammar_settings: list[GrammarSetting]):
+        def __init__(self, grammar_settings: Sequence[HasSettings]):
             self._grammar_settings = grammar_settings
             self._reduced: dict[NonTerminal, Node] = dict()
             self.seen_keys: set[NonTerminal] = set()

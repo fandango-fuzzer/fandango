@@ -34,20 +34,22 @@ from fandango.language.convert import (
 from fandango.language.grammar import (
     FuzzingMode,
     Grammar,
-    MessageNestingDetector,
     Node,
-    NodeReplacer,
     NodeType,
     NonTerminalNode,
     Option,
-    PacketTruncator,
     Plus,
     Repetition,
     Star,
-    SymbolFinder,
     TerminalNode,
     closest_match,
 )
+from fandango.language.grammar.node_visitors.message_nesting_detector import (
+    MessageNestingDetector,
+)
+from fandango.language.grammar.node_visitors.node_replacer import NodeReplacer
+from fandango.language.grammar.node_visitors.packet_truncator import PacketTruncator
+from fandango.language.grammar.node_visitors.symbol_finder import SymbolFinder
 from fandango.language.parser import sa_fandango
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
