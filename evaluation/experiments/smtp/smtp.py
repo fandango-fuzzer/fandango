@@ -1,6 +1,7 @@
 import time
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
+from fandango.language.grammar import FuzzingMode
 from fandango.language.parse import parse
 
 
@@ -20,17 +21,18 @@ def main():
         logger_level=LoggerLevel.INFO,
     )
 
-    # Evolve solutions
-
-    solutions = fandango.evolve()
-    print(time.time() - time_start)
-
     # Output solutions
-    for solution in solutions:
+    solution_count = 0
+    for solution in fandango.generate(mode=FuzzingMode.IO):
+        print(time.time() - time_start)
         if solution.contains_bytes():
-            print(bytes(solution))
+            print(solution.to_bytes())
         else:
-            print(str(solution))
+            print(solution.to_string())
+        time_start = time.time()
+        solution_count += 1
+        if solution_count >= 10:
+            break
 
 
 if __name__ == "__main__":

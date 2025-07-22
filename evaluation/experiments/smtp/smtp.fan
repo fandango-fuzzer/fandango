@@ -72,10 +72,9 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 <response_ehlo_param> ::= '250-' r'[a-zA-Z0-9\- ]+' '\r\n'
 <response_ehlo_end> ::= '250 Ok\r\n'
 
-<exchange_quit> ::= <Client:request_quit><Server:response_quit><state_end>
+<exchange_quit> ::= <Client:request_quit><Server:response_quit>
 <request_quit> ::= 'QUIT\r\n'
 <response_quit> ::= '221 Bye\r\n'
-<state_end> ::= ''
 
 # When sending a mail the client to the server, the client first tells the server who he is and where to send the mail
 # to, afterwards the client send mail headers and the mail body before finally submitting the mail and goind back to the logged in state.
