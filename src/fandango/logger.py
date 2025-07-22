@@ -3,11 +3,15 @@ import os
 import sys
 import time
 import traceback
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from ansi_styles import ansiStyles as styles
 
-from fandango.language import DerivationTree
+if TYPE_CHECKING:
+    from fandango.language.tree import DerivationTree
+else:
+    DerivationTree = object  # needs to be defined for beartype
+
 
 LOGGER = logging.getLogger("fandango")
 logging.basicConfig(
@@ -152,7 +156,7 @@ def clear_visualization(max_generations: Optional[int] = None):
 def log_message_transfer(
     sender: str,
     receiver: str | None,
-    msg: DerivationTree,
+    msg: "DerivationTree",
     self_is_sender: bool,
 ):
     info = sender

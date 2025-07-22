@@ -48,6 +48,12 @@ SA_FandangoTranslator::~SA_FandangoTranslator() {
     Py_XDECREF(Rs_sliceContext_cls);
     Py_XDECREF(PythonContext_cls);
     Py_XDECREF(Python_tagContext_cls);
+    Py_XDECREF(Grammar_settingContext_cls);
+    Py_XDECREF(Grammar_setting_contentContext_cls);
+    Py_XDECREF(Grammar_selectorContext_cls);
+    Py_XDECREF(Grammar_ruleContext_cls);
+    Py_XDECREF(Grammar_setting_keyContext_cls);
+    Py_XDECREF(Grammar_setting_valueContext_cls);
     Py_XDECREF(Python_fileContext_cls);
     Py_XDECREF(InteractiveContext_cls);
     Py_XDECREF(EvalContext_cls);
@@ -473,6 +479,42 @@ antlrcpp::Any SA_FandangoTranslator::visitPython(FandangoParser::PythonContext *
 antlrcpp::Any SA_FandangoTranslator::visitPython_tag(FandangoParser::Python_tagContext *ctx){
     if(!Python_tagContext_cls) Python_tagContext_cls = PyObject_GetAttrString(translator->parser_cls, "Python_tagContext");
     PyObject *py_ctx = translator->convert_ctx(this, ctx, Python_tagContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitGrammar_setting(FandangoParser::Grammar_settingContext *ctx){
+    if(!Grammar_settingContext_cls) Grammar_settingContext_cls = PyObject_GetAttrString(translator->parser_cls, "Grammar_settingContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Grammar_settingContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitGrammar_setting_content(FandangoParser::Grammar_setting_contentContext *ctx){
+    if(!Grammar_setting_contentContext_cls) Grammar_setting_contentContext_cls = PyObject_GetAttrString(translator->parser_cls, "Grammar_setting_contentContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Grammar_setting_contentContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitGrammar_selector(FandangoParser::Grammar_selectorContext *ctx){
+    if(!Grammar_selectorContext_cls) Grammar_selectorContext_cls = PyObject_GetAttrString(translator->parser_cls, "Grammar_selectorContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Grammar_selectorContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitGrammar_rule(FandangoParser::Grammar_ruleContext *ctx){
+    if(!Grammar_ruleContext_cls) Grammar_ruleContext_cls = PyObject_GetAttrString(translator->parser_cls, "Grammar_ruleContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Grammar_ruleContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitGrammar_setting_key(FandangoParser::Grammar_setting_keyContext *ctx){
+    if(!Grammar_setting_keyContext_cls) Grammar_setting_keyContext_cls = PyObject_GetAttrString(translator->parser_cls, "Grammar_setting_keyContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Grammar_setting_keyContext_cls);
+    return py_ctx;
+}
+
+antlrcpp::Any SA_FandangoTranslator::visitGrammar_setting_value(FandangoParser::Grammar_setting_valueContext *ctx){
+    if(!Grammar_setting_valueContext_cls) Grammar_setting_valueContext_cls = PyObject_GetAttrString(translator->parser_cls, "Grammar_setting_valueContext");
+    PyObject *py_ctx = translator->convert_ctx(this, ctx, Grammar_setting_valueContext_cls);
     return py_ctx;
 }
 

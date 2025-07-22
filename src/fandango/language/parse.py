@@ -201,14 +201,13 @@ class FandangoSpec:
 
         LOGGER.debug(f"{filename}: extracting grammar")
         grammar_processor = GrammarProcessor(
+            splitter.grammar_settings,
             local_variables=self.local_vars,
             global_variables=self.global_vars,
             id_prefix="{0:x}".format(abs(hash(filename))),
             max_repetitions=max_repetitions,
         )
-        self.grammar: Grammar = grammar_processor.get_grammar(
-            splitter.productions, prime=False
-        )
+        self.grammar = grammar_processor.get_grammar(splitter.productions, prime=False)
 
         LOGGER.debug(f"{filename}: extracting constraints")
         constraint_processor = ConstraintProcessor(
@@ -633,8 +632,6 @@ def parse(
 
     # We invoke this at the very end, now that all data is there
     grammar.update(grammar, prime=check)
-    if check:
-        grammar.prime()
 
     if parties:
         slice_parties(grammar, parties)
@@ -1111,7 +1108,11 @@ def assign_implicit_party(grammar, implicit_party: str):
             while rule_nt in grammar.rules:
                 terminal_id += 1
                 rule_nt = NonTerminal(f"<_terminal:{terminal_id}>")
-            n_node = NonTerminalNode(rule_nt, implicit_party)
+            n_node = NonTerminalNode(
+                rule_nt,
+                grammar.grammar_settings,
+                implicit_party,
+            )
             NodeReplacer(t_node, n_node).visit(current_node)
             grammar.rules[rule_nt] = t_node
 
