@@ -2,9 +2,7 @@ from copy import deepcopy
 from typing import Optional, Sequence
 
 from fandango.errors import FandangoValueError
-from fandango.language.grammar import (
-    ParsingMode,
-)
+from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.column import Column
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.iterative_parser import IterativeParser
