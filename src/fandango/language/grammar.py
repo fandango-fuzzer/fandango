@@ -1974,11 +1974,11 @@ class Grammar(NodeVisitor):
             self._clear_tmp()
 
         def consume(self, char: str | bytes | int):
-            assert self._start is not None, "Call new_parse() before consume()"
             for tree in self._consume(char):
                 yield self.to_derivation_tree(tree)
 
         def _consume(self, char: str | bytes | int):
+            assert self._start is not None, "Call new_parse() before consume()"
             if isinstance(char, int):
                 char = bytes([char])
             word = char
