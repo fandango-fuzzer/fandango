@@ -821,7 +821,7 @@ def check_grammar_definitions(
 def check_grammar_types(
     grammar: Optional[Grammar], *, start_symbol: str = "<start>"
 ) -> None:
-    if not grammar:
+    if grammar is None:
         return
 
     LOGGER.debug("Checking types")
@@ -873,6 +873,7 @@ def check_grammar_types(
                 return symbol_types[tree.symbol]
 
             symbol_types[tree.symbol] = (None, 0, 0, 0)
+            assert grammar is not None
             symbol_tree = grammar.rules[tree.symbol]
             tp, min_bits, max_bits, step = get_type(symbol_tree, tree.symbol.name())
             symbol_types[tree.symbol] = tp, min_bits, max_bits, step
