@@ -132,6 +132,12 @@ class FandangoParty(ABC):
                 )
         FandangoIO.instance().add_receive(sender, self.party_name, message)
 
+    def start(self):
+        raise FandangoError("start() method not implemented!")
+
+    def stop(self):
+        raise FandangoError("stop() method not implemented!")
+
 
 class ProtocolDecorator(ABC):
     def __init__(
@@ -537,6 +543,14 @@ class FandangoIO(object):
         self.receive = list[tuple[str, str, str | bytes]]()
         self.parties = dict[str, FandangoParty]()
         self.receive_lock = threading.Lock()
+
+    def reset_parties(self):
+        with self.receive_lock:
+            for party in self.parties.values():
+                party.stop()
+            self.receive.clear()
+            for party in self.parties.values():
+                party.start()
 
     def add_receive(self, sender: str, receiver: str, message: str | bytes) -> None:
         """Forwards an external, received message to Fandango for processing.
