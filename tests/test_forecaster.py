@@ -1,9 +1,7 @@
-import logging
 from fandango.io.packetforecaster import PacketForecaster
 from fandango.language.grammar import ParsingMode
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
-from fandango.logger import LOGGER
 from tests.utils import RESOURCES_ROOT
 from fandango.api import Fandango
 
@@ -96,7 +94,6 @@ def test_forecast_7():
 
 
 def test_forecast_8():
-    LOGGER.setLevel(logging.INFO)
     grammar = get_grammar()
     forecaster = PacketForecaster(grammar)
     tree = grammar.parse("dcci", mode=ParsingMode.INCOMPLETE)
