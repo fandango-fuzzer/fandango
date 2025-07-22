@@ -57,6 +57,7 @@ test = [
     "pytest-xdist>=3.7.0",
     "python-dateutil>=2.9.0.post0",
     "docutils==0.21.2",
+    "tccbox==2024.7.1",
 ]
 
 development = [
