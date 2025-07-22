@@ -17,12 +17,15 @@ from fandango.language.grammar import (
     Plus,
     Star,
     CharSet,
-    GrammarKeyError,
     ParsingMode,
 )
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.symbols import Terminal, NonTerminal
 from fandango.language.tree import DerivationTree
+
+
+class GrammarKeyError(KeyError):
+    pass
 
 
 class PathFinder(NodeVisitor):

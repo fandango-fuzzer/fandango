@@ -9,7 +9,9 @@ from typing import Any, Sequence, cast, Optional, Union
 
 
 from fandango.errors import FandangoValueError, FandangoParseError
+from fandango.language.grammar.column import Column
 from fandango.language.grammar.has_settings import HasSettings
+from fandango.language.grammar.literal_generator import LiteralGenerator
 from fandango.language.grammar.node_visitors.disambiguator import Disambiguator
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
@@ -23,9 +25,9 @@ from fandango.language.grammar.nodes.repetition import (
     Plus,
     Repetition,
     Star,
-    MAX_REPETITIONS,
 )
 from fandango.language.grammar.nodes.terminal import TerminalNode
+from fandango.language.grammar.parse_state import ParseState
 from fandango.language.tree import DerivationTree
 from fandango.language.symbols import Symbol, NonTerminal, Terminal
 from fandango.logger import LOGGER
@@ -35,222 +37,6 @@ from fandango.language.tree_value import TreeValue
 class FuzzingMode(enum.Enum):
     COMPLETE = 0
     IO = 1
-
-
-class GrammarKeyError(KeyError):
-    pass
-
-
-class GeneratorParserValueError(ValueError):
-    pass
-
-
-class LiteralGenerator:
-    def __init__(self, call: str, nonterminals: dict):
-        self.call = call
-        self.nonterminals = nonterminals
-
-    def __repr__(self):
-        return f"LiteralGenerator({self.call!r}, {self.nonterminals!r})"
-
-    def __str__(self):
-        # Generators are created with internal variables;
-        # we replace them with "..." to avoid cluttering the output.
-        s = re.sub(r"___[0-9a-zA-Z_]+___", r"...", str(self.call))
-        return s
-
-    def __eq__(self, other):
-        return (
-            isinstance(other, LiteralGenerator)
-            and self.call == other.call
-            and self.nonterminals == other.nonterminals
-        )
-
-    def __hash__(self):
-        return hash(self.call) ^ hash(self.nonterminals)
-
-
-class ParseState:
-    def __init__(
-        self,
-        nonterminal: NonTerminal,
-        position: int,
-        symbols: tuple[tuple[Symbol, frozenset[tuple[str, Any]]], ...],
-        dot: int = 0,
-        children: Optional[list[DerivationTree]] = None,
-        is_incomplete: bool = False,
-        incomplete_idx=0,
-    ):
-        self._nonterminal = nonterminal
-        self._position = position
-        self._symbols = symbols
-        self._dot = dot
-        self.children = children or []
-        self.is_incomplete = is_incomplete
-        self.incomplete_idx = incomplete_idx
-        self._hash: Optional[int] = None
-
-    @property
-    def nonterminal(self):
-        return self._nonterminal
-
-    def append_child(self, child: DerivationTree):
-        self.children.append(child)
-        self._hash = None
-
-    def extend_children(self, children: list[DerivationTree]):
-        self.children.extend(children)
-        self._hash = None
-
-    @property
-    def position(self):
-        return self._position
-
-    @property
-    def symbols(self):
-        return self._symbols
-
-    @property
-    def dot(self) -> Optional[Symbol]:
-        return self.symbols[self._dot][0] if self._dot < len(self.symbols) else None
-
-    @property
-    def dot_params(self) -> Optional[frozenset[tuple[str, Any]]]:
-        return self.symbols[self._dot][1] if self._dot < len(self.symbols) else None
-
-    def finished(self):
-        return self._dot >= len(self.symbols) and not self.is_incomplete
-
-    def next_symbol_is_nonterminal(self):
-        return (
-            self._dot < len(self.symbols) and self.symbols[self._dot][0].is_non_terminal
-        )
-
-    def next_symbol_is_terminal(self):
-        return self._dot < len(self.symbols) and self.symbols[self._dot][0].is_terminal
-
-    def __hash__(self):
-        if self._hash is None:
-            self._hash = hash(
-                (
-                    self.nonterminal,
-                    self.position,
-                    self.symbols,
-                    self._dot,
-                    tuple(self.children),
-                )
-            )
-        return self._hash
-
-    def __eq__(self, other):
-        return (
-            isinstance(other, ParseState)
-            and self.nonterminal == other.nonterminal
-            and self.position == other.position
-            and self.symbols == other.symbols
-            and self._dot == other._dot
-        )
-
-    def __repr__(self):
-        return (
-            f"({repr(self.nonterminal)} -> "
-            + "".join(
-                [
-                    f"{'•' if i == self._dot else ''}{repr(s[0])!s}"
-                    for i, s in enumerate(self.symbols)
-                ]
-            )
-            + ("•" if self.finished() else "")
-            + f", column {self.position}"
-            + ")"
-        )
-
-    def next(self):
-        next_state = self.copy()
-        next_state._dot += 1
-        return next_state
-
-    def copy(self):
-        return ParseState(
-            self.nonterminal,
-            self.position,
-            self.symbols,
-            self._dot,
-            self.children[:],
-            self.is_incomplete,
-            self.incomplete_idx,
-        )
-
-
-class Column:
-    def __init__(self, states: Optional[list[ParseState]] = None):
-        self.states: list[ParseState] = states or []
-        self.dot_map = dict[Symbol, list[ParseState]]()
-        self.unique = set(self.states)
-        for state in self.states:
-            self.dot_map[state.nonterminal].append(state)
-
-    def __iter__(self):
-        yield from self.states
-
-    def __len__(self):
-        return len(self.states)
-
-    def __getitem__(self, item):
-        return self.states[item]
-
-    def remove(self, state: ParseState):
-        if state not in self.unique:
-            return False
-        self.unique.remove(state)
-        self.states.remove(state)
-        symbol = state.dot
-        assert symbol is not None
-        default_list: list[ParseState] = []
-        self.dot_map.get(symbol, default_list).remove(state)
-        return None
-
-    def replace(self, old: ParseState, new: ParseState):
-        self.unique.remove(old)
-        self.unique.add(new)
-        i_old = self.states.index(old)
-        del self.states[i_old]
-        self.states.insert(i_old, new)
-
-        old_symbol = old.dot
-        if old_symbol is not None:
-            self.dot_map[old_symbol].remove(old)
-
-        new_symbol = new.dot
-        if new_symbol is not None:
-            dot_list = self.dot_map.get(new_symbol, [])
-            dot_list.append(new)
-            self.dot_map[new_symbol] = dot_list
-
-    def __contains__(self, item):
-        return item in self.unique
-
-    def find_dot(self, nt: NonTerminal):
-        return self.dot_map.get(nt, [])
-
-    def add(self, state: ParseState):
-        if state not in self.unique:
-            self.states.append(state)
-            self.unique.add(state)
-            symbol = state.dot
-            if symbol is not None:
-                state_list = self.dot_map.get(symbol, [])
-                state_list.append(state)
-                self.dot_map[symbol] = state_list
-            return True
-        return False
-
-    def update(self, states: set[ParseState]):
-        for state in states:
-            self.add(state)
-
-    def __repr__(self):
-        return f"Column({self.states})"
 
 
 def closest_match(word, candidates):
