@@ -1,4 +1,5 @@
 import ast
+from collections.abc import Sequence
 from io import UnsupportedOperation
 from typing import Any, Optional
 
@@ -16,21 +17,16 @@ from fandango.constraints.base import (
 )
 from fandango.constraints.fitness import Comparison
 from fandango.language import NonTerminalSearch, NodeType
-from fandango.language.grammar import (
-    Alternative,
-    CharSet,
-    Concatenation,
-    Grammar,
-    GrammarSetting,
-    NonTerminalNode,
-    Option,
-    Plus,
-    Repetition,
-    Star,
-    TerminalNode,
-    Node,
-    FuzzingMode,
-)
+from fandango.language.grammar import Grammar, FuzzingMode
+from fandango.language.grammar.grammar_settings import GrammarSetting
+from fandango.language.grammar.has_settings import HasSettings
+from fandango.language.grammar.nodes.alternative import Alternative
+from fandango.language.grammar.nodes.char_set import CharSet
+from fandango.language.grammar.nodes.concatenation import Concatenation
+from fandango.language.grammar.nodes.node import Node
+from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
+from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.parser.FandangoParserVisitor import FandangoParserVisitor
 from fandango.language.search import (
@@ -93,7 +89,7 @@ class GrammarProcessor(FandangoParserVisitor):
         self.seenParties = set[str]()
         self.additionalRules = dict[NonTerminal, Node]()
         self.max_repetitions = max_repetitions
-        self._grammar_settings = [
+        self._grammar_settings: Sequence[HasSettings] = [
             self.visitGrammar_setting_content(ctx) for ctx in grammar_settings
         ]
 
