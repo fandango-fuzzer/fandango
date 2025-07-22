@@ -54,7 +54,7 @@ def test_indents():
     )
     splitter = FandangoSplitter()
     splitter.visit(tree)
-    processor = GrammarProcessor()
+    processor = GrammarProcessor(grammar_settings=splitter.grammar_settings)
     grammar = processor.get_grammar(splitter.productions)
     assert len(grammar.rules) == 1
     rule = list(grammar.rules.values())[0]
@@ -73,7 +73,7 @@ def test_alt_indents():
     )
     splitter = FandangoSplitter()
     splitter.visit(tree)
-    processor = GrammarProcessor()
+    processor = GrammarProcessor(grammar_settings=splitter.grammar_settings)
     grammar = processor.get_grammar(splitter.productions)
     assert len(grammar.rules) == 1
     rule = list(grammar.rules.values())[0]
@@ -146,7 +146,7 @@ def test_conversion_without_replace(expression):
         fandango_tree: FandangoParser.ExpressionContext = get_tree(
             expression, start="expression"
         )
-        processor = SearchProcessor(Grammar({}))
+        processor = SearchProcessor(Grammar([], {}))
         fandango_tree, searches, search_map = processor.visit(fandango_tree)
         assert 0 == len(searches)
         assert 0 == len(search_map)
@@ -202,7 +202,7 @@ def test_conversion_with_replacement(expression, value, expected):
     fandango_tree: FandangoParser.ExpressionContext = get_tree(
         expression, start="expression"
     )
-    processor = SearchProcessor(Grammar({}))
+    processor = SearchProcessor(Grammar([], {}))
     fandango_tree, searches, search_map = processor.visit(fandango_tree)
     assert 1 == len(search_map)
     assert 1 == len(searches)

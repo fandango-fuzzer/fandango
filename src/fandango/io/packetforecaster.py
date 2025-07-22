@@ -4,6 +4,7 @@ from typing import Optional
 from fandango.errors import FandangoValueError
 from fandango.language.grammar import (
     Grammar,
+    GrammarSetting,
     NodeVisitor,
     NonTerminalNode,
     TerminalNode,
@@ -360,10 +361,11 @@ class PacketForecaster:
         protocol messages without parsing each protocol message again.
         """
 
-        def __init__(self):
-            self._reduced = dict()
-            self.seen_keys = set()
-            self.processed_keys = set()
+        def __init__(self, grammar_settings: list[GrammarSetting]):
+            self._grammar_settings = grammar_settings
+            self._reduced: dict[NonTerminal, Node] = dict()
+            self.seen_keys: set[NonTerminal] = set()
+            self.processed_keys: set[NonTerminal] = set()
 
         def process(self, grammar: Grammar) -> dict[NonTerminal, Node]:
             """
@@ -389,30 +391,50 @@ class PacketForecaster:
             return aggregate
 
         def visitConcatenation(self, node: Concatenation):
-            return Concatenation(self.visitChildren(node), node.id)
+            return Concatenation(
+                self.visitChildren(node),
+                self._grammar_settings,
+                node.id,
+            )
 
         def visitTerminalNode(self, node: TerminalNode):
-            return TerminalNode(node.symbol)
+            return TerminalNode(node.symbol, self._grammar_settings)
 
         def visitAlternative(self, node: Alternative):
-            return Alternative(self.visitChildren(node), node.id)
+            return Alternative(
+                self.visitChildren(node),
+                self._grammar_settings,
+                node.id,
+            )
 
         def visitRepetition(self, node: Repetition):
             return Repetition(
-                self.visit(node.node), node.id, node.min, node.internal_max
+                self.visit(node.node),
+                self._grammar_settings,
+                node.id,
+                node.min,
+                node.internal_max,
             )
 
         def visitOption(self, node: Option):
-            return Option(self.visit(node.node), node.id)
+            return Option(
+                self.visit(node.node),
+                self._grammar_settings,
+                node.id,
+            )
 
         def visitPlus(self, node: Plus):
-            return Plus(self.visit(node.node), node.id)
+            return Plus(self.visit(node.node), self._grammar_settings, node.id)
 
         def visitStar(self, node: Star):
-            return Star(self.visit(node.node), node.id)
+            return Star(
+                self.visit(node.node),
+                self._grammar_settings,
+                node.id,
+            )
 
         def visitCharSet(self, node: CharSet):
-            return CharSet(node.chars)
+            return CharSet(node.chars, self._grammar_settings)
 
         def visitNonTerminalNode(self, node: NonTerminalNode):
             if node.sender is None and node.recipient is None:
@@ -423,8 +445,15 @@ class PacketForecaster:
                 symbol = NonTerminal("<_packet_" + node.symbol.name()[1:])
             else:
                 raise FandangoValueError("NonTerminal symbol must be a string!")
-            repl_node = NonTerminalNode(symbol, node.sender, node.recipient)
-            self._reduced[symbol] = TerminalNode(Terminal(node.symbol.value()))
+            repl_node = NonTerminalNode(
+                symbol,
+                self._grammar_settings,
+                node.sender,
+                node.recipient,
+            )
+            self._reduced[symbol] = TerminalNode(
+                Terminal(node.symbol.value()), self._grammar_settings
+            )
             self.seen_keys.add(symbol)
             self.processed_keys.add(symbol)
             return repl_node
@@ -459,10 +488,16 @@ class PacketForecaster:
 
     def __init__(self, grammar: Grammar):
         g_globals, g_locals = grammar.get_spec_env()
-        reduced = PacketForecaster.GrammarReducer().process(grammar)
+        reduced = PacketForecaster.GrammarReducer(grammar.grammar_settings).process(
+            grammar
+        )
         self.grammar = grammar
         self.reduced_grammar = Grammar(
-            reduced, grammar.fuzzing_mode, g_locals, g_globals
+            grammar.grammar_settings,
+            reduced,
+            grammar.fuzzing_mode,
+            g_locals,
+            g_globals,
         )
         self._parser = PacketForecaster.PacketIterativeParser(self.reduced_grammar)
 

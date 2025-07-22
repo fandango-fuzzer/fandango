@@ -40,7 +40,7 @@ class Terminal(Symbol):
     def from_number(number: str) -> "Terminal":
         return Terminal(Terminal.clean(number))
 
-    def check(self, word: str | int | bytes, incomplete=False) -> tuple[bool, int]:
+    def check(self, word: str | bytes | int, incomplete=False) -> tuple[bool, int]:
         """Return (True, # characters matched by `word`), or (False, 0)"""
 
         if self._value.is_type(NoneType) or isinstance(word, int):
@@ -60,7 +60,7 @@ class Terminal(Symbol):
 
         if self.is_regex:
             if not incomplete:
-                match = re.match(symbol, check_word)  # type: ignore[arg-type]
+                match = re.match(symbol, check_word)  # type: ignore [arg-type] # re actually does accept bytes
                 if match:
                     # LOGGER.debug(f"It's a match: {match.group(0)!r}")
                     return True, len(match.group(0))
@@ -79,24 +79,30 @@ class Terminal(Symbol):
                 return False, 0
 
         else:
-            if not incomplete:
-                if check_word.startswith(symbol):  # type: ignore[arg-type]
-                    # LOGGER.debug(f"It's a match: {symbol!r}")
-                    return True, len(symbol)
+            if incomplete:
+                prefix = check_word
+                full_word = symbol
             else:
-                if symbol.startswith(check_word):  # type: ignore[arg-type]
-                    return True, len(check_word)
+                prefix = symbol
+                full_word = check_word
+            if isinstance(full_word, str):
+                assert isinstance(prefix, str)
+                if full_word.startswith(prefix):
+                    return True, len(prefix)
+            else:
+                assert isinstance(full_word, bytes)
+                assert isinstance(prefix, bytes)
+                if full_word.startswith(prefix):
+                    return True, len(prefix)
 
         # LOGGER.debug(f"No match")
         return False, 0
 
-    def check_all(self, word: str | int | bytes) -> bool:
+    def check_all(self, word: str | bytes | int) -> bool:
         if isinstance(word, str):
-            if self._value.is_type(NoneType):
-                # cannot reasonably compare strings to partial bytes
-                return False
-            else:
-                return str(self._value) == word
+            return self._value.to_string() == word
+        elif isinstance(word, bytes):
+            return self._value.to_bytes() == word
         else:
             return int(self._value) == word
 

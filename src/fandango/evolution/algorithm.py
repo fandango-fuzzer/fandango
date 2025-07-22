@@ -530,7 +530,9 @@ class Fandango:
                             f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(forecast.get_msg_parties())}"
                         )
                     time.sleep(0.025)
-                forecast, packet_tree = parse_next_remote_packet(self.grammar, forecast, io_instance)
+                forecast, packet_tree = parse_next_remote_packet(
+                    self.grammar, forecast, io_instance
+                )
                 log_message_transfer(
                     packet_tree.sender,
                     packet_tree.recipient,

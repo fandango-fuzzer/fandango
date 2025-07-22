@@ -337,15 +337,16 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
             "cat",
         ]
         out, err, code = run_command(command)
-        err = err.split("\n")
+        split_err = err.split("\n")
 
         filter_prefixes = ["fandango:INFO: In:", "fandango:INFO: Out:"]
         io_logs = list(
             filter(
-                lambda x: any(filter(lambda b: x.startswith(b), filter_prefixes)), err
+                lambda x: any(filter(lambda b: x.startswith(b), filter_prefixes)),
+                split_err,
             )
         )
-        self.assertEqual(2, len(io_logs))
+        self.assertEqual(2, len(io_logs), f"err: {err}")
         result_a = io_logs[0].split(": ", 2)[2]
         result_b = io_logs[0].split(": ", 2)[2]
         self.assertEqual(result_a, result_b)
