@@ -43,7 +43,7 @@ from fandango.language.search import (
     StarSearch,
     PopulationSearch,
 )
-from fandango.language.symbol import NonTerminal, Terminal
+from fandango.language.symbols import NonTerminal, Terminal
 from fandango.logger import LOGGER
 
 

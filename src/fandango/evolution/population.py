@@ -11,8 +11,8 @@ from fandango.constraints.fitness import (
 )
 from fandango.io.packetforecaster import PacketForecaster
 from fandango.language.grammar import DerivationTree, Grammar
-from fandango.language.symbol import NonTerminal
-from fandango.language.symbol.slice import Slice
+from fandango.language.symbols import NonTerminal
+from fandango.language.symbols import Slice
 from fandango.logger import LOGGER
 
 

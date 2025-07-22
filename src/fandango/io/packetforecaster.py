@@ -21,7 +21,7 @@ from fandango.language.grammar import (
     GrammarKeyError,
     ParsingMode,
 )
-from fandango.language.symbol import Terminal, NonTerminal
+from fandango.language.symbols import Terminal, NonTerminal
 from fandango.language.tree import DerivationTree
 
 
