@@ -1,4 +1,4 @@
-from fandango.language.grammar import Grammar
+from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation

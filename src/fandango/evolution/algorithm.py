@@ -21,7 +21,9 @@ from fandango.io import FandangoIO, FandangoParty
 from fandango.io.packetforecaster import PacketForecaster
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.language import NonTerminal
-from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode, ParsingMode
+from fandango.language.grammar import FuzzingMode
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.tree import DerivationTree
 from fandango.logger import (
     LOGGER,
     clear_visualization,

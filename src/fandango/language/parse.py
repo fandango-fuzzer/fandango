@@ -31,25 +31,18 @@ from fandango.language.convert import (
     GrammarProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import (
-    FuzzingMode,
-    Grammar,
-    Node,
-    NodeType,
-    NonTerminalNode,
-    Option,
-    Plus,
-    Repetition,
-    Star,
-    TerminalNode,
-    closest_match,
-)
+from fandango.language.grammar import FuzzingMode, closest_match
+from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.node_visitors.message_nesting_detector import (
     MessageNestingDetector,
 )
 from fandango.language.grammar.node_visitors.node_replacer import NodeReplacer
 from fandango.language.grammar.node_visitors.packet_truncator import PacketTruncator
 from fandango.language.grammar.node_visitors.symbol_finder import SymbolFinder
+from fandango.language.grammar.nodes.node import Node, NodeType
+from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
+from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.parser import sa_fandango
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser

@@ -7,6 +7,7 @@ from fandango.io import FandangoIO
 from fandango.io.packetforecaster import PacketForecaster
 from fandango.language import Grammar, NonTerminal, DerivationTree
 from fandango.language.grammar import ParsingMode
+from fandango.language.grammar.iterative_parser import IterativeParser
 
 
 def _find_next_fragment(
@@ -66,7 +67,7 @@ def parse_next_remote_packet(
     available_non_terminals = set(forecast_non_terminals.get_non_terminals())
 
     # Initialize parsers for each non-terminal in the forecast applicable for the sender
-    nt_parsers: dict[NonTerminal, Grammar.IterativeParser] = dict()
+    nt_parsers: dict[NonTerminal, IterativeParser] = dict()
     for non_terminal in available_non_terminals:
         forecast_packet = forecast_non_terminals[non_terminal]
         hookin_data = random.choice(list(forecast_packet.paths))
@@ -74,7 +75,7 @@ def parse_next_remote_packet(
         assert hookin_tree is not None
         path = list(map(lambda x: x[0], filter(lambda x: not x[1], hookin_data.path)))
         hookin_point = hookin_tree.get_last_by_path(path)
-        nt_parsers[non_terminal] = Grammar.IterativeParser(grammar=grammar)
+        nt_parsers[non_terminal] = IterativeParser(grammar.rules)
         nt_parsers[non_terminal].new_parse(
             start=non_terminal, mode=ParsingMode.COMPLETE, hookin_parent=hookin_point
         )

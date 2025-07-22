@@ -1,6 +1,6 @@
 import random
 from typing import Any, Callable
-from fandango.language.grammar import Grammar
+from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.grammar_settings import GrammarSetting
 from fandango.language.grammar.nodes.node import Node, NODE_SETTINGS_DEFAULTS
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode

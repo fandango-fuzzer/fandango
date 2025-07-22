@@ -1,4 +1,4 @@
-from fandango.language.grammar import Grammar
+from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.symbols.non_terminal import NonTerminal

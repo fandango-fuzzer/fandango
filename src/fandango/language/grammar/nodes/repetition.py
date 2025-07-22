@@ -12,7 +12,7 @@ from fandango.language.tree import DerivationTree
 if TYPE_CHECKING:
     from fandango.constraints.base import RepetitionBoundsConstraint
     from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
-    from fandango.language.grammar import Grammar
+    from fandango.language.grammar.grammar import Grammar
 
 MAX_REPETITIONS = 5
 

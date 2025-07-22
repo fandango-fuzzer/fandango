@@ -16,10 +16,8 @@ from fandango.language.convert import (
     SearchProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import (
-    Alternative,
-    Grammar,
-)
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.parse import parse
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
@@ -146,7 +144,7 @@ def test_conversion_without_replace(expression):
         fandango_tree: FandangoParser.ExpressionContext = get_tree(
             expression, start="expression"
         )
-        processor = SearchProcessor(Grammar([], {}))
+        processor = SearchProcessor(Grammar.dummy())
         fandango_tree, searches, search_map = processor.visit(fandango_tree)
         assert 0 == len(searches)
         assert 0 == len(search_map)
@@ -202,7 +200,7 @@ def test_conversion_with_replacement(expression, value, expected):
     fandango_tree: FandangoParser.ExpressionContext = get_tree(
         expression, start="expression"
     )
-    processor = SearchProcessor(Grammar([], {}))
+    processor = SearchProcessor(Grammar.dummy())
     fandango_tree, searches, search_map = processor.visit(fandango_tree)
     assert 1 == len(search_map)
     assert 1 == len(searches)
