@@ -521,7 +521,6 @@ class PacketForecaster:
             self._parser.reference_tree = tree
             self._parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
             for suggested_tree in self._parser.consume(history_nts):
-                suggested_tree = deepcopy(suggested_tree)
                 for orig_r_msg, r_msg in zip(
                     tree.protocol_msgs(), suggested_tree.protocol_msgs()
                 ):
