@@ -462,8 +462,11 @@ class Fandango:
                 if len(history_tree.protocol_msgs()) == 0:
                     raise FandangoFailedError("Could not forecast next packet")
                 yield history_tree
-                return
-                # TODO: Reset for next iteration
+                io_instance.reset_parties()
+                history_tree = DerivationTree(NonTerminal(self.start_symbol), [])
+                forecast = forecaster.predict(history_tree)
+                if len(forecast.get_msg_parties()) == 0:
+                    return
 
             msg_parties = list(
                 filter(
