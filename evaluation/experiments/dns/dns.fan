@@ -5,7 +5,7 @@ from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 from copy import deepcopy
 from fandango.language.parse import parse
-from fandango.language.grammar import Grammar
+from fandango.language.grammar.grammar import Grammar
 from random import randint
 import socket
 import threading
