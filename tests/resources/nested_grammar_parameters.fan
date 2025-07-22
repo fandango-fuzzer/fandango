@@ -9,19 +9,19 @@ def bit_to_str_converter(input):
     return input.decode()
 
 <start> ::= <converted_outer>
-<converted_outer> ::= <byte>+ := str_to_bit_converter(<converted_inner>.to_string())
-<converted_inner> ::= <dummy_outer_2> := bit_to_str_converter(<converted_outer>.to_bytes())
+<converted_outer> ::= <byte>+ := str_to_bit_converter(str(<converted_inner>))
+<converted_inner> ::= <dummy_outer_2> := bit_to_str_converter(bytes(<converted_outer>))
 
-<dummy_outer_2> ::= <number_tail>+ := bit_to_str_converter(<dummy_inner_2>.to_bytes())
-<dummy_inner_2> ::= <dummy_outer> := str_to_bit_converter(<dummy_outer_2>.to_string())
+<dummy_outer_2> ::= <number_tail>+ := bit_to_str_converter(bytes(<dummy_inner_2>))
+<dummy_inner_2> ::= <dummy_outer> := str_to_bit_converter(str(<dummy_outer_2>))
 
-<dummy_outer> ::= <byte>+ := str_to_bit_converter(<dummy_inner>.to_string())
-<dummy_inner> ::= <nr_palindrome> := bit_to_str_converter(<dummy_outer>.to_bytes())
+<dummy_outer> ::= <byte>+ := str_to_bit_converter(str(<dummy_inner>))
+<dummy_inner> ::= <nr_palindrome> := bit_to_str_converter(bytes(<dummy_outer>))
 
 <nr_palindrome> ::= <number> <rev_number>
 
-<rev_number> ::= <number_tail>{0, 2} <number_start> := reverse(<source_number>.to_string())
-<source_number> ::= <number> := reverse(<rev_number>.to_string())
+<rev_number> ::= <number_tail>{0, 2} <number_start> := reverse(str(<source_number>))
+<source_number> ::= <number> := reverse(str(<rev_number>))
 
 
 

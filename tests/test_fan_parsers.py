@@ -15,7 +15,7 @@ files = glob.glob(str(RESOURCES_ROOT / "*.fan")) + glob.glob(str(DOCS_ROOT / "*.
 def test_file(fan_file):
     """Test the C++ and python .fan parsers for `fan_file`."""
 
-    command = ["fandango", "--parser=python", "convert", fan_file]
+    command = ["fandango", "-v", "--parser=python", "convert", fan_file]
     python_out, err, return_code = run_command(command)
     assert return_code == 0, err
     assert err == ""

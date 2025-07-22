@@ -22,22 +22,23 @@ public:
     NONE = 37, NONLOCAL = 38, NOT = 39, OR = 40, PASS = 41, RAISE = 42, 
     RETURN = 43, TRUE = 44, TRY = 45, TYPE = 46, WHILE = 47, WHERE = 48, 
     WITH = 49, YIELD = 50, FORALL = 51, EXISTS = 52, MAXIMIZING = 53, MINIMIZING = 54, 
-    ANY = 55, ALL = 56, LEN = 57, NAME = 58, STRING_LITERAL = 59, FSTRING_END_TRIPLE_QUOTE = 60, 
-    FSTRING_END_TRIPLE_SINGLE_QUOTE = 61, FSTRING_END_QUOTE = 62, FSTRING_END_SINGLE_QUOTE = 63, 
-    BYTES_LITERAL = 64, DECIMAL_INTEGER = 65, OCT_INTEGER = 66, HEX_INTEGER = 67, 
-    BIN_INTEGER = 68, FLOAT_NUMBER = 69, IMAG_NUMBER = 70, GRAMMAR_ASSIGN = 71, 
-    QUESTION = 72, BACKSLASH = 73, ELLIPSIS = 74, DOTDOT = 75, DOT = 76, 
-    STAR = 77, OPEN_PAREN = 78, CLOSE_PAREN = 79, COMMA = 80, COLON = 81, 
-    SEMI_COLON = 82, POWER = 83, ASSIGN = 84, OPEN_BRACK = 85, CLOSE_BRACK = 86, 
-    OR_OP = 87, XOR = 88, AND_OP = 89, LEFT_SHIFT = 90, RIGHT_SHIFT = 91, 
-    ADD = 92, MINUS = 93, DIV = 94, MOD = 95, IDIV = 96, NOT_OP = 97, OPEN_BRACE = 98, 
-    CLOSE_BRACE = 99, LESS_THAN = 100, GREATER_THAN = 101, EQUALS = 102, 
-    GT_EQ = 103, LT_EQ = 104, NOT_EQ_1 = 105, NOT_EQ_2 = 106, AT = 107, 
-    ARROW = 108, ADD_ASSIGN = 109, SUB_ASSIGN = 110, MULT_ASSIGN = 111, 
-    AT_ASSIGN = 112, DIV_ASSIGN = 113, MOD_ASSIGN = 114, AND_ASSIGN = 115, 
-    OR_ASSIGN = 116, XOR_ASSIGN = 117, LEFT_SHIFT_ASSIGN = 118, RIGHT_SHIFT_ASSIGN = 119, 
-    POWER_ASSIGN = 120, IDIV_ASSIGN = 121, EXPR_ASSIGN = 122, EXCL = 123, 
-    NEWLINE = 124, SKIP_ = 125, UNKNOWN_CHAR = 126, UNDERSCORE = 127
+    ANY = 55, ALL = 56, LEN = 57, SETTING = 58, ALL_WITH_TYPE = 59, NONTERMINAL_NODE = 60, 
+    TERMINAL_NODE = 61, NAME = 62, STRING_LITERAL = 63, FSTRING_END_TRIPLE_QUOTE = 64, 
+    FSTRING_END_TRIPLE_SINGLE_QUOTE = 65, FSTRING_END_QUOTE = 66, FSTRING_END_SINGLE_QUOTE = 67, 
+    BYTES_LITERAL = 68, DECIMAL_INTEGER = 69, OCT_INTEGER = 70, HEX_INTEGER = 71, 
+    BIN_INTEGER = 72, FLOAT_NUMBER = 73, IMAG_NUMBER = 74, GRAMMAR_ASSIGN = 75, 
+    QUESTION = 76, BACKSLASH = 77, ELLIPSIS = 78, DOTDOT = 79, DOT = 80, 
+    STAR = 81, OPEN_PAREN = 82, CLOSE_PAREN = 83, COMMA = 84, COLON = 85, 
+    SEMI_COLON = 86, POWER = 87, ASSIGN = 88, OPEN_BRACK = 89, CLOSE_BRACK = 90, 
+    OR_OP = 91, XOR = 92, AND_OP = 93, LEFT_SHIFT = 94, RIGHT_SHIFT = 95, 
+    ADD = 96, MINUS = 97, DIV = 98, MOD = 99, IDIV = 100, NOT_OP = 101, 
+    OPEN_BRACE = 102, CLOSE_BRACE = 103, LESS_THAN = 104, GREATER_THAN = 105, 
+    EQUALS = 106, GT_EQ = 107, LT_EQ = 108, NOT_EQ_1 = 109, NOT_EQ_2 = 110, 
+    AT = 111, ARROW = 112, ADD_ASSIGN = 113, SUB_ASSIGN = 114, MULT_ASSIGN = 115, 
+    AT_ASSIGN = 116, DIV_ASSIGN = 117, MOD_ASSIGN = 118, AND_ASSIGN = 119, 
+    OR_ASSIGN = 120, XOR_ASSIGN = 121, LEFT_SHIFT_ASSIGN = 122, RIGHT_SHIFT_ASSIGN = 123, 
+    POWER_ASSIGN = 124, IDIV_ASSIGN = 125, EXPR_ASSIGN = 126, EXCL = 127, 
+    NEWLINE = 128, SKIP_ = 129, SPACES = 130, UNDERSCORE = 131, UNKNOWN_CHAR = 132
   };
 
   enum {
@@ -51,69 +52,71 @@ public:
     RuleStar_selection_or_dot_selection = 26, RuleStar_selection = 27, RuleDot_selection = 28, 
     RuleSelection = 29, RuleBase_selection = 30, RuleRs_pairs = 31, RuleRs_pair = 32, 
     RuleRs_slices = 33, RuleRs_slice = 34, RulePython = 35, RulePython_tag = 36, 
-    RulePython_file = 37, RuleInteractive = 38, RuleEval = 39, RuleFunc_type = 40, 
-    RuleStatements = 41, RuleStmt = 42, RuleStatement_newline = 43, RuleSimple_stmts = 44, 
-    RuleSimple_stmt = 45, RuleCompound_stmt = 46, RuleAssignment = 47, RuleAnnotated_rhs = 48, 
-    RuleAugassign = 49, RuleReturn_stmt = 50, RuleRaise_stmt = 51, RuleGlobal_stmt = 52, 
-    RuleNonlocal_stmt = 53, RuleDel_stmt = 54, RuleYield_stmt = 55, RuleAssert_stmt = 56, 
-    RuleImport_stmt = 57, RuleImport_name = 58, RuleImport_from = 59, RuleImport_from_targets = 60, 
-    RuleImport_from_as_names = 61, RuleImport_from_as_name = 62, RuleDotted_as_names = 63, 
-    RuleDotted_as_name = 64, RuleDotted_name = 65, RuleBlock = 66, RuleDecorators = 67, 
-    RuleClass_def = 68, RuleClass_def_raw = 69, RuleFunction_def = 70, RuleFunction_def_raw = 71, 
-    RuleParams = 72, RuleParameters = 73, RuleSlash_no_default = 74, RuleSlash_with_default = 75, 
-    RuleStar_etc = 76, RuleKwds = 77, RuleParam_no_default = 78, RuleParam_no_default_star_annotation = 79, 
-    RuleParam_with_default = 80, RuleParam_maybe_default = 81, RuleParam = 82, 
-    RuleParam_star_annotation = 83, RuleAnnotation = 84, RuleStar_annotation = 85, 
-    RuleDefault = 86, RuleIf_stmt = 87, RuleElif_stmt = 88, RuleElse_block = 89, 
-    RuleWhile_stmt = 90, RuleFor_stmt = 91, RuleWith_stmt = 92, RuleWith_item = 93, 
-    RuleTry_stmt = 94, RuleExcept_block = 95, RuleExcept_star_block = 96, 
-    RuleFinally_block = 97, RuleMatch_stmt = 98, RuleSubject_expr = 99, 
-    RuleCase_block = 100, RuleGuard = 101, RulePatterns = 102, RulePattern = 103, 
-    RuleAs_pattern = 104, RuleOr_pattern = 105, RuleClosed_pattern = 106, 
-    RuleLiteral_pattern = 107, RuleLiteral_expr = 108, RuleComplex_number = 109, 
-    RuleSigned_number = 110, RuleSigned_real_number = 111, RuleReal_number = 112, 
-    RuleImaginary_number = 113, RuleCapture_pattern = 114, RulePattern_capture_target = 115, 
-    RuleWildcard_pattern = 116, RuleValue_pattern = 117, RuleAttr = 118, 
-    RuleName_or_attr = 119, RuleGroup_pattern = 120, RuleSequence_pattern = 121, 
-    RuleOpen_sequence_pattern = 122, RuleMaybe_sequence_pattern = 123, RuleMaybe_star_pattern = 124, 
-    RuleStar_pattern = 125, RuleMapping_pattern = 126, RuleItems_pattern = 127, 
-    RuleKey_value_pattern = 128, RuleDouble_star_pattern = 129, RuleClass_pattern = 130, 
-    RulePositional_patterns = 131, RuleKeyword_patterns = 132, RuleKeyword_pattern = 133, 
-    RuleType_alias = 134, RuleType_params = 135, RuleType_param_seq = 136, 
-    RuleType_param = 137, RuleType_param_bound = 138, RuleExpressions = 139, 
-    RuleExpression = 140, RuleYield_expr = 141, RuleStar_expressions = 142, 
-    RuleStar_expression = 143, RuleStar_named_expressions = 144, RuleStar_named_expression = 145, 
-    RuleAssignment_expression = 146, RuleNamed_expression = 147, RuleDisjunction = 148, 
-    RuleConjunction = 149, RuleInversion = 150, RuleComparison = 151, RuleCompare_op_bitwise_or_pair = 152, 
-    RuleEq_bitwise_or = 153, RuleNoteq_bitwise_or = 154, RuleLte_bitwise_or = 155, 
-    RuleLt_bitwise_or = 156, RuleGte_bitwise_or = 157, RuleGt_bitwise_or = 158, 
-    RuleNotin_bitwise_or = 159, RuleIn_bitwise_or = 160, RuleIsnot_bitwise_or = 161, 
-    RuleIs_bitwise_or = 162, RuleBitwise_or = 163, RuleBitwise_xor = 164, 
-    RuleBitwise_and = 165, RuleShift_expr = 166, RuleSum = 167, RuleTerm = 168, 
-    RuleFactor = 169, RulePower = 170, RuleAwait_primary = 171, RulePrimary = 172, 
-    RuleSlices = 173, RuleSlice = 174, RuleAtom = 175, RuleGroup = 176, 
-    RuleLambdef = 177, RuleLambda_params = 178, RuleLambda_parameters = 179, 
-    RuleLambda_slash_no_default = 180, RuleLambda_slash_with_default = 181, 
-    RuleLambda_star_etc = 182, RuleLambda_kwds = 183, RuleLambda_param_no_default = 184, 
-    RuleLambda_param_with_default = 185, RuleLambda_param_maybe_default = 186, 
-    RuleLambda_param = 187, RuleFstring_middle_no_quote = 188, RuleFstring_middle_no_single_quote = 189, 
-    RuleFstring_middle_breaks_no_triple_quote = 190, RuleFstring_middle_breaks_no_triple_single_quote = 191, 
-    RuleFstring_any_no_quote = 192, RuleFstring_any_no_single_quote = 193, 
-    RuleFstring_middle = 194, RuleFstring_any_breaks_no_triple_quote = 195, 
-    RuleFstring_any_breaks_no_triple_single_quote = 196, RuleFstring_any = 197, 
-    RuleFstring_replacement_field = 198, RuleFstring_conversion = 199, RuleFstring_full_format_spec = 200, 
-    RuleFstring_format_spec = 201, RuleFstring = 202, RuleString = 203, 
-    RuleStrings = 204, RuleList = 205, RuleTuple = 206, RuleSet = 207, RuleDict = 208, 
-    RuleDouble_starred_kvpairs = 209, RuleDouble_starred_kvpair = 210, RuleKvpair = 211, 
-    RuleFor_if_clauses = 212, RuleFor_if_clause = 213, RuleListcomp = 214, 
-    RuleSetcomp = 215, RuleGenexp = 216, RuleDictcomp = 217, RuleArguments = 218, 
-    RuleArgs = 219, RuleArg = 220, RuleKwargs = 221, RuleStarred_expression = 222, 
-    RuleKwarg_or_starred = 223, RuleKwarg_or_double_starred = 224, RuleStar_targets = 225, 
-    RuleStar_targets_list_seq = 226, RuleStar_targets_tuple_seq = 227, RuleStar_target = 228, 
-    RuleTarget_with_star_atom = 229, RuleStar_atom = 230, RuleSingle_target = 231, 
-    RuleSingle_subscript_attribute_target = 232, RuleT_primary = 233, RuleDel_targets = 234, 
-    RuleDel_target = 235, RuleDel_t_atom = 236, RuleType_expressions = 237, 
-    RuleFunc_type_comment = 238, RuleIdentifier = 239
+    RuleGrammar_setting = 37, RuleGrammar_setting_content = 38, RuleGrammar_selector = 39, 
+    RuleGrammar_rule = 40, RuleGrammar_setting_key = 41, RuleGrammar_setting_value = 42, 
+    RulePython_file = 43, RuleInteractive = 44, RuleEval = 45, RuleFunc_type = 46, 
+    RuleStatements = 47, RuleStmt = 48, RuleStatement_newline = 49, RuleSimple_stmts = 50, 
+    RuleSimple_stmt = 51, RuleCompound_stmt = 52, RuleAssignment = 53, RuleAnnotated_rhs = 54, 
+    RuleAugassign = 55, RuleReturn_stmt = 56, RuleRaise_stmt = 57, RuleGlobal_stmt = 58, 
+    RuleNonlocal_stmt = 59, RuleDel_stmt = 60, RuleYield_stmt = 61, RuleAssert_stmt = 62, 
+    RuleImport_stmt = 63, RuleImport_name = 64, RuleImport_from = 65, RuleImport_from_targets = 66, 
+    RuleImport_from_as_names = 67, RuleImport_from_as_name = 68, RuleDotted_as_names = 69, 
+    RuleDotted_as_name = 70, RuleDotted_name = 71, RuleBlock = 72, RuleDecorators = 73, 
+    RuleClass_def = 74, RuleClass_def_raw = 75, RuleFunction_def = 76, RuleFunction_def_raw = 77, 
+    RuleParams = 78, RuleParameters = 79, RuleSlash_no_default = 80, RuleSlash_with_default = 81, 
+    RuleStar_etc = 82, RuleKwds = 83, RuleParam_no_default = 84, RuleParam_no_default_star_annotation = 85, 
+    RuleParam_with_default = 86, RuleParam_maybe_default = 87, RuleParam = 88, 
+    RuleParam_star_annotation = 89, RuleAnnotation = 90, RuleStar_annotation = 91, 
+    RuleDefault = 92, RuleIf_stmt = 93, RuleElif_stmt = 94, RuleElse_block = 95, 
+    RuleWhile_stmt = 96, RuleFor_stmt = 97, RuleWith_stmt = 98, RuleWith_item = 99, 
+    RuleTry_stmt = 100, RuleExcept_block = 101, RuleExcept_star_block = 102, 
+    RuleFinally_block = 103, RuleMatch_stmt = 104, RuleSubject_expr = 105, 
+    RuleCase_block = 106, RuleGuard = 107, RulePatterns = 108, RulePattern = 109, 
+    RuleAs_pattern = 110, RuleOr_pattern = 111, RuleClosed_pattern = 112, 
+    RuleLiteral_pattern = 113, RuleLiteral_expr = 114, RuleComplex_number = 115, 
+    RuleSigned_number = 116, RuleSigned_real_number = 117, RuleReal_number = 118, 
+    RuleImaginary_number = 119, RuleCapture_pattern = 120, RulePattern_capture_target = 121, 
+    RuleWildcard_pattern = 122, RuleValue_pattern = 123, RuleAttr = 124, 
+    RuleName_or_attr = 125, RuleGroup_pattern = 126, RuleSequence_pattern = 127, 
+    RuleOpen_sequence_pattern = 128, RuleMaybe_sequence_pattern = 129, RuleMaybe_star_pattern = 130, 
+    RuleStar_pattern = 131, RuleMapping_pattern = 132, RuleItems_pattern = 133, 
+    RuleKey_value_pattern = 134, RuleDouble_star_pattern = 135, RuleClass_pattern = 136, 
+    RulePositional_patterns = 137, RuleKeyword_patterns = 138, RuleKeyword_pattern = 139, 
+    RuleType_alias = 140, RuleType_params = 141, RuleType_param_seq = 142, 
+    RuleType_param = 143, RuleType_param_bound = 144, RuleExpressions = 145, 
+    RuleExpression = 146, RuleYield_expr = 147, RuleStar_expressions = 148, 
+    RuleStar_expression = 149, RuleStar_named_expressions = 150, RuleStar_named_expression = 151, 
+    RuleAssignment_expression = 152, RuleNamed_expression = 153, RuleDisjunction = 154, 
+    RuleConjunction = 155, RuleInversion = 156, RuleComparison = 157, RuleCompare_op_bitwise_or_pair = 158, 
+    RuleEq_bitwise_or = 159, RuleNoteq_bitwise_or = 160, RuleLte_bitwise_or = 161, 
+    RuleLt_bitwise_or = 162, RuleGte_bitwise_or = 163, RuleGt_bitwise_or = 164, 
+    RuleNotin_bitwise_or = 165, RuleIn_bitwise_or = 166, RuleIsnot_bitwise_or = 167, 
+    RuleIs_bitwise_or = 168, RuleBitwise_or = 169, RuleBitwise_xor = 170, 
+    RuleBitwise_and = 171, RuleShift_expr = 172, RuleSum = 173, RuleTerm = 174, 
+    RuleFactor = 175, RulePower = 176, RuleAwait_primary = 177, RulePrimary = 178, 
+    RuleSlices = 179, RuleSlice = 180, RuleAtom = 181, RuleGroup = 182, 
+    RuleLambdef = 183, RuleLambda_params = 184, RuleLambda_parameters = 185, 
+    RuleLambda_slash_no_default = 186, RuleLambda_slash_with_default = 187, 
+    RuleLambda_star_etc = 188, RuleLambda_kwds = 189, RuleLambda_param_no_default = 190, 
+    RuleLambda_param_with_default = 191, RuleLambda_param_maybe_default = 192, 
+    RuleLambda_param = 193, RuleFstring_middle_no_quote = 194, RuleFstring_middle_no_single_quote = 195, 
+    RuleFstring_middle_breaks_no_triple_quote = 196, RuleFstring_middle_breaks_no_triple_single_quote = 197, 
+    RuleFstring_any_no_quote = 198, RuleFstring_any_no_single_quote = 199, 
+    RuleFstring_middle = 200, RuleFstring_any_breaks_no_triple_quote = 201, 
+    RuleFstring_any_breaks_no_triple_single_quote = 202, RuleFstring_any = 203, 
+    RuleFstring_replacement_field = 204, RuleFstring_conversion = 205, RuleFstring_full_format_spec = 206, 
+    RuleFstring_format_spec = 207, RuleFstring = 208, RuleString = 209, 
+    RuleStrings = 210, RuleList = 211, RuleTuple = 212, RuleSet = 213, RuleDict = 214, 
+    RuleDouble_starred_kvpairs = 215, RuleDouble_starred_kvpair = 216, RuleKvpair = 217, 
+    RuleFor_if_clauses = 218, RuleFor_if_clause = 219, RuleListcomp = 220, 
+    RuleSetcomp = 221, RuleGenexp = 222, RuleDictcomp = 223, RuleArguments = 224, 
+    RuleArgs = 225, RuleArg = 226, RuleKwargs = 227, RuleStarred_expression = 228, 
+    RuleKwarg_or_starred = 229, RuleKwarg_or_double_starred = 230, RuleStar_targets = 231, 
+    RuleStar_targets_list_seq = 232, RuleStar_targets_tuple_seq = 233, RuleStar_target = 234, 
+    RuleTarget_with_star_atom = 235, RuleStar_atom = 236, RuleSingle_target = 237, 
+    RuleSingle_subscript_attribute_target = 238, RuleT_primary = 239, RuleDel_targets = 240, 
+    RuleDel_target = 241, RuleDel_t_atom = 242, RuleType_expressions = 243, 
+    RuleFunc_type_comment = 244, RuleIdentifier = 245
   };
 
   explicit FandangoParser(antlr4::TokenStream *input);
@@ -170,6 +173,12 @@ public:
   class Rs_sliceContext;
   class PythonContext;
   class Python_tagContext;
+  class Grammar_settingContext;
+  class Grammar_setting_contentContext;
+  class Grammar_selectorContext;
+  class Grammar_ruleContext;
+  class Grammar_setting_keyContext;
+  class Grammar_setting_valueContext;
   class Python_fileContext;
   class InteractiveContext;
   class EvalContext;
@@ -410,6 +419,7 @@ public:
     virtual size_t getRuleIndex() const override;
     ProductionContext *production();
     ConstraintContext *constraint();
+    Grammar_settingContext *grammar_setting();
     PythonContext *python();
 
 
@@ -1037,6 +1047,101 @@ public:
   };
 
   Python_tagContext* python_tag();
+
+  class  Grammar_settingContext : public antlr4::ParserRuleContext {
+  public:
+    Grammar_settingContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *SETTING();
+    Grammar_setting_contentContext *grammar_setting_content();
+    std::vector<antlr4::tree::TerminalNode *> INDENT();
+    antlr4::tree::TerminalNode* INDENT(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> DEDENT();
+    antlr4::tree::TerminalNode* DEDENT(size_t i);
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Grammar_settingContext* grammar_setting();
+
+  class  Grammar_setting_contentContext : public antlr4::ParserRuleContext {
+  public:
+    Grammar_setting_contentContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    Grammar_selectorContext *grammar_selector();
+    std::vector<Grammar_ruleContext *> grammar_rule();
+    Grammar_ruleContext* grammar_rule(size_t i);
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Grammar_setting_contentContext* grammar_setting_content();
+
+  class  Grammar_selectorContext : public antlr4::ParserRuleContext {
+  public:
+    Grammar_selectorContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    NonterminalContext *nonterminal();
+    antlr4::tree::TerminalNode *ALL_WITH_TYPE();
+    antlr4::tree::TerminalNode *OPEN_PAREN();
+    antlr4::tree::TerminalNode *CLOSE_PAREN();
+    antlr4::tree::TerminalNode *TERMINAL_NODE();
+    antlr4::tree::TerminalNode *NONTERMINAL_NODE();
+    antlr4::tree::TerminalNode *STAR();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Grammar_selectorContext* grammar_selector();
+
+  class  Grammar_ruleContext : public antlr4::ParserRuleContext {
+  public:
+    Grammar_ruleContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    Grammar_setting_keyContext *grammar_setting_key();
+    Grammar_setting_valueContext *grammar_setting_value();
+    std::vector<antlr4::tree::TerminalNode *> SPACES();
+    antlr4::tree::TerminalNode* SPACES(size_t i);
+    antlr4::tree::TerminalNode *ASSIGN();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Grammar_ruleContext* grammar_rule();
+
+  class  Grammar_setting_keyContext : public antlr4::ParserRuleContext {
+  public:
+    Grammar_setting_keyContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *NAME();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Grammar_setting_keyContext* grammar_setting_key();
+
+  class  Grammar_setting_valueContext : public antlr4::ParserRuleContext {
+  public:
+    Grammar_setting_valueContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    Literal_exprContext *literal_expr();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Grammar_setting_valueContext* grammar_setting_value();
 
   class  Python_fileContext : public antlr4::ParserRuleContext {
   public:

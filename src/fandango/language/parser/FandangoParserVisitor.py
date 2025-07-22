@@ -161,6 +161,34 @@ class FandangoParserVisitor(ParseTreeVisitor):
     def visitPython_tag(self, ctx: FandangoParser.Python_tagContext):
         return self.visitChildren(ctx)
 
+    # Visit a parse tree produced by FandangoParser#grammar_setting.
+    def visitGrammar_setting(self, ctx: FandangoParser.Grammar_settingContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#grammar_setting_content.
+    def visitGrammar_setting_content(
+        self, ctx: FandangoParser.Grammar_setting_contentContext
+    ):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#grammar_selector.
+    def visitGrammar_selector(self, ctx: FandangoParser.Grammar_selectorContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#grammar_rule.
+    def visitGrammar_rule(self, ctx: FandangoParser.Grammar_ruleContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#grammar_setting_key.
+    def visitGrammar_setting_key(self, ctx: FandangoParser.Grammar_setting_keyContext):
+        return self.visitChildren(ctx)
+
+    # Visit a parse tree produced by FandangoParser#grammar_setting_value.
+    def visitGrammar_setting_value(
+        self, ctx: FandangoParser.Grammar_setting_valueContext
+    ):
+        return self.visitChildren(ctx)
+
     # Visit a parse tree produced by FandangoParser#python_file.
     def visitPython_file(self, ctx: FandangoParser.Python_fileContext):
         return self.visitChildren(ctx)
