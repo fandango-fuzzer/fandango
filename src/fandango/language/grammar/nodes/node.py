@@ -117,6 +117,9 @@ class Node(abc.ABC):
 NODE_SETTINGS_DEFAULTS = {
     "havoc_probability": 0.0,
     "max_stack_pow": 7,
+    "nonterminal_should_repeat": 0.0,
+    "plus_should_return_nothing": 0.0,
+    "option_should_return_multiple": 0.0,
 }
 
 
@@ -137,6 +140,15 @@ class NodeSettings:
                 return self._settings[name]
             else:
                 return NODE_SETTINGS_DEFAULTS[name]
+        else:
+            return getattr(super(), name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name in NODE_SETTINGS_DEFAULTS:
+            assert isinstance(value, type(NODE_SETTINGS_DEFAULTS[name]))
+            self._settings[name] = value
+        else:
+            super().__setattr__(name, value)
 
     def __deepcopy__(self, memo: dict[int, Any]) -> "NodeSettings":
         return NodeSettings(copy.deepcopy(self._settings))

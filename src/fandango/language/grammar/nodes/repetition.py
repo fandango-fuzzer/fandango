@@ -151,6 +151,34 @@ class Plus(Repetition):
     ):
         super().__init__(node, grammar_settings, id, min_=1)
 
+    def fuzz(
+        self,
+        parent: DerivationTree,
+        grammar: "Grammar",
+        max_nodes: int = 100,
+        in_message: bool = False,
+        override_current_iteration: Optional[int] = None,
+        override_starting_repetition: int = 0,
+        override_iterations_to_perform: Optional[int] = None,
+    ):
+        # Gmutator mutation (1b)
+        should_return_nothing = random.random() < getattr(
+            self._settings, "plus_should_return_nothing"
+        )
+        if should_return_nothing:
+            terminal = TerminalNode(Terminal(""), self._grammar_settings)
+            return terminal.fuzz(parent, grammar, max_nodes, in_message)
+        else:
+            return super().fuzz(
+                parent,
+                grammar,
+                max_nodes,
+                in_message,
+                override_current_iteration,
+                override_starting_repetition,
+                override_iterations_to_perform,
+            )
+
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitPlus(self)
 
@@ -166,6 +194,45 @@ class Option(Repetition):
         id: str = "",
     ):
         super().__init__(node, grammar_settings, id, min_=0, max_=1)
+
+    def fuzz(
+        self,
+        parent: DerivationTree,
+        grammar: "Grammar",
+        max_nodes: int = 100,
+        in_message: bool = False,
+        override_current_iteration: Optional[int] = None,
+        override_starting_repetition: int = 0,
+        override_iterations_to_perform: Optional[int] = None,
+    ):
+        # Gmutator mutation (1c)
+        should_return_multiple = random.random() < getattr(
+            self._settings, "option_should_return_multiple"
+        )
+        if should_return_multiple:
+            repetition = Repetition(
+                self.node, self._grammar_settings, id=self.id, min_=2
+            )
+            repetition.distance_to_completion = self.distance_to_completion + 2
+            return repetition.fuzz(
+                parent,
+                grammar,
+                max_nodes,
+                in_message,
+                override_current_iteration,
+                override_starting_repetition,
+                override_iterations_to_perform,
+            )
+        else:
+            return super().fuzz(
+                parent,
+                grammar,
+                max_nodes,
+                in_message,
+                override_current_iteration,
+                override_starting_repetition,
+                override_iterations_to_perform,
+            )
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitOption(self)
