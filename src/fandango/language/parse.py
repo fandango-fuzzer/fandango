@@ -53,7 +53,7 @@ from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.search import DescendantAttributeSearch, ItemSearch
 from fandango.language.stdlib import stdlib
-from fandango.language.symbol import NonTerminal, Symbol
+from fandango.language.symbols import NonTerminal, Symbol
 from fandango.logger import LOGGER, print_exception
 
 
@@ -821,7 +821,7 @@ def check_grammar_definitions(
 def check_grammar_types(
     grammar: Optional[Grammar], *, start_symbol: str = "<start>"
 ) -> None:
-    if not grammar:
+    if grammar is None:
         return
 
     LOGGER.debug("Checking types")
@@ -873,6 +873,7 @@ def check_grammar_types(
                 return symbol_types[tree.symbol]
 
             symbol_types[tree.symbol] = (None, 0, 0, 0)
+            assert grammar is not None
             symbol_tree = grammar.rules[tree.symbol]
             tp, min_bits, max_bits, step = get_type(symbol_tree, tree.symbol.name())
             symbol_types[tree.symbol] = tp, min_bits, max_bits, step

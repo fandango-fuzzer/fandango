@@ -5,9 +5,9 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-from fandango.language import DerivationTree
+from fandango.language.tree import DerivationTree
 from fandango.language.parse import parse
-from fandango.language.symbol.symbol import NonTerminal, Terminal
+from fandango.language.symbols import NonTerminal, Terminal
 from tests.utils import run_command
 
 
@@ -22,6 +22,7 @@ def is_syntactically_valid_ssl(tree):
 def evaluate_ssl():
     with open("evaluation/experiments/ssl/ssl.fan", "r") as fd:
         grammar, constraints = parse(fd)
+        assert grammar is not None
     start_time = time.time()
     fandango = Fandango(
         grammar,
@@ -30,9 +31,8 @@ def evaluate_ssl():
         population_size=100,
         profiling=True,
     )
-    fandango.evolve(max_generations=100, desired_solutions=100)
+    sol = fandango.evolve(max_generations=100, desired_solutions=100)
     end_time = time.time()
-    sol = fandango.solution
     i = 0
     for c in sol:
         cert = insert_key(i, c)

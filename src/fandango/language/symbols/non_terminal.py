@@ -1,4 +1,4 @@
-from fandango.language.symbol import Symbol, SymbolType
+from fandango.language.symbols import Symbol, SymbolType
 
 
 class NonTerminal(Symbol):
