@@ -562,6 +562,7 @@ class TestBitParsing(TestCLIParsing):
     def test_single_bit(self):
         with open(RESOURCES_ROOT / "bit_special.fan", "r") as file:
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
         parser = Grammar.Parser(grammar)
         iter_parser = IterParsingTester(grammar)
         bit_tree_0 = DerivationTree(
@@ -576,8 +577,8 @@ class TestBitParsing(TestCLIParsing):
             NonTerminal("<start>"),
             [
                 DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(1))]),
-                DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))])
-            ]
+                DerivationTree(NonTerminal("<bit>"), [DerivationTree(Terminal(0))]),
+            ],
         )
         self._test(bit_tree_0, bit_tree_0, [parser, iter_parser], "<bit>")
         self._test(bit_tree_1, bit_tree_1, [parser, iter_parser], "<bit>")
