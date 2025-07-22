@@ -6,7 +6,7 @@ search criteria.
 import abc
 from typing import Optional, Any
 
-from fandango.language.symbol import NonTerminal
+from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 
 
