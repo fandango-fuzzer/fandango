@@ -332,7 +332,7 @@ class DeterminismTests(unittest.TestCase):
             fandango.generate(max_generations=100), desired_solutions
         )
         for solution in generator:
-            yield solution.to_string()
+            yield str(solution)
 
     def test_deterministic_solutions(self):
         gen1 = self.get_solutions(RESOURCES_ROOT / "determinism.fan", 30, 1)

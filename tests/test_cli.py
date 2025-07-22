@@ -15,16 +15,16 @@ from .utils import DOCS_ROOT, IS_BEARTYPE_ACTIVE, RESOURCES_ROOT, run_command
 # beartype somehow scrambles the fixed rng
 if IS_BEARTYPE_ACTIVE:
     expected_with_random_seed = [
-        "50099",
+        "80",
+        "99",
         "761",
         "4241",
-        "72",
-        "5",
-        "72772",
-        "96688",
-        "85",
-        "88",
-        "6",
+        "72963",
+        "47",
+        "2606",
+        "8",
+        "26869",
+        "4735",
     ]
 else:
     expected_with_random_seed = [
@@ -86,6 +86,7 @@ class TestCLI(unittest.TestCase):
             "--no-cache",
         ]
         out, err, code = run_command(command)
+        self.maxDiff = 1000000
         self.assertEqual(0, code)
         self.assertEqual("", out)
         self.assertEqual("", err)
@@ -319,6 +320,7 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
         input_data = f"set -f {DOCS_ROOT / 'persons.fan'}\nset\n"
         out, err, code = run_command(["fandango", "shell"], input=input_data)
         self.assertEqual(0, code)
+        self.maxDiff = 1000000
         self.assertEqual("", err)
         self.assertTrue(out.startswith("<_char> ::= r'(.|\\n)'\n"), out)
         self.assertTrue(out.endswith("<age> ::= <digit>+\n"), out)
@@ -331,19 +333,20 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
             "-n",
             "1",
             "-f",
-            str(DOCS_ROOT / "cat.fan"),
+            str(DOCS_ROOT / "cat-oracle.fan"),
             "cat",
         ]
         out, err, code = run_command(command)
-        err = err.split("\n")
+        split_err = err.split("\n")
 
         filter_prefixes = ["fandango:INFO: In:", "fandango:INFO: Out:"]
         io_logs = list(
             filter(
-                lambda x: any(filter(lambda b: x.startswith(b), filter_prefixes)), err
+                lambda x: any(filter(lambda b: x.startswith(b), filter_prefixes)),
+                split_err,
             )
         )
-        self.assertEqual(2, len(io_logs))
+        self.assertEqual(2, len(io_logs), f"err: {err}")
         result_a = io_logs[0].split(": ", 2)[2]
         result_b = io_logs[0].split(": ", 2)[2]
         self.assertEqual(result_a, result_b)

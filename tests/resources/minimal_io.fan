@@ -14,9 +14,9 @@ class Fuzzer(FandangoParty):
         message: DerivationTree,
         recipient: str
     ):
-        if message.to_string() == "ping\n":
+        if str(message) == "ping\n":
             self.receive_msg("Extern", "pong\n")
-        elif message.to_string() == "puff\n":
+        elif str(message) == "puff\n":
             self.receive_msg("Extern", "paff\n")
 
 class Extern(FandangoParty):

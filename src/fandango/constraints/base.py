@@ -145,17 +145,6 @@ class Value(GeneticBase):
         """
         return self.searches.values()
 
-    def __str__(self):
-        representation = self.expression
-        for identifier in self.searches:
-            representation = representation.replace(
-                identifier, repr(self.searches[identifier])
-            )
-        return f"where {representation}"
-
-    def __repr__(self):
-        return self.expression
-
 
 class SoftValue(Value):
     """
@@ -171,19 +160,11 @@ class SoftValue(Value):
         self.optimization_goal = optimization_goal
         self.tdigest = TDigest(optimization_goal)
 
-    def __repr__(self):
-        representation = repr(self.expression)
+    def format_as_spec(self) -> str:
+        representation = self.expression
         for identifier in self.searches:
             representation = representation.replace(
-                identifier, repr(self.searches[identifier])
-            )
-        return f"SoftValue({self.optimization_goal!r}, {representation})"
-
-    def __str__(self):
-        representation = str(self.expression)
-        for identifier in self.searches:
-            representation = representation.replace(
-                identifier, str(self.searches[identifier])
+                identifier, self.searches[identifier].format_as_spec()
             )
 
         # noinspection PyUnreachableCode
@@ -268,6 +249,17 @@ class Constraint(GeneticBase, ABC):
         # LOGGER.debug(f"Result = {res!r}")
 
         return result
+
+    @abstractmethod
+    def format_as_spec(self) -> str:
+        """
+        Format the constraint as a string that can be used in a spec file.
+        """
+
+    def __repr__(self):
+        raise NotImplementedError(
+            "Repr not implemented, use method specific to your usecase"
+        )
 
 
 class ExpressionConstraint(Constraint):
@@ -355,19 +347,11 @@ class ExpressionConstraint(Constraint):
         self.cache[tree_hash] = fitness
         return fitness
 
-    def __repr__(self):
+    def format_as_spec(self) -> str:
         representation = self.expression
         for identifier in self.searches:
             representation = representation.replace(
-                identifier, repr(self.searches[identifier])
-            )
-        return representation
-
-    def __str__(self):
-        representation = self.expression
-        for identifier in self.searches:
-            representation = representation.replace(
-                identifier, str(self.searches[identifier])
+                identifier, self.searches[identifier].format_as_spec()
             )
         return representation
 
@@ -556,8 +540,12 @@ class ComparisonConstraint(Constraint):
         """
         if isinstance(left, DerivationTree):
             left = left.value()
+            if left.can_compare_with(right):
+                return True
         if isinstance(right, DerivationTree):
             right = right.value()
+            if right.can_compare_with(left):
+                return True
 
         if left is None or right is None:
             # Cannot check - value does not exist
@@ -571,23 +559,15 @@ class ComparisonConstraint(Constraint):
             return True
 
         LOGGER.warning(
-            f"{self}: {self.operator.value!r}: Cannot compare {type(left).__name__!r} and {type(right).__name__!r}"
+            f"{self.format_as_spec()}: {self.operator.value!r}: Cannot compare {type(left).__name__!r} and {type(right).__name__!r}"
         )
         return True
 
-    def __repr__(self):
+    def format_as_spec(self) -> str:
         representation = f"{self.left} {self.operator.value} {self.right}"
         for identifier in self.searches:
             representation = representation.replace(
-                identifier, repr(self.searches[identifier])
-            )
-        return representation
-
-    def __str__(self):
-        representation = f"{self.left!s} {self.operator.value} {self.right!s}"
-        for identifier in self.searches:
-            representation = representation.replace(
-                identifier, str(self.searches[identifier])
+                identifier, self.searches[identifier].format_as_spec()
             )
         return representation
 
@@ -669,11 +649,8 @@ class ConjunctionConstraint(Constraint):
         self.cache[tree_hash] = fitness
         return fitness
 
-    def __repr__(self):
-        return "(" + " and ".join(repr(c) for c in self.constraints) + ")"
-
-    def __str__(self):
-        return "(" + " and ".join(str(c) for c in self.constraints) + ")"
+    def format_as_spec(self) -> str:
+        return "(" + " and ".join(c.format_as_spec() for c in self.constraints) + ")"
 
     def accept(self, visitor: "ConstraintVisitor"):
         """
@@ -756,11 +733,8 @@ class DisjunctionConstraint(Constraint):
         self.cache[tree_hash] = fitness
         return fitness
 
-    def __repr__(self):
-        return "(" + " or ".join(repr(c) for c in self.constraints) + ")"
-
-    def __str__(self):
-        return "(" + " or ".join(str(c) for c in self.constraints) + ")"
+    def format_as_spec(self) -> str:
+        return "(" + " or ".join(c.format_as_spec() for c in self.constraints) + ")"
 
     def accept(self, visitor: "ConstraintVisitor"):
         """
@@ -830,11 +804,8 @@ class ImplicationConstraint(Constraint):
         self.cache[tree_hash] = fitness
         return fitness
 
-    def __repr__(self):
-        return f"({repr(self.antecedent)} -> {repr(self.consequent)})"
-
-    def __str__(self):
-        return f"({str(self.antecedent)} -> {str(self.consequent)})"
+    def format_as_spec(self) -> str:
+        return f"({self.antecedent.format_as_spec()} -> {self.consequent.format_as_spec()})"
 
     def accept(self, visitor: "ConstraintVisitor"):
         """
@@ -930,17 +901,14 @@ class ExistsConstraint(Constraint):
         self.cache[tree_hash] = fitness
         return fitness
 
-    def __repr__(self):
+    def format_as_spec(self) -> str:
+        bound = (
+            self.bound if isinstance(self.bound, str) else self.bound.format_as_spec()
+        )
         if LEGACY:
-            return f"(exists {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
+            return f"(exists {bound} in {self.search.format_as_spec()}: {self.statement.format_as_spec()})"
         else:
-            return f"any({repr(self.statement)} for {repr(self.bound)} in {repr(self.search)})"
-
-    def __str__(self):
-        if LEGACY:
-            return f"(exists {str(self.bound)} in {str(self.search)}: {str(self.statement)})"
-        else:
-            return f"any({str(self.statement)} for {str(self.bound)} in {str(self.search)})"
+            return f"any({self.statement.format_as_spec()} for {bound} in {self.search.format_as_spec()})"
 
     def accept(self, visitor: "ConstraintVisitor"):
         """
@@ -1036,17 +1004,14 @@ class ForallConstraint(Constraint):
         self.cache[tree_hash] = fitness
         return fitness
 
-    def __repr__(self):
+    def format_as_spec(self) -> str:
+        bound = (
+            self.bound if isinstance(self.bound, str) else self.bound.format_as_spec()
+        )
         if LEGACY:
-            return f"forall {repr(self.bound)} in {repr(self.search)}: {repr(self.statement)})"
+            return f"(forall {bound} in {self.search.format_as_spec()}: {self.statement.format_as_spec()})"
         else:
-            return f"all({repr(self.statement)}) for {repr(self.bound)} in {repr(self.search)})"
-
-    def __str__(self):
-        if LEGACY:
-            return f"forall {str(self.bound)} in {str(self.search)}: {str(self.statement)})"
-        else:
-            return f"all({str(self.statement)}) for {str(self.bound)} in {str(self.search)})"
+            return f"all({self.statement.format_as_spec()} for {bound} in {self.search.format_as_spec()})"
 
     def accept(self, visitor: "ConstraintVisitor"):
         """
@@ -1447,19 +1412,16 @@ class RepetitionBoundsConstraint(Constraint):
         copy_parent.set_children(new_children)
         return tree, copy_parent
 
-    def __repr__(self):
+    def format_as_spec(self) -> str:
         if self.search_min is None:
             print_min, _, _ = self.expr_data_min
         else:
-            print_min = str(self.search_min)
+            print_min = self.search_min.format_as_spec()
         if self.search_max is None:
             print_max, _, _ = self.expr_data_max
         else:
-            print_max = str(self.search_max)
-        return f"RepetitionBounds({print_min} <= |{repr(self.repetition_node.node)}| <= {print_max})"
-
-    def __str__(self):
-        return repr(self)
+            print_max = self.search_max.format_as_spec()
+        return f"RepetitionBounds({print_min} <= |{self.repetition_node.node.format_as_spec()}| <= {print_max})"
 
     def accept(self, visitor: "ConstraintVisitor"):
         """Accepts a visitor to traverse the constraint structure."""
