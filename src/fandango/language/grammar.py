@@ -9,7 +9,7 @@ from collections import defaultdict
 from copy import deepcopy
 from thefuzz import process as thefuzz_process
 from types import NoneType
-from typing import Any, Optional, Union, cast, TYPE_CHECKING
+from typing import Any, Protocol, cast, Generic, Optional, TypeVar, Union, TYPE_CHECKING
 
 import exrex
 
@@ -688,17 +688,22 @@ class CharSet(Node):
         return self.chars
 
 
-class NodeVisitor(abc.ABC):
+AggregateType = TypeVar("AggregateType")
+
+
+class NodeVisitor(abc.ABC, Generic[AggregateType]):
     def visit(self, node: Node):
         return node.accept(self)
 
-    def default_result(self):
-        pass
+    def default_result(self) -> AggregateType:
+        return None  # type: ignore[return-value]
 
-    def aggregate_results(self, aggregate, result):
-        pass
+    def aggregate_results(
+        self, aggregate: AggregateType, result: Node
+    ) -> AggregateType:
+        return aggregate
 
-    def visitChildren(self, node: Node):
+    def visitChildren(self, node: Node) -> AggregateType:
         # noinspection PyNoneFunctionAssignment
         result = self.default_result()
         for child in node.children():
@@ -864,55 +869,79 @@ class NodeReplacer(NodeVisitor):
         self.old_node = old_node
         self.new_node = new_node
 
-    def replace(self, node: Node):
+    def replace(self, node: Node) -> Node:
         if node == self.old_node:
             return self.new_node
         return node
 
-    def default_result(self):
+    def default_result(self) -> list[Node]:
         return []
 
-    def aggregate_results(self, aggregate, result):
+    def aggregate_results(self, aggregate: list[Node], result: Node) -> list[Node]:
         aggregate.append(result)
         return aggregate
 
-    def visitConcatenation(self, node: Concatenation):
-        node = self.replace(node)
-        node.nodes = self.visitChildren(node)
-        return node
+    def visitConcatenation(self, node: Concatenation) -> Node:
+        replaced = self.replace(node)
+        if isinstance(replaced, Concatenation):
+            replaced.nodes = self.visitChildren(replaced)
+            return replaced
+        else:
+            return self.visit(replaced)
 
-    def visitAlternative(self, node: Alternative):
-        node = self.replace(node)
-        node.alternatives = self.visitChildren(node)
-        return node
+    def visitAlternative(self, node: Alternative) -> Node:
+        replaced = self.replace(node)
+        if isinstance(replaced, Alternative):
+            replaced.alternatives = self.visitChildren(replaced)
+            return replaced
+        else:
+            return self.visit(replaced)
 
-    def visitRepetition(self, node: Repetition):
-        node = self.replace(node)
-        node.node = self.visit(node.node)
-        return node
+    def visitRepetition(self, node: Repetition) -> Node:
+        replaced = self.replace(node)
+        if isinstance(replaced, Repetition):
+            replaced.node = self.visit(replaced.node)
+            return replaced
+        else:
+            return self.visit(replaced)
 
-    def visitStar(self, node: Star):
-        node = self.replace(node)
-        node.node = self.visit(node.node)
-        return node
+    def visitStar(self, node: Star) -> Node:
+        replaced = self.replace(node)
+        if isinstance(replaced, Star):
+            replaced.node = self.visit(replaced.node)
+            return replaced
+        else:
+            return self.visit(replaced)
 
-    def visitPlus(self, node: Plus):
-        node = self.replace(node)
-        node.node = self.visit(node.node)
-        return node
+    def visitPlus(self, node: Plus) -> Node:
+        replaced = self.replace(node)
+        if isinstance(replaced, Plus):
+            replaced.node = self.visit(replaced.node)
+            return replaced
+        else:
+            return self.visit(replaced)
 
-    def visitOption(self, node: Option):
-        node = self.replace(node)
-        node.node = self.visit(node.node)
-        return node
+    def visitOption(self, node: Option) -> Node:
+        replaced = self.replace(node)
+        if isinstance(replaced, Option):
+            replaced.node = self.visit(replaced.node)
+            return replaced
+        else:
+            return self.visit(replaced)
 
-    def visitNonTerminalNode(self, node: NonTerminalNode):
-        node = self.replace(node)
-        return node
+    def visitNonTerminalNode(self, node: NonTerminalNode) -> Node:
+        replaced = self.replace(node)
+        if isinstance(replaced, NonTerminalNode):
+            return replaced
+        else:
+            return self.visit(replaced)
 
-    def visitTerminalNode(self, node: TerminalNode):
-        node = self.replace(node)
-        return node
+    def visitTerminalNode(self, node: TerminalNode) -> Node:
+        replaced = self.replace(node)
+        if isinstance(replaced, TerminalNode):
+            return replaced
+        else:
+            return self.visit(replaced)
 
 
 class PacketTruncator(NodeVisitor):
@@ -1426,7 +1455,7 @@ class Grammar(NodeVisitor):
         def visitTerminalNode(self, node: TerminalNode):
             return [[(node.symbol, frozenset())]]
 
-        def collapse(self, tree: Optional[DerivationTree]):
+        def collapse(self, tree: Optional[DerivationTree]) -> Optional[DerivationTree]:
             if tree is None:
                 return None
             if isinstance(tree.symbol, NonTerminal):
@@ -1436,7 +1465,7 @@ class Grammar(NodeVisitor):
                     )
             return self._collapse(tree)[0]
 
-        def _collapse(self, tree: DerivationTree):
+        def _collapse(self, tree: DerivationTree) -> list[DerivationTree]:
             reduced = []
             for child in tree.children:
                 rec_reduced = self._collapse(child)
@@ -1555,7 +1584,9 @@ class Grammar(NodeVisitor):
                 raise FandangoValueError(f"Node {node} needs to be a Repetition")
 
             tree = self.construct_incomplete_tree(state, table)
-            tree = self.collapse(tree)
+            collapsed_tree = self.collapse(tree)
+            assert collapsed_tree is not None
+            tree = collapsed_tree
             if hookin_parent is not None:
                 hookin_parent.set_children(hookin_parent.children + [tree])
             try:
@@ -2142,7 +2173,7 @@ class Grammar(NodeVisitor):
             mode: ParsingMode = ParsingMode.COMPLETE,
             hookin_parent: Optional[DerivationTree] = None,
             include_controlflow: bool = False,
-        ) -> Generator[tuple[DerivationTree, Any] | DerivationTree, None, None]:
+        ) -> Generator[Optional[DerivationTree], None, None]:
             """
             Yield multiple parse alternatives, using a cache.
             """
@@ -2171,8 +2202,7 @@ class Grammar(NodeVisitor):
                 for tree in forest:
                     tree = deepcopy(tree)
                     if not include_controlflow:
-                        tree = self._iter_parser.collapse(tree)
-                        yield tree
+                        yield self.collapse(tree)
                 return
 
             for tree in self._parse_forest(
@@ -2187,9 +2217,7 @@ class Grammar(NodeVisitor):
                     self._cache[cache_key].append(tree)
                 else:
                     self._cache[cache_key] = [tree]
-                if not include_controlflow:
-                    tree = self._iter_parser.collapse(tree)
-                yield tree
+                yield self.collapse(tree) if not include_controlflow else tree
 
         def parse_multiple(
             self,
@@ -2232,7 +2260,7 @@ class Grammar(NodeVisitor):
             )
             return next(tree_gen, None)
 
-        def collapse(self, tree: Optional[DerivationTree]) -> DerivationTree:
+        def collapse(self, tree: Optional[DerivationTree]) -> Optional[DerivationTree]:
             return self._iter_parser.collapse(tree)
 
     def __init__(
@@ -2424,7 +2452,7 @@ class Grammar(NodeVisitor):
         tree.sources = [p.deepcopy(copy_parent=False) for p in sources]
         return tree
 
-    def collapse(self, tree: Optional[DerivationTree]) -> DerivationTree:
+    def collapse(self, tree: Optional[DerivationTree]) -> Optional[DerivationTree]:
         return self._parser.collapse(tree)
 
     def fuzz(
@@ -2502,7 +2530,7 @@ class Grammar(NodeVisitor):
         start: str | NonTerminal = "<start>",
         mode: ParsingMode = ParsingMode.COMPLETE,
         include_controlflow: bool = False,
-    ):
+    ) -> Generator[Optional[DerivationTree], None, None]:
         return self._parser.parse_forest(
             word, start, mode=mode, include_controlflow=include_controlflow
         )
