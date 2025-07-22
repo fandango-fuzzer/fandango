@@ -9,20 +9,22 @@ from fandango.language.symbol import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command
 
+
 class IterParsingTester(Grammar.Parser):
     def _parse_forest(
-            self,
-            word: str | bytes,
-            start: str | NonTerminal = "<start>",
-            *,
-            mode: ParsingMode = ParsingMode.COMPLETE,
-            hookin_parent: Optional[DerivationTree] = None,
-            starter_bit=-1,
+        self,
+        word: str | bytes,
+        start: str | NonTerminal = "<start>",
+        *,
+        mode: ParsingMode = ParsingMode.COMPLETE,
+        hookin_parent: Optional[DerivationTree] = None,
+        starter_bit=-1,
     ):
         self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
         for char in word[:-1]:
             next(self._iter_parser.consume(char), None)
         yield from self._iter_parser.consume(word[-1])
+
 
 class ParserTests(unittest.TestCase):
     # Type annotation for instance attribute set in setUp
@@ -374,9 +376,11 @@ class TestEmptyParsing(unittest.TestCase):
             self.parser = Grammar.Parser(grammar)
             self.iter_parser = IterParsingTester(self.grammar)
 
-    def _test(self, example, tree):
-        for parser in [self.parser, self.iter_parser]:
+    def _test(self, example: str, tree: DerivationTree):
+        parsers: list[Grammar.Parser] = [self.parser, self.iter_parser]
+        for parser in parsers:
             actual_tree = parser.parse(example)
+            print(type(parser), type(actual_tree))
             self.assertEqual(tree, actual_tree)
 
     def test_a(self):
@@ -408,6 +412,7 @@ class TestEmptyParsing(unittest.TestCase):
             ),
         )
 
+
 class TestCanContinueParsing(unittest.TestCase):
 
     def setUp(self):
@@ -419,19 +424,19 @@ class TestCanContinueParsing(unittest.TestCase):
 
     def test_1(self):
         self.iter_parser.new_parse()
-        next(self.iter_parser.consume(b'r'), None)
+        next(self.iter_parser.consume(b"r"), None)
         self.assertTrue(self.iter_parser.can_continue())
-        next(self.iter_parser.consume(b'g'), None)
+        next(self.iter_parser.consume(b"g"), None)
         self.assertTrue(self.iter_parser.can_continue())
-        next(self.iter_parser.consume(b'b'), None)
+        next(self.iter_parser.consume(b"b"), None)
         self.assertTrue(self.iter_parser.can_continue())
-        next(self.iter_parser.consume(b'd'), None)
+        next(self.iter_parser.consume(b"d"), None)
         self.assertTrue(self.iter_parser.can_continue())
-        next(self.iter_parser.consume(b';'), None)
+        next(self.iter_parser.consume(b";"), None)
         self.assertFalse(self.iter_parser.can_continue())
 
         self.iter_parser.new_parse()
-        next(self.iter_parser.consume(b'rgbd;'), None)
+        next(self.iter_parser.consume(b"rgbd;"), None)
 
 
 class TestCLIParsing(unittest.TestCase):
@@ -515,6 +520,7 @@ class TestBitParsing(TestCLIParsing):
     def test_alternative_bits(self):
         with open(RESOURCES_ROOT / "byte_alternative.fan", "r") as file:
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
+            assert grammar is not None
         parser = Grammar.Parser(grammar)
         iter_parser = IterParsingTester(grammar)
         self._test(b"\x00", None, [parser, iter_parser])

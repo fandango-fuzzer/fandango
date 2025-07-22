@@ -12,6 +12,7 @@ program: NEWLINE* (statement NEWLINE*)*;
 statement
     : production
     | constraint
+    | grammar_setting
     | python
     ;
 
@@ -199,6 +200,32 @@ python
 
 python_tag:
     (NEWLINE* (stmt) NEWLINE*)
+    ;
+
+grammar_setting:
+    INDENT* SETTING grammar_setting_content DEDENT*    
+    ;
+
+grammar_setting_content:
+    grammar_selector (grammar_rule)*
+    ;
+
+grammar_selector:
+    nonterminal
+    | 'all_with_type' '(' (TERMINAL_NODE | NONTERMINAL_NODE) ')'
+    | '*'
+    ;
+
+grammar_rule:
+    grammar_setting_key SPACES? '='? SPACES? grammar_setting_value SPACES?
+    ;
+
+grammar_setting_key:
+    NAME
+    ;
+
+grammar_setting_value:
+    literal_expr
     ;
 
 // STARTING RULES
