@@ -17,7 +17,8 @@ from fandango.constraints.base import (
 )
 from fandango.constraints.fitness import Comparison
 from fandango.language import NonTerminalSearch, NodeType
-from fandango.language.grammar import Grammar, FuzzingMode
+from fandango.language.grammar import FuzzingMode
+from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.grammar_settings import GrammarSetting
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.alternative import Alternative

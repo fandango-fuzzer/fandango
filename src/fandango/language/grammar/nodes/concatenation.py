@@ -4,7 +4,7 @@ from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:
-    from fandango.language.grammar import Grammar
+    from fandango.language.grammar.grammar import Grammar
     from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 
 

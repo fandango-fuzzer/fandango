@@ -12,7 +12,7 @@ from fandango.language.symbols import NonTerminal, Terminal, Slice
 from fandango.language.symbols.symbol import Symbol
 
 if TYPE_CHECKING:
-    from fandango.language.grammar import Grammar
+    from fandango.language.grammar.grammar import Grammar
 
 
 class Disambiguator(NodeVisitor):

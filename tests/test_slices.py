@@ -4,7 +4,7 @@ import re
 import unittest
 
 from fandango.constraints.base import ExpressionConstraint
-from fandango.language.grammar import Grammar
+from fandango.language.grammar.grammar import Grammar
 from fandango.language.search import ItemSearch, RuleSearch
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree

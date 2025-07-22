@@ -10,9 +10,10 @@ from fandango.constraints.fitness import (
     BoundsFailingTree,
 )
 from fandango.io.packetforecaster import PacketForecaster
-from fandango.language.grammar import DerivationTree, Grammar
+from fandango.language.grammar.grammar import Grammar
 from fandango.language.symbols import NonTerminal
 from fandango.language.symbols import Slice
+from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
 
