@@ -209,6 +209,39 @@ assert _exit_code == 0
 The `-v` option comes right after `fandango` (and not after `fandango fuzz`), as `-v` affects all commands (and not just `fuzz`).
 ```
 
+(sec:progress-bar)=
+## The Fandango Progress Bar
+
+While Fandango is solving constraints, you may see a _progress bar_ in the terminal.
+The progress bar looks like this:
+
+![progress-bar](progress-bar.png)
+
+The progress bar is composed of three parts.
+On the leftmost side, we have the _Fandango logo_ ("💃 Fandango"), followed by a _generation counter_ ("6/500") showing how often (6) the population has evolved (out of a maximum 500).
+
+Most of the line, however, is filled by a _fitness visualization_ illustrating how the fitness is distributed across the inputs in the population.
+Each fraction of the line corresponds to an equal fraction of individual inputs.
+Hence, a 1/70 of the line (typically one character) stands for 1/70 of the population.
+
+The _color_ of each fraction how _fit_ the inputs in the fraction are - on a scale from _bright green_ (perfect fitness, fulfilling the given constraints) to _dark red_ (very little fitness, far away from fulfilling the constraints).
+Depending on its capabilities, your terminal may also show shades between these colors.
+Inputs that do not satisfy the constraints at all (zero fitness) are shown in gray.
+
+In the above example, we can see that Fandango already has produces a few inputs that satisfy the constraints; a few more are close and may get there through further evolution.
+
+```{note}
+By default, the progress bar only shows up if
+
+* Fandango's standard error is a terminal;
+* Fandango is not run within Jupyter notebook (Jupyter cannot interpret the terminal escape sequences); and
+* Fandango logging is turned off (it also writes to standard error).
+
+The option `--progress-bar=on` turns on the progress bar even if the above conditions are not met.
+The option `--progress-bar=off` turns the progress bar off.
+```
+
+
 (sec:soft-constraints)=
 ## Soft Constraints and Optimization
 
