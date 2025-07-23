@@ -8,13 +8,12 @@ from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.symbols.terminal import Terminal
 from fandango.language.tree import DerivationTree
+import fandango.language.grammar.nodes as nodes
 
 if TYPE_CHECKING:
     from fandango.constraints.base import RepetitionBoundsConstraint
     from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
     from fandango.language.grammar.grammar import Grammar
-
-MAX_REPETITIONS = 5
 
 
 class Repetition(Node):
@@ -49,7 +48,7 @@ class Repetition(Node):
     @property
     def max(self):
         if self._max is None:
-            return MAX_REPETITIONS
+            return nodes.MAX_REPETITIONS
         return self._max
 
     def accept(self, visitor: "NodeVisitor"):
@@ -161,11 +160,10 @@ class Plus(Repetition):
         override_iterations_to_perform: Optional[int] = None,
     ):
         # Gmutator mutation (1b)
-        should_return_nothing = random.random() < self.settings.get(
-            "plus_should_return_nothing"
-        )
-        if should_return_nothing:
-            terminal = TerminalNode(Terminal(""), self._grammar_settings)
+        if random.random() < self.settings.get("plus_should_return_nothing"):
+            terminal = TerminalNode(
+                Terminal(""), self._grammar_settings
+            )  # TODO: remove once empty TreeValues are supported
             return terminal.fuzz(parent, grammar, max_nodes, in_message)
         else:
             return super().fuzz(

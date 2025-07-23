@@ -119,7 +119,7 @@ class Node(abc.ABC):
 NODE_SETTINGS_DEFAULTS = {
     "havoc_probability": 0.0,
     "max_stack_pow": 7,
-    "nonterminal_should_repeat": 0.0,
+    "terminal_should_repeat": 0.0,
     "plus_should_return_nothing": 0.0,
     "option_should_return_multiple": 0.0,
     "alternatives_should_concatenate": 0.0,

@@ -1,3 +1,4 @@
+import random
 from types import NoneType
 from typing import TYPE_CHECKING, Sequence
 import exrex
@@ -6,6 +7,7 @@ from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.symbols import Terminal
 from fandango.language.tree import DerivationTree
+import fandango.language.grammar.nodes as nodes
 
 if TYPE_CHECKING:
     from fandango.language.grammar.grammar import Grammar
@@ -30,23 +32,34 @@ class TerminalNode(Node):
         max_nodes: int = 100,
         in_message: bool = False,
     ):
-        if not self.symbol.is_regex:
-            parent.add_child(DerivationTree(self.symbol))
-        else:
-            if self.symbol.is_type(bytes):
-                # Exrex can't do bytes, so we decode to str and back
-                instance = exrex.getone(
-                    self.symbol.value().to_string(bytes_to_str_encoding="latin-1")
-                ).encode("latin-1")
-            elif self.symbol.is_type(str):
-                instance = exrex.getone(str(self.symbol.value()))
-            elif self.symbol.is_type(NoneType):
-                instance = exrex.getone(int(self.symbol.value()))
+        repetitions = 1
+        # Gmutator mutation (1a)
+        if random.random() < self.settings.get("terminal_should_repeat"):
+            if random.random() < 0.5:
+                repetitions = 0
+                parent.add_child(
+                    DerivationTree(Terminal(""))
+                )  # TODO: remove once empty TreeValues are supported
             else:
-                raise FandangoValueError(
-                    f"Unsupported type: {self.symbol.value().type_}"
-                )
-            parent.add_child(DerivationTree(Terminal(instance)))
+                repetitions = nodes.MAX_REPETITIONS
+        for _ in range(repetitions):
+            if not self.symbol.is_regex:
+                parent.add_child(DerivationTree(self.symbol))
+            else:
+                if self.symbol.is_type(bytes):
+                    # Exrex can't do bytes, so we decode to str and back
+                    instance = exrex.getone(
+                        self.symbol.value().to_string(bytes_to_str_encoding="latin-1")
+                    ).encode("latin-1")
+                elif self.symbol.is_type(str):
+                    instance = exrex.getone(str(self.symbol.value()))
+                elif self.symbol.is_type(NoneType):
+                    instance = exrex.getone(int(self.symbol.value()))
+                else:
+                    raise FandangoValueError(
+                        f"Unsupported type: {self.symbol.value().type_}"
+                    )
+                parent.add_child(DerivationTree(Terminal(instance)))
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitTerminalNode(self)
