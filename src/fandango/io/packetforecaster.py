@@ -1,28 +1,27 @@
 from copy import deepcopy
-from typing import Optional
+from typing import Optional, Sequence
 
 from fandango.errors import FandangoValueError
-from fandango.language.grammar import (
-    Grammar,
-    GrammarSetting,
-    NodeVisitor,
-    NonTerminalNode,
-    TerminalNode,
-    ParseState,
-    Column,
-    Node,
-    Concatenation,
-    Alternative,
-    Repetition,
-    Option,
-    Plus,
-    Star,
-    CharSet,
-    GrammarKeyError,
-    ParsingMode,
-)
+from fandango.language.grammar import ParsingMode
+from fandango.language.grammar.parser.column import Column
+from fandango.language.grammar.has_settings import HasSettings
+from fandango.language.grammar.parser.iterative_parser import IterativeParser
+from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
+from fandango.language.grammar.nodes.char_set import CharSet
+from fandango.language.grammar.parser.parse_state import ParseState
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.nodes.node import Node
+from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.terminal import TerminalNode
+from fandango.language.grammar.nodes.concatenation import Concatenation
+from fandango.language.grammar.nodes.alternative import Alternative
+from fandango.language.grammar.nodes.repetition import Repetition, Option, Plus, Star
 from fandango.language.symbols import Terminal, NonTerminal
 from fandango.language.tree import DerivationTree
+
+
+class GrammarKeyError(KeyError):
+    pass
 
 
 class PathFinder(NodeVisitor):
@@ -361,7 +360,7 @@ class PacketForecaster:
         protocol messages without parsing each protocol message again.
         """
 
-        def __init__(self, grammar_settings: list[GrammarSetting]):
+        def __init__(self, grammar_settings: Sequence[HasSettings]):
             self._grammar_settings = grammar_settings
             self._reduced: dict[NonTerminal, Node] = dict()
             self.seen_keys: set[NonTerminal] = set()
@@ -458,9 +457,9 @@ class PacketForecaster:
             self.processed_keys.add(symbol)
             return repl_node
 
-    class PacketIterativeParser(Grammar.IterativeParser):
-        def __init__(self, grammar: Grammar):
-            super().__init__(grammar)
+    class PacketIterativeParser(IterativeParser):
+        def __init__(self, grammar_rules: dict[NonTerminal, Node]):
+            super().__init__(grammar_rules)
             self.reference_tree: Optional[DerivationTree] = None
             self.detailed_tree: Optional[DerivationTree] = None
 
@@ -499,7 +498,9 @@ class PacketForecaster:
             g_locals,
             g_globals,
         )
-        self._parser = PacketForecaster.PacketIterativeParser(self.reduced_grammar)
+        self._parser = PacketForecaster.PacketIterativeParser(
+            self.reduced_grammar.rules
+        )
 
     def predict(self, tree: DerivationTree) -> "ForecastingResult":
         """

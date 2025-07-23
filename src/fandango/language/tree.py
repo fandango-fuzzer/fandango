@@ -704,7 +704,7 @@ class DerivationTree:
 
     def replace(
         self,
-        grammar: "fandango.language.grammar.Grammar",  # has to be full path, otherwise beartype complains because of a circular import with grammar
+        grammar: "fandango.language.grammar.grammar.Grammar",  # has to be full path, otherwise beartype complains because of a circular import with grammar
         tree_to_replace: "DerivationTree",
         new_subtree: "DerivationTree",
     ) -> "DerivationTree":
@@ -712,7 +712,7 @@ class DerivationTree:
 
     def replace_multiple(
         self,
-        grammar: "fandango.language.grammar.Grammar",  # full path to avoid circular import
+        grammar: "fandango.language.grammar.grammar.Grammar",  # full path to avoid circular import
         replacements: list[tuple["DerivationTree", "DerivationTree"]],
         path_to_replacement: Optional[dict[tuple, "DerivationTree"]] = None,
         current_path: Optional[tuple] = None,

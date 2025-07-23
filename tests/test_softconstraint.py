@@ -75,8 +75,9 @@ class TestSoftValue(TestSoft):
         ]
         out, err, code = run_command(command)
         lines = [line for line in out.split("\n") if line.strip()]
+        self.assertGreater(len(lines), 0, f"\nerr: {err}\nout: {out}")
         last_age = int(lines[-1].split(",")[1])  # e.g., 9999999999999599999999
-        self.assertGreater(last_age, 9999999999999)
+        self.assertGreater(last_age, 9999999999999, f"\nerr: {err}\nout: {out}")
 
     def test_cli_max_2(self):
         command = [
