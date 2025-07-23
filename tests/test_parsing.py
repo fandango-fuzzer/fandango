@@ -6,8 +6,8 @@ from typing import Optional
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.alternative import Alternative
-from fandango.language.grammar.iterative_parser import IterativeParser
-from fandango.language.grammar.parser import Parser
+from fandango.language.grammar.parser.iterative_parser import IterativeParser
+from fandango.language.grammar.parser.parser import Parser
 from fandango.language.parse import parse
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
