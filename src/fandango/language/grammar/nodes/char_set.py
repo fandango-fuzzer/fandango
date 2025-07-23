@@ -16,7 +16,6 @@ class CharSet(Node):
         chars: str,
         grammar_settings: Sequence[HasSettings],
     ):
-        self._grammar_settings = grammar_settings
         self.chars = chars
         super().__init__(NodeType.CHAR_SET, grammar_settings)
 

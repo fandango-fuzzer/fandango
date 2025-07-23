@@ -73,8 +73,7 @@ ALL        : 'all';
 LEN        : 'len';
 SETTING    : 'setting';
 ALL_WITH_TYPE : 'all_with_type';
-NONTERMINAL_NODE: 'NonTerminalNode';
-TERMINAL_NODE: 'TerminalNode';
+NODE_TYPES: 'NonTerminalNode' | 'TerminalNode' | 'Alternative' | 'Repetition' | 'Star' | 'Plus' | 'Option' | 'Concatenation';
 
 // identifiers
 NAME: ID_START ID_CONTINUE*;

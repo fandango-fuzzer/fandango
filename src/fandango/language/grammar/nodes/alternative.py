@@ -1,6 +1,8 @@
+from itertools import combinations, permutations
 import random
 from typing import TYPE_CHECKING, Iterator, Sequence
 from fandango.language.grammar.has_settings import HasSettings
+from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.tree import DerivationTree
 
@@ -16,6 +18,7 @@ class Alternative(Node):
         grammar_settings: Sequence[HasSettings],
         id: str = "",
     ):
+        assert len(alternatives) > 0, "alternatives must be non-empty"
         self.id = id
         self.alternatives = alternatives
         super().__init__(NodeType.ALTERNATIVE, grammar_settings)
@@ -27,19 +30,37 @@ class Alternative(Node):
         max_nodes: int = 100,
         in_message: bool = False,
     ):
-        in_range_nodes = list(
+        in_range_nodes: Sequence[Node] = list(
             filter(lambda x: x.distance_to_completion < max_nodes, self.alternatives)
         )
+
         if len(in_range_nodes) == 0:
             min_ = min(self.alternatives, key=lambda x: x.distance_to_completion)
-            random.choice(
-                [
-                    a
-                    for a in self.alternatives
-                    if a.distance_to_completion <= min_.distance_to_completion
+            in_range_nodes = [
+                a
+                for a in self.alternatives
+                if a.distance_to_completion <= min_.distance_to_completion
+            ]
+            max_nodes = 0
+
+        # Gmutator mutation (2)
+        if random.random() < self.settings.get("alternatives_should_concatenate"):
+            if len(in_range_nodes) < 2:
+                pass  # can't concatenate less than 2 nodes
+            else:
+                concatenations: list[list[Node]] = []
+                for r in range(2, len(in_range_nodes) + 1):
+                    concatenations.extend(map(list, permutations(in_range_nodes, r)))
+                concats = [
+                    Concatenation(concatenation, self._grammar_settings)
+                    for concatenation in concatenations
                 ]
-            ).fuzz(parent, grammar, 0, in_message)
-            return
+                for node in concats:
+                    node.distance_to_completion = (
+                        sum(n.distance_to_completion for n in node.nodes) + 1
+                    )
+                in_range_nodes = concats
+
         random.choice(in_range_nodes).fuzz(parent, grammar, max_nodes, in_message)
 
     def accept(self, visitor: "NodeVisitor"):

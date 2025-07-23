@@ -15,16 +15,16 @@ from .utils import DOCS_ROOT, IS_BEARTYPE_ACTIVE, RESOURCES_ROOT, run_command
 # beartype somehow scrambles the fixed rng
 if IS_BEARTYPE_ACTIVE:
     expected_with_random_seed = [
-        "80",
-        "99",
-        "761",
-        "4241",
-        "72963",
-        "47",
-        "2606",
-        "8",
-        "26869",
-        "4735",
+        "9",
+        "367",
+        "80865",
+        "86",
+        "0296",
+        "7660",
+        "35",
+        "600",
+        "42",
+        "6",
     ]
 else:
     expected_with_random_seed = [

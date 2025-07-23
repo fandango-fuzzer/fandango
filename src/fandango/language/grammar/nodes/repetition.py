@@ -8,13 +8,12 @@ from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.symbols.terminal import Terminal
 from fandango.language.tree import DerivationTree
+import fandango.language.grammar.nodes as nodes
 
 if TYPE_CHECKING:
     from fandango.constraints.base import RepetitionBoundsConstraint
     from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
     from fandango.language.grammar.grammar import Grammar
-
-MAX_REPETITIONS = 5
 
 
 class Repetition(Node):
@@ -26,7 +25,6 @@ class Repetition(Node):
         min_: int = 0,
         max_: Optional[int] = None,
     ):
-        self._grammar_settings = grammar_settings
         self.id = id
         self.min = min_
         self._max = max_
@@ -50,7 +48,7 @@ class Repetition(Node):
     @property
     def max(self):
         if self._max is None:
-            return MAX_REPETITIONS
+            return nodes.MAX_REPETITIONS
         return self._max
 
     def accept(self, visitor: "NodeVisitor"):
@@ -151,6 +149,30 @@ class Plus(Repetition):
     ):
         super().__init__(node, grammar_settings, id, min_=1)
 
+    def fuzz(
+        self,
+        parent: DerivationTree,
+        grammar: "Grammar",
+        max_nodes: int = 100,
+        in_message: bool = False,
+        override_current_iteration: Optional[int] = None,
+        override_starting_repetition: int = 0,
+        override_iterations_to_perform: Optional[int] = None,
+    ):
+        # Gmutator mutation (1b)
+        if random.random() < self.settings.get("plus_should_return_nothing"):
+            return  # nop, don't add a node
+        else:
+            return super().fuzz(
+                parent,
+                grammar,
+                max_nodes,
+                in_message,
+                override_current_iteration,
+                override_starting_repetition,
+                override_iterations_to_perform,
+            )
+
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitPlus(self)
 
@@ -166,6 +188,45 @@ class Option(Repetition):
         id: str = "",
     ):
         super().__init__(node, grammar_settings, id, min_=0, max_=1)
+
+    def fuzz(
+        self,
+        parent: DerivationTree,
+        grammar: "Grammar",
+        max_nodes: int = 100,
+        in_message: bool = False,
+        override_current_iteration: Optional[int] = None,
+        override_starting_repetition: int = 0,
+        override_iterations_to_perform: Optional[int] = None,
+    ):
+        # Gmutator mutation (1c)
+        should_return_multiple = random.random() < self.settings.get(
+            "option_should_return_multiple"
+        )
+        if should_return_multiple:
+            repetition = Repetition(
+                self.node, self._grammar_settings, id=self.id, min_=2
+            )
+            repetition.distance_to_completion = self.node.distance_to_completion * 2 + 1
+            return repetition.fuzz(
+                parent,
+                grammar,
+                max_nodes,
+                in_message,
+                override_current_iteration,
+                override_starting_repetition,
+                override_iterations_to_perform,
+            )
+        else:
+            return super().fuzz(
+                parent,
+                grammar,
+                max_nodes,
+                in_message,
+                override_current_iteration,
+                override_starting_repetition,
+                override_iterations_to_perform,
+            )
 
     def accept(self, visitor: "NodeVisitor"):
         return visitor.visitOption(self)
