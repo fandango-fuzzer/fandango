@@ -29,7 +29,7 @@ class Alternative(Node):
         max_nodes: int = 100,
         in_message: bool = False,
     ):
-        in_range_nodes = list(
+        in_range_nodes: Sequence[Node] = list(
             filter(lambda x: x.distance_to_completion < max_nodes, self.alternatives)
         )
 
@@ -49,10 +49,15 @@ class Alternative(Node):
             for r in range(2, len(in_range_nodes)):
                 for subset in combinations(in_range_nodes, r):
                     concatenations.extend(permutations(subset))
-            in_range_nodes = [
+            concats = [
                 Concatenation(concatenation, self._grammar_settings)
                 for concatenation in concatenations
             ]
+            for node in concats:
+                node.distance_to_completion = (
+                    sum(n.distance_to_completion for n in node.nodes) + 1
+                )
+            in_range_nodes = concats
 
         random.choice(in_range_nodes).fuzz(parent, grammar, max_nodes, in_message)
 

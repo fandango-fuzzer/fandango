@@ -125,6 +125,7 @@ NODE_SETTINGS_DEFAULTS = {
     "alternatives_should_concatenate": 0.0,
     "invert_regex": 0.0,
     "max_out_of_regex_tries": 10000,
+    "non_terminal_use_other_rule": 0.0,
 }
 
 

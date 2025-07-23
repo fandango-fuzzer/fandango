@@ -161,9 +161,8 @@ class Plus(Repetition):
     ):
         # Gmutator mutation (1b)
         if random.random() < self.settings.get("plus_should_return_nothing"):
-            terminal = TerminalNode(
-                Terminal(""), self._grammar_settings
-            )  # TODO: remove once empty TreeValues are supported
+            # TODO: remove once empty TreeValues are supported
+            terminal = TerminalNode(Terminal(""), self._grammar_settings)
             return terminal.fuzz(parent, grammar, max_nodes, in_message)
         else:
             return super().fuzz(
@@ -210,7 +209,7 @@ class Option(Repetition):
             repetition = Repetition(
                 self.node, self._grammar_settings, id=self.id, min_=2
             )
-            repetition.distance_to_completion = self.distance_to_completion + 2
+            repetition.distance_to_completion = self.node.distance_to_completion * 2 + 1
             return repetition.fuzz(
                 parent,
                 grammar,
