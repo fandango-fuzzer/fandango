@@ -18,6 +18,7 @@ class Alternative(Node):
         grammar_settings: Sequence[HasSettings],
         id: str = "",
     ):
+        assert len(alternatives) > 0, "alternatives must be non-empty"
         self.id = id
         self.alternatives = alternatives
         super().__init__(NodeType.ALTERNATIVE, grammar_settings)
@@ -44,20 +45,21 @@ class Alternative(Node):
 
         # Gmutator mutation (2)
         if random.random() < self.settings.get("alternatives_should_concatenate"):
-            # TODO: Do we need to change the distance_to_completion?
-            concatenations: list[tuple[Node, ...]] = []
-            for r in range(2, len(in_range_nodes)):
-                for subset in combinations(in_range_nodes, r):
-                    concatenations.extend(permutations(subset))
-            concats = [
-                Concatenation(concatenation, self._grammar_settings)
-                for concatenation in concatenations
-            ]
-            for node in concats:
-                node.distance_to_completion = (
-                    sum(n.distance_to_completion for n in node.nodes) + 1
-                )
-            in_range_nodes = concats
+            if len(in_range_nodes) < 2:
+                pass  # can't concatenate less than 2 nodes
+            else:
+                concatenations: list[list[Node]] = []
+                for r in range(2, len(in_range_nodes) + 1):
+                    concatenations.extend(map(list, permutations(in_range_nodes, r)))
+                concats = [
+                    Concatenation(concatenation, self._grammar_settings)
+                    for concatenation in concatenations
+                ]
+                for node in concats:
+                    node.distance_to_completion = (
+                        sum(n.distance_to_completion for n in node.nodes) + 1
+                    )
+                in_range_nodes = concats
 
         random.choice(in_range_nodes).fuzz(parent, grammar, max_nodes, in_message)
 

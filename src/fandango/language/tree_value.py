@@ -30,6 +30,7 @@ class TreeValue:
         value: str | bytes | int | None,
         *,
         trailing_bits: list[int] = [],
+        allow_empty: bool = False,
     ):
         self._value: str | bytes | None
         assert all(
@@ -45,7 +46,9 @@ class TreeValue:
             value = None
 
         if value is None:
-            assert len(trailing_bits) > 0, "None values must have trailing bits"
+            assert (
+                allow_empty or len(trailing_bits) > 0
+            ), "None values must have trailing bits"
 
         self._value = value
         self._trailing_bits = trailing_bits
@@ -114,6 +117,9 @@ class TreeValue:
         :return: A new TreeValue.
         """
 
+        if self.is_type(TreeValueType.EMPTY):
+            return TreeValue(other._value, trailing_bits=other._trailing_bits)
+
         if other._value is None:
             trailing_bits = self._trailing_bits + other._trailing_bits
             return TreeValue(self._value, trailing_bits=trailing_bits)
@@ -150,7 +156,7 @@ class TreeValue:
 
     def can_compare_with(self, right: object) -> bool:
         if isinstance(right, TreeValue):
-            return True
+            return self.is_type(right.type_)
 
         return (
             (isinstance(right, int) and self.is_type(TreeValueType.TRAILING_BITS_ONLY))
@@ -168,6 +174,9 @@ class TreeValue:
         :param bytes_to_str_encoding: The encoding to use when converting bytes to strings.
         :return: A string.
         """
+        if self.is_type(TreeValueType.EMPTY):
+            return ""
+
         # encoding with the same encoding in both direction
         self._reduce_trailing_bits(str_to_bytes_encoding=bytes_to_str_encoding)
         if isinstance(self._value, str):
@@ -186,6 +195,9 @@ class TreeValue:
         :param str_to_bytes_encoding: The encoding to use when converting strings to bytes.
         :return: A bytes object.
         """
+        if self.is_type(TreeValueType.EMPTY):
+            return b""
+
         self._reduce_trailing_bits(str_to_bytes_encoding=str_to_bytes_encoding)
         if isinstance(self._value, bytes):
             return self._value
@@ -280,3 +292,7 @@ class TreeValue:
             return f"{self._value!r} + bits: {''.join(str(bit) for bit in self._trailing_bits)}"
         else:
             return repr(self._value)
+
+    @classmethod
+    def empty(cls) -> TreeValue:
+        return TreeValue(None, trailing_bits=[], allow_empty=True)
