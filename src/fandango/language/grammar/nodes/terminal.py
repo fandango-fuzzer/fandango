@@ -1,4 +1,5 @@
 import random
+import re
 from types import NoneType
 from typing import TYPE_CHECKING, Sequence
 import exrex
@@ -8,6 +9,7 @@ from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.symbols import Terminal
 from fandango.language.tree import DerivationTree
 import fandango.language.grammar.nodes as nodes
+from fandango.logger import LOGGER
 
 if TYPE_CHECKING:
     from fandango.language.grammar.grammar import Grammar
@@ -46,15 +48,31 @@ class TerminalNode(Node):
             if not self.symbol.is_regex:
                 parent.add_child(DerivationTree(self.symbol))
             else:
+
+                def get_one(pattern: str) -> str:
+                    # Gmutator mutation (3)
+                    if random.random() < self.settings.get("invert_regex"):
+                        for _ in range(self.settings.get("max_out_of_regex_tries")):
+                            try_ = exrex.getone(".*")
+                            if not re.match(pattern, try_):
+                                return try_
+                        LOGGER.warning(
+                            f"Failed to generate a non-matching regex: {pattern}, falling back to matching regex"
+                        )
+
+                    return exrex.getone(pattern)
+
+                instance: str | bytes
                 if self.symbol.is_type(bytes):
                     # Exrex can't do bytes, so we decode to str and back
-                    instance = exrex.getone(
-                        self.symbol.value().to_string(bytes_to_str_encoding="latin-1")
-                    ).encode("latin-1")
+                    pattern = self.symbol.value().to_string("latin-1")
+                    instance = get_one(pattern).encode("latin-1")
                 elif self.symbol.is_type(str):
-                    instance = exrex.getone(str(self.symbol.value()))
+                    instance = get_one(str(self.symbol.value()))
                 elif self.symbol.is_type(NoneType):
-                    instance = exrex.getone(int(self.symbol.value()))
+                    raise FandangoValueError(
+                        f"Regex on trailing bits should not happen: {self.symbol.value()!r}"
+                    )
                 else:
                     raise FandangoValueError(
                         f"Unsupported type: {self.symbol.value().type_}"

@@ -123,6 +123,8 @@ NODE_SETTINGS_DEFAULTS = {
     "plus_should_return_nothing": 0.0,
     "option_should_return_multiple": 0.0,
     "alternatives_should_concatenate": 0.0,
+    "invert_regex": 0.0,
+    "max_out_of_regex_tries": 10000,
 }
 
 
