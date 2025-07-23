@@ -24,7 +24,6 @@ class NonTerminalNode(Node):
         sender: Optional[str] = None,
         recipient: Optional[str] = None,
     ):
-        self._grammar_settings = grammar_settings
         self.symbol = symbol
         self.sender = sender
         self.recipient = recipient
@@ -40,18 +39,19 @@ class NonTerminalNode(Node):
         if self.symbol not in grammar:
             raise FandangoValueError(f"Symbol {self.symbol} not found in grammar")
 
-        if random.random() < getattr(
-            self._settings, "nonterminal_should_repeat"
-        ):  # Gmutator mutation (1a)
+        # Gmutator mutation (1a)
+        if random.random() < self.settings.get("nonterminal_should_repeat"):
 
             # prevent recursion in repetition
             non_repeating_self = deepcopy(self)
-            setattr(non_repeating_self._settings, "nonterminal_should_repeat", 0.0)
+            non_repeating_self.settings.set("nonterminal_should_repeat", 0.0)
 
             # ensure no nop
             repeat = Repetition(
                 non_repeating_self, non_repeating_self._grammar_settings, min_=2
             )
+
+            # TODO: Do we need to change the distance_to_completion?
             repeat.distance_to_completion = (
                 non_repeating_self.distance_to_completion + 2
             )

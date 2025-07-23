@@ -1,6 +1,8 @@
+from itertools import combinations, permutations
 import random
 from typing import TYPE_CHECKING, Iterator, Sequence
 from fandango.language.grammar.has_settings import HasSettings
+from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.tree import DerivationTree
 
@@ -30,16 +32,28 @@ class Alternative(Node):
         in_range_nodes = list(
             filter(lambda x: x.distance_to_completion < max_nodes, self.alternatives)
         )
+
         if len(in_range_nodes) == 0:
             min_ = min(self.alternatives, key=lambda x: x.distance_to_completion)
-            random.choice(
-                [
-                    a
-                    for a in self.alternatives
-                    if a.distance_to_completion <= min_.distance_to_completion
-                ]
-            ).fuzz(parent, grammar, 0, in_message)
-            return
+            in_range_nodes = [
+                a
+                for a in self.alternatives
+                if a.distance_to_completion <= min_.distance_to_completion
+            ]
+            max_nodes = 0
+
+        # Gmutator mutation (2)
+        if random.random() < self.settings.get("alternatives_should_concatenate"):
+            # TODO: Do we need to change the distance_to_completion?
+            concatenations: list[tuple[Node, ...]] = []
+            for r in range(2, len(in_range_nodes)):
+                for subset in combinations(in_range_nodes, r):
+                    concatenations.extend(permutations(subset))
+            in_range_nodes = [
+                Concatenation(concatenation, self._grammar_settings)
+                for concatenation in concatenations
+            ]
+
         random.choice(in_range_nodes).fuzz(parent, grammar, max_nodes, in_message)
 
     def accept(self, visitor: "NodeVisitor"):

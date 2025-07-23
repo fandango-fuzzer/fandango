@@ -2,6 +2,7 @@ import abc
 import copy
 import enum
 from typing import TYPE_CHECKING, Any, Iterator, Sequence
+from fandango.errors import FandangoValueError
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
@@ -36,6 +37,7 @@ class Node(abc.ABC):
         grammar_settings: Sequence["HasSettings"],
         distance_to_completion: float = float("inf"),
     ):
+        self._grammar_settings = grammar_settings
         self._node_type = node_type
         self.distance_to_completion = distance_to_completion
         self._settings = NodeSettings({})
@@ -120,6 +122,7 @@ NODE_SETTINGS_DEFAULTS = {
     "nonterminal_should_repeat": 0.0,
     "plus_should_return_nothing": 0.0,
     "option_should_return_multiple": 0.0,
+    "alternatives_should_concatenate": 0.0,
 }
 
 
@@ -134,21 +137,18 @@ class NodeSettings:
             if k in raw_settings:
                 self._settings[k] = type(v)(raw_settings[k])
 
-    def __getattr__(self, name: str) -> Any:
-        if name in NODE_SETTINGS_DEFAULTS:
-            if name in self._settings:
-                return self._settings[name]
-            else:
-                return NODE_SETTINGS_DEFAULTS[name]
+    def get(self, key: str) -> Any:
+        if key not in NODE_SETTINGS_DEFAULTS:
+            raise FandangoValueError(f"Grammar setting {key} not found")
+        if key in self._settings:
+            return self._settings[key]
         else:
-            return getattr(super(), name)
+            return NODE_SETTINGS_DEFAULTS[key]
 
-    def __setattr__(self, name: str, value: Any) -> None:
-        if name in NODE_SETTINGS_DEFAULTS:
-            assert isinstance(value, type(NODE_SETTINGS_DEFAULTS[name]))
-            self._settings[name] = value
-        else:
-            super().__setattr__(name, value)
+    def set(self, key: str, value: Any) -> None:
+        if key not in NODE_SETTINGS_DEFAULTS:
+            raise FandangoValueError(f"Grammar setting {key} not found")
+        self._settings[key] = type(NODE_SETTINGS_DEFAULTS[key])(value)
 
     def __deepcopy__(self, memo: dict[int, Any]) -> "NodeSettings":
         return NodeSettings(copy.deepcopy(self._settings))
@@ -157,10 +157,9 @@ class NodeSettings:
         if other is None:
             return self
 
-        for k in NODE_SETTINGS_DEFAULTS:
-            if k in other._settings:
-                if k in self._settings:
-                    LOGGER.warning(f"Overriding {k} with a different value")
-                self._settings[k] = other._settings[k]
+        for k in other._settings:
+            if k in self._settings:
+                LOGGER.warning(f"Overriding {k} with a different value")
+            self._settings[k] = other._settings[k]
 
         return self
