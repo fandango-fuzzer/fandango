@@ -1,14 +1,8 @@
-from copy import deepcopy
-import random
 from typing import TYPE_CHECKING, Iterator, Optional, Sequence
 from fandango.errors import FandangoValueError
 from fandango.language.grammar.has_settings import HasSettings
-from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.node import Node, NodeType
-from fandango.language.grammar.nodes.repetition import Repetition
-from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols.non_terminal import NonTerminal
-from fandango.language.symbols.terminal import Terminal
 from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:
@@ -38,34 +32,6 @@ class NonTerminalNode(Node):
     ):
         if self.symbol not in grammar:
             raise FandangoValueError(f"Symbol {self.symbol} not found in grammar")
-
-        # Gmutator mutation (1a)
-        if random.random() < self.settings.get("nonterminal_should_repeat"):
-
-            # prevent recursion in repetition
-            non_repeating_self = deepcopy(self)
-            non_repeating_self.settings.set("nonterminal_should_repeat", 0.0)
-
-            # ensure no nop
-            repeat = Repetition(
-                non_repeating_self, non_repeating_self._grammar_settings, min_=2
-            )
-
-            # TODO: Do we need to change the distance_to_completion?
-            repeat.distance_to_completion = (
-                non_repeating_self.distance_to_completion + 2
-            )
-            empty = TerminalNode(Terminal(""), non_repeating_self._grammar_settings)
-            empty.distance_to_completion = non_repeating_self.distance_to_completion + 2
-            alternative = Alternative(
-                [empty, repeat], non_repeating_self._grammar_settings
-            )
-            alternative.distance_to_completion = (
-                non_repeating_self.distance_to_completion + 1
-            )
-
-            alternative.fuzz(parent, grammar, max_nodes, in_message)
-            return
 
         dummy_current_tree = DerivationTree(self.symbol)
         parent.add_child(dummy_current_tree)

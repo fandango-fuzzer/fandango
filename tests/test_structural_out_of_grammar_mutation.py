@@ -4,11 +4,10 @@ from fandango.language.parse import parse
 REPETITIONS = 1000
 
 
-def test_repeat_nonterminal():
+def test_repeat_terminal():
     raw_grammar = """
-<start> ::= <nonterminal>
-<nonterminal> ::= "a"
-setting <nonterminal> nonterminal_should_repeat = 1.0
+<start> ::= "a"
+setting all_with_type(TerminalNode) terminal_should_repeat = 1.0
 """
     grammar, _ = parse(raw_grammar)
     assert grammar is not None

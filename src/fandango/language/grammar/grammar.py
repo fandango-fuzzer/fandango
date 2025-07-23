@@ -15,7 +15,7 @@ from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-import fandango.language.grammar.nodes.repetition as repetition_mod
+import fandango.language.grammar.nodes as nodes
 from fandango.language.grammar.nodes.repetition import (
     Option,
     Plus,
@@ -687,7 +687,7 @@ class Grammar(NodeVisitor):
         return self.contains_type(str, start=start)
 
     def set_max_repetition(self, max_rep: int):
-        repetition_mod.MAX_REPETITIONS = max_rep
+        nodes.MAX_REPETITIONS = max_rep
 
     def get_max_repetition(self):
-        return repetition_mod.MAX_REPETITIONS
+        return nodes.MAX_REPETITIONS
