@@ -9,6 +9,7 @@ from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.symbols import Terminal
 from fandango.language.tree import DerivationTree
 import fandango.language.grammar.nodes as nodes
+from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER
 
 if TYPE_CHECKING:
@@ -62,16 +63,12 @@ class TerminalNode(Node):
                     return exrex.getone(pattern)
 
                 instance: str | bytes
-                if self.symbol.is_type(bytes):
+                if self.symbol.is_type(TreeValueType.BYTES):
                     # Exrex can't do bytes, so we decode to str and back
                     pattern = self.symbol.value().to_string("latin-1")
                     instance = get_one(pattern).encode("latin-1")
-                elif self.symbol.is_type(str):
+                elif self.symbol.is_type(TreeValueType.STRING):
                     instance = get_one(str(self.symbol.value()))
-                elif self.symbol.is_type(NoneType):
-                    raise FandangoValueError(
-                        f"Regex on trailing bits should not happen: {self.symbol.value()!r}"
-                    )
                 else:
                     raise FandangoValueError(
                         f"Unsupported type: {self.symbol.value().type_}"

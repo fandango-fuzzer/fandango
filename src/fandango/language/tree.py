@@ -8,6 +8,7 @@ from fandango.language.tree_value import (
     BYTES_TO_STRING_ENCODING,
     STRING_TO_BYTES_ENCODING,
     TreeValue,
+    TreeValueType,
 )
 
 if TYPE_CHECKING:
@@ -459,9 +460,11 @@ class DerivationTree:
         """
         Return true if the derivation tree should be serialized to bytes.
         """
-        return self._contains_type(NoneType) or self._contains_type(bytes)
+        return self._contains_type(
+            TreeValueType.TRAILING_BITS_ONLY
+        ) or self._contains_type(TreeValueType.BYTES)
 
-    def _contains_type(self, tp: type) -> bool:
+    def _contains_type(self, tp: TreeValueType) -> bool:
         """
         Return true if the derivation tree contains any terminal symbols of type `tp` (say, `int` or `bytes`).
         """
@@ -473,13 +476,13 @@ class DerivationTree:
         """
         Return true iff the derivation tree contains any bits (0 or 1).
         """
-        return self._contains_type(NoneType)
+        return self._contains_type(TreeValueType.TRAILING_BITS_ONLY)
 
     def contains_bytes(self) -> bool:
         """
         Return true iff the derivation tree contains any byte strings.
         """
-        return self._contains_type(bytes)
+        return self._contains_type(TreeValueType.BYTES)
 
     def to_string(self, *, encoding: str = BYTES_TO_STRING_ENCODING) -> str:
         """
@@ -584,7 +587,7 @@ class DerivationTree:
                     terminal = cast(Terminal, child.symbol)
                     s += " " + repr(terminal)
                     terminal_symbols += 1
-                    if terminal.is_type(NoneType):
+                    if terminal.is_type(TreeValueType.TRAILING_BITS_ONLY):
                         if bit_count <= 0:
                             bit_count = 7
                             max_bit_count = 7

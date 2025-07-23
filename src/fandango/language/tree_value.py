@@ -1,4 +1,5 @@
 from __future__ import annotations
+import enum
 
 from fandango.errors import FandangoValueError
 
@@ -14,6 +15,13 @@ def trailing_bits_to_int(trailing_bits: list[int]) -> int:
     The bits are assumed to be in big endian order and are not checked for validity (assumed to be 0 or 1)
     """
     return sum(bit << i for i, bit in enumerate(reversed(trailing_bits)))
+
+
+class TreeValueType(enum.Enum):
+    STRING = "string"
+    BYTES = "bytes"
+    TRAILING_BITS_ONLY = "trailing_bits"
+    EMPTY = "empty"
 
 
 class TreeValue:
@@ -70,11 +78,25 @@ class TreeValue:
             raise ValueError(f"Invalid value type: {type(self._value)}")
 
     @property
-    def type_(self) -> type:
-        return type(self._value)
+    def type_(self) -> TreeValueType:
+        if self._value is None:
+            if self._trailing_bits:
+                return TreeValueType.TRAILING_BITS_ONLY
+            else:
+                return TreeValueType.EMPTY
+        elif isinstance(self._value, str):
+            if self._trailing_bits:
+                # Trailing bits are reduced to bytes
+                return TreeValueType.BYTES
+            else:
+                return TreeValueType.STRING
+        elif isinstance(self._value, bytes):
+            return TreeValueType.BYTES
+        else:
+            raise ValueError(f"Invalid value type: {type(self._value)}")
 
-    def is_type(self, type_: type) -> bool:
-        return isinstance(self._value, type_)
+    def is_type(self, type_: TreeValueType) -> bool:
+        return self.type_ == type_
 
     def count_bytes(self) -> int:
         return len(self.to_bytes())
@@ -128,12 +150,12 @@ class TreeValue:
 
     def can_compare_with(self, right: object) -> bool:
         if isinstance(right, TreeValue):
-            return self.can_compare_with(right._value)
+            return True
 
         return (
-            (isinstance(right, int) and self._value is None)
-            or (isinstance(right, str) and self.is_type(str))
-            or (isinstance(right, bytes) and self.is_type(bytes))
+            (isinstance(right, int) and self.is_type(TreeValueType.TRAILING_BITS_ONLY))
+            or (isinstance(right, str) and self.is_type(TreeValueType.STRING))
+            or (isinstance(right, bytes) and self.is_type(TreeValueType.BYTES))
         )
 
     def to_string(
