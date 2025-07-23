@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Iterator, Sequence
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.node import Node, NodeType
@@ -11,12 +12,12 @@ if TYPE_CHECKING:
 class Concatenation(Node):
     def __init__(
         self,
-        nodes: list[Node],
+        nodes: Iterable[Node],
         grammar_settings: Sequence[HasSettings],
         id: str = "",
     ):
         self.id = id
-        self.nodes = nodes
+        self.nodes = list(nodes)
         super().__init__(NodeType.CONCATENATION, grammar_settings)
 
     def fuzz(

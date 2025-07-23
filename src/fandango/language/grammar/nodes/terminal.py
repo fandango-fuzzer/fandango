@@ -18,7 +18,6 @@ class TerminalNode(Node):
         symbol: Terminal,
         grammar_settings: Sequence[HasSettings],
     ):
-        self._grammar_settings = grammar_settings
         self.symbol = symbol
         super().__init__(
             NodeType.TERMINAL, grammar_settings, distance_to_completion=1.0

@@ -26,7 +26,6 @@ class Repetition(Node):
         min_: int = 0,
         max_: Optional[int] = None,
     ):
-        self._grammar_settings = grammar_settings
         self.id = id
         self.min = min_
         self._max = max_
@@ -162,8 +161,8 @@ class Plus(Repetition):
         override_iterations_to_perform: Optional[int] = None,
     ):
         # Gmutator mutation (1b)
-        should_return_nothing = random.random() < getattr(
-            self._settings, "plus_should_return_nothing"
+        should_return_nothing = random.random() < self.settings.get(
+            "plus_should_return_nothing"
         )
         if should_return_nothing:
             terminal = TerminalNode(Terminal(""), self._grammar_settings)
@@ -206,8 +205,8 @@ class Option(Repetition):
         override_iterations_to_perform: Optional[int] = None,
     ):
         # Gmutator mutation (1c)
-        should_return_multiple = random.random() < getattr(
-            self._settings, "option_should_return_multiple"
+        should_return_multiple = random.random() < self.settings.get(
+            "option_should_return_multiple"
         )
         if should_return_multiple:
             repetition = Repetition(
