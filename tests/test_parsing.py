@@ -3,14 +3,18 @@
 import unittest
 from typing import Optional
 
-from fandango.language.grammar import Alternative, Grammar, ParsingMode
+from fandango.language.grammar import ParsingMode
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.nodes.alternative import Alternative
+from fandango.language.grammar.parser.iterative_parser import IterativeParser
+from fandango.language.grammar.parser.parser import Parser
 from fandango.language.parse import parse
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 from .utils import RESOURCES_ROOT, DOCS_ROOT, run_command
 
 
-class IterParsingTester(Grammar.Parser):
+class IterParsingTester(Parser):
     def _parse_forest(
         self,
         word: str | bytes,
@@ -129,8 +133,8 @@ class TestComplexParsing(unittest.TestCase):
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
             self.grammar = grammar
-            self.parser = Grammar.Parser(grammar)
-            self.iter_parser = IterParsingTester(self.grammar)
+            self.parser = Parser(grammar.rules)
+            self.iter_parser = IterParsingTester(grammar.rules)
 
     def _test(self, example, tree):
         for parser in [self.parser, self.iter_parser]:
@@ -211,8 +215,8 @@ class TestIncompleteParsing(unittest.TestCase):
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
             self.grammar = grammar
-            self.parser = Grammar.Parser(grammar)
-            self.iter_parser = IterParsingTester(self.grammar)
+            self.parser = Parser(grammar.rules)
+            self.iter_parser = IterParsingTester(grammar.rules)
 
     def _test(self, example, tree):
         for parser in [self.parser, self.iter_parser]:
@@ -270,8 +274,8 @@ class TestDynamicRepetitionParsing(unittest.TestCase):
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
             self.grammar = grammar
-            self.parser = Grammar.Parser(grammar)
-            self.iter_parser = IterParsingTester(self.grammar)
+            self.parser = Parser(grammar.rules)
+            self.iter_parser = IterParsingTester(grammar.rules)
 
     def _test(self, example, tree):
         for parser in [self.parser, self.iter_parser]:
@@ -373,11 +377,11 @@ class TestEmptyParsing(unittest.TestCase):
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
             self.grammar = grammar
-            self.parser = Grammar.Parser(grammar)
-            self.iter_parser = IterParsingTester(self.grammar)
+            self.parser = Parser(grammar.rules)
+            self.iter_parser = IterParsingTester(grammar.rules)
 
     def _test(self, example: str, tree: DerivationTree):
-        parsers: list[Grammar.Parser] = [self.parser, self.iter_parser]
+        parsers: list[Parser] = [self.parser, self.iter_parser]
         for parser in parsers:
             actual_tree = parser.parse(example)
             print(type(parser), type(actual_tree))
@@ -420,7 +424,7 @@ class TestCanContinueParsing(unittest.TestCase):
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
             self.grammar = grammar
-            self.iter_parser = Grammar.IterativeParser(self.grammar)
+            self.iter_parser = IterativeParser(self.grammar.rules)
 
     def test_1(self):
         self.iter_parser.new_parse()
@@ -521,8 +525,8 @@ class TestBitParsing(TestCLIParsing):
         with open(RESOURCES_ROOT / "byte_alternative.fan", "r") as file:
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
-        parser = Grammar.Parser(grammar)
-        iter_parser = IterParsingTester(grammar)
+        parser = Parser(grammar.rules)
+        iter_parser = IterParsingTester(grammar.rules)
         self._test(b"\x00", None, [parser, iter_parser])
         self._test(
             b"\x01",
@@ -563,8 +567,8 @@ class TestBitParsing(TestCLIParsing):
         with open(RESOURCES_ROOT / "bit_special.fan", "r") as file:
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
-        parser = Grammar.Parser(grammar)
-        iter_parser = IterParsingTester(grammar)
+        parser = Parser(grammar.rules)
+        iter_parser = IterParsingTester(grammar.rules)
         bit_tree_0 = DerivationTree(
             NonTerminal("<bit>"),
             [DerivationTree(Terminal(0))],

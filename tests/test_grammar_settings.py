@@ -1,12 +1,10 @@
 import random
 from typing import Any, Callable
-from fandango.language.grammar import (
-    NODE_SETTINGS_DEFAULTS,
-    Grammar,
-    Node,
-    NonTerminalNode,
-    TerminalNode,
-)
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.grammar_settings import GrammarSetting
+from fandango.language.grammar.nodes.node import Node, NODE_SETTINGS_DEFAULTS
+from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.parse import parse
 
 FLOAT_KEY = next(
@@ -66,6 +64,7 @@ def test_can_parse_grammar_settings():
     gss = grammar._grammar_settings
     assert len(gss) == 1
     gs = gss[0]
+    assert isinstance(gs, GrammarSetting)
     assert gs._selector == "<start>"
     ns = gs._node_settings
     assert ns._settings[FLOAT_KEY] == 0.5
@@ -88,6 +87,7 @@ def test_assign_to_all_nonterminals():
     gss = grammar._grammar_settings
     assert len(gss) == 1
     gs = gss[0]
+    assert isinstance(gs, GrammarSetting)
     assert gs._selector == "all_with_type(NonTerminalNode)"
     ns = gs._node_settings
     assert ns._settings[FLOAT_KEY] == 0.5
@@ -110,6 +110,7 @@ def test_assign_to_all_terminals():
     gss = grammar._grammar_settings
     assert len(gss) == 1
     gs = gss[0]
+    assert isinstance(gs, GrammarSetting)
     assert gs._selector == "all_with_type(TerminalNode)"
     ns = gs._node_settings
     assert ns._settings[FLOAT_KEY] == 0.5
@@ -132,6 +133,7 @@ def test_assign_to_all():
     gss = grammar._grammar_settings
     assert len(gss) == 1
     gs = gss[0]
+    assert isinstance(gs, GrammarSetting)
     assert gs._selector == "*"
     assert gs._node_settings._settings[FLOAT_KEY] == 0.5
     assert getattr(gs._node_settings, FLOAT_KEY) == 0.5
@@ -158,6 +160,7 @@ def test_multiple_settings_lines():
     gss = grammar._grammar_settings
     assert len(gss) == 2
     for gs in gss:
+        assert isinstance(gs, GrammarSetting)
         assert (
             gs._selector == "all_with_type(NonTerminalNode)"
             or gs._selector == "all_with_type(TerminalNode)"
@@ -187,6 +190,7 @@ def test_multiple_key_value_pairs():
     gss = grammar._grammar_settings
     assert len(gss) == 1
     gs = gss[0]
+    assert isinstance(gs, GrammarSetting)
     assert gs._selector == "all_with_type(NonTerminalNode)"
     ns = gs._node_settings
     assert ns._settings[FLOAT_KEY] == 0.5

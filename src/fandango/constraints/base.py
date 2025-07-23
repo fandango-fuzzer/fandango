@@ -22,7 +22,8 @@ from fandango.constraints.fitness import (
     ValueFitness,
 )
 from fandango.errors import FandangoValueError
-from fandango.language.grammar import Grammar, Repetition
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.nodes.repetition import Repetition
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree, index_by_reference
