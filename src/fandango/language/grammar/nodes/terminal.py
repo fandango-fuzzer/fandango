@@ -40,8 +40,7 @@ class TerminalNode(Node):
         if random.random() < self.settings.get("terminal_should_repeat"):
             if random.random() < 0.5:
                 repetitions = 0
-                # TODO: remove once empty TreeValues are supported
-                parent.add_child(DerivationTree(Terminal("")))
+                return  # nop, don't add a node
             else:
                 repetitions = nodes.MAX_REPETITIONS
         for _ in range(repetitions):
@@ -52,10 +51,12 @@ class TerminalNode(Node):
                 def get_one(pattern: str) -> str:
                     # Gmutator mutation (3)
                     if random.random() < self.settings.get("invert_regex"):
-                        for _ in range(self.settings.get("max_out_of_regex_tries")):
-                            try_ = exrex.getone(".*")
-                            if not re.match(pattern, try_):
-                                return try_
+                        attempts = 0
+                        while attempts < self.settings.get("max_out_of_regex_tries"):
+                            attempt = exrex.getone(".*")
+                            if not re.match(pattern, attempt):
+                                return attempt
+                            attempts += 1
                         LOGGER.warning(
                             f"Failed to generate a non-matching regex: {pattern}, falling back to matching regex"
                         )

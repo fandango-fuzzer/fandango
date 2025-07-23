@@ -41,6 +41,7 @@ class NonTerminalNode(Node):
                 for nt, rhs in grammar.rules.items()
                 if nt.name() != self.symbol.name()
             ]
+            print("other_nodes", [n.format_as_spec() for n in other_nodes])
             alt = Alternative(other_nodes, self._grammar_settings)
             return alt.fuzz(parent, grammar, max_nodes, in_message)
 

@@ -24,6 +24,50 @@ def test_tree_value_create(value):
     assert type_(tree_value) == value
 
 
+def test_empty_convertors():
+    tree_value = TreeValue.empty()
+    assert str(tree_value) == ""
+    assert bytes(tree_value) == b""
+    assert int(tree_value) == 0
+    assert tree_value.to_bits() == ""
+
+
+def test_append_to_empty():
+    tree_value = TreeValue.empty()
+    tree_value = tree_value.append(TreeValue(1))
+    with pytest.raises(ValueError):
+        str(tree_value)
+    with pytest.raises(ValueError):
+        bytes(tree_value)
+    assert int(tree_value) == 1
+    assert tree_value.to_bits() == "1"
+
+    tree_value = TreeValue.empty()
+    tree_value = tree_value.append(TreeValue("a"))
+    assert str(tree_value) == "a"
+    assert bytes(tree_value) == b"a"
+    with pytest.raises(ValueError):
+        assert int(tree_value) == 1
+
+
+def test_append_with_empty():
+    tree_value = TreeValue(1)
+    tree_value = tree_value.append(TreeValue.empty())
+    with pytest.raises(ValueError):
+        str(tree_value)
+    with pytest.raises(ValueError):
+        bytes(tree_value)
+    assert int(tree_value) == 1
+    assert tree_value.to_bits() == "1"
+
+    tree_value = TreeValue("a")
+    tree_value = tree_value.append(TreeValue.empty())
+    assert str(tree_value) == "a"
+    assert bytes(tree_value) == b"a"
+    with pytest.raises(ValueError):
+        assert int(tree_value) == 1
+
+
 def test_tree_value_cross_conversion_from_int():
     # simple case
     tree_value = TreeValue(1)

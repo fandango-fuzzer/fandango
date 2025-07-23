@@ -161,9 +161,7 @@ class Plus(Repetition):
     ):
         # Gmutator mutation (1b)
         if random.random() < self.settings.get("plus_should_return_nothing"):
-            # TODO: remove once empty TreeValues are supported
-            terminal = TerminalNode(Terminal(""), self._grammar_settings)
-            return terminal.fuzz(parent, grammar, max_nodes, in_message)
+            return  # nop, don't add a node
         else:
             return super().fuzz(
                 parent,

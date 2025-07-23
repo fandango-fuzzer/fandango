@@ -1,5 +1,4 @@
 import copy
-from types import NoneType
 from typing import Any, Optional, TYPE_CHECKING, TypeVar, cast
 from collections.abc import Iterable, Iterator
 
@@ -907,39 +906,27 @@ class DerivationTree:
         except ValueError:
             return -1
 
-    ## General purpose converters
-    def _value(self) -> Optional[TreeValue]:
-        """
-        Convert the derivation tree into a standard Python value.
-        Returns the value and the number of bits used.
-        """
+    def value(self) -> TreeValue:
         if self.symbol.is_terminal:
             return self.symbol.value()
 
-        aggregate: TreeValue | None = None
+        aggregate = TreeValue.empty()
         for child in self._children:
-            value = child._value()
-            if value is None:
-                continue
-            if aggregate is None:
-                aggregate = value
-                continue
-            aggregate = aggregate.append(value)
-        return aggregate
-
-    def value(self) -> TreeValue:
-        aggregate = self._value()
-        if aggregate is None:
-            raise ValueError(
-                "Does not have a value, probably because it does not contain a terminal"
-            )
+            aggregate = aggregate.append(child.value())
         return aggregate
 
     def to_value(self) -> str:
         value = self.value()
-        if isinstance(value, int):
-            return "0b" + format(value, "b") + f" ({value})"
-        return repr(self.value())
+        if value.is_type(TreeValueType.EMPTY):
+            return ""
+        elif value.is_type(TreeValueType.TRAILING_BITS_ONLY):
+            return "0b" + value.to_bits()
+        elif value.is_type(TreeValueType.STRING):
+            return str(value)
+        elif value.is_type(TreeValueType.BYTES):
+            return str(bytes(value))
+        else:
+            raise ValueError(f"Invalid value type: {value.type_}")
 
     ## Comparison operations
     def __eq__(self, other: Any) -> bool:
