@@ -39,9 +39,8 @@ class TerminalNode(Node):
         if random.random() < self.settings.get("terminal_should_repeat"):
             if random.random() < 0.5:
                 repetitions = 0
-                parent.add_child(
-                    DerivationTree(Terminal(""))
-                )  # TODO: remove once empty TreeValues are supported
+                # TODO: remove once empty TreeValues are supported
+                parent.add_child(DerivationTree(Terminal("")))
             else:
                 repetitions = nodes.MAX_REPETITIONS
         for _ in range(repetitions):
