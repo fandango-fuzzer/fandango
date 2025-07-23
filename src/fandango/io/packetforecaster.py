@@ -18,6 +18,7 @@ from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.repetition import Repetition, Option, Plus, Star
 from fandango.language.symbols import Terminal, NonTerminal
 from fandango.language.tree import DerivationTree
+from fandango.language.tree_value import TreeValueType
 
 
 class GrammarKeyError(KeyError):
@@ -51,9 +52,11 @@ class PathFinder(NodeVisitor):
     def _collapsed_path(path: list[tuple[NonTerminal, bool]]):
         new_path = []
         for nt, new_node in path:
-            if nt.is_type(str) and str(nt.value()).startswith("<__"):
+            if nt.is_type(TreeValueType.STRING) and str(nt.value()).startswith("<__"):
                 continue
-            elif nt.is_type(bytes) and bytes(nt.value()).startswith(b"<__"):
+            elif nt.is_type(TreeValueType.BYTES) and bytes(nt.value()).startswith(
+                b"<__"
+            ):
                 continue
             new_path.append((nt, new_node))
         return tuple(new_path)
@@ -440,7 +443,7 @@ class PacketForecaster:
                 self.seen_keys.add(node.symbol)
                 return node
 
-            if node.symbol.is_type(str):
+            if node.symbol.is_type(TreeValueType.STRING):
                 symbol = NonTerminal("<_packet_" + node.symbol.name()[1:])
             else:
                 raise FandangoValueError("NonTerminal symbol must be a string!")
