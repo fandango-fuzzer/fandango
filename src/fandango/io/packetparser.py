@@ -7,7 +7,7 @@ from fandango.io import FandangoIO
 from fandango.io.packetforecaster import PacketForecaster
 from fandango.language import Grammar, NonTerminal, DerivationTree
 from fandango.language.grammar import ParsingMode
-from fandango.language.grammar.iterative_parser import IterativeParser
+from fandango.language.grammar.parser.iterative_parser import IterativeParser
 
 
 def _find_next_fragment(

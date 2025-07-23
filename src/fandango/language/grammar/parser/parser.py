@@ -2,7 +2,7 @@ from copy import deepcopy
 from typing import Generator, Optional
 
 from fandango.language.grammar import ParsingMode
-from fandango.language.grammar.iterative_parser import IterativeParser
+from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree

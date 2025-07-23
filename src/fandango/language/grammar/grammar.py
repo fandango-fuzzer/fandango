@@ -23,7 +23,7 @@ from fandango.language.grammar.nodes.repetition import (
     Star,
 )
 from fandango.language.grammar.nodes.terminal import TerminalNode
-from fandango.language.grammar.parser import Parser
+from fandango.language.grammar.parser.parser import Parser
 from fandango.language.tree import DerivationTree
 from fandango.language.symbols import Symbol, NonTerminal
 from fandango.logger import LOGGER

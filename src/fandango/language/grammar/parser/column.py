@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fandango.language.grammar.parse_state import ParseState
+from fandango.language.grammar.parser.parse_state import ParseState
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.symbols.symbol import Symbol
 

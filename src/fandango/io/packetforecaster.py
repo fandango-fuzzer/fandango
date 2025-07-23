@@ -3,12 +3,12 @@ from typing import Optional, Sequence
 
 from fandango.errors import FandangoValueError
 from fandango.language.grammar import ParsingMode
-from fandango.language.grammar.column import Column
+from fandango.language.grammar.parser.column import Column
 from fandango.language.grammar.has_settings import HasSettings
-from fandango.language.grammar.iterative_parser import IterativeParser
+from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.char_set import CharSet
-from fandango.language.grammar.parse_state import ParseState
+from fandango.language.grammar.parser.parse_state import ParseState
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
