@@ -2,6 +2,7 @@ import copy
 from types import NoneType
 from typing import Any, Optional, TYPE_CHECKING, TypeVar, cast
 from collections.abc import Iterable, Iterator
+import warnings
 
 from fandango.language.symbols import NonTerminal, Slice, Symbol, Terminal
 from fandango.language.tree_value import (
@@ -950,6 +951,22 @@ class DerivationTree:
 
     def __iter__(self) -> Iterator["DerivationTree"]:
         return iter(self._children)
+
+    def __getattr__(self, name: str) -> Any:
+        # Check if the attribute exists on the instance
+        try:
+            return object.__getattribute__(self, name)
+        except AttributeError:
+            pass
+        warnings.warn(
+            f"Using functions on the underlying types of DerivationTree and TreeValue types is deprecated.  Use the `str` or `bytes` to explicitly convert to the desired type first. DerivationTree has no attribute {name}.",
+            DeprecationWarning,
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter(
+                "ignore", DeprecationWarning
+            )  # don't double emit this deprecation warning
+            return getattr(self.value(), name)
 
 
 class SliceTree(DerivationTree):

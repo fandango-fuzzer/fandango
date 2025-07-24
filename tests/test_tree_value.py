@@ -1,8 +1,13 @@
 import pytest
+from fandango.errors import FandangoConversionError
+from fandango.language.symbols.non_terminal import NonTerminal
+from fandango.language.symbols.terminal import Terminal
+from fandango.language.tree import DerivationTree
 from fandango.language.tree_value import TreeValue, trailing_bits_to_int
 
 
 A_BITS = [int(bit) for bit in f"{ord('a'):08b}"]
+ONE_BITS = [int(bit) for bit in f"{ord('1'):08b}"]
 
 
 def test_trailing_bits_to_int():
@@ -27,6 +32,7 @@ def test_tree_value_create(value):
 def test_tree_value_cross_conversion_from_int():
     # simple case
     tree_value = TreeValue(1)
+    assert tree_value.trailing_bits == (1,)
     assert int(tree_value) == 1
 
     with pytest.raises(ValueError):
@@ -36,11 +42,11 @@ def test_tree_value_cross_conversion_from_int():
 
     # reducing
     tree_value = TreeValue(b"")
-    for bit in A_BITS:
+    for bit in ONE_BITS:
         tree_value = tree_value.append(TreeValue(int(bit)))  # push 8 bits, or one byte
-    assert int(tree_value) == ord("a")
-    assert str(tree_value) == "a"
-    assert bytes(tree_value) == b"a"
+    assert int(tree_value) == 1
+    assert str(tree_value) == "1"
+    assert bytes(tree_value) == b"1"
 
 
 def test_tree_value_cross_conversion_from_str():
@@ -53,9 +59,15 @@ def test_tree_value_cross_conversion_from_str():
 
 def test_tree_value_cross_conversion_from_bytes():
     tree_value = TreeValue(b"Hello, World!")
-    assert int(tree_value) == int.from_bytes(b"Hello, World!")
+    with pytest.raises(FandangoConversionError):
+        int(tree_value)
     assert str(tree_value) == "Hello, World!"
     assert bytes(tree_value) == b"Hello, World!"
+
+    tree_value = TreeValue(b"123")
+    assert int(tree_value) == 123
+    assert str(tree_value) == "123"
+    assert bytes(tree_value) == b"123"
 
 
 def test_tree_value_trailing_bits():
@@ -65,6 +77,10 @@ def test_tree_value_trailing_bits():
         tree_value = tree_value.append(TreeValue(bit))
 
     assert str(tree_value) == "Hello, World!a"
+
+    tree_value = TreeValue("Hello, World!")
+    for bit in A_BITS:
+        tree_value = tree_value.append(TreeValue(bit))
     assert bytes(tree_value) == b"Hello, World!a"
 
     # from bytes
@@ -72,17 +88,21 @@ def test_tree_value_trailing_bits():
     for bit in A_BITS:
         tree_value = tree_value.append(TreeValue(bit))
     assert str(tree_value) == "Hello, World!a"
+
+    tree_value = TreeValue(b"Hello, World!")
+    for bit in A_BITS:
+        tree_value = tree_value.append(TreeValue(bit))
     assert bytes(tree_value) == b"Hello, World!a"
 
 
 def test_tree_value_incomplete_trailing_bits():
     tree_value = TreeValue("Hello, World!")
     tree_value = tree_value.append(TreeValue(1))
-    with pytest.raises(ValueError):
+    with pytest.raises(FandangoConversionError):
         int(tree_value)
-    with pytest.raises(ValueError):
+    with pytest.raises(FandangoConversionError):
         str(tree_value)
-    with pytest.raises(ValueError):
+    with pytest.raises(FandangoConversionError):
         bytes(tree_value)
 
 
@@ -101,7 +121,7 @@ def test_tree_value_combine_with_str():
 
     # from int
     tree_value = TreeValue(1)
-    with pytest.raises(ValueError):
+    with pytest.raises(FandangoConversionError):
         tree_value = tree_value.append(TreeValue("a"))
 
 
@@ -120,7 +140,7 @@ def test_tree_value_combine_with_bytes():
 
     # from int
     tree_value = TreeValue(1)
-    with pytest.raises(ValueError):
+    with pytest.raises(FandangoConversionError):
         tree_value = tree_value.append(TreeValue(b"a"))
 
 
@@ -134,7 +154,9 @@ def test_tree_value_combine_with_int():
     for i in range(1, len(A_BITS)):  # add more bits to be reducible to a byte
         tree_value = tree_value.append(TreeValue(A_BITS[i]))
     assert str(tree_value) == "Hello, World!a"
-    assert bytes(tree_value) == b"Hello, World!a"
+    for bit in A_BITS:  # add more bits to be reducible to a byte
+        tree_value = tree_value.append(TreeValue(bit))
+    assert bytes(tree_value) == b"Hello, World!aa"
     assert tree_value.is_type(bytes)
 
     # from bytes
@@ -146,7 +168,9 @@ def test_tree_value_combine_with_int():
     for i in range(1, len(A_BITS)):  # add more bits to be reducible to a byte
         tree_value = tree_value.append(TreeValue(A_BITS[i]))
     assert str(tree_value) == "Hello, World!a"
-    assert bytes(tree_value) == b"Hello, World!a"
+    for bit in A_BITS:
+        tree_value = tree_value.append(TreeValue(bit))
+    assert bytes(tree_value) == b"Hello, World!aa"
     assert tree_value.is_type(bytes)
 
     # from int
@@ -174,3 +198,40 @@ def test_tree_value_to_bits():
 
     tree_value_int = tree_value_int.append(TreeValue(1))
     assert tree_value_int.to_bits() == "11"
+
+
+def test_deprecated_direct_access_to_tree():
+    # string
+    tree = DerivationTree(Terminal("a"))
+    with pytest.warns(DeprecationWarning):
+        assert tree.startswith("a")
+
+    # bytes
+    tree = DerivationTree(Terminal(b"a"))
+    with pytest.warns(DeprecationWarning):
+        assert tree.startswith(b"a")
+
+    # int
+    tree = DerivationTree(
+        NonTerminal("<start>"),
+        list(map(DerivationTree, map(Terminal, map(int, f"{ord('a'):08b}")))),
+    )
+    with pytest.warns(DeprecationWarning):
+        assert tree.bit_length() == 7  # 'a' is "0b01100001"
+
+
+def test_deprecated_direct_access_to_tree_value():
+    # string
+    with pytest.warns(DeprecationWarning):
+        tree_value = TreeValue("a")
+        assert tree_value.startswith("a")
+
+    # bytes
+    with pytest.warns(DeprecationWarning):
+        tree_value = TreeValue(b"a")
+        assert tree_value.startswith(b"a")
+
+    # int
+    tree_value = TreeValue(None, trailing_bits=list(map(int, f"{ord('a'):08b}")))
+    with pytest.warns(DeprecationWarning):
+        assert tree_value.bit_length() == 7  # 'a' is "0b01100001"
