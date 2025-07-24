@@ -1334,7 +1334,9 @@ def parse_file(
     for constraint in constraints:
         fitness = constraint.fitness(last_tree).fitness()
         if fitness == 0:
-            raise FandangoError(f"{fd.name!r}: constraint {constraint} not satisfied")
+            raise FandangoError(
+                f"{fd.name!r}: constraint {constraint.format_as_spec()} not satisfied"
+            )
 
     raise FandangoError("This should not happen")
 

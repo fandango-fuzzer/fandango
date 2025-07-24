@@ -65,4 +65,6 @@ class Symbol(abc.ABC):
         raise KeyError(f"str() not implemented for {type(self)}, use specific function")
 
     def __repr__(self) -> str:
-        return "Symbol(" + repr(self.value()) + ")"
+        raise KeyError(
+            f"repr() not implemented for {type(self)}, use specific function"
+        )

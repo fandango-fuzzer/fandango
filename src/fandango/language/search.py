@@ -319,7 +319,7 @@ class RuleSearch(NonTerminalSearch):
         return [self.symbol]
 
     def format_as_spec(self) -> str:
-        return repr(self.symbol)
+        return self.symbol.format_as_spec()
 
 
 class AttributeSearch(NonTerminalSearch):

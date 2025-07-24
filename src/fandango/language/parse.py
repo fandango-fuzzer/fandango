@@ -959,7 +959,9 @@ def check_constraints_existence(
         defined_symbols.append(symbol.name())
 
     grammar_symbols = grammar.rules.keys()
-    grammar_matches = re.findall(r"<([^>]*)>", str(grammar_symbols))
+    grammar_matches = re.findall(
+        r"<([^>]*)>", "".join(k.format_as_spec() for k in grammar_symbols)
+    )
     # LOGGER.debug(f"All used symbols: {grammar_matches}")
 
     for constraint in constraints:
