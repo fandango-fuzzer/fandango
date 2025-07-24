@@ -1073,7 +1073,9 @@ class RepetitionBoundsConstraint(Constraint):
         self.repetition_node = repetition_node
 
     def _compute_rep_bound(
-        self, tree_rightmost_relevant_node: "DerivationTree", expr_data
+        self,
+        tree_rightmost_relevant_node: "DerivationTree",
+        expr_data: tuple[str, list, dict],
     ):
         expr, _, searches = expr_data
         local_cpy = self.local_variables.copy()

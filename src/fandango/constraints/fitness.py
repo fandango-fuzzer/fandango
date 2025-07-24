@@ -355,10 +355,14 @@ class GeneticBase(abc.ABC):
         return self.fitness(tree, scope, population, local_variables).failing_trees
 
     def __str__(self) -> str:
-        raise RuntimeError("Not implemented, use method specific to your usecase")
+        raise RuntimeError(
+            f"str() not implemented on {type(self).__name__}, use method specific to your usecase"
+        )
 
     def __repr__(self) -> str:
-        raise RuntimeError("Not implemented, use method specific to your usecase")
+        raise RuntimeError(
+            f"repr() not implemented on {type(self).__name__}, use method specific to your usecase"
+        )
 
     @abc.abstractmethod
     def format_as_spec(self) -> str:
