@@ -1,6 +1,8 @@
 from __future__ import annotations
+from typing import Any, Optional
+import warnings
 
-from fandango.errors import FandangoValueError
+from fandango.errors import FandangoConversionError, FandangoValueError
 
 
 STRING_TO_BYTES_ENCODING = "utf-8"  # according to the docs
@@ -14,6 +16,40 @@ def trailing_bits_to_int(trailing_bits: list[int]) -> int:
     The bits are assumed to be in big endian order and are not checked for validity (assumed to be 0 or 1)
     """
     return sum(bit << i for i, bit in enumerate(reversed(trailing_bits)))
+
+
+def _str_to_bytes(value: str, encoding: str) -> bytes:
+    """
+    Convert a string to bytes.
+
+    :param value: The string to convert.
+    :param encoding: The encoding to use when converting the string to bytes.
+    :throws FandangoConversionError: If the string cannot be converted to bytes.
+    :return: A bytes object.
+    """
+    try:
+        return value.encode(encoding=encoding)
+    except UnicodeEncodeError as e:
+        raise FandangoConversionError(
+            f"string to bytes conversion failed, string: {value}, encoding: {encoding}, error: {e}"
+        )
+
+
+def _bytes_to_str(value: bytes, encoding: str) -> str:
+    """
+    Convert bytes to a string.
+
+    :param value: The bytes to convert.
+    :param encoding: The encoding to use when converting the bytes to a string.
+    :throws FandangoConversionError: If the bytes cannot be converted to a string.
+    :return: A string.
+    """
+    try:
+        return value.decode(encoding=encoding)
+    except UnicodeDecodeError as e:
+        raise FandangoConversionError(
+            f"bytes to string conversion failed, bytes: {value!r}, encoding: {encoding}, error: {e}"
+        )
 
 
 class TreeValue:
@@ -46,13 +82,13 @@ class TreeValue:
         """
         Reduce the trailing bits into the value.
 
-        :raises ValueError: If the trailing bits don't sum up to a perfect number of bytes.
+        :raises FandangoConversionError: If the trailing bits don't sum up to a perfect number of bytes.
         """
         if not self._trailing_bits:
             return
 
         if len(self._trailing_bits) % 8 != 0:
-            raise ValueError(
+            raise FandangoConversionError(
                 "Trailing bits are not a multiple of 8, currently have "
                 f"{len(self._trailing_bits)} bits"
             )
@@ -61,13 +97,17 @@ class TreeValue:
         bytes_ = num.to_bytes(len(self._trailing_bits) // 8)
         self._trailing_bits = []
         if isinstance(self._value, str):
-            self._value = self._value.encode(encoding=str_to_bytes_encoding) + bytes_
+            self._value = (
+                _str_to_bytes(self._value, encoding=str_to_bytes_encoding) + bytes_
+            )
         elif isinstance(self._value, bytes):
             self._value = self._value + bytes_
         elif self._value is None:
             self._value = bytes_
         else:
-            raise ValueError(f"Invalid value type: {type(self._value)}")
+            raise FandangoValueError(
+                f"Invalid value type: {type(self._value)}, {self._trailing_bits}. This should not happen, please report this as a bug"
+            )
 
     @property
     def type_(self) -> type:
@@ -77,6 +117,12 @@ class TreeValue:
         return isinstance(self._value, type_)
 
     def count_bytes(self) -> int:
+        """
+        Count the number of bytes in the TreeValue.
+
+        :throws FandangoConversionError: If the value cannot be converted to bytes.
+        :return: The number of bytes in the TreeValue.
+        """
         return len(self.to_bytes())
 
     def append(
@@ -89,6 +135,7 @@ class TreeValue:
 
         :param other: The value to append..
         :param str_to_bytes_encoding: The encoding to use when converting strings to bytes.
+        :throws FandangoConversionError: If one of the values has to be converted and the conversion fails.
         :return: A new TreeValue.
         """
 
@@ -107,14 +154,16 @@ class TreeValue:
                 )
             elif isinstance(other._value, bytes):
                 return TreeValue(
-                    self._value.encode(str_to_bytes_encoding) + other._value,
+                    _str_to_bytes(self._value, encoding=str_to_bytes_encoding)
+                    + other._value,
                     trailing_bits=other._trailing_bits,
                 )
 
         elif isinstance(self._value, bytes):
             if isinstance(other._value, str):
                 return TreeValue(
-                    self._value + other._value.encode(str_to_bytes_encoding),
+                    self._value
+                    + _str_to_bytes(other._value, encoding=str_to_bytes_encoding),
                     trailing_bits=other._trailing_bits,
                 )
             elif isinstance(other._value, bytes):
@@ -123,7 +172,7 @@ class TreeValue:
                     trailing_bits=other._trailing_bits,
                 )
         raise FandangoValueError(
-            f"Cannot compute {self._value!r} + {other._value!r}, should not happen"
+            f"Cannot compute {self._value!r} + {other._value!r}. This should not happen, please report this as a bug"
         )
 
     def can_compare_with(self, right: object) -> bool:
@@ -144,6 +193,7 @@ class TreeValue:
         Convert the TreeValue to a string.
 
         :param bytes_to_str_encoding: The encoding to use when converting bytes to strings.
+        :throws FandangoConversionError: If the value cannot be converted to a string.
         :return: A string.
         """
         # encoding with the same encoding in both direction
@@ -151,8 +201,10 @@ class TreeValue:
         if isinstance(self._value, str):
             return self._value
         if isinstance(self._value, bytes):
-            return self._value.decode(encoding=bytes_to_str_encoding)
-        raise ValueError(f"Invalid value type: {type(self._value)}")
+            return _bytes_to_str(self._value, encoding=bytes_to_str_encoding)
+        raise FandangoValueError(
+            f"Invalid value type: {type(self._value)}, {self._trailing_bits}. This should not happen, please report this as a bug"
+        )
 
     def to_bytes(
         self,
@@ -162,14 +214,17 @@ class TreeValue:
         Convert the TreeValue to bytes.
 
         :param str_to_bytes_encoding: The encoding to use when converting strings to bytes.
+        :throws FandangoConversionError: If the value cannot be converted to bytes.
         :return: A bytes object.
         """
         self._reduce_trailing_bits(str_to_bytes_encoding=str_to_bytes_encoding)
         if isinstance(self._value, bytes):
             return self._value
         elif isinstance(self._value, str):
-            return self._value.encode(encoding=str_to_bytes_encoding)
-        raise ValueError(f"Invalid value type: {type(self._value)}")
+            return _str_to_bytes(self._value, encoding=str_to_bytes_encoding)
+        raise FandangoValueError(
+            f"Invalid value type: {type(self._value)}, {self._trailing_bits}. This should not happen, please report this as a bug"
+        )
 
     def to_bits(
         self,
@@ -179,6 +234,7 @@ class TreeValue:
         Convert the TreeValue to a string of 0s and 1s representing bits.
 
         :param str_to_bytes_encoding: The encoding to use when converting strings to bytes.
+        :throws FandangoConversionError: If the value cannot be converted to bits.
         :return: A string of bits.
         """
         if self._value is None:
@@ -188,10 +244,12 @@ class TreeValue:
         elif isinstance(self._value, str):
             value = "".join(
                 f"{byte_:08b}"
-                for byte_ in self._value.encode(encoding=str_to_bytes_encoding)
+                for byte_ in _str_to_bytes(self._value, encoding=str_to_bytes_encoding)
             )
         else:
-            raise ValueError(f"Invalid value type: {type(self._value)}")
+            raise FandangoValueError(
+                f"Invalid value type: {type(self._value)}. This should not happen, please report this as a bug"
+            )
 
         trailing_bits = "".join(str(bit) for bit in self._trailing_bits)
 
@@ -200,15 +258,17 @@ class TreeValue:
     def to_int(
         self,
         str_to_bytes_encoding: str = STRING_TO_BYTES_ENCODING,
+        bytes_to_str_encoding: str = BYTES_TO_STRING_ENCODING,
     ) -> int:
         """
         Convert the TreeValue to an integer.
 
-        Strings are converted to ints using int(), bytes are converted to ints using int.from_bytes().
+        Strings are converted to ints using int(), bytes are converted to strings using the given encoding and then to ints using int().
 
         If bits were ever included, the underlying data structure is bytes.
 
         :param str_to_bytes_encoding: The encoding to use when converting strings to bytes.
+        :throws FandangoConversionError: If the value cannot be converted to an integer.
         :return: An integer.
         """
         if self._value is None:  # only trailing bits
@@ -218,9 +278,30 @@ class TreeValue:
             if isinstance(self._value, str):
                 return int(self._value)
             elif isinstance(self._value, bytes):
-                return int.from_bytes(self._value)
+                try:
+                    return int(
+                        self.to_string(bytes_to_str_encoding=bytes_to_str_encoding)
+                    )
+                except ValueError as e:
+                    raise FandangoConversionError(
+                        f"int conversion failed, value: {self._value!r}, encoding: {bytes_to_str_encoding}, error: {e}"
+                    )
             else:
-                raise ValueError(f"Invalid value type: {type(self._value)}")
+                raise FandangoValueError(
+                    f"Invalid value type: {type(self._value)}, {self._trailing_bits}. This should not happen, please report this as a bug"
+                )
+
+    @property
+    def trailing_bits(self) -> Optional[tuple[int, ...]]:
+        """
+        Return the trailing bits as a tuple of 0s and 1s. MSB first. None if this is not only trailing bits.
+
+        :return: A tuple of integers, or None if this is not only trailing bits.
+        """
+        if self._value is None:
+            return tuple(self._trailing_bits)
+        else:
+            return None
 
     def __str__(self) -> str:
         return self.to_string()
@@ -258,3 +339,50 @@ class TreeValue:
             return f"{self._value!r} + bits: {''.join(str(bit) for bit in self._trailing_bits)}"
         else:
             return repr(self._value)
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> TreeValue:
+        return TreeValue(self._value, trailing_bits=self._trailing_bits)
+
+    def __getattr__(self, name: str) -> Any:
+        # Check if the attribute exists on the instance
+        try:
+            return object.__getattribute__(self, name)
+        except AttributeError:
+            pass
+
+        warnings.warn(
+            f"Using functions on the underlying types of DerivationTree and TreeValue types is deprecated.  Use the `str` or `bytes` to explicitly convert to the desired type first. TreeValue has no attribute {name}",
+            DeprecationWarning,
+        )
+
+        # Create a wrapper that tries different type conversions when called
+        def method_wrapper(*args, **kwargs):
+            errors = []
+            # Try string first, then bytes, then int
+            if hasattr("", name):
+                try:
+                    return getattr(str(self), name)(*args, **kwargs)
+                except Exception as e:
+                    errors.append(e)
+            if hasattr(b"", name):
+                try:
+                    return getattr(bytes(self), name)(*args, **kwargs)
+                except Exception as e:
+                    errors.append(e)
+            if hasattr(1, name):
+                try:
+                    with warnings.catch_warnings():
+                        warnings.simplefilter(
+                            "ignore", DeprecationWarning
+                        )  # don't emit the warning that to_int is deprecated
+                        return getattr(int(self), name)(*args, **kwargs)
+                except Exception as e:
+                    errors.append(e)
+
+            if errors:
+                raise AttributeError(
+                    f"Errors during attempt to access {name}, errors: {errors}"
+                )
+            raise AttributeError(f"TreeValue has no attribute {name}")
+
+        return method_wrapper

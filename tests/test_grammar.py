@@ -12,7 +12,7 @@ from .utils import RESOURCES_ROOT
 
 
 class ConstraintTest(unittest.TestCase):
-    def count_g_params(self, tree: DerivationTree):
+    def count_g_params(self, tree: DerivationTree) -> int:
         count = 0
         if len(tree.sources) > 0:
             count += 1
