@@ -50,7 +50,7 @@ jobs:
 
       # Step 7: Upload built book as artifact
       - name: Upload built book as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: book-html
           path: docs/_build/html/
@@ -66,7 +66,7 @@ jobs:
 
       # Step 2: Download built book artifact
       - name: Download built book artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: book-html
           path: htmlcov
