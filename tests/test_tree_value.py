@@ -222,16 +222,78 @@ def test_deprecated_direct_access_to_tree():
 
 def test_deprecated_direct_access_to_tree_value():
     # string
+    tree_value = TreeValue("a")
     with pytest.warns(DeprecationWarning):
-        tree_value = TreeValue("a")
         assert tree_value.startswith("a")
 
     # bytes
+    tree_value = TreeValue(b"a")
     with pytest.warns(DeprecationWarning):
-        tree_value = TreeValue(b"a")
         assert tree_value.startswith(b"a")
 
     # int
     tree_value = TreeValue(None, trailing_bits=list(map(int, f"{ord('a'):08b}")))
     with pytest.warns(DeprecationWarning):
         assert tree_value.bit_length() == 7  # 'a' is "0b01100001"
+
+
+def test_deprecated_direct_access_to_tree_value_with_wrapped_args():
+    tree = DerivationTree(Terminal("Hello, World!"))
+    with pytest.warns(DeprecationWarning):
+        assert tree.startswith("Hello")
+    with pytest.warns(DeprecationWarning):
+        assert tree.startswith(DerivationTree(Terminal("Hello")))
+    with pytest.warns(DeprecationWarning):
+        assert tree.startswith(TreeValue("Hello"))
+
+    tree_value = TreeValue("Hello, World!")
+    with pytest.warns(DeprecationWarning):
+        assert tree_value.startswith("Hello")
+    with pytest.warns(DeprecationWarning):
+        assert tree_value.startswith(TreeValue("Hello"))
+    with pytest.warns(DeprecationWarning):
+        assert tree_value.startswith(DerivationTree(Terminal("Hello")))
+
+
+def test_deprecated_direct_access_to_tree_value_with_wrapped_kwargs():
+    tree = DerivationTree(Terminal("Hello, {name}!"))
+    with pytest.warns(DeprecationWarning):
+        assert tree.format(name="World") == "Hello, World!"
+    with pytest.warns(DeprecationWarning):
+        assert tree.format(name=TreeValue("World")) == "Hello, World!"
+    with pytest.warns(DeprecationWarning):
+        assert tree.format(name=DerivationTree(Terminal("World"))) == "Hello, World!"
+
+    tree_value = TreeValue("Hello, {name}!")
+    with pytest.warns(DeprecationWarning):
+        assert tree_value.format(name="World") == "Hello, World!"
+    with pytest.warns(DeprecationWarning):
+        assert tree_value.format(name=TreeValue("World")) == "Hello, World!"
+    with pytest.warns(DeprecationWarning):
+        assert (
+            tree_value.format(name=DerivationTree(Terminal("World"))) == "Hello, World!"
+        )
+
+
+def test_deprecated_direct_access_to_tree_value_implicit():
+    tree = DerivationTree(Terminal(1))
+    with pytest.warns(DeprecationWarning):
+        assert 3 == tree + 2  # type: ignore[operator] # with the delegation hack, this works
+    with pytest.warns(DeprecationWarning):
+        assert 3 == tree + TreeValue(None, trailing_bits=[1, 0])  # type: ignore[operator] # with the delegation hack, this works
+    with pytest.warns(DeprecationWarning):
+        assert 3 == tree + DerivationTree(
+            NonTerminal("<start>"),
+            [DerivationTree(Terminal(1)), DerivationTree(Terminal(0))],
+        )  # type: ignore[operator] # with the delegation hack, this works
+
+    tree_value = TreeValue(1)
+    with pytest.warns(DeprecationWarning):
+        assert 3 == tree_value + 2  # type: ignore[operator] # with the delegation hack, this works
+    with pytest.warns(DeprecationWarning):
+        assert 3 == tree_value + TreeValue(None, trailing_bits=[1, 0])  # type: ignore[operator] # with the delegation hack, this works
+    with pytest.warns(DeprecationWarning):
+        assert 3 == tree_value + DerivationTree(
+            NonTerminal("<start>"),
+            [DerivationTree(Terminal(1)), DerivationTree(Terminal(0))],
+        )  # type: ignore[operator] # with the delegation hack, this works

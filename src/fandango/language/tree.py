@@ -9,6 +9,8 @@ from fandango.language.tree_value import (
     BYTES_TO_STRING_ENCODING,
     STRING_TO_BYTES_ENCODING,
     TreeValue,
+    delegate_dunders,
+    DUNDER_METHODS,
 )
 
 if TYPE_CHECKING:
@@ -78,6 +80,7 @@ def index_by_reference(lst: Iterable[T], target: T) -> Optional[int]:
     return None
 
 
+@delegate_dunders("value", DUNDER_METHODS)
 class DerivationTree:
     """
     This class is used to represent a node in the derivation tree.

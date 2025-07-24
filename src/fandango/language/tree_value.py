@@ -1,9 +1,9 @@
 from __future__ import annotations
+from types import NoneType
 from typing import Any, Optional
 import warnings
 
 from fandango.errors import FandangoConversionError, FandangoValueError
-
 
 STRING_TO_BYTES_ENCODING = "utf-8"  # according to the docs
 BYTES_TO_STRING_ENCODING = "latin-1"  # according to the docs
@@ -52,6 +52,80 @@ def _bytes_to_str(value: bytes, encoding: str) -> str:
         )
 
 
+# Shared argument unwrapping for operator and attribute delegation
+
+
+def _unwrap_for_operator(arg):
+    # Can't import DerivationTree directly due to circular import, so check by name
+    if type(arg).__name__ == "TreeValue":
+        # Inline the logic from to_inner_value
+        if arg.is_type(str):
+            return str(arg)
+        elif arg.is_type(bytes):
+            return bytes(arg)
+        elif arg.is_type(NoneType):
+            return int(arg)
+        else:
+            return arg._value
+    elif type(arg).__name__ == "DerivationTree":
+        return _unwrap_for_operator(arg.value())
+    return arg
+
+
+def delegate_dunders(to_method, dunder_names):
+    """
+    Decorator to add dunder methods to a class, delegating to the result of `to_method(self)`.
+    """
+
+    def make_method(name):
+        def method(self, *args, **kwargs):
+            warnings.warn(
+                f"Using {name} on {type(self).__name__} is deprecated.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            new_args = tuple(_unwrap_for_operator(arg) for arg in args)
+            new_kwargs = {k: _unwrap_for_operator(v) for k, v in kwargs.items()}
+            # For TreeValue, use self directly, not self.to_inner_value()
+            if type(self).__name__ == "TreeValue":
+                left = _unwrap_for_operator(self)
+            else:
+                left = getattr(self, to_method)()
+
+            return getattr(left, name)(*new_args, **new_kwargs)
+
+        return method
+
+    def decorator(cls):
+        for name in dunder_names:
+            setattr(cls, name, make_method(name))
+        return cls
+
+    return decorator
+
+
+DUNDER_METHODS = [
+    "__add__",
+    "__radd__",
+    "__sub__",
+    "__mul__",
+    "__truediv__",
+    "__floordiv__",
+    "__mod__",
+    "__pow__",
+    "__and__",
+    "__or__",
+    "__xor__",
+    "__lt__",
+    "__le__",
+    "__gt__",
+    "__ge__",
+    "__contains__",
+]
+
+
+# delegate_dunders and DUNDER_METHODS are now the canonical implementation for operator delegation.
+@delegate_dunders("to_inner_value", DUNDER_METHODS)
 class TreeValue:
     def __init__(
         self,
@@ -355,34 +429,47 @@ class TreeValue:
             DeprecationWarning,
         )
 
-        # Create a wrapper that tries different type conversions when called
-        def method_wrapper(*args, **kwargs):
-            errors = []
-            # Try string first, then bytes, then int
-            if hasattr("", name):
-                try:
-                    return getattr(str(self), name)(*args, **kwargs)
-                except Exception as e:
-                    errors.append(e)
-            if hasattr(b"", name):
-                try:
-                    return getattr(bytes(self), name)(*args, **kwargs)
-                except Exception as e:
-                    errors.append(e)
-            if hasattr(1, name):
-                try:
-                    with warnings.catch_warnings():
-                        warnings.simplefilter(
-                            "ignore", DeprecationWarning
-                        )  # don't emit the warning that to_int is deprecated
-                        return getattr(int(self), name)(*args, **kwargs)
-                except Exception as e:
-                    errors.append(e)
+        def wrapper(*args, **kwargs):
+            errors: list[tuple[str, Any]] = []
 
-            if errors:
-                raise AttributeError(
-                    f"Errors during attempt to access {name}, errors: {errors}"
-                )
-            raise AttributeError(f"TreeValue has no attribute {name}")
+            unwrapped_args = tuple(_unwrap_for_operator(arg) for arg in args)
+            unwrapped_kwargs = {
+                key: _unwrap_for_operator(value) for key, value in kwargs.items()
+            }
 
-        return method_wrapper
+            for blank in ("", b"", 0):
+                if hasattr(blank, name):
+                    try:
+                        converted = type(blank)(self)
+                        attr = getattr(converted, name)
+                        res = attr(*unwrapped_args, **unwrapped_kwargs)
+                        return res
+                    except Exception as e:
+                        errors.append((type(blank).__name__, e))
+
+            stringified_errors = "\n".join(f"{k}: {e}" for k, e in errors)
+            stringified_args = ", ".join(
+                f"{arg!r}(type: {type(arg).__name__})" for arg in args
+            )
+            stringified_kwargs = ", ".join(
+                f"{k!r}={v!r}(type: {type(v).__name__})" for k, v in kwargs.items()
+            )
+            stringified_unwrapped_args = ", ".join(
+                f"{arg!r}(type: {type(arg).__name__})" for arg in unwrapped_args
+            )
+            stringified_unwrapped_kwargs = ", ".join(
+                f"{k!r}={v!r}(type: {type(v).__name__})"
+                for k, v in unwrapped_kwargs.items()
+            )
+
+            raise AttributeError(
+                f"TreeValue has no attribute {name} or all application attempts failed, "
+                "possibly because the function call threw an exception, "
+                f"errors during application attempts: {stringified_errors},\n"
+                f"args: {stringified_args},\n"
+                f"kwargs: {stringified_kwargs},\n"
+                f"unwrapped_args: {stringified_unwrapped_args},\n"
+                f"unwrapped_kwargs: {stringified_unwrapped_kwargs}"
+            )
+
+        return wrapper
