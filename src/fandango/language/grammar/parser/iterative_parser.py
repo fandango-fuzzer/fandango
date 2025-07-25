@@ -440,7 +440,7 @@ class IterativeParser(NodeVisitor):
         w: int,
     ) -> bool:
         """
-        Scan a byte from the input `word`.
+        Scan a byte from th noe input `word`.
         `state` is the current parse state.
         `table` is the parse table.
         `table[k]` is the current column.
@@ -473,9 +473,7 @@ class IterativeParser(NodeVisitor):
             dot_len = len(str(state.dot.value()))
 
         match, match_length = state.dot.check(check_word)
-        table_idx_multiplier = 1
-        if isinstance(check_word, bytes):
-            table_idx_multiplier = 8
+        table_idx_multiplier = 8
 
         if not match:
             if (w + dot_len - state.incomplete_idx) < len(word):
@@ -547,10 +545,7 @@ class IterativeParser(NodeVisitor):
                 check_word = str(TreeValue(prev_val_raw).append(TreeValue(check_word)))
             prev_match_length = len(prev_val_raw)
 
-        table_idx_multiplier = 1
-        if isinstance(check_word, bytes):
-            table_idx_multiplier = 8
-
+        table_idx_multiplier = 8
         match, match_length = state.dot.check(check_word)
         table_offset = match_length
         if match and match_length <= prev_match_length:
@@ -748,7 +743,6 @@ class IterativeParser(NodeVisitor):
         self._first_consume = True
         self._incomplete.clear()
         self._max_position = -1
-        self._bit_position = starter_bit
         self._parsing_mode = mode
         self._hookin_parent = deepcopy(hookin_parent)
         self._clear_tmp()
@@ -765,10 +759,7 @@ class IterativeParser(NodeVisitor):
 
         # If >= 0, indicates the next bit to be scanned (7-0)
         table = list(self._table)
-        if isinstance(char, bytes):
-            table.extend([Column() for _ in range(len(char) * 8)])
-        else:
-            table.extend([Column() for _ in range(len(char))])
+        table.extend([Column() for _ in range(len(char) * 8)])
         # Add the start state at the first consume
         if self._first_consume:
             table[self._table_idx].add(
@@ -777,15 +768,14 @@ class IterativeParser(NodeVisitor):
             self._first_consume = False
         curr_table_idx = self._table_idx
         curr_word_idx = 0
-        curr_bit_position = self._bit_position
 
         while curr_table_idx < len(table):
+            curr_bit_position = 7 - (curr_table_idx % 8)
             if curr_table_idx == len(table) - 1:
                 self._table = list(table)
                 if len(table) > 0:
                     self._table[-1] = deepcopy(table[-1])
                 self._table_idx = curr_table_idx
-                self._bit_position = curr_bit_position
             # True iff we have processed all characters
             # (or some bits of the last character)
             at_end = curr_word_idx >= len(word)
@@ -803,8 +793,6 @@ class IterativeParser(NodeVisitor):
                     else:
                         if state.dot.is_type(NoneType):
                             # Scan a bit
-                            if curr_bit_position < 0:
-                                curr_bit_position = 7
                             match = self.scan_bit(
                                 state,
                                 word,
@@ -813,22 +801,7 @@ class IterativeParser(NodeVisitor):
                                 curr_word_idx,
                                 curr_bit_position,
                             )
-                            if match:
-                                pass
                         else:
-                            # Scan a regex or a byte
-                            if 0 <= curr_bit_position <= 7:
-                                # We are still expecting bits here:
-                                #
-                                # * we may have _peeked_ at a bit,
-                                # without actually parsing it; or
-                                # * we may have a grammar with bits
-                                # that do not come in multiples of 8.
-                                #
-                                # In either case, we need to get back
-                                # to scanning bytes here.
-                                self._bit_position = -1
-
                             if state.dot.is_regex:
                                 match = self.scan_regex(
                                     state,
@@ -858,22 +831,10 @@ class IterativeParser(NodeVisitor):
                                 yield child
                     self.complete(state, table, curr_table_idx)
 
-            if curr_bit_position >= 0:
-                # Advance by one bit
-                curr_bit_position -= 1
-            if curr_bit_position < 0:
-                # Advance to next byte
-                curr_word_idx += 1
-
             self.place_repetition_shortcut(table, curr_table_idx)
-
-            if isinstance(char, bytes) and curr_bit_position < 0:
-                if curr_table_idx % 8 == 0:
-                    curr_table_idx += 8
-                else:
-                    curr_table_idx += -curr_table_idx % 8
-            else:
-                curr_table_idx += 1
+            curr_table_idx += 1
+            if curr_table_idx % 8 == 0:
+                curr_word_idx += 1
 
     def max_position(self):
         """Return the maximum position reached during parsing."""
