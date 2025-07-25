@@ -440,7 +440,7 @@ class IterativeParser(NodeVisitor):
         w: int,
     ) -> bool:
         """
-        Scan a byte from the input `word`.
+        Scan a byte from th noe input `word`.
         `state` is the current parse state.
         `table` is the parse table.
         `table[k]` is the current column.
@@ -473,9 +473,7 @@ class IterativeParser(NodeVisitor):
             dot_len = len(str(state.dot.value()))
 
         match, match_length = state.dot.check(check_word)
-        table_idx_multiplier = 1
-        if isinstance(check_word, bytes):
-            table_idx_multiplier = 8
+        table_idx_multiplier = 8
 
         if not match:
             if (w + dot_len - state.incomplete_idx) < len(word):
@@ -547,10 +545,7 @@ class IterativeParser(NodeVisitor):
                 check_word = str(TreeValue(prev_val_raw).append(TreeValue(check_word)))
             prev_match_length = len(prev_val_raw)
 
-        table_idx_multiplier = 1
-        if isinstance(check_word, bytes):
-            table_idx_multiplier = 8
-
+        table_idx_multiplier = 8
         match, match_length = state.dot.check(check_word)
         table_offset = match_length
         if match and match_length <= prev_match_length:
@@ -765,10 +760,7 @@ class IterativeParser(NodeVisitor):
 
         # If >= 0, indicates the next bit to be scanned (7-0)
         table = list(self._table)
-        if isinstance(char, bytes):
-            table.extend([Column() for _ in range(len(char) * 8)])
-        else:
-            table.extend([Column() for _ in range(len(char))])
+        table.extend([Column() for _ in range(len(char) * 8)])
         # Add the start state at the first consume
         if self._first_consume:
             table[self._table_idx].add(
@@ -858,22 +850,11 @@ class IterativeParser(NodeVisitor):
                                 yield child
                     self.complete(state, table, curr_table_idx)
 
-            if curr_bit_position >= 0:
-                # Advance by one bit
-                curr_bit_position -= 1
-            if curr_bit_position < 0:
-                # Advance to next byte
-                curr_word_idx += 1
-
             self.place_repetition_shortcut(table, curr_table_idx)
-
-            if isinstance(char, bytes) and curr_bit_position < 0:
-                if curr_table_idx % 8 == 0:
-                    curr_table_idx += 8
-                else:
-                    curr_table_idx += -curr_table_idx % 8
-            else:
-                curr_table_idx += 1
+            curr_table_idx += 1
+            if curr_table_idx % 8 == 0:
+                curr_word_idx += 1
+            curr_bit_position = 7 - (curr_table_idx % 8)
 
     def max_position(self):
         """Return the maximum position reached during parsing."""
