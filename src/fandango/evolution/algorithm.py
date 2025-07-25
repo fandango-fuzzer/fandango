@@ -359,6 +359,7 @@ class Fandango:
         while True:
             if max_generations is not None and generation >= max_generations:
                 break
+            solutions_in_this_generation = 0
             generation += 1
 
             avg_fitness = sum(e[1] for e in self.evaluation) / self.population_size
@@ -373,14 +374,18 @@ class Fandango:
                 len(new_population) < self.population_size
                 and random.random() < self.adaptive_tuner.crossover_rate
             ):
-                yield from self._perform_crossover(new_population, unique_hashes)
+                for solution in self._perform_crossover(new_population, unique_hashes):
+                    solutions_in_this_generation += 1
+                    yield solution
 
             # Truncate if necessary
             if len(new_population) > self.population_size:
                 new_population = new_population[: self.population_size]
 
             # Mutation
-            yield from self._perform_mutation(new_population)
+            for solution in self._perform_mutation(new_population):
+                solutions_in_this_generation += 1
+                yield solution
 
             # Destruction
             if self.destruction_rate > 0:
@@ -388,18 +393,25 @@ class Fandango:
 
             # Ensure Uniqueness & Fill Population
             new_population = list(set(new_population))
-            yield from self.population_manager.refill_population(
+            for solution in self.population_manager.refill_population(
                 new_population,
                 self.evaluator.evaluate_individual,
                 self.current_max_nodes,
                 self.population_size,
-            )
+            ):
+                solutions_in_this_generation += 1
+                yield solution
 
             self.population = []
             for ind in new_population:
-                _fitness, failing_trees = yield from self.evaluator.evaluate_individual(
-                    ind
-                )
+                generator = GeneratorWithReturn(self.evaluator.evaluate_individual(ind))
+
+                for solution in generator:
+                    solutions_in_this_generation += 1
+                    yield solution
+
+                _fitness, failing_trees = generator.return_value
+
                 ind, num_fixes = self.population_manager.fix_individual(
                     ind, failing_trees
                 )
