@@ -743,7 +743,6 @@ class IterativeParser(NodeVisitor):
         self._first_consume = True
         self._incomplete.clear()
         self._max_position = -1
-        self._bit_position = starter_bit
         self._parsing_mode = mode
         self._hookin_parent = deepcopy(hookin_parent)
         self._clear_tmp()
@@ -769,15 +768,14 @@ class IterativeParser(NodeVisitor):
             self._first_consume = False
         curr_table_idx = self._table_idx
         curr_word_idx = 0
-        curr_bit_position = self._bit_position
 
         while curr_table_idx < len(table):
+            curr_bit_position = 7 - (curr_table_idx % 8)
             if curr_table_idx == len(table) - 1:
                 self._table = list(table)
                 if len(table) > 0:
                     self._table[-1] = deepcopy(table[-1])
                 self._table_idx = curr_table_idx
-                self._bit_position = curr_bit_position
             # True iff we have processed all characters
             # (or some bits of the last character)
             at_end = curr_word_idx >= len(word)
@@ -795,8 +793,6 @@ class IterativeParser(NodeVisitor):
                     else:
                         if state.dot.is_type(NoneType):
                             # Scan a bit
-                            if curr_bit_position < 0:
-                                curr_bit_position = 7
                             match = self.scan_bit(
                                 state,
                                 word,
@@ -805,22 +801,7 @@ class IterativeParser(NodeVisitor):
                                 curr_word_idx,
                                 curr_bit_position,
                             )
-                            if match:
-                                pass
                         else:
-                            # Scan a regex or a byte
-                            if 0 <= curr_bit_position <= 7:
-                                # We are still expecting bits here:
-                                #
-                                # * we may have _peeked_ at a bit,
-                                # without actually parsing it; or
-                                # * we may have a grammar with bits
-                                # that do not come in multiples of 8.
-                                #
-                                # In either case, we need to get back
-                                # to scanning bytes here.
-                                self._bit_position = -1
-
                             if state.dot.is_regex:
                                 match = self.scan_regex(
                                     state,
@@ -854,7 +835,6 @@ class IterativeParser(NodeVisitor):
             curr_table_idx += 1
             if curr_table_idx % 8 == 0:
                 curr_word_idx += 1
-            curr_bit_position = 7 - (curr_table_idx % 8)
 
     def max_position(self):
         """Return the maximum position reached during parsing."""
