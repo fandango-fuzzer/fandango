@@ -11,8 +11,8 @@ def pytest_configure(config: pytest.Config):
 def pytest_collection_modifyitems(items: list[pytest.Item]):
     # ensure long-running tests are run first to balance loading across cores
     # so we have to wait less for a single long test to finish running because it was scheduled last
-    order = ["cli", "softconstraint", "optimizer", "fan_parsers"]
-    priority = [f"tests/{test}.py" for test in order]
+    order = ["softconstraint", "cli", "optimizer", "fan_parsers"]
+    priority = [f"tests/test_{test}.py" for test in order]
     items.sort(
         key=lambda x: (
             priority.index(x.location[0])

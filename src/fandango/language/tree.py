@@ -2,12 +2,15 @@ import copy
 from types import NoneType
 from typing import Any, Optional, TYPE_CHECKING, TypeVar, cast
 from collections.abc import Iterable, Iterator
+import warnings
 
 from fandango.language.symbols import NonTerminal, Slice, Symbol, Terminal
 from fandango.language.tree_value import (
     BYTES_TO_STRING_ENCODING,
     STRING_TO_BYTES_ENCODING,
     TreeValue,
+    delegate_dunders,
+    DUNDER_METHODS,
 )
 
 if TYPE_CHECKING:
@@ -77,6 +80,7 @@ def index_by_reference(lst: Iterable[T], target: T) -> Optional[int]:
     return None
 
 
+@delegate_dunders("value", DUNDER_METHODS)
 class DerivationTree:
     """
     This class is used to represent a node in the derivation tree.
@@ -508,7 +512,7 @@ class DerivationTree:
         """
         Pretty-print the derivation tree (for visualization).
         """
-        s = "  " * start_indent + "Tree(" + repr(self.symbol)
+        s = "  " * start_indent + "Tree(" + self.symbol.format_as_spec()
         if len(self._children) == 1 and len(self._sources) == 0:
             s += ", " + self._children[0].to_tree(indent, start_indent=0)
         else:
@@ -531,7 +535,7 @@ class DerivationTree:
         """
         Output the derivation tree in internal representation.
         """
-        s = "  " * start_indent + "DerivationTree(" + repr(self.symbol)
+        s = "  " * start_indent + "DerivationTree(" + self.symbol.format_as_spec()
         if len(self._children) == 1 and len(self._sources) == 0:
             s += ", [" + self._children[0].to_repr(indent, start_indent=0) + "])"
         elif len(self._children + self._sources) >= 1:
@@ -578,11 +582,12 @@ class DerivationTree:
             max_bit_count = bit_count - 1
 
             for child in node._children:
+                assert not isinstance(child.symbol, Slice)
                 if child.symbol.is_non_terminal:
-                    s += f" {child.symbol!r}"
+                    s += f" {child.symbol.format_as_spec()}"
                 else:
                     terminal = cast(Terminal, child.symbol)
-                    s += " " + repr(terminal)
+                    s += " " + terminal.format_as_spec()
                     terminal_symbols += 1
                     if terminal.is_type(NoneType):
                         if bit_count <= 0:
@@ -602,7 +607,9 @@ class DerivationTree:
                 # We don't know the grammar, so we report a symbolic generator
                 s += (
                     " := f("
-                    + ", ".join([repr(param.symbol) for param in node._sources])
+                    + ", ".join(
+                        [param.symbol.format_as_spec() for param in node._sources]
+                    )
                     + ")"
                 )
 
@@ -950,6 +957,22 @@ class DerivationTree:
 
     def __iter__(self) -> Iterator["DerivationTree"]:
         return iter(self._children)
+
+    def __getattr__(self, name: str) -> Any:
+        # Check if the attribute exists on the instance
+        try:
+            return object.__getattribute__(self, name)
+        except AttributeError:
+            pass
+        warnings.warn(
+            f"Using functions on the underlying types of DerivationTree and TreeValue types is deprecated.  Use the `str` or `bytes` to explicitly convert to the desired type first. DerivationTree has no attribute {name}.",
+            DeprecationWarning,
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter(
+                "ignore", DeprecationWarning
+            )  # don't double emit this deprecation warning
+            return getattr(self.value(), name)
 
 
 class SliceTree(DerivationTree):
