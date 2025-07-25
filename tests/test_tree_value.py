@@ -277,43 +277,26 @@ def test_deprecated_direct_access_to_tree_value_with_wrapped_kwargs():
 
 def test_deprecated_direct_access_to_tree_value_implicit():
     tree = DerivationTree(Terminal(1))
-    with pytest.warns(DeprecationWarning):
-        assert 3 == tree + 2  # type: ignore[operator] # with the delegation hack, this works
-    with pytest.warns(DeprecationWarning):
-        assert 3 == 2 + tree  # type: ignore[operator] # with the delegation hack, this works
-
-    tv = TreeValue(None, trailing_bits=[1, 0])
-    with pytest.warns(DeprecationWarning):
-        assert 3 == tree + tv  # type: ignore[operator] # with the delegation hack, this works
-    with pytest.warns(DeprecationWarning):
-        assert 3 == tv + tree  # type: ignore[operator] # with the delegation hack, this works
-
     other_tree = DerivationTree(
-        NonTerminal("<start>"),
+        NonTerminal("<b>"),
         [DerivationTree(Terminal(1)), DerivationTree(Terminal(0))],
     )
-    with pytest.warns(DeprecationWarning):
-        assert 3 == tree + other_tree  # type: ignore[operator] # with the delegation hack, this works
-    with pytest.warns(DeprecationWarning):
-        assert 3 == other_tree + tree  # type: ignore[operator] # with the delegation hack, this works
-
     tree_value = TreeValue(1)
-    with pytest.warns(DeprecationWarning):
-        assert 3 == tree_value + 2  # type: ignore[operator] # with the delegation hack, this works
-    with pytest.warns(DeprecationWarning):
-        assert 3 == 2 + tree_value  # type: ignore[operator] # with the delegation hack, this works
+    other_tree_value = TreeValue(None, trailing_bits=[1, 0])
 
-    tv = TreeValue(None, trailing_bits=[1, 0])
-    with pytest.warns(DeprecationWarning):
-        assert 3 == tree_value + tv  # type: ignore[operator] # with the delegation hack, this works
-    with pytest.warns(DeprecationWarning):
-        assert 3 == tv + tree_value  # type: ignore[operator] # with the delegation hack, this works
-
-    other_tree = DerivationTree(
-        NonTerminal("<start>"),
-        [DerivationTree(Terminal(1)), DerivationTree(Terminal(0))],
+    solution_tree = DerivationTree(
+        NonTerminal("<a>"),
+        [DerivationTree(Terminal(1)), DerivationTree(Terminal(1))],
     )
-    with pytest.warns(DeprecationWarning):
-        assert 3 == tree_value + other_tree  # type: ignore[operator] # with the delegation hack, this works
-    with pytest.warns(DeprecationWarning):
-        assert 3 == other_tree + tree_value  # type: ignore[operator] # with the delegation hack, this works
+    solution_tree_value = TreeValue(None, trailing_bits=[1, 1])
+
+    for solution in [3, solution_tree, solution_tree_value]:
+        for smaller in [1, tree, tree_value]:
+            for larger in [2, other_tree, other_tree_value]:
+                if isinstance(smaller, int) and isinstance(larger, int):
+                    continue  # don't care about summation of two ints
+
+                with pytest.warns(DeprecationWarning):
+                    assert solution == smaller + larger  # type: ignore[operator] # with the delegation hack, this works
+                with pytest.warns(DeprecationWarning):
+                    assert solution == larger + smaller  # type: ignore[operator] # with the delegation hack, this works
