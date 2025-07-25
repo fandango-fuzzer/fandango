@@ -1,5 +1,5 @@
 import abc
-from typing import Generic, TypeVar
+from typing import Generic, Optional, TypeVar
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
@@ -20,7 +20,7 @@ class NodeVisitor(abc.ABC, Generic[AggregateType]):
         return None  # type: ignore[return-value]
 
     def aggregate_results(
-        self, aggregate: AggregateType, result: Node
+        self, aggregate: AggregateType, result: Optional[Node]
     ) -> AggregateType:
         return aggregate
 

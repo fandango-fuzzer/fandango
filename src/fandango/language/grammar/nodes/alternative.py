@@ -1,12 +1,12 @@
 import random
-from typing import TYPE_CHECKING, Iterator, Sequence
+from typing import TYPE_CHECKING
+from collections.abc import Iterator, Sequence
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:
-    from fandango.language.grammar.grammar import Grammar
-    from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
+    import fandango
 
 
 class Alternative(Node):
@@ -23,7 +23,7 @@ class Alternative(Node):
     def fuzz(
         self,
         parent: DerivationTree,
-        grammar: "Grammar",
+        grammar: "fandango.language.grammar.grammar.Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
     ):
@@ -42,7 +42,10 @@ class Alternative(Node):
             return
         random.choice(in_range_nodes).fuzz(parent, grammar, max_nodes, in_message)
 
-    def accept(self, visitor: "NodeVisitor"):
+    def accept(
+        self,
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
+    ):
         return visitor.visitAlternative(self)
 
     def children(self):
@@ -65,5 +68,7 @@ class Alternative(Node):
             "(" + " | ".join(map(lambda x: x.format_as_spec(), self.alternatives)) + ")"
         )
 
-    def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
+    def descendents(
+        self, grammar: "fandango.language.grammar.grammar.Grammar"
+    ) -> Iterator["Node"]:
         yield from self.alternatives
