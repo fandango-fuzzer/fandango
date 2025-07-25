@@ -56,9 +56,12 @@ def _bytes_to_str(value: bytes, encoding: str) -> str:
 
 
 def _unwrap_for_operator(arg):
+    """
+    Don't you dare using this outside this class!
+    """
     # Can't import DerivationTree directly due to circular import, so check by name
-    if type(arg).__name__ == "TreeValue":
-        # Inline the logic from to_inner_value
+    arg = arg.value() if type(arg).__name__ == "DerivationTree" else arg
+    if isinstance(arg, TreeValue):
         if arg.is_type(str):
             return str(arg)
         elif arg.is_type(bytes):
@@ -67,8 +70,6 @@ def _unwrap_for_operator(arg):
             return int(arg)
         else:
             return arg._value
-    elif type(arg).__name__ == "DerivationTree":
-        return _unwrap_for_operator(arg.value())
     return arg
 
 
@@ -87,7 +88,7 @@ def delegate_dunders(to_method, dunder_names):
             new_args = tuple(_unwrap_for_operator(arg) for arg in args)
             new_kwargs = {k: _unwrap_for_operator(v) for k, v in kwargs.items()}
             # For TreeValue, use self directly, not self.to_inner_value()
-            if type(self).__name__ == "TreeValue":
+            if isinstance(self, TreeValue):
                 left = _unwrap_for_operator(self)
             else:
                 left = getattr(self, to_method)()
