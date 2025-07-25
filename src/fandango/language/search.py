@@ -557,7 +557,7 @@ class SelectiveSearch(NonTerminalSearch):
     def format_as_spec(self) -> str:
         slice_reprs: list[str] = []
         for symbol, is_direct, items in zip(*self.symbols, self.slices):
-            slice_repr = f"{'' if is_direct else '*'}{repr(symbol)}"
+            slice_repr = f"{'' if is_direct else '*'}{symbol.format_as_spec()}"
             if items is not None:
                 slice_repr += ": "
                 if isinstance(items, slice):
