@@ -62,7 +62,7 @@ class Parser:
             else:
                 word = word.to_string()
         if isinstance(word, int):
-            word = bytes([word])
+            word = str(word)
         assert isinstance(word, str) or isinstance(word, bytes), type(word)
 
         if isinstance(start, str):
