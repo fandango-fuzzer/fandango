@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
+from collections.abc import Sequence
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
@@ -12,11 +13,15 @@ from fandango.language.symbols import NonTerminal, Terminal, Slice
 from fandango.language.symbols.symbol import Symbol
 
 if TYPE_CHECKING:
-    from fandango.language.grammar.grammar import Grammar
+    import fandango
 
 
 class Disambiguator(NodeVisitor):
-    def __init__(self, grammar: "Grammar", grammar_settings: Sequence[HasSettings]):
+    def __init__(
+        self,
+        grammar: "fandango.language.grammar.grammar.Grammar",
+        grammar_settings: Sequence[HasSettings],
+    ):
         self.known_disambiguations: dict[
             Node,
             dict[tuple[NonTerminal | Terminal | Slice, ...], list[tuple[Node, ...]]],
