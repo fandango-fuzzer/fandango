@@ -116,7 +116,7 @@ def is_valid_iso8601datetime(iso8601datetime: str) -> bool:
 )
 
 iso8601lib += make_constraint("is_valid_iso8601datetime(str(<iso8601datetime>))")
-# iso8601lib += make_constraint("<iso8601year>.startswith('20')")
+# iso8601lib += make_constraint("str(<iso8601year>).startswith('20')")
 
 if __name__ == "__main__":
     print(iso8601lib)  # Output the standard library
