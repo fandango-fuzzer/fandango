@@ -8,7 +8,7 @@ from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
 if TYPE_CHECKING:
-    from fandango.language.grammar.grammar import Grammar
+    import fandango
     from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 
 
@@ -63,7 +63,7 @@ class Node(abc.ABC):
     def fuzz(
         self,
         parent: DerivationTree,
-        grammar: "Grammar",
+        grammar: "fandango.language.grammar.grammar.Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
     ):
@@ -106,7 +106,9 @@ class Node(abc.ABC):
         Format as a string that can be used in a spec file.
         """
 
-    def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
+    def descendents(
+        self, grammar: "fandango.language.grammar.grammar.Grammar"
+    ) -> Iterator["Node"]:
         """
         Returns an iterator of the descendents of this node.
 
@@ -132,7 +134,7 @@ NODE_SETTINGS_DEFAULTS = {
 class NodeSettings:
     def __init__(
         self,
-        raw_settings: dict[str, str] = {},
+        raw_settings: dict[str, Any] = {},
     ):
         self._settings: dict[str, Any] = {}
 

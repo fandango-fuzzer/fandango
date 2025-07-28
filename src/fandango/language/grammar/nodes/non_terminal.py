@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Iterator, Optional, Sequence
+from typing import TYPE_CHECKING, Optional
+from collections.abc import Iterator, Sequence
 from fandango.errors import FandangoValueError
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.alternative import Alternative
@@ -7,8 +8,7 @@ from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:
-    from fandango.language.grammar.grammar import Grammar
-    from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
+    import fandango
 
 
 class NonTerminalNode(Node):
@@ -27,7 +27,7 @@ class NonTerminalNode(Node):
     def fuzz(
         self,
         parent: DerivationTree,
-        grammar: "Grammar",
+        grammar: "fandango.language.grammar.grammar.Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
     ):
@@ -86,7 +86,10 @@ class NonTerminalNode(Node):
         parent.add_child(current_tree)
         grammar[self.symbol].fuzz(current_tree, grammar, max_nodes - 1, in_message)
 
-    def accept(self, visitor: "NodeVisitor"):
+    def accept(
+        self,
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
+    ):
         return visitor.visitNonTerminalNode(self)
 
     def format_as_spec(self) -> str:
@@ -112,7 +115,9 @@ class NonTerminalNode(Node):
                 parties.add(self.recipient)
         return parties
 
-    def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
+    def descendents(
+        self, grammar: "fandango.language.grammar.grammar.Grammar"
+    ) -> Iterator["Node"]:
         yield grammar.rules[self.symbol]
 
     def in_parties(self, parties: list[str]) -> bool:
