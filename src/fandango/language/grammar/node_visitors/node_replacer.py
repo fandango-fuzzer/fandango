@@ -1,3 +1,4 @@
+from typing import Optional
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
@@ -20,8 +21,11 @@ class NodeReplacer(NodeVisitor):
     def default_result(self) -> list[Node]:
         return []
 
-    def aggregate_results(self, aggregate: list[Node], result: Node) -> list[Node]:
-        aggregate.append(result)
+    def aggregate_results(
+        self, aggregate: list[Node], result: Optional[Node]
+    ) -> list[Node]:
+        if result is not None:
+            aggregate.append(result)
         return aggregate
 
     def visitConcatenation(self, node: Concatenation) -> Node:
