@@ -1,7 +1,8 @@
 import random
 import re
 from types import NoneType
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
+from collections.abc import Sequence
 import exrex
 from fandango.errors import FandangoValueError
 from fandango.language.grammar.has_settings import HasSettings
@@ -13,8 +14,7 @@ from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER
 
 if TYPE_CHECKING:
-    from fandango.language.grammar.grammar import Grammar
-    from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
+    import fandango
 
 
 class TerminalNode(Node):
@@ -31,7 +31,7 @@ class TerminalNode(Node):
     def fuzz(
         self,
         parent: DerivationTree,
-        grammar: "Grammar",
+        grammar: "fandango.language.grammar.grammar.Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
     ):
@@ -76,7 +76,10 @@ class TerminalNode(Node):
                     )
                 parent.add_child(DerivationTree(Terminal(instance)))
 
-    def accept(self, visitor: "NodeVisitor"):
+    def accept(
+        self,
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
+    ):
         return visitor.visitTerminalNode(self)
 
     def format_as_spec(self) -> str:

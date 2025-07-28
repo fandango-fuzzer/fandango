@@ -1,5 +1,6 @@
 from copy import deepcopy
-from typing import Generator, Optional
+from typing import Optional
+from collections.abc import Generator
 
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.parser.iterative_parser import IterativeParser
@@ -94,7 +95,7 @@ class Parser:
 
     def parse_multiple(
         self,
-        word: str | bytes | DerivationTree,
+        word: str | bytes | int | DerivationTree,
         start: str | NonTerminal = "<start>",
         mode: ParsingMode = ParsingMode.COMPLETE,
         hookin_parent: Optional[DerivationTree] = None,
@@ -114,7 +115,7 @@ class Parser:
 
     def parse(
         self,
-        word: str | bytes | DerivationTree,
+        word: str | bytes | int | DerivationTree,
         start: str | NonTerminal = "<start>",
         mode: ParsingMode = ParsingMode.COMPLETE,
         hookin_parent: Optional[DerivationTree] = None,
