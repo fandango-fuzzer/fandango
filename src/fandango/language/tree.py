@@ -1,4 +1,5 @@
 import copy
+from types import NoneType
 from typing import Any, Optional, TYPE_CHECKING, TypeVar, cast
 from collections.abc import Iterable, Iterator
 
@@ -7,7 +8,6 @@ from fandango.language.tree_value import (
     BYTES_TO_STRING_ENCODING,
     STRING_TO_BYTES_ENCODING,
     TreeValue,
-    TreeValueType,
 )
 
 if TYPE_CHECKING:
@@ -459,11 +459,9 @@ class DerivationTree:
         """
         Return true if the derivation tree should be serialized to bytes.
         """
-        return self._contains_type(
-            TreeValueType.TRAILING_BITS_ONLY
-        ) or self._contains_type(TreeValueType.BYTES)
+        return self._contains_type(NoneType) or self._contains_type(bytes)
 
-    def _contains_type(self, tp: TreeValueType) -> bool:
+    def _contains_type(self, tp: type) -> bool:
         """
         Return true if the derivation tree contains any terminal symbols of type `tp` (say, `int` or `bytes`).
         """
@@ -475,13 +473,13 @@ class DerivationTree:
         """
         Return true iff the derivation tree contains any bits (0 or 1).
         """
-        return self._contains_type(TreeValueType.TRAILING_BITS_ONLY)
+        return self._contains_type(NoneType)
 
     def contains_bytes(self) -> bool:
         """
         Return true iff the derivation tree contains any byte strings.
         """
-        return self._contains_type(TreeValueType.BYTES)
+        return self._contains_type(bytes)
 
     def to_string(self, *, encoding: str = BYTES_TO_STRING_ENCODING) -> str:
         """
@@ -586,7 +584,7 @@ class DerivationTree:
                     terminal = cast(Terminal, child.symbol)
                     s += " " + repr(terminal)
                     terminal_symbols += 1
-                    if terminal.is_type(TreeValueType.TRAILING_BITS_ONLY):
+                    if terminal.is_type(NoneType):
                         if bit_count <= 0:
                             bit_count = 7
                             max_bit_count = 7
@@ -906,27 +904,39 @@ class DerivationTree:
         except ValueError:
             return -1
 
-    def value(self) -> TreeValue:
+    ## General purpose converters
+    def _value(self) -> Optional[TreeValue]:
+        """
+        Convert the derivation tree into a standard Python value.
+        Returns the value and the number of bits used.
+        """
         if self.symbol.is_terminal:
             return self.symbol.value()
 
-        aggregate = TreeValue.empty()
+        aggregate: TreeValue | None = None
         for child in self._children:
-            aggregate = aggregate.append(child.value())
+            value = child._value()
+            if value is None:
+                continue
+            if aggregate is None:
+                aggregate = value
+                continue
+            aggregate = aggregate.append(value)
+        return aggregate
+
+    def value(self) -> TreeValue:
+        aggregate = self._value()
+        if aggregate is None:
+            raise ValueError(
+                "Does not have a value, probably because it does not contain a terminal"
+            )
         return aggregate
 
     def to_value(self) -> str:
         value = self.value()
-        if value.is_type(TreeValueType.EMPTY):
-            return ""
-        elif value.is_type(TreeValueType.TRAILING_BITS_ONLY):
-            return "0b" + value.to_bits()
-        elif value.is_type(TreeValueType.STRING):
-            return str(value)
-        elif value.is_type(TreeValueType.BYTES):
-            return str(bytes(value))
-        else:
-            raise ValueError(f"Invalid value type: {value.type_}")
+        if isinstance(value, int):
+            return "0b" + format(value, "b") + f" ({value})"
+        return repr(self.value())
 
     ## Comparison operations
     def __eq__(self, other: Any) -> bool:

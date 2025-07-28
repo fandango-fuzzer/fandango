@@ -15,7 +15,7 @@ from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-import fandango.language.grammar.nodes as nodes
+import fandango.language.grammar.nodes.repetition as repetition_mod
 from fandango.language.grammar.nodes.repetition import (
     Option,
     Plus,
@@ -26,7 +26,6 @@ from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.grammar.parser.parser import Parser
 from fandango.language.tree import DerivationTree
 from fandango.language.symbols import Symbol, NonTerminal
-from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER
 
 
@@ -636,23 +635,11 @@ class Grammar(NodeVisitor):
     def get_spec_env(self):
         return self._global_variables, self._local_variables
 
-    def contains_type(self, tp: TreeValueType, *, start="<start>") -> bool:
+    def contains_type(self, tp: type, *, start="<start>") -> bool:
         """
         Return true if the grammar can produce an element of type `tp` (say, `int` or `bytes`).
         * `start`: a start symbol other than `<start>`.
         """
-        if isinstance(tp, TreeValueType):
-            tvt = tp
-        else:
-            if isinstance(tp, str):
-                tvt = TreeValueType.STRING
-            elif isinstance(tp, bytes):
-                tvt = TreeValueType.BYTES
-            elif isinstance(tp, int):
-                tvt = TreeValueType.TRAILING_BITS_ONLY
-            else:
-                raise FandangoValueError(f"Invalid type: {type(tp)}")
-
         if isinstance(start, str):
             start = NonTerminal(start)
 
@@ -668,9 +655,8 @@ class Grammar(NodeVisitor):
                 return False
             seen.add(node)
 
-            if isinstance(node, TerminalNode):
-                if node.symbol.is_type(tvt):
-                    return True
+            if isinstance(node, TerminalNode) and node.symbol.is_type(tp):
+                return True
             if any(node_matches(child) for child in node.children()):
                 return True
             if isinstance(node, NonTerminalNode):
@@ -684,17 +670,24 @@ class Grammar(NodeVisitor):
         Return true iff the grammar can produce a bit element (0 or 1).
         * `start`: a start symbol other than `<start>`.
         """
-        return self.contains_type(TreeValueType.TRAILING_BITS_ONLY, start=start)
+        return self.contains_type(NoneType, start=start)
 
     def contains_bytes(self, *, start="<start>") -> bool:
         """
         Return true iff the grammar can produce a bytes element.
         * `start`: a start symbol other than `<start>`.
         """
-        return self.contains_type(TreeValueType.BYTES, start=start)
+        return self.contains_type(bytes, start=start)
+
+    def contains_strings(self, *, start="<start>") -> bool:
+        """
+        Return true iff the grammar can produce a (UTF-8) string element.
+        * `start`: a start symbol other than `<start>`.
+        """
+        return self.contains_type(str, start=start)
 
     def set_max_repetition(self, max_rep: int):
-        nodes.MAX_REPETITIONS = max_rep
+        repetition_mod.MAX_REPETITIONS = max_rep
 
     def get_max_repetition(self):
-        return nodes.MAX_REPETITIONS
+        return repetition_mod.MAX_REPETITIONS

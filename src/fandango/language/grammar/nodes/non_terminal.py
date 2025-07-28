@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, Iterator, Optional, Sequence
 from fandango.errors import FandangoValueError
 from fandango.language.grammar.has_settings import HasSettings
-from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -19,6 +18,7 @@ class NonTerminalNode(Node):
         sender: Optional[str] = None,
         recipient: Optional[str] = None,
     ):
+        self._grammar_settings = grammar_settings
         self.symbol = symbol
         self.sender = sender
         self.recipient = recipient
@@ -33,18 +33,6 @@ class NonTerminalNode(Node):
     ):
         if self.symbol not in grammar:
             raise FandangoValueError(f"Symbol {self.symbol} not found in grammar")
-
-        # Gmutator mutation (4)
-        if self.settings.get("non_terminal_use_other_rule"):
-            other_nodes = [
-                rhs
-                for nt, rhs in grammar.rules.items()
-                if nt.name() != self.symbol.name()
-            ]
-            print("other_nodes", [n.format_as_spec() for n in other_nodes])
-            alt = Alternative(other_nodes, self._grammar_settings)
-            return alt.fuzz(parent, grammar, max_nodes, in_message)
-
         dummy_current_tree = DerivationTree(self.symbol)
         parent.add_child(dummy_current_tree)
 

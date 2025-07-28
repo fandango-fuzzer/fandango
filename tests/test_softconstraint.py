@@ -29,7 +29,6 @@ class TestSoft(unittest.TestCase):
         generator = itertools.islice(
             fandango.generate(max_generations=max_generations), desired_solutions
         )
-
         for solution in generator:
             yield str(solution)
 
@@ -47,24 +46,19 @@ class TestSoftValue(TestSoft):
             if "999999-999999" == s:
                 return  # optimized solution found, stop generating and don't fail
 
-        self.fail(
-            f"999999-999999 not found in the first {len(solutions)} solutions, found: {solutions}"
-        )
+        self.assertTrue(False, "999999-999999 not found, found: " + str(solutions))
 
     def test_min_in_different_contexts(self):
         gen = self.get_solutions(
             RESOURCES_ROOT / "persons_with_constr.fan",
-            desired_solutions=60,
+            desired_solutions=20,
             random_seed=1,
         )
-        for solution in gen:
-            name, age = solution.split(",")
-            first_name, last_name = name.split(" ")
-            if len(first_name) == 2 and len(last_name) == 2:
-                return
-        self.fail(
-            "No solution found, last first_name: {first_name}, last last_name: {last_name}"
-        )
+        solution = next(gen)
+        name, age = solution.split(",")
+        first_name, last_name = name.split(" ")
+        self.assertEqual(len(first_name), 2)
+        self.assertEqual(len(last_name), 2)
 
     def test_cli_max_1(self):
         command = [
