@@ -19,7 +19,7 @@ from fandango.language.grammar.parser.parse_state import ParseState
 from fandango.language.grammar.parser.parser_tree import ParserDerivationTree
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
-from fandango.language.tree_value import TreeValue
+from fandango.language.tree_value import TreeValue, TreeValueType
 
 
 class IterativeParser(NodeVisitor):
@@ -394,7 +394,7 @@ class IterativeParser(NodeVisitor):
         Return True if a bit was matched, False otherwise.
         """
         assert state.dot is not None
-        assert state.dot.is_type(NoneType)
+        assert state.dot.is_type(TreeValueType.TRAILING_BITS_ONLY)
         assert 0 <= bit_count <= 7
 
         if w >= len(word):
@@ -449,7 +449,10 @@ class IterativeParser(NodeVisitor):
         """
 
         assert state.dot is not None
-        assert not state.dot.is_type(NoneType)
+        assert not (
+            state.dot.is_type(TreeValueType.TRAILING_BITS_ONLY)
+            or state.dot.is_type(TreeValueType.EMPTY)
+        )
         assert not state.dot.is_regex
 
         # LOGGER.debug(f"Checking byte(s) {state.dot!r} at position {w:#06x} ({w}) {word[w:]!r}")
@@ -459,7 +462,7 @@ class IterativeParser(NodeVisitor):
             prev_terminal = state.children[-1]
             prev_val = prev_terminal.symbol.value()
             prev_val_raw: str | bytes
-            if prev_val.is_type(bytes):
+            if prev_val.is_type(TreeValueType.BYTES):
                 prev_val_raw = bytes(prev_val)
                 check_word = bytes(
                     TreeValue(prev_val_raw).append(TreeValue(check_word))
@@ -467,7 +470,7 @@ class IterativeParser(NodeVisitor):
             else:
                 prev_val_raw = str(prev_val)
                 check_word = str(TreeValue(prev_val_raw).append(TreeValue(check_word)))
-        if state.dot.is_type(bytes):
+        if state.dot.is_type(TreeValueType.BYTES):
             dot_len = len(bytes(state.dot.value()))
         else:
             dot_len = len(str(state.dot.value()))
@@ -526,7 +529,10 @@ class IterativeParser(NodeVisitor):
         """
 
         assert state.dot is not None
-        assert not state.dot.is_type(NoneType)
+        assert not (
+            state.dot.is_type(TreeValueType.TRAILING_BITS_ONLY)
+            or state.dot.is_type(TreeValueType.EMPTY)
+        )
         assert state.dot.is_regex
 
         check_word = word[w:]
@@ -535,7 +541,7 @@ class IterativeParser(NodeVisitor):
             prev_terminal = state.children[-1]
             prev_val = prev_terminal.symbol.value()
             prev_val_raw: str | bytes
-            if prev_val.is_type(bytes):
+            if prev_val.is_type(TreeValueType.BYTES):
                 prev_val_raw = bytes(prev_val)
                 check_word = bytes(
                     TreeValue(prev_val_raw).append(TreeValue(check_word))
@@ -791,7 +797,7 @@ class IterativeParser(NodeVisitor):
                     if not state.is_incomplete and state.next_symbol_is_nonterminal():
                         self.predict(state, table, curr_table_idx, self._hookin_parent)
                     else:
-                        if state.dot.is_type(NoneType):
+                        if state.dot.is_type(TreeValueType.TRAILING_BITS_ONLY):
                             # Scan a bit
                             match = self.scan_bit(
                                 state,
