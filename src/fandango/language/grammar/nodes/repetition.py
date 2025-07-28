@@ -1,20 +1,19 @@
 import random
-from typing import TYPE_CHECKING, Iterator, Optional, Sequence
+from collections.abc import Iterator, Sequence
+from typing import TYPE_CHECKING, Optional
+
+import fandango.language.grammar.nodes as nodes
 from fandango.errors import FandangoValueError
-from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node, NodeType
+from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols.terminal import Terminal
 from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:
-    from fandango.constraints.base import RepetitionBoundsConstraint
-    from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
-    from fandango.language.grammar.grammar import Grammar
-
-MAX_REPETITIONS = 5
+    import fandango
 
 
 class Repetition(Node):
@@ -26,12 +25,13 @@ class Repetition(Node):
         min_: int = 0,
         max_: Optional[int] = None,
     ):
-        self._grammar_settings = grammar_settings
         self.id = id
         self.min = min_
         self._max = max_
         self.node = node
-        self.bounds_constraint: Optional["RepetitionBoundsConstraint"] = None
+        self.bounds_constraint: Optional[
+            "fandango.constraints.base.RepetitionBoundsConstraint"
+        ] = None
         self.iteration = 0
         if min_ < 0:
             raise FandangoValueError(
@@ -50,16 +50,19 @@ class Repetition(Node):
     @property
     def max(self):
         if self._max is None:
-            return MAX_REPETITIONS
+            return nodes.MAX_REPETITIONS
         return self._max
 
-    def accept(self, visitor: "NodeVisitor"):
+    def accept(
+        self,
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
+    ):
         return visitor.visitRepetition(self)
 
     def fuzz(
         self,
         parent: DerivationTree,
-        grammar: "Grammar",
+        grammar: "fandango.language.grammar.grammar.Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
         override_current_iteration: Optional[int] = None,
@@ -104,7 +107,9 @@ class Repetition(Node):
             return f"{self.node.format_as_spec()}{{{self.min}}}"
         return f"{self.node.format_as_spec()}{{{self.min},{self.max}}}"
 
-    def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
+    def descendents(
+        self, grammar: "fandango.language.grammar.grammar.Grammar"
+    ) -> Iterator["Node"]:
         base: list = []
         if self.min == 0:
             base.append(TerminalNode(Terminal(""), self._grammar_settings))
@@ -135,7 +140,10 @@ class Star(Repetition):
     ):
         super().__init__(node, grammar_settings, id, min_=0)
 
-    def accept(self, visitor: "NodeVisitor"):
+    def accept(
+        self,
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
+    ):
         return visitor.visitStar(self)
 
     def format_as_spec(self) -> str:
@@ -151,7 +159,34 @@ class Plus(Repetition):
     ):
         super().__init__(node, grammar_settings, id, min_=1)
 
-    def accept(self, visitor: "NodeVisitor"):
+    def fuzz(
+        self,
+        parent: DerivationTree,
+        grammar: "fandango.language.grammar.grammar.Grammar",
+        max_nodes: int = 100,
+        in_message: bool = False,
+        override_current_iteration: Optional[int] = None,
+        override_starting_repetition: int = 0,
+        override_iterations_to_perform: Optional[int] = None,
+    ):
+        # Gmutator mutation (1b)
+        if random.random() < self.settings.get("plus_should_return_nothing"):
+            return  # nop, don't add a node
+        else:
+            return super().fuzz(
+                parent,
+                grammar,
+                max_nodes,
+                in_message,
+                override_current_iteration,
+                override_starting_repetition,
+                override_iterations_to_perform,
+            )
+
+    def accept(
+        self,
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
+    ):
         return visitor.visitPlus(self)
 
     def format_as_spec(self) -> str:
@@ -167,11 +202,55 @@ class Option(Repetition):
     ):
         super().__init__(node, grammar_settings, id, min_=0, max_=1)
 
-    def accept(self, visitor: "NodeVisitor"):
+    def fuzz(
+        self,
+        parent: DerivationTree,
+        grammar: "fandango.language.grammar.grammar.Grammar",
+        max_nodes: int = 100,
+        in_message: bool = False,
+        override_current_iteration: Optional[int] = None,
+        override_starting_repetition: int = 0,
+        override_iterations_to_perform: Optional[int] = None,
+    ):
+        # Gmutator mutation (1c)
+        should_return_multiple = random.random() < self.settings.get(
+            "option_should_return_multiple"
+        )
+        if should_return_multiple:
+            repetition = Repetition(
+                self.node, self._grammar_settings, id=self.id, min_=2
+            )
+            repetition.distance_to_completion = self.node.distance_to_completion * 2 + 1
+            return repetition.fuzz(
+                parent,
+                grammar,
+                max_nodes,
+                in_message,
+                override_current_iteration,
+                override_starting_repetition,
+                override_iterations_to_perform,
+            )
+        else:
+            return super().fuzz(
+                parent,
+                grammar,
+                max_nodes,
+                in_message,
+                override_current_iteration,
+                override_starting_repetition,
+                override_iterations_to_perform,
+            )
+
+    def accept(
+        self,
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
+    ):
         return visitor.visitOption(self)
 
     def format_as_spec(self) -> str:
         return self.node.format_as_spec() + "?"
 
-    def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
+    def descendents(
+        self, grammar: "fandango.language.grammar.grammar.Grammar"
+    ) -> Iterator["Node"]:
         yield from (self.node, TerminalNode(Terminal(""), self._grammar_settings))

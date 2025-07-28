@@ -2,11 +2,19 @@ from __future__ import annotations
 from types import NoneType
 from typing import Any, Optional
 import warnings
+import enum
 
 from fandango.errors import FandangoConversionError, FandangoValueError
 
 STRING_TO_BYTES_ENCODING = "utf-8"  # according to the docs
 BYTES_TO_STRING_ENCODING = "latin-1"  # according to the docs
+
+
+class TreeValueType(enum.Enum):
+    STRING = "string"
+    BYTES = "bytes"
+    TRAILING_BITS_ONLY = "trailing_bits"
+    EMPTY = "empty"
 
 
 def trailing_bits_to_int(trailing_bits: list[int]) -> int:
@@ -275,6 +283,7 @@ class TreeValue:
         value: str | bytes | int | None,
         *,
         trailing_bits: list[int] = [],
+        allow_empty: bool = False,
     ):
         self._value: str | bytes | None
         assert all(
@@ -290,7 +299,9 @@ class TreeValue:
             value = None
 
         if value is None:
-            assert len(trailing_bits) > 0, "None values must have trailing bits"
+            assert (
+                allow_empty or len(trailing_bits) > 0
+            ), "None values must have trailing bits"
 
         self._value = value
         self._trailing_bits = trailing_bits
@@ -327,11 +338,25 @@ class TreeValue:
             )
 
     @property
-    def type_(self) -> type:
-        return type(self._value)
+    def type_(self) -> TreeValueType:
+        if self._value is None:
+            if self._trailing_bits:
+                return TreeValueType.TRAILING_BITS_ONLY
+            else:
+                return TreeValueType.EMPTY
+        elif isinstance(self._value, str):
+            if self._trailing_bits:
+                # Trailing bits are reduced to bytes
+                return TreeValueType.BYTES
+            else:
+                return TreeValueType.STRING
+        elif isinstance(self._value, bytes):
+            return TreeValueType.BYTES
+        else:
+            raise ValueError(f"Invalid value type: {type(self._value)}")
 
-    def is_type(self, type_: type) -> bool:
-        return isinstance(self._value, type_)
+    def is_type(self, type_: TreeValueType) -> bool:
+        return self.type_ == type_
 
     def count_bytes(self) -> int:
         """
@@ -355,6 +380,9 @@ class TreeValue:
         :throws FandangoConversionError: If one of the values has to be converted and the conversion fails.
         :return: A new TreeValue.
         """
+
+        if self.is_type(TreeValueType.EMPTY):
+            return TreeValue(other._value, trailing_bits=other._trailing_bits)
 
         if other._value is None:
             trailing_bits = self._trailing_bits + other._trailing_bits
@@ -394,12 +422,12 @@ class TreeValue:
 
     def can_compare_with(self, right: object) -> bool:
         if isinstance(right, TreeValue):
-            return self.can_compare_with(right._value)
+            return self.is_type(right.type_)
 
         return (
-            (isinstance(right, int) and self._value is None)
-            or (isinstance(right, str) and self.is_type(str))
-            or (isinstance(right, bytes) and self.is_type(bytes))
+            (isinstance(right, int) and self.is_type(TreeValueType.TRAILING_BITS_ONLY))
+            or (isinstance(right, str) and self.is_type(TreeValueType.STRING))
+            or (isinstance(right, bytes) and self.is_type(TreeValueType.BYTES))
         )
 
     def to_string(
@@ -413,6 +441,9 @@ class TreeValue:
         :throws FandangoConversionError: If the value cannot be converted to a string.
         :return: A string.
         """
+        if self.is_type(TreeValueType.EMPTY):
+            return ""
+
         # encoding with the same encoding in both direction
         self._reduce_trailing_bits(str_to_bytes_encoding=bytes_to_str_encoding)
         if isinstance(self._value, str):
@@ -434,6 +465,9 @@ class TreeValue:
         :throws FandangoConversionError: If the value cannot be converted to bytes.
         :return: A bytes object.
         """
+        if self.is_type(TreeValueType.EMPTY):
+            return b""
+
         self._reduce_trailing_bits(str_to_bytes_encoding=str_to_bytes_encoding)
         if isinstance(self._value, bytes):
             return self._value
@@ -558,7 +592,9 @@ class TreeValue:
             return repr(self._value)
 
     def __deepcopy__(self, memo: dict[int, Any]) -> TreeValue:
-        return TreeValue(self._value, trailing_bits=self._trailing_bits)
+        return TreeValue(
+            self._value, trailing_bits=self._trailing_bits, allow_empty=True
+        )
 
     def _inner_value(self, name: str) -> str | bytes | int:
         """
@@ -573,13 +609,20 @@ class TreeValue:
             stacklevel=2,
         )
 
-        if self.is_type(str):
-            return str(self)
-        elif self.is_type(bytes):
-            return bytes(self)
-        elif self.is_type(NoneType):
-            return int(self)
-        else:
-            raise FandangoValueError(
-                f"Invalid value type: {type(self)}. This should not happen, please report this as a bug"
-            )
+        match self.type_:
+            case TreeValueType.STRING:
+                return str(self)
+            case TreeValueType.BYTES:
+                return bytes(self)
+            case TreeValueType.TRAILING_BITS_ONLY:
+                return int(self)
+            case TreeValueType.EMPTY:
+                return ""
+            case _:
+                raise FandangoValueError(
+                    f"Invalid value type: {type(self)}. This should not happen, please report this as a bug"
+                )
+
+    @classmethod
+    def empty(cls) -> TreeValue:
+        return TreeValue(None, trailing_bits=[], allow_empty=True)
