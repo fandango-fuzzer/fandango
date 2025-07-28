@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Optional
 
 import fandango.language.grammar.nodes as nodes
 from fandango.errors import FandangoValueError
-from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
@@ -163,7 +162,7 @@ class Plus(Repetition):
     def fuzz(
         self,
         parent: DerivationTree,
-        grammar: "Grammar",
+        grammar: "fandango.language.grammar.grammar.Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
         override_current_iteration: Optional[int] = None,
@@ -206,7 +205,7 @@ class Option(Repetition):
     def fuzz(
         self,
         parent: DerivationTree,
-        grammar: "Grammar",
+        grammar: "fandango.language.grammar.grammar.Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
         override_current_iteration: Optional[int] = None,
