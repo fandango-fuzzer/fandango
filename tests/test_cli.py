@@ -15,16 +15,16 @@ from .utils import DOCS_ROOT, IS_BEARTYPE_ACTIVE, RESOURCES_ROOT, run_command
 # beartype somehow scrambles the fixed rng
 if IS_BEARTYPE_ACTIVE:
     expected_with_random_seed = [
-        "80",
-        "99",
-        "761",
-        "4241",
-        "72963",
-        "47",
-        "2606",
-        "8",
-        "26869",
-        "4735",
+        "9",
+        "51",
+        "94",
+        "14720",
+        "022",
+        "70",
+        "9199",
+        "6",
+        "714",
+        "079",
     ]
 else:
     expected_with_random_seed = [
@@ -374,7 +374,7 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
                 import time
 
                 time.sleep(
-                    2
+                    5
                 )  # delay to let server start. We should find a better method for this
                 client_cmd = [
                     "fandango",

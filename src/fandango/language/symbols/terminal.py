@@ -6,7 +6,7 @@ import regex
 
 from fandango.errors import FandangoValueError
 from fandango.language.symbols import Symbol, SymbolType
-from fandango.language.tree_value import TreeValue
+from fandango.language.tree_value import TreeValue, TreeValueType
 
 
 class Terminal(Symbol):
@@ -44,12 +44,14 @@ class Terminal(Symbol):
     def check(self, word: str | bytes | int, incomplete=False) -> tuple[bool, int]:
         """Return (True, # characters matched by `word`), or (False, 0)"""
 
-        if self._value.is_type(NoneType) or isinstance(word, int):
+        if self._value.is_type(TreeValueType.TRAILING_BITS_ONLY) or isinstance(
+            word, int
+        ):
             return self.check_all(word), 1
         check_word: str | bytes = word
 
         symbol: str | bytes
-        if self._value.is_type(bytes) and isinstance(check_word, bytes):
+        if self._value.is_type(TreeValueType.BYTES) and isinstance(check_word, bytes):
             symbol = self._value.to_bytes()
         else:
             symbol = self._value.to_string()
@@ -111,11 +113,11 @@ class Terminal(Symbol):
 
     def format_as_spec(self) -> str:
         if self.is_regex:
-            if self.is_type(bytes):
+            if self.is_type(TreeValueType.BYTES):
                 symbol = repr(self._value)
                 symbol = symbol.replace(r"\\", "\\")
                 return "r" + symbol
-            elif self.is_type(NoneType):
+            elif self.is_type(TreeValueType.TRAILING_BITS_ONLY):
                 return "r'" + str(self._value) + "'"
 
             if "'" not in str(self._value):

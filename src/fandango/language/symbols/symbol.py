@@ -2,7 +2,7 @@ import abc
 import enum
 from typing import Any
 
-from fandango.language.tree_value import TreeValue
+from fandango.language.tree_value import TreeValue, TreeValueType
 
 
 class SymbolType(enum.Enum):
@@ -45,7 +45,7 @@ class Symbol(abc.ABC):
         except AttributeError:
             return False  # for cached grammars
 
-    def is_type(self, type_: type) -> bool:
+    def is_type(self, type_: TreeValueType) -> bool:
         return self._value.is_type(type_)
 
     def value(self) -> TreeValue:

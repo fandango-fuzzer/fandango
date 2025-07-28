@@ -1,13 +1,14 @@
-from typing import TYPE_CHECKING, Iterator, Optional, Sequence
+from typing import TYPE_CHECKING, Optional
+from collections.abc import Iterator, Sequence
 from fandango.errors import FandangoValueError
 from fandango.language.grammar.has_settings import HasSettings
+from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:
-    from fandango.language.grammar.grammar import Grammar
-    from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
+    import fandango
 
 
 class NonTerminalNode(Node):
@@ -18,7 +19,6 @@ class NonTerminalNode(Node):
         sender: Optional[str] = None,
         recipient: Optional[str] = None,
     ):
-        self._grammar_settings = grammar_settings
         self.symbol = symbol
         self.sender = sender
         self.recipient = recipient
@@ -27,12 +27,24 @@ class NonTerminalNode(Node):
     def fuzz(
         self,
         parent: DerivationTree,
-        grammar: "Grammar",
+        grammar: "fandango.language.grammar.grammar.Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
     ):
         if self.symbol not in grammar:
             raise FandangoValueError(f"Symbol {self.symbol} not found in grammar")
+
+        # Gmutator mutation (4)
+        if self.settings.get("non_terminal_use_other_rule"):
+            other_nodes = [
+                rhs
+                for nt, rhs in grammar.rules.items()
+                if nt.name() != self.symbol.name()
+            ]
+            print("other_nodes", [n.format_as_spec() for n in other_nodes])
+            alt = Alternative(other_nodes, self._grammar_settings)
+            return alt.fuzz(parent, grammar, max_nodes, in_message)
+
         dummy_current_tree = DerivationTree(self.symbol)
         parent.add_child(dummy_current_tree)
 
@@ -74,7 +86,10 @@ class NonTerminalNode(Node):
         parent.add_child(current_tree)
         grammar[self.symbol].fuzz(current_tree, grammar, max_nodes - 1, in_message)
 
-    def accept(self, visitor: "NodeVisitor"):
+    def accept(
+        self,
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
+    ):
         return visitor.visitNonTerminalNode(self)
 
     def format_as_spec(self) -> str:
@@ -100,7 +115,9 @@ class NonTerminalNode(Node):
                 parties.add(self.recipient)
         return parties
 
-    def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
+    def descendents(
+        self, grammar: "fandango.language.grammar.grammar.Grammar"
+    ) -> Iterator["Node"]:
         yield grammar.rules[self.symbol]
 
     def in_parties(self, parties: list[str]) -> bool:

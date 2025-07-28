@@ -539,14 +539,8 @@ class ComparisonConstraint(Constraint):
         Check the types of `left` and `right` are compatible in a comparison.
         Return True iff check was actually performed
         """
-        if isinstance(left, DerivationTree):
-            left = left.value()
-            if left.can_compare_with(right):
-                return True
-        if isinstance(right, DerivationTree):
-            right = right.value()
-            if right.can_compare_with(left):
-                return True
+        if left is None and right is None:
+            return True
 
         if left is None or right is None:
             # Cannot check - value does not exist
@@ -554,6 +548,12 @@ class ComparisonConstraint(Constraint):
 
         if isinstance(left, type(right)):
             return True
+
+        if isinstance(left, DerivationTree):
+            return left.value().can_compare_with(right)
+        if isinstance(right, DerivationTree):
+            return right.value().can_compare_with(left)
+
         if isinstance(left, (bool, int, float)) and isinstance(
             right, (bool, int, float)
         ):

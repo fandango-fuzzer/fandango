@@ -7,8 +7,8 @@
 <NULs> ::= <NUL> <NULs> | "" 
 <file_mode> ::= <octal_digit>{6} <SPACE> <NUL>
 <uid> ::= <octal_digit>{6} <SPACE> <NUL> 
-<gid> ::= <octal_digit>{6} <SPACE> <NUL> 
-<file_size> ::= <octal_digit>{11} <SPACE>
+<gid> ::= <octal_digit>{6} <SPACE> <NUL>
+<file_size> ::= '00000000' ('1' | '0') <octal_digit>{2} <SPACE>
 <mod_time> ::= <octal_digit>{11} <SPACE>
 <checksum> ::= <octal_digit>{6} <NUL> <SPACE> 
 <typeflag> ::= '0' 
