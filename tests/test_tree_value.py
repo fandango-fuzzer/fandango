@@ -1,9 +1,14 @@
+from typing import Any
 import pytest
 from fandango.errors import FandangoConversionError
-from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.symbols.terminal import Terminal
 from fandango.language.tree import DerivationTree
-from fandango.language.tree_value import TreeValue, trailing_bits_to_int
+from fandango.language.tree_value import (
+    DIRECT_ACCESS_METHODS_BASE_TO_FIRST_ARG_TYPE,
+    DIRECT_ACCESS_METHODS_BASE_TO_UNDERLYING_TYPE,
+    TreeValue,
+    trailing_bits_to_int,
+)
 
 
 A_BITS = [int(bit) for bit in f"{ord('a'):08b}"]
@@ -200,103 +205,316 @@ def test_tree_value_to_bits():
     assert tree_value_int.to_bits() == "11"
 
 
-def test_deprecated_direct_access_to_tree():
-    # string
-    tree = DerivationTree(Terminal("a"))
-    with pytest.warns(DeprecationWarning):
-        assert tree.startswith("a")
-
-    # bytes
-    tree = DerivationTree(Terminal(b"a"))
-    with pytest.warns(DeprecationWarning):
-        assert tree.startswith(b"a")
-
-    # int
-    tree = DerivationTree(
-        NonTerminal("<start>"),
-        list(map(DerivationTree, map(Terminal, map(int, f"{ord('a'):08b}")))),
-    )
-    with pytest.warns(DeprecationWarning):
-        assert tree.bit_length() == 7  # 'a' is "0b01100001"
-
-
-def test_deprecated_direct_access_to_tree_value():
-    # string
-    tree_value = TreeValue("a")
-    with pytest.warns(DeprecationWarning):
-        assert tree_value.startswith("a")
-
-    # bytes
-    tree_value = TreeValue(b"a")
-    with pytest.warns(DeprecationWarning):
-        assert tree_value.startswith(b"a")
-
-    # int
-    tree_value = TreeValue(None, trailing_bits=list(map(int, f"{ord('a'):08b}")))
-    with pytest.warns(DeprecationWarning):
-        assert tree_value.bit_length() == 7  # 'a' is "0b01100001"
-
-
-def test_deprecated_direct_access_to_tree_value_with_wrapped_args():
-    tree = DerivationTree(Terminal("Hello, World!"))
-    with pytest.warns(DeprecationWarning):
-        assert tree.startswith("Hello")
-    with pytest.warns(DeprecationWarning):
-        assert tree.startswith(DerivationTree(Terminal("Hello")))
-    with pytest.warns(DeprecationWarning):
-        assert tree.startswith(TreeValue("Hello"))
-
-    tree_value = TreeValue("Hello, World!")
-    with pytest.warns(DeprecationWarning):
-        assert tree_value.startswith("Hello")
-    with pytest.warns(DeprecationWarning):
-        assert tree_value.startswith(TreeValue("Hello"))
-    with pytest.warns(DeprecationWarning):
-        assert tree_value.startswith(DerivationTree(Terminal("Hello")))
-
-
-def test_deprecated_direct_access_to_tree_value_with_wrapped_kwargs():
-    tree = DerivationTree(Terminal("Hello, {name}!"))
-    with pytest.warns(DeprecationWarning):
-        assert tree.format(name="World") == "Hello, World!"
-    with pytest.warns(DeprecationWarning):
-        assert tree.format(name=TreeValue("World")) == "Hello, World!"
-    with pytest.warns(DeprecationWarning):
-        assert tree.format(name=DerivationTree(Terminal("World"))) == "Hello, World!"
-
-    tree_value = TreeValue("Hello, {name}!")
-    with pytest.warns(DeprecationWarning):
-        assert tree_value.format(name="World") == "Hello, World!"
-    with pytest.warns(DeprecationWarning):
-        assert tree_value.format(name=TreeValue("World")) == "Hello, World!"
-    with pytest.warns(DeprecationWarning):
-        assert (
-            tree_value.format(name=DerivationTree(Terminal("World"))) == "Hello, World!"
-        )
-
-
-def test_deprecated_direct_access_to_tree_value_implicit():
-    tree = DerivationTree(Terminal(1))
-    other_tree = DerivationTree(
-        NonTerminal("<b>"),
-        [DerivationTree(Terminal(1)), DerivationTree(Terminal(0))],
-    )
+def test_direct_access_simple():
     tree_value = TreeValue(1)
-    other_tree_value = TreeValue(None, trailing_bits=[1, 0])
+    assert -1 == -tree_value  # type: ignore[operator]
+    tree = DerivationTree(Terminal(1))
+    assert -1 == -tree  # type: ignore[operator]
 
-    solution_tree = DerivationTree(
-        NonTerminal("<a>"),
-        [DerivationTree(Terminal(1)), DerivationTree(Terminal(1))],
+
+UNDERLYING_TYPE_NO_ARGS = [
+    "__abs__",
+    "__ceil__",
+    "__float__",
+    "__floor__",
+    "__index__",
+    "__invert__",
+    "__neg__",
+    "__pos__",
+    "__round__",
+    "__trunc__",
+    "as_integer_ratio",
+    "bit_count",
+    "bit_length",
+    "capitalize",
+    "casefold",
+    "conjugate",
+    "expandtabs",
+    "hex",
+    "is_integer",
+    "isalnum",
+    "isalpha",
+    "isascii",
+    "isdecimal",
+    "isdigit",
+    "isidentifier",
+    "islower",
+    "isnumeric",
+    "isprintable",
+    "isspace",
+    "istitle",
+    "isupper",
+    "lower",
+    "lstrip",
+    "split",
+    "strip",
+    "rsplit",
+    "rstrip",
+    "splitlines",
+    "swapcase",
+    "title",
+    "upper",
+]
+
+
+@pytest.mark.parametrize("method", UNDERLYING_TYPE_NO_ARGS)
+def test_to_underlying_type_no_arg(method):
+    def check_method(obj, method):
+        if 1 < ((method in dir(1)) + (method in dir("1")) + (method in dir(b"1"))):
+            with pytest.warns(DeprecationWarning):
+                assert not callable(getattr(obj, method)())
+        else:
+            assert not callable(getattr(obj, method)())
+
+    run = 0
+    if method in dir(1):
+        assert not callable(getattr(1, method)())
+        check_method(DerivationTree(Terminal(1)), method)
+        check_method(TreeValue(1), method)
+        run += 1
+    if method in dir("1"):
+        assert not callable(getattr("1", method)())
+        check_method(DerivationTree(Terminal("1")), method)
+        check_method(TreeValue("1"), method)
+        run += 1
+    if method in dir(b"1"):
+        assert not callable(getattr(b"1", method)())
+        check_method(DerivationTree(Terminal(b"1")), method)
+        check_method(TreeValue(b"1"), method)
+        run += 1
+    assert (
+        run > 0
+    ), f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+
+
+UNDERLYING_TYPE_INT_ARG = [
+    "__mul__",
+    "__pow__",
+    "__rmul__",
+    "__rpow__",
+    "center",
+    "ljust",
+    "rjust",
+    "zfill",
+]
+
+
+@pytest.mark.parametrize("method", UNDERLYING_TYPE_INT_ARG)
+def test_to_underlying_type_int_arg(method):
+    left: tuple[int | str | bytes, ...] = (1, "1", b"1")
+    right: tuple[int | str | bytes, ...] = (1, 1, 1)
+    if "__r" in method:
+        left, right = right, left
+
+    def check_method(obj, method, *args):
+        if 1 < ((method in dir(1)) + (method in dir("1")) + (method in dir(b"1"))):
+            with pytest.warns(DeprecationWarning):
+                assert not callable(getattr(obj, method)(*args))
+        else:
+            assert not callable(getattr(obj, method)(*args))
+
+    run = 0
+    if method in dir(1):
+        assert not callable(getattr(left[0], method)(right[0]))
+        check_method(DerivationTree(Terminal(left[0])), method, right[0])
+        check_method(TreeValue(left[0]), method, right[0])
+        run += 1
+    if method in dir("1"):
+        assert not callable(getattr(left[1], method)(right[1]))
+        check_method(DerivationTree(Terminal(left[1])), method, right[1])
+        check_method(TreeValue(left[1]), method, right[1])
+        run += 1
+    if method in dir(b"1"):
+        assert not callable(getattr(left[2], method)(right[2]))
+        check_method(DerivationTree(Terminal(left[2])), method, right[2])
+        check_method(TreeValue(left[2]), method, right[2])
+        run += 1
+    assert (
+        run > 0
+    ), f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+
+
+MODS = [
+    "__mod__",
+    "__rmod__",
+]
+
+
+@pytest.mark.parametrize("method", MODS)
+def test_to_underlying_type_mod(method):
+    run = 0
+    left = (1, "%s", b"%s")
+    right = (1, "1", b"1")
+    if "r" in method:
+        left, right = right, left
+
+    if method in dir(1):
+        assert not callable(getattr(left[0], method)(right[0]))
+        assert not callable(
+            getattr(DerivationTree(Terminal(left[0])), method)(right[0])
+        )
+        assert not callable(getattr(TreeValue(left[0]), method)(right[0]))
+        run += 1
+    if method in dir("1"):
+        assert not callable(getattr(left[1], method)(right[1]))
+        assert not callable(
+            getattr(DerivationTree(Terminal(left[1])), method)(right[1])
+        )
+        assert not callable(getattr(TreeValue(left[1]), method)(right[1]))
+        run += 1
+    if method in dir(b"1"):
+        assert not callable(getattr(left[2], method)(right[2]))
+        assert not callable(
+            getattr(DerivationTree(Terminal(left[2])), method)(right[2])
+        )
+        assert not callable(getattr(TreeValue(left[2]), method)(right[2]))
+        run += 1
+    assert (
+        run > 0
+    ), f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+
+
+FORMATS = [
+    "format",
+]
+
+
+@pytest.mark.parametrize("method", FORMATS)
+def test_to_underlying_type_format(method):
+    def check_method(obj, method, *args, **kwargs):
+        if 1 < ((method in dir(1)) + (method in dir("1")) + (method in dir(b"1"))):
+            with pytest.warns(DeprecationWarning):
+                assert not callable(getattr(obj, method)(*args, **kwargs))
+        else:
+            assert not callable(getattr(obj, method)(*args, **kwargs))
+
+    run = 0
+    if method in dir(1):
+        assert not callable(getattr(1, method)())
+        check_method(DerivationTree(Terminal(1)), method)
+        check_method(TreeValue(1), method)
+        run += 1
+    if method in dir("1"):
+        assert not callable(getattr("{}", method)("1"))
+        check_method(DerivationTree(Terminal("{}")), method, "1")
+        check_method(TreeValue("{}"), method, "1")
+        run += 1
+    if method in dir(b"1"):
+        assert not callable(getattr(b"{}", method)(b"1"))
+        check_method(DerivationTree(Terminal(b"{}")), method, b"1")
+        check_method(TreeValue(b"{}"), method, b"1")
+        run += 1
+
+    assert (
+        run > 0
+    ), f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+
+
+FORMAT_MAP = [
+    "format_map",
+]
+
+
+@pytest.mark.parametrize("method", FORMAT_MAP)
+def test_to_underlying_type_format_map(method):
+    def check_method(obj, method, *args, **kwargs):
+        if 1 < ((method in dir(1)) + (method in dir("1")) + (method in dir(b"1"))):
+            with pytest.warns(DeprecationWarning):
+                assert not callable(getattr(obj, method)(*args, **kwargs))
+        else:
+            assert not callable(getattr(obj, method)(*args, **kwargs))
+
+    run = 0
+    if method in dir(1):
+        assert not callable(getattr(1, method)({1: 1}))
+        check_method(DerivationTree(Terminal(1)), method, {1: 1})
+        check_method(TreeValue(1), method, {1: 1})
+        run += 1
+    if method in dir("1"):
+        assert not callable(getattr("1", method)({"1": "1"}))
+        check_method(DerivationTree(Terminal("1")), method, {"1": "1"})
+        check_method(TreeValue("1"), method, {"1": "1"})
+        run += 1
+    if method in dir(b"1"):
+        assert not callable(getattr(b"1", method)({b"1": b"1"}))
+        check_method(DerivationTree(Terminal(b"1")), method, {b"1": b"1"})
+        check_method(TreeValue(b"1"), method, {b"1": b"1"})
+
+
+FIRST_ARG = [
+    "__add__",
+    "__and__",
+    "__contains__",
+    "__divmod__",
+    "__floordiv__",
+    "__ge__",
+    "__gt__",
+    "__le__",
+    "__lshift__",
+    "__lt__",
+    "__or__",
+    "__radd__",
+    "__rand__",
+    "__rdivmod__",
+    "__rfloordiv__",
+    "__rlshift__",
+    "__ror__",
+    "__rrshift__",
+    "__rshift__",
+    "__rsub__",
+    "__rtruediv__",
+    "__rxor__",
+    "__sub__",
+    "__truediv__",
+    "__xor__",
+    "count",
+    "endswith",
+    "find",
+    "index",
+    "partition",
+    "removeprefix",
+    "removesuffix",
+    "rfind",
+    "rindex",
+    "rpartition",
+    "startswith",
+]
+
+
+@pytest.mark.parametrize("method", FIRST_ARG)
+def test_to_first_arg(method):
+    run = 0
+    if method in dir(1):
+        assert not callable(getattr(1, method)(1))
+        assert not callable(getattr(DerivationTree(Terminal(1)), method)(1))
+        assert not callable(getattr(TreeValue(1), method)(1))
+        run += 1
+    if method in dir("1"):
+        assert not callable(getattr("1", method)("1"))
+        assert not callable(getattr(DerivationTree(Terminal("1")), method)("1"))
+        assert not callable(getattr(TreeValue("1"), method)("1"))
+        run += 1
+    if method in dir(b"1"):
+        assert not callable(getattr(b"1", method)(b"1"))
+        assert not callable(getattr(DerivationTree(Terminal(b"1")), method)(b"1"))
+        assert not callable(getattr(TreeValue(b"1"), method)(b"1"))
+        run += 1
+    assert (
+        run > 0
+    ), f"{method} not found in dirs of 1, {set(dir(1) + dir('1') + dir(b'1'))}"
+
+
+def test_check_all_direct_methods_tested():
+    in_tests = (
+        FIRST_ARG
+        + UNDERLYING_TYPE_NO_ARGS
+        + UNDERLYING_TYPE_INT_ARG
+        + MODS
+        + FORMATS
+        + FORMAT_MAP
     )
-    solution_tree_value = TreeValue(None, trailing_bits=[1, 1])
-
-    for solution in [3, solution_tree, solution_tree_value]:
-        for smaller in [1, tree, tree_value]:
-            for larger in [2, other_tree, other_tree_value]:
-                if isinstance(smaller, int) and isinstance(larger, int):
-                    continue  # don't care about summation of two ints
-
-                with pytest.warns(DeprecationWarning):
-                    assert solution == smaller + larger  # type: ignore[operator] # with the delegation hack, this works
-                with pytest.warns(DeprecationWarning):
-                    assert solution == larger + smaller  # type: ignore[operator] # with the delegation hack, this works
+    implemented = (
+        DIRECT_ACCESS_METHODS_BASE_TO_FIRST_ARG_TYPE
+        + DIRECT_ACCESS_METHODS_BASE_TO_UNDERLYING_TYPE
+    )
+    assert sorted(in_tests) == sorted(implemented)

@@ -52,81 +52,224 @@ def _bytes_to_str(value: bytes, encoding: str) -> str:
         )
 
 
-# Shared argument unwrapping for operator and attribute delegation
-
-
-def _unwrap_for_operator(arg):
-    """
-    Don't you dare using this outside this class!
-    """
-    # Can't import DerivationTree directly due to circular import, so check by name
-    arg = arg.value() if type(arg).__name__ == "DerivationTree" else arg
-    if isinstance(arg, TreeValue):
-        if arg.is_type(str):
-            return str(arg)
-        elif arg.is_type(bytes):
-            return bytes(arg)
-        elif arg.is_type(NoneType):
-            return int(arg)
-        else:
-            return arg._value
-    return arg
-
-
-def delegate_dunders(to_method, dunder_names):
+def _attach_to_first_arg(
+    function_names: list[str],
+):
     """
     Decorator to add dunder methods to a class, delegating to the result of `to_method(self)`.
     """
 
     def make_method(name):
         def method(self, *args, **kwargs):
-            warnings.warn(
-                f"Using {name} on {type(self).__name__} is deprecated.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            new_args = tuple(_unwrap_for_operator(arg) for arg in args)
-            new_kwargs = {k: _unwrap_for_operator(v) for k, v in kwargs.items()}
-            # For TreeValue, use self directly, not self.to_inner_value()
-            if isinstance(self, TreeValue):
-                left = _unwrap_for_operator(self)
+            if len(args) == 0:
+                assert len(kwargs) == 1, f"Method {name} must have exactly one argument"
+                first_arg_type = type(list(kwargs.values())[0])
             else:
-                left = getattr(self, to_method)()
+                assert len(args) >= 1, f"Method {name} must have at least one argument"
+                first_arg_type = type(args[0])
 
-            return getattr(left, name)(*new_args, **new_kwargs)
+            base = first_arg_type(self)
+            return getattr(base, name)(*args, **kwargs)
 
         return method
 
     def decorator(cls):
-        for name in dunder_names:
-            setattr(cls, name, make_method(name))
+        for name in function_names:
+            # Check if the method is actually implemented on the class itself, not inherited
+            if name in cls.__dict__:
+                warnings.warn(
+                    f"Method {name} already exists on {cls.__name__}, skipping",
+                    Warning,
+                )
+            else:
+                setattr(cls, name, make_method(name))
         return cls
 
     return decorator
 
 
-DUNDER_METHODS = [
+def _attach_to_underlying(
+    function_names: list[str],
+):
+    """
+    Decorator to add dunder methods to a class, delegating to the result of `to_method(self)`.
+    """
+
+    def make_method(name):
+        def method(self: TreeValue, *args, **kwargs):
+            is_in_int = name in dir(1)
+            is_in_str = name in dir("1")
+            is_in_bytes = name in dir(b"1")
+            match is_in_int + is_in_str + is_in_bytes:
+                case 0:
+                    raise FandangoValueError(
+                        f"Method {name} is not implemented on any underlying type"
+                    )
+                case 1:
+                    # only implemented on one type, so it's clear which one to use
+                    base_type = int if is_in_int else str if is_in_str else bytes
+                    base = base_type(self)
+                case _:
+                    base = self._inner_value(name)
+            return getattr(base, name)(*args, **kwargs)
+
+        return method
+
+    def decorator(cls):
+        for name in function_names:
+            # Check if the method is actually implemented on the class itself, not inherited
+            if name in cls.__dict__:
+                warnings.warn(
+                    f"Method {name} already exists on {cls.__name__}, skipping",
+                    Warning,
+                )
+            else:
+                setattr(cls, name, make_method(name))
+        return cls
+
+    return decorator
+
+
+# not implemented on purpose:
+# __bool__
+# __buffer__
+# __bytes__
+# __delattr__
+# __dir__
+# __doc__
+# __eq__
+# __format__
+# __getattribute__
+# __getitem__
+# __getnewargs__
+# __getstate__
+# __hash__
+# __init__
+# __init_subclass__
+# __int__
+# __iter__
+# __len__
+# __ne__
+# __new__
+# __reduce__
+# __reduce_ex__
+# __repr__
+# __setattr__
+# __sizeof__
+# __str__
+# __subclasshook__
+# decode
+# denominator
+# encode
+# fromhex
+# from_bytes
+# imag
+# numerator
+# maketrans
+# join
+# real
+# replace
+# translate
+# to_bytes
+
+DIRECT_ACCESS_METHODS_BASE_TO_FIRST_ARG_TYPE = [
     "__add__",
-    "__radd__",
-    "__sub__",
-    "__mul__",
-    "__truediv__",
-    "__floordiv__",
-    "__mod__",
-    "__pow__",
-    "__and__",
-    "__or__",
-    "__xor__",
-    "__lt__",
-    "__le__",
-    "__gt__",
-    "__ge__",
     "__contains__",
+    "__divmod__",
+    "__floordiv__",
+    "__ge__",
+    "__gt__",
+    "__le__",
+    "__lshift__",
+    "__lt__",
+    "__mod__",
+    "__radd__",
+    "__rand__",
+    "__rdivmod__",
+    "__rfloordiv__",
+    "__rlshift__",
+    "__rmod__",
+    "__rrshift__",
+    "__rshift__",
+    "__rsub__",
+    "__rtruediv__",
+    "__rxor__",
+    "__sub__",
+    "__truediv__",
+    "__xor__",
+    "count",
+    "endswith",
+    "find",
+    "index",
+    "partition",
+    "removeprefix",
+    "removesuffix",
+    "rfind",
+    "rindex",
+    "rpartition",
+    "startswith",
+]
+
+DIRECT_ACCESS_METHODS_BASE_TO_UNDERLYING_TYPE = [
+    "__and__",
+    "__abs__",
+    "__ceil__",
+    "__float__",
+    "__floor__",
+    "__index__",
+    "__invert__",
+    "__mul__",
+    "__neg__",
+    "__or__",
+    "__pos__",
+    "__pow__",
+    "__rmul__",
+    "__round__",
+    "__ror__",
+    "__rpow__",
+    "__trunc__",
+    "as_integer_ratio",
+    "bit_count",
+    "bit_length",
+    "capitalize",
+    "casefold",
+    "center",
+    "conjugate",
+    "expandtabs",
+    "format",
+    "format_map",
+    "hex",
+    "is_integer",
+    "isalnum",
+    "isalpha",
+    "isascii",
+    "isdecimal",
+    "isdigit",
+    "isidentifier",
+    "islower",
+    "isnumeric",
+    "isprintable",
+    "isspace",
+    "istitle",
+    "isupper",
+    "lower",
+    "lstrip",
+    "ljust",
+    "split",
+    "strip",
+    "rjust",
+    "rsplit",
+    "rstrip",
+    "splitlines",
+    "swapcase",
+    "title",
+    "upper",
+    "zfill",
 ]
 
 
-# delegate_dunders and DUNDER_METHODS are now the canonical implementation for operator delegation.
-@delegate_dunders("to_inner_value", DUNDER_METHODS)
+@_attach_to_first_arg(DIRECT_ACCESS_METHODS_BASE_TO_FIRST_ARG_TYPE)
+@_attach_to_underlying(DIRECT_ACCESS_METHODS_BASE_TO_UNDERLYING_TYPE)
 class TreeValue:
     def __init__(
         self,
@@ -418,59 +561,26 @@ class TreeValue:
     def __deepcopy__(self, memo: dict[int, Any]) -> TreeValue:
         return TreeValue(self._value, trailing_bits=self._trailing_bits)
 
-    def __getattr__(self, name: str) -> Any:
-        # Check if the attribute exists on the instance
-        try:
-            return object.__getattribute__(self, name)
-        except AttributeError:
-            pass
+    def _inner_value(self, name: str) -> str | bytes | int:
+        """
+        Don't you dare using this outside this class! This is a dirty, dirty hack to support the legacy interface.
+        """
 
         warnings.warn(
-            f"Using functions on the underlying types of DerivationTree and TreeValue types is deprecated.  Use the `str` or `bytes` to explicitly convert to the desired type first. TreeValue has no attribute {name}",
+            f"Using {name} on DerivationTree or TreeValue objects is deprecated "
+            "because there is no automated way of knowing which type to transform the underlying type to. "
+            "Use `str` or `bytes` to explicitly convert to the desired type first.",
             DeprecationWarning,
+            stacklevel=2,
         )
 
-        def wrapper(*args, **kwargs):
-            errors: list[tuple[str, Any]] = []
-
-            unwrapped_args = tuple(_unwrap_for_operator(arg) for arg in args)
-            unwrapped_kwargs = {
-                key: _unwrap_for_operator(value) for key, value in kwargs.items()
-            }
-
-            for blank in ("", b"", 0):
-                if hasattr(blank, name):
-                    try:
-                        converted = type(blank)(self)
-                        attr = getattr(converted, name)
-                        res = attr(*unwrapped_args, **unwrapped_kwargs)
-                        return res
-                    except Exception as e:
-                        errors.append((type(blank).__name__, e))
-
-            stringified_errors = "\n".join(f"{k}: {e}" for k, e in errors)
-            stringified_args = ", ".join(
-                f"{arg!r}(type: {type(arg).__name__})" for arg in args
+        if self.is_type(str):
+            return str(self)
+        elif self.is_type(bytes):
+            return bytes(self)
+        elif self.is_type(NoneType):
+            return int(self)
+        else:
+            raise FandangoValueError(
+                f"Invalid value type: {type(self)}. This should not happen, please report this as a bug"
             )
-            stringified_kwargs = ", ".join(
-                f"{k!r}={v!r}(type: {type(v).__name__})" for k, v in kwargs.items()
-            )
-            stringified_unwrapped_args = ", ".join(
-                f"{arg!r}(type: {type(arg).__name__})" for arg in unwrapped_args
-            )
-            stringified_unwrapped_kwargs = ", ".join(
-                f"{k!r}={v!r}(type: {type(v).__name__})"
-                for k, v in unwrapped_kwargs.items()
-            )
-
-            raise AttributeError(
-                f"TreeValue has no attribute {name} or all application attempts failed, "
-                "possibly because the function call threw an exception, "
-                f"errors during application attempts: {stringified_errors},\n"
-                f"args: {stringified_args},\n"
-                f"kwargs: {stringified_kwargs},\n"
-                f"unwrapped_args: {stringified_unwrapped_args},\n"
-                f"unwrapped_kwargs: {stringified_unwrapped_kwargs}"
-            )
-
-        return wrapper

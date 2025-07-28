@@ -7,10 +7,10 @@ import warnings
 from fandango.language.symbols import NonTerminal, Slice, Symbol, Terminal
 from fandango.language.tree_value import (
     BYTES_TO_STRING_ENCODING,
+    DIRECT_ACCESS_METHODS_BASE_TO_FIRST_ARG_TYPE,
+    DIRECT_ACCESS_METHODS_BASE_TO_UNDERLYING_TYPE,
     STRING_TO_BYTES_ENCODING,
     TreeValue,
-    delegate_dunders,
-    DUNDER_METHODS,
 )
 
 if TYPE_CHECKING:
@@ -80,7 +80,36 @@ def index_by_reference(lst: Iterable[T], target: T) -> Optional[int]:
     return None
 
 
-@delegate_dunders("value", DUNDER_METHODS)
+def forward_to_tree_value_methods(
+    function_names: list[str],
+):
+    """
+    Decorator to add dunder methods to a class, delegating to the result of `value().method(self)`.
+    """
+
+    def make_method(name):
+        def method(self, *args, **kwargs):
+            return getattr(self.value(), name)(*args, **kwargs)
+
+        return method
+
+    def decorator(cls):
+        for name in function_names:
+            # Check if the method is actually implemented on the class itself, not inherited
+            if name in cls.__dict__:
+                warnings.warn(
+                    f"Method {name} already exists on {cls.__name__}, skipping",
+                    Warning,
+                )
+            else:
+                setattr(cls, name, make_method(name))
+        return cls
+
+    return decorator
+
+
+@forward_to_tree_value_methods(DIRECT_ACCESS_METHODS_BASE_TO_FIRST_ARG_TYPE)
+@forward_to_tree_value_methods(DIRECT_ACCESS_METHODS_BASE_TO_UNDERLYING_TYPE)
 class DerivationTree:
     """
     This class is used to represent a node in the derivation tree.
@@ -957,22 +986,6 @@ class DerivationTree:
 
     def __iter__(self) -> Iterator["DerivationTree"]:
         return iter(self._children)
-
-    def __getattr__(self, name: str) -> Any:
-        # Check if the attribute exists on the instance
-        try:
-            return object.__getattribute__(self, name)
-        except AttributeError:
-            pass
-        warnings.warn(
-            f"Using functions on the underlying types of DerivationTree and TreeValue types is deprecated.  Use the `str` or `bytes` to explicitly convert to the desired type first. DerivationTree has no attribute {name}.",
-            DeprecationWarning,
-        )
-        with warnings.catch_warnings():
-            warnings.simplefilter(
-                "ignore", DeprecationWarning
-            )  # don't double emit this deprecation warning
-            return getattr(self.value(), name)
 
 
 class SliceTree(DerivationTree):
