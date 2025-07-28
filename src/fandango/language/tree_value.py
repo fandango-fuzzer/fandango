@@ -239,7 +239,6 @@ DIRECT_ACCESS_METHODS_BASE_TO_UNDERLYING_TYPE = [
     "format",
     "format_map",
     "hex",
-    "is_integer",
     "isalnum",
     "isalpha",
     "isascii",

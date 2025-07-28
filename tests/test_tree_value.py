@@ -231,7 +231,6 @@ UNDERLYING_TYPE_NO_ARGS = [
     "conjugate",
     "expandtabs",
     "hex",
-    "is_integer",
     "isalnum",
     "isalpha",
     "isascii",
