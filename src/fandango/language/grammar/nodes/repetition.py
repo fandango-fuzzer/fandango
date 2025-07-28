@@ -1,15 +1,17 @@
 import random
-from typing import TYPE_CHECKING, Optional
 from collections.abc import Iterator, Sequence
+from typing import TYPE_CHECKING, Optional
+
+import fandango.language.grammar.nodes as nodes
 from fandango.errors import FandangoValueError
-from fandango.language.grammar.nodes.terminal import TerminalNode
+from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node, NodeType
+from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.symbols.terminal import Terminal
 from fandango.language.tree import DerivationTree
-import fandango.language.grammar.nodes as nodes
 
 if TYPE_CHECKING:
     import fandango
