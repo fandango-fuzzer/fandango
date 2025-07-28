@@ -1,7 +1,8 @@
 from collections.abc import Generator
 from collections import defaultdict
 from types import NoneType
-from typing import Any, Sequence, cast, Optional, Union
+from typing import Any, cast, Optional, Union
+from collections.abc import Sequence
 
 
 from fandango.errors import FandangoValueError, FandangoParseError
@@ -159,7 +160,7 @@ class Grammar(NodeVisitor):
         self,
         symbol: str | NonTerminal = "<start>",
         sources: Optional[list[DerivationTree]] = None,
-    ) -> tuple[list[DerivationTree], str]:
+    ) -> tuple[list[DerivationTree], str | bytes]:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         if self.generators[symbol] is None:
@@ -279,7 +280,7 @@ class Grammar(NodeVisitor):
 
     def parse(
         self,
-        word: str | bytes | DerivationTree,
+        word: str | bytes | int | DerivationTree,
         start: str | NonTerminal = "<start>",
         mode: ParsingMode = ParsingMode.COMPLETE,
         hookin_parent: Optional[DerivationTree] = None,
