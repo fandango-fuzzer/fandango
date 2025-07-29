@@ -39,7 +39,7 @@ TEST_TOOLS =  # clang is installed by default on Mac
 SYSTEM_DEV_INSTALL = brew install
 else ifeq ($(UNAME), Linux)
 # Linux
-SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli
+SYSTEM_DEV_TOOLS = antlr pdftk-java graphviz mermaid-cli bsdtar
 TEST_TOOLS = clang
 SYSTEM_DEV_INSTALL = apt-get install
 else ifneq (,$(findstring NT,$(UNAME)))
