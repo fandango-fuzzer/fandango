@@ -197,7 +197,7 @@ $ fandango -v fuzz -f persons.fan -n 10 -c 'int(<age>) % 7 == 0'
 
 ```{code-cell}
 :tags: ["remove-input", "scroll-output"]
-!fandango -v fuzz -f persons.fan -n 10 -c 'int(<age>) % 7 == 0' --validate
+!fandango -v fuzz -f persons.fan -n 10 -c 'int(<age>) % 7 == 0' --progress-bar=off
 assert _exit_code == 0
 ```
 
@@ -261,7 +261,7 @@ $ fandango fuzz -f persons.fan --maximize 'int(<age>)'
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 --maximize 'int(<age>)'
+!fandango fuzz -f persons.fan -n 10 --maximize 'int(<age>)' --progress-bar=off
 assert _exit_code == 0
 ```
 
@@ -273,7 +273,7 @@ $ fandango fuzz -f persons.fan --maximize 'int(<age>)'
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 --minimize 'int(<age>)'
+!fandango fuzz -f persons.fan -n 10 --minimize 'int(<age>)' --progress-bar=off
 assert _exit_code == 0
 ```
 
@@ -306,7 +306,7 @@ $ fandango fuzz -f persons.fan --maximize '<name>.startswith("A")' -n 10
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan --maximize '<name>.startswith("A")' -n 10
+!fandango fuzz -f persons.fan --maximize '<name>.startswith("A")' -n 10 --progress-bar=off
 assert _exit_code == 0
 ```
 
@@ -331,7 +331,7 @@ $ fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50
 
 ```{code-cell}
 :tags: ["remove-input", "scroll-output"]
-!fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50 --validate
+!fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50 --validate --progress-bar=off
 assert _exit_code == 0
 ```
 
