@@ -5,8 +5,8 @@ import pytest
 
 
 def test_run_evaluation_success():
-    if sys.platform.startswith("win"):
-        pytest.skip("bsdtar not supported on Windows")
+    if sys.platform.startswith("win") or sys.platform.startswith("linux"):
+        pytest.skip("bsdtar not supported on Windows and Ubuntu")
 
     """Test that running `python -m evaluation.vs_isla.run_evaluation 1` exits with code 0."""
     result = subprocess.run(
