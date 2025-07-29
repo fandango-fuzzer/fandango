@@ -470,8 +470,6 @@ class Grammar(NodeVisitor):
         traverse(tree, ())
         return paths
 
-    def to_graph(self) -> dict[NonTerminal, set[NonTerminalNode]]:
-
     def prime(self):
         LOGGER.debug("Priming grammar")
         nodes: list[Node] = sum(
