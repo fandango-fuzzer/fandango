@@ -64,7 +64,7 @@ class Parser:
                 word = word.to_string()
         if isinstance(word, int):
             word = str(word)
-        assert isinstance(word, str) or isinstance(word, bytes), type(word)
+        assert isinstance(word, (str, bytes)), type(word)
 
         if isinstance(start, str):
             start = NonTerminal(start)

@@ -22,7 +22,7 @@ T = TypeVar("T")
 if TYPE_CHECKING:
     TreeTuple = tuple[T, list["TreeTuple[T]"]]
 else:
-    TreeTuple = tuple  # beartype falls over with recursive types
+    TreeTuple = tuple[T, list]  # beartype falls over with recursive types
 
 
 class ProtocolMessage:
@@ -423,16 +423,13 @@ class DerivationTree:
     @staticmethod
     def from_tree(tree: TreeTuple[str]) -> "DerivationTree":
         symbol, children = tree
-        if not isinstance(symbol, str):
-            raise TypeError(f"{symbol} must be a string")
         new_symbol: Symbol
         if symbol.startswith("<") and symbol.endswith(">"):
             new_symbol = NonTerminal(symbol)
         else:
             new_symbol = Terminal(symbol)
-        return DerivationTree(
-            new_symbol, [DerivationTree.from_tree(child) for child in children]
-        )
+        parsed_children = [DerivationTree.from_tree(child) for child in children]
+        return DerivationTree(new_symbol, parsed_children)
 
     def deepcopy(
         self,
