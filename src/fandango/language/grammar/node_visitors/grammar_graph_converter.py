@@ -10,9 +10,50 @@ from fandango.language.grammar.nodes.repetition import Repetition, Plus, Option,
 from fandango.language.grammar.nodes.terminal import TerminalNode
 
 class GrammarGraphNode:
-    def __init__(self, node: Node, reaches: set["GrammarGraphNode"]):
+    def __init__(self, node: Node):
         self.node = node
-        self.reaches = reaches
+
+    def consumes(self) -> Optional[Terminal]:
+        if isinstance(self.node, TerminalNode):
+            return self.node.symbol
+        return None
+
+    def add_egress(self, node: "GrammarGraphNode"):
+        raise NotImplementedError()
+
+    @property
+    def reaches(self) -> set["GrammarGraphNode"]:
+        raise NotImplementedError()
+
+class EagerGrammarGraphNode(GrammarGraphNode):
+    def __init__(self, node: Node, reaches: set["GrammarGraphNode"]):
+        super().__init__(node)
+        self._reaches = reaches
+
+    def add_egress(self, node: "GrammarGraphNode"):
+        self._reaches.add(node)
+
+    @property
+    def reaches(self):
+        return self._reaches
+
+class LazyGrammarGraphNode(GrammarGraphNode):
+    def __init__(self, node: NonTerminalNode, grammar_rules: dict[NonTerminal, Node]):
+        super().__init__(node)
+        self.grammar_rules = grammar_rules
+        self._chain_end_egress = set()
+        self._reaches: Optional[set[GrammarGraphNode]] = None
+
+    def add_egress(self, node: GrammarGraphNode):
+        if self._reaches is None:
+            self._chain_end_egress.add(node)
+        else:
+            self._reaches.add(node)
+
+    @property
+    def reaches(self):
+        # Todo - implement lazy reachability
+        raise NotImplementedError("Not implemented yet.")
 
 class GrammarGraph:
     def __init__(self, start: GrammarGraphNode):
@@ -25,7 +66,7 @@ class GrammarGraphConverterVisitor(NodeVisitor):
     def __init__(self):
         self.rules = None
         self.start_symbol = None
-        self.parent_chain = []
+        self.parent_chain: list[NonTerminal] = []
 
     def process(self, grammar_rules: dict[NonTerminal, Node], start_symbol: NonTerminal):
         self.rules = grammar_rules
@@ -34,15 +75,13 @@ class GrammarGraphConverterVisitor(NodeVisitor):
         return start_node
 
     def visit(self, node: Node) -> tuple[GrammarGraphNode, set[GrammarGraphNode]]:
-        self.parent_chain.append(node)
         visited = super().visit(node)
-        self.parent_chain.pop()
         return visited
 
     @staticmethod
     def _set_next(node: GrammarGraphNode, next_nodes: set[GrammarGraphNode]):
         for next_child in next_nodes:
-            node.reaches.add(next_child)
+            node.add_egress(next_child)
 
     def visitAlternative(self, node: Alternative):
         chain_start = set()
@@ -52,7 +91,7 @@ class GrammarGraphConverterVisitor(NodeVisitor):
             chain_start.add(start_node)
             for end_node in end_nodes:
                 chain_end.add(end_node)
-        return GrammarGraphNode(node, chain_start), chain_end
+        return EagerGrammarGraphNode(node, chain_start), chain_end
 
     def visitRepetition(self, node: Repetition):
         chain_start = None
@@ -71,8 +110,8 @@ class GrammarGraphConverterVisitor(NodeVisitor):
                 for node in intermediate_end:
                     chain_end.add(node)
         if chain_start is None:
-            chain_start = GrammarGraphNode(node, set())
-        return GrammarGraphNode(node, {chain_start}), chain_end
+            chain_start = EagerGrammarGraphNode(node, set())
+        return EagerGrammarGraphNode(node, {chain_start}), chain_end
 
     def visitConcatenation(self, node: Concatenation):
         chain_start = None
@@ -80,7 +119,7 @@ class GrammarGraphConverterVisitor(NodeVisitor):
         for child in node.children():
             if chain_start is None:
                 next_node, chain_end = self.visit(child)
-                chain_start = GrammarGraphNode(node, {next_node})
+                chain_start = EagerGrammarGraphNode(node, {next_node})
             else:
                 next_node, next_end_nodes = self.visit(child)
                 for end_node in chain_end:
@@ -89,16 +128,20 @@ class GrammarGraphConverterVisitor(NodeVisitor):
         return chain_start, chain_end
 
     def visitTerminalNode(self, node: TerminalNode):
-        graph_node = GrammarGraphNode(node, set())
+        graph_node = EagerGrammarGraphNode(node, set())
         return graph_node, {graph_node}
 
     def visitNonTerminalNode(self, node: NonTerminalNode):
-        graph_node = GrammarGraphNode(node, set())
-
-        to_visit = self.rules[node.symbol]
-        chain_start, chain_end = self.visit(to_visit)
-        self._set_next(graph_node, {chain_start})
-        return graph_node, chain_end
+        if node.symbol in self.parent_chain:
+            graph_node = LazyGrammarGraphNode(node, self.rules)
+            return graph_node, {graph_node}
+        else:
+            self.parent_chain.append(node.symbol)
+            to_visit = self.rules[node.symbol]
+            chain_start, chain_end = self.visit(to_visit)
+            graph_node = EagerGrammarGraphNode(node, {chain_start})
+            self.parent_chain.pop()
+            return graph_node, {chain_end}
 
     def visitPlus(self, node: Plus):
         return self.visitRepetition(node)
