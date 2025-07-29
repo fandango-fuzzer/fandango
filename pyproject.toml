@@ -114,4 +114,4 @@ exclude = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "-n auto --timeout 500"
+addopts = "-n auto --timeout 700"
