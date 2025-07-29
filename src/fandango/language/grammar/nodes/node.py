@@ -1,7 +1,8 @@
 import abc
 import copy
 import enum
-from typing import TYPE_CHECKING, Any, Iterator, Sequence
+from collections.abc import Iterator, Sequence
+from typing import TYPE_CHECKING, Any
 from fandango.errors import FandangoValueError
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.tree import DerivationTree

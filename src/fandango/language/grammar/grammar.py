@@ -1,8 +1,8 @@
 from collections.abc import Generator
 from collections import defaultdict
-from types import NoneType
 from typing import Any, cast, Optional, Union
 from collections.abc import Sequence
+import warnings
 
 
 from fandango.errors import FandangoValueError, FandangoParseError
@@ -25,7 +25,7 @@ from fandango.language.grammar.nodes.repetition import (
 )
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.grammar.parser.parser import Parser
-from fandango.language.tree import DerivationTree
+from fandango.language.tree import DerivationTree, TreeTuple
 from fandango.language.symbols import Symbol, NonTerminal
 from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER
@@ -161,7 +161,7 @@ class Grammar(NodeVisitor):
         self,
         symbol: str | NonTerminal = "<start>",
         sources: Optional[list[DerivationTree]] = None,
-    ) -> tuple[list[DerivationTree], str | bytes]:
+    ) -> tuple[list[DerivationTree], str | bytes | TreeTuple[str]]:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         if self.generators[symbol] is None:
@@ -203,17 +203,15 @@ class Grammar(NodeVisitor):
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         sources, string = self.generate_string(symbol, sources)
-        if not (
-            isinstance(string, str)
-            or isinstance(string, bytes)
-            or isinstance(string, int)
-            or isinstance(string, tuple)
-        ):
+        if not (isinstance(string, (str, bytes, int, tuple))):
             raise TypeError(
                 f"Generator {self.generators[symbol]} must return string, bytes, int, or tuple (returned {string!r})"
             )
 
         if isinstance(string, tuple):
+            warnings.warn(
+                "Returning a tree in the shape of a tuple from a generator is deprecated, as it is parsed into a tree, then immediately stringified and parsed against the grammar. You should instead return a str/bytes directly"
+            )
             string = str(DerivationTree.from_tree(string))
         tree = self.parse(string, symbol)
         if tree is None:
