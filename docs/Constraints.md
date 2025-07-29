@@ -125,8 +125,15 @@ int(<age>) > 20
 
 the type of `<age>` is actually not a string, but a `DerivationTree` object - [a tree representing the structure of the output.](sec:paths). You can use `DerivationTree` objects as other basic python data types by converting them using (`int(<age>)`, `str(<age>)`, `bytes(<age>)`).
 
-* You can then invoke _string methods_ on them (`str(<age>).startswith('0')`)
+* You can then invoke most _string, bytes and int methods_ on them (`<age>.startswith('0')`) (see [Details](sec:derivation-tree-direct-access-functions))
 * You can _compare_ them against each other (`<age_1> == <age_2>`) as well as against other strings (`<age> != "19"`)
+
+One thing you _cannot_ do, though, is _passing them directly as arguments to functions_ that do not expect a `DerivationTree` type. This applies to the vast majority of Python functions.
+
+```{important}
+If you want to pass a symbol as a function argument, convert it to the proper type (`int(<age>)`, `float(<age>)`, `str(<age>)`) first.
+Otherwise, you will likely raise an internal error in that very function.
+```
 
 ```{important}
 On symbols, the `[...]` operator operates differently from strings - it returns a _subtree_ of the produced output: `<name>[0]` returns the `<first_name>` element, not the first character.

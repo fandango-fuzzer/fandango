@@ -260,18 +260,27 @@ For instance, if we want to refer to a `<name>` element, but only if it is the c
 Here is a constraint that makes Fandango produce first names that end with `x`:
 
 :::{margin}
-Since a `<first_name>` is defined to be a `<name>`, we could also write `str(<first_name>).endswith("x")`
+Since a `<first_name>` is defined to be a `<name>`, we could also write `<first_name>.endswith("x")`
 :::
 
 ```shell
-$ fandango fuzz -f persons.fan -n 10 -c 'str(<first_name>[0]).endswith("x")'
+$ fandango fuzz -f persons.fan -n 10 -c '<first_name>[0].endswith("x")'
 ```
 
+% FIXME: does not work (bug #501)
+% ```{code-cell}
+% :tags: ["remove-input"]
+% !fandango fuzz -f persons.fan -n 10 -c '<first_name>[0].endswith("x")' --validate
+% assert _exit_code == 0
+% ```
+
+% This works
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c 'str(<first_name>[0]).endswith("x")' --validate
+!fandango fuzz -f persons.fan -n 10 -c '<first_name>.endswith("x")' --validate
 assert _exit_code == 0
 ```
+
 
 ```{tip}
 As in Python, you can use _negative_ indexes to refer to the last elements.
@@ -364,12 +373,12 @@ To refer to the `<name>` element as a direct child of a `<first_name>` element, 
 This allows you to express the earlier constraint in a possibly more readable form:
 
 ```shell
-$ fandango fuzz -f persons.fan -n 10 -c 'str(<first_name>.<name>).endswith("x")'
+$ fandango fuzz -f persons.fan -n 10 -c '<first_name>.<name>.endswith("x")'
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c 'str(<first_name>.<name>).endswith("x")' --validate
+!fandango fuzz -f persons.fan -n 10 -c '<first_name>.<name>.endswith("x")' --validate
 assert _exit_code == 0
 ```
 
@@ -498,7 +507,7 @@ where
 Hence, the expression
 
 ```python
-any(str(n).startswith("A") for n in *<name>)
+any(n.startswith("A") for n in *<name>)
 ```
 
 ensures there is at least _one_ element `<name>` that starts with an "A":
@@ -506,18 +515,18 @@ ensures there is at least _one_ element `<name>` that starts with an "A":
 Let us decompose this expression for a moment:
 
 * The expression `for n in *<name>` lets Python iterate over `*<name>` (all `<name>` objects within a person)...
-* ... and evaluate `str(n).startswith("A")` for each of them, resulting in a collection of Boolean values.
+* ... and evaluate `n.startswith("A")` for each of them, resulting in a collection of Boolean values.
 * The Python function `any(list)` returns `True` if at least one element in `list` is True.
 
 So, what we get is existential quantification:
 
 ```shell
-$ fandango fuzz -f persons.fan -n 10 -c 'any(str(n).startswith("A") for n in *<name>)'
+$ fandango fuzz -f persons.fan -n 10 -c 'any(n.startswith("A") for n in *<name>)'
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 -c 'any(str(n).startswith("A") for n in *<name>)' --validate
+!fandango fuzz -f persons.fan -n 10 -c 'any(n.startswith("A") for n in *<name>)' --validate
 assert _exit_code == 0
 ```
 
