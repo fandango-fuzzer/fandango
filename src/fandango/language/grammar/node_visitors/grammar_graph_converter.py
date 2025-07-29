@@ -13,20 +13,6 @@ class GrammarGraphNode:
     def __init__(self, node: Node, reaches: set["GrammarGraphNode"]):
         self.node = node
         self.reaches = reaches
-        self.read_symbol: Optional[Symbol] = None
-        self.push_symbol: Optional[Symbol] = None
-        self.pop_symbol: Optional[Symbol] = None
-
-    def set_read_symbol(self, symbol: Optional[Symbol]):
-        self.read_symbol = symbol
-
-    def set_push(self, symbol: Symbol):
-        self.pop_symbol = None
-        self.push_symbol = symbol
-
-    def set_pop(self, symbol: Symbol):
-        self.push_symbol = None
-        self.pop_symbol = symbol
 
 class GrammarGraph:
     def __init__(self, start: GrammarGraphNode):
@@ -104,7 +90,6 @@ class GrammarGraphConverterVisitor(NodeVisitor):
 
     def visitTerminalNode(self, node: TerminalNode):
         graph_node = GrammarGraphNode(node, set())
-        graph_node.set_read_symbol(node.symbol)
         return graph_node, {graph_node}
 
     def visitNonTerminalNode(self, node: NonTerminalNode):
@@ -123,6 +108,3 @@ class GrammarGraphConverterVisitor(NodeVisitor):
 
     def visitStar(self, node: Star):
         return self.visitRepetition(node)
-
-    def visitChildren(self, node: Node) -> AggregateType:
-        pass
