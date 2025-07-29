@@ -174,7 +174,7 @@ $ fandango talk -f cat-oracle.fan cat
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango talk -f cat-oracle.fan --population-size=1 cat
+!fandango talk -f cat-oracle.fan -n 1 --population-size 1  cat
 assert _exit_code == 0
 ```
 
@@ -253,7 +253,7 @@ $ fandango talk -f bc.fan -n 1 -c 'eval(str(<input>)) == int(<output>)' bc
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango talk -f bc.fan -n 1 -c 'eval(str(<input>)) == int(<output>)' bc
+!fandango talk -f bc.fan -n 1 --population-size 1 -c 'eval(str(<input>)) == int(<output>)' bc
 ```
 
 To ensure complete testing, we need to
