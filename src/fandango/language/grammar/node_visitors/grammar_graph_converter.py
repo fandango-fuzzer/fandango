@@ -1,5 +1,6 @@
-from fandango.language import NonTerminal, Terminal
-from fandango.language.grammar.has_settings import HasSettings
+from typing import Optional
+
+from fandango.language import NonTerminal, Terminal, Symbol
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor, AggregateType
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
@@ -12,6 +13,20 @@ class GrammarGraphNode:
     def __init__(self, node: Node, reaches: set["GrammarGraphNode"]):
         self.node = node
         self.reaches = reaches
+        self.read_symbol: Optional[Symbol] = None
+        self.push_symbol: Optional[Symbol] = None
+        self.pop_symbol: Optional[Symbol] = None
+
+    def set_read_symbol(self, symbol: Optional[Symbol]):
+        self.read_symbol = symbol
+
+    def set_push(self, symbol: Symbol):
+        self.pop_symbol = None
+        self.push_symbol = symbol
+
+    def set_pop(self, symbol: Symbol):
+        self.push_symbol = None
+        self.pop_symbol = symbol
 
 class GrammarGraph:
     def __init__(self, start: GrammarGraphNode):
@@ -24,6 +39,7 @@ class GrammarGraphConverterVisitor(NodeVisitor):
     def __init__(self):
         self.rules = None
         self.start_symbol = None
+        self.parent_chain = []
 
     def process(self, grammar_rules: dict[NonTerminal, Node], start_symbol: NonTerminal):
         self.rules = grammar_rules
@@ -32,7 +48,10 @@ class GrammarGraphConverterVisitor(NodeVisitor):
         return start_node
 
     def visit(self, node: Node) -> tuple[GrammarGraphNode, set[GrammarGraphNode]]:
-        return super().visit(node)
+        self.parent_chain.append(node)
+        visited = super().visit(node)
+        self.parent_chain.pop()
+        return visited
 
     @staticmethod
     def _set_next(node: GrammarGraphNode, next_nodes: set[GrammarGraphNode]):
@@ -85,10 +104,12 @@ class GrammarGraphConverterVisitor(NodeVisitor):
 
     def visitTerminalNode(self, node: TerminalNode):
         graph_node = GrammarGraphNode(node, set())
+        graph_node.set_read_symbol(node.symbol)
         return graph_node, {graph_node}
 
     def visitNonTerminalNode(self, node: NonTerminalNode):
         graph_node = GrammarGraphNode(node, set())
+
         to_visit = self.rules[node.symbol]
         chain_start, chain_end = self.visit(to_visit)
         self._set_next(graph_node, {chain_start})
