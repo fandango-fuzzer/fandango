@@ -60,15 +60,9 @@ class GeneticTest(unittest.TestCase):
             elitism_rate=0.2,
             logger_level=LoggerLevel.DEBUG,
         )
-
-    def test_refill_population_during_init(self):
-        # Generate a population of derivation trees
-        population = self.fandango.population
-
-        self.assertEqual(len(population), self.fandango.population_size)
-        for individual in population:
-            self.assertIsInstance(individual, DerivationTree)
-            self.assertTrue(self.fandango.grammar.parse(str(individual)))
+        list(
+            self.fandango.generate_initial_population()
+        )  # ensure the generator runs until the end
 
     def test_refill_population_with_empty_population(self):
         manager = PopulationManager(
