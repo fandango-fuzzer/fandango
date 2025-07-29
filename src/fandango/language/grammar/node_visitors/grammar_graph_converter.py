@@ -91,7 +91,7 @@ class GrammarGraphConverterVisitor(NodeVisitor):
     def visitAlternative(self, node: Alternative):
         chain_start = set()
         chain_end = set()
-        next_nodes = { self.visit(child) for child in node.children() }
+        next_nodes = [ self.visit(child) for child in node.children() ]
         for start_node, end_nodes in next_nodes:
             chain_start.add(start_node)
             for end_node in end_nodes:
@@ -146,7 +146,7 @@ class GrammarGraphConverterVisitor(NodeVisitor):
             chain_start, chain_end = self.visit(to_visit)
             graph_node = EagerGrammarGraphNode(node, {chain_start})
             self.parent_chain.pop()
-            return graph_node, {chain_end}
+            return graph_node, chain_end
 
     def visitPlus(self, node: Plus):
         return self.visitRepetition(node)
