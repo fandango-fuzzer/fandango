@@ -174,7 +174,7 @@ To access the `n`th _character_ of `<SYMBOL>`, use `str(<SYMBOL>)[n]`.
 : Return a list containing the values of all children of `<SYMBOL>`.
 
 ```{note}
-Each element of the list can have a different type, depending on the type of the sub-nodes of each child. Convert them into standard Python objects with `str()`, `bytes()`, or `int().`
+`TreeValue` objects can be converted into standard Python objects with `str()`, `bytes()`, or `int().` Alternatively, use the same base functionality from `str`, `bytes`, and `int` on them directly that is [implemented on entire `DerivationTree`s](sec:derivation-tree-direct-access-functions).
 ```
 
 `<SYMBOL_1> in <SYMBOL_2>`
@@ -192,7 +192,8 @@ Each element of the list can have a different type, depending on the type of the
 : Return a list containing the values of all descendants of `<SYMBOL>`; that is, the values of all children and their transitive children.
 
 ```{note}
-Each element of the list can have a different type, depending on the type of the sub-nodes of each child. Convert them into standard Python objects with `str()`, `bytes()`, or `int().```
+`TreeValue` objects can be converted into standard Python objects with `str()`, `bytes()`, or `int().` Alternatively, use the same base functionality from `str`, `bytes`, and `int` on them directly that is [implemented on entire `DerivationTree`s](sec:derivation-tree-direct-access-functions).
+```
 
 ### Accessing Parents
 
@@ -246,4 +247,9 @@ The bulk of available functions comes from the Python standard library. The vast
 
 * If a method is only implemented on one of the three base types, the `DerivationTree` internally is first transformed into that type (using `str(<SYMBOL>)` etc.).
 * If a method is implemented on multiple base types, but they always have different signatures (such as `.startswith`, which takes a `str` if called on a `str`, and `bytes` if called on `bytes`), the `DerivationTree` is transformed into the appropriate base type.
-* If a method is implemented on multiple base types, and there is no way to distinguish based on the signatures, the method is envoked on the underlying type. It is not recommended to use these functions, as they rely on knowledge of the type of the internal representation (which may change in the future). Simply convert the tree to the desired base type first (`str(<SYMBOL>).upper()`)
+* If a method is implemented on multiple base types, and there is no way to distinguish based on the signatures, the method is envoked on the underlying type. 
+
+```{deprecated} 1.0.4
+The last category of methods is not recommended — and thus deprecated — as they rely on knowledge of the type of the internal representation (which may change in the future). Simply convert the tree to the desired base type first (`str(<SYMBOL>).upper()`).
+```
+
