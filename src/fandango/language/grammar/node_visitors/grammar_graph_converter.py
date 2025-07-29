@@ -28,6 +28,11 @@ class GrammarGraphConverterVisitor(NodeVisitor):
     def process(self, grammar_rules: dict[NonTerminal, Node], start_symbol: NonTerminal):
         self.rules = grammar_rules
         self.start_symbol = start_symbol
+        start_node, end_nodes = self.visit(self.rules[start_symbol])
+        return start_node
+
+    def visit(self, node: Node) -> tuple[GrammarGraphNode, set[GrammarGraphNode]]:
+        return super().visit(node)
 
     @staticmethod
     def _set_next(node: GrammarGraphNode, next_nodes: set[GrammarGraphNode]):
@@ -84,8 +89,10 @@ class GrammarGraphConverterVisitor(NodeVisitor):
 
     def visitNonTerminalNode(self, node: NonTerminalNode):
         graph_node = GrammarGraphNode(node, set())
-
-        pass
+        to_visit = self.rules[node.symbol]
+        chain_start, chain_end = self.visit(to_visit)
+        self._set_next(graph_node, {chain_start})
+        return graph_node, chain_end
 
     def visitPlus(self, node: Plus):
         return self.visitRepetition(node)
