@@ -52,8 +52,17 @@ class LazyGrammarGraphNode(GrammarGraphNode):
 
     @property
     def reaches(self):
-        # Todo - implement lazy reachability
-        raise NotImplementedError("Not implemented yet.")
+        if self._reaches is not None:
+            return self._reaches
+        graph_converter = GrammarGraphConverterVisitor()
+        assert isinstance(self.node, NonTerminalNode)
+        #Todo initialize process
+        # graph_converter.process(self.grammar_rules, self.node.symbol)
+        start_node, end_nodes = graph_converter.visit(self.node)
+        self._reaches = {start_node}
+        for end_node in end_nodes:
+            self.add_egress(end_node)
+        return self._reaches
 
 class GrammarGraph:
     def __init__(self, start: GrammarGraphNode):
