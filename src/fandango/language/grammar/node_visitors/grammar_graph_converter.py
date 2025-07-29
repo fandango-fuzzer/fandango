@@ -9,7 +9,7 @@ from fandango.language.grammar.nodes.repetition import Repetition, Plus, Option,
 from fandango.language.grammar.nodes.terminal import TerminalNode
 
 class GrammarGraphNode:
-    def __init__(self, node: Node, reaches: set[Node]):
+    def __init__(self, node: Node, reaches: set["GrammarGraphNode"]):
         self.node = node
         self.reaches = reaches
 
@@ -19,35 +19,82 @@ class GrammarGraph:
         self.id_to_state: dict[str, GrammarGraphNode] = {}
 
 
-
 class GrammarGraphConverterVisitor(NodeVisitor):
 
-    def visit(self, node: Node):
-        pass
+    def __init__(self):
+        self.rules = None
+        self.start_symbol = None
+
+    def process(self, grammar_rules: dict[NonTerminal, Node], start_symbol: NonTerminal):
+        self.rules = grammar_rules
+        self.start_symbol = start_symbol
+
+    @staticmethod
+    def _set_next(node: GrammarGraphNode, next_nodes: set[GrammarGraphNode]):
+        for next_child in next_nodes:
+            node.reaches.add(next_child)
 
     def visitAlternative(self, node: Alternative):
-        pass
+        chain_start = set()
+        chain_end = set()
+        next_nodes = { self.visit(child) for child in node.children() }
+        for start_node, end_nodes in next_nodes:
+            chain_start.add(start_node)
+            for end_node in end_nodes:
+                chain_end.add(end_node)
+        return GrammarGraphNode(node, chain_start), chain_end
 
     def visitRepetition(self, node: Repetition):
-        pass
+        chain_start = None
+        chain_end = set()
+        intermediate_end = None
+
+        for idx in range(node.max):
+            if chain_start is None:
+                chain_start, intermediate_end = self.visit(node.node)
+            else:
+                next_node, next_end_nodes = self.visit(node.node)
+                for end_node in intermediate_end:
+                    self._set_next(end_node, {next_node})
+                intermediate_end = next_end_nodes
+            if idx >= node.min:
+                for node in intermediate_end:
+                    chain_end.add(node)
+        if chain_start is None:
+            chain_start = GrammarGraphNode(node, set())
+        return GrammarGraphNode(node, {chain_start}), chain_end
 
     def visitConcatenation(self, node: Concatenation):
-        pass
+        chain_start = None
+        chain_end = set()
+        for child in node.children():
+            if chain_start is None:
+                next_node, chain_end = self.visit(child)
+                chain_start = GrammarGraphNode(node, {next_node})
+            else:
+                next_node, next_end_nodes = self.visit(child)
+                for end_node in chain_end:
+                    self._set_next(end_node, {next_node})
+                chain_end = next_end_nodes
+        return chain_start, chain_end
 
     def visitTerminalNode(self, node: TerminalNode):
-        pass
+        graph_node = GrammarGraphNode(node, set())
+        return graph_node, {graph_node}
 
     def visitNonTerminalNode(self, node: NonTerminalNode):
+        graph_node = GrammarGraphNode(node, set())
+
         pass
 
     def visitPlus(self, node: Plus):
-        pass
+        return self.visitRepetition(node)
 
     def visitOption(self, node: Option):
-        pass
+        return self.visitRepetition(node)
 
     def visitStar(self, node: Star):
-        pass
+        return self.visitRepetition(node)
 
     def visitChildren(self, node: Node) -> AggregateType:
         pass
