@@ -62,18 +62,28 @@ def generate_file_name():
         '5', '-', '*', 'Z', '?', '3', 'b', 'v', 'U', 'D', '"', '9',
         'M', 'i', 'm', '8', ']', 'x', '7', '.', 'B'
     ]
+    # Previous versions of Fandango supported creating DerivationTrees directly in generators
+    # This is deprecated now because it involves additional parsing/serializing
+    # This old code serves as the original implementation, the above should be the equivalent string construction
+
     import random
     n = random.randint(0, 99)
-    c = [("<file_name_first_char>", [(random.choice(first), [])])]
-    file_name_chars = ("<file_name_chars>", [("", [])])
+    c = random.choice(first)
     for i in range(n):
-        file_name_chars = ("<file_name_chars>", [("<file_name_char>", [(random.choice(char), [])]), file_name_chars])
-    c.append(file_name_chars)
-    nuls = ("<NULs>", [("", [])])
+        c += random.choice(char)
     for i in range(99 - n):
-        nuls = ("<NULs>", [("<NUL>", [("\0", [])]), nuls])
-    c.append(nuls)
-    return "<file_name>", c
+        c += "\0"
+    return c
+    # c = [("<file_name_first_char>", [(random.choice(first), [])])]
+    # file_name_chars = ("<file_name_chars>", [("", [])])
+    # for i in range(n):
+    #     file_name_chars = ("<file_name_chars>", [("<file_name_char>", [(random.choice(char), [])]), file_name_chars])
+    # c.append(file_name_chars)
+    # nuls = ("<NULs>", [("", [])])
+    # for i in range(99 - n):
+    #     nuls = ("<NULs>", [("<NUL>", [("\0", [])]), nuls])
+    # c.append(nuls)
+    # return "<file_name>", c
 
 
 ## File Mode Length Constraint "file_mode_length_constraint"
@@ -133,10 +143,14 @@ where forall <entr> in <entry>:
 def generate_linked_file_name():
     import random
     if random.random() < 0.25 or True:
-        c = []
-        for i in range(100):
-            c.append(("<NUL>", [("\0", [])]))
-        return "<linked_file_name>", c
+        return "\0" * 100
+        # Previous versions of Fandango supported creating DerivationTrees directly in generators
+        # This is deprecated now because it involves additional parsing/serializing
+        # This old code serves as the original implementation, the above should be the equivalent string construction
+        # c = []
+        # for i in range(100):
+        #     c.append(("<NUL>", [("\0", [])]))
+        # return "<linked_file_name>", c
     first = [
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
         'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
@@ -156,12 +170,22 @@ def generate_linked_file_name():
     ]
     import random
     n = random.randint(0, 99)
-    c = [("<file_name_first_char>", [(random.choice(first), [])])]
+    c = random.choice(first)
     for i in range(n):
-        c.append(("<file_name_char_or_nul>", [("<file_name_char>", [(random.choice(char), [])])]))
+        c += random.choice(char)
     for i in range(99 - n):
-        c.append(("<file_name_char_or_nul>", [("<NUL>", [("\0", [])])]))
-    return "<linked_file_name>", c
+        c += "\0"
+    return c
+    # Previous versions of Fandango supported creating DerivationTrees directly in generators
+    # This is deprecated now because it involves additional parsing/serializing
+    # This old code serves as the original implementation, the above should be the equivalent string construction
+
+    # c = [("<file_name_first_char>", [(random.choice(first), [])])]
+    # for i in range(n):
+    #     c.append(("<file_name_char_or_nul>", [("<file_name_char>", [(random.choice(char), [])])]))
+    # for i in range(99 - n):
+    #     c.append(("<file_name_char_or_nul>", [("<NUL>", [("\0", [])])]))
+    # return "<linked_file_name>", c
 
 ## User Name Length Constraint "uname_length_constraint" (generator in grammar)
 
@@ -181,15 +205,24 @@ def generate_uname(name):
     ]
     import random
     n = random.randint(0, 31)
-    c = [("<uname_first_char>", [(random.choice(first), [])])]
+    c = random.choice(first)
     for i in range(n):
-        c.append(("<name_char_dollar_nul>", [("<uname_char>", [(random.choice(char), [])])]))
-    if n < 31 and random.random() < 0.5:
-        c.append(("<name_char_dollar_nul>", [("$", [])]))
-        n += 1
+        c += random.choice(char)
     for i in range(31 - n):
-        c.append(("<name_char_dollar_nul>", [("<NUL>", [("\0", [])])]))
-    return name, c
+        c += "\0"
+    return c
+    # Previous versions of Fandango supported creating DerivationTrees directly in generators
+    # This is deprecated now because it involves additional parsing/serializing
+    # This old code serves as the original implementation, the above should be the equivalent string construction
+    # c = [("<uname_first_char>", [(random.choice(first), [])])]
+    # for i in range(n):
+    #     c.append(("<name_char_dollar_nul>", [("<uname_char>", [(random.choice(char), [])])]))
+    # if n < 31 and random.random() < 0.5:
+    #     c.append(("<name_char_dollar_nul>", [("$", [])]))
+    #     n += 1
+    # for i in range(31 - n):
+    #     c.append(("<name_char_dollar_nul>", [("<NUL>", [("\0", [])])]))
+    # return name, c
 
 ## Group Name Length Constraint "gname_length_constraint" (generator in grammar)
 
@@ -239,13 +272,23 @@ def generate_content():
         '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', ']', '^', '_',
         '`', '{', '|', '}', '~', ' '
     ]
-    c = []
     n = random.randint(0, 512)
+    c = ""
     for i in range(n):
-        c.append(("<char_or_nul>", [("<character>", [(random.choice(chars), [])])]))
+        c += random.choice(chars)
     for i in range(512 - n):
-        c.append(("<char_or_nul>", [("<NUL>", [("\0", [])])]))
-    return "<content>", c
+        c += "\0"
+    return c
+
+    # Previous versions of Fandango supported creating DerivationTrees directly in generators
+    # This is deprecated now because it involves additional parsing/serializing
+    # This old code serves as the original implementation, the above should be the equivalent string construction
+    # c = []
+    # for i in range(n):
+    #     c.append(("<char_or_nul>", [("<character>", [(random.choice(chars), [])])]))
+    # for i in range(512 - n):
+    #     c.append(("<char_or_nul>", [("<NUL>", [("\0", [])])]))
+    # return "<content>", c
 
 ## 16. Content Size Constraint "content_size_constr" (constraint for the fuzzer)
 
