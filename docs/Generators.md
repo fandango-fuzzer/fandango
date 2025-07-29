@@ -243,14 +243,14 @@ Grammar symbols `<...>` support all [Python string methods](https://docs.python.
 :::
 
 ```shell
-$ fandango fuzz -f persons-faker.fan -c 'str(<last_name>).startswith("S")' -n 10
+$ fandango fuzz -f persons-faker.fan -c '<last_name>.startswith("S")' -n 10
 ```
 
 and we get
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons-faker.fan -c 'str(<last_name>).startswith("S")' -n 10 --validate
+!fandango fuzz -f persons-faker.fan -c '<last_name>.startswith("S")' -n 10 --validate
 assert _exit_code == 0
 ```
 
