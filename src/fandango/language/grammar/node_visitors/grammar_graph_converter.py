@@ -54,10 +54,8 @@ class LazyGrammarGraphNode(GrammarGraphNode):
     def reaches(self):
         if self._reaches is not None:
             return self._reaches
-        graph_converter = GrammarGraphConverterVisitor()
         assert isinstance(self.node, NonTerminalNode)
-        #Todo initialize process
-        # graph_converter.process(self.grammar_rules, self.node.symbol)
+        graph_converter = GrammarGraphConverterVisitor(self.grammar_rules, self.node.symbol)
         start_node, end_nodes = graph_converter.visit(self.node)
         self._reaches = {start_node}
         for end_node in end_nodes:
@@ -72,15 +70,13 @@ class GrammarGraph:
 
 class GrammarGraphConverterVisitor(NodeVisitor):
 
-    def __init__(self):
-        self.rules = None
-        self.start_symbol = None
-        self.parent_chain: list[NonTerminal] = []
-
-    def process(self, grammar_rules: dict[NonTerminal, Node], start_symbol: NonTerminal):
+    def __init__(self, grammar_rules: dict[NonTerminal, Node], start_symbol: NonTerminal):
         self.rules = grammar_rules
         self.start_symbol = start_symbol
-        start_node, end_nodes = self.visit(self.rules[start_symbol])
+        self.parent_chain: list[NonTerminal] = []
+
+    def process(self):
+        start_node, end_nodes = self.visit(self.rules[self.start_symbol])
         return start_node
 
     def visit(self, node: Node) -> tuple[GrammarGraphNode, set[GrammarGraphNode]]:
