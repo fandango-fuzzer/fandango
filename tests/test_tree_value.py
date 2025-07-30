@@ -561,3 +561,18 @@ def test_check_all_direct_methods_tested():
         + DIRECT_ACCESS_METHODS_BASE_TO_UNDERLYING_TYPE
     )
     assert sorted(in_tests) == sorted(implemented)
+
+
+@pytest.mark.parametrize(
+    "base_value",
+    [TreeValue("Hello, World!"), DerivationTree(Terminal("Hello, World!"))],
+)
+def test_tree_value_direct_access_non_base_type(base_value):
+    assert base_value.startswith("Hello")
+    with pytest.warns(DeprecationWarning):
+        assert base_value.startswith(TreeValue("Hello"))
+    with pytest.warns(DeprecationWarning):
+        assert base_value.startswith(DerivationTree(Terminal("Hello")))
+
+    with pytest.raises(Exception):
+        base_value.startswith(1.0)  # float is illegal base type

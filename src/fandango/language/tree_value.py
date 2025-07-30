@@ -69,12 +69,48 @@ def _attach_to_first_arg(
 
     def make_method(name):
         def method(self, *args, **kwargs):
+            message = (
+                "Using a {} arg to pass as a {} arg "
+                f"to {name} is deprecated "
+                "because there is no automated way of knowing which type to transform the underlying type to. "
+                "Use `str` or `bytes` to explicitly convert to the desired type first."
+            )
+
             if len(args) == 0:
-                assert len(kwargs) == 1, f"Method {name} must have exactly one argument"
-                first_arg_type = type(list(kwargs.values())[0])
+                assert (
+                    len(kwargs) == 1
+                ), f"Method {name} must have at least one unnamed argument or exactly one named argument"
+                k, v = list(kwargs.items())[0]
+                if (
+                    v.__class__.__name__ == "DerivationTree"
+                ):  # cannot import DerivationTree because of circular import
+                    v = v.value()._inner_value(
+                        message.format("DerivationTree", "keyword")
+                    )
+                elif isinstance(v, TreeValue):
+                    v = v._inner_value(message.format("TreeValue", "keyword"))
+                kwargs = {k: v}
+                first_arg_type = type(v)
             else:
-                assert len(args) >= 1, f"Method {name} must have at least one argument"
-                first_arg_type = type(args[0])
+                first_arg = args[0]
+                if (
+                    first_arg.__class__.__name__ == "DerivationTree"
+                ):  # cannot import DerivationTree because of circular import
+                    first_arg = first_arg.value()._inner_value(
+                        message.format("DerivationTree", "first")
+                    )
+                elif isinstance(first_arg, TreeValue):
+                    first_arg = first_arg._inner_value(
+                        message.format("TreeValue", "first")
+                    )
+                first_arg_type = type(first_arg)
+                args = (first_arg,) + args[1:]
+
+            assert first_arg_type in [
+                str,
+                bytes,
+                int,
+            ], f"Cannot determine the type the base should be converted to based on argument of type {first_arg_type.__name__}"
 
             base = first_arg_type(self)
             return getattr(base, name)(*args, **kwargs)
@@ -118,7 +154,12 @@ def _attach_to_underlying(
                     base_type = int if is_in_int else str if is_in_str else bytes
                     base = base_type(self)
                 case _:
-                    base = self._inner_value(name)
+                    message = (
+                        f"Using {name} on DerivationTree or TreeValue objects is deprecated "
+                        "because there is no automated way of knowing which type to transform the underlying type to. "
+                        "Use `str` or `bytes` to explicitly convert to the desired type first."
+                    )
+                    base = self._inner_value(message)
             return getattr(base, name)(*args, **kwargs)
 
         return method
@@ -596,18 +637,12 @@ class TreeValue:
             self._value, trailing_bits=self._trailing_bits, allow_empty=True
         )
 
-    def _inner_value(self, name: str) -> str | bytes | int:
+    def _inner_value(self, warn_message: str) -> str | bytes | int:
         """
         Don't you dare using this outside this class! This is a dirty, dirty hack to support the legacy interface.
         """
 
-        warnings.warn(
-            f"Using {name} on DerivationTree or TreeValue objects is deprecated "
-            "because there is no automated way of knowing which type to transform the underlying type to. "
-            "Use `str` or `bytes` to explicitly convert to the desired type first.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
+        warnings.warn(warn_message, DeprecationWarning, stacklevel=2)
 
         match self.type_:
             case TreeValueType.STRING:
