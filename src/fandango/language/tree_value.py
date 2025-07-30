@@ -60,59 +60,84 @@ def _bytes_to_str(value: bytes, encoding: str) -> str:
         )
 
 
+def _get_exclusive_base_type_method_is_implemented_for(name: str) -> Optional[type]:
+    """
+    If the method, whose name is passed, is implemented on only one of int, str, bytes, return that type.
+    If the method is implemented on more than one type, return None.
+    If the method is not implemented on any type, raise an error.
+    """
+    is_in_int = name in dir(1)
+    is_in_str = name in dir("1")
+    is_in_bytes = name in dir(b"1")
+    match is_in_int + is_in_str + is_in_bytes:
+        case 0:
+            raise FandangoValueError(
+                f"Method {name} is not implemented on any underlying type"
+            )
+        case 1:
+            return int if is_in_int else str if is_in_str else bytes
+        case _:
+            return None
+
+
 def _attach_to_first_arg(
     function_names: list[str],
 ):
     """
-    Decorator to add dunder methods to a class, delegating to the result of `to_method(self)`.
+    Decorator to add methods to a class, where self is transformed to either
+    (a) the only base type it is implemented on,
+    (b) the type of the first argument,
+    (c) the type of the only keyword argument.
+
+    If the first argument is a DerivationTree or TreeValue, it is converted to the underlying type. This is deprecated.
     """
 
     def make_method(name):
         def method(self, *args, **kwargs):
-            message = (
-                "Using a {} arg to pass as a {} arg "
-                f"to {name} is deprecated "
-                "because there is no automated way of knowing which type to transform the underlying type to. "
-                "Use `str` or `bytes` to explicitly convert to the desired type first."
-            )
+            base_type = _get_exclusive_base_type_method_is_implemented_for(name)
+            if base_type is None:
+                message = (
+                    "Using a {} arg to pass as a {} arg "
+                    f"to {name} is deprecated "
+                    "because there is no automated way of knowing which type to transform the underlying type to. "
+                    "Use `str` or `bytes` to explicitly convert to the desired type first."
+                )
 
-            if len(args) == 0:
-                assert (
-                    len(kwargs) == 1
-                ), f"Method {name} must have at least one unnamed argument or exactly one named argument"
-                k, v = list(kwargs.items())[0]
-                if (
-                    v.__class__.__name__ == "DerivationTree"
-                ):  # cannot import DerivationTree because of circular import
-                    v = v.value()._inner_value(
-                        message.format("DerivationTree", "keyword")
-                    )
-                elif isinstance(v, TreeValue):
-                    v = v._inner_value(message.format("TreeValue", "keyword"))
-                kwargs = {k: v}
-                first_arg_type = type(v)
-            else:
-                first_arg = args[0]
-                if (
-                    first_arg.__class__.__name__ == "DerivationTree"
-                ):  # cannot import DerivationTree because of circular import
-                    first_arg = first_arg.value()._inner_value(
-                        message.format("DerivationTree", "first")
-                    )
-                elif isinstance(first_arg, TreeValue):
-                    first_arg = first_arg._inner_value(
-                        message.format("TreeValue", "first")
-                    )
-                first_arg_type = type(first_arg)
-                args = (first_arg,) + args[1:]
+                if len(args) == 0:
+                    assert (
+                        len(kwargs) == 1
+                    ), f"Method {name} must have at least one unnamed argument or exactly one named argument"
+                    k, v = list(kwargs.items())[0]
+                    # cannot import DerivationTree because of circular import
+                    if v.__class__.__name__ == "DerivationTree":
+                        v = v.value()._inner_value(
+                            message.format("DerivationTree", "keyword")
+                        )
+                    elif isinstance(v, TreeValue):
+                        v = v._inner_value(message.format("TreeValue", "keyword"))
+                    base_type = type(v)
+                    kwargs = {k: v}
+                else:
+                    first_arg = args[0]
+                    # cannot import DerivationTree because of circular import
+                    if first_arg.__class__.__name__ == "DerivationTree":
+                        first_arg = first_arg.value()._inner_value(
+                            message.format("DerivationTree", "first")
+                        )
+                    elif isinstance(first_arg, TreeValue):
+                        first_arg = first_arg._inner_value(
+                            message.format("TreeValue", "first")
+                        )
+                    base_type = type(first_arg)
+                    args = (first_arg,) + args[1:]
 
-            assert first_arg_type in [
+            assert base_type in [
                 str,
                 bytes,
                 int,
-            ], f"Cannot determine the type the base should be converted to based on argument of type {first_arg_type.__name__}"
+            ], f"Cannot determine the type the base should be converted to based on argument of type {base_type.__name__}"
 
-            base = first_arg_type(self)
+            base = base_type(self)
             return getattr(base, name)(*args, **kwargs)
 
         return method
@@ -136,30 +161,23 @@ def _attach_to_underlying(
     function_names: list[str],
 ):
     """
-    Decorator to add dunder methods to a class, delegating to the result of `to_method(self)`.
+    Decorator to add methods to a class, where self is transformed to either (a) the only base type it is implemented on or (b) the underlying type and then the method is called on that.
+
+    (b) is deprecated.
     """
 
     def make_method(name):
         def method(self: TreeValue, *args, **kwargs):
-            is_in_int = name in dir(1)
-            is_in_str = name in dir("1")
-            is_in_bytes = name in dir(b"1")
-            match is_in_int + is_in_str + is_in_bytes:
-                case 0:
-                    raise FandangoValueError(
-                        f"Method {name} is not implemented on any underlying type"
-                    )
-                case 1:
-                    # only implemented on one type, so it's clear which one to use
-                    base_type = int if is_in_int else str if is_in_str else bytes
-                    base = base_type(self)
-                case _:
-                    message = (
-                        f"Using {name} on DerivationTree or TreeValue objects is deprecated "
-                        "because there is no automated way of knowing which type to transform the underlying type to. "
-                        "Use `str` or `bytes` to explicitly convert to the desired type first."
-                    )
-                    base = self._inner_value(message)
+            base_type = _get_exclusive_base_type_method_is_implemented_for(name)
+            if base_type is not None:
+                base = base_type(self)
+            else:
+                message = (
+                    f"Using {name} on DerivationTree or TreeValue objects is deprecated "
+                    "because there is no automated way of knowing which type to transform the underlying type to. "
+                    "Use `str` or `bytes` to explicitly convert to the desired type first."
+                )
+                base = self._inner_value(message)
             return getattr(base, name)(*args, **kwargs)
 
         return method
