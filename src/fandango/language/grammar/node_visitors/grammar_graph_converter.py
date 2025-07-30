@@ -1,3 +1,4 @@
+import abc
 from typing import Optional
 
 from fandango.language import NonTerminal, Terminal, Symbol
@@ -9,7 +10,7 @@ from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Repetition, Plus, Option, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
 
-class GrammarGraphNode:
+class GrammarGraphNode(abc.ABC):
     def __init__(self, node: Node):
         self.node = node
 
@@ -21,10 +22,12 @@ class GrammarGraphNode:
     def is_lazy(self):
         return False
 
+    @abc.abstractmethod
     def add_egress(self, node: "GrammarGraphNode"):
         raise NotImplementedError()
 
     @property
+    @abc.abstractmethod
     def reaches(self) -> set["GrammarGraphNode"]:
         raise NotImplementedError()
 
