@@ -84,7 +84,7 @@ def forward_to_tree_value_methods(
     function_names: list[str],
 ):
     """
-    Decorator to add dunder methods to a class, delegating to the result of `value().method(self)`.
+    Decorator to add methods to a class, delegating to the result of `value().method(self)`.
     """
 
     def make_method(name):
