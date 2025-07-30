@@ -31,29 +31,25 @@ from fandango.language.convert import (
     GrammarProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import (
-    FuzzingMode,
-    Grammar,
+from fandango.language.grammar import FuzzingMode, closest_match
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.node_visitors.message_nesting_detector import (
     MessageNestingDetector,
-    Node,
-    NodeReplacer,
-    NodeType,
-    NonTerminalNode,
-    Option,
-    PacketTruncator,
-    Plus,
-    Repetition,
-    Star,
-    SymbolFinder,
-    TerminalNode,
-    closest_match,
 )
+from fandango.language.grammar.node_visitors.node_replacer import NodeReplacer
+from fandango.language.grammar.node_visitors.packet_truncator import PacketTruncator
+from fandango.language.grammar.node_visitors.symbol_finder import SymbolFinder
+from fandango.language.grammar.nodes.node import Node, NodeType
+from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
+from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.parser import sa_fandango
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.search import DescendantAttributeSearch, ItemSearch
 from fandango.language.stdlib import stdlib
 from fandango.language.symbols import NonTerminal, Symbol
+from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER, print_exception
 
 
@@ -841,7 +837,7 @@ def check_grammar_types(
         if isinstance(tree, TerminalNode):
             tp = type(tree.symbol).__name__
             # LOGGER.debug(f"Type of {tree.symbol.symbol!r} is {tp!r}")
-            bits = 1 if tree.symbol.is_type(NoneType) else 0
+            bits = 1 if tree.symbol.is_type(TreeValueType.TRAILING_BITS_ONLY) else 0
             return tp, bits, bits, 0
 
         elif (

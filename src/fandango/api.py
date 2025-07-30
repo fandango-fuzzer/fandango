@@ -5,7 +5,8 @@ import logging
 import time
 from typing import IO, Optional
 from fandango.constraints.base import Constraint, SoftValue
-from fandango.language.grammar import FuzzingMode, Grammar, ParsingMode
+from fandango.language.grammar import FuzzingMode, ParsingMode
+from fandango.language.grammar.grammar import Grammar
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER

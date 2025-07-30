@@ -21,7 +21,9 @@ from fandango.io import FandangoIO, FandangoParty
 from fandango.io.packetforecaster import PacketForecaster
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.language import NonTerminal
-from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode, ParsingMode
+from fandango.language.grammar import FuzzingMode
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.tree import DerivationTree
 from fandango.logger import (
     LOGGER,
     clear_visualization,
@@ -128,33 +130,9 @@ class Fandango:
         self.mutation_method = mutation_method
 
         self.population = self._parse_and_deduplicate(population=initial_population)
-
-        LOGGER.info(
-            f"Generating (additional) initial population (size: {self.population_size - len(self.population)})..."
-        )
-        st_time = time.time()
-
-        with self.profiler.timer("initial_population") as timer:
-            self._initial_solutions = list(
-                self.population_manager.refill_population(
-                    current_population=self.population,
-                    eval_individual=self.evaluator.evaluate_individual,
-                    max_nodes=self.current_max_nodes,
-                    target_population_size=self.population_size,
-                )
-            )
-            timer.increment(len(self.population))
-
-        LOGGER.info(
-            f"Initial population generated in {time.time() - st_time:.2f} seconds"
-        )
-
-        # Evaluate initial population
-        with self.profiler.timer("evaluate_population", increment=self.population):
-            additional_solutions, self.evaluation = GeneratorWithReturn(
-                self.evaluator.evaluate_population(self.population)
-            ).collect()
-            self._initial_solutions.extend(additional_solutions)
+        self._initial_solutions, self.evaluation = GeneratorWithReturn(
+            self.evaluator.evaluate_population(self.population)
+        ).collect()
 
         self.crossovers_made = 0
         self.fixes_made = 0
@@ -192,6 +170,41 @@ class Fandango:
                 population=unique_population, candidate=tree, unique_set=unique_hashes
             )
         return unique_population
+
+    def generate_initial_population(self) -> Generator[DerivationTree, None, None]:
+        """
+        Extends the population to the target size. Does not perform fixes.
+
+        `.generate` will call this if necessary. If you don't know what you're doing, you probably don't need to call this.
+
+        Since this is a generator, it will only do its job if the generator is actually used. Call `list(fandango.generate_initial_population())` to ensure the generator runs until the end.
+
+        :return: A generator of DerivationTree objects, all of which are valid solutions to the grammar (or satisify the minimum fitness threshold).
+        """
+        LOGGER.info(
+            f"Generating (additional) initial population (size: {self.population_size - len(self.population)})..."
+        )
+        st_time = time.time()
+
+        with self.profiler.timer("initial_population") as timer:
+            yield from self.population_manager.refill_population(
+                current_population=self.population,
+                eval_individual=self.evaluator.evaluate_individual,
+                max_nodes=self.current_max_nodes,
+                target_population_size=self.population_size,
+            )
+
+            timer.increment(len(self.population))
+
+        LOGGER.info(
+            f"Initial population generated in {time.time() - st_time:.2f} seconds"
+        )
+
+        # Evaluate initial population
+        with self.profiler.timer("evaluate_population", increment=self.population):
+            self.evaluation = yield from self.evaluator.evaluate_population(
+                self.population
+            )
 
     def _perform_selection(self) -> tuple[list[DerivationTree], set[int]]:
         """
@@ -349,8 +362,12 @@ class Fandango:
         :param max_generations: The maximum number of generations to generate. If None, the generation will run indefinitely.
         :return: A generator of DerivationTree objects, all of which are valid solutions to the grammar (or satisify the minimum fitness threshold).
         """
-        while self._initial_solutions:
-            yield self._initial_solutions.pop(0)
+        yield from self._initial_solutions
+        self._initial_solutions.clear()
+
+        if len(self.population) < self.population_size:
+            yield from self.generate_initial_population()
+
         prev_best_fitness = 0.0
         generation = 0
 
@@ -447,11 +464,15 @@ class Fandango:
     def _generate_io(
         self, max_generations: Optional[int] = None
     ) -> Generator[DerivationTree, None, None]:
+        if len(self.population) < self.population_size:
+            list(
+                self.generate_initial_population()
+            )  # ensure the generator runs until the end
+
         spec_env_global, _ = self.grammar.get_spec_env()
         io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
         history_tree: DerivationTree = random.choice(self.population)
         forecaster = PacketForecaster(self.grammar)
-        self._initial_solutions.clear()
 
         while True:
             forecast = forecaster.predict(history_tree)

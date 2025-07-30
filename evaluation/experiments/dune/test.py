@@ -1,4 +1,4 @@
-from fandango.language.grammar import Grammar
+from fandango.language.grammar.grammar import Grammar
 from fandango.language.parse import parse
 from fandango.language.symbols import NonTerminal
 
