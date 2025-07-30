@@ -1,7 +1,8 @@
 import abc
 from typing import Optional
 
-from fandango.language import NonTerminal, Terminal, Symbol
+from fandango import FandangoError
+from fandango.language import NonTerminal, Terminal, Symbol, DerivationTree
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor, AggregateType
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
@@ -75,6 +76,37 @@ class GrammarGraph:
     def __init__(self, start: GrammarGraphNode):
         self.start = start
         self.id_to_state: dict[str, GrammarGraphNode] = {}
+
+    def walk(self, tree_root: DerivationTree):
+        return self._walk(self.start, [tree_root], 0)
+
+    def _walk(self, graph_node: GrammarGraphNode, tree_nodes: list[DerivationTree], tree_nodes_idx: int):
+        if issubclass(graph_node.node.__class__, (Concatenation, Repetition, Alternative)):
+            node_id = graph_node.node.id
+            node_type = graph_node.node.node_type
+            symbol = f"__{node_type}:{node_id}"
+        elif isinstance(graph_node.node, (TerminalNode, NonTerminalNode)):
+            symbol = graph_node.node.symbol
+
+        tree_node = tree_nodes[tree_nodes_idx]
+        if len(tree_node.children) == 0:
+            return graph_node
+
+        current_graph_node = graph_node
+        for idx, child in enumerate(tree_node.children):
+            found_node = False
+            for graph_child in graph_node.reaches:
+                try:
+                    current_graph_node = self._walk(current_graph_node, tree_node.children, idx)
+                    found_node = True
+                    break
+                except NoChildMatchError:
+                    continue
+            if not found_node:
+                raise FandangoError(f"Grammar graph doesn't match tree structure.")
+        return current_graph_node
+
+
 
 
 class GrammarGraphConverterVisitor(NodeVisitor):
