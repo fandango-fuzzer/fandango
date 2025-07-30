@@ -23,6 +23,6 @@ class PacketNavigator(AStar[GrammarGraphNode]):
         return 1
 
     def is_goal_reached(self, current: GrammarGraphNode, goal: GrammarGraphNode):
-        if isinstance(current.node, TerminalNode) and isinstance(goal.node, TerminalNode):
+        if isinstance(current.node, NonTerminalNode) and isinstance(goal.node, NonTerminalNode):
             return current.node.symbol == goal.node.symbol
         return False
