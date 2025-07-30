@@ -57,7 +57,8 @@ from pathlib import Path
 from ansi_styles import ansiStyles as styles
 
 from fandango import Fandango
-from fandango.language.grammar import Grammar, FuzzingMode, ParsingMode
+from fandango.language.grammar import FuzzingMode, ParsingMode
+from fandango.language.grammar.grammar import Grammar
 from fandango.language.parse import parse, clear_cache, cache_dir
 from fandango.logger import (
     LOGGER,

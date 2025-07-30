@@ -1,12 +1,10 @@
 import random
 from typing import Any, Callable
-from fandango.language.grammar import (
-    NODE_SETTINGS_DEFAULTS,
-    Grammar,
-    Node,
-    NonTerminalNode,
-    TerminalNode,
-)
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.grammar_settings import GrammarSetting
+from fandango.language.grammar.nodes.node import Node, NODE_SETTINGS_DEFAULTS
+from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.parse import parse
 
 FLOAT_KEY = next(
@@ -66,12 +64,13 @@ def test_can_parse_grammar_settings():
     gss = grammar._grammar_settings
     assert len(gss) == 1
     gs = gss[0]
+    assert isinstance(gs, GrammarSetting)
     assert gs._selector == "<start>"
     ns = gs._node_settings
     assert ns._settings[FLOAT_KEY] == 0.5
-    assert getattr(ns, FLOAT_KEY) == 0.5
+    assert ns.get(FLOAT_KEY) == 0.5
     assert INT_KEY not in ns._settings
-    assert getattr(ns, INT_KEY) == NODE_SETTINGS_DEFAULTS[INT_KEY]
+    assert ns.get(INT_KEY) == NODE_SETTINGS_DEFAULTS[INT_KEY]
 
     def match_start(node: Node) -> bool:
         return isinstance(node, NonTerminalNode) and node.symbol.name() == "<start>"
@@ -88,12 +87,13 @@ def test_assign_to_all_nonterminals():
     gss = grammar._grammar_settings
     assert len(gss) == 1
     gs = gss[0]
+    assert isinstance(gs, GrammarSetting)
     assert gs._selector == "all_with_type(NonTerminalNode)"
     ns = gs._node_settings
     assert ns._settings[FLOAT_KEY] == 0.5
-    assert getattr(ns, FLOAT_KEY) == 0.5
+    assert ns.get(FLOAT_KEY) == 0.5
     assert INT_KEY not in ns._settings
-    assert getattr(ns, INT_KEY) == NODE_SETTINGS_DEFAULTS[INT_KEY]
+    assert ns.get(INT_KEY) == NODE_SETTINGS_DEFAULTS[INT_KEY]
 
     def match_nts(node: Node) -> bool:
         return isinstance(node, NonTerminalNode)
@@ -110,12 +110,13 @@ def test_assign_to_all_terminals():
     gss = grammar._grammar_settings
     assert len(gss) == 1
     gs = gss[0]
+    assert isinstance(gs, GrammarSetting)
     assert gs._selector == "all_with_type(TerminalNode)"
     ns = gs._node_settings
     assert ns._settings[FLOAT_KEY] == 0.5
-    assert getattr(ns, FLOAT_KEY) == 0.5
+    assert ns.get(FLOAT_KEY) == 0.5
     assert INT_KEY not in ns._settings
-    assert getattr(ns, INT_KEY) == NODE_SETTINGS_DEFAULTS[INT_KEY]
+    assert ns.get(INT_KEY) == NODE_SETTINGS_DEFAULTS[INT_KEY]
 
     def match_ts(node: Node) -> bool:
         return isinstance(node, TerminalNode)
@@ -132,11 +133,12 @@ def test_assign_to_all():
     gss = grammar._grammar_settings
     assert len(gss) == 1
     gs = gss[0]
+    assert isinstance(gs, GrammarSetting)
     assert gs._selector == "*"
     assert gs._node_settings._settings[FLOAT_KEY] == 0.5
-    assert getattr(gs._node_settings, FLOAT_KEY) == 0.5
+    assert gs._node_settings.get(FLOAT_KEY) == 0.5
     assert INT_KEY not in gs._node_settings._settings
-    assert getattr(gs._node_settings, INT_KEY) == NODE_SETTINGS_DEFAULTS[INT_KEY]
+    assert gs._node_settings.get(INT_KEY) == NODE_SETTINGS_DEFAULTS[INT_KEY]
 
     def match_all(node: Node) -> bool:
         return True
@@ -158,6 +160,7 @@ def test_multiple_settings_lines():
     gss = grammar._grammar_settings
     assert len(gss) == 2
     for gs in gss:
+        assert isinstance(gs, GrammarSetting)
         assert (
             gs._selector == "all_with_type(NonTerminalNode)"
             or gs._selector == "all_with_type(TerminalNode)"
@@ -187,12 +190,13 @@ def test_multiple_key_value_pairs():
     gss = grammar._grammar_settings
     assert len(gss) == 1
     gs = gss[0]
+    assert isinstance(gs, GrammarSetting)
     assert gs._selector == "all_with_type(NonTerminalNode)"
     ns = gs._node_settings
     assert ns._settings[FLOAT_KEY] == 0.5
     assert ns._settings[INT_KEY] == 3
-    assert getattr(ns, FLOAT_KEY) == 0.5
-    assert getattr(ns, INT_KEY) == 3
+    assert ns.get(FLOAT_KEY) == 0.5
+    assert ns.get(INT_KEY) == 3
 
     def match_nts(node: Node) -> bool:
         return isinstance(node, NonTerminalNode)

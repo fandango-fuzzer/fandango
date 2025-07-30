@@ -11,7 +11,7 @@ from fandango.constraints.base import (
 from fandango.constraints.fitness import Comparison
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
-from fandango.language.grammar import Grammar
+from fandango.language.grammar.grammar import Grammar
 from fandango.language.search import (
     StarSearch,
     RuleSearch,

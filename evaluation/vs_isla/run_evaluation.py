@@ -49,7 +49,7 @@ def run_evaluation(time: int = 3600):
     better_print_results(evaluate_csv(seconds))
     better_print_results(evaluate_rest(seconds))
     better_print_results(evaluate_scriptsizec(seconds))
-    # better_print_results(evaluate_tar(seconds))
+    better_print_results(evaluate_tar(seconds))
     better_print_results(evaluate_xml(seconds))
 
 
