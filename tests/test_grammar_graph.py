@@ -18,9 +18,10 @@ def test_forecast_1():
     converter = GrammarGraphConverterVisitor(grammar.rules, NonTerminal("<start>"))
     graph = converter.process()
     navigator = PacketNavigator(graph)
-    start_node = graph.start
-    goal_node = start_node.reaches[0].reaches[0].reaches[0].reaches[0].reaches[0].reaches[0].reaches[0]
+    start_node = graph.start.reaches[0].reaches[0].reaches[0]
+    goal_node = graph.start.reaches[0].reaches[0].reaches[0].reaches[0].reaches[0].reaches[0].reaches[0]
     path = navigator.astar(start_node, goal_node)
     path = filter(lambda n: isinstance(n.node, NonTerminalNode) and n.node.sender is not None, path)
+    path = map(lambda n: n.node.symbol, path)
     path = list(path)
     print(path)
