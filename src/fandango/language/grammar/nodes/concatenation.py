@@ -1,28 +1,28 @@
-from typing import TYPE_CHECKING, Iterator, Sequence
+from collections.abc import Iterable, Iterator, Sequence
+from typing import TYPE_CHECKING
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:
-    from fandango.language.grammar.grammar import Grammar
-    from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
+    import fandango
 
 
 class Concatenation(Node):
     def __init__(
         self,
-        nodes: list[Node],
+        nodes: Iterable[Node],
         grammar_settings: Sequence[HasSettings],
         id: str = "",
     ):
         self.id = id
-        self.nodes = nodes
+        self.nodes = list(nodes)
         super().__init__(NodeType.CONCATENATION, grammar_settings)
 
     def fuzz(
         self,
         parent: DerivationTree,
-        grammar: "Grammar",
+        grammar: "fandango.language.grammar.grammar.Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
     ):
@@ -42,7 +42,10 @@ class Concatenation(Node):
             max_nodes -= parent.size() - prev_parent_size
             prev_parent_size = parent.size()
 
-    def accept(self, visitor: "NodeVisitor"):
+    def accept(
+        self,
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
+    ):
         return visitor.visitConcatenation(self)
 
     def children(self):
@@ -61,5 +64,7 @@ class Concatenation(Node):
     def format_as_spec(self) -> str:
         return " ".join(map(lambda x: x.format_as_spec(), self.nodes))
 
-    def descendents(self, grammar: "Grammar") -> Iterator["Node"]:
+    def descendents(
+        self, grammar: "fandango.language.grammar.grammar.Grammar"
+    ) -> Iterator["Node"]:
         yield from self.nodes
