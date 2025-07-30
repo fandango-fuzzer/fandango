@@ -1,4 +1,5 @@
 from fandango.api import Fandango
+from fandango.io.PacketNavigator import PacketNavigator
 from fandango.language import NonTerminal
 from fandango.language.grammar.node_visitors.grammar_graph_converter import GrammarGraphConverterVisitor
 from tests.utils import RESOURCES_ROOT
@@ -12,7 +13,12 @@ def get_grammar(path):
 
 
 def test_forecast_1():
-    grammar = get_grammar(RESOURCES_ROOT / "grammar.fan")
+    grammar = get_grammar(RESOURCES_ROOT / "minimal_io.fan")
     converter = GrammarGraphConverterVisitor(grammar.rules, NonTerminal("<start>"))
     graph = converter.process()
-    print(graph)
+    navigator = PacketNavigator(graph)
+    start_node = graph.node
+    goal_node = graph.node
+    path = navigator.astar(start_node, goal_node)
+    path = list(path)
+    print(path)
