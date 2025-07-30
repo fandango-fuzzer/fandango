@@ -34,7 +34,7 @@ jobs:
 
       - name: Check formatting with black
         run: |
-          black --check src
+          black --check src tests scripts
 
   mypy-check:
     runs-on: ${{ matrix.os }}
@@ -63,8 +63,10 @@ jobs:
             !src/fandango/language/parser/sa_fandango.py|
             !src/fandango/language/parser/*Parser*.py|
             !src/fandango/converters/antlr/ANTLRv4*.py
-            tests/**/*.py no type checking for tests
-            tests/**.py no type checking for tests
+            tests/**/*.py
+            tests/**.py
+            scripts/**/*.py
+            scripts/**.py
           separator: ' '
 
       # Step 3: Set up Python environment
