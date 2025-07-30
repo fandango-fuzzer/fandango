@@ -95,7 +95,7 @@ class GrammarGraph:
         current_graph_node = graph_node
         for idx, child in enumerate(tree_node.children):
             found_node = False
-            for graph_child in graph_node.reaches:
+            for current_graph_node in graph_node.reaches:
                 try:
                     current_graph_node = self._walk(current_graph_node, tree_node.children, idx)
                     found_node = True
