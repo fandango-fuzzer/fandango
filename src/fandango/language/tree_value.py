@@ -1,4 +1,5 @@
 from __future__ import annotations
+import enum
 
 from fandango.errors import FandangoValueError
 
@@ -16,12 +17,20 @@ def trailing_bits_to_int(trailing_bits: list[int]) -> int:
     return sum(bit << i for i, bit in enumerate(reversed(trailing_bits)))
 
 
+class TreeValueType(enum.Enum):
+    STRING = "string"
+    BYTES = "bytes"
+    TRAILING_BITS_ONLY = "trailing_bits"
+    EMPTY = "empty"
+
+
 class TreeValue:
     def __init__(
         self,
         value: str | bytes | int | None,
         *,
         trailing_bits: list[int] = [],
+        allow_empty: bool = False,
     ):
         self._value: str | bytes | None
         assert all(
@@ -37,7 +46,9 @@ class TreeValue:
             value = None
 
         if value is None:
-            assert len(trailing_bits) > 0, "None values must have trailing bits"
+            assert (
+                allow_empty or len(trailing_bits) > 0
+            ), "None values must have trailing bits"
 
         self._value = value
         self._trailing_bits = trailing_bits
@@ -70,11 +81,25 @@ class TreeValue:
             raise ValueError(f"Invalid value type: {type(self._value)}")
 
     @property
-    def type_(self) -> type:
-        return type(self._value)
+    def type_(self) -> TreeValueType:
+        if self._value is None:
+            if self._trailing_bits:
+                return TreeValueType.TRAILING_BITS_ONLY
+            else:
+                return TreeValueType.EMPTY
+        elif isinstance(self._value, str):
+            if self._trailing_bits:
+                # Trailing bits are reduced to bytes
+                return TreeValueType.BYTES
+            else:
+                return TreeValueType.STRING
+        elif isinstance(self._value, bytes):
+            return TreeValueType.BYTES
+        else:
+            raise ValueError(f"Invalid value type: {type(self._value)}")
 
-    def is_type(self, type_: type) -> bool:
-        return isinstance(self._value, type_)
+    def is_type(self, type_: TreeValueType) -> bool:
+        return self.type_ == type_
 
     def count_bytes(self) -> int:
         return len(self.to_bytes())
@@ -91,6 +116,9 @@ class TreeValue:
         :param str_to_bytes_encoding: The encoding to use when converting strings to bytes.
         :return: A new TreeValue.
         """
+
+        if self.is_type(TreeValueType.EMPTY):
+            return TreeValue(other._value, trailing_bits=other._trailing_bits)
 
         if other._value is None:
             trailing_bits = self._trailing_bits + other._trailing_bits
@@ -128,12 +156,12 @@ class TreeValue:
 
     def can_compare_with(self, right: object) -> bool:
         if isinstance(right, TreeValue):
-            return self.can_compare_with(right._value)
+            return self.is_type(right.type_)
 
         return (
-            (isinstance(right, int) and self._value is None)
-            or (isinstance(right, str) and self.is_type(str))
-            or (isinstance(right, bytes) and self.is_type(bytes))
+            (isinstance(right, int) and self.is_type(TreeValueType.TRAILING_BITS_ONLY))
+            or (isinstance(right, str) and self.is_type(TreeValueType.STRING))
+            or (isinstance(right, bytes) and self.is_type(TreeValueType.BYTES))
         )
 
     def to_string(
@@ -146,6 +174,9 @@ class TreeValue:
         :param bytes_to_str_encoding: The encoding to use when converting bytes to strings.
         :return: A string.
         """
+        if self.is_type(TreeValueType.EMPTY):
+            return ""
+
         # encoding with the same encoding in both direction
         self._reduce_trailing_bits(str_to_bytes_encoding=bytes_to_str_encoding)
         if isinstance(self._value, str):
@@ -164,6 +195,9 @@ class TreeValue:
         :param str_to_bytes_encoding: The encoding to use when converting strings to bytes.
         :return: A bytes object.
         """
+        if self.is_type(TreeValueType.EMPTY):
+            return b""
+
         self._reduce_trailing_bits(str_to_bytes_encoding=str_to_bytes_encoding)
         if isinstance(self._value, bytes):
             return self._value
@@ -258,3 +292,7 @@ class TreeValue:
             return f"{self._value!r} + bits: {''.join(str(bit) for bit in self._trailing_bits)}"
         else:
             return repr(self._value)
+
+    @classmethod
+    def empty(cls) -> TreeValue:
+        return TreeValue(None, trailing_bits=[], allow_empty=True)

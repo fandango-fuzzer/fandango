@@ -10,7 +10,7 @@ def test_msg_exchange():
     with open(RESOURCES_ROOT / "minimal_io.fan") as f:
         spec = f.read()
     fandango = Fandango(spec, use_stdlib=False, use_cache=False)
-    result_list = fandango.fuzz(mode=FuzzingMode.IO)
+    result_list = fandango.fuzz(mode=FuzzingMode.IO, population_size=1)
     assert len(result_list) == 1
     result = result_list[0]
     assert isinstance(result, DerivationTree)

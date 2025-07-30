@@ -1,5 +1,4 @@
 import copy
-from types import NoneType
 from typing import Any, Optional, TYPE_CHECKING, TypeVar, cast
 from collections.abc import Iterable, Iterator
 
@@ -8,6 +7,7 @@ from fandango.language.tree_value import (
     BYTES_TO_STRING_ENCODING,
     STRING_TO_BYTES_ENCODING,
     TreeValue,
+    TreeValueType,
 )
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ T = TypeVar("T")
 if TYPE_CHECKING:
     TreeTuple = tuple[T, list["TreeTuple[T]"]]
 else:
-    TreeTuple = tuple  # beartype falls over with recursive types
+    TreeTuple = tuple[T, list]  # beartype falls over with recursive types
 
 
 class ProtocolMessage:
@@ -390,16 +390,13 @@ class DerivationTree:
     @staticmethod
     def from_tree(tree: TreeTuple[str]) -> "DerivationTree":
         symbol, children = tree
-        if not isinstance(symbol, str):
-            raise TypeError(f"{symbol} must be a string")
         new_symbol: Symbol
         if symbol.startswith("<") and symbol.endswith(">"):
             new_symbol = NonTerminal(symbol)
         else:
             new_symbol = Terminal(symbol)
-        return DerivationTree(
-            new_symbol, [DerivationTree.from_tree(child) for child in children]
-        )
+        parsed_children = [DerivationTree.from_tree(child) for child in children]
+        return DerivationTree(new_symbol, parsed_children)
 
     def deepcopy(
         self,
@@ -459,9 +456,11 @@ class DerivationTree:
         """
         Return true if the derivation tree should be serialized to bytes.
         """
-        return self._contains_type(NoneType) or self._contains_type(bytes)
+        return self._contains_type(
+            TreeValueType.TRAILING_BITS_ONLY
+        ) or self._contains_type(TreeValueType.BYTES)
 
-    def _contains_type(self, tp: type) -> bool:
+    def _contains_type(self, tp: TreeValueType) -> bool:
         """
         Return true if the derivation tree contains any terminal symbols of type `tp` (say, `int` or `bytes`).
         """
@@ -473,13 +472,13 @@ class DerivationTree:
         """
         Return true iff the derivation tree contains any bits (0 or 1).
         """
-        return self._contains_type(NoneType)
+        return self._contains_type(TreeValueType.TRAILING_BITS_ONLY)
 
     def contains_bytes(self) -> bool:
         """
         Return true iff the derivation tree contains any byte strings.
         """
-        return self._contains_type(bytes)
+        return self._contains_type(TreeValueType.BYTES)
 
     def to_string(self, *, encoding: str = BYTES_TO_STRING_ENCODING) -> str:
         """
@@ -584,7 +583,7 @@ class DerivationTree:
                     terminal = cast(Terminal, child.symbol)
                     s += " " + repr(terminal)
                     terminal_symbols += 1
-                    if terminal.is_type(NoneType):
+                    if terminal.is_type(TreeValueType.TRAILING_BITS_ONLY):
                         if bit_count <= 0:
                             bit_count = 7
                             max_bit_count = 7
@@ -904,39 +903,27 @@ class DerivationTree:
         except ValueError:
             return -1
 
-    ## General purpose converters
-    def _value(self) -> Optional[TreeValue]:
-        """
-        Convert the derivation tree into a standard Python value.
-        Returns the value and the number of bits used.
-        """
+    def value(self) -> TreeValue:
         if self.symbol.is_terminal:
             return self.symbol.value()
 
-        aggregate: TreeValue | None = None
+        aggregate = TreeValue.empty()
         for child in self._children:
-            value = child._value()
-            if value is None:
-                continue
-            if aggregate is None:
-                aggregate = value
-                continue
-            aggregate = aggregate.append(value)
-        return aggregate
-
-    def value(self) -> TreeValue:
-        aggregate = self._value()
-        if aggregate is None:
-            raise ValueError(
-                "Does not have a value, probably because it does not contain a terminal"
-            )
+            aggregate = aggregate.append(child.value())
         return aggregate
 
     def to_value(self) -> str:
         value = self.value()
-        if isinstance(value, int):
-            return "0b" + format(value, "b") + f" ({value})"
-        return repr(self.value())
+        if value.is_type(TreeValueType.EMPTY):
+            return ""
+        elif value.is_type(TreeValueType.TRAILING_BITS_ONLY):
+            return "0b" + value.to_bits()
+        elif value.is_type(TreeValueType.STRING):
+            return str(value)
+        elif value.is_type(TreeValueType.BYTES):
+            return str(bytes(value))
+        else:
+            raise ValueError(f"Invalid value type: {value.type_}")
 
     ## Comparison operations
     def __eq__(self, other: Any) -> bool:

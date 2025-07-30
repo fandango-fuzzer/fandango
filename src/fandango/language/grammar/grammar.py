@@ -1,7 +1,8 @@
 from collections.abc import Generator
 from collections import defaultdict
-from types import NoneType
-from typing import Any, Sequence, cast, Optional, Union
+from typing import Any, cast, Optional, Union
+from collections.abc import Sequence
+import warnings
 
 
 from fandango.errors import FandangoValueError, FandangoParseError
@@ -15,7 +16,7 @@ from fandango.language.grammar.nodes.char_set import CharSet
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
-import fandango.language.grammar.nodes.repetition as repetition_mod
+import fandango.language.grammar.nodes as nodes
 from fandango.language.grammar.nodes.repetition import (
     Option,
     Plus,
@@ -24,8 +25,9 @@ from fandango.language.grammar.nodes.repetition import (
 )
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.grammar.parser.parser import Parser
-from fandango.language.tree import DerivationTree
+from fandango.language.tree import DerivationTree, TreeTuple
 from fandango.language.symbols import Symbol, NonTerminal
+from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER
 
 
@@ -159,7 +161,7 @@ class Grammar(NodeVisitor):
         self,
         symbol: str | NonTerminal = "<start>",
         sources: Optional[list[DerivationTree]] = None,
-    ) -> tuple[list[DerivationTree], str]:
+    ) -> tuple[list[DerivationTree], str | bytes | TreeTuple[str]]:
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         if self.generators[symbol] is None:
@@ -201,17 +203,15 @@ class Grammar(NodeVisitor):
         if isinstance(symbol, str):
             symbol = NonTerminal(symbol)
         sources, string = self.generate_string(symbol, sources)
-        if not (
-            isinstance(string, str)
-            or isinstance(string, bytes)
-            or isinstance(string, int)
-            or isinstance(string, tuple)
-        ):
+        if not (isinstance(string, (str, bytes, int, tuple))):
             raise TypeError(
                 f"Generator {self.generators[symbol]} must return string, bytes, int, or tuple (returned {string!r})"
             )
 
         if isinstance(string, tuple):
+            warnings.warn(
+                "Returning a tree in the shape of a tuple from a generator is deprecated, as it is parsed into a tree, then immediately stringified and parsed against the grammar. You should instead return a str/bytes directly"
+            )
             string = str(DerivationTree.from_tree(string))
         tree = self.parse(string, symbol)
         if tree is None:
@@ -279,7 +279,7 @@ class Grammar(NodeVisitor):
 
     def parse(
         self,
-        word: str | bytes | DerivationTree,
+        word: str | bytes | int | DerivationTree,
         start: str | NonTerminal = "<start>",
         mode: ParsingMode = ParsingMode.COMPLETE,
         hookin_parent: Optional[DerivationTree] = None,
@@ -635,11 +635,23 @@ class Grammar(NodeVisitor):
     def get_spec_env(self):
         return self._global_variables, self._local_variables
 
-    def contains_type(self, tp: type, *, start="<start>") -> bool:
+    def contains_type(self, tp: TreeValueType, *, start="<start>") -> bool:
         """
         Return true if the grammar can produce an element of type `tp` (say, `int` or `bytes`).
         * `start`: a start symbol other than `<start>`.
         """
+        if isinstance(tp, TreeValueType):
+            tvt = tp
+        else:
+            if isinstance(tp, str):
+                tvt = TreeValueType.STRING
+            elif isinstance(tp, bytes):
+                tvt = TreeValueType.BYTES
+            elif isinstance(tp, int):
+                tvt = TreeValueType.TRAILING_BITS_ONLY
+            else:
+                raise FandangoValueError(f"Invalid type: {type(tp)}")
+
         if isinstance(start, str):
             start = NonTerminal(start)
 
@@ -655,8 +667,9 @@ class Grammar(NodeVisitor):
                 return False
             seen.add(node)
 
-            if isinstance(node, TerminalNode) and node.symbol.is_type(tp):
-                return True
+            if isinstance(node, TerminalNode):
+                if node.symbol.is_type(tvt):
+                    return True
             if any(node_matches(child) for child in node.children()):
                 return True
             if isinstance(node, NonTerminalNode):
@@ -670,24 +683,17 @@ class Grammar(NodeVisitor):
         Return true iff the grammar can produce a bit element (0 or 1).
         * `start`: a start symbol other than `<start>`.
         """
-        return self.contains_type(NoneType, start=start)
+        return self.contains_type(TreeValueType.TRAILING_BITS_ONLY, start=start)
 
     def contains_bytes(self, *, start="<start>") -> bool:
         """
         Return true iff the grammar can produce a bytes element.
         * `start`: a start symbol other than `<start>`.
         """
-        return self.contains_type(bytes, start=start)
-
-    def contains_strings(self, *, start="<start>") -> bool:
-        """
-        Return true iff the grammar can produce a (UTF-8) string element.
-        * `start`: a start symbol other than `<start>`.
-        """
-        return self.contains_type(str, start=start)
+        return self.contains_type(TreeValueType.BYTES, start=start)
 
     def set_max_repetition(self, max_rep: int):
-        repetition_mod.MAX_REPETITIONS = max_rep
+        nodes.MAX_REPETITIONS = max_rep
 
     def get_max_repetition(self):
-        return repetition_mod.MAX_REPETITIONS
+        return nodes.MAX_REPETITIONS
