@@ -18,6 +18,9 @@ class GrammarGraphNode:
             return self.node.symbol
         return None
 
+    def is_lazy(self):
+        return False
+
     def add_egress(self, node: "GrammarGraphNode"):
         raise NotImplementedError()
 
@@ -43,6 +46,9 @@ class LazyGrammarGraphNode(GrammarGraphNode):
         self.grammar_rules = grammar_rules
         self._chain_end_egress = set()
         self._reaches: Optional[set[GrammarGraphNode]] = None
+
+    def is_lazy(self):
+        return True
 
     def add_egress(self, node: GrammarGraphNode):
         if self._reaches is None:
