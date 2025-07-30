@@ -89,6 +89,8 @@ class GrammarGraph:
             symbol = graph_node.node.symbol
 
         tree_node = tree_nodes[tree_nodes_idx]
+        if tree_node.symbol.value() != symbol:
+            raise FandangoError(f"Grammar graph node {symbol} doesn't match tree node {tree_node.symbol.value()}.")
         if len(tree_node.children) == 0:
             return graph_node
 
