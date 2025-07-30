@@ -2,6 +2,7 @@ from fandango.api import Fandango
 from fandango.io.PacketNavigator import PacketNavigator
 from fandango.language import NonTerminal
 from fandango.language.grammar.node_visitors.grammar_graph_converter import GrammarGraphConverterVisitor
+from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from tests.utils import RESOURCES_ROOT
 
 
@@ -20,5 +21,6 @@ def test_forecast_1():
     start_node = graph.start
     goal_node = start_node.reaches[0].reaches[0].reaches[0].reaches[0].reaches[0].reaches[0].reaches[0]
     path = navigator.astar(start_node, goal_node)
+    path = filter(lambda n: isinstance(n.node, NonTerminalNode) and n.node.sender is not None, path)
     path = list(path)
     print(path)
