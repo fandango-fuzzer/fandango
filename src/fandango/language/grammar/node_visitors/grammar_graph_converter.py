@@ -87,6 +87,8 @@ class GrammarGraph:
             symbol = f"__{node_type}:{node_id}"
         elif isinstance(graph_node.node, (TerminalNode, NonTerminalNode)):
             symbol = graph_node.node.symbol
+        else:
+            raise FandangoError(f"Unsupported node type: {graph_node.node.__class__.__name__}")
 
         tree_node = tree_nodes[tree_nodes_idx]
         if tree_node.symbol.value() != symbol:
@@ -98,12 +100,11 @@ class GrammarGraph:
         for idx, child in enumerate(tree_node.children):
             found_node = False
             for current_graph_node in graph_node.reaches:
-                try:
-                    current_graph_node = self._walk(current_graph_node, tree_node.children, idx)
+                walked_graph = self._walk(current_graph_node, tree_node.children, idx)
+                if walked_graph is not None:
                     found_node = True
+                    current_graph_node = walked_graph
                     break
-                except NoChildMatchError:
-                    continue
             if not found_node:
                 raise FandangoError(f"Grammar graph doesn't match tree structure.")
         return current_graph_node
