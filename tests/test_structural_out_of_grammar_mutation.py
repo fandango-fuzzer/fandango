@@ -1,25 +1,16 @@
-import contextlib
-from io import StringIO
 import logging
-import os
 import re
-import subprocess
-import sys
-import tempfile
 from typing import Counter
 
 import pytest
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.grammar_settings import GrammarSetting
 from fandango.language.grammar.nodes.alternative import Alternative
-from fandango.language.grammar.nodes.node import NodeSettings
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.parse import parse
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.symbols.terminal import Terminal
 from fandango.language.tree import DerivationTree
-from fandango.language.tree_value import TreeValueType
-from fandango.logger import LOGGER
 
 REPETITIONS = 1000
 
@@ -37,15 +28,15 @@ setting all_with_type(TerminalNode) terminal_should_repeat = 1.0
     for _ in range(REPETITIONS):
         tree = grammar.fuzz()
         assert tree is not None
-        counter = Counter(tree.to_string())
-        assert len(counter) < 2
-        if len(counter) == 1:
-            assert "a" in counter
-            assert counter["a"] != 1
+        tree_str = str(tree)
+        num_as = tree_str.count("a")
+        assert len(tree_str) == num_as
+        if num_as > 1:
             found_multiple = True
-        else:
-            assert tree.to_string() == ""
+        elif num_as == 0:
             found_empty = True
+        else:
+            assert False, f"Unexpected tree: {tree_str}"
     assert found_empty
     assert found_multiple
 
