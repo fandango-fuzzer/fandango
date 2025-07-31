@@ -1,26 +1,38 @@
 from astar import AStar
 
 from fandango.language import DerivationTree, Symbol, NonTerminal, Terminal
-from fandango.language.grammar.grammar_settings import GrammarSetting
-from fandango.language.grammar.node_visitors.grammar_graph_converter import GrammarGraphNode, GrammarGraph, \
-    LazyGrammarGraphNode, EagerGrammarGraphNode
+from fandango.language.grammar.node_visitors.grammar_graph_converter import GrammarGraphNode, GrammarGraph, EagerGrammarGraphNode
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode
 
 
-class PacketNavigator(AStar[GrammarGraphNode]):
+class GrammarNavigator(AStar[GrammarGraphNode]):
 
     def __init__(self, graph: GrammarGraph):
         self.graph = graph
+        self.message_cost = 0
+        self.non_terminal_cost = 0
+        self.node_cost = 0
 
     def neighbors(self, n: GrammarGraphNode):
         return n.reaches
 
+    def set_message_cost(self, cost: int):
+        self.message_cost = cost
+
+    def set_non_terminal_cost(self, cost: int):
+        self.non_terminal_cost = cost
+
+    def set_node_costs(self, cost: int):
+        self.node_cost = cost
+
     def distance_between(self, n1: GrammarGraphNode, n2: GrammarGraphNode):
         if isinstance(n2.node, NonTerminalNode):
             if n2.node.sender is not None:
-                return 1
-        return 0
+                return self.message_cost
+            else:
+                return self.non_terminal_cost
+        return self.node_cost
 
     def heuristic_cost_estimate(self, current, goal):
         return 1
