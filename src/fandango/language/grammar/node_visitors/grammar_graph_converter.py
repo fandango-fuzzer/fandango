@@ -68,12 +68,11 @@ class LazyGrammarGraphNode(GrammarGraphNode):
         assert isinstance(self.node, NonTerminalNode)
         graph_converter = GrammarGraphConverterVisitor(self.grammar_rules, self.node.symbol)
         start_node, end_nodes = graph_converter.visit(self.grammar_rules[self.node.symbol])
-        self_node = EagerGrammarGraphNode(self.node, [start_node])
+        self._loaded_reaches = [start_node]
         for end_node in end_nodes:
             for chain_end in self._pre_load_reaches:
                 end_node.add_egress(chain_end)
 
-        self._loaded_reaches = self_node.reaches
         return self._loaded_reaches
 
 class GrammarGraph:
