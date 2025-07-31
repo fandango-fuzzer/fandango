@@ -1,0 +1,55 @@
+from copy import deepcopy
+
+from fandango.io.navigation.grammarnavigator import GrammarNavigator
+from fandango.io.navigation.grammarreducer import GrammarReducer
+from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
+from fandango.language import Grammar, NonTerminal, DerivationTree
+from fandango.language.grammar import ParsingMode
+from fandango.language.grammar.node_visitors.grammar_graph_converter import GrammarGraphConverter
+
+
+class PacketNavigator(GrammarNavigator):
+
+    def __init__(self, grammar: Grammar, start_symbol: NonTerminal = NonTerminal("<start>")):
+        reduced_rules = GrammarReducer(grammar.grammar_settings).process(
+            grammar.rules, start_symbol
+        )
+        graph_converter = GrammarGraphConverter(reduced_rules, NonTerminal("<start>"))
+        graph = graph_converter.process()
+        super().__init__(graph)
+        self._parser = PacketIterativeParser(
+            reduced_rules
+        )
+        self.set_message_cost(1)
+
+
+    def astar_tree(self, tree: DerivationTree, goal_symbol: NonTerminal):
+        history_nts = ""
+        for r_msg in tree.protocol_msgs():
+            assert isinstance(r_msg.msg.symbol, NonTerminal)
+            history_nts += r_msg.msg.symbol.name()
+        self._parser.detailed_tree = tree
+
+        self._parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
+        paths = []
+        for suggested_tree in self._parser.consume(history_nts):
+            for orig_r_msg, r_msg in zip(
+                    tree.protocol_msgs(), suggested_tree.protocol_msgs()
+            ):
+                assert isinstance(r_msg.msg.symbol, NonTerminal)
+                assert isinstance(orig_r_msg.msg.symbol, NonTerminal)
+                if (
+                        r_msg.msg.symbol.name()[9:] == orig_r_msg.msg.symbol.name()[1:]
+                        and r_msg.sender == orig_r_msg.sender
+                        and r_msg.recipient == orig_r_msg.recipient
+                ):
+                    pass # Todo set children for computed length repetitions
+                else:
+                    break
+            else:
+                paths.append(super().astar_tree(suggested_tree, goal_symbol))
+
+        paths.sort(key=lambda path: len(path))
+        if len(paths) == 0:
+            return None
+        return paths[0]

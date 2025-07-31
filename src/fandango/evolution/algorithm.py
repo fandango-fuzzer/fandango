@@ -18,7 +18,7 @@ from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import PopulationManager, IoPopulationManager
 from fandango.evolution.profiler import Profiler
 from fandango.io import FandangoIO, FandangoParty
-from fandango.io.packetforecaster import PacketForecaster
+from fandango.io.navigation.packetforecaster import PacketForecaster
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.language import NonTerminal
 from fandango.language.grammar import FuzzingMode
