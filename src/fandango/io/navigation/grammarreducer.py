@@ -1,5 +1,4 @@
-from typing import Sequence
-
+from collections.abc import Sequence
 from fandango.errors import FandangoValueError
 from fandango.language import NonTerminal, Terminal
 from fandango.language.grammar.has_settings import HasSettings

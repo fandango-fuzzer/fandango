@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 from fandango.io.navigation.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.grammarreducer import GrammarReducer
 from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
