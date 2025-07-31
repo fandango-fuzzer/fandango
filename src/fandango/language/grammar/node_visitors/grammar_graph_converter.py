@@ -78,36 +78,41 @@ class GrammarGraph:
         self.id_to_state: dict[str, GrammarGraphNode] = {}
 
     def walk(self, tree_root: DerivationTree):
-        return self._walk(self.start, [tree_root], 0)
+        return self._walk(self.start, tree_root)
 
-    def _walk(self, graph_node: GrammarGraphNode, tree_nodes: list[DerivationTree], tree_nodes_idx: int):
-        if issubclass(graph_node.node.__class__, (Concatenation, Repetition, Alternative)):
-            node_id = graph_node.node.id
-            node_type = graph_node.node.node_type
-            symbol = f"__{node_type}:{node_id}"
-        elif isinstance(graph_node.node, (TerminalNode, NonTerminalNode)):
-            symbol = graph_node.node.symbol
+    def _walk(self, graph_node: GrammarGraphNode, tree_node: DerivationTree):
+        if issubclass(graph_node.node.__class__, (NonTerminalNode, Concatenation, Repetition, Alternative)):
+            if isinstance(graph_node.node, NonTerminalNode):
+                symbol = graph_node.node.symbol
+            else:
+                node_id = graph_node.node.id
+                symbol = NonTerminal(f"<__{node_id}>")
+            if tree_node.symbol != symbol:
+                raise FandangoError(f"Grammar graph node {symbol.value()} doesn't match tree node {tree_node.symbol.value()}.")
+        elif isinstance(graph_node.node, TerminalNode):
+            if not graph_node.node.symbol.check(tree_node.symbol.value().to_string())[0]:
+                # Todo other tree value types
+                raise FandangoError(f"Grammar graph node {graph_node.node.symbol.value()} doesn't match tree node {tree_node.symbol.value()}.")
         else:
             raise FandangoError(f"Unsupported node type: {graph_node.node.__class__.__name__}")
 
-        tree_node = tree_nodes[tree_nodes_idx]
-        if tree_node.symbol.value() != symbol:
-            raise FandangoError(f"Grammar graph node {symbol} doesn't match tree node {tree_node.symbol.value()}.")
         if len(tree_node.children) == 0:
             return graph_node
 
-        current_graph_node = graph_node
-        for idx, child in enumerate(tree_node.children):
+        for child in tree_node.children:
             found_node = False
             for current_graph_node in graph_node.reaches:
-                walked_graph = self._walk(current_graph_node, tree_node.children, idx)
+                try:
+                    walked_graph = self._walk(current_graph_node, child)
+                except FandangoError:
+                    walked_graph = None
                 if walked_graph is not None:
                     found_node = True
-                    current_graph_node = walked_graph
+                    graph_node = walked_graph
                     break
             if not found_node:
                 raise FandangoError(f"Grammar graph doesn't match tree structure.")
-        return current_graph_node
+        return graph_node
 
 
 
@@ -121,6 +126,7 @@ class GrammarGraphConverterVisitor(NodeVisitor):
 
     def process(self):
         start_node, end_nodes = self.visit(self.rules[self.start_symbol])
+        start_node = EagerGrammarGraphNode(NonTerminalNode(self.start_symbol, []), [start_node])
         graph = GrammarGraph(start_node)
         return graph
 
