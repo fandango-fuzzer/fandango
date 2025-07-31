@@ -28,7 +28,11 @@ class GrammarReducer(NodeVisitor):
         self.seen_keys: set[NonTerminal] = set()
         self.processed_keys: set[NonTerminal] = set()
 
-    def process(self, rules: dict[NonTerminal, Node], start_symbol: NonTerminal = NonTerminal("<start>")) -> dict[NonTerminal, Node]:
+    def process(
+        self,
+        rules: dict[NonTerminal, Node],
+        start_symbol: NonTerminal = NonTerminal("<start>"),
+    ) -> dict[NonTerminal, Node]:
         """
         Applies the grammar reduction to the provided grammar.
         """
