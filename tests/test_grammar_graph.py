@@ -1,5 +1,6 @@
 from fandango.api import Fandango
 from fandango.io.navigation.grammarnavigator import GrammarNavigator
+from fandango.io.navigation.packetnavigator import PacketNavigator
 from fandango.language import NonTerminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.node_visitors.grammar_graph_converter import GrammarGraphConverter
@@ -48,6 +49,16 @@ def test_graph_3():
     tree_to_continue = grammar.parse("220 abc ESMTP Postfix\r\nHELO abc\r\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True)
     navigator = GrammarNavigator(graph)
     navigator.set_message_cost(1)
+    path = navigator.astar_tree(tree_to_continue, NonTerminal("<end_data>"))
+    path = filter(lambda n: isinstance(n.node, (NonTerminalNode, TerminalNode)), path)
+    path = map(lambda n: n.node.symbol, path)
+    path = list(path)
+    print(path)
+
+def test_graph_4():
+    grammar = get_grammar(DOCS_ROOT / "smtp-extended.fan")
+    navigator = PacketNavigator(grammar, NonTerminal("<start>"))
+    tree_to_continue = grammar.parse("220 abc ESMTP Postfix\r\nHELO abc\r\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True)
     path = navigator.astar_tree(tree_to_continue, NonTerminal("<end_data>"))
     path = filter(lambda n: isinstance(n.node, (NonTerminalNode, TerminalNode)), path)
     path = map(lambda n: n.node.symbol, path)
