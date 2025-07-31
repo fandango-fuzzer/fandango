@@ -1,8 +1,8 @@
 from fandango.api import Fandango
-from fandango.io.PacketNavigator import GrammarNavigator
+from fandango.io.navigation.grammarnavigator import GrammarNavigator
 from fandango.language import NonTerminal
 from fandango.language.grammar import ParsingMode
-from fandango.language.grammar.node_visitors.grammar_graph_converter import GrammarGraphConverterVisitor
+from fandango.language.grammar.node_visitors.grammar_graph_converter import GrammarGraphConverter
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from tests.utils import RESOURCES_ROOT, DOCS_ROOT
@@ -17,7 +17,7 @@ def get_grammar(path):
 
 def test_graph_1():
     grammar = get_grammar(RESOURCES_ROOT / "minimal_io.fan")
-    converter = GrammarGraphConverterVisitor(grammar.rules, NonTerminal("<start>"))
+    converter = GrammarGraphConverter(grammar.rules, NonTerminal("<start>"))
     graph = converter.process()
     navigator = GrammarNavigator(graph)
     start_node = graph.start.reaches[0].reaches[0].reaches[0]
@@ -31,7 +31,7 @@ def test_graph_1():
 
 def test_graph_2():
     grammar = get_grammar(RESOURCES_ROOT / "minimal_io.fan")
-    converter = GrammarGraphConverterVisitor(grammar.rules, NonTerminal("<start>"))
+    converter = GrammarGraphConverter(grammar.rules, NonTerminal("<start>"))
     graph = converter.process()
     tree_to_continue = grammar.parse("ping\npong\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True)
     navigator = GrammarNavigator(graph)
@@ -43,7 +43,7 @@ def test_graph_2():
 
 def test_graph_3():
     grammar = get_grammar(DOCS_ROOT / "smtp-extended.fan")
-    converter = GrammarGraphConverterVisitor(grammar.rules, NonTerminal("<start>"))
+    converter = GrammarGraphConverter(grammar.rules, NonTerminal("<start>"))
     graph = converter.process()
     tree_to_continue = grammar.parse("220 abc ESMTP Postfix\r\nHELO abc\r\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True)
     navigator = GrammarNavigator(graph)

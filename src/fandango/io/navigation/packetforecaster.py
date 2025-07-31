@@ -1,16 +1,12 @@
 from copy import deepcopy
-from typing import Optional, Sequence
+from typing import Optional
 
 from fandango.errors import FandangoValueError
+from fandango.io.navigation.grammarreducer import GrammarReducer
+from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
 from fandango.language.grammar import ParsingMode
-from fandango.language.grammar.parser.column import Column
-from fandango.language.grammar.has_settings import HasSettings
-from fandango.language.grammar.parser.iterative_parser import IterativeParser
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
-from fandango.language.grammar.nodes.char_set import CharSet
-from fandango.language.grammar.parser.parse_state import ParseState
 from fandango.language.grammar.grammar import Grammar
-from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.grammar.nodes.concatenation import Concatenation
@@ -354,155 +350,13 @@ class PacketForecaster:
                     c_new.add_packet(party, fp)
             return c_new
 
-    class GrammarReducer(NodeVisitor):
-        """
-        Converts a grammar into a reduced form, where all protocol message defining NonTerminalNodes are replaced with
-        a TerminalNode that describes the protocol message type.
-        Message defining NonTerminals are replaced with a Terminal, in the form of <_packet_<message_type>>.
-        This allows the PacketForecaster to predict upcoming
-        protocol messages without parsing each protocol message again.
-        """
-
-        def __init__(self, grammar_settings: Sequence[HasSettings]):
-            self._grammar_settings = grammar_settings
-            self._reduced: dict[NonTerminal, Node] = dict()
-            self.seen_keys: set[NonTerminal] = set()
-            self.processed_keys: set[NonTerminal] = set()
-
-        def process(self, grammar: Grammar) -> dict[NonTerminal, Node]:
-            """
-            Applies the grammar reduction to the provided grammar.
-            """
-            self._reduced = dict()
-            self.seen_keys = set()
-            self.seen_keys.add(NonTerminal("<start>"))
-            self.processed_keys = set()
-            diff_keys = self.seen_keys - self.processed_keys
-            while len(diff_keys) != 0:
-                key = diff_keys.pop()
-                self._reduced[key] = self.visit(grammar.rules[key])
-                self.processed_keys.add(key)
-                diff_keys = self.seen_keys - self.processed_keys
-            return self._reduced
-
-        def default_result(self):
-            return []
-
-        def aggregate_results(self, aggregate, result):
-            aggregate.append(result)
-            return aggregate
-
-        def visitConcatenation(self, node: Concatenation):
-            return Concatenation(
-                self.visitChildren(node),
-                self._grammar_settings,
-                node.id,
-            )
-
-        def visitTerminalNode(self, node: TerminalNode):
-            return TerminalNode(node.symbol, self._grammar_settings)
-
-        def visitAlternative(self, node: Alternative):
-            return Alternative(
-                self.visitChildren(node),
-                self._grammar_settings,
-                node.id,
-            )
-
-        def visitRepetition(self, node: Repetition):
-            return Repetition(
-                self.visit(node.node),
-                self._grammar_settings,
-                node.id,
-                node.min,
-                node.internal_max,
-            )
-
-        def visitOption(self, node: Option):
-            return Option(
-                self.visit(node.node),
-                self._grammar_settings,
-                node.id,
-            )
-
-        def visitPlus(self, node: Plus):
-            return Plus(self.visit(node.node), self._grammar_settings, node.id)
-
-        def visitStar(self, node: Star):
-            return Star(
-                self.visit(node.node),
-                self._grammar_settings,
-                node.id,
-            )
-
-        def visitCharSet(self, node: CharSet):
-            return CharSet(node.chars, self._grammar_settings)
-
-        def visitNonTerminalNode(self, node: NonTerminalNode):
-            if node.sender is None and node.recipient is None:
-                self.seen_keys.add(node.symbol)
-                return node
-
-            if node.symbol.is_type(TreeValueType.STRING):
-                symbol = NonTerminal("<_packet_" + node.symbol.name()[1:])
-            else:
-                raise FandangoValueError("NonTerminal symbol must be a string!")
-            repl_node = NonTerminalNode(
-                symbol,
-                self._grammar_settings,
-                node.sender,
-                node.recipient,
-            )
-            self._reduced[symbol] = TerminalNode(
-                Terminal(node.symbol.value()), self._grammar_settings
-            )
-            self.seen_keys.add(symbol)
-            self.processed_keys.add(symbol)
-            return repl_node
-
-    class PacketIterativeParser(IterativeParser):
-        def __init__(self, grammar_rules: dict[NonTerminal, Node]):
-            super().__init__(grammar_rules)
-            self.reference_tree: Optional[DerivationTree] = None
-            self.detailed_tree: Optional[DerivationTree] = None
-
-        def construct_incomplete_tree(
-            self, state: ParseState, table: list[Column]
-        ) -> DerivationTree:
-            i_tree = super().construct_incomplete_tree(state, table)
-            i_cpy = deepcopy(i_tree)
-            if self.reference_tree is None:
-                raise FandangoValueError(
-                    "Reference tree must be set before constructing the incomplete tree!"
-                )
-            for i_msg, r_msg in zip(
-                i_cpy.protocol_msgs(), self.reference_tree.protocol_msgs()
-            ):
-                i_msg.msg.set_children(r_msg.msg.children)
-                i_msg.msg.sources = r_msg.msg.sources
-                symbol = r_msg.msg.symbol
-                if isinstance(symbol, NonTerminal):
-                    # TODO: Is this just to create a new string?
-                    i_msg.msg.symbol = NonTerminal("<" + symbol.name()[1:])
-                else:
-                    raise FandangoValueError("NonTerminal symbol must be a string!")
-            return i_cpy
-
     def __init__(self, grammar: Grammar):
-        g_globals, g_locals = grammar.get_spec_env()
-        reduced = PacketForecaster.GrammarReducer(grammar.grammar_settings).process(
-            grammar
+        reduced_rules = GrammarReducer(grammar.grammar_settings).process(
+            grammar.rules
         )
         self.grammar = grammar
-        self.reduced_grammar = Grammar(
-            grammar.grammar_settings,
-            reduced,
-            grammar.fuzzing_mode,
-            g_locals,
-            g_globals,
-        )
-        self._parser = PacketForecaster.PacketIterativeParser(
-            self.reduced_grammar.rules
+        self._parser = PacketIterativeParser(
+            reduced_rules
         )
 
     def predict(self, tree: DerivationTree) -> "ForecastingResult":
@@ -535,11 +389,11 @@ class PacketForecaster:
                         and r_msg.sender == orig_r_msg.sender
                         and r_msg.recipient == orig_r_msg.recipient
                     ):
-                        cpy = orig_r_msg.msg.deepcopy(copy_parent=False)
-                        assert isinstance(cpy.symbol, NonTerminal)
-                        r_msg.msg.set_children(cpy.children)
-                        r_msg.msg.sources = deepcopy(cpy.sources)
-                        r_msg.msg.symbol = NonTerminal("<" + cpy.symbol.name()[1:])
+                            cpy = orig_r_msg.msg.deepcopy(copy_parent=False)
+                            assert isinstance(cpy.symbol, NonTerminal)
+                            r_msg.msg.set_children(cpy.children)
+                            r_msg.msg.sources = deepcopy(cpy.sources)
+                            r_msg.msg.symbol = NonTerminal("<" + cpy.symbol.name()[1:])
                     else:
                         break
                 else:

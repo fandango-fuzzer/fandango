@@ -9,7 +9,7 @@ from fandango.constraints.fitness import (
     FailingTree,
     BoundsFailingTree,
 )
-from fandango.io.packetforecaster import PacketForecaster
+from fandango.io.navigation.packetforecaster import PacketForecaster
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.symbols import NonTerminal
 from fandango.language.symbols import Slice

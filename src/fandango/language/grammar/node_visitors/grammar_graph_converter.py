@@ -66,7 +66,7 @@ class LazyGrammarGraphNode(GrammarGraphNode):
         if self._loaded_reaches is not None:
             return self._loaded_reaches
         assert isinstance(self.node, NonTerminalNode)
-        graph_converter = GrammarGraphConverterVisitor(self.grammar_rules, self.node.symbol)
+        graph_converter = GrammarGraphConverter(self.grammar_rules, self.node.symbol)
         start_node, end_nodes = graph_converter.visit(self.grammar_rules[self.node.symbol])
         self._loaded_reaches = [start_node]
         for end_node in end_nodes:
@@ -120,7 +120,7 @@ class GrammarGraph:
 
 
 
-class GrammarGraphConverterVisitor(NodeVisitor):
+class GrammarGraphConverter(NodeVisitor):
 
     def __init__(self, grammar_rules: dict[NonTerminal, Node], start_symbol: NonTerminal):
         self.rules = grammar_rules
