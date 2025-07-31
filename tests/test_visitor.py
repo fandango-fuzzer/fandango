@@ -4,8 +4,17 @@ import unittest
 from collections import defaultdict
 import logging
 
+from fandango.constraints.comparison import ComparisonConstraint
+from fandango.constraints.conjunction import ConjunctionConstraint
+from fandango.constraints.constraint import Constraint
+from fandango.constraints.constraint_visitor import ConstraintVisitor
+from fandango.constraints.disjunct import DisjunctionConstraint
+from fandango.constraints.exists import ExistsConstraint
+from fandango.constraints.expression import ExpressionConstraint
+from fandango.constraints.forall import ForallConstraint
+from fandango.constraints.implication import ImplicationConstraint
+from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
 from fandango.language.parse import parse
-from fandango.constraints.base import *
 from fandango.logger import LOGGER
 from .utils import RESOURCES_ROOT
 
