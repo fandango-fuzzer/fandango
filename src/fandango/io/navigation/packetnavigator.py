@@ -3,7 +3,7 @@ from copy import deepcopy
 from fandango.io.navigation.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.grammarreducer import GrammarReducer
 from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
-from fandango.language import Grammar, NonTerminal, DerivationTree
+from fandango.language import Grammar, NonTerminal, DerivationTree, Terminal
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.node_visitors.grammar_graph_converter import GrammarGraphConverter
 
@@ -29,6 +29,7 @@ class PacketNavigator(GrammarNavigator):
             assert isinstance(r_msg.msg.symbol, NonTerminal)
             history_nts += r_msg.msg.symbol.name()
         self._parser.detailed_tree = tree
+        goal_symbol = Terminal(goal_symbol.name())
 
         self._parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
         paths = []
@@ -47,7 +48,7 @@ class PacketNavigator(GrammarNavigator):
                 else:
                     break
             else:
-                paths.append(super().astar_tree(suggested_tree, goal_symbol))
+                paths.append(list(super().astar_tree(suggested_tree, goal_symbol)))
 
         paths.sort(key=lambda path: len(path))
         if len(paths) == 0:
