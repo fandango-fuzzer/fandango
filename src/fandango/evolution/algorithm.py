@@ -501,18 +501,24 @@ class Fandango:
                 # Select next packet to send by computing guiding generator to underexplored areas of the grammar
                 all_derivations = set(self.parst_io_derivations)
                 all_derivations.add(history_tree)
-                coverage_scores: dict[NonTerminal, float] = compute_nt_coverage_score(all_derivations)
+                coverage_scores: dict[NonTerminal, float] = compute_nt_coverage_score(
+                    all_derivations
+                )
                 grammar_graph = self.grammar.to_graph()
-                scores_sorted = list(sorted(coverage_scores.items(), key=lambda x: x[1], reverse=True))
+                scores_sorted = list(
+                    sorted(coverage_scores.items(), key=lambda x: x[1], reverse=True)
+                )
                 if len(scores_sorted) > 0:
                     target_nt = scores_sorted[0][0]
-                    path = find_shortest_path(forecast.paths, target_nt, grammar_graph, only_messages=True)
+                    path = find_shortest_path(
+                        forecast.paths, target_nt, grammar_graph, only_messages=True
+                    )
                     # Todo maybe the next message is not fuzzer controlled.
                     # Todo we might currently be at the most underexplored nonterminal, to path is empty.
                     sender, next_nt = path[0]
                     fuzzable_packets.append(forecast[sender].nt_to_packet[next_nt])
 
-                #for party in msg_parties:
+                # for party in msg_parties:
                 #    fuzzable_packets.extend(forecast[party].nt_to_packet.values())
                 assert isinstance(self.population_manager, IoPopulationManager)
                 self.population_manager.fuzzable_packets = fuzzable_packets

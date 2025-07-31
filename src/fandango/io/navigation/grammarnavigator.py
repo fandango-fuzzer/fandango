@@ -1,7 +1,11 @@
 from astar import AStar
 
 from fandango.language import DerivationTree, Symbol, NonTerminal, Terminal
-from fandango.language.grammar.node_visitors.grammar_graph_converter import GrammarGraphNode, GrammarGraph, EagerGrammarGraphNode
+from fandango.language.grammar.node_visitors.grammar_graph_converter import (
+    GrammarGraphNode,
+    GrammarGraph,
+    EagerGrammarGraphNode,
+)
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode
 
@@ -38,9 +42,13 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         return 1
 
     def is_goal_reached(self, current: GrammarGraphNode, goal: GrammarGraphNode):
-        if isinstance(current.node, NonTerminalNode) and isinstance(goal.node, NonTerminalNode):
+        if isinstance(current.node, NonTerminalNode) and isinstance(
+            goal.node, NonTerminalNode
+        ):
             return current.node.symbol == goal.node.symbol
-        if isinstance(current.node, TerminalNode) and isinstance(goal.node, TerminalNode):
+        if isinstance(current.node, TerminalNode) and isinstance(
+            goal.node, TerminalNode
+        ):
             return current.node.symbol == goal.node.symbol
         return False
 

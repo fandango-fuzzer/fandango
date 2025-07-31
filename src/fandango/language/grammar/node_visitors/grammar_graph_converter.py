@@ -3,13 +3,17 @@ from typing import Optional
 
 from fandango import FandangoError
 from fandango.language import NonTerminal, Terminal, Symbol, DerivationTree
-from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor, AggregateType
+from fandango.language.grammar.node_visitors.node_visitor import (
+    NodeVisitor,
+    AggregateType,
+)
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Repetition, Plus, Option, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
+
 
 class GrammarGraphNode(abc.ABC):
     def __init__(self, node: Node):
@@ -32,6 +36,7 @@ class GrammarGraphNode(abc.ABC):
     def reaches(self) -> list["GrammarGraphNode"]:
         raise NotImplementedError()
 
+
 class EagerGrammarGraphNode(GrammarGraphNode):
     def __init__(self, node: Node, reaches: list["GrammarGraphNode"]):
         super().__init__(node)
@@ -43,6 +48,7 @@ class EagerGrammarGraphNode(GrammarGraphNode):
     @property
     def reaches(self):
         return self._reaches
+
 
 class LazyGrammarGraphNode(GrammarGraphNode):
     def __init__(self, node: NonTerminalNode, grammar_rules: dict[NonTerminal, Node]):
@@ -67,13 +73,16 @@ class LazyGrammarGraphNode(GrammarGraphNode):
             return self._loaded_reaches
         assert isinstance(self.node, NonTerminalNode)
         graph_converter = GrammarGraphConverter(self.grammar_rules, self.node.symbol)
-        start_node, end_nodes = graph_converter.visit(self.grammar_rules[self.node.symbol])
+        start_node, end_nodes = graph_converter.visit(
+            self.grammar_rules[self.node.symbol]
+        )
         self._loaded_reaches = [start_node]
         for end_node in end_nodes:
             for chain_end in self._pre_load_reaches:
                 end_node.add_egress(chain_end)
 
         return self._loaded_reaches
+
 
 class GrammarGraph:
     def __init__(self, start: GrammarGraphNode):
@@ -84,20 +93,31 @@ class GrammarGraph:
         return self._walk(self.start, tree_root)
 
     def _walk(self, graph_node: GrammarGraphNode, tree_node: DerivationTree):
-        if issubclass(graph_node.node.__class__, (NonTerminalNode, Concatenation, Repetition, Alternative)):
+        if issubclass(
+            graph_node.node.__class__,
+            (NonTerminalNode, Concatenation, Repetition, Alternative),
+        ):
             if isinstance(graph_node.node, NonTerminalNode):
                 symbol = graph_node.node.symbol
             else:
                 node_id = graph_node.node.id
                 symbol = NonTerminal(f"<__{node_id}>")
             if tree_node.symbol != symbol:
-                raise FandangoError(f"Grammar graph node {symbol.value()} doesn't match tree node {tree_node.symbol.value()}.")
+                raise FandangoError(
+                    f"Grammar graph node {symbol.value()} doesn't match tree node {tree_node.symbol.value()}."
+                )
         elif isinstance(graph_node.node, TerminalNode):
-            if not graph_node.node.symbol.check(tree_node.symbol.value().to_string())[0]:
+            if not graph_node.node.symbol.check(tree_node.symbol.value().to_string())[
+                0
+            ]:
                 # Todo other tree value types
-                raise FandangoError(f"Grammar graph node {graph_node.node.symbol.value()} doesn't match tree node {tree_node.symbol.value()}.")
+                raise FandangoError(
+                    f"Grammar graph node {graph_node.node.symbol.value()} doesn't match tree node {tree_node.symbol.value()}."
+                )
         else:
-            raise FandangoError(f"Unsupported node type: {graph_node.node.__class__.__name__}")
+            raise FandangoError(
+                f"Unsupported node type: {graph_node.node.__class__.__name__}"
+            )
 
         if len(tree_node.children) == 0:
             return graph_node
@@ -118,17 +138,19 @@ class GrammarGraph:
         return graph_node
 
 
-
-
 class GrammarGraphConverter(NodeVisitor):
 
-    def __init__(self, grammar_rules: dict[NonTerminal, Node], start_symbol: NonTerminal):
+    def __init__(
+        self, grammar_rules: dict[NonTerminal, Node], start_symbol: NonTerminal
+    ):
         self.rules = grammar_rules
         self.start_symbol = start_symbol
 
     def process(self):
         start_node, end_nodes = self.visit(self.rules[self.start_symbol])
-        start_node = EagerGrammarGraphNode(NonTerminalNode(self.start_symbol, []), [start_node])
+        start_node = EagerGrammarGraphNode(
+            NonTerminalNode(self.start_symbol, []), [start_node]
+        )
         graph = GrammarGraph(start_node)
         return graph
 
@@ -144,7 +166,7 @@ class GrammarGraphConverter(NodeVisitor):
     def visitAlternative(self, node: Alternative):
         chain_start = list()
         chain_end = list()
-        next_nodes = [ self.visit(child) for child in node.children() ]
+        next_nodes = [self.visit(child) for child in node.children()]
         for start_node, end_nodes in next_nodes:
             chain_start.append(start_node)
             for end_node in end_nodes:
@@ -190,8 +212,8 @@ class GrammarGraphConverter(NodeVisitor):
         return graph_node, [graph_node]
 
     def visitNonTerminalNode(self, node: NonTerminalNode):
-            graph_node = LazyGrammarGraphNode(node, self.rules)
-            return graph_node, [graph_node]
+        graph_node = LazyGrammarGraphNode(node, self.rules)
+        return graph_node, [graph_node]
 
     def visitPlus(self, node: Plus):
         return self.visitRepetition(node)

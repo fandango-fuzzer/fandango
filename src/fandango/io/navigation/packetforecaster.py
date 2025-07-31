@@ -58,9 +58,7 @@ class PathFinder(NodeVisitor):
             new_path.append((nt, new_node))
         return tuple(new_path)
 
-    def find(
-        self, tree: Optional[DerivationTree] = None
-    ) -> ForecastingResult:
+    def find(self, tree: Optional[DerivationTree] = None) -> ForecastingResult:
         """
         Finds all possible protocol messages that can be mounted to the given DerivationTree.
         :param tree: The DerivationTree to base the search on. The DerivationTree must contain controlflow nodes
@@ -268,6 +266,7 @@ class MountingPath:
     def __repr__(self):
         return repr(self.path)
 
+
 class ForcastingPacket:
     def __init__(self, node: NonTerminalNode):
         self.node = node
@@ -275,6 +274,7 @@ class ForcastingPacket:
 
     def add_path(self, path: MountingPath) -> None:
         self.paths.add(path)
+
 
 class ForcastingNonTerminals:
     def __init__(self):
@@ -299,9 +299,7 @@ class ForcastingNonTerminals:
 
 class ForecastingResult:
     def __init__(self):
-        self.parties_to_packets = dict[
-            str, ForcastingNonTerminals
-        ]()
+        self.parties_to_packets = dict[str, ForcastingNonTerminals]()
 
     def get_msg_parties(self) -> set[str]:
         return set(self.parties_to_packets.keys())
@@ -320,23 +318,17 @@ class ForecastingResult:
     def __contains__(self, item: str) -> bool:
         return item in self.parties_to_packets
 
-    def add_packet(
-        self, party: Optional[str], packet: ForcastingPacket
-    ) -> None:
+    def add_packet(self, party: Optional[str], packet: ForcastingPacket) -> None:
         """
         Adds a packet to the ForecastingResult under the specified party.
         """
         if party is None:
             raise FandangoValueError("Party cannot be None")
         if party not in self.parties_to_packets.keys():
-            self.parties_to_packets[party] = (
-                ForcastingNonTerminals()
-            )
+            self.parties_to_packets[party] = ForcastingNonTerminals()
         self.parties_to_packets[party].add_packet(packet)
 
-    def union(
-        self, other: ForecastingResult
-    ) -> ForecastingResult:
+    def union(self, other: ForecastingResult) -> ForecastingResult:
         """
         Combines two ForecastingResults by adding all packets from the other result.
         Returns a copy of the current ForecastingResult with the combined packets.
@@ -349,16 +341,13 @@ class ForecastingResult:
                 c_new.add_packet(party, fp)
         return c_new
 
+
 class PacketForecaster:
 
     def __init__(self, grammar: Grammar):
-        reduced_rules = GrammarReducer(grammar.grammar_settings).process(
-            grammar.rules
-        )
+        reduced_rules = GrammarReducer(grammar.grammar_settings).process(grammar.rules)
         self.grammar = grammar
-        self._parser = PacketIterativeParser(
-            reduced_rules
-        )
+        self._parser = PacketIterativeParser(reduced_rules)
 
     def predict(self, tree: DerivationTree) -> ForecastingResult:
         """
@@ -390,11 +379,11 @@ class PacketForecaster:
                         and r_msg.sender == orig_r_msg.sender
                         and r_msg.recipient == orig_r_msg.recipient
                     ):
-                            cpy = orig_r_msg.msg.deepcopy(copy_parent=False)
-                            assert isinstance(cpy.symbol, NonTerminal)
-                            r_msg.msg.set_children(cpy.children)
-                            r_msg.msg.sources = deepcopy(cpy.sources)
-                            r_msg.msg.symbol = NonTerminal("<" + cpy.symbol.name()[1:])
+                        cpy = orig_r_msg.msg.deepcopy(copy_parent=False)
+                        assert isinstance(cpy.symbol, NonTerminal)
+                        r_msg.msg.set_children(cpy.children)
+                        r_msg.msg.sources = deepcopy(cpy.sources)
+                        r_msg.msg.symbol = NonTerminal("<" + cpy.symbol.name()[1:])
                     else:
                         break
                 else:
