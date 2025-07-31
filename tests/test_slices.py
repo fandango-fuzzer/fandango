@@ -3,7 +3,7 @@
 import re
 import unittest
 
-from fandango.constraints.base import ExpressionConstraint
+from fandango.constraints.expression import ExpressionConstraint
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.search import ItemSearch, RuleSearch
 from fandango.language.symbols import NonTerminal, Terminal

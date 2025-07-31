@@ -30,7 +30,7 @@ class Repetition(Node):
         self._max = max_
         self.node = node
         self.bounds_constraint: Optional[
-            "fandango.constraints.base.RepetitionBoundsConstraint"
+            "fandango.constraints.repetition_bounds.RepetitionBoundsConstraint"
         ] = None
         self.iteration = 0
         if min_ < 0:

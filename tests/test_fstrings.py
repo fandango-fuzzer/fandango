@@ -1,7 +1,8 @@
 import pytest
 
 from fandango import parse, FandangoParseError, DerivationTree
-from fandango.constraints.base import ExpressionConstraint, ComparisonConstraint
+from fandango.constraints.comparison import ComparisonConstraint
+from fandango.constraints.expression import ExpressionConstraint
 from fandango.language.symbols import NonTerminal, Terminal
 
 

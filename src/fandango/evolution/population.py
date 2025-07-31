@@ -1,14 +1,10 @@
 import random
 from collections.abc import Callable, Generator
 
-from fandango.constraints.base import RepetitionBoundsConstraint
+from fandango.constraints.failing_tree import Comparison, ComparisonSide
+from fandango.constraints.failing_tree import FailingTree, BoundsFailingTree
+from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
 from fandango.errors import FandangoValueError
-from fandango.constraints.fitness import (
-    Comparison,
-    ComparisonSide,
-    FailingTree,
-    BoundsFailingTree,
-)
 from fandango.io.packetforecaster import PacketForecaster
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.symbols import NonTerminal
