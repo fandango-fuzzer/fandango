@@ -15,6 +15,9 @@ from fandango.language.grammar.nodes.repetition import Repetition, Plus, Option,
 from fandango.language.grammar.nodes.terminal import TerminalNode
 
 
+class GrammarWalkError(FandangoError):
+    pass
+
 class GrammarGraphNode(abc.ABC):
     def __init__(self, node: Node):
         self.node = node
@@ -103,7 +106,7 @@ class GrammarGraph:
                 node_id = graph_node.node.id
                 symbol = NonTerminal(f"<__{node_id}>")
             if tree_node.symbol != symbol:
-                raise FandangoError(
+                raise GrammarWalkError(
                     f"Grammar graph node {symbol.value()} doesn't match tree node {tree_node.symbol.value()}."
                 )
         elif isinstance(graph_node.node, TerminalNode):
@@ -111,7 +114,7 @@ class GrammarGraph:
                 0
             ]:
                 # Todo other tree value types
-                raise FandangoError(
+                raise GrammarWalkError(
                     f"Grammar graph node {graph_node.node.symbol.value()} doesn't match tree node {tree_node.symbol.value()}."
                 )
         else:
@@ -127,14 +130,14 @@ class GrammarGraph:
             for current_graph_node in graph_node.reaches:
                 try:
                     walked_graph = self._walk(current_graph_node, child)
-                except FandangoError:
+                except GrammarWalkError:
                     walked_graph = None
                 if walked_graph is not None:
                     found_node = True
                     graph_node = walked_graph
                     break
             if not found_node:
-                raise FandangoError(f"Grammar graph doesn't match tree structure.")
+                raise GrammarWalkError(f"Grammar graph doesn't match tree structure.")
         return graph_node
 
 
