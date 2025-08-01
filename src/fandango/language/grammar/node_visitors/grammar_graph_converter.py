@@ -18,6 +18,7 @@ from fandango.language.grammar.nodes.terminal import TerminalNode
 class GrammarWalkError(FandangoError):
     pass
 
+
 class GrammarGraphNode(abc.ABC):
     def __init__(self, node: Node):
         self.node = node

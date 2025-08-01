@@ -6,6 +6,7 @@ from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     GrammarGraphConverter,
 )
+from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 
 
 class PacketNavigator(GrammarNavigator):
@@ -47,7 +48,16 @@ class PacketNavigator(GrammarNavigator):
                 else:
                     break
             else:
-                paths.append(list(super().astar_tree(suggested_tree, goal_symbol)))
+                path = list(super().astar_tree(suggested_tree, goal_symbol))
+                path = list(filter(lambda n: isinstance(n.node, NonTerminalNode), path))
+                path = list(filter(lambda n: n.node.sender is not None, path))
+                path = list(
+                    map(
+                        lambda n: NonTerminal(f"<{str(n.node.symbol.value())[9:]}"),
+                        path,
+                    )
+                )
+                paths.append(path)
 
         paths.sort(key=lambda path: len(path))
         if len(paths) == 0:

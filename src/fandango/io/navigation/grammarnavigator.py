@@ -61,5 +61,3 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         else:
             raise ValueError(f"Unsupported symbol type: {type(symbol)}")
         return self.astar(start_node, EagerGrammarGraphNode(symbol_node, []))
-
-
