@@ -19,6 +19,7 @@ from fandango.evolution.population import PopulationManager, IoPopulationManager
 from fandango.evolution.profiler import Profiler
 from fandango.io import FandangoIO, FandangoParty
 from fandango.io.navigation.packetforecaster import PacketForecaster
+from fandango.io.navigation.packetnavigator import PacketNavigator
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.language import NonTerminal
 from fandango.language.grammar import FuzzingMode
@@ -504,15 +505,18 @@ class Fandango:
                 coverage_scores: dict[NonTerminal, float] = compute_nt_coverage_score(
                     all_derivations
                 )
-                grammar_graph = self.grammar.to_graph()
                 scores_sorted = list(
                     sorted(coverage_scores.items(), key=lambda x: x[1], reverse=True)
                 )
                 if len(scores_sorted) > 0:
                     target_nt = scores_sorted[0][0]
-                    path = find_shortest_path(
-                        forecast.paths, target_nt, grammar_graph, only_messages=True
-                    )
+
+                    navigator = PacketNavigator(self.grammar, NonTerminal("<start>"))
+                    path = navigator.astar_tree(history_tree, target_nt)
+                    if path is None:
+                        raise FandangoFailedError(
+                            f"Could not find path to target nonterminal {target_nt}"
+                        )
                     # Todo maybe the next message is not fuzzer controlled.
                     # Todo we might currently be at the most underexplored nonterminal, to path is empty.
                     sender, next_nt = path[0]
