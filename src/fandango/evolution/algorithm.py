@@ -498,8 +498,6 @@ class Fandango:
                 )
             )
             if len(msg_parties) != 0 and not io_instance.received_msg():
-                fuzzable_packets = []
-
                 # Select next packet to send by computing guiding generator to underexplored areas of the grammar
                 all_derivations = list(self.parst_io_derivations)
                 all_derivations.append(history_tree)
@@ -507,22 +505,21 @@ class Fandango:
                 scores_sorted = list(
                     sorted(coverage_scores.items(), key=lambda x: x[1], reverse=True)
                 )
+                fuzzable_packets = []
                 if len(scores_sorted) > 0:
-                    target_nt = scores_sorted[0][0]
-
-                    navigator = PacketNavigator(self.grammar, NonTerminal("<start>"))
-                    path = navigator.astar_tree(history_tree, target_nt)
-                    if path is None:
-                        raise FandangoFailedError(
-                            f"Could not find path to target nonterminal {target_nt}"
-                        )
-                    # Todo maybe the next message is not fuzzer controlled.
-                    # Todo we might currently be at the most underexplored nonterminal, to path is empty.
-                    sender, next_nt = path[0]
-                    fuzzable_packets.append(forecast[sender].nt_to_packet[next_nt])
-
-                # for party in msg_parties:
-                #    fuzzable_packets.extend(forecast[party].nt_to_packet.values())
+                    for target_nt, _ in scores_sorted:
+                        navigator = PacketNavigator(self.grammar, NonTerminal("<start>"))
+                        path = navigator.astar_tree(history_tree, target_nt)
+                        if path is None:
+                            continue
+                        # Todo maybe the next message is not fuzzer controlled.
+                        # Todo we might currently be at the most underexplored nonterminal, to path is empty.
+                        sender, next_nt = path[0]
+                        fuzzable_packets.append(forecast[sender].nt_to_packet[next_nt])
+                        break
+                if len(fuzzable_packets) == 0:
+                    for party in msg_parties:
+                        fuzzable_packets.extend(forecast[party].nt_to_packet.values())
                 assert isinstance(self.population_manager, IoPopulationManager)
                 self.population_manager.fuzzable_packets = fuzzable_packets
 
