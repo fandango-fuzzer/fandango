@@ -79,3 +79,14 @@ class TestGrammarGraph(unittest.TestCase):
                 NonTerminal("<end_data>"),
             ],
         )
+
+    def test_packet_navigator__symbol_not_reachable(self):
+        grammar = self.get_grammar(DOCS_ROOT / "smtp-extended.fan")
+        navigator = PacketNavigator(grammar, NonTerminal("<start>"))
+        tree_to_continue = grammar.parse(
+            "220 abc ESMTP Postfix\r\nHELO abc\r\n",
+            mode=ParsingMode.INCOMPLETE,
+            include_controlflow=True,
+        )
+        path = navigator.astar_tree(tree_to_continue, NonTerminal("<helo>"))
+        self.assertIsNone(path)
