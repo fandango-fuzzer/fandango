@@ -4,9 +4,18 @@ import unittest
 
 
 from fandango.constraints.constraint import Constraint
+from fandango.constraints.comparison import ComparisonConstraint
+from fandango.constraints.conjunction import ConjunctionConstraint
+from fandango.constraints.disjunct import DisjunctionConstraint
+from fandango.constraints.exists import ExistsConstraint
+from fandango.constraints.forall import ForallConstraint
+from fandango.constraints.expression import ExpressionConstraint
+from fandango.constraints.implication import ImplicationConstraint
+from fandango.constraints.failing_tree import Comparison
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 from fandango.language.parse import parse
+from fandango.language.search import RuleSearch
 from .utils import RESOURCES_ROOT
 
 
@@ -412,3 +421,191 @@ class ConverterTest(unittest.TestCase):
         tree = DerivationTree(Terminal(1))
         self.assertEqual(int(tree), 1)
         self.assertEqual(tree.to_bits(), "1")
+
+
+class InvertConstraintTest(unittest.TestCase):
+    """Test class for the invert functionality of constraints."""
+
+    def test_comparison_constraint_invert(self):
+        """Test that comparison constraints are correctly inverted."""
+        # Test all comparison operators
+        test_cases = [
+            (Comparison.EQUAL, Comparison.NOT_EQUAL),
+            (Comparison.NOT_EQUAL, Comparison.EQUAL),
+            (Comparison.GREATER, Comparison.LESS_EQUAL),
+            (Comparison.GREATER_EQUAL, Comparison.LESS),
+            (Comparison.LESS, Comparison.GREATER_EQUAL),
+            (Comparison.LESS_EQUAL, Comparison.GREATER),
+        ]
+
+        for original_op, expected_inverted_op in test_cases:
+            constraint = ComparisonConstraint(original_op, "x", "y")
+            inverted = constraint.invert()
+
+            assert isinstance(inverted, ComparisonConstraint)
+            self.assertEqual(inverted.operator, expected_inverted_op)
+            self.assertEqual(inverted.left, "x")
+            self.assertEqual(inverted.right, "y")
+
+    def test_comparison_enum_invert(self):
+        """Test that the Comparison enum's invert method works correctly."""
+        # Test all comparison operators
+        test_cases = [
+            (Comparison.EQUAL, Comparison.NOT_EQUAL),
+            (Comparison.NOT_EQUAL, Comparison.EQUAL),
+            (Comparison.GREATER, Comparison.LESS_EQUAL),
+            (Comparison.GREATER_EQUAL, Comparison.LESS),
+            (Comparison.LESS, Comparison.GREATER_EQUAL),
+            (Comparison.LESS_EQUAL, Comparison.GREATER),
+        ]
+
+        for original_op, expected_inverted_op in test_cases:
+            inverted_op = original_op.invert()
+            self.assertEqual(inverted_op, expected_inverted_op)
+
+            # Test double inversion returns the original
+            double_inverted = inverted_op.invert()
+            self.assertEqual(double_inverted, original_op)
+
+    def test_expression_constraint_invert(self):
+        """Test that expression constraints are correctly inverted."""
+        constraint = ExpressionConstraint("x > 5")
+        inverted = constraint.invert()
+
+        assert isinstance(inverted, ExpressionConstraint)
+        self.assertEqual(inverted.expression, "not (x > 5)")
+
+    def test_conjunction_constraint_invert(self):
+        """Test that conjunction constraints are correctly inverted using De Morgan's law."""
+        # Create two simple constraints
+        c1 = ExpressionConstraint("x > 5")
+        c2 = ExpressionConstraint("y < 10")
+
+        conjunction = ConjunctionConstraint([c1, c2])
+        inverted = conjunction.invert()
+
+        assert isinstance(inverted, DisjunctionConstraint)
+        self.assertEqual(len(inverted.constraints), 2)
+
+        # Check that the sub-constraints are inverted
+        assert isinstance(inverted.constraints[0], ExpressionConstraint)
+        self.assertEqual(inverted.constraints[0].expression, "not (x > 5)")
+
+        assert isinstance(inverted.constraints[1], ExpressionConstraint)
+        self.assertEqual(inverted.constraints[1].expression, "not (y < 10)")
+
+    def test_disjunction_constraint_invert(self):
+        """Test that disjunction constraints are correctly inverted using De Morgan's law."""
+        # Create two simple constraints
+        c1 = ExpressionConstraint("x > 5")
+        c2 = ExpressionConstraint("y < 10")
+
+        disjunction = DisjunctionConstraint([c1, c2])
+        inverted = disjunction.invert()
+
+        assert isinstance(inverted, ConjunctionConstraint)
+
+        self.assertEqual(len(inverted.constraints), 2)
+
+        # Check that the sub-constraints are inverted
+        assert isinstance(inverted.constraints[0], ExpressionConstraint)
+        self.assertEqual(inverted.constraints[0].expression, "not (x > 5)")
+
+        assert isinstance(inverted.constraints[1], ExpressionConstraint)
+        self.assertEqual(inverted.constraints[1].expression, "not (y < 10)")
+
+    def test_implication_constraint_invert(self):
+        """Test that implication constraints are correctly inverted."""
+        antecedent = ExpressionConstraint("x > 5")
+        consequent = ExpressionConstraint("y < 10")
+
+        implication = ImplicationConstraint(antecedent, consequent)
+        inverted = implication.invert()
+
+        assert isinstance(inverted, ConjunctionConstraint)
+        self.assertEqual(len(inverted.constraints), 2)
+
+        # The antecedent should remain the same
+        self.assertEqual(inverted.constraints[0], antecedent)
+
+        # The consequent should be inverted
+        assert isinstance(inverted.constraints[1], ExpressionConstraint)
+        self.assertEqual(inverted.constraints[1].expression, "not (y < 10)")
+
+    def test_exists_constraint_invert(self):
+        """Test that exists constraints are correctly inverted."""
+        statement = ExpressionConstraint("x > 5")
+        bound = "item"
+        search = RuleSearch(NonTerminal("<items>"))
+
+        exists_constraint = ExistsConstraint(statement, bound, search)
+        inverted = exists_constraint.invert()
+
+        assert isinstance(inverted, ForallConstraint)
+        self.assertEqual(inverted.bound, bound)
+        self.assertEqual(inverted.search, search)
+
+        # The statement should be inverted
+        assert isinstance(inverted.statement, ExpressionConstraint)
+        self.assertEqual(inverted.statement.expression, "not (x > 5)")
+
+    def test_forall_constraint_invert(self):
+        """Test that forall constraints are correctly inverted."""
+        statement = ExpressionConstraint("x > 5")
+        bound = "item"
+        search = RuleSearch(NonTerminal("<items>"))
+
+        forall_constraint = ForallConstraint(statement, bound, search)
+        inverted = forall_constraint.invert()
+
+        assert isinstance(inverted, ExistsConstraint)
+        self.assertEqual(inverted.bound, bound)
+        self.assertEqual(inverted.search, search)
+
+        # The statement should be inverted
+        assert isinstance(inverted.statement, ExpressionConstraint)
+        self.assertEqual(inverted.statement.expression, "not (x > 5)")
+
+    def test_double_invert_identity(self):
+        """Test that inverting a constraint twice returns the original constraint."""
+        # Test with a comparison constraint
+        original = ComparisonConstraint(Comparison.EQUAL, "x", "y")
+        inverted = original.invert()
+        double_inverted = inverted.invert()
+
+        self.assertEqual(double_inverted.operator, original.operator)
+        self.assertEqual(double_inverted.left, original.left)
+        self.assertEqual(double_inverted.right, original.right)
+
+        # Test with an expression constraint - double negation is preserved
+        original_expr = ExpressionConstraint("x > 5")
+        inverted_expr = original_expr.invert()
+        double_inverted_expr = inverted_expr.invert()
+
+        # The double negation should be preserved: not (not (x > 5))
+        self.assertEqual(double_inverted_expr.expression, "not (not (x > 5))")
+
+    def test_complex_nested_invert(self):
+        """Test that complex nested constraints are correctly inverted."""
+        # Create a complex constraint: (x > 5 and y < 10) or (z == 0)
+        c1 = ExpressionConstraint("x > 5")
+        c2 = ExpressionConstraint("y < 10")
+        c3 = ExpressionConstraint("z == 0")
+
+        conjunction = ConjunctionConstraint([c1, c2])
+        disjunction = DisjunctionConstraint([conjunction, c3])
+
+        inverted = disjunction.invert()
+
+        # The result should be: not (x > 5 and y < 10) and not (z == 0)
+        # Which is: (not (x > 5) or not (y < 10)) and not (z == 0)
+        assert isinstance(inverted, ConjunctionConstraint)
+        self.assertEqual(len(inverted.constraints), 2)
+
+        # First constraint should be a disjunction
+        assert isinstance(inverted.constraints[0], DisjunctionConstraint)
+        self.assertEqual(len(inverted.constraints[0].constraints), 2)
+
+        # Second constraint should be an inverted expression
+        assert isinstance(inverted.constraints[1], ExpressionConstraint)
+        self.assertEqual(inverted.constraints[1].expression, "not (z == 0)")
