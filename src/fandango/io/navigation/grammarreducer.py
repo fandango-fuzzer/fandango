@@ -73,13 +73,15 @@ class GrammarReducer(NodeVisitor):
         )
 
     def visitRepetition(self, node: Repetition):
-        return Repetition(
+        repetition = Repetition(
             self.visit(node.node),
             self._grammar_settings,
             node.id,
             node.min,
-            node.internal_max,
+            node.internal_max
         )
+        repetition.bounds_constraint = node.bounds_constraint
+        return repetition
 
     def visitOption(self, node: Option):
         return Option(
