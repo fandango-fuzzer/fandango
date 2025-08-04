@@ -17,9 +17,16 @@ class PacketNavigator(GrammarNavigator):
         reduced_rules = GrammarReducer(grammar.grammar_settings).process(
             grammar.rules, start_symbol
         )
-        graph_converter = GrammarGraphConverter(reduced_rules, NonTerminal("<start>"))
-        graph = graph_converter.process()
-        super().__init__(graph)
+        super().__init__(
+            Grammar(
+                grammar_settings=grammar.grammar_settings,
+                rules=reduced_rules,
+                fuzzing_mode=grammar.fuzzing_mode,
+                local_variables=grammar._local_variables,
+                global_variables=grammar._global_variables,
+            ),
+            start_symbol,
+        )
         self._parser = PacketIterativeParser(reduced_rules)
         self.set_message_cost(1)
 

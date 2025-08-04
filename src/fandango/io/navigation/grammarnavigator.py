@@ -1,10 +1,10 @@
 from astar import AStar
 
-from fandango.language import DerivationTree, Symbol, NonTerminal, Terminal
+from fandango.language import DerivationTree, Symbol, NonTerminal, Terminal, Grammar
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     GrammarGraphNode,
-    GrammarGraph,
     EagerGrammarGraphNode,
+    GrammarGraphConverter,
 )
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode
@@ -12,8 +12,11 @@ from fandango.language.grammar.nodes.terminal import TerminalNode
 
 class GrammarNavigator(AStar[GrammarGraphNode]):
 
-    def __init__(self, graph: GrammarGraph):
-        self.graph = graph
+    def __init__(
+        self, grammar: Grammar, start_symbol: NonTerminal = NonTerminal("<start>")
+    ):
+        graph_converter = GrammarGraphConverter(grammar.rules, start_symbol)
+        self.graph = graph_converter.process()
         self.message_cost = 0
         self.non_terminal_cost = 0
         self.node_cost = 0
@@ -60,9 +63,30 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             symbol_node = TerminalNode(symbol, [])
         else:
             raise ValueError(f"Unsupported symbol type: {type(symbol)}")
-        if not self.is_reachable(start_node, symbol):
-            pass
+        if not self.is_reachable(start_node, symbol_node):
+            return None
         return self.astar(start_node, EagerGrammarGraphNode(symbol_node, []))
 
-    def is_reachable(self, start_node, symbol):
-        return True
+    def is_reachable(
+        self, start_node: GrammarGraphNode, symbol_node: NonTerminalNode | TerminalNode
+    ) -> bool:
+        seen_nts = set()
+        node_queue = [start_node]
+        while len(node_queue) > 0:
+            current_node = node_queue.pop()
+            if isinstance(current_node.node, (NonTerminalNode, TerminalNode)) and current_node.node.symbol == symbol_node.symbol:
+                return True
+            if isinstance(current_node.node, NonTerminalNode):
+                seen_nts.add(current_node.node.symbol)
+            elif not isinstance(current_node.node, TerminalNode):
+                seen_nts.add(NonTerminal(current_node.node.id))
+            for next_node in current_node.reaches:
+                if isinstance(next_node.node, NonTerminalNode):
+                    if next_node.node.symbol in seen_nts:
+                        continue
+                elif isinstance(next_node.node, TerminalNode):
+                    pass
+                elif NonTerminal(next_node.node.id) in seen_nts:
+                    continue
+                node_queue.append(next_node)
+        return False
