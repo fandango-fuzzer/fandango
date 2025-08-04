@@ -502,24 +502,27 @@ class Fandango:
                 all_derivations = list(self.parst_io_derivations)
                 all_derivations.append(history_tree)
                 coverage_scores: dict[NonTerminal, float] = compute_nt_coverage_score(self.grammar, all_derivations, 4)
+                for party in msg_parties:
+                    for nt in forecast[party].nt_to_packet.values():
+                        if nt.node.symbol not in coverage_scores:
+                            coverage_scores[nt.node.symbol] = 0.0
                 scores_sorted = list(
                     sorted(coverage_scores.items(), key=lambda x: x[1], reverse=True)
                 )
                 fuzzable_packets = []
-                if len(scores_sorted) > 0:
-                    for target_nt, _ in scores_sorted:
-                        navigator = PacketNavigator(self.grammar, NonTerminal("<start>"))
-                        path = navigator.astar_tree(history_tree, target_nt)
-                        if path is None:
+                for target_nt, _ in scores_sorted:
+                    navigator = PacketNavigator(self.grammar, NonTerminal("<start>"))
+                    path = navigator.astar_tree(history_tree, target_nt)
+                    if path is None:
+                        continue
+                    # Todo maybe the next message is not fuzzer controlled.
+                    # Todo also make the sender a part of the path
+                    next_nt = path[0]
+                    for msg_party in msg_parties:
+                        if next_nt not in forecast[msg_party].nt_to_packet:
                             continue
-                        # Todo maybe the next message is not fuzzer controlled.
-                        # Todo we might currently be at the most underexplored nonterminal, to path is empty.
-                        sender, next_nt = path[0]
-                        fuzzable_packets.append(forecast[sender].nt_to_packet[next_nt])
-                        break
-                if len(fuzzable_packets) == 0:
-                    for party in msg_parties:
-                        fuzzable_packets.extend(forecast[party].nt_to_packet.values())
+                        fuzzable_packets.append(forecast[msg_party].nt_to_packet[next_nt])
+                    break
                 assert isinstance(self.population_manager, IoPopulationManager)
                 self.population_manager.fuzzable_packets = fuzzable_packets
 
