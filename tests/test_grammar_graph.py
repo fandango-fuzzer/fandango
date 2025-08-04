@@ -21,12 +21,10 @@ class TestGrammarGraph(unittest.TestCase):
 
     def test_graph_navigator(self):
         grammar = self.get_grammar(RESOURCES_ROOT / "minimal_io.fan")
-        converter = GrammarGraphConverter(grammar.rules, NonTerminal("<start>"))
-        graph = converter.process()
-        navigator = GrammarNavigator(graph)
-        start_node = graph.start.reaches[0]
+        navigator = GrammarNavigator(grammar)
+        start_node = navigator.graph.start.reaches[0]
         goal_node = (
-            graph.start.reaches[0]
+            navigator.graph.start.reaches[0]
             .reaches[0]
             .reaches[0]
             .reaches[0]

@@ -66,6 +66,6 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         else:
             raise ValueError(f"Unsupported symbol type: {type(symbol)}")
         checker = ReachabilityChecker(self.grammar)
-        if not checker.find(symbol, tree):
+        if not checker.find_reachability(symbol, tree):
             return None
         return self.astar(start_node, EagerGrammarGraphNode(symbol_node, []))
