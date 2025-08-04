@@ -18,6 +18,7 @@ from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import PopulationManager, IoPopulationManager
 from fandango.evolution.profiler import Profiler
 from fandango.io import FandangoIO, FandangoParty
+from fandango.io.io_utils import compute_nt_coverage_score
 from fandango.io.navigation.packetforecaster import PacketForecaster
 from fandango.io.navigation.packetnavigator import PacketNavigator
 from fandango.io.packetparser import parse_next_remote_packet
@@ -500,11 +501,9 @@ class Fandango:
                 fuzzable_packets = []
 
                 # Select next packet to send by computing guiding generator to underexplored areas of the grammar
-                all_derivations = set(self.parst_io_derivations)
-                all_derivations.add(history_tree)
-                coverage_scores: dict[NonTerminal, float] = compute_nt_coverage_score(
-                    all_derivations
-                )
+                all_derivations = list(self.parst_io_derivations)
+                all_derivations.append(history_tree)
+                coverage_scores: dict[NonTerminal, float] = compute_nt_coverage_score(self.grammar, all_derivations, 4)
                 scores_sorted = list(
                     sorted(coverage_scores.items(), key=lambda x: x[1], reverse=True)
                 )
