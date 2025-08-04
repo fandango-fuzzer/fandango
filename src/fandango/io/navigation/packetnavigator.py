@@ -55,7 +55,9 @@ class PacketNavigator(GrammarNavigator):
                 else:
                     break
             else:
-                path = list(super().astar_tree(suggested_tree, goal_symbol))
+                path = super().astar_tree(suggested_tree, goal_symbol)
+                if path is None:
+                    continue
                 path = list(filter(lambda n: isinstance(n.node, NonTerminalNode), path))
                 path = list(filter(lambda n: n.node.sender is not None, path))
                 path = list(
