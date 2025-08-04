@@ -5,9 +5,6 @@ from fandango.io.navigation.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.packetnavigator import PacketNavigator
 from fandango.language import NonTerminal
 from fandango.language.grammar import ParsingMode
-from fandango.language.grammar.node_visitors.grammar_graph_converter import (
-    GrammarGraphConverter,
-)
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from tests.utils import RESOURCES_ROOT, DOCS_ROOT
 

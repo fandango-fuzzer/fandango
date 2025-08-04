@@ -3,9 +3,6 @@ from fandango.io.navigation.grammarreducer import GrammarReducer
 from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
 from fandango.language import Grammar, NonTerminal, DerivationTree, Terminal
 from fandango.language.grammar import ParsingMode
-from fandango.language.grammar.node_visitors.grammar_graph_converter import (
-    GrammarGraphConverter,
-)
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 
 

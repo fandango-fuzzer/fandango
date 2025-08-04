@@ -1,14 +1,16 @@
 from typing import Optional
 
 from fandango.language.tree import DerivationTree
-from fandango.io.navigation.packetforecaster import GrammarKeyError
-from fandango.language import Grammar, NonTerminal, Symbol
+from fandango.language import Grammar, NonTerminal
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Repetition, Option, Plus, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
+
+class GrammarKeyError(KeyError):
+    pass
 
 class ContinuingNodeVisitor(NodeVisitor):
     """
@@ -20,7 +22,6 @@ class ContinuingNodeVisitor(NodeVisitor):
     def __init__(self, grammar: Grammar):
         self.grammar = grammar
         self.tree: Optional[DerivationTree] = None
-        self.collapsed_tree: Optional[DerivationTree] = None
         self.current_tree: list[list[DerivationTree] | None] = []
         self.current_path: list[tuple[NonTerminal, bool]] = []
 
@@ -29,10 +30,8 @@ class ContinuingNodeVisitor(NodeVisitor):
             self.tree = DerivationTree(NonTerminal("<start>"))
         else:
             self.tree = tree
-        self.collapsed_tree = self.grammar.collapse(self.tree)
         self.current_path = []
         self.current_tree = []
-
         self.current_path.append((self.tree.nonterminal, False))
         if len(self.tree.children) == 0:
             self.current_tree = [None]
