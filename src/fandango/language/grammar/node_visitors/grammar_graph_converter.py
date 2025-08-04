@@ -3,7 +3,7 @@ from typing import Optional
 
 from fandango.errors import FandangoError
 from fandango.language import NonTerminal, Terminal, DerivationTree
-from fandango.language.grammar.node_visitors.node_visitor import (NodeVisitor)
+from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node
@@ -38,7 +38,10 @@ class GrammarGraphNode(abc.ABC):
         raise NotImplementedError()
 
     def walk(self, tree_node: DerivationTree):
-        if issubclass(self.node.__class__, (NonTerminalNode, Concatenation, Repetition, Alternative)):
+        if issubclass(
+            self.node.__class__,
+            (NonTerminalNode, Concatenation, Repetition, Alternative),
+        ):
             if isinstance(self.node, NonTerminalNode):
                 symbol = self.node.symbol
             else:
@@ -49,9 +52,7 @@ class GrammarGraphNode(abc.ABC):
                     f"Grammar graph node {symbol.value()} doesn't match tree node {tree_node.symbol.value()}."
                 )
         elif isinstance(self.node, TerminalNode):
-            if not self.node.symbol.check(tree_node.symbol.value().to_string())[
-                0
-            ]:
+            if not self.node.symbol.check(tree_node.symbol.value().to_string())[0]:
                 # Todo other tree value types
                 raise GrammarWalkError(
                     f"Grammar graph node {self.node.symbol.value()} doesn't match tree node {tree_node.symbol.value()}."

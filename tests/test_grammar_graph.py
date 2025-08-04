@@ -45,12 +45,10 @@ class TestGrammarGraph(unittest.TestCase):
 
     def test_grammar_walk(self):
         grammar = self.get_grammar(RESOURCES_ROOT / "minimal_io.fan")
-        converter = GrammarGraphConverter(grammar.rules, NonTerminal("<start>"))
-        graph = converter.process()
         tree_to_continue = grammar.parse(
             "ping\npong\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True
         )
-        navigator = GrammarNavigator(graph)
+        navigator = GrammarNavigator(grammar)
         path = navigator.astar_tree(tree_to_continue, NonTerminal("<paff>"))
         path = filter(
             lambda n: isinstance(n.node, NonTerminalNode) and n.node.sender is not None,
