@@ -57,8 +57,10 @@ class PathFinder(ContinuingNodeVisitor):
         :param tree: The DerivationTree to base the search on. The DerivationTree must contain controlflow nodes
         as provided by the DerivationTree parser with the parsing option 'include_controlflow=True'
         """
+        if tree is None:
+            tree = DerivationTree(NonTerminal("<start>"))
         self.result = ForecastingResult()
-        self.collapsed_tree = self.grammar.collapse(self.tree)
+        self.collapsed_tree = self.grammar.collapse(tree)
         super().find(tree)
         return self.result
 
