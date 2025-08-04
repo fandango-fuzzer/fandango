@@ -16,7 +16,7 @@ class ReachabilityChecker(ContinuingNodeVisitor):
 
     def __init__(self, grammar: Grammar):
         super().__init__(grammar)
-        self.seen_symbols: Set[Symbol] = set()
+        self.seen_symbols: set[Symbol] = set()
 
     def find_reachability(self, symbol_to_reach: Symbol, tree: Optional[DerivationTree] = None):
         self.seen_symbols.clear()
