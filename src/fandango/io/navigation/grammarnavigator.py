@@ -69,4 +69,3 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         if not checker.find(symbol, tree):
             return None
         return self.astar(start_node, EagerGrammarGraphNode(symbol_node, []))
-

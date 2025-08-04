@@ -80,7 +80,7 @@ class TestGrammarGraph(unittest.TestCase):
             ],
         )
 
-    def test_packet_navigator__symbol_not_reachable(self):
+    def test_packet_navigator_symbol_not_reachable(self):
         grammar = self.get_grammar(DOCS_ROOT / "smtp-extended.fan")
         navigator = PacketNavigator(grammar, NonTerminal("<start>"))
         tree_to_continue = grammar.parse(
