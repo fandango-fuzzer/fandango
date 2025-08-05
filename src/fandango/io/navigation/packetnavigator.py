@@ -65,7 +65,7 @@ class PacketNavigator(GrammarNavigator):
             path = list(filter(lambda n: n.node.sender is not None, path))
             path = list(
                 map(
-                    lambda n: NonTerminal(f"<{str(n.node.symbol.value())[9:]}"),
+                    lambda n: (n.node.sender, n.node.recipient, NonTerminal(f"<{str(n.node.symbol.value())[9:]}")),
                     path,
                 )
             )
