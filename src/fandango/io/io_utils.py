@@ -31,7 +31,7 @@ def compute_message_coverage_score(
             nt_coverage[non_terminal] = 0.0
             continue
         nt_coverage[non_terminal] = grammar.compute_kpath_coverage(
-            messages, k, non_terminal
+            messages_by_nt[non_terminal], k, non_terminal
         )
     return nt_coverage
 

@@ -58,6 +58,13 @@ class Node(abc.ABC):
         return self.node_type == NodeType.NON_TERMINAL
 
     @property
+    def is_controlflow(self) -> bool:
+        return self.node_type not in {
+            NodeType.TERMINAL,
+            NodeType.NON_TERMINAL,
+        }
+
+    @property
     def settings(self) -> "NodeSettings":
         return self._settings
 
@@ -108,7 +115,7 @@ class Node(abc.ABC):
         """
 
     def descendents(
-        self, grammar: "fandango.language.grammar.grammar.Grammar"
+        self, grammar: "fandango.language.grammar.grammar.Grammar", filter_controlflow: bool = False
     ) -> Iterator["Node"]:
         """
         Returns an iterator of the descendents of this node.
