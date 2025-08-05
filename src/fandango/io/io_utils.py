@@ -4,7 +4,7 @@ from fandango.language.tree import DerivationTree
 from fandango.language import NonTerminal, Grammar
 
 
-def compute_nt_coverage_score(grammar: Grammar, trees: list[DerivationTree], k: int) -> dict[NonTerminal, float]:
+def compute_message_coverage_score(grammar: Grammar, trees: list[DerivationTree], k: int) -> dict[NonTerminal, float]:
     """
     Computes the coverage score for each NonTerminal in the given DerivationTrees.
     The score is the ratio of the number of trees containing the NonTerminal to the total number of trees.
