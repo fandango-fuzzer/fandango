@@ -1,5 +1,7 @@
 from itertools import groupby
+from typing import Optional
 
+from fandango.io.navigation.packetforecaster import ForecastingResult, ForcastingPacket
 from fandango.language.tree import DerivationTree
 from fandango.language import NonTerminal, Grammar
 
@@ -27,3 +29,14 @@ def compute_message_coverage_score(grammar: Grammar, trees: list[DerivationTree]
             continue
         nt_coverage[non_terminal] = grammar.compute_kpath_coverage(messages, k, non_terminal)
     return nt_coverage
+
+def get_guide_to_end_packet(forecast: ForecastingResult, fuzzer_parties: list[str]) -> Optional[ForcastingPacket]:
+    current_selection = None
+    for sender in fuzzer_parties:
+        for nt, packet in forecast[sender].nt_to_packet.items():
+            if current_selection is None:
+                current_selection = packet
+                continue
+            if packet.node.distance_to_completion < current_selection.node.distance_to_completion:
+                current_selection = packet
+    return current_selection

@@ -18,7 +18,7 @@ from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import PopulationManager, IoPopulationManager
 from fandango.evolution.profiler import Profiler
 from fandango.io import FandangoIO, FandangoParty
-from fandango.io.io_utils import compute_message_coverage_score
+from fandango.io.io_utils import compute_message_coverage_score, get_guide_to_end_packet
 from fandango.io.navigation.packetforecaster import PacketForecaster
 from fandango.io.navigation.packetnavigator import PacketNavigator
 from fandango.io.packetparser import parse_next_remote_packet
@@ -518,24 +518,18 @@ class Fandango:
                     path = navigator.astar_tree(history_tree, target_nt)
                     if path is None:
                         # We can't find a path to this non-terminal. That means we can't reach it without starting a new tree.
-                        # So we try to finish this tree ASAP be selecting the non-terminals with the lowest distance to completion.
+                        # So we try to finish this tree ASAP by selecting the non-terminal with the lowest distance to completion.
                         print(f"No path found for target {target_nt} with score {coverage_score}. Guiding to end of tree.")
-                        current_selection = None
-                        for sender in msg_parties:
-                            for nt, packet in forecast[sender].nt_to_packet.items():
-                                if current_selection is None:
-                                    current_selection = packet
-                                    continue
-                                if packet.node.distance_to_completion < current_selection.node.distance_to_completion:
-                                    current_selection = packet
-                        if current_selection is not None:
-                            fuzzable_packets.append(current_selection)
-                            break
-                    print(f"Guiding to target {target_nt} with score {coverage_score}")
-                    sender, receiver, next_nt = path[0]
-                    if sender in msg_parties and next_nt in forecast[sender].nt_to_packet:
-                        fuzzable_packets.append(forecast[sender].nt_to_packet[next_nt])
+                        fuzzable_packets.append(get_guide_to_end_packet(forecast, msg_parties))
                         break
+                    else:
+                        print(f"Guiding to target {target_nt} with score {coverage_score}")
+                        sender, receiver, next_nt = path[0]
+                        if sender in msg_parties and next_nt in forecast[sender].nt_to_packet:
+                            fuzzable_packets.append(forecast[sender].nt_to_packet[next_nt])
+                            break
+                if len(fuzzable_packets) == 0:
+                    fuzzable_packets.append(get_guide_to_end_packet(forecast, msg_parties))
                 assert isinstance(self.population_manager, IoPopulationManager)
                 self.population_manager.fuzzable_packets = fuzzable_packets
 
