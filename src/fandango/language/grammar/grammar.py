@@ -277,6 +277,25 @@ class Grammar(NodeVisitor):
         if prime:
             self.prime()
 
+    def get_protocol_messages(self, start_symbol = NonTerminal("<start>")) -> set[NonTerminal]:
+        work = set()
+        work.add(self.rules[start_symbol])
+        seen = set()
+        while len(work) > 0:
+            current = work.pop()
+            for node in current.descendents(self):
+                if node in seen:
+                    continue
+                seen.add(node)
+                work.add(node)
+        seen = filter(lambda n: isinstance(n, NonTerminalNode), seen)
+        seen = filter(lambda n: n.sender is not None, seen)
+        seen = map(lambda n: n.symbol, seen)
+        return set(seen)
+
+
+
+
     def parse(
         self,
         word: str | bytes | int | DerivationTree,
@@ -399,14 +418,14 @@ class Grammar(NodeVisitor):
         self._parser = Parser(self.rules)
 
     def compute_kpath_coverage(
-        self, derivation_trees: list[DerivationTree], k: int
+        self, derivation_trees: list[DerivationTree], k: int, non_terminal: Optional[NonTerminal] = None
     ) -> float:
         """
         Computes the k-path coverage of the grammar given a set of derivation trees.
         Returns a score between 0 and 1 representing the fraction of k-paths covered.
         """
         # Generate all possible k-paths in the grammar
-        all_k_paths = self._generate_all_k_paths(k)
+        all_k_paths = self._generate_all_k_paths(k, non_terminal)
 
         # Extract k-paths from the derivation trees
         covered_k_paths = set()
@@ -418,7 +437,7 @@ class Grammar(NodeVisitor):
             return 1.0  # If there are no k-paths, coverage is 100%
         return len(covered_k_paths) / len(all_k_paths)
 
-    def _generate_all_k_paths(self, k: int) -> set[tuple[Node, ...]]:
+    def _generate_all_k_paths(self, k: int, non_terminal: Optional[NonTerminal] = None) -> set[tuple[Node, ...]]:
         """
         Computes the *k*-paths for this grammar, constructively. See: doi.org/10.1109/ASE.2019.00027
 
@@ -427,9 +446,15 @@ class Grammar(NodeVisitor):
         """
 
         initial = set()
-        initial_work: list[Node] = [
-            NonTerminalNode(name, self._grammar_settings) for name in self.rules.keys()
-        ]
+        if non_terminal is not None:
+            initial_work: list[Node] = [
+                NonTerminalNode(non_terminal, self._grammar_settings)
+            ]
+        else:
+            initial_work: list[Node] = [
+                NonTerminalNode(name, self._grammar_settings) for name in self.rules.keys()
+            ]
+
         while initial_work:
             node = initial_work.pop(0)
             if node in initial:
