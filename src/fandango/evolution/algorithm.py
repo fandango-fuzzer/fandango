@@ -485,6 +485,13 @@ class Fandango:
                     raise FandangoFailedError("Could not forecast next packet")
                 self.parst_io_derivations.add(history_tree)
                 yield history_tree
+                coverage_scores = compute_message_coverage_score(self.grammar, list(self.parst_io_derivations), 2)
+                scores_sorted = list(
+                    sorted(coverage_scores.items(), key=lambda x: (x[1], x[0].name()))
+                )
+                if len(scores_sorted) > 0 and scores_sorted[0][1] >= 1:
+                    print("Full coverage reached, stopping evolution.")
+                    return
                 io_instance.reset_parties()
                 history_tree = DerivationTree(NonTerminal(self.start_symbol), [])
                 forecast = forecaster.predict(history_tree)
@@ -503,14 +510,28 @@ class Fandango:
                 all_derivations.append(history_tree)
                 coverage_scores: dict[NonTerminal, float] = compute_message_coverage_score(self.grammar, all_derivations, 2)
                 scores_sorted = list(
-                    sorted(coverage_scores.items(), key=lambda x: x[1])
+                    sorted(coverage_scores.items(), key=lambda x: (x[1], x[0].name()))
                 )
                 fuzzable_packets = []
-                for target_nt, _ in scores_sorted:
+                for target_nt, coverage_score in scores_sorted:
                     navigator = PacketNavigator(self.grammar, NonTerminal("<start>"))
                     path = navigator.astar_tree(history_tree, target_nt)
                     if path is None:
-                        continue
+                        # We can't find a path to this non-terminal. That means we can't reach it without starting a new tree.
+                        # So we try to finish this tree ASAP be selecting the non-terminals with the lowest distance to completion.
+                        print(f"No path found for target {target_nt} with score {coverage_score}. Guiding to end of tree.")
+                        current_selection = None
+                        for sender in msg_parties:
+                            for nt, packet in forecast[sender].nt_to_packet.items():
+                                if current_selection is None:
+                                    current_selection = packet
+                                    continue
+                                if packet.node.distance_to_completion < current_selection.node.distance_to_completion:
+                                    current_selection = packet
+                        if current_selection is not None:
+                            fuzzable_packets.append(current_selection)
+                            break
+                    print(f"Guiding to target {target_nt} with score {coverage_score}")
                     sender, receiver, next_nt = path[0]
                     if sender in msg_parties and next_nt in forecast[sender].nt_to_packet:
                         fuzzable_packets.append(forecast[sender].nt_to_packet[next_nt])
