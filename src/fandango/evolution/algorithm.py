@@ -362,8 +362,8 @@ class Fandango:
         :param max_generations: The maximum number of generations to generate. If None, the generation will run indefinitely.
         :return: A generator of DerivationTree objects, all of which are valid solutions to the grammar (or satisify the minimum fitness threshold).
         """
-        yield from self._initial_solutions
-        self._initial_solutions.clear()
+        while self._initial_solutions:
+            yield self._initial_solutions.pop(0)
 
         if len(self.population) < self.population_size:
             yield from self.generate_initial_population()
