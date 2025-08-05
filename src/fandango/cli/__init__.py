@@ -7,6 +7,10 @@ from fandango import Fandango
 from fandango.cli.commands import COMMANDS, run
 from fandango.cli.shell import shell_command
 from fandango.cli.parser import get_parser
+from fandango.constraints.constraint import Constraint
+from fandango.constraints.soft import SoftValue
+
+from fandango.language.grammar.grammar import Grammar
 from fandango.logger import LOGGER
 
 
