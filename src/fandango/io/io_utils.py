@@ -21,6 +21,9 @@ def compute_nt_coverage_score(grammar: Grammar, trees: list[DerivationTree], k: 
     for msg in messages:
         messages_by_nt.setdefault(msg.symbol, []).append(msg)
     nt_coverage = {}
-    for non_terminal, messages in messages_by_nt.items():
-        nt_coverage[non_terminal] = grammar.compute_kpath_coverage(messages, k)
+    for non_terminal in grammar.get_protocol_messages():
+        if non_terminal not in messages_by_nt:
+            nt_coverage[non_terminal] = 0.0
+            continue
+        nt_coverage[non_terminal] = grammar.compute_kpath_coverage(messages, k, non_terminal)
     return nt_coverage
