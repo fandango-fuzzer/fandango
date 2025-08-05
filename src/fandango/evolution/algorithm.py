@@ -515,14 +515,11 @@ class Fandango:
                     path = navigator.astar_tree(history_tree, target_nt)
                     if path is None:
                         continue
-                    # Todo maybe the next message is not fuzzer controlled.
-                    # Todo also make the sender a part of the path
-                    next_nt = path[0]
-                    for msg_party in msg_parties:
-                        if next_nt not in forecast[msg_party].nt_to_packet:
-                            continue
-                        fuzzable_packets.append(forecast[msg_party].nt_to_packet[next_nt])
-                    break
+                    sender, receiver, next_nt = path[0]
+                    if sender in forecast and forecast[sender].is_fuzzer_controlled():
+                        if next_nt in forecast[sender].nt_to_packet:
+                            fuzzable_packets.append(forecast[sender].nt_to_packet[next_nt])
+                            break
                 assert isinstance(self.population_manager, IoPopulationManager)
                 self.population_manager.fuzzable_packets = fuzzable_packets
 
