@@ -21,7 +21,8 @@ from fandango.cli.utils import (
     parse_file,
     validate,
 )
-from fandango.constraints.base import Constraint, SoftValue
+from fandango.constraints.constraint import Constraint
+from fandango.constraints.soft import SoftValue
 from fandango.converters.FandangoConverter import FandangoConverter
 from fandango.converters.antlr.ANTLRFandangoConverter import ANTLRFandangoConverter
 from fandango.converters.bt.BTFandangoConverter import (
