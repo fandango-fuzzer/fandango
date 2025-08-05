@@ -9,8 +9,10 @@ from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.repetition import Repetition, Option, Plus, Star
 from fandango.language.grammar.nodes.terminal import TerminalNode
 
+
 class GrammarKeyError(KeyError):
     pass
+
 
 class ContinuingNodeVisitor(NodeVisitor):
     """
@@ -68,7 +70,9 @@ class ContinuingNodeVisitor(NodeVisitor):
             if tree[0].symbol != node.symbol:
                 raise GrammarKeyError("Symbol mismatch")
 
-        continue_exploring, enter_non_terminal = self.onNonTerminalNodeVisit(node, tree is None)
+        continue_exploring, enter_non_terminal = self.onNonTerminalNodeVisit(
+            node, tree is None
+        )
         if not enter_non_terminal:
             return continue_exploring
 
@@ -81,7 +85,9 @@ class ContinuingNodeVisitor(NodeVisitor):
             self.current_tree.pop()
         return result
 
-    def onNonTerminalNodeVisit(self, node: NonTerminalNode, is_exploring: bool) -> tuple[bool, bool]:
+    def onNonTerminalNodeVisit(
+        self, node: NonTerminalNode, is_exploring: bool
+    ) -> tuple[bool, bool]:
         raise NotImplementedError()
 
     def onTerminalNodeVisit(self, node: TerminalNode, is_exploring: bool):

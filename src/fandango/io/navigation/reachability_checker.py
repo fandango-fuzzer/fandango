@@ -18,7 +18,9 @@ class ReachabilityChecker(ContinuingNodeVisitor):
         super().__init__(grammar)
         self.seen_symbols: set[Symbol] = set()
 
-    def find_reachability(self, symbol_to_reach: Symbol, tree: Optional[DerivationTree] = None):
+    def find_reachability(
+        self, symbol_to_reach: Symbol, tree: Optional[DerivationTree] = None
+    ):
         self.seen_symbols.clear()
         super().find(tree)
         return symbol_to_reach in self.seen_symbols

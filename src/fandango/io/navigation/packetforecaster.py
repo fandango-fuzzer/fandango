@@ -18,6 +18,7 @@ from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.language.tree_value import TreeValueType
 
+
 class PathFinder(ContinuingNodeVisitor):
     """
     For a given grammar and DerivationTree, this class
@@ -64,7 +65,9 @@ class PathFinder(ContinuingNodeVisitor):
         super().find(tree)
         return self.result
 
-    def onNonTerminalNodeVisit(self, node: NonTerminalNode, is_exploring: bool) -> tuple[bool, bool]:
+    def onNonTerminalNodeVisit(
+        self, node: NonTerminalNode, is_exploring: bool
+    ) -> tuple[bool, bool]:
         if node.sender is not None:
             if is_exploring:
                 self.add_option(node)
