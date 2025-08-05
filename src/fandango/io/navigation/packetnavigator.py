@@ -38,7 +38,9 @@ class PacketNavigator(GrammarNavigator):
         self._parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
         paths = []
         if history_nts == "":
-            path = super().astar_tree(DerivationTree(NonTerminal("<start>")), goal_symbol)
+            path = super().astar_tree(
+                DerivationTree(NonTerminal("<start>")), goal_symbol
+            )
             if path is not None:
                 paths.append(path)
         for suggested_tree in self._parser.consume(history_nts):
@@ -65,7 +67,11 @@ class PacketNavigator(GrammarNavigator):
             path = list(filter(lambda n: n.node.sender is not None, path))
             path = list(
                 map(
-                    lambda n: (n.node.sender, n.node.recipient, NonTerminal(f"<{str(n.node.symbol.value())[9:]}")),
+                    lambda n: (
+                        n.node.sender,
+                        n.node.recipient,
+                        NonTerminal(f"<{str(n.node.symbol.value())[9:]}"),
+                    ),
                     path,
                 )
             )

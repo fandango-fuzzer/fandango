@@ -78,7 +78,7 @@ class GrammarReducer(NodeVisitor):
             self._grammar_settings,
             node.id,
             node.min,
-            node.internal_max
+            node.internal_max,
         )
         repetition.bounds_constraint = node.bounds_constraint
         return repetition

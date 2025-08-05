@@ -277,7 +277,9 @@ class Grammar(NodeVisitor):
         if prime:
             self.prime()
 
-    def get_protocol_messages(self, start_symbol = NonTerminal("<start>")) -> set[NonTerminal]:
+    def get_protocol_messages(
+        self, start_symbol=NonTerminal("<start>")
+    ) -> set[NonTerminal]:
         work = set()
         work.add(self.rules[start_symbol])
         seen = set()
@@ -292,9 +294,6 @@ class Grammar(NodeVisitor):
         seen = filter(lambda n: n.sender is not None, seen)
         seen = map(lambda n: n.symbol, seen)
         return set(seen)
-
-
-
 
     def parse(
         self,
@@ -418,7 +417,10 @@ class Grammar(NodeVisitor):
         self._parser = Parser(self.rules)
 
     def compute_kpath_coverage(
-        self, derivation_trees: list[DerivationTree], k: int, non_terminal: Optional[NonTerminal] = None
+        self,
+        derivation_trees: list[DerivationTree],
+        k: int,
+        non_terminal: Optional[NonTerminal] = None,
     ) -> float:
         """
         Computes the k-path coverage of the grammar given a set of derivation trees.
@@ -437,7 +439,9 @@ class Grammar(NodeVisitor):
             return 1.0  # If there are no k-paths, coverage is 100%
         return len(covered_k_paths) / len(all_k_paths)
 
-    def _generate_all_k_paths(self, k: int, non_terminal: Optional[NonTerminal] = None) -> set[tuple[Node, ...]]:
+    def _generate_all_k_paths(
+        self, k: int, non_terminal: Optional[NonTerminal] = None
+    ) -> set[tuple[Node, ...]]:
         """
         Computes the *k*-paths for this grammar, constructively. See: doi.org/10.1109/ASE.2019.00027
 
@@ -452,7 +456,8 @@ class Grammar(NodeVisitor):
             ]
         else:
             initial_work: list[Node] = [
-                NonTerminalNode(name, self._grammar_settings) for name in self.rules.keys()
+                NonTerminalNode(name, self._grammar_settings)
+                for name in self.rules.keys()
             ]
 
         while initial_work:
