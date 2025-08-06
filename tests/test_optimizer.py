@@ -60,9 +60,9 @@ class GeneticTest(unittest.TestCase):
             elitism_rate=0.2,
             logger_level=LoggerLevel.DEBUG,
         )
-        list(
-            self.fandango.generate_initial_population()
-        )  # ensure the generator runs until the end
+
+        # force initial population generation
+        list(self.fandango.generate(max_generations=0))
 
     def test_refill_population_with_empty_population(self):
         manager = PopulationManager(
@@ -292,8 +292,11 @@ class GeneticTest(unittest.TestCase):
             self.assertTrue(self.fandango.grammar.parse(str(individual)))
 
     def test_generate(self):
+        # limit to 100 solutions
+        generator = itertools.islice(self.fandango.generate(), 100)
+
         # Run the evolution process
-        solutions = list(self.fandango.generate(max_generations=20))
+        solutions = list(generator)
 
         # Check that the population has been updated
         self.assertIsNotNone(self.fandango.population)
