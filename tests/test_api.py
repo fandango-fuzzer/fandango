@@ -66,15 +66,6 @@ class APITest(unittest.TestCase):
         with self.assertRaises(FandangoParseError):
             list(fan.parse(invalid_word))  # force generator evaluation
 
-    def ensure_capped_generation(self):
-        fan = Fandango(self.SPEC_abcd, logging_level=logging.INFO)
-        solutions = fan.fuzz()
-        self.assertLess(
-            100,
-            len(solutions),
-            f"Expected more than 100 trees, only received {len(solutions)}",
-        )
-
 
 if __name__ == "__main__":
     unittest.main()
