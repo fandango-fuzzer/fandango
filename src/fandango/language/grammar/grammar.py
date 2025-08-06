@@ -465,14 +465,14 @@ class Grammar(NodeVisitor):
             if node in initial:
                 continue
             initial.add(node)
-            initial_work.extend(node.descendents(self))
+            initial_work.extend(node.descendents(self, filter_controlflow=True))
 
         work: list[set[tuple[Node, ...]]] = [set((x,) for x in initial)]
 
         for _ in range(1, k):
             next_work = set()
             for base in work[-1]:
-                for descendent in base[-1].descendents(self):
+                for descendent in base[-1].descendents(self, filter_controlflow=True):
                     next_work.add(base + (descendent,))
             work.append(next_work)
 
@@ -486,18 +486,18 @@ class Grammar(NodeVisitor):
         """
         Extracts all k-length paths (k-paths) from a derivation tree.
         """
+        start_nodes = tree.flatten()
         paths = set()
 
-        def traverse(node: DerivationTree, current_path: tuple[Symbol, ...]):
-            new_path = current_path + (node.symbol,)
-            if len(new_path) == k:
-                paths.add(new_path)
-                # Do not traverse further to keep path length at k
+        def traverse(current_node, path):
+            if len(path) == k:
+                paths.add(path)  # Make a copy
                 return
-            for child in node.children:
-                traverse(child, new_path)
+            for child in current_node.children:
+                traverse(child, path + (child.symbol,))
 
-        traverse(tree, ())
+        for node in start_nodes:
+            traverse(node, (node.symbol,))
         return paths
 
     def prime(self):
