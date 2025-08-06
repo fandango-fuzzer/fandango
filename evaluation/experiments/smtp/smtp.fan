@@ -48,19 +48,19 @@ def decode64(input):
 
 <request_auth> ::= 'AUTH LOGIN\r\n'
 <response_auth_expect_user> ::= '334 VXNlcm5hbWU6\r\n'
-<request_auth_user_correct> ::= 'dGhlX3VzZXI=\r\n'
+<request_auth_user_correct> ::= 'ZGVidWdAbG9jYWxkb21haW4udGVzdA==\r\n'
 <request_auth_user_incorrect> ::= <user_incorrect_64> '\r\n'
 <response_auth_expect_pass> ::= '334 UGFzc3dvcmQ6\r\n'
-<request_auth_pass_correct> ::= 'dGhlX3Bhc3N3b3Jk\r\n'
+<request_auth_pass_correct> ::= 'TkVXcGFzczEyMw==\r\n'
 <request_auth_pass_incorrect> ::= <pass_incorrect_64> '\r\n'
-<response_auth_success> ::= '235 Authentication successful.\r\n'
-<response_auth_fail> ::= '535 Authentication credentials invalid\r\n'
+<response_auth_success> ::= '235 ' r'[a-zA-Z0-9\-\. ]+' '\r\n'
+<response_auth_fail> ::= '535 ' r'[a-zA-Z0-9\-\.:\(\) ]+' '\r\n'
 
 <user_incorrect_64> ::= r'[a-zA-Z0-9\+\\\=]+' := encode64(<user_incorrect>)
 <pass_incorrect_64> ::= r'[a-zA-Z0-9\+\\\=]+' := encode64(<pass_incorrect>)
 
-<user_incorrect> ::= r'^(?!the_user$)([a-zA-Z0-9_]+)' := decode64(<user_incorrect_64>)
-<pass_incorrect> ::= r'^(?!the_password$)([a-zA-Z0-9_]+)' := decode64(<pass_incorrect_64>)
+<user_incorrect> ::= r'^(?!debug\@localdomain\.test$)([a-zA-Z0-9_]+)' := decode64(<user_incorrect_64>)
+<pass_incorrect> ::= r'^(?!NEWpass123$)([a-zA-Z0-9_]+)' := decode64(<pass_incorrect_64>)
 
 where len(str(<request_auth_user_incorrect>)) >= 6
 
@@ -69,12 +69,12 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 <request_ehlo> ::= 'EHLO ' <client_identifier> '\r\n'
 <client_identifier> ::= r'[a-zA-Z0-9\-\. ]+'
 <response_ehlo> ::= <response_ehlo_param>+<response_ehlo_end> := '250-fandango-server\r\n250-8BITMIME\r\n250-AUTH PLAIN LOGIN\r\n250 Ok\r\n'
-<response_ehlo_param> ::= '250-' r'[a-zA-Z0-9\- ]+' '\r\n'
-<response_ehlo_end> ::= '250 Ok\r\n'
+<response_ehlo_param> ::= '250-' r'[a-zA-Z0-9\-\.= ]+' '\r\n'
+<response_ehlo_end> ::= '250 ' ('CHUNKING' | 'Ok') '\r\n'
 
 <exchange_quit> ::= <Client:request_quit><Server:response_quit>
 <request_quit> ::= 'QUIT\r\n'
-<response_quit> ::= '221 Bye\r\n'
+<response_quit> ::= '221 ' r'[a-zA-Z0-9\-\. ]+' '\r\n'
 
 # When sending a mail the client to the server, the client first tells the server who he is and where to send the mail
 # to, afterwards the client send mail headers and the mail body before finally submitting the mail and goind back to the logged in state.
@@ -96,9 +96,9 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 <mail_body> ::= <mail_contents_64><mail_body_end>
 
 <request_mail_from> ::= 'MAIL FROM:<' <email_address> '>\r\n'
-<response_mail_from> ::= '250 Ok\r\n'
+<response_mail_from> ::= '250 ' r'[a-zA-Z0-9\-\. ]+' '\r\n'
 <request_mail_to> ::= 'RCPT TO:<' <email_address> '>\r\n'
-<response_mail_to> ::= '250 Ok\r\n'
+<response_mail_to> ::= '250 ' r'[a-zA-Z0-9\-\. ]+' '\r\n'
 <request_mail_data> ::= 'DATA\r\n'
 <response_mail_data> ::= '354 End data with <CR><LF>.<CR><LF>\r\n'
 
@@ -115,8 +115,8 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 <mail_header_content_type> ::= 'content-type: text/plain; charset=utf-8\r\n'
 <mail_header_encoding> ::= 'content-transfer-encoding: base64\r\n'
 <mail_header_end> ::= '\r\n'
-<response_submit> ::= '250 Ok\r\n'
-<email_address> ::= r'[a-z]+@[a-z]+\.[a-z]+'
+<response_submit> ::= '250 ' r'[a-zA-Z0-9\-\.: ]+' '\r\n'
+<email_address> ::= r'[a-z]+@[a-z]+\.de'
 <unix_time_formatted> ::= r'[a-zA-Z0-9\:\+\, ]+' := format_unix_time(int(<unix_time>))
 <unix_time> ::= <unix_time_number> := str(str_to_unix_time(str(<unix_time_formatted>)))
 <unix_time_number> ::= r'[1-9][0-9]+' := str(random.randint(0, 2147483647))
@@ -132,7 +132,7 @@ class Client(ConnectParty):
         super().__init__(
             ownership=Ownership.FANDANGO_PARTY if fandango_is_client else Ownership.EXTERNAL_PARTY,
             endpoint_type=EndpointType.CONNECT,
-            uri="tcp://localhost:8025"
+            uri="tcp://localhost:25587"
         )
         self.start()
 
