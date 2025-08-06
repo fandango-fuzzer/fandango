@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Generator, Iterable
+from collections.abc import Callable, Generator
 import itertools
 import logging
 import time
-from typing import IO, Optional
+from typing import IO, Optional, cast
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
 from fandango.language.grammar import FuzzingMode, ParsingMode
@@ -97,7 +97,10 @@ class FandangoBase(ABC):
 
     @abstractmethod
     def init_population(
-        self, *, extra_constraints: Optional[list[str]] = None, **settings
+        self,
+        *,
+        extra_constraints: Optional[list[str] | list[Constraint | SoftValue]] = None,
+        **settings,
     ) -> None:
         """
         Initialize a Fandango population.
@@ -134,6 +137,7 @@ class FandangoBase(ABC):
         max_generations: Optional[int] = None,
         infinite: bool = False,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
+        inverted_constraint_depth: int = 0,
         **settings,
     ) -> list[DerivationTree]:
         """
@@ -183,8 +187,23 @@ class Fandango(FandangoBase):
         obj._start_symbol = start_symbol if start_symbol is not None else "<start>"
         return obj
 
+    def _parse_extra_constraints(
+        self, extra_constraints: list[str], start_symbol: str
+    ) -> list[Constraint | SoftValue]:
+        _, extra_constraints_parsed = parse(
+            [],
+            extra_constraints,
+            given_grammars=[self.grammar],
+            start_symbol=start_symbol,
+        )
+        return extra_constraints_parsed
+
     def init_population(
-        self, *, extra_constraints: Optional[list[str]] = None, **settings
+        self,
+        *,
+        extra_constraints: Optional[list[str] | list[Constraint | SoftValue]] = None,
+        skip_base_constraints: bool = False,
+        **settings,
     ) -> None:
         """
         Initialize a Fandango population.
@@ -196,15 +215,20 @@ class Fandango(FandangoBase):
 
         start_symbol = settings.pop("start_symbol", self._start_symbol)
 
-        constraints = self.constraints[:]
+        constraints = [] if skip_base_constraints else self.constraints[:]
+
         if extra_constraints:
-            _, extra_constraints_parsed = parse(
-                [],
-                extra_constraints,
-                given_grammars=[self.grammar],
-                start_symbol=start_symbol,
-            )
-            constraints += extra_constraints_parsed
+            if all(isinstance(c, str) for c in extra_constraints):
+
+                extra_constraints_parsed = self._parse_extra_constraints(
+                    cast(list[str], extra_constraints), start_symbol
+                )
+                constraints += extra_constraints_parsed
+            else:
+                assert all(
+                    isinstance(c, (Constraint, SoftValue)) for c in extra_constraints
+                )
+                constraints += cast(list[Constraint | SoftValue], extra_constraints)
 
         self.fandango = FandangoStrategy(
             self.grammar, constraints, start_symbol=start_symbol, **settings
@@ -245,15 +269,24 @@ class Fandango(FandangoBase):
         desired_solutions: Optional[int],
         max_generations: Optional[int],
         infinite: bool,
-    ) -> tuple[Optional[int], Optional[int]]:
+        inverted_constraint_depth: int,
+    ) -> tuple[Optional[int], Optional[int], bool]:
         """
         Sanitize the runtime end settings and emit warnings if necessary.
         :param mode: The fuzzing mode
         :param desired_solutions: The desired number of solutions
         :param max_generations: The maximum number of generations
         :param infinite: Whether to run infinitely
-        :return: The sanitized max_generations and desired_solutions values
+        :param inverted_constraint_depth: How many constraints to invert at most
+        :return: The sanitized max_generations, desired_solutions, and infinite values
         """
+        if inverted_constraint_depth > 0:
+            if infinite:
+                LOGGER.warning(
+                    "Infinite mode cannot be combined with inverted constraints (since it would never get to the second combination), disabling infinite mode"
+                )
+                infinite = False
+
         if mode == FuzzingMode.IO:
             match desired_solutions:
                 case None:
@@ -283,7 +316,7 @@ class Fandango(FandangoBase):
                 LOGGER.warning("Infinite mode is activated, overriding max_generations")
             max_generations = None  # infinite overrides max_generations
 
-        return max_generations, desired_solutions
+        return max_generations, desired_solutions, infinite
 
     def _print_warnings_if_necessary_post_fuzz(
         self,
@@ -327,6 +360,48 @@ class Fandango(FandangoBase):
                 return solutions + padding
         return []
 
+    def _generate_constraint_combinations(
+        self, extra_constraints: Optional[list[str]], inverted_constraint_depth: int
+    ) -> list[list[Constraint | SoftValue]]:
+        all_constraints = self.constraints[:]
+        if extra_constraints:
+            parsed_extra_constraints = self._parse_extra_constraints(
+                extra_constraints, self._start_symbol
+            )
+            all_constraints += parsed_extra_constraints
+
+        hard_constraints: list[Constraint] = []
+        soft_constraints: list[SoftValue] = []
+        for c in all_constraints:
+            if isinstance(c, SoftValue):
+                soft_constraints.append(c)
+            elif isinstance(c, Constraint):
+                hard_constraints.append(c)
+            else:
+                raise ValueError(f"Unknown constraint type: {type(c)}")
+
+        constraint_combinations: list[list[Constraint | SoftValue]] = []
+
+        if inverted_constraint_depth > len(hard_constraints):
+            LOGGER.warning(
+                f"Inverted constraint depth is greater than the number of hard constraints ({len(hard_constraints)}) — flipping up to all constraints"
+            )
+
+        for num_flipped in range(inverted_constraint_depth + 1):
+            constraints_to_flip_combinations = itertools.combinations(
+                hard_constraints, num_flipped
+            )
+            for constraints_to_flip in constraints_to_flip_combinations:
+                unflipped_constraints = [
+                    c for c in hard_constraints if c not in constraints_to_flip
+                ]
+                flipped_constraints = [c.invert() for c in constraints_to_flip]
+                constraint_combinations.append(
+                    unflipped_constraints + flipped_constraints + soft_constraints
+                )
+
+        return constraint_combinations
+
     def fuzz(
         self,
         *,
@@ -336,6 +411,7 @@ class Fandango(FandangoBase):
         max_generations: Optional[int] = None,
         infinite: bool = False,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
+        inverted_constraint_depth: int = 0,
         **settings,
     ) -> list[DerivationTree]:
         """
@@ -345,35 +421,47 @@ class Fandango(FandangoBase):
         :param settings: Additional settings for the evolution algorithm
         :return: A list of derivation trees
         """
-
-        # force-(re-)initialize if settings changed
-        if extra_constraints is not None or settings is not None:
-            self.init_population(extra_constraints=extra_constraints, **settings)
-        assert self.fandango is not None
-
-        max_generations, desired_solutions = self._sanitize_runtime_end_settings(
-            mode, desired_solutions, max_generations, infinite
+        max_generations, desired_solutions, infinite = (
+            self._sanitize_runtime_end_settings(
+                mode,
+                desired_solutions,
+                max_generations,
+                infinite,
+                inverted_constraint_depth,
+            )
         )
 
-        raw_generator = self.generate_solutions(
-            max_generations=max_generations, mode=mode
+        constraint_combinations = self._generate_constraint_combinations(
+            extra_constraints, inverted_constraint_depth
         )
 
-        # limit the generator to desired_solutions — no limit if desired_solutions is None
-        generator = itertools.islice(raw_generator, desired_solutions)
-
+        solution_i = 0
         solutions = []
-        for i, s in enumerate(generator):
-            solution_callback(s, i)
-            # prevent memory buildup in infinite mode
-            if not infinite:
-                solutions.append(s)
 
-        padding = self._print_warnings_if_necessary_post_fuzz(
-            desired_solutions, solutions, settings
-        )
+        for constraints in constraint_combinations:
+            self.init_population(
+                extra_constraints=constraints, skip_base_constraints=True, **settings
+            )
+            raw_generator = self.generate_solutions(max_generations, mode)
 
-        return solutions + padding
+            # limit the generator to desired_solutions — no limit if desired_solutions is None
+            generator = itertools.islice(raw_generator, desired_solutions)
+
+            solutions_for_this_combination = []
+            for s in generator:
+                solution_callback(s, solution_i)
+                solution_i += 1
+                # prevent memory buildup in infinite mode
+                if not infinite:
+                    solutions_for_this_combination.append(s)
+
+            padding = self._print_warnings_if_necessary_post_fuzz(
+                desired_solutions, solutions_for_this_combination, settings
+            )
+
+            solutions.extend(solutions_for_this_combination + padding)
+
+        return solutions
 
     def parse(
         self, word: str | bytes | DerivationTree, *, prefix: bool = False, **settings
