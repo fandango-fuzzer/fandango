@@ -72,10 +72,7 @@ def shell_command(args: argparse.Namespace) -> None:
         if state == 0:  # first trigger
             buffer = readline.get_line_buffer()[: readline.get_endidx()]
             MATCHES = complete(buffer)
-        try:
-            return MATCHES[state]
-        except IndexError:
-            return None
+        return MATCHES[state] if state < len(MATCHES) else None
 
     if sys.stdin.isatty():
         if "readline" in globals():
@@ -162,7 +159,5 @@ def shell_command(args: argparse.Namespace) -> None:
             else:
                 command = COMMANDS[args.command]
                 run(command, args)
-        except SystemExit:
-            pass
-        except KeyboardInterrupt:
+        except (SystemExit, KeyboardInterrupt):
             pass

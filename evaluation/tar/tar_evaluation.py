@@ -24,8 +24,10 @@ def is_syntactically_valid_tar(tree: str):
 def evaluate_tar(
     seconds=60,
 ) -> tuple[str, int, int, float, tuple[float, int, int], float, float]:
-    file = open("evaluation/tar/tar.fan", "r")
-    grammar, constraints = parse(file, use_stdlib=False)
+    with open("evaluation/tar/tar.fan", "r") as file:
+        grammar, constraints = parse(file, use_stdlib=False)
+        assert grammar is not None
+
     solutions = []
 
     time_in_an_hour = time.time() + seconds

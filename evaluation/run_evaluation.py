@@ -1,6 +1,7 @@
 import logging
 import random
 import sys
+from typing import Optional
 
 from evaluation.csv.csv_evaluation import evaluate_csv
 from evaluation.rest.rest_evaluation import evaluate_rest
@@ -32,7 +33,7 @@ def better_print_results(
     print("")
 
 
-def run_evaluation(time: int = 3600):
+def run_evaluation(time: Optional[str] = "3600"):
     seconds = 3600
     random_seed = 1
 

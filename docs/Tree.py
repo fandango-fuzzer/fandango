@@ -54,6 +54,7 @@ class Tree:
 
         label = label.replace("<", "\\<")
         label = label.replace(">", "\\>")
+        assert Tree.dot is not None
         Tree.dot.node(name, label, fontcolor=color)
 
         for child in self.children():
