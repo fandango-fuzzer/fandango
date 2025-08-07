@@ -272,7 +272,7 @@ class PacketForecaster:
             return hash(self) == hash(other)
 
         def __repr__(self):
-            return repr(self.path)
+            return f"({', '.join([f'({nt.format_as_spec()}, {new_node})' for nt, new_node in self.path])})"
 
     class ForcastingPacket:
         def __init__(self, node: NonTerminalNode):

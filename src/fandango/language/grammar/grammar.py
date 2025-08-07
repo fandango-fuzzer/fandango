@@ -112,12 +112,12 @@ class Grammar(NodeVisitor):
             if val.symbol not in self.rules:
                 closest = closest_match(str(val), self.rules.keys())
                 raise FandangoValueError(
-                    f"Symbol {val.symbol!s} not defined in grammar. Did you mean {closest!s}?"
+                    f"Symbol {val.symbol.format_as_spec()} not defined in grammar. Did you mean {closest.format_as_spec()}?"
                 )
 
             if val.symbol not in self.generators:
                 raise FandangoValueError(
-                    f"{val.symbol}: Missing converter from {gen_symbol} ({val.symbol} ::= ... := f({gen_symbol}))"
+                    f"{val.symbol.format_as_spec()}: Missing converter from {gen_symbol.format_as_spec()} ({val.symbol.format_as_spec()} ::= ... := f({gen_symbol.format_as_spec()}))"
                 )
 
             dependent_generators[val.symbol] = self.generator_dependencies(val.symbol)

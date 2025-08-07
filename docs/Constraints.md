@@ -123,16 +123,12 @@ Whenever Fandango evaluates a constraint, such as
 int(<age>) > 20
 ```
 
-the type of `<age>` is actually not a string, but a `DerivationTree` object - [a tree representing the structure of the output.](sec:paths).
-For now, you can use `DerivationTree` objects almost as if they were strings:
+the type of `<age>` is actually not a string, but a `DerivationTree` object - [a tree representing the structure of the output.](sec:paths). You can use `DerivationTree` objects as other basic python data types by converting them using (`int(<age>)`, `str(<age>)`, `bytes(<age>)`).
 
-* You can _convert_ them to other basic data types with (`int(<age>)`, `float(<age>)`, `str(<age>)`)
-* You can invoke _string methods_ on them (`<age>.startswith('0'))
+* You can then invoke most _string, bytes and int methods_ on them (`<age>.startswith('0')`) (see [Details](sec:derivation-tree-direct-access-functions))
 * You can _compare_ them against each other (`<age_1> == <age_2>`) as well as against other strings (`<age> != "19"`)
-* You can _print_ them, using implicit string conversions (`print(<age>)`, which invokes `<age>.__str__()`)
 
-One thing you _cannot_ do, though, is _passing them directly as arguments to functions_ that do not expect a `DerivationTree` type.
-This applies to the vast majority of Python functions.
+One thing you _cannot_ do, though, is _passing them directly as arguments to functions_ that do not expect a `DerivationTree` type. This applies to the vast majority of Python functions.
 
 ```{important}
 If you want to pass a symbol as a function argument, convert it to the proper type (`int(<age>)`, `float(<age>)`, `str(<age>)`) first.
@@ -140,7 +136,7 @@ Otherwise, you will likely raise an internal error in that very function.
 ```
 
 ```{important}
-On symbols, the `[...]` operator operates differently from strings - it returns a _subtree_ (a substring) of the produced output: `<name>[0]` returns the `<first_name>` element, not the first character.
+On symbols, the `[...]` operator operates differently from strings - it returns a _subtree_ of the produced output: `<name>[0]` returns the `<first_name>` element, not the first character.
 If you want to access a character (or a range of characters) of a symbol, convert it into a string first, as in `str(<name>)[0]`.
 ```
 
@@ -201,7 +197,7 @@ $ fandango -v fuzz -f persons.fan -n 10 -c 'int(<age>) % 7 == 0'
 
 ```{code-cell}
 :tags: ["remove-input", "scroll-output"]
-!fandango -v fuzz -f persons.fan -n 10 -c 'int(<age>) % 7 == 0' --validate
+!fandango -v fuzz -f persons.fan -n 10 -c 'int(<age>) % 7 == 0' --progress-bar=off
 assert _exit_code == 0
 ```
 
@@ -265,7 +261,7 @@ $ fandango fuzz -f persons.fan --maximize 'int(<age>)'
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 --maximize 'int(<age>)'
+!fandango fuzz -f persons.fan -n 10 --maximize 'int(<age>)' --progress-bar=off
 assert _exit_code == 0
 ```
 
@@ -277,7 +273,7 @@ $ fandango fuzz -f persons.fan --maximize 'int(<age>)'
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 --minimize 'int(<age>)'
+!fandango fuzz -f persons.fan -n 10 --minimize 'int(<age>)' --progress-bar=off
 assert _exit_code == 0
 ```
 
@@ -310,7 +306,7 @@ $ fandango fuzz -f persons.fan --maximize '<name>.startswith("A")' -n 10
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan --maximize '<name>.startswith("A")' -n 10
+!fandango fuzz -f persons.fan --maximize '<name>.startswith("A")' -n 10 --progress-bar=off
 assert _exit_code == 0
 ```
 
@@ -335,7 +331,7 @@ $ fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50
 
 ```{code-cell}
 :tags: ["remove-input", "scroll-output"]
-!fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50 --validate
+!fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50 --validate --progress-bar=off
 assert _exit_code == 0
 ```
 

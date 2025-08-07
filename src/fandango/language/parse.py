@@ -12,6 +12,7 @@ from io import StringIO
 from pathlib import Path
 from types import NoneType
 from typing import IO, Optional
+import warnings
 
 import cachedir_tag
 import dill as pickle
@@ -306,7 +307,11 @@ def parse_spec(
                 with open(pickle_file, "rb") as fp:
                     LOGGER.info(f"{filename}: loading cached spec from {pickle_file}")
                     start_time = time.time()
-                    spec = pickle.load(fp)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter(
+                            "ignore", DeprecationWarning
+                        )  # for some reason, unpickling triggers the deprecation warnings in __getattr__ of DerivationTree and TreeValue
+                        spec = pickle.load(fp)
                     assert spec is not None
                     LOGGER.debug(f"Cached spec version: {spec.version}")
                     if spec.fan_contents != fan_contents:
@@ -956,7 +961,9 @@ def check_constraints_existence(
         defined_symbols.append(symbol.name())
 
     grammar_symbols = grammar.rules.keys()
-    grammar_matches = re.findall(r"<([^>]*)>", str(grammar_symbols))
+    grammar_matches = re.findall(
+        r"<([^>]*)>", "".join(k.format_as_spec() for k in grammar_symbols)
+    )
     # LOGGER.debug(f"All used symbols: {grammar_matches}")
 
     for constraint in constraints:

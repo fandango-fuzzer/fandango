@@ -2,70 +2,91 @@ name: GitHub Pages
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - docs/**
+    branches: [main]
+  pull_request:
+    branches: [dev, main]
   workflow_dispatch: # Allows manual triggering from the Actions tab
 
 permissions:
   contents: write
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-    # Step 1: Checkout the source repository
-    - name: Checkout the source repository
-      uses: actions/checkout@v3
+      # Step 1: Checkout the source repository
+      - name: Checkout the source repository
+        uses: actions/checkout@v3
 
-    # Step 2: Set up Python
-    - name: Set up Python 3.13
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.13
-        cache: "pip"
+      # Step 2: Set up Python
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.13
+          cache: "pip"
 
-    # Step 3: Ensure Graphviz system package is installed
-    - name: Install Graphviz system package
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y graphviz
+      # Step 3: Ensure Graphviz system package is installed
+      - name: Install Graphviz system package
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz
 
-    # Step 4: Install dependencies
-    - name: Install dependencies
-      run: |
-        pip install -e ".[book]"
+      # Step 4: Install dependencies
+      - name: Install dependencies
+        run: |
+          pip install -e ".[book]"
 
-    # Step 5: Locate Fandango and add to PATH
-    - name: Locate Fandango and add to PATH
-      run: |
-        which fandango
-        echo "/opt/hostedtoolcache/Python/3.13.1/x64/bin/fandango" >> $GITHUB_PATH
-        fandango --help
+      # Step 5: Locate Fandango and add to PATH
+      - name: Locate Fandango and add to PATH
+        run: |
+          which fandango
+          echo "/opt/hostedtoolcache/Python/3.13.1/x64/bin/fandango" >> $GITHUB_PATH
+          fandango --help
 
-    # Step 6: Build the documentation
-    - name: Build the book
-      run: |
-        make html
+      # Step 6: Build the documentation
+      - name: Build the book
+        run: |
+          make html
 
-    # Step 7: Clone the target repository
-    - name: Clone the target repository
-      run: |
-        git clone https://github.com/fandango-fuzzer/fandango-fuzzer.github.io.git gh-pages
+      # Step 7: Upload built book as artifact
+      - name: Upload built book as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: book-html
+          path: docs/_build/html/
 
-    # Step 8: Copy the built HTML files to the target repository
-    - name: Copy built files to the target repository
-      run: |
-        cp -r docs/_build/html/* gh-pages/
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout the source repository
+      - name: Checkout the source repository
+        uses: actions/checkout@v3
 
-    # Step 9: Commit and push changes to the target repository
-    - name: Deploy to GitHub Pages
-      run: |
-        cd gh-pages
-        git config --global user.name "${{ secrets.CI_COMMIT_AUTHOR }}"
-        git config --global user.email "${{ secrets.CI_COMMIT_EMAIL }}"
-        git add .
-        git commit -m "Update GitHub Pages site" || echo "No changes to commit"
-        git push https://x-access-token:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/fandango-fuzzer/fandango-fuzzer.github.io.git main
+      # Step 2: Download built book artifact
+      - name: Download built book artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: book-html
+          path: htmlcov
+
+      # Step 3: Clone the target repository
+      - name: Clone the target repository
+        run: |
+          git clone https://github.com/fandango-fuzzer/fandango-fuzzer.github.io.git gh-pages
+
+      # Step 4: Copy the built HTML files to the target repository
+      - name: Copy built files to the target repository
+        run: |
+          cp -r htmlcov/* gh-pages/
+
+      # Step 5: Commit and push changes to the target repository
+      - name: Deploy to GitHub Pages
+        run: |
+          cd gh-pages
+          git config --global user.name "${{ secrets.CI_COMMIT_AUTHOR }}"
+          git config --global user.email "${{ secrets.CI_COMMIT_EMAIL }}"
+          git add .
+          git commit -m "Update GitHub Pages site" || echo "No changes to commit"
+          git push https://x-access-token:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/fandango-fuzzer/fandango-fuzzer.github.io.git main

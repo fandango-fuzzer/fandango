@@ -1,5 +1,5 @@
-from collections.abc import Iterable, Iterator, Sequence
 from typing import TYPE_CHECKING
+from collections.abc import Iterable, Iterator, Sequence
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.tree import DerivationTree
