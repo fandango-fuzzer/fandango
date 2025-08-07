@@ -138,6 +138,7 @@ class Evaluator:
                     soft_fitness += 1 - normalized_fitness
             except Exception as e:
                 LOGGER.error(f"Error evaluating soft constraint {constraint}: {e}")
+                print_exception(e)
                 soft_fitness += 0.0
 
         soft_fitness /= len(self._soft_constraints)
