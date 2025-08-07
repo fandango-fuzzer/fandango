@@ -34,7 +34,7 @@ jobs:
 
       - name: Check formatting with black
         run: |
-          black --check src tests scripts evaluation
+          black --check .
 
   mypy-check:
     runs-on: ${{ matrix.os }}
