@@ -374,7 +374,7 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
                 import time
 
                 time.sleep(
-                    5
+                    20
                 )  # delay to let server start. We should find a better method for this
                 client_cmd = [
                     "fandango",

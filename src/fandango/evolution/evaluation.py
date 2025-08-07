@@ -2,7 +2,8 @@ import random
 from typing import Counter, Union
 from collections.abc import Generator
 
-from fandango.constraints.base import Constraint, SoftValue
+from fandango.constraints.constraint import Constraint
+from fandango.constraints.soft import SoftValue
 from fandango.constraints.fitness import FailingTree
 from fandango.language import DerivationTree, Grammar
 from fandango.logger import LOGGER, print_exception
