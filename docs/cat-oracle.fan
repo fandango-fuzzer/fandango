@@ -1,5 +1,6 @@
 <start> ::= <In:input> <Out:output>
-<input> ::= <line>
-<output> ::= <line>
-<line> ::= r'[.*\n]+'
+<input> ::= <lines>
+<output> ::= <lines>
+<lines> ::= <line>+
+<line> ::= r'.*\n'
 where str(<input>) == str(<output>)

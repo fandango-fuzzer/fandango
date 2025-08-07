@@ -4,6 +4,7 @@ from types import NoneType
 
 import regex
 
+from fandango.errors import FandangoValueError
 from fandango.language.symbols import Symbol, SymbolType
 from fandango.language.tree_value import TreeValue, TreeValueType
 
@@ -105,8 +106,10 @@ class Terminal(Symbol):
             return self._value.to_string() == word
         elif isinstance(word, bytes):
             return self._value.to_bytes() == word
-        else:
+        elif isinstance(word, int):
             return int(self._value) == word
+        else:
+            raise FandangoValueError(f"Invalid word type: {type(word)}")
 
     def format_as_spec(self) -> str:
         if self.is_regex:

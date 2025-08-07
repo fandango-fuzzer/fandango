@@ -17,6 +17,8 @@ repos:
     hooks:
     -   id: mypy
         name: mypy
+        entry: mypy
+        language: python
         files: ^(src|tests|scripts).*\.py$
         exclude: |
             (?x)^(
@@ -25,5 +27,3 @@ repos:
                 src/fandango/language/parser/.*Parser.*\.py|
                 src/fandango/converters/antlr/ANTLRv4.*\.py
             )$
-        entry: mypy
-        language: system
