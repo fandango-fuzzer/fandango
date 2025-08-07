@@ -60,7 +60,7 @@ jobs:
       # Step 3: Install mypy
       - name: Install dependencies
         run: |
-           pip install mypy -e ".[test]"
+           pip install mypy -e ".[development]"
         env:
           FANDANGO_SKIP_CPP_PARSER: 1
 
@@ -68,4 +68,4 @@ jobs:
       - name: Run mypy
         shell: bash
         run: |
-          mypy src tests scripts
+          mypy -v src tests scripts
