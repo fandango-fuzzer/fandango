@@ -1,4 +1,0 @@
-LibAFL
-libafl_libfuzzer_runtime.dylib
-
-example_harness_*
