@@ -119,6 +119,7 @@ def parse_next_remote_packet(
             parse_tree = next(parser.consume(next_fragment), None)
             if parse_tree is not None:
                 parse_tree = parser.collapse(parse_tree)
+                assert parse_tree is not None
                 forecast_packet = forecast_non_terminals[non_terminal]
                 parse_tree.sender = forecast_packet.node.sender
                 parse_tree.recipient = forecast_packet.node.recipient
