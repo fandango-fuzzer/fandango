@@ -69,7 +69,7 @@ class Concatenation(Node):
     ) -> Iterator["Node"]:
         if filter_controlflow:
             for child in self.nodes:
-                if not child.is_controlflow:
+                if child.is_controlflow:
                     yield from child.descendents(grammar, filter_controlflow)
                 else:
                     yield child

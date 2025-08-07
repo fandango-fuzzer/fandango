@@ -120,6 +120,7 @@ class Repetition(Node):
                 base.append(self.node)
         if filter_controlflow:
             yield from base
+            return
 
         yield Alternative(
             base
