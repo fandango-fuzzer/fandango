@@ -2,13 +2,11 @@ from typing import cast
 import unittest
 
 from fandango import parse
-from fandango.constraints.base import (
-    Constraint,
-    ExistsConstraint,
-    ForallConstraint,
-    ComparisonConstraint,
-)
-from fandango.constraints.fitness import Comparison
+from fandango.constraints.constraint import Constraint
+from fandango.constraints.comparison import ComparisonConstraint
+from fandango.constraints.exists import ExistsConstraint
+from fandango.constraints.forall import ForallConstraint
+from fandango.constraints.failing_tree import Comparison
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 from fandango.language.grammar.grammar import Grammar
