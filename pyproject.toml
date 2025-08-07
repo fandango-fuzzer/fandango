@@ -54,7 +54,7 @@ test = [
     "pytest-xdist>=3.7.0",
     "python-dateutil>=2.9.0.post0",
     "docutils==0.21.2",
-    "tccbox==2024.7.1",
+    "tccbox>=2025.6.6", # We have upgraded from ==2024.7.1 (the version ISLa used) because it is not compatible with Python 3.12 anymore :(
 ]
 
 development = [
@@ -65,8 +65,6 @@ development = [
     "pygls>=2.0.0a4",           # language server
     "speedy-antlr-tool>=1.4.3",
 ]
-
-evaluation = ["cryptography>=44.0.1", "tccbox>=2025.6.6"]
 
 book = [
     "fandango-fuzzer[development]", # need black and faker

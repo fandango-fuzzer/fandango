@@ -507,12 +507,8 @@ class Grammar(NodeVisitor):
                 if node.node.distance_to_completion == float("inf"):
                     nodes.append(node)
                 else:
-                    try:
-                        min_rep = node.min
-                    except ValueError:
-                        min_rep = 0
                     node.distance_to_completion = (
-                        node.node.distance_to_completion * min_rep + 1
+                        node.node.distance_to_completion * node.min + 1
                     )
             else:
                 raise FandangoValueError(f"Unknown node type {node.node_type}")

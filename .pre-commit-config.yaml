@@ -19,7 +19,7 @@ repos:
         name: mypy
         entry: mypy
         language: python
-        files: ^(src|tests|scripts).*\.py$
+        files: ^(src|tests|evaluation|scripts).*\.py$
         exclude: |
             (?x)^(
                 src/fandango/language/parser/FandangoLexer.py|
