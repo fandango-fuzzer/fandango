@@ -28,8 +28,10 @@ def is_syntactically_valid_csv(csv_string):
 def evaluate_csv(
     seconds=60,
 ) -> tuple[str, int, int, float, tuple[float, int, int], float, float]:
-    file = open("evaluation/csv/csv.fan", "r")
-    grammar, constraints = parse(file, use_stdlib=False)
+    with open("evaluation/vs_isla/csv_evaluation/csv.fan", "r") as file:
+        grammar, constraints = parse(file, use_stdlib=False)
+        assert grammar is not None
+
     solutions = []
 
     time_in_an_hour = time.time() + seconds
