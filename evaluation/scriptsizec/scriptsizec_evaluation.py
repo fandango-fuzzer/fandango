@@ -83,7 +83,7 @@ def is_valid_tinyc_code(c_code: str) -> bool:
 def evaluate_scriptsizec(
     seconds=60,
 ) -> tuple[str, int, int, float, tuple[float, int, int], float, float]:
-    with open("evaluation/vs_isla/scriptsizec_evaluation/scriptsizec.fan", "r") as file:
+    with open("evaluation/scriptsizec/scriptsizec.fan", "r") as file:
         grammar, constraints = parse(file, use_stdlib=False)
         assert grammar is not None
 

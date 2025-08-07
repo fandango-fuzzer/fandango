@@ -32,7 +32,7 @@ def is_syntactically_valid_rest(rst_string):
 def evaluate_rest(
     seconds=60,
 ) -> tuple[str, int, int, float, tuple[float, int, int], float, float]:
-    with open("evaluation/vs_isla/rest_evaluation/rest.fan", "r") as file:
+    with open("evaluation/rest/rest.fan", "r") as file:
         grammar, constraints = parse(file, use_stdlib=False)
         assert grammar is not None
 

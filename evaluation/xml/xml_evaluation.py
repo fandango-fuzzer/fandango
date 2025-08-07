@@ -18,7 +18,7 @@ def is_syntactically_valid_xml(xml_string):
 def evaluate_xml(
     seconds=60,
 ) -> tuple[str, int, int, float, tuple[float, int, int], float, float]:
-    with open("evaluation/vs_isla/xml_evaluation/xml.fan", "r") as file:
+    with open("evaluation/xml/xml.fan", "r") as file:
         grammar, constraints = parse(file, use_stdlib=False)
         assert grammar is not None
 
