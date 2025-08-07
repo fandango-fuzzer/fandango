@@ -25,6 +25,7 @@ from fandango.io.io_utils import (
 )
 from fandango.io.navigation.packetforecaster import PacketForecaster
 from fandango.io.packetparser import parse_next_remote_packet
+from fandango.language.symbols import NonTerminal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.tree import DerivationTree
