@@ -83,7 +83,7 @@ def parse_next_remote_packet(
     continue_parse = True
     complete_parses: dict[NonTerminal, tuple[int, DerivationTree]] = dict()
     current_fragment_idx: int = -1
-    parameter_parsing_exception = None
+    parameter_parsing_exception_tuple = None
     wait_for_completion_time = 1
     while continue_parse:
 
@@ -132,7 +132,7 @@ def parse_next_remote_packet(
         continue_parse = len(available_non_terminals) > 0
 
     if len(complete_parses) == 0:
-        if parameter_parsing_exception is not None:
+        if parameter_parsing_exception_tuple is not None:
             applicable_nt, parameter_parsing_exception, complete_msg = (
                 parameter_parsing_exception_tuple
             )
