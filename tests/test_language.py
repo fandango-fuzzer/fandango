@@ -8,8 +8,8 @@ from antlr4 import InputStream, CommonTokenStream, BailErrorStrategy
 from antlr4.error.Errors import ParseCancellationException
 
 from fandango.constraints import predicates
-from fandango.constraints.base import ComparisonConstraint
-from fandango.constraints.fitness import Comparison
+from fandango.constraints.comparison import ComparisonConstraint
+from fandango.constraints.failing_tree import Comparison
 from fandango.language.convert import (
     FandangoSplitter,
     GrammarProcessor,
