@@ -4,8 +4,8 @@ repos:
     -   id: black
         name: black
         entry: black .
-        language: python
-        files: ^(src|tests|evaluation).*\.py$
+        language: system
+        files: ^(src|tests|evaluation|scripts).*\.py$
         exclude: |
             (?x)^(
                 src/fandango/language/parser/FandangoLexer.py|
@@ -19,7 +19,7 @@ repos:
         name: mypy
         entry: mypy
         language: python
-        files: ^(src|tests).*\.py$
+        files: ^(src|tests|scripts).*\.py$
         exclude: |
             (?x)^(
                 src/fandango/language/parser/FandangoLexer.py|

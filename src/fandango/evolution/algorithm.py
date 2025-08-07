@@ -4,32 +4,32 @@ import itertools
 import logging
 import random
 import time
-from typing import Iterable, Optional, Union
-from collections.abc import Callable, Generator
 import warnings
+from collections.abc import Callable, Generator
+from typing import Iterable, Optional, Union
 
+from fandango.constraints.constraint import Constraint
+from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
-from fandango.constraints.base import Constraint, SoftValue
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.adaptation import AdaptiveTuner
 from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
 from fandango.evolution.evaluation import Evaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
-from fandango.evolution.population import PopulationManager, IoPopulationManager
+from fandango.evolution.population import IoPopulationManager, PopulationManager
 from fandango.evolution.profiler import Profiler
 from fandango.io import FandangoIO, FandangoParty
 from fandango.io.packetforecaster import PacketForecaster
 from fandango.io.packetparser import parse_next_remote_packet
-from fandango.language import NonTerminal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.tree import DerivationTree
 from fandango.logger import (
     LOGGER,
     clear_visualization,
+    log_message_transfer,
     print_exception,
     visualize_evaluation,
-    log_message_transfer,
 )
 
 

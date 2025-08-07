@@ -24,7 +24,8 @@ from xdg_base_dirs import xdg_cache_home, xdg_data_dirs, xdg_data_home
 import fandango
 from fandango.errors import FandangoSyntaxError, FandangoValueError
 from fandango.constraints import predicates
-from fandango.constraints.base import Constraint, SoftValue
+from fandango.constraints.constraint import Constraint
+from fandango.constraints.soft import SoftValue
 from fandango.io import FandangoIO, FandangoParty
 from fandango.language.convert import (
     ConstraintProcessor,
