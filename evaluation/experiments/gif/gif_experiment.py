@@ -23,6 +23,8 @@ def is_syntactically_valid_gif(file_path):
 def evaluate_gif():
     with open("evaluation/experiments/gif/gif.fan", "r") as fd:
         grammar, constraints = parse(fd)
+        assert grammar is not None
+
     fandango = Fandango(
         grammar,
         constraints,
@@ -30,9 +32,9 @@ def evaluate_gif():
         population_size=100,
         profiling=True,
     )
-    fandango.evolve(max_generations=100, desired_solutions=100)
+    solutions = fandango.evolve(max_generations=100, desired_solutions=100)
     i = 0
-    for sol in fandango.solution:
+    for sol in solutions:
         with open(f"evaluation/experiments/gif/files/fuzzed_{i}.gif", "wb") as fd:
             # Ensure sol is valid byte data, convert to bytes if needed
             gif_bytes = bytes(

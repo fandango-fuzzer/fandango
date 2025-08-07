@@ -8,6 +8,7 @@ def main():
     # Parse grammar and constraints
     with open("std.fan") as f:
         grammar, constraints = parse(f, use_stdlib=False)
+        assert grammar is not None
 
     time_start = time.time()
     fandango = Fandango(

@@ -1,5 +1,6 @@
 import subprocess
 import time
+from typing import Any
 
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
@@ -79,6 +80,7 @@ def get_issuer(tree):
 
 def sign_certificate_chain(tbs, i):
     key_file = f"evaluation/experiments/ssl/certificates/private_{i}.pem"
+    key: Any  # 2025-08-07, riesentoaster: I don't know how to type this, ignoring for now using `Any`
     with open(key_file, "rb") as fd:
         key = serialization.load_pem_private_key(fd.read(), password=None)
     tbs = bytes(str(tbs), "latin1")
@@ -218,7 +220,9 @@ def find_tbs(tree):
 
 
 def build_sig_tree(sig):
-    children = []
+    # 2025-08-07: This doesn't work, the interface for the DerivationTree constructor changed,
+    # children can no longer be a tuple structure.
+    children: Any = []
     for c in sig:
         children.append(("<byte>", [(c, [])]))
     return DerivationTree(NonTerminal("<bit_string_value_signature>"), children)

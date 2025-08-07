@@ -1,4 +1,4 @@
-from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar import ParsingMode
 from fandango.language.parse import parse
 from fandango.language.symbols import NonTerminal
 
@@ -10,9 +10,7 @@ with open("dune.fan") as f:
 
 word = "[{'id': '65', 'quote': 'The thing the ecologically illiterate don't realise about an ecosystem is that it's a system. A system! A system maintains a certain fluid stability that can be destroyed by a misstep in just one niche. A system has order, flowing from point to point. If something dams that flow, order collapses. The untrained might miss that collapse until it was too late. That's why the highest function of ecology is the understanding of consequences.'}]"
 
-tree = grammar.parse(
-    word, NonTerminal("<response>"), mode=Grammar.Parser.ParsingMode.INCOMPLETE
-)
+tree = grammar.parse(word, NonTerminal("<response>"), mode=ParsingMode.INCOMPLETE)
 assert tree is not None
 
 print(tree.to_tree())

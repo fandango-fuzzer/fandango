@@ -11,6 +11,7 @@ def main():
             f,
             use_stdlib=False,
         )
+        assert grammar is not None
 
     time_start = time.time()
     fandango = Fandango(

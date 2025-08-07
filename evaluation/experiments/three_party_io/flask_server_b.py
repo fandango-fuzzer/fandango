@@ -12,6 +12,7 @@ nr_high = 0
 
 @app.route("/api/hello", methods=["POST"])
 def hello():
+    assert request.json is not None
     return {
         "nr_low": html.escape(str(request.json["nr_low"])),
         "nr_mid": random.randint(

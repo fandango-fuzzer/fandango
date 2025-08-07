@@ -17,18 +17,19 @@ def count_g_params(tree: DerivationTree):
 def run():
     # Load the fandango file
     # file = open("nested_params.fan", "r")
-    file = open("nested_params_complexer.fan", "r")
+    with open("nested_params_complexer.fan", "r") as file:
+        grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
+        assert grammar is not None
     # file = open("generator_params.fan", "r")
-    grammar, constraints = parse(file, use_stdlib=False, use_cache=False)
 
     fandango = Fandango(
         grammar,
         constraints,
         logger_level=LoggerLevel.DEBUG,
     )
-    fandango.evolve(max_generations=100, desired_solutions=10)
+    solutions = fandango.evolve(max_generations=100, desired_solutions=10)
 
-    for solution in fandango.solution:
+    for solution in solutions:
         print(count_g_params(solution))
         print(solution.to_bytes().decode())
 

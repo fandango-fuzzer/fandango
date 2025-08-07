@@ -33,17 +33,21 @@ def binary_to_string(binary):
 
 
 def evaluate_whitebox():
-    xml_file = open("evaluation/experiments/whitebox/xml.fan", "r")
-    xml_grammar, xml_constraints = parse(xml_file, use_stdlib=False)
+    with open("evaluation/experiments/whitebox/xml.fan", "r") as xml_file:
+        xml_grammar, xml_constraints = parse(xml_file, use_stdlib=False)
+        assert xml_grammar is not None
+
     xml_files = Fandango(xml_grammar, xml_constraints).evolve()  # Generate XML files
     xml_binaries = [
         tree_to_binary(xml) for xml in xml_files
     ]  # Convert XML files to binary
 
-    bytes_file = open("evaluation/experiments/whitebox/bytes.fan", "r")
-    bytes_grammar, bytes_constraints = parse(
-        bytes_file, use_stdlib=False
-    )  # Load the bytes grammar and constraints
+    with open("evaluation/experiments/whitebox/bytes.fan", "r") as bytes_file:
+        bytes_grammar, bytes_constraints = parse(
+            bytes_file, use_stdlib=False
+        )  # Load the bytes grammar and constraints
+        assert bytes_grammar is not None
+
     xml_binary_trees = [
         bytes_grammar.parse(xml_binary) for xml_binary in xml_binaries
     ]  # Parse the binary repr into derivation trees

@@ -4,14 +4,15 @@ from fandango.language.parse import parse
 
 def evaluate_transactions():
     # Load the fandango file
-    file = open("evaluation/experiments/transactions/transactions.fan", "r")
-    grammar, constraints = parse(file, use_stdlib=False)
+    with open("evaluation/experiments/transactions/transactions.fan", "r") as file:
+        grammar, constraints = parse(file, use_stdlib=False)
+        assert grammar is not None
 
     fandango = Fandango(grammar, constraints)
-    fandango.evolve(max_generations=100, desired_solutions=10)
+    solutions = fandango.evolve(max_generations=100, desired_solutions=10)
 
     print("TRANSACTIONS")
-    for solution in fandango.solution:
+    for solution in solutions:
         print(solution)
 
 

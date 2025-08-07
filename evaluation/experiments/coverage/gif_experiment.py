@@ -41,6 +41,7 @@ def evaluate_gif():
     # Parse the grammar and constraints for Fandango
     with open("evaluation/experiments/gif/gif.fan", "r") as fd:
         grammar, constraints = parse(fd)
+        assert grammar is not None
 
     start_time = time.time()
     fandango = Fandango(
@@ -49,22 +50,22 @@ def evaluate_gif():
         logger_level=LoggerLevel.DEBUG,
         population_size=1000,
     )
-    fandango.evolve(max_generations=100, desired_solutions=1000)
+    solutions = fandango.evolve(max_generations=100, desired_solutions=1000)
     end_time = time.time()
 
     valid_count = 0
     # List to hold every binary input_ produced (to later review what was sent to gif.Reader)
     inputs_list = []
 
-    for i, sol in enumerate(fandango.solution):
+    for i, sol in enumerate(solutions):
         file_path = f"evaluation/experiments/gif/files/fuzzed_{i}.gif"
         with open(file_path, "wb") as fd:
             # Convert solution to bytes using latin1 to preserve byte values
             gif_bytes = bytes(str(sol), "latin1")
-            print(f"Generated GIF file bytes: {gif_bytes}")
+            print(f"Generated GIF file bytes: {gif_bytes!r}")
             # Process escape sequences: first decode as unicode_escape then re-encode with latin1
             binary_data = gif_bytes.decode("unicode_escape").encode("latin1")
-            print(f"First 10 bytes of generated GIF: {binary_data[:10]}")
+            print(f"First 10 bytes of generated GIF: {binary_data[:10]!r}")
             fd.write(binary_data)
             inputs_list.append(binary_data)
 
