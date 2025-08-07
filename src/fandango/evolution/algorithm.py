@@ -288,7 +288,6 @@ class Fandango:
                     mutated_population.append(mutated_individual)
                     self.mutations_made += 1
                 except Exception as e:
-                    LOGGER.error(f"Error during mutation: {e}")
                     print_exception(e, "Error during mutation")
                     mutated_population.append(individual)
             else:
