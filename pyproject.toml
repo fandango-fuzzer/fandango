@@ -66,13 +66,6 @@ development = [
     "speedy-antlr-tool>=1.4.3",
 ]
 
-evaluation = [
-    "cryptography>=44.0.1",
-    "pygif>=0.3",
-    "flask>=3.1.1",
-    "coverage>=7.9.1",
-]
-
 book = [
     "fandango-fuzzer[development]", # need black and faker
     "aiosmtpd>=1.4.6",              # example server for protocol testing

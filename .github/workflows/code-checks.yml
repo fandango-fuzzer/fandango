@@ -60,7 +60,7 @@ jobs:
       # Step 3: Install mypy
       - name: Install dependencies
         run: |
-           pip install mypy -e ".[development,evaluation,book]"
+           pip install mypy -e ".[development,book]"
         env:
           FANDANGO_SKIP_CPP_PARSER: 1
 
