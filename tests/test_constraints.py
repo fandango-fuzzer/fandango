@@ -3,7 +3,7 @@
 import unittest
 
 
-from fandango.constraints.base import Constraint
+from fandango.constraints.constraint import Constraint
 from fandango.language.symbols import NonTerminal, Terminal
 from fandango.language.tree import DerivationTree
 from fandango.language.parse import parse

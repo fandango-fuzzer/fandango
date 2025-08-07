@@ -5,7 +5,7 @@ repos:
         name: black
         entry: black .
         language: system
-        files: ^(src|tests|evaluation).*\.py$
+        files: ^(src|tests|evaluation|scripts).*\.py$
         exclude: |
             (?x)^(
                 src/fandango/language/parser/FandangoLexer.py|
@@ -17,7 +17,7 @@ repos:
     hooks:
     -   id: mypy
         name: mypy
-        files: ^(src|tests).*\.py$
+        files: ^(src|tests|scripts).*\.py$
         exclude: |
             (?x)^(
                 src/fandango/language/parser/FandangoLexer.py|
