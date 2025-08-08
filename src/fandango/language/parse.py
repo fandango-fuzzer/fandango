@@ -12,6 +12,7 @@ from io import StringIO
 from pathlib import Path
 from types import NoneType
 from typing import IO, Optional
+import warnings
 
 import cachedir_tag
 import dill as pickle
@@ -23,7 +24,8 @@ from xdg_base_dirs import xdg_cache_home, xdg_data_dirs, xdg_data_home
 import fandango
 from fandango.errors import FandangoSyntaxError, FandangoValueError
 from fandango.constraints import predicates
-from fandango.constraints.base import Constraint, SoftValue
+from fandango.constraints.constraint import Constraint
+from fandango.constraints.soft import SoftValue
 from fandango.io import FandangoIO, FandangoParty
 from fandango.language.convert import (
     ConstraintProcessor,
@@ -103,7 +105,8 @@ INCLUDES: list[str] = []
 # An include depth of 0 means the file was given as input_.
 # A higher include depth means the file was included from another file;
 # hence its grammar and constraints should be processed _before_ the current file.
-FILES_TO_PARSE: list[tuple[IO | str, int]] = []
+# Format: (file_name, file_contents, include_depth)
+FILES_TO_PARSE: list[tuple[str, str, int]] = []
 
 # The current include depth
 INCLUDE_DEPTH: int = 0
@@ -138,15 +141,16 @@ def include(file_to_be_included: str):
     ]  # sth like /usr/local/share/fandango
 
     for dir in dirs:
-        try:
-            full_file_name = dir / file_to_be_included
-            full_file = open(full_file_name, "r")
-        except FileNotFoundError:
+        full_file_name = dir / file_to_be_included
+        if not os.path.exists(full_file_name):
             continue
-        LOGGER.debug(f"{CURRENT_FILENAME}: including {full_file_name}")
+        with open(full_file_name, "r") as full_file:
+            LOGGER.debug(f"{CURRENT_FILENAME}: including {full_file_name}")
 
-        INCLUDE_DEPTH += 1  # Will be lowered when the included file is done processing
-        FILES_TO_PARSE.append((full_file, INCLUDE_DEPTH))
+            INCLUDE_DEPTH += (
+                1  # Will be lowered when the included file is done processing
+            )
+            FILES_TO_PARSE.append((full_file.name, full_file.read(), INCLUDE_DEPTH))
         return
 
     raise FileNotFoundError(
@@ -305,7 +309,11 @@ def parse_spec(
                 with open(pickle_file, "rb") as fp:
                     LOGGER.info(f"{filename}: loading cached spec from {pickle_file}")
                     start_time = time.time()
-                    spec = pickle.load(fp)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter(
+                            "ignore", DeprecationWarning
+                        )  # for some reason, unpickling triggers the deprecation warnings in __getattr__ of DerivationTree and TreeValue
+                        spec = pickle.load(fp)
                     assert spec is not None
                     LOGGER.debug(f"Cached spec version: {spec.version}")
                     if spec.fan_contents != fan_contents:
@@ -319,6 +327,7 @@ def parse_spec(
                     )
                     from_cache = True
             except Exception as exc:
+
                 LOGGER.debug(type(exc).__name__ + ":" + str(exc))
 
     if spec:
@@ -511,7 +520,11 @@ def parse(
     LOGGER.debug("Reading files")
     more_grammars = []
     global FILES_TO_PARSE
-    FILES_TO_PARSE = [(file, 0) for file in fan_files]
+    for file in fan_files:
+        if isinstance(file, str):
+            FILES_TO_PARSE.append(("<string>", file, 0))  # TODO: fix
+        else:
+            FILES_TO_PARSE.append((file.name, file.read(), 0))
 
     global INCLUDE_DEPTH
     INCLUDE_DEPTH = 0
@@ -519,16 +532,11 @@ def parse(
     mode = FuzzingMode.COMPLETE
 
     while FILES_TO_PARSE:
-        (file, depth) = FILES_TO_PARSE.pop(0)
-        if isinstance(file, str):
-            file = StringIO(file)
-            file.name = "<string>"
-
-        LOGGER.debug(f"Reading {file.name} (depth = {depth})")
-        fan_contents = file.read()
+        (name, fan_contents, depth) = FILES_TO_PARSE.pop(0)
+        LOGGER.debug(f"Reading {name} (depth = {depth})")
         new_grammar, new_constraints = parse_content(
             fan_contents,
-            filename=file.name,
+            filename=name,
             use_cache=use_cache,
             lazy=lazy,
             max_repetitions=max_repetitions,
@@ -850,16 +858,8 @@ def check_grammar_types(
             # if min_bits % 8 != 0 and tree.min == 0:
             #     raise FandangoValueError(f"{rule_symbol!s}: Bits cannot be optional")
 
-            try:
-                rep_min = tree.min
-            except ValueError:
-                rep_min = 0
-            try:
-                rep_max = tree.max
-            except ValueError:
-                # Add 7 to min, such that there are 8 steps.
-                # If result is not dividable by 8 this will catch at least one case.
-                rep_max = rep_min + 7
+            rep_min = tree.min
+            rep_max = tree.max
 
             step = min(min_bits, max_bits)
             return tp, rep_min * min_bits, rep_max * max_bits, step
@@ -955,7 +955,9 @@ def check_constraints_existence(
         defined_symbols.append(symbol.name())
 
     grammar_symbols = grammar.rules.keys()
-    grammar_matches = re.findall(r"<([^>]*)>", str(grammar_symbols))
+    grammar_matches = re.findall(
+        r"<([^>]*)>", "".join(k.format_as_spec() for k in grammar_symbols)
+    )
     # LOGGER.debug(f"All used symbols: {grammar_matches}")
 
     for constraint in constraints:

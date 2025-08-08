@@ -5,7 +5,7 @@ repos:
         name: black
         entry: black .
         language: system
-        files: ^(src|tests|evaluation).*\.py$
+        files: ^(src|tests|evaluation|scripts).*\.py$
         exclude: |
             (?x)^(
                 src/fandango/language/parser/FandangoLexer.py|
@@ -17,7 +17,9 @@ repos:
     hooks:
     -   id: mypy
         name: mypy
-        files: ^(src|tests).*\.py$
+        entry: mypy
+        language: python
+        files: ^(src|tests|evaluation|scripts).*\.py$
         exclude: |
             (?x)^(
                 src/fandango/language/parser/FandangoLexer.py|
@@ -25,5 +27,3 @@ repos:
                 src/fandango/language/parser/.*Parser.*\.py|
                 src/fandango/converters/antlr/ANTLRv4.*\.py
             )$
-        entry: mypy
-        language: system

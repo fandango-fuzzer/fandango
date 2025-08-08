@@ -8,7 +8,8 @@ import warnings
 from collections.abc import Callable, Generator
 from typing import Iterable, Optional, Union
 
-from fandango.constraints.base import Constraint, SoftValue
+from fandango.constraints.constraint import Constraint
+from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.adaptation import AdaptiveTuner
@@ -287,7 +288,6 @@ class Fandango:
                     mutated_population.append(mutated_individual)
                     self.mutations_made += 1
                 except Exception as e:
-                    LOGGER.error(f"Error during mutation: {e}")
                     print_exception(e, "Error during mutation")
                     mutated_population.append(individual)
             else:
