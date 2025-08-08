@@ -90,3 +90,22 @@ class DisjunctionConstraint(Constraint):
         if visitor.do_continue(self):
             for constraint in self.constraints:
                 constraint.accept(visitor)
+
+    def invert(self) -> "Constraint":
+        """
+        Return an inverted version of this disjunction constraint.
+        Using De Morgan's law: not (A or B) = not A and not B
+        """
+        from fandango.constraints.conjunction import ConjunctionConstraint
+
+        # Invert each sub-constraint
+        inverted_constraints = [constraint.invert() for constraint in self.constraints]
+
+        # Return a conjunction of the inverted constraints
+        return ConjunctionConstraint(
+            inverted_constraints,
+            searches=self.searches,
+            local_variables=self.local_variables,
+            global_variables=self.global_variables,
+            lazy=self.lazy,
+        )

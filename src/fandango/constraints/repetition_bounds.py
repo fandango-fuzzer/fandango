@@ -420,3 +420,9 @@ class RepetitionBoundsConstraint(Constraint):
     def accept(self, visitor: "ConstraintVisitor"):
         """Accepts a visitor to traverse the constraint structure."""
         visitor.visit_repetition_bounds_constraint(self)
+
+    def invert(self):
+        """
+        RepetitionBoundsConstraint are not inverted.
+        """
+        raise NotImplementedError("RepetitionBoundsConstraints should not be inverted.")

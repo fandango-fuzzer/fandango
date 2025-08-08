@@ -77,3 +77,21 @@ class ImplicationConstraint(Constraint):
         if visitor.do_continue(self):
             self.antecedent.accept(visitor)
             self.consequent.accept(visitor)
+
+    def invert(self) -> "Constraint":
+        """
+        Return an inverted version of this implication constraint.
+        Using logical equivalence: not (A -> B) = A and not B
+        """
+        from fandango.constraints.conjunction import ConjunctionConstraint
+
+        # Invert the consequent
+        inverted_consequent = self.consequent.invert()
+
+        # Return a conjunction of the antecedent and inverted consequent
+        return ConjunctionConstraint(
+            [self.antecedent, inverted_consequent],
+            searches=self.searches,
+            local_variables=self.local_variables,
+            global_variables=self.global_variables,
+        )

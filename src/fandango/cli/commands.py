@@ -181,6 +181,7 @@ def fuzz_command(args: argparse.Namespace) -> None:
     max_generations = args.max_generations
     desired_solutions = args.desired_solutions
     infinite = args.infinite
+    inverted_constraint_depth = args.inverted_constraint_depth
 
     population = fandango.fuzz(
         solution_callback=solutions_callback,
@@ -188,6 +189,7 @@ def fuzz_command(args: argparse.Namespace) -> None:
         desired_solutions=desired_solutions,
         infinite=infinite,
         mode=FuzzingMode.COMPLETE,
+        inverted_constraint_depth=inverted_constraint_depth,
         **settings,
     )
 
@@ -328,6 +330,7 @@ def talk_command(args: argparse.Namespace) -> None:
     max_generations = args.max_generations
     desired_solutions = args.desired_solutions
     infinite = args.infinite
+    inverted_constraint_depth = args.inverted_constraint_depth
 
     fandango.fuzz(
         solution_callback=solutions_callback,
@@ -335,6 +338,7 @@ def talk_command(args: argparse.Namespace) -> None:
         desired_solutions=desired_solutions,
         infinite=infinite,
         mode=FuzzingMode.IO,
+        inverted_constraint_depth=inverted_constraint_depth,
         **settings,
     )
 

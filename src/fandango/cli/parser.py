@@ -268,6 +268,12 @@ def _get_algorithm_parser() -> argparse.ArgumentParser:
         default=None,
     )
     algorithm_group.add_argument(
+        "--inverted-constraint-depth",
+        type=int,
+        help="Runs the algorithm multiple times, with up to this many constraints inverted (all combinations). Solutions no longer all satisfy the original unaltered constraints. Runs for the number of generations/desired solutions specified for each constraint combination. Incompatible with --infinite.",
+        default=0,
+    )
+    algorithm_group.add_argument(
         "--progress-bar",
         choices=["on", "off", "auto"],
         default="auto",

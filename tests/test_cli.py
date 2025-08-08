@@ -408,3 +408,46 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
             client_code,
             f"Client error: {client_err}\n\nClient output: {client_out}",
         )
+
+    def test_inverted_constraint_depth(self):
+        # no flips
+        command = [
+            "fandango",
+            "fuzz",
+            "-n",
+            "3",
+            "--inverted-constraint-depth",
+            "0",
+            "-f",
+            str(RESOURCES_ROOT / "even_numbers.txt"),
+        ]
+        out, err, code = run_command(command)
+        self.assertEqual(0, code)
+        self.assertEqual("", err)
+        solutions = [e.strip() for e in out.split("\n")]
+        solutions = [e for e in solutions if e]
+        self.assertEqual(3, len(solutions), f"out: {out}")
+        for s in solutions:
+            self.assertEqual(0, int(s) % 2, f"out: {out}")
+
+        # one flip
+        command = [
+            "fandango",
+            "fuzz",
+            "-n",
+            "3",
+            "--inverted-constraint-depth",
+            "1",
+            "-f",
+            str(RESOURCES_ROOT / "even_numbers.txt"),
+        ]
+        out, err, code = run_command(command)
+        self.assertEqual(0, code)
+        self.assertEqual("", err)
+        solutions = [e.strip() for e in out.split("\n")]
+        solutions = [e for e in solutions if e]
+
+        for s in solutions[:3]:
+            self.assertEqual(0, int(s) % 2, f"out: {out}")
+        for s in solutions[3:]:
+            self.assertEqual(1, int(s) % 2, f"out: {out}")

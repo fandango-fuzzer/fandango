@@ -85,6 +85,14 @@ class Constraint(GeneticBase, ABC):
         Format the constraint as a string that can be used in a spec file.
         """
 
+    @abstractmethod
+    def invert(self) -> "Constraint":
+        """
+        Return an inverted version of this constraint.
+        The inverted constraint should have the opposite logical meaning.
+        """
+        raise NotImplementedError("Invert function not implemented")
+
     def __repr__(self):
         raise NotImplementedError(
             "Repr not implemented, use method specific to your usecase"

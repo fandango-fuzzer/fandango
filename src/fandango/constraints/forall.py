@@ -111,3 +111,24 @@ class ForallConstraint(Constraint):
         visitor.visit_forall_constraint(self)
         if visitor.do_continue(self):
             self.statement.accept(visitor)
+
+    def invert(self) -> "Constraint":
+        """
+        Return an inverted version of this forall constraint.
+        Using logical equivalence: not forall x: P(x) = exists x: not P(x)
+        """
+        from fandango.constraints.exists import ExistsConstraint
+
+        # Invert the statement
+        inverted_statement = self.statement.invert()
+
+        # Return an exists constraint with the inverted statement
+        return ExistsConstraint(
+            inverted_statement,
+            self.bound,
+            self.search,
+            lazy=self.lazy,
+            searches=self.searches,
+            local_variables=self.local_variables,
+            global_variables=self.global_variables,
+        )
