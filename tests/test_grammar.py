@@ -12,7 +12,7 @@ from .utils import RESOURCES_ROOT
 
 
 class ConstraintTest(unittest.TestCase):
-    def count_g_params(self, tree: DerivationTree):
+    def count_g_params(self, tree: DerivationTree) -> int:
         count = 0
         if len(tree.sources) > 0:
             count += 1
@@ -38,7 +38,7 @@ class ConstraintTest(unittest.TestCase):
 
         random.seed(0)
         tree = grammar.fuzz()
-        print([t.symbol for t in tree.flatten()])
+        print([t.symbol.format_as_spec() for t in tree.flatten()])
 
     def test_parse(self):
         with open(RESOURCES_ROOT / "grammar.fan", "r") as file:

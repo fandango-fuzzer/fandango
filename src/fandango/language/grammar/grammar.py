@@ -112,12 +112,12 @@ class Grammar(NodeVisitor):
             if val.symbol not in self.rules:
                 closest = closest_match(str(val), self.rules.keys())
                 raise FandangoValueError(
-                    f"Symbol {val.symbol!s} not defined in grammar. Did you mean {closest!s}?"
+                    f"Symbol {val.symbol.format_as_spec()} not defined in grammar. Did you mean {closest.format_as_spec()}?"
                 )
 
             if val.symbol not in self.generators:
                 raise FandangoValueError(
-                    f"{val.symbol}: Missing converter from {gen_symbol} ({val.symbol} ::= ... := f({gen_symbol}))"
+                    f"{val.symbol.format_as_spec()}: Missing converter from {gen_symbol.format_as_spec()} ({val.symbol.format_as_spec()} ::= ... := f({gen_symbol.format_as_spec()}))"
                 )
 
             dependent_generators[val.symbol] = self.generator_dependencies(val.symbol)
@@ -507,12 +507,8 @@ class Grammar(NodeVisitor):
                 if node.node.distance_to_completion == float("inf"):
                     nodes.append(node)
                 else:
-                    try:
-                        min_rep = node.min
-                    except ValueError:
-                        min_rep = 0
                     node.distance_to_completion = (
-                        node.node.distance_to_completion * min_rep + 1
+                        node.node.distance_to_completion * node.min + 1
                     )
             else:
                 raise FandangoValueError(f"Unknown node type {node.node_type}")

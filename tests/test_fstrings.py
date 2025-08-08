@@ -1,7 +1,8 @@
 import pytest
 
 from fandango import parse, FandangoParseError, DerivationTree
-from fandango.constraints.base import ExpressionConstraint, ComparisonConstraint
+from fandango.constraints.comparison import ComparisonConstraint
+from fandango.constraints.expression import ExpressionConstraint
 from fandango.language.symbols import NonTerminal, Terminal
 
 
@@ -51,25 +52,27 @@ def test_fstrings(expression):
         ), f"Constraints should be an ExpressionConstraint for expression: {expression}"
 
 
-VALID = DerivationTree(
-    NonTerminal("<start>"),
-    [
-        DerivationTree(NonTerminal("<x>"), [DerivationTree(Terminal("1"))]),
-    ],
-)
-
-INVALID = DerivationTree(
-    NonTerminal("<start>"),
-    [
-        DerivationTree(NonTerminal("<x>"), [DerivationTree(Terminal("2"))]),
-    ],
-)
-
-
 def test_concreate_constraint():
-    grammar, constraints = parse(
-        '<start> ::= <x>\n<x> ::= "1" | "2" | "3" \nwhere f"{<x>!s:03}" == "100"',
+    VALID = DerivationTree(
+        NonTerminal("<start>"),
+        [
+            DerivationTree(NonTerminal("<x>"), [DerivationTree(Terminal("1"))]),
+        ],
     )
+
+    INVALID = DerivationTree(
+        NonTerminal("<start>"),
+        [
+            DerivationTree(NonTerminal("<x>"), [DerivationTree(Terminal("2"))]),
+        ],
+    )
+
+    raw_grammar = """
+<start> ::= <x>
+<x> ::= "1" | "2" | "3"
+where f"{<x>!s:03}" == "100"
+"""
+    grammar, constraints = parse(raw_grammar)
     assert grammar is not None, "Grammar should not be None"
     assert len(constraints) == 1, "Constraints should contain one item"
     assert isinstance(

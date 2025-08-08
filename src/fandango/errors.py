@@ -36,6 +36,15 @@ class FandangoValueError(FandangoError, ValueError):
         ValueError.__init__(self, message)
 
 
+class FandangoConversionError(FandangoValueError):
+    """
+    An error raised when a conversion call on a TreeValue fails.
+    """
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
 class FandangoFailedError(FandangoError):
     """Error during the Fandango algorithm"""
 

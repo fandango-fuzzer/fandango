@@ -283,13 +283,13 @@ If the target keeps on changing, the algorithm will lose guidance and will not p
 Likewise, in contrast to our example in {ref}`sec:generators-and-constraints`, one may think about using a _constraint_ to set a limit to a number, say:
 
 ```shell
-$ fandango fuzz -f persons-faker.fan -c 'str(<last_name>).startswith("S")' -c 'int(<age>) >= 25 and int(<age>) <= 35' -n 10
+$ fandango fuzz -f persons-faker.fan -c '<last_name>.startswith("S")' -c 'int(<age>) >= 25 and int(<age>) <= 35' -n 10
 ```
 
 This would work:
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons-faker.fan -c 'str(<last_name>).startswith("S")' -c 'int(<age>) >= 25 and int(<age>) <= 35' -n 10 --validate
+!fandango fuzz -f persons-faker.fan -c '<last_name>.startswith("S")' -c 'int(<age>) >= 25 and int(<age>) <= 35' -n 10 --validate --progress-bar=off
 assert _exit_code == 0
 ```
 

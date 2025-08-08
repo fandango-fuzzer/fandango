@@ -83,7 +83,7 @@ def parse_next_remote_packet(
     continue_parse = True
     complete_parses: dict[NonTerminal, tuple[int, DerivationTree]] = dict()
     current_fragment_idx: int = -1
-    parameter_parsing_exception = None
+    parameter_parsing_exception_tuple = None
     wait_for_completion_time = 1
     while continue_parse:
 
@@ -118,6 +118,8 @@ def parse_next_remote_packet(
             parser = nt_parsers[non_terminal]
             parse_tree = next(parser.consume(next_fragment), None)
             if parse_tree is not None:
+                parse_tree = parser.collapse(parse_tree)
+                assert parse_tree is not None
                 forecast_packet = forecast_non_terminals[non_terminal]
                 parse_tree.sender = forecast_packet.node.sender
                 parse_tree.recipient = forecast_packet.node.recipient
@@ -131,7 +133,7 @@ def parse_next_remote_packet(
         continue_parse = len(available_non_terminals) > 0
 
     if len(complete_parses) == 0:
-        if parameter_parsing_exception is not None:
+        if parameter_parsing_exception_tuple is not None:
             applicable_nt, parameter_parsing_exception, complete_msg = (
                 parameter_parsing_exception_tuple
             )
@@ -139,7 +141,9 @@ def parse_next_remote_packet(
                 f"Couldn't derive parameters for received packet or timed out while waiting for remaining packet. Applicable NonTerminal: {applicable_nt} Received part: {complete_msg!r}. Exception: {str(parameter_parsing_exception)}"
             )
         else:
-            nt_list = map(lambda x: repr(x), forecast_non_terminals.get_non_terminals())
+            nt_list = map(
+                lambda x: x.format_as_spec(), forecast_non_terminals.get_non_terminals()
+            )
             raise FandangoValueError(
                 "Could not parse received message fragments into predicted NonTerminals. "
                 + "Predicted NonTerminals: "

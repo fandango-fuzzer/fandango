@@ -40,10 +40,7 @@ class Symbol(abc.ABC):
 
     @property
     def is_regex(self) -> bool:
-        try:
-            return self._is_regex
-        except AttributeError:
-            return False  # for cached grammars
+        return getattr(self, "_is_regex", False)
 
     def is_type(self, type_: TreeValueType) -> bool:
         return self._value.is_type(type_)
@@ -65,4 +62,6 @@ class Symbol(abc.ABC):
         raise KeyError(f"str() not implemented for {type(self)}, use specific function")
 
     def __repr__(self) -> str:
-        return "Symbol(" + repr(self.value()) + ")"
+        raise KeyError(
+            f"repr() not implemented for {type(self)}, use specific function"
+        )
