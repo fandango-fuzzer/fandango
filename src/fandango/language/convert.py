@@ -1,35 +1,31 @@
 import ast
+from collections.abc import Sequence
 from io import UnsupportedOperation
 from typing import Any, Optional
 
+from fandango.constraints.soft import SoftValue
+from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
 from fandango.errors import FandangoValueError
-from fandango.constraints.base import (
-    Constraint,
-    ComparisonConstraint,
-    ConjunctionConstraint,
-    DisjunctionConstraint,
-    ExistsConstraint,
-    ExpressionConstraint,
-    ForallConstraint,
-    SoftValue,
-    RepetitionBoundsConstraint,
-)
-from fandango.constraints.fitness import Comparison
+from fandango.constraints.constraint import Constraint
+from fandango.constraints.comparison import ComparisonConstraint
+from fandango.constraints.conjunction import ConjunctionConstraint
+from fandango.constraints.disjunct import DisjunctionConstraint
+from fandango.constraints.exists import ExistsConstraint
+from fandango.constraints.expression import ExpressionConstraint
+from fandango.constraints.forall import ForallConstraint
+from fandango.constraints.failing_tree import Comparison
 from fandango.language import NonTerminalSearch, NodeType
-from fandango.language.grammar import (
-    Alternative,
-    CharSet,
-    Concatenation,
-    Grammar,
-    NonTerminalNode,
-    Option,
-    Plus,
-    Repetition,
-    Star,
-    TerminalNode,
-    Node,
-    FuzzingMode,
-)
+from fandango.language.grammar import FuzzingMode
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.grammar_settings import GrammarSetting
+from fandango.language.grammar.has_settings import HasSettings
+from fandango.language.grammar.nodes.alternative import Alternative
+from fandango.language.grammar.nodes.char_set import CharSet
+from fandango.language.grammar.nodes.concatenation import Concatenation
+from fandango.language.grammar.nodes.node import Node
+from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.repetition import Option, Plus, Repetition, Star
+from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.parser.FandangoParserVisitor import FandangoParserVisitor
 from fandango.language.search import (
@@ -41,9 +37,8 @@ from fandango.language.search import (
     SelectiveSearch,
     StarSearch,
     PopulationSearch,
-    NonTerminalSearch,
 )
-from fandango.language.symbol import NonTerminal, Terminal
+from fandango.language.symbols import NonTerminal, Terminal
 from fandango.logger import LOGGER
 
 
@@ -51,11 +46,13 @@ class FandangoSplitter(FandangoParserVisitor):
     def __init__(self):
         self.productions = []
         self.constraints = []
+        self.grammar_settings: list[FandangoParser.Grammar_setting_contentContext] = []
         self.python_code = []
 
     def visitFandango(self, ctx: FandangoParser.FandangoContext):
         self.productions = []
         self.constraints = []
+        self.grammar_settings = []
         self.python_code = []
         self.visitChildren(ctx)
 
@@ -65,6 +62,11 @@ class FandangoSplitter(FandangoParserVisitor):
     def visitConstraint(self, ctx: FandangoParser.ConstraintContext):
         self.constraints.append(ctx)
 
+    def visitGrammar_setting_content(
+        self, ctx: FandangoParser.Grammar_setting_contentContext
+    ):
+        self.grammar_settings.append(ctx)
+
     def visitPython(self, ctx: FandangoParser.PythonContext):
         self.python_code.append(ctx)
 
@@ -72,6 +74,7 @@ class FandangoSplitter(FandangoParserVisitor):
 class GrammarProcessor(FandangoParserVisitor):
     def __init__(
         self,
+        grammar_settings: list[FandangoParser.Grammar_setting_contentContext],
         local_variables: Optional[dict[str, Any]] = None,
         global_variables: Optional[dict[str, Any]] = None,
         id_prefix: Optional[str] = None,
@@ -85,6 +88,10 @@ class GrammarProcessor(FandangoParserVisitor):
         self.seenParties = set[str]()
         self.additionalRules = dict[NonTerminal, Node]()
         self.max_repetitions = max_repetitions
+        self._grammar_settings: Sequence[HasSettings] = [
+            self.visitGrammar_setting_content(ctx) for ctx in grammar_settings
+        ]
+
         if self.id_prefix is None:
             self.id_prefix = ""
 
@@ -96,9 +103,12 @@ class GrammarProcessor(FandangoParserVisitor):
         self.seenPluses = 0
 
     def get_grammar(
-        self, productions: list[FandangoParser.ProductionContext], prime=True
-    ):
+        self,
+        productions: list[FandangoParser.ProductionContext],
+        prime: bool = True,
+    ) -> Grammar:
         grammar = Grammar(
+            grammar_settings=self._grammar_settings,
             local_variables=self.local_variables,
             global_variables=self.global_variables,
         )
@@ -114,20 +124,32 @@ class GrammarProcessor(FandangoParserVisitor):
 
                 if not production.EXPR_ASSIGN():
                     LOGGER.warning(
-                        f"{symbol}: Using '=' and '::' for generators is deprecated. Use ':=' instead."
+                        f"{symbol.format_as_spec()}: Using '=' and '::' for generators is deprecated. Use ':=' instead."
                     )
             if production.SEMI_COLON():
-                LOGGER.info(f"{symbol}: A final ';' is not required in grammar rules.")
+                LOGGER.info(
+                    f"{symbol.format_as_spec()}: A final ';' is not required in grammar rules."
+                )
 
         grammar.rules.update(self.additionalRules)
-        if len(self.seenParties) == 0:
-            grammar.fuzzing_mode = FuzzingMode.COMPLETE
-        else:
-            grammar.fuzzing_mode = FuzzingMode.IO
+        grammar.fuzzing_mode = (
+            FuzzingMode.COMPLETE if len(self.seenParties) == 0 else FuzzingMode.IO
+        )
         grammar.update_parser()
         if prime:
             grammar.prime()
         return grammar
+
+    def visitGrammar_setting_content(
+        self, ctx: FandangoParser.Grammar_setting_contentContext
+    ) -> GrammarSetting:
+        selector = ctx.grammar_selector().getText()
+        unparsed_rules: list[FandangoParser.Grammar_ruleContext] = ctx.grammar_rule()
+        rules = {
+            rule.grammar_setting_key().getText(): rule.grammar_setting_value().getText()
+            for rule in unparsed_rules
+        }
+        return GrammarSetting(selector, rules)
 
     def visitAlternative(self, ctx: FandangoParser.AlternativeContext):
         nodes = [self.visitConcatenation(child) for child in ctx.concatenation()]
@@ -135,7 +157,11 @@ class GrammarProcessor(FandangoParserVisitor):
             return nodes[0]
         self.seenAlternatives += 1
         nid = self.seenAlternatives
-        return Alternative(nodes, f"{NodeType.ALTERNATIVE}:{nid}_{self.id_prefix}")
+        return Alternative(
+            nodes,
+            self._grammar_settings,
+            f"{NodeType.ALTERNATIVE}:{nid}_{self.id_prefix}",
+        )
 
     def visitConcatenation(self, ctx: FandangoParser.ConcatenationContext):
         nodes = [self.visitOperator(child) for child in ctx.operator()]
@@ -143,23 +169,37 @@ class GrammarProcessor(FandangoParserVisitor):
             return nodes[0]
         self.seenConcatenations += 1
         nid = self.seenConcatenations
-        return Concatenation(nodes, f"{NodeType.CONCATENATION}:{nid}_{self.id_prefix}")
+        return Concatenation(
+            nodes,
+            self._grammar_settings,
+            f"{NodeType.CONCATENATION}:{nid}_{self.id_prefix}",
+        )
 
     def visitKleene(self, ctx: FandangoParser.KleeneContext):
         self.seenStars += 1
         nid = self.seenStars
-        return Star(self.visit(ctx.symbol()), f"{NodeType.STAR}:{nid}_{self.id_prefix}")
+        return Star(
+            self.visit(ctx.symbol()),
+            self._grammar_settings,
+            f"{NodeType.STAR}:{nid}_{self.id_prefix}",
+        )
 
     def visitPlus(self, ctx: FandangoParser.PlusContext):
         self.seenPluses += 1
         nid = self.seenPluses
-        return Plus(self.visit(ctx.symbol()), f"{NodeType.PLUS}:{nid}_{self.id_prefix}")
+        return Plus(
+            self.visit(ctx.symbol()),
+            self._grammar_settings,
+            f"{NodeType.PLUS}:{nid}_{self.id_prefix}",
+        )
 
     def visitOption(self, ctx: FandangoParser.OptionContext):
         self.seenOptions += 1
         nid = self.seenOptions
         return Option(
-            self.visit(ctx.symbol()), f"{NodeType.OPTION}:{nid}_{self.id_prefix}"
+            self.visit(ctx.symbol()),
+            self._grammar_settings,
+            f"{NodeType.OPTION}:{nid}_{self.id_prefix}",
         )
 
     def visitRepeat(self, ctx: FandangoParser.RepeatContext):
@@ -218,7 +258,9 @@ class GrammarProcessor(FandangoParserVisitor):
                     min_arg = 1
                 if max_arg is not None and max_arg < min_arg:
                     max_arg = min_arg
-            rep_node = Repetition(node, nid, min_=min_arg, max_=max_arg)
+            rep_node = Repetition(
+                node, self._grammar_settings, nid, min_=min_arg, max_=max_arg
+            )
             if require_constraint:
                 bounds_constraint = RepetitionBoundsConstraint(
                     nid,
@@ -235,9 +277,11 @@ class GrammarProcessor(FandangoParserVisitor):
         reps_visit = self.searches.visit(ctx.expression(0))
         reps: tuple[str, list, dict] = (ast.unparse(reps_visit[0]), *reps_visit[1:])
         if reps[0].isdigit():
-            return Repetition(node, nid, int(reps[0]), int(reps[0]))
+            return Repetition(
+                node, self._grammar_settings, nid, int(reps[0]), int(reps[0])
+            )
         else:
-            rep_node = Repetition(node, nid, min_=1)
+            rep_node = Repetition(node, self._grammar_settings, nid, min_=1)
             bounds_constraint = RepetitionBoundsConstraint(
                 nid,
                 expr_data_min=reps,
@@ -255,18 +299,20 @@ class GrammarProcessor(FandangoParserVisitor):
         if ctx.nonterminal_right():
             return self.visitNonterminal_right(ctx.nonterminal_right())
         elif ctx.string():
-            return TerminalNode(Terminal.from_symbol(ctx.string().getText()))
+            return TerminalNode(
+                Terminal.from_symbol(ctx.string().getText()), self._grammar_settings
+            )
         elif ctx.NUMBER():
             number = ctx.NUMBER().getText()
             if number not in ["0", "1"]:
                 raise UnsupportedOperation(f"Unsupported bit spec: {number}")
-            return TerminalNode(Terminal.from_number(number))
+            return TerminalNode(Terminal.from_number(number), self._grammar_settings)
         elif ctx.char_set():
             text = ctx.char_set().getText()
             LOGGER.warning(
                 f"{text}: Charset specs are deprecated. Use regular expressions (r'...') instead."
             )
-            return CharSet(text)
+            return CharSet(text, self._grammar_settings)
         elif ctx.alternative():
             return self.visitAlternative(ctx.alternative())
         else:
@@ -274,11 +320,15 @@ class GrammarProcessor(FandangoParserVisitor):
 
     def visitNonterminal_right(self, ctx: FandangoParser.Nonterminal_rightContext):
         if ctx.identifier(1) is None:
-            return NonTerminalNode(NonTerminal("<" + ctx.identifier(0).getText() + ">"))
+            return NonTerminalNode(
+                NonTerminal("<" + ctx.identifier(0).getText() + ">"),
+                self._grammar_settings,
+            )
         elif ctx.identifier(2) is None:
             self.seenParties.add(ctx.identifier(0).getText())
             return NonTerminalNode(
                 NonTerminal("<" + ctx.identifier(1).getText() + ">"),
+                self._grammar_settings,
                 ctx.identifier(0).getText(),
                 None,
             )
@@ -287,6 +337,7 @@ class GrammarProcessor(FandangoParserVisitor):
             self.seenParties.add(ctx.identifier(1).getText())
             return NonTerminalNode(
                 NonTerminal("<" + ctx.identifier(2).getText() + ">"),
+                self._grammar_settings,
                 ctx.identifier(0).getText(),
                 ctx.identifier(1).getText(),
             )

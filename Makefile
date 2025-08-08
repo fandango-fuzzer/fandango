@@ -202,15 +202,10 @@ TESTS = tests
 TEST_SOURCES = $(wildcard $(TESTS)/*.py $(TESTS)/resources/* $(TESTS)/docs/*.fan)
 TEST_MARKER = $(TESTS)/test-marker.txt
 
-.PHONY: test tests run-tests
-test: $(PYTHON_SOURCES) $(TEST_SOURCES)
-	$(PYTEST)
-	echo 'Success' > $(TEST_MARKER)
-
+.PHONY: test tests
 # As above, but run tests in parallel
 tests $(TEST_MARKER): $(PYTHON_SOURCES) $(TEST_SOURCES)
 	$(PYTEST)
-	echo 'Success' > $(TEST_MARKER)
 
 COVERAGE = coverage.xml
 COVERAGERC = .coveragerc
@@ -228,32 +223,15 @@ run-tests: $(TEST_MARKER)
 ## Evaluation
 EVALUATION = evaluation
 EVALUATION_SOURCES = $(wildcard $(EVALUATION)/*.py $(EVALUATION)/*/*.py $(EVALUATION)/*/*/*.py $(EVALUATION)/*/*/*.fan $(EVALUATION)/*/*/*.txt)
-EVALUATION_MARKER = $(EVALUATION)/test-evaluation.txt
 
 # python -m evaluation.vs_isla.run_evaluation
-.PHONY: evaluation evaluate
-evaluation evaluate $(EVALUATION_MARKER): $(PYTHON_SOURCES) $(EVALUATION_SOURCES)
-	$(PYTHON) -m evaluation.vs_isla.run_evaluation 1
-	echo 'Success' > $(EVALUATION_MARKER)
-
-run-evaluation: $(EVALUATION_MARKER)
-
-## Experiments
-EXPERIMENTS = $(EVALUATION)/experiments
-EXPERIMENTS_SOURCES = $(wildcard $(EXPERIMENTS)/*/*.py $(EXPERIMENTS)/*/*.fan)
-EXPERIMENTS_MARKER = $(EXPERIMENTS)/test-experiments.txt
-
-.PHONY: experiment experiments
-experiment experiments $(EXPERIMENTS_MARKER): $(PYTHON_SOURCES) $(EXPERIMENTS_SOURCES)
-	$(PYTHON) -m evaluation.experiments.run_experiments
-	echo 'Success' > $(EXPERIMENTS_MARKER)
-
-run-experiments: $(EXPERIMENTS_MARKER)
+.PHONY: evaluation
+evaluation $(EVALUATION_MARKER): $(PYTHON_SOURCES) $(EVALUATION_SOURCES)
+	$(PYTHON) -m evaluation.run_evaluation 1
 
 ## All
 .PHONY: run-all
-run-all: $(TEST_MARKER) $(EVALUATION_MARKER) $(EXPERIMENTS_MARKER)
-	@echo 'All tests passed.'
+run-all: $(TEST_MARKER) $(EVALUATION_MARKER)
 
 ## Installation
 .PHONY: install
@@ -292,8 +270,8 @@ stats statistics:
 	grep -E '(\.py|\.g4|\.md|\.fan|\.yml|file)$$' | xargs wc -l | grep ' total$$'
 
 ## Credit - from https://gist.github.com/Alpha59/4e9cd6c65f7aa2711b79
-.PHONY: credit credits
-credit credits:
+.PHONY: credits
+credits:
 	@echo "Lines contributed"
 	@for pattern in .py .g4 .md .fan .toml .yml file; do \
 		echo "*$$pattern files:"; \

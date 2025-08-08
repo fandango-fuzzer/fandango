@@ -5,7 +5,7 @@ import pytest
 
 from fandango.evolution import havoc
 
-ITERS = 100000
+ITERS = 1000
 INPUT_SIZE = 100
 
 

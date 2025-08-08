@@ -10,7 +10,7 @@ def test_msg_exchange():
     with open(RESOURCES_ROOT / "minimal_io.fan") as f:
         spec = f.read()
     fandango = Fandango(spec, use_stdlib=False, use_cache=False)
-    result_list = fandango.fuzz(mode=FuzzingMode.IO)
+    result_list = fandango.fuzz(mode=FuzzingMode.IO, population_size=1)
     assert len(result_list) == 1
     result = result_list[0]
     assert isinstance(result, DerivationTree)
@@ -18,13 +18,13 @@ def test_msg_exchange():
     assert len(messages) == 4
     assert messages[0].sender == "Fuzzer"
     assert messages[0].recipient == "Extern"
-    assert messages[0].msg.to_string() == "ping\n"
+    assert str(messages[0].msg) == "ping\n"
     assert messages[1].sender == "Extern"
     assert messages[1].recipient == "Fuzzer"
-    assert messages[1].msg.to_string() == "pong\n"
+    assert str(messages[1].msg) == "pong\n"
     assert messages[2].sender == "Fuzzer"
     assert messages[2].recipient == "Extern"
-    assert messages[2].msg.to_string() == "puff\n"
+    assert str(messages[2].msg) == "puff\n"
     assert messages[3].sender == "Extern"
     assert messages[3].recipient == "Fuzzer"
-    assert messages[3].msg.to_string() == "paff\n"
+    assert str(messages[3].msg) == "paff\n"

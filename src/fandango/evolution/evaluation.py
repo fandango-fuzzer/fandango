@@ -2,10 +2,11 @@ import random
 from typing import Counter, Union
 from collections.abc import Generator
 
-from fandango.constraints.base import Constraint, SoftValue
+from fandango.constraints.constraint import Constraint
+from fandango.constraints.soft import SoftValue
 from fandango.constraints.fitness import FailingTree
 from fandango.language import DerivationTree, Grammar
-from fandango.logger import LOGGER
+from fandango.logger import LOGGER, print_exception
 
 
 class Evaluator:
@@ -107,7 +108,10 @@ class Evaluator:
                     hard_fitness += result.fitness()
                 self._checks_made += 1
             except Exception as e:
-                LOGGER.error(f"Error evaluating hard constraint {constraint}: {e}")
+                LOGGER.error(
+                    f"Error evaluating hard constraint {constraint.format_as_spec()}"
+                )
+                print_exception(e)
                 hard_fitness += 0.0
         hard_fitness /= len(self._hard_constraints)
         return hard_fitness, failing_trees
@@ -134,6 +138,7 @@ class Evaluator:
                     soft_fitness += 1 - normalized_fitness
             except Exception as e:
                 LOGGER.error(f"Error evaluating soft constraint {constraint}: {e}")
+                print_exception(e)
                 soft_fitness += 0.0
 
         soft_fitness /= len(self._soft_constraints)

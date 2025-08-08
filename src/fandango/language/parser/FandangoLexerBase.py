@@ -1,18 +1,12 @@
 from __future__ import annotations
 import re
 import sys
-from typing import TYPE_CHECKING, TextIO, Optional
+from typing import TextIO, Optional
 
 # noinspection PyUnresolvedReferences
 from fandango.language.parser.FandangoParser import FandangoParser
 from antlr4 import Lexer, InputStream, Token
 from antlr4.Token import CommonToken
-
-# noinspection PyUnresolvedReferences
-from fandango.language.parser.FandangoParser import FandangoParser
-
-if TYPE_CHECKING:
-    import fandango
 
 # Current lexer instance, set by the generated lexer code
 lexer: Optional["FandangoLexerBase"] = None

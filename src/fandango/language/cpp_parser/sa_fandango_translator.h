@@ -49,6 +49,12 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     PyObject *Rs_sliceContext_cls = NULL;
     PyObject *PythonContext_cls = NULL;
     PyObject *Python_tagContext_cls = NULL;
+    PyObject *Grammar_settingContext_cls = NULL;
+    PyObject *Grammar_setting_contentContext_cls = NULL;
+    PyObject *Grammar_selectorContext_cls = NULL;
+    PyObject *Grammar_ruleContext_cls = NULL;
+    PyObject *Grammar_setting_keyContext_cls = NULL;
+    PyObject *Grammar_setting_valueContext_cls = NULL;
     PyObject *Python_fileContext_cls = NULL;
     PyObject *InteractiveContext_cls = NULL;
     PyObject *EvalContext_cls = NULL;
@@ -329,6 +335,18 @@ class SA_FandangoTranslator : public FandangoParserBaseVisitor {
     antlrcpp::Any visitPython(FandangoParser::PythonContext *ctx);
 
     antlrcpp::Any visitPython_tag(FandangoParser::Python_tagContext *ctx);
+
+    antlrcpp::Any visitGrammar_setting(FandangoParser::Grammar_settingContext *ctx);
+
+    antlrcpp::Any visitGrammar_setting_content(FandangoParser::Grammar_setting_contentContext *ctx);
+
+    antlrcpp::Any visitGrammar_selector(FandangoParser::Grammar_selectorContext *ctx);
+
+    antlrcpp::Any visitGrammar_rule(FandangoParser::Grammar_ruleContext *ctx);
+
+    antlrcpp::Any visitGrammar_setting_key(FandangoParser::Grammar_setting_keyContext *ctx);
+
+    antlrcpp::Any visitGrammar_setting_value(FandangoParser::Grammar_setting_valueContext *ctx);
 
     antlrcpp::Any visitPython_file(FandangoParser::Python_fileContext *ctx);
 

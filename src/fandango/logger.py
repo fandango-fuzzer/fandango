@@ -3,11 +3,15 @@ import os
 import sys
 import time
 import traceback
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from ansi_styles import ansiStyles as styles
 
-from fandango.language import DerivationTree
+if TYPE_CHECKING:
+    from fandango.language.tree import DerivationTree
+else:
+    DerivationTree = object  # needs to be defined for beartype
+
 
 LOGGER = logging.getLogger("fandango")
 logging.basicConfig(
@@ -15,8 +19,13 @@ logging.basicConfig(
     format="%(name)s:%(levelname)s: %(message)s",
 )
 
+RAISE_ALL_EXCEPTIONS = os.environ.get("FANDANGO_RAISE_ALL_EXCEPTIONS")
+
 
 def print_exception(e: Exception, exception_note: str | None = None):
+    if RAISE_ALL_EXCEPTIONS:
+        raise e
+
     if exception_note is not None and getattr(Exception, "add_note", None):
         # Python 3.11+ has add_note() method
         e.add_note(exception_note)
@@ -34,9 +43,18 @@ def print_exception(e: Exception, exception_note: str | None = None):
 
     if "DerivationTree" in str(e):
         print(
-            "  Convert <symbol> to the expected type, say 'str(<symbol>)', 'int(<symbol>)', or 'float(<symbol>)'",
+            "  Convert <symbol> to the expected type, say 'str(<symbol>)', 'int(<symbol>)', or 'bytes(<symbol>)'",
             file=sys.stderr,
         )
+
+
+USE_VISUALIZATION: bool | None = None
+
+
+def set_visualization(use_visualization: bool | None):
+    """Set whether to use visualization while Fandango is running"""
+    global USE_VISUALIZATION
+    USE_VISUALIZATION = use_visualization
 
 
 COLUMNS = None
@@ -45,21 +63,25 @@ LINES = None
 
 def use_visualization():
     """Return True if we should use visualization while Fandango is running"""
-    global COLUMNS, LINES
-    if COLUMNS is not None and COLUMNS < 0:
-        return False  # No terminal
+    global COLUMNS, LINES, USE_VISUALIZATION
 
-    if LOGGER.isEnabledFor(logging.INFO):
+    if COLUMNS is not None and COLUMNS < 0:
+        return False  # We have checked this before
+
+    if USE_VISUALIZATION is not None and not USE_VISUALIZATION:
+        return False
+
+    if not USE_VISUALIZATION and LOGGER.isEnabledFor(logging.INFO):
         # Don't want to interfere with logging
         COLUMNS = -1
         return False
 
-    if "JPY_PARENT_PID" in os.environ:
+    if not USE_VISUALIZATION and "JPY_PARENT_PID" in os.environ:
         # We're within Jupyter Notebook
         COLUMNS = -1
         return False
 
-    if not sys.stderr.isatty():
+    if not USE_VISUALIZATION and not sys.stderr.isatty():
         # Output is not a terminal
         COLUMNS = -1
         return False
@@ -68,11 +90,18 @@ def use_visualization():
         try:
             COLUMNS, LINES = os.get_terminal_size()
         except Exception:
-            COLUMNS = -1
-            return False
+            if USE_VISUALIZATION:
+                # Assume some reasonable default width
+                COLUMNS = 80
+            else:
+                COLUMNS = -1
+                return False
 
     assert COLUMNS > 0
     return True
+
+
+LINE_IS_CLEAR = True
 
 
 def visualize_evaluation(
@@ -106,25 +135,33 @@ def visualize_evaluation(
         s += "   "
         s += styles.bgColor.close
 
+    global LINE_IS_CLEAR
+    LINE_IS_CLEAR = False
+
     print(f"\r{s}", end="", file=sys.stderr)
-    return
 
 
 def clear_visualization(max_generations: Optional[int] = None):
     """Clear Fandango visualization"""
-    if not use_visualization() or max_generations is None:
+    if not use_visualization():  # or max_generations is None:
         return
 
-    time.sleep(0.5)
+    global LINE_IS_CLEAR
+    if LINE_IS_CLEAR:
+        return
+
+    time.sleep(0.25)
     assert COLUMNS is not None
     s = " " * (COLUMNS - 1)
     print(f"\r{s}\r", end="", file=sys.stderr)
+
+    LINE_IS_CLEAR = True
 
 
 def log_message_transfer(
     sender: str,
     receiver: str | None,
-    msg: DerivationTree,
+    msg: "DerivationTree",
     self_is_sender: bool,
 ):
     info = sender

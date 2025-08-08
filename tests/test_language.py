@@ -8,23 +8,21 @@ from antlr4 import InputStream, CommonTokenStream, BailErrorStrategy
 from antlr4.error.Errors import ParseCancellationException
 
 from fandango.constraints import predicates
-from fandango.constraints.base import ComparisonConstraint
-from fandango.constraints.fitness import Comparison
+from fandango.constraints.comparison import ComparisonConstraint
+from fandango.constraints.failing_tree import Comparison
 from fandango.language.convert import (
     FandangoSplitter,
     GrammarProcessor,
     SearchProcessor,
     PythonProcessor,
 )
-from fandango.language.grammar import (
-    Alternative,
-    Grammar,
-)
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.parse import parse
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.parser.FandangoParser import FandangoParser
 from fandango.language.search import RuleSearch
-from fandango.language.symbol import NonTerminal
+from fandango.language.symbols import NonTerminal
 from .utils import RESOURCES_ROOT
 
 FUZZINGBOOK_GRAMMAR = {
@@ -54,7 +52,7 @@ def test_indents():
     )
     splitter = FandangoSplitter()
     splitter.visit(tree)
-    processor = GrammarProcessor()
+    processor = GrammarProcessor(grammar_settings=splitter.grammar_settings)
     grammar = processor.get_grammar(splitter.productions)
     assert len(grammar.rules) == 1
     rule = list(grammar.rules.values())[0]
@@ -73,7 +71,7 @@ def test_alt_indents():
     )
     splitter = FandangoSplitter()
     splitter.visit(tree)
-    processor = GrammarProcessor()
+    processor = GrammarProcessor(grammar_settings=splitter.grammar_settings)
     grammar = processor.get_grammar(splitter.productions)
     assert len(grammar.rules) == 1
     rule = list(grammar.rules.values())[0]
@@ -146,7 +144,7 @@ def test_conversion_without_replace(expression):
         fandango_tree: FandangoParser.ExpressionContext = get_tree(
             expression, start="expression"
         )
-        processor = SearchProcessor(Grammar({}))
+        processor = SearchProcessor(Grammar.dummy())
         fandango_tree, searches, search_map = processor.visit(fandango_tree)
         assert 0 == len(searches)
         assert 0 == len(search_map)
@@ -202,7 +200,7 @@ def test_conversion_with_replacement(expression, value, expected):
     fandango_tree: FandangoParser.ExpressionContext = get_tree(
         expression, start="expression"
     )
-    processor = SearchProcessor(Grammar({}))
+    processor = SearchProcessor(Grammar.dummy())
     fandango_tree, searches, search_map = processor.visit(fandango_tree)
     assert 1 == len(search_map)
     assert 1 == len(searches)
@@ -279,7 +277,7 @@ def test_conversion_statement(stmt, value, is_global):
         assert value == global_vars["x"]
     else:
         assert "x" not in global_vars
-        assert local_vars is None or "x" in local_vars
+        assert local_vars is not None and "x" in local_vars
         assert value == local_vars["x"]
 
 
@@ -302,6 +300,6 @@ def test_parsing():
     assert constraint.left == f"f({placeholder}) % 2"
     assert "f" in constraint.global_variables
     assert eval("f('1')", constraint.global_variables, constraint.local_variables) == 1
-    assert isinstance(constraint.searches[placeholder], RuleSearch)
-    search: RuleSearch = constraint.searches[placeholder]
+    search = constraint.searches[placeholder]
+    assert isinstance(search, RuleSearch)
     assert NonTerminal("<number>") == search.symbol

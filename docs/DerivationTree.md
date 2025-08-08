@@ -17,7 +17,7 @@ kernelspec:
 :tags: ["remove-input", "remove-output"]
 from myst_nb import glue
 from fandango.language.tree import DerivationTree
-from fandango.language.symbol import NonTerminal
+from fandango.language.symbols import NonTerminal
 t = DerivationTree(NonTerminal('a string'))
 number_of_methods = len(dir(t)) + len(dir(str))
 glue("number_of_methods", number_of_methods)
@@ -83,90 +83,24 @@ Terminal Symbol
 Nonterminal Symbol
 : A node without children.
 
-Concatenating all terminal symbols (using `str(<SYMBOL>)` or `<SYMBOL>.value()`) in a derivation tree yields the string represented.
-For the above tree, this would be `2025-10-27`.
+Concatenating all terminal symbols (using `str(<SYMBOL>)`) in a derivation tree yields the string represented. For the above tree, this would be `2025-10-27`.
 
 
-(sec:derivation-tree-value)=
 ## Evaluating Derivation Trees
 
-Since standard Python functions do not accept derivation trees as arguments, one must first convert them into an acceptable type.
-The `value()` method plays a central role in this.
+To write constraints, you may want to serialize derivation trees into standard Python types such as `str`ings, `bytes`, or `int`s. To do so, simply call `str(<SYMBOL>)`, `bytes(<SYMBOL>)`, or `int(<SYMBOL>)` respectively.
 
-`<SYMBOL>.value() -> str | int | bytes`
-: The method `<SYMBOL>.value()` _evaluates_ `<SYMBOL>` and returns its value, which represents the concatenation of all descendants.
-The _type_ of the return value is
-    * A _Unicode string_ (`str`) if all descendants are Unicode strings.
-    * An _integer_ (`int`) if all descendants are bits.
-    * A _byte string_ (`bytes`) in all other cases, notably if
-        - any of the descendants of `<SYMBOL>` is a byte string, or
-        - the descendants of `<SYMBOL>` contain bits _and_ other elements.
-    * `None` if `<SYMBOL>` expands into zero elements
+Internally, the serialization is done in `str` objects as long as the sub-tree only contains string values, and in `bytes` otherwise. During concatenation, strings are converted to bytes in with `utf-8` encoding, for conversion from bytes to strings, `latin-1` is used to prevent breaking non-utf-8 strings. If you would like to convert them using utf-8, you can call `<SYMBOL>.to_string("utf-8")`.
 
+Concatenation of non-bit types with bit types always triggers Fandango to convert the remaining trailing bits into `bytes` (with the first bit being the most significant). If the number of trailing bits isn't a multiple of 8, Fandango will throw an error.
 
-### Unicode Strings
+`int(<SYMBOL>)` on a subtree consisting only of strings will attempt to parse the string as a number. If the tree consists of bits only, it will be converted to a number with the first bit being the most significant. Bytes are converted to strings and then treated accordingly.
 
-Any derivation tree that is composed only from Unicode strings will evaluate into a Python _Unicode string_ (`str`).
-The descendants of `<SYMBOL>` are concatenated as strings.
+Previous versions of Fandango automatically converted certain values — this no longer works to prevent accidental mistakes while writing constraints.
 
-Example - in
-```python
-<foo> ::= <bar> "bara"
-<bar> ::= "bar"
+```{tip}
+It is generally unwise to rely on the type of the internal representation of linearized `DerivationTree` values as these may change with future expansions of Fandango. Use functions directly implemented on them (`<SYMBOL>.startswith("Hello")`), or explicitly convert them to a base type in Python instead (`str(<SYMBOL>)`).
 ```
-
-`<foo>.value()` will be the Unicode string `"barbara"`.
-
-This is the most common case.
-
-
-### Integers
-
-Any derivation tree that is composed only from bits will evaluate into a Python _integer_ (`int`).
-The descendants are concatenated as bits; the most significant bit comes first.
-
-Example - in
-```python
-<foo> ::= <bar> 0 1 1
-<bar> ::= 0 1 0
-```
-
-`<foo>.value()` will be the integer `0b010011`, or 19.
-
-
-### Byte Strings
-
-Any derivation tree where any of the descendants is a byte string, or where the descendants are bits _and_ other elements, will evaluate into a Python _byte string_ (`bytes`).
-The descendants are all concatenated as follows:
-
-1. Any _bit sequence_ $B$ is converted into a _bytes string_ with the most significant bit coming first.
-2. Any _Unicode string_ $S$ is converted into a _bytes string_ representing $S$ in UTF-8 encoding.
-3. The resulting byte strings are all concatenated.
-
-Example 1 - in
-```python
-<foo> ::= <bar> "foo"  # a Unicode string
-<bar> ::= b"bar"       # a byte string
-```
-
-`<foo>.value()` will be the byte string `b"barfoo"`.
-
-```{note}
-If you mix byte strings and Unicode strings a grammar, Fandango will issue a warning.
-```
-
-Example 2 - in
-```python
-<foo> ::= <bar> b"foo"    # a byte string
-<bar> ::= 1 1 1 1 1 1 1 1 # a bit string
-```
-
-`<foo>.value()` will be the byte string `b"foo\xff"`.
-
-```{note}
-If you mix bits and Unicode strings in a grammar, Fandango will issue a warning.
-```
-
 
 ## General `DerivationTree` Functions
 
@@ -174,56 +108,44 @@ These functions are available for all `DerivationTree` objects, regardless of th
 
 ### Converters
 
-:::{margin}
-Invoking methods (`<SYMBOL>.METHOD()`), as well as operators (say, `<SYMBOL> + ...`), where `<SYMBOL>` is one of the operators, do not require conversion.
-:::
-
 Since any `<SYMBOL>` has the type `DerivationTree`, one must convert it first into a standard Python type before passing it as argument to a standard Python function.
 
 `str(<SYMBOL>) -> str`
 : Convert `<SYMBOL>` into a Unicode string. Byte strings in `<SYMBOL>` are converted using `latin-1` encoding.
 
+`<SYMBOL>.to_string(encoding: str = "latin-1") -> str`
+: More flexible alternative to `str(<SYMBOL>)`
+
 `bytes(<SYMBOL>) -> bytes`
 : Convert `<SYMBOL>` into a byte string. Unicode strings in `<SYMBOL>` are converted using `utf-8` encoding.
 
+`<SYMBOL>.to_bytes(encoding: str = "utf-8") -> bytes`
+: More flexible alternative to `bytes(<SYMBOL>)`
+
 `int(<SYMBOL>) -> int`
 : Convert `<SYMBOL>` into an integer, like the Python `int()` function.
-`<SYMBOL>` must be an `int`, or a Unicode string or byte string representing an integer literal.
+`<SYMBOL>` must be exclusively bits, or a Unicode string or byte string representing an integer literal.
 
-`float(<SYMBOL>) -> float`
-: Convert `<SYMBOL>` into a floating-point number, like the Python `float()` function.
-`<SYMBOL>` must be an `int`, or a Unicode string or byte string representing a float literal.
+`<SYMBOL>.to_int(encoding: str = "utf-8") -> int`
+: More flexible alternative to `int(<SYMBOL>)`
 
-`complex(<SYMBOL>) -> complex`
-: Convert `<SYMBOL>` into a complex number, like the Python `complex()` function.
-`<SYMBOL>` must be an `int`, or a Unicode string or byte string representing a float or complex literal.
+`<SYMBOL>.should_be_serialized_to_bytes() -> bool`
+: Returns `True` if the sub-tree contains bits or bytes and thus is natively serialized to bytes
 
-`bool(<SYMBOL>) -> bool`
-: Convert `<SYMBOL>` into a truth value:
-    * If `<SYMBOL>` evaluates into an integer (because it represents bits), the value will be `True` if the integer is non-zero.
-    * If `<SYMBOL>` evaluates into a string (bytes or Unicode), the value will be `True` if the string is not empty.
+`<SYMBOL>.contains_bits() -> bool`
+: Returns `True` if the sub-tree contains bits
 
-    Note that Python applies `bool()` conversion by default if a truth value is needed; hence, expressions like `<flag_1> and <flag_2>`, where both flags are bits, are allowed.
+`<SYMBOL>.contains_bytes() -> bool`
+: Returns `True` if the sub-tree contains bytes
 
-
-### Node Attributes
-
-`<SYMBOL>.sym() -> str | int | bytes`
-: The symbol of the node:
-    * for _nonterminals_, the symbol as a string (say, `"<SYMBOL>"`)
-    * for _terminals_, the value:
-        - for Unicode strings, the value of the string (type `str`);
-        - for bits, either `0` or `1` (type `int`)'
-        - for bytes, the value of the byte string (type `bytes`).
+`<SYMBOL>.to_bits(encoding: str = "utf-8") -> int`
+: Provides a bitwise representation of the input, in a string of `0`s  and `1`s
 
 `<SYMBOL>.is_terminal() -> bool`
 : True if `<SYMBOL>` is a terminal node.
 
 `<SYMBOL>.is_nonterminal() -> bool`
 : True if `<SYMBOL>` is a nonterminal node.
-
-`<SYMBOL>.is_regex() -> bool`
-: True if the (terminal) symbol of `<SYMBOL>` is a regular expression.
 
 
 ### Accessing Children
@@ -248,11 +170,11 @@ To access the `n`th _character_ of `<SYMBOL>`, use `str(<SYMBOL>)[n]`.
 `<SYMBOL>.children() -> list[DerivationTree]`
 : Return a list containing all children of `<SYMBOL>`.
 
-`<SYMBOL>.children_values() -> list[str | int | bytes]`
+`<SYMBOL>.children_values() -> list[TreeValue]`
 : Return a list containing the values of all children of `<SYMBOL>`.
 
 ```{note}
-Each element of the list can have a different type, depending on the type the `value()` method returns.
+`TreeValue` objects can be converted into standard Python objects with `str()`, `bytes()`, or `int().` Alternatively, use the same base functionality from `str`, `bytes`, and `int` on them directly that is [implemented on entire `DerivationTree`s](sec:derivation-tree-direct-access-functions).
 ```
 
 `<SYMBOL_1> in <SYMBOL_2>`
@@ -266,11 +188,11 @@ Each element of the list can have a different type, depending on the type the `v
 `<SYMBOL>.descendants() -> list[DerivationTree]`
 : Return a list containing all descendants of `<SYMBOL>`; that is, all children and their transitive children.
 
-`<SYMBOL>.descendant_values() -> list[str | int | bytes]`
+`<SYMBOL>.descendant_values() -> list[TreeValue]`
 : Return a list containing the values of all descendants of `<SYMBOL>`; that is, the values of all children and their transitive children.
 
 ```{note}
-Each element of the list can have a different type, depending on the type the `value()` method returns.
+`TreeValue` objects can be converted into standard Python objects with `str()`, `bytes()`, or `int().` Alternatively, use the same base functionality from `str`, `bytes`, and `int` on them directly that is [implemented on entire `DerivationTree`s](sec:derivation-tree-direct-access-functions).
 ```
 
 ### Accessing Parents
@@ -291,20 +213,15 @@ Each element of the list can have a different type, depending on the type the `v
 : Returns True if both trees have the same structure and all nodes have the same values.
 
 `<SYMBOL> == VALUE`
-: Returns True if `<SYMBOL>.value() == VALUE`
+: Returns True if `<SYMBOL>.value() == VALUE` — requires the types to match
 
 `<SYMBOL_1> != <SYMBOL_2>`
 : Returns True if both trees have a different structure or any nodes have different values.
 
-`<SYMBOL> == VALUE`
-: Returns True if `<SYMBOL>.value() == VALUE`.
+`<SYMBOL> != VALUE`
+: Inverse of `<SYMBOL> == VALUE`.
 
-`<SYMBOL_1> <|>|<=|>= <SYMBOL_2>`
-: Returns True if `<SYMBOL_1>.value() <|>|<=|>= <SYMBOL_2>.value()`.
-
-`<SYMBOL> <|>|<=|>= VALUE`
-: Returns True if `<SYMBOL>.value() <|>|<=|>= VALUE`.
-
+To compare values with `<`, `>`, `<=`, `>=`, etc., explicitly convert them to the type you would like to use for comparison first.
 
 ### Debugging
 
@@ -323,29 +240,12 @@ See the [section on output formats](sec:formats) for details on these representa
 : Return the internal representation of `<SYMBOL>`, as a `DerivationTree` constructor that can be evaluated as a Python expression.
 
 
-
+(sec:derivation-tree-direct-access-functions)=
 ## Type-Specific Functions
 
-The bulk of available functions comes from the Python standard library.
+The bulk of available functions comes from the Python standard library. The vast majority of methods implemented on `str`, `bytes`, and `int` are also implemented on `DerivationTree`s:
 
-### Unicode Strings
-
-For derivation trees that [evaluate](sec:derivation-tree-value) into Unicode strings (`str`), all [Python String methods](https://docs.python.org/3/library/stdtypes.html#string-methods) are available, such as
-`<SYMBOL>.startswith()`, `<SYMBOL>.endswith()`, `<SYMBOL>.strip()`, and more.
-The method is invoked on the `<SYMBOL>.value()` string value.
-
-
-### Integers
-
-For derivation trees that [evaluate](sec:derivation-tree-value) into integers (`int`), all [Python numeric operators and functions](https://docs.python.org/3/library/stdtypes.html#numeric-types-int-float-complex) are available, including `+`, `-`, or `abs()`, as well as bitwise operators such as `<<`, `&`, `~`, etc.
-Symbols can be used on either side of an operator; the operator is applied on the `<SYMBOL>.value()` integer value.
-
-In addition, the [Python methods on integer types](https://docs.python.org/3/library/stdtypes.html#additional-methods-on-integer-types) can be used, such as `<SYMBOL>.to_bytes()` or `<SYMBOL>.bit_count()`.
-Methods are invoked on the `<SYMBOL>.value()` integer value.
-
-
-### Byte Strings
-
-For derivation trees that [evaluate](sec:derivation-tree-value) into byte strings (`bytes`), all [Python bytes methods](https://docs.python.org/3/library/stdtypes.html#bytes-and-bytearray-operations) are available, including `<SYMBOL>.decode()`, `<SYMBOL>.startswith()`, `<SYMBOL>.endswith()`, etc.
-The method is invoked on the `<SYMBOL>.value()` byte string value.
+* If a method is only implemented on one of the three base types, the `DerivationTree` internally is first transformed into that type (using `str(<SYMBOL>)` etc.).
+* If a method is implemented on multiple base types, but they always have different signatures (such as `.startswith`, which takes a `str` if called on a `str`, and `bytes` if called on `bytes`), the `DerivationTree` is transformed into the appropriate base type.
+* If a method is implemented on multiple base types, and there is no way to distinguish based on the signatures, the method is envoked on the underlying type. This is not recommended as these methods rely on knowledge of the type of the internal representation (which may change in the future). Simply convert the tree to the desired base type first (`str(<SYMBOL>).upper()`).
 

@@ -1,6 +1,7 @@
-from fandango import DerivationTree
 from fandango.io.packetforecaster import PacketForecaster
-from fandango.language import Grammar, NonTerminal
+from fandango.language.grammar import ParsingMode
+from fandango.language.symbols import NonTerminal
+from fandango.language.tree import DerivationTree
 from tests.utils import RESOURCES_ROOT
 from fandango.api import Fandango
 
@@ -35,8 +36,8 @@ def test_forecast_1():
 def test_forecast_2():
     grammar = get_grammar()
     forecaster = PacketForecaster(grammar)
-    tree = grammar.parse("d", mode=Grammar.Parser.ParsingMode.INCOMPLETE)
-
+    tree = grammar.parse("d", mode=ParsingMode.INCOMPLETE)
+    assert tree is not None
     prediction: PacketForecaster.ForecastingResult = forecaster.predict(tree)
     expected = {"StdOut": ["<e>", "<c>"]}
     assert_prediction(prediction, expected)
@@ -45,8 +46,8 @@ def test_forecast_2():
 def test_forecast_3():
     grammar = get_grammar()
     forecaster = PacketForecaster(grammar)
-    tree = grammar.parse("de", mode=Grammar.Parser.ParsingMode.INCOMPLETE)
-
+    tree = grammar.parse("de", mode=ParsingMode.INCOMPLETE)
+    assert tree is not None
     prediction: PacketForecaster.ForecastingResult = forecaster.predict(tree)
     expected = {"StdOut": ["<e>", "<c>"]}
     assert_prediction(prediction, expected)
@@ -55,38 +56,38 @@ def test_forecast_3():
 def test_forecast_4():
     grammar = get_grammar()
     forecaster = PacketForecaster(grammar)
-    tree = grammar.parse("dec", mode=Grammar.Parser.ParsingMode.INCOMPLETE)
-
+    tree = grammar.parse("dec", mode=ParsingMode.INCOMPLETE)
+    assert tree is not None
     prediction: PacketForecaster.ForecastingResult = forecaster.predict(tree)
-    expected = {"StdOut": ["<c>", "<g>", "<h>"]}
+    expected = {"StdOut": ["<c>", "<g>", "<i>"]}
     assert_prediction(prediction, expected)
 
 
 def test_forecast_5():
     grammar = get_grammar()
     forecaster = PacketForecaster(grammar)
-    tree = grammar.parse("dc", mode=Grammar.Parser.ParsingMode.INCOMPLETE)
-
+    tree = grammar.parse("dc", mode=ParsingMode.INCOMPLETE)
+    assert tree is not None
     prediction: PacketForecaster.ForecastingResult = forecaster.predict(tree)
-    expected = {"StdOut": ["<c>", "<g>", "<h>"]}
+    expected = {"StdOut": ["<c>", "<g>", "<i>"]}
     assert_prediction(prediction, expected)
 
 
 def test_forecast_6():
     grammar = get_grammar()
     forecaster = PacketForecaster(grammar)
-    tree = grammar.parse("dcc", mode=Grammar.Parser.ParsingMode.INCOMPLETE)
-
+    tree = grammar.parse("dcc", mode=ParsingMode.INCOMPLETE)
+    assert tree is not None
     prediction: PacketForecaster.ForecastingResult = forecaster.predict(tree)
-    expected = {"StdOut": ["<g>", "<h>"]}
+    expected = {"StdOut": ["<g>", "<i>"]}
     assert_prediction(prediction, expected)
 
 
 def test_forecast_7():
     grammar = get_grammar()
     forecaster = PacketForecaster(grammar)
-    tree = grammar.parse("dccg", mode=Grammar.Parser.ParsingMode.INCOMPLETE)
-
+    tree = grammar.parse("dccg", mode=ParsingMode.INCOMPLETE)
+    assert tree is not None
     prediction: PacketForecaster.ForecastingResult = forecaster.predict(tree)
     expected: dict[str, list[str]] = {}
     assert_prediction(prediction, expected)
@@ -95,8 +96,8 @@ def test_forecast_7():
 def test_forecast_8():
     grammar = get_grammar()
     forecaster = PacketForecaster(grammar)
-    tree = grammar.parse("dcch", mode=Grammar.Parser.ParsingMode.INCOMPLETE)
-
+    tree = grammar.parse("dcci", mode=ParsingMode.INCOMPLETE)
+    assert tree is not None
     prediction: PacketForecaster.ForecastingResult = forecaster.predict(tree)
     expected: dict[str, list[str]] = {}
     assert_prediction(prediction, expected)

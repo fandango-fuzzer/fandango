@@ -5,14 +5,14 @@ import random
 import unittest
 
 from fandango.evolution.algorithm import Fandango
-from fandango.language import NonTerminal
+from fandango.language.symbols import NonTerminal
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
 from .utils import RESOURCES_ROOT
 
 
 class ConstraintTest(unittest.TestCase):
-    def count_g_params(self, tree: DerivationTree):
+    def count_g_params(self, tree: DerivationTree) -> int:
         count = 0
         if len(tree.sources) > 0:
             count += 1
@@ -31,9 +31,6 @@ class ConstraintTest(unittest.TestCase):
         k_paths = grammar._generate_all_k_paths(3)
         print(len(k_paths))
 
-        for path in grammar._generate_all_k_paths(3):
-            print(tuple(path))
-
     def test_derivation_k_paths(self):
         with open(RESOURCES_ROOT / "grammar.fan", "r") as file:
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
@@ -41,16 +38,17 @@ class ConstraintTest(unittest.TestCase):
 
         random.seed(0)
         tree = grammar.fuzz()
-        print([t.symbol for t in tree.flatten()])
+        print([t.symbol.format_as_spec() for t in tree.flatten()])
 
     def test_parse(self):
         with open(RESOURCES_ROOT / "grammar.fan", "r") as file:
             grammar, _ = parse(file, use_stdlib=False, use_cache=False)
             assert grammar is not None
         tree = grammar.parse("aabb")
-
+        assert tree is not None
         for path in grammar.traverse_derivation(tree):
-            print(path)
+            for node in path:
+                print(node.format_as_spec())
 
     @staticmethod
     def get_solutions(grammar, constraints, desired_solutions=1):
@@ -64,7 +62,10 @@ class ConstraintTest(unittest.TestCase):
 
         # grammar produces 1 output
         actual = self.get_solutions(grammar, constraints, desired_solutions=1)
-        self.assertListEqual(actual, ["bar"])
+        self.assertEqual(len(actual), 1)
+        res = actual[0]
+        self.assertIsInstance(res, DerivationTree)
+        self.assertEqual(str(res.value()), "bar")
 
     def test_nested_generators(self):
         with open(RESOURCES_ROOT / "nested_grammar_parameters.fan", "r") as file:
@@ -131,12 +132,15 @@ class ConstraintTest(unittest.TestCase):
         solutions = self.get_solutions(grammar, c)
         for solution in solutions:
             len_a = solution.children[0].to_int()
+            assert len_a is not None
             self.assertLessEqual(len_a + 2, len(solution.children))
             for child in solution.children[1 : len_a + 1]:
                 self.assertTrue(child.symbol == NonTerminal("<a>"))
             len_b = solution.children[len_a + 1]
+            assert len_b is not None
             self.assertTrue(len_b.symbol == NonTerminal("<len_b>"))
             len_b = len_b.to_int()
+            assert len_b is not None
             self.assertEqual(len_a + len_b + 2, len(solution.children))
             for child in solution.children[len_a + 4 :]:
                 self.assertTrue(child.symbol == NonTerminal("<b>"))
@@ -147,7 +151,7 @@ class ConstraintTest(unittest.TestCase):
             assert grammar is not None
         solutions = self.get_solutions(grammar, c, desired_solutions=10)
         for solution in solutions:
-            self.assertNotEqual(solution, "10")
+            self.assertNotEqual(str(solution.value()), "10")
 
     def test_max_nodes(self):
         with open(RESOURCES_ROOT / "gen_number.fan", "r") as file:

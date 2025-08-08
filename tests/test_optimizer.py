@@ -18,6 +18,9 @@ from .utils import RESOURCES_ROOT
 class GeneticTest(unittest.TestCase):
     def is_this_art_or_can_it_be_deleted(self):
         # I just need to keep this part of the code to ensure such a piece of art is not lost in the ether
+        #
+        # From a fellow connoisseur of art: thank you for preserving this!
+        #
         # Define a simple grammar for testing
         file = open("tests/resources/example_number.fan", "r")
         try:
@@ -57,15 +60,9 @@ class GeneticTest(unittest.TestCase):
             elitism_rate=0.2,
             logger_level=LoggerLevel.DEBUG,
         )
-
-    def test_refill_population_during_init(self):
-        # Generate a population of derivation trees
-        population = self.fandango.population
-
-        self.assertEqual(len(population), self.fandango.population_size)
-        for individual in population:
-            self.assertIsInstance(individual, DerivationTree)
-            self.assertTrue(self.fandango.grammar.parse(str(individual)))
+        list(
+            self.fandango.generate_initial_population()
+        )  # ensure the generator runs until the end
 
     def test_refill_population_with_empty_population(self):
         manager = PopulationManager(
@@ -332,7 +329,7 @@ class DeterminismTests(unittest.TestCase):
             fandango.generate(max_generations=100), desired_solutions
         )
         for solution in generator:
-            yield solution.to_string()
+            yield str(solution)
 
     def test_deterministic_solutions(self):
         gen1 = self.get_solutions(RESOURCES_ROOT / "determinism.fan", 30, 1)

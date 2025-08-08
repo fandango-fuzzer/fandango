@@ -1,53 +1,7 @@
 # wildcard import required for usage in spec files
 from fandango.io import *  # noqa: F403
-from fandango.language.symbol import NonTerminal
-
-
-# Importing '*' here, because all functions, and classes existing in the io file, need to be available within spec files
-
-
-def is_int(x):
-    if isinstance(x, DerivationTree):
-        return x.is_int()
-    try:
-        int(x)
-    except ValueError:
-        return False
-    else:
-        return True
-
-
-def is_float(x):
-    if isinstance(x, DerivationTree):
-        return x.is_float()
-    try:
-        float(x)
-    except ValueError:
-        return False
-    else:
-        return True
-
-
-def is_num(x):
-    if isinstance(x, DerivationTree):
-        return x.is_num()
-    try:
-        float(x)
-    except ValueError:
-        return False
-    else:
-        return True
-
-
-def is_complex(x):
-    if isinstance(x, DerivationTree):
-        return x.is_complex()
-    try:
-        complex(x)
-    except ValueError:
-        return False
-    else:
-        return True
+from fandango.language.symbols import NonTerminal
+from fandango.language.tree import DerivationTree
 
 
 def is_before(

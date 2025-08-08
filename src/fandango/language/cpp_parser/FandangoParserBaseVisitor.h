@@ -163,6 +163,30 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitGrammar_setting(FandangoParser::Grammar_settingContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitGrammar_setting_content(FandangoParser::Grammar_setting_contentContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitGrammar_selector(FandangoParser::Grammar_selectorContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitGrammar_rule(FandangoParser::Grammar_ruleContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitGrammar_setting_key(FandangoParser::Grammar_setting_keyContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitGrammar_setting_value(FandangoParser::Grammar_setting_valueContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitPython_file(FandangoParser::Python_fileContext *ctx) override {
     return visitChildren(ctx);
   }

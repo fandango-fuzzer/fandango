@@ -201,3 +201,5 @@ docs/Markdown.fan
 docs/Markdown.fan
 report.html
 
+# env config
+.env

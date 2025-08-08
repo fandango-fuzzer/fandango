@@ -71,6 +71,9 @@ MINIMIZING : 'minimizing';
 ANY        : 'any';
 ALL        : 'all';
 LEN        : 'len';
+SETTING    : 'setting';
+ALL_WITH_TYPE : 'all_with_type';
+NODE_TYPES: 'NonTerminalNode' | 'TerminalNode' | 'Alternative' | 'Repetition' | 'Star' | 'Plus' | 'Option' | 'Concatenation';
 
 // identifiers
 NAME: ID_START ID_CONTINUE*;
@@ -147,6 +150,8 @@ EXCL               : '!';
 
 NEWLINE: (('\r'? '\n' | '\r' | '\f') SPACES?) { on_newline(); };
 SKIP_: ( SPACES | COMMENT | LINE_JOINING) -> channel(HIDDEN);
+SPACES: [ \t]+;
+UNDERSCORE : '_';
 
 UNKNOWN_CHAR: . | STRING_ESCAPE_SEQ;
 
@@ -195,13 +200,11 @@ fragment SHORT_BYTES_CHAR_NO_DOUBLE_QUOTE:
 fragment LONG_BYTES_CHAR: [\u0000-\u005B] | [\u005D-\u007F];
 fragment BYTES_ESCAPE_SEQ: '\\' [\u0000-\u007F];
 
-fragment SPACES: [ \t]+;
 fragment COMMENT: '#' ~[\r\n\f]*;
 fragment LINE_JOINING: '\\' SPACES? ( '\r'? '\n' | '\r' | '\f') SPACES?;
 
 fragment UNICODE_OIDS: '\u1885' ..'\u1886' | '\u2118' | '\u212e' | '\u309b' ..'\u309c';
 fragment UNICODE_OIDC: '\u00b7' | '\u0387' | '\u1369' ..'\u1371' | '\u19da';
-fragment UNDERSCORE : '_';
 fragment ID_START:
     UNDERSCORE
     | [\p{L}]

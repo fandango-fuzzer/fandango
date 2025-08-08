@@ -123,16 +123,12 @@ Whenever Fandango evaluates a constraint, such as
 int(<age>) > 20
 ```
 
-the type of `<age>` is actually not a string, but a `DerivationTree` object - [a tree representing the structure of the output.](sec:paths).
-For now, you can use `DerivationTree` objects almost as if they were strings:
+the type of `<age>` is actually not a string, but a `DerivationTree` object - [a tree representing the structure of the output.](sec:paths). You can use `DerivationTree` objects as other basic python data types by converting them using (`int(<age>)`, `str(<age>)`, `bytes(<age>)`).
 
-* You can _convert_ them to other basic data types with (`int(<age>)`, `float(<age>)`, `str(<age>)`)
-* You can invoke _string methods_ on them (`<age>.startswith('0'))
+* You can then invoke most _string, bytes and int methods_ on them (`<age>.startswith('0')`) (see [Details](sec:derivation-tree-direct-access-functions))
 * You can _compare_ them against each other (`<age_1> == <age_2>`) as well as against other strings (`<age> != "19"`)
-* You can _print_ them, using implicit string conversions (`print(<age>)`, which invokes `<age>.__str__()`)
 
-One thing you _cannot_ do, though, is _passing them directly as arguments to functions_ that do not expect a `DerivationTree` type.
-This applies to the vast majority of Python functions.
+One thing you _cannot_ do, though, is _passing them directly as arguments to functions_ that do not expect a `DerivationTree` type. This applies to the vast majority of Python functions.
 
 ```{important}
 If you want to pass a symbol as a function argument, convert it to the proper type (`int(<age>)`, `float(<age>)`, `str(<age>)`) first.
@@ -140,7 +136,7 @@ Otherwise, you will likely raise an internal error in that very function.
 ```
 
 ```{important}
-On symbols, the `[...]` operator operates differently from strings - it returns a _subtree_ (a substring) of the produced output: `<name>[0]` returns the `<first_name>` element, not the first character.
+On symbols, the `[...]` operator operates differently from strings - it returns a _subtree_ of the produced output: `<name>[0]` returns the `<first_name>` element, not the first character.
 If you want to access a character (or a range of characters) of a symbol, convert it into a string first, as in `str(<name>)[0]`.
 ```
 
@@ -201,13 +197,46 @@ $ fandango -v fuzz -f persons.fan -n 10 -c 'int(<age>) % 7 == 0'
 
 ```{code-cell}
 :tags: ["remove-input", "scroll-output"]
-!fandango -v fuzz -f persons.fan -n 10 -c 'int(<age>) % 7 == 0' --validate
+!fandango -v fuzz -f persons.fan -n 10 -c 'int(<age>) % 7 == 0' --progress-bar=off
 assert _exit_code == 0
 ```
 
 ```{note}
 The `-v` option comes right after `fandango` (and not after `fandango fuzz`), as `-v` affects all commands (and not just `fuzz`).
 ```
+
+(sec:progress-bar)=
+## The Fandango Progress Bar
+
+While Fandango is solving constraints, you may see a _progress bar_ in the terminal.
+The progress bar looks like this:
+
+![progress-bar](progress-bar.png)
+
+The progress bar is composed of three parts.
+On the leftmost side, we have the _Fandango logo_ ("💃 Fandango"), followed by a _generation counter_ ("6/500") showing how often (6) the population has evolved (out of a maximum 500).
+
+Most of the line, however, is filled by a _fitness visualization_ illustrating how the fitness is distributed across the inputs in the population.
+Each fraction of the line corresponds to an equal fraction of individual inputs.
+Hence, a 1/70 of the line (typically one character) stands for 1/70 of the population.
+
+The _color_ of each fraction how _fit_ the inputs in the fraction are - on a scale from _bright green_ (perfect fitness, fulfilling the given constraints) to _dark red_ (very little fitness, far away from fulfilling the constraints).
+Depending on its capabilities, your terminal may also show shades between these colors.
+Inputs that do not satisfy the constraints at all (zero fitness) are shown in gray.
+
+In the above example, we can see that Fandango already has produces a few inputs that satisfy the constraints; a few more are close and may get there through further evolution.
+
+```{note}
+By default, the progress bar only shows up if
+
+* Fandango's standard error is a terminal;
+* Fandango is not run within Jupyter notebook (Jupyter cannot interpret the terminal escape sequences); and
+* Fandango logging is turned off (it also writes to standard error).
+
+The option `--progress-bar=on` turns on the progress bar even if the above conditions are not met.
+The option `--progress-bar=off` turns the progress bar off.
+```
+
 
 (sec:soft-constraints)=
 ## Soft Constraints and Optimization
@@ -232,7 +261,7 @@ $ fandango fuzz -f persons.fan --maximize 'int(<age>)'
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 --maximize 'int(<age>)'
+!fandango fuzz -f persons.fan -n 10 --maximize 'int(<age>)' --progress-bar=off
 assert _exit_code == 0
 ```
 
@@ -244,7 +273,7 @@ $ fandango fuzz -f persons.fan --maximize 'int(<age>)'
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 10 --minimize 'int(<age>)'
+!fandango fuzz -f persons.fan -n 10 --minimize 'int(<age>)' --progress-bar=off
 assert _exit_code == 0
 ```
 
@@ -277,7 +306,7 @@ $ fandango fuzz -f persons.fan --maximize '<name>.startswith("A")' -n 10
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan --maximize '<name>.startswith("A")' -n 10
+!fandango fuzz -f persons.fan --maximize '<name>.startswith("A")' -n 10 --progress-bar=off
 assert _exit_code == 0
 ```
 
@@ -302,7 +331,7 @@ $ fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50
 
 ```{code-cell}
 :tags: ["remove-input", "scroll-output"]
-!fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50 --validate
+!fandango -v fuzz -f persons.fan -n 10 -c 'False' -N 50 --validate --progress-bar=off
 assert _exit_code == 0
 ```
 

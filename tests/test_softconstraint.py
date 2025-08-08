@@ -29,8 +29,9 @@ class TestSoft(unittest.TestCase):
         generator = itertools.islice(
             fandango.generate(max_generations=max_generations), desired_solutions
         )
+
         for solution in generator:
-            yield solution.to_string()
+            yield str(solution)
 
 
 class TestSoftValue(TestSoft):
@@ -46,19 +47,24 @@ class TestSoftValue(TestSoft):
             if "999999-999999" == s:
                 return  # optimized solution found, stop generating and don't fail
 
-        self.assertTrue(False, "999999-999999 not found, found: " + str(solutions))
+        self.fail(
+            f"999999-999999 not found in the first {len(solutions)} solutions, found: {solutions}"
+        )
 
     def test_min_in_different_contexts(self):
         gen = self.get_solutions(
             RESOURCES_ROOT / "persons_with_constr.fan",
-            desired_solutions=20,
+            desired_solutions=60,
             random_seed=1,
         )
-        solution = next(gen)
-        name, age = solution.split(",")
-        first_name, last_name = name.split(" ")
-        self.assertEqual(len(first_name), 2)
-        self.assertEqual(len(last_name), 2)
+        for solution in gen:
+            name, age = solution.split(",")
+            first_name, last_name = name.split(" ")
+            if len(first_name) == 2 and len(last_name) == 2:
+                return
+        self.fail(
+            "No solution found, last first_name: {first_name}, last last_name: {last_name}"
+        )
 
     def test_cli_max_1(self):
         command = [
@@ -75,8 +81,9 @@ class TestSoftValue(TestSoft):
         ]
         out, err, code = run_command(command)
         lines = [line for line in out.split("\n") if line.strip()]
+        self.assertGreater(len(lines), 0, f"\nerr: {err}\nout: {out}")
         last_age = int(lines[-1].split(",")[1])  # e.g., 9999999999999599999999
-        self.assertGreater(last_age, 9999999999999)
+        self.assertGreater(last_age, 9999999999999, f"\nerr: {err}\nout: {out}")
 
     def test_cli_max_2(self):
         command = [

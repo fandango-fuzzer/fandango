@@ -39,6 +39,7 @@ class APITest(unittest.TestCase):
         word = "abc"
 
         for tree in fan.parse(word):
+            assert tree is not None
             print(f"tree = {repr(str(tree))}")
             print(tree.to_grammar())
 
@@ -47,6 +48,7 @@ class APITest(unittest.TestCase):
         word = "ab"
 
         for tree in fan.parse(word, prefix=True):
+            assert tree is not None
             print(f"tree = {repr(str(tree))}")
             print(tree.to_grammar())
 
@@ -54,21 +56,15 @@ class APITest(unittest.TestCase):
         fan = Fandango(self.SPEC_abcd)
         invalid_word = "ab"
 
-        try:
-            fan.parse(invalid_word)
-            self.assertTrue(False, "Expected FandangoParseError")
-        except FandangoParseError as exc:
-            print(f"Syntax error at {exc.position} in word {invalid_word!r}")
+        with self.assertRaises(FandangoParseError):
+            list(fan.parse(invalid_word))  # force generator evaluation
 
     def test_failing_parse(self):
         fan = Fandango(self.SPEC_abcd)
         invalid_word = "abcdef"
 
-        try:
-            fan.parse(invalid_word)
-            self.assertTrue(False, "Expected FandangoParseError")
-        except FandangoParseError as exc:
-            print(f"Syntax error at {exc.position} in word {invalid_word!r}")
+        with self.assertRaises(FandangoParseError):
+            list(fan.parse(invalid_word))  # force generator evaluation
 
     def ensure_capped_generation(self):
         fan = Fandango(self.SPEC_abcd, logging_level=logging.INFO)

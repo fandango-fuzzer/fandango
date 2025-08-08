@@ -1,14 +1,11 @@
 [build-system]
-requires = [
-    "setuptools>=73.0.1",
-    "wheel"
-]
+requires = ["setuptools>=73.0.1", "wheel"]
 build-backend = "setuptools.build_meta"
 
 # If you update this info, please also update the version in setup.py
 [project]
 name = "fandango-fuzzer"
-version = "1.0.3"
+version = "1.0.4"
 authors = [
     { name = "José Antonio Zamudio Amaya", email = "jose.zamudio@cispa.de" },
     { name = "Marius Smytzek", email = "marius.smytzek@cispa.de" },
@@ -26,7 +23,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering",
-    "Topic :: Software Development :: Testing"
+    "Topic :: Software Development :: Testing",
 ]
 
 dependencies = [
@@ -56,6 +53,8 @@ test = [
     "pytest-timeout>=2.4.0",
     "pytest-xdist>=3.7.0",
     "python-dateutil>=2.9.0.post0",
+    "docutils==0.21.2",
+    "tccbox>=2025.6.6", # We have upgraded from ==2024.7.1 (the version ISLa used) because it is not compatible with Python 3.12 anymore :(
 ]
 
 development = [
@@ -63,19 +62,14 @@ development = [
     "black>=25.1.0",
     "mypy>=1.16.0",
     "pre-commit>=4.2.0",
-    "pygls>=2.0.0a4", # language server
+    "pygls>=2.0.0a4",           # language server
     "speedy-antlr-tool>=1.4.3",
-]
-
-evaluation = [
-    "cryptography>=44.0.1",
-    "tccbox>=2025.6.6",
 ]
 
 book = [
     "fandango-fuzzer[development]", # need black and faker
-    "aiosmtpd>=1.4.6",  # example server for protocol testing
-    "docutils>=0.20.1",  # Jupyter-book needs docutils<=0.20
+    "aiosmtpd>=1.4.6",              # example server for protocol testing
+    "docutils>=0.20.1",             # Jupyter-book needs docutils<=0.20
     "ghp-import>=2.1.0",
     "graphviz>=0.20.3",
     "jupyter-book>=1.0.4",
@@ -105,11 +99,13 @@ check_untyped_defs = true
 enable_error_code = ['ignore-without-code']
 # See https://mypy.readthedocs.io/en/stable/config_file.html#confval-exclude
 exclude = [
-    'src/fandango/language/parser/Fandango[^.]*\.py$',
+    'src/fandango/language/parser/FandangoLexer\.py$',
+    'src/fandango/language/parser/FandangoParser\.py$',
+    'src/fandango/language/parser/FandangoParserVisitor\.py$',
     'src/fandango/language/parser/sa_fandango\.py$',
     'src/fandango/converters/antlr/ANTLRv4[^.]*\.py$',
     'src/fandango/converters/antlr/LexerAdaptor[^.]*\.py$',
 ]
 
 [tool.pytest.ini_options]
-addopts = "-n auto --timeout 300"
+addopts = "-n auto --timeout 700 --durations=10"

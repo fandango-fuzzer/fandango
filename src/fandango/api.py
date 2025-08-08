@@ -4,8 +4,10 @@ import itertools
 import logging
 import time
 from typing import IO, Optional
-from fandango.constraints.base import Constraint, SoftValue
-from fandango.language.grammar import FuzzingMode, Grammar
+from fandango.constraints.constraint import Constraint
+from fandango.constraints.soft import SoftValue
+from fandango.language.grammar import FuzzingMode, ParsingMode
+from fandango.language.grammar.grammar import Grammar
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
@@ -45,7 +47,7 @@ class FandangoBase(ABC):
         """
         self._start_symbol = start_symbol if start_symbol is not None else "<start>"
         LOGGER.setLevel(logging_level if logging_level is not None else logging.WARNING)
-        self._grammar, self._constraints = parse(
+        grammar, self._constraints = parse(
             fan_files,
             constraints,
             use_cache=use_cache,
@@ -54,6 +56,12 @@ class FandangoBase(ABC):
             start_symbol=start_symbol,
             includes=includes,
         )
+        if grammar is None:
+            raise FandangoParseError(
+                position=0,
+                message="Failed to parse grammar, Grammar is None",
+            )
+        self._grammar = grammar
 
     @property
     def grammar(self):
@@ -140,7 +148,7 @@ class FandangoBase(ABC):
     @abstractmethod
     def parse(
         self, word: str | bytes | DerivationTree, *, prefix: bool = False, **settings
-    ) -> Generator[DerivationTree, None, None]:
+    ) -> Generator[Optional[DerivationTree], None, None]:
         """
         Parse a string according to spec.
         :param word: The string to parse
@@ -323,7 +331,7 @@ class Fandango(FandangoBase):
 
     def parse(
         self, word: str | bytes | DerivationTree, *, prefix: bool = False, **settings
-    ) -> Generator[DerivationTree, None, None]:
+    ) -> Generator[Optional[DerivationTree], None, None]:
         """
         Parse a string according to spec.
         :param word: The string to parse
@@ -332,23 +340,22 @@ class Fandango(FandangoBase):
         :return: A generator of derivation trees
         """
         if prefix:
-            mode = Grammar.Parser.ParsingMode.INCOMPLETE
+            mode = ParsingMode.INCOMPLETE
         else:
-            mode = Grammar.Parser.ParsingMode.COMPLETE
+            mode = ParsingMode.COMPLETE
 
         tree_generator = self.grammar.parse_forest(
             word, mode=mode, start=self._start_symbol, **settings
         )
         try:
             peek = next(tree_generator)
-            self.grammar.populate_sources(peek)
-            tree_generator = itertools.chain([peek], tree_generator)
-            have_tree = True
         except StopIteration:
-            have_tree = False
+            peek = None
 
-        if not have_tree:
+        if peek is None:
             position = self.grammar.max_position() + 1
             raise FandangoParseError(position=position)
 
-        return tree_generator
+        self.grammar.populate_sources(peek)
+        yield peek
+        yield from tree_generator

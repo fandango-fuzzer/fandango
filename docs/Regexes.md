@@ -142,12 +142,12 @@ Let us limit the number of repetitions to the range 1..5:
 This is what we get:
 
 ```shell
-$ fandango fuzz -f finity.fan -n 10
+$ fandango fuzz -f finity.fan -n 5
 ```
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f finity.fan -n 10 --validate
+!fandango fuzz -f finity.fan -n 5 --validate
 assert _exit_code == 0
 ```
 
