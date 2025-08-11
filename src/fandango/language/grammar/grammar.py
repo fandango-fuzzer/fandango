@@ -51,6 +51,8 @@ class Grammar(NodeVisitor):
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
         self._parser = Parser(self.rules)
+        self._k_path_cache: dict[NonTerminal, list[set[tuple[Node, ...]]]] = dict()
+        self._tree_k_path_cache: dict[int, list[set[tuple[Symbol, ...]]]] = dict()
 
     @property
     def grammar_settings(self) -> Sequence[HasSettings]:
@@ -452,28 +454,28 @@ class Grammar(NodeVisitor):
         :param k: The length of the paths.
         :return: All paths of length up to *k* within this grammar.
         """
-
-        initial = set()
-        if non_terminal is not None:
-            initial_work: list[Node] = [
-                NonTerminalNode(non_terminal, self._grammar_settings)
-            ]
+        if non_terminal in self._k_path_cache:
+            work = self._k_path_cache[non_terminal]
         else:
-            initial_work: list[Node] = [
-                NonTerminalNode(name, self._grammar_settings)
-                for name in self.rules.keys()
-            ]
+            initial = set()
+            if non_terminal is not None:
+                initial_work: list[Node] = [
+                    NonTerminalNode(non_terminal, self._grammar_settings)
+                ]
+            else:
+                initial_work: list[Node] = [
+                    NonTerminalNode(name, self._grammar_settings)
+                    for name in self.rules.keys()
+                ]
+            while initial_work:
+                node = initial_work.pop(0)
+                if node in initial:
+                    continue
+                initial.add(node)
+                initial_work.extend(node.descendents(self, filter_controlflow=True))
+            work: list[set[tuple[Node, ...]]] = [set((x,) for x in initial)]
 
-        while initial_work:
-            node = initial_work.pop(0)
-            if node in initial:
-                continue
-            initial.add(node)
-            initial_work.extend(node.descendents(self, filter_controlflow=True))
-
-        work: list[set[tuple[Node, ...]]] = [set((x,) for x in initial)]
-
-        for _ in range(1, k):
+        for _ in range(len(work), k):
             next_work = set()
             for base in work[-1]:
                 for descendent in base[-1].descendents(self, filter_controlflow=True):
@@ -481,7 +483,7 @@ class Grammar(NodeVisitor):
             work.append(next_work)
 
         # return set.union(*work)
-        return work[-1]
+        return work[k - 1]
 
     def _extract_k_paths_from_tree(
         self, tree: DerivationTree, k: int
