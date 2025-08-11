@@ -77,6 +77,11 @@ def select_next_packet(
     scores_sorted = list(
         sorted(coverage_scores.items(), key=lambda x: (x[1], x[0].name()))
     )
+    if len(scores_sorted) > 0 and scores_sorted[0][1] == 1.0:
+        print("Full coverage reached. Guiding to end of tree.")
+        fuzzable_packets.append(get_guide_to_end_packet(forecast, msg_parties))
+        return fuzzable_packets
+
     for target_nt, coverage_score in scores_sorted:
         navigator = PacketNavigator(grammar, NonTerminal("<start>"))
         path = navigator.astar_tree(history_tree, target_nt)
