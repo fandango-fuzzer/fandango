@@ -108,7 +108,9 @@ class Repetition(Node):
         return f"{self.node.format_as_spec()}{{{self.min},{self.max}}}"
 
     def descendents(
-        self, grammar: "fandango.language.grammar.grammar.Grammar", filter_controlflow: bool = False
+        self,
+        grammar: "fandango.language.grammar.grammar.Grammar",
+        filter_controlflow: bool = False,
     ) -> Iterator["Node"]:
         base: list = []
         if self.min == 0:
@@ -258,12 +260,15 @@ class Option(Repetition):
         return self.node.format_as_spec() + "?"
 
     def descendents(
-        self, grammar: "fandango.language.grammar.grammar.Grammar", filter_controlflow: bool = False
+        self,
+        grammar: "fandango.language.grammar.grammar.Grammar",
+        filter_controlflow: bool = False,
     ) -> Iterator["Node"]:
         if filter_controlflow:
-            for descendent in self.node.descendents(
-                grammar, filter_controlflow=True
-            ):
-                yield from (descendent, TerminalNode(Terminal(""), self._grammar_settings))
+            for descendent in self.node.descendents(grammar, filter_controlflow=True):
+                yield from (
+                    descendent,
+                    TerminalNode(Terminal(""), self._grammar_settings),
+                )
         else:
             yield from (self.node, TerminalNode(Terminal(""), self._grammar_settings))

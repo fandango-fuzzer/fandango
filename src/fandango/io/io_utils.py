@@ -68,6 +68,16 @@ def get_guide_to_end_packet(
                 if best_key is None or key < best_key:
                     best_key = key
                     best_packet = packet
+    if best_packet is None:
+        for sender in fuzzer_parties:
+            for nt, packet in forecast[sender].nt_to_packet.items():
+                if best_packet is None:
+                    best_packet = packet
+                    best_key = packet.node.distance_to_completion
+                    continue
+                if packet.node.distance_to_completion < best_key:
+                    best_packet = packet
+                    best_key = packet.node.distance_to_completion
     return best_packet
 
 
@@ -109,7 +119,9 @@ def select_next_packet(
             print(
                 f"No path found for target {target_nt} with score {coverage_score}. Guiding to end of tree."
             )
-            fuzzable_packets.append(get_guide_to_end_packet(forecast, msg_parties, grammar))
+            fuzzable_packets.append(
+                get_guide_to_end_packet(forecast, msg_parties, grammar)
+            )
             break
         else:
             print(f"Guiding to target {target_nt} with score {coverage_score}")

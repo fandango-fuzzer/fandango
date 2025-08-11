@@ -91,7 +91,9 @@ class Alternative(Node):
         )
 
     def descendents(
-        self, grammar: "fandango.language.grammar.grammar.Grammar", filter_controlflow: bool = False
+        self,
+        grammar: "fandango.language.grammar.grammar.Grammar",
+        filter_controlflow: bool = False,
     ) -> Iterator["Node"]:
         if filter_controlflow:
             for alt in self.alternatives:

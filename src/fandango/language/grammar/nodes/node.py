@@ -115,7 +115,9 @@ class Node(abc.ABC):
         """
 
     def descendents(
-        self, grammar: "fandango.language.grammar.grammar.Grammar", filter_controlflow: bool = False
+        self,
+        grammar: "fandango.language.grammar.grammar.Grammar",
+        filter_controlflow: bool = False,
     ) -> Iterator["Node"]:
         """
         Returns an iterator of the descendents of this node.

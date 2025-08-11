@@ -52,7 +52,9 @@ class Grammar(NodeVisitor):
         self._global_variables = global_variables or {}
         self._parser = Parser(self.rules)
         self._k_path_cache: dict[NonTerminal, list[set[tuple[Node, ...]]]] = dict()
-        self._tree_k_path_cache: dict[int, list[Optional[set[tuple[Symbol, ...]]]]] = dict()
+        self._tree_k_path_cache: dict[int, list[Optional[set[tuple[Symbol, ...]]]]] = (
+            dict()
+        )
 
     @property
     def grammar_settings(self) -> Sequence[HasSettings]:
@@ -524,7 +526,9 @@ class Grammar(NodeVisitor):
                 if len(path) != k - 1:
                     return
                 if parent_symbol is None:
-                    raise RuntimeError("Received a NonTerminal with no parent symbol when computing k-path!")
+                    raise RuntimeError(
+                        "Received a NonTerminal with no parent symbol when computing k-path!"
+                    )
                 if tree_symbol.value().is_type(TreeValueType.STRING):
                     symbol_value = tree_symbol.value().to_string()
                 elif tree_symbol.value().is_type(TreeValueType.BYTES):
@@ -532,8 +536,12 @@ class Grammar(NodeVisitor):
                 else:
                     symbol_value = tree_symbol.value().to_int()
 
-                parent_rule_nodes = NonTerminalNode(parent_symbol, self.grammar_settings).descendents(self, filter_controlflow=True)
-                parent_rule_nodes = list(filter(lambda x: isinstance(x, TerminalNode), parent_rule_nodes))
+                parent_rule_nodes = NonTerminalNode(
+                    parent_symbol, self.grammar_settings
+                ).descendents(self, filter_controlflow=True)
+                parent_rule_nodes = list(
+                    filter(lambda x: isinstance(x, TerminalNode), parent_rule_nodes)
+                )
                 random.shuffle(parent_rule_nodes)
                 for rule_node in parent_rule_nodes:
                     if rule_node.symbol.check(symbol_value, False):
