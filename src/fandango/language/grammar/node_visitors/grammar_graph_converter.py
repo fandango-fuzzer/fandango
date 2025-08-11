@@ -185,8 +185,8 @@ class GrammarGraphConverter(NodeVisitor):
                     self._set_next(end_node, [next_node])
                 intermediate_end = next_end_nodes
             if idx >= node.min:
-                for node in intermediate_end:
-                    chain_end.append(node)
+                for end_node in intermediate_end:
+                    chain_end.append(end_node)
         if chain_start is None:
             chain_start = EagerGrammarGraphNode(node, list())
         return EagerGrammarGraphNode(node, [chain_start]), chain_end
