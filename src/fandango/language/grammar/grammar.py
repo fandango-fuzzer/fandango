@@ -52,7 +52,7 @@ class Grammar(NodeVisitor):
         self._global_variables = global_variables or {}
         self._parser = Parser(self.rules)
         self._k_path_cache: dict[NonTerminal, list[set[tuple[Node, ...]]]] = dict()
-        self._tree_k_path_cache: dict[int, list[set[tuple[Symbol, ...]]]] = dict()
+        self._tree_k_path_cache: dict[int, list[Optional[set[tuple[Symbol, ...]]]]] = dict()
 
     @property
     def grammar_settings(self) -> Sequence[HasSettings]:
@@ -491,6 +491,11 @@ class Grammar(NodeVisitor):
         """
         Extracts all k-length paths (k-paths) from a derivation tree.
         """
+        if hash(tree) in self._tree_k_path_cache:
+            k_paths = self._tree_k_path_cache[hash(tree)]
+            if len(k_paths) > (k - 1) and k_paths[k - 1] is not None:
+                return k_paths[k - 1]
+
         start_nodes: list[tuple[Optional[NonTerminal], DerivationTree]] = []
 
         def collect_start_nodes(tree_root: DerivationTree):
@@ -535,6 +540,13 @@ class Grammar(NodeVisitor):
 
         for parent, node in start_nodes:
             traverse(parent, node, tuple())
+
+        if hash(tree) not in self._tree_k_path_cache:
+            self._tree_k_path_cache[hash(tree)] = []
+        k_paths = self._tree_k_path_cache[hash(tree)]
+        if len(k_paths) < k:
+            k_paths.extend([None] * (k - len(k_paths)))
+        k_paths[k - 1] = paths
         return paths
 
     def prime(self):
