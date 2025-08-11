@@ -7,13 +7,9 @@ from fandango.io.navigation.grammarreducer import GrammarReducer
 from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
 from fandango.io.navigation.visitor.continuing_nodevisitor import ContinuingNodeVisitor
 from fandango.language.grammar import ParsingMode
-from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode
-from fandango.language.grammar.nodes.concatenation import Concatenation
-from fandango.language.grammar.nodes.alternative import Alternative
-from fandango.language.grammar.nodes.repetition import Repetition, Option, Plus, Star
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.language.tree_value import TreeValueType
@@ -33,24 +29,11 @@ class PathFinder(ContinuingNodeVisitor):
 
     def add_option(self, node: NonTerminalNode) -> None:
         mounting_path = MountingPath(
-            self.collapsed_tree, tuple(self._collapsed_path(self.current_path))
+            self.collapsed_tree, tuple(self.current_path)
         )
         f_packet = ForcastingPacket(node)
         f_packet.add_path(mounting_path)
         self.result.add_packet(node.sender, f_packet)
-
-    @staticmethod
-    def _collapsed_path(path: list[tuple[NonTerminal, bool]]):
-        new_path = []
-        for nt, new_node in path:
-            if nt.is_type(TreeValueType.STRING) and str(nt.value()).startswith("<__"):
-                continue
-            elif nt.is_type(TreeValueType.BYTES) and bytes(nt.value()).startswith(
-                b"<__"
-            ):
-                continue
-            new_path.append((nt, new_node))
-        return tuple(new_path)
 
     def find(self, tree: Optional[DerivationTree] = None) -> ForecastingResult:
         """
@@ -86,13 +69,27 @@ class MountingPath:
     def __init__(
         self,
         tree: Optional[DerivationTree],
-        path: tuple[tuple[NonTerminal, bool], ...],
+        controlflow_path: tuple[tuple[NonTerminal, bool], ...],
     ):
         """
         Represents a path in the given DerivationTree where a protocol message can be mounted.
         """
         self.tree = tree
-        self.path = path
+        self.controlflow_path = controlflow_path
+        self.path = MountingPath._collapsed_path(controlflow_path)
+
+    @staticmethod
+    def _collapsed_path(path: tuple[tuple[NonTerminal, bool], ...]):
+        new_path = []
+        for nt, new_node in path:
+            if nt.is_type(TreeValueType.STRING) and str(nt.value()).startswith("<__"):
+                continue
+            elif nt.is_type(TreeValueType.BYTES) and bytes(nt.value()).startswith(
+                b"<__"
+            ):
+                continue
+            new_path.append((nt, new_node))
+        return tuple(new_path)
 
     def __hash__(self):
         return hash((hash(self.tree), hash(self.path)))
