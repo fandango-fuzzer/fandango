@@ -116,7 +116,9 @@ class NonTerminalNode(Node):
         return parties
 
     def descendents(
-        self, grammar: "fandango.language.grammar.grammar.Grammar", filter_controlflow: bool = False
+        self,
+        grammar: "fandango.language.grammar.grammar.Grammar",
+        filter_controlflow: bool = False,
     ) -> Iterator["Node"]:
         node = grammar.rules[self.symbol]
         if filter_controlflow and node.is_controlflow:

@@ -65,7 +65,9 @@ class Concatenation(Node):
         return " ".join(map(lambda x: x.format_as_spec(), self.nodes))
 
     def descendents(
-        self, grammar: "fandango.language.grammar.grammar.Grammar", filter_controlflow: bool = False
+        self,
+        grammar: "fandango.language.grammar.grammar.Grammar",
+        filter_controlflow: bool = False,
     ) -> Iterator["Node"]:
         if filter_controlflow:
             for child in self.nodes:

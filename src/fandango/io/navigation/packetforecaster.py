@@ -28,9 +28,7 @@ class PathFinder(ContinuingNodeVisitor):
         self.result = ForecastingResult()
 
     def add_option(self, node: NonTerminalNode) -> None:
-        mounting_path = MountingPath(
-            self.collapsed_tree, tuple(self.current_path)
-        )
+        mounting_path = MountingPath(self.collapsed_tree, tuple(self.current_path))
         f_packet = ForcastingPacket(node)
         f_packet.add_path(mounting_path)
         self.result.add_packet(node.sender, f_packet)

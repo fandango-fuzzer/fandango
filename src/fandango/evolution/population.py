@@ -27,7 +27,9 @@ class PopulationManager:
     def _generate_population_entry(self, max_nodes: int):
         return self._grammar.fuzz(self._start_symbol, max_nodes)
 
-    def _generate_population_hashes(self, current_population: list[DerivationTree]) -> set[int]:
+    def _generate_population_hashes(
+        self, current_population: list[DerivationTree]
+    ) -> set[int]:
         return {hash(ind) for ind in current_population}
 
     def add_unique_individual(
