@@ -1,10 +1,13 @@
-from itertools import groupby
 from typing import Optional
 
 from fandango.io.navigation.packetforecaster import ForecastingResult, ForcastingPacket
 from fandango.io.navigation.packetnavigator import PacketNavigator
+from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
+from fandango.language.grammar.nodes.terminal import TerminalNode
 from fandango.language.tree import DerivationTree
-from fandango.language import NonTerminal, Grammar
+from fandango.language.symbols.symbol import Symbol
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.symbols.non_terminal import NonTerminal
 
 
 def compute_message_coverage_score(
@@ -37,20 +40,35 @@ def compute_message_coverage_score(
 
 
 def get_guide_to_end_packet(
-    forecast: ForecastingResult, fuzzer_parties: list[str]
+    forecast: ForecastingResult, fuzzer_parties: list[str], grammar: Grammar
 ) -> Optional[ForcastingPacket]:
     current_selection = None
+    nodes = grammar.nodes()
+    distance_map: dict[Symbol, float] = {}
+    for node in nodes:
+        if isinstance(node, (NonTerminalNode, TerminalNode)):
+            distance_map[node.symbol] = node.distance_to_completion
+        else:
+            id_symbol = NonTerminal(f"<__{node.id}>")
+            distance_map[id_symbol] = node.distance_to_completion
+
+    best_packet = None
+    best_key = None
+
     for sender in fuzzer_parties:
         for nt, packet in forecast[sender].nt_to_packet.items():
-            if current_selection is None:
-                current_selection = packet
-                continue
-            if (
-                packet.node.distance_to_completion
-                < current_selection.node.distance_to_completion
-            ):
-                current_selection = packet
-    return current_selection
+            for mounting_path in packet.paths:
+                key = tuple(
+                    distance_map[symbol]
+                    for symbol, is_new in mounting_path.controlflow_path
+                    if is_new and symbol in distance_map
+                )
+                if not key:
+                    continue
+                if best_key is None or key < best_key:
+                    best_key = key
+                    best_packet = packet
+    return best_packet
 
 
 def select_next_packet(
@@ -66,7 +84,7 @@ def select_next_packet(
         print(
             f"Current tree contains more then {max_messages_per_tree} messages. Guiding to end of tree."
         )
-        fuzzable_packets.append(get_guide_to_end_packet(forecast, msg_parties))
+        fuzzable_packets.append(get_guide_to_end_packet(forecast, msg_parties, grammar))
         return fuzzable_packets
     # Select next packet to send by computing guiding generator to underexplored areas of the grammar
     all_derivations = list(parst_io_derivations)
@@ -79,7 +97,7 @@ def select_next_packet(
     )
     if len(scores_sorted) > 0 and scores_sorted[0][1] == 1.0:
         print("Full coverage reached. Guiding to end of tree.")
-        fuzzable_packets.append(get_guide_to_end_packet(forecast, msg_parties))
+        fuzzable_packets.append(get_guide_to_end_packet(forecast, msg_parties, grammar))
         return fuzzable_packets
 
     for target_nt, coverage_score in scores_sorted:
@@ -91,7 +109,7 @@ def select_next_packet(
             print(
                 f"No path found for target {target_nt} with score {coverage_score}. Guiding to end of tree."
             )
-            fuzzable_packets.append(get_guide_to_end_packet(forecast, msg_parties))
+            fuzzable_packets.append(get_guide_to_end_packet(forecast, msg_parties, grammar))
             break
         else:
             print(f"Guiding to target {target_nt} with score {coverage_score}")
@@ -100,5 +118,5 @@ def select_next_packet(
                 fuzzable_packets.append(forecast[sender].nt_to_packet[next_nt])
                 break
     if len(fuzzable_packets) == 0:
-        fuzzable_packets.append(get_guide_to_end_packet(forecast, msg_parties))
+        fuzzable_packets.append(get_guide_to_end_packet(forecast, msg_parties, grammar))
     return fuzzable_packets

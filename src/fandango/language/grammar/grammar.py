@@ -341,6 +341,14 @@ class Grammar(NodeVisitor):
         """Return the maximum position reached during last parsing."""
         return self._parser._iter_parser.max_position()
 
+    def nodes(self) -> set[Node]:
+        """Return a map of all nodes in the grammar."""
+        node_set = set()
+        for node in self.rules.values():
+            node_set.add(node)
+            node_set.update(node.descendents(self, filter_controlflow=False))
+        return node_set
+
     def __contains__(self, item: str | NonTerminal):
         if not isinstance(item, NonTerminal):
             item = NonTerminal(item)
