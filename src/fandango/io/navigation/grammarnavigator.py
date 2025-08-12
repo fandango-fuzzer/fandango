@@ -60,7 +60,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
     def is_goal_reached(self, current: GrammarGraphNode, goal: GrammarGraphNode):
         self.comparisons += 1
         if self.comparisons > self.max_comparisons:
-            raise NavigatorTimedOutError()
+            raise NavigatorTimedOutError(f"Couldn't find route to target NonTerminal after {self.comparisons} comparisons. Giving up. Does the grammar contain unbreakable cycles?")
         if self.is_search_end_node:
             return current.is_accepting
         if isinstance(current.node, NonTerminalNode) and isinstance(
