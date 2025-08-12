@@ -285,7 +285,7 @@ class Grammar(NodeVisitor):
 
     def get_protocol_messages(
         self, start_symbol=NonTerminal("<start>")
-    ) -> set[NonTerminal]:
+    ) -> set[tuple[str, Optional[str], NonTerminal]]:
         work = set()
         work.add(self.rules[start_symbol])
         seen = set()
@@ -298,7 +298,7 @@ class Grammar(NodeVisitor):
                 work.add(node)
         seen = filter(lambda n: isinstance(n, NonTerminalNode), seen)
         seen = filter(lambda n: n.sender is not None, seen)
-        seen = map(lambda n: n.symbol, seen)
+        seen = map(lambda n: (n.sender, n.recipient, n.symbol), seen)
         return set(seen)
 
     def parse(

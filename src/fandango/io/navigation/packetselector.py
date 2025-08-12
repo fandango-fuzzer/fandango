@@ -2,7 +2,7 @@ from typing import Optional
 
 from fandango.io import FandangoIO
 from fandango.language.tree import DerivationTree
-from fandango.io.navigation.packetforecaster import ForcastingPacket, PacketForecaster
+from fandango.io.navigation.packetforecaster import ForcastingPacket, PacketForecaster, ForecastingResult
 from fandango.io.navigation.packetnavigator import PacketNavigator
 from fandango.language import Grammar
 from fandango.language.symbols import NonTerminal
@@ -17,16 +17,16 @@ class PacketSelector:
         self.io_instance = io_instance
         self.navigator = PacketNavigator(grammar, NonTerminal("<start>"))
         self.forecaster = PacketForecaster(self.grammar)
+        self.parst_derivations: set[DerivationTree] = set()
         self.history_tree = None
-        self.forecasting_result = None
-        self.parst_derivations = set()
-        self.next_packets = []
-        self.coverage_scores = []
+        self._forecasting_result = None
+        self._next_packets = None
+        self._coverage_scores = None
         self._guide_to_end = False
         self.compute(history_tree, self.parst_derivations)
 
     def _compute_message_coverage_score(
-        self, k: int
+        self, k: int, show_external: bool = False
     ) -> list[tuple[NonTerminal, float]]:
         """
         Computes the coverage score for each NonTerminal in the given DerivationTrees.
@@ -36,16 +36,22 @@ class PacketSelector:
         :param k: The k-path length for coverage computation.
         :return: Dictionary mapping NonTerminals to their coverage scores.
         """
+        fuzzer_parties = set(map(lambda x: x.party_name, self.io_instance.get_fuzzer_parties()))
         trees = list(self.parst_derivations)
         trees.append(self.history_tree)
         messages: list[DerivationTree] = []
         for tree in trees:
-            messages.extend(map(lambda x: x.msg, tree.protocol_msgs()))
+            if show_external:
+                messages.extend(map(lambda x: x.msg, tree.protocol_msgs()))
+            else:
+                messages.extend(filter(lambda y: y.sender in fuzzer_parties, map(lambda x: x.msg, tree.protocol_msgs())))
         messages_by_nt = {}
         for msg in messages:
             messages_by_nt.setdefault(msg.symbol, []).append(msg)
         nt_coverage = {}
-        for non_terminal in self.grammar.get_protocol_messages():
+        for sender, recipient, non_terminal in self.grammar.get_protocol_messages():
+            if not (show_external or (sender in fuzzer_parties)):
+                continue
             if non_terminal not in messages_by_nt:
                 nt_coverage[non_terminal] = 0.0
                 continue
@@ -73,9 +79,27 @@ class PacketSelector:
     ):
         self.history_tree = history_tree
         self.parst_derivations = parst_derivations
-        self.coverage_scores = self._compute_message_coverage_score(2)
-        self.forecasting_result = self.forecaster.predict(self.history_tree)
-        self.next_packets = self._select_next_packet()
+        self._forecasting_result = None
+        self._coverage_scores = None
+        self._next_packets = None
+
+    @property
+    def forecasting_result(self) -> ForecastingResult:
+        if self._forecasting_result is None:
+            self._forecasting_result = self.forecaster.predict(self.history_tree)
+        return self._forecasting_result
+
+    @property
+    def coverage_scores(self) -> list[tuple[NonTerminal, float]]:
+        if self._coverage_scores is None:
+            self._coverage_scores = self._compute_message_coverage_score(2)
+        return self._coverage_scores
+
+    @property
+    def next_packets(self) -> list[ForcastingPacket]:
+        if self._next_packets is None:
+            self._next_packets = self._select_next_packet()
+        return self._next_packets
 
     def is_guide_to_end(self) -> bool:
         return self._guide_to_end
