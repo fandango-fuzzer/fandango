@@ -20,11 +20,12 @@ class PacketSelector:
         self.forecasting_result = None
         self.parst_derivations = set()
         self.next_packets = []
+        self.coverage_scores = []
         self._guide_to_end = False
         self.compute(history_tree, self.parst_derivations)
 
-    def compute_message_coverage_score(
-        self, trees: list[DerivationTree], k: int
+    def _compute_message_coverage_score(
+        self, k: int
     ) -> list[tuple[NonTerminal, float]]:
         """
         Computes the coverage score for each NonTerminal in the given DerivationTrees.
@@ -34,6 +35,8 @@ class PacketSelector:
         :param k: The k-path length for coverage computation.
         :return: Dictionary mapping NonTerminals to their coverage scores.
         """
+        trees = list(self.parst_derivations)
+        trees.append(self.history_tree)
         messages: list[DerivationTree] = []
         for tree in trees:
             messages.extend(map(lambda x: x.msg, tree.protocol_msgs()))
@@ -67,8 +70,9 @@ class PacketSelector:
     def compute(self, history_tree: DerivationTree, parst_derivations: set[DerivationTree]):
         self.history_tree = history_tree
         self.parst_derivations = parst_derivations
+        self.coverage_scores = self._compute_message_coverage_score(2)
         self.forecasting_result = self.forecaster.predict(self.history_tree)
-        self.next_packets = self._select_next_packet(parst_derivations)
+        self.next_packets = self._select_next_packet()
 
     def is_guide_to_end(self) -> bool:
         return self._guide_to_end
@@ -99,8 +103,7 @@ class PacketSelector:
         return self.forecasting_result.get_msg_parties()
 
     def _select_next_packet(
-        self,
-        parst_io_derivations: set[DerivationTree],
+        self
     ):
         fuzzable_packets = []
         if len(self.next_fuzzer_parties()) == 0:
@@ -115,18 +118,15 @@ class PacketSelector:
             fuzzable_packets.append(self._get_guide_to_end_packet())
             return fuzzable_packets
         # Select next packet to send by computing guiding generator to underexplored areas of the grammar
-        all_derivations = list(parst_io_derivations)
+        all_derivations = list(self.parst_derivations)
         all_derivations.append(self.history_tree)
-        coverage_scores = self.compute_message_coverage_score(
-            all_derivations, 2
-        )
-        if len(coverage_scores) > 0 and coverage_scores[0][1] == 1.0:
+        if len(self.coverage_scores) > 0 and self.coverage_scores[0][1] == 1.0:
             print("Full coverage reached. Guiding to end of tree.")
             self._guide_to_end = True
             fuzzable_packets.append(self._get_guide_to_end_packet())
             return fuzzable_packets
 
-        for target_nt, coverage_score in coverage_scores:
+        for target_nt, coverage_score in self.coverage_scores:
             path = self.navigator.astar_tree(self.history_tree, target_nt)
             if path is None:
                 # We can't find a path to this non-terminal. That means we can't reach it without starting a new tree.
