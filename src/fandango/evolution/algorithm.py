@@ -18,12 +18,7 @@ from fandango.evolution.evaluation import Evaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import IoPopulationManager, PopulationManager
 from fandango.evolution.profiler import Profiler
-from fandango.io import FandangoIO, FandangoParty
-from fandango.io.io_utils import (
-    compute_message_coverage_score,
-    select_next_packet,
-)
-from fandango.io.navigation.packetforecaster import PacketForecaster
+from fandango.io import FandangoIO
 from fandango.io.navigation.packetselector import PacketSelector
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.language.symbols import NonTerminal
@@ -482,31 +477,28 @@ class Fandango:
         packet_selector = PacketSelector(self.grammar, io_instance, history_tree)
 
         while True:
-            packet_selector.compute(history_tree)
+            packet_selector.compute(history_tree, self.parst_io_derivations)
 
-            if len(packet_selector.get_next_parties()) == 0:
-                if not packet_selector.is_complete():
-                    raise FandangoFailedError("Could not forecast next packet")
+            if len(packet_selector.get_next_parties()) == 0 and not packet_selector.is_complete():
+                raise FandangoFailedError("Could not forecast next packet")
+
+            if packet_selector.is_guide_to_end() and packet_selector.is_complete():
                 self.parst_io_derivations.add(history_tree)
                 yield history_tree
                 coverage_scores = packet_selector.compute_message_coverage_score(
                     list(self.parst_io_derivations), 2
                 )
-                scores_sorted = list(
-                    sorted(coverage_scores.items(), key=lambda x: (x[1], x[0].name()))
-                )
-                if len(scores_sorted) > 0 and scores_sorted[0][1] >= 1:
+                if len(coverage_scores) > 0 and coverage_scores[0][1] >= 1:
                     print("Full coverage reached, stopping evolution.")
                     return
                 io_instance.reset_parties()
                 history_tree = DerivationTree(NonTerminal(self.start_symbol), [])
                 continue
 
-            msg_parties = packet_selector.next_fuzzer_parties()
-            if len(msg_parties) != 0 and not io_instance.received_msg():
+            if len(packet_selector.next_fuzzer_parties()) != 0 and not io_instance.received_msg():
                 assert isinstance(self.population_manager, IoPopulationManager)
                 self.population_manager.fuzzable_packets = (
-                    packet_selector.select_next_packet(list(self.parst_io_derivations))
+                    packet_selector.next_packets
                 )
 
                 self.population.clear()
@@ -562,8 +554,9 @@ class Fandango:
                 wait_start = time.time()
                 while not io_instance.received_msg():
                     if time.time() - wait_start > self.remote_response_timeout:
+                        external_parties = packet_selector.next_external_parties()
                         raise FandangoFailedError(
-                            f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(packet_selector.forecasting_result.get_msg_parties())}"
+                            f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(external_parties)}"
                         )
                     time.sleep(0.025)
                 forecast, packet_tree = parse_next_remote_packet(
@@ -624,11 +617,3 @@ class Fandango:
         LOGGER.info(f"Time taken: {(time.time() - start_time):.2f} seconds")
 
         return solutions
-
-    def msg_parties(self) -> list[FandangoParty]:
-        """
-        :return: A list of all parties in the grammar.
-        """
-        spec_env_global, _ = self.grammar.get_spec_env()
-        io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
-        return list(io_instance.parties.values())
