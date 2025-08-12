@@ -2,7 +2,11 @@ from typing import Optional
 
 from fandango.io import FandangoIO
 from fandango.language.tree import DerivationTree
-from fandango.io.navigation.packetforecaster import ForcastingPacket, PacketForecaster, ForecastingResult
+from fandango.io.navigation.packetforecaster import (
+    ForcastingPacket,
+    PacketForecaster,
+    ForecastingResult,
+)
 from fandango.io.navigation.packetnavigator import PacketNavigator
 from fandango.language import Grammar
 from fandango.language.symbols import NonTerminal
@@ -36,7 +40,9 @@ class PacketSelector:
         :param k: The k-path length for coverage computation.
         :return: Dictionary mapping NonTerminals to their coverage scores.
         """
-        fuzzer_parties = set(map(lambda x: x.party_name, self.io_instance.get_fuzzer_parties()))
+        fuzzer_parties = set(
+            map(lambda x: x.party_name, self.io_instance.get_fuzzer_parties())
+        )
         trees = list(self.parst_derivations)
         trees.append(self.history_tree)
         messages: list[DerivationTree] = []
@@ -44,10 +50,17 @@ class PacketSelector:
             if show_external:
                 messages.extend(map(lambda x: x.msg, tree.protocol_msgs()))
             else:
-                messages.extend(filter(lambda y: y.sender in fuzzer_parties, map(lambda x: x.msg, tree.protocol_msgs())))
+                messages.extend(
+                    filter(
+                        lambda y: y.sender in fuzzer_parties,
+                        map(lambda x: x.msg, tree.protocol_msgs()),
+                    )
+                )
         messages_by_nt = {}
         for msg in messages:
-            messages_by_nt.setdefault((msg.sender, msg.recipient, msg.symbol), []).append(msg)
+            messages_by_nt.setdefault(
+                (msg.sender, msg.recipient, msg.symbol), []
+            ).append(msg)
         nt_coverage = {}
         for sender, recipient, non_terminal in self.grammar.get_protocol_messages():
             if not (show_external or (sender in fuzzer_parties)):
@@ -55,8 +68,10 @@ class PacketSelector:
             if (sender, recipient, non_terminal) not in messages_by_nt:
                 nt_coverage[(sender, recipient, non_terminal)] = 0.0
                 continue
-            nt_coverage[(sender, recipient, non_terminal)] = self.grammar.compute_kpath_coverage(
-                messages_by_nt[(sender, recipient, non_terminal)], k, non_terminal
+            nt_coverage[(sender, recipient, non_terminal)] = (
+                self.grammar.compute_kpath_coverage(
+                    messages_by_nt[(sender, recipient, non_terminal)], k, non_terminal
+                )
             )
         nt_coverage = list(
             sorted(nt_coverage.items(), key=lambda x: (x[1], x[0][2].name()))
@@ -90,7 +105,9 @@ class PacketSelector:
         return self._forecasting_result
 
     @property
-    def coverage_scores(self) -> list[tuple[tuple[str, Optional[str], NonTerminal], float]]:
+    def coverage_scores(
+        self,
+    ) -> list[tuple[tuple[str, Optional[str], NonTerminal], float]]:
         if self._coverage_scores is None:
             self._coverage_scores = self._compute_message_coverage_score(2)
         return self._coverage_scores
@@ -136,7 +153,9 @@ class PacketSelector:
         self._guide_to_end = False
         max_messages_per_tree = 50
         if len(self.history_tree.protocol_msgs()) > max_messages_per_tree:
-            log_guidance_hint(f"Current tree contains more then {max_messages_per_tree} messages. Guiding to end of tree.")
+            log_guidance_hint(
+                f"Current tree contains more then {max_messages_per_tree} messages. Guiding to end of tree."
+            )
             self._guide_to_end = True
             fuzzable_packets.append(self._get_guide_to_end_packet())
             return fuzzable_packets
@@ -161,7 +180,9 @@ class PacketSelector:
                 fuzzable_packets.append(self._get_guide_to_end_packet())
                 break
             else:
-                log_guidance_hint(f"Guiding to target {target_nt} with score {coverage_score}")
+                log_guidance_hint(
+                    f"Guiding to target {target_nt} with score {coverage_score}"
+                )
                 sender, receiver, next_nt = path[0]
                 if (
                     sender in self.next_fuzzer_parties()

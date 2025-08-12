@@ -520,7 +520,9 @@ class Grammar(NodeVisitor):
 
         paths = set()
 
-        def traverse(parent_symbol: Optional[NonTerminal], tree_node: DerivationTree, path):
+        def traverse(
+            parent_symbol: Optional[NonTerminal], tree_node: DerivationTree, path
+        ):
             tree_symbol = tree_node.symbol
             if isinstance(tree_symbol, Terminal):
                 if len(path) != k - 1:

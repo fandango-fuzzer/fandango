@@ -86,11 +86,21 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             return False
         if self.search_sender is not None and current.node.sender != self.search_sender:
             return False
-        if self.search_recipient is not None and current.node.recipient != self.search_recipient:
+        if (
+            self.search_recipient is not None
+            and current.node.recipient != self.search_recipient
+        ):
             return False
         return True
 
-    def astar_tree(self, *, tree: DerivationTree, symbol: Symbol, sender: Optional[str] = None, recipient: Optional[str] = None):
+    def astar_tree(
+        self,
+        *,
+        tree: DerivationTree,
+        symbol: Symbol,
+        sender: Optional[str] = None,
+        recipient: Optional[str] = None,
+    ):
         start_node = self.graph.walk(tree)
         if isinstance(symbol, NonTerminal):
             symbol_node = NonTerminalNode(symbol, [])
@@ -99,7 +109,9 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         else:
             raise ValueError(f"Unsupported symbol type: {type(symbol)}")
         checker = ReachabilityChecker(self.grammar)
-        if not checker.find_reachability(symbol_to_reach=symbol, sender=sender, recipient=recipient, tree=tree):
+        if not checker.find_reachability(
+            symbol_to_reach=symbol, sender=sender, recipient=recipient, tree=tree
+        ):
             return None
         self.is_search_end_node = False
         self.search_sender = sender
