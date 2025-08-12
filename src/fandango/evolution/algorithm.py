@@ -491,7 +491,9 @@ class Fandango:
                 len(packet_selector.get_next_parties()) == 0
                 or packet_selector.is_guide_to_end()
             ) and packet_selector.is_complete():
-                history_tree = random.choice(list(packet_selector.forecasting_result.complete_trees))
+                history_tree = random.choice(
+                    list(packet_selector.forecasting_result.complete_trees)
+                )
                 self.parst_io_derivations.add(history_tree)
                 self.evaluator._solution_set.clear()
                 self.evaluator._fitness_cache.clear()
