@@ -16,24 +16,31 @@ class ReachabilityChecker(ContinuingNodeVisitor):
 
     def __init__(self, grammar: Grammar):
         super().__init__(grammar)
-        self.seen_symbols: set[Symbol] = set()
+        self.seen_symbols: set[tuple[Optional[str], Optional[str], Symbol]] = set()
+        self.search_sender = None
+        self.search_recipient = None
 
     def find_reachability(
-        self, symbol_to_reach: Symbol, tree: Optional[DerivationTree] = None
+        self, *, symbol_to_reach: Symbol, sender: str = None, recipient: str = None, tree: Optional[DerivationTree] = None
     ):
+        self.search_sender = sender
+        self.search_recipient = recipient
         self.seen_symbols.clear()
         super().find(tree)
         return symbol_to_reach in self.seen_symbols
 
     def onNonTerminalNodeVisit(self, node: NonTerminalNode, is_exploring: bool):
         if is_exploring:
-            if node.symbol not in self.seen_symbols:
-                self.seen_symbols.add(node.symbol)
+            sender = None if self.search_sender is None else node.sender
+            recipient = None if self.search_recipient is None else node.recipient
+            key = (sender, recipient, node.symbol)
+            if key not in self.seen_symbols:
+                self.seen_symbols.add(key)
                 return True, True
             return True, False
         return True, True
 
     def onTerminalNodeVisit(self, node: TerminalNode, is_exploring: bool):
         if is_exploring:
-            self.seen_symbols.add(node.symbol)
+            self.seen_symbols.add((None, None, node.symbol))
         return True

@@ -30,6 +30,9 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         self.node_cost = 0
         self.max_comparisons = 10_000_000
         self.comparisons = 0
+        self.search_sender = None
+        self.search_recipient = None
+        self.search_symbol = None
         self.is_search_end_node = False
 
     def astar(
@@ -72,17 +75,19 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             )
         if self.is_search_end_node:
             return current.is_accepting
-        if isinstance(current.node, NonTerminalNode) and isinstance(
-            goal.node, NonTerminalNode
-        ):
-            return current.node.symbol == goal.node.symbol
-        if isinstance(current.node, TerminalNode) and isinstance(
-            goal.node, TerminalNode
-        ):
-            return current.node.symbol == goal.node.symbol
-        return False
 
-    def astar_tree(self, tree: DerivationTree, symbol: Symbol):
+        if not isinstance(current.node, (NonTerminalNode, TerminalNode)):
+            return False
+
+        if current.node.symbol != self.search_symbol:
+            return False
+        if self.search_sender is not None and current.node.sender != self.search_sender:
+            return False
+        if self.search_recipient is not None and current.node.recipient != self.search_recipient:
+            return False
+        return True
+
+    def astar_tree(self, *, tree: DerivationTree, symbol: Symbol, sender: str = None, recipient: str = None):
         start_node = self.graph.walk(tree)
         if isinstance(symbol, NonTerminal):
             symbol_node = NonTerminalNode(symbol, [])
@@ -91,14 +96,20 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         else:
             raise ValueError(f"Unsupported symbol type: {type(symbol)}")
         checker = ReachabilityChecker(self.grammar)
-        if not checker.find_reachability(symbol, tree):
+        if not checker.find_reachability(symbol_to_reach=symbol, sender=sender, tree=tree):
             return None
         self.is_search_end_node = False
+        self.search_sender = sender
+        self.search_recipient = recipient
+        self.search_symbol = symbol
         return self.astar(start_node, EagerGrammarGraphNode(symbol_node, []))
 
     def astar_search_end(self, tree: DerivationTree) -> Iterable[GrammarGraphNode]:
         start_node = self.graph.walk(tree)
         if start_node.is_accepting:
             return []
+        self.search_sender = None
+        self.search_recipient = None
+        self.search_symbol = None
         self.is_search_end_node = True
         return self.astar(start_node, start_node)

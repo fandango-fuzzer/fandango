@@ -479,24 +479,34 @@ class Fandango:
         while True:
             packet_selector.compute(history_tree, self.parst_io_derivations)
 
-            if len(packet_selector.get_next_parties()) == 0 and not packet_selector.is_complete():
+            if (
+                len(packet_selector.get_next_parties()) == 0
+                and not packet_selector.is_complete()
+            ):
                 raise FandangoFailedError("Could not forecast next packet")
 
-            if (len(packet_selector.get_next_parties()) == 0 or packet_selector.is_guide_to_end()) and packet_selector.is_complete():
+            if (
+                len(packet_selector.get_next_parties()) == 0
+                or packet_selector.is_guide_to_end()
+            ) and packet_selector.is_complete():
                 self.parst_io_derivations.add(history_tree)
                 yield history_tree
-                if len(packet_selector.coverage_scores) > 0 and packet_selector.coverage_scores[0][1] >= 1:
+                if (
+                    len(packet_selector.coverage_scores) > 0
+                    and packet_selector.coverage_scores[0][1] >= 1
+                ):
                     print("Full coverage reached, stopping evolution.")
                     return
                 io_instance.reset_parties()
                 history_tree = DerivationTree(NonTerminal(self.start_symbol), [])
                 continue
 
-            if len(packet_selector.next_fuzzer_parties()) != 0 and not io_instance.received_msg():
+            if (
+                len(packet_selector.next_fuzzer_parties()) != 0
+                and not io_instance.received_msg()
+            ):
                 assert isinstance(self.population_manager, IoPopulationManager)
-                self.population_manager.fuzzable_packets = (
-                    packet_selector.next_packets
-                )
+                self.population_manager.fuzzable_packets = packet_selector.next_packets
 
                 self.population.clear()
                 solutions = list(

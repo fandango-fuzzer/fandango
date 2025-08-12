@@ -67,7 +67,9 @@ class PacketSelector:
                 return self.forecasting_result[sender].nt_to_packet[next_nt]
         return None
 
-    def compute(self, history_tree: DerivationTree, parst_derivations: set[DerivationTree]):
+    def compute(
+        self, history_tree: DerivationTree, parst_derivations: set[DerivationTree]
+    ):
         self.history_tree = history_tree
         self.parst_derivations = parst_derivations
         self.coverage_scores = self._compute_message_coverage_score(2)
@@ -102,9 +104,7 @@ class PacketSelector:
     def get_next_parties(self) -> list[str]:
         return self.forecasting_result.get_msg_parties()
 
-    def _select_next_packet(
-        self
-    ):
+    def _select_next_packet(self):
         fuzzable_packets = []
         if len(self.next_fuzzer_parties()) == 0:
             return fuzzable_packets
@@ -127,7 +127,7 @@ class PacketSelector:
             return fuzzable_packets
 
         for target_nt, coverage_score in self.coverage_scores:
-            path = self.navigator.astar_tree(self.history_tree, target_nt)
+            path = self.navigator.astar_tree(tree=self.history_tree, goal_symbol=target_nt)
             if path is None:
                 # We can't find a path to this non-terminal. That means we can't reach it without starting a new tree.
                 # So we try to finish this tree ASAP by selecting the non-terminal with the lowest distance to completion.

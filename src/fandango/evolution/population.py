@@ -19,9 +19,11 @@ class PopulationManager:
         grammar: Grammar,
         start_symbol: str,
         warnings_are_errors: bool = False,
+        force_min_population=0,
     ):
         self._grammar = grammar
         self._start_symbol = start_symbol
+        self._force_min_population = force_min_population
         self._warnings_are_errors = warnings_are_errors
 
     def _generate_population_entry(self, max_nodes: int):
@@ -78,11 +80,12 @@ class PopulationManager:
         unique_hashes = self._generate_population_hashes(current_population)
         attempts = 0
         max_attempts = (target_population_size - len(current_population)) * 10
+        min_population_size = min(self._force_min_population, target_population_size)
 
         while (
             not self._is_population_complete(current_population, target_population_size)
             and attempts < max_attempts
-        ):
+        ) or not self._is_population_complete(current_population, min_population_size):
             individual = self._generate_population_entry(max_nodes)
             _fitness, failing_trees = yield from eval_individual(individual)
             candidate, _fixes_made = self.fix_individual(
@@ -90,10 +93,13 @@ class PopulationManager:
                 failing_trees,
             )
             _new_fitness, _new_failing_trees = yield from eval_individual(candidate)
-            if not self.add_unique_individual(
-                current_population, candidate, unique_hashes
-            ):
-                attempts += 1
+            if attempts < max_attempts:
+                if not self.add_unique_individual(
+                    current_population, candidate, unique_hashes
+                ):
+                    attempts += 1
+            else:
+                current_population.append(candidate)
 
         if not self._is_population_complete(current_population, target_population_size):
             LOGGER.warning(
@@ -187,8 +193,11 @@ class IoPopulationManager(PopulationManager):
         grammar: Grammar,
         start_symbol: str,
         warnings_are_errors: bool = False,
+        force_min_population=10,
     ):
-        super().__init__(grammar, start_symbol, warnings_are_errors)
+        super().__init__(
+            grammar, start_symbol, warnings_are_errors, force_min_population
+        )
         self._prev_packet_idx = 0
         self.fuzzable_packets: list[ForcastingPacket] | None = None
 
