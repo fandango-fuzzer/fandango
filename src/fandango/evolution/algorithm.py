@@ -505,8 +505,8 @@ class Fandango:
             msg_parties = packet_selector.next_fuzzer_parties()
             if len(msg_parties) != 0 and not io_instance.received_msg():
                 assert isinstance(self.population_manager, IoPopulationManager)
-                self.population_manager.fuzzable_packets = packet_selector.select_next_packet(
-                    list(self.parst_io_derivations)
+                self.population_manager.fuzzable_packets = (
+                    packet_selector.select_next_packet(list(self.parst_io_derivations))
                 )
 
                 self.population.clear()
@@ -530,7 +530,10 @@ class Fandango:
                         )
                     except StopIteration:
                         nonterminals_str = " | ".join(
-                            map(lambda x: str(x.node.symbol), self.population_manager.fuzzable_packets)
+                            map(
+                                lambda x: str(x.node.symbol),
+                                self.population_manager.fuzzable_packets,
+                            )
                         )
                         raise FandangoFailedError(
                             f"Couldn't find solution for any packet: {nonterminals_str}"
