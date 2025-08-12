@@ -168,7 +168,7 @@ class Fandango:
                 tree = individual
             else:
                 raise TypeError("Initial individuals must be DerivationTree or String")
-            PopulationManager.add_unique_individual(
+            self.population_manager.add_unique_individual(
                 population=unique_population, candidate=tree, unique_set=unique_hashes
             )
         return unique_population
@@ -251,7 +251,7 @@ class Fandango:
                     self.grammar, parent1, parent2
                 )
 
-            PopulationManager.add_unique_individual(
+            self.population_manager.add_unique_individual(
                 new_population, child1, unique_hashes
             )
             yield from self.evaluator.evaluate_individual(child1)
@@ -259,7 +259,7 @@ class Fandango:
             count = len(new_population)
             with self.profiler.timer("filling") as timer:
                 if len(new_population) < self.population_size:
-                    PopulationManager.add_unique_individual(
+                    self.population_manager.add_unique_individual(
                         new_population, child2, unique_hashes
                     )
                 yield from self.evaluator.evaluate_individual(child2)
