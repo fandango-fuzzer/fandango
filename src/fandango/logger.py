@@ -169,3 +169,6 @@ def log_message_transfer(
         print_msg = str(msg.value())
 
     LOGGER.info(f"{info}: {print_msg!r}")
+
+def log_guidance_hint(message: str):
+    LOGGER.info(f"{message}")
