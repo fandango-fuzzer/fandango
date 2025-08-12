@@ -21,7 +21,7 @@ class ReachabilityChecker(ContinuingNodeVisitor):
         self.search_recipient = None
 
     def find_reachability(
-        self, *, symbol_to_reach: Symbol, sender: str = None, recipient: str = None, tree: Optional[DerivationTree] = None
+        self, *, symbol_to_reach: Symbol, sender: Optional[str] = None, recipient: Optional[str] = None, tree: Optional[DerivationTree] = None
     ):
         self.search_sender = sender
         self.search_recipient = recipient
