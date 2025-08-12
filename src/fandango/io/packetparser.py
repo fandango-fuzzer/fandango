@@ -116,7 +116,7 @@ def parse_next_remote_packet(
 
         for non_terminal in set(available_non_terminals):
             parser = nt_parsers[non_terminal]
-            parse_tree = next(parser.consume(next_fragment), None)
+            parse_tree, is_complete = next(parser.consume(next_fragment), (None, None))
             if parse_tree is not None:
                 parse_tree = parser.collapse(parse_tree)
                 assert parse_tree is not None

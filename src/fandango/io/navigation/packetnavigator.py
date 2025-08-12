@@ -42,7 +42,7 @@ class PacketNavigator(GrammarNavigator):
         self._parser.detailed_tree = tree
         self._parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
 
-        for suggested_tree in self._parser.consume(history_nts):
+        for suggested_tree, is_complete in self._parser.consume(history_nts):
             for orig_r_msg, r_msg in zip(
                 tree.protocol_msgs(), suggested_tree.protocol_msgs()
             ):
