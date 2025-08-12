@@ -1,5 +1,7 @@
-from astar import AStar
+from typing import Union, Iterable
 
+from astar import AStar
+from fandango.errors import FandangoError
 from fandango.io.navigation.reachability_checker import ReachabilityChecker
 from fandango.language import DerivationTree, Symbol, NonTerminal, Terminal, Grammar
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
@@ -10,6 +12,8 @@ from fandango.language.grammar.node_visitors.grammar_graph_converter import (
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode
 
+class NavigatorTimedOutError(FandangoError):
+    pass
 
 class GrammarNavigator(AStar[GrammarGraphNode]):
 
@@ -22,6 +26,13 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         self.message_cost = 0
         self.non_terminal_cost = 0
         self.node_cost = 0
+        self.max_comparisons = 10_000_000
+        self.comparisons = 0
+        self.is_search_end_node = False
+
+    def astar(self, start: GrammarGraphNode, goal: GrammarGraphNode, reverse_path: bool = False) -> Union[Iterable[GrammarGraphNode], None]:
+        self.comparisons = 0
+        return super().astar(start, goal, reverse_path)
 
     def neighbors(self, n: GrammarGraphNode):
         return n.reaches
@@ -47,6 +58,11 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         return 1
 
     def is_goal_reached(self, current: GrammarGraphNode, goal: GrammarGraphNode):
+        self.comparisons += 1
+        if self.comparisons > self.max_comparisons:
+            raise NavigatorTimedOutError()
+        if self.is_search_end_node:
+            return current.is_accepting
         if isinstance(current.node, NonTerminalNode) and isinstance(
             goal.node, NonTerminalNode
         ):
@@ -68,4 +84,12 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         checker = ReachabilityChecker(self.grammar)
         if not checker.find_reachability(symbol, tree):
             return None
+        self.is_search_end_node = False
         return self.astar(start_node, EagerGrammarGraphNode(symbol_node, []))
+
+    def astar_search_end(self, tree: DerivationTree) -> Union[Iterable[GrammarGraphNode], None]:
+        start_node = self.graph.walk(tree)
+        if start_node.is_accepting:
+            return []
+        self.is_search_end_node = True
+        return self.astar(start_node, start_node)

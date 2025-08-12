@@ -1,8 +1,11 @@
+from typing import Optional
+
 from fandango.io.navigation.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.grammarreducer import GrammarReducer
 from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
 from fandango.language import Grammar, NonTerminal, DerivationTree, Terminal
 from fandango.language.grammar import ParsingMode
+from fandango.language.grammar.node_visitors.grammar_graph_converter import GrammarGraphNode
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 
 
@@ -27,22 +30,18 @@ class PacketNavigator(GrammarNavigator):
         self._parser = PacketIterativeParser(reduced_rules)
         self.set_message_cost(1)
 
-    def astar_tree(self, tree: DerivationTree, goal_symbol: NonTerminal):
+    def _get_controlflow_tree(self, tree: DerivationTree):
         history_nts = ""
         for r_msg in tree.protocol_msgs():
             assert isinstance(r_msg.msg.symbol, NonTerminal)
             history_nts += r_msg.msg.symbol.name()
-        self._parser.detailed_tree = tree
-        goal_symbol = Terminal(goal_symbol.name())
 
-        self._parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
-        paths = []
         if history_nts == "":
-            path = super().astar_tree(
-                DerivationTree(NonTerminal("<start>")), goal_symbol
-            )
-            if path is not None:
-                paths.append(path)
+            yield DerivationTree(NonTerminal("<start>"))
+            return
+        self._parser.detailed_tree = tree
+        self._parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
+
         for suggested_tree in self._parser.consume(history_nts):
             for orig_r_msg, r_msg in zip(
                 tree.protocol_msgs(), suggested_tree.protocol_msgs()
@@ -58,25 +57,44 @@ class PacketNavigator(GrammarNavigator):
                 else:
                     break
             else:
-                path = super().astar_tree(suggested_tree, goal_symbol)
-                if path is None:
-                    continue
-                paths.append(path)
-        for i, path in enumerate(paths):
-            path = list(filter(lambda n: isinstance(n.node, NonTerminalNode), path))
-            path = list(filter(lambda n: n.node.sender is not None, path))
-            path = list(
-                map(
-                    lambda n: (
-                        n.node.sender,
-                        n.node.recipient,
-                        NonTerminal(f"<{str(n.node.symbol.value())[9:]}"),
-                    ),
-                    path,
-                )
-            )
-            paths[i] = path
+                yield suggested_tree
 
+    def _to_packet_symbols(self, path: list[GrammarGraphNode]) -> list[tuple[str, str, NonTerminal]]:
+        path = list(filter(lambda n: isinstance(n.node, NonTerminalNode), path))
+        path = list(filter(lambda n: n.node.sender is not None, path))
+        path = list(
+            map(
+                lambda n: (
+                    n.node.sender,
+                    n.node.recipient,
+                    NonTerminal(f"<{str(n.node.symbol.value())[9:]}"),
+                ),
+                path,
+            )
+        )
+        return path
+
+    def astar_tree(self, tree: DerivationTree, goal_symbol: NonTerminal):
+        goal_symbol = Terminal(goal_symbol.name())
+        paths = []
+        for suggested_tree in self._get_controlflow_tree(tree):
+            path = super().astar_tree(suggested_tree, goal_symbol)
+            if path is None:
+                continue
+            paths.append(self._to_packet_symbols(path))
+
+        paths.sort(key=lambda path: len(path))
+        if len(paths) == 0:
+            return None
+        return paths[0]
+
+    def astar_search_end(self, tree: DerivationTree) -> Optional[list[tuple[str, str, NonTerminal]]]:
+        paths = []
+        for suggested_tree in self._get_controlflow_tree(tree):
+            path = super().astar_search_end(suggested_tree)
+            if path is None:
+                continue
+            paths.append(self._to_packet_symbols(list(path)))
         paths.sort(key=lambda path: len(path))
         if len(paths) == 0:
             return None

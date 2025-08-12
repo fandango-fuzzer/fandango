@@ -37,6 +37,16 @@ class GrammarGraphNode(abc.ABC):
     def reaches(self) -> list["GrammarGraphNode"]:
         raise NotImplementedError()
 
+    @property
+    def is_accepting(self) -> bool:
+        if len(self.reaches) == 0:
+            return True
+        if len(self.reaches) > 1:
+            return False
+        if not isinstance(self.node, Repetition):
+            return False
+        return self.node.min == 0
+
     def walk(self, tree_node: DerivationTree):
         if issubclass(
             self.node.__class__,
@@ -187,9 +197,13 @@ class GrammarGraphConverter(NodeVisitor):
             if idx >= node.min:
                 for end_node in intermediate_end:
                     chain_end.append(end_node)
-        if chain_start is None:
-            chain_start = EagerGrammarGraphNode(node, list())
-        return EagerGrammarGraphNode(node, [chain_start]), chain_end
+        reaches = []
+        if chain_start is not None:
+            reaches.append(chain_start)
+        graph_node = EagerGrammarGraphNode(node, reaches)
+        if node.min == 0:
+            chain_end.append(graph_node)
+        return graph_node, chain_end
 
     def visitConcatenation(self, node: Concatenation):
         chain_start = None
