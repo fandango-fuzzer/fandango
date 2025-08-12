@@ -44,7 +44,7 @@ class TestGrammarGraph(unittest.TestCase):
             "ping\npong\n", mode=ParsingMode.INCOMPLETE, include_controlflow=True
         )
         navigator = GrammarNavigator(grammar)
-        path = navigator.astar_tree(tree_to_continue, NonTerminal("<paff>"))
+        path = navigator.astar_tree(tree=tree_to_continue, symbol=NonTerminal("<paff>"))
         path = filter(
             lambda n: isinstance(n.node, NonTerminalNode) and n.node.sender is not None,
             path,
@@ -61,7 +61,7 @@ class TestGrammarGraph(unittest.TestCase):
             mode=ParsingMode.INCOMPLETE,
             include_controlflow=True,
         )
-        path = navigator.astar_tree(tree_to_continue, NonTerminal("<end_data>"))
+        path = navigator.astar_tree(tree=tree_to_continue, symbol=NonTerminal("<end_data>"))
         self.assertEqual(
             path,
             [
@@ -83,5 +83,5 @@ class TestGrammarGraph(unittest.TestCase):
             mode=ParsingMode.INCOMPLETE,
             include_controlflow=True,
         )
-        path = navigator.astar_tree(tree_to_continue, NonTerminal("<helo>"))
+        path = navigator.astar_tree(tree=tree_to_continue, symbol=NonTerminal("<helo>"))
         self.assertIsNone(path)

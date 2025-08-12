@@ -520,14 +520,14 @@ class Grammar(NodeVisitor):
 
         paths = set()
 
-        def traverse(parent_symbol: NonTerminal, tree_node: DerivationTree, path):
+        def traverse(parent_symbol: Optional[NonTerminal], tree_node: DerivationTree, path):
             tree_symbol = tree_node.symbol
             if isinstance(tree_symbol, Terminal):
                 if len(path) != k - 1:
                     return
                 if parent_symbol is None:
                     raise RuntimeError(
-                        "Received a NonTerminal with no parent symbol when computing k-path!"
+                        "Received a Terminal with no parent symbol when computing k-path!"
                     )
                 if tree_symbol.value().is_type(TreeValueType.STRING):
                     symbol_value = tree_symbol.value().to_string()
