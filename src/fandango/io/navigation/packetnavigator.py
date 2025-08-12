@@ -64,7 +64,7 @@ class PacketNavigator(GrammarNavigator):
     @staticmethod
     def _to_packet_symbols(
         path: list[GrammarGraphNode]
-    ) -> list[tuple[str, str, NonTerminal]]:
+    ) -> list[tuple[Optional[str], Optional[str], NonTerminal]]:
         path = list(filter(lambda n: isinstance(n.node, NonTerminalNode), path))
         path = list(filter(lambda n: n.node.sender is not None, path))
         path = list(
@@ -86,7 +86,7 @@ class PacketNavigator(GrammarNavigator):
             path = super().astar_tree(tree=suggested_tree, symbol=symbol, sender=sender, recipient=recipient)
             if path is None:
                 continue
-            paths.append(self._to_packet_symbols(path))
+            paths.append(self._to_packet_symbols(list(path)))
 
         paths.sort(key=lambda path: len(path))
         if len(paths) == 0:

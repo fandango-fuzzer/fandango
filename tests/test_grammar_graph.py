@@ -3,7 +3,7 @@ import unittest
 from fandango.api import Fandango
 from fandango.io.navigation.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.packetnavigator import PacketNavigator
-from fandango.language import NonTerminal
+from fandango.language import NonTerminal, DerivationTree
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from tests.utils import RESOURCES_ROOT, DOCS_ROOT
@@ -19,24 +19,15 @@ class TestGrammarGraph(unittest.TestCase):
     def test_graph_navigator(self):
         grammar = self.get_grammar(RESOURCES_ROOT / "minimal_io.fan")
         navigator = GrammarNavigator(grammar)
-        start_node = navigator.graph.start.reaches[0]
-        goal_node = (
-            navigator.graph.start.reaches[0]
-            .reaches[0]
-            .reaches[0]
-            .reaches[0]
-            .reaches[0]
-            .reaches[0]
-            .reaches[0]
-        )
-        path = navigator.astar(start_node, goal_node)
+        tree = DerivationTree(NonTerminal("<start>"))
+        path = navigator.astar_search_end(tree)
         path = filter(
             lambda n: isinstance(n.node, NonTerminalNode) and n.node.sender is not None,
             path,
         )
         path = map(lambda n: n.node.symbol, path)
         path = list(path)
-        self.assertEqual(path, [NonTerminal('<ping>'), NonTerminal('<pong>'), NonTerminal('<puff>')])
+        self.assertEqual(path, [NonTerminal('<ping>'), NonTerminal('<pong>'), NonTerminal('<puff>'), NonTerminal('<paff>')])
 
     def test_grammar_walk(self):
         grammar = self.get_grammar(RESOURCES_ROOT / "minimal_io.fan")
@@ -65,13 +56,13 @@ class TestGrammarGraph(unittest.TestCase):
         self.assertEqual(
             path,
             [
-                NonTerminal("<hello>"),
-                NonTerminal("<MAIL_FROM>"),
-                NonTerminal("<ok>"),
-                NonTerminal("<RCPT_TO>"),
-                NonTerminal("<ok>"),
-                NonTerminal("<DATA>"),
-                NonTerminal("<end_data>"),
+                ('StdOut', None, NonTerminal("<hello>")),
+                ('StdOut', None, NonTerminal("<MAIL_FROM>")),
+                ('StdOut', None, NonTerminal("<ok>")),
+                ('StdOut', None, NonTerminal("<RCPT_TO>")),
+                ('StdOut', None, NonTerminal("<ok>")),
+                ('StdOut', None, NonTerminal("<DATA>")),
+                ('StdOut', None, NonTerminal("<end_data>")),
             ],
         )
 
