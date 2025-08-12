@@ -27,7 +27,8 @@ class IterParsingTester(Parser):
         self._iter_parser.new_parse(start, mode, hookin_parent, starter_bit)
         for char in word[:-1]:
             next(self._iter_parser.consume(char), None)
-        yield from self._iter_parser.consume(word[-1])
+        for tree, is_complete in self._iter_parser.consume(word[-1]):
+            yield tree
 
 
 class ParserTests(unittest.TestCase):
@@ -428,19 +429,19 @@ class TestCanContinueParsing(unittest.TestCase):
 
     def test_1(self):
         self.iter_parser.new_parse()
-        next(self.iter_parser.consume(b"r"), None)
+        next(self.iter_parser.consume(b"r"), (None, None))
         self.assertTrue(self.iter_parser.can_continue())
-        next(self.iter_parser.consume(b"g"), None)
+        next(self.iter_parser.consume(b"g"), (None, None))
         self.assertTrue(self.iter_parser.can_continue())
-        next(self.iter_parser.consume(b"b"), None)
+        next(self.iter_parser.consume(b"b"), (None, None))
         self.assertTrue(self.iter_parser.can_continue())
-        next(self.iter_parser.consume(b"d"), None)
+        next(self.iter_parser.consume(b"d"), (None, None))
         self.assertTrue(self.iter_parser.can_continue())
-        next(self.iter_parser.consume(b";"), None)
+        next(self.iter_parser.consume(b";"), (None, None))
         self.assertFalse(self.iter_parser.can_continue())
 
         self.iter_parser.new_parse()
-        next(self.iter_parser.consume(b"rgbd;"), None)
+        next(self.iter_parser.consume(b"rgbd;"), (None, None))
 
 
 class TestCLIParsing(unittest.TestCase):

@@ -132,6 +132,7 @@ class ForcastingNonTerminals:
 class ForecastingResult:
     def __init__(self):
         self.parties_to_packets = dict[str, ForcastingNonTerminals]()
+        self.complete_trees = set[DerivationTree]()
 
     def get_msg_parties(self) -> set[str]:
         return set(self.parties_to_packets.keys())
@@ -171,6 +172,7 @@ class ForecastingResult:
         for party, fnt in c_other.parties_to_packets.items():
             for fp in fnt.nt_to_packet.values():
                 c_new.add_packet(party, fp)
+        c_new.complete_trees.update(c_other.complete_trees)
         return c_new
 
 
@@ -200,7 +202,7 @@ class PacketForecaster:
         else:
             self._parser.reference_tree = tree
             self._parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
-            for suggested_tree in self._parser.consume(history_nts):
+            for suggested_tree, is_complete in self._parser.consume(history_nts):
                 for orig_r_msg, r_msg in zip(
                     tree.protocol_msgs(), suggested_tree.protocol_msgs()
                 ):
@@ -220,4 +222,6 @@ class PacketForecaster:
                         break
                 else:
                     options = options.union(finder.find(suggested_tree))
+                    if is_complete:
+                        options.complete_trees.add(suggested_tree)
         return options
