@@ -103,7 +103,7 @@ class PacketSelector:
         )
 
     def get_next_parties(self) -> list[str]:
-        return self.forecasting_result.get_msg_parties()
+        return list(self.forecasting_result.get_msg_parties())
 
     def _select_next_packet(self):
         fuzzable_packets = []
