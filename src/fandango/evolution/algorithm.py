@@ -30,7 +30,7 @@ from fandango.logger import (
     clear_visualization,
     log_message_transfer,
     print_exception,
-    visualize_evaluation, log_guidance_hint,
+    visualize_evaluation, log_guidance_hint, log_message_coverage,
 )
 
 
@@ -499,7 +499,8 @@ class Fandango:
                     len(packet_selector.coverage_scores) > 0
                     and packet_selector.coverage_scores[0][1] >= 1
                 ):
-                    log_guidance_hint("Full coverage reached, stopping evolution.")
+                    log_guidance_hint("Full coverage of fuzzer controlled NonTerminals reached, stopping evolution.")
+                    log_message_coverage(packet_selector._compute_message_coverage_score(2, True))
                     return
                 log_guidance_hint("Starting new protocol run.")
                 io_instance.reset_parties()
