@@ -63,7 +63,7 @@ class PacketNavigator(GrammarNavigator):
 
     @staticmethod
     def _to_packet_symbols(
-        path: list[GrammarGraphNode]
+        path: list[GrammarGraphNode],
     ) -> list[tuple[Optional[str], Optional[str], NonTerminal]]:
         path = list(filter(lambda n: isinstance(n.node, NonTerminalNode), path))
         path = list(filter(lambda n: n.node.sender is not None, path))
@@ -79,11 +79,20 @@ class PacketNavigator(GrammarNavigator):
         )
         return path
 
-    def astar_tree(self, *, tree: DerivationTree, symbol: NonTerminal, sender: Optional[str] = None, recipient: Optional[str] = None):
+    def astar_tree(
+        self,
+        *,
+        tree: DerivationTree,
+        symbol: NonTerminal,
+        sender: Optional[str] = None,
+        recipient: Optional[str] = None,
+    ):
         symbol = Terminal(symbol.name())
         paths = []
         for suggested_tree, is_complete in self._get_controlflow_tree(tree):
-            path = super().astar_tree(tree=suggested_tree, symbol=symbol, sender=sender, recipient=recipient)
+            path = super().astar_tree(
+                tree=suggested_tree, symbol=symbol, sender=sender, recipient=recipient
+            )
             if path is None:
                 continue
             paths.append(self._to_packet_symbols(list(path)))
