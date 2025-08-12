@@ -27,7 +27,7 @@ class PacketSelector:
 
     def _compute_message_coverage_score(
         self, k: int, show_external: bool = False
-    ) -> list[tuple[NonTerminal, float]]:
+    ) -> list[tuple[tuple[str, Optional[str], NonTerminal], float]]:
         """
         Computes the coverage score for each NonTerminal in the given DerivationTrees.
         The score is the ratio of the number of trees containing the NonTerminal to the total number of trees.
@@ -47,19 +47,19 @@ class PacketSelector:
                 messages.extend(filter(lambda y: y.sender in fuzzer_parties, map(lambda x: x.msg, tree.protocol_msgs())))
         messages_by_nt = {}
         for msg in messages:
-            messages_by_nt.setdefault(msg.symbol, []).append(msg)
+            messages_by_nt.setdefault((msg.sender, msg.recipient, msg.symbol), []).append(msg)
         nt_coverage = {}
         for sender, recipient, non_terminal in self.grammar.get_protocol_messages():
             if not (show_external or (sender in fuzzer_parties)):
                 continue
-            if non_terminal not in messages_by_nt:
-                nt_coverage[non_terminal] = 0.0
+            if (sender, recipient, non_terminal) not in messages_by_nt:
+                nt_coverage[(sender, recipient, non_terminal)] = 0.0
                 continue
-            nt_coverage[non_terminal] = self.grammar.compute_kpath_coverage(
-                messages_by_nt[non_terminal], k, non_terminal
+            nt_coverage[(sender, recipient, non_terminal)] = self.grammar.compute_kpath_coverage(
+                messages_by_nt[(sender, recipient, non_terminal)], k, non_terminal
             )
         nt_coverage = list(
-            sorted(nt_coverage.items(), key=lambda x: (x[1], x[0].name()))
+            sorted(nt_coverage.items(), key=lambda x: (x[1], x[0][2].name()))
         )
         return nt_coverage
 
@@ -90,7 +90,7 @@ class PacketSelector:
         return self._forecasting_result
 
     @property
-    def coverage_scores(self) -> list[tuple[NonTerminal, float]]:
+    def coverage_scores(self) -> list[tuple[tuple[str, Optional[str], NonTerminal], float]]:
         if self._coverage_scores is None:
             self._coverage_scores = self._compute_message_coverage_score(2)
         return self._coverage_scores
@@ -149,7 +149,7 @@ class PacketSelector:
             fuzzable_packets.append(self._get_guide_to_end_packet())
             return fuzzable_packets
 
-        for target_nt, coverage_score in self.coverage_scores:
+        for (sender, recipient, target_nt), coverage_score in self.coverage_scores:
             path = self.navigator.astar_tree(tree=self.history_tree, symbol=target_nt)
             if path is None:
                 # We can't find a path to this non-terminal. That means we can't reach it without starting a new tree.
