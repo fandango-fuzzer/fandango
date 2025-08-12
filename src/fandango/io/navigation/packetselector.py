@@ -126,7 +126,7 @@ class PacketSelector:
             return fuzzable_packets
 
         for target_nt, coverage_score in self.coverage_scores:
-            path = self.navigator.astar_tree(tree=self.history_tree, goal_symbol=target_nt)
+            path = self.navigator.astar_tree(tree=self.history_tree, symbol=target_nt)
             if path is None:
                 # We can't find a path to this non-terminal. That means we can't reach it without starting a new tree.
                 # So we try to finish this tree ASAP by selecting the non-terminal with the lowest distance to completion.
