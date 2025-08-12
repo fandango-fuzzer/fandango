@@ -24,6 +24,7 @@ from fandango.io.io_utils import (
     select_next_packet,
 )
 from fandango.io.navigation.packetforecaster import PacketForecaster
+from fandango.io.navigation.packetselector import PacketSelector
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.language.symbols import NonTerminal
 from fandango.language.grammar import FuzzingMode
@@ -478,18 +479,18 @@ class Fandango:
         spec_env_global, _ = self.grammar.get_spec_env()
         io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
         history_tree: DerivationTree = random.choice(self.population)
-        forecaster = PacketForecaster(self.grammar)
+        packet_selector = PacketSelector(self.grammar, io_instance, history_tree)
 
         while True:
-            forecast = forecaster.predict(history_tree)
+            packet_selector.compute(history_tree)
 
-            if len(forecast.get_msg_parties()) == 0:
-                if len(history_tree.protocol_msgs()) == 0:
+            if len(packet_selector.get_next_parties()) == 0:
+                if not packet_selector.is_complete():
                     raise FandangoFailedError("Could not forecast next packet")
                 self.parst_io_derivations.add(history_tree)
                 yield history_tree
-                coverage_scores = compute_message_coverage_score(
-                    self.grammar, list(self.parst_io_derivations), 2
+                coverage_scores = packet_selector.compute_message_coverage_score(
+                    list(self.parst_io_derivations), 2
                 )
                 scores_sorted = list(
                     sorted(coverage_scores.items(), key=lambda x: (x[1], x[0].name()))
@@ -501,20 +502,11 @@ class Fandango:
                 history_tree = DerivationTree(NonTerminal(self.start_symbol), [])
                 continue
 
-            msg_parties = list(
-                filter(
-                    lambda x: io_instance.parties[x].is_fuzzer_controlled(),
-                    forecast.get_msg_parties(),
-                )
-            )
+            msg_parties = packet_selector.next_fuzzer_parties()
             if len(msg_parties) != 0 and not io_instance.received_msg():
                 assert isinstance(self.population_manager, IoPopulationManager)
-                self.population_manager.fuzzable_packets = select_next_packet(
-                    forecast,
-                    msg_parties,
-                    self.grammar,
-                    list(self.parst_io_derivations),
-                    history_tree,
+                self.population_manager.fuzzable_packets = packet_selector.select_next_packet(
+                    list(self.parst_io_derivations)
                 )
 
                 self.population.clear()
@@ -568,11 +560,11 @@ class Fandango:
                 while not io_instance.received_msg():
                     if time.time() - wait_start > self.remote_response_timeout:
                         raise FandangoFailedError(
-                            f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(forecast.get_msg_parties())}"
+                            f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(packet_selector.forecasting_result.get_msg_parties())}"
                         )
                     time.sleep(0.025)
                 forecast, packet_tree = parse_next_remote_packet(
-                    self.grammar, forecast, io_instance
+                    self.grammar, packet_selector.forecasting_result, io_instance
                 )
                 log_message_transfer(
                     packet_tree.sender,

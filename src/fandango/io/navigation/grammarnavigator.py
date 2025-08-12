@@ -87,7 +87,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         self.is_search_end_node = False
         return self.astar(start_node, EagerGrammarGraphNode(symbol_node, []))
 
-    def astar_search_end(self, tree: DerivationTree) -> Union[Iterable[GrammarGraphNode], None]:
+    def astar_search_end(self, tree: DerivationTree) -> Iterable[GrammarGraphNode]:
         start_node = self.graph.walk(tree)
         if start_node.is_accepting:
             return []
