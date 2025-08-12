@@ -7,6 +7,8 @@ from typing import Optional, TYPE_CHECKING
 
 from ansi_styles import ansiStyles as styles
 
+from fandango.language.symbols.non_terminal import NonTerminal
+
 if TYPE_CHECKING:
     from fandango.language.tree import DerivationTree
 else:
@@ -172,3 +174,8 @@ def log_message_transfer(
 
 def log_guidance_hint(message: str):
     LOGGER.info(f"{message}")
+
+def log_message_coverage(coverage: list[tuple[NonTerminal, float]]):
+    LOGGER.info(f"Current message coverage:")
+    for symbol, coverage in coverage:
+        LOGGER.info(f"{symbol}: {coverage}")
