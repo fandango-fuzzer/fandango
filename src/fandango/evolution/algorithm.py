@@ -530,7 +530,7 @@ class Fandango:
                         )
                     except StopIteration:
                         nonterminals_str = " | ".join(
-                            map(lambda x: str(x.node.symbol), fuzzable_packets)
+                            map(lambda x: str(x.node.symbol), self.population_manager.fuzzable_packets)
                         )
                         raise FandangoFailedError(
                             f"Couldn't find solution for any packet: {nonterminals_str}"
