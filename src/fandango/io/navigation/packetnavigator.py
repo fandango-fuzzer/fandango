@@ -5,7 +5,9 @@ from fandango.io.navigation.grammarreducer import GrammarReducer
 from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
 from fandango.language import Grammar, NonTerminal, DerivationTree, Terminal
 from fandango.language.grammar import ParsingMode
-from fandango.language.grammar.node_visitors.grammar_graph_converter import GrammarGraphNode
+from fandango.language.grammar.node_visitors.grammar_graph_converter import (
+    GrammarGraphNode,
+)
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 
 
@@ -59,7 +61,9 @@ class PacketNavigator(GrammarNavigator):
             else:
                 yield suggested_tree, is_complete
 
-    def _to_packet_symbols(self, path: list[GrammarGraphNode]) -> list[tuple[str, str, NonTerminal]]:
+    def _to_packet_symbols(
+        self, path: list[GrammarGraphNode]
+    ) -> list[tuple[str, str, NonTerminal]]:
         path = list(filter(lambda n: isinstance(n.node, NonTerminalNode), path))
         path = list(filter(lambda n: n.node.sender is not None, path))
         path = list(
@@ -88,7 +92,9 @@ class PacketNavigator(GrammarNavigator):
             return None
         return paths[0]
 
-    def astar_search_end(self, tree: DerivationTree) -> Optional[list[tuple[str, str, NonTerminal]]]:
+    def astar_search_end(
+        self, tree: DerivationTree
+    ) -> Optional[list[tuple[str, str, NonTerminal]]]:
         paths = []
         for suggested_tree, is_complete in self._get_controlflow_tree(tree):
             if is_complete:
