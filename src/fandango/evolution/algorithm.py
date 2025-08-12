@@ -490,6 +490,10 @@ class Fandango:
                 or packet_selector.is_guide_to_end()
             ) and packet_selector.is_complete():
                 self.parst_io_derivations.add(history_tree)
+                self.evaluator._solution_set.clear()
+                self.evaluator._fitness_cache.clear()
+                self.evaluator.flush_fitness_cache()
+                self._initial_solutions.clear()
                 yield history_tree
                 if (
                     len(packet_selector.coverage_scores) > 0
