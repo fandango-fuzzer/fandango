@@ -79,7 +79,7 @@ class PacketNavigator(GrammarNavigator):
         )
         return path
 
-    def astar_tree(self, *, tree: DerivationTree, symbol: NonTerminal, sender: str = None, recipient: str = None):
+    def astar_tree(self, *, tree: DerivationTree, symbol: NonTerminal, sender: Optional[str] = None, recipient: Optional[str] = None):
         symbol = Terminal(symbol.name())
         paths = []
         for suggested_tree, is_complete in self._get_controlflow_tree(tree):

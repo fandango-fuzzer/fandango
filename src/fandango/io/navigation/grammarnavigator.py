@@ -1,4 +1,4 @@
-from typing import Union, Iterable
+from typing import Union, Iterable, Optional
 
 from astar import AStar
 from fandango.errors import FandangoError
@@ -87,7 +87,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             return False
         return True
 
-    def astar_tree(self, *, tree: DerivationTree, symbol: Symbol, sender: str = None, recipient: str = None):
+    def astar_tree(self, *, tree: DerivationTree, symbol: Symbol, sender: Optional[str] = None, recipient: Optional[str] = None):
         start_node = self.graph.walk(tree)
         if isinstance(symbol, NonTerminal):
             symbol_node = NonTerminalNode(symbol, [])
