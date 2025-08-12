@@ -39,7 +39,7 @@ class PacketNavigator(GrammarNavigator):
             history_nts += r_msg.msg.symbol.name()
 
         if history_nts == "":
-            yield DerivationTree(NonTerminal("<start>"))
+            yield DerivationTree(NonTerminal("<start>")), False
             return
         self._parser.detailed_tree = tree
         self._parser.new_parse(NonTerminal("<start>"), ParsingMode.INCOMPLETE)
