@@ -482,13 +482,10 @@ class Fandango:
             if len(packet_selector.get_next_parties()) == 0 and not packet_selector.is_complete():
                 raise FandangoFailedError("Could not forecast next packet")
 
-            if packet_selector.is_guide_to_end() and packet_selector.is_complete():
+            if (len(packet_selector.get_next_parties()) == 0 or packet_selector.is_guide_to_end()) and packet_selector.is_complete():
                 self.parst_io_derivations.add(history_tree)
                 yield history_tree
-                coverage_scores = packet_selector.compute_message_coverage_score(
-                    list(self.parst_io_derivations), 2
-                )
-                if len(coverage_scores) > 0 and coverage_scores[0][1] >= 1:
+                if len(packet_selector.coverage_scores) > 0 and packet_selector.coverage_scores[0][1] >= 1:
                     print("Full coverage reached, stopping evolution.")
                     return
                 io_instance.reset_parties()
