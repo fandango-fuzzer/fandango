@@ -175,7 +175,14 @@ def log_message_transfer(
 def log_guidance_hint(message: str):
     LOGGER.info(f"{message}")
 
-def log_message_coverage(coverage: list[tuple[NonTerminal, float]]):
+def log_message_coverage(coverage: list[tuple[tuple[str, Optional[str], NonTerminal], float]]):
     LOGGER.info(f"Current message coverage:")
-    for symbol, coverage in coverage:
-        LOGGER.info(f"{symbol}: {coverage}")
+    for (sender, recipient, symbol), coverage in coverage:
+        print_symbol_components = []
+        if sender is not None:
+            print_symbol_components.append(sender)
+        if recipient is not None:
+            print_symbol_components.append(recipient)
+        print_symbol_components.append(str(symbol)[1:-1])
+        print_symbol = "<" + ":".join(print_symbol_components) + ">"
+        LOGGER.info(f"{print_symbol}: {coverage}")
