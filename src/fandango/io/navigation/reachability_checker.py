@@ -27,7 +27,8 @@ class ReachabilityChecker(ContinuingNodeVisitor):
         self.search_recipient = recipient
         self.seen_symbols.clear()
         super().find(tree)
-        return symbol_to_reach in self.seen_symbols
+        key = (self.search_sender, self.search_recipient, symbol_to_reach)
+        return key in self.seen_symbols
 
     def onNonTerminalNodeVisit(self, node: NonTerminalNode, is_exploring: bool):
         if is_exploring:
