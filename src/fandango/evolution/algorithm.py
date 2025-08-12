@@ -501,6 +501,7 @@ class Fandango:
                 ):
                     log_guidance_hint("Full coverage reached, stopping evolution.")
                     return
+                log_guidance_hint("Starting new protocol run.")
                 io_instance.reset_parties()
                 history_tree = DerivationTree(NonTerminal(self.start_symbol), [])
                 continue
