@@ -6,6 +6,7 @@ from fandango.io.navigation.packetforecaster import ForcastingPacket, PacketFore
 from fandango.io.navigation.packetnavigator import PacketNavigator
 from fandango.language import Grammar
 from fandango.language.symbols import NonTerminal
+from fandango.logger import log_guidance_hint
 
 
 class PacketSelector:
@@ -111,9 +112,7 @@ class PacketSelector:
         self._guide_to_end = False
         max_messages_per_tree = 50
         if len(self.history_tree.protocol_msgs()) > max_messages_per_tree:
-            print(
-                f"Current tree contains more then {max_messages_per_tree} messages. Guiding to end of tree."
-            )
+            log_guidance_hint(f"Current tree contains more then {max_messages_per_tree} messages. Guiding to end of tree.")
             self._guide_to_end = True
             fuzzable_packets.append(self._get_guide_to_end_packet())
             return fuzzable_packets
@@ -121,7 +120,7 @@ class PacketSelector:
         all_derivations = list(self.parst_derivations)
         all_derivations.append(self.history_tree)
         if len(self.coverage_scores) > 0 and self.coverage_scores[0][1] == 1.0:
-            print("Full coverage reached. Guiding to end of tree.")
+            log_guidance_hint("Full coverage reached. Guiding to end of tree.")
             self._guide_to_end = True
             fuzzable_packets.append(self._get_guide_to_end_packet())
             return fuzzable_packets
@@ -131,14 +130,14 @@ class PacketSelector:
             if path is None:
                 # We can't find a path to this non-terminal. That means we can't reach it without starting a new tree.
                 # So we try to finish this tree ASAP by selecting the non-terminal with the lowest distance to completion.
-                print(
+                log_guidance_hint(
                     f"No path found for target {target_nt} with score {coverage_score}. Guiding to end of tree."
                 )
                 self._guide_to_end = True
                 fuzzable_packets.append(self._get_guide_to_end_packet())
                 break
             else:
-                print(f"Guiding to target {target_nt} with score {coverage_score}")
+                log_guidance_hint(f"Guiding to target {target_nt} with score {coverage_score}")
                 sender, receiver, next_nt = path[0]
                 if (
                     sender in self.next_fuzzer_parties()

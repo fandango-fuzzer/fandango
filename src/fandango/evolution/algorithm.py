@@ -30,7 +30,7 @@ from fandango.logger import (
     clear_visualization,
     log_message_transfer,
     print_exception,
-    visualize_evaluation,
+    visualize_evaluation, log_guidance_hint,
 )
 
 
@@ -495,7 +495,7 @@ class Fandango:
                     len(packet_selector.coverage_scores) > 0
                     and packet_selector.coverage_scores[0][1] >= 1
                 ):
-                    print("Full coverage reached, stopping evolution.")
+                    log_guidance_hint("Full coverage reached, stopping evolution.")
                     return
                 io_instance.reset_parties()
                 history_tree = DerivationTree(NonTerminal(self.start_symbol), [])
