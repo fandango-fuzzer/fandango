@@ -223,5 +223,7 @@ class PacketForecaster:
                 else:
                     options = options.union(finder.find(suggested_tree))
                     if is_complete:
-                        options.complete_trees.add(self.grammar.collapse(suggested_tree))
+                        options.complete_trees.add(
+                            self.grammar.collapse(suggested_tree)
+                        )
         return options
