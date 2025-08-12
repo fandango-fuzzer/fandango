@@ -41,6 +41,9 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         goal: GrammarGraphNode,
         reverse_path: bool = False,
     ) -> Union[Iterable[GrammarGraphNode], None]:
+        """
+        Overloaded method. Don't call this directly, use astar_tree or astar_search_end instead.
+        """
         self.comparisons = 0
         return super().astar(start, goal, reverse_path)
 
