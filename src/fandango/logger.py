@@ -189,4 +189,4 @@ def log_message_coverage(
             print_symbol_components.append(recipient)
         print_symbol_components.append(str(symbol)[1:-1])
         print_symbol = "<" + ":".join(print_symbol_components) + ">"
-        LOGGER.info(f"{print_symbol}: {coverage}")
+        LOGGER.info(f"{print_symbol}: {coverage:.2f}")
