@@ -119,6 +119,8 @@ class PacketSelector:
         return self._next_packets
 
     def is_guide_to_end(self) -> bool:
+        if self._next_packets is None:
+            self._next_packets = self._select_next_packet()
         return self._guide_to_end
 
     def is_complete(self) -> bool:
