@@ -182,11 +182,18 @@ def log_message_coverage(
 ):
     LOGGER.info(f"Current message coverage:")
     for (sender, recipient, symbol), coverage in coverage:
-        print_symbol_components = []
-        if sender is not None:
-            print_symbol_components.append(sender)
-        if recipient is not None:
-            print_symbol_components.append(recipient)
-        print_symbol_components.append(str(symbol)[1:-1])
-        print_symbol = "<" + ":".join(print_symbol_components) + ">"
-        LOGGER.info(f"{print_symbol}: {coverage:.2f}")
+        LOGGER.info(f"{packet_nt_to_str(symbol, sender, recipient)}: {coverage:.2f}")
+
+def packet_nt_to_str(
+    symbol: NonTerminal,
+    sender: Optional[str] = None,
+    recipient: Optional[str] = None,
+) -> str:
+    """Convert a packet to a string representation"""
+    print_symbol_components = []
+    if sender is not None:
+        print_symbol_components.append(sender)
+    if recipient is not None:
+        print_symbol_components.append(recipient)
+    print_symbol_components.append(str(symbol)[1:-1])
+    return "<" + ":".join(print_symbol_components) + ">"
