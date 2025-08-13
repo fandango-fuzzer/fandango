@@ -5,8 +5,8 @@ import os
 from typing import IO, Any
 import zipfile
 
-from fandango.constraints.soft import SoftValue
 from fandango.constraints.constraint import Constraint
+from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoError, FandangoParseError
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar
