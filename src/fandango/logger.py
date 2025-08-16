@@ -184,6 +184,7 @@ def log_message_coverage(
     for (sender, recipient, symbol), coverage in coverage:
         LOGGER.info(f"{packet_nt_to_str(symbol, sender, recipient)}: {coverage:.2f}")
 
+
 def packet_nt_to_str(
     symbol: NonTerminal,
     sender: Optional[str] = None,

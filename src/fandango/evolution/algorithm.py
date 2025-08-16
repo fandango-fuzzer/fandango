@@ -524,21 +524,27 @@ class Fandango:
             ):
 
                 assert isinstance(self.population_manager, IoPopulationManager)
-                #for constraint in soft_constraints:
+                # for constraint in soft_constraints:
                 #    self.evaluator._soft_constraints.remove(constraint)
-                #soft_constraints.clear()
-                #for next_packet in packet_selector.next_packets:
+                # soft_constraints.clear()
+                # for next_packet in packet_selector.next_packets:
                 #    soft_constraints.append(SoftValue("max",
                 #                                      f"len(___fandango__guide_start_tree_0___.protocol_msgs()) > 0 and ___fandango__guide_start_tree_0___.protocol_msgs()[-1].msg.symbol == NonTerminal(\"{next_packet.node.symbol.name()}\")",
                 #                                      searches={"___fandango__guide_start_tree_0___": RuleSearch(NonTerminal("<start>"))},
                 #                                      local_variables=self.grammar._local_variables,
                 #                                      global_variables=self.grammar._global_variables))
-                #self.evaluator._soft_constraints.extend(soft_constraints)
-                #self.evaluator._fitness_cache.clear()
+                # self.evaluator._soft_constraints.extend(soft_constraints)
+                # self.evaluator._fitness_cache.clear()
                 self.population_manager.fuzzable_packets = packet_selector.next_packets
                 self.population_manager.fallback_packets = []
                 for sender in packet_selector.next_fuzzer_parties():
-                    self.population_manager.fallback_packets.extend(list(packet_selector.forecasting_result.parties_to_packets[sender].nt_to_packet.values()))
+                    self.population_manager.fallback_packets.extend(
+                        list(
+                            packet_selector.forecasting_result.parties_to_packets[
+                                sender
+                            ].nt_to_packet.values()
+                        )
+                    )
                 self.population_manager.existing_trees = list(self.past_io_derivations)
                 self.population_manager.existing_trees.append(history_tree)
 
@@ -563,12 +569,14 @@ class Fandango:
                     self.evaluator._fitness_cache.clear()
                     self.evaluator.flush_fitness_cache()
                     self._initial_solutions.clear()
-                    solutions = list(self.population_manager.refill_population(
-                        current_population=self.population,
-                        eval_individual=self.evaluator.evaluate_individual,
-                        max_nodes=self.current_max_nodes,
-                        target_population_size=self.population_size,
-                    ))
+                    solutions = list(
+                        self.population_manager.refill_population(
+                            current_population=self.population,
+                            eval_individual=self.evaluator.evaluate_individual,
+                            max_nodes=self.current_max_nodes,
+                            target_population_size=self.population_size,
+                        )
+                    )
                 self.population_manager.allow_fallback_packets = True
                 if not solutions:
                     solutions, self.evaluation = GeneratorWithReturn(
@@ -635,7 +643,9 @@ class Fandango:
                 solutions, (fitness, failing_trees) = GeneratorWithReturn(
                     self.evaluator.evaluate_individual(history_tree)
                 ).collect()
-                failing_trees = list(filter(lambda x: not isinstance(x.cause, SoftValue), failing_trees))
+                failing_trees = list(
+                    filter(lambda x: not isinstance(x.cause, SoftValue), failing_trees)
+                )
                 if len(failing_trees) != 0:
                     raise FandangoParseError(
                         "Remote response does not match constraints"
