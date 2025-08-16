@@ -21,6 +21,8 @@ from fandango.evolution.profiler import Profiler
 from fandango.io import FandangoIO
 from fandango.io.navigation.packetselector import PacketSelector
 from fandango.io.packetparser import parse_next_remote_packet
+from fandango.language.convert import ConstraintProcessor
+from fandango.language.search import RuleSearch
 from fandango.language.symbols import NonTerminal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
@@ -94,7 +96,7 @@ class Fandango:
         self.best_effort = best_effort
         self.current_max_nodes = 50
         self.remote_response_timeout = 15.0
-        self.parst_io_derivations = set()
+        self.past_io_derivations = set()
 
         # Instantiate managers
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
@@ -479,7 +481,7 @@ class Fandango:
         packet_selector = PacketSelector(self.grammar, io_instance, history_tree)
 
         while True:
-            packet_selector.compute(history_tree, self.parst_io_derivations)
+            packet_selector.compute(history_tree, self.past_io_derivations)
 
             if (
                 len(packet_selector.get_next_parties()) == 0
@@ -494,7 +496,7 @@ class Fandango:
                 history_tree = random.choice(
                     list(packet_selector.forecasting_result.complete_trees)
                 )
-                self.parst_io_derivations.add(history_tree)
+                self.past_io_derivations.add(history_tree)
                 self.evaluator._solution_set.clear()
                 self.evaluator._fitness_cache.clear()
                 self.evaluator.flush_fitness_cache()
@@ -520,10 +522,33 @@ class Fandango:
                 len(packet_selector.next_fuzzer_parties()) != 0
                 and not io_instance.received_msg()
             ):
+
                 assert isinstance(self.population_manager, IoPopulationManager)
+                #for constraint in soft_constraints:
+                #    self.evaluator._soft_constraints.remove(constraint)
+                #soft_constraints.clear()
+                #for next_packet in packet_selector.next_packets:
+                #    soft_constraints.append(SoftValue("max",
+                #                                      f"len(___fandango__guide_start_tree_0___.protocol_msgs()) > 0 and ___fandango__guide_start_tree_0___.protocol_msgs()[-1].msg.symbol == NonTerminal(\"{next_packet.node.symbol.name()}\")",
+                #                                      searches={"___fandango__guide_start_tree_0___": RuleSearch(NonTerminal("<start>"))},
+                #                                      local_variables=self.grammar._local_variables,
+                #                                      global_variables=self.grammar._global_variables))
+                #self.evaluator._soft_constraints.extend(soft_constraints)
+                #self.evaluator._fitness_cache.clear()
                 self.population_manager.fuzzable_packets = packet_selector.next_packets
+                self.population_manager.fallback_packets = []
+                for sender in packet_selector.next_fuzzer_parties():
+                    self.population_manager.fallback_packets.extend(list(packet_selector.forecasting_result.parties_to_packets[sender].nt_to_packet.values()))
+                self.population_manager.existing_trees = list(self.past_io_derivations)
+                self.population_manager.existing_trees.append(history_tree)
 
                 self.population.clear()
+                self.population_manager.allow_fallback_packets = False
+                self.population_manager.is_avoid_existing_trees = True
+                self.evaluator._solution_set.clear()
+                self.evaluator._fitness_cache.clear()
+                self.evaluator.flush_fitness_cache()
+                self._initial_solutions.clear()
                 solutions = list(
                     self.population_manager.refill_population(
                         current_population=self.population,
@@ -532,6 +557,19 @@ class Fandango:
                         target_population_size=self.population_size,
                     )
                 )
+                self.population_manager.is_avoid_existing_trees = False
+                if len(self.population) == 0:
+                    self.evaluator._solution_set.clear()
+                    self.evaluator._fitness_cache.clear()
+                    self.evaluator.flush_fitness_cache()
+                    self._initial_solutions.clear()
+                    solutions = list(self.population_manager.refill_population(
+                        current_population=self.population,
+                        eval_individual=self.evaluator.evaluate_individual,
+                        max_nodes=self.current_max_nodes,
+                        target_population_size=self.population_size,
+                    ))
+                self.population_manager.allow_fallback_packets = True
                 if not solutions:
                     solutions, self.evaluation = GeneratorWithReturn(
                         self.evaluator.evaluate_population(self.population)
@@ -594,10 +632,11 @@ class Fandango:
                 hookin_option = next(iter(forecast.paths))
                 history_tree = hookin_option.tree
                 history_tree.append(hookin_option.path[1:], packet_tree)
-                solutions, (fitness, _failing_trees) = GeneratorWithReturn(
+                solutions, (fitness, failing_trees) = GeneratorWithReturn(
                     self.evaluator.evaluate_individual(history_tree)
                 ).collect()
-                if fitness < 0.99:
+                failing_trees = list(filter(lambda x: not isinstance(x.cause, SoftValue), failing_trees))
+                if len(failing_trees) != 0:
                     raise FandangoParseError(
                         "Remote response does not match constraints"
                     )
