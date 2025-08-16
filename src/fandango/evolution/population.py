@@ -79,20 +79,29 @@ class PopulationManager:
         :return: A generator that yields solutions. The population is modified in place.
         """
         if self.is_avoid_existing_trees:
-            unique_hashes = self._generate_population_hashes(current_population + self.existing_trees)
+            unique_hashes = self._generate_population_hashes(
+                current_population + self.existing_trees
+            )
         else:
             unique_hashes = self._generate_population_hashes(current_population)
         attempts = 0
         max_attempts = (target_population_size - len(current_population)) * 10
 
-        while not self._is_population_complete(current_population, target_population_size) and attempts < max_attempts:
+        while (
+            not self._is_population_complete(current_population, target_population_size)
+            and attempts < max_attempts
+        ):
             individual = self._generate_population_entry(max_nodes)
-            found_solution, (_fitness, failing_trees) = GeneratorWithReturn(eval_individual(individual)).collect()
+            found_solution, (_fitness, failing_trees) = GeneratorWithReturn(
+                eval_individual(individual)
+            ).collect()
             candidate, _fixes_made = self.fix_individual(
                 individual,
                 failing_trees,
             )
-            new_found_solution, (_new_fitness, _new_failing_trees) = GeneratorWithReturn(eval_individual(candidate)).collect()
+            new_found_solution, (_new_fitness, _new_failing_trees) = (
+                GeneratorWithReturn(eval_individual(candidate)).collect()
+            )
             if attempts < max_attempts:
                 if self.add_unique_individual(
                     current_population, candidate, unique_hashes
@@ -195,9 +204,7 @@ class IoPopulationManager(PopulationManager):
         start_symbol: str,
         warnings_are_errors: bool = False,
     ):
-        super().__init__(
-            grammar, start_symbol, warnings_are_errors
-        )
+        super().__init__(grammar, start_symbol, warnings_are_errors)
         self._prev_packet_idx = 0
         self.fuzzable_packets: list[ForcastingPacket] | None = None
         self.fallback_packets: list[ForcastingPacket] | None = None

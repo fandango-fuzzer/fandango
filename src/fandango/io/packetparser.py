@@ -99,7 +99,9 @@ def parse_next_remote_packet(
             if time.time() - start_time > wait_for_completion_time:
                 if len(complete_parses) == 0:
                     incomplete_nt_list = map(lambda x: repr(x), available_non_terminals)
-                    nt_list = map(lambda x: repr(x), forecast_non_terminals.get_non_terminals())
+                    nt_list = map(
+                        lambda x: repr(x), forecast_non_terminals.get_non_terminals()
+                    )
                     incomplete_nt_str = " | ".join(incomplete_nt_list)
                     applicable_nt_str = str(" | ".join(nt_list))
                     received_msgs_str = str(io_instance.get_received_msgs())
