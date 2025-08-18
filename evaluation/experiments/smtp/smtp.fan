@@ -26,7 +26,7 @@ def decode64(input):
 <state_logged_out> ::= <exchange_login_valid> | <exchange_login_invalid>
 
 # When logged in the grammar accepts either a quit (terminating the connection) or a mail exchange.
-<state_logged_in> ::= <exchange_quit> |  <exchange_mail>
+<state_logged_in> ::= <exchange_quit> | <exchange_mail>
 
 # A successful login consist of the correct username and password and leads to the logged in state.
 <exchange_login_valid> ::= <Client:request_auth><Server:response_auth_expect_user><Client:request_auth_user_correct><Server:response_auth_expect_pass> \
