@@ -23,8 +23,6 @@ class PopulationManager:
     ):
         self._grammar = grammar
         self._start_symbol = start_symbol
-        self.existing_trees: list[DerivationTree] = []
-        self.is_avoid_existing_trees = True
         self._warnings_are_errors = warnings_are_errors
 
     def _generate_population_entry(self, max_nodes: int):
@@ -78,12 +76,7 @@ class PopulationManager:
         :param target_population_size: The target size of the population.
         :return: A generator that yields solutions. The population is modified in place.
         """
-        if self.is_avoid_existing_trees:
-            unique_hashes = self._generate_population_hashes(
-                current_population + self.existing_trees
-            )
-        else:
-            unique_hashes = self._generate_population_hashes(current_population)
+        unique_hashes = self._generate_population_hashes(current_population)
         attempts = 0
         max_attempts = (target_population_size - len(current_population)) * 10
 
@@ -213,9 +206,10 @@ class IoPopulationManager(PopulationManager):
     def _generate_population_hashes(self, population: list[DerivationTree]) -> set[int]:
         hashes: set[int] = set()
         for pop_entry in population:
-            hashes.add(hash(pop_entry))
-            for pop_msg in pop_entry.protocol_msgs():
-                hashes.add(hash(pop_msg.msg))
+            deduplicate_tree = pop_entry
+            if len(pop_entry.protocol_msgs()) != 0:
+                deduplicate_tree = pop_entry.protocol_msgs()[-1].msg
+            hashes.add(hash(deduplicate_tree))
         return hashes
 
     def _generate_population_entry(self, max_nodes: int):
@@ -252,12 +246,9 @@ class IoPopulationManager(PopulationManager):
         candidate: DerivationTree,
         unique_set: set[int],
     ) -> bool:
-        deduplicate_tree = candidate
-        if len(candidate.protocol_msgs()) != 0:
-            deduplicate_tree = candidate.protocol_msgs()[-1].msg
-        new_hashes = self._generate_population_hashes([deduplicate_tree])
+        new_hashes = self._generate_population_hashes([candidate])
         if len(new_hashes.intersection(unique_set)) == 0:
-            # If the candidate has a new hash, we can add it to the population
+            # If the candidate has is new, we can add it to the population
             unique_set.update(new_hashes)
             population.append(candidate)
             return True

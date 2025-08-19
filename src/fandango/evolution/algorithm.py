@@ -14,15 +14,13 @@ from fandango.errors import FandangoFailedError, FandangoParseError, FandangoVal
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.adaptation import AdaptiveTuner
 from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
-from fandango.evolution.evaluation import Evaluator
+from fandango.evolution.evaluation import Evaluator, IoEvaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import IoPopulationManager, PopulationManager
 from fandango.evolution.profiler import Profiler
 from fandango.io import FandangoIO
 from fandango.io.navigation.packetselector import PacketSelector
 from fandango.io.packetparser import parse_next_remote_packet
-from fandango.language.convert import ConstraintProcessor
-from fandango.language.search import RuleSearch
 from fandango.language.symbols import NonTerminal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
@@ -105,20 +103,28 @@ class Fandango:
                 start_symbol,
                 warnings_are_errors,
             )
+            self.evaluator = IoEvaluator(
+                grammar,
+                constraints,
+                expected_fitness,
+                diversity_k,
+                diversity_weight,
+                warnings_are_errors,
+            )
         else:
             self.population_manager = PopulationManager(
                 grammar,
                 start_symbol,
                 warnings_are_errors,
             )
-        self.evaluator = Evaluator(
-            grammar,
-            constraints,
-            expected_fitness,
-            diversity_k,
-            diversity_weight,
-            warnings_are_errors,
-        )
+            self.evaluator = Evaluator(
+                grammar,
+                constraints,
+                expected_fitness,
+                diversity_k,
+                diversity_weight,
+                warnings_are_errors,
+            )
         self.adaptive_tuner = AdaptiveTuner(
             mutation_rate,
             crossover_rate,
@@ -482,6 +488,7 @@ class Fandango:
 
         while True:
             packet_selector.compute(history_tree, self.past_io_derivations)
+            self.evaluator.coverage = packet_selector.coverage_scores
 
             if (
                 len(packet_selector.get_next_parties()) == 0
@@ -497,7 +504,6 @@ class Fandango:
                     list(packet_selector.forecasting_result.complete_trees)
                 )
                 self.past_io_derivations.add(history_tree)
-                self.evaluator._solution_set.clear()
                 self.evaluator._fitness_cache.clear()
                 self.evaluator.flush_fitness_cache()
                 self._initial_solutions.clear()
@@ -534,13 +540,8 @@ class Fandango:
                             ].nt_to_packet.values()
                         )
                     )
-                self.population_manager.existing_trees = list(self.past_io_derivations)
-                self.population_manager.existing_trees.append(history_tree)
-
                 self.population.clear()
                 self.population_manager.allow_fallback_packets = False
-                self.population_manager.is_avoid_existing_trees = True
-                self.evaluator._solution_set.clear()
                 self.evaluator._fitness_cache.clear()
                 self.evaluator.flush_fitness_cache()
                 self._initial_solutions.clear()
