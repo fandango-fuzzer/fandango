@@ -25,6 +25,8 @@ class PacketSelector:
         self.history_tree = None
         self._forecasting_result = None
         self._next_packets = None
+        self._old_packet_selections = []
+        self._old_coverage_scores = []
         self._coverage_scores = None
         self._guide_to_end = False
         self.compute(history_tree, self.parst_derivations)
@@ -94,6 +96,12 @@ class PacketSelector:
     ):
         self.history_tree = history_tree
         self.parst_derivations = parst_derivations
+        if self._coverage_scores is not None:
+            self._old_coverage_scores.append(self._coverage_scores)
+        if self._next_packets is not None:
+            for packet in self._next_packets:
+                node = packet.node
+                self._old_packet_selections.append((node.sender, node.recipient, node.symbol))
         self._forecasting_result = None
         self._coverage_scores = None
         self._next_packets = None
