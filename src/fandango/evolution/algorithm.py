@@ -485,10 +485,12 @@ class Fandango:
         io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
         history_tree: DerivationTree = random.choice(self.population)
         packet_selector = PacketSelector(self.grammar, io_instance, history_tree)
+        assert isinstance(self.evaluator, IoEvaluator)
 
         while True:
             packet_selector.compute(history_tree, self.past_io_derivations)
             self.evaluator.coverage = packet_selector.coverage_scores
+            self.evaluator.set_past_trees([history_tree] + list(self.past_io_derivations))
 
             if (
                 len(packet_selector.get_next_parties()) == 0
@@ -546,13 +548,6 @@ class Fandango:
                 self.evaluator.flush_fitness_cache()
                 self._initial_solutions.clear()
 
-                packet_must_repeat = True
-                coverage_scores = dict(packet_selector.coverage_scores)
-                for packet in self.population_manager.fuzzable_packets:
-                    if packet.node.symbol not in coverage_scores:
-                        if coverage_scores[(packet.node.sender, packet.node.recipient, packet.node.symbol)] != 1.0:
-                            packet_must_repeat = False
-                self.population_manager.is_avoid_existing_trees = not packet_must_repeat
                 solutions = list(
                     self.population_manager.refill_population(
                         current_population=self.population,
