@@ -191,20 +191,17 @@ class Evaluator:
 
     def evaluate_population(
         self,
-        population: list[DerivationTree],
-        diversity_fillup_population: Optional[list[DerivationTree]] = None
+        population: list[DerivationTree]
     ) -> Generator[
         DerivationTree, None, list[tuple[DerivationTree, float, list[FailingTree]]]
     ]:
-        if diversity_fillup_population is None:
-            diversity_fillup_population = []
         evaluation: list[tuple[DerivationTree, float, list[FailingTree]]] = []
         for ind in population:
             ind_eval = yield from self.evaluate_individual(ind)
             evaluation.append((ind, *ind_eval))
 
         if self._diversity_k > 0 and self._diversity_weight > 0:
-            bonuses = self.compute_diversity_bonus(population, diversity_fillup_population)
+            bonuses = self.compute_diversity_bonus(population, [])
             evaluation = [
                 (ind, fitness + bonus, failing_trees)
                 for (ind, fitness, failing_trees), bonus in zip(evaluation, bonuses)
@@ -259,8 +256,18 @@ class IoEvaluator(Evaluator):
             diversity_weight,
             warnings_are_errors,
         )
+        self._submitted_solutions: set[int] = set()
         self._coverage: list[tuple[tuple[str, str | None, NonTerminal], float]] = []
         self._coverage_dict: dict[tuple[str, str | None, NonTerminal], float] = dict()
+        self._past_trees = []
+
+    def set_past_trees(self, past_trees: list[DerivationTree]) -> None:
+        self._past_trees = past_trees
+        for tree in past_trees:
+            for msg in tree.protocol_msgs():
+                msg = msg.msg
+                key = (msg.sender, msg.recipient, msg)
+                self._submitted_solutions.add(hash(key))
 
     @property
     def coverage(self):
@@ -305,13 +312,10 @@ class IoEvaluator(Evaluator):
 
     def evaluate_population(
         self,
-        population: list[DerivationTree],
-        diversity_fillup_population: Optional[list[DerivationTree]] = None
+        population: list[DerivationTree]
     ) -> Generator[
         DerivationTree, None, list[tuple[DerivationTree, float, list[FailingTree]]]
     ]:
-        if diversity_fillup_population is None:
-            diversity_fillup_population = []
         evaluation: list[tuple[DerivationTree, float, list[FailingTree]]] = []
         for ind in population:
             ind_eval = yield from self.evaluate_individual(ind)
@@ -327,7 +331,7 @@ class IoEvaluator(Evaluator):
                         fill_up_by_msg_nt[key] = []
                     if i != len(msgs) - 1:
                         fill_up_by_msg_nt[key].append(msg.msg)
-            for ind in diversity_fillup_population:
+            for ind in self._past_trees:
                 for i, msg in enumerate(ind.protocol_msgs()):
                     key = (msg.sender, msg.recipient, msg.msg.symbol)
                     if key not in fill_up_by_msg_nt:
