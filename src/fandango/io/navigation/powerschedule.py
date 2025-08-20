@@ -8,7 +8,7 @@ class PowerSchedule:
 
     def __init__(self):
         self.energy = dict()
-        self.exponent = 1.0
+        self.exponent = 2.0
 
     def assign_energy(self, packet_types: Sequence[PacketNonTerminal]):
         frequencies = Counter(packet_types)
