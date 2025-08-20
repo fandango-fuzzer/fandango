@@ -15,8 +15,11 @@ from fandango.logger import log_guidance_hint
 
 class PacketSelector:
     def __init__(
-        self, grammar: Grammar, io_instance: FandangoIO, history_tree: DerivationTree,
-            diversity_k: int
+        self,
+        grammar: Grammar,
+        io_instance: FandangoIO,
+        history_tree: DerivationTree,
+        diversity_k: int,
     ):
         self.grammar = grammar
         self.io_instance = io_instance
@@ -103,7 +106,9 @@ class PacketSelector:
         if self._next_packets is not None:
             for packet in self._next_packets:
                 node = packet.node
-                self._old_packet_selections.append((node.sender, node.recipient, node.symbol))
+                self._old_packet_selections.append(
+                    (node.sender, node.recipient, node.symbol)
+                )
         self._forecasting_result = None
         self._coverage_scores = None
         self._next_packets = None
@@ -119,7 +124,9 @@ class PacketSelector:
         self,
     ) -> list[tuple[tuple[str, Optional[str], NonTerminal], float]]:
         if self._coverage_scores is None:
-            self._coverage_scores = self._compute_message_coverage_score(self.diversity_k)
+            self._coverage_scores = self._compute_message_coverage_score(
+                self.diversity_k
+            )
         return self._coverage_scores
 
     @property

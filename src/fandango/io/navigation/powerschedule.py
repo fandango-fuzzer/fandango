@@ -14,12 +14,14 @@ class PowerSchedule:
         frequencies = Counter(packet_types)
         self.energy = dict()
         for p_type, freq in frequencies.items():
-            self.energy[p_type] = 1 / (freq ** self.exponent)
+            self.energy[p_type] = 1 / (freq**self.exponent)
 
     def normalized_energy(self) -> dict[PacketNonTerminal, float]:
         sum_energy = sum(self.energy.values())
         assert sum_energy != 0
-        norm_energy = dict(map(lambda item: (item[0], item[1] / sum_energy), self.energy.items()))
+        norm_energy = dict(
+            map(lambda item: (item[0], item[1] / sum_energy), self.energy.items())
+        )
         return norm_energy
 
     def choose(self):

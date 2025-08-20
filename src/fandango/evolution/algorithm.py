@@ -485,12 +485,16 @@ class Fandango:
         spec_env_global, _ = self.grammar.get_spec_env()
         io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
         history_tree: DerivationTree = random.choice(self.population)
-        packet_selector = PacketSelector(self.grammar, io_instance, history_tree, self.diversity_k)
+        packet_selector = PacketSelector(
+            self.grammar, io_instance, history_tree, self.diversity_k
+        )
         assert isinstance(self.evaluator, IoEvaluator)
 
         while True:
             packet_selector.compute(history_tree, self.past_io_derivations)
-            self.evaluator.start_next_message([history_tree] + list(self.past_io_derivations))
+            self.evaluator.start_next_message(
+                [history_tree] + list(self.past_io_derivations)
+            )
 
             if (
                 len(packet_selector.get_next_parties()) == 0

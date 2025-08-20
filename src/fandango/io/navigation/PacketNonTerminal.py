@@ -5,7 +5,9 @@ from fandango.language import NonTerminal
 
 class PacketNonTerminal:
 
-    def __init__(self, sender: Optional[str], recipient: Optional[str], symbol: NonTerminal):
+    def __init__(
+        self, sender: Optional[str], recipient: Optional[str], symbol: NonTerminal
+    ):
         self.sender = sender
         self.recipient = recipient
         self.symbol = symbol
