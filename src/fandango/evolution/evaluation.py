@@ -73,7 +73,11 @@ class Evaluator:
         if len(self._soft_constraints) > 0:
             self._fitness_cache = {}
 
-    def compute_diversity_bonus(self, individuals: list[DerivationTree], fill_up: Optional[list[DerivationTree]] = None) -> list[float]:
+    def compute_diversity_bonus(
+        self,
+        individuals: list[DerivationTree],
+        fill_up: Optional[list[DerivationTree]] = None,
+    ) -> list[float]:
         if fill_up is None:
             fill_up = []
         ind_kpaths = [
@@ -84,7 +88,9 @@ class Evaluator:
             self._grammar._extract_k_paths_from_tree(ind, self._diversity_k)
             for ind in fill_up
         ]
-        frequencies = Counter(path for paths in ind_kpaths + fill_up_kpaths for path in paths)
+        frequencies = Counter(
+            path for paths in ind_kpaths + fill_up_kpaths for path in paths
+        )
 
         bonus = [
             (
@@ -150,15 +156,17 @@ class Evaluator:
         soft_fitness /= len(self._soft_constraints)
         return soft_fitness, failing_trees
 
-    def evaluate_constraints(self, individual: DerivationTree) -> tuple[float, list[FailingTree]]:
+    def evaluate_constraints(
+        self, individual: DerivationTree
+    ) -> tuple[float, list[FailingTree]]:
         fitness, failing_trees = self.evaluate_hard_constraints(individual)
 
         if self._soft_constraints:
             if fitness < 1.0:
                 fitness = (
-                        fitness
-                        * len(self._hard_constraints)
-                        / (len(self._hard_constraints) + len(self._soft_constraints))
+                    fitness
+                    * len(self._hard_constraints)
+                    / (len(self._hard_constraints) + len(self._soft_constraints))
                 )
             else:  # fitness from hard constraints == 1.0
                 soft_fitness, soft_failing_trees = self.evaluate_soft_constraints(
@@ -168,9 +176,9 @@ class Evaluator:
                 failing_trees.extend(soft_failing_trees)
 
                 fitness = (
-                                  fitness * len(self._hard_constraints)
-                                  + soft_fitness * len(self._soft_constraints)
-                          ) / (len(self._hard_constraints) + len(self._soft_constraints))
+                    fitness * len(self._hard_constraints)
+                    + soft_fitness * len(self._soft_constraints)
+                ) / (len(self._hard_constraints) + len(self._soft_constraints))
         return fitness, failing_trees
 
     def evaluate_individual(
@@ -191,8 +199,7 @@ class Evaluator:
         return fitness, failing_trees
 
     def evaluate_population(
-        self,
-        population: list[DerivationTree]
+        self, population: list[DerivationTree]
     ) -> Generator[
         DerivationTree, None, list[tuple[DerivationTree, float, list[FailingTree]]]
     ]:
@@ -261,14 +268,22 @@ class IoEvaluator(Evaluator):
         self._hold_back_solutions: set[int] = set()
         self._past_trees = []
 
-    def get_past_msgs(self, packet_type: Optional[PacketNonTerminal] = None) -> set[DerivationTree]:
+    def get_past_msgs(
+        self, packet_type: Optional[PacketNonTerminal] = None
+    ) -> set[DerivationTree]:
         msgs = []
         for tree in self._past_trees:
             msgs.extend(tree.protocol_msgs())
         msgs = set(map(lambda x: x.msg, msgs))
         if packet_type is None:
             return msgs
-        return set(filter(lambda msg: PacketNonTerminal(msg.sender, msg.recipient, msg.symbol) == packet_type, msgs))
+        return set(
+            filter(
+                lambda msg: PacketNonTerminal(msg.sender, msg.recipient, msg.symbol)
+                == packet_type,
+                msgs,
+            )
+        )
 
     def start_next_message(self, past_trees: list[DerivationTree]) -> None:
         self._hold_back_solutions.clear()
@@ -300,28 +315,34 @@ class IoEvaluator(Evaluator):
             msg_key = None
             msg_hash = None
 
-
         if fitness >= self._expected_fitness:
             if msg is None:
                 yield individual
             else:
-                old_coverage = self._grammar.compute_kpath_coverage(list(self.get_past_msgs(msg_key)),
-                                                                    self._diversity_k, msg.symbol)
-                new_coverage = self._grammar.compute_kpath_coverage(list(self.get_past_msgs(msg_key)) + [msg],
-                                                                    self._diversity_k, msg.symbol)
+                old_coverage = self._grammar.compute_kpath_coverage(
+                    list(self.get_past_msgs(msg_key)), self._diversity_k, msg.symbol
+                )
+                new_coverage = self._grammar.compute_kpath_coverage(
+                    list(self.get_past_msgs(msg_key)) + [msg],
+                    self._diversity_k,
+                    msg.symbol,
+                )
                 if old_coverage < new_coverage or new_coverage == 1.0:
                     if new_coverage < 1.0:
                         self._solution_set.add(msg_hash)
                     yield individual
-                elif msg_hash not in self._submitted_solutions and msg_hash not in self._solution_set and msg_hash not in self._hold_back_solutions:
+                elif (
+                    msg_hash not in self._submitted_solutions
+                    and msg_hash not in self._solution_set
+                    and msg_hash not in self._hold_back_solutions
+                ):
                     self._hold_back_solutions.add(msg_hash)
 
         self._fitness_cache[key] = (fitness, failing_trees)
         return fitness, failing_trees
 
     def evaluate_population(
-        self,
-        population: list[DerivationTree]
+        self, population: list[DerivationTree]
     ) -> Generator[
         DerivationTree, None, list[tuple[DerivationTree, float, list[FailingTree]]]
     ]:
@@ -331,7 +352,9 @@ class IoEvaluator(Evaluator):
             evaluation.append((ind, *ind_eval))
 
         if self._diversity_k > 0 and self._diversity_weight > 0:
-            fill_up_by_msg_nt: dict[tuple[str, str, NonTerminal], list[DerivationTree]] = {}
+            fill_up_by_msg_nt: dict[
+                tuple[str, str, NonTerminal], list[DerivationTree]
+            ] = {}
             for ind in population:
                 msgs = ind.protocol_msgs()
                 for i, msg in enumerate(msgs):
