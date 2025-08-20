@@ -1,6 +1,7 @@
 from typing import Optional
 
 from fandango.io import FandangoIO
+from fandango.io.navigation.powerschedule import PowerSchedule
 from fandango.language.tree import DerivationTree
 from fandango.io.navigation.packetforecaster import (
     ForcastingPacket,
@@ -22,6 +23,7 @@ class PacketSelector:
         diversity_k: int,
     ):
         self.grammar = grammar
+        self.power_schedule = PowerSchedule()
         self.io_instance = io_instance
         self.navigator = PacketNavigator(grammar, NonTerminal("<start>"))
         self.forecaster = PacketForecaster(self.grammar)
