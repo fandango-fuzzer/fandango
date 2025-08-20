@@ -80,7 +80,7 @@ class PacketSelector:
         )
         return nt_coverage
 
-    def _get_guide_to_end_packet(self) -> Optional[ForcastingPacket]:
+    def _get_guide_to_end_packet(self) -> list[ForcastingPacket]:
         path = self.navigator.astar_search_end(self.history_tree)
         if len(path) > 0:
             sender, receiver, next_nt = path[0]
@@ -88,8 +88,8 @@ class PacketSelector:
                 sender in self.next_fuzzer_parties()
                 and next_nt in self.forecasting_result[sender].nt_to_packet
             ):
-                return self.forecasting_result[sender].nt_to_packet[next_nt]
-        return None
+                return [self.forecasting_result[sender].nt_to_packet[next_nt]]
+        return []
 
     def compute(
         self, history_tree: DerivationTree, parst_derivations: set[DerivationTree]
@@ -167,7 +167,7 @@ class PacketSelector:
                 f"Current tree contains more then {max_messages_per_tree} messages. Guiding to end of tree."
             )
             self._guide_to_end = True
-            fuzzable_packets.append(self._get_guide_to_end_packet())
+            fuzzable_packets.extend(self._get_guide_to_end_packet())
             return fuzzable_packets
         # Select next packet to send by computing guiding generator to underexplored areas of the grammar
         all_derivations = list(self.parst_derivations)
@@ -175,7 +175,7 @@ class PacketSelector:
         if len(self.coverage_scores) > 0 and self.coverage_scores[0][1] == 1.0:
             log_guidance_hint("Full coverage reached. Guiding to end of tree.")
             self._guide_to_end = True
-            fuzzable_packets.append(self._get_guide_to_end_packet())
+            fuzzable_packets.extend(self._get_guide_to_end_packet())
             return fuzzable_packets
 
         for (sender, recipient, target_nt), coverage_score in self.coverage_scores:
@@ -187,7 +187,7 @@ class PacketSelector:
                     f"No path found for target {target_nt} with score {coverage_score}. Guiding to end of tree."
                 )
                 self._guide_to_end = True
-                fuzzable_packets.append(self._get_guide_to_end_packet())
+                fuzzable_packets.extend(self._get_guide_to_end_packet())
                 break
             else:
                 log_guidance_hint(
@@ -203,5 +203,5 @@ class PacketSelector:
                     )
                     break
         if len(fuzzable_packets) == 0:
-            fuzzable_packets.append(self._get_guide_to_end_packet())
+            fuzzable_packets.extend(self._get_guide_to_end_packet())
         return fuzzable_packets
