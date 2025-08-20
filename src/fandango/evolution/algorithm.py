@@ -570,25 +570,28 @@ class Fandango:
                 if not solutions:
                     try:
                         evolve_result = next(
-                            self.generate(max_generations=selected_packet_max_generations)
+                            self.generate(max_generations=selected_packet_max_generations, mode=FuzzingMode.COMPLETE)
                         )
                     except StopIteration:
-                        self.population_manager.allow_fallback_packets = True
-                        try:
-                            evolve_result = next(
-                                self.generate(max_generations=overall_max_generations)
-                            )
-                        except StopIteration:
-                            all_allowed_packets = self.population_manager.fuzzable_packets + self.population_manager.fallback_packets
-                            nonterminals_str = " | ".join(
-                                map(
-                                    lambda x: str(x.node.symbol),
-                                    all_allowed_packets,
+                        if len(self.evaluator._hold_back_solutions) != 0:
+                            evolve_result = random.choice(self.evaluator._hold_back_solutions)
+                        else:
+                            self.population_manager.allow_fallback_packets = True
+                            try:
+                                evolve_result = next(
+                                    self.generate(max_generations=overall_max_generations, mode=FuzzingMode.COMPLETE)
                                 )
-                            )
-                            raise FandangoFailedError(
-                                f"Couldn't find solution for any packet: {nonterminals_str}"
-                            )
+                            except StopIteration:
+                                all_allowed_packets = self.population_manager.fuzzable_packets + self.population_manager.fallback_packets
+                                nonterminals_str = " | ".join(
+                                    map(
+                                        lambda x: str(x.node.symbol),
+                                        all_allowed_packets,
+                                    )
+                                )
+                                raise FandangoFailedError(
+                                    f"Couldn't find solution for any packet: {nonterminals_str}"
+                                )
                     next_tree = evolve_result
                 else:
                     next_tree = solutions[0]
