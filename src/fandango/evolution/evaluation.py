@@ -5,6 +5,7 @@ from collections.abc import Generator
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
 from fandango.constraints.fitness import FailingTree
+from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language import DerivationTree, Grammar, NonTerminal
 from fandango.logger import LOGGER, print_exception
 
@@ -257,26 +258,28 @@ class IoEvaluator(Evaluator):
             warnings_are_errors,
         )
         self._submitted_solutions: set[int] = set()
-        self._coverage: list[tuple[tuple[str, str | None, NonTerminal], float]] = []
-        self._coverage_dict: dict[tuple[str, str | None, NonTerminal], float] = dict()
+        self._hold_back_solutions: set[int] = set()
         self._past_trees = []
 
-    def set_past_trees(self, past_trees: list[DerivationTree]) -> None:
+    def get_past_msgs(self, packet_type: Optional[PacketNonTerminal] = None) -> set[DerivationTree]:
+        msgs = []
+        for tree in self._past_trees:
+            msgs.extend(tree.protocol_msgs())
+        msgs = set(map(lambda x: x.msg, msgs))
+        if packet_type is None:
+            return msgs
+        return set(filter(lambda msg: PacketNonTerminal(msg.sender, msg.recipient, msg.symbol) == packet_type, msgs))
+
+    def start_next_message(self, past_trees: list[DerivationTree]) -> None:
+        self._hold_back_solutions.clear()
+        self._solution_set.clear()
+        self._fitness_cache.clear()
         self._past_trees = past_trees
         for tree in past_trees:
             for msg in tree.protocol_msgs():
                 msg = msg.msg
                 key = (msg.sender, msg.recipient, msg)
                 self._submitted_solutions.add(hash(key))
-
-    @property
-    def coverage(self):
-        return self._coverage
-
-    @coverage.setter
-    def coverage(self, coverage: list[tuple[tuple[str, str | None, NonTerminal], float]]) -> None:
-        self._coverage = coverage
-        self._coverage_dict = dict(self._coverage)
 
     def evaluate_individual(
         self,
@@ -290,22 +293,28 @@ class IoEvaluator(Evaluator):
 
         if len(individual.protocol_msgs()) != 0:
             msg = individual.protocol_msgs()[-1].msg
-            msg_key = (msg.sender, msg.recipient, msg.symbol)
+            msg_key = PacketNonTerminal(msg.sender, msg.recipient, msg.symbol)
             msg_hash = hash(msg)
         else:
+            msg = None
             msg_key = None
             msg_hash = None
 
+
         if fitness >= self._expected_fitness:
-            if msg_key is None:
+            if msg is None:
                 yield individual
-            elif msg_hash not in self._solution_set:
-                self._solution_set.add(msg_hash)
-                yield individual
-            elif msg_key not in self._coverage_dict:
-                self._coverage_dict.setdefault(msg_key, 0)
-            elif self._coverage_dict[msg_key] == 1.0:
-                yield individual
+            else:
+                old_coverage = self._grammar.compute_kpath_coverage(list(self.get_past_msgs(msg_key)),
+                                                                    self._diversity_k, msg.symbol)
+                new_coverage = self._grammar.compute_kpath_coverage(list(self.get_past_msgs(msg_key)) + [msg],
+                                                                    self._diversity_k, msg.symbol)
+                if old_coverage < new_coverage or new_coverage == 1.0:
+                    if new_coverage < 1.0:
+                        self._solution_set.add(msg_hash)
+                    yield individual
+                elif msg_hash not in self._submitted_solutions and msg_hash not in self._solution_set and msg_hash not in self._hold_back_solutions:
+                    self._hold_back_solutions.add(msg_hash)
 
         self._fitness_cache[key] = (fitness, failing_trees)
         return fitness, failing_trees

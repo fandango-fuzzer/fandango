@@ -65,7 +65,7 @@ class Fandango:
         best_effort: bool = False,
         random_seed: Optional[int] = None,
         start_symbol: str = "<start>",
-        diversity_k: int = 5,
+        diversity_k: int = 2,
         diversity_weight: float = 1.0,
         max_repetition_rate: float = 0.5,
         max_repetitions: Optional[int] = None,
@@ -93,6 +93,7 @@ class Fandango:
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
         self.current_max_nodes = 50
+        self.diversity_k = diversity_k
         self.remote_response_timeout = 15.0
         self.past_io_derivations = set()
 
@@ -484,13 +485,12 @@ class Fandango:
         spec_env_global, _ = self.grammar.get_spec_env()
         io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
         history_tree: DerivationTree = random.choice(self.population)
-        packet_selector = PacketSelector(self.grammar, io_instance, history_tree)
+        packet_selector = PacketSelector(self.grammar, io_instance, history_tree, self.diversity_k)
         assert isinstance(self.evaluator, IoEvaluator)
 
         while True:
             packet_selector.compute(history_tree, self.past_io_derivations)
-            self.evaluator.coverage = packet_selector.coverage_scores
-            self.evaluator.set_past_trees([history_tree] + list(self.past_io_derivations))
+            self.evaluator.start_next_message([history_tree] + list(self.past_io_derivations))
 
             if (
                 len(packet_selector.get_next_parties()) == 0
@@ -506,8 +506,6 @@ class Fandango:
                     list(packet_selector.forecasting_result.complete_trees)
                 )
                 self.past_io_derivations.add(history_tree)
-                self.evaluator._fitness_cache.clear()
-                self.evaluator.flush_fitness_cache()
                 self._initial_solutions.clear()
                 yield history_tree
                 if (
@@ -544,8 +542,6 @@ class Fandango:
                     )
                 self.population.clear()
                 self.population_manager.allow_fallback_packets = False
-                self.evaluator._fitness_cache.clear()
-                self.evaluator.flush_fitness_cache()
                 self._initial_solutions.clear()
 
                 solutions = list(
