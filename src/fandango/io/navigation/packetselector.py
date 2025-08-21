@@ -86,7 +86,9 @@ class PacketSelector:
     def _get_guide_to_end_packet(self) -> list[ForecastingPacket]:
         path = self.navigator.astar_search_end(self.history_tree)
         if len(path) > 0:
-            sender, receiver, next_nt = path[0]
+            sender, receiver, next_nt = next(filter(lambda x: x[0] is not None, path), (None, None, None))
+            if next_nt is None:
+                return []
             if (
                 sender in self.next_fuzzer_parties()
                 and next_nt in self.forecasting_result[sender].nt_to_packet
@@ -212,14 +214,7 @@ class PacketSelector:
                 sender, recipient, next_nt = next((x for x in path if x[0] is not None), (None, None, None))
                 if next_nt is None:
                     for sender in self.next_fuzzer_parties():
-                        if sender in self.next_fuzzer_parties():
-                            for packet in self.forecasting_result[sender].nt_to_packet.values():
-                                append_packet = ForecastingPacket(packet.node)
-                                for hookin_path in packet.paths:
-                                    if any(filter(lambda s: s[0] == target_nt and s[1], hookin_path.path)):
-                                        append_packet.paths.add(hookin_path)
-                                if len(append_packet.paths) != 0:
-                                    fuzzable_packets.append(append_packet)
+                        fuzzable_packets.extend(self.find_packets_with_sender_path_symbol(sender, target_nt))
                     if len(fuzzable_packets) == 0:
                         fuzzable_packets.extend(self.get_fuzzer_packets())
                     return fuzzable_packets
@@ -227,10 +222,25 @@ class PacketSelector:
                         sender in self.next_fuzzer_parties()
                         and next_nt in self.forecasting_result[sender].nt_to_packet
                 ):
-                    fuzzable_packets.append(
-                        self.forecasting_result[sender].nt_to_packet[next_nt]
-                    )
+                    fuzzable_packets.extend(self.find_packets_with_sender_path_symbol(sender, target_nt))
+                    if len(fuzzable_packets) == 0:
+                        fuzzable_packets.append(
+                            self.forecasting_result[sender].nt_to_packet[next_nt]
+                        )
                     break
         if len(fuzzable_packets) == 0:
             fuzzable_packets.extend(self._get_guide_to_end_packet())
         return fuzzable_packets
+
+
+    def find_packets_with_sender_path_symbol(self, sender: str, path_symbol: NonTerminal) -> list[ForecastingPacket]:
+        packets = []
+        if sender in self.next_fuzzer_parties():
+            for packet in self.forecasting_result[sender].nt_to_packet.values():
+                append_packet = ForecastingPacket(packet.node)
+                for hookin_path in packet.paths:
+                    if any(filter(lambda s: s[0] == path_symbol and s[1], hookin_path.path)):
+                        append_packet.paths.add(hookin_path)
+                if len(append_packet.paths) != 0:
+                    packets.append(append_packet)
+        return packets

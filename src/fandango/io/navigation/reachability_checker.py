@@ -2,7 +2,7 @@ from typing import Optional, Set
 
 from fandango.io.navigation.visitor.continuing_nodevisitor import ContinuingNodeVisitor
 from fandango.language.tree import DerivationTree
-from fandango.language import Grammar, Symbol
+from fandango.language import Grammar, Symbol, NonTerminal
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode
 
@@ -32,6 +32,8 @@ class ReachabilityChecker(ContinuingNodeVisitor):
         if is_exploring:
             if node.symbol not in self.seen_symbols:
                 self.seen_symbols.add(node.symbol)
+                if node.symbol.name().startswith("<_packet_"):
+                    self.seen_symbols.add(NonTerminal(f"<{node.symbol.name()[9:]}"))
                 return True, True
             return True, False
         return True, True
