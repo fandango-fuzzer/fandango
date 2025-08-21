@@ -55,9 +55,6 @@ class PacketSelector:
         :param k: The k-path length for coverage computation.
         :return: Dictionary mapping NonTerminals to their coverage scores.
         """
-        fuzzer_parties = set(
-            map(lambda x: x.party_name, self.io_instance.get_fuzzer_parties())
-        )
         trees = list(self.parst_derivations)
         trees.append(self.history_tree)
         messages: list[DerivationTree] = []
