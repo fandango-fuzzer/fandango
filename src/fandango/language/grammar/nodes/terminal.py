@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from collections.abc import Sequence
 import exrex
 from fandango.errors import FandangoValueError
+from fandango.language.symbols import Symbol, NonTerminal
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.symbols import Terminal
@@ -27,6 +28,9 @@ class TerminalNode(Node):
         super().__init__(
             NodeType.TERMINAL, grammar_settings, distance_to_completion=1.0
         )
+
+    def to_symbol(self) -> Symbol:
+        return self.symbol
 
     def fuzz(
         self,

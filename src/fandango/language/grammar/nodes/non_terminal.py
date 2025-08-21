@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Optional
 from collections.abc import Iterator, Sequence
 from fandango.errors import FandangoValueError
+from fandango.language.symbols import Symbol
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.node import Node, NodeType
@@ -23,6 +24,9 @@ class NonTerminalNode(Node):
         self.sender = sender
         self.recipient = recipient
         super().__init__(NodeType.NON_TERMINAL, grammar_settings)
+
+    def to_symbol(self) -> Symbol:
+        return self.symbol
 
     def fuzz(
         self,
