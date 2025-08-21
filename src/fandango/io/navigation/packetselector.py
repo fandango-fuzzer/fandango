@@ -1,6 +1,7 @@
 from typing import Optional
 
 from fandango.io import FandangoIO
+from fandango.io.navigation.grammarreducer import GrammarReducer
 from fandango.io.navigation.powerschedule import PowerSchedule
 from fandango.language.tree import DerivationTree
 from fandango.io.navigation.packetforecaster import (
@@ -22,10 +23,15 @@ class PacketSelector:
         history_tree: DerivationTree,
         diversity_k: int,
     ):
+        self.start_symbol = NonTerminal("<start>")
         self.grammar = grammar
+        reduced_grammar = GrammarReducer(self.grammar.grammar_settings).process(self.grammar.rules, self.start_symbol)
+        self.coverage_symbols = list(reduced_grammar.keys())
+        self.coverage_symbols.extend(map(lambda x: x[2], self.grammar.get_protocol_messages(self.start_symbol)))
+        self.coverage_symbols = list(filter(lambda x: x in self.grammar.rules, self.coverage_symbols))
         self.power_schedule = PowerSchedule()
         self.io_instance = io_instance
-        self.navigator = PacketNavigator(grammar, NonTerminal("<start>"))
+        self.navigator = PacketNavigator(grammar, self.start_symbol)
         self.forecaster = PacketForecaster(self.grammar)
         self.diversity_k = diversity_k
         self.parst_derivations: set[DerivationTree] = set()
@@ -38,7 +44,7 @@ class PacketSelector:
         self._guide_to_end = False
         self.compute(history_tree, self.parst_derivations)
 
-    def _compute_message_coverage_score(
+    def _compute_coverage_score(
         self, k: int, show_external: bool = False
     ) -> list[tuple[tuple[str, Optional[str], NonTerminal], float]]:
         """
@@ -126,7 +132,7 @@ class PacketSelector:
         self,
     ) -> list[tuple[tuple[str, Optional[str], NonTerminal], float]]:
         if self._coverage_scores is None:
-            self._coverage_scores = self._compute_message_coverage_score(
+            self._coverage_scores = self._compute_coverage_score(
                 self.diversity_k
             )
         return self._coverage_scores
