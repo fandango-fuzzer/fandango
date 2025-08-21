@@ -4,6 +4,7 @@ import enum
 from collections.abc import Iterator, Sequence
 from typing import TYPE_CHECKING, Any
 from fandango.errors import FandangoValueError
+from fandango.language.symbols import Symbol
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
@@ -56,6 +57,10 @@ class Node(abc.ABC):
     @property
     def is_nonterminal(self) -> bool:
         return self.node_type == NodeType.NON_TERMINAL
+
+    @abc.abstractmethod
+    def to_symbol(self) -> Symbol:
+        raise NotImplementedError("to_symbol method not implemented")
 
     @property
     def is_controlflow(self) -> bool:

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Optional
 
 import fandango.language.grammar.nodes as nodes
 from fandango.errors import FandangoValueError
+from fandango.language.symbols import Symbol, NonTerminal
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
@@ -42,6 +43,9 @@ class Repetition(Node):
                 f"Maximum repetitions {self.max} must be greater than 0 or greater than min {min_}"
             )
         super().__init__(NodeType.REPETITION, grammar_settings)
+
+    def to_symbol(self) -> Symbol:
+        return NonTerminal(f"<__{self.id}>")
 
     @property
     def internal_max(self):

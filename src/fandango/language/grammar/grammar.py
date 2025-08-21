@@ -51,8 +51,8 @@ class Grammar(NodeVisitor):
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
         self._parser = Parser(self.rules)
-        self._k_path_cache: dict[NonTerminal, list[set[tuple[Node, ...]]]] = dict()
-        self._tree_k_path_cache: dict[int, list[Optional[set[tuple[Symbol, ...]]]]] = (
+        self._k_path_cache: dict[NonTerminal, list[set[tuple[Symbol, ...]]]] = dict()
+        self._tree_k_path_cache: dict[int, set[tuple[Symbol, ...]]] = (
             dict()
         )
 
@@ -457,7 +457,7 @@ class Grammar(NodeVisitor):
 
     def _generate_all_k_paths(
         self, k: int, non_terminal: NonTerminal = NonTerminal("<start>")
-    ) -> set[tuple[Node, ...]]:
+    ) -> set[tuple[Symbol, ...]]:
         """
         Computes the *k*-paths for this grammar, constructively. See: doi.org/10.1109/ASE.2019.00027
 
@@ -465,33 +465,40 @@ class Grammar(NodeVisitor):
         :return: All paths of length up to *k* within this grammar.
         """
         if non_terminal in self._k_path_cache:
-            work = self._k_path_cache[non_terminal]
-            if len(work) >= k:
-                return set.union(*work[:k])
-        else:
-            initial = set()
-            initial_work: list[Node] = [
-                NonTerminalNode(non_terminal, self._grammar_settings)
-            ]
-            while initial_work:
-                node = initial_work.pop(0)
-                if node in initial:
-                    continue
-                initial.add(node)
-                initial_work.extend(node.descendents(self, filter_controlflow=True))
-            work: list[set[tuple[Node, ...]]] = [set((x,) for x in initial)]
+            cache_work = self._k_path_cache[non_terminal]
+            if len(cache_work) >= k:
+                return cache_work[k - 1]
+
+        initial = set()
+        initial_work: list[Node] = [
+            NonTerminalNode(non_terminal, self._grammar_settings)
+        ]
+        while initial_work:
+            node = initial_work.pop(0)
+            if node in initial:
+                continue
+            initial.add(node)
+            initial_work.extend(node.descendents(self, filter_controlflow=True))
+        work: list[set[tuple[Node, ...]]] = [set((x,) for x in initial)]
 
 
         for _ in range(len(work), k):
-            next_work = set()
+            next_work = set(work[-1])
             for base in work[-1]:
                 for descendent in base[-1].descendents(self, filter_controlflow=True):
                     next_work.add(base + (descendent,))
             work.append(next_work)
-        self._k_path_cache[non_terminal] = work
 
-        # return set.union(*work)
-        return set.union(*work[:k])
+        symbol_work = []
+        for work_k in work:
+            symbol_work_k = set()
+            symbol_work.append(symbol_work_k)
+            for path in work_k:
+                symbol_work_k.add(tuple(node.to_symbol() for node in path))
+
+        self._k_path_cache[non_terminal] = symbol_work
+
+        return symbol_work[k - 1]
 
     def _extract_k_paths_from_tree(
         self, tree: DerivationTree, k: int
@@ -502,8 +509,7 @@ class Grammar(NodeVisitor):
         hash_key = hash((tree, k))
         if hash_key in self._tree_k_path_cache:
             k_paths = self._tree_k_path_cache[hash_key]
-            if len(k_paths) > (k - 1) and k_paths[k - 1] is not None:
-                return set.union(*k_paths[:k])
+            return k_paths
 
         start_nodes: list[tuple[Optional[NonTerminal], DerivationTree]] = []
 
@@ -557,9 +563,12 @@ class Grammar(NodeVisitor):
         for parent, node in start_nodes:
             traverse(parent, node, tuple())
 
-        if hash_key not in self._tree_k_path_cache:
-            self._tree_k_path_cache[hash_key] = paths
-        return set.union(*paths[:k])
+        k_paths = set()
+        for path_set in paths:
+            k_paths.update(path_set)
+
+        self._tree_k_path_cache[hash_key] = k_paths
+        return k_paths
 
     def prime(self):
         LOGGER.debug("Priming grammar")
