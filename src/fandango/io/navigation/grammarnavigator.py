@@ -79,7 +79,11 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
 
         if not isinstance(current.node, (NonTerminalNode, TerminalNode)):
             return False
-        return current.node.symbol == self.search_symbol
+        if current.node.symbol == self.search_symbol:
+            return True
+        if isinstance(current.node, NonTerminalNode):
+            return NonTerminal(f"<{current.node.symbol.name()[9:]}") == self.search_symbol
+        return False
 
     def astar_tree(
         self,
