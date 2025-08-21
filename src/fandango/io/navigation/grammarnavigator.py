@@ -85,7 +85,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             return NonTerminal(f"<{current.node.symbol.name()[9:]}") == self.search_symbol
         return False
 
-    def astar_tree(
+    def astar_tree_w_controlflow(
         self,
         *,
         tree: DerivationTree,
@@ -102,15 +102,37 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         if not checker.find_reachability(
             symbol_to_reach=symbol, tree=tree
         ):
-            return None
+            empty_tree = DerivationTree(NonTerminal("<start>"))
+            if not checker.find_reachability(
+                    symbol_to_reach=symbol, tree=empty_tree
+            ):
+                raise FandangoError(
+                    f"Symbol {symbol} is not reachable in grammar."
+                )
+            path = list(self.astar_search_end_w_controlflow(tree))
+            path.append(None)
+            path.extend(self.astar_tree_w_controlflow(tree=empty_tree, symbol=symbol))
+            return path
         self.is_search_end_node = False
         self.search_symbol = symbol
         return self.astar(start_node, EagerGrammarGraphNode(symbol_node, []))
 
-    def astar_search_end(self, tree: DerivationTree) -> Iterable[GrammarGraphNode]:
+    def astar_tree(
+            self,
+            *,
+            tree: DerivationTree,
+            symbol: Symbol
+    ):
+        return self.astar_tree_w_controlflow(tree=tree, symbol=symbol)
+
+    def astar_search_end_w_controlflow(self, tree: DerivationTree) -> Iterable[GrammarGraphNode]:
         start_node = self.graph.walk(tree)
         if start_node.is_accepting:
             return []
         self.search_symbol = None
         self.is_search_end_node = True
         return self.astar(start_node, start_node)
+
+
+    def astar_search_end(self, tree: DerivationTree) -> Iterable[GrammarGraphNode]:
+        return self.astar_search_end_w_controlflow(tree)

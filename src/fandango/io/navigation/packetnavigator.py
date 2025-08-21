@@ -65,7 +65,7 @@ class PacketNavigator(GrammarNavigator):
     def _to_symbols(
         path: list[GrammarGraphNode],
     ) -> list[tuple[Optional[str], Optional[str], NonTerminal]]:
-        path = list(filter(lambda n: isinstance(n.node, NonTerminalNode), path))
+        path = list(filter(lambda n: n is None or isinstance(n.node, NonTerminalNode), path))
         path = list(map(lambda n: (n.node.sender, n.node.recipient, NonTerminal(f"<{n.node.symbol.name()[9:]}" if n.node.symbol.name().startswith("<_packet_") else n.node.symbol.name())), path))
         return path
 
