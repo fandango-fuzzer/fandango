@@ -467,7 +467,7 @@ class Grammar(NodeVisitor):
         if non_terminal in self._k_path_cache:
             work = self._k_path_cache[non_terminal]
             if len(work) >= k:
-                return work[k - 1]
+                return set.union(*work[:k])
         else:
             initial = set()
             initial_work: list[Node] = [
@@ -491,7 +491,7 @@ class Grammar(NodeVisitor):
         self._k_path_cache[non_terminal] = work
 
         # return set.union(*work)
-        return set.union(*work[: (k - 1)])
+        return set.union(*work[:k])
 
     def _extract_k_paths_from_tree(
         self, tree: DerivationTree, k: int
@@ -503,7 +503,7 @@ class Grammar(NodeVisitor):
         if hash_key in self._tree_k_path_cache:
             k_paths = self._tree_k_path_cache[hash_key]
             if len(k_paths) > (k - 1) and k_paths[k - 1] is not None:
-                return k_paths[k - 1]
+                return set.union(*k_paths[:k])
 
         start_nodes: list[tuple[Optional[NonTerminal], DerivationTree]] = []
 
@@ -517,15 +517,13 @@ class Grammar(NodeVisitor):
         collect_start_nodes(tree)
         start_nodes.append((None, tree))
 
-        paths = set()
+        paths = [set() for _ in range(k)]
 
         def traverse(
             parent_symbol: Optional[NonTerminal], tree_node: DerivationTree, path
         ):
             tree_symbol = tree_node.symbol
             if isinstance(tree_symbol, Terminal):
-                if len(path) != k - 1:
-                    return
                 if parent_symbol is None:
                     raise RuntimeError(
                         "Received a Terminal with no parent symbol when computing k-path!"
@@ -546,12 +544,12 @@ class Grammar(NodeVisitor):
                 random.shuffle(parent_rule_nodes)
                 for rule_node in parent_rule_nodes:
                     if rule_node.symbol.check(symbol_value, False):
-                        paths.add(path + (rule_node.symbol,))
+                        paths[len(path)].add(path + (rule_node.symbol,))
                 return
             new_path = path + (tree_symbol,)
             if len(new_path) <= k:
-                paths.add(new_path)
-                if len(paths) == k:
+                paths[len(new_path) - 1].add(new_path)
+                if len(new_path) == k:
                     return
             for child in tree_node.children:
                 traverse(tree_symbol, child, new_path)
@@ -560,12 +558,8 @@ class Grammar(NodeVisitor):
             traverse(parent, node, tuple())
 
         if hash_key not in self._tree_k_path_cache:
-            self._tree_k_path_cache[hash_key] = []
-        k_paths = self._tree_k_path_cache[hash_key]
-        if len(k_paths) < k:
-            k_paths.extend([None] * (k - len(k_paths)))
-        k_paths[k - 1] = paths
-        return paths
+            self._tree_k_path_cache[hash_key] = paths
+        return set.union(*paths[:k])
 
     def prime(self):
         LOGGER.debug("Priming grammar")
