@@ -526,7 +526,7 @@ class Fandango:
                         "Full coverage of fuzzer controlled NonTerminals reached, stopping evolution."
                     )
                     log_message_coverage(
-                        packet_selector._compute_coverage_score(2, True)
+                        packet_selector._compute_coverage_score(self.diversity_k)
                     )
                     return
                 log_guidance_hint("Starting new protocol run.")

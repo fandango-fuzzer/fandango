@@ -30,8 +30,6 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         self.node_cost = 0
         self.max_comparisons = 10_000_000
         self.comparisons = 0
-        self.search_sender = None
-        self.search_recipient = None
         self.search_symbol = None
         self.is_search_end_node = False
 
@@ -81,25 +79,13 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
 
         if not isinstance(current.node, (NonTerminalNode, TerminalNode)):
             return False
-
-        if current.node.symbol != self.search_symbol:
-            return False
-        if self.search_sender is not None and current.node.sender != self.search_sender:
-            return False
-        if (
-            self.search_recipient is not None
-            and current.node.recipient != self.search_recipient
-        ):
-            return False
-        return True
+        return current.node.symbol == self.search_symbol
 
     def astar_tree(
         self,
         *,
         tree: DerivationTree,
-        symbol: Symbol,
-        sender: Optional[str] = None,
-        recipient: Optional[str] = None,
+        symbol: Symbol
     ):
         start_node = self.graph.walk(tree)
         if isinstance(symbol, NonTerminal):
@@ -110,12 +96,10 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             raise ValueError(f"Unsupported symbol type: {type(symbol)}")
         checker = ReachabilityChecker(self.grammar)
         if not checker.find_reachability(
-            symbol_to_reach=symbol, sender=sender, recipient=recipient, tree=tree
+            symbol_to_reach=symbol, tree=tree
         ):
             return None
         self.is_search_end_node = False
-        self.search_sender = sender
-        self.search_recipient = recipient
         self.search_symbol = symbol
         return self.astar(start_node, EagerGrammarGraphNode(symbol_node, []))
 
@@ -123,8 +107,6 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         start_node = self.graph.walk(tree)
         if start_node.is_accepting:
             return []
-        self.search_sender = None
-        self.search_recipient = None
         self.search_symbol = None
         self.is_search_end_node = True
         return self.astar(start_node, start_node)

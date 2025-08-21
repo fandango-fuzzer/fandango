@@ -62,40 +62,27 @@ class PacketNavigator(GrammarNavigator):
                 yield suggested_tree, is_complete
 
     @staticmethod
-    def _to_packet_symbols(
+    def _to_symbols(
         path: list[GrammarGraphNode],
     ) -> list[tuple[Optional[str], Optional[str], NonTerminal]]:
         path = list(filter(lambda n: isinstance(n.node, NonTerminalNode), path))
-        path = list(filter(lambda n: n.node.sender is not None, path))
-        path = list(
-            map(
-                lambda n: (
-                    n.node.sender,
-                    n.node.recipient,
-                    NonTerminal(f"<{str(n.node.symbol.value())[9:]}"),
-                ),
-                path,
-            )
-        )
+        path = list(map(lambda n: (n.node.sender, n.node.recipient, NonTerminal(f"<{n.node.symbol.name()[9:]}" if n.node.symbol.name().startswith("<_packet_") else n.node.symbol.name())), path))
         return path
 
     def astar_tree(
         self,
         *,
         tree: DerivationTree,
-        symbol: NonTerminal,
-        sender: Optional[str] = None,
-        recipient: Optional[str] = None,
+        symbol: NonTerminal
     ):
-        symbol = Terminal(symbol.name())
         paths = []
         for suggested_tree, is_complete in self._get_controlflow_tree(tree):
             path = super().astar_tree(
-                tree=suggested_tree, symbol=symbol, sender=sender, recipient=recipient
+                tree=suggested_tree, symbol=symbol
             )
             if path is None:
                 continue
-            paths.append(self._to_packet_symbols(list(path)))
+            paths.append(self._to_symbols(list(path)))
 
         paths.sort(key=lambda path: len(path))
         if len(paths) == 0:
@@ -110,6 +97,6 @@ class PacketNavigator(GrammarNavigator):
             if is_complete:
                 return []
             path = super().astar_search_end(suggested_tree)
-            paths.append(self._to_packet_symbols(list(path)))
+            paths.append(self._to_symbols(list(path)))
         paths.sort(key=lambda path: len(path))
         return paths[0]

@@ -5,7 +5,7 @@ from fandango.io.navigation.grammarreducer import GrammarReducer
 from fandango.io.navigation.powerschedule import PowerSchedule
 from fandango.language.tree import DerivationTree
 from fandango.io.navigation.packetforecaster import (
-    ForcastingPacket,
+    ForecastingPacket,
     PacketForecaster,
     ForecastingResult,
 )
@@ -45,8 +45,8 @@ class PacketSelector:
         self.compute(history_tree, self.parst_derivations)
 
     def _compute_coverage_score(
-        self, k: int, show_external: bool = False
-    ) -> list[tuple[tuple[str, Optional[str], NonTerminal], float]]:
+        self, k: int
+    ) -> list[tuple[NonTerminal, float]]:
         """
         Computes the coverage score for each NonTerminal in the given DerivationTrees.
         The score is the ratio of the number of trees containing the NonTerminal to the total number of trees.
@@ -62,38 +62,28 @@ class PacketSelector:
         trees.append(self.history_tree)
         messages: list[DerivationTree] = []
         for tree in trees:
-            if show_external:
-                messages.extend(map(lambda x: x.msg, tree.protocol_msgs()))
-            else:
-                messages.extend(
-                    filter(
-                        lambda y: y.sender in fuzzer_parties,
-                        map(lambda x: x.msg, tree.protocol_msgs()),
-                    )
-                )
+            for subtree in tree.flatten():
+                if subtree.symbol in self.coverage_symbols:
+                    messages.append(subtree)
         messages_by_nt = {}
         for msg in messages:
-            messages_by_nt.setdefault(
-                (msg.sender, msg.recipient, msg.symbol), []
-            ).append(msg)
+            messages_by_nt.setdefault(msg.symbol, []).append(msg)
         nt_coverage = {}
-        for sender, recipient, non_terminal in self.grammar.get_protocol_messages():
-            if not (show_external or (sender in fuzzer_parties)):
+        for symbol in self.coverage_symbols:
+            if symbol not in messages_by_nt:
+                nt_coverage[symbol] = 0.0
                 continue
-            if (sender, recipient, non_terminal) not in messages_by_nt:
-                nt_coverage[(sender, recipient, non_terminal)] = 0.0
-                continue
-            nt_coverage[(sender, recipient, non_terminal)] = (
+            nt_coverage[symbol] = (
                 self.grammar.compute_kpath_coverage(
-                    messages_by_nt[(sender, recipient, non_terminal)], k, non_terminal
+                    messages_by_nt[symbol], k, symbol
                 )
             )
         nt_coverage = list(
-            sorted(nt_coverage.items(), key=lambda x: (x[1], x[0][2].name()))
+            sorted(nt_coverage.items(), key=lambda x: (x[1], x[0].name()))
         )
         return nt_coverage
 
-    def _get_guide_to_end_packet(self) -> list[ForcastingPacket]:
+    def _get_guide_to_end_packet(self) -> list[ForecastingPacket]:
         path = self.navigator.astar_search_end(self.history_tree)
         if len(path) > 0:
             sender, receiver, next_nt = path[0]
@@ -130,7 +120,7 @@ class PacketSelector:
     @property
     def coverage_scores(
         self,
-    ) -> list[tuple[tuple[str, Optional[str], NonTerminal], float]]:
+    ) -> list[tuple[NonTerminal, float]]:
         if self._coverage_scores is None:
             self._coverage_scores = self._compute_coverage_score(
                 self.diversity_k
@@ -138,7 +128,7 @@ class PacketSelector:
         return self._coverage_scores
 
     @property
-    def next_packets(self) -> list[ForcastingPacket]:
+    def next_packets(self) -> list[ForecastingPacket]:
         if self._next_packets is None:
             self._next_packets = self._select_next_packet()
         return self._next_packets
@@ -160,6 +150,14 @@ class PacketSelector:
                 self.forecasting_result.get_msg_parties(),
             )
         )
+
+    def get_fuzzer_packets(self):
+        assert self.forecasting_result is not None
+        return [
+            packet
+            for sender in self.next_fuzzer_parties()
+            for packet in self.forecasting_result.parties_to_packets[sender].nt_to_packet.values()
+        ]
 
     def next_external_parties(self) -> list[str]:
         assert self.forecasting_result is not None
@@ -195,7 +193,7 @@ class PacketSelector:
             fuzzable_packets.extend(self._get_guide_to_end_packet())
             return fuzzable_packets
 
-        for (sender, recipient, target_nt), coverage_score in self.coverage_scores:
+        for target_nt, coverage_score in self.coverage_scores:
             path = self.navigator.astar_tree(tree=self.history_tree, symbol=target_nt)
             if path is None:
                 # We can't find a path to this non-terminal. That means we can't reach it without starting a new tree.
@@ -210,10 +208,24 @@ class PacketSelector:
                 log_guidance_hint(
                     f"Guiding to target {target_nt} with score {coverage_score}"
                 )
-                sender, receiver, next_nt = path[0]
+
+                sender, recipient, next_nt = next((x for x in path if x[0] is not None), (None, None, None))
+                if next_nt is None:
+                    for sender in self.next_fuzzer_parties():
+                        if sender in self.next_fuzzer_parties():
+                            for packet in self.forecasting_result[sender].nt_to_packet.values():
+                                append_packet = ForecastingPacket(packet.node)
+                                for hookin_path in packet.paths:
+                                    if any(filter(lambda s: s[0] == target_nt and s[1], hookin_path.path)):
+                                        append_packet.paths.add(hookin_path)
+                                if len(append_packet.paths) != 0:
+                                    fuzzable_packets.append(append_packet)
+                    if len(fuzzable_packets) == 0:
+                        fuzzable_packets.extend(self.get_fuzzer_packets())
+                    return fuzzable_packets
                 if (
-                    sender in self.next_fuzzer_parties()
-                    and next_nt in self.forecasting_result[sender].nt_to_packet
+                        sender in self.next_fuzzer_parties()
+                        and next_nt in self.forecasting_result[sender].nt_to_packet
                 ):
                     fuzzable_packets.append(
                         self.forecasting_result[sender].nt_to_packet[next_nt]

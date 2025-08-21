@@ -6,7 +6,7 @@ from fandango.constraints.failing_tree import FailingTree, BoundsFailingTree
 from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
 from fandango.errors import FandangoValueError
 from fandango.evolution import GeneratorWithReturn
-from fandango.io.navigation.packetforecaster import ForcastingPacket
+from fandango.io.navigation.packetforecaster import ForecastingPacket
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.symbols import NonTerminal
 from fandango.language.symbols import Slice
@@ -199,8 +199,8 @@ class IoPopulationManager(PopulationManager):
     ):
         super().__init__(grammar, start_symbol, warnings_are_errors)
         self._prev_packet_idx = 0
-        self.fuzzable_packets: list[ForcastingPacket] | None = None
-        self.fallback_packets: list[ForcastingPacket] | None = None
+        self.fuzzable_packets: list[ForecastingPacket] | None = None
+        self.fallback_packets: list[ForecastingPacket] | None = None
         self.allow_fallback_packets = False
 
     def _generate_population_hashes(self, population: list[DerivationTree]) -> set[int]:
