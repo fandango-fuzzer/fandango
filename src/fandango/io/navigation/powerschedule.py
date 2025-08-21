@@ -10,9 +10,16 @@ class PowerSchedule:
         self.energy = dict()
         self.exponent = 2.0
 
-    def assign_energy(self, packet_types: Sequence[PacketNonTerminal]):
+    def assign_energy(self, packet_types: Sequence[PacketNonTerminal], coverage: dict[PacketNonTerminal, float]):
         frequencies = Counter(packet_types)
         self.energy = dict()
+
+
+        alpha = 0.9
+
+        for type in packet_types:
+            self.energy[type] = (1 - distance(type)) * (1 - t_exp) + 0.5 * t_exp
+
         for p_type, freq in frequencies.items():
             self.energy[p_type] = 1 / (freq**self.exponent)
 

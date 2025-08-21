@@ -574,7 +574,7 @@ class Fandango:
                         )
                     except StopIteration:
                         if len(self.evaluator._hold_back_solutions) != 0:
-                            evolve_result = random.choice(self.evaluator._hold_back_solutions)
+                            evolve_result = random.choice(list(self.evaluator._hold_back_solutions))
                         else:
                             self.population_manager.allow_fallback_packets = True
                             try:
