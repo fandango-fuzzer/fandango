@@ -105,7 +105,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             empty_tree = DerivationTree(NonTerminal("<start>"))
             if not checker.find_reachability(
                     symbol_to_reach=symbol, tree=empty_tree
-            ):
+            ) and symbol != NonTerminal("<start>"):
                 raise FandangoError(
                     f"Symbol {symbol} is not reachable in grammar."
                 )
