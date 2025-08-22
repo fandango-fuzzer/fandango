@@ -273,7 +273,14 @@ class PacketSelector:
             for path in packet.paths:
                 symbol_path = tuple(map(lambda x: x[0], path.path))
                 symbol_path = (*symbol_path, packet.node.symbol)
-                if any(filter(lambda x: contains(x, symbol_path), missing_paths)):
+
+                truncated_paths = []
+                for missing_path in missing_paths:
+                    if packet.node.symbol in missing_path:
+                        truncated_paths.append(missing_path[:(missing_path.index(packet.node.symbol)+1)])
+                    else:
+                        truncated_paths.append(missing_path)
+                if any(filter(lambda x: contains(x, symbol_path), truncated_paths)):
                     append_packet.paths.add(path)
             if len(append_packet.paths) != 0:
                 packets.append(append_packet)

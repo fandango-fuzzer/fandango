@@ -65,7 +65,7 @@ class Fandango:
         best_effort: bool = False,
         random_seed: Optional[int] = None,
         start_symbol: str = "<start>",
-        diversity_k: int = 2,
+        diversity_k: int = 5,
         diversity_weight: float = 1.0,
         max_repetition_rate: float = 0.5,
         max_repetitions: Optional[int] = None,
