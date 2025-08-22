@@ -1,6 +1,7 @@
 from typing import Optional
 
 from fandango.io import FandangoIO
+from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.grammarreducer import GrammarReducer
 from fandango.io.navigation.powerschedule import PowerSchedule
 from fandango.language.tree import DerivationTree
@@ -42,6 +43,8 @@ class PacketSelector:
         self._old_coverage_scores = []
         self._coverage_scores = None
         self._guide_to_end = False
+        self._current_guide_target = None
+        self._current_guide_path = None
         self.compute(history_tree, self.parst_derivations)
 
     def _compute_coverage_score(
@@ -83,14 +86,15 @@ class PacketSelector:
     def _get_guide_to_end_packet(self) -> list[ForecastingPacket]:
         path = self.navigator.astar_search_end(self.history_tree)
         if len(path) > 0:
-            sender, receiver, next_nt = next(filter(lambda x: x[0] is not None, path), (None, None, None))
-            if next_nt is None:
+            next_packet = next(filter(lambda x: isinstance(x, PacketNonTerminal), path), None)
+            if next_packet is None:
                 return []
+            assert isinstance(next_packet, PacketNonTerminal)
             if (
-                sender in self.next_fuzzer_parties()
-                and next_nt in self.forecasting_result[sender].nt_to_packet
+                next_packet.sender in self.next_fuzzer_parties()
+                and next_packet.symbol in self.forecasting_result[next_packet.sender].nt_to_packet
             ):
-                return [self.forecasting_result[sender].nt_to_packet[next_nt]]
+                return [self.forecasting_result[next_packet.sender].nt_to_packet[next_packet.symbol]]
         return []
 
     def compute(
@@ -194,37 +198,29 @@ class PacketSelector:
 
         for target_nt, coverage_score in self.coverage_scores:
             path = self.navigator.astar_tree(tree=self.history_tree, symbol=target_nt)
-            if path is None:
-                # We can't find a path to this non-terminal. That means we can't reach it without starting a new tree.
-                # So we try to finish this tree ASAP by selecting the non-terminal with the lowest distance to completion.
-                log_guidance_hint(
-                    f"No path found for target {target_nt} with score {coverage_score}. Guiding to end of tree."
-                )
-                self._guide_to_end = True
-                fuzzable_packets.extend(self._get_guide_to_end_packet())
-                break
-            else:
-                log_guidance_hint(
-                    f"Guiding to target {target_nt} with score {coverage_score}"
-                )
+            log_guidance_hint(
+                f"Guiding to target {target_nt} with score {coverage_score}"
+            )
+            self._guide_to_end = any(filter(lambda p: p is None, path))
 
-                sender, recipient, next_nt = next((x for x in path if x[0] is not None), (None, None, None))
-                if next_nt is None:
-                    for sender in self.next_fuzzer_parties():
-                        fuzzable_packets.extend(self.find_packets_with_sender_path_symbol(sender, target_nt))
-                    if len(fuzzable_packets) == 0:
-                        fuzzable_packets.extend(self.get_fuzzer_packets())
-                    return fuzzable_packets
-                if (
-                        sender in self.next_fuzzer_parties()
-                        and next_nt in self.forecasting_result[sender].nt_to_packet
-                ):
+            next_packet = next((x for x in path if isinstance(x, PacketNonTerminal)), None)
+            if next_packet is None:
+                for sender in self.next_fuzzer_parties():
                     fuzzable_packets.extend(self.find_packets_with_sender_path_symbol(sender, target_nt))
-                    if len(fuzzable_packets) == 0:
-                        fuzzable_packets.append(
-                            self.forecasting_result[sender].nt_to_packet[next_nt]
-                        )
-                    break
+                if len(fuzzable_packets) == 0:
+                    fuzzable_packets.extend(self.get_fuzzer_packets())
+                return fuzzable_packets
+
+            if (
+                    next_packet.sender in self.next_fuzzer_parties()
+                    and next_packet.symbol in self.forecasting_result[next_packet.sender].nt_to_packet
+            ):
+                fuzzable_packets.extend(self.find_packets_with_sender_path_symbol(next_packet.sender, target_nt))
+                if len(fuzzable_packets) == 0:
+                    fuzzable_packets.append(
+                        self.forecasting_result[next_packet.sender].nt_to_packet[next_packet.symbol]
+                    )
+                break
         if len(fuzzable_packets) == 0:
             fuzzable_packets.extend(self._get_guide_to_end_packet())
         return fuzzable_packets
