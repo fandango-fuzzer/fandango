@@ -109,7 +109,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
                 raise FandangoError(
                     f"Symbol {symbol} is not reachable in grammar."
                 )
-            path = list(self.astar_search_end_w_controlflow(tree))
+            path: list[GrammarGraphNode | None] = list(self.astar_search_end_w_controlflow(tree))
             path.append(None)
             path.extend(self.astar_tree_w_controlflow(tree=empty_tree, symbol=symbol))
             return path

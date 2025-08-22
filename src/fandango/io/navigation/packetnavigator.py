@@ -1,5 +1,6 @@
 from typing import Optional
 
+from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.grammarreducer import GrammarReducer
 from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
@@ -64,17 +65,25 @@ class PacketNavigator(GrammarNavigator):
     @staticmethod
     def _to_symbols(
         path: list[GrammarGraphNode],
-    ) -> list[tuple[Optional[str], Optional[str], NonTerminal]]:
+    ) -> list[Optional[PacketNonTerminal | NonTerminal]]:
         path = list(filter(lambda n: n is None or isinstance(n.node, NonTerminalNode), path))
-        path = list(map(lambda n: (n.node.sender, n.node.recipient, NonTerminal(f"<{n.node.symbol.name()[9:]}" if n.node.symbol.name().startswith("<_packet_") else n.node.symbol.name())), path))
-        return path
+        symbol_path = []
+        for n in path:
+            if n is None:
+                symbol_path.append(None)
+                continue
+            if n.node.sender is not None:
+                symbol_path.append(PacketNonTerminal(n.node.sender, n.node.recipient, NonTerminal(f"<{n.node.symbol.name()[9:]}" if n.node.symbol.name().startswith("<_packet_") else n.node.symbol.name())))
+            else:
+                symbol_path.append(NonTerminal(n.node.symbol.name()))
+        return symbol_path
 
     def astar_tree(
         self,
         *,
         tree: DerivationTree,
         symbol: NonTerminal
-    ):
+    ) -> Optional[list[PacketNonTerminal | NonTerminal]]:
         paths = []
         for suggested_tree, is_complete in self._get_controlflow_tree(tree):
             path = super().astar_tree(
@@ -91,7 +100,7 @@ class PacketNavigator(GrammarNavigator):
 
     def astar_search_end(
         self, tree: DerivationTree
-    ) -> Optional[list[tuple[str, str, NonTerminal]]]:
+    ) -> Optional[list[PacketNonTerminal | NonTerminal]]:
         paths = []
         for suggested_tree, is_complete in self._get_controlflow_tree(tree):
             if is_complete:
