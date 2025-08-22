@@ -430,6 +430,18 @@ class Grammar(NodeVisitor):
     def update_parser(self):
         self._parser = Parser(self.rules)
 
+    def find_missing_k_paths(
+            self,
+            derivation_trees: list[DerivationTree],
+            k: int,
+            non_terminal: Optional[NonTerminal] = None,
+    ) -> set[tuple[Symbol, ...]]:
+        all_k_paths = self._generate_all_k_paths(k, non_terminal)
+        covered_k_paths = set()
+        for tree in derivation_trees:
+            covered_k_paths.update(self._extract_k_paths_from_tree(tree, k))
+        return all_k_paths.difference(covered_k_paths)
+
     def compute_kpath_coverage(
         self,
         derivation_trees: list[DerivationTree],

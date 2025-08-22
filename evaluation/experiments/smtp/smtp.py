@@ -23,6 +23,7 @@ def main():
 
     # Output solutions
     solution_count = 0
+    overall_start = time.time()
     for solution in fandango.generate(mode=FuzzingMode.IO):
         print(time.time() - time_start)
         if solution.contains_bytes():
@@ -33,6 +34,8 @@ def main():
         solution_count += 1
         if solution_count >= 10:
             break
+
+    print(f"Overall time: {time.time() - overall_start:.4f} seconds")
 
 
 if __name__ == "__main__":

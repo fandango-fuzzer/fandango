@@ -47,6 +47,18 @@ class PacketSelector:
         self._current_guide_path = None
         self.compute(history_tree, self.parst_derivations)
 
+    def _group_messages_by_nt(self, trees: list[DerivationTree]):
+        messages: list[DerivationTree] = []
+        for tree in trees:
+            for subtree in tree.flatten():
+                if subtree.symbol in self.coverage_symbols:
+                    messages.append(subtree)
+        messages_by_nt = {}
+        for msg in messages:
+            messages_by_nt.setdefault(msg.symbol, []).append(msg)
+        return messages_by_nt
+
+
     def _compute_coverage_score(
         self, k: int
     ) -> list[tuple[NonTerminal, float]]:
@@ -60,14 +72,7 @@ class PacketSelector:
         """
         trees = list(self.parst_derivations)
         trees.append(self.history_tree)
-        messages: list[DerivationTree] = []
-        for tree in trees:
-            for subtree in tree.flatten():
-                if subtree.symbol in self.coverage_symbols:
-                    messages.append(subtree)
-        messages_by_nt = {}
-        for msg in messages:
-            messages_by_nt.setdefault(msg.symbol, []).append(msg)
+        messages_by_nt = self._group_messages_by_nt(trees)
         nt_coverage = {}
         for symbol in self.coverage_symbols:
             if symbol not in messages_by_nt:
@@ -201,6 +206,9 @@ class PacketSelector:
             if len(messages) > 0:
                 last_message = messages[-1]
                 if target_nt in last_message.get_state_nt():
+                    fuzzable_packets.extend(self.get_fuzzer_packets_w_coverage(target_nt, all_derivations))
+                    if len(fuzzable_packets) > 0:
+                        return fuzzable_packets
                     fuzzable_packets.extend(self.get_fuzzer_packets())
                     return fuzzable_packets
             path = self.navigator.astar_tree(tree=self.history_tree, symbol=target_nt)
@@ -242,4 +250,31 @@ class PacketSelector:
                         append_packet.paths.add(hookin_path)
                 if len(append_packet.paths) != 0:
                     packets.append(append_packet)
+        return packets
+
+    def get_fuzzer_packets_w_coverage(self, target_nt, all_derivations) -> list[ForecastingPacket]:
+        def contains(sub, full):
+            n, m = len(sub), len(full)
+            if n == 0:
+                return True
+            for i in range(m - n + 1):
+                if full[i:i + n] == sub:
+                    return True
+            return False
+        by_nt = self._group_messages_by_nt(all_derivations)
+        if target_nt not in by_nt:
+            missing_paths = self.grammar.find_missing_k_paths([], self.diversity_k, target_nt)
+        else:
+            missing_paths = self.grammar.find_missing_k_paths(by_nt[target_nt], self.diversity_k, target_nt)
+        packets = []
+        assert self.forecasting_result is not None
+        for packet in self.get_fuzzer_packets():
+            append_packet = ForecastingPacket(packet.node)
+            for path in packet.paths:
+                symbol_path = tuple(map(lambda x: x[0], path.path))
+                symbol_path = (*symbol_path, packet.node.symbol)
+                if any(filter(lambda x: contains(x, symbol_path), missing_paths)):
+                    append_packet.paths.add(path)
+            if len(append_packet.paths) != 0:
+                packets.append(append_packet)
         return packets
