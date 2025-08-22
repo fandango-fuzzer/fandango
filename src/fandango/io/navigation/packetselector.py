@@ -179,7 +179,7 @@ class PacketSelector:
         if len(self.next_fuzzer_parties()) == 0:
             return fuzzable_packets
         self._guide_to_end = False
-        max_messages_per_tree = 50
+        max_messages_per_tree = 100
         if len(self.history_tree.protocol_msgs()) > max_messages_per_tree:
             log_guidance_hint(
                 f"Current tree contains more then {max_messages_per_tree} messages. Guiding to end of tree."
@@ -197,6 +197,12 @@ class PacketSelector:
             return fuzzable_packets
 
         for target_nt, coverage_score in self.coverage_scores:
+            messages = self.history_tree.protocol_msgs()
+            if len(messages) > 0:
+                last_message = messages[-1]
+                if target_nt in last_message.get_state_nt():
+                    fuzzable_packets.extend(self.get_fuzzer_packets())
+                    return fuzzable_packets
             path = self.navigator.astar_tree(tree=self.history_tree, symbol=target_nt)
             log_guidance_hint(
                 f"Guiding to target {target_nt} with score {coverage_score}"
