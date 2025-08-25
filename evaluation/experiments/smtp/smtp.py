@@ -32,7 +32,7 @@ def main():
             print(solution.to_string())
         time_start = time.time()
         solution_count += 1
-        if solution_count >= 10:
+        if solution_count >= 10 and False:
             break
 
     print(f"Overall time: {time.time() - overall_start:.4f} seconds")

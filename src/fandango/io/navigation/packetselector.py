@@ -219,6 +219,8 @@ class PacketSelector:
 
             next_packet = next((x for x in path if isinstance(x, PacketNonTerminal)), None)
             if next_packet is None:
+                # If no packet needs to be sent to reach the target, we are in a state that contains the target state that we want to reach.
+                # We send a packet that adds the target state nonterminal as part of its hookin path.
                 for sender in self.next_fuzzer_parties():
                     fuzzable_packets.extend(self.find_packets_with_sender_path_symbol(sender, target_nt))
                 if len(fuzzable_packets) == 0:
@@ -229,7 +231,7 @@ class PacketSelector:
                     next_packet.sender in self.next_fuzzer_parties()
                     and next_packet.symbol in self.forecasting_result[next_packet.sender].nt_to_packet
             ):
-                fuzzable_packets.extend(self.find_packets_with_sender_path_symbol(next_packet.sender, target_nt))
+                fuzzable_packets.extend(self.find_packets_with_sender_path_symbol(next_packet.sender, target_nt, next_packet.symbol))
                 if len(fuzzable_packets) == 0:
                     fuzzable_packets.append(
                         self.forecasting_result[next_packet.sender].nt_to_packet[next_packet.symbol]
@@ -240,10 +242,12 @@ class PacketSelector:
         return fuzzable_packets
 
 
-    def find_packets_with_sender_path_symbol(self, sender: str, path_symbol: NonTerminal) -> list[ForecastingPacket]:
+    def find_packets_with_sender_path_symbol(self, sender: str, path_symbol: NonTerminal, packet_symbol: Optional[NonTerminal] = None) -> list[ForecastingPacket]:
         packets = []
         if sender in self.next_fuzzer_parties():
             for packet in self.forecasting_result[sender].nt_to_packet.values():
+                if packet_symbol is not None and packet.node.symbol != packet_symbol:
+                    continue
                 append_packet = ForecastingPacket(packet.node)
                 for hookin_path in packet.paths:
                     if any(filter(lambda s: s[0] == path_symbol and s[1], hookin_path.path)):

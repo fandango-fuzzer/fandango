@@ -111,7 +111,10 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
                 )
             path: list[GrammarGraphNode | None] = list(self.astar_search_end_w_controlflow(tree))
             path.append(None)
-            path.extend(self.astar_tree_w_controlflow(tree=empty_tree, symbol=symbol))
+            if symbol != NonTerminal("<start>"):
+                path.extend(self.astar_tree_w_controlflow(tree=empty_tree, symbol=symbol))
+            else:
+                path.append(EagerGrammarGraphNode(NonTerminalNode(NonTerminal("<start>"), []), []))
             return path
         self.is_search_end_node = False
         self.search_symbol = symbol
