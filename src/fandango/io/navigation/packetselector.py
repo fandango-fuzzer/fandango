@@ -43,8 +43,9 @@ class PacketSelector:
         self._old_coverage_scores = []
         self._coverage_scores = None
         self._guide_to_end = False
-        self._current_guide_target = None
-        self._current_guide_path = None
+        self._past_guide_targets = []
+        self._guide_target = None
+        self._guide_path = None
         self.compute(history_tree, self.parst_derivations)
 
     def _group_messages_by_nt(self, trees: list[DerivationTree]):
@@ -57,6 +58,16 @@ class PacketSelector:
         for msg in messages:
             messages_by_nt.setdefault(msg.symbol, []).append(msg)
         return messages_by_nt
+
+    @staticmethod
+    def _tuple_contains(sub: tuple, full: tuple) -> bool:
+        n, m = len(sub), len(full)
+        if n == 0:
+            return True
+        for i in range(m - n + 1):
+            if full[i:i + n] == sub:
+                return True
+        return False
 
 
     def _compute_coverage_score(
@@ -179,12 +190,20 @@ class PacketSelector:
     def get_next_parties(self) -> list[str]:
         return list(self.forecasting_result.get_msg_parties())
 
+    def _select_next_target(self):
+        ps = PowerSchedule()
+        ps.assign_energy(self._past_guide_targets, dict(self.coverage_scores))
+        new_target = ps.choose()
+        self._past_guide_targets.append(new_target)
+        return new_target
+
     def _select_next_packet(self):
         fuzzable_packets = []
         if len(self.next_fuzzer_parties()) == 0:
             return fuzzable_packets
         self._guide_to_end = False
         max_messages_per_tree = 100
+
         if len(self.history_tree.protocol_msgs()) > max_messages_per_tree:
             log_guidance_hint(
                 f"Current tree contains more then {max_messages_per_tree} messages. Guiding to end of tree."
@@ -201,42 +220,57 @@ class PacketSelector:
             fuzzable_packets.extend(self._get_guide_to_end_packet())
             return fuzzable_packets
 
-        for target_nt, coverage_score in self.coverage_scores:
-            messages = self.history_tree.protocol_msgs()
-            if len(messages) > 0:
-                last_message = messages[-1]
-                if target_nt in last_message.get_state_nt():
-                    fuzzable_packets.extend(self.get_fuzzer_packets_w_coverage(target_nt, all_derivations))
-                    if len(fuzzable_packets) > 0:
-                        return fuzzable_packets
-                    fuzzable_packets.extend(self.get_fuzzer_packets())
-                    return fuzzable_packets
-            path = self.navigator.astar_tree(tree=self.history_tree, symbol=target_nt)
-            log_guidance_hint(
-                f"Guiding to target {target_nt} with score {coverage_score}"
-            )
-            self._guide_to_end = any(filter(lambda p: p is None, path))
+        if self._guide_path is None:
+            left_path = False
+            current_guide_path = []
+        else:
+            current_guide_path = self.navigator.astar_tree(tree=self.history_tree, symbol=self._guide_target)
+            left_path = not (len(current_guide_path) <= len(self._guide_path) and PacketSelector._tuple_contains(tuple(current_guide_path), tuple(self._guide_path)))
 
-            next_packet = next((x for x in path if isinstance(x, PacketNonTerminal)), None)
-            if next_packet is None:
-                # If no packet needs to be sent to reach the target, we are in a state that contains the target state that we want to reach.
-                # We send a packet that adds the target state nonterminal as part of its hookin path.
-                for sender in self.next_fuzzer_parties():
-                    fuzzable_packets.extend(self.find_packets_with_sender_path_symbol(sender, target_nt))
-                if len(fuzzable_packets) == 0:
-                    fuzzable_packets.extend(self.get_fuzzer_packets())
+        if self._guide_target is None or left_path:
+            self._guide_target = self._select_next_target()
+            self._guide_path = self.navigator.astar_tree(tree=self.history_tree, symbol=self._guide_target)
+            current_guide_path = self._guide_path
+            log_guidance_hint(
+                f"Guiding to target {self._guide_target} with score {dict(self.coverage_scores)[self._guide_target]}"
+            )
+
+        if self.coverage_scores[0][1] > 0.95:
+            print("LOWEST AT 95 PERCENT")
+
+        messages = self.history_tree.protocol_msgs()
+        if len(messages) > 0:
+            last_message = messages[-1]
+            if self._guide_target in last_message.get_state_nt():
+                fuzzable_packets.extend(self.get_fuzzer_packets_w_coverage(self._guide_target, all_derivations))
+                if len(fuzzable_packets) > 0:
+                    return fuzzable_packets
+                fuzzable_packets.extend(self.get_fuzzer_packets())
                 return fuzzable_packets
 
-            if (
-                    next_packet.sender in self.next_fuzzer_parties()
-                    and next_packet.symbol in self.forecasting_result[next_packet.sender].nt_to_packet
-            ):
-                fuzzable_packets.extend(self.find_packets_with_sender_path_symbol(next_packet.sender, target_nt, next_packet.symbol))
-                if len(fuzzable_packets) == 0:
-                    fuzzable_packets.append(
-                        self.forecasting_result[next_packet.sender].nt_to_packet[next_packet.symbol]
-                    )
-                break
+        self._guide_to_end = any(filter(lambda p: p is None, current_guide_path))
+
+        next_packet = next((x for x in current_guide_path if isinstance(x, PacketNonTerminal)), None)
+        if next_packet is None:
+            # If no packet needs to be sent to reach the target, we are in a state that contains the target state that we want to reach.
+            # We send a packet that adds the target state nonterminal as part of its hookin path.
+            for sender in self.next_fuzzer_parties():
+                fuzzable_packets.extend(self.find_packets_with_sender_path_symbol(sender, self._guide_target))
+            if len(fuzzable_packets) == 0:
+                fuzzable_packets.extend(self.get_fuzzer_packets())
+            return fuzzable_packets
+
+        if (
+                next_packet.sender in self.next_fuzzer_parties()
+                and next_packet.symbol in self.forecasting_result[next_packet.sender].nt_to_packet
+        ):
+            fuzzable_packets.extend(
+                self.find_packets_with_sender_path_symbol(next_packet.sender, self._guide_target, next_packet.symbol))
+            if len(fuzzable_packets) == 0:
+                fuzzable_packets.append(
+                    self.forecasting_result[next_packet.sender].nt_to_packet[next_packet.symbol]
+                )
+
         if len(fuzzable_packets) == 0:
             fuzzable_packets.extend(self._get_guide_to_end_packet())
         return fuzzable_packets
@@ -257,14 +291,6 @@ class PacketSelector:
         return packets
 
     def get_fuzzer_packets_w_coverage(self, target_nt, all_derivations) -> list[ForecastingPacket]:
-        def contains(sub, full):
-            n, m = len(sub), len(full)
-            if n == 0:
-                return True
-            for i in range(m - n + 1):
-                if full[i:i + n] == sub:
-                    return True
-            return False
         by_nt = self._group_messages_by_nt(all_derivations)
         if target_nt not in by_nt:
             missing_paths = self.grammar.find_missing_k_paths([], self.diversity_k, target_nt)
@@ -284,7 +310,7 @@ class PacketSelector:
                         truncated_paths.append(missing_path[:(missing_path.index(packet.node.symbol)+1)])
                     else:
                         truncated_paths.append(missing_path)
-                if any(filter(lambda x: contains(x, symbol_path), truncated_paths)):
+                if any(filter(lambda x: PacketSelector._tuple_contains(x, symbol_path), truncated_paths)):
                     append_packet.paths.add(path)
             if len(append_packet.paths) != 0:
                 packets.append(append_packet)
