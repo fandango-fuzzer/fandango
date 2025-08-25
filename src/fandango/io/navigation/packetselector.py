@@ -226,6 +226,7 @@ class PacketSelector:
         else:
             current_guide_path = self.navigator.astar_tree(tree=self.history_tree, symbol=self._guide_target)
             left_path = not (len(current_guide_path) <= len(self._guide_path) and PacketSelector._tuple_contains(tuple(current_guide_path), tuple(self._guide_path)))
+            self._guide_path = current_guide_path
 
         if self._guide_target is None or left_path:
             self._guide_target = self._select_next_target()
@@ -235,8 +236,7 @@ class PacketSelector:
                 f"Guiding to target {self._guide_target} with score {dict(self.coverage_scores)[self._guide_target]}"
             )
 
-        if self.coverage_scores[0][1] > 0.95:
-            print("LOWEST AT 95 PERCENT")
+        print(f"LOWEST AT {self.coverage_scores[0][1]} PERCENT")
 
         messages = self.history_tree.protocol_msgs()
         if len(messages) > 0:
