@@ -10,7 +10,7 @@ class PowerSchedule:
     def __init__(self):
         self.energy = dict()
         self._past_targets = []
-        self.exponent = 2.0
+        self.exponent = 0.7
 
     def assign_energy(self, coverage: dict[NonTerminal, float]):
         frequencies = Counter(self._past_targets)

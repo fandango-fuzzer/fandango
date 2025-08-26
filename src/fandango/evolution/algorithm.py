@@ -553,6 +553,8 @@ class Fandango:
                 self.population.clear()
                 self.population_manager.allow_fallback_packets = False
                 self._initial_solutions.clear()
+                self.adaptive_tuner.reset_parameters()
+                self.grammar.set_max_repetition(self.adaptive_tuner.current_max_repetition)
 
                 solutions = list(
                     self.population_manager.refill_population(

@@ -325,7 +325,7 @@ class IoEvaluator(Evaluator):
                 new_coverage = self._grammar.compute_kpath_coverage(
                     list(self.get_past_msgs(msg_key)) + [msg],
                     self._diversity_k,
-                    msg.symbol,
+                    msg.symbol
                 )
                 if old_coverage < new_coverage or new_coverage == 1.0:
                     if new_coverage < 1.0:
@@ -336,7 +336,7 @@ class IoEvaluator(Evaluator):
                     and msg_hash not in self._solution_set
                     and msg_hash not in self._hold_back_solutions
                 ):
-                    self._hold_back_solutions.add(msg)
+                    self._hold_back_solutions.add(individual)
 
         self._fitness_cache[key] = (fitness, failing_trees)
         return fitness, failing_trees
