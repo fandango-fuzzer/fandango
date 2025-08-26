@@ -250,14 +250,7 @@ class PacketSelector:
                 self._guide_target = self._select_next_target(self._guide_target)
                 self._guide_path = self.navigator.astar_tree(tree=self.history_tree, symbol=self._guide_target)
 
-                # fuzzable_packets.extend(self.get_fuzzer_packets_w_coverage(self._guide_target, all_derivations))
-                #if len(fuzzable_packets) > 0:
-                #    return fuzzable_packets
-                #fuzzable_packets.extend(self.get_fuzzer_packets())
-                #return fuzzable_packets
-
         self._guide_to_end = any(filter(lambda p: p is None, self._guide_path))
-
         next_packet = next((x for x in self._guide_path if isinstance(x, PacketNonTerminal)), None)
         if next_packet is not None:
             packet_idx = self._guide_path.index(next_packet)
@@ -268,22 +261,11 @@ class PacketSelector:
         if next_packet is None:
             # If no packet needs to be sent to reach the target, we are in a state that contains the target state that we want to reach.
             # We send a packet that adds the target state nonterminal as part of its hookin path.
-            for sender in self.next_fuzzer_parties():
-                fuzzable_packets.extend(self.find_packets(sender=sender, prev_states=self._guide_states, hookin_states=hookin_states, packet_symbol=None))
-            if len(fuzzable_packets) == 0:
-                fuzzable_packets.extend(self.get_fuzzer_packets())
-            return fuzzable_packets
+            fuzzable_packets.extend(self.find_packets(prev_states=self._guide_states, hookin_states=hookin_states, packet_symbol=None))
 
-        if (
-                next_packet.sender in self.next_fuzzer_parties()
-                and next_packet.symbol in self.forecasting_result[next_packet.sender].nt_to_packet
-        ):
+        elif next_packet.sender in self.next_fuzzer_parties():
             fuzzable_packets.extend(
                 self.find_packets(sender=next_packet.sender, prev_states=self._guide_states, hookin_states=hookin_states, packet_symbol=next_packet.symbol))
-            if len(fuzzable_packets) == 0:
-                fuzzable_packets.append(
-                    self.forecasting_result[next_packet.sender].nt_to_packet[next_packet.symbol]
-                )
 
         if len(fuzzable_packets) == 0:
             fuzzable_packets.extend(self._get_guide_to_end_packet())
@@ -298,7 +280,7 @@ class PacketSelector:
         else:
             hookin_states = tuple(hookin_states)
 
-        for current_sender in self.get_next_parties():
+        for current_sender in self.next_fuzzer_parties():
             if sender is not None and current_sender != sender:
                 continue
             for packet in self.forecasting_result[current_sender].nt_to_packet.values():
@@ -319,44 +301,4 @@ class PacketSelector:
                     append_packet.paths.add(hookin_path)
                 if len(append_packet.paths) != 0:
                     packets.append(append_packet)
-        return packets
-
-    def find_packets_with_sender_path_symbol(self, sender: str, path_symbol: NonTerminal, packet_symbol: Optional[NonTerminal] = None) -> list[ForecastingPacket]:
-        packets = []
-        if sender in self.next_fuzzer_parties():
-            for packet in self.forecasting_result[sender].nt_to_packet.values():
-                if packet_symbol is not None and packet.node.symbol != packet_symbol:
-                    continue
-                append_packet = ForecastingPacket(packet.node)
-                for hookin_path in packet.paths:
-                    if any(filter(lambda s: s[0] == path_symbol and s[1], hookin_path.path)):
-                        append_packet.paths.add(hookin_path)
-                if len(append_packet.paths) != 0:
-                    packets.append(append_packet)
-        return packets
-
-    def get_fuzzer_packets_w_coverage(self, target_nt, all_derivations) -> list[ForecastingPacket]:
-        by_nt = self._group_messages_by_nt(all_derivations)
-        if target_nt not in by_nt:
-            missing_paths = self.grammar.find_missing_k_paths([], self.diversity_k, target_nt)
-        else:
-            missing_paths = self.grammar.find_missing_k_paths(by_nt[target_nt], self.diversity_k, target_nt)
-        packets = []
-        assert self.forecasting_result is not None
-        for packet in self.get_fuzzer_packets():
-            append_packet = ForecastingPacket(packet.node)
-            for path in packet.paths:
-                symbol_path = tuple(map(lambda x: x[0], path.path))
-                symbol_path = (*symbol_path, packet.node.symbol)
-
-                truncated_paths = []
-                for missing_path in missing_paths:
-                    if packet.node.symbol in missing_path:
-                        truncated_paths.append(missing_path[:(missing_path.index(packet.node.symbol)+1)])
-                    else:
-                        truncated_paths.append(missing_path)
-                if any(filter(lambda x: PacketSelector._tuple_contains(x, symbol_path), truncated_paths)):
-                    append_packet.paths.add(path)
-            if len(append_packet.paths) != 0:
-                packets.append(append_packet)
         return packets

@@ -29,7 +29,10 @@ class PowerSchedule:
 
     def _normalize_energy(self) -> dict[PacketNonTerminal, float]:
         sum_energy = sum(self.energy.values())
-        assert sum_energy != 0
+        if sum_energy == 0:
+            # all energies are zero, assign uniform distribution
+            n = len(self.energy)
+            return dict(map(lambda item: (item[0], 1 / n), self.energy.items()))
         norm_energy = dict(
             map(lambda item: (item[0], item[1] / sum_energy), self.energy.items())
         )
