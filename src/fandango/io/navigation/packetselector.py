@@ -95,7 +95,7 @@ class PacketSelector:
                 continue
             nt_coverage[symbol] = (
                 self.grammar.compute_kpath_coverage(
-                    messages_by_nt[symbol], k, symbol
+                    messages_by_nt[symbol], k, symbol, True
                 )
             )
         nt_coverage = list(
@@ -211,7 +211,7 @@ class PacketSelector:
         if len(self.next_fuzzer_parties()) == 0:
             return fuzzable_packets
         self._guide_to_end = False
-        max_messages_per_tree = 100
+        max_messages_per_tree = 200
 
         if len(self.history_tree.protocol_msgs()) > max_messages_per_tree:
             log_guidance_hint(

@@ -51,7 +51,7 @@ class Grammar(NodeVisitor):
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
         self._parser = Parser(self.rules)
-        self._k_path_cache: dict[NonTerminal, list[set[tuple[Symbol, ...]]]] = dict()
+        self._k_path_cache: dict[tuple[NonTerminal, bool], list[set[tuple[Symbol, ...]]]] = dict()
         self._tree_k_path_cache: dict[int, set[tuple[Symbol, ...]]] = (
             dict()
         )
@@ -447,18 +447,19 @@ class Grammar(NodeVisitor):
         derivation_trees: list[DerivationTree],
         k: int,
         non_terminal: Optional[NonTerminal] = None,
+        overlap_to_root: bool = False,
     ) -> float:
         """
         Computes the k-path coverage of the grammar given a set of derivation trees.
         Returns a score between 0 and 1 representing the fraction of k-paths covered.
         """
         # Generate all possible k-paths in the grammar
-        all_k_paths = self._generate_all_k_paths(k, non_terminal)
+        all_k_paths = self._generate_all_k_paths(k, non_terminal, overlap_to_root)
 
         # Extract k-paths from the derivation trees
         covered_k_paths = set()
         for tree in derivation_trees:
-            covered_k_paths.update(self._extract_k_paths_from_tree(tree, k))
+            covered_k_paths.update(self._extract_k_paths_from_tree(tree, k, overlap_to_root))
             if len(covered_k_paths) == len(all_k_paths):
                 return 1.0
 
@@ -468,7 +469,7 @@ class Grammar(NodeVisitor):
         return len(covered_k_paths) / len(all_k_paths)
 
     def _generate_all_k_paths(
-        self, k: int, non_terminal: NonTerminal = NonTerminal("<start>")
+        self, k: int, non_terminal: NonTerminal = NonTerminal("<start>"), overlap_to_root: bool = False
     ) -> set[tuple[Symbol, ...]]:
         """
         Computes the *k*-paths for this grammar, constructively. See: doi.org/10.1109/ASE.2019.00027
@@ -476,8 +477,8 @@ class Grammar(NodeVisitor):
         :param k: The length of the paths.
         :return: All paths of length up to *k* within this grammar.
         """
-        if non_terminal in self._k_path_cache:
-            cache_work = self._k_path_cache[non_terminal]
+        if (non_terminal, overlap_to_root) in self._k_path_cache:
+            cache_work = self._k_path_cache[(non_terminal, overlap_to_root)]
             if len(cache_work) >= k:
                 return cache_work[k - 1]
 
@@ -508,17 +509,25 @@ class Grammar(NodeVisitor):
             for path in work_k:
                 symbol_work_k.add(tuple(node.to_symbol() for node in path))
 
-        self._k_path_cache[non_terminal] = symbol_work
+        if overlap_to_root:
+            all_k_paths = self._generate_all_k_paths(k)
+            for k_path in all_k_paths:
+                if non_terminal in k_path:
+                    for idx in range(len(k_path) - 1, k):
+                        symbol_work[idx].add(k_path)
+
+
+        self._k_path_cache[(non_terminal, overlap_to_root)] = symbol_work
 
         return symbol_work[k - 1]
 
     def _extract_k_paths_from_tree(
-        self, tree: DerivationTree, k: int
+        self, tree: DerivationTree, k: int, overlap_to_root: bool = False
     ) -> set[tuple[Symbol, ...]]:
         """
         Extracts all k-length paths (k-paths) from a derivation tree.
         """
-        hash_key = hash((tree, k))
+        hash_key = hash((tree, k, overlap_to_root))
         if hash_key in self._tree_k_path_cache:
             k_paths = self._tree_k_path_cache[hash_key]
             return k_paths
@@ -578,6 +587,15 @@ class Grammar(NodeVisitor):
         k_paths = set()
         for path_set in paths:
             k_paths.update(path_set)
+
+        if overlap_to_root:
+            current_node = tree
+            for _ in range(k - 1):
+                if current_node.parent is not None:
+                    current_node = current_node.parent
+            for path in self._extract_k_paths_from_tree(current_node, k, False):
+                if tree.symbol in path:
+                    k_paths.add(path)
 
         self._tree_k_path_cache[hash_key] = k_paths
         return k_paths
