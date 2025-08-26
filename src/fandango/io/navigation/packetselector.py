@@ -242,6 +242,7 @@ class PacketSelector:
             )
 
         print(f"LOWEST AT {self.coverage_scores[0][1]} PERCENT")
+        print(f"START  AT {dict(self.coverage_scores)[NonTerminal("<start>")]} PERCENT")
 
         messages = self.history_tree.protocol_msgs()
         if len(messages) > 0:
