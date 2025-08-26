@@ -527,7 +527,14 @@ class Grammar(NodeVisitor):
         """
         Extracts all k-length paths (k-paths) from a derivation tree.
         """
-        hash_key = hash((tree, k, overlap_to_root))
+
+        overlap_parent = tree
+        if overlap_to_root:
+            for _ in range(k - 1):
+                if overlap_parent.parent is not None:
+                    overlap_parent = overlap_parent.parent
+
+        hash_key = hash((tree, overlap_parent, k, overlap_to_root))
         if hash_key in self._tree_k_path_cache:
             k_paths = self._tree_k_path_cache[hash_key]
             return k_paths
@@ -589,11 +596,7 @@ class Grammar(NodeVisitor):
             k_paths.update(path_set)
 
         if overlap_to_root:
-            current_node = tree
-            for _ in range(k - 1):
-                if current_node.parent is not None:
-                    current_node = current_node.parent
-            for path in self._extract_k_paths_from_tree(current_node, k, False):
+            for path in self._extract_k_paths_from_tree(overlap_parent, k, False):
                 if tree.symbol in path:
                     k_paths.add(path)
 
