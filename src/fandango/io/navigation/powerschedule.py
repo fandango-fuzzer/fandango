@@ -10,7 +10,7 @@ class PowerSchedule:
     def __init__(self):
         self.energy = dict()
         self._past_targets = []
-        self.exponent = 0.7
+        self.exponent = 1.0
 
     def assign_energy(self, coverage: dict[NonTerminal, float]):
         frequencies = Counter(self._past_targets)
@@ -21,7 +21,7 @@ class PowerSchedule:
                 coverage_val = coverage[p_type]
             else:
                 coverage_val = 0.0
-            self.energy[p_type] = 1 / (freq**self.exponent) * (1 - coverage_val)
+            self.energy[p_type] = 1 / (freq**self.exponent) * (1.2 - coverage_val)
         for p_type in coverage.keys():
             if p_type not in self.energy:
                 self.energy[p_type] = 1 - coverage[p_type]

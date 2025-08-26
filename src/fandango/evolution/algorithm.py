@@ -523,10 +523,7 @@ class Fandango:
                     and packet_selector.coverage_scores[0][1] >= 1
                 ):
                     log_guidance_hint(
-                        "Full coverage of fuzzer controlled NonTerminals reached, stopping evolution."
-                    )
-                    log_message_coverage(
-                        packet_selector._compute_coverage_score(self.diversity_k)
+                        "Full coverage reached, stopping evolution."
                     )
                     return
                 log_guidance_hint("Starting new protocol run.")
