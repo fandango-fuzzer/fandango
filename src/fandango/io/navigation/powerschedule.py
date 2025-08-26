@@ -1,6 +1,5 @@
 import random
 from collections import Counter
-from typing import Sequence
 
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.language.symbols.non_terminal import NonTerminal
@@ -10,10 +9,11 @@ class PowerSchedule:
 
     def __init__(self):
         self.energy = dict()
+        self._past_targets = []
         self.exponent = 2.0
 
-    def assign_energy(self, packet_types: Sequence[NonTerminal], coverage: dict[NonTerminal, float]):
-        frequencies = Counter(packet_types)
+    def assign_energy(self, coverage: dict[NonTerminal, float]):
+        frequencies = Counter(self._past_targets)
         self.energy = dict()
 
         for p_type, freq in frequencies.items():
@@ -40,3 +40,6 @@ class PowerSchedule:
         key_list = list(map(lambda item: item[0], energy_list))
         value_list = list(map(lambda item: item[1], energy_list))
         return random.choices(key_list, weights=value_list, k=1)[0]
+
+    def add_past_target(self, new_target):
+        self._past_targets.append(new_target)
