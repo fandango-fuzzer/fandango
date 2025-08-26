@@ -196,6 +196,7 @@ class PacketSelector:
         else:
             self._guide_states.append(grammar_starting_symbol)
         grammar_nonterminals = self._get_subgrammar_symbols(grammar_starting_symbol)
+        grammar_nonterminals.remove(grammar_starting_symbol)
         coverage_scores = list(filter(lambda x: x[0] in grammar_nonterminals, self.coverage_scores))
         ps.assign_energy(dict(coverage_scores))
         new_target = ps.choose()
@@ -260,7 +261,7 @@ class PacketSelector:
         next_packet = next((x for x in self._guide_path if isinstance(x, PacketNonTerminal)), None)
         if next_packet is not None:
             packet_idx = self._guide_path.index(next_packet)
-            hookin_states = self._guide_path = self._guide_path[:packet_idx]
+            hookin_states = self._guide_path[:packet_idx]
         else:
             hookin_states = self._guide_path
 
