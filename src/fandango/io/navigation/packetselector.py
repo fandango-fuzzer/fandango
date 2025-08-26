@@ -11,8 +11,8 @@ from fandango.io.navigation.packetforecaster import (
     ForecastingResult,
 )
 from fandango.io.navigation.packetnavigator import PacketNavigator
-from fandango.language import Grammar
-from fandango.language.symbols import NonTerminal
+from fandango.language.grammar.grammar import Grammar
+from fandango.language.symbols import NonTerminal, Symbol
 from fandango.logger import log_guidance_hint
 
 
@@ -26,11 +26,8 @@ class PacketSelector:
     ):
         self.start_symbol = NonTerminal("<start>")
         self.grammar = grammar
-        reduced_grammar = GrammarReducer(self.grammar.grammar_settings).process(self.grammar.rules, self.start_symbol)
-        self.coverage_symbols = list(reduced_grammar.keys())
-        self.coverage_symbols.extend(map(lambda x: x[2], self.grammar.get_protocol_messages(self.start_symbol)))
-        self.coverage_symbols = list(filter(lambda x: x in self.grammar.rules, self.coverage_symbols))
-        self.power_schedule = PowerSchedule()
+        self.coverage_symbols = self._get_subgrammar_symbols(self.start_symbol)
+        self.power_schedules: dict[Symbol, PowerSchedule] = dict()
         self.io_instance = io_instance
         self.navigator = PacketNavigator(grammar, self.start_symbol)
         self.forecaster = PacketForecaster(self.grammar)
@@ -39,20 +36,27 @@ class PacketSelector:
         self.history_tree = None
         self._forecasting_result = None
         self._next_packets = None
-        self._old_packet_selections = []
-        self._old_coverage_scores = []
         self._coverage_scores = None
         self._guide_to_end = False
-        self._past_guide_targets = []
         self._guide_target = None
         self._guide_path = None
+        self._guide_states: list[Symbol] = []
         self.compute(history_tree, self.parst_derivations)
 
-    def _group_messages_by_nt(self, trees: list[DerivationTree]):
+    def _get_subgrammar_symbols(self, starting_symbol: NonTerminal):
+        reduced_grammar = GrammarReducer(self.grammar.grammar_settings).process(self.grammar.rules, starting_symbol)
+        symbols = set(reduced_grammar.keys())
+        symbols.update(map(lambda x: x[2], self.grammar.get_protocol_messages(starting_symbol)))
+        symbols = set(filter(lambda x: x in self.grammar.rules, symbols))
+        return symbols
+
+    def _group_messages_by_nt(self, trees: list[DerivationTree], non_terminals: Optional[set[NonTerminal]] = None):
+        if non_terminals is None:
+            non_terminals = self.coverage_symbols
         messages: list[DerivationTree] = []
         for tree in trees:
             for subtree in tree.flatten():
-                if subtree.symbol in self.coverage_symbols:
+                if subtree.symbol in non_terminals:
                     messages.append(subtree)
         messages_by_nt = {}
         for msg in messages:
@@ -118,14 +122,6 @@ class PacketSelector:
     ):
         self.history_tree = history_tree
         self.parst_derivations = parst_derivations
-        if self._coverage_scores is not None:
-            self._old_coverage_scores.append(self._coverage_scores)
-        if self._next_packets is not None:
-            for packet in self._next_packets:
-                node = packet.node
-                self._old_packet_selections.append(
-                    (node.sender, node.recipient, node.symbol)
-                )
         self._forecasting_result = None
         self._coverage_scores = None
         self._next_packets = None
@@ -190,15 +186,27 @@ class PacketSelector:
     def get_next_parties(self) -> list[str]:
         return list(self.forecasting_result.get_msg_parties())
 
-    def _select_next_target(self):
-        ps = PowerSchedule()
-        ps.assign_energy(self._past_guide_targets, dict(self.coverage_scores))
+    def _select_next_target(self, grammar_starting_symbol: Optional[NonTerminal] = None) -> NonTerminal:
+        if grammar_starting_symbol not in self.power_schedules:
+            self.power_schedules[grammar_starting_symbol] = PowerSchedule()
+        ps = self.power_schedules[grammar_starting_symbol]
+        if grammar_starting_symbol is None:
+            self._guide_states = []
+            grammar_starting_symbol = self.start_symbol
+        else:
+            self._guide_states.append(grammar_starting_symbol)
+        grammar_nonterminals = self._get_subgrammar_symbols(grammar_starting_symbol)
+        coverage_scores = list(filter(lambda x: x[0] in grammar_nonterminals, self.coverage_scores))
+        ps.assign_energy(dict(coverage_scores))
         new_target = ps.choose()
-        self._past_guide_targets.append(new_target)
+        ps.add_past_target(new_target)
         return new_target
 
     def _select_next_packet(self):
         fuzzable_packets = []
+        all_derivations = list(self.parst_derivations)
+        all_derivations.append(self.history_tree)
+
         if len(self.next_fuzzer_parties()) == 0:
             return fuzzable_packets
         self._guide_to_end = False
@@ -211,9 +219,7 @@ class PacketSelector:
             self._guide_to_end = True
             fuzzable_packets.extend(self._get_guide_to_end_packet())
             return fuzzable_packets
-        # Select next packet to send by computing guiding generator to underexplored areas of the grammar
-        all_derivations = list(self.parst_derivations)
-        all_derivations.append(self.history_tree)
+
         if len(self.coverage_scores) > 0 and self.coverage_scores[0][1] == 1.0:
             log_guidance_hint("Full coverage reached. Guiding to end of tree.")
             self._guide_to_end = True
@@ -222,7 +228,6 @@ class PacketSelector:
 
         if self._guide_path is None:
             left_path = False
-            current_guide_path = []
         else:
             current_guide_path = self.navigator.astar_tree(tree=self.history_tree, symbol=self._guide_target)
             left_path = not (len(current_guide_path) <= len(self._guide_path) and PacketSelector._tuple_contains(tuple(current_guide_path), tuple(self._guide_path)))
@@ -231,7 +236,6 @@ class PacketSelector:
         if self._guide_target is None or left_path:
             self._guide_target = self._select_next_target()
             self._guide_path = self.navigator.astar_tree(tree=self.history_tree, symbol=self._guide_target)
-            current_guide_path = self._guide_path
             log_guidance_hint(
                 f"Guiding to target {self._guide_target} with score {dict(self.coverage_scores)[self._guide_target]}"
             )
@@ -242,20 +246,29 @@ class PacketSelector:
         if len(messages) > 0:
             last_message = messages[-1]
             if self._guide_target in last_message.get_state_nt():
-                fuzzable_packets.extend(self.get_fuzzer_packets_w_coverage(self._guide_target, all_derivations))
-                if len(fuzzable_packets) > 0:
-                    return fuzzable_packets
-                fuzzable_packets.extend(self.get_fuzzer_packets())
-                return fuzzable_packets
+                self._guide_target = self._select_next_target(self._guide_target)
+                self._guide_path = self.navigator.astar_tree(tree=self.history_tree, symbol=self._guide_target)
 
-        self._guide_to_end = any(filter(lambda p: p is None, current_guide_path))
+                # fuzzable_packets.extend(self.get_fuzzer_packets_w_coverage(self._guide_target, all_derivations))
+                #if len(fuzzable_packets) > 0:
+                #    return fuzzable_packets
+                #fuzzable_packets.extend(self.get_fuzzer_packets())
+                #return fuzzable_packets
 
-        next_packet = next((x for x in current_guide_path if isinstance(x, PacketNonTerminal)), None)
+        self._guide_to_end = any(filter(lambda p: p is None, self._guide_path))
+
+        next_packet = next((x for x in self._guide_path if isinstance(x, PacketNonTerminal)), None)
+        if next_packet is not None:
+            packet_idx = self._guide_path.index(next_packet)
+            hookin_states = self._guide_path = self._guide_path[:packet_idx]
+        else:
+            hookin_states = self._guide_path
+
         if next_packet is None:
             # If no packet needs to be sent to reach the target, we are in a state that contains the target state that we want to reach.
             # We send a packet that adds the target state nonterminal as part of its hookin path.
             for sender in self.next_fuzzer_parties():
-                fuzzable_packets.extend(self.find_packets_with_sender_path_symbol(sender, self._guide_target))
+                fuzzable_packets.extend(self.find_packets(sender=sender, prev_states=self._guide_states, hookin_states=hookin_states, packet_symbol=None))
             if len(fuzzable_packets) == 0:
                 fuzzable_packets.extend(self.get_fuzzer_packets())
             return fuzzable_packets
@@ -265,7 +278,7 @@ class PacketSelector:
                 and next_packet.symbol in self.forecasting_result[next_packet.sender].nt_to_packet
         ):
             fuzzable_packets.extend(
-                self.find_packets_with_sender_path_symbol(next_packet.sender, self._guide_target, next_packet.symbol))
+                self.find_packets(sender=next_packet.sender, prev_states=self._guide_states, hookin_states=hookin_states, packet_symbol=next_packet.symbol))
             if len(fuzzable_packets) == 0:
                 fuzzable_packets.append(
                     self.forecasting_result[next_packet.sender].nt_to_packet[next_packet.symbol]
@@ -275,6 +288,37 @@ class PacketSelector:
             fuzzable_packets.extend(self._get_guide_to_end_packet())
         return fuzzable_packets
 
+    def find_packets(self, *, sender: Optional[str] = None, prev_states: Optional[list[Symbol]] = None, hookin_states: Optional[list[Symbol]] = None, packet_symbol: Optional[NonTerminal] = None) -> list[ForecastingPacket]:
+        packets = []
+        if prev_states is None:
+            prev_states = []
+        if hookin_states is None:
+            hookin_states = tuple()
+        else:
+            hookin_states = tuple(hookin_states)
+
+        for current_sender in self.get_next_parties():
+            if sender is not None and current_sender != sender:
+                continue
+            for packet in self.forecasting_result[current_sender].nt_to_packet.values():
+                if packet_symbol is not None and packet.node.symbol != packet_symbol:
+                    continue
+                append_packet = ForecastingPacket(packet.node)
+                for hookin_path in packet.paths:
+                    matches_history_states = True
+                    for msg, expected_state in zip(hookin_path.tree.protocol_msgs()[::-1], prev_states[::-1]):
+                        if expected_state not in msg.get_state_nt():
+                            matches_history_states = False
+                            break
+                    if not matches_history_states:
+                        continue
+                    packet_hookin_states = tuple(map(lambda y: y[0], filter(lambda x: x[1], hookin_path.path)))
+                    if not PacketSelector._tuple_contains(hookin_states, packet_hookin_states):
+                        continue
+                    append_packet.paths.add(hookin_path)
+                if len(append_packet.paths) != 0:
+                    packets.append(append_packet)
+        return packets
 
     def find_packets_with_sender_path_symbol(self, sender: str, path_symbol: NonTerminal, packet_symbol: Optional[NonTerminal] = None) -> list[ForecastingPacket]:
         packets = []
