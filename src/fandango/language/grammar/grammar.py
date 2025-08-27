@@ -442,6 +442,27 @@ class Grammar(NodeVisitor):
             covered_k_paths.update(self._extract_k_paths_from_tree(tree, k))
         return all_k_paths.difference(covered_k_paths)
 
+    def get_uncovered_k_paths(
+        self,
+        derivation_trees: list[DerivationTree],
+        k: int,
+        non_terminal: Optional[NonTerminal] = None,
+        overlap_to_root: bool = False,
+    ) -> list[tuple[Symbol, ...]]:
+        """
+        Returns a list of uncovered k-paths in the grammar given a set of derivation trees.
+        """
+        all_k_paths = self._generate_all_k_paths(k, non_terminal, overlap_to_root)
+        covered_k_paths = set()
+        for tree in derivation_trees:
+            covered_k_paths.update(self._extract_k_paths_from_tree(tree, k, overlap_to_root))
+            if len(covered_k_paths) == len(all_k_paths):
+                return []
+
+        uncovered_k_paths = all_k_paths.difference(covered_k_paths)
+        return list(uncovered_k_paths)
+
+
     def compute_kpath_coverage(
         self,
         derivation_trees: list[DerivationTree],
