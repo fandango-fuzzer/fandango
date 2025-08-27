@@ -33,6 +33,7 @@ class PacketSelector:
         self.forecaster = PacketForecaster(self.grammar)
         self.diversity_k = diversity_k
         self.parst_derivations: set[DerivationTree] = set()
+        self.prev_past_derivations_len = 0
         self.history_tree = None
         self._forecasting_result = None
         self._next_packets = None
@@ -186,6 +187,110 @@ class PacketSelector:
     def get_next_parties(self) -> list[str]:
         return list(self.forecasting_result.get_msg_parties())
 
+    def _all_derivation_trees(self):
+        all_derivation_trees = list(self.parst_derivations)
+        all_derivation_trees.append(self.history_tree)
+        return all_derivation_trees
+
+    def _uncovered_paths(self):
+        return self.grammar.get_uncovered_k_paths(self._all_derivation_trees(), self.diversity_k, self.start_symbol)
+
+
+    def _select_next_target_2(self, grammar_starting_symbol: Optional[NonTerminal] = None):
+        def shorten_tuples(list1, list2):
+            results = []
+            for tup in list1:
+                longest = 0
+                for ref in list2:
+                    if tup[:len(ref)] == ref and len(ref) > longest:
+                        longest = len(ref)
+                results.append((tup[longest:], longest))
+            return results
+
+        def is_prefix(a: tuple, b: tuple) -> bool:
+            return len(a) <= len(b) and b[:len(a)] == a
+
+        current_guide_states = tuple(self._guide_states)
+        uncovered_paths = self._uncovered_paths()
+        uncovered_state_paths = []
+
+        # Remove or truncate all parts that are not part of the state model
+        for path in uncovered_paths:
+            added = False
+            for idx, symbol in enumerate(path):
+                if symbol not in self.coverage_symbols and idx != 0:
+                    uncovered_state_paths.append(path[:idx])
+                    added = True
+                    break
+            if not added:
+                uncovered_state_paths.append(path)
+
+        relevant_packets = []
+        packets_with_coverage = list()
+        # check of each packet, if it can directly cover any uncovered paths
+        for party in self.get_next_parties():
+            for packet in self.forecasting_result.parties_to_packets[party].nt_to_packet.values():
+                append_packet = ForecastingPacket(packet.node)
+                packet_covered_paths = set()
+                for path in packet.paths:
+                    new_path = tuple(map(lambda y: y[0], filter(lambda x: x[1], path.path)))
+                    existing_path = tuple(map(lambda y: y[0], filter(lambda x: not x[1], path.path)))
+                    # only packets that expand the current search area are taken into account
+                    if not is_prefix(current_guide_states, new_path):
+                        continue
+                    append_packet.paths.add(path)
+                    full_path = existing_path + new_path + (packet.node.symbol,)
+                    new_covered_paths = set(filter(lambda x: PacketSelector._tuple_contains(x, full_path), uncovered_paths))
+                    if len(new_covered_paths) == 0:
+                        continue
+                    append_packet.paths.add(path)
+                    packet_covered_paths.update(new_covered_paths)
+                if len(append_packet.paths) == 0:
+                    continue
+                packet_covered_paths = len(packet_covered_paths)
+                packet_covered_paths += len(self.grammar.get_uncovered_k_paths(self._all_derivation_trees(), self.diversity_k, packet.node.symbol))
+                packets_with_coverage.append((append_packet, packet_covered_paths))
+
+
+
+        direct_reach_paths = set()
+        reachable_path_distribution = dict()
+        for packet in relevant_packets:
+            for path in packet.paths:
+                cover = tuple(map(lambda y: y[0], filter(lambda x: x[1], path.path)))
+                cover = cover + (packet.node.symbol,)
+                direct_reach_paths.add((packet, cover))
+        for uncovered_path, covered_len in shortened_paths:
+            prefix = next(filter(lambda x: is_prefix(x[1], uncovered_path), direct_reach_paths), None)
+            if prefix is not None:
+                if prefix[1] not in reachable_path_distribution:
+                    reachable_path_distribution[prefix[1]] = {'score': 0, 'node': prefix[0]}
+                reachable_path_distribution[prefix[1]]['score'] += 1 + covered_len
+
+        by_next_path_node = dict()
+        for path, covered_len in shortened_paths:
+            if len(path) == 0:
+                continue
+            next_node = path[0]
+            if next_node not in self.coverage_symbols:
+                continue
+            if next_node not in by_next_path_node:
+                by_next_path_node[next_node] = 0
+            by_next_path_node[next_node] += 1 + covered_len
+
+        if grammar_starting_symbol not in self.power_schedules:
+            self.power_schedules[grammar_starting_symbol] = PowerSchedule()
+        ps = self.power_schedules[grammar_starting_symbol]
+        if grammar_starting_symbol is None:
+            self._guide_states = []
+        else:
+            self._guide_states.append(grammar_starting_symbol)
+        ps.assign_energy_new(by_next_path_node, reachable_path_distribution)
+        new_target = ps.choose()
+        ps.add_past_target(new_target)
+        return new_target
+
+
     def _select_next_target(self, grammar_starting_symbol: Optional[NonTerminal] = None) -> NonTerminal:
         if grammar_starting_symbol not in self.power_schedules:
             self.power_schedules[grammar_starting_symbol] = PowerSchedule()
@@ -203,7 +308,28 @@ class PacketSelector:
         ps.add_past_target(new_target)
         return new_target
 
+    def _is_appended_target_state(self, tree: DerivationTree) -> bool:
+        messages = tree.protocol_msgs()
+        if len(messages) > 0:
+            last_message = messages[-1]
+            return self._guide_target in last_message.get_state_nt()
+        return False
+
+    def _is_can_enter_target_state(self) -> bool:
+        for packet in self.get_fuzzer_packets():
+            for path in packet.paths:
+                if self._guide_target in set(map(lambda y: y[0], filter(lambda x: x[1], path.path))):
+                    return True
+        return False
+
     def _select_next_packet(self):
+        #print(f"LOWEST AT {self.coverage_scores[0][1]} PERCENT ({self.coverage_scores[0][0]})")
+        #print(f"START  AT {dict(self.coverage_scores)[NonTerminal("<start>")]} PERCENT")
+        #return self.get_fuzzer_packets()
+        is_new_tree = len(self.parst_derivations) > self.prev_past_derivations_len
+        if is_new_tree:
+            self._guide_states.clear()
+        self.prev_past_derivations_len = len(self.parst_derivations)
         fuzzable_packets = []
         all_derivations = list(self.parst_derivations)
         all_derivations.append(self.history_tree)
@@ -232,24 +358,23 @@ class PacketSelector:
         else:
             current_guide_path = self.navigator.astar_tree(tree=self.history_tree, symbol=self._guide_target)
             left_path = not (len(current_guide_path) <= len(self._guide_path) and PacketSelector._tuple_contains(tuple(current_guide_path), tuple(self._guide_path)))
+            # any(filter(lambda x: isinstance(x, PacketNonTerminal), self._guide_path)) and
+            left_path = left_path and not self._is_can_enter_target_state()
             self._guide_path = current_guide_path
 
         if self._guide_target is None or left_path:
-            self._guide_target = self._select_next_target()
+            self._guide_target = self._select_next_target_2()
             self._guide_path = self.navigator.astar_tree(tree=self.history_tree, symbol=self._guide_target)
             log_guidance_hint(
                 f"Guiding to target {self._guide_target} with score {dict(self.coverage_scores)[self._guide_target]}"
             )
 
-        print(f"LOWEST AT {self.coverage_scores[0][1]} PERCENT")
+        print(f"LOWEST AT {self.coverage_scores[0][1]} PERCENT ({self.coverage_scores[0][0]})")
         print(f"START  AT {dict(self.coverage_scores)[NonTerminal("<start>")]} PERCENT")
 
-        messages = self.history_tree.protocol_msgs()
-        if len(messages) > 0:
-            last_message = messages[-1]
-            if self._guide_target in last_message.get_state_nt():
-                self._guide_target = self._select_next_target(self._guide_target)
-                self._guide_path = self.navigator.astar_tree(tree=self.history_tree, symbol=self._guide_target)
+        while self._is_can_enter_target_state() or self._is_appended_target_state(self.history_tree):
+            self._guide_target = self._select_next_target_2(self._guide_target)
+            self._guide_path = self.navigator.astar_tree(tree=self.history_tree, symbol=self._guide_target)
 
         self._guide_to_end = any(filter(lambda p: p is None, self._guide_path))
         next_packet = next((x for x in self._guide_path if isinstance(x, PacketNonTerminal)), None)
@@ -289,12 +414,14 @@ class PacketSelector:
                     continue
                 append_packet = ForecastingPacket(packet.node)
                 for hookin_path in packet.paths:
-                    matches_history_states = True
-                    for msg, expected_state in zip(hookin_path.tree.protocol_msgs()[::-1], prev_states[::-1]):
-                        if expected_state not in msg.get_state_nt():
-                            matches_history_states = False
+                    match_prev_state = True
+                    curr_hookin_path_idx = 0
+                    for state in prev_states:
+                        if state not in hookin_path.path[curr_hookin_path_idx:]:
+                            match_prev_state = False
                             break
-                    if not matches_history_states:
+                        curr_hookin_path_idx = hookin_path.path[curr_hookin_path_idx].index(state)
+                    if not match_prev_state:
                         continue
                     packet_hookin_states = tuple(map(lambda y: y[0], filter(lambda x: x[1], hookin_path.path)))
                     if not PacketSelector._tuple_contains(hookin_states, packet_hookin_states):
