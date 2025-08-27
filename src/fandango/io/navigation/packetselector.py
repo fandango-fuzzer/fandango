@@ -144,13 +144,15 @@ class PacketSelector:
                 if not any_match:
                     all_paths.remove(path)
 
+            covered_k_paths = set()
+            for tree in messages_by_nt[cov_symbol]:
+                covered_k_paths.update(self.grammar._extract_k_paths_from_tree(tree, self.diversity_k, True))
+            covered_k_paths = covered_k_paths.intersection(all_paths)
 
-
-            nt_coverage[cov_symbol] = (
-                self.grammar.compute_kpath_coverage(
-                    messages_by_nt[cov_symbol], self.diversity_k, cov_symbol, False
-                )
-            )
+            if not all_paths:
+                nt_coverage[cov_symbol] = 1.0
+            else:
+                nt_coverage[cov_symbol] = len(covered_k_paths) / len(all_paths)
         nt_coverage = list(
             sorted(nt_coverage.items(), key=lambda x: (x[1], x[0].name()))
         )
@@ -355,7 +357,7 @@ class PacketSelector:
         grammar_nonterminals = self._get_subgrammar_symbols(grammar_starting_symbol)
         grammar_nonterminals.remove(grammar_starting_symbol)
         coverage_scores = self._compute_coverage_score_perspective()
-        coverage_scores = list(filter(lambda x: x[0] in grammar_nonterminals, self.coverage_scores))
+        coverage_scores = list(filter(lambda x: x[0] in grammar_nonterminals, coverage_scores))
         ps.assign_energy(dict(coverage_scores))
         new_target = ps.choose()
         ps.add_past_target(new_target)
