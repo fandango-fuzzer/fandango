@@ -251,7 +251,7 @@ class PacketSelector:
                 packet_covered_paths += len(self.grammar.get_uncovered_k_paths(self._all_derivation_trees(), self.diversity_k, packet.node.symbol))
                 packets_with_coverage.append((append_packet, packet_covered_paths))
 
-
+        
 
         direct_reach_paths = set()
         reachable_path_distribution = dict()
