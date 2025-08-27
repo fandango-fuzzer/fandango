@@ -125,20 +125,30 @@ class PacketSelector:
                 existing_prefix = path[:idx]
                 any_match = len(controlflow_trees) == 0
                 for tree in controlflow_trees:
-                    for prefix_symbol in existing_prefix:
-                        reachable = self.navigator.check_reachability_w_controlflow(tree=tree, symbol=prefix_symbol)
-                        if reachable:
-                            any_match = True
-                            break
-                        symbol_trees = self.history_tree.find_all_nodes(prefix_symbol, exclude_read_only=False)
-                        any_incomplete = False
-                        for symbol_tree in symbol_trees:
-                            if not rule_completion_tester.check_complete(symbol_tree):
+                    first_symbol = existing_prefix[0]
+                    reachable = self.navigator.check_reachability_w_controlflow(tree=tree, symbol=first_symbol)
+                    if reachable:
+                        any_match = True
+                        break
+                    symbol_trees = self.history_tree.find_all_nodes(first_symbol, exclude_read_only=False)
+                    any_incomplete = False
+                    for symbol_tree in symbol_trees:
+                        if not rule_completion_tester.check_complete(symbol_tree):
+                            inner_symbol_trees = {symbol_tree}
+                            for inner_symbol in existing_prefix[1:]:
+                                new_inner_symbol_trees = set()
+                                for inner_symbol_tree in inner_symbol_trees:
+                                    new_inner_symbol_trees.update(inner_symbol_tree.find_all_nodes(inner_symbol, exclude_read_only=False))
+                                inner_symbol_trees = new_inner_symbol_trees
+                                for inner_symbol_tree in set(inner_symbol_trees):
+                                    if rule_completion_tester.check_complete(inner_symbol_tree):
+                                        inner_symbol_trees.remove(inner_symbol_tree)
+                            if len(inner_symbol_trees) > 0:
                                 any_incomplete = True
                                 break
-                        if any_incomplete:
-                            any_match = True
-                            break
+                    if any_incomplete:
+                        any_match = True
+                        break
                     if any_match:
                         break
                 if not any_match:
