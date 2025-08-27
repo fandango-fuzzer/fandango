@@ -85,6 +85,11 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             return NonTerminal(f"<{current.node.symbol.name()[9:]}") == self.search_symbol
         return False
 
+    def check_reachability_w_controlflow(self, *, tree: DerivationTree, symbol: Symbol) -> bool:
+        checker = ReachabilityChecker(self.grammar)
+        return checker.find_reachability(tree=tree, symbol_to_reach=symbol)
+
+
     def astar_tree_w_controlflow(
         self,
         *,
@@ -98,13 +103,12 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             symbol_node = TerminalNode(symbol, [])
         else:
             raise ValueError(f"Unsupported symbol type: {type(symbol)}")
-        checker = ReachabilityChecker(self.grammar)
-        if not checker.find_reachability(
-            symbol_to_reach=symbol, tree=tree
+        if not self.check_reachability_w_controlflow(
+            symbol=symbol, tree=tree
         ):
             empty_tree = DerivationTree(NonTerminal("<start>"))
-            if not checker.find_reachability(
-                    symbol_to_reach=symbol, tree=empty_tree
+            if not self.check_reachability_w_controlflow(
+                    symbol=symbol, tree=empty_tree
             ) and symbol != NonTerminal("<start>"):
                 raise FandangoError(
                     f"Symbol {symbol} is not reachable in grammar."

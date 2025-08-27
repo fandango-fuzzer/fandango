@@ -33,7 +33,7 @@ class PacketNavigator(GrammarNavigator):
         self._parser = PacketIterativeParser(reduced_rules)
         self.set_message_cost(1)
 
-    def _get_controlflow_tree(self, tree: DerivationTree):
+    def get_controlflow_tree(self, tree: DerivationTree):
         history_nts = ""
         for r_msg in tree.protocol_msgs():
             assert isinstance(r_msg.msg.symbol, NonTerminal)
@@ -85,7 +85,7 @@ class PacketNavigator(GrammarNavigator):
         symbol: NonTerminal
     ) -> Optional[list[PacketNonTerminal | NonTerminal]]:
         paths = []
-        for suggested_tree, is_complete in self._get_controlflow_tree(tree):
+        for suggested_tree, is_complete in self.get_controlflow_tree(tree):
             path = super().astar_tree(
                 tree=suggested_tree, symbol=symbol
             )
@@ -102,7 +102,7 @@ class PacketNavigator(GrammarNavigator):
         self, tree: DerivationTree
     ) -> Optional[list[PacketNonTerminal | NonTerminal]]:
         paths = []
-        for suggested_tree, is_complete in self._get_controlflow_tree(tree):
+        for suggested_tree, is_complete in self.get_controlflow_tree(tree):
             if is_complete:
                 return []
             path = super().astar_search_end(suggested_tree)
