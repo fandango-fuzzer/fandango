@@ -4,6 +4,7 @@ from fandango.io import FandangoIO
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.grammarreducer import GrammarReducer
 from fandango.io.navigation.powerschedule import PowerSchedule
+from fandango.io.rule_completion_tester import RuleCompletionTester
 from fandango.language.tree import DerivationTree
 from fandango.io.navigation.packetforecaster import (
     ForecastingPacket,
@@ -26,6 +27,7 @@ class PacketSelector:
     ):
         self.start_symbol = NonTerminal("<start>")
         self.grammar = grammar
+        self._completion_tester = RuleCompletionTester(self.grammar)
         self.coverage_symbols = self._get_subgrammar_symbols(self.start_symbol)
         self.power_schedules: dict[Symbol, PowerSchedule] = dict()
         self.io_instance = io_instance
@@ -86,9 +88,7 @@ class PacketSelector:
         :param k: The k-path length for coverage computation.
         :return: Dictionary mapping NonTerminals to their coverage scores.
         """
-        trees = list(self.parst_derivations)
-        trees.append(self.history_tree)
-        messages_by_nt = self._group_messages_by_nt(trees)
+        messages_by_nt = self._group_messages_by_nt(self._all_derivation_trees())
         nt_coverage = {}
         for symbol in self.coverage_symbols:
             if symbol not in messages_by_nt:
@@ -96,7 +96,59 @@ class PacketSelector:
                 continue
             nt_coverage[symbol] = (
                 self.grammar.compute_kpath_coverage(
-                    messages_by_nt[symbol], k, symbol, True
+                    messages_by_nt[symbol], k, symbol, False
+                )
+            )
+        nt_coverage = list(
+            sorted(nt_coverage.items(), key=lambda x: (x[1], x[0].name()))
+        )
+        return nt_coverage
+
+    def _compute_coverage_score_perspective(self) -> list[tuple[NonTerminal, float]]:
+        messages_by_nt = self._group_messages_by_nt(self._all_derivation_trees())
+        controlflow_trees = list(map(lambda x: x[0], self.navigator.get_controlflow_tree(self.history_tree)))
+        rule_completion_tester = RuleCompletionTester(self.grammar)
+
+
+        nt_coverage = {}
+        for cov_symbol in self.coverage_symbols:
+            if cov_symbol not in messages_by_nt:
+                nt_coverage[cov_symbol] = 0.0
+                continue
+            all_paths = self.grammar._generate_all_k_paths(self.diversity_k, cov_symbol, True)
+            for path in list(all_paths):
+                if cov_symbol not in path:
+                    continue
+                idx = path.index(cov_symbol)
+                if idx == 0:
+                    continue
+                existing_prefix = path[:idx]
+                any_match = len(controlflow_trees) == 0
+                for tree in controlflow_trees:
+                    for prefix_symbol in existing_prefix:
+                        reachable = self.navigator.check_reachability_w_controlflow(tree=tree, symbol=prefix_symbol)
+                        if reachable:
+                            any_match = True
+                            break
+                        symbol_trees = self.history_tree.find_all_nodes(prefix_symbol, exclude_read_only=False)
+                        any_incomplete = False
+                        for symbol_tree in symbol_trees:
+                            if not rule_completion_tester.check_complete(symbol_tree):
+                                any_incomplete = True
+                                break
+                        if any_incomplete:
+                            any_match = True
+                            break
+                    if any_match:
+                        break
+                if not any_match:
+                    all_paths.remove(path)
+
+
+
+            nt_coverage[cov_symbol] = (
+                self.grammar.compute_kpath_coverage(
+                    messages_by_nt[cov_symbol], self.diversity_k, cov_symbol, False
                 )
             )
         nt_coverage = list(
@@ -251,7 +303,7 @@ class PacketSelector:
                 packet_covered_paths += len(self.grammar.get_uncovered_k_paths(self._all_derivation_trees(), self.diversity_k, packet.node.symbol))
                 packets_with_coverage.append((append_packet, packet_covered_paths))
 
-        
+
 
         direct_reach_paths = set()
         reachable_path_distribution = dict()
@@ -302,6 +354,7 @@ class PacketSelector:
             self._guide_states.append(grammar_starting_symbol)
         grammar_nonterminals = self._get_subgrammar_symbols(grammar_starting_symbol)
         grammar_nonterminals.remove(grammar_starting_symbol)
+        coverage_scores = self._compute_coverage_score_perspective()
         coverage_scores = list(filter(lambda x: x[0] in grammar_nonterminals, self.coverage_scores))
         ps.assign_energy(dict(coverage_scores))
         new_target = ps.choose()
@@ -318,7 +371,7 @@ class PacketSelector:
     def _is_can_enter_target_state(self) -> bool:
         for packet in self.get_fuzzer_packets():
             for path in packet.paths:
-                if self._guide_target in set(map(lambda y: y[0], filter(lambda x: x[1], path.path))):
+                if PacketSelector._tuple_contains(tuple(self._guide_states + [self._guide_target]), tuple(map(lambda y: y[0], filter(lambda x: x[1], path.path)))):
                     return True
         return False
 
@@ -363,7 +416,7 @@ class PacketSelector:
             self._guide_path = current_guide_path
 
         if self._guide_target is None or left_path:
-            self._guide_target = self._select_next_target_2()
+            self._guide_target = self._select_next_target()
             self._guide_path = self.navigator.astar_tree(tree=self.history_tree, symbol=self._guide_target)
             log_guidance_hint(
                 f"Guiding to target {self._guide_target} with score {dict(self.coverage_scores)[self._guide_target]}"
@@ -373,7 +426,7 @@ class PacketSelector:
         print(f"START  AT {dict(self.coverage_scores)[NonTerminal("<start>")]} PERCENT")
 
         while self._is_can_enter_target_state() or self._is_appended_target_state(self.history_tree):
-            self._guide_target = self._select_next_target_2(self._guide_target)
+            self._guide_target = self._select_next_target(self._guide_target)
             self._guide_path = self.navigator.astar_tree(tree=self.history_tree, symbol=self._guide_target)
 
         self._guide_to_end = any(filter(lambda p: p is None, self._guide_path))
