@@ -82,12 +82,12 @@ class PacketNavigator(GrammarNavigator):
         self,
         *,
         tree: DerivationTree,
-        symbol: NonTerminal
+        destination_symbols: list[NonTerminal]
     ) -> Optional[list[PacketNonTerminal | NonTerminal]]:
         paths = []
         for suggested_tree, is_complete in self.get_controlflow_tree(tree):
             path = super().astar_tree(
-                tree=suggested_tree, symbol=symbol
+                tree=suggested_tree, destination_symbols=destination_symbols
             )
             if path is None:
                 continue
