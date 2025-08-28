@@ -48,8 +48,16 @@ class ReachabilityChecker(ContinuingNodeVisitor):
         current_node = node
         chain_found = True
         for child_symbol in self.symbol_chain_to_reach[1:]:
-            child_nodes = list(current_node.descendents(self.grammar, True))
-            child_nodes = list(filter(lambda n: child_symbol in self._to_normal_symbol(n.to_symbol()), child_nodes))
+            seen = set()
+            work = set()
+            work.add(current_node)
+            while len(work) != 0:
+                n = work.pop()
+                if n in seen:
+                    continue
+                seen.add(n)
+                work.update(n.descendents(self.grammar, True))
+            child_nodes = list(filter(lambda n: child_symbol in self._to_normal_symbol(n.to_symbol()), seen))
             if not child_nodes:
                 chain_found = False
                 break

@@ -301,10 +301,9 @@ class PacketSelector:
             all_k_paths = set(filter(lambda x: grammar_starting_symbol in x, all_k_paths))
             all_covered = set(filter(lambda x: grammar_starting_symbol in x, all_covered))
             uncovered_paths = all_k_paths.difference(all_covered)
+
+            # Remove paths that do not contain the guide states
             for path in list(uncovered_paths):
-                if grammar_starting_symbol not in path:
-                    uncovered_paths.remove(path)
-                    continue
                 remaining_path = path
                 for symbol in self._guide_states[::-1]:
                     if symbol not in remaining_path:
@@ -313,16 +312,40 @@ class PacketSelector:
                     last_idx = len(remaining_path) - remaining_path[::-1].index(symbol) - 1
                     remaining_path = remaining_path[:last_idx]
 
-            at_position_paths = list(map(lambda x: x[x.index(grammar_starting_symbol) + 1:], uncovered_paths))
-            by_next_symbol = {}
-            for path in at_position_paths:
-                if len(path) == 0:
-                    continue
-                first_symbol = path[0]
-                if first_symbol not in by_next_symbol:
-                    by_next_symbol[first_symbol] = []
-                by_next_symbol[first_symbol].append(path)
-            next_symbol_scores = dict(map(lambda item: (item[0], len(item[1])), by_next_symbol.items()))
+            uncovered_paths = list(uncovered_paths)
+            for list_idx, path in enumerate(list(uncovered_paths)):
+                remaining_path = path
+                for path_idx, symbol in enumerate(path[::-1]):
+                    if symbol in self.coverage_symbols:
+                        break
+                    last_idx = len(path) - path_idx - 1
+                    remaining_path = remaining_path[:last_idx]
+                uncovered_paths[list_idx] = remaining_path
+
+            next_symbol_scores = dict()
+            for packet in self.get_fuzzer_packets():
+                for path in packet.paths:
+                    path_symbols = tuple(map(lambda x: x[0], path.path))
+                    for u_path in uncovered_paths:
+                        if PacketSelector._tuple_contains(u_path, path_symbols):
+                            if packet.node.symbol not in next_symbol_scores:
+                                next_symbol_scores[packet.node.symbol] = 0
+                            next_symbol_scores[packet.node.symbol] += 10
+
+            if len(next_symbol_scores) == 0:
+                at_position_paths = list(map(lambda x: x[x.index(grammar_starting_symbol) + 1:], uncovered_paths))
+                by_next_symbol = {}
+                for path in at_position_paths:
+                    if len(path) == 0:
+                        continue
+                    first_symbol = path[0]
+                    if first_symbol not in by_next_symbol:
+                        by_next_symbol[first_symbol] = []
+                    by_next_symbol[first_symbol].append(path)
+                    next_symbol_scores.update(dict(map(lambda item: (item[0], len(item[1])), by_next_symbol.items())))
+            else:
+                self._guide_states.clear()
+
             max_score = max(next_symbol_scores.values()) if len(next_symbol_scores) > 0 else 1
             next_symbol_scores = dict(map(lambda item: (item[0], -(item[1] / max_score) + 1), next_symbol_scores.items()))
             ps.assign_energy(next_symbol_scores)
