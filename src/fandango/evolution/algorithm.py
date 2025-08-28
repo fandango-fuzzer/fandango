@@ -95,7 +95,7 @@ class Fandango:
         self.current_max_nodes = 50
         self.diversity_k = diversity_k
         self.remote_response_timeout = 15.0
-        self.past_io_derivations = set()
+        self.past_io_derivations = []
 
         # Instantiate managers
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
@@ -515,7 +515,7 @@ class Fandango:
                 history_tree = random.choice(
                     list(packet_selector.forecasting_result.complete_trees)
                 )
-                self.past_io_derivations.add(history_tree)
+                self.past_io_derivations.append(history_tree)
                 self._initial_solutions.clear()
                 yield history_tree
                 if (
