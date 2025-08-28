@@ -373,10 +373,70 @@ class PacketSelector:
         ps.add_past_target(new_target)
         return new_target
 
+    def _select_next_target_3(self, grammar_starting_symbol: Optional[NonTerminal] = None) -> NonTerminal:
+        if grammar_starting_symbol not in self.power_schedules:
+            self.power_schedules[grammar_starting_symbol] = PowerSchedule()
+        ps = self.power_schedules[grammar_starting_symbol]
+        if grammar_starting_symbol is None:
+            self._guide_states = []
+            grammar_starting_symbol = self.start_symbol
+            grammar_nonterminals = self._get_subgrammar_symbols(grammar_starting_symbol)
+            grammar_nonterminals.remove(grammar_starting_symbol)
+            coverage_scores = list(filter(lambda x: x[0] in grammar_nonterminals, self.coverage_scores))
+            ps.assign_energy(dict(coverage_scores))
+            new_target = ps.choose()
+            ps.add_past_target(new_target)
+        else:
+            self._guide_states.append(grammar_starting_symbol)
+            all_k_paths = self.grammar._generate_all_k_paths(self.diversity_k, grammar_starting_symbol, True)
+            all_covered = set()
+            for tree in self._all_derivation_trees():
+                for symbol_tree in tree.find_all_trees(grammar_starting_symbol):
+                    all_covered.update(self.grammar._extract_k_paths_from_tree(symbol_tree, self.diversity_k, True))
+            all_k_paths = set(filter(lambda x: grammar_starting_symbol in x, all_k_paths))
+            all_covered = set(filter(lambda x: grammar_starting_symbol in x, all_covered))
+            uncovered_paths = all_k_paths.difference(all_covered)
+            for path in list(uncovered_paths):
+                if grammar_starting_symbol not in path:
+                    uncovered_paths.remove(path)
+                    continue
+                remaining_path = path
+                for symbol in self._guide_states[::-1]:
+                    if symbol not in remaining_path:
+                        uncovered_paths.remove(path)
+                        break
+                    remaining_path = remaining_path[:remaining_path.index(symbol)]
+
+            at_position_paths = list(map(lambda x: x[x.index(grammar_starting_symbol) + 1:], uncovered_paths))
+            by_next_symbol = {}
+            for path in at_position_paths:
+                if len(path) == 0:
+                    continue
+                first_symbol = path[0]
+                if first_symbol not in by_next_symbol:
+                    by_next_symbol[first_symbol] = []
+                by_next_symbol[first_symbol].append(path)
+            next_symbol_scores = dict(map(lambda item: (item[0], len(item[1])), by_next_symbol.items()))
+            max_score = max(next_symbol_scores.values()) if len(next_symbol_scores) > 0 else 1
+            next_symbol_scores = dict(map(lambda item: (item[0], -(item[1] / max_score) + 1), next_symbol_scores.items()))
+            ps.assign_energy(next_symbol_scores)
+            new_target = ps.choose()
+            ps.add_past_target(new_target)
+
+
+
+
+            # Select the state / packet that is part of the most uncovered k-paths
+
+        return new_target
+
     def _is_appended_target_state(self, tree: DerivationTree) -> bool:
         messages = tree.protocol_msgs()
         if len(messages) > 0:
             last_message = messages[-1]
+            for state in self._guide_states:
+                if state not in last_message.get_state_nt():
+                    return False
             return self._guide_target in last_message.get_state_nt()
         return False
 
@@ -428,7 +488,7 @@ class PacketSelector:
             self._guide_path = current_guide_path
 
         if self._guide_target is None or left_path:
-            self._guide_target = self._select_next_target()
+            self._guide_target = self._select_next_target_3()
             self._guide_path = self.navigator.astar_tree(tree=self.history_tree, symbol=self._guide_target)
             log_guidance_hint(
                 f"Guiding to target {self._guide_target} with score {dict(self.coverage_scores)[self._guide_target]}"
@@ -438,7 +498,7 @@ class PacketSelector:
         print(f"START  AT {dict(self.coverage_scores)[NonTerminal("<start>")]} PERCENT")
 
         while self._is_can_enter_target_state() or self._is_appended_target_state(self.history_tree):
-            self._guide_target = self._select_next_target(self._guide_target)
+            self._guide_target = self._select_next_target_3(self._guide_target)
             self._guide_path = self.navigator.astar_tree(tree=self.history_tree, symbol=self._guide_target)
 
         self._guide_to_end = any(filter(lambda p: p is None, self._guide_path))
@@ -481,11 +541,12 @@ class PacketSelector:
                 for hookin_path in packet.paths:
                     match_prev_state = True
                     curr_hookin_path_idx = 0
+                    hookin_path_states = tuple(map(lambda y: y[0], hookin_path.path))
                     for state in prev_states:
-                        if state not in hookin_path.path[curr_hookin_path_idx:]:
+                        if state not in hookin_path_states[curr_hookin_path_idx:]:
                             match_prev_state = False
                             break
-                        curr_hookin_path_idx = hookin_path.path[curr_hookin_path_idx].index(state)
+                        curr_hookin_path_idx = hookin_path_states[curr_hookin_path_idx:].index(state)
                     if not match_prev_state:
                         continue
                     packet_hookin_states = tuple(map(lambda y: y[0], filter(lambda x: x[1], hookin_path.path)))

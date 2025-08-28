@@ -42,8 +42,8 @@ class PowerSchedule:
                 coverage_val = coverage[p_type]
             else:
                 coverage_val = 0.0
-            #self.energy[p_type] = 1 / (freq**self.exponent) * (1.05 - coverage_val)
-            self.energy[p_type] = (1.05 - coverage_val)
+            self.energy[p_type] = (1.0 - coverage_val)
+            #self.energy[p_type] = (1.0 - coverage_val)
         for p_type in coverage.keys():
             if p_type not in self.energy:
                 self.energy[p_type] = 1 - coverage[p_type]
