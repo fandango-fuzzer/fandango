@@ -26,6 +26,7 @@ class ContinuingNodeVisitor(NodeVisitor):
         self.tree: Optional[DerivationTree] = None
         self.current_tree: list[list[DerivationTree] | None] = []
         self.current_path: list[tuple[NonTerminal, bool]] = []
+        self.current_path_collapsed: list[tuple[NonTerminal, bool]] = []
 
     def find(self, tree: Optional[DerivationTree] = None):
         if tree is None:
@@ -70,20 +71,23 @@ class ContinuingNodeVisitor(NodeVisitor):
             if tree[0].symbol != node.symbol:
                 raise GrammarKeyError("Symbol mismatch")
 
-        continue_exploring, enter_non_terminal = self.onNonTerminalNodeVisit(
-            node, tree is None
-        )
-        if not enter_non_terminal:
-            return continue_exploring
-
         self.current_tree.append(None if tree is None else tree[0].children)
         self.current_path.append((node.symbol, tree is None))
+        self.current_path_collapsed.append((node.symbol, tree is None))
+
         try:
+            continue_exploring, enter_non_terminal = self.onNonTerminalNodeVisit(
+                node, tree is None
+            )
+            if not enter_non_terminal:
+                return continue_exploring
             result = self.visit(self.grammar.rules[node.symbol])
+            return result
         finally:
             self.current_path.pop()
+            self.current_path_collapsed.pop()
             self.current_tree.pop()
-        return result
+
 
     def onNonTerminalNodeVisit(
         self, node: NonTerminalNode, is_exploring: bool
