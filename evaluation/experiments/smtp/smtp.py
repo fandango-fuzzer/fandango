@@ -23,6 +23,7 @@ def main():
 
     # Output solutions
     solution_count = 0
+    solutions = []
     overall_start = time.time()
     for solution in fandango.generate(mode=FuzzingMode.IO):
         print(time.time() - time_start)
@@ -32,10 +33,13 @@ def main():
             print(solution.to_string())
         time_start = time.time()
         solution_count += 1
+        solutions.append(solution)
         if solution_count >= 10 and False:
             break
 
     print(f"Overall time: {time.time() - overall_start:.4f} seconds")
+    print(f"Trees generated: {solution_count}")
+    print(f"Messages exchanged: {sum(len(s.protocol_msgs()) for s in solutions)}")
 
 
 if __name__ == "__main__":

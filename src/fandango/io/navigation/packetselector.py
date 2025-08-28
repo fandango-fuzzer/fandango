@@ -1,3 +1,4 @@
+import random
 from typing import Optional
 
 from fandango.io import FandangoIO
@@ -34,7 +35,7 @@ class PacketSelector:
         self.navigator = PacketNavigator(grammar, self.start_symbol)
         self.forecaster = PacketForecaster(self.grammar)
         self.diversity_k = diversity_k
-        self.parst_derivations: set[DerivationTree] = set()
+        self.parst_derivations: list[DerivationTree] = []
         self.prev_past_derivations_len = 0
         self.history_tree = None
         self._forecasting_result = None
@@ -43,7 +44,7 @@ class PacketSelector:
         self._guide_to_end = False
         self._guide_target = None
         self._guide_path = None
-        self._guide_states: list[NonTerminal] = []
+        self._navigator_states: list[NonTerminal] = []
         self.compute(history_tree, self.parst_derivations)
 
     def _get_subgrammar_symbols(self, starting_symbol: NonTerminal):
@@ -183,7 +184,7 @@ class PacketSelector:
         return []
 
     def compute(
-        self, history_tree: DerivationTree, parst_derivations: set[DerivationTree]
+        self, history_tree: DerivationTree, parst_derivations: list[DerivationTree]
     ):
         self.history_tree = history_tree
         self.parst_derivations = parst_derivations
@@ -265,10 +266,10 @@ class PacketSelector:
             self.power_schedules[grammar_starting_symbol] = PowerSchedule()
         ps = self.power_schedules[grammar_starting_symbol]
         if grammar_starting_symbol is None:
-            self._guide_states = []
+            self._navigator_states = []
             grammar_starting_symbol = self.start_symbol
         else:
-            self._guide_states.append(grammar_starting_symbol)
+            self._navigator_states.append(grammar_starting_symbol)
         grammar_nonterminals = self._get_subgrammar_symbols(grammar_starting_symbol)
         grammar_nonterminals.remove(grammar_starting_symbol)
         coverage_scores = self._compute_coverage_score_perspective()
@@ -283,16 +284,19 @@ class PacketSelector:
             self.power_schedules[grammar_starting_symbol] = PowerSchedule()
         ps = self.power_schedules[grammar_starting_symbol]
         if grammar_starting_symbol is None:
-            self._guide_states = []
+            self._navigator_states = []
+            self._hookin_states = []
             grammar_starting_symbol = self.start_symbol
             grammar_nonterminals = self._get_subgrammar_symbols(grammar_starting_symbol)
             grammar_nonterminals.remove(grammar_starting_symbol)
-            coverage_scores = list(filter(lambda x: x[0] in grammar_nonterminals, self.coverage_scores))
+            coverage_scores = self._compute_coverage_score_perspective()
+            coverage_scores = list(filter(lambda x: x[0] in grammar_nonterminals, coverage_scores))
             ps.assign_energy(dict(coverage_scores))
             new_target = ps.choose()
             ps.add_past_target(new_target)
         else:
-            self._guide_states.append(grammar_starting_symbol)
+            self._navigator_states.append(grammar_starting_symbol)
+            self._hookin_states.append(grammar_starting_symbol)
             all_k_paths = self.grammar._generate_all_k_paths(self.diversity_k, grammar_starting_symbol, True)
             all_covered = set()
             for tree in self._all_derivation_trees():
@@ -305,7 +309,7 @@ class PacketSelector:
             # Remove paths that do not contain the guide states
             for path in list(uncovered_paths):
                 remaining_path = path
-                for symbol in self._guide_states[::-1]:
+                for symbol in self._navigator_states[::-1]:
                     if symbol not in remaining_path:
                         uncovered_paths.remove(path)
                         break
@@ -331,9 +335,21 @@ class PacketSelector:
                             if packet.node.symbol not in next_symbol_scores:
                                 next_symbol_scores[packet.node.symbol] = 0
                             next_symbol_scores[packet.node.symbol] += 10
+            at_position_paths = list(map(lambda x: x[x.index(grammar_starting_symbol) + 1:], uncovered_paths))
+            at_position_paths = list(filter(lambda x: len(x) > 0, at_position_paths))
+            if len(at_position_paths) == 0:
+                return self._select_next_target_3()
+
+            if len(at_position_paths) > 0:
+                random_path = random.choice(at_position_paths)
+                if len(random_path) > 0:
+                    if len(random_path) > 1:
+                        self._navigator_states = list(random_path[:-1])
+                    else:
+                        self._navigator_states = []
+                    return random_path[-1]
 
             if len(next_symbol_scores) == 0:
-                at_position_paths = list(map(lambda x: x[x.index(grammar_starting_symbol) + 1:], uncovered_paths))
                 by_next_symbol = {}
                 for path in at_position_paths:
                     if len(path) == 0:
@@ -344,7 +360,7 @@ class PacketSelector:
                     by_next_symbol[first_symbol].append(path)
                     next_symbol_scores.update(dict(map(lambda item: (item[0], len(item[1])), by_next_symbol.items())))
             else:
-                self._guide_states.clear()
+                self._navigator_states.clear()
 
             max_score = max(next_symbol_scores.values()) if len(next_symbol_scores) > 0 else 1
             next_symbol_scores = dict(map(lambda item: (item[0], -(item[1] / max_score) + 1), next_symbol_scores.items()))
@@ -358,7 +374,7 @@ class PacketSelector:
         messages = tree.protocol_msgs()
         if len(messages) > 0:
             last_message = messages[-1]
-            for state in self._guide_states:
+            for state in self._navigator_states:
                 if state not in last_message.get_state_nt():
                     return False
             return self._guide_target in last_message.get_state_nt()
@@ -372,26 +388,30 @@ class PacketSelector:
                     continue
                 first_new_idx = is_new_states.index(True)
                 states = list(map(lambda x: x[0], path.path))
-                from_scan_idx = first_new_idx - len(self._guide_states)
+                from_scan_idx = first_new_idx - len(self._navigator_states)
                 if from_scan_idx < 0:
                     continue
                 scan_states = states[from_scan_idx:]
-                if PacketSelector._tuple_contains(tuple(self._guide_states + [self._guide_target]), tuple(scan_states)):
+                if PacketSelector._tuple_contains(tuple(self._navigator_states + [self._guide_target]), tuple(scan_states)):
                     return True
         return False
 
     def _remember_messages(self):
         self._prev_session_msgs = list(map(lambda x: x.msg, self.history_tree.protocol_msgs()))
 
-    def _new_msgs(self):
+    def _new_msgs(self, is_new_tree: bool) -> list[DerivationTree]:
+        prev_msgs = []
+        if is_new_tree:
+            prev_msgs = list(map(lambda x: x.msg, self.parst_derivations[-1].protocol_msgs()))
         current_session_msgs = list(map(lambda x: x.msg, self.history_tree.protocol_msgs()))
+        all_current_msgs = prev_msgs + current_session_msgs
         new_msgs = []
-        for prev, new in zip(self._prev_session_msgs, current_session_msgs):
+        for prev, new in zip(self._prev_session_msgs, all_current_msgs):
             if prev != new:
                 new_msgs.extend(current_session_msgs)
                 return new_msgs
-        if len(current_session_msgs) > len(self._prev_session_msgs):
-            return current_session_msgs[len(self._prev_session_msgs):]
+        if len(all_current_msgs) > len(self._prev_session_msgs):
+            return all_current_msgs[len(self._prev_session_msgs):]
         return new_msgs
 
     def _get_next_packet(self):
@@ -401,16 +421,19 @@ class PacketSelector:
         #print(f"LOWEST AT {self.coverage_scores[0][1]} PERCENT ({self.coverage_scores[0][0]})")
         #print(f"START  AT {dict(self.coverage_scores)[NonTerminal("<start>")]} PERCENT")
         #return self.get_fuzzer_packets()
+
+        if len(self.next_fuzzer_parties()) == 0:
+            return []
+
         is_new_tree = len(self.parst_derivations) > self.prev_past_derivations_len
         if is_new_tree:
-            self._guide_states.clear()
+            self._navigator_states.clear()
         self.prev_past_derivations_len = len(self.parst_derivations)
         fuzzable_packets = []
         all_derivations = list(self.parst_derivations)
         all_derivations.append(self.history_tree)
 
-        if len(self.next_fuzzer_parties()) == 0:
-            return fuzzable_packets
+
         self._guide_to_end = False
         max_messages_per_tree = 200
 
@@ -432,7 +455,7 @@ class PacketSelector:
             left_path = False
         else:
             left_path = False
-            for msg in self._new_msgs():
+            for msg in self._new_msgs(is_new_tree):
                 old_next_packet = self._get_next_packet()
                 if old_next_packet is None or old_next_packet.symbol != msg.symbol:
                     left_path = True
@@ -440,14 +463,14 @@ class PacketSelector:
 
                 path_to_remove = self._guide_path[:self._guide_path.index(old_next_packet) + 1]
                 for symbol in path_to_remove:
-                    if len(self._guide_states) > 0 and symbol == self._guide_states[0]:
-                        self._guide_states.pop(0)
+                    if len(self._navigator_states) > 0 and symbol == self._navigator_states[0]:
+                        self._navigator_states.pop(0)
                 self._guide_path = self._guide_path[self._guide_path.index(old_next_packet) + 1:]
             left_path = left_path and not self._is_can_enter_target_state()
 
         if self._guide_target is None or left_path:
             self._guide_target = self._select_next_target_3()
-            self._guide_path = self.navigator.astar_tree(tree=self.history_tree, destination_symbols=self._guide_states + [self._guide_target])
+            self._guide_path = self.navigator.astar_tree(tree=self.history_tree, destination_symbols=self._navigator_states + [self._guide_target])
             log_guidance_hint(
                 f"Guiding to target {self._guide_target} with score {dict(self.coverage_scores)[self._guide_target]}"
             )
@@ -458,27 +481,20 @@ class PacketSelector:
         is_next_symbol_state = next((x for x in self._guide_path if isinstance(x, PacketNonTerminal)), None) is None
         while self._is_can_enter_target_state() and is_next_symbol_state:
             self._guide_target = self._select_next_target_3(self._guide_target)
-            self._guide_path = self.navigator.astar_tree(tree=self.history_tree, destination_symbols=self._guide_states + [self._guide_target])
+            self._guide_path = self.navigator.astar_tree(tree=self.history_tree, destination_symbols=self._navigator_states + [self._guide_target])
             is_next_symbol_state = next((x for x in self._guide_path if isinstance(x, PacketNonTerminal)), None) is None
 
         self._guide_to_end = any(filter(lambda p: p is None, self._guide_path))
         next_packet = next((x for x in self._guide_path if isinstance(x, PacketNonTerminal)), None)
-        if next_packet is not None:
-            packet_idx = self._guide_path.index(next_packet)
-            # hookin_states = self._guide_path[:packet_idx]
-        else:
-            pass
-            # hookin_states = self._guide_path
-        hookin_states = []
 
         if next_packet is None:
             # If no packet needs to be sent to reach the target, we are in a state that contains the target state that we want to reach.
             # We send a packet that adds the target state nonterminal as part of its hookin path.
-            fuzzable_packets.extend(self.find_packets(prev_states=self._guide_states, hookin_states=hookin_states, packet_symbol=None))
+            fuzzable_packets.extend(self.find_packets(prev_states=self._hookin_states, packet_symbol=None))
 
         elif next_packet.sender in self.next_fuzzer_parties():
             fuzzable_packets.extend(
-                self.find_packets(sender=next_packet.sender, prev_states=self._guide_states, hookin_states=hookin_states, packet_symbol=next_packet.symbol))
+                self.find_packets(sender=next_packet.sender, prev_states=self._hookin_states, packet_symbol=next_packet.symbol))
 
         if len(fuzzable_packets) == 0:
             fuzzable_packets.extend(self._get_guide_to_end_packet())
