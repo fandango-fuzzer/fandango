@@ -329,11 +329,6 @@ class PacketSelector:
             new_target = ps.choose()
             ps.add_past_target(new_target)
 
-
-
-
-            # Select the state / packet that is part of the most uncovered k-paths
-
         return new_target
 
     def _is_appended_target_state(self, tree: DerivationTree) -> bool:
