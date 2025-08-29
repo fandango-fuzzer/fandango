@@ -217,7 +217,7 @@ class PacketSelector:
             self._navigator_states.clear()
             self._hookin_states.clear()
             self._current_k_path = None
-            return random.choice(message_coverage)
+            return message_coverage[0]
         selected_path = random.choice(uncovered_paths)
         if len(selected_path) > 1:
             self._navigator_states = list(selected_path[:-1])
