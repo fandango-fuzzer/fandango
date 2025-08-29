@@ -199,7 +199,7 @@ class PacketSelector:
     def _uncovered_paths(self):
         return self.grammar.get_uncovered_k_paths(self._all_derivation_trees(), self.diversity_k, self.start_symbol)
 
-    def _select_next_target_4(self, grammar_starting_symbol: Optional[NonTerminal] = None) -> NonTerminal:
+    def _select_next_target(self) -> NonTerminal:
         uncovered_paths = self._uncovered_paths()
         for list_idx, path in enumerate(list(uncovered_paths)):
             remaining_path = path
@@ -216,7 +216,7 @@ class PacketSelector:
             message_nts = self.grammar.get_protocol_messages(self.start_symbol)
             message_coverage = dict(filter(lambda x: x[0] in message_nts, self.coverage_scores))
             ps = self.msg_power_schedule
-            ps.assign_energy(message_coverage)
+            ps.assign_energy_coverage(message_coverage)
             target = ps.choose()
             ps.add_past_target(target)
             return target
@@ -339,23 +339,23 @@ class PacketSelector:
                     self._current_covered_k_paths.add(self._current_k_path)
 
         if self._guide_target is None or len(self._guide_path) == 0 or left_path:
-            self._guide_target = self._select_next_target_4()
+            self._guide_target = self._select_next_target()
             self._guide_path = self.navigator.astar_tree(tree=self.history_tree, destination_k_path=self._navigator_states + [self._guide_target], included_k_paths=self._current_covered_k_paths)
             log_guidance_hint(
                 f"Guiding to target {self._guide_target} with score {dict(self.coverage_scores)[self._guide_target]}"
             )
+        self._guide_to_end = any(filter(lambda p: p is None, self._guide_path))
 
         print(f"LOWEST AT {self.coverage_scores[0][1]} PERCENT ({self.coverage_scores[0][0]})")
         print(f"START  AT {dict(self.coverage_scores)[NonTerminal("<start>")]} PERCENT")
 
-        is_next_symbol_state = next((x for x in self._guide_path if isinstance(x, PacketNonTerminal)), None) is None
-        while self._is_can_enter_target_state() and is_next_symbol_state:
-            self._guide_target = self._select_next_target_4(self._guide_target)
-            self._guide_path = self.navigator.astar_tree(tree=self.history_tree, destination_k_path=self._navigator_states + [self._guide_target], included_k_paths=self._current_covered_k_paths)
-            is_next_symbol_state = next((x for x in self._guide_path if isinstance(x, PacketNonTerminal)), None) is None
+        next_packet = self._get_next_packet()
+        is_next_symbol_state = len(self._guide_path) > 0 and next_packet is None
+        if self._is_can_enter_target_state() and is_next_symbol_state:
+            fuzzable_packets.extend(self.find_packets(hookin_states=self._guide_path))
+            if len(fuzzable_packets) > 0:
+                return fuzzable_packets
 
-        self._guide_to_end = any(filter(lambda p: p is None, self._guide_path))
-        next_packet = next((x for x in self._guide_path if isinstance(x, PacketNonTerminal)), None)
 
         if next_packet is None:
             # If no packet needs to be sent to reach the target, we are in a state that contains the target state that we want to reach.
@@ -371,10 +371,14 @@ class PacketSelector:
         self._remember_messages()
         return fuzzable_packets
 
-    def find_packets(self, *, sender: Optional[str] = None, prev_states: Optional[list[Symbol]] = None, packet_symbol: Optional[NonTerminal] = None) -> list[ForecastingPacket]:
+    def find_packets(self, *, sender: Optional[str] = None, prev_states: Optional[list[Symbol]] = None, hookin_states: Optional[list[Symbol]] = None, packet_symbol: Optional[NonTerminal] = None) -> list[ForecastingPacket]:
         packets = []
         if prev_states is None:
             prev_states = []
+        if hookin_states is None:
+            hookin_states = tuple()
+        else:
+            hookin_states = tuple(hookin_states)
 
         for current_sender in self.next_fuzzer_parties():
             if sender is not None and current_sender != sender:
@@ -395,6 +399,9 @@ class PacketSelector:
                             break
                         curr_hookin_path_idx = hookin_path_states[curr_hookin_path_idx:].index(state)
                     if not match_prev_state:
+                        continue
+                    packet_hookin_states = tuple(map(lambda y: y[0], filter(lambda x: x[1], hookin_path.path)))
+                    if not PacketSelector._tuple_contains(hookin_states, packet_hookin_states):
                         continue
                     append_packet.paths.add(hookin_path)
                 if len(append_packet.paths) != 0:
