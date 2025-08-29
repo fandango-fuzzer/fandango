@@ -200,7 +200,6 @@ class PacketSelector:
 
     def _select_next_target_4(self, grammar_starting_symbol: Optional[NonTerminal] = None) -> NonTerminal:
         uncovered_paths = self._uncovered_paths()
-        self._hookin_states = []
         for list_idx, path in enumerate(list(uncovered_paths)):
             remaining_path = path
             for path_idx, symbol in enumerate(path[::-1]):
@@ -215,16 +214,13 @@ class PacketSelector:
             message_coverage = filter(lambda x: x[0] in message_nts, self.coverage_scores)
             message_coverage = list(map(lambda y: y[0], filter(lambda x: x[1] < 1.0, message_coverage)))
             self._navigator_states.clear()
-            self._hookin_states.clear()
             self._current_k_path = None
             return message_coverage[0]
         selected_path = random.choice(uncovered_paths)
         if len(selected_path) > 1:
             self._navigator_states = list(selected_path[:-1])
-            self._hookin_states = list(self._navigator_states)
         else:
             self._navigator_states.clear()
-            self._hookin_states.clear()
         self._current_k_path = selected_path
         return selected_path[-1]
 
@@ -368,14 +364,10 @@ class PacketSelector:
         self._remember_messages()
         return fuzzable_packets
 
-    def find_packets(self, *, sender: Optional[str] = None, prev_states: Optional[list[Symbol]] = None, hookin_states: Optional[list[Symbol]] = None, packet_symbol: Optional[NonTerminal] = None) -> list[ForecastingPacket]:
+    def find_packets(self, *, sender: Optional[str] = None, prev_states: Optional[list[Symbol]] = None, packet_symbol: Optional[NonTerminal] = None) -> list[ForecastingPacket]:
         packets = []
         if prev_states is None:
             prev_states = []
-        if hookin_states is None:
-            hookin_states = tuple()
-        else:
-            hookin_states = tuple(hookin_states)
 
         for current_sender in self.next_fuzzer_parties():
             if sender is not None and current_sender != sender:
@@ -396,9 +388,6 @@ class PacketSelector:
                             break
                         curr_hookin_path_idx = hookin_path_states[curr_hookin_path_idx:].index(state)
                     if not match_prev_state:
-                        continue
-                    packet_hookin_states = tuple(map(lambda y: y[0], filter(lambda x: x[1], hookin_path.path)))
-                    if not PacketSelector._tuple_contains(hookin_states, packet_hookin_states):
                         continue
                     append_packet.paths.add(hookin_path)
                 if len(append_packet.paths) != 0:
