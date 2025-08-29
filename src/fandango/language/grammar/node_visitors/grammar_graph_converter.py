@@ -19,6 +19,7 @@ class GrammarWalkError(FandangoError):
 class GrammarGraphNode(abc.ABC):
     def __init__(self, node: Node):
         self.node = node
+        self.parent = None
 
     def consumes(self) -> Optional[Terminal]:
         if isinstance(self.node, TerminalNode):
@@ -126,9 +127,11 @@ class LazyGrammarGraphNode(GrammarGraphNode):
             return self._loaded_reaches
         assert isinstance(self.node, NonTerminalNode)
         graph_converter = GrammarGraphConverter(self.grammar_rules, self.node.symbol)
+        graph_converter.current_parent.append(self.parent)
         start_node, end_nodes = graph_converter.visit(
             self.grammar_rules[self.node.symbol]
         )
+        graph_converter.current_parent.pop()
         self._loaded_reaches = [start_node]
         for end_node in end_nodes:
             for chain_end in self._pre_load_reaches:
@@ -153,18 +156,30 @@ class GrammarGraphConverter(NodeVisitor):
     ):
         self.rules = grammar_rules
         self.start_symbol = start_symbol
+        self.current_parent = []
 
     def process(self):
-        start_node, end_nodes = self.visit(self.rules[self.start_symbol])
         start_node = EagerGrammarGraphNode(
-            NonTerminalNode(self.start_symbol, []), [start_node]
+            NonTerminalNode(self.start_symbol, []), []
         )
+        self.current_parent.append(start_node)
+        child_start_node, child_end_nodes = self.visit(self.rules[self.start_symbol])
+        self.current_parent.pop()
+        start_node.reaches.append(child_start_node)
         graph = GrammarGraph(start_node)
         return graph
 
+    def _get_current_parent(self):
+        if len(self.current_parent) < 2:
+            return None
+        return self.current_parent[-2]
+
     def visit(self, node: Node) -> tuple[GrammarGraphNode, list[GrammarGraphNode]]:
-        visited = super().visit(node)
-        return visited
+        self.current_parent.append(node)
+        start, end_nodes = super().visit(node)
+        start.parent = self._get_current_parent()
+        self.current_parent.pop()
+        return start, end_nodes
 
     @staticmethod
     def _set_next(node: GrammarGraphNode, next_nodes: list[GrammarGraphNode]):
