@@ -30,6 +30,7 @@ class PacketNavigator(GrammarNavigator):
             ),
             start_symbol,
         )
+        self._packet_symbols = set(map(lambda x: x[2], grammar.get_protocol_messages(start_symbol)))
         self._parser = PacketIterativeParser(reduced_rules)
         self.set_message_cost(1)
 
@@ -107,9 +108,15 @@ class PacketNavigator(GrammarNavigator):
         if included_k_paths is None:
             included_k_paths = set()
         paths = []
+        search_destination_symbols = []
+        for symbol in destination_symbols:
+            if symbol in self._packet_symbols:
+                search_destination_symbols.append(NonTerminal(f"<{symbol.name()[1:-1]}>"))
+            else:
+                search_destination_symbols.append(symbol)
         for suggested_tree, is_complete in self._find_trees_including_k_paths(included_k_paths, tree):
             path = super().astar_tree(
-                tree=suggested_tree, destination_symbols=destination_symbols
+                tree=suggested_tree, destination_symbols=search_destination_symbols
             )
             if path is None:
                 continue

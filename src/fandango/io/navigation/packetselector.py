@@ -211,10 +211,13 @@ class PacketSelector:
             uncovered_paths[list_idx] = remaining_path
         uncovered_paths = list(filter(lambda x: len(x) > 0, uncovered_paths))
         if len(uncovered_paths) == 0:
+            message_nts = self.grammar.get_protocol_messages(self.start_symbol)
+            message_coverage = filter(lambda x: x[0] in message_nts, self.coverage_scores)
+            message_coverage = list(map(lambda y: y[0], filter(lambda x: x[1] < 1.0, message_coverage)))
             self._navigator_states.clear()
             self._hookin_states.clear()
             self._current_k_path = None
-            return random.choice(list(self.coverage_symbols))
+            return random.choice(message_coverage)
         selected_path = random.choice(uncovered_paths)
         if len(selected_path) > 1:
             self._navigator_states = list(selected_path[:-1])

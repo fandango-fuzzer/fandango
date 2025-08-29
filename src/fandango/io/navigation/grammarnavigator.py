@@ -30,7 +30,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         self.node_cost = 0
         self.max_comparisons = 10_000_000
         self.comparisons = 0
-        self.search_symbol = None
+        self.search_symbols = None
         self.is_search_end_node = False
 
     def astar(
@@ -65,7 +65,38 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
                 return self.non_terminal_cost
         return self.node_cost
 
-    def heuristic_cost_estimate(self, current, goal):
+    def _get_path_symbols(self, node: GrammarGraphNode, include_controlflow: bool) -> list[Symbol]:
+        chain = [node]
+        current = node
+        while current.parent is not None:
+            current = current.parent
+            chain.append(current)
+        chain = list(map(lambda x: x.node.to_symbol(), chain))
+        if include_controlflow:
+            return chain
+        deleted = 0
+        for idx, symbol in enumerate(list(chain)):
+            if isinstance(symbol, NonTerminal) and symbol.name().startswith("<__"):
+                del chain[idx - deleted]
+                deleted += 1
+        return chain
+
+    def heuristic_path_symbols(self, current_chain: list[Symbol]) -> float:
+        if not self.search_symbols or not current_chain:
+            return 0.0
+        max_overlap = 0
+        search_len = len(self.search_symbols)
+        chain_len = len(current_chain)
+        for i in range(1, min(search_len, chain_len) + 1):
+            if current_chain[-i:] == self.search_symbols[:i]:
+                max_overlap = i
+        return max_overlap / search_len
+
+
+    def heuristic_cost_estimate(self, current: GrammarGraphNode, goal: GrammarGraphNode):
+        if self.search_symbols is not None and len(self.search_symbols) > 0:
+            chain = self._get_path_symbols(current, False)
+            return self.heuristic_path_symbols(chain)
         return 1
 
     def is_goal_reached(self, current: GrammarGraphNode, goal: GrammarGraphNode):
@@ -77,13 +108,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         if self.is_search_end_node:
             return current.is_accepting
 
-        if not isinstance(current.node, (NonTerminalNode, TerminalNode)):
-            return False
-        if current.node.symbol == self.search_symbol:
-            return True
-        if isinstance(current.node, NonTerminalNode):
-            return NonTerminal(f"<{current.node.symbol.name()[9:]}") == self.search_symbol
-        return False
+        return self.heuristic_cost_estimate(current, goal) == 1
 
     def check_reachability_w_controlflow(self, *, tree: DerivationTree, destination_symbols: list[Symbol]) -> bool:
         checker = ReachabilityChecker(self.grammar)
