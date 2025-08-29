@@ -311,7 +311,7 @@ class PacketSelector:
             fuzzable_packets.extend(self._get_guide_to_end_packet())
             return fuzzable_packets
 
-        if len(self.coverage_scores) > 0 and self.coverage_scores[0][1] == 1.0:
+        if len(self._uncovered_paths()) == 0:
             log_guidance_hint("Full coverage reached. Guiding to end of tree.")
             self._guide_to_end = True
             fuzzable_packets.extend(self._get_guide_to_end_packet())
