@@ -30,7 +30,7 @@ class PacketSelector:
         self.grammar = grammar
         self._completion_tester = RuleCompletionTester(self.grammar)
         self.coverage_symbols = self._get_subgrammar_symbols(self.start_symbol)
-        self.power_schedules: dict[Symbol, PowerSchedule] = dict()
+        self.msg_power_schedule = PowerSchedule()
         self.io_instance = io_instance
         self.navigator = PacketNavigator(grammar, self.start_symbol)
         self.forecaster = PacketForecaster(self.grammar)
@@ -210,12 +210,15 @@ class PacketSelector:
             uncovered_paths[list_idx] = remaining_path
         uncovered_paths = list(filter(lambda x: len(x) > 0, uncovered_paths))
         if len(uncovered_paths) == 0:
-            message_nts = self.grammar.get_protocol_messages(self.start_symbol)
-            message_coverage = filter(lambda x: x[0] in message_nts, self.coverage_scores)
-            message_coverage = list(map(lambda y: y[0], filter(lambda x: x[1] < 1.0, message_coverage)))
             self._navigator_states.clear()
             self._current_k_path = None
-            return message_coverage[0]
+            message_nts = self.grammar.get_protocol_messages(self.start_symbol)
+            message_coverage = dict(filter(lambda x: x[0] in message_nts, self.coverage_scores))
+            ps = self.msg_power_schedule
+            ps.assign_energy(message_coverage)
+            target = ps.choose()
+            ps.add_past_target(target)
+            return target
         selected_path = random.choice(uncovered_paths)
         if len(selected_path) > 1:
             self._navigator_states = list(selected_path[:-1])
