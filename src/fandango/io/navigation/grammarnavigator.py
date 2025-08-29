@@ -143,6 +143,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         self.is_search_end_node = False
         nav_path = []
         start_nav_node = self.graph.walk(tree)
+        self.search_symbols = []
         for symbol in destination_symbols:
             if isinstance(symbol, NonTerminal):
                 symbol_node = NonTerminalNode(symbol, [])
@@ -150,11 +151,8 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
                 symbol_node = TerminalNode(symbol, [])
             else:
                 raise ValueError(f"Unsupported symbol type: {type(symbol)}")
-            self.search_symbol = symbol
-            current_part_nav = list(self.astar(start_nav_node, EagerGrammarGraphNode(symbol_node, [])))
-            nav_path.extend(current_part_nav[1:])
-            if len(nav_path) > 0:
-                start_nav_node = nav_path[-1]
+            self.search_symbols.append(symbol_node)
+        list(self.astar(start_nav_node, EagerGrammarGraphNode(NonTerminalNode(NonTerminal("<dummy>"), []), [])))
         return nav_path
 
     def astar_tree(

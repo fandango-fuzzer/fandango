@@ -111,7 +111,7 @@ class PacketNavigator(GrammarNavigator):
         search_destination_symbols = []
         for symbol in destination_symbols:
             if symbol in self._packet_symbols:
-                search_destination_symbols.append(NonTerminal(f"<{symbol.name()[1:-1]}>"))
+                search_destination_symbols.append(NonTerminal(f"<_packet_{symbol.name()[1:-1]}>"))
             else:
                 search_destination_symbols.append(symbol)
         for suggested_tree, is_complete in self._find_trees_including_k_paths(included_k_paths, tree):
