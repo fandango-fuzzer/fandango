@@ -105,70 +105,6 @@ class PacketSelector:
         )
         return nt_coverage
 
-    def _compute_coverage_score_perspective(self) -> list[tuple[NonTerminal, float]]:
-        messages_by_nt = self._group_messages_by_nt(self._all_derivation_trees())
-        controlflow_trees = list(map(lambda x: x[0], self.navigator.get_controlflow_tree(self.history_tree)))
-        rule_completion_tester = RuleCompletionTester(self.grammar)
-
-
-        nt_coverage = {}
-        for cov_symbol in self.coverage_symbols:
-            if cov_symbol not in messages_by_nt:
-                nt_coverage[cov_symbol] = 0.0
-                continue
-            all_paths = self.grammar._generate_all_k_paths(self.diversity_k, cov_symbol, True)
-            for path in list(all_paths):
-                if cov_symbol not in path:
-                    continue
-                idx = path.index(cov_symbol)
-                if idx == 0:
-                    continue
-                existing_prefix = path[:idx]
-                any_match = len(controlflow_trees) == 0
-                for tree in controlflow_trees:
-                    first_symbol = existing_prefix[0]
-                    reachable = self.navigator.check_reachability_w_controlflow(tree=tree, destination_symbols=[first_symbol])
-                    if reachable:
-                        any_match = True
-                        break
-                    symbol_trees = self.history_tree.find_all_nodes(first_symbol, exclude_read_only=False)
-                    any_incomplete = False
-                    for symbol_tree in symbol_trees:
-                        if not rule_completion_tester.check_complete(symbol_tree):
-                            inner_symbol_trees = {symbol_tree}
-                            for inner_symbol in existing_prefix[1:]:
-                                new_inner_symbol_trees = set()
-                                for inner_symbol_tree in inner_symbol_trees:
-                                    new_inner_symbol_trees.update(inner_symbol_tree.find_all_nodes(inner_symbol, exclude_read_only=False))
-                                inner_symbol_trees = new_inner_symbol_trees
-                                for inner_symbol_tree in set(inner_symbol_trees):
-                                    if rule_completion_tester.check_complete(inner_symbol_tree):
-                                        inner_symbol_trees.remove(inner_symbol_tree)
-                            if len(inner_symbol_trees) > 0:
-                                any_incomplete = True
-                                break
-                    if any_incomplete:
-                        any_match = True
-                        break
-                    if any_match:
-                        break
-                if not any_match:
-                    all_paths.remove(path)
-
-            covered_k_paths = set()
-            for tree in messages_by_nt[cov_symbol]:
-                covered_k_paths.update(self.grammar._extract_k_paths_from_tree(tree, self.diversity_k, True))
-            covered_k_paths = covered_k_paths.intersection(all_paths)
-
-            if not all_paths:
-                nt_coverage[cov_symbol] = 1.0
-            else:
-                nt_coverage[cov_symbol] = len(covered_k_paths) / len(all_paths)
-        nt_coverage = list(
-            sorted(nt_coverage.items(), key=lambda x: (x[1], x[0].name()))
-        )
-        return nt_coverage
-
     def _get_guide_to_end_packet(self) -> list[ForecastingPacket]:
         path = self.navigator.astar_search_end(self.history_tree)
         if len(path) > 0:
@@ -260,125 +196,26 @@ class PacketSelector:
     def _uncovered_paths(self):
         return self.grammar.get_uncovered_k_paths(self._all_derivation_trees(), self.diversity_k, self.start_symbol)
 
-
-    def _select_next_target(self, grammar_starting_symbol: Optional[NonTerminal] = None) -> NonTerminal:
-        if grammar_starting_symbol not in self.power_schedules:
-            self.power_schedules[grammar_starting_symbol] = PowerSchedule()
-        ps = self.power_schedules[grammar_starting_symbol]
-        if grammar_starting_symbol is None:
-            self._navigator_states = []
-            grammar_starting_symbol = self.start_symbol
+    def _select_next_target_4(self, grammar_starting_symbol: Optional[NonTerminal] = None) -> NonTerminal:
+        uncovered_paths = self._uncovered_paths()
+        self._hookin_states = []
+        for list_idx, path in enumerate(list(uncovered_paths)):
+            remaining_path = path
+            for path_idx, symbol in enumerate(path[::-1]):
+                if symbol in self.coverage_symbols:
+                    break
+                last_idx = len(path) - path_idx - 1
+                remaining_path = remaining_path[:last_idx]
+            uncovered_paths[list_idx] = remaining_path
+        uncovered_paths = list(filter(lambda x: len(x) > 0, uncovered_paths))
+        selected_path = random.choice(uncovered_paths)
+        if len(selected_path) > 1:
+            self._navigator_states = list(selected_path[:-1])
+            self._hookin_states = list(self._navigator_states)
         else:
-            self._navigator_states.append(grammar_starting_symbol)
-        grammar_nonterminals = self._get_subgrammar_symbols(grammar_starting_symbol)
-        grammar_nonterminals.remove(grammar_starting_symbol)
-        coverage_scores = self._compute_coverage_score_perspective()
-        coverage_scores = list(filter(lambda x: x[0] in grammar_nonterminals, coverage_scores))
-        ps.assign_energy(dict(coverage_scores))
-        new_target = ps.choose()
-        ps.add_past_target(new_target)
-        return new_target
-
-    def _select_next_target_3(self, grammar_starting_symbol: Optional[NonTerminal] = None) -> NonTerminal:
-        if grammar_starting_symbol not in self.power_schedules:
-            self.power_schedules[grammar_starting_symbol] = PowerSchedule()
-        ps = self.power_schedules[grammar_starting_symbol]
-        if grammar_starting_symbol is None:
-            self._navigator_states = []
-            self._hookin_states = []
-            grammar_starting_symbol = self.start_symbol
-            grammar_nonterminals = self._get_subgrammar_symbols(grammar_starting_symbol)
-            grammar_nonterminals.remove(grammar_starting_symbol)
-            coverage_scores = self._compute_coverage_score_perspective()
-            coverage_scores = list(filter(lambda x: x[0] in grammar_nonterminals, coverage_scores))
-            ps.assign_energy(dict(coverage_scores))
-            new_target = ps.choose()
-            ps.add_past_target(new_target)
-        else:
-            self._navigator_states.append(grammar_starting_symbol)
-            self._hookin_states.append(grammar_starting_symbol)
-            all_k_paths = self.grammar._generate_all_k_paths(self.diversity_k, grammar_starting_symbol, True)
-            all_covered = set()
-            for tree in self._all_derivation_trees():
-                for symbol_tree in tree.find_all_trees(grammar_starting_symbol):
-                    all_covered.update(self.grammar._extract_k_paths_from_tree(symbol_tree, self.diversity_k, True))
-            all_k_paths = set(filter(lambda x: grammar_starting_symbol in x, all_k_paths))
-            all_covered = set(filter(lambda x: grammar_starting_symbol in x, all_covered))
-            uncovered_paths = all_k_paths.difference(all_covered)
-
-            # Remove paths that do not contain the guide states
-            for path in list(uncovered_paths):
-                remaining_path = path
-                for symbol in self._navigator_states[::-1]:
-                    if symbol not in remaining_path:
-                        uncovered_paths.remove(path)
-                        break
-                    last_idx = len(remaining_path) - remaining_path[::-1].index(symbol) - 1
-                    remaining_path = remaining_path[:last_idx]
-
-            uncovered_paths = list(uncovered_paths)
-            for list_idx, path in enumerate(list(uncovered_paths)):
-                remaining_path = path
-                for path_idx, symbol in enumerate(path[::-1]):
-                    if symbol in self.coverage_symbols:
-                        break
-                    last_idx = len(path) - path_idx - 1
-                    remaining_path = remaining_path[:last_idx]
-                uncovered_paths[list_idx] = remaining_path
-
-            next_symbol_scores = dict()
-            for packet in self.get_fuzzer_packets():
-                for path in packet.paths:
-                    path_symbols = tuple(map(lambda x: x[0], path.path))
-                    for u_path in uncovered_paths:
-                        if PacketSelector._tuple_contains(u_path, path_symbols):
-                            if packet.node.symbol not in next_symbol_scores:
-                                next_symbol_scores[packet.node.symbol] = 0
-                            next_symbol_scores[packet.node.symbol] += 10
-            at_position_paths = list(map(lambda x: x[x.index(grammar_starting_symbol) + 1:], uncovered_paths))
-            at_position_paths = list(filter(lambda x: len(x) > 0, at_position_paths))
-            if len(at_position_paths) == 0:
-                return self._select_next_target_3()
-
-            if len(at_position_paths) > 0:
-                random_path = random.choice(at_position_paths)
-                if len(random_path) > 0:
-                    if len(random_path) > 1:
-                        self._navigator_states = list(random_path[:-1])
-                    else:
-                        self._navigator_states = []
-                    return random_path[-1]
-
-            if len(next_symbol_scores) == 0:
-                by_next_symbol = {}
-                for path in at_position_paths:
-                    if len(path) == 0:
-                        continue
-                    first_symbol = path[0]
-                    if first_symbol not in by_next_symbol:
-                        by_next_symbol[first_symbol] = []
-                    by_next_symbol[first_symbol].append(path)
-                    next_symbol_scores.update(dict(map(lambda item: (item[0], len(item[1])), by_next_symbol.items())))
-            else:
-                self._navigator_states.clear()
-
-            max_score = max(next_symbol_scores.values()) if len(next_symbol_scores) > 0 else 1
-            next_symbol_scores = dict(map(lambda item: (item[0], -(item[1] / max_score) + 1), next_symbol_scores.items()))
-            ps.assign_energy(next_symbol_scores)
-            new_target = ps.choose()
-            ps.add_past_target(new_target)
-
-        return new_target
-
-    def _is_appended_target_state(self, tree: DerivationTree) -> bool:
-        messages = tree.protocol_msgs()
-        if len(messages) > 0:
-            last_message = messages[-1]
-            for state in self._navigator_states:
-                if state not in last_message.get_state_nt():
-                    return False
-            return self._guide_target in last_message.get_state_nt()
-        return False
+            self._navigator_states.clear()
+            self._hookin_states.clear()
+        return selected_path[-1]
 
     def _is_can_enter_target_state(self) -> bool:
         for packet in self.get_fuzzer_packets():
@@ -469,7 +306,7 @@ class PacketSelector:
             left_path = left_path and not self._is_can_enter_target_state()
 
         if self._guide_target is None or left_path:
-            self._guide_target = self._select_next_target_3()
+            self._guide_target = self._select_next_target_4()
             self._guide_path = self.navigator.astar_tree(tree=self.history_tree, destination_symbols=self._navigator_states + [self._guide_target])
             log_guidance_hint(
                 f"Guiding to target {self._guide_target} with score {dict(self.coverage_scores)[self._guide_target]}"
@@ -480,7 +317,7 @@ class PacketSelector:
 
         is_next_symbol_state = next((x for x in self._guide_path if isinstance(x, PacketNonTerminal)), None) is None
         while self._is_can_enter_target_state() and is_next_symbol_state:
-            self._guide_target = self._select_next_target_3(self._guide_target)
+            self._guide_target = self._select_next_target_4(self._guide_target)
             self._guide_path = self.navigator.astar_tree(tree=self.history_tree, destination_symbols=self._navigator_states + [self._guide_target])
             is_next_symbol_state = next((x for x in self._guide_path if isinstance(x, PacketNonTerminal)), None) is None
 
