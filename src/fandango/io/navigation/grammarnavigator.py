@@ -109,7 +109,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         if self.is_search_end_node:
             return current.is_accepting
 
-        return self.heuristic_cost_estimate(current, goal) == 1
+        return self.heuristic_cost_estimate(current, goal) == len(self.search_symbols)
 
     def check_reachability_w_controlflow(self, *, tree: DerivationTree, destination_symbols: list[Symbol]) -> bool:
         checker = ReachabilityChecker(self.grammar)
@@ -147,7 +147,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         self.search_symbols = []
         for symbol in destination_symbols:
             self.search_symbols.append(symbol)
-        list(self.astar(start_nav_node, EagerGrammarGraphNode(NonTerminalNode(NonTerminal("<dummy>"), []), [])))
+        nav_path = list(self.astar(start_nav_node, EagerGrammarGraphNode(NonTerminalNode(NonTerminal("<dummy>"), []), [])))
         return nav_path
 
     def astar_tree(
