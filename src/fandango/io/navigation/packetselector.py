@@ -337,7 +337,7 @@ class PacketSelector:
 
         if self._guide_target is None or len(self._guide_path) == 0 or left_path:
             self._guide_target = self._select_next_target_4()
-            self._guide_path = self.navigator.astar_tree(tree=self.history_tree, destination_symbols=self._navigator_states + [self._guide_target], included_k_paths=self._current_covered_k_paths)
+            self._guide_path = self.navigator.astar_tree(tree=self.history_tree, destination_k_path=self._navigator_states + [self._guide_target], included_k_paths=self._current_covered_k_paths)
             log_guidance_hint(
                 f"Guiding to target {self._guide_target} with score {dict(self.coverage_scores)[self._guide_target]}"
             )
@@ -348,7 +348,7 @@ class PacketSelector:
         is_next_symbol_state = next((x for x in self._guide_path if isinstance(x, PacketNonTerminal)), None) is None
         while self._is_can_enter_target_state() and is_next_symbol_state:
             self._guide_target = self._select_next_target_4(self._guide_target)
-            self._guide_path = self.navigator.astar_tree(tree=self.history_tree, destination_symbols=self._navigator_states + [self._guide_target], included_k_paths=self._current_covered_k_paths)
+            self._guide_path = self.navigator.astar_tree(tree=self.history_tree, destination_k_path=self._navigator_states + [self._guide_target], included_k_paths=self._current_covered_k_paths)
             is_next_symbol_state = next((x for x in self._guide_path if isinstance(x, PacketNonTerminal)), None) is None
 
         self._guide_to_end = any(filter(lambda p: p is None, self._guide_path))

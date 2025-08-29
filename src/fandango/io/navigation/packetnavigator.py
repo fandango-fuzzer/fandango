@@ -102,21 +102,21 @@ class PacketNavigator(GrammarNavigator):
         self,
         *,
         tree: DerivationTree,
-        destination_symbols: list[NonTerminal],
+        destination_k_path: list[NonTerminal],
         included_k_paths: Optional[set[tuple[Symbol, ...]]] = None
     ) -> Optional[list[PacketNonTerminal | NonTerminal]]:
         if included_k_paths is None:
             included_k_paths = set()
         paths = []
         search_destination_symbols = []
-        for symbol in destination_symbols:
+        for symbol in destination_k_path:
             if symbol in self._packet_symbols:
                 search_destination_symbols.append(NonTerminal(f"<_packet_{symbol.name()[1:-1]}>"))
             else:
                 search_destination_symbols.append(symbol)
         for suggested_tree, is_complete in self._find_trees_including_k_paths(included_k_paths, tree):
             path = super().astar_tree(
-                tree=suggested_tree, destination_symbols=search_destination_symbols
+                tree=suggested_tree, destination_k_path=search_destination_symbols
             )
             if path is None:
                 continue
