@@ -127,7 +127,7 @@ class LazyGrammarGraphNode(GrammarGraphNode):
             return self._loaded_reaches
         assert isinstance(self.node, NonTerminalNode)
         graph_converter = GrammarGraphConverter(self.grammar_rules, self.node.symbol)
-        graph_converter.current_parent.append(self.parent)
+        graph_converter.current_parent.append(self)
         start_node, end_nodes = graph_converter.visit(
             self.grammar_rules[self.node.symbol]
         )
@@ -170,15 +170,13 @@ class GrammarGraphConverter(NodeVisitor):
         return graph
 
     def _get_current_parent(self):
-        if len(self.current_parent) < 2:
+        if len(self.current_parent) == 0:
             return None
-        return self.current_parent[-2]
+        return self.current_parent[-1]
 
     def visit(self, node: Node) -> tuple[GrammarGraphNode, list[GrammarGraphNode]]:
-        self.current_parent.append(node)
         start, end_nodes = super().visit(node)
         start.parent = self._get_current_parent()
-        self.current_parent.pop()
         return start, end_nodes
 
     @staticmethod
@@ -189,17 +187,23 @@ class GrammarGraphConverter(NodeVisitor):
     def visitAlternative(self, node: Alternative):
         chain_start = list()
         chain_end = list()
+        graph_node = EagerGrammarGraphNode(node, chain_start)
+        self.current_parent.append(graph_node)
         next_nodes = [self.visit(child) for child in node.children()]
         for start_node, end_nodes in next_nodes:
             chain_start.append(start_node)
             for end_node in end_nodes:
                 chain_end.append(end_node)
-        return EagerGrammarGraphNode(node, chain_start), chain_end
+        self.current_parent.pop()
+        return graph_node, chain_end
 
     def visitRepetition(self, node: Repetition):
         chain_start = None
         chain_end = list()
         intermediate_end = None
+        reaches = []
+        graph_node = EagerGrammarGraphNode(node, reaches)
+        self.current_parent.append(graph_node)
 
         for idx in range(node.max):
             if chain_start is None:
@@ -212,27 +216,33 @@ class GrammarGraphConverter(NodeVisitor):
             if idx >= node.min:
                 for end_node in intermediate_end:
                     chain_end.append(end_node)
-        reaches = []
         if chain_start is not None:
             reaches.append(chain_start)
-        graph_node = EagerGrammarGraphNode(node, reaches)
         if node.min == 0:
             chain_end.append(graph_node)
+
+        self.current_parent.pop()
         return graph_node, chain_end
 
     def visitConcatenation(self, node: Concatenation):
-        chain_start = None
         chain_end = list()
+        reaches = []
+        # TODO
+        graph_node = EagerGrammarGraphNode(node, reaches)
+        self.current_parent.append(graph_node)
+        first = True
         for child in node.children():
-            if chain_start is None:
+            if first:
+                first = False
                 next_node, chain_end = self.visit(child)
-                chain_start = EagerGrammarGraphNode(node, [next_node])
+                reaches.append(next_node)
             else:
                 next_node, next_end_nodes = self.visit(child)
                 for end_node in chain_end:
                     self._set_next(end_node, [next_node])
                 chain_end = next_end_nodes
-        return chain_start, chain_end
+        self.current_parent.pop()
+        return graph_node, chain_end
 
     def visitTerminalNode(self, node: TerminalNode):
         graph_node = EagerGrammarGraphNode(node, list())
