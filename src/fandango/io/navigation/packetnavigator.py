@@ -4,7 +4,7 @@ from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.grammarnavigator import GrammarNavigator
 from fandango.io.navigation.grammarreducer import GrammarReducer
 from fandango.io.navigation.packetiterativeparser import PacketIterativeParser
-from fandango.language import Grammar, NonTerminal, DerivationTree, Terminal
+from fandango.language import Grammar, NonTerminal, DerivationTree, Terminal, Symbol
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.node_visitors.grammar_graph_converter import (
     GrammarGraphNode,
@@ -78,14 +78,36 @@ class PacketNavigator(GrammarNavigator):
                 symbol_path.append(NonTerminal(n.node.symbol.name()))
         return symbol_path
 
+    def _includes_k_paths(self, k_paths: set[tuple[Symbol, ...]], controlflow_tree: DerivationTree):
+        if len(k_paths) == 0:
+            return True
+        k = max(1, max(map(lambda x: len(x), k_paths)))
+        col_tree = self.grammar.collapse(controlflow_tree)
+        covered_k_paths = self.grammar._extract_k_paths_from_tree(col_tree, k)
+        return len(k_paths.difference(covered_k_paths)) == 0
+
+    def _find_trees_including_k_paths(self, k_paths: set[tuple[Symbol, ...]], tree: DerivationTree):
+        match_k_paths_trees = []
+        process_trees = []
+        for suggested_tree, is_complete in self.get_controlflow_tree(tree):
+            process_trees.append((suggested_tree, is_complete))
+            if self._includes_k_paths(k_paths, self.grammar.collapse(suggested_tree)):
+                match_k_paths_trees.append((suggested_tree, is_complete))
+        if len(match_k_paths_trees) != 0:
+            process_trees = match_k_paths_trees
+        return process_trees
+
     def astar_tree(
         self,
         *,
         tree: DerivationTree,
-        destination_symbols: list[NonTerminal]
+        destination_symbols: list[NonTerminal],
+        included_k_paths: Optional[set[tuple[Symbol, ...]]] = None
     ) -> Optional[list[PacketNonTerminal | NonTerminal]]:
+        if included_k_paths is None:
+            included_k_paths = set()
         paths = []
-        for suggested_tree, is_complete in self.get_controlflow_tree(tree):
+        for suggested_tree, is_complete in self._find_trees_including_k_paths(included_k_paths, tree):
             path = super().astar_tree(
                 tree=suggested_tree, destination_symbols=destination_symbols
             )
@@ -99,10 +121,12 @@ class PacketNavigator(GrammarNavigator):
         return paths[0]
 
     def astar_search_end(
-        self, tree: DerivationTree
+        self, tree: DerivationTree, included_k_paths: Optional[set[tuple[Symbol, ...]]] = None
     ) -> Optional[list[PacketNonTerminal | NonTerminal]]:
+        if included_k_paths is None:
+            included_k_paths = set()
         paths = []
-        for suggested_tree, is_complete in self.get_controlflow_tree(tree):
+        for suggested_tree, is_complete in self._find_trees_including_k_paths(included_k_paths, tree):
             if is_complete:
                 return []
             path = super().astar_search_end(suggested_tree)
