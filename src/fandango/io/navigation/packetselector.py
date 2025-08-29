@@ -4,7 +4,7 @@ from typing import Optional
 from fandango.io import FandangoIO
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.grammarreducer import GrammarReducer
-from fandango.io.navigation.powerschedule import PowerSchedule
+from fandango.io.navigation.powerschedule import PowerSchedule, PowerScheduleCoverage, PowerScheduleKPath
 from fandango.io.rule_completion_tester import RuleCompletionTester
 from fandango.language.tree import DerivationTree
 from fandango.io.navigation.packetforecaster import (
@@ -30,7 +30,8 @@ class PacketSelector:
         self.grammar = grammar
         self._completion_tester = RuleCompletionTester(self.grammar)
         self.coverage_symbols = self._get_subgrammar_symbols(self.start_symbol)
-        self.msg_power_schedule = PowerSchedule()
+        self.msg_power_schedule = PowerScheduleCoverage()
+        self.state_path_power_schedule = PowerScheduleKPath()
         self.io_instance = io_instance
         self.navigator = PacketNavigator(grammar, self.start_symbol)
         self.forecaster = PacketForecaster(self.grammar)
@@ -219,7 +220,10 @@ class PacketSelector:
             target = ps.choose()
             ps.add_past_target(target)
             return target
-        selected_path = random.choice(uncovered_paths)
+        ps = self.state_path_power_schedule
+        ps.assign_energy_k_path(uncovered_paths)
+        selected_path = ps.choose()
+        ps.add_past_target(selected_path)
         if len(selected_path) > 1:
             self._navigator_states = list(selected_path[:-1])
         else:
