@@ -72,6 +72,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             current = current.parent
             chain.append(current)
         chain = list(map(lambda x: x.node.to_symbol(), chain))
+        chain = chain[::-1]
         if include_controlflow:
             return chain
         deleted = 0
@@ -83,14 +84,14 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
 
     def heuristic_path_symbols(self, current_chain: list[Symbol]) -> float:
         if not self.search_symbols or not current_chain:
-            return 0.0
+            return 1
         max_overlap = 0
         search_len = len(self.search_symbols)
         chain_len = len(current_chain)
         for i in range(1, min(search_len, chain_len) + 1):
             if current_chain[-i:] == self.search_symbols[:i]:
                 max_overlap = i
-        return max_overlap / search_len
+        return search_len - max_overlap
 
 
     def heuristic_cost_estimate(self, current: GrammarGraphNode, goal: GrammarGraphNode):
@@ -145,13 +146,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         start_nav_node = self.graph.walk(tree)
         self.search_symbols = []
         for symbol in destination_symbols:
-            if isinstance(symbol, NonTerminal):
-                symbol_node = NonTerminalNode(symbol, [])
-            elif isinstance(symbol, Terminal):
-                symbol_node = TerminalNode(symbol, [])
-            else:
-                raise ValueError(f"Unsupported symbol type: {type(symbol)}")
-            self.search_symbols.append(symbol_node)
+            self.search_symbols.append(symbol)
         list(self.astar(start_nav_node, EagerGrammarGraphNode(NonTerminalNode(NonTerminal("<dummy>"), []), [])))
         return nav_path
 
