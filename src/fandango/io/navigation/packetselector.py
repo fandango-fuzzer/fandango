@@ -4,8 +4,7 @@ from typing import Optional
 from fandango.io import FandangoIO
 from fandango.io.navigation.PacketNonTerminal import PacketNonTerminal
 from fandango.io.navigation.grammarreducer import GrammarReducer
-from fandango.io.navigation.powerschedule import PowerSchedule, PowerScheduleCoverage, PowerScheduleKPath
-from fandango.io.rule_completion_tester import RuleCompletionTester
+from fandango.io.navigation.powerschedule import PowerScheduleCoverage, PowerScheduleKPath
 from fandango.language.tree import DerivationTree
 from fandango.io.navigation.packetforecaster import (
     ForecastingPacket,
@@ -28,7 +27,6 @@ class PacketSelector:
     ):
         self.start_symbol = NonTerminal("<start>")
         self.grammar = grammar
-        self._completion_tester = RuleCompletionTester(self.grammar)
         self.coverage_symbols = self._get_subgrammar_symbols(self.start_symbol)
         self.msg_power_schedule = PowerScheduleCoverage()
         self.state_path_power_schedule = PowerScheduleKPath()
@@ -109,7 +107,7 @@ class PacketSelector:
         return nt_coverage
 
     def _get_guide_to_end_packet(self) -> list[ForecastingPacket]:
-        path = self.navigator.astar_search_end(self.history_tree)
+        path = self.navigator.astar_search_end(self.history_tree, included_k_paths=self._current_covered_k_paths)
         if len(path) > 0:
             next_packet = next(filter(lambda x: isinstance(x, PacketNonTerminal), path), None)
             if next_packet is None:
