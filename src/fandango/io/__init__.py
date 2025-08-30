@@ -442,6 +442,12 @@ class StdOut(FandangoParty):
         """
         self.stream.write(message.to_string())
 
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
+
 
 class StdIn(FandangoParty):
     """Standard input party for reading messages from stdin. The party can only receive messages, but not send any.
