@@ -1,5 +1,6 @@
 from typing import Optional, Set
 
+from fandango.io.navigation.pathutils import find_longest_suffix
 from fandango.io.navigation.visitor.continuing_nodevisitor import ContinuingNodeVisitor
 from fandango.language.tree import DerivationTree
 from fandango.language import Grammar, Symbol, NonTerminal, Terminal
@@ -34,45 +35,46 @@ class ReachabilityChecker(ContinuingNodeVisitor):
         super().find(tree)
         return self.path_reached
 
+    def test_reachability_from_node(self, node: NonTerminalNode, k_path_to_reach: list[Symbol]):
+        current_nodes = [node]
+        chain_found = True
+        for symbol in k_path_to_reach:
+            current_nodes = list(
+                filter(
+                    lambda n: symbol == n.to_symbol(),
+                    current_nodes,
+                )
+            )
+            if not current_nodes:
+                chain_found = False
+                break
+            current = current_nodes[0]
+            current_nodes = list(current.descendents(self.grammar, True))
+        return chain_found
+
+
     def onNonTerminalNodeVisit(self, node: NonTerminalNode, is_exploring: bool):
         if not is_exploring:
             return True, True
         first = self.k_path_to_reach[0]
         if node.symbol in self.seen_symbols:
             return True, False
-        node_symbols = self._to_normal_symbol(node.symbol)
-        self.seen_symbols.update(node_symbols)
+        self.seen_symbols.add(node.symbol)
+        if first == node.symbol:
+            if self.test_reachability_from_node(node, self.k_path_to_reach):
+                self.path_reached = True
+            return False, False
 
-        if first not in node_symbols:
+        current_path = tuple(map(lambda x: x[0], self.current_path_collapsed))
+        match = find_longest_suffix(current_path, tuple(self.k_path_to_reach))
+        if len(match) == 0:
             return True, True
-        current_node = node
-        chain_found = True
-        for child_symbol in self.k_path_to_reach[1:]:
-            child_nodes = list(
-                filter(
-                    lambda n: child_symbol in self._to_normal_symbol(n.to_symbol()),
-                    current_node.descendents(self.grammar, True),
-                )
-            )
-            if not child_nodes:
-                chain_found = False
-                break
-            current_node = child_nodes[0]
-        if chain_found:
+        if self.test_reachability_from_node(node, self.k_path_to_reach[len(match)-1:]):
             self.path_reached = True
         return False, False
+
 
     def onTerminalNodeVisit(self, node: TerminalNode, is_exploring: bool):
         if is_exploring:
             self.seen_symbols.add(node.symbol)
         return True
-
-    def _to_normal_symbol(self, symbol: Symbol) -> set[Symbol]:
-        returnme = set()
-        returnme.add(symbol)
-        if str(symbol).startswith("<_packet_"):
-            if isinstance(symbol, NonTerminal):
-                returnme.add(NonTerminal(f"<{symbol.name()[9:]}"))
-            if isinstance(symbol, Terminal):
-                returnme.add(Terminal(f"<{str(symbol)[9:]}"))
-        return returnme

@@ -151,9 +151,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
             start_nav_node = self.graph.walk(tree)
         else:
             start_nav_node = self.graph.start
-        self.search_symbols = []
-        for symbol in destination_k_path:
-            self.search_symbols.append(symbol)
+        self.search_symbols = list(destination_k_path)
         return list(
             self.astar(
                 start_nav_node,
