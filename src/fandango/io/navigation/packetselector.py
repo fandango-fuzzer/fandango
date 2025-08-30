@@ -47,7 +47,6 @@ class PacketSelector:
         self._guide_to_end = False
         self._guide_target = None
         self._guide_path = None
-        self._current_k_path = None
         self._current_covered_k_paths = set()
         self.compute(history_tree, self.parst_derivations)
 
@@ -350,14 +349,14 @@ class PacketSelector:
             covered_paths = total_paths - len(self._uncovered_paths())
             print(f"K-Path coverage: {covered_paths} / {total_paths}")
 
-            if self._current_k_path is not None:
+            if self._guide_target is not None:
                 should_covered_paths = self._current_covered_k_paths.union(
-                    [self._current_k_path]
+                    [self._guide_target]
                 )
                 if self._is_tree_contains_paths(
                     should_covered_paths, self.history_tree
                 ):
-                    self._current_covered_k_paths.add(self._current_k_path)
+                    self._current_covered_k_paths.add(self._guide_target)
 
             self._guide_target = self._select_next_target()
             self._guide_path = self.navigator.astar_tree(
