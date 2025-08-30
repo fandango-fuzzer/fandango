@@ -122,16 +122,7 @@ class PacketSelector:
             if next_packet is None:
                 return []
             assert isinstance(next_packet, PacketNonTerminal)
-            if (
-                next_packet.sender in self.next_fuzzer_parties()
-                and next_packet.symbol
-                in self.forecasting_result[next_packet.sender].nt_to_packet
-            ):
-                return [
-                    self.forecasting_result[next_packet.sender].nt_to_packet[
-                        next_packet.symbol
-                    ]
-                ]
+            return self.find_packets(sender=next_packet.sender, packet_symbol=next_packet.symbol)
         return []
 
     def compute(
@@ -334,10 +325,9 @@ class PacketSelector:
             # left_path = left_path and not self._is_can_enter_target_state()
 
         if self._guide_target is None or len(self._guide_path) == 0 or left_path:
-            total_paths = len(self.grammar.compute_k_paths(self.diversity_k))
-            covered_paths = total_paths - len(self._uncovered_paths())
-            print(f"K-Path coverage: {covered_paths} / {total_paths}")
-            self.old_covered_paths = covered_paths
+            #total_paths = len(self.grammar.compute_k_paths(self.diversity_k))
+            #covered_paths = total_paths - len(self._uncovered_paths())
+            #print(f"K-Path coverage: {covered_paths} / {total_paths}")
 
             if self._guide_target is not None:
                 should_covered_paths = self._current_covered_k_paths.union(
@@ -356,10 +346,10 @@ class PacketSelector:
             )
         self._guide_to_end = len(list(filter(lambda p: p is None, self._guide_path))) > 0
 
-        print(
-            f"LOWEST AT {self.coverage_scores[0][1]} PERCENT ({self.coverage_scores[0][0]})"
-        )
-        print(f"START  AT {dict(self.coverage_scores)[NonTerminal("<start>")]} PERCENT")
+        #print(
+        #    f"LOWEST AT {self.coverage_scores[0][1]} PERCENT ({self.coverage_scores[0][0]})"
+        #)
+        #print(f"START  AT {dict(self.coverage_scores)[NonTerminal("<start>")]} PERCENT")
 
         selected_packets = []
         next_packet = self._get_next_packet()
