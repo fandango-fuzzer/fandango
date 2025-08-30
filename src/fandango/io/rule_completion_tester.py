@@ -35,7 +35,6 @@ class RuleCompletionTester(NodeVisitor):
                 reduced_tree.add_child(symbol_tree)
         return self._parser.parse(word=reduced_tree, start=tree.symbol) is not None
 
-
     def default_result(self):
         return []
 

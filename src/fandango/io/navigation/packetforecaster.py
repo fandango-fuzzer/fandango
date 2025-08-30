@@ -74,7 +74,9 @@ class MountingPath:
         """
         self.tree = tree
         self.controlflow_path = controlflow_path
-        self.path: tuple[tuple[NonTerminal, bool], ...] = MountingPath._collapsed_path(controlflow_path)
+        self.path: tuple[tuple[NonTerminal, bool], ...] = MountingPath._collapsed_path(
+            controlflow_path
+        )
 
     @staticmethod
     def _collapsed_path(path: tuple[tuple[NonTerminal, bool], ...]):

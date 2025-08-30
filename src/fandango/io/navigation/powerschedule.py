@@ -32,6 +32,7 @@ class PowerSchedule:
     def add_past_target(self, new_target):
         self._past_targets.append(new_target)
 
+
 class PowerScheduleKPath(PowerSchedule):
     def __init__(self):
         super().__init__()
@@ -40,11 +41,12 @@ class PowerScheduleKPath(PowerSchedule):
         frequencies = Counter(self._past_targets)
         self.energy = dict()
         for path, freq in frequencies.items():
-            self.energy[path] = (1 / (freq ** self.exponent))
+            self.energy[path] = 1 / (freq**self.exponent)
         for path in k_paths:
             if path not in self.energy:
                 self.energy[path] = 1
         self.energy = self._normalize_energy()
+
 
 class PowerScheduleCoverage(PowerSchedule):
     def __init__(self):
@@ -58,7 +60,7 @@ class PowerScheduleCoverage(PowerSchedule):
                 coverage_val = coverage[p_type]
             else:
                 coverage_val = 0.0
-            self.energy[p_type] = (1 / (freq ** self.exponent)) * (1.0 - coverage_val)
+            self.energy[p_type] = (1 / (freq**self.exponent)) * (1.0 - coverage_val)
         for p_type in coverage.keys():
             if p_type not in self.energy:
                 self.energy[p_type] = 1 - coverage[p_type]

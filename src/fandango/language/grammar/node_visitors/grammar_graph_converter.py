@@ -159,9 +159,7 @@ class GrammarGraphConverter(NodeVisitor):
         self.current_parent = []
 
     def process(self):
-        start_node = EagerGrammarGraphNode(
-            NonTerminalNode(self.start_symbol, []), []
-        )
+        start_node = EagerGrammarGraphNode(NonTerminalNode(self.start_symbol, []), [])
         self.current_parent.append(start_node)
         child_start_node, child_end_nodes = self.visit(self.rules[self.start_symbol])
         self.current_parent.pop()
