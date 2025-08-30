@@ -18,6 +18,7 @@ def main():
         grammar=grammar,
         constraints=constraints,
         population_size=100,
+        diversity_k=5,
         logger_level=LoggerLevel.INFO,
     )
 
