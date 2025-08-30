@@ -518,10 +518,7 @@ class Fandango:
                 self.past_io_derivations.append(history_tree)
                 self._initial_solutions.clear()
                 yield history_tree
-                if (
-                    len(packet_selector.coverage_scores) > 0
-                    and packet_selector.coverage_scores[0][1] >= 1
-                ):
+                if len(packet_selector._uncovered_paths()) == 0:
                     log_guidance_hint("Full coverage reached, stopping evolution.")
                     return
                 log_guidance_hint("Starting new protocol run.")

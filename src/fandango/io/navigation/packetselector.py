@@ -304,6 +304,8 @@ class PacketSelector:
         ):
             if len(self._uncovered_paths()) == 0:
                 log_guidance_hint("Full coverage reached. Guiding to end of tree.")
+                if self._guide_target is not None:
+                    self._current_covered_k_paths.add(self._guide_target)
             else:
                 log_guidance_hint(
                     f"Current tree contains more then {self.max_messages_per_tree} messages. Guiding to end of tree."
@@ -325,9 +327,9 @@ class PacketSelector:
             # left_path = left_path and not self._is_can_enter_target_state()
 
         if self._guide_target is None or len(self._guide_path) == 0 or left_path:
-            #total_paths = len(self.grammar.compute_k_paths(self.diversity_k))
-            #covered_paths = total_paths - len(self._uncovered_paths())
-            #print(f"K-Path coverage: {covered_paths} / {total_paths}")
+            total_paths = len(self.grammar.compute_k_paths(self.diversity_k))
+            covered_paths = total_paths - len(self._uncovered_paths())
+            print(f"K-Path coverage: {covered_paths} / {total_paths}")
 
             if self._guide_target is not None:
                 should_covered_paths = self._current_covered_k_paths.union(
@@ -346,10 +348,10 @@ class PacketSelector:
             )
         self._guide_to_end = len(list(filter(lambda p: p is None, self._guide_path))) > 0
 
-        #print(
-        #    f"LOWEST AT {self.coverage_scores[0][1]} PERCENT ({self.coverage_scores[0][0]})"
-        #)
-        #print(f"START  AT {dict(self.coverage_scores)[NonTerminal("<start>")]} PERCENT")
+        print(
+            f"LOWEST AT {self.coverage_scores[0][1]} PERCENT ({self.coverage_scores[0][0]})"
+        )
+        print(f"START  AT {dict(self.coverage_scores)[NonTerminal("<start>")]} PERCENT")
 
         selected_packets = []
         next_packet = self._get_next_packet()
