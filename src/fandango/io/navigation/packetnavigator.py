@@ -102,7 +102,7 @@ class PacketNavigator(GrammarNavigator):
         self,
         *,
         tree: DerivationTree,
-        destination_k_path: list[NonTerminal],
+        destination_k_path: tuple[NonTerminal, ...],
         included_k_paths: Optional[set[tuple[Symbol, ...]]] = None
     ) -> Optional[list[PacketNonTerminal | NonTerminal]]:
         if included_k_paths is None:
