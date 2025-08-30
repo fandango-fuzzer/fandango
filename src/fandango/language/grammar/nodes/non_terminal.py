@@ -111,8 +111,10 @@ class NonTerminalNode(Node):
     def __hash__(self):
         return hash(self.symbol)
 
-    def msg_parties(self, *, include_recipients: bool = False) -> set[str]:
-        parties: set[str] = super().msg_parties(include_recipients=include_recipients)
+    def msg_parties(self, *, grammar: "fandango.language.grammar.grammar.Grammar", include_recipients: bool = False) -> set[str]:
+        parties: set[str] = grammar.rules[self.symbol].msg_parties(
+            grammar=grammar, include_recipients=include_recipients
+        )
         if self.sender is not None:
             parties.add(self.sender)
             if self.recipient is not None and include_recipients:

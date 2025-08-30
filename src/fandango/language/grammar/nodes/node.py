@@ -86,10 +86,10 @@ class Node(abc.ABC):
     def accept(self, visitor: "NodeVisitor"):
         raise NotImplementedError("accept method not implemented")
 
-    def msg_parties(self, *, include_recipients: bool = False) -> set[str]:
+    def msg_parties(self, *, grammar: "fandango.language.grammar.grammar.Grammar", include_recipients: bool = False) -> set[str]:
         parties: set[str] = set()
         for child in self.children():
-            parties |= child.msg_parties(include_recipients=include_recipients)
+            parties |= child.msg_parties(grammar=grammar, include_recipients=include_recipients)
         return parties
 
     def slice_parties(self, parties: list[str]) -> None:

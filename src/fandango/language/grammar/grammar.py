@@ -388,7 +388,7 @@ class Grammar(NodeVisitor):
     def msg_parties(self, *, include_recipients: bool = True) -> set:
         parties: set[str] = set()
         for rule in self.rules.values():
-            parties |= rule.msg_parties(include_recipients=include_recipients)
+            parties |= rule.msg_parties(grammar=self, include_recipients=include_recipients)
         return parties
 
     def get_repr_for_rule(self, symbol: str | NonTerminal):
