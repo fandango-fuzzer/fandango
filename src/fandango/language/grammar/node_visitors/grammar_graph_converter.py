@@ -194,7 +194,7 @@ class GrammarGraphConverter(NodeVisitor):
                 for end_node in intermediate_end:
                     self._set_next(end_node, [next_node])
                 intermediate_end = next_end_nodes
-            if idx >= node.min:
+            if (idx + 1) >= node.min:
                 for end_node in intermediate_end:
                     chain_end.append(end_node)
         reaches = []
