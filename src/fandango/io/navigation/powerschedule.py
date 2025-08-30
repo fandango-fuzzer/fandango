@@ -40,11 +40,11 @@ class PowerScheduleKPath(PowerSchedule):
     def assign_energy_k_path(self, k_paths: list[tuple[Symbol, ...]]):
         frequencies = Counter(self._past_targets)
         self.energy = dict()
-        for path, freq in frequencies.items():
-            self.energy[path] = 1 / (freq**self.exponent) * len(path)
         for path in k_paths:
-            if path not in self.energy:
+            if path not in frequencies:
                 self.energy[path] = len(path)
+            else:
+                self.energy[path] = 1 / (frequencies[path] ** self.exponent) * len(path)
         self.energy = self._normalize_energy()
 
 
