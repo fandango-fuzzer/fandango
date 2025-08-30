@@ -458,8 +458,8 @@ class Grammar(NodeVisitor):
             covered_k_paths.update(
                 self._extract_k_paths_from_tree(tree, k, overlap_to_root)
             )
-            if len(covered_k_paths) == len(all_k_paths):
-                return []
+            #if len(covered_k_paths) == len(all_k_paths):
+            #    return []
 
         uncovered_k_paths = all_k_paths.difference(covered_k_paths)
         return list(uncovered_k_paths)
