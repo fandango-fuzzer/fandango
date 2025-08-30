@@ -243,19 +243,8 @@ class PacketSelector:
     def _is_tree_contains_paths(
         self, paths: set[tuple[Symbol, ...]], tree: DerivationTree
     ) -> bool:
-        covered_paths = list(
-            self.grammar._extract_k_paths_from_tree(tree, self.diversity_k)
-        )
-        for list_idx, path in enumerate(list(covered_paths)):
-            remaining_path = path
-            for path_idx, symbol in enumerate(path[::-1]):
-                if symbol in self.coverage_symbols:
-                    break
-                last_idx = len(path) - path_idx - 1
-                remaining_path = remaining_path[:last_idx]
-            covered_paths[list_idx] = remaining_path
-        covered_paths = list(filter(lambda x: len(x) > 0, covered_paths))
-        return len(paths.difference(covered_paths)) == 0
+        found_trees, include_k_paths = self.navigator._find_trees_including_k_paths(paths, tree)
+        return include_k_paths
 
     def _is_can_enter_target_state(self) -> bool:
         for packet in self.get_fuzzer_packets():
@@ -348,6 +337,7 @@ class PacketSelector:
             total_paths = len(self.grammar.compute_k_paths(self.diversity_k))
             covered_paths = total_paths - len(self._uncovered_paths())
             print(f"K-Path coverage: {covered_paths} / {total_paths}")
+            self.old_covered_paths = covered_paths
 
             if self._guide_target is not None:
                 should_covered_paths = self._current_covered_k_paths.union(
@@ -364,7 +354,7 @@ class PacketSelector:
                 destination_k_path=self._guide_target,
                 included_k_paths=self._current_covered_k_paths,
             )
-        self._guide_to_end = any(filter(lambda p: p is None, self._guide_path))
+        self._guide_to_end = len(list(filter(lambda p: p is None, self._guide_path))) > 0
 
         print(
             f"LOWEST AT {self.coverage_scores[0][1]} PERCENT ({self.coverage_scores[0][0]})"

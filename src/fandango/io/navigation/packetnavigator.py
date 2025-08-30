@@ -98,10 +98,18 @@ class PacketNavigator(GrammarNavigator):
     ):
         if len(k_paths) == 0:
             return True
+        packet_k_paths = set()
+        for k_path in k_paths:
+            packet_path = tuple()
+            for symbol in k_path:
+                if symbol in self._packet_symbols:
+                    symbol = NonTerminal(f"<_packet_{symbol.name()[1:]}")
+                packet_path += (symbol,)
+            packet_k_paths.add(packet_path)
         k = max(1, max(map(lambda x: len(x), k_paths)))
         col_tree = self.grammar.collapse(controlflow_tree)
         covered_k_paths = self.grammar._extract_k_paths_from_tree(col_tree, k)
-        return len(k_paths.difference(covered_k_paths)) == 0
+        return len(packet_k_paths.difference(covered_k_paths)) == 0
 
     def _find_trees_including_k_paths(
         self, k_paths: set[tuple[Symbol, ...]], tree: DerivationTree
@@ -110,11 +118,11 @@ class PacketNavigator(GrammarNavigator):
         process_trees = []
         for suggested_tree, is_complete in self.get_controlflow_tree(tree):
             process_trees.append((suggested_tree, is_complete))
-            if self._includes_k_paths(k_paths, self.grammar.collapse(suggested_tree)):
+            if self._includes_k_paths(k_paths, suggested_tree):
                 match_k_paths_trees.append((suggested_tree, is_complete))
         if len(match_k_paths_trees) != 0:
-            process_trees = match_k_paths_trees
-        return process_trees
+            return match_k_paths_trees, True
+        return process_trees, False
 
     def astar_tree(
         self,
@@ -134,9 +142,8 @@ class PacketNavigator(GrammarNavigator):
                 )
             else:
                 search_destination_symbols.append(symbol)
-        for suggested_tree, is_complete in self._find_trees_including_k_paths(
-            included_k_paths, tree
-        ):
+        found_trees, include_k_paths = self._find_trees_including_k_paths(included_k_paths, tree)
+        for suggested_tree, is_complete in found_trees:
             path = super().astar_tree(
                 tree=suggested_tree, destination_k_path=search_destination_symbols
             )
@@ -157,9 +164,8 @@ class PacketNavigator(GrammarNavigator):
         if included_k_paths is None:
             included_k_paths = set()
         paths = []
-        for suggested_tree, is_complete in self._find_trees_including_k_paths(
-            included_k_paths, tree
-        ):
+        found_trees, include_k_paths = self._find_trees_including_k_paths(included_k_paths, tree)
+        for suggested_tree, is_complete in found_trees:
             if is_complete:
                 return []
             path = super().astar_search_end(suggested_tree)

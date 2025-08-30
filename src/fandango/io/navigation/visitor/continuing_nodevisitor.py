@@ -29,19 +29,18 @@ class ContinuingNodeVisitor(NodeVisitor):
         self.current_path_collapsed: list[tuple[NonTerminal, bool]] = []
 
     def find(self, tree: Optional[DerivationTree] = None):
-        if tree is None:
-            self.tree = DerivationTree(NonTerminal("<start>"))
-        else:
-            self.tree = tree
+        self.tree = tree
         self.current_path = []
-        self.current_tree = []
-        self.current_path.append((self.tree.nonterminal, False))
-        if len(self.tree.children) == 0:
-            self.current_tree = [None]
+        self.current_tree = [None]
+        if tree is not None:
+            self.current_path.append((self.tree.nonterminal, False))
+            if len(self.tree.children) != 0:
+                self.current_tree = [[self.tree.children[0]]]
+            self.visit(self.grammar.rules[self.current_path[-1][0]])
         else:
-            self.current_tree = [[self.tree.children[0]]]
+            self.current_path.append((NonTerminal("<start>"), True))
+            self.visit(NonTerminalNode(NonTerminal("<start>"), []))
 
-        self.visit(self.grammar.rules[self.current_path[-1][0]])
         self.current_tree.pop()
         self.current_path.pop()
 
