@@ -242,24 +242,6 @@ class PacketSelector:
         self._current_covered_k_paths.add(path)
         self._all_past_covered_k_paths.add(path)
 
-    def _is_can_enter_target_state(self) -> bool:
-        for packet in self.get_fuzzer_packets():
-            for path in packet.paths:
-                is_new_states = list(map(lambda x: x[1], path.path))
-                if True not in is_new_states:
-                    continue
-                first_new_idx = is_new_states.index(True)
-                states = list(map(lambda x: x[0], path.path))
-                from_scan_idx = first_new_idx - len(self._navigator_states)
-                if from_scan_idx < 0:
-                    continue
-                scan_states = states[from_scan_idx:]
-                if PacketSelector._tuple_contains(
-                    self._guide_target, tuple(scan_states)
-                ):
-                    return True
-        return False
-
     def _remember_messages(self):
         self._prev_session_msgs = list(
             map(lambda x: x.msg, self.history_tree.protocol_msgs())
@@ -331,7 +313,6 @@ class PacketSelector:
                 self._guide_path = self._guide_path[
                     self._guide_path.index(old_next_packet) + 1 :
                 ]
-            # left_path = left_path and not self._is_can_enter_target_state()
 
         print(f"Confirmed paths: {len(self._all_past_covered_k_paths)}")
         all_covered_paths = set()
