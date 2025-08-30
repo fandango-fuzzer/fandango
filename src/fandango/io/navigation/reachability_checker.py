@@ -57,7 +57,12 @@ class ReachabilityChecker(ContinuingNodeVisitor):
                     continue
                 seen.add(n)
                 work.update(n.descendents(self.grammar, True))
-            child_nodes = list(filter(lambda n: child_symbol in self._to_normal_symbol(n.to_symbol()), seen))
+            child_nodes = list(
+                filter(
+                    lambda n: child_symbol in self._to_normal_symbol(n.to_symbol()),
+                    seen,
+                )
+            )
             if not child_nodes:
                 chain_found = False
                 break
@@ -65,7 +70,6 @@ class ReachabilityChecker(ContinuingNodeVisitor):
         if chain_found:
             self.path_reached = True
         return False, False
-
 
     def onTerminalNodeVisit(self, node: TerminalNode, is_exploring: bool):
         if is_exploring:

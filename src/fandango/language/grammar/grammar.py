@@ -51,10 +51,10 @@ class Grammar(NodeVisitor):
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
         self._parser = Parser(self.rules)
-        self._k_path_cache: dict[tuple[NonTerminal, bool], list[set[tuple[Symbol, ...]]]] = dict()
-        self._tree_k_path_cache: dict[int, set[tuple[Symbol, ...]]] = (
-            dict()
-        )
+        self._k_path_cache: dict[
+            tuple[NonTerminal, bool], list[set[tuple[Symbol, ...]]]
+        ] = dict()
+        self._tree_k_path_cache: dict[int, set[tuple[Symbol, ...]]] = dict()
 
     @property
     def grammar_settings(self) -> Sequence[HasSettings]:
@@ -431,10 +431,10 @@ class Grammar(NodeVisitor):
         self._parser = Parser(self.rules)
 
     def find_missing_k_paths(
-            self,
-            derivation_trees: list[DerivationTree],
-            k: int,
-            non_terminal: Optional[NonTerminal] = None,
+        self,
+        derivation_trees: list[DerivationTree],
+        k: int,
+        non_terminal: Optional[NonTerminal] = None,
     ) -> set[tuple[Symbol, ...]]:
         all_k_paths = self._generate_all_k_paths(k, non_terminal)
         covered_k_paths = set()
@@ -455,13 +455,14 @@ class Grammar(NodeVisitor):
         all_k_paths = self._generate_all_k_paths(k, non_terminal, overlap_to_root)
         covered_k_paths = set()
         for tree in derivation_trees:
-            covered_k_paths.update(self._extract_k_paths_from_tree(tree, k, overlap_to_root))
+            covered_k_paths.update(
+                self._extract_k_paths_from_tree(tree, k, overlap_to_root)
+            )
             if len(covered_k_paths) == len(all_k_paths):
                 return []
 
         uncovered_k_paths = all_k_paths.difference(covered_k_paths)
         return list(uncovered_k_paths)
-
 
     def compute_kpath_coverage(
         self,
@@ -480,7 +481,9 @@ class Grammar(NodeVisitor):
         # Extract k-paths from the derivation trees
         covered_k_paths = set()
         for tree in derivation_trees:
-            covered_k_paths.update(self._extract_k_paths_from_tree(tree, k, overlap_to_root))
+            covered_k_paths.update(
+                self._extract_k_paths_from_tree(tree, k, overlap_to_root)
+            )
             if len(covered_k_paths) == len(all_k_paths):
                 return 1.0
 
@@ -490,7 +493,10 @@ class Grammar(NodeVisitor):
         return len(covered_k_paths) / len(all_k_paths)
 
     def _generate_all_k_paths(
-        self, k: int, non_terminal: NonTerminal = NonTerminal("<start>"), overlap_to_root: bool = False
+        self,
+        k: int,
+        non_terminal: NonTerminal = NonTerminal("<start>"),
+        overlap_to_root: bool = False,
     ) -> set[tuple[Symbol, ...]]:
         """
         Computes the *k*-paths for this grammar, constructively. See: doi.org/10.1109/ASE.2019.00027
@@ -515,7 +521,6 @@ class Grammar(NodeVisitor):
             initial_work.extend(node.descendents(self, filter_controlflow=True))
         work: list[set[tuple[Node, ...]]] = [set((x,) for x in initial)]
 
-
         for _ in range(len(work), k):
             next_work = set(work[-1])
             for base in work[-1]:
@@ -536,7 +541,6 @@ class Grammar(NodeVisitor):
                 if non_terminal in k_path:
                     for idx in range(len(k_path) - 1, k):
                         symbol_work[idx].add(k_path)
-
 
         self._k_path_cache[(non_terminal, overlap_to_root)] = symbol_work
 

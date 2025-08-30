@@ -522,9 +522,7 @@ class Fandango:
                     len(packet_selector.coverage_scores) > 0
                     and packet_selector.coverage_scores[0][1] >= 1
                 ):
-                    log_guidance_hint(
-                        "Full coverage reached, stopping evolution."
-                    )
+                    log_guidance_hint("Full coverage reached, stopping evolution.")
                     return
                 log_guidance_hint("Starting new protocol run.")
                 io_instance.reset_parties()
@@ -551,7 +549,9 @@ class Fandango:
                 self.population_manager.allow_fallback_packets = False
                 self._initial_solutions.clear()
                 self.adaptive_tuner.reset_parameters()
-                self.grammar.set_max_repetition(self.adaptive_tuner.current_max_repetition)
+                self.grammar.set_max_repetition(
+                    self.adaptive_tuner.current_max_repetition
+                )
 
                 solutions = list(
                     self.population_manager.refill_population(
@@ -569,19 +569,30 @@ class Fandango:
                 if not solutions:
                     try:
                         evolve_result = next(
-                            self.generate(max_generations=selected_packet_max_generations, mode=FuzzingMode.COMPLETE)
+                            self.generate(
+                                max_generations=selected_packet_max_generations,
+                                mode=FuzzingMode.COMPLETE,
+                            )
                         )
                     except StopIteration:
                         if len(self.evaluator._hold_back_solutions) != 0:
-                            evolve_result = random.choice(list(self.evaluator._hold_back_solutions))
+                            evolve_result = random.choice(
+                                list(self.evaluator._hold_back_solutions)
+                            )
                         else:
                             self.population_manager.allow_fallback_packets = True
                             try:
                                 evolve_result = next(
-                                    self.generate(max_generations=overall_max_generations, mode=FuzzingMode.COMPLETE)
+                                    self.generate(
+                                        max_generations=overall_max_generations,
+                                        mode=FuzzingMode.COMPLETE,
+                                    )
                                 )
                             except StopIteration:
-                                all_allowed_packets = self.population_manager.fuzzable_packets + self.population_manager.fallback_packets
+                                all_allowed_packets = (
+                                    self.population_manager.fuzzable_packets
+                                    + self.population_manager.fallback_packets
+                                )
                                 nonterminals_str = " | ".join(
                                     map(
                                         lambda x: str(x.node.symbol),

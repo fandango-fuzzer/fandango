@@ -88,7 +88,6 @@ class ContinuingNodeVisitor(NodeVisitor):
             self.current_path_collapsed.pop()
             self.current_tree.pop()
 
-
     def onNonTerminalNodeVisit(
         self, node: NonTerminalNode, is_exploring: bool
     ) -> tuple[bool, bool]:

@@ -43,7 +43,6 @@ class ProtocolMessage:
             current = current.parent
         return state_nts
 
-
     def __repr__(self) -> str:
         return str(self)
 
