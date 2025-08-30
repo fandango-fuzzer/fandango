@@ -48,6 +48,7 @@ class PacketSelector:
         self._guide_target = None
         self._guide_path = None
         self._current_covered_k_paths = set()
+        self._all_past_covered_k_paths = set()
         self.compute(history_tree, self.parst_derivations)
 
     def _get_subgrammar_symbols(self, starting_symbol: NonTerminal):
@@ -237,6 +238,10 @@ class PacketSelector:
         found_trees, include_k_paths = self.navigator._find_trees_including_k_paths(paths, tree)
         return include_k_paths
 
+    def _confirm_covered_path(self, path: tuple[Symbol, ...]):
+        self._current_covered_k_paths.add(path)
+        self._all_past_covered_k_paths.add(path)
+
     def _is_can_enter_target_state(self) -> bool:
         for packet in self.get_fuzzer_packets():
             for path in packet.paths:
@@ -305,7 +310,7 @@ class PacketSelector:
             if len(self._uncovered_paths()) == 0:
                 log_guidance_hint("Full coverage reached. Guiding to end of tree.")
                 if self._guide_target is not None:
-                    self._current_covered_k_paths.add(self._guide_target)
+                    self._confirm_covered_path(self._guide_target)
             else:
                 log_guidance_hint(
                     f"Current tree contains more then {self.max_messages_per_tree} messages. Guiding to end of tree."
@@ -326,10 +331,16 @@ class PacketSelector:
                 ]
             # left_path = left_path and not self._is_can_enter_target_state()
 
+        print(f"Confirmed paths: {len(self._all_past_covered_k_paths)}")
+        all_covered_paths = set()
+        for tree in self._all_derivation_trees():
+            all_covered_paths.update(self.grammar._extract_k_paths_from_tree(tree, self.diversity_k))
+        print(f"Missing confirmed paths: {self._all_past_covered_k_paths.difference(all_covered_paths)}")
+
         if self._guide_target is None or len(self._guide_path) == 0 or left_path:
-            total_paths = len(self.grammar.compute_k_paths(self.diversity_k))
-            covered_paths = total_paths - len(self._uncovered_paths())
-            print(f"K-Path coverage: {covered_paths} / {total_paths}")
+            #total_paths = len(self.grammar.compute_k_paths(self.diversity_k))
+            #covered_paths = total_paths - len(self._uncovered_paths())
+            #print(f"K-Path coverage: {covered_paths} / {total_paths}")
 
             if self._guide_target is not None:
                 should_covered_paths = self._current_covered_k_paths.union(
@@ -338,7 +349,7 @@ class PacketSelector:
                 if self._is_tree_contains_paths(
                     should_covered_paths, self.history_tree
                 ):
-                    self._current_covered_k_paths.add(self._guide_target)
+                    self._confirm_covered_path(self._guide_target)
 
             self._guide_target = self._select_next_target()
             self._guide_path = self.navigator.astar_tree(
