@@ -18,18 +18,18 @@ class ReachabilityChecker(ContinuingNodeVisitor):
         super().__init__(grammar)
         self.seen_symbols: set[Symbol] = set()
         self.path_reached = False
-        self.symbol_chain_to_reach: list[Symbol] = []
+        self.k_path_to_reach: list[Symbol] = []
 
     def find_reachability(
         self,
         *,
-        symbol_chain_to_reach: list[Symbol],
+        k_path_to_reach: list[Symbol],
         tree: Optional[DerivationTree] = None,
     ):
-        if not symbol_chain_to_reach:
+        if not k_path_to_reach:
             return False
         self.path_reached = False
-        self.symbol_chain_to_reach = symbol_chain_to_reach
+        self.k_path_to_reach = k_path_to_reach
         self.seen_symbols.clear()
         super().find(tree)
         return self.path_reached
@@ -37,7 +37,7 @@ class ReachabilityChecker(ContinuingNodeVisitor):
     def onNonTerminalNodeVisit(self, node: NonTerminalNode, is_exploring: bool):
         if not is_exploring:
             return True, True
-        first = self.symbol_chain_to_reach[0]
+        first = self.k_path_to_reach[0]
         if node.symbol in self.seen_symbols:
             return True, False
         node_symbols = self._to_normal_symbol(node.symbol)
@@ -47,20 +47,11 @@ class ReachabilityChecker(ContinuingNodeVisitor):
             return True, True
         current_node = node
         chain_found = True
-        for child_symbol in self.symbol_chain_to_reach[1:]:
-            seen = set()
-            work = set()
-            work.add(current_node)
-            while len(work) != 0:
-                n = work.pop()
-                if n in seen:
-                    continue
-                seen.add(n)
-                work.update(n.descendents(self.grammar, True))
+        for child_symbol in self.k_path_to_reach[1:]:
             child_nodes = list(
                 filter(
                     lambda n: child_symbol in self._to_normal_symbol(n.to_symbol()),
-                    seen,
+                    current_node.descendents(self.grammar, True),
                 )
             )
             if not child_nodes:

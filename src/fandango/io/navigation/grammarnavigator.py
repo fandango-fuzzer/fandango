@@ -115,24 +115,23 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
         return self.heuristic_cost_estimate(current, goal) == 0
 
     def check_reachability_w_controlflow(
-        self, *, tree: DerivationTree, destination_k_path: list[Symbol]
+        self, *, tree: Optional[DerivationTree] = None, destination_k_path: list[Symbol]
     ) -> bool:
         checker = ReachabilityChecker(self.grammar)
         return checker.find_reachability(
-            tree=tree, symbol_chain_to_reach=destination_k_path
+            tree=tree, k_path_to_reach=destination_k_path
         )
 
     def astar_tree_w_controlflow(
-        self, *, tree: DerivationTree, destination_k_path: list[Symbol]
+        self, *, tree: Optional[DerivationTree]=None, destination_k_path: list[Symbol]
     ):
         if len(destination_k_path) == 0:
             return []
         if not self.check_reachability_w_controlflow(
             destination_k_path=destination_k_path, tree=tree
         ):
-            empty_tree = DerivationTree(NonTerminal("<start>"))
             if not self.check_reachability_w_controlflow(
-                destination_k_path=destination_k_path, tree=empty_tree
+                destination_k_path=destination_k_path
             ) and destination_k_path[0] != NonTerminal("<start>"):
                 raise FandangoError(
                     f"Symbol {destination_k_path} is not reachable in grammar."
@@ -141,21 +140,17 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
                 self.astar_search_end_w_controlflow(tree)
             )
             path.append(None)
-            if destination_k_path[0] != NonTerminal("<start>"):
-                path.extend(
-                    self.astar_tree_w_controlflow(
-                        tree=empty_tree, destination_k_path=destination_k_path
-                    )
+            path.extend(
+                self.astar_tree_w_controlflow(
+                    destination_k_path=destination_k_path
                 )
-            else:
-                path.append(
-                    EagerGrammarGraphNode(
-                        NonTerminalNode(NonTerminal("<start>"), []), []
-                    )
-                )
+            )
             return path
         self.is_search_end_node = False
-        start_nav_node = self.graph.walk(tree)
+        if tree is not None:
+            start_nav_node = self.graph.walk(tree)
+        else:
+            start_nav_node = self.graph.start
         self.search_symbols = []
         for symbol in destination_k_path:
             self.search_symbols.append(symbol)
