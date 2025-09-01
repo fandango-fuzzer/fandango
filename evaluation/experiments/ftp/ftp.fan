@@ -212,6 +212,9 @@ def is_unique_folder_and_file(current_file_or_folder, data):
 def open_data_port(port):
     FandangoIO.instance().parties['ClientData'].port = port
     FandangoIO.instance().parties['ServerData'].port = port
+
+    FandangoIO.instance().parties["ClientData"].stop()
+    FandangoIO.instance().parties["ServerData"].stop()
     FandangoIO.instance().parties["ClientData"].start()
     FandangoIO.instance().parties["ServerData"].start()
     return port
@@ -243,8 +246,8 @@ class ServerControl(ConnectParty):
 
     def on_send(self, message: DerivationTree, recipient: str):
         super().on_send(message, recipient)
-        if message.to_string().startswith("226"):
-            FandangoIO.instance().parties['ServerData'].stop()
+        #if message.to_string().startswith("226"):
+        #    FandangoIO.instance().parties['ServerData'].stop()
 
 class ClientData(ConnectParty):
     def __init__(self):
