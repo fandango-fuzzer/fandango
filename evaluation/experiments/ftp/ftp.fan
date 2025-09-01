@@ -18,9 +18,9 @@ fandango_is_client = True
 <state_finished> ::= ''
 
 # The logged in state. If the client is logged in, it is allowed to send the following commands.
-<logged_in_cmds> ::= <exchange_set_type> | <exchange_pwd> | <exchange_syst> | <exchange_feat> | <exchange_set_client> | <exchange_set_utf8> | <exchange_set_type> | <exchange_set_epassive>
+<logged_in_cmds> ::= <exchange_set_type> | <exchange_pwd> | <exchange_syst> | <exchange_feat> | <exchange_set_utf8> | <exchange_set_type> | <exchange_set_epassive>
 <exchange_socket_connect> ::= <ServerControl:ClientControl:response_server_info>
-<response_server_info> ::= '220 ' r'[a-zA-Z0-9\_\.\(\) ]+\s' '[' r'[a-zA-Z0-9\:\.]+' ']\r\n'
+<response_server_info> ::= r'(220-(?:[\x20-\x7E]*\r\n))*220 (?:[\x20-\x7E]*)\r\n'
 
 <exchange_auth_tls> ::= <ClientControl:ServerControl:request_auth_tls><ServerControl:ClientControl:response_auth_tls>
 <request_auth_tls> ::= 'AUTH TLS\r\n'
@@ -65,7 +65,7 @@ def contains_nt(tree, nt):
 <response_login_user> ::= '331 ' <command_tail> '\r\n'
 <request_login_pass_ok> ::= 'PASS the_password\r\n'
 <response_login_pass_ok> ::= '230 ' <command_tail> '\r\n'
-<command_tail> ::= r'([a-zA-Z0-9\_\. ]+)'
+<command_tail> ::= r'[\x20-\x7E]+'
 
 <request_login_user_fail> ::= 'USER ' <wrong_user_name> '\r\n'
 <request_login_pass_fail> ::= 'PASS ' <wrong_user_password> '\r\n'
@@ -205,8 +205,8 @@ class ClientControl(ConnectParty):
         )
         self.start()
 
-    def receive(self, data: bytes):
-        self.receive_msg("ServerControl", data.decode("utf-8"))
+    def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
+        super().receive_msg("ServerControl", message.decode("utf-8"))
 
 class ServerControl(ConnectParty):
     def __init__(self):
@@ -217,11 +217,11 @@ class ServerControl(ConnectParty):
         )
         self.start()
 
-    def receive(self, data: bytes):
-        self.receive_msg("ClientControl", data.decode("utf-8"))
+    def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
+        self.receive_msg("ClientControl", message.decode("utf-8"))
 
-    def transmit(self, message: DerivationTree, recipient: str):
-        self.connection.sendall(message.to_string().encode("utf-8"))
+    def on_send(self, message: DerivationTree, recipient: str):
+        super().on_send(message, recipient)
         if message.to_string() == "226 Transfer complete\r\n":
             FandangoIO.instance().parties['ServerData'].stop()
 
@@ -233,8 +233,8 @@ class ClientData(ConnectParty):
             uri="tcp://localhost:50100"
         )
 
-    def receive(self, data: bytes):
-        self.receive_msg("ServerData", data.decode("utf-8"))
+    def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
+        self.receive_msg("ServerData", message.decode("utf-8"))
 
 class ServerData(ConnectParty):
     def __init__(self):
@@ -244,5 +244,5 @@ class ServerData(ConnectParty):
             uri="tcp://localhost:50100"
         )
 
-    def receive(self, data: bytes):
-        self.receive_msg("ClientData", data.decode("utf-8"))
+    def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
+        self.receive_msg("ClientData", message.decode("utf-8"))
