@@ -96,6 +96,7 @@ class Fandango:
         self.diversity_k = diversity_k
         self.remote_response_timeout = 15.0
         self.past_io_derivations = []
+        self.coverage_log: list[tuple[float, float]] = []
 
         # Instantiate managers
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
@@ -498,6 +499,9 @@ class Fandango:
 
         while True:
             packet_selector.compute(history_tree, self.past_io_derivations)
+            current_coverage = dict(packet_selector.coverage_scores)[NonTerminal("<start>")]
+            self.coverage_log.append((time.time(), current_coverage))
+            LOGGER.info(f"Current coverage: {current_coverage:.2f}%")
             self.evaluator.start_next_message(
                 [history_tree] + list(self.past_io_derivations)
             )
@@ -640,7 +644,7 @@ class Fandango:
 
                 hookin_option = next(iter(forecast.paths))
                 history_tree = hookin_option.tree
-                history_tree.append(hookin_option.path[1:], packet_tree)
+                history_tree.append(hookin_option.path[1:-1], packet_tree)
                 solutions, (fitness, failing_trees) = GeneratorWithReturn(
                     self.evaluator.evaluate_individual(history_tree)
                 ).collect()
