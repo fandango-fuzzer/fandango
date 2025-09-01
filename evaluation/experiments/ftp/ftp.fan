@@ -1,7 +1,7 @@
 from random import randint
 import math
 
-fandango_is_client = False
+fandango_is_client = True
 
 # The starting symbol from which the fuzzer starts generating messages.
 <start> ::= <state_setup>
@@ -38,21 +38,21 @@ fandango_is_client = False
 
 # A failed login consist of incorrect username and incorrect password, incorrect username and correct
 # password or correct username and incorrect password. The rule ends with the fuzzer going back into the logged out state.
-<exchange_login_fail> ::= (<ClientControl:ServerControl:request_login_user_ok>
-                            <ServerControl:ClientControl:response_login_user>
-                            <ClientControl:ServerControl:request_login_pass_fail>
-                          )
-                               |
-                          (<ClientControl:ServerControl:request_login_user_fail>
-                            <ServerControl:ClientControl:response_login_user>
-                            (<ClientControl:ServerControl:request_login_pass_fail>|<ClientControl:ServerControl:request_login_pass_ok>)
-                          )
-                           <ServerControl:ClientControl:response_login_pass_fail>
+<exchange_login_fail> ::= (<ClientControl:ServerControl:request_login_user_ok> \
+                            <ServerControl:ClientControl:response_login_user> \
+                            <ClientControl:ServerControl:request_login_pass_fail> \
+                          ) \
+                               | \
+                          (<ClientControl:ServerControl:request_login_user_fail> \
+                            <ServerControl:ClientControl:response_login_user> \
+                            (<ClientControl:ServerControl:request_login_pass_fail>|<ClientControl:ServerControl:request_login_pass_ok>) \
+                          ) \
+                           <ServerControl:ClientControl:response_login_pass_fail> \
                            (<state_logged_out> | (<ServerControl:ClientControl:response_login_throttled><state_finished>))
 
 # This constraint ensured, that the client sent the EPSV command (opening a passive port, for transmitting data),
 # before executing the mlsd command.
-where (not contains_nt(<start>, NonTerminal('<request_mlsd>')))
+where (not contains_nt(<start>, NonTerminal('<request_mlsd>'))) \
     or (contains_nt(<start>, NonTerminal('<request_set_epassive>')) and contains_nt(<start>, NonTerminal('<request_set_type>')))
 
 def contains_nt(tree, nt):
@@ -127,13 +127,13 @@ def feat_response():
 
 where int(<mlsd_data_user_uid>.<number>) < 1000
 
-where forall <data> in <mlsd_data>:
-    len(<data>.find_all_nodes(NonTerminal('<mlsd_data_folder_cdir>'), exclude_read_only=False)) == 1
+where forall <data> in <mlsd_data>: \
+    len(<data>.find_all_nodes(NonTerminal('<mlsd_data_folder_cdir>'), exclude_read_only=False)) == 1 \
     and len(<data>.find_all_nodes(NonTerminal('<mlsd_data_folder_pdir>'), exclude_read_only=False)) == 1
 
 
-where forall <data> in <mlsd_transfer>.<mlsd_data>:
-    forall <mlsd_file> in <data>..<mlsd_file>:
+where forall <data> in <mlsd_transfer>.<mlsd_data>: \
+    forall <mlsd_file> in <data>..<mlsd_file>: \
         is_unique_folder_and_file(<mlsd_file>, <data>)
 
 
@@ -196,28 +196,24 @@ def open_data_port(port):
     FandangoIO.instance().parties['ServerData'].start()
     return port
 
-class ClientControl(SocketClient):
+class ClientControl(ConnectParty):
     def __init__(self):
         super().__init__(
-            ownership=Ownership.FUZZER if fandango_is_client else Ownership.EXTERNAL,
-            ip_type=IpType.IPV6,
-            ip="::1",
-            port=21,
-            protocol_type=Protocol.TCP
+            ownership=Ownership.FANDANGO_PARTY if fandango_is_client else Ownership.EXTERNAL_PARTY,
+            endpoint_type=EndpointType.CONNECT,
+            uri="tcp://localhost:25521"
         )
         self.start()
 
     def receive(self, data: bytes):
         self.receive_msg("ServerControl", data.decode("utf-8"))
 
-class ServerControl(SocketServer):
+class ServerControl(ConnectParty):
     def __init__(self):
         super().__init__(
-            ownership=Ownership.EXTERNAL if fandango_is_client else Ownership.FUZZER,
-            ip_type=IpType.IPV6,
-            ip="::1",
-            port=50200,
-            protocol_type=Protocol.TCP
+            ownership=Ownership.EXTERNAL_PARTY if fandango_is_client else Ownership.FANDANGO_PARTY,
+            endpoint_type=EndpointType.OPEN,
+            uri="tcp://localhost:25521"
         )
         self.start()
 
@@ -229,27 +225,23 @@ class ServerControl(SocketServer):
         if message.to_string() == "226 Transfer complete\r\n":
             FandangoIO.instance().parties['ServerData'].stop()
 
-class ClientData(SocketClient):
+class ClientData(ConnectParty):
     def __init__(self):
         super().__init__(
-            ownership=Ownership.FUZZER if fandango_is_client else Ownership.EXTERNAL,
-            ip_type=IpType.IPV6,
-            ip="::1",
-            port=50100,
-            protocol_type=Protocol.TCP
+            ownership=Ownership.FANDANGO_PARTY if fandango_is_client else Ownership.EXTERNAL_PARTY,
+            endpoint_type=EndpointType.CONNECT,
+            uri="tcp://localhost:50100"
         )
 
     def receive(self, data: bytes):
         self.receive_msg("ServerData", data.decode("utf-8"))
 
-class ServerData(SocketServer):
+class ServerData(ConnectParty):
     def __init__(self):
         super().__init__(
-            ownership=Ownership.EXTERNAL if fandango_is_client else Ownership.FUZZER,
-            ip_type=IpType.IPV6,
-            ip="::1",
-            port=50100,
-            protocol_type=Protocol.TCP
+            ownership=Ownership.EXTERNAL_PARTY if fandango_is_client else Ownership.FANDANGO_PARTY,
+            endpoint_type=EndpointType.OPEN,
+            uri="tcp://localhost:50100"
         )
 
     def receive(self, data: bytes):
