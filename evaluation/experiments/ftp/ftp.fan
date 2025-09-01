@@ -76,7 +76,7 @@ def contains_nt(tree, nt):
 <exchange_syst> ::= <ClientControl:ServerControl:request_syst><ServerControl:ClientControl:response_syst>
 <request_syst> ::= 'SYST\r\n'
 <response_syst> ::= '215 ' <syst_name> '\r\n'
-<syst_name> ::= r'[a-zA-Z0-9\: ]+' := 'Linux'
+<syst_name> ::= r'[\x20-\x7E]+' := 'Linux'
 
 <exchange_set_client> ::= <ClientControl:ServerControl:request_set_client><ServerControl:ClientControl:response_set_client>
 <request_set_client> ::= 'CLNT ' <client_name> '\r\n'
@@ -92,7 +92,7 @@ def contains_nt(tree, nt):
 <exchange_feat> ::= <ClientControl:ServerControl:request_feat><ServerControl:ClientControl:response_feat>
 <request_feat> ::= 'FEAT\r\n'
 <response_feat> ::= '211-Features:\r\n' <feat_entry>+ '211 End\r\n' := feat_response()
-<feat_entry> ::= ' ' r'[a-zA-Z0-9\*\;\-\. ]+' '\r\n'
+<feat_entry> ::= ' ' r'[\x20-\x7E]+' '\r\n'
 
 def feat_response():
     features = '211-Features:\r\n CLNT\r\n EPRT\r\n EPSV\r\n HOST\r\n LANG en-US*\r\n MDTM\r\n MFF modify;UNIX.group;UNIX.mode;\r\n MFMT\r\n MLST modify*;perm*;size*;type*;unique*;UNIX.group*;UNIX.groupname*;UNIX.mode*;UNIX.owner*;UNIX.ownername*;\r\n211 End\r\n'
