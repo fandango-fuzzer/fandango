@@ -170,7 +170,7 @@ def is_unique_folder_and_file(current_file_or_folder, data):
 
 <modify_timestamp> ::= <year><month><day><hour><minute><second>
 <year> ::= <number_tail>{4} := "{:04d}".format(randint(0, 9999))
-<month> ::= <number_tail>{2} := "{:02d}".format(randint(1, 12))
+#<month> ::= <number_tail>{2} := "{:02d}".format(randint(1, 12))
 <day> ::= <number_tail>{2} := "{:02d}".format(randint(1, 28))
 <hour> ::= <number_tail>{2} := "{:02d}".format(randint(0, 23))
 <minute> ::= <number_tail>{2} := "{:02d}".format(randint(0, 59))

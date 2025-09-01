@@ -131,11 +131,12 @@ def parse_next_remote_packet(
                 forecast_packet = forecast_non_terminals[non_terminal]
                 parse_tree.sender = forecast_packet.node.sender
                 parse_tree.recipient = forecast_packet.node.recipient
-                try:
-                    grammar.populate_sources(parse_tree)
-                    complete_parses[non_terminal] = (current_fragment_idx, parse_tree)
-                except FandangoParseError as e:
-                    parameter_parsing_exception_tuple = (non_terminal, e, parse_tree)
+                if is_complete:
+                    try:
+                        grammar.populate_sources(parse_tree)
+                        complete_parses[non_terminal] = (current_fragment_idx, parse_tree)
+                    except FandangoParseError as e:
+                        parameter_parsing_exception_tuple = (non_terminal, e, parse_tree)
             if not parser.can_continue():
                 available_non_terminals.remove(non_terminal)
         continue_parse = len(available_non_terminals) > 0
