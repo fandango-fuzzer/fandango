@@ -106,9 +106,7 @@ class Node(abc.ABC):
         return []
 
     def __repr__(self):
-        raise NotImplementedError(
-            "__repr__ not implemented, use method specific to your usecase"
-        )
+        return f"{type(self).__name__}({self.to_symbol()})"
 
     def __str__(self):
         raise NotImplementedError(
