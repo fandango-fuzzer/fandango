@@ -12,7 +12,9 @@ fandango_is_client = True
 # Logged out state. Client is not logged in yet. Client might ask for ssl or tls auth, which gets rejected by the server.
 # Client is allowed to log in unencrypted.
 <state_logged_out> ::= (<exchange_auth_tls><state_logged_out>) | (<exchange_auth_ssl><state_logged_out>) | (<exchange_login>)
-<state_logged_in> ::= (<exchange_list><state_finished>) | (<logged_in_cmds><state_logged_in>)
+# <state_logged_in> ::= (<exchange_list><state_finished>) | (<logged_in_cmds><state_logged_in>)
+<state_logged_in> ::= <exchange_set_type> <exchange_set_epassive> <exchange_list>
+
 <state_finished> ::= ''
 
 # The logged in state. If the client is logged in, it is allowed to send the following commands.
@@ -109,7 +111,7 @@ def feat_response():
 <list_transfer> ::= <ServerData:ClientData:list_data><ServerControl:ClientControl:finalize_list>
 <finalize_list> ::= '226 ' <command_tail> '\r\n'
 <list_data> ::= (<list_data_file>)* # (<list_data_folder> | <list_data_file>)*
-<list_data_file> ::= <permissions> ' ' <number> ' ' <user> ' ' <group> ' ' <number> ' ' <date> ' ' <filename> '\r\n'
+<list_data_file> ::= <permissions> ' '+ <number> ' ' <user> ' '+ <group> ' '+ <number> ' ' <date> ' ' <filename> '\r\n'
 <filename>    ::= r'[\x20-\x7E]+'
 
 <permissions> ::= <file_type> <perm> <perm> <perm>
@@ -209,9 +211,9 @@ def is_unique_folder_and_file(current_file_or_folder, data):
 # data party definitions to use that port.
 def open_data_port(port):
     FandangoIO.instance().parties['ClientData'].port = port
-    FandangoIO.instance().parties['ClientData'].start()
     FandangoIO.instance().parties['ServerData'].port = port
-    FandangoIO.instance().parties['ServerData'].start()
+    FandangoIO.instance().parties["ClientData"].start()
+    FandangoIO.instance().parties["ServerData"].start()
     return port
 
 class ClientControl(ConnectParty):
@@ -224,6 +226,7 @@ class ClientControl(ConnectParty):
         self.start()
 
     def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
+       # if message.decode("utf-8").startswith("150"):
         super().receive_msg("ServerControl", message.decode("utf-8"))
 
 class ServerControl(ConnectParty):
@@ -236,7 +239,7 @@ class ServerControl(ConnectParty):
         self.start()
 
     def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
-        self.receive_msg("ClientControl", message.decode("utf-8"))
+        super().receive_msg("ClientControl", message.decode("utf-8"))
 
     def on_send(self, message: DerivationTree, recipient: str):
         super().on_send(message, recipient)
@@ -252,7 +255,7 @@ class ClientData(ConnectParty):
         )
 
     def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
-        self.receive_msg("ServerData", message.decode("utf-8"))
+        super().receive_msg("ServerData", message.decode("utf-8"))
 
 class ServerData(ConnectParty):
     def __init__(self):
@@ -263,4 +266,4 @@ class ServerData(ConnectParty):
         )
 
     def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
-        self.receive_msg("ClientData", message.decode("utf-8"))
+        super().receive_msg("ClientData", message.decode("utf-8"))
