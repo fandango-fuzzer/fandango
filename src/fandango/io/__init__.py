@@ -170,7 +170,7 @@ class ProtocolDecorator(ABC):
 
 
 class UdpTcpProtocolDecorator(ProtocolDecorator):
-    BUFFER_SIZE = 1024  # Size of the buffer for receiving data
+    BUFFER_SIZE = 1  # Size of the buffer for receiving data
 
     def __init__(
         self,
@@ -304,9 +304,9 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
                 rlist, _, _ = select.select([self._connection], [], [], 0.1)
                 if rlist and self._running:
                     if self.protocol_type == Protocol.TCP:
-                        data = self._connection.recv(self.BUFFER_SIZE)
+                        data = self._connection.recv(UdpTcpProtocolDecorator.BUFFER_SIZE)
                     else:
-                        data, addr = self._connection.recvfrom(self.BUFFER_SIZE)
+                        data, addr = self._connection.recvfrom(UdpTcpProtocolDecorator.BUFFER_SIZE)
                         self.current_remote_addr = addr
                     if len(data) == 0:
                         continue  # Keep waiting if connection is open but no data
