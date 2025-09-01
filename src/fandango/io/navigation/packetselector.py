@@ -352,8 +352,7 @@ class PacketSelector:
         )
 
         if len(selected_packets) == 0:
-            self._guide_to_end = True
-            selected_packets.extend(self._get_guide_to_end_packet())
+            selected_packets.extend(self.get_fuzzer_packets())
         self._remember_messages()
         return selected_packets
 
