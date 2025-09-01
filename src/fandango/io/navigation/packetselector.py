@@ -314,17 +314,7 @@ class PacketSelector:
                     self._guide_path.index(old_next_packet) + 1 :
                 ]
 
-        print(f"Confirmed paths: {len(self._all_past_covered_k_paths)}")
-        all_covered_paths = set()
-        for tree in self._all_derivation_trees():
-            all_covered_paths.update(self.grammar._extract_k_paths_from_tree(tree, self.diversity_k))
-        print(f"Missing confirmed paths: {self._all_past_covered_k_paths.difference(all_covered_paths)}")
-
         if self._guide_target is None or len(self._guide_path) == 0 or left_path:
-            #total_paths = len(self.grammar.compute_k_paths(self.diversity_k))
-            #covered_paths = total_paths - len(self._uncovered_paths())
-            #print(f"K-Path coverage: {covered_paths} / {total_paths}")
-
             if self._guide_target is not None:
                 should_covered_paths = self._current_covered_k_paths.union(
                     [self._guide_target]
@@ -341,12 +331,6 @@ class PacketSelector:
                 included_k_paths=self._current_covered_k_paths,
             )
         self._guide_to_end = len(list(filter(lambda p: p is None, self._guide_path))) > 0
-
-        print(
-            f"LOWEST AT {self.coverage_scores[0][1]} PERCENT ({self.coverage_scores[0][0]})"
-        )
-        print(f"START  AT {dict(self.coverage_scores)[NonTerminal("<start>")]} PERCENT")
-
         selected_packets = []
         next_packet = self._get_next_packet()
         if next_packet is not None:
