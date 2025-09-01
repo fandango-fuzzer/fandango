@@ -217,7 +217,7 @@ class IoPopulationManager(PopulationManager):
             return DerivationTree(NonTerminal(self._start_symbol))
         packet_selection = list(self.fuzzable_packets)
         if self.allow_fallback_packets:
-            packet_selection.extend(self.fuzzable_packets)
+            packet_selection.extend(self.fallback_packets)
 
         current_idx = (self._prev_packet_idx + 1) % len(packet_selection)
         current_pck = random.choice(packet_selection)

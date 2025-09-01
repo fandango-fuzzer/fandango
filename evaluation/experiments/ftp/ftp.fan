@@ -12,9 +12,7 @@ fandango_is_client = True
 # Logged out state. Client is not logged in yet. Client might ask for ssl or tls auth, which gets rejected by the server.
 # Client is allowed to log in unencrypted.
 <state_logged_out> ::= (<exchange_auth_tls><state_logged_out>) | (<exchange_auth_ssl><state_logged_out>) | (<exchange_login>)
-<state_logged_in> ::= (<exchange_mlsd><state_finished>) | (<logged_in_cmds><state_logged_in>)
-#<state_logged_out> ::= <exchange_login_ok>
-#<state_logged_in> ::= <exchange_set_type> <exchange_set_epassive> <exchange_set_epassive> <exchange_mlsd>
+<state_logged_in> ::= (<exchange_list><state_finished>) | (<logged_in_cmds><state_logged_in>)
 <state_finished> ::= ''
 
 # The logged in state. If the client is logged in, it is allowed to send the following commands.
@@ -24,11 +22,11 @@ fandango_is_client = True
 
 <exchange_auth_tls> ::= <ClientControl:ServerControl:request_auth_tls><ServerControl:ClientControl:response_auth_tls>
 <request_auth_tls> ::= 'AUTH TLS\r\n'
-<response_auth_tls> ::= '500 ' <command_tail> '\r\n'
+<response_auth_tls> ::= '5' ('3'|'0') '0 ' <command_tail> '\r\n'
 
 <exchange_auth_ssl> ::= <ClientControl:ServerControl:request_auth_ssl><ServerControl:ClientControl:response_auth_ssl>
 <request_auth_ssl> ::= 'AUTH SSL\r\n'
-<response_auth_ssl> ::= '500 ' <command_tail> '\r\n'
+<response_auth_ssl> ::= '5' ('3'|'0') '0 ' <command_tail> '\r\n'
 
 # When client client logs in, he can either login with the correct or incorrect credentials.
 <exchange_login> ::= <exchange_login_fail> | <exchange_login_ok>
@@ -52,7 +50,7 @@ fandango_is_client = True
 
 # This constraint ensured, that the client sent the EPSV command (opening a passive port, for transmitting data),
 # before executing the mlsd command.
-where (not contains_nt(<start>, NonTerminal('<request_mlsd>'))) \
+where (not contains_nt(<start>, NonTerminal('<request_list>'))) \
     or (contains_nt(<start>, NonTerminal('<request_set_epassive>')) and contains_nt(<start>, NonTerminal('<request_set_type>')))
 
 def contains_nt(tree, nt):
@@ -78,10 +76,6 @@ def contains_nt(tree, nt):
 <response_syst> ::= '215 ' <syst_name> '\r\n'
 <syst_name> ::= r'[\x20-\x7E]+' := 'Linux'
 
-<exchange_set_client> ::= <ClientControl:ServerControl:request_set_client><ServerControl:ClientControl:response_set_client>
-<request_set_client> ::= 'CLNT ' <client_name> '\r\n'
-<response_set_client> ::= '200 ' <command_tail> '\r\n'
-
 <exchange_set_utf8> ::= <ClientControl:ServerControl:request_set_utf8><ServerControl:ClientControl:response_set_utf8>
 <request_set_utf8> ::= 'OPTS UTF8 ON\r\n'
 <response_set_utf8> ::= '200 ' <command_tail> '\r\n'
@@ -95,7 +89,7 @@ def contains_nt(tree, nt):
 <feat_entry> ::= ' ' r'[\x20-\x7E]+' '\r\n'
 
 def feat_response():
-    features = '211-Features:\r\n CLNT\r\n EPRT\r\n EPSV\r\n HOST\r\n LANG en-US*\r\n MDTM\r\n MFF modify;UNIX.group;UNIX.mode;\r\n MFMT\r\n MLST modify*;perm*;size*;type*;unique*;UNIX.group*;UNIX.groupname*;UNIX.mode*;UNIX.owner*;UNIX.ownername*;\r\n211 End\r\n'
+    features = '211-Features:\r\n EPRT\r\n EPSV\r\n HOST\r\n LANG en-US*\r\n MDTM\r\n MFF modify;UNIX.group;UNIX.mode;\r\n MFMT\r\n MLST modify*;perm*;size*;type*;unique*;UNIX.group*;UNIX.groupname*;UNIX.mode*;UNIX.owner*;UNIX.ownername*;\r\n211 End\r\n'
     return features
 
 <exchange_set_type> ::= <ClientControl:ServerControl:request_set_type><ServerControl:ClientControl:response_set_type>
@@ -108,6 +102,30 @@ def feat_response():
 <exchange_set_epassive> ::= <ClientControl:ServerControl:request_set_epassive><ServerControl:ClientControl:response_set_epassive>
 <request_set_epassive> ::= 'EPSV\r\n'
 <response_set_epassive> ::= '229 Entering Extended Passive Mode (|||' <open_port> '|)\r\n'
+
+<exchange_list> ::= <ClientControl:ServerControl:request_list><ServerControl:ClientControl:open_list><list_transfer>
+<request_list> ::= 'LIST\r\n'
+<open_list> ::= '150 ' <command_tail> '\r\n'
+<list_transfer> ::= <ServerData:ClientData:list_data><ServerControl:ClientControl:finalize_list>
+<finalize_list> ::= '226 ' <command_tail> '\r\n'
+<list_data> ::= (<list_data_file>)* # (<list_data_folder> | <list_data_file>)*
+<list_data_file> ::= <permissions> ' ' <number> ' ' <user> ' ' <group> ' ' <number> ' ' <date> ' ' <filename> '\r\n'
+<filename>    ::= r'[\x20-\x7E]+'
+
+<permissions> ::= <file_type> <perm> <perm> <perm>
+<file_type>   ::= '-' | 'd' | 'l' | 'c' | 'b'
+<perm>        ::= ('r' | '-') ('w' | '-') ('x' | '-')
+<user>        ::= r'[0-9a-zA-Z_\-]+'
+<group>       ::= r'[0-9a-zA-Z_\-]+'
+<date>        ::= <month> ' ' <day> ' ' (<time> | <year>)
+<month>       ::= 'Jan' | 'Feb' | 'Mar' | 'Apr' | 'May' | 'Jun' | 'Jul' | 'Aug' | 'Sep' | 'Oct' | 'Nov' | 'Dec'
+<day>         ::= <number_tail>{2} := "{:02d}".format(randint(1, 28))
+<time>        ::= <hour> ':' <minute>
+<hour> ::= <number_tail>{2} := "{:02d}".format(randint(0, 23))
+<minute> ::= <number_tail>{2} := "{:02d}".format(randint(0, 59))
+<year>        ::= <number_tail>{4} := "{:04d}".format(randint(0, 9999))
+
+
 
 # MLSD requests the server to send a list of files and folders included in the current working directory.
 # This list is transmitted though the data channel.
@@ -173,7 +191,7 @@ def is_unique_folder_and_file(current_file_or_folder, data):
 <response_pwd> ::= '257 \"' <directory> '\" is the current directory\r\n'
 <directory> ::= '/' | ('/' <filesystem_name>)+
 <file> ::= <filesystem_name> ('.' <filesystem_name>)?
-<filesystem_name> ::= r'[a-zA-Z0-9]+'
+<filesystem_name> ::= r'[a-zA-Z0-9_]+'
 <client_name> ::= r'[a-zA-Z0-9]+'
 
 <wrong_user_name> ::= r'^(?!the_user\r\n$)([a-zA-Z0-9_]+)'
@@ -222,7 +240,7 @@ class ServerControl(ConnectParty):
 
     def on_send(self, message: DerivationTree, recipient: str):
         super().on_send(message, recipient)
-        if message.to_string() == "226 Transfer complete\r\n":
+        if message.to_string().startswith("226"):
             FandangoIO.instance().parties['ServerData'].stop()
 
 class ClientData(ConnectParty):
