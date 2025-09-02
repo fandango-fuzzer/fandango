@@ -124,7 +124,7 @@ class Repetition(Node):
                 base.extend(self.node.descendents(grammar, filter_controlflow=True))
             else:
                 base.append(self.node)
-        if not filter_controlflow:
+        if filter_controlflow:
             yield from base
             return
 
