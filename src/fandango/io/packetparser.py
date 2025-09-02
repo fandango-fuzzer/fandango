@@ -104,13 +104,12 @@ def parse_next_remote_packet(
                     )
                     incomplete_nt_str = " | ".join(incomplete_nt_list)
                     applicable_nt_str = str(" | ".join(nt_list))
-                    received_msgs_str = str(io_instance.get_received_msgs())
 
                     raise FandangoFailedError(
                         f"Timeout while waiting for next message fragment from {msg_sender}. "
                         + f"Incompletely parsed NonTerminals: {incomplete_nt_str} "
                         + f"Applicable NonTerminals: {applicable_nt_str} "
-                        + f"Received messages: {received_msgs_str}"
+                        + f"Received messages: {io_instance.get_full_fragements()}"
                     )
                 else:
                     continue_parse = False

@@ -17,17 +17,24 @@ def main():
         logger_level=LoggerLevel.INFO,
     )
 
-    # Evolve solutions
+    try:
+        solutions = fandango.evolve()
 
-    solutions = fandango.evolve()
-    print(time.time() - time_start)
-
-    # Output solutions
-    for solution in solutions:
-        if solution.contains_bytes():
-            print(bytes(solution))
-        else:
-            print(str(solution))
+        # Output solutions
+        for solution in solutions:
+            if solution.contains_bytes():
+                print(bytes(solution))
+            else:
+                print(str(solution))
+    finally:
+        with open("grammar_coverage.csv", "w") as f:
+            print("Coverage log:")
+            for timestamp, coverage in fandango.coverage_log:
+                time_elapsed = timestamp - time_start
+                f.write(f"{time_elapsed},{coverage}\n")
+        print(f"Nr trees generated: {len(fandango.packet_selector._all_derivation_trees())}")
+        print(f"Nr messages exchanged: {sum(len(sol.protocol_msgs()) for sol in fandango.packet_selector._all_derivation_trees())}")
+        print(f"Overall time elapsed: {time.time() - time_start:.2f}s")
 
 
 if __name__ == "__main__":

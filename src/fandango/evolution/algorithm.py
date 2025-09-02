@@ -486,7 +486,7 @@ class Fandango:
         spec_env_global, _ = self.grammar.get_spec_env()
         io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
         history_tree: DerivationTree = random.choice(self.population)
-        packet_selector = PacketSelector(
+        self.packet_selector = PacketSelector(
             self.grammar, io_instance, history_tree, self.diversity_k
         )
         if max_generations is None:
@@ -498,8 +498,8 @@ class Fandango:
         assert isinstance(self.evaluator, IoEvaluator)
 
         while True:
-            packet_selector.compute(history_tree, self.past_io_derivations)
-            current_coverage = dict(packet_selector.coverage_scores)[NonTerminal("<start>")]
+            self.packet_selector.compute(history_tree, self.past_io_derivations)
+            current_coverage = dict(self.packet_selector.coverage_scores)[NonTerminal("<start>")]
             self.coverage_log.append((time.time(), current_coverage))
             LOGGER.info(f"Current coverage: {current_coverage:.2f}%")
             self.evaluator.start_next_message(
@@ -507,22 +507,22 @@ class Fandango:
             )
 
             if (
-                len(packet_selector.get_next_parties()) == 0
-                and not packet_selector.is_complete()
+                len(self.packet_selector.get_next_parties()) == 0
+                and not self.packet_selector.is_complete()
             ):
                 raise FandangoFailedError("Could not forecast next packet")
 
             if (
-                len(packet_selector.get_next_parties()) == 0
-                or packet_selector.is_guide_to_end()
-            ) and packet_selector.is_complete():
+                len(self.packet_selector.get_next_parties()) == 0
+                or self.packet_selector.is_guide_to_end()
+            ) and self.packet_selector.is_complete():
                 history_tree = random.choice(
-                    list(packet_selector.forecasting_result.complete_trees)
+                    list(self.packet_selector.forecasting_result.complete_trees)
                 )
                 self.past_io_derivations.append(history_tree)
                 self._initial_solutions.clear()
                 yield history_tree
-                if len(packet_selector._uncovered_paths()) == 0:
+                if len(self.packet_selector._uncovered_paths()) == 0:
                     log_guidance_hint("Full coverage reached, stopping evolution.")
                     return
                 log_guidance_hint("Starting new protocol run.")
@@ -531,17 +531,17 @@ class Fandango:
                 continue
 
             if (
-                len(packet_selector.next_fuzzer_parties()) != 0
+                len(self.packet_selector.next_fuzzer_parties()) != 0
                 and not io_instance.received_msg()
             ):
 
                 assert isinstance(self.population_manager, IoPopulationManager)
-                self.population_manager.fuzzable_packets = packet_selector.next_packets
+                self.population_manager.fuzzable_packets = self.packet_selector.next_packets
                 self.population_manager.fallback_packets = []
-                for sender in packet_selector.next_fuzzer_parties():
+                for sender in self.packet_selector.next_fuzzer_parties():
                     self.population_manager.fallback_packets.extend(
                         list(
-                            packet_selector.forecasting_result.parties_to_packets[
+                            self.packet_selector.forecasting_result.parties_to_packets[
                                 sender
                             ].nt_to_packet.values()
                         )
@@ -627,13 +627,13 @@ class Fandango:
                 wait_start = time.time()
                 while not io_instance.received_msg():
                     if time.time() - wait_start > self.remote_response_timeout:
-                        external_parties = packet_selector.next_external_parties()
+                        external_parties = self.packet_selector.next_external_parties()
                         raise FandangoFailedError(
                             f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(external_parties)}"
                         )
                     time.sleep(0.025)
                 forecast, packet_tree = parse_next_remote_packet(
-                    self.grammar, packet_selector.forecasting_result, io_instance
+                    self.grammar, self.packet_selector.forecasting_result, io_instance
                 )
                 log_message_transfer(
                     packet_tree.sender,
