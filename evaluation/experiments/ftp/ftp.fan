@@ -18,7 +18,7 @@ fandango_is_client = True
 <state_logged_in> ::= (<logged_in_cmds><state_logged_in>) | (<exchange_set_type><state_in_binary>) | (<exchange_set_epassive><state_in_passive>)
 <state_in_binary> ::= (<logged_in_cmds><state_in_binary>) | (<exchange_set_epassive><state_in_binary_passive>)
 <state_in_passive> ::= (<logged_in_cmds><state_in_passive>) | (<exchange_set_type> <state_in_binary_passive>)
-<state_in_binary_passive> ::= (<logged_in_cmds><state_in_binary_passive>) | (<exchange_list><state_in_binary_passive>) | (<exchange_quit><state_finished>)
+<state_in_binary_passive> ::= (<logged_in_cmds><state_in_binary_passive>) | (<exchange_list><state_in_binary>) | (<exchange_quit><state_finished>)
 
 <state_finished> ::= ''
 
@@ -54,17 +54,6 @@ fandango_is_client = True
                             (<ClientControl:ServerControl:request_login_pass_fail>|<ClientControl:ServerControl:request_login_pass_ok>) \
                           )) \
                            <ServerControl:ClientControl:response_login_pass_fail>
-
-# This constraint ensured, that the client sent the EPSV command (opening a passive port, for transmitting data),
-# before executing the list command.
-where (not contains_nt(<start>, NonTerminal('<request_list>'))) \
-    or (contains_nt(<start>, NonTerminal('<request_set_epassive>')) and contains_nt(<start>, NonTerminal('<request_set_type>')))
-
-def contains_nt(tree, nt):
-    for msg in tree.protocol_msgs():
-        if msg.msg.symbol == nt:
-            return True
-    return False
 
 <request_login_user_ok> ::= 'USER the_user\r\n'
 <response_login_user> ::= '331 ' <command_tail> '\r\n'
