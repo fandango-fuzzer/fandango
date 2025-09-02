@@ -15,15 +15,21 @@ fandango_is_client = True
 <state_logged_out_2> ::= (<exchange_auth_tls><state_logged_out_2>) | (<exchange_auth_ssl><state_logged_out_2>) | (<exchange_login_fail><state_logged_out_3>) | (<exchange_login_ok><state_logged_in>)
 <state_logged_out_3> ::= (<exchange_auth_tls><state_logged_out_3>) | (<exchange_auth_ssl><state_logged_out_3>) | (<exchange_login_ok><state_logged_in>)
 
-# <state_logged_in> ::= (<exchange_list><state_finished>) | (<logged_in_cmds><state_logged_in>)
-<state_logged_in> ::= <exchange_feat><exchange_set_type> <exchange_set_epassive> <exchange_list>
+<state_logged_in> ::= (<logged_in_cmds><state_logged_in>) | (<exchange_set_type><state_in_binary>) | (<exchange_set_epassive><state_in_passive>)
+<state_in_binary> ::= (<logged_in_cmds><state_in_binary>) | (<exchange_set_epassive><state_in_binary_passive>)
+<state_in_passive> ::= (<logged_in_cmds><state_in_passive>) | (<exchange_set_type> <state_in_binary_passive>)
+<state_in_binary_passive> ::= (<logged_in_cmds><state_in_binary_passive>) | (<exchange_list><state_in_binary_passive>) | (<exchange_quit><state_finished>)
 
 <state_finished> ::= ''
 
 # The logged in state. If the client is logged in, it is allowed to send the following commands.
-<logged_in_cmds> ::= <exchange_set_type> | <exchange_pwd> | <exchange_syst> | <exchange_feat> | <exchange_set_utf8> | <exchange_set_type> | <exchange_set_epassive>
+<logged_in_cmds> ::= <exchange_pwd> | <exchange_syst> | <exchange_feat> | <exchange_set_utf8>
 <exchange_socket_connect> ::= <ServerControl:ClientControl:response_server_info>
 <response_server_info> ::= r'(220-(?:[\x20-\x7E]*\r\n))*220 (?:[\x20-\x7E]*)\r\n'
+
+<exchange_quit> ::= <ClientControl:ServerControl:request_quit><ServerControl:ClientControl:response_quit>
+<request_quit> ::= 'QUIT\r\n'
+<response_quit> ::= '221 ' <command_tail> '\r\n'
 
 <exchange_auth_tls> ::= <ClientControl:ServerControl:request_auth_tls><ServerControl:ClientControl:response_auth_tls>
 <request_auth_tls> ::= 'AUTH TLS\r\n'
