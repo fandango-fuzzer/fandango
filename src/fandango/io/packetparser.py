@@ -46,7 +46,7 @@ def parse_next_remote_packet(
                 raise FandangoValueError(
                     "Unexpected party sent message. Expected: "
                     + " | ".join(forecast.get_msg_parties())
-                    + f". Received: {received_parties}."
+                    + f". Received: {set(received_parties)}."
                     + f" Messages: {io_instance.get_received_msgs()}"
                 )
         time.sleep(0.025)

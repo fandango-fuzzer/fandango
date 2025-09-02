@@ -13,7 +13,7 @@ fandango_is_client = True
 # Client is allowed to log in unencrypted.
 <state_logged_out> ::= (<exchange_auth_tls><state_logged_out>) | (<exchange_auth_ssl><state_logged_out>) | (<exchange_login>)
 # <state_logged_in> ::= (<exchange_list><state_finished>) | (<logged_in_cmds><state_logged_in>)
-<state_logged_in> ::= <exchange_set_type> <exchange_set_epassive> <exchange_list>
+<state_logged_in> ::= <exchange_feat><exchange_set_type> <exchange_set_epassive> <exchange_list>
 
 <state_finished> ::= ''
 
@@ -51,7 +51,7 @@ fandango_is_client = True
                            (<state_logged_out> | (<ServerControl:ClientControl:response_login_throttled><state_finished>))
 
 # This constraint ensured, that the client sent the EPSV command (opening a passive port, for transmitting data),
-# before executing the mlsd command.
+# before executing the list command.
 where (not contains_nt(<start>, NonTerminal('<request_list>'))) \
     or (contains_nt(<start>, NonTerminal('<request_set_epassive>')) and contains_nt(<start>, NonTerminal('<request_set_type>')))
 
@@ -91,7 +91,7 @@ def contains_nt(tree, nt):
 <feat_entry> ::= ' ' r'[\x20-\x7E]+' '\r\n'
 
 def feat_response():
-    features = '211-Features:\r\n EPRT\r\n EPSV\r\n HOST\r\n LANG en-US*\r\n MDTM\r\n MFF modify;UNIX.group;UNIX.mode;\r\n MFMT\r\n MLST modify*;perm*;size*;type*;unique*;UNIX.group*;UNIX.groupname*;UNIX.mode*;UNIX.owner*;UNIX.ownername*;\r\n211 End\r\n'
+    features = '211-Features:\r\n EPRT\r\n EPSV\r\n HOST\r\n LANG en-US*\r\n MDTM\r\n211 End\r\n'
     return features
 
 <exchange_set_type> ::= <ClientControl:ServerControl:request_set_type><ServerControl:ClientControl:response_set_type>
@@ -111,81 +111,24 @@ def feat_response():
 <list_transfer> ::= <ServerData:ClientData:list_data><ServerControl:ClientControl:finalize_list>
 <finalize_list> ::= '226 ' <command_tail> '\r\n'
 <list_data> ::= (<list_data_file>)* # (<list_data_folder> | <list_data_file>)*
-<list_data_file> ::= <permissions> ' '+ <number> ' ' <user> ' '+ <group> ' '+ <number> ' ' <date> ' ' <filename> '\r\n'
+<list_data_file> ::= <permissions> ' '+ <link_count> ' ' <user> ' '+ <group> ' '+ <file_size> ' ' <date> ' ' <filename> '\r\n'
 <filename>    ::= r'[\x20-\x7E]+'
+<number>      ::= r'[0-9]+' := str(randint(1, 1000))
+<file_size>   ::= <number> := str(randint(0, 9999999))
+<link_count>  ::= <number>
 
 <permissions> ::= <file_type> <perm> <perm> <perm>
 <file_type>   ::= '-' | 'd' | 'l' | 'c' | 'b'
 <perm>        ::= ('r' | '-') ('w' | '-') ('x' | '-')
 <user>        ::= r'[0-9a-zA-Z_\-]+'
 <group>       ::= r'[0-9a-zA-Z_\-]+'
-<date>        ::= <month> ' ' <day> ' ' (<time> | <year>)
+<date>        ::= <month> ' ' <day> ' ' <time>
 <month>       ::= 'Jan' | 'Feb' | 'Mar' | 'Apr' | 'May' | 'Jun' | 'Jul' | 'Aug' | 'Sep' | 'Oct' | 'Nov' | 'Dec'
-<day>         ::= <number_tail>{2} := "{:02d}".format(randint(1, 28))
+<day>         ::= r'[0-9]{2}' := "{:02d}".format(randint(1, 28))
 <time>        ::= <hour> ':' <minute>
-<hour> ::= <number_tail>{2} := "{:02d}".format(randint(0, 23))
-<minute> ::= <number_tail>{2} := "{:02d}".format(randint(0, 59))
-<year>        ::= <number_tail>{4} := "{:04d}".format(randint(0, 9999))
+<hour>        ::= r'[0-9]{2}' := "{:02d}".format(randint(0, 23))
+<minute>      ::= r'[0-9]{2}' := "{:02d}".format(randint(0, 59))
 
-
-
-# MLSD requests the server to send a list of files and folders included in the current working directory.
-# This list is transmitted though the data channel.
-<exchange_mlsd> ::= <ClientControl:ServerControl:request_mlsd><ServerControl:ClientControl:open_mlsd><mlsd_transfer>
-<request_mlsd> ::= 'MLSD\r\n'
-<open_mlsd> ::= '150 Opening BINARY mode data connection for MLSD\r\n'
-<mlsd_transfer> ::= <ServerData:ClientData:mlsd_data><ServerControl:ClientControl:finalize_mlsd>
-<finalize_mlsd> ::= '226 Transfer complete\r\n'
-<mlsd_data> ::= (<mlsd_data_folder> | <mlsd_data_file>)+
-<mlsd_data_folder> ::= <mlsd_data_folder_cdir> | <mlsd_data_folder_pdir> | <mlsd_data_folder_dir>
-<mlsd_data_folder_cdir> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_folder> ';type=cdir;unique=' <mlsd_unique> ';UNIX.group=' <mlsd_data_user_uid> ';UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=' <mlsd_data_user_uid> ';UNIX.ownername=the_user; .\r\n'
-<mlsd_data_folder_pdir> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_folder> ';type=pdir;unique=' <mlsd_unique> ';UNIX.group=' <mlsd_data_user_uid> ';UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=' <mlsd_data_user_uid> ';UNIX.ownername=the_user; ..\r\n'
-<mlsd_data_folder_dir> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_folder> ';type=dir;unique=' <mlsd_unique> ';UNIX.group=' <mlsd_data_user_uid> ';UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=' <mlsd_data_user_uid> ';UNIX.ownername=the_user; ' <filesystem_name> '\r\n'
-<mlsd_data_file> ::= 'modify=' <modify_timestamp> ';perm=' <mlsd_perm_file> ';size=' <mlsd_size> ';type=' <mlsd_type_file> ';unique=' <mlsd_unique> ';UNIX.group=' <mlsd_data_user_uid> ';UNIX.groupname=www-data;UNIX.mode=' <mlsd_permission> ';UNIX.owner=' <mlsd_data_user_uid> ';UNIX.ownername=the_user; ' <mlsd_file> '\r\n'
-<mlsd_data_user_uid> ::= <number>
-<mlsd_unique> ::= r'[A-Z0-9]+'
-
-where int(<mlsd_data_user_uid>.<number>) < 1000
-
-where forall <data> in <mlsd_data>: \
-    len(<data>.find_all_nodes(NonTerminal('<mlsd_data_folder_cdir>'), exclude_read_only=False)) == 1 \
-    and len(<data>.find_all_nodes(NonTerminal('<mlsd_data_folder_pdir>'), exclude_read_only=False)) == 1
-
-
-where forall <data> in <mlsd_transfer>.<mlsd_data>: \
-    forall <mlsd_file> in <data>..<mlsd_file>: \
-        is_unique_folder_and_file(<mlsd_file>, <data>)
-
-
-def is_unique_folder_and_file(current_file_or_folder, data):
-    files_and_dirs = data.find_all_trees(NonTerminal('<mlsd_folder>'))
-    files_and_dirs.extend(data.find_all_trees(NonTerminal('<mlsd_file>')))
-    seen = False
-    for entry in files_and_dirs:
-        if str(entry) == str(current_file_or_folder):
-            if seen:
-                return False
-            seen = True
-    return True
-
-<modify_timestamp> ::= <year><month><day><hour><minute><second>
-<year> ::= <number_tail>{4} := "{:04d}".format(randint(0, 9999))
-#<month> ::= <number_tail>{2} := "{:02d}".format(randint(1, 12))
-<day> ::= <number_tail>{2} := "{:02d}".format(randint(1, 28))
-<hour> ::= <number_tail>{2} := "{:02d}".format(randint(0, 23))
-<minute> ::= <number_tail>{2} := "{:02d}".format(randint(0, 59))
-<second> ::= <number_tail>{2} := "{:02d}".format(randint(0, 59))
-<mlsd_type_folder> ::= 'cdir' | 'pdir' | 'dir'
-<mlsd_type_file> ::= 'file'
-#<mlsd_unique> ::= '2BUA' | '2BUB' | '2BUC' | '2CUA' | '2CUB' | '2CUC' | '2CUD'
-<mlsd_perm_folder> ::= 'flcdmpe' | 'fle'
-<mlsd_perm_file> ::= 'adfrw'
-<mlsd_size> ::= <number>
-
-<mlsd_permission> ::= '0' <permission_byte>{3}
-<permission_byte> ::= <number_tail> := randint(0, 7)
-<mlsd_folder> ::= <filesystem_name>
-<mlsd_file> ::= <filesystem_name> ('.' r'[a-zA-Z0-9]+')?
 
 # PWD requests the current working directory. The server answers with a (random) path.
 <exchange_pwd> ::= <ClientControl:ServerControl:request_pwd><ServerControl:ClientControl:response_pwd>
@@ -201,11 +144,7 @@ def is_unique_folder_and_file(current_file_or_folder, data):
 
 <open_port> ::= <passive_port> := open_data_port(int(<open_port_param>))
 <open_port_param> ::= <passive_port> := open_data_port(int(<open_port>))
-<passive_port> ::= <number> := randint(50100, 50100)
-
-<number> ::= '0' | (<number_start> <number_tail>*)
-<number_start> ::= '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
-<number_tail> ::= '0' | <number_start>
+<passive_port> ::= r'[1-9][0-9]{0,4}' := randint(50100, 50100)
 
 # open_data_port(port) is a generator. When executed, it returns the value that was given to it and reconfigures the
 # data party definitions to use that port.
