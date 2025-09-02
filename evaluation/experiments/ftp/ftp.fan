@@ -7,11 +7,14 @@ fandango_is_client = True
 <start> ::= <state_setup>
 
 # Setup stage that directs server to send a welcome message and leads over to the logged out state.
-<state_setup> ::= <exchange_socket_connect> <state_logged_out>
+<state_setup> ::= <exchange_socket_connect> <state_logged_out_1>
 
 # Logged out state. Client is not logged in yet. Client might ask for ssl or tls auth, which gets rejected by the server.
 # Client is allowed to log in unencrypted.
-<state_logged_out> ::= (<exchange_auth_tls><state_logged_out>) | (<exchange_auth_ssl><state_logged_out>) | (<exchange_login>)
+<state_logged_out_1> ::= (<exchange_auth_tls><state_logged_out_1>) | (<exchange_auth_ssl><state_logged_out_1>) | (<exchange_login_fail><state_logged_out_2>) | (<exchange_login_ok><state_logged_in>)
+<state_logged_out_2> ::= (<exchange_auth_tls><state_logged_out_2>) | (<exchange_auth_ssl><state_logged_out_2>) | (<exchange_login_fail><state_logged_out_3>) | (<exchange_login_ok><state_logged_in>)
+<state_logged_out_3> ::= (<exchange_auth_tls><state_logged_out_3>) | (<exchange_auth_ssl><state_logged_out_3>) | (<exchange_login_ok><state_logged_in>)
+
 # <state_logged_in> ::= (<exchange_list><state_finished>) | (<logged_in_cmds><state_logged_in>)
 <state_logged_in> ::= <exchange_feat><exchange_set_type> <exchange_set_epassive> <exchange_list>
 
@@ -30,15 +33,12 @@ fandango_is_client = True
 <request_auth_ssl> ::= 'AUTH SSL\r\n'
 <response_auth_ssl> ::= '5' ('3'|'0') '0 ' <command_tail> '\r\n'
 
-# When client client logs in, he can either login with the correct or incorrect credentials.
-<exchange_login> ::= <exchange_login_fail> | <exchange_login_ok>
-
 # A successful login consist of the correct username and password and leads to the logged in state.
-<exchange_login_ok> ::= <ClientControl:ServerControl:request_login_user_ok><ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_ok><ServerControl:ClientControl:response_login_pass_ok><state_logged_in>
+<exchange_login_ok> ::= <ClientControl:ServerControl:request_login_user_ok><ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_ok><ServerControl:ClientControl:response_login_pass_ok>
 
 # A failed login consist of incorrect username and incorrect password, incorrect username and correct
 # password or correct username and incorrect password. The rule ends with the fuzzer going back into the logged out state.
-<exchange_login_fail> ::= (<ClientControl:ServerControl:request_login_user_ok> \
+<exchange_login_fail> ::= ((<ClientControl:ServerControl:request_login_user_ok> \
                             <ServerControl:ClientControl:response_login_user> \
                             <ClientControl:ServerControl:request_login_pass_fail> \
                           ) \
@@ -46,9 +46,8 @@ fandango_is_client = True
                           (<ClientControl:ServerControl:request_login_user_fail> \
                             <ServerControl:ClientControl:response_login_user> \
                             (<ClientControl:ServerControl:request_login_pass_fail>|<ClientControl:ServerControl:request_login_pass_ok>) \
-                          ) \
-                           <ServerControl:ClientControl:response_login_pass_fail> \
-                           (<state_logged_out> | (<ServerControl:ClientControl:response_login_throttled><state_finished>))
+                          )) \
+                           <ServerControl:ClientControl:response_login_pass_fail>
 
 # This constraint ensured, that the client sent the EPSV command (opening a passive port, for transmitting data),
 # before executing the list command.
@@ -151,7 +150,6 @@ def feat_response():
 def open_data_port(port):
     FandangoIO.instance().parties['ClientData'].port = port
     FandangoIO.instance().parties['ServerData'].port = port
-
     FandangoIO.instance().parties["ClientData"].stop()
     FandangoIO.instance().parties["ServerData"].stop()
     FandangoIO.instance().parties["ClientData"].start()
