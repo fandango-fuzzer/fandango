@@ -128,7 +128,6 @@ def feat_response():
 <request_pwd> ::= 'PWD\r\n'
 <response_pwd> ::= '257 \"' <directory> '\" is the current directory\r\n'
 <directory> ::= '/' | ('/' <filesystem_name>)+
-<file> ::= <filesystem_name> ('.' <filesystem_name>)?
 <filesystem_name> ::= r'[a-zA-Z0-9_]+'
 <client_name> ::= r'[a-zA-Z0-9]+'
 
