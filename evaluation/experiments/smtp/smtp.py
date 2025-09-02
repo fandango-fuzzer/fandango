@@ -22,25 +22,25 @@ def main():
         logger_level=LoggerLevel.INFO,
     )
 
-    # Output solutions
-    solution_count = 0
-    solutions = []
     overall_start = time.time()
-    for solution in fandango.generate(mode=FuzzingMode.IO):
-        print(time.time() - time_start)
-        if solution.contains_bytes():
-            print(solution.to_bytes())
-        else:
-            print(solution.to_string())
-        time_start = time.time()
-        solution_count += 1
-        solutions.append(solution)
-        if solution_count >= 10 and False:
-            break
 
-    print(f"Overall time: {time.time() - overall_start:.4f} seconds")
-    print(f"Trees generated: {solution_count}")
-    print(f"Messages exchanged: {sum(len(s.protocol_msgs()) for s in solutions)}")
+    try:
+        solutions = fandango.evolve()
+        for solution in solutions:
+            if solution.contains_bytes():
+                print(bytes(solution))
+            else:
+                print(str(solution))
+    finally:
+        with open("grammar_coverage.csv", "w") as f:
+            print("Coverage log:")
+            for timestamp, coverage in fandango.coverage_log:
+                time_elapsed = timestamp - time_start
+                f.write(f"{time_elapsed},{coverage}\n")
+        print(f"Nr trees generated: {len(fandango.packet_selector._all_derivation_trees())}")
+        print(
+            f"Nr messages exchanged: {sum(len(sol.protocol_msgs()) for sol in fandango.packet_selector._all_derivation_trees())}")
+        print(f"Overall time elapsed: {time.time() - time_start:.2f}s")
 
 
 if __name__ == "__main__":
