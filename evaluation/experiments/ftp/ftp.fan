@@ -11,9 +11,16 @@ fandango_is_client = True
 
 # Logged out state. Client is not logged in yet. Client might ask for ssl or tls auth, which gets rejected by the server.
 # Client is allowed to log in unencrypted.
-<state_logged_out_1> ::= (<exchange_auth_tls><state_logged_out_1>) | (<exchange_auth_ssl><state_logged_out_1>) | (<exchange_login_fail><state_logged_out_2>) | (<exchange_login_ok><state_logged_in>)
-<state_logged_out_2> ::= (<exchange_auth_tls><state_logged_out_2>) | (<exchange_auth_ssl><state_logged_out_2>) | (<exchange_login_fail><state_logged_out_3>) | (<exchange_login_ok><state_logged_in>)
-<state_logged_out_3> ::= (<exchange_auth_tls><state_logged_out_3>) | (<exchange_auth_ssl><state_logged_out_3>) | (<exchange_login_ok><state_logged_in>)
+<state_logged_out_1> ::= (<exchange_auth_tls><state_logged_out_1>) | (<exchange_auth_ssl><state_logged_out_1>) | (<exchange_login_fail><state_logged_out_1>) | (<exchange_login_ok><state_logged_in>)
+#<state_logged_out_1> ::= (<exchange_auth_tls><state_logged_out_1>) | (<exchange_auth_ssl><state_logged_out_1>) | (<exchange_login_fail><state_logged_out_2>) | (<exchange_login_ok><state_logged_in>)
+#<state_logged_out_2> ::= (<exchange_auth_tls><state_logged_out_2>) | (<exchange_auth_ssl><state_logged_out_2>) | (<exchange_login_fail><state_logged_out_3>) | (<exchange_login_ok><state_logged_in>)
+#<state_logged_out_3> ::= (<exchange_auth_tls><state_logged_out_3>) | (<exchange_auth_ssl><state_logged_out_3>) | (<exchange_login_ok><state_logged_in>)
+
+where less_then(<start>, 3);
+
+def less_then(tree, number):
+    count = len(tree.find_all_trees(NonTerminal('<exchange_login_fail>')))
+    return count < number
 
 <state_logged_in> ::= (<logged_in_cmds><state_logged_in>) | (<exchange_set_type><state_in_binary>) | (<exchange_set_epassive><state_in_passive>)
 <state_in_binary> ::= (<logged_in_cmds><state_in_binary>) | (<exchange_set_epassive><state_in_binary_passive>)
