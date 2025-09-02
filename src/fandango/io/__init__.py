@@ -361,8 +361,14 @@ class ConnectParty(FandangoParty):
         protocol = Protocol(prot)
         if host is None:
             host = self.DEFAULT_IP
-        info = socket.getaddrinfo(host, None, socket.AF_INET)
-        ip = info[0][4][0]
+        try:
+            info = socket.getaddrinfo(host, None, socket.AF_INET)
+            ip = info[0][4][0]
+            ip_type=IpType.IPV4
+        except socket.gaierror:
+            info = socket.getaddrinfo(host, None, socket.AF_INET6)
+            ip = info[0][4][0]
+            ip_type=IpType.IPV6
         if isinstance(ip, int):
             raise FandangoValueError(f"Invalid IP address: {ip}")
         if port is None:
@@ -372,7 +378,7 @@ class ConnectParty(FandangoParty):
             self.protocol_impl = UdpTcpProtocolDecorator(
                 endpoint_type=endpoint_type,
                 protocol_type=protocol,
-                ip_type=IpType.IPV4,
+                ip_type=ip_type,
                 ip=ip,
                 port=port,
                 party_instance=self,

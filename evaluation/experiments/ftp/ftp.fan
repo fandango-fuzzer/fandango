@@ -64,7 +64,6 @@ fandango_is_client = True
 <request_login_user_fail> ::= 'USER ' <wrong_user_name> '\r\n'
 <request_login_pass_fail> ::= 'PASS ' <wrong_user_password> '\r\n'
 <response_login_pass_fail> ::= '530 ' <command_tail> '\r\n'
-<response_login_throttled> ::= 'FTP session closed.\r\n'
 
 # SYST command expects 215 + the name of the system back.
 <exchange_syst> ::= <ClientControl:ServerControl:request_syst><ServerControl:ClientControl:response_syst>
@@ -85,7 +84,7 @@ fandango_is_client = True
 <feat_entry> ::= ' ' r'[\x20-\x7E]+' '\r\n'
 
 def feat_response():
-    features = '211-Features:\r\n EPRT\r\n EPSV\r\n HOST\r\n LANG en-US*\r\n MDTM\r\n211 End\r\n'
+    features = '211-Features:\r\n EPRT\r\n EPSV\r\n MDTM\r\n PASV\r\n REST STREAM\r\n SIZE\r\n TVFS\r\n211 End\r\n'
     return features
 
 <exchange_set_type> ::= <ClientControl:ServerControl:request_set_type><ServerControl:ClientControl:response_set_type>
@@ -102,9 +101,9 @@ def feat_response():
 <exchange_list> ::= <ClientControl:ServerControl:request_list><ServerControl:ClientControl:open_list><list_transfer>
 <request_list> ::= 'LIST\r\n'
 <open_list> ::= '150 ' <command_tail> '\r\n'
-<list_transfer> ::= <ServerData:ClientData:list_data><ServerControl:ClientControl:finalize_list>
+<list_transfer> ::= <ServerData:ClientData:list_data>?<ServerControl:ClientControl:finalize_list>
 <finalize_list> ::= '226 ' <command_tail> '\r\n'
-<list_data> ::= (<list_data_file>)* # (<list_data_folder> | <list_data_file>)*
+<list_data> ::= (<list_data_file>)+ # (<list_data_folder> | <list_data_file>)*
 <list_data_file> ::= <permissions> ' '+ <link_count> ' ' <user> ' '+ <group> ' '+ <file_size> ' ' <date> ' ' <filename> '\r\n'
 <filename>    ::= r'[\x20-\x7E]+'
 <number>      ::= r'[0-9]+' := str(randint(1, 1000))
@@ -133,8 +132,8 @@ def feat_response():
 <filesystem_name> ::= r'[a-zA-Z0-9_]+'
 <client_name> ::= r'[a-zA-Z0-9]+'
 
-<wrong_user_name> ::= r'^(?!the_user\r\n$)([a-zA-Z0-9_]+)'
-<wrong_user_password> ::= r'^(?!the_password\r\n$)([a-zA-Z0-9_]+)'
+<wrong_user_name> ::= r'^(?!the_user$)([a-zA-Z0-9_]+)'
+<wrong_user_password> ::= r'^(?!the_password$)([a-zA-Z0-9_]+)'
 
 <open_port> ::= <passive_port> := open_data_port(int(<open_port_param>))
 <open_port_param> ::= <passive_port> := open_data_port(int(<open_port>))
@@ -143,10 +142,12 @@ def feat_response():
 # open_data_port(port) is a generator. When executed, it returns the value that was given to it and reconfigures the
 # data party definitions to use that port.
 def open_data_port(port):
-    FandangoIO.instance().parties['ClientData'].port = port
-    FandangoIO.instance().parties['ServerData'].port = port
-    FandangoIO.instance().parties["ClientData"].stop()
-    FandangoIO.instance().parties["ServerData"].stop()
+    if FandangoIO.instance().parties['ClientData'].port != port:
+        FandangoIO.instance().parties["ClientData"].stop()
+        FandangoIO.instance().parties['ClientData'].port = port
+    if FandangoIO.instance().parties['ServerData'].port != port:
+        FandangoIO.instance().parties["ServerData"].stop()
+        FandangoIO.instance().parties['ServerData'].port = port
     FandangoIO.instance().parties["ClientData"].start()
     FandangoIO.instance().parties["ServerData"].start()
     return port
@@ -156,12 +157,13 @@ class ClientControl(ConnectParty):
         super().__init__(
             ownership=Ownership.FANDANGO_PARTY if fandango_is_client else Ownership.EXTERNAL_PARTY,
             endpoint_type=EndpointType.CONNECT,
-            uri="tcp://localhost:25521"
+            uri="tcp://[::1]:25521"
         )
         self.start()
 
     def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
-       # if message.decode("utf-8").startswith("150"):
+        if message.decode("utf-8").startswith("150"):
+            FandangoIO.instance().parties["ClientData"].start()
         super().receive_msg("ServerControl", message.decode("utf-8"))
 
 class ServerControl(ConnectParty):
@@ -169,7 +171,7 @@ class ServerControl(ConnectParty):
         super().__init__(
             ownership=Ownership.EXTERNAL_PARTY if fandango_is_client else Ownership.FANDANGO_PARTY,
             endpoint_type=EndpointType.OPEN,
-            uri="tcp://localhost:25521"
+            uri="tcp://[::1]:25522"
         )
         self.start()
 
@@ -178,15 +180,15 @@ class ServerControl(ConnectParty):
 
     def on_send(self, message: DerivationTree, recipient: str):
         super().on_send(message, recipient)
-        #if message.to_string().startswith("226"):
-        #    FandangoIO.instance().parties['ServerData'].stop()
+        if message.to_string().startswith("226"):
+            FandangoIO.instance().parties['ServerData'].stop()
 
 class ClientData(ConnectParty):
     def __init__(self):
         super().__init__(
             ownership=Ownership.FANDANGO_PARTY if fandango_is_client else Ownership.EXTERNAL_PARTY,
             endpoint_type=EndpointType.CONNECT,
-            uri="tcp://localhost:50100"
+            uri="tcp://[::1]:50100"
         )
 
     def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
@@ -197,7 +199,7 @@ class ServerData(ConnectParty):
         super().__init__(
             ownership=Ownership.EXTERNAL_PARTY if fandango_is_client else Ownership.FANDANGO_PARTY,
             endpoint_type=EndpointType.OPEN,
-            uri="tcp://localhost:50100"
+            uri="tcp://[::1]:50100"
         )
 
     def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
