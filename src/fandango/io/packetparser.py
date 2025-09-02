@@ -47,7 +47,7 @@ def parse_next_remote_packet(
                     "Unexpected party sent message. Expected: "
                     + " | ".join(forecast.get_msg_parties())
                     + f". Received: {set(received_parties)}."
-                    + f" Messages: {io_instance.get_received_msgs()}"
+                    + f" Messages: {io_instance.get_full_fragements()}"
                 )
         time.sleep(0.025)
         received_parties = list(map(lambda x: x[0], io_instance.get_received_msgs()))
@@ -151,22 +151,12 @@ def parse_next_remote_packet(
             )
         else:
             nt_list = map(lambda x: repr(x), forecast_non_terminals.get_non_terminals())
-            fragments = []
-            prev_sender_receiver = (None, None)
-            for idx, (sender, recipient, msg_fragment) in enumerate(
-                io_instance.get_received_msgs()
-            ):
-                if (sender, recipient) != prev_sender_receiver:
-                    prev_sender_receiver = (sender, recipient)
-                    fragments.append(prev_sender_receiver + (msg_fragment,))
-                else:
-                    fragments[-1] = (prev_sender_receiver + ((fragments[-1][2] + msg_fragment),))
             raise FandangoValueError(
                 "Could not parse received message fragments into predicted NonTerminals. "
                 + "Predicted NonTerminals: "
                 + str(" | ".join(nt_list))
                 + " Messages: "
-                + str(fragments)
+                + str(io_instance.get_full_fragements())
             )
 
     max_parse_idx = -1

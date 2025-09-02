@@ -575,6 +575,22 @@ class FandangoIO(object):
         with self.receive_lock:
             return len(self.receive) != 0
 
+    def get_full_fragements(
+        self,
+    ) -> list[tuple[str, str, str | bytes]]:
+        """Returns a list of all received messages from external parties, combining consecutive fragments from the same sender to the same receiver."""
+        fragments = []
+        prev_sender_receiver = (None, None)
+        for idx, (sender, recipient, msg_fragment) in enumerate(
+                self.get_received_msgs()
+        ):
+            if (sender, recipient) != prev_sender_receiver:
+                prev_sender_receiver = (sender, recipient)
+                fragments.append(prev_sender_receiver + (msg_fragment,))
+            else:
+                fragments[-1] = (prev_sender_receiver + ((fragments[-1][2] + msg_fragment),))
+        return fragments
+
     def get_received_msgs(self) -> list[tuple[str, str, str | bytes]]:
         """Returns a list of all received messages from external parties."""
         with self.receive_lock:
