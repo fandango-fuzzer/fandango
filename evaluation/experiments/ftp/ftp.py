@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
@@ -6,6 +7,7 @@ from fandango.language.parse import parse
 
 
 def main():
+    sys.setrecursionlimit(10 ** 6)
     # Parse grammar and constraints
     with open("ftp.fan") as f:
         grammar, constraints = parse(f, use_stdlib=True)
@@ -36,11 +38,11 @@ def main():
                 time_elapsed = timestamp - time_start
                 f.write(f"{time_elapsed},{coverage}\n")
         with open(f"attempt_{current_id}_metrics.md", "w") as f:
-            f.write("Coverage metrics:")
-            f.write(f"Nr trees generated: {len(fandango.packet_selector._all_derivation_trees())}")
+            f.write("Coverage metrics:\n")
+            f.write(f"Nr trees generated: {len(fandango.packet_selector._all_derivation_trees())}\n")
             f.write(
-                f"Nr messages exchanged: {sum(len(sol.protocol_msgs()) for sol in fandango.packet_selector._all_derivation_trees())}")
-            f.write(f"Overall time elapsed: {time.time() - time_start:.2f}s")
+                f"Nr messages exchanged: {sum(len(sol.protocol_msgs()) for sol in fandango.packet_selector._all_derivation_trees())}\n")
+            f.write(f"Overall time elapsed: {time.time() - time_start:.2f}s\n")
 
 
 if __name__ == "__main__":
