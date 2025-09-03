@@ -2,7 +2,6 @@ import os
 import time
 
 from fandango.evolution.algorithm import Fandango, LoggerLevel
-from fandango.language.grammar import FuzzingMode
 from fandango.language.parse import parse
 
 
@@ -32,14 +31,14 @@ def main():
                 print(str(solution))
     finally:
         current_id = 1
-        while os.path.exists(f"attempt_{current_id}_grammar_coverage.csv"):
+        while os.path.exists(f"coverage_output/attempt_{current_id}_grammar_coverage.csv"):
             current_id += 1
 
-        with open(f"attempt_{current_id}_grammar_coverage.csv", "w") as f:
+        with open(f"coverage_output/attempt_{current_id}_grammar_coverage.csv", "w") as f:
             for timestamp, coverage in fandango.coverage_log:
                 time_elapsed = timestamp - time_start
                 f.write(f"{time_elapsed},{coverage}\n")
-        with open(f"attempt_{current_id}_metrics.md", "w") as f:
+        with open(f"coverage_output/attempt_{current_id}_metrics.md", "w") as f:
             f.write("Coverage metrics:\n")
             f.write(f"Nr trees generated: {len(fandango.packet_selector._all_derivation_trees())}\n")
             f.write(
