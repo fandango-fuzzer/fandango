@@ -17,10 +17,21 @@ fandango_is_client = True
 #<state_logged_out_3> ::= (<exchange_auth_tls><state_logged_out_3>) | (<exchange_auth_ssl><state_logged_out_3>) | (<exchange_login_ok><state_logged_in>)
 
 where less_then(<start>, 3);
+where limit_errors(<start>);
 
 def less_then(tree, number):
     count = len(tree.find_all_trees(NonTerminal('<exchange_login_fail>')))
     return count < number
+
+def limit_errors(tree):
+    nts = [NonTerminal('<request_auth_ssl>'), NonTerminal('<response_auth_ssl>'), NonTerminal('<request_auth_tls>'), NonTerminal('<response_auth_tls>')]
+    count = 0
+    for msg in tree.protocol_msgs()[::-1]:
+        if msg.msg.symbol not in nts:
+            return True
+        count += 1
+        if count > 10:
+            return False
 
 <state_logged_in> ::= (<logged_in_cmds><state_logged_in>) | (<exchange_set_type><state_in_binary>) | (<exchange_set_epassive><state_in_passive>)
 <state_in_binary> ::= (<logged_in_cmds><state_in_binary>) | (<exchange_set_epassive><state_in_binary_passive>)
