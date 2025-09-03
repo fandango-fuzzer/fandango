@@ -1,17 +1,20 @@
 # Compiler
-CC = gcc
+CC = clang
 
 # Compiler flags
-CFLAGS = -O0 -g --coverage -Wall -W -Wshadow -Wformat-security -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
+CFLAGS = -O0 -g -Wall -W -Wshadow -Wformat-security \
+         -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -DONE_PROCESS \
+         -fprofile-instr-generate -fcoverage-mapping
+
 IFLAGS = -idirafter dummyinc
 
 # Linker flags
-LDFLAGS = -fPIE -pie --coverage -lcrypt
+LDFLAGS = -fprofile-instr-generate -fcoverage-mapping -fPIE -pie
 
 # Libraries
 LIBS = `./vsf_findlibs.sh` -lcrypt -lssl -lcrypto
 
-# Object files
+# Source files
 SRCS = main.c utility.c prelogin.c ftpcmdio.c postlogin.c privsock.c \
        tunables.c ftpdataio.c secbuf.c ls.c \
        postprivparent.c logging.c str.c netstr.c sysstr.c strlist.c \
@@ -41,4 +44,4 @@ install:
 
 # Clean build
 clean:
-	rm -f $(OBJS) vsftpd *.gcno *.gcda
+	rm -f $(OBJS) vsftpd *.gcno *.gcda *.profraw

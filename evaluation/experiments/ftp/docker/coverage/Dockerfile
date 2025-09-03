@@ -3,9 +3,11 @@ FROM ubuntu:24.04
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
+    clang \
+    llvm \
+    lcov \
     build-essential \
     git \
-    lcov \
     python3 \
     python3-pip \
     g++ \
@@ -25,52 +27,35 @@ WORKDIR /app
 # Clone project
 RUN git clone https://github.com/djarosz/vsftpd.git /app
 COPY image/Makefile /app/Makefile
-
-# Build vsftpd with coverage flags (use CFLAGS, not CXXFLAGS)
 RUN cd /app && make clean && make
 
-# ------------------------------
-# Hardcode FTP user and folder
-# ------------------------------
-
-# FTP server config folder
-RUN mkdir -p /etc/vsftpd && mkdir -p /var/run/vsftpd
-
-# Copy vsftpd configuration
-COPY image/vsftpd.conf /etc/vsftpd/vsftpd.conf
-ENV PATH="/app:${PATH}"
-
-RUN mkdir -p /usr/share/empty
+# Coverage folder
+RUN mkdir -p /app/coverage_snapshots/gcda && chmod -R 777 /app/coverage_snapshots/gcda
 RUN mkdir -p /usr/share/empty && chmod 755 /usr/share/empty
 
-# Create home folder and user
+# Create FTP users
 RUN mkdir -p /home/the_user && chmod 750 /home/the_user
 RUN groupadd the_user || true && \
     useradd -d /home/the_user -s /usr/sbin/nologin -g the_user the_user && \
     echo "the_user:the_password" | chpasswd && \
-    mkdir -p /home/the_user
-RUN chown the_user:the_user /home/the_user
-RUN chmod 750 /home/the_user
+    chown the_user:the_user /home/the_user
 RUN echo "root:the_password" | chpasswd
-
 RUN grep -qxF '/usr/sbin/nologin' /etc/shells || echo '/usr/sbin/nologin' >> /etc/shells
-RUN mkdir -p /app/coverage_snapshots/gcda \
-    && chown -R the_user:the_user /app/coverage_snapshots/gcda
 
-# Hardcode FTP server ports
+# Copy vsftpd configuration
+RUN mkdir -p /etc/vsftpd /var/run/vsftpd
+COPY image/vsftpd.conf /etc/vsftpd/vsftpd.conf
+
+# Expose FTP ports
 ENV MIN_PORT=50000
 ENV MAX_PORT=50100
-
-# Expose FTP port and passive range
 EXPOSE 21
 EXPOSE 50000-50100
 
-# ------------------------------
 # Coverage snapshot script
-# ------------------------------
 COPY image/coverage_snapshots_loop.sh .
 
 VOLUME /app/coverage_snapshots
 
-# Run vsftpd and coverage loop by default
+# Run vsftpd and coverage loop
 CMD ["bash", "coverage_snapshots_loop.sh"]
