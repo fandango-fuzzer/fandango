@@ -642,16 +642,20 @@ class Fandango:
                     False,
                 )
 
-                hookin_option = next(iter(forecast.paths))
-                history_tree = hookin_option.tree
-                history_tree.append(hookin_option.path[1:-1], packet_tree)
-                solutions, (fitness, failing_trees) = GeneratorWithReturn(
-                    self.evaluator.evaluate_individual(history_tree)
-                ).collect()
-                failing_trees = list(
-                    filter(lambda x: not isinstance(x.cause, SoftValue), failing_trees)
-                )
-                if len(failing_trees) != 0:
+                hookin_success = False
+                for hookin_option in forecast.paths:
+                    history_tree = hookin_option.tree
+                    history_tree.append(hookin_option.path[1:-1], packet_tree)
+                    solutions, (fitness, failing_trees) = GeneratorWithReturn(
+                        self.evaluator.evaluate_individual(history_tree)
+                    ).collect()
+                    failing_trees = list(
+                        filter(lambda x: not isinstance(x.cause, SoftValue), failing_trees)
+                    )
+                    if len(failing_trees) == 0:
+                        hookin_success = True
+                        break
+                if not hookin_success:
                     raise FandangoParseError(
                         "Remote response does not match constraints"
                     )
