@@ -51,6 +51,7 @@ RUN groupadd the_user || true && \
     mkdir -p /home/the_user
 RUN chown the_user:the_user /home/the_user
 RUN chmod 750 /home/the_user
+RUN echo "root:the_password" | chpasswd
 
 RUN grep -qxF '/usr/sbin/nologin' /etc/shells || echo '/usr/sbin/nologin' >> /etc/shells
 RUN mkdir -p /app/coverage_snapshots/gcda \
