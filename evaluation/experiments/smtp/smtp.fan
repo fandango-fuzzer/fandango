@@ -67,10 +67,10 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 
 <response_setup> ::= '220 ' r'[a-zA-Z0-9\-\. ]+' '\r\n'
 <request_ehlo> ::= 'EHLO ' <client_identifier> '\r\n'
-<client_identifier> ::= r'([a-zA-Z0-9\-\.]+ [ ]?)+'
+<client_identifier> ::= r'([a-zA-Z0-9\-\.]+[ ]?)+' := 'io.fandango-fuzzer.local'
 <response_ehlo> ::= <response_ehlo_param>+<response_ehlo_end> := '250-fandango-server\r\n250-8BITMIME\r\n250-AUTH PLAIN LOGIN\r\n250 Ok\r\n'
-<response_ehlo_param> ::= '250-' r'[a-zA-Z0-9\-\.= ]+' '\r\n'
-<response_ehlo_end> ::= '250 ' ('CHUNKING' | 'Ok') '\r\n'
+<response_ehlo_param> ::= '250-' r'[a-zA-Z0-9\-\.=\[\]\, ]+' '\r\n'
+<response_ehlo_end> ::= '250 ' r'[a-zA-Z0-9\-\.=\[\]\, ]+' '\r\n'
 
 <exchange_quit> ::= <Client:request_quit><Server:response_quit>
 <request_quit> ::= 'QUIT\r\n'
