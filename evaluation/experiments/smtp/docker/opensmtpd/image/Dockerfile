@@ -101,4 +101,4 @@ RUN mkdir -p /var/mail && \
 
 
 # Default command
-CMD ["smtpd", "-d", "-F", "-f", "/etc/smtpd.conf"]
+CMD smtpd -d -F -f /etc/smtpd.conf & stunnel /etc/stunnel/stunnel.conf
