@@ -308,8 +308,8 @@ fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
             r"""(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.\d+\n)*"""
         )
         out, err, code = run_command(command)
-        self.assertRegex(out, out_pattern, f"out: {out}")
-        self.assertRegex(err, err_pattern, f"err: {err}")
+        self.assertRegex(out, out_pattern, f"out: {out}, err: {err}")
+        self.assertRegex(err, err_pattern, f"err: {err}, out: {out}")
         self.assertEqual(0, code)
 
         num_from_error_message = int(re.findall(err_pattern, err)[0])
