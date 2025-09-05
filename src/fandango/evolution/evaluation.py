@@ -296,6 +296,15 @@ class IoEvaluator(Evaluator):
                 key = (msg.sender, msg.recipient, msg)
                 self._submitted_solutions.add(hash(key))
 
+    def _is_path_start_with(self, state_path: tuple, path: tuple) -> int:
+        n = len(state_path)
+        m = len(path)
+        max_overlap = min(n, m)
+        for overlap in range(max_overlap, 0, -1):
+            if state_path[-overlap:] == path[:overlap]:
+                return overlap
+        return 0
+
     def evaluate_individual(
         self,
         individual: DerivationTree,
@@ -319,13 +328,21 @@ class IoEvaluator(Evaluator):
             if msg is None:
                 yield individual
             else:
+                state_path = msg.get_path()
+                if len(state_path) > self._diversity_k:
+                    state_path = state_path[-self._diversity_k :]
+                state_path = tuple(map(lambda x: x.symbol, state_path))
+                uncovered_paths = self._grammar.get_uncovered_k_paths(list(self.get_past_msgs(msg_key)), self._diversity_k, msg.symbol, True)
+                overlap_to_root = any(filter(lambda path: 0 < self._is_path_start_with(state_path, path) < self._diversity_k, uncovered_paths))
+
                 old_coverage = self._grammar.compute_kpath_coverage(
-                    list(self.get_past_msgs(msg_key)), self._diversity_k, msg.symbol
+                    list(self.get_past_msgs(msg_key)), self._diversity_k, msg.symbol, overlap_to_root=overlap_to_root
                 )
                 new_coverage = self._grammar.compute_kpath_coverage(
                     list(self.get_past_msgs(msg_key)) + [msg],
                     self._diversity_k,
                     msg.symbol,
+                    overlap_to_root=overlap_to_root
                 )
                 if old_coverage < new_coverage or new_coverage == 1.0:
                     if new_coverage < 1.0:

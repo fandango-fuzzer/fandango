@@ -31,7 +31,7 @@ for df in dataframes:
     last_coverage = df["coverage"].values[-1]
     last_valid_time = df["time"].values[-1]
     # Nach dem letzten Messpunkt: Wert auf letzten Coverage-Wert setzen (meist 1.0)
-    df_aligned.loc[df_aligned["time"] > last_valid_time, "coverage"] = last_coverage
+    df_aligned.loc[df_aligned["time"] > last_valid_time, "coverage"] = np.nan
     df_aligned["coverage"] = df_aligned["coverage"].fillna(method="bfill")
     aligned_coverages.append(df_aligned["coverage"].values)
 
