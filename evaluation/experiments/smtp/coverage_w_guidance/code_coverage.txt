@@ -1,0 +1,22 @@
+Summary coverage rate:
+  lines......: 8.0% (1620 of 20169 lines)
+  functions..: 12.0% (140 of 1167 functions)
+  branches...: no data found
+
+
+Summary coverage rate:
+  lines......: 8.0% (1620 of 20169 lines)
+  functions..: 12.0% (140 of 1167 functions)
+  branches...: no data found
+
+
+Summary coverage rate:
+  lines......: 8.0% (1620 of 20169 lines)
+  functions..: 12.0% (140 of 1167 functions)
+  branches...: no data found
+
+After 12 runs:
+Summary coverage rate:
+  lines......: 8.0% (1620 of 20169 lines)
+  functions..: 12.0% (140 of 1167 functions)
+  branches...: no data found
