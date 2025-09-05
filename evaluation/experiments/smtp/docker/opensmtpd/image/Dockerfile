@@ -22,6 +22,8 @@ RUN apt-get update && \
     zlib1g-dev \
     ca-certificates \
     swaks \
+    gcovr \
+    lcov \
     locales && \
     locale-gen en_US.UTF-8 && \
     rm -rf /var/lib/apt/lists/*
@@ -99,6 +101,11 @@ RUN mkdir -p /var/mail && \
     touch /var/mail/the_user && \
     chown the_user:the_user /var/mail/the_user
 
+COPY coverage_snapshots_loop.sh .
+RUN mkdir -p /app/coverage/
+RUN chmod 777 /app/coverage/
+VOLUME /app/coverage/
+
 
 # Default command
-CMD smtpd -d -F -f /etc/smtpd.conf & stunnel /etc/stunnel/stunnel.conf
+CMD bash coverage_snapshots_loop.sh & stunnel /etc/stunnel/stunnel.conf

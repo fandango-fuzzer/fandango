@@ -7,5 +7,5 @@ services:
     ports:
       - "8025:8025"           # expose SMTP locally
     volumes:
-      - ./coverage_snapshots:/coverage   # coverage logs
+      - ./coverage_snapshots:/app/coverage   # coverage logs
     tty: true

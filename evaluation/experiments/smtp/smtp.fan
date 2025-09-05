@@ -98,9 +98,9 @@ where len(str(<request_auth_user_incorrect>)) >= 6
 <request_mail_from> ::= 'MAIL FROM:<' <email_address> '>\r\n'
 <response_mail_from> ::= '250 ' r'[a-zA-Z0-9\-\. ]+' '\r\n'
 <request_mail_to> ::= 'RCPT TO:<' <email_address> '>\r\n'
-<response_mail_to> ::= '250 ' r'[a-zA-Z0-9\-\. ]+' '\r\n'
+<response_mail_to> ::= '250 ' r'[a-zA-Z0-9\-\.\: ]+' '\r\n'
 <request_mail_data> ::= 'DATA\r\n'
-<response_mail_data> ::= '354 End data with <CR><LF>.<CR><LF>\r\n'
+<response_mail_data> ::= '354 ' r'[a-zA-Z0-9\-\.\,\"\: ]+' '\r\n'
 
 <mail_body_end> ::= '\r\n\r\n.\r\n'
 <mail_contents_64> ::= r'[a-zA-Z0-9\+\\\=]+' := encode64(<mail_contents>)
