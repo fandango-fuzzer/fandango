@@ -274,9 +274,9 @@ class PacketSelector:
     def _select_next_packet(self):
         #print(f"LOWEST AT {self.coverage_scores[0][1]} PERCENT ({self.coverage_scores[0][0]})")
         #print(f"START  AT {dict(self.coverage_scores)[NonTerminal("<start>")]} PERCENT")
-        #if len(self._uncovered_paths()) == 0:
-        #    return self._get_guide_to_end_packet()
-        #return self.get_fuzzer_packets()
+        if len(self._uncovered_paths()) == 0:
+            return self._get_guide_to_end_packet()
+        return self.get_fuzzer_packets()
 
         if len(self.next_fuzzer_parties()) == 0:
             return []
