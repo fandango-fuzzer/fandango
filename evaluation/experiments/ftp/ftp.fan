@@ -51,11 +51,11 @@ def limit_errors(tree):
 
 <exchange_auth_tls> ::= <ClientControl:ServerControl:request_auth_tls><ServerControl:ClientControl:response_auth_tls>
 <request_auth_tls> ::= 'AUTH TLS\r\n'
-<response_auth_tls> ::= '5' ('3'|'0') '0 ' <command_tail> '\r\n'
+<response_auth_tls> ::= r'(530|500)' ' ' <command_tail> '\r\n'
 
 <exchange_auth_ssl> ::= <ClientControl:ServerControl:request_auth_ssl><ServerControl:ClientControl:response_auth_ssl>
 <request_auth_ssl> ::= 'AUTH SSL\r\n'
-<response_auth_ssl> ::= '5' ('3'|'0') '0 ' <command_tail> '\r\n'
+<response_auth_ssl> ::= r'(530|500)' ' ' <command_tail> '\r\n'
 
 # A successful login consist of the correct username and password and leads to the logged in state.
 <exchange_login_ok> ::= <ClientControl:ServerControl:request_login_user_ok><ServerControl:ClientControl:response_login_user><ClientControl:ServerControl:request_login_pass_ok><ServerControl:ClientControl:response_login_pass_ok>
@@ -121,7 +121,7 @@ def feat_response():
 <open_list> ::= '150 ' <command_tail> '\r\n'
 <list_transfer> ::= <ServerData:ClientData:list_data>?<ServerControl:ClientControl:finalize_list>
 <finalize_list> ::= '226 ' <command_tail> '\r\n'
-<list_data> ::= (<list_data_file>)+ # (<list_data_folder> | <list_data_file>)*
+<list_data> ::= (<list_data_file>)+
 <list_data_file> ::= <permissions> ' '+ <link_count> ' ' <user> ' '+ <group> ' '+ <file_size> ' ' <date> ' ' <filename> '\r\n'
 <filename>    ::= r'[\x20-\x7E]+'
 <number>      ::= r'[0-9]+' := str(randint(1, 1000))
@@ -129,12 +129,12 @@ def feat_response():
 <link_count>  ::= <number>
 
 <permissions> ::= <file_type> <perm> <perm> <perm>
-<file_type>   ::= '-' | 'd' | 'l' | 'c' | 'b'
-<perm>        ::= ('r' | '-') ('w' | '-') ('x' | '-')
+<file_type>   ::= r'[-dlcb]'
+<perm>        ::= r'[r-]' r'[w-]' r'[x-]'
 <user>        ::= r'[0-9a-zA-Z_\-]+'
 <group>       ::= r'[0-9a-zA-Z_\-]+'
 <date>        ::= <month> ' ' <day> ' ' <time>
-<month>       ::= 'Jan' | 'Feb' | 'Mar' | 'Apr' | 'May' | 'Jun' | 'Jul' | 'Aug' | 'Sep' | 'Oct' | 'Nov' | 'Dec'
+<month>       ::= r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
 <day>         ::= r'[0-9]{2}' := "{:02d}".format(randint(1, 28))
 <time>        ::= <hour> ':' <minute>
 <hour>        ::= r'[0-9]{2}' := "{:02d}".format(randint(0, 23))

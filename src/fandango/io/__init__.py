@@ -271,7 +271,7 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
                     if self.endpoint_type == EndpointType.OPEN:
                         assert self._sock is not None
                         while self._running:
-                            rlist, _, _ = select.select([self._sock], [], [], 0.1)
+                            rlist, _, _ = select.select([self._sock], [], [], 0.01)
                             if rlist:
                                 self._connection, _ = self._sock.accept()
                                 break
@@ -283,7 +283,7 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
                         except BlockingIOError:
                             pass
                         while self._running:
-                            _, wlist, _ = select.select([], [self._sock], [], 0.1)
+                            _, wlist, _ = select.select([], [self._sock], [], 0.01)
                             if wlist:
                                 self._connection = self._sock
                                 break

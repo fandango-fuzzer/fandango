@@ -602,7 +602,7 @@ class Grammar(NodeVisitor):
                 )
                 random.shuffle(parent_rule_nodes)
                 for rule_node in parent_rule_nodes:
-                    if rule_node.symbol.check(symbol_value, False):
+                    if rule_node.symbol.check(symbol_value, False)[0]:
                         paths[len(path)].add(path + (rule_node.symbol,))
                 return
             new_path = path + (tree_symbol,)
