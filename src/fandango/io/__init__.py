@@ -170,7 +170,7 @@ class ProtocolDecorator(ABC):
 
 
 class UdpTcpProtocolDecorator(ProtocolDecorator):
-    BUFFER_SIZE = 1  # Size of the buffer for receiving data
+    BUFFER_SIZE = 1024  # Size of the buffer for receiving data
 
     def __init__(
         self,
@@ -574,7 +574,12 @@ class FandangoIO(object):
         :param message: The message received from the sender.
         """
         with self.receive_lock:
-            self.receive.append((sender, receiver, message))
+            if isinstance(message, bytes):
+                for fragment in message:
+                    self.receive.append((sender, receiver, bytes([fragment])))
+            else:
+                for fragment in message:
+                    self.receive.append((sender, receiver, fragment))
 
     def received_msg(self) -> bool:
         """Checks if there are any received messages from external parties."""

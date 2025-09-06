@@ -16,7 +16,11 @@ fandango_is_client = True
 
 def gen_q_name():
     result = b''
-    domain_parts = fake.domain_name().split('.')
+    if randint(0, 2) == 0 or True:
+        domain_name = 'fandango.io'
+    else:
+        domain_name = fake.domain_name()
+    domain_parts = domain_name.split('.')
     #domain_parts = "fandango.io".split('.')
     #domain_parts = "google.com".split('.')
     for part in domain_parts:
@@ -226,7 +230,7 @@ where forall <ex> in <start>.<exchange>:
 
 
 <answer_au> ::= <q_name_optional> <type_soa>
-<answer_opt> ::= <q_name_optional> <type_opt>
+<answer_opt> ::= <q_name_optional> (<type_opt>|<type_a>)
 <answer_an> ::= <q_name_optional> (<type_a> |<type_cname> | <type_ns>)
 <answer> ::= <q_name_optional> (<type_a> |<type_cname> | <type_ns> | <type_soa> | <type_opt>)
 <a_ttl> ::= 0 <bit>{7} <byte>{3}
@@ -264,9 +268,13 @@ class Client(ConnectParty):
         super().__init__(
             ownership=Ownership.FANDANGO_PARTY if fandango_is_client else Ownership.EXTERNAL_PARTY,
             endpoint_type=EndpointType.CONNECT,
-            uri="udp://localhost:53"
+            uri="udp://localhost:25566"
         )
         self.start()
+
+    def receive_msg(self, sender: Optional[str], message: str | bytes) -> None:
+        super().receive_msg(sender, decompress_msg(message))
+
 
 class Server(ConnectParty):
     def __init__(self):
