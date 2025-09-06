@@ -137,6 +137,7 @@ class Fandango:
             max_nodes,
             max_nodes_rate,
         )
+        self._is_enable_guidance = True
 
         self.profiler = Profiler(enabled=profiling)
 
@@ -152,6 +153,15 @@ class Fandango:
         self.fixes_made = 0
         self.mutations_made = 0
         self.time_taken = 0.0
+
+    def enable_guidance(self, value: bool) -> None:
+        if self.grammar.fuzzing_mode != FuzzingMode.IO:
+            raise FandangoValueError("Guidance can only be enabled in IO mode")
+        assert isinstance(self.population_manager, IoPopulationManager)
+        self.evaluator.enable_guidance(value)
+        self._is_enable_guidance = value
+        if hasattr(self, 'packet_selector') and self.packet_selector is not None:
+            self.packet_selector.enable_guidance(value)
 
     def _parse_and_deduplicate(
         self, population: Optional[list[Union[DerivationTree, str]]]
@@ -489,6 +499,7 @@ class Fandango:
         self.packet_selector = PacketSelector(
             self.grammar, io_instance, history_tree, self.diversity_k
         )
+        self.packet_selector.enable_guidance(self._is_enable_guidance)
         if max_generations is None:
             selected_packet_max_generations = 10
             overall_max_generations = max_generations
