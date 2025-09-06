@@ -267,6 +267,10 @@ class IoEvaluator(Evaluator):
         self._submitted_solutions: set[int] = set()
         self._hold_back_solutions: set[DerivationTree] = set()
         self._past_trees = []
+        self._is_enable_guidance = True
+
+    def enable_guidance(self, value):
+        self._is_enable_guidance = value
 
     def get_past_msgs(
         self, packet_type: Optional[PacketNonTerminal] = None
@@ -314,6 +318,10 @@ class IoEvaluator(Evaluator):
             return self._fitness_cache[key]
 
         fitness, failing_trees = self.evaluate_constraints(individual)
+        self._fitness_cache[key] = (fitness, failing_trees)
+
+        if fitness < self._expected_fitness:
+            return fitness, failing_trees
 
         if len(individual.protocol_msgs()) != 0:
             msg = individual.protocol_msgs()[-1].msg
@@ -323,6 +331,12 @@ class IoEvaluator(Evaluator):
             msg = None
             msg_key = None
             msg_hash = None
+
+        if not self._is_enable_guidance:
+            if key not in self._solution_set:
+                self._solution_set.add(key)
+                yield individual
+            return fitness, failing_trees
 
         if fitness >= self._expected_fitness:
             if msg is None:

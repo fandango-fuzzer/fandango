@@ -9,9 +9,7 @@
 where int(<request>.<number>) > 0 and int(<request>.<number>) < 10
 where len(<response>.find_all_trees(NonTerminal('<quote>'))) == int(<request>.<number>)
 
-<number> ::= <number_start> <number_tail>*
-<number_start> ::= '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
-<number_tail> ::= '0' | <number_start>
+<number> ::= r'[0-9]+'
 
 import json
 import requests
