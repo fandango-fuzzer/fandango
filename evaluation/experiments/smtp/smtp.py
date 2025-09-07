@@ -21,7 +21,7 @@ def main():
         diversity_k=5,
         logger_level=LoggerLevel.INFO,
     )
-    fandango.enable_guidance(False)
+    fandango.enable_guidance(True)
 
     try:
         solutions = fandango.evolve()
