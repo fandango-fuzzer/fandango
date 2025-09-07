@@ -57,15 +57,22 @@ RUN mkdir -p /etc/bind/zones
 # Minimal named.conf to start
 COPY named.conf /etc/bind/named.conf
 COPY zones/* /etc/bind/zones/
+
+# Create runtime directories and fix permissions
+RUN mkdir -p /var/cache/bind /var/run/named /var/log/named
+
 COPY coverage_loop.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/coverage_loop.sh
+RUN mkdir -p /home/binduser/coverage/
 
 # Expose DNS ports
 EXPOSE 53/udp
 EXPOSE 53/tcp
 
-# Switch to binduser
-USER binduser
 
 # Default command: start bind9 in foreground
-CMD ["/home/binduser/.local/sbin/named", "-c", "/etc/bind/named.conf", "-f", "-g"]
+# Wrapper to run named and coverage in background
+CMD ["/bin/bash", "-c", "\
+/usr/local/bin/coverage_loop.sh & \
+exec /home/binduser/.local/sbin/named -c /etc/bind/named.conf -f -g \
+"]
