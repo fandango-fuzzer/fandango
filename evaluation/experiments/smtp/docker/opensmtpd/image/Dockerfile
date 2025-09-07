@@ -32,16 +32,17 @@ RUN apt-get update && \
 RUN useradd -ms /bin/bash the_user && echo "the_user:the_password" | chpasswd && adduser the_user sudo
 
 # Set environment variables for coverage compilation
-ENV CFLAGS="-fprofile-arcs -ftest-coverage -O0"
-ENV CXXFLAGS="-fprofile-arcs -ftest-coverage -O0"
+ENV CFLAGS="-fprofile-arcs --coverage -ftest-coverage -O0"
+ENV CXXFLAGS="-fprofile-arcs --coverage -ftest-coverage -O0"
 ENV LDFLAGS="--coverage"
 
 WORKDIR /home/app
 
 # Download and prepare OpenSMTPD source
-RUN wget https://github.com/OpenSMTPD/OpenSMTPD/archive/refs/tags/7.7.0p0.zip && \
-    unzip 7.7.0p0.zip && \
-    rm 7.7.0p0.zip
+#RUN wget https://github.com/OpenSMTPD/OpenSMTPD/archive/refs/tags/7.7.0p0.zip && \
+#    unzip 7.7.0p0.zip && \
+#    rm 7.7.0p0.zip \
+COPY repo OpenSMTPD-7.7.0p0
 
 WORKDIR /home/app/OpenSMTPD-7.7.0p0
 
