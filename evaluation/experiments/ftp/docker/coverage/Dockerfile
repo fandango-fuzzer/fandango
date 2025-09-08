@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
     gcovr \
     lcov
 
-RUN git clone https://github.com/djarosz/vsftpd.git
+COPY image/repo /vsftpd
 
 WORKDIR /vsftpd
 
@@ -36,11 +36,26 @@ COPY image/vsftpd.conf /etc/vsftpd/vsftpd.conf
 RUN mkdir -p /usr/share/empty && \
     chmod 755 /usr/share/empty
 
+RUN chmod -R 777 /vsftpd
+#RUN chmod -R 777 /app
+
+COPY image/coverage_snapshots_loop.sh /vsftpd/coverage_snapshots_loop.sh
+RUN chmod +x /vsftpd/coverage_snapshots_loop.sh
+
 # Expose FTP ports
 ENV MIN_PORT=50000
 ENV MAX_PORT=50100
 EXPOSE 21
 EXPOSE 50000-50100
 
+RUN export GCOV_PREFIX=/coverage
+RUN export GCOV_PREFIX_STRIP=1
+RUN mkdir -p /coverage
+RUN chmod 777 /coverage
+
+#RUN mkdir -p /vsftpd/coverage
+#RUN chmod 777 /vsftpd/coverage
+
 # Start vsftpd
+#CMD ["./coverage_snapshots_loop.sh"]
 CMD ["./vsftpd", "/etc/vsftpd/vsftpd.conf"]

@@ -8,3 +8,6 @@ $TTL    604800
 ;
 @       IN      NS      ns1.fandango.io.
 ns1     IN      A       127.0.0.1
+@       IN      A       127.0.0.1
+test    IN      CNAME   other.fandango.io.
+other   IN      A       127.0.0.1
