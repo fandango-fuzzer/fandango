@@ -1,30 +1,29 @@
-<start> ::= <exchange>{20}
+<start> ::= <exchange>
 <exchange> ::= <Client:request><Gpt:response>
 <request> ::= <gpt_model><gpt_message>
 <gpt_model> ::= 'gpt-4.1' #| 'o4-mini' #| 'o3'
-<gpt_message> ::= 'Write a report about ' <subject> '. '
-                  'Include every word from the subject. '
-                  'Under no circumstances should the '
-                  'following non-case sensitive character '
+<gpt_message> ::= 'Write a report about ' <subject> '. ' \
+                  'Include every word from the subject. ' \
+                  'Under no circumstances should the ' \
+                  'following non-case sensitive character ' \
                   'sequence be used: ' <avoid>
 <subject> ::= <verb> ' ' <adjective> ' ' <noun> ' ' <place>
 <verb> ::= 'testing' | 'evaluating' | 'fixing'
 <adjective> ::= 'sustainable' | 'intestinal' | 'innovative'
 <noun> ::= 'rocket' | 'cars' | 'rockets' | 'satellites'
-<place> ::= 'at Google' | 'on Mars' | 'at ASE 2025'
+<place> ::= 'at Google' | 'on Mars' | 'at FSE 2026'
 <avoid> ::= 'AI' | 'crash' | 'Elon' | 'universe'
 <response> ::= r'(?s).*'
 
-where forall <ex> in <exchange>:
-    str(<ex>.<request>..<verb>).lower() in str(<ex>.<response>).lower()
-    and str(<ex>.<request>..<adjective>).lower() in str(<ex>.<response>).lower()
-    and str(<ex>.<request>..<noun>).lower() in str(<ex>.<response>).lower()
+where str(<ex>.<request>..<verb>).lower() in str(<ex>.<response>).lower() \
+    and str(<ex>.<request>..<adjective>).lower() in str(<ex>.<response>).lower() \
+    and str(<ex>.<request>..<noun>).lower() in str(<ex>.<response>).lower() \
     and str(<ex>.<request>..<avoid>).lower() not in str(<ex>.<response>).lower()
 
 import openai
 class Client(FandangoParty):
     def __init__(self):
-        super().__init__(True)
+        super().__init__(ownership=Ownership.FANDANGO_PARTY)
         if not self.is_fuzzer_controlled():
             return
         openai.api_key = 'YOUR_OPENAI_API_KEY'
@@ -36,6 +35,18 @@ class Client(FandangoParty):
         )
         self.receive_msg("Gpt", response.output_text)
 
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
+
 class Gpt(FandangoParty):
     def __init__(self):
-        super().__init__(False)
+        super().__init__(ownership=Ownership.EXTERNAL_PARTY)
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass

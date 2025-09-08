@@ -42,8 +42,9 @@ ENV LDFLAGS="--coverage"
 
 # Download Bind9 source (example: 9.18 branch)
 WORKDIR /home/binduser
-RUN wget https://gitlab.isc.org/isc-projects/bind9/-/archive/stable/bind9-stable.zip?ref_type=tags -O bind9-stable.zip
-RUN unzip bind9-stable.zip && mv bind9-stable bind9 && rm bind9-stable.zip
+COPY /repo bind9
+#RUN wget https://gitlab.isc.org/isc-projects/bind9/-/archive/stable/bind9-stable.zip?ref_type=tags -O bind9-stable.zip
+#RUN unzip bind9-stable.zip && mv bind9-stable bind9 && rm bind9-stable.zip
 
 WORKDIR /home/binduser/bind9
 RUN autoreconf -fi
@@ -73,6 +74,4 @@ EXPOSE 53/tcp
 # Default command: start bind9 in foreground
 # Wrapper to run named and coverage in background
 CMD ["/bin/bash", "-c", "\
-/usr/local/bin/coverage_loop.sh & \
-exec /home/binduser/.local/sbin/named -c /etc/bind/named.conf -f -g \
-"]
+/usr/local/bin/coverage_loop.sh"]
