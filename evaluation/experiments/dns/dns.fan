@@ -17,7 +17,10 @@ fandango_is_client = True
 def gen_q_name():
     result = b''
     if randint(0, 2) == 0 or True:
-        domain_name = 'fandango.io'
+        if randint(0, 1) == 0:
+            domain_name = 'fandango.io'
+        else:
+            domain_name = 'test.fandango.io'
     else:
         domain_name = fake.domain_name()
     domain_parts = domain_name.split('.')
@@ -177,11 +180,11 @@ def decompress_msg(compressed):
 <exchange> ::= <Client:dns_req> <Server:dns_resp>
 
 # A request consists of a header and a number of questions and answers as specified in the header
-<dns_req> ::= <header_req> <question>{byte_to_int(<req_qd_count>)} <answer>{byte_to_int(<req_ar_count>)}
+<dns_req> ::= <header_req> <question>{byte_to_int(<req_qd_count>)}
 <dns_resp> ::= <header_resp> <question>{byte_to_int(<header_req>.<req_qd_count>)} <answer_an>{byte_to_int(<resp_an_count>)} <answer_au>{byte_to_int(<resp_ns_count>)} <answer_opt>{byte_to_int(<resp_ar_count>)}
 
 #                       qr      opcode       aa tc rd  ra  z      rcode   qdcount  ancount nscount arcount
-<header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_none> <req_qd_count> 0{16} 0{16} <req_ar_count>
+<header_req> ::= <h_id> 0 <h_opcode_standard> 0 0 <h_rd> 0 0 <bit> 0 <h_rcode_none> <req_qd_count> 0{16} 0{16} 0{16}
 <header_resp> ::= <h_id> 1 <h_opcode_standard> <bit> 0 <h_rd> <h_ra> 0 <h_aa> 0 (<h_rcode_none> | <h_rcode_name>) <resp_qd_count> <resp_an_count> <resp_ns_count> <resp_ar_count>
 # aa=1 if server has authority over domain
 
@@ -225,7 +228,7 @@ where forall <ex> in <start>.<exchange>:
 where forall <ex> in <start>.<exchange>:
     forall <q> in <ex>.<dns_req>.<question>:
         forall <a> in <ex>.<dns_resp>.<answer_an>:
-            (bytes(<a>.children[1])[0:2] == bytes(<q>.<q_type>) and bytes(<a>.<q_name_optional>) == bytes(<q>.<q_name>)) or get_index_within(<a>, <ex>.<dns_resp>, ['<answer_an>']) != get_index_within(<q>, <ex>.<dns_req>, ['<question>'])
+            bytes(<a>.<q_name_optional>) == bytes(<q>.<q_name>) or get_index_within(<a>, <ex>.<dns_resp>, ['<answer_an>']) != get_index_within(<q>, <ex>.<dns_req>, ['<question>'])
 
 
 
