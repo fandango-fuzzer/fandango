@@ -92,7 +92,7 @@ class Fandango:
         self.tournament_size = tournament_size
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
-        self.current_max_nodes = 50
+        self.current_max_nodes = max_nodes
         self.diversity_k = diversity_k
         self.remote_response_timeout = 15.0
         self.past_io_derivations = []

@@ -15,14 +15,18 @@ def main():
         grammar=grammar,
         constraints=constraints,
         population_size=10,
+        max_nodes=600*8,
         logger_level=LoggerLevel.INFO,
     )
-    fandango.enable_guidance(False)
+    fandango.enable_guidance(True)
     time_start = time.time()
     try:
         for solution in fandango.generate(mode=FuzzingMode.IO):
             pass
     finally:
+        for entry, value in fandango.packet_selector.coverage_scores:
+            print(entry, value)
+
         current_id = 1
         while os.path.exists(f"coverage_raw/attempt_{current_id}_grammar_coverage.csv"):
             current_id += 1
