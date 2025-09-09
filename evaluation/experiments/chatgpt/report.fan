@@ -1,5 +1,4 @@
-<start> ::= <exchange>
-<exchange> ::= <Client:request><Gpt:response>
+<start> ::= <Client:request><Gpt:response>
 <request> ::= <gpt_model><gpt_message>
 <gpt_model> ::= 'gpt-4.1' #| 'o4-mini' #| 'o3'
 <gpt_message> ::= 'Write a report about ' <subject> '. ' \
@@ -15,10 +14,13 @@
 <avoid> ::= 'AI' | 'crash' | 'Elon' | 'universe'
 <response> ::= r'(?s).*'
 
-where str(<ex>.<request>..<verb>).lower() in str(<ex>.<response>).lower() \
-    and str(<ex>.<request>..<adjective>).lower() in str(<ex>.<response>).lower() \
-    and str(<ex>.<request>..<noun>).lower() in str(<ex>.<response>).lower() \
-    and str(<ex>.<request>..<avoid>).lower() not in str(<ex>.<response>).lower()
+where str(<request>..<verb>).lower() in str(<response>).lower()
+
+where str(<request>..<adjective>).lower() in str(<response>).lower()
+
+where str(<request>..<noun>).lower() in str(<response>).lower()
+
+where str(<request>..<avoid>).lower() not in str(<response>).lower()
 
 import openai
 class Client(FandangoParty):
