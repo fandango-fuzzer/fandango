@@ -302,12 +302,9 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             "--max-nodes",
             "30",
         ]
-        err_pattern = r"fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"
-        out_pattern = (
-            r"""(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.\d+\n)*"""
-        )
+        err_pattern = r"fandango:ERROR: Only found (0) perfect solutions, instead of the required 10"
         out, err, code = run_command(command)
-        self.assertRegex(out, out_pattern, f"out: {out}")
+        self.assertEqual(out, '', f"out: {out}")
         self.assertRegex(err, err_pattern, f"err: {err}")
         self.assertEqual(0, code)
 
