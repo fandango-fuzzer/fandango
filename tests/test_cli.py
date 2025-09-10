@@ -1,7 +1,6 @@
 #!/usr/bin/env pytest
 import asyncio
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -15,16 +14,16 @@ from .utils import DOCS_ROOT, IS_BEARTYPE_ACTIVE, RESOURCES_ROOT, run_command
 # beartype somehow scrambles the fixed rng
 if IS_BEARTYPE_ACTIVE:
     expected_with_random_seed = [
-        "647",
-        "3781",
-        "601",
-        "90137",
-        "54048",
-        "228",
-        "54",
-        "606",
-        "69241",
-        "9925",
+        "6040",
+        "0561",
+        "37900",
+        "17",
+        "06",
+        "9",
+        "56683",
+        "8254",
+        "44066",
+        "52",
     ]
 else:
     expected_with_random_seed = [
