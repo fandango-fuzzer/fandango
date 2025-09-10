@@ -302,8 +302,7 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             "--max-nodes",
             "30",
         ]
-        err_pattern = r"""fandango:ERROR: Population did not converge to a perfect population
-fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"""
+        err_pattern = r"fandango:ERROR: Only found (\d) perfect solutions, instead of the required 10"
         out_pattern = (
             r"""(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.\d+\n)*"""
         )
