@@ -249,7 +249,9 @@ class Fandango:
                     self.grammar, parent1, parent2
                 )
                 to_add = list(
-                    filter(lambda tree: tree.size() <= self.current_max_nodes, crossovers)
+                    filter(
+                        lambda tree: tree.size() <= self.current_max_nodes, crossovers
+                    )
                 )
 
             first = True
