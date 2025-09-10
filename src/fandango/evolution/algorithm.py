@@ -249,7 +249,9 @@ class Fandango:
                     self.grammar, parent1, parent2
                 )
                 to_add = [child1, child2]
-                to_add = list(filter(lambda tree: tree.size() <= self.current_max_nodes, to_add))
+                to_add = list(
+                    filter(lambda tree: tree.size() <= self.current_max_nodes, to_add)
+                )
 
             first = True
             for child in to_add:
