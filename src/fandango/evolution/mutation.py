@@ -80,7 +80,7 @@ class SimpleMutation(MutationOperator):
         else:
             prefix_node = None
         new_subtree = grammar.fuzz(
-            node_to_mutate.symbol, prefix_node=prefix_node, max_nodes=max_nodes
+            node_to_mutate.symbol, prefix_node=prefix_node, max_nodes=node_to_mutate.size() + (max_nodes - individual.size())
         )
         mutated = individual.replace(grammar, node_to_mutate, new_subtree)
         return mutated
