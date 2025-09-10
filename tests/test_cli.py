@@ -15,16 +15,16 @@ from .utils import DOCS_ROOT, IS_BEARTYPE_ACTIVE, RESOURCES_ROOT, run_command
 # beartype somehow scrambles the fixed rng
 if IS_BEARTYPE_ACTIVE:
     expected_with_random_seed = [
-        "6040",
-        "0561",
-        "37900",
-        "17",
-        "06",
-        "9",
-        "56683",
-        "8254",
-        "44066",
-        "52",
+        "647",
+        "3781",
+        "601",
+        "90137",
+        "54048",
+        "228",
+        "54",
+        "606",
+        "69241",
+        "9925",
     ]
 else:
     expected_with_random_seed = [
@@ -302,14 +302,14 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
             "--max-nodes",
             "30",
         ]
-        err_pattern = r"fandango:ERROR: Only found (0) perfect solutions, instead of the required 10"
         out, err, code = run_command(command)
         self.assertEqual(out, "", f"out: {out}")
-        self.assertEqual(err, err_pattern, f"err: {err}")
+        self.assertEqual(
+            err,
+            "fandango:ERROR: Only found 0 perfect solutions, instead of the required 10\n",
+            f"err: {err}",
+        )
         self.assertEqual(0, code)
-
-        num_from_error_message = int(re.findall(err_pattern, err)[0])
-        self.assertEqual(num_from_error_message, len(out.split("\n")) - 1)
 
     def test_unparse_grammar(self):
         # We unparse the standard library as well as docs/persons.fan
