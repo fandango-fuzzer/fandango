@@ -5,8 +5,8 @@ PYTHON_FILE="gpt_novel.py"
 
 # Infinite loop
 while true; do
-    mkdir -p ./coverage_raw
     python3 "$PYTHON_FILE"
+    #python3 "multi_run_merger.py" "./coverage_raw" "./coverage/median_grammar_coverage.csv"
     echo "Script finished. Restarting in 5 seconds..."
     sleep 5
 done

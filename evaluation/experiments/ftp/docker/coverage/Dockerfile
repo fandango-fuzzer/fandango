@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
     gcovr \
     lcov
 
-COPY image/repo /vsftpd
+RUN git clone https://github.com/djarosz/vsftpd.git
 
 WORKDIR /vsftpd
 

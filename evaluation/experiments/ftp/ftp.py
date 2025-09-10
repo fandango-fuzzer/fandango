@@ -2,7 +2,9 @@ import os
 import sys
 import time
 
+from utils import write_coverage_log
 from fandango.evolution.algorithm import Fandango, LoggerLevel
+from fandango.language.grammar import FuzzingMode
 from fandango.language.parse import parse
 
 
@@ -12,37 +14,23 @@ def main():
     with open("ftp.fan") as f:
         grammar, constraints = parse(f, use_stdlib=True)
 
-    time_start = time.time()
     fandango = Fandango(
         grammar=grammar,
         constraints=constraints,
-        population_size=100,
         logger_level=LoggerLevel.INFO,
     )
+    fandango.enable_guidance(False)
+    output_folder_name = "coverage_w_guidance" if fandango._is_enable_guidance else "coverage_wo_guidance"
 
+    time_start = time.time()
     try:
-        solutions = fandango.evolve()
-        for solution in solutions:
-            if solution.contains_bytes():
-                print(bytes(solution))
-            else:
-                print(str(solution))
+        for solution in fandango.generate(mode=FuzzingMode.IO):
+            pass
     finally:
         current_id = 1
-        while os.path.exists(f"attempt_{current_id}_grammar_coverage.csv"):
+        while os.path.exists(f"{output_folder_name}/run_{current_id}_grammar_coverage.csv"):
             current_id += 1
-
-        with open(f"attempt_{current_id}_grammar_coverage.csv", "w") as f:
-            print("Coverage log:")
-            for timestamp, coverage in fandango.coverage_log:
-                time_elapsed = timestamp - time_start
-                f.write(f"{time_elapsed},{coverage}\n")
-        with open(f"attempt_{current_id}_metrics.md", "w") as f:
-            f.write("Coverage metrics:\n")
-            f.write(f"Nr trees generated: {len(fandango.packet_selector._all_derivation_trees())}\n")
-            f.write(
-                f"Nr messages exchanged: {sum(len(sol.protocol_msgs()) for sol in fandango.packet_selector._all_derivation_trees())}\n")
-            f.write(f"Overall time elapsed: {time.time() - time_start:.2f}s\n")
+        write_coverage_log(fandango, output_folder_name, current_id, time_start)
 
 
 if __name__ == "__main__":

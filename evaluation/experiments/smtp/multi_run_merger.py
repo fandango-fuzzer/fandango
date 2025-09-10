@@ -3,21 +3,28 @@ import pandas as pd
 import numpy as np
 import glob
 
-if len(sys.argv) < 3:
-    print("Usage: python convert_series.py <CSV_DIR> <OUTPUT_FILE>")
+if len(sys.argv) < 4:
+    print("Usage: python multi_run_merger.py <CSV_DIR> <OUTPUT_FILE> <COLUMN_NAME>")
     sys.exit(1)
 
 input_folder = sys.argv[1]
 output_file = sys.argv[2]
+column_name = sys.argv[3]
+time_col = "time_elapsed"
 
-csv_pattern = "attempt_*_grammar_coverage.csv"
+
+
+csv_pattern = "run_*_grammar_coverage.csv"
 
 files = glob.glob(f"{input_folder}/{csv_pattern}")
 dataframes = []
 
 for f in files:
-    df = pd.read_csv(f, header=None, names=["time", "coverage"])
-    dataframes.append(df)
+    df = pd.read_csv(f)
+    if time_col not in df.columns or column_name not in df.columns:
+        print(f"Spalte {column_name} oder {time_col} nicht gefunden in {f}")
+        sys.exit(1)
+    dataframes.append(df[[time_col, column_name]].rename(columns={time_col: "time", column_name: "coverage"}))
 
 all_times = np.unique(np.concatenate([df["time"].values for df in dataframes]))
 all_times.sort()
@@ -30,12 +37,10 @@ for df in dataframes:
     df_aligned["coverage"] = df_aligned["coverage"].ffill()
     last_coverage = df["coverage"].values[-1]
     last_valid_time = df["time"].values[-1]
-    # Nach dem letzten Messpunkt: Wert auf letzten Coverage-Wert setzen (meist 1.0)
     df_aligned.loc[df_aligned["time"] > last_valid_time, "coverage"] = last_coverage
     df_aligned["coverage"] = df_aligned["coverage"].fillna(method="bfill")
     aligned_coverages.append(df_aligned["coverage"].values)
 
-# Mittelwert nur über vorhandene Werte berechnen
 mean_coverage = np.nanmedian(np.vstack(aligned_coverages), axis=0)
 merged_df = pd.DataFrame({"time": all_times, "mean_coverage": mean_coverage})
 
