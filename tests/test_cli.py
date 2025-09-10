@@ -305,7 +305,7 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         err_pattern = r"fandango:ERROR: Only found (0) perfect solutions, instead of the required 10"
         out, err, code = run_command(command)
         self.assertEqual(out, '', f"out: {out}")
-        self.assertRegex(err, err_pattern, f"err: {err}")
+        self.assertEqual(err, err_pattern, f"err: {err}")
         self.assertEqual(0, code)
 
         num_from_error_message = int(re.findall(err_pattern, err)[0])

@@ -245,12 +245,11 @@ class Fandango:
                 )
 
             with self.profiler.timer("crossover", increment=2):
-                child1, child2 = self.crossover_operator.crossover(
+                crossovers = self.crossover_operator.crossover(
                     self.grammar, parent1, parent2
                 )
-                to_add = [child1, child2]
                 to_add = list(
-                    filter(lambda tree: tree.size() <= self.current_max_nodes, to_add)
+                    filter(lambda tree: tree.size() <= self.current_max_nodes, crossovers)
                 )
 
             first = True
