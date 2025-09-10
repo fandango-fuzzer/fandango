@@ -17,7 +17,7 @@ def main():
         logger_level=LoggerLevel.INFO,
     )
 
-    fandango.enable_guidance(False)
+    fandango.enable_guidance(True)
     time_start = time.time()
     try:
         for solution in fandango.generate(mode=FuzzingMode.IO):

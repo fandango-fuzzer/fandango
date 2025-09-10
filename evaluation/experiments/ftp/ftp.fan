@@ -16,11 +16,11 @@ fandango_is_client = True
 #<state_logged_out_2> ::= (<exchange_auth_tls><state_logged_out_2>) | (<exchange_auth_ssl><state_logged_out_2>) | (<exchange_login_fail><state_logged_out_3>) | (<exchange_login_ok><state_logged_in>)
 #<state_logged_out_3> ::= (<exchange_auth_tls><state_logged_out_3>) | (<exchange_auth_ssl><state_logged_out_3>) | (<exchange_login_ok><state_logged_in>)
 
-where less_then(<start>, 3);
+where less_then(<start>, NonTerminal('<exchange_login_fail>'), 3);
 where limit_errors(<start>);
 
-def less_then(tree, number):
-    count = len(tree.find_all_trees(NonTerminal('<exchange_login_fail>')))
+def less_then(tree, symbol_to_find, number):
+    count = len(tree.find_all_trees(symbol_to_find))
     return count < number
 
 def limit_errors(tree):
