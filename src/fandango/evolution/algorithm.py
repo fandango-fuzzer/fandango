@@ -96,7 +96,8 @@ class Fandango:
         self.diversity_k = diversity_k
         self.remote_response_timeout = 15.0
         self.past_io_derivations = []
-        self.coverage_log: list[tuple[float, float]] = []
+        self.coverage_log: list[tuple[float, dict[NonTerminal, tuple[int, int]]]] = []
+        self.coverage_log_overlap: list[tuple[float, float]] = []
 
         # Instantiate managers
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
@@ -511,7 +512,8 @@ class Fandango:
         while True:
             self.packet_selector.compute(history_tree, self.past_io_derivations)
             current_coverage = dict(self.packet_selector.coverage_scores)[NonTerminal("<start>")]
-            self.coverage_log.append((time.time(), current_coverage))
+            self.coverage_log.append((time.time(), self.packet_selector._compute_coverage_trees(False)))
+            self.coverage_log_overlap.append((time.time(), self.packet_selector._compute_coverage_trees(True)))
             LOGGER.info(f"Current coverage: {current_coverage:.2f}%")
             self.evaluator.start_next_message(
                 [history_tree] + list(self.past_io_derivations)

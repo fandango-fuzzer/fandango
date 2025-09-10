@@ -13,10 +13,23 @@ import threading
 fake = Faker()
 
 fandango_is_client = True
+# If uses as a client interact with a command like this:
+# dig @127.0.0.1 -p 25565 NS fandango.io +noedns +time=100 +tries=1
+
+def verify_transitive(question, response):
+    type_byte = bytes(question.find_direct_trees(NonTerminal("<q_type>"))[0])
+    allowed_names = [bytes(question.find_direct_trees(NonTerminal("<q_name>"))[0])]
+    for ans in response.find_all_trees(NonTerminal("<answer_an>")):
+        if bytes(ans.children[1])[0:2] == pack('>H', 5) and bytes(ans.find_direct_trees(NonTerminal("<q_name_optional>"))[0]) in allowed_names:
+            allowed_names.append(bytes(ans.children[1].children[4])) # <type_cname>.<q_name>
+    for ans in response.find_all_trees(NonTerminal("<answer_an>")):
+        if bytes(ans.children[1])[0:2] == type_byte and bytes(ans.find_direct_trees(NonTerminal("<q_name_optional>"))[0]) in allowed_names:
+            return True
+    return False
 
 def gen_q_name():
     result = b''
-    if randint(0, 2) == 0 or True:
+    if randint(0, 2) == 0:
         if randint(0, 1) == 0:
             domain_name = 'fandango.io'
         else:
@@ -24,8 +37,6 @@ def gen_q_name():
     else:
         domain_name = fake.domain_name()
     domain_parts = domain_name.split('.')
-    #domain_parts = "fandango.io".split('.')
-    #domain_parts = "google.com".split('.')
     for part in domain_parts:
         result += len(part).to_bytes(1, 'big')
         result += part.encode('iso8859-1')
@@ -174,6 +185,8 @@ def decompress_msg(compressed):
     return decompressed
 
 
+
+
 <start> ::= <exchange>
 
 # Each exchange consists of a request made by the client and a response from the server.
@@ -228,9 +241,7 @@ where forall <ex> in <start>.<exchange>:
 where forall <ex> in <start>.<exchange>:
     forall <q> in <ex>.<dns_req>.<question>:
         forall <a> in <ex>.<dns_resp>.<answer_an>:
-            bytes(<a>.<q_name_optional>) == bytes(<q>.<q_name>) or get_index_within(<a>, <ex>.<dns_resp>, ['<answer_an>']) != get_index_within(<q>, <ex>.<dns_req>, ['<question>'])
-
-
+            verify_transitive(<q>, <ex>.<dns_resp>) or (bytes(<a>.children[1])[0:2] == bytes(<q>.<q_type>) and bytes(<a>.<q_name_optional>) == bytes(<q>.<q_name>))
 
 <answer_au> ::= <q_name_optional> <type_soa>
 <answer_opt> ::= <q_name_optional> (<type_opt>|<type_a>)

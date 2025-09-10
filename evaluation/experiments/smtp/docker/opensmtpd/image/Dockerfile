@@ -39,10 +39,10 @@ ENV LDFLAGS="--coverage"
 WORKDIR /home/app
 
 # Download and prepare OpenSMTPD source
-#RUN wget https://github.com/OpenSMTPD/OpenSMTPD/archive/refs/tags/7.7.0p0.zip && \
-#    unzip 7.7.0p0.zip && \
-#    rm 7.7.0p0.zip \
-COPY repo OpenSMTPD-7.7.0p0
+RUN wget https://github.com/OpenSMTPD/OpenSMTPD/archive/refs/tags/7.7.0p0.zip && \
+    unzip 7.7.0p0.zip && \
+    rm 7.7.0p0.zip
+# COPY repo OpenSMTPD-7.7.0p0
 
 WORKDIR /home/app/OpenSMTPD-7.7.0p0
 

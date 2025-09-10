@@ -16,7 +16,6 @@ from fandango.errors import FandangoError, FandangoValueError
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
-
 class Protocol(enum.Enum):
     TCP = "TCP"
     UDP = "UDP"
@@ -170,7 +169,8 @@ class ProtocolDecorator(ABC):
 
 
 class UdpTcpProtocolDecorator(ProtocolDecorator):
-    BUFFER_SIZE = 1024  # Size of the buffer for receiving data
+    BUFFER_SIZE_UDP = 1024  # Size of the buffer for receiving data
+    BUFFER_SIZE_TCP = 1  # Size of the buffer for receiving data
 
     def __init__(
         self,
@@ -193,6 +193,7 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
         )
         self._running = False
         assert protocol_type == Protocol.TCP or protocol_type == Protocol.UDP
+        self._buffer_size = UdpTcpProtocolDecorator.BUFFER_SIZE_TCP if protocol_type == Protocol.TCP else UdpTcpProtocolDecorator.BUFFER_SIZE_UDP
         self._protocol_type = protocol_type
         self._sock: Optional[socket.socket] = None
         self._connection: Optional[socket.socket] = None
@@ -271,7 +272,7 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
                     if self.endpoint_type == EndpointType.OPEN:
                         assert self._sock is not None
                         while self._running:
-                            rlist, _, _ = select.select([self._sock], [], [], 0.01)
+                            rlist, _, _ = select.select([self._sock], [], [], 0.00001)
                             if rlist:
                                 self._connection, _ = self._sock.accept()
                                 break
@@ -283,7 +284,7 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
                         except BlockingIOError:
                             pass
                         while self._running:
-                            _, wlist, _ = select.select([], [self._sock], [], 0.01)
+                            _, wlist, _ = select.select([], [self._sock], [], 0.00001)
                             if wlist:
                                 self._connection = self._sock
                                 break
@@ -301,12 +302,12 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
         while self._running:
             try:
                 assert self._connection is not None
-                rlist, _, _ = select.select([self._connection], [], [], 0.1)
+                rlist, _, _ = select.select([self._connection], [], [], 0.00001)
                 if rlist and self._running:
                     if self.protocol_type == Protocol.TCP:
-                        data = self._connection.recv(UdpTcpProtocolDecorator.BUFFER_SIZE)
+                        data = self._connection.recv(self._buffer_size)
                     else:
-                        data, addr = self._connection.recvfrom(UdpTcpProtocolDecorator.BUFFER_SIZE)
+                        data, addr = self._connection.recvfrom(self._buffer_size)
                         self.current_remote_addr = addr
                     if len(data) == 0:
                         continue  # Keep waiting if connection is open but no data
