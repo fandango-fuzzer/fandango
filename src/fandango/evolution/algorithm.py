@@ -248,21 +248,28 @@ class Fandango:
                 child1, child2 = self.crossover_operator.crossover(
                     self.grammar, parent1, parent2
                 )
+                to_add = [child1, child2]
+                to_add = list(filter(lambda tree: tree.size() <= self.current_max_nodes, to_add))
 
-            PopulationManager.add_unique_individual(
-                new_population, child1, unique_hashes
-            )
-            yield from self.evaluator.evaluate_individual(child1)
-
-            count = len(new_population)
-            with self.profiler.timer("filling") as timer:
-                if len(new_population) < self.population_size:
+            first = True
+            for child in to_add:
+                if first:
                     PopulationManager.add_unique_individual(
-                        new_population, child2, unique_hashes
+                        new_population, child, unique_hashes
                     )
-                yield from self.evaluator.evaluate_individual(child2)
-                timer.increment(len(new_population) - count)
-            self.crossovers_made += 2
+                    yield from self.evaluator.evaluate_individual(child)
+                    first = False
+                else:
+                    count = len(new_population)
+                    with self.profiler.timer("filling") as timer:
+                        if len(new_population) < self.population_size:
+                            PopulationManager.add_unique_individual(
+                                new_population, child, unique_hashes
+                            )
+                        yield from self.evaluator.evaluate_individual(child)
+                        timer.increment(len(new_population) - count)
+                self.crossovers_made += 1
+
         except Exception as e:
             print_exception(e, "Error during crossover")
 
