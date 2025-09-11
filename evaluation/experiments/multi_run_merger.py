@@ -42,32 +42,33 @@ for df in dataframes:
         df_aligned[col] = df_aligned[col].ffill()
         last_val = df[col].values[-1]
         last_time = df["time"].values[-1]
-        df_aligned.loc[df_aligned["time"] > last_time, col] = last_val
+
+        if last_val >= 1.0:
+            df_aligned.loc[df_aligned["time"] > last_time, col] = last_val
+        else:
+            df_aligned.loc[df_aligned["time"] > last_time, col] = np.nan
         df_aligned[col] = df_aligned[col].fillna(method="bfill")
         aligned_values[col].append(df_aligned[col].values)
 
 merged = {"time": all_times}
 for col in column_names:
     mean_col = np.nanmedian(np.vstack(aligned_values[col]), axis=0)
-    # Nach dem letzten Messpunkt: Nur fortführen, wenn letzter Wert 1.0 ist, sonst np.nan
-    last_valid_idx = np.where(~np.isnan(mean_col))[0][-1]
-    last_val = mean_col[last_valid_idx]
-    if last_val == 1.0:
-        mean_col[last_valid_idx + 1 :] = 1.0
-    else:
-        mean_col[last_valid_idx + 1 :] = np.nan
     merged[f"mean_{col}"] = mean_col
 
 merged_df = pd.DataFrame(merged)
 
-first_full_idx = merged_df[(merged_df[[f"mean_{col}" for col in column_names]] >= 1.0).all(axis=1)].index.min()
-if not np.isnan(first_full_idx):
-    merged_df = merged_df.iloc[:first_full_idx + 1]
+first_max_idx = merged_df[[f"mean_{col}" for col in column_names]].max(axis=1).idxmax()
+if not np.isnan(first_max_idx):
+    merged_df = merged_df.iloc[:first_max_idx + 1]
 
 max_points = 100
 if len(merged_df) > max_points:
     idx = np.linspace(0, len(merged_df) - 1, max_points, dtype=int)
     merged_df = merged_df.iloc[idx]
+
+merged_df.columns = [col.replace("_", "") for col in merged_df.columns]
+merged_df.columns = [col.replace("<", "") for col in merged_df.columns]
+merged_df.columns = [col.replace(">", "") for col in merged_df.columns]
 merged_df.to_csv(output_file, index=False, header=True)
 
 print(f"Merged CSV saved to {output_file}")
