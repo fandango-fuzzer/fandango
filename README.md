@@ -34,7 +34,7 @@ Please check the original README at /README_ORIGINAL.md for further information 
 
 
 ## Evaluation subjects
-See our evaluation subjects at
+See the evaluation subjects at
 ```
 evaluation/experiments ...
     .../chatgpt
