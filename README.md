@@ -9,7 +9,7 @@ It can now generate syntactically and semantically valid inputs as those partici
 
 - [Introduction](#introduction)
 - [Installation](#installation)
-- [Evaluation subjects](#evaluation subjects)
+- [Evaluation subjects](#evaluation-subjects)
 - [License](#license)
 
 ## Introduction
@@ -44,3 +44,7 @@ evaluation/experiments ...
     .../dune
 ```
 for examples on how to use FANDANGO for different protocols and on how to define an IO grammar.
+
+## License
+
+This project is licensed under the European Union Public Licence V. 1.2. See the [LICENSE](LICENSE.md) file for details.
