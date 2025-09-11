@@ -1,69 +1,46 @@
-# FANDANGO: Evolving Language-Based Testing
+# FANDANGO for IO grammars: Evolving Language-Based Testing for Protocols
 
-
-[![PyPI Release](https://img.shields.io/pypi/v/fandango-fuzzer)](https://pypi.org/project/fandango-fuzzer/) [![Last Release](https://img.shields.io/github/release-date/fandango-fuzzer/fandango)](https://github.com/fandango-fuzzer/fandango/releases)
-[![Tests](https://github.com/fandango-fuzzer/fandango/actions/workflows/python-tests.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/python-tests.yml) [![Code Quality Checks](https://github.com/fandango-fuzzer/fandango/actions/workflows/code-checks.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/code-checks.yml) [![CodeQL Analysis](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/github-code-scanning/codeql) [![Docs Deployment](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-book.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/deploy-book.yml) [![Build & Publish](https://github.com/fandango-fuzzer/fandango/actions/workflows/build-and-publish.yml/badge.svg)](https://github.com/fandango-fuzzer/fandango/actions/workflows/build-and-publish.yml) [![Coverage Status](https://coveralls.io/repos/github/fandango-fuzzer/fandango/badge.svg?branch=main)](https://coveralls.io/github/fandango-fuzzer/fandango?branch=main) [![PyPI Downloads](https://img.shields.io/pypi/dm/fandango-fuzzer)](https://pypi.org/project/fandango-fuzzer/) [![PyPI Downloads](https://static.pepy.tech/badge/fandango-fuzzer)](https://pepy.tech/projects/fandango-fuzzer) [![GitHub stars](https://img.shields.io/github/stars/fandango-fuzzer/fandango?style=social)](https://github.com/fandango-fuzzer/fandango/stargazers) 
-
-
-FANDANGO is a language-based fuzzer that leverages formal input specifications (grammars) combined with constraints to generate diverse sets of valid inputs for programs under test. Unlike traditional symbolic constraint solvers, FANDANGO uses a search-based approach to systematically evolve a population of inputs through syntactically valid mutations until semantic input constraints are satisfied.
+This project extends FANDANGO that is a language-based fuzzer that leverages formal input specifications (grammars) combined with constraints to generate diverse sets of valid inputs for programs under test.
+This project adds support for IO grammars, which allow specifying the input and output of a protocol in a single grammar.
+With this addition, FANDANGO gains the ability to participate in a protocol as one or more participants. 
+It can now generate syntactically and semantically valid inputs as those participants and also receive, parse and validate received messages from other participants against a specification. 
 
 ## Table of Contents
 
 - [Introduction](#introduction)
-- [Features](#features)
-- [Documentation](#documentation)
-- [Evaluation](#evaluation)
-- [Contributing](#contributing)
+- [Installation](#installation)
+- [Evaluation subjects](#evaluation subjects)
 - [License](#license)
 
 ## Introduction
 
-Modern language-based test generators often rely on symbolic constraint solvers to satisfy both syntactic and semantic input constraints. While precise, this approach can be slow and restricts the expressiveness of constraints due to the limitations of solver languages.
+Generating software tests faces two fundamental problems.
+First, one needs to _generate inputs_ that are syntactically and semantically correct, yet sufficiently diverse to cover behavior.
+Second, one needs an _oracle_ to _check outputs_ whether a test case is correct or not.
+Both problems become apparent in _protocol testing_, where inputs are messages exchanged between parties, and outputs are the responses of these parties.
 
-FANDANGO introduces a search-based alternative, using genetic algorithms to evolve inputs until they meet the specified constraints. This approach not only enhances efficiency—being one to three orders of magnitude faster in our experiments compared to leading tools like [ISLa](https://github.com/rindPHI/isla/tree/ESEC_FSE_22)—but also allows for the use of the full Python language and libraries in defining constraints.
+We propose a novel approach to protocol testing that combines input generation and output checking in a single framework. We introduce _IO grammars_ as the first means to completely specify the syntax and semantics of protocols, including messages, states, and interactions.
+Our implementation, based on the FANDANGO framework, takes a single \IO grammar, and can act as a _test generator,_ as a _mock object,_ and as an _oracle_ for a _client,_ a _server,_ or both (or actually any number of parties), a versatility not found in any existing tool or formalism.
+User-defined _constraints_ can have the generator focus on arbitrary protocol features; _$k$-path guidance_ systematically covers states, messages, responses, and value alternatives in a unified fashion.
 
-With FANDANGO, testers gain unprecedented flexibility in shaping test inputs and can state arbitrary goals for test generation. For example:
 
-> "Please produce 1,000 valid test inputs where the ⟨voltage⟩ field follows a Gaussian distribution but never exceeds 20 mV."
+## Installation
+To install FANDANGO, you can use the provided makefile. This will install the package and its dependencies.
 
-## Features
+```bash
+make install
+```
+Please check the original README at /README_ORIGINAL.md further information about the original FANDANGO framework.
 
-- **Grammar-Based Input Generation**: Define formal grammars to specify the syntactic structure of inputs.
-- **Constraint Satisfaction**: Use arbitrary Python code to define semantic constraints over grammar elements.
-- **Genetic Algorithms**: Employ a search-based approach to evolve inputs, improving efficiency over symbolic solvers.
-- **Flexible Constraint Language**: Leverage the full power of Python and its libraries in constraints.
-- **Performance**: Achieve faster input generation without sacrificing precision.
 
----
-
-## Documentation
-
-For the complete FANDANGO documentation, including tutorials, references, and advanced usage guides, visit the [FANDANGO docs](https://fandango-fuzzer.github.io/)
-
----
-
-## Evaluation
-
-FANDANGO has been evaluated against [ISLa](https://github.com/rindPHI/isla/tree/ESEC_FSE_22), a state-of-the-art language-based fuzzer. The results show that FANDANGO is faster and more scalable than ISLa, while maintaining the same level of precision.
-
-To reproduce the evaluation results from ISLa, please refer to [their replication package](https://dl.acm.org/do/10.1145/3554336/full/), published in FSE 2022.
-To reproduce the evaluation results from FANDANGO, please checkout to branch `replication-package` and follow the README.md.
-
-Our evaluation showcases FANDANGO's search-based approach as a viable alternative to symbolic solvers, offering the following advantages:
-
-- **Speed**: Faster by one to three orders of magnitude compared to symbolic solvers.
-- **Precision**: Maintains precision in satisfying constraints.
-- **Scalability**: Efficiently handles large grammars and complex constraints.
-
----
-
-## Contributing
-
-Contributions are welcome!
-See our [Contribution Guidelines](https://fandango-fuzzer.github.io/Contributing.html) for details.
-
----
-
-## License
-
-This project is licensed under the European Union Public Licence V. 1.2. See the [LICENSE](https://github.com/fandango-fuzzer/fandango/blob/main/LICENSE.md) file for details.
+## Evaluation subjects
+See our evaluation subjects at
+```
+evaluation/experiments ...
+    .../chatgpt
+    .../dns
+    .../ftp
+    .../smtp
+    .../dune
+```
+for examples on how to use FANDANGO for different protocols and on how to define an IO grammar.
