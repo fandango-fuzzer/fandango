@@ -15,7 +15,6 @@ time_col = "time_elapsed"
 
 
 csv_pattern = "run_*_grammar_coverage.csv"
-#csv_pattern = "run_*_grammar_coverage_overlap.csv"
 
 files = glob.glob(f"{input_folder}/{csv_pattern}")
 dataframes = []
@@ -33,22 +32,26 @@ for f in files:
 all_times = np.unique(np.concatenate([df["time"].values for df in dataframes]))
 all_times.sort()
 
-aligned_coverages = []
+aligned_values = {col: [] for col in column_names}
 
 for df in dataframes:
     df_aligned = pd.DataFrame({"time": all_times})
     df_aligned = df_aligned.merge(df, on="time", how="left")
-    df_aligned["coverage"] = df_aligned["coverage"].ffill()
-    last_coverage = df["coverage"].values[-1]
-    last_valid_time = df["time"].values[-1]
-    df_aligned.loc[df_aligned["time"] > last_valid_time, "coverage"] = last_coverage
-    df_aligned["coverage"] = df_aligned["coverage"].fillna(method="bfill")
-    aligned_coverages.append(df_aligned["coverage"].values)
+    for col in column_names:
+        df_aligned[col] = df_aligned[col].ffill()
+        last_val = df[col].values[-1]
+        last_time = df["time"].values[-1]
+        df_aligned.loc[df_aligned["time"] > last_time, col] = last_val
+        df_aligned[col] = df_aligned[col].fillna(method="bfill")
+        aligned_values[col].append(df_aligned[col].values)
 
-mean_coverage = np.nanmedian(np.vstack(aligned_coverages), axis=0)
-merged_df = pd.DataFrame({"time": all_times, "mean_coverage": mean_coverage})
+merged = {"time": all_times}
+for col in column_names:
+    merged[f"mean_{col}"] = np.nanmedian(np.vstack(aligned_values[col]), axis=0)
 
-first_full_idx = merged_df[merged_df["mean_coverage"] >= 1.0].index.min()
+merged_df = pd.DataFrame(merged)
+
+first_full_idx = merged_df[(merged_df[[f"mean_{col}" for col in column_names]] >= 1.0).all(axis=1)].index.min()
 if not np.isnan(first_full_idx):
     merged_df = merged_df.iloc[:first_full_idx + 1]
 
@@ -56,6 +59,6 @@ max_points = 100
 if len(merged_df) > max_points:
     idx = np.linspace(0, len(merged_df) - 1, max_points, dtype=int)
     merged_df = merged_df.iloc[idx]
-merged_df.to_csv(output_file, index=False, header=False)
+merged_df.to_csv(output_file, index=False, header=True)
 
 print(f"Merged CSV saved to {output_file}")

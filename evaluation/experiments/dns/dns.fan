@@ -29,11 +29,11 @@ def verify_transitive(question, response):
 
 def gen_q_name():
     result = b''
-    if randint(0, 2) == 0:
-        if randint(0, 1) == 0:
-            domain_name = 'fandango.io'
-        else:
-            domain_name = 'test.fandango.io'
+    rand = randint(0, 2)
+    if rand == 0:
+        domain_name = 'fandango.io'
+    elif rand == 1:
+        domain_name = 'test.fandango.io'
     else:
         domain_name = fake.domain_name()
     domain_parts = domain_name.split('.')
