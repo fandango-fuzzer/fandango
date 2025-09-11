@@ -16,7 +16,7 @@ def main():
         constraints=constraints,
         logger_level=LoggerLevel.INFO,
     )
-    fandango.enable_guidance(True)
+    fandango.enable_guidance(False)
     output_folder_name = "coverage_w_guidance" if fandango._is_enable_guidance else "coverage_wo_guidance"
 
     time_start = time.time()
