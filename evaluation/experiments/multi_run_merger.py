@@ -14,8 +14,8 @@ time_col = "time_elapsed"
 
 
 
-csv_pattern = "run_*_grammar_coverage.csv"
-#csv_pattern = "run_*_grammar_coverage_overlap.csv"
+#csv_pattern = "run_*_grammar_coverage.csv"
+csv_pattern = "run_*_grammar_coverage_overlap.csv"
 
 files = glob.glob(f"{input_folder}/{csv_pattern}")
 dataframes = []
