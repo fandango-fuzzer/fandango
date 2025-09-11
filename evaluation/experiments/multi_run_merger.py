@@ -15,6 +15,7 @@ time_col = "time_elapsed"
 
 
 csv_pattern = "run_*_grammar_coverage.csv"
+#csv_pattern = "run_*_grammar_coverage_overlap.csv"
 
 files = glob.glob(f"{input_folder}/{csv_pattern}")
 dataframes = []
@@ -47,7 +48,15 @@ for df in dataframes:
 
 merged = {"time": all_times}
 for col in column_names:
-    merged[f"mean_{col}"] = np.nanmedian(np.vstack(aligned_values[col]), axis=0)
+    mean_col = np.nanmedian(np.vstack(aligned_values[col]), axis=0)
+    # Nach dem letzten Messpunkt: Nur fortführen, wenn letzter Wert 1.0 ist, sonst np.nan
+    last_valid_idx = np.where(~np.isnan(mean_col))[0][-1]
+    last_val = mean_col[last_valid_idx]
+    if last_val == 1.0:
+        mean_col[last_valid_idx + 1 :] = 1.0
+    else:
+        mean_col[last_valid_idx + 1 :] = np.nan
+    merged[f"mean_{col}"] = mean_col
 
 merged_df = pd.DataFrame(merged)
 
