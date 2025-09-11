@@ -11,7 +11,7 @@
 <adjective> ::= 'sustainable' | 'intestinal' | 'innovative'
 <noun> ::= 'rocket' | 'cars' | 'rockets' | 'satellites'
 <place> ::= 'at Google' | 'on Mars' | 'at FSE 2026'
-<avoid> ::= 'AI' | 'crash' | 'Elon' | 'universe'
+<avoid> ::= 'woke' | 'crash' | 'Elon' | 'universe'
 <response> ::= r'(?s).*'
 
 where str(<request>..<verb>).lower() in str(<response>).lower()
