@@ -14,14 +14,14 @@ fake = Faker()
 
 fandango_is_client = True
 # If uses as a client interact with a command like this:
-# dig @127.0.0.1 -p 25565 NS fandango.io +noedns +time=100 +tries=1
+# dig @127.0.0.1 -p 25565 A fandango.io +noedns +time=100 +tries=1
 
 def verify_transitive(question, response):
     type_byte = bytes(question.find_direct_trees(NonTerminal("<q_type>"))[0])
     allowed_names = [bytes(question.find_direct_trees(NonTerminal("<q_name>"))[0])]
     for ans in response.find_all_trees(NonTerminal("<answer_an>")):
         if bytes(ans.children[1])[0:2] == pack('>H', 5) and bytes(ans.find_direct_trees(NonTerminal("<q_name_optional>"))[0]) in allowed_names:
-            allowed_names.append(bytes(ans.children[1].children[4])) # <type_cname>.<q_name>
+            allowed_names.append(bytes(ans.children[1].children[0].children[4])) # <type_cname>.<q_name>
     for ans in response.find_all_trees(NonTerminal("<answer_an>")):
         if bytes(ans.children[1])[0:2] == type_byte and bytes(ans.find_direct_trees(NonTerminal("<q_name_optional>"))[0]) in allowed_names:
             return True
@@ -241,15 +241,15 @@ where forall <ex> in <start>.<exchange>:
 where forall <ex> in <start>.<exchange>:
     forall <q> in <ex>.<dns_req>.<question>:
         forall <a> in <ex>.<dns_resp>.<answer_an>:
-            verify_transitive(<q>, <ex>.<dns_resp>) or (bytes(<a>.children[1])[0:2] == bytes(<q>.<q_type>) and bytes(<a>.<q_name_optional>) == bytes(<q>.<q_name>))
+            verify_transitive(<q>, <ex>.<dns_resp>) or (bytes(<a>.<answer_an_type>)[0:2] == bytes(<q>.<q_type>) and bytes(<a>.<q_name_optional>) == bytes(<q>.<q_name>))
 
 <answer_au> ::= <q_name_optional> <type_soa>
 <answer_opt> ::= <q_name_optional> (<type_opt>|<type_a>)
-<answer_an> ::= <q_name_optional> (<type_a> |<type_cname> | <type_ns>)
-<answer> ::= <q_name_optional> (<type_a> |<type_cname> | <type_ns> | <type_soa> | <type_opt>)
+<answer_an> ::= <q_name_optional> <answer_an_type>
 <a_ttl> ::= 0 <bit>{7} <byte>{3}
 <a_rd_length> ::= <byte>{2} := pack(">H", randint(0, 0))
 <a_rdata> ::= <byte>
+<answer_an_type> ::= (<type_a> |<type_cname> | <type_ns>)
 
 <type_id_a> ::= 0{15} 1
 <type_id_ns> ::= 0{14} 1 0
