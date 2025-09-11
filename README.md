@@ -30,7 +30,7 @@ To install FANDANGO, you can use the provided makefile. This will install the pa
 ```bash
 make install
 ```
-Please check the original README at /README_ORIGINAL.md further information about the original FANDANGO framework.
+Please check the original README at /README_ORIGINAL.md for further information about the original FANDANGO framework.
 
 
 ## Evaluation subjects
