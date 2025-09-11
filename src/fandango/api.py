@@ -148,13 +148,13 @@ class FandangoBase(ABC):
     @abstractmethod
     def parse(
         self, word: str | bytes | DerivationTree, *, prefix: bool = False, **settings
-    ) -> Generator[Optional[DerivationTree], None, None]:
+    ) -> Generator[Optional[DerivationTree], None, Optional[DerivationTree]]:
         """
-        Parse a string according to spec.
-        :param word: The string to parse
-        :param prefix: If True, allow incomplete parsing
-        :param settings: Additional settings for the parse function
-        :return: A generator of derivation trees
+               Parse a string according to spec.
+               :param word: The string to parse
+               :param prefix: If True, allow incomplete parsing
+               :param settings: Additional settings for the parse function
+        :return: A generator of derivation trees that match the grammar and constraints. The generator returns the last tree that did not match the constraints if any.
         """
         pass
 
@@ -331,13 +331,13 @@ class Fandango(FandangoBase):
 
     def parse(
         self, word: str | bytes | DerivationTree, *, prefix: bool = False, **settings
-    ) -> Generator[Optional[DerivationTree], None, None]:
+    ) -> Generator[Optional[DerivationTree], None, Optional[DerivationTree]]:
         """
         Parse a string according to spec.
         :param word: The string to parse
         :param prefix: If True, allow incomplete parsing
         :param settings: Additional settings for the parse function
-        :return: A generator of derivation trees
+        :return: A generator of derivation trees that match the grammar and constraints. The generator returns the last tree that did not match the constraints if any.
         """
         if prefix:
             mode = ParsingMode.INCOMPLETE
@@ -347,15 +347,13 @@ class Fandango(FandangoBase):
         tree_generator = self.grammar.parse_forest(
             word, mode=mode, start=self._start_symbol, **settings
         )
-        try:
-            peek = next(tree_generator)
-        except StopIteration:
-            peek = None
 
-        if peek is None:
-            position = self.grammar.max_position() + 1
-            raise FandangoParseError(position=position)
+        last_tree = None
 
-        self.grammar.populate_sources(peek)
-        yield peek
-        yield from tree_generator
+        for tree in tree_generator:
+            if all(constraint.check(tree) for constraint in self.constraints):
+                yield tree
+            else:
+                last_tree = tree
+
+        return last_tree
