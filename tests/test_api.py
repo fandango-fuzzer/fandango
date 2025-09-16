@@ -5,8 +5,10 @@ import random
 import unittest
 import logging
 
-from fandango import Fandango, FandangoParseError
-from .utils import DOCS_ROOT
+import pytest
+
+from fandango import Fandango
+from .utils import DOCS_ROOT, RESOURCES_ROOT
 
 
 class APITest(unittest.TestCase):
@@ -56,15 +58,13 @@ class APITest(unittest.TestCase):
         fan = Fandango(self.SPEC_abcd)
         invalid_word = "ab"
 
-        with self.assertRaises(FandangoParseError):
-            list(fan.parse(invalid_word))  # force generator evaluation
+        assert len(list(fan.parse(invalid_word))) == 0
 
     def test_failing_parse(self):
         fan = Fandango(self.SPEC_abcd)
         invalid_word = "abcdef"
 
-        with self.assertRaises(FandangoParseError):
-            list(fan.parse(invalid_word))  # force generator evaluation
+        assert len(list(fan.parse(invalid_word))) == 0
 
     def ensure_capped_generation(self):
         fan = Fandango(self.SPEC_abcd, logging_level=logging.INFO)
@@ -74,6 +74,25 @@ class APITest(unittest.TestCase):
             len(solutions),
             f"Expected more than 100 trees, only received {len(solutions)}",
         )
+
+
+@pytest.mark.parametrize("even_number", ["0", "1", "10", "11", "12", "123", "1234"])
+def test_even_number(even_number):
+    with open(RESOURCES_ROOT / "even_numbers.fan", "r") as file:
+        fan = Fandango(file)
+
+    parses = list(fan.parse(even_number))
+
+    is_even = int(even_number) % 2 == 0
+    successful_parse = len(parses) > 0
+
+    assert (
+        successful_parse == is_even
+    ), f"parsed for {even_number} the following: {parses}"
+
+    assert all(
+        all(c.check(p) for c in fan.constraints) for p in parses
+    ), f"some parses did not match the constraints for {even_number}"
 
 
 if __name__ == "__main__":
