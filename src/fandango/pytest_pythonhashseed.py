@@ -15,7 +15,6 @@
 """Pytest plugin to set PYTHONHASHSEED env var."""
 
 import os
-import subprocess
 import sys
 
 __version__ = "1.0.1"
@@ -57,10 +56,4 @@ def pytest_configure(config):
         argv = [sys.executable, "-m", module_name, *sys.argv[1:]]
 
     os.environ["PYTHONHASHSEED"] = str(opt_hashseed)
-
-    if sys.platform == "win32":
-        # os.execvpe works differently on Windows, use subprocess.run instead
-        result = subprocess.run(argv, timeout=450, capture_output=True)
-        assert result.returncode == 0, f"subprocess.run failed: {result}"
-    else:
-        os.execvpe(argv[0], argv, os.environ)  # noqa: S606
+    os.execvpe(argv[0], argv, os.environ)  # noqa: S606
