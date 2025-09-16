@@ -63,12 +63,11 @@ def pytest_configure(config):
         module_name = module_spec.name.rsplit(".", 1)[0]
         argv = [sys.executable, "-m", module_name, *sys.argv[1:]]
 
+    os.environ["PYTHONHASHSEED"] = str(opt_hashseed)
+
     # Use execvpe on Unix-like systems, execv on Windows
     if sys.platform == "win32":
-        env = os.environ.copy()
-        env["PYTHONHASHSEED"] = str(opt_hashseed)
-        result = subprocess.run(argv, env=env)
+        result = subprocess.run(argv, env=os.environ, timeout=450, capture_output=True)
         assert result.returncode == 0, f"subprocess.run failed: {result}"
     else:
-        os.environ["PYTHONHASHSEED"] = str(opt_hashseed)
         os.execvpe(argv[0], argv, os.environ)  # noqa: S606
