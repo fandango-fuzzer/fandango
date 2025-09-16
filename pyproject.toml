@@ -110,7 +110,7 @@ exclude = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "-n auto --timeout 700 --durations=10"
+addopts = "-n auto --timeout 700 --durations=10 --pythonhashseed=0"
 
 [tool.scikit-build]
 # Enable parallel builds
