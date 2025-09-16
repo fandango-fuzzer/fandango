@@ -66,9 +66,9 @@ def pytest_configure(config):
     os.environ["PYTHONHASHSEED"] = str(opt_hashseed)
 
     # Use execvpe on Unix-like systems, execv on Windows
-    # if sys.platform == "win32":
-    #     result = subprocess.run(argv, env=os.environ, timeout=450, capture_output=True)
-    #     assert result.returncode == 0, f"subprocess.run failed: {result}"
-    # else:
-    #     os.execvpe(argv[0], argv, os.environ)  # noqa: S606
-    os.execvpe(argv[0], argv, os.environ)  # noqa: S606
+    if sys.platform == "win32":
+        result = subprocess.run(argv, env=os.environ, timeout=450, capture_output=True)
+        assert result.returncode == 0, f"subprocess.run failed: {result}"
+        os._exit(result.returncode)  # force exit; ugly but works
+    else:
+        os.execvpe(argv[0], argv, os.environ)  # noqa: S606
