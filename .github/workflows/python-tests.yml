@@ -39,6 +39,8 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install -e ".[test]"
+        env:
+          "CMAKE_GENERATOR": "Ninja"
 
       # Run tests or coverage depending on branch and OS
       - name: Run tests (dev or non-Ubuntu)
