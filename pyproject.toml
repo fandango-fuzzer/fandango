@@ -109,7 +109,7 @@ exclude = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "-n auto --timeout 700 --durations=10"
+addopts = "-n auto --timeout 700 --durations=10 --pythonhashseed=1"
 
 [tool.scikit-build]
 # Set minimum CMake version
