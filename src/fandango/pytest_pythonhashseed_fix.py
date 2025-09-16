@@ -74,7 +74,9 @@ def pytest_configure(config):
         f"pytest_pythonhashseed_fix: sys.platform = {sys.platform}", UserWarning
     )
 
-    if module_spec is None:  # run as standalone script
+    if (
+        module_spec is None or module_spec.name == "__main__"
+    ):  # run as standalone script
         warnings.warn(
             "pytest_pythonhashseed_fix: Running as standalone script", UserWarning
         )
