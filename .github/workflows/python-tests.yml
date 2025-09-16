@@ -44,7 +44,7 @@ jobs:
       - name: Run tests (dev or non-Ubuntu)
         if: github.ref != 'refs/heads/main' || matrix.os != 'ubuntu-latest'
         run: |
-          pytest -vv
+          pytest -v
 
       - name: Install system dependencies for coverage (main + Ubuntu only)
         if: github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
