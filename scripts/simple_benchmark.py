@@ -6,21 +6,25 @@
 # Example: python parse_times.py 1000 -f docs/persons.fan -n 1000
 
 import subprocess
+import shlex
 import multiprocessing as mp
 import csv
 import sys
 
 
-def run_single_iteration(args):
-    cmd = f"/usr/bin/time -l fandango fuzz --format none {args}"
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+def run_single_iteration(args_list):
+    fuzz_args = ["fandango", "fuzz", "--format", "none", *args_list]
+    fuzz_cmd = shlex.join(fuzz_args)
+    sh_command = f"{fuzz_cmd} >/dev/null 2>&1"
+    cmd = ["/usr/bin/time", "-l", "sh", "-c", sh_command]
+    result = subprocess.run(cmd, capture_output=True, text=True)
     return result.stderr
 
 
-def run_command(args, number_of_iterations):
+def run_command(args_list, number_of_iterations):
     pool_size = min(number_of_iterations, mp.cpu_count())
     with mp.Pool(pool_size) as pool:
-        results = pool.map(run_single_iteration, [args] * number_of_iterations)
+        results = pool.map(run_single_iteration, [args_list] * number_of_iterations)
     return results
 
 
@@ -110,8 +114,8 @@ if __name__ == "__main__":
         sys.exit(1)
 
     number_of_iterations = int(sys.argv[1])
-    additional_args = " ".join(sys.argv[2:])
+    additional_args_list = sys.argv[2:]
 
-    raw_results = run_command(additional_args, number_of_iterations)
+    raw_results = run_command(additional_args_list, number_of_iterations)
     parsed_results = parse_times(raw_results)
     print_csv(parsed_results)

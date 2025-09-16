@@ -89,7 +89,6 @@ class Fandango:
         self.tournament_size = tournament_size
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
-        self.current_max_nodes = 50
         self.remote_response_timeout = 15.0
 
         # Instantiate managers
@@ -117,7 +116,7 @@ class Fandango:
             mutation_rate,
             crossover_rate,
             grammar.get_max_repetition(),
-            self.current_max_nodes,
+            max_nodes,
             max_repetitions,
             max_repetition_rate,
             max_nodes,
@@ -190,7 +189,7 @@ class Fandango:
             yield from self.population_manager.refill_population(
                 current_population=self.population,
                 eval_individual=self.evaluator.evaluate_individual,
-                max_nodes=self.current_max_nodes,
+                max_nodes=self.adaptive_tuner.current_max_nodes,
                 target_population_size=self.population_size,
             )
 
@@ -245,24 +244,32 @@ class Fandango:
                 )
 
             with self.profiler.timer("crossover", increment=2):
-                child1, child2 = self.crossover_operator.crossover(
+                crossovers = self.crossover_operator.crossover(
                     self.grammar, parent1, parent2
                 )
+                to_add = [
+                    tree
+                    for tree in crossovers
+                    if tree.size() <= self.adaptive_tuner.current_max_nodes
+                ]
 
-            PopulationManager.add_unique_individual(
-                new_population, child1, unique_hashes
-            )
-            yield from self.evaluator.evaluate_individual(child1)
-
-            count = len(new_population)
-            with self.profiler.timer("filling") as timer:
-                if len(new_population) < self.population_size:
+            for i, child in enumerate(to_add):
+                if i == 0:
                     PopulationManager.add_unique_individual(
-                        new_population, child2, unique_hashes
+                        new_population, child, unique_hashes
                     )
-                yield from self.evaluator.evaluate_individual(child2)
-                timer.increment(len(new_population) - count)
-            self.crossovers_made += 2
+                    yield from self.evaluator.evaluate_individual(child)
+                else:
+                    count = len(new_population)
+                    with self.profiler.timer("filling") as timer:
+                        if len(new_population) < self.population_size:
+                            PopulationManager.add_unique_individual(
+                                new_population, child, unique_hashes
+                            )
+                        yield from self.evaluator.evaluate_individual(child)
+                        timer.increment(len(new_population) - count)
+                self.crossovers_made += 1
+
         except Exception as e:
             print_exception(e, "Error during crossover")
 
@@ -405,7 +412,7 @@ class Fandango:
             yield from self.population_manager.refill_population(
                 new_population,
                 self.evaluator.evaluate_individual,
-                self.current_max_nodes,
+                self.adaptive_tuner.current_max_nodes,
                 self.population_size,
             )
 
@@ -448,8 +455,6 @@ class Fandango:
                 self.grammar.set_max_repetition(
                     self.adaptive_tuner.current_max_repetition
                 )
-
-            self.current_max_nodes = self.adaptive_tuner.current_max_nodes
 
             prev_best_fitness = current_best_fitness
 
@@ -501,7 +506,7 @@ class Fandango:
                     self.population_manager.refill_population(
                         current_population=self.population,
                         eval_individual=self.evaluator.evaluate_individual,
-                        max_nodes=self.current_max_nodes,
+                        max_nodes=self.adaptive_tuner.current_max_nodes,
                         target_population_size=self.population_size,
                     )
                 )
