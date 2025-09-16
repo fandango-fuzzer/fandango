@@ -31,6 +31,8 @@ def run_command(command_list, input=None):
     if IS_BEARTYPE_ACTIVE:
         env["FANDANGO_RUN_BEARTYPE"] = "1"
 
+    env["PYTHONHASHSEED"] = "0"  # ensure reproducability
+
     proc = subprocess.Popen(
         command_list,
         stdin=stdin,
