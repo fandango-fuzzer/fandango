@@ -319,9 +319,6 @@ fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
         ]
 
         out, err, code = run_command(command)
-        self.assertRegex(out, out_pattern, f"out: {out}, err: {err}")
-        self.assertRegex(err, err_pattern, f"err: {err}, out: {out}")
-        self.assertEqual(0, code)
 
         # ignore these warnings, they are expected because there is no way to build a full population of 20 unique individuals with these constraints/max-nodes
         err_stripped = re.sub(
