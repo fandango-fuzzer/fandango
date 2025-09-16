@@ -2,7 +2,6 @@ name: Code Checks
 
 on:
   pull_request:
-    branches: [dev, main]
   workflow_dispatch: # Enables manual execution from the Actions tab
 
 jobs:
