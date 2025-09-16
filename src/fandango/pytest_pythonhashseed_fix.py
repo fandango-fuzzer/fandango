@@ -51,12 +51,12 @@ def pytest_configure(config):
     if module_spec is None:  # run as standalone script
         argv = sys.argv
     elif module_spec.name == "__main__":  # this seems to happen on windows
-        # When run as standalone script, we need to find the pytest executable
-        import shutil
+        # import shutil
 
-        pytest_path = shutil.which("pytest")
-        assert pytest_path is not None, "pytest not found"
-        argv = [pytest_path] + sys.argv[1:]
+        # pytest_path = shutil.which("pytest")
+        # assert pytest_path is not None, "pytest not found"
+        # argv = [pytest_path] + sys.argv[1:]
+        argv = sys.argv
     else:  # run as `python -m ...`
         # abspath to module instead of binary in argv[0] in this case
         # see details in https://bugs.python.org/issue23427#msg371022
@@ -65,10 +65,13 @@ def pytest_configure(config):
 
     os.environ["PYTHONHASHSEED"] = str(opt_hashseed)
 
-    # Use execvpe on Unix-like systems, execv on Windows
     if sys.platform == "win32":
+        # On Windows, os.execvpe re-spawns a process, but the original process immediately terminates.
+        # This means that the new process does not have time to actually run the tests.
+        # So we use subprocess.run to run the tests in the new process
+        # and then force exit the original process.
+        # pytest doesn't like sys.exit, so we use os._exit instead.
         result = subprocess.run(argv, env=os.environ, timeout=450)
-        assert result.returncode == 0, f"subprocess.run failed: {result}"
-        os._exit(result.returncode)  # force exit; ugly but works
+        os._exit(result.returncode)
     else:
         os.execvpe(argv[0], argv, os.environ)  # noqa: S606
