@@ -81,9 +81,6 @@ install(TARGETS sa_fandango_cpp_parser
     DESTINATION fandango/language/parser
 )
 
-# Enable parallel builds
-set(CMAKE_BUILD_PARALLEL_LEVEL ${CMAKE_BUILD_PARALLEL_LEVEL})
-
 # Set build type if not specified
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)

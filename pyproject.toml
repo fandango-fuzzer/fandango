@@ -113,8 +113,6 @@ exclude = [
 addopts = "-n auto --timeout 700 --durations=10 --pythonhashseed=0"
 
 [tool.scikit-build]
-# Enable parallel builds
-cmake.args = ["-DCMAKE_BUILD_PARALLEL_LEVEL=auto"]
 # Set minimum CMake version
 cmake.version = ">=3.18"
 # Tell scikit-build about the Python extension
