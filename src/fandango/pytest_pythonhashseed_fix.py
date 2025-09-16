@@ -48,7 +48,8 @@ def pytest_configure(config):
     module_spec = sys.modules["__main__"].__spec__
 
     if module_spec is None:  # run as standalone script
-        argv = sys.argv
+        # When run as standalone script, use sys.executable to ensure we use the correct Python
+        argv = [sys.executable] + sys.argv
     else:  # run as `python -m ...`
         # abspath to module instead of binary in argv[0] in this case
         # see details in https://bugs.python.org/issue23427#msg371022
