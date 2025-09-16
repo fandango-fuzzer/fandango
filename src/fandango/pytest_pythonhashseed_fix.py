@@ -15,6 +15,7 @@
 """Pytest plugin to set PYTHONHASHSEED env var."""
 
 import os
+import subprocess
 import sys
 
 __version__ = "1.0.1"
@@ -35,10 +36,6 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     """Reexec process with correct PYTHONHASHSEED env var."""
-    # Prevent multiple reexecutions by checking if we've already been reexecuted
-    if os.environ.get("PYTHONHASHSEED_REEXECUTED"):
-        return
-
     opt_hashseed = config.getoption("pythonhashseed")
 
     if opt_hashseed is None:
@@ -55,7 +52,6 @@ def pytest_configure(config):
         module_spec is None or module_spec.name == "__main__"
     ):  # run as standalone script
         # When run as standalone script, we need to find the pytest executable
-        # and run it directly, not through python
         import shutil
 
         pytest_path = shutil.which("pytest")
@@ -70,11 +66,12 @@ def pytest_configure(config):
         module_name = module_spec.name.rsplit(".", 1)[0]
         argv = [sys.executable, "-m", module_name, *sys.argv[1:]]
 
-    os.environ["PYTHONHASHSEED"] = str(opt_hashseed)
-    os.environ["PYTHONHASHSEED_REEXECUTED"] = "1"
-
     # Use execvpe on Unix-like systems, execv on Windows
     if sys.platform == "win32":
-        os.execv(argv[0], argv)  # noqa: S606
+        env = os.environ.copy()
+        env["PYTHONHASHSEED"] = str(opt_hashseed)
+        result = subprocess.run(argv, env=env)
+        sys.exit(result.returncode)
     else:
+        os.environ["PYTHONHASHSEED"] = str(opt_hashseed)
         os.execvpe(argv[0], argv, os.environ)  # noqa: S606
