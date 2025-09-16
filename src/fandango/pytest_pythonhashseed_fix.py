@@ -14,6 +14,7 @@
 
 """Pytest plugin to set PYTHONHASHSEED env var."""
 
+import logging
 import os
 import subprocess
 import sys
@@ -71,6 +72,8 @@ def pytest_configure(config):
         env = os.environ.copy()
         env["PYTHONHASHSEED"] = str(opt_hashseed)
         result = subprocess.run(argv, env=env)
+        logger = logging.getLogger(__name__)
+        logger.info(f"result: {result}")
         sys.exit(result.returncode)
     else:
         os.environ["PYTHONHASHSEED"] = str(opt_hashseed)
