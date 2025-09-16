@@ -69,11 +69,11 @@ target_compile_definitions(sa_fandango_cpp_parser PRIVATE
 # Platform-specific compile flags
 if(MSVC)
     target_compile_definitions(sa_fandango_cpp_parser PRIVATE ANTLR4CPP_STATIC)
-    target_compile_options(sa_fandango_cpp_parser PRIVATE /Zc:__cplusplus /std:c++17 /MP)
+    # Enable multi-processor compilation; rely on CMAKE_CXX_STANDARD for language level
+    target_compile_options(sa_fandango_cpp_parser PRIVATE /MP)
 elseif(WIN32)
     # MinGW or other non-MSVC compilers on Windows
     target_compile_definitions(sa_fandango_cpp_parser PRIVATE ANTLR4CPP_STATIC)
-    target_compile_options(sa_fandango_cpp_parser PRIVATE -std=gnu++17)
 elseif(APPLE)
     target_compile_options(sa_fandango_cpp_parser PRIVATE -std=c++17 -mmacosx-version-min=10.13)
 else()
