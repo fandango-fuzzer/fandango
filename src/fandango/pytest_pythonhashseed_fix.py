@@ -59,9 +59,42 @@ def pytest_configure(config):
     os.environ["PYTHONHASHSEED"] = str(opt_hashseed)
 
     if sys.platform == "win32":
+        # Print to stderr for debugging (won't interfere with pytest's logging)
+        def debug_print(msg):
+            print(f"[PYTHONHASHSEED_DEBUG] {msg}", file=sys.stderr)
+
+        debug_print("Windows platform detected, using subprocess.run()")
         # On Windows, use subprocess to spawn a new process and wait for it to complete
-        result = subprocess.run(argv, env=os.environ)
-        sys.exit(result.returncode)
+        debug_print(f"Spawning subprocess with command: {argv}")
+        debug_print(f"Environment PYTHONHASHSEED: {os.environ.get('PYTHONHASHSEED')}")
+
+        # Capture both stdout and stderr for better debugging
+        result = subprocess.run(
+            argv,
+            env=os.environ,
+            capture_output=True,
+            text=True,
+            timeout=300,  # 5 minute timeout
+        )
+
+        debug_print(f"Subprocess completed with return code: {result.returncode}")
+        debug_print(f"Subprocess stdout: {result.stdout[:500]}...")  # First 500 chars
+        debug_print(f"Subprocess stderr: {result.stderr[:500]}...")  # First 500 chars
+
+        # Don't call sys.exit() when running under pytest as it causes SystemExit errors
+        # The subprocess will have already run with the correct PYTHONHASHSEED
+        if result.returncode != 0:
+            # If the subprocess failed, we should indicate this to pytest
+            # but not by calling sys.exit() which causes pytest internal errors
+            debug_print(f"Subprocess failed with return code {result.returncode}")
+            debug_print(f"Full stdout: {result.stdout}")
+            debug_print(f"Full stderr: {result.stderr}")
+            raise RuntimeError(
+                f"Subprocess failed with return code {result.returncode}. "
+                f"stdout: {result.stdout}, stderr: {result.stderr}"
+            )
+        else:
+            debug_print("Subprocess completed successfully")
     else:
         # On Unix-like systems, use os.execvpe to replace the current process
         os.execvpe(argv[0], argv, os.environ)  # noqa: S606
