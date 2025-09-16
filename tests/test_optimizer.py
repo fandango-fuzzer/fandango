@@ -308,7 +308,7 @@ class GeneticTest(unittest.TestCase):
 
 
 class DeterminismTests(unittest.TestCase):
-    # fandango fuzz -f tests/resources/determinism.fan -n 100 --random-seed 1
+    # PYTHONHASHSEED=0 fandango fuzz -f tests/resources/determinism.fan -n 100 --random-seed 1
     @staticmethod
     def get_solutions(
         specification_file,
