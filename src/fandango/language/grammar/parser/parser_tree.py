@@ -28,4 +28,4 @@ class ParserDerivationTree(DerivationTree):
 
     def set_children(self, children: list[DerivationTree]):
         self._children = children
-        self.invalidate_hash()
+        self.invalidate_hash(update_size=False)
