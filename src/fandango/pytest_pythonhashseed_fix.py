@@ -48,19 +48,15 @@ def pytest_configure(config):
 
     module_spec = sys.modules["__main__"].__spec__
 
-    if (
-        module_spec is None or module_spec.name == "__main__"
-    ):  # run as standalone script
+    if module_spec is None:  # run as standalone script
+        argv = sys.argv
+    elif module_spec.name == "__main__":  # this seems to happen on windows
         # When run as standalone script, we need to find the pytest executable
-        assert False, "Hihi"
         import shutil
 
         pytest_path = shutil.which("pytest")
-        if pytest_path:
-            argv = [pytest_path] + sys.argv[1:]
-        else:
-            # Fallback: try to run pytest as a module
-            argv = [sys.executable, "-m", "pytest"] + sys.argv[1:]
+        assert pytest_path is not None, "pytest not found"
+        argv = [pytest_path] + sys.argv[1:]
     else:  # run as `python -m ...`
         # abspath to module instead of binary in argv[0] in this case
         # see details in https://bugs.python.org/issue23427#msg371022
