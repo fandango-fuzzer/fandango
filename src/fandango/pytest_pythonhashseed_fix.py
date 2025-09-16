@@ -67,7 +67,7 @@ def pytest_configure(config):
 
     # Use execvpe on Unix-like systems, execv on Windows
     if sys.platform == "win32":
-        result = subprocess.run(argv, env=os.environ, timeout=450, capture_output=True)
+        result = subprocess.run(argv, env=os.environ, timeout=450)
         assert result.returncode == 0, f"subprocess.run failed: {result}"
         os._exit(result.returncode)  # force exit; ugly but works
     else:
