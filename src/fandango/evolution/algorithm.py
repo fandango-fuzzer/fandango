@@ -295,6 +295,7 @@ class Fandango:
                     mutated_population.append(mutated_individual)
                     self.mutations_made += 1
                 except Exception as e:
+                    LOGGER.error(f"Error during mutation: {e}")
                     print_exception(e, "Error during mutation")
                     mutated_population.append(individual)
             else:
@@ -338,11 +339,11 @@ class Fandango:
                 max_generations, desired_solutions, solution_callback
             )
         elif self.grammar.fuzzing_mode == FuzzingMode.IO:
-            return self.evolve_io(max_generations)
+            return self._evolve_io(max_generations)
         else:
             raise FandangoValueError(f"Invalid mode: {self.grammar.fuzzing_mode}")
 
-    def evolve_io(self, max_generations: Optional[int] = None) -> list[DerivationTree]:
+    def _evolve_io(self, max_generations: Optional[int] = None) -> list[DerivationTree]:
         warnings.warn("Use .generate instead", DeprecationWarning)
         return list(self._generate_io(max_generations=max_generations))
 
@@ -368,8 +369,8 @@ class Fandango:
         :param max_generations: The maximum number of generations to generate. If None, the generation will run indefinitely.
         :return: A generator of DerivationTree objects, all of which are valid solutions to the grammar (or satisify the minimum fitness threshold).
         """
-        yield from self._initial_solutions
-        self._initial_solutions.clear()
+        while self._initial_solutions:
+            yield self._initial_solutions.pop(0)
 
         if len(self.population) < self.population_size:
             yield from self.generate_initial_population()
@@ -463,7 +464,7 @@ class Fandango:
             )
             visualize_evaluation(generation, max_generations, self.evaluation)
         clear_visualization()
-        self.log_statistics()
+        self._log_statistics()
 
     def _generate_io(
         self, max_generations: Optional[int] = None
@@ -581,7 +582,7 @@ class Fandango:
     def average_population_fitness(self) -> float:
         return sum(e[1] for e in self.evaluation) / self.population_size
 
-    def log_statistics(self) -> None:
+    def _log_statistics(self) -> None:
         LOGGER.debug("---------- FANDANGO statistics ----------")
         LOGGER.info(
             f"Average fitness of population: {self.average_population_fitness:.2f}"
@@ -613,11 +614,3 @@ class Fandango:
         LOGGER.info(f"Time taken: {(time.time() - start_time):.2f} seconds")
 
         return solutions
-
-    def msg_parties(self) -> list[FandangoParty]:
-        """
-        :return: A list of all parties in the grammar.
-        """
-        spec_env_global, _ = self.grammar.get_spec_env()
-        io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
-        return list(io_instance.parties.values())

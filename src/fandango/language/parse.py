@@ -327,7 +327,6 @@ def parse_spec(
                     )
                     from_cache = True
             except Exception as exc:
-
                 LOGGER.debug(type(exc).__name__ + ":" + str(exc))
 
     if spec:

@@ -227,3 +227,17 @@ class ComparisonConstraint(Constraint):
         :param ConstraintVisitor visitor: The visitor to accept.
         """
         return visitor.visit_comparison_constraint(self)
+
+    def invert(self) -> "ComparisonConstraint":
+        """
+        Return an inverted version of this comparison constraint.
+        The inverted constraint has the opposite comparison operator.
+        """
+        return ComparisonConstraint(
+            self.operator.invert(),
+            self.left,
+            self.right,
+            searches=self.searches,
+            local_variables=self.local_variables,
+            global_variables=self.global_variables,
+        )

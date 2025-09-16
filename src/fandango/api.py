@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Generator, Iterable
+from collections.abc import Callable, Generator
 import itertools
 import logging
 import time
-from typing import IO, Optional
+from typing import IO, Optional, cast
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
 from fandango.language.grammar import FuzzingMode, ParsingMode
@@ -64,40 +64,43 @@ class FandangoBase(ABC):
         self._grammar = grammar
 
     @property
-    def grammar(self):
+    def grammar(self) -> Grammar:
         return self._grammar
 
     @grammar.setter
-    def grammar(self, value):
+    def grammar(self, value: Grammar):
         self._grammar = value
 
     @property
-    def constraints(self):
+    def constraints(self) -> list[Constraint | SoftValue]:
         return self._constraints
 
     @constraints.setter
-    def constraints(self, value):
+    def constraints(self, value: list[Constraint | SoftValue]):
         self._constraints = value
 
     @property
-    def start_symbol(self):
+    def start_symbol(self) -> str:
         return self._start_symbol
 
     @start_symbol.setter
-    def start_symbol(self, value):
+    def start_symbol(self, value: str):
         self._start_symbol = value
 
     @property
-    def logging_level(self):
+    def logging_level(self) -> int:
         return LOGGER.getEffectiveLevel()
 
     @logging_level.setter
-    def logging_level(self, value):
+    def logging_level(self, value: int):
         LOGGER.setLevel(value)
 
     @abstractmethod
     def init_population(
-        self, *, extra_constraints: Optional[list[str]] = None, **settings
+        self,
+        *,
+        extra_constraints: Optional[list[str] | list[Constraint | SoftValue]] = None,
+        **settings,
     ) -> None:
         """
         Initialize a Fandango population.
@@ -183,8 +186,23 @@ class Fandango(FandangoBase):
         obj._start_symbol = start_symbol if start_symbol is not None else "<start>"
         return obj
 
+    def _parse_extra_constraints(
+        self, extra_constraints: list[str], start_symbol: str
+    ) -> list[Constraint | SoftValue]:
+        _, extra_constraints_parsed = parse(
+            [],
+            extra_constraints,
+            given_grammars=[self.grammar],
+            start_symbol=start_symbol,
+        )
+        return extra_constraints_parsed
+
     def init_population(
-        self, *, extra_constraints: Optional[list[str]] = None, **settings
+        self,
+        *,
+        extra_constraints: Optional[list[str] | list[Constraint | SoftValue]] = None,
+        skip_base_constraints: bool = False,
+        **settings,
     ) -> None:
         """
         Initialize a Fandango population.
@@ -196,15 +214,20 @@ class Fandango(FandangoBase):
 
         start_symbol = settings.pop("start_symbol", self._start_symbol)
 
-        constraints = self.constraints[:]
+        constraints = [] if skip_base_constraints else self.constraints[:]
+
         if extra_constraints:
-            _, extra_constraints_parsed = parse(
-                [],
-                extra_constraints,
-                given_grammars=[self.grammar],
-                start_symbol=start_symbol,
-            )
-            constraints += extra_constraints_parsed
+            if all(isinstance(c, str) for c in extra_constraints):
+
+                extra_constraints_parsed = self._parse_extra_constraints(
+                    cast(list[str], extra_constraints), start_symbol
+                )
+                constraints += extra_constraints_parsed
+            else:
+                assert all(
+                    isinstance(c, (Constraint, SoftValue)) for c in extra_constraints
+                )
+                constraints += cast(list[Constraint | SoftValue], extra_constraints)
 
         self.fandango = FandangoStrategy(
             self.grammar, constraints, start_symbol=start_symbol, **settings
@@ -239,30 +262,21 @@ class Fandango(FandangoBase):
         )
         LOGGER.info(f"Time taken: {(time.time() - start_time):.2f} seconds")
 
-    def fuzz(
+    def _sanitize_runtime_end_settings(
         self,
-        *,
-        extra_constraints: Optional[list[str]] = None,
-        solution_callback: Callable[[DerivationTree, int], None] = lambda _a, _b: None,
-        desired_solutions: Optional[int] = None,
-        max_generations: Optional[int] = None,
-        infinite: bool = False,
-        mode: FuzzingMode = FuzzingMode.COMPLETE,
-        **settings,
-    ) -> list[DerivationTree]:
+        mode: FuzzingMode,
+        desired_solutions: Optional[int],
+        max_generations: Optional[int],
+        infinite: bool,
+    ) -> tuple[Optional[int], Optional[int], bool]:
         """
-        Create a Fandango population.
-        :param extra_constraints: Additional constraints to apply
-        :param solution_callback: What to do with each solution; receives the solution and a unique index
-        :param settings: Additional settings for the evolution algorithm
-        :return: A list of derivation trees
+        Sanitize the runtime end settings and emit warnings if necessary.
+        :param mode: The fuzzing mode
+        :param desired_solutions: The desired number of solutions
+        :param max_generations: The maximum number of generations
+        :param infinite: Whether to run infinitely
+        :return: The sanitized max_generations, desired_solutions, and infinite values
         """
-
-        # force-(re-)initialize if settings changed
-        if extra_constraints is not None or settings is not None:
-            self.init_population(extra_constraints=extra_constraints, **settings)
-        assert self.fandango is not None
-
         if mode == FuzzingMode.IO:
             match desired_solutions:
                 case None:
@@ -289,21 +303,25 @@ class Fandango(FandangoBase):
 
         if infinite:
             if max_generations is not None:
-                LOGGER.warn("Infinite mode is activated, overriding max_generations")
+                LOGGER.warning("Infinite mode is activated, overriding max_generations")
             max_generations = None  # infinite overrides max_generations
 
-        generator: Iterable[DerivationTree] = self.generate_solutions(
-            max_generations=max_generations, mode=mode
-        )
-        if desired_solutions is not None:
-            LOGGER.info(f"Generating {desired_solutions} solutions")
-            generator = itertools.islice(generator, desired_solutions)
+        return max_generations, desired_solutions, infinite
 
-        solutions = []
-        for i, s in enumerate(generator):
-            solutions.append(s)
-            solution_callback(s, i)
-
+    def _print_warnings_if_necessary_post_fuzz(
+        self,
+        desired_solutions: Optional[int],
+        solutions: list[DerivationTree],
+        settings: dict,
+    ) -> list[DerivationTree]:
+        """
+        Print warnings if necessary after fuzzing.
+        :param desired_solutions: The desired number of solutions
+        :param solutions: The solutions found
+        :param settings: The settings used for the fuzzing
+        :return: A list of derivation trees from the population to append to the solutions before returning; used for best-effort solving of constraints
+        """
+        assert self.fandango is not None
         if desired_solutions is not None and len(solutions) < desired_solutions:
             warnings_are_errors = settings.get("warnings_are_errors", False)
             best_effort = settings.get("best_effort", False)
@@ -315,7 +333,10 @@ class Fandango(FandangoBase):
                 if warnings_are_errors:
                     raise FandangoFailedError("Failed to find a perfect solution")
                 elif best_effort:
-                    return self.fandango.population
+                    padding = self.fandango.population[
+                        : desired_solutions - len(solutions)
+                    ]
+                    return solutions + padding
 
             LOGGER.error(
                 f"Only found {len(solutions)} perfect solutions, instead of the required {desired_solutions}"
@@ -325,7 +346,58 @@ class Fandango(FandangoBase):
                     "Failed to find the required number of perfect solutions"
                 )
             elif best_effort:
-                return self.fandango.population[:desired_solutions]
+                padding = self.fandango.population[: desired_solutions - len(solutions)]
+                return solutions + padding
+        return []
+
+    def fuzz(
+        self,
+        *,
+        extra_constraints: Optional[list[str]] = None,
+        solution_callback: Callable[[DerivationTree, int], None] = lambda _a, _b: None,
+        desired_solutions: Optional[int] = None,
+        max_generations: Optional[int] = None,
+        infinite: bool = False,
+        mode: FuzzingMode = FuzzingMode.COMPLETE,
+        **settings,
+    ) -> list[DerivationTree]:
+        """
+        Create a Fandango population.
+        :param extra_constraints: Additional constraints to apply
+        :param solution_callback: What to do with each solution; receives the solution and a unique index
+        :param settings: Additional settings for the evolution algorithm
+        :return: A list of derivation trees
+        """
+        max_generations, desired_solutions, infinite = (
+            self._sanitize_runtime_end_settings(
+                mode,
+                desired_solutions,
+                max_generations,
+                infinite,
+            )
+        )
+
+        solution_i = 0
+        solutions = []
+
+        self.init_population(extra_constraints=extra_constraints, **settings)
+        raw_generator = self.generate_solutions(max_generations, mode)
+
+        # limit the generator to desired_solutions — no limit if desired_solutions is None
+        generator = itertools.islice(raw_generator, desired_solutions)
+
+        for s in generator:
+            solution_callback(s, solution_i)
+            solution_i += 1
+            # prevent memory buildup in infinite mode
+            if not infinite:
+                solutions.append(s)
+
+        padding = self._print_warnings_if_necessary_post_fuzz(
+            desired_solutions, solutions, settings
+        )
+
+        solutions.extend(padding)
 
         return solutions
 
