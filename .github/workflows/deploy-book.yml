@@ -1,8 +1,6 @@
 name: GitHub Pages
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [dev, main]
   workflow_dispatch: # Allows manual triggering from the Actions tab
