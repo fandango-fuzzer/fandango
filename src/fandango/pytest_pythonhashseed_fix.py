@@ -53,8 +53,12 @@ def pytest_configure(config):
     else:  # run as `python -m ...`
         # abspath to module instead of binary in argv[0] in this case
         # see details in https://bugs.python.org/issue23427#msg371022
-        module_name = module_spec.name.rsplit(".", 1)[0]
-        argv = [sys.executable, "-m", module_name, *sys.argv[1:]]
+        module_name = module_spec.name
+        # If the module name is '__main__', we should run as a script, not as a module
+        if module_name == "__main__":
+            argv = sys.argv
+        else:
+            argv = [sys.executable, "-m", module_name, *sys.argv[1:]]
 
     os.environ["PYTHONHASHSEED"] = str(opt_hashseed)
 
