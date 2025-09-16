@@ -48,19 +48,30 @@ def pytest_configure(config):
 
     module_spec = sys.modules["__main__"].__spec__
 
-    if module_spec is None:  # run as standalone script
-        argv = sys.argv
+    if (
+        module_spec is None or module_spec.name == "__main__"
+    ):  # run as standalone script
+        # When run as standalone script, we need to find the pytest executable
+        import shutil
+
+        pytest_path = shutil.which("pytest")
+        if pytest_path:
+            argv = [pytest_path] + sys.argv[1:]
+        else:
+            # Fallback: try to run pytest as a module
+            argv = [sys.executable, "-m", "pytest"] + sys.argv[1:]
     else:  # run as `python -m ...`
         # abspath to module instead of binary in argv[0] in this case
         # see details in https://bugs.python.org/issue23427#msg371022
         module_name = module_spec.name.rsplit(".", 1)[0]
         argv = [sys.executable, "-m", module_name, *sys.argv[1:]]
 
-    os.environ["PYTHONHASHSEED"] = str(opt_hashseed)
-
+    # Use execvpe on Unix-like systems, execv on Windows
     if sys.platform == "win32":
-        # os.execvpe works differently on Windows, use subprocess.run instead
-        result = subprocess.run(argv, timeout=450, capture_output=True)
+        env = os.environ.copy()
+        env["PYTHONHASHSEED"] = str(opt_hashseed)
+        result = subprocess.run(argv, env=env)
         assert result.returncode == 0, f"subprocess.run failed: {result}"
     else:
+        os.environ["PYTHONHASHSEED"] = str(opt_hashseed)
         os.execvpe(argv[0], argv, os.environ)  # noqa: S606
