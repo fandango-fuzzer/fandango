@@ -1,3 +1,7 @@
+# This is a modified version of pytest-pythonhashseed that works on Windows.
+# Once https://github.com/mr-mixas/pytest-pythonhashseed/pull/1 is merged,
+# we can just use the released version.
+
 # Copyright 2024 Michael Samoglyadov
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +21,8 @@
 import os
 import subprocess
 import sys
+
+import pytest
 
 __version__ = "1.0.1"
 __author__ = "Michael Samoglyadov"
@@ -48,14 +54,9 @@ def pytest_configure(config):
 
     module_spec = sys.modules["__main__"].__spec__
 
-    if module_spec is None:  # run as standalone script
-        argv = sys.argv
-    elif module_spec.name == "__main__":  # this seems to happen on windows
-        # import shutil
-
-        # pytest_path = shutil.which("pytest")
-        # assert pytest_path is not None, "pytest not found"
-        # argv = [pytest_path] + sys.argv[1:]
+    if (
+        module_spec is None or module_spec.name == "__main__"
+    ):  # run as standalone script
         argv = sys.argv
     else:  # run as `python -m ...`
         # abspath to module instead of binary in argv[0] in this case
@@ -66,12 +67,13 @@ def pytest_configure(config):
     os.environ["PYTHONHASHSEED"] = str(opt_hashseed)
 
     if sys.platform == "win32":
-        # On Windows, os.execvpe re-spawns a process, but the original process immediately terminates.
-        # This means that the new process does not have time to actually run the tests.
-        # So we use subprocess.run to run the tests in the new process
-        # and then force exit the original process.
-        # pytest doesn't like sys.exit, so we use os._exit instead.
-        result = subprocess.run(argv, env=os.environ, timeout=450)
-        os._exit(result.returncode)
+        # On Windows, os.execvpe re-spawns a process, but the original process
+        # immediately terminates. This means that the new process does not have
+        # time to actually run the tests. So we use subprocess.run to run the
+        # tests in the new process and then force exit the original process.
+        result = subprocess.run(argv, check=False, env=os.environ)  # noqa: S603
+        pytest.exit(
+            returncode=result.returncode,
+        )
     else:
-        os.execvpe(argv[0], argv, os.environ)  # noqa: S606
+        os.execvpe(argv[0], argv, env=os.environ)  # noqa: S606
