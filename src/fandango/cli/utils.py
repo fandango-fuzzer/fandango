@@ -5,9 +5,11 @@ import os
 from typing import IO, Any
 import zipfile
 
+
 from fandango.api import Fandango
 from fandango.constraints.soft import SoftValue
 from fandango.constraints.constraint import Constraint
+from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoError, FandangoParseError
 from fandango.evolution import GeneratorWithReturn
 from fandango.language.grammar import ParsingMode
