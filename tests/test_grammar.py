@@ -156,7 +156,11 @@ class ConstraintTest(unittest.TestCase):
     def test_max_nodes(self):
         with open(RESOURCES_ROOT / "gen_number.fan", "r") as file:
             grammar, c = parse(file, use_cache=False, use_stdlib=True)
-        solution = self.get_solutions(grammar, c, desired_solutions=10)
+
+        _, extra_constraints = parse("where len(str(<start>)) > 60")
+        solution = self.get_solutions(
+            grammar, c + extra_constraints, desired_solutions=10
+        )
         for sol in solution:
             s = str(sol).split(".")
             self.assertEqual(s[0], "a" * 50)

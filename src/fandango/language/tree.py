@@ -154,9 +154,8 @@ class DerivationTree:
             origin_repetitions = []
         self.origin_repetitions: list[tuple[str, int, int]] = origin_repetitions
         self.read_only = read_only
-        self._size = 1
+        self._size: int  # no need to set it, it will be set in invalidate_hash, which is called in set_children
         self.set_children(children or [])
-        self.invalidate_hash()
 
     def __len__(self) -> int:
         return len(self._children)
@@ -218,8 +217,10 @@ class DerivationTree:
         """
         return self.symbol.is_non_terminal
 
-    def invalidate_hash(self) -> None:
+    def invalidate_hash(self, update_size: bool = True) -> None:
         self.hash_cache = None
+        if update_size:
+            self._size = 1 + sum(child.size() for child in self._children)
         if self._parent is not None:
             self._parent.invalidate_hash()
 
@@ -299,7 +300,6 @@ class DerivationTree:
 
     def set_children(self, children: list["DerivationTree"]) -> None:
         self._children = children
-        self._update_size(1 + sum(child.size() for child in self._children))
         for child in self._children:
             child._parent = self
         self.invalidate_hash()
@@ -319,14 +319,8 @@ class DerivationTree:
 
     def add_child(self, child: "DerivationTree") -> None:
         self._children.append(child)
-        self._update_size(self.size() + child.size())
         child._parent = self
         self.invalidate_hash()
-
-    def _update_size(self, new_val: int) -> None:
-        if self._parent is not None:
-            self._parent._update_size(self._parent.size() + new_val - self._size)
-        self._size = new_val
 
     def find_all_trees(self, symbol: NonTerminal) -> list["DerivationTree"]:
         trees = sum(
