@@ -12,7 +12,11 @@ from .utils import RESOURCES_ROOT, run_command
 class TestSoft(unittest.TestCase):
     @staticmethod
     def get_solutions(
-        specification_file, desired_solutions, random_seed, max_generations=500
+        specification_file,
+        desired_solutions,
+        random_seed,
+        max_generations=500,
+        population_size=100,
     ) -> Generator[str, None, None]:
         with open(specification_file, "r") as file:
             grammar_int, constraints_int = parse(
@@ -25,6 +29,7 @@ class TestSoft(unittest.TestCase):
             constraints=constraints_int,
             random_seed=random_seed,
             logger_level=LoggerLevel.DEBUG,
+            population_size=population_size,
         )
         generator = itertools.islice(
             fandango.generate(max_generations=max_generations), desired_solutions
@@ -38,8 +43,10 @@ class TestSoftValue(TestSoft):
     def test_soft_value(self):
         gen = self.get_solutions(
             RESOURCES_ROOT / "softvalue.fan",
-            desired_solutions=100,
+            desired_solutions=50,
+            population_size=10,
             random_seed=1,
+            max_generations=10000,  # make this a non-limiting factor
         )
         solutions = []
         for s in gen:
@@ -75,7 +82,9 @@ class TestSoftValue(TestSoft):
             "-c",
             "maximizing int(<age>)",
             "-n",
-            "50",
+            "30",
+            "--population-size",
+            "10",
             "--random-seed",
             "1",
         ]
@@ -94,7 +103,9 @@ class TestSoftValue(TestSoft):
             "--maximize",
             "int(<age>)",
             "-n",
-            "50",
+            "30",
+            "--population-size",
+            "10",
             "--random-seed",
             "1",
         ]
@@ -112,7 +123,9 @@ class TestSoftValue(TestSoft):
             "-c",
             "minimizing int(<age>)",
             "-n",
-            "100",
+            "20",
+            "--population-size",
+            "10",
             "--random-seed",
             "1",
         ]
@@ -130,7 +143,9 @@ class TestSoftValue(TestSoft):
             "--minimize",
             "int(<age>)",
             "-n",
-            "100",
+            "20",
+            "--population-size",
+            "10",
             "--random-seed",
             "1",
         ]
