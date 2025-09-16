@@ -1,13 +1,8 @@
 name: Code Checks
 
 on:
-  push:
-    branches:
-      - dev
   pull_request:
-    branches:
-      - main
-      - dev
+    branches: [dev, main]
   workflow_dispatch: # Enables manual execution from the Actions tab
 
 jobs:
