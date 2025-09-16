@@ -52,6 +52,7 @@ def pytest_configure(config):
         module_spec is None or module_spec.name == "__main__"
     ):  # run as standalone script
         # When run as standalone script, we need to find the pytest executable
+        assert False, "Hihi"
         import shutil
 
         pytest_path = shutil.which("pytest")
