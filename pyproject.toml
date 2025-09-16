@@ -1,8 +1,7 @@
 [build-system]
-requires = ["setuptools>=73.0.1", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["scikit-build-core>=0.11.0", "setuptools>=73.0.1", "wheel"]
+build-backend = "scikit_build_core.build"
 
-# If you update this info, please also update the version in setup.py
 [project]
 name = "fandango-fuzzer"
 version = "1.0.6"
@@ -54,7 +53,7 @@ test = [
     "pytest-xdist>=3.7.0",
     "python-dateutil>=2.9.0.post0",
     "docutils==0.21.2",
-    "tccbox>=2025.6.6", # We have upgraded from ==2024.7.1 (the version ISLa used) because it is not compatible with Python 3.12 anymore :(
+    "tccbox>=2025.6.6",             # We have upgraded from ==2024.7.1 (the version ISLa used) because it is not compatible with Python 3.12 anymore :(
 ]
 
 development = [
@@ -64,6 +63,8 @@ development = [
     "pre-commit>=4.2.0",
     "pygls>=2.0.0a4",           # language server
     "speedy-antlr-tool>=1.4.3",
+    "scikit-build>=0.17.0",     # for parallel builds
+    "cmake>=3.18",              # required by scikit-build
 ]
 
 book = [
@@ -109,3 +110,11 @@ exclude = [
 
 [tool.pytest.ini_options]
 addopts = "-n auto --timeout 700 --durations=10"
+
+[tool.scikit-build]
+# Enable parallel builds
+cmake.args = ["-DCMAKE_BUILD_PARALLEL_LEVEL=auto"]
+# Set minimum CMake version
+cmake.version = ">=3.18"
+# Tell scikit-build about the Python extension
+wheel.packages = ["src/fandango"]
