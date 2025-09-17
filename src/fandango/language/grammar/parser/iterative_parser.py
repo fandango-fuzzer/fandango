@@ -247,7 +247,7 @@ class IterativeParser(NodeVisitor):
             )
         ]
 
-    def can_continue(self):
+    def can_continue(self) -> bool:
         if len(self._table) <= 1:
             # Assume that an unstarted parse can continue
             return True

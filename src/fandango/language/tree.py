@@ -527,7 +527,7 @@ class DerivationTree:
         """
         return self.value().to_bytes(str_to_bytes_encoding=encoding)
 
-    def to_int(self, encoding: str = STRING_TO_BYTES_ENCODING) -> Optional[int]:
+    def to_int(self, encoding: str = STRING_TO_BYTES_ENCODING) -> int:
         return self.value().to_int(str_to_bytes_encoding=encoding)
 
     def to_tree(self, indent: int = 0, start_indent: int = 0) -> str:

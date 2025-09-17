@@ -48,17 +48,17 @@ class Concatenation(Node):
     ):
         return visitor.visitConcatenation(self)
 
-    def children(self):
+    def children(self) -> list[Node]:
         return self.nodes
 
     def slice_parties(self, parties: list[str]) -> None:
         self.nodes = [node for node in self.nodes if node.in_parties(parties)]
         super().slice_parties(parties)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int) -> Node:
         return self.nodes.__getitem__(item)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.nodes)
 
     def format_as_spec(self) -> str:

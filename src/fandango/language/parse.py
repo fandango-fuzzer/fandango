@@ -435,7 +435,7 @@ STDLIB_CONSTRAINTS: Optional[list[Constraint | SoftValue]] = None
 
 
 def parse(
-    fan_files: str | IO | list[str | IO],
+    fan_files: str | IO[str] | list[str | IO[str]],
     constraints: Optional[list[str]] = None,
     *,
     use_cache: bool = True,

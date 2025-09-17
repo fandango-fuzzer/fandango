@@ -48,7 +48,7 @@ class FailingTree:
     def __init__(
         self,
         tree: DerivationTree,
-        cause: "GeneticBase",
+        cause: GeneticBase,
         suggestions: Optional[list[tuple[Comparison, Any, ComparisonSide]]] = None,
     ):
         """
@@ -63,16 +63,20 @@ class FailingTree:
         self.cause = cause
         self.suggestions = suggestions or []
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.tree, self.cause))
 
-    def __eq__(self, other):
-        return self.tree == other.tree and self.cause == other.cause
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, FailingTree)
+            and self.tree == other.tree
+            and self.cause == other.cause
+        )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"FailingTree({self.tree}, {self.cause}, {self.suggestions})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.__repr__()
 
 
@@ -88,7 +92,7 @@ class BoundsFailingTree(FailingTree):
         ending_rep_tree: DerivationTree,
         starting_rep_value: DerivationTree,
         ending_rep_value: DerivationTree,
-        cause: "GeneticBase",
+        cause: GeneticBase,
         suggestions: Optional[list[tuple[Comparison, Any, ComparisonSide]]] = None,
     ):
         """
@@ -109,5 +113,5 @@ class BoundsFailingTree(FailingTree):
         self.starting_rep_value = starting_rep_value
         self.ending_rep_value = ending_rep_value
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"BoundsFailingTree({self.tree}, {self.cause}, {str(self.starting_rep_value)}, {self.ending_rep_value}, {self.suggestions})"

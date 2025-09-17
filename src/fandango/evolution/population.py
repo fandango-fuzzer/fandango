@@ -24,7 +24,7 @@ class PopulationManager:
         self._start_symbol = start_symbol
         self._warnings_are_errors = warnings_are_errors
 
-    def _generate_population_entry(self, max_nodes: int):
+    def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         return self._grammar.fuzz(self._start_symbol, max_nodes)
 
     @staticmethod
@@ -193,7 +193,7 @@ class IoPopulationManager(PopulationManager):
         self._prev_packet_idx = 0
         self.fuzzable_packets: list[PacketForecaster.ForcastingPacket] | None = None
 
-    def _generate_population_entry(self, max_nodes: int):
+    def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         if self.fuzzable_packets is None or len(self.fuzzable_packets) == 0:
             return DerivationTree(NonTerminal(self._start_symbol))
 

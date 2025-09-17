@@ -28,7 +28,7 @@ def parse_next_remote_packet(
     grammar: Grammar,
     forecast: PacketForecaster.ForecastingResult,
     io_instance: FandangoIO,
-):
+) -> tuple[Optional[PacketForecaster.ForcastingPacket], Optional[DerivationTree]]:
     if len(io_instance.get_received_msgs()) == 0:
         return None, None
 
@@ -86,7 +86,6 @@ def parse_next_remote_packet(
     parameter_parsing_exception_tuple = None
     wait_for_completion_time = 1
     while continue_parse:
-
         # Find the next message fragment sent by the selected sender
         start_time = time.time()
         next_fragment_idx, next_fragment = _find_next_fragment(
