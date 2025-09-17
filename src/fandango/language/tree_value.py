@@ -441,7 +441,9 @@ class TreeValue:
         """
 
         if self.is_type(TreeValueType.EMPTY):
-            return TreeValue(other._value, trailing_bits=other._trailing_bits)
+            return TreeValue(
+                other._value, trailing_bits=other._trailing_bits, allow_empty=True
+            )
 
         if other._value is None:
             trailing_bits = self._trailing_bits + other._trailing_bits

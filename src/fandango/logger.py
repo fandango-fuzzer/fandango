@@ -19,13 +19,8 @@ logging.basicConfig(
     format="%(name)s:%(levelname)s: %(message)s",
 )
 
-RAISE_ALL_EXCEPTIONS = os.environ.get("FANDANGO_RAISE_ALL_EXCEPTIONS")
-
 
 def print_exception(e: Exception, exception_note: str | None = None):
-    if RAISE_ALL_EXCEPTIONS:
-        raise e
-
     if exception_note is not None and getattr(Exception, "add_note", None):
         # Python 3.11+ has add_note() method
         e.add_note(exception_note)

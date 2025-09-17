@@ -107,3 +107,19 @@ class ExpressionConstraint(Constraint):
         :param ConstraintVisitor visitor: The visitor to accept.
         """
         visitor.visit_expression_constraint(self)
+
+    def invert(self) -> "ExpressionConstraint":
+        """
+        Return an inverted version of this expression constraint.
+        The inverted constraint negates the expression using "not".
+        """
+        # Negate the expression by wrapping it with "not"
+        inverted_expression = f"not ({self.expression})"
+
+        # Create a new ExpressionConstraint with the negated expression
+        return ExpressionConstraint(
+            inverted_expression,
+            searches=self.searches,
+            local_variables=self.local_variables,
+            global_variables=self.global_variables,
+        )
