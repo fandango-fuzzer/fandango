@@ -33,8 +33,8 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Find Python
-find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+# Find Python (use Module development to avoid requiring libpython on manylinux)
+find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 
 # Set the C++ parser directory
 set(CPP_PARSER_DIR "src/fandango/language/cpp_parser")
@@ -44,6 +44,9 @@ file(GLOB_RECURSE CPP_SOURCES "${CPP_PARSER_DIR}/*.cpp")
 
 # Create the Python extension module
 Python3_add_library(sa_fandango_cpp_parser MODULE ${CPP_SOURCES})
+
+# Link against the Python module target (provides include dirs and compile defs)
+target_link_libraries(sa_fandango_cpp_parser PRIVATE Python3::Module)
 
 # If binary build is required, ensure the target is properly configured
 if(FANDANGO_REQUIRE_BINARY_BUILD)
