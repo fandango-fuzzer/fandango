@@ -9,10 +9,8 @@ import zipfile
 from fandango.api import Fandango
 from fandango.constraints.soft import SoftValue
 from fandango.constraints.constraint import Constraint
-from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoError, FandangoParseError
 from fandango.evolution import GeneratorWithReturn
-from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree

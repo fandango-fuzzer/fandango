@@ -10,7 +10,7 @@ import sys
 import threading
 import time
 from abc import ABC
-from typing import Any, Optional
+from typing import Optional
 
 from fandango.errors import FandangoError, FandangoValueError
 from fandango.language.tree import DerivationTree

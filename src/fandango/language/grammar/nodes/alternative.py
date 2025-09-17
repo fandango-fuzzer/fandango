@@ -1,4 +1,4 @@
-from itertools import combinations, permutations
+from itertools import permutations
 import random
 from typing import TYPE_CHECKING
 from collections.abc import Iterator, Sequence
