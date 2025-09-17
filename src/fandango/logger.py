@@ -3,7 +3,7 @@ import os
 import sys
 import time
 import traceback
-from typing import Optional, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 
 from ansi_styles import ansiStyles as styles
 
@@ -20,7 +20,7 @@ logging.basicConfig(
 )
 
 
-def print_exception(e: Exception, exception_note: str | None = None):
+def print_exception(e: Exception, exception_note: str | None = None) -> None:
     if exception_note is not None and getattr(Exception, "add_note", None):
         # Python 3.11+ has add_note() method
         e.add_note(exception_note)
@@ -49,7 +49,7 @@ def print_exception(e: Exception, exception_note: str | None = None):
 USE_VISUALIZATION: bool | None = None
 
 
-def set_visualization(use_visualization: bool | None):
+def set_visualization(use_visualization: bool | None) -> None:
     """Set whether to use visualization while Fandango is running"""
     global USE_VISUALIZATION
     USE_VISUALIZATION = use_visualization
@@ -59,9 +59,12 @@ COLUMNS = None
 LINES = None
 
 
-def use_visualization():
+def use_visualization() -> bool:
     """Return True if we should use visualization while Fandango is running"""
     global COLUMNS, LINES, USE_VISUALIZATION
+
+    if os.environ.get("FANDANGO_DISABLE_VISUALIZATION"):
+        return False
 
     if COLUMNS is not None and COLUMNS < 0:
         return False  # We have checked this before
@@ -105,8 +108,8 @@ LINE_IS_CLEAR = True
 def visualize_evaluation(
     generation: int,
     max_generations: Optional[int],
-    evaluation: list[tuple],
-):
+    evaluation: list[tuple[DerivationTree, float, Any]],
+) -> None:
     """Visualize current evolution while Fandango is running"""
     if not use_visualization() or max_generations is None:
         return
@@ -139,7 +142,7 @@ def visualize_evaluation(
     print(f"\r{s}", end="", file=sys.stderr)
 
 
-def clear_visualization(max_generations: Optional[int] = None):
+def clear_visualization(max_generations: Optional[int] = None) -> None:
     """Clear Fandango visualization"""
     if not use_visualization():  # or max_generations is None:
         return
@@ -161,7 +164,7 @@ def log_message_transfer(
     receiver: str | None,
     msg: "DerivationTree",
     self_is_sender: bool,
-):
+) -> None:
     info = sender
     if receiver:
         info += f" -> {receiver}"

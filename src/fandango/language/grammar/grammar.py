@@ -315,7 +315,7 @@ class Grammar(NodeVisitor):
             word, start, mode=mode, include_controlflow=include_controlflow
         )
 
-    def max_position(self):
+    def max_position(self) -> int:
         """Return the maximum position reached during last parsing."""
         return self._parser._iter_parser.max_position()
 
@@ -628,7 +628,7 @@ class Grammar(NodeVisitor):
             len(all_k_paths),
         )
 
-    def get_spec_env(self):
+    def get_spec_env(self) -> tuple[dict[str, Any], dict[str, Any]]:
         return self._global_variables, self._local_variables
 
     def contains_type(self, tp: TreeValueType, *, start="<start>") -> bool:
@@ -691,5 +691,5 @@ class Grammar(NodeVisitor):
     def set_max_repetition(self, max_rep: int):
         nodes.MAX_REPETITIONS = max_rep
 
-    def get_max_repetition(self):
+    def get_max_repetition(self) -> int:
         return nodes.MAX_REPETITIONS

@@ -1,13 +1,20 @@
 import abc
 import itertools
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
 from fandango.language.search import Container, NonTerminalSearch
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 
 if TYPE_CHECKING:
-    from fandango.constraints.fitness import FailingTree, Fitness
+    from fandango.constraints.failing_tree import FailingTree
+    from fandango.constraints.fitness import Fitness
+
+
+class GeneticBaseInitArgs(TypedDict, total=False):
+    searches: Optional[dict[str, NonTerminalSearch]]
+    local_variables: Optional[dict[str, Any]]
+    global_variables: Optional[dict[str, Any]]
 
 
 class GeneticBase(abc.ABC):
@@ -31,7 +38,7 @@ class GeneticBase(abc.ABC):
         self.local_variables = local_variables or dict()
         self.global_variables = global_variables or dict()
 
-    def get_access_points(self):
+    def get_access_points(self) -> list[NonTerminal]:
         """
         Get the access points of the genetic base, i.e., the non-terminal that are considered in this genetic base.
         :return list[NonTerminal]: The list of access points.
@@ -64,7 +71,7 @@ class GeneticBase(abc.ABC):
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
         population: Optional[list[DerivationTree]] = None,
         local_variables: Optional[dict[str, Any]] = None,
-    ):
+    ) -> int:
         return hash(
             (
                 tree,
@@ -79,7 +86,7 @@ class GeneticBase(abc.ABC):
         tree: DerivationTree,
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
         population: Optional[list[DerivationTree]] = None,
-    ):
+    ) -> list[tuple[tuple[str, Container], ...]]:
         """
         Get all possible combinations of trees that satisfy the searches.
         :param DerivationTree tree: The tree to calculate the fitness.
@@ -98,7 +105,7 @@ class GeneticBase(abc.ABC):
                     )
                 ]
             )
-        return itertools.product(*nodes)
+        return list(itertools.product(*nodes))
 
     def check(
         self,

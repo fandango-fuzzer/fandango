@@ -1,13 +1,13 @@
+from collections.abc import Callable, Collection
 import math
 from typing import Any, Optional
 
-from tdigest import TDigest as BaseTDigest
+from tdigest.tdigest import TDigest as BaseTDigest
 
-from fandango.constraints.fitness import (
-    FailingTree,
-    GeneticBase,
-    ValueFitness,
-)
+from fandango.constraints.failing_tree import FailingTree
+from fandango.constraints.fitness import ValueFitness
+from fandango.constraints.base import GeneticBase
+from fandango.language.search import NonTerminalSearch
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import print_exception
@@ -15,39 +15,40 @@ from fandango.logger import print_exception
 
 class TDigest(BaseTDigest):
     def __init__(self, optimization_goal: str):
-        super().__init__()
-        self._min = None
-        self._max = None
+        super().__init__()  # type: ignore[no-untyped-call] # TDigest is not typed
+        self._min: Optional[float] = None
+        self._max: Optional[float] = None
         self.contrast = 200.0
-        if optimization_goal == "min":
-            self.transform = self.amplify_near_0
-        else:
-            self.transform = self.amplify_near_1
+        self.transform: Callable[[float], float] = (
+            self.amplify_near_0 if optimization_goal == "min" else self.amplify_near_1
+        )
 
-    def update(self, x, w=1):
-        super().update(x, w)
+    def update(self, x: float, w: int = 1) -> None:
+        super().update(x, w)  # type: ignore[no-untyped-call] # TDigest is not typed
         if self._min is None or x < self._min:
             self._min = x
         if self._max is None or x > self._max:
             self._max = x
 
-    def amplify_near_0(self, q):
+    def amplify_near_0(self, q: float) -> float:
         return 1 - math.exp(-self.contrast * q)
 
-    def amplify_near_1(self, q):
+    def amplify_near_1(self, q: float) -> float:
         return math.exp(self.contrast * (q - 1))
 
-    def score(self, x):
+    def score(self, x: float) -> float:
         if self._min is None or self._max is None:
             return 0
         if self._min == self._max:
-            return self.transform(self.cdf(x))
+            cdf = self.cdf(x)  # type: ignore[no-untyped-call] # TDigest is not typed
+            return self.transform(cdf)
         if x <= self._min:
             return 0
         if x >= self._max:
             return 1
         else:
-            return self.transform(self.cdf(x))
+            cdf = self.cdf(x)  # type: ignore[no-untyped-call] # TDigest is not typed
+            return self.transform(cdf)
 
 
 class Value(GeneticBase):
@@ -57,14 +58,25 @@ class Value(GeneticBase):
     but rather by a user-defined expression.
     """
 
-    def __init__(self, expression: str, *args, **kwargs):
+    def __init__(
+        self,
+        expression: str,
+        searches: dict[str, NonTerminalSearch] | None = None,
+        local_variables: dict[str, Any] | None = None,
+        global_variables: dict[str, Any] | None = None,
+    ) -> None:
         """
         Initializes the value with the given expression.
         :param str expression: The expression to evaluate.
-        :param args: Additional arguments.
-        :param kwargs: Additional keyword arguments.
+        :param dict[str, NonTerminalSearch] searches: The searches to use.
+        :param dict[str, Any] local_variables: The local variables to use.
+        :param dict[str, Any] global_variables: The global variables to use.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            searches=searches,
+            local_variables=local_variables,
+            global_variables=global_variables,
+        )
         self.expression = expression
         self.cache: dict[int, ValueFitness] = dict()
 
@@ -121,7 +133,7 @@ class Value(GeneticBase):
         self.cache[tree_hash] = fitness
         return fitness
 
-    def get_symbols(self):
+    def get_symbols(self) -> Collection[NonTerminalSearch]:
         """
         Get the placeholders of the constraint.
         """
@@ -133,8 +145,20 @@ class SoftValue(Value):
     A `Value`, which is not mandatory, but aimed to be optimized.
     """
 
-    def __init__(self, optimization_goal: str, expression: str, *args, **kwargs):
-        super().__init__(expression, *args, **kwargs)
+    def __init__(
+        self,
+        optimization_goal: str,
+        expression: str,
+        searches: dict[str, NonTerminalSearch] | None = None,
+        local_variables: dict[str, Any] | None = None,
+        global_variables: dict[str, Any] | None = None,
+    ):
+        super().__init__(
+            expression,
+            searches=searches,
+            local_variables=local_variables,
+            global_variables=global_variables,
+        )
         assert optimization_goal in (
             "min",
             "max",

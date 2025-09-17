@@ -1,6 +1,6 @@
 def activate_beartype() -> None:
-    from beartype.claw import beartype_this_package  # type: ignore [import-not-found]
-    from beartype import BeartypeConf  # type: ignore [import-not-found]
+    from beartype.claw import beartype_this_package
+    from beartype import BeartypeConf
 
     skip_packages = (
         "fandango.converters.antlr.ANTLRv4Parser",  # auto-generated

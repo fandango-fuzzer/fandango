@@ -24,7 +24,7 @@ class ConstraintVisitor:
     custom behavior for processing or interacting with that type.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     def do_continue(self, constraint: "Constraint") -> bool:
@@ -32,40 +32,40 @@ class ConstraintVisitor:
         its children."""
         return True
 
-    def visit(self, constraint: "Constraint"):
+    def visit(self, constraint: "Constraint") -> None:
         """Visits a constraint."""
-        return constraint.accept(self)
+        constraint.accept(self)
 
-    def visit_expression_constraint(self, constraint: "ExpressionConstraint"):
+    def visit_expression_constraint(self, constraint: "ExpressionConstraint") -> None:
         """Visits an expression constraint."""
         pass
 
-    def visit_comparison_constraint(self, constraint: "ComparisonConstraint"):
+    def visit_comparison_constraint(self, constraint: "ComparisonConstraint") -> None:
         """Visits a comparison constraint."""
         pass
 
-    def visit_forall_constraint(self, constraint: "ForallConstraint"):
+    def visit_forall_constraint(self, constraint: "ForallConstraint") -> None:
         """Visits a forall constraint."""
         pass
 
-    def visit_exists_constraint(self, constraint: "ExistsConstraint"):
+    def visit_exists_constraint(self, constraint: "ExistsConstraint") -> None:
         """Visits an exists constraint."""
         pass
 
-    def visit_disjunction_constraint(self, constraint: "DisjunctionConstraint"):
+    def visit_disjunction_constraint(self, constraint: "DisjunctionConstraint") -> None:
         """Visits a disjunction constraint."""
         pass
 
-    def visit_conjunction_constraint(self, constraint: "ConjunctionConstraint"):
+    def visit_conjunction_constraint(self, constraint: "ConjunctionConstraint") -> None:
         """Visits a conjunction constraint."""
         pass
 
-    def visit_implication_constraint(self, constraint: "ImplicationConstraint"):
+    def visit_implication_constraint(self, constraint: "ImplicationConstraint") -> None:
         """Visits an implication constraint."""
         pass
 
     def visit_repetition_bounds_constraint(
         self, constraint: "RepetitionBoundsConstraint"
-    ):
+    ) -> None:
         """Visits a repetition bounds constraint."""
         pass

@@ -1,11 +1,11 @@
 from copy import copy
+from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.constraint_visitor import ConstraintVisitor
-from typing import Any, Optional
+from typing import Any, Optional, Unpack
 from fandango import DerivationTree
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.fitness import ConstraintFitness
 from fandango.language.symbols.non_terminal import NonTerminal
-from fandango.language.tree import DerivationTree
 
 
 class ImplicationConstraint(Constraint):
@@ -13,13 +13,18 @@ class ImplicationConstraint(Constraint):
     Represents an implication constraint that can be used for fitness evaluation.
     """
 
-    def __init__(self, antecedent: Constraint, consequent: Constraint, *args, **kwargs):
+    def __init__(
+        self,
+        antecedent: Constraint,
+        consequent: Constraint,
+        **kwargs: Unpack[GeneticBaseInitArgs],
+    ) -> None:
         """
         Initializes the implication constraint with the given antecedent and consequent.
         :param Constraint antecedent: The antecedent of the implication.
         :param Constraint consequent: The consequent of the implication.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         self.antecedent = antecedent
         self.consequent = consequent
 
@@ -68,7 +73,7 @@ class ImplicationConstraint(Constraint):
     def format_as_spec(self) -> str:
         return f"({self.antecedent.format_as_spec()} -> {self.consequent.format_as_spec()})"
 
-    def accept(self, visitor: "ConstraintVisitor"):
+    def accept(self, visitor: "ConstraintVisitor") -> None:
         """
         Accepts a visitor to traverse the constraint structure.
         :param ConstraintVisitor visitor: The visitor to accept.

@@ -3,7 +3,7 @@ from collections.abc import Callable, Generator
 import itertools
 import logging
 import time
-from typing import IO, Optional, cast
+from typing import IO, Any, Optional, cast
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
 from fandango.language.grammar import FuzzingMode, ParsingMode
@@ -25,7 +25,7 @@ class FandangoBase(ABC):
 
     def __init__(
         self,
-        fan_files: str | IO | list[str | IO],
+        fan_files: str | IO[str] | list[str | IO[str]],
         constraints: Optional[list[str]] = None,
         *,
         logging_level: Optional[int] = None,
@@ -68,7 +68,7 @@ class FandangoBase(ABC):
         return self._grammar
 
     @grammar.setter
-    def grammar(self, value: Grammar):
+    def grammar(self, value: Grammar) -> None:
         self._grammar = value
 
     @property
@@ -76,7 +76,7 @@ class FandangoBase(ABC):
         return self._constraints
 
     @constraints.setter
-    def constraints(self, value: list[Constraint | SoftValue]):
+    def constraints(self, value: list[Constraint | SoftValue]) -> None:
         self._constraints = value
 
     @property
@@ -84,7 +84,7 @@ class FandangoBase(ABC):
         return self._start_symbol
 
     @start_symbol.setter
-    def start_symbol(self, value: str):
+    def start_symbol(self, value: str) -> None:
         self._start_symbol = value
 
     @property
@@ -92,7 +92,7 @@ class FandangoBase(ABC):
         return LOGGER.getEffectiveLevel()
 
     @logging_level.setter
-    def logging_level(self, value: int):
+    def logging_level(self, value: int) -> None:
         LOGGER.setLevel(value)
 
     @abstractmethod
@@ -100,7 +100,7 @@ class FandangoBase(ABC):
         self,
         *,
         extra_constraints: Optional[list[str] | list[Constraint | SoftValue]] = None,
-        **settings,
+        **settings: Any,
     ) -> None:
         """
         Initialize a Fandango population.
@@ -137,7 +137,7 @@ class FandangoBase(ABC):
         max_generations: Optional[int] = None,
         infinite: bool = False,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
-        **settings,
+        **settings: Any,
     ) -> list[DerivationTree]:
         """
         Create a Fandango population.
@@ -150,7 +150,11 @@ class FandangoBase(ABC):
 
     @abstractmethod
     def parse(
-        self, word: str | bytes | DerivationTree, *, prefix: bool = False, **settings
+        self,
+        word: str | bytes | DerivationTree,
+        *,
+        prefix: bool = False,
+        **settings: Any,
     ) -> Generator[DerivationTree, None, Optional[DerivationTree]]:
         """
         Parse a string according to spec.
@@ -165,9 +169,39 @@ class FandangoBase(ABC):
 class Fandango(FandangoBase):
     """Evolutionary testing with Fandango."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fandango = None
+    def __init__(
+        self,
+        fan_files: str | IO[str] | list[str | IO[str]],
+        constraints: Optional[list[str]] = None,
+        *,
+        logging_level: Optional[int] = None,
+        use_cache: bool = True,
+        use_stdlib: bool = True,
+        lazy: bool = False,
+        start_symbol: Optional[str] = None,
+        includes: Optional[list[str]] = None,
+    ):
+        """
+        Initialize a Fandango object.
+        :param fan_files: One (open) .fan file, one string, or a list of these
+        :param constraints: List of constraints (as strings); default: []
+        :param use_cache: If True (default), cache parsing results
+        :param use_stdlib: If True (default), use the standard library
+        :param lazy: If True, the constraints are evaluated lazily
+        :param start_symbol: The grammar start symbol (default: "<start>")
+        :param includes: A list of directories to search for include files
+        """
+        super().__init__(
+            fan_files,
+            constraints,
+            logging_level=logging_level,
+            use_cache=use_cache,
+            use_stdlib=use_stdlib,
+            lazy=lazy,
+            start_symbol=start_symbol,
+            includes=includes,
+        )
+        self.fandango: Optional[FandangoStrategy] = None
 
     @classmethod
     def _with_parsed(
@@ -202,7 +236,7 @@ class Fandango(FandangoBase):
         *,
         extra_constraints: Optional[list[str] | list[Constraint | SoftValue]] = None,
         skip_base_constraints: bool = False,
-        **settings,
+        **settings: Any,
     ) -> None:
         """
         Initialize a Fandango population.
@@ -311,7 +345,7 @@ class Fandango(FandangoBase):
         self,
         desired_solutions: Optional[int],
         solutions: list[DerivationTree],
-        settings: dict,
+        settings: dict[str, Any],
     ) -> list[DerivationTree]:
         """
         Print warnings if necessary after fuzzing.
@@ -358,7 +392,7 @@ class Fandango(FandangoBase):
         max_generations: Optional[int] = None,
         infinite: bool = False,
         mode: FuzzingMode = FuzzingMode.COMPLETE,
-        **settings,
+        **settings: Any,
     ) -> list[DerivationTree]:
         """
         Create a Fandango population.
@@ -401,7 +435,11 @@ class Fandango(FandangoBase):
         return solutions
 
     def parse(
-        self, word: str | bytes | DerivationTree, *, prefix: bool = False, **settings
+        self,
+        word: str | bytes | DerivationTree,
+        *,
+        prefix: bool = False,
+        **settings: Any,
     ) -> Generator[DerivationTree, None, Optional[DerivationTree]]:
         """
         Parse a string according to spec.
