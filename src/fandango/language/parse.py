@@ -8,9 +8,7 @@ import time
 import shutil
 
 from copy import deepcopy
-from io import StringIO
 from pathlib import Path
-from types import NoneType
 from typing import IO, Optional
 import warnings
 
@@ -296,7 +294,7 @@ def parse_spec(
     CACHE_DIR = cache_dir()
     if use_cache:
         if not os.path.exists(CACHE_DIR):
-            os.makedirs(CACHE_DIR, mode=0o700)
+            os.makedirs(CACHE_DIR, mode=0o700, exist_ok=True)
             cachedir_tag.tag(CACHE_DIR, application="Fandango")
 
         # Keep separate hashes for different Fandango and Python versions
@@ -327,7 +325,6 @@ def parse_spec(
                     )
                     from_cache = True
             except Exception as exc:
-
                 LOGGER.debug(type(exc).__name__ + ":" + str(exc))
 
     if spec:

@@ -299,7 +299,7 @@ class Grammar(NodeVisitor):
         start: str | NonTerminal = "<start>",
         mode: ParsingMode = ParsingMode.COMPLETE,
         include_controlflow: bool = False,
-    ) -> Generator[Optional[DerivationTree], None, None]:
+    ) -> Generator[DerivationTree, None, None]:
         return self._parser.parse_forest(
             word, start, mode=mode, include_controlflow=include_controlflow
         )
@@ -310,7 +310,7 @@ class Grammar(NodeVisitor):
         start: str | NonTerminal = "<start>",
         mode: ParsingMode = ParsingMode.COMPLETE,
         include_controlflow: bool = False,
-    ):
+    ) -> Generator[DerivationTree, None, None]:
         return self._parser.parse_multiple(
             word, start, mode=mode, include_controlflow=include_controlflow
         )

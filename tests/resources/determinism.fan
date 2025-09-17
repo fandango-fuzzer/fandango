@@ -1,4 +1,4 @@
-# fandango fuzz -f tests/resources/determinism.fan -n 10 --random-seed 1
+# PYTHONHASHSEED=0 fandango fuzz -f tests/resources/determinism.fan -n 10 --random-seed 1
 
 <start> ::= <sub>
 <sub>   ::= <a> "-" <b>
