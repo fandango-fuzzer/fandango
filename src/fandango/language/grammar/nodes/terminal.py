@@ -1,6 +1,5 @@
 import random
 import re
-from types import NoneType
 from typing import TYPE_CHECKING
 from collections.abc import Sequence
 import exrex

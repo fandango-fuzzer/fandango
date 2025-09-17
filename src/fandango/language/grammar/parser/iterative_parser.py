@@ -1,5 +1,4 @@
 from copy import deepcopy
-from types import NoneType
 from typing import Optional
 
 from fandango.errors import FandangoValueError

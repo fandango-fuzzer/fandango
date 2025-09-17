@@ -1,5 +1,4 @@
 from __future__ import annotations
-from types import NoneType
 from typing import Any, Optional
 import warnings
 import enum

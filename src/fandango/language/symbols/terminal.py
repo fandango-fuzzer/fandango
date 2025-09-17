@@ -1,6 +1,5 @@
 from io import UnsupportedOperation
 import re
-from types import NoneType
 
 import regex
 
