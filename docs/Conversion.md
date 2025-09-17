@@ -91,7 +91,7 @@ $ fandango fuzz -f encode.fan -n 1
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f encode.fan -n 1 --random-seed 7
+!PYTHONHASHSEED=0 fandango fuzz -f encode.fan -n 1 --random-seed 7
 assert _exit_code == 0
 ```
 
@@ -109,7 +109,7 @@ $ fandango fuzz -f encode.fan -n 1 --format=grammar
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f encode.fan -n 1 --format=grammar --random-seed 7
+!PYTHONHASHSEED=0 fandango fuzz -f encode.fan -n 1 --format=grammar --random-seed 7
 assert _exit_code == 0
 ```
 

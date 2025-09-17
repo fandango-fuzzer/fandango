@@ -151,13 +151,13 @@ class FandangoBase(ABC):
     @abstractmethod
     def parse(
         self, word: str | bytes | DerivationTree, *, prefix: bool = False, **settings
-    ) -> Generator[Optional[DerivationTree], None, Optional[DerivationTree]]:
+    ) -> Generator[DerivationTree, None, Optional[DerivationTree]]:
         """
-               Parse a string according to spec.
-               :param word: The string to parse
-               :param prefix: If True, allow incomplete parsing
-               :param settings: Additional settings for the parse function
-        :return: A generator of derivation trees that match the grammar and constraints. The generator returns the last tree that did not match the constraints if any.
+        Parse a string according to spec.
+        :param word: The string to parse
+        :param prefix: If True, allow incomplete parsing
+        :param settings: Additional settings for the parse function
+        :return: A generator yielding derivation trees that match the grammar and constraints. The generator returns the last tree that did not match the constraints if any.
         """
         pass
 
@@ -218,7 +218,6 @@ class Fandango(FandangoBase):
 
         if extra_constraints:
             if all(isinstance(c, str) for c in extra_constraints):
-
                 extra_constraints_parsed = self._parse_extra_constraints(
                     cast(list[str], extra_constraints), start_symbol
                 )
@@ -403,13 +402,13 @@ class Fandango(FandangoBase):
 
     def parse(
         self, word: str | bytes | DerivationTree, *, prefix: bool = False, **settings
-    ) -> Generator[Optional[DerivationTree], None, Optional[DerivationTree]]:
+    ) -> Generator[DerivationTree, None, Optional[DerivationTree]]:
         """
         Parse a string according to spec.
         :param word: The string to parse
         :param prefix: If True, allow incomplete parsing
         :param settings: Additional settings for the parse function
-        :return: A generator of derivation trees that match the grammar and constraints. The generator returns the last tree that did not match the constraints if any.
+        :return: A generator yielding derivation trees that match the grammar and constraints. The generator returns the last tree that did not match the constraints if any.
         """
         if prefix:
             mode = ParsingMode.INCOMPLETE
