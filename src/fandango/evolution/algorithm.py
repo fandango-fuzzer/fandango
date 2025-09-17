@@ -89,7 +89,6 @@ class Fandango:
         self.tournament_size = tournament_size
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
-        self.current_max_nodes = 50
         self.remote_response_timeout = 15.0
 
         # Instantiate managers
@@ -117,7 +116,7 @@ class Fandango:
             mutation_rate,
             crossover_rate,
             grammar.get_max_repetition(),
-            self.current_max_nodes,
+            max_nodes,
             max_repetitions,
             max_repetition_rate,
             max_nodes,
@@ -190,7 +189,7 @@ class Fandango:
             yield from self.population_manager.refill_population(
                 current_population=self.population,
                 eval_individual=self.evaluator.evaluate_individual,
-                max_nodes=self.current_max_nodes,
+                max_nodes=self.adaptive_tuner.current_max_nodes,
                 target_population_size=self.population_size,
             )
 
@@ -245,24 +244,32 @@ class Fandango:
                 )
 
             with self.profiler.timer("crossover", increment=2):
-                child1, child2 = self.crossover_operator.crossover(
+                crossovers = self.crossover_operator.crossover(
                     self.grammar, parent1, parent2
                 )
+                to_add = [
+                    tree
+                    for tree in crossovers
+                    if tree.size() <= self.adaptive_tuner.current_max_nodes
+                ]
 
-            PopulationManager.add_unique_individual(
-                new_population, child1, unique_hashes
-            )
-            yield from self.evaluator.evaluate_individual(child1)
-
-            count = len(new_population)
-            with self.profiler.timer("filling") as timer:
-                if len(new_population) < self.population_size:
+            for i, child in enumerate(to_add):
+                if i == 0:
                     PopulationManager.add_unique_individual(
-                        new_population, child2, unique_hashes
+                        new_population, child, unique_hashes
                     )
-                yield from self.evaluator.evaluate_individual(child2)
-                timer.increment(len(new_population) - count)
-            self.crossovers_made += 2
+                    yield from self.evaluator.evaluate_individual(child)
+                else:
+                    count = len(new_population)
+                    with self.profiler.timer("filling") as timer:
+                        if len(new_population) < self.population_size:
+                            PopulationManager.add_unique_individual(
+                                new_population, child, unique_hashes
+                            )
+                        yield from self.evaluator.evaluate_individual(child)
+                        timer.increment(len(new_population) - count)
+                self.crossovers_made += 1
+
         except Exception as e:
             print_exception(e, "Error during crossover")
 
@@ -288,6 +295,7 @@ class Fandango:
                     mutated_population.append(mutated_individual)
                     self.mutations_made += 1
                 except Exception as e:
+                    LOGGER.error(f"Error during mutation: {e}")
                     print_exception(e, "Error during mutation")
                     mutated_population.append(individual)
             else:
@@ -331,11 +339,11 @@ class Fandango:
                 max_generations, desired_solutions, solution_callback
             )
         elif self.grammar.fuzzing_mode == FuzzingMode.IO:
-            return self.evolve_io(max_generations)
+            return self._evolve_io(max_generations)
         else:
             raise FandangoValueError(f"Invalid mode: {self.grammar.fuzzing_mode}")
 
-    def evolve_io(self, max_generations: Optional[int] = None) -> list[DerivationTree]:
+    def _evolve_io(self, max_generations: Optional[int] = None) -> list[DerivationTree]:
         warnings.warn("Use .generate instead", DeprecationWarning)
         return list(self._generate_io(max_generations=max_generations))
 
@@ -361,8 +369,8 @@ class Fandango:
         :param max_generations: The maximum number of generations to generate. If None, the generation will run indefinitely.
         :return: A generator of DerivationTree objects, all of which are valid solutions to the grammar (or satisify the minimum fitness threshold).
         """
-        yield from self._initial_solutions
-        self._initial_solutions.clear()
+        while self._initial_solutions:
+            yield self._initial_solutions.pop(0)
 
         if len(self.population) < self.population_size:
             yield from self.generate_initial_population()
@@ -405,7 +413,7 @@ class Fandango:
             yield from self.population_manager.refill_population(
                 new_population,
                 self.evaluator.evaluate_individual,
-                self.current_max_nodes,
+                self.adaptive_tuner.current_max_nodes,
                 self.population_size,
             )
 
@@ -449,8 +457,6 @@ class Fandango:
                     self.adaptive_tuner.current_max_repetition
                 )
 
-            self.current_max_nodes = self.adaptive_tuner.current_max_nodes
-
             prev_best_fitness = current_best_fitness
 
             self.adaptive_tuner.log_generation_statistics(
@@ -458,7 +464,7 @@ class Fandango:
             )
             visualize_evaluation(generation, max_generations, self.evaluation)
         clear_visualization()
-        self.log_statistics()
+        self._log_statistics()
 
     def _generate_io(
         self, max_generations: Optional[int] = None
@@ -501,7 +507,7 @@ class Fandango:
                     self.population_manager.refill_population(
                         current_population=self.population,
                         eval_individual=self.evaluator.evaluate_individual,
-                        max_nodes=self.current_max_nodes,
+                        max_nodes=self.adaptive_tuner.current_max_nodes,
                         target_population_size=self.population_size,
                     )
                 )
@@ -576,7 +582,7 @@ class Fandango:
     def average_population_fitness(self) -> float:
         return sum(e[1] for e in self.evaluation) / self.population_size
 
-    def log_statistics(self) -> None:
+    def _log_statistics(self) -> None:
         LOGGER.debug("---------- FANDANGO statistics ----------")
         LOGGER.info(
             f"Average fitness of population: {self.average_population_fitness:.2f}"
@@ -608,11 +614,3 @@ class Fandango:
         LOGGER.info(f"Time taken: {(time.time() - start_time):.2f} seconds")
 
         return solutions
-
-    def msg_parties(self) -> list[FandangoParty]:
-        """
-        :return: A list of all parties in the grammar.
-        """
-        spec_env_global, _ = self.grammar.get_spec_env()
-        io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
-        return list(io_instance.parties.values())

@@ -204,7 +204,7 @@ $ fandango fuzz -f persons.fan -n 1 --format=grammar
 
 ```{code-cell}
 :tags: ["remove-input"]
-!fandango fuzz -f persons.fan -n 1 --format=grammar --random-seed 4712 
+!PYTHONHASHSEED=0 fandango fuzz -f persons.fan -n 1 --format=grammar --random-seed 4712 
 assert _exit_code == 0
 ```
 

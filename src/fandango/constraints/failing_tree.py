@@ -16,6 +16,20 @@ class Comparison(enum.Enum):
     LESS = "<"
     LESS_EQUAL = "<="
 
+    def invert(self) -> "Comparison":
+        """
+        Return the inverse comparison operator.
+        """
+        inverse_operators = {
+            Comparison.EQUAL: Comparison.NOT_EQUAL,
+            Comparison.NOT_EQUAL: Comparison.EQUAL,
+            Comparison.GREATER: Comparison.LESS_EQUAL,
+            Comparison.GREATER_EQUAL: Comparison.LESS,
+            Comparison.LESS: Comparison.GREATER_EQUAL,
+            Comparison.LESS_EQUAL: Comparison.GREATER,
+        }
+        return inverse_operators[self]
+
 
 class ComparisonSide(enum.Enum):
     """
