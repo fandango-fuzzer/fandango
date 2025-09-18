@@ -204,7 +204,7 @@ $ fandango fuzz -f expr-float.fan -n 10 -c 'eval(str(<start>)) > 1000'
 
 ```{code-cell}
 :tags: ["remove-input", "remove-stderr"]
-!fandango fuzz -f expr-float.fan -n 10 -c 'eval(str(<start>)) > 1000' --validate 2> /dev/null
+!FANDANGO_RAISE_ALL_EXCEPTIONS="" fandango fuzz -f expr-float.fan -n 10 -c 'eval(str(<start>)) > 1000' --validate 2> /dev/null
 assert _exit_code == 0
 ```
 
