@@ -130,7 +130,7 @@ def output_solution_with_test_command(
         def named_temp_file(*, mode: str, prefix: str, suffix: str) -> Any:
             try:
                 # Windows needs delete_on_close=False, so the subprocess can access the file by name
-                return tempfile.NamedTemporaryFile(
+                return tempfile.NamedTemporaryFile(  # type: ignore [call-overload, unused-ignore] # the mode type is not available from the library and only broken on some OSs
                     mode=mode,
                     prefix=prefix,
                     suffix=suffix,
