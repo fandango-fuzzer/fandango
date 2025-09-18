@@ -42,6 +42,9 @@ def print_exception(e: Exception, exception_note: str | None = None):
             file=sys.stderr,
         )
 
+    if os.environ.get("FANDANGO_RAISE_ALL_EXCEPTIONS"):
+        raise e
+
 
 USE_VISUALIZATION: bool | None = None
 
