@@ -25,7 +25,7 @@ class Concatenation(Node):
         grammar: "fandango.language.grammar.grammar.Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
-    ):
+    ) -> None:
         prev_parent_size = parent.size()
         for node in self.nodes:
             if node.distance_to_completion >= max_nodes:
@@ -44,8 +44,8 @@ class Concatenation(Node):
 
     def accept(
         self,
-        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
-    ):
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
+    ) -> "fandango.language.grammar.node_visitors.node_visitor.ResultType":
         return visitor.visitConcatenation(self)
 
     def children(self) -> list[Node]:

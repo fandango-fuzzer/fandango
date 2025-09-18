@@ -13,7 +13,7 @@ class ParseState:
         dot: int = 0,
         children: Optional[list[DerivationTree]] = None,
         is_incomplete: bool = False,
-        incomplete_idx=0,
+        incomplete_idx: int = 0,
     ):
         self._nonterminal = nonterminal
         self._position = position
@@ -25,23 +25,23 @@ class ParseState:
         self._hash: Optional[int] = None
 
     @property
-    def nonterminal(self):
+    def nonterminal(self) -> NonTerminal:
         return self._nonterminal
 
-    def append_child(self, child: DerivationTree):
+    def append_child(self, child: DerivationTree) -> None:
         self.children.append(child)
         self._hash = None
 
-    def extend_children(self, children: list[DerivationTree]):
+    def extend_children(self, children: list[DerivationTree]) -> None:
         self.children.extend(children)
         self._hash = None
 
     @property
-    def position(self):
+    def position(self) -> int:
         return self._position
 
     @property
-    def symbols(self):
+    def symbols(self) -> tuple[tuple[Symbol, frozenset[tuple[str, Any]]], ...]:
         return self._symbols
 
     @property
@@ -52,18 +52,18 @@ class ParseState:
     def dot_params(self) -> Optional[frozenset[tuple[str, Any]]]:
         return self.symbols[self._dot][1] if self._dot < len(self.symbols) else None
 
-    def finished(self):
+    def finished(self) -> bool:
         return self._dot >= len(self.symbols) and not self.is_incomplete
 
-    def next_symbol_is_nonterminal(self):
+    def next_symbol_is_nonterminal(self) -> bool:
         return (
             self._dot < len(self.symbols) and self.symbols[self._dot][0].is_non_terminal
         )
 
-    def next_symbol_is_terminal(self):
+    def next_symbol_is_terminal(self) -> bool:
         return self._dot < len(self.symbols) and self.symbols[self._dot][0].is_terminal
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         if self._hash is None:
             self._hash = hash(
                 (
@@ -76,7 +76,7 @@ class ParseState:
             )
         return self._hash
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, ParseState)
             and self.nonterminal == other.nonterminal
@@ -85,12 +85,12 @@ class ParseState:
             and self._dot == other._dot
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"({self.nonterminal.format_as_spec()} -> "
             + "".join(
                 [
-                    f"{'•' if i == self._dot else ''}{s[0].format_as_spec()!s}"
+                    f"{'•' if i == self._dot else ''}{s[0]!s}"
                     for i, s in enumerate(self.symbols)
                 ]
             )
@@ -99,12 +99,12 @@ class ParseState:
             + ")"
         )
 
-    def next(self):
+    def next(self) -> "ParseState":
         next_state = self.copy()
         next_state._dot += 1
         return next_state
 
-    def copy(self):
+    def copy(self) -> "ParseState":
         return ParseState(
             self.nonterminal,
             self.position,

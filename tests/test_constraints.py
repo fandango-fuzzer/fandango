@@ -324,6 +324,7 @@ class ConstraintTest(unittest.TestCase):
         self.assertFalse(constraint.check(counter_example))
 
         example = grammar.parse("11")
+        assert example is not None
         self.assertTrue(constraint.check(example))
 
     def test_accessing_children(self):
@@ -334,9 +335,11 @@ class ConstraintTest(unittest.TestCase):
         assert isinstance(constraint, Constraint)
 
         counter_example = grammar.parse("11")
+        assert counter_example is not None
         self.assertFalse(constraint.check(counter_example))
 
         example = grammar.parse("01")
+        assert example is not None
         self.assertTrue(constraint.check(example))
 
     def test_eval_constraint(self):
@@ -349,6 +352,7 @@ class ConstraintTest(unittest.TestCase):
         self.assertIsNone(counter_example)
 
         example = grammar.parse("+5 * 0 / 96 + 10")
+        assert example is not None
         self.assertTrue(constraint.check(example))
 
     def test_complex_constraint(self):

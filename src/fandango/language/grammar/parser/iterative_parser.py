@@ -1,3 +1,4 @@
+from collections.abc import Generator
 from copy import deepcopy
 from typing import Optional
 
@@ -21,7 +22,7 @@ from fandango.language.tree import DerivationTree
 from fandango.language.tree_value import TreeValue, TreeValueType
 
 
-class IterativeParser(NodeVisitor):
+class IterativeParser(NodeVisitor[list, list]):
     def __init__(
         self,
         grammar_rules: dict[NonTerminal, Node],
@@ -629,7 +630,7 @@ class IterativeParser(NodeVisitor):
 
             children.append(
                 self._rec_to_derivation_tree(child, current_origin_repetitions)
-            )  # type: ignore[arg-type]
+            )
 
         return DerivationTree(
             tree.symbol,
@@ -642,9 +643,8 @@ class IterativeParser(NodeVisitor):
             origin_repetitions=origin_repetitions,
         )
 
-    def to_derivation_tree(self, tree: "ParserDerivationTree"):
-        if tree is None:
-            return None
+    def to_derivation_tree(self, tree: DerivationTree) -> DerivationTree:
+        assert tree is not None
         return self._rec_to_derivation_tree(tree)  # type: ignore[arg-type]
 
     def complete(
@@ -655,7 +655,7 @@ class IterativeParser(NodeVisitor):
         use_implicit: bool = False,
     ):
         for s in table[state.position].find_dot(state.nonterminal):
-            dot_params = dict(s.dot_params)
+            dot_params = dict(s.dot_params or [])
             s = s.next()
             if state.nonterminal in self._rules:
                 s.append_child(
@@ -667,9 +667,9 @@ class IterativeParser(NodeVisitor):
                 if use_implicit and state.nonterminal in self._implicit_rules:
                     s.append_child(
                         ParserDerivationTree(
-                            NonTerminal(state.nonterminal.symbol),
+                            NonTerminal(state.nonterminal.name()),
                             state.children,
-                            **s.dot_params,
+                            **dict(s.dot_params or []),
                         )
                     )
                 else:
@@ -752,7 +752,7 @@ class IterativeParser(NodeVisitor):
         self._hookin_parent = deepcopy(hookin_parent)
         self._clear_tmp()
 
-    def consume(self, char: str | bytes | int):
+    def consume(self, char: str | bytes | int) -> Generator[DerivationTree, None, None]:
         for tree in self._consume(char):
             yield self.to_derivation_tree(tree)
 
@@ -796,7 +796,9 @@ class IterativeParser(NodeVisitor):
                     if not state.is_incomplete and state.next_symbol_is_nonterminal():
                         self.predict(state, table, curr_table_idx, self._hookin_parent)
                     else:
-                        if state.dot.is_type(TreeValueType.TRAILING_BITS_ONLY):
+                        if state.dot is not None and state.dot.is_type(
+                            TreeValueType.TRAILING_BITS_ONLY
+                        ):
                             # Scan a bit
                             match = self.scan_bit(
                                 state,
@@ -807,7 +809,7 @@ class IterativeParser(NodeVisitor):
                                 curr_bit_position,
                             )
                         else:
-                            if state.dot.is_regex:
+                            if state.dot is not None and state.dot.is_regex:
                                 match = self.scan_regex(
                                     state,
                                     word,
@@ -841,6 +843,6 @@ class IterativeParser(NodeVisitor):
             if curr_table_idx % 8 == 0:
                 curr_word_idx += 1
 
-    def max_position(self):
+    def max_position(self) -> int:
         """Return the maximum position reached during parsing."""
         return self._max_position
