@@ -16,10 +16,24 @@ repos:
 -   repo: local
     hooks:
     -   id: mypy
-        name: mypy
+        name: mypy (non-strict)
         entry: mypy
         language: python
-        files: ^(src|tests|evaluation|scripts).*\.py$
+        files: ^(tests|evaluation|scripts).*\.py$
+        exclude: |
+            (?x)^(
+                src/fandango/language/parser/FandangoLexer.py|
+                src/fandango/language/parser/sa_fandango\.py|
+                src/fandango/language/parser/.*Parser.*\.py|
+                src/fandango/converters/antlr/ANTLRv4.*\.py
+            )$
+    -   id: mypy-strict
+        name: mypy (strict for src/)
+        entry: mypy
+        language: python
+        args:
+        - --strict
+        files: ^src/.*\.py$
         exclude: |
             (?x)^(
                 src/fandango/language/parser/FandangoLexer.py|
