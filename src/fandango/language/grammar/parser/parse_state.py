@@ -3,13 +3,15 @@ from typing import Any, Optional
 from fandango.language.tree import DerivationTree
 from fandango.language.symbols import NonTerminal, Symbol
 
+ParserStateSymbolContent = tuple[Symbol, frozenset[tuple[str, Any]]]
+
 
 class ParseState:
     def __init__(
         self,
         nonterminal: NonTerminal,
         position: int,
-        symbols: tuple[tuple[Symbol, frozenset[tuple[str, Any]]], ...],
+        symbols: tuple[ParserStateSymbolContent, ...],
         dot: int = 0,
         children: Optional[list[DerivationTree]] = None,
         is_incomplete: bool = False,
@@ -41,7 +43,7 @@ class ParseState:
         return self._position
 
     @property
-    def symbols(self) -> tuple[tuple[Symbol, frozenset[tuple[str, Any]]], ...]:
+    def symbols(self) -> tuple[ParserStateSymbolContent, ...]:
         return self._symbols
 
     @property
