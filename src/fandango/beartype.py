@@ -5,11 +5,7 @@ def activate_beartype() -> None:
     skip_packages = (
         "fandango.converters.antlr.ANTLRv4Parser",  # auto-generated
         "fandango.converters.antlr.ANTLRv4Lexer",  # auto-generated
-        "fandango.language.grammar.parser.iterative_parser",
         "fandango.language.parser",  # broken
-        "fandango.language.search",  # broken, at least test_item_search and test_searches call ItemSearch with non-lists
-        "fandango.constraints.fitness",  # ValueFitness sometimes receives a list of ints in the constructor
-        "fandango.io.packetforecaster",  # broken
     )
 
     beartype_this_package(conf=BeartypeConf(claw_skip_package_names=skip_packages))
