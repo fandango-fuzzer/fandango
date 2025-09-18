@@ -1,4 +1,3 @@
-from typing import Optional
 from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.concatenation import Concatenation
@@ -8,7 +7,7 @@ from fandango.language.grammar.nodes.repetition import Repetition, Star, Plus, O
 from fandango.language.grammar.nodes.terminal import TerminalNode
 
 
-class NodeReplacer(NodeVisitor):
+class NodeReplacer(NodeVisitor[list[Node], Node]):
     def __init__(self, old_node: Node, new_node: Node):
         self.old_node = old_node
         self.new_node = new_node
@@ -21,11 +20,9 @@ class NodeReplacer(NodeVisitor):
     def default_result(self) -> list[Node]:
         return []
 
-    def aggregate_results(
-        self, aggregate: list[Node], result: Optional[Node]
-    ) -> list[Node]:
-        if result is not None:
-            aggregate.append(result)
+    def aggregate_results(self, aggregate: list[Node], result: Node) -> list[Node]:
+        assert result is not None
+        aggregate.append(result)
         return aggregate
 
     def visitConcatenation(self, node: Concatenation) -> Node:

@@ -1,10 +1,6 @@
 import abc
-import enum
-from typing import Optional, Any
-
-from fandango.constraints.base import GeneticBase
+from typing import Optional
 from fandango.constraints.failing_tree import FailingTree
-from fandango.language.tree import DerivationTree
 
 
 class Fitness(abc.ABC):
@@ -36,7 +32,7 @@ class Fitness(abc.ABC):
     def __copy__(self) -> "Fitness":
         pass
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Fitness(success={self.success})"
 
 
@@ -78,7 +74,7 @@ class ValueFitness(Fitness):
     def __copy__(self) -> Fitness:
         return ValueFitness(self.values[:])
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"ValueFitness(values={self.values})"
 
 
@@ -126,5 +122,5 @@ class ConstraintFitness(Fitness):
             failing_trees=self.failing_trees[:],
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"ConstraintFitness(solved={self.solved}, total={self.total}, success={self.success})"

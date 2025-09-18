@@ -1,4 +1,4 @@
-from itertools import combinations, permutations
+from itertools import permutations
 import random
 from typing import TYPE_CHECKING
 from collections.abc import Iterator, Sequence
@@ -29,7 +29,7 @@ class Alternative(Node):
         grammar: "fandango.language.grammar.grammar.Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
-    ):
+    ) -> None:
         in_range_nodes: Sequence[Node] = list(
             filter(lambda x: x.distance_to_completion < max_nodes, self.alternatives)
         )
@@ -65,11 +65,11 @@ class Alternative(Node):
 
     def accept(
         self,
-        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
-    ):
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
+    ) -> "fandango.language.grammar.node_visitors.node_visitor.ResultType":
         return visitor.visitAlternative(self)
 
-    def children(self):
+    def children(self) -> list[Node]:
         return self.alternatives
 
     def slice_parties(self, parties: list[str]) -> None:
@@ -78,10 +78,10 @@ class Alternative(Node):
         ]
         super().slice_parties(parties)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int) -> Node:
         return self.alternatives.__getitem__(item)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.alternatives)
 
     def format_as_spec(self) -> str:

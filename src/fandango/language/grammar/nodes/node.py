@@ -10,7 +10,11 @@ from fandango.logger import LOGGER
 
 if TYPE_CHECKING:
     import fandango
-    from fandango.language.grammar.node_visitors.node_visitor import NodeVisitor
+    from fandango.language.grammar.node_visitors.node_visitor import (
+        NodeVisitor,
+        AggregateType,
+        ResultType,
+    )
 
 
 class NodeType(enum.Enum):
@@ -24,10 +28,10 @@ class NodeType(enum.Enum):
     TERMINAL = "terminal"
     CHAR_SET = "char_set"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.value
 
 
@@ -46,7 +50,7 @@ class Node(abc.ABC):
             self._settings.update(setting.settings_for(self))
 
     @property
-    def node_type(self):
+    def node_type(self) -> NodeType:
         return self._node_type
 
     @property
@@ -67,11 +71,14 @@ class Node(abc.ABC):
         grammar: "fandango.language.grammar.grammar.Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
-    ):
+    ) -> None:
         return
 
     @abc.abstractmethod
-    def accept(self, visitor: "NodeVisitor"):
+    def accept(
+        self,
+        visitor: "NodeVisitor[AggregateType, ResultType]",
+    ) -> "ResultType":
         raise NotImplementedError("accept method not implemented")
 
     def msg_parties(self, *, include_recipients: bool = False) -> set[str]:
@@ -88,15 +95,15 @@ class Node(abc.ABC):
     def in_parties(self, parties: list[str]) -> bool:
         return True
 
-    def children(self):
+    def children(self) -> list["Node"]:
         return []
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         raise NotImplementedError(
             "__repr__ not implemented, use method specific to your usecase"
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         raise NotImplementedError(
             "__str__ not implemented, use method specific to your usecase"
         )

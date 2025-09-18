@@ -10,7 +10,7 @@ from lxml import etree  # type: ignore[attr-defined] # types not available
 from fandango.converters.FandangoConverter import FandangoConverter
 
 
-def fan(name):
+def fan(name: str) -> str:
     """Convert a name to a Fandango identifier."""
     return re.sub(r"[^a-zA-Z0-9_]", "_", name)
 
@@ -21,7 +21,7 @@ def fan(name):
 class DTDFandangoConverter(FandangoConverter):
     """Convert a DTD schema to a Fandango grammar."""
 
-    def __init__(self, filename: str):
+    def __init__(self, filename: str) -> None:
         super().__init__(filename)
 
         self.dtd = etree.DTD(filename)
@@ -33,7 +33,7 @@ class DTDFandangoConverter(FandangoConverter):
 
         self.attribute_types: dict[str, str] = {}
 
-    def header(self):
+    def header(self) -> str:
         s = f"""# Automatically generated from {self.filename!r}.
 #
 <ws> ::= <whitespace>+ := ' '  # whitespace sequence
@@ -41,7 +41,7 @@ class DTDFandangoConverter(FandangoConverter):
 """
         return s
 
-    def to_fan(self) -> str:
+    def to_fan(self, **_kwargs: Any) -> str:
         self.attribute_types = {}
 
         s = self.header()
@@ -57,7 +57,7 @@ class DTDFandangoConverter(FandangoConverter):
 
         return s
 
-    def convert_element(self, element) -> str:
+    def convert_element(self, element: etree.Element) -> str:
         attrs, values, required_attributes = self.convert_attributes(element)
 
         s = f"\n\n# {element.name} ({element.type})\n"
@@ -79,7 +79,7 @@ class DTDFandangoConverter(FandangoConverter):
             s += f"\n<{fan(element.name)}_{value}> ::= <{value}>"
         return s
 
-    def convert_content(self, content):
+    def convert_content(self, content: etree.Element) -> str:
         if content is None:
             return ""
 
@@ -118,7 +118,9 @@ class DTDFandangoConverter(FandangoConverter):
 
         return s
 
-    def convert_attributes(self, element) -> tuple[str, list[str], list[Any]]:
+    def convert_attributes(
+        self, element: etree.Element
+    ) -> tuple[str, list[str], list[Any]]:
         s = f"<{fan(element.name)}_attribute> ::= "
 
         attrs = []
@@ -135,7 +137,9 @@ class DTDFandangoConverter(FandangoConverter):
         s += "\n    | ".join(attrs)
         return s, values, required_attributes
 
-    def convert_attribute(self, attribute) -> tuple[str, str | None, bool]:
+    def convert_attribute(
+        self, attribute: etree.Element
+    ) -> tuple[str, str | None, bool]:
         value = None
         s = f"'{fan(attribute.name)}='"
         if attribute.default == "fixed":

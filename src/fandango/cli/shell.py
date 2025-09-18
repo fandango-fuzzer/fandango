@@ -15,21 +15,21 @@ from fandango.logger import LOGGER, print_exception
 if "readline" not in globals():
     try:
         # Linux and Mac. This should do the trick.
-        import gnureadline as readline  # type: ignore [import-not-found] # types not always available
+        import gnureadline as readline  # type: ignore [import-not-found] # types not available
     except Exception:
         pass
 
 if "readline" not in globals():
     try:
         # Windows. This should do the trick.
-        import pyreadline3 as readline  # type: ignore [import-not-found] # types not always available
+        import pyreadline3 as readline  # type: ignore [import-not-found, unused-ignore] # types not always but sometimes available
     except Exception:
         pass
 
 if "readline" not in globals():
     try:
         # Another Windows alternative
-        import pyreadline as readline  # type: ignore [import-not-found] # types not always available
+        import pyreadline as readline  # type: ignore [import-not-found] # types not available
     except Exception:
         pass
 

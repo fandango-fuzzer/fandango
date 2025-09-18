@@ -1,7 +1,7 @@
+from collections.abc import Iterator
 from typing import Optional
 
 from fandango.language.grammar.parser.parse_state import ParseState
-from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.symbols.symbol import Symbol
 
 
@@ -13,16 +13,16 @@ class Column:
         for state in self.states:
             self.dot_map[state.nonterminal].append(state)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[ParseState]:
         yield from self.states
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.states)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int) -> ParseState:
         return self.states[item]
 
-    def remove(self, state: ParseState):
+    def remove(self, state: ParseState) -> Optional[bool]:
         if state not in self.unique:
             return False
         self.unique.remove(state)
@@ -33,7 +33,7 @@ class Column:
         self.dot_map.get(symbol, default_list).remove(state)
         return None
 
-    def replace(self, old: ParseState, new: ParseState):
+    def replace(self, old: ParseState, new: ParseState) -> None:
         self.unique.remove(old)
         self.unique.add(new)
         i_old = self.states.index(old)
@@ -50,13 +50,15 @@ class Column:
             dot_list.append(new)
             self.dot_map[new_symbol] = dot_list
 
-    def __contains__(self, item):
+    def __contains__(self, item: ParseState) -> bool:
         return item in self.unique
 
-    def find_dot(self, nt: NonTerminal):
+    def find_dot(self, nt: Optional[Symbol]) -> list[ParseState]:
+        if nt is None:
+            return []
         return self.dot_map.get(nt, [])
 
-    def add(self, state: ParseState):
+    def add(self, state: ParseState) -> bool:
         if state not in self.unique:
             self.states.append(state)
             self.unique.add(state)
@@ -68,9 +70,9 @@ class Column:
             return True
         return False
 
-    def update(self, states: set[ParseState]):
+    def update(self, states: set[ParseState]) -> None:
         for state in states:
             self.add(state)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Column({self.states})"

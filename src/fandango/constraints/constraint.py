@@ -1,9 +1,14 @@
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from collections.abc import Collection
+from typing import TYPE_CHECKING, Any, Optional
+from fandango.constraints.base import GeneticBase
 from fandango.language.tree import DerivationTree
-from fandango.constraints.fitness import ConstraintFitness, GeneticBase
+from fandango.constraints.fitness import ConstraintFitness
 from fandango.language.search import NonTerminalSearch
 from fandango.language.symbols.non_terminal import NonTerminal
+
+if TYPE_CHECKING:
+    from fandango.constraints.constraint_visitor import ConstraintVisitor
 
 
 class Constraint(GeneticBase, ABC):
@@ -47,37 +52,28 @@ class Constraint(GeneticBase, ABC):
         return expression.startswith("print(")
 
     @abstractmethod
-    def accept(self, visitor):
+    def accept(self, visitor: "ConstraintVisitor") -> None:
         """
         Accepts a visitor to traverse the constraint structure.
         """
         pass
 
-    def get_symbols(self):
+    def get_symbols(self) -> Collection[NonTerminalSearch]:
         """
         Get the placeholders of the constraint.
         """
         return self.searches.values()
 
     @staticmethod
-    def eval(expression: str, global_variables, local_variables):
+    def eval(
+        expression: str,
+        global_variables: dict[str, Any],
+        local_variables: dict[str, Any],
+    ) -> Any:
         """
         Evaluate the tree in the context of local and global variables.
         """
-        # LOGGER.debug(f"Evaluating {expression}")
-        # for name, value in local_variables.items():
-        #     if isinstance(value, DerivationTree):
-        #         value = value.value()
-        #     LOGGER.debug(f"    {name} = {value!r}")
-
-        result = eval(expression, global_variables, local_variables)
-
-        # res = result
-        # if isinstance(res, DerivationTree):
-        #     res = res.value()
-        # LOGGER.debug(f"Result = {res!r}")
-
-        return result
+        return eval(expression, global_variables, local_variables)
 
     @abstractmethod
     def format_as_spec(self) -> str:
@@ -93,7 +89,7 @@ class Constraint(GeneticBase, ABC):
         """
         raise NotImplementedError("Invert function not implemented")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         raise NotImplementedError(
             "Repr not implemented, use method specific to your usecase"
         )

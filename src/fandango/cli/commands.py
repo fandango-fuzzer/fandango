@@ -10,7 +10,7 @@ import tempfile
 from typing import Any
 
 import fandango
-from fandango.api import Fandango
+from fandango import Fandango, DerivationTree
 from fandango.cli.output import open_file, output_population, output_solution
 from fandango.cli.parser import get_parser
 from fandango.cli.utils import (
@@ -175,7 +175,7 @@ def fuzz_command(args: argparse.Namespace) -> None:
     )
     LOGGER.debug("Evolving population")
 
-    def solutions_callback(sol, i):
+    def solutions_callback(sol: DerivationTree, i: int) -> None:
         return output_solution(sol, args, i, file_mode)
 
     max_generations = args.max_generations
@@ -197,7 +197,7 @@ def fuzz_command(args: argparse.Namespace) -> None:
         # Ensure that every generated file can be parsed
         # and returns the same string as the original
         try:
-            temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore [call-overload] # delete is only available on some OSs
+            temp_dir = tempfile.TemporaryDirectory(delete=False)  # type: ignore [call-overload, unused-ignore] # delete is only available on some OSs
         except TypeError:
             # Python 3.11 does not know the `delete` argument
             temp_dir = tempfile.TemporaryDirectory()
@@ -322,7 +322,7 @@ def talk_command(args: argparse.Namespace) -> None:
     )
     LOGGER.debug("Evolving population")
 
-    def solutions_callback(sol, i):
+    def solutions_callback(sol: DerivationTree, i: int) -> None:
         return output_solution(sol, args, i, file_mode)
 
     max_generations = args.max_generations

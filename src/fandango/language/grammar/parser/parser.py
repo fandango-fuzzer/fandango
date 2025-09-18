@@ -29,8 +29,8 @@ class Parser:
         *,
         mode: ParsingMode = ParsingMode.COMPLETE,
         hookin_parent: Optional[DerivationTree] = None,
-        starter_bit=-1,
-    ):
+        starter_bit: int = -1,
+    ) -> Generator[DerivationTree, None, None]:
         """
         Parse a forest of input trees from `word`.
         `start` is the start symbol (default: `<start>`).

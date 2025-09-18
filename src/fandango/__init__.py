@@ -27,6 +27,7 @@ __all__ = [
     "FandangoSyntaxError",
     "FandangoValueError",
     "FandangoBase",
+    "Fandango",
     "DerivationTree",
     "version",
     "homepage",

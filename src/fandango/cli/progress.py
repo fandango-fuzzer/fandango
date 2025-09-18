@@ -11,7 +11,7 @@ FITNESS: list[float] = []
 COLUMNS, LINES = os.get_terminal_size()
 
 
-def progress():
+def progress() -> None:
     columns = COLUMNS
     s = f"💃 {styles.color.ansi256(styles.rgbToAnsi256(128, 0, 0))}Fandango {styles.color.close}"
     columns -= len("   Fandango ")
@@ -46,7 +46,7 @@ def progress():
     return
 
 
-def clear():
+def clear() -> None:
     s = " " * (COLUMNS - 1)
     print(f"\r{s}\r", end="")
 

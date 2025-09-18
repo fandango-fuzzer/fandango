@@ -3,7 +3,8 @@ from typing import Optional
 
 from pygls.lsp.server import LanguageServer
 import lsprotocol.types as lsp
-from antlr4 import InputStream, Token
+from antlr4.InputStream import InputStream
+from antlr4.Token import Token
 
 from fandango.language.parser.FandangoLexer import FandangoLexer
 from fandango.language.server.semantic_tokens import (
@@ -14,8 +15,8 @@ from fandango.language.server.semantic_tokens import (
 logger = logging.getLogger(__name__)
 
 
-def map_to_ranges(references: list[Token], uri: str):
-    def mapper(t: Token):
+def map_to_ranges(references: list[Token], uri: str) -> list[lsp.Range]:
+    def mapper(t: Token) -> lsp.Range:
         assert isinstance(t.line, int), f"Token {t} has no line"
         assert isinstance(t.column, int), f"Token {t} has no column"
         return lsp.Range(
@@ -23,33 +24,33 @@ def map_to_ranges(references: list[Token], uri: str):
             end=lsp.Position(line=t.line - 1, character=t.column + len(t.text)),
         )
 
-    return list(map(mapper, references))
+    return [mapper(t) for t in references]
 
 
-def map_to_locations(references: list[Token], uri: str):
+def map_to_locations(references: list[Token], uri: str) -> list[lsp.Location]:
     return [lsp.Location(uri, range) for range in map_to_ranges(references, uri)]
 
 
 class FileAssets:
     def __init__(self, lexer: FandangoLexer):
-        self.tokens: list[Token] = lexer.getAllTokens()
+        self.tokens: list[Token] = lexer.getAllTokens()  # type: ignore[no-untyped-call] # antlr4 doesn't provide types
 
 
 class FandangoLanguageServer(LanguageServer):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, name: str, version: str):
+        super().__init__(name, version)
         self.files: dict[str, FileAssets] = {}
 
-    def parse(self, uri: str):
+    def parse(self, uri: str) -> None:
         document = self.workspace.get_text_document(uri)
         document_text = document.source
         lexer = FandangoLexer(InputStream(document_text))
         self.files[document.uri] = FileAssets(lexer)
 
-    def get_file_assets(self, document: lsp.TextDocumentIdentifier):
+    def get_file_assets(self, document: lsp.TextDocumentIdentifier) -> FileAssets:
         return self.files[document.uri]
 
-    def get_nonterminals(self, document: lsp.TextDocumentIdentifier):
+    def get_nonterminals(self, document: lsp.TextDocumentIdentifier) -> list[Token]:
         tokens = self.get_file_assets(document).tokens
         nonterminals = [t for t in tokens if t.type == FandangoLexer.NAME]
         return nonterminals
@@ -58,12 +59,13 @@ class FandangoLanguageServer(LanguageServer):
         self,
         document: lsp.TextDocumentIdentifier,
         position: lsp.Position,
-    ):
+    ) -> list[Token]:
         non_terminals = self.get_nonterminals(document)
         current_token = [
             t
             for t in non_terminals
             if t.line == position.line + 1
+            and isinstance(t.column, int)
             and t.column <= position.character
             and t.column + len(t.text) >= position.character
         ]
@@ -79,13 +81,15 @@ server = FandangoLanguageServer("fandango-language-server", "v0.1")
 
 
 @server.feature(lsp.TEXT_DOCUMENT_DID_OPEN)
-def did_open(ls: FandangoLanguageServer, params: lsp.DidOpenTextDocumentParams):
+def did_open(ls: FandangoLanguageServer, params: lsp.DidOpenTextDocumentParams) -> None:
     """Parse each document when it is opened"""
     ls.parse(params.text_document.uri)
 
 
 @server.feature(lsp.TEXT_DOCUMENT_DID_CHANGE)
-def did_change(ls: FandangoLanguageServer, params: lsp.DidChangeTextDocumentParams):
+def did_change(
+    ls: FandangoLanguageServer, params: lsp.DidChangeTextDocumentParams
+) -> None:
     """Parse each document when it is changed"""
     ls.parse(params.text_document.uri)
 
@@ -95,7 +99,9 @@ def did_change(ls: FandangoLanguageServer, params: lsp.DidChangeTextDocumentPara
     lsp.TEXT_DOCUMENT_COMPLETION,
     lsp.CompletionOptions(trigger_characters=["<"], all_commit_characters=[">"]),
 )
-def completions(params: Optional[lsp.CompletionParams] = None) -> lsp.CompletionList:
+def completions(
+    params: Optional[lsp.CompletionParams] = None,
+) -> lsp.CompletionList:
     """Returns completion items."""
     if params is None:
         raise ValueError("params must not be None")
@@ -107,7 +113,9 @@ def completions(params: Optional[lsp.CompletionParams] = None) -> lsp.Completion
 
 
 @server.feature(lsp.TEXT_DOCUMENT_REFERENCES)
-def find_references(server: FandangoLanguageServer, params: lsp.ReferenceParams):
+def find_references(
+    server: FandangoLanguageServer, params: lsp.ReferenceParams
+) -> list[lsp.Location]:
     """Find references of an object."""
 
     return map_to_locations(
@@ -117,7 +125,9 @@ def find_references(server: FandangoLanguageServer, params: lsp.ReferenceParams)
 
 
 @server.feature(lsp.TEXT_DOCUMENT_DEFINITION)
-def goto_definition(server: FandangoLanguageServer, params: lsp.DefinitionParams):
+def goto_definition(
+    server: FandangoLanguageServer, params: lsp.DefinitionParams
+) -> Optional[lsp.Location]:
     """Jump to an object's definition."""
 
     tokens = server.get_file_assets(params.text_document).tokens
@@ -140,9 +150,11 @@ def goto_definition(server: FandangoLanguageServer, params: lsp.DefinitionParams
                 params.text_document.uri,
             )[0]
 
+    return None
+
 
 @server.feature(lsp.TEXT_DOCUMENT_RENAME)
-def rename(ls: FandangoLanguageServer, params: lsp.RenameParams):
+def rename(ls: FandangoLanguageServer, params: lsp.RenameParams) -> lsp.WorkspaceEdit:
     """Rename the symbol at the given position."""
 
     references = ls.get_references(params.text_document, params.position)
@@ -155,7 +167,9 @@ def rename(ls: FandangoLanguageServer, params: lsp.RenameParams):
 
 
 @server.feature(lsp.TEXT_DOCUMENT_PREPARE_RENAME)
-def prepare_rename(ls: FandangoLanguageServer, params: lsp.PrepareRenameParams):
+def prepare_rename(
+    ls: FandangoLanguageServer, params: lsp.PrepareRenameParams
+) -> Optional[lsp.PrepareRenameDefaultBehavior]:
     """Called by the client to determine if renaming the symbol at the given location
     is a valid operation."""
 
@@ -172,7 +186,9 @@ def prepare_rename(ls: FandangoLanguageServer, params: lsp.PrepareRenameParams):
         token_modifiers=SemanticTokenModifiers.values(),
     ),
 )
-def semantic_tokens_full(ls: FandangoLanguageServer, params: lsp.SemanticTokensParams):
+def semantic_tokens_full(
+    ls: FandangoLanguageServer, params: lsp.SemanticTokensParams
+) -> lsp.SemanticTokens:
     tokens = ls.get_file_assets(params.text_document).tokens
 
     output = []
@@ -180,6 +196,8 @@ def semantic_tokens_full(ls: FandangoLanguageServer, params: lsp.SemanticTokensP
     prev_col = 0
 
     for t in tokens:
+        assert isinstance(t.line, int), f"Token {t} has no line"
+        assert isinstance(t.column, int), f"Token {t} has no column"
         line = t.line - 1
         col = t.column
 
@@ -206,7 +224,7 @@ def semantic_tokens_full(ls: FandangoLanguageServer, params: lsp.SemanticTokensP
     lsp.TEXT_DOCUMENT_CODE_ACTION,
     lsp.CodeActionOptions(code_action_kinds=[lsp.CodeActionKind.QuickFix]),
 )
-def code_actions(params: lsp.CodeActionParams):
+def code_actions(params: lsp.CodeActionParams) -> list[lsp.CodeAction]:
     if (
         params.range.start.line != params.range.end.line
         or params.range.start.character != params.range.end.character
@@ -222,7 +240,9 @@ def code_actions(params: lsp.CodeActionParams):
         (
             t
             for t in tokens
-            if t.line - 1 == line
+            if isinstance(t.line, int)
+            and isinstance(t.column, int)
+            and t.line - 1 == line
             and t.column <= column
             and t.column + len(t.text) >= column
         ),
@@ -244,6 +264,7 @@ def code_actions(params: lsp.CodeActionParams):
     if current_token.text in defined_tokens:
         return []
 
+    assert isinstance(current_token.line, int), f"Token {current_token} has no line"
     position = lsp.Position(line=current_token.line, character=0)
     range = lsp.Range(start=position, end=position)  # start == end means insert
     text_edit = lsp.TextEdit(

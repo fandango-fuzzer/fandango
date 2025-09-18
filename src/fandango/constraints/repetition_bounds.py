@@ -1,14 +1,16 @@
-from typing import Optional, Any
+from typing import Optional, Any, Unpack
 from itertools import zip_longest
 import random
+from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.constraint_visitor import ConstraintVisitor
-from fandango.constraints.fitness import ConstraintFitness, FailingTree
 from fandango.constraints.failing_tree import (
     BoundsFailingTree,
     Comparison,
     ComparisonSide,
+    FailingTree,
 )
+from fandango.constraints.fitness import ConstraintFitness
 from fandango.errors import FandangoValueError
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.nodes.repetition import Repetition
@@ -26,11 +28,14 @@ class RepetitionBoundsConstraint(Constraint):
     def __init__(
         self,
         repetition_id: str,
-        expr_data_min: tuple[str, list, dict],
-        expr_data_max: tuple[str, list, dict],
+        expr_data_min: tuple[
+            str, list[NonTerminalSearch], dict[str, NonTerminalSearch]
+        ],
+        expr_data_max: tuple[
+            str, list[NonTerminalSearch], dict[str, NonTerminalSearch]
+        ],
         repetition_node: Repetition,
-        *args,
-        **kwargs,
+        **kwargs: Unpack[GeneticBaseInitArgs],
     ):
         """
         Initializes the repetition bounds constraint with the given pattern and repetition bounds.
@@ -40,7 +45,7 @@ class RepetitionBoundsConstraint(Constraint):
         :param args: Additional arguments.
         :param kwargs: Additional keyword arguments.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         self.repetition_id = repetition_id
         self.expr_data_min = expr_data_min
         self.expr_data_max = expr_data_max
@@ -66,13 +71,18 @@ class RepetitionBoundsConstraint(Constraint):
         self.repetition_node = repetition_node
 
     def _compute_rep_bound(
-        self, tree_rightmost_relevant_node: "DerivationTree", expr_data
-    ):
+        self,
+        tree_rightmost_relevant_node: "DerivationTree",
+        expr_data: tuple[str, list[NonTerminalSearch], dict[str, NonTerminalSearch]],
+    ) -> tuple[Any, "DerivationTree"]:
         expr, _, searches = expr_data
         local_cpy = self.local_variables.copy()
 
         if len(searches) == 0:
-            return eval(expr, self.global_variables, local_cpy)
+            return (
+                eval(expr, self.global_variables, local_cpy),
+                tree_rightmost_relevant_node,
+            )
 
         nodes = []
         if len(searches) != 1:
@@ -109,10 +119,10 @@ class RepetitionBoundsConstraint(Constraint):
         local_cpy[search_name] = target
         return eval(expr, self.global_variables, local_cpy), target
 
-    def min(self, tree_stop_before: DerivationTree):
+    def min(self, tree_stop_before: DerivationTree) -> tuple[Any, DerivationTree]:
         return self._compute_rep_bound(tree_stop_before, self.expr_data_min)
 
-    def max(self, tree_stop_before: DerivationTree):
+    def max(self, tree_stop_before: DerivationTree) -> tuple[Any, DerivationTree]:
         return self._compute_rep_bound(tree_stop_before, self.expr_data_max)
 
     def group_by_repetition_id(
@@ -417,11 +427,11 @@ class RepetitionBoundsConstraint(Constraint):
             print_max = self.search_max.format_as_spec()
         return f"RepetitionBounds({print_min} <= |{self.repetition_node.node.format_as_spec()}| <= {print_max})"
 
-    def accept(self, visitor: "ConstraintVisitor"):
+    def accept(self, visitor: "ConstraintVisitor") -> None:
         """Accepts a visitor to traverse the constraint structure."""
         visitor.visit_repetition_bounds_constraint(self)
 
-    def invert(self):
+    def invert(self) -> "RepetitionBoundsConstraint":
         """
         RepetitionBoundsConstraint are not inverted.
         """

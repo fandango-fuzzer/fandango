@@ -30,7 +30,7 @@ __license__ = "Apache License, Version 2.0"
 __website__ = "https://github.com/mr-mixas/pytest-pythonhashseed"
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser: pytest.Parser) -> None:
     """Add plugin-specific options to pytest."""
     group = parser.getgroup("general")
     group.addoption(
@@ -40,7 +40,7 @@ def pytest_addoption(parser):
     )
 
 
-def pytest_configure(config):
+def pytest_configure(config: pytest.Config) -> None:
     """Reexec process with correct PYTHONHASHSEED env var."""
     opt_hashseed = config.getoption("pythonhashseed")
 

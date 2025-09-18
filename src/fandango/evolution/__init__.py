@@ -1,5 +1,5 @@
 from typing import Optional, TypeVar, Generic
-from collections.abc import Generator
+from collections.abc import Generator, Iterator
 
 # Define type variables for generator type and return type
 GT = TypeVar("GT")  # Generator Type
@@ -11,7 +11,7 @@ class GeneratorWithReturn(Generic[GT, RT]):
         self.generator = generator
         self._return_value: Optional[RT] = None
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[GT]:
         self._return_value = yield from self.generator
 
     @property

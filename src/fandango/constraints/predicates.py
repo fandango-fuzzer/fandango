@@ -6,7 +6,7 @@ from fandango.language.tree import DerivationTree
 
 def is_before(
     tree: DerivationTree, before_tree: DerivationTree, after_tree: DerivationTree
-):
+) -> bool:
     """
     Check if the tree is before the before_tree and after the after_tree.
     """
@@ -19,7 +19,7 @@ def is_before(
 
 def is_after(
     tree: DerivationTree, after_tree: DerivationTree, before_tree: DerivationTree
-):
+) -> bool:
     """
     Check if the tree is after the after_tree and before the before_tree.
     """

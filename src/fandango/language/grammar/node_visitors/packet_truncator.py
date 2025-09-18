@@ -7,21 +7,21 @@ from fandango.language.grammar.nodes.repetition import Repetition, Star, Plus, O
 from fandango.language.grammar.nodes.terminal import TerminalNode
 
 
-class PacketTruncator(NodeVisitor):
+class PacketTruncator(NodeVisitor[bool, bool]):
     def __init__(self, grammar: "Grammar", keep_parties: set[str]):
         self.grammar = grammar
         self.keep_msg_parties = keep_parties
 
-    def visitStar(self, node: Star):
+    def visitStar(self, node: Star) -> bool:
         return self.visitRepetition(node)
 
-    def visitPlus(self, node: Plus):
+    def visitPlus(self, node: Plus) -> bool:
         return self.visitRepetition(node)
 
-    def visitOption(self, node: Option):
+    def visitOption(self, node: Option) -> bool:
         return self.visitRepetition(node)
 
-    def visitAlternative(self, node: Alternative):
+    def visitAlternative(self, node: Alternative) -> bool:
         for child in list(node.children()):
             if self.visit(child):
                 node.alternatives.remove(child)
@@ -29,13 +29,13 @@ class PacketTruncator(NodeVisitor):
             return True
         return False
 
-    def visitRepetition(self, node: Repetition):
+    def visitRepetition(self, node: Repetition) -> bool:
         for child in list(node.children()):
             if self.visit(child):
                 return True
         return False
 
-    def visitConcatenation(self, node: Concatenation):
+    def visitConcatenation(self, node: Concatenation) -> bool:
         for child in list(node.children()):
             if self.visit(child):
                 node.nodes.remove(child)
@@ -43,7 +43,7 @@ class PacketTruncator(NodeVisitor):
             return True
         return False
 
-    def visitNonTerminalNode(self, node: NonTerminalNode):
+    def visitNonTerminalNode(self, node: NonTerminalNode) -> bool:
         if node.sender is None or node.recipient is None:
             return False
         truncatable = True
@@ -53,5 +53,5 @@ class PacketTruncator(NodeVisitor):
             truncatable = False
         return truncatable
 
-    def visitTerminalNode(self, node: TerminalNode):
+    def visitTerminalNode(self, node: TerminalNode) -> bool:
         return False

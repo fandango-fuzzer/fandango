@@ -1,5 +1,6 @@
 import random
 from collections.abc import Callable, Generator
+from typing import Optional
 
 from fandango.constraints.failing_tree import Comparison, ComparisonSide
 from fandango.constraints.failing_tree import FailingTree, BoundsFailingTree
@@ -24,7 +25,7 @@ class PopulationManager:
         self._start_symbol = start_symbol
         self._warnings_are_errors = warnings_are_errors
 
-    def _generate_population_entry(self, max_nodes: int):
+    def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         return self._grammar.fuzz(self._start_symbol, max_nodes)
 
     @staticmethod
@@ -144,6 +145,7 @@ class PopulationManager:
 
             for operator, value, side in failing_tree.suggestions:
                 if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
+                    suggested_tree: Optional[DerivationTree]
                     # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
                     symbol = failing_tree.tree.symbol
                     if isinstance(value, DerivationTree) and symbol == value.symbol:
@@ -193,7 +195,7 @@ class IoPopulationManager(PopulationManager):
         self._prev_packet_idx = 0
         self.fuzzable_packets: list[PacketForecaster.ForcastingPacket] | None = None
 
-    def _generate_population_entry(self, max_nodes: int):
+    def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         if self.fuzzable_packets is None or len(self.fuzzable_packets) == 0:
             return DerivationTree(NonTerminal(self._start_symbol))
 

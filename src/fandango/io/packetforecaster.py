@@ -25,7 +25,7 @@ class GrammarKeyError(KeyError):
     pass
 
 
-class PathFinder(NodeVisitor):
+class PathFinder(NodeVisitor[bool, bool]):
     """
     For a given grammar and DerivationTree, this class
     finds possible upcoming message types, the nonterminals that generate them and the paths where the messages
@@ -49,7 +49,9 @@ class PathFinder(NodeVisitor):
         self.result.add_packet(node.sender, f_packet)
 
     @staticmethod
-    def _collapsed_path(path: list[tuple[NonTerminal, bool]]):
+    def _collapsed_path(
+        path: list[tuple[NonTerminal, bool]],
+    ) -> tuple[tuple[NonTerminal, bool], ...]:
         new_path = []
         for nt, new_node in path:
             if nt.is_type(TreeValueType.STRING) and str(nt.value()).startswith("<__"):
@@ -89,7 +91,7 @@ class PathFinder(NodeVisitor):
         self.current_path.pop()
         return self.result
 
-    def on_enter_controlflow(self, expected_nt: str):
+    def on_enter_controlflow(self, expected_nt: str) -> None:
         tree = self.current_tree[-1]
         cf_nt = (NonTerminal(expected_nt), True)
         if tree is not None:
@@ -105,11 +107,11 @@ class PathFinder(NodeVisitor):
         self.current_tree.append(None if tree is None else tree[0].children)
         self.current_path.append(cf_nt)
 
-    def on_leave_controlflow(self):
+    def on_leave_controlflow(self) -> None:
         self.current_tree.pop()
         self.current_path.pop()
 
-    def visitNonTerminalNode(self, node: NonTerminalNode):
+    def visitNonTerminalNode(self, node: NonTerminalNode) -> bool:
         tree = self.current_tree[-1]
         if tree is not None:
             if tree[0].symbol != node.symbol:
@@ -130,12 +132,12 @@ class PathFinder(NodeVisitor):
             self.current_tree.pop()
         return result
 
-    def visitTerminalNode(self, node: TerminalNode):
+    def visitTerminalNode(self, node: TerminalNode) -> bool:
         raise FandangoValueError(
             "PacketForecaster reached TerminalNode! This is a bug."
         )
 
-    def visitConcatenation(self, node: Concatenation):
+    def visitConcatenation(self, node: Concatenation) -> bool:
         self.on_enter_controlflow(f"<__{node.id}>")
         tree = self.current_tree[-1]
         child_idx = 0 if tree is None else (len(tree) - 1)
@@ -160,7 +162,7 @@ class PathFinder(NodeVisitor):
         self.on_leave_controlflow()
         return continue_exploring
 
-    def visitAlternative(self, node: Alternative):
+    def visitAlternative(self, node: Alternative) -> bool:
         self.on_enter_controlflow(f"<__{node.id}>")
         tree = self.current_tree[-1]
 
@@ -192,13 +194,13 @@ class PathFinder(NodeVisitor):
             self.on_leave_controlflow()
             return continue_exploring
 
-    def visitRepetition(self, node: Repetition):
+    def visitRepetition(self, node: Repetition) -> bool:
         self.on_enter_controlflow(f"<__{node.id}>")
         ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
         return ret
 
-    def visitRepetitionType(self, node: Repetition):
+    def visitRepetitionType(self, node: Repetition) -> bool:
         tree = self.current_tree[-1]
         continue_exploring = True
         tree_len = 0
@@ -233,19 +235,19 @@ class PathFinder(NodeVisitor):
             return True
         return continue_exploring
 
-    def visitStar(self, node: Star):
+    def visitStar(self, node: Star) -> bool:
         self.on_enter_controlflow(f"<__{node.id}>")
         ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
         return ret
 
-    def visitPlus(self, node: Plus):
+    def visitPlus(self, node: Plus) -> bool:
         self.on_enter_controlflow(f"<__{node.id}>")
         ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
         return ret
 
-    def visitOption(self, node: Option):
+    def visitOption(self, node: Option) -> bool:
         self.on_enter_controlflow(f"<__{node.id}>")
         ret = self.visitRepetitionType(node)
         self.on_leave_controlflow()
@@ -265,13 +267,13 @@ class PacketForecaster:
             self.tree = tree
             self.path = path
 
-        def __hash__(self):
+        def __hash__(self) -> int:
             return hash((hash(self.tree), hash(self.path)))
 
-        def __eq__(self, other):
+        def __eq__(self, other: object) -> bool:
             return hash(self) == hash(other)
 
-        def __repr__(self):
+        def __repr__(self) -> str:
             return f"({', '.join([f'({nt.format_as_spec()}, {new_node})' for nt, new_node in self.path])})"
 
     class ForcastingPacket:
@@ -283,13 +285,13 @@ class PacketForecaster:
             self.paths.add(path)
 
     class ForcastingNonTerminals:
-        def __init__(self):
+        def __init__(self) -> None:
             self.nt_to_packet = dict[NonTerminal, PacketForecaster.ForcastingPacket]()
 
         def get_non_terminals(self) -> set[NonTerminal]:
             return set(self.nt_to_packet.keys())
 
-        def __getitem__(self, item: NonTerminal):
+        def __getitem__(self, item: NonTerminal) -> "PacketForecaster.ForcastingPacket":
             return self.nt_to_packet[item]
 
         def add_packet(self, packet: "PacketForecaster.ForcastingPacket") -> None:
@@ -303,7 +305,7 @@ class PacketForecaster:
                 self.nt_to_packet[packet.node.symbol] = packet
 
     class ForecastingResult:
-        def __init__(self):
+        def __init__(self) -> None:
             self.parties_to_packets = dict[
                 str, PacketForecaster.ForcastingNonTerminals
             ]()
@@ -311,7 +313,7 @@ class PacketForecaster:
         def get_msg_parties(self) -> set[str]:
             return set(self.parties_to_packets.keys())
 
-        def contains_any_party(self, parties: list[str]):
+        def contains_any_party(self, parties: list[str]) -> bool:
             """
             Checks if the ForecastingResult contains any of the specified parties.
             :param parties: List of party names to check.
@@ -319,7 +321,7 @@ class PacketForecaster:
             """
             return any(party in self.parties_to_packets for party in parties)
 
-        def __getitem__(self, item: str):
+        def __getitem__(self, item: str) -> "PacketForecaster.ForcastingNonTerminals":
             return self.parties_to_packets[item]
 
         def __contains__(self, item: str) -> bool:
@@ -354,7 +356,7 @@ class PacketForecaster:
                     c_new.add_packet(party, fp)
             return c_new
 
-    class GrammarReducer(NodeVisitor):
+    class GrammarReducer(NodeVisitor[list[Node], Node]):
         """
         Converts a grammar into a reduced form, where all protocol message defining NonTerminalNodes are replaced with
         a TerminalNode that describes the protocol message type.
@@ -385,31 +387,31 @@ class PacketForecaster:
                 diff_keys = self.seen_keys - self.processed_keys
             return self._reduced
 
-        def default_result(self):
+        def default_result(self) -> list[Node]:
             return []
 
-        def aggregate_results(self, aggregate, result):
+        def aggregate_results(self, aggregate: list[Node], result: Node) -> list[Node]:
             aggregate.append(result)
             return aggregate
 
-        def visitConcatenation(self, node: Concatenation):
+        def visitConcatenation(self, node: Concatenation) -> Concatenation:
             return Concatenation(
                 self.visitChildren(node),
                 self._grammar_settings,
                 node.id,
             )
 
-        def visitTerminalNode(self, node: TerminalNode):
+        def visitTerminalNode(self, node: TerminalNode) -> TerminalNode:
             return TerminalNode(node.symbol, self._grammar_settings)
 
-        def visitAlternative(self, node: Alternative):
+        def visitAlternative(self, node: Alternative) -> Alternative:
             return Alternative(
                 self.visitChildren(node),
                 self._grammar_settings,
                 node.id,
             )
 
-        def visitRepetition(self, node: Repetition):
+        def visitRepetition(self, node: Repetition) -> Repetition:
             return Repetition(
                 self.visit(node.node),
                 self._grammar_settings,
@@ -418,27 +420,27 @@ class PacketForecaster:
                 node.internal_max,
             )
 
-        def visitOption(self, node: Option):
+        def visitOption(self, node: Option) -> Option:
             return Option(
                 self.visit(node.node),
                 self._grammar_settings,
                 node.id,
             )
 
-        def visitPlus(self, node: Plus):
+        def visitPlus(self, node: Plus) -> Plus:
             return Plus(self.visit(node.node), self._grammar_settings, node.id)
 
-        def visitStar(self, node: Star):
+        def visitStar(self, node: Star) -> Star:
             return Star(
                 self.visit(node.node),
                 self._grammar_settings,
                 node.id,
             )
 
-        def visitCharSet(self, node: CharSet):
+        def visitCharSet(self, node: CharSet) -> CharSet:
             return CharSet(node.chars, self._grammar_settings)
 
-        def visitNonTerminalNode(self, node: NonTerminalNode):
+        def visitNonTerminalNode(self, node: NonTerminalNode) -> NonTerminalNode:
             if node.sender is None and node.recipient is None:
                 self.seen_keys.add(node.symbol)
                 return node
@@ -461,7 +463,7 @@ class PacketForecaster:
             return repl_node
 
     class PacketIterativeParser(IterativeParser):
-        def __init__(self, grammar_rules: dict[NonTerminal, Node]):
+        def __init__(self, grammar_rules: dict[NonTerminal, Node]) -> None:
             super().__init__(grammar_rules)
             self.reference_tree: Optional[DerivationTree] = None
             self.detailed_tree: Optional[DerivationTree] = None

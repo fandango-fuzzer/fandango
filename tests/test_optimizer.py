@@ -163,7 +163,7 @@ class GeneticTest(unittest.TestCase):
             self.fandango.evaluator.evaluate_population(self.fandango.population)
         )
         solutions = list(generator)
-        self.assertTrue(all(s.to_int() % 2 == 0) for s in solutions)
+        self.assertTrue(all(s.to_int() % 2 == 0 for s in solutions))
 
         self.assertEqual(len(solutions), len(set(solutions)))
         evaluation = generator.return_value
