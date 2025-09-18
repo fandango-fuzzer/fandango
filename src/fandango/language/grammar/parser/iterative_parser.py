@@ -1,6 +1,6 @@
 from collections.abc import Generator
 from copy import deepcopy
-from typing import Optional
+from typing import Optional, Any
 
 from fandango.errors import FandangoValueError
 from fandango.language.grammar import ParsingMode
@@ -15,26 +15,37 @@ from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.repetition import Option
 from fandango.language.grammar.nodes.repetition import Plus
 from fandango.language.grammar.nodes.repetition import Star
-from fandango.language.grammar.parser.parse_state import ParseState
+from fandango.language.grammar.parser.parse_state import (
+    ParseState,
+    ParserStateSymbolContent,
+)
 from fandango.language.grammar.parser.parser_tree import ParserDerivationTree
 from fandango.language.symbols import NonTerminal, Terminal
+from fandango.language.symbols.symbol import Symbol
 from fandango.language.tree import DerivationTree
 from fandango.language.tree_value import TreeValue, TreeValueType
 
+IterativeParserVisitorReturnType = list[list[ParserStateSymbolContent]]
 
-class IterativeParser(NodeVisitor[list, list]):
+
+class IterativeParser(
+    NodeVisitor[
+        IterativeParserVisitorReturnType,
+        IterativeParserVisitorReturnType,
+    ]
+):
     def __init__(
         self,
         grammar_rules: dict[NonTerminal, Node],
     ):
         self.implicit_start = NonTerminal("<*start*>")
         self.grammar_rules: dict[NonTerminal, Node] = grammar_rules
-        self._rules: dict[NonTerminal, set[tuple[NonTerminal, frozenset]]] = {}
-        self._implicit_rules: dict[NonTerminal, set[tuple[NonTerminal, frozenset]]] = {}
+        self._rules: dict[NonTerminal, set[ParserStateSymbolContent]] = {}
+        self._implicit_rules: dict[NonTerminal, set[ParserStateSymbolContent]] = {}
         self._context_rules: dict[
-            NonTerminal, tuple[Node, tuple[NonTerminal, frozenset]]
+            NonTerminal, tuple[Node, ParserStateSymbolContent]
         ] = dict()
-        self._tmp_rules: dict[NonTerminal, set[tuple[NonTerminal, frozenset]]] = {}
+        self._tmp_rules: dict[NonTerminal, set[ParserStateSymbolContent]] = {}
         self._incomplete: set[DerivationTree] = set()
         self._nodes: dict[str, Node] = {}
         self._max_position = -1
@@ -49,7 +60,7 @@ class IterativeParser(NodeVisitor[list, list]):
         self._hookin_parent: Optional[DerivationTree] = None
         self._prefix_word = None
 
-    def _process(self):
+    def _process(self) -> None:
         self._rules.clear()
         self._implicit_rules.clear()
         self._context_rules.clear()
@@ -63,21 +74,19 @@ class IterativeParser(NodeVisitor[list, list]):
             }
 
     def set_implicit_rule(
-        self, rule: list[list[tuple[NonTerminal, frozenset]]]
-    ) -> tuple[NonTerminal, frozenset]:
+        self, rule: IterativeParserVisitorReturnType
+    ) -> ParserStateSymbolContent:
         nonterminal = NonTerminal(f"<*{len(self._implicit_rules)}*>")
-        self._implicit_rules[nonterminal] = rule  # type: ignore[assignment]
+        self._implicit_rules[nonterminal] = rule  # type: ignore[assignment] # TODO: this is wrong somewhere but magically works. Fix me!
         return (nonterminal, frozenset())
 
     def set_rule(
-        self,
-        nonterminal: NonTerminal,
-        rule: list[list[tuple[NonTerminal, frozenset]]],
-    ):
+        self, nonterminal: NonTerminal, rule: IterativeParserVisitorReturnType
+    ) -> None:
         self._rules[nonterminal] = {tuple(a) for a in rule}  # type: ignore[misc]
 
     def set_context_rule(
-        self, node: Node, non_terminal: tuple[NonTerminal, frozenset]
+        self, node: Node, non_terminal: ParserStateSymbolContent
     ) -> NonTerminal:
         nonterminal = NonTerminal(f"<*ctx_{len(self._context_rules)}*>")
         self._context_rules[nonterminal] = (node, non_terminal)
@@ -85,36 +94,42 @@ class IterativeParser(NodeVisitor[list, list]):
 
     def set_tmp_rule(
         self,
-        rule: list[list[tuple[NonTerminal, frozenset]]],
+        rule: IterativeParserVisitorReturnType,
         nonterminal: Optional[NonTerminal] = None,
-    ):
+    ) -> tuple[ParserStateSymbolContent, str]:
         if nonterminal is None:
             nonterminal = NonTerminal(f"<*tmp_{len(self._tmp_rules)}*>")
         rule_id = str(nonterminal.value())[2:-2]
         self._tmp_rules[nonterminal] = {tuple(a) for a in rule}  # type: ignore[misc]
         return (nonterminal, frozenset()), rule_id
 
-    def _clear_tmp(self):
+    def _clear_tmp(self) -> None:
         self._tmp_rules.clear()
 
-    def default_result(self):
+    def default_result(self) -> IterativeParserVisitorReturnType:
         return []
 
-    def aggregate_results(self, aggregate, result):
+    def aggregate_results(
+        self,
+        aggregate: IterativeParserVisitorReturnType,
+        result: IterativeParserVisitorReturnType,
+    ) -> IterativeParserVisitorReturnType:
         aggregate.extend(result)
         return aggregate
 
-    def visitAlternative(self, node: Alternative):
+    def visitAlternative(self, node: Alternative) -> IterativeParserVisitorReturnType:
         intermediate_nt = NonTerminal(f"<__{node.id}>")
         self._nodes[intermediate_nt.name()] = node
         result = self.visitChildren(node)
         self.set_rule(intermediate_nt, result)
         return [[(intermediate_nt, frozenset())]]
 
-    def visitConcatenation(self, node: Concatenation):
+    def visitConcatenation(
+        self, node: Concatenation
+    ) -> IterativeParserVisitorReturnType:
         intermediate_nt = NonTerminal(f"<__{node.id}>")
         self._nodes[intermediate_nt.name()] = node
-        result: list[list[tuple[NonTerminal, frozenset]]] = [[]]
+        result: IterativeParserVisitorReturnType = [[]]
         for child in node.children():
             to_add = self.visit(child)
             new_result = []
@@ -128,9 +143,9 @@ class IterativeParser(NodeVisitor[list, list]):
     def visitRepetition(
         self,
         node: Repetition,
-        nt: Optional[tuple[NonTerminal, frozenset]] = None,
+        nt: Optional[ParserStateSymbolContent] = None,
         tree: Optional[DerivationTree] = None,
-    ):
+    ) -> IterativeParserVisitorReturnType:
         repetition_nt = NonTerminal(f"<__{node.id}>")
         self._nodes[repetition_nt.name()] = node
         is_context = node.bounds_constraint is not None
@@ -173,10 +188,10 @@ class IterativeParser(NodeVisitor[list, list]):
         self.set_rule(repetition_nt, [[min_nt]])
         return [[(repetition_nt, frozenset())]]
 
-    def visitStar(self, node: Star):
+    def visitStar(self, node: Star) -> IterativeParserVisitorReturnType:
         intermediate_nt = NonTerminal(f"<__{node.id}>")
         self._nodes[intermediate_nt.name()] = node
-        alternatives: list[list[tuple[NonTerminal, frozenset]]] = [[]]
+        alternatives: IterativeParserVisitorReturnType = [[]]
         nt = self.set_implicit_rule(alternatives)
         for r in self.visit(node.node):
             alternatives.append(r + [nt])
@@ -184,10 +199,10 @@ class IterativeParser(NodeVisitor[list, list]):
         self.set_rule(intermediate_nt, result)
         return [[(intermediate_nt, frozenset())]]
 
-    def visitPlus(self, node: Plus):
+    def visitPlus(self, node: Plus) -> IterativeParserVisitorReturnType:
         intermediate_nt = NonTerminal(f"<__{node.id}>")
         self._nodes[intermediate_nt.name()] = node
-        alternatives: list[list[tuple[NonTerminal, frozenset]]] = []
+        alternatives: IterativeParserVisitorReturnType = []
         nt = self.set_implicit_rule(alternatives)
         for r in self.visit(node.node):
             alternatives.append(r)
@@ -196,14 +211,16 @@ class IterativeParser(NodeVisitor[list, list]):
         self.set_rule(intermediate_nt, result)
         return [[(intermediate_nt, frozenset())]]
 
-    def visitOption(self, node: Option):
+    def visitOption(self, node: Option) -> IterativeParserVisitorReturnType:
         intermediate_nt = NonTerminal(f"<__{node.id}>")
         self._nodes[intermediate_nt.name()] = node
-        result: list[list[tuple[NonTerminal, frozenset]]] = [[]] + self.visit(node.node)
+        result: IterativeParserVisitorReturnType = [[]] + self.visit(node.node)
         self.set_rule(intermediate_nt, result)
         return [[(intermediate_nt, frozenset())]]
 
-    def visitNonTerminalNode(self, node: NonTerminalNode):
+    def visitNonTerminalNode(
+        self, node: NonTerminalNode
+    ) -> IterativeParserVisitorReturnType:
         params = dict()
         if node.sender is not None:
             params["sender"] = node.sender
@@ -212,7 +229,7 @@ class IterativeParser(NodeVisitor[list, list]):
         parameters = frozenset(params.items())
         return [[(node.symbol, parameters)]]
 
-    def visitTerminalNode(self, node: TerminalNode):
+    def visitTerminalNode(self, node: TerminalNode) -> IterativeParserVisitorReturnType:
         return [[(node.symbol, frozenset())]]
 
     def collapse(self, tree: Optional[DerivationTree]) -> Optional[DerivationTree]:
@@ -271,30 +288,24 @@ class IterativeParser(NodeVisitor[list, list]):
         table: list[Column],
         k: int,
         hookin_parent: Optional[DerivationTree] = None,
-    ):
+    ) -> None:
         symbol = state.dot
         assert symbol is not None
         assert isinstance(symbol, NonTerminal)
         if state.dot in self._rules:
             table[k].update(
-                {
-                    ParseState(state.dot, k, rule, 0)  # type: ignore[arg-type]
-                    for rule in self._rules[symbol]
-                }
+                {ParseState(symbol, k, rule, 0) for rule in self._rules[symbol]}  # type: ignore[arg-type] # TODO:  this is a bug!
             )
         elif state.dot in self._implicit_rules:
             table[k].update(
                 {
-                    ParseState(state.dot, k, rule, 0)  # type: ignore[arg-type]
+                    ParseState(symbol, k, rule, 0)  # type: ignore[arg-type] # TODO:  this is a bug!
                     for rule in self._implicit_rules[symbol]
                 }
             )
         elif state.dot in self._tmp_rules:
             table[k].update(
-                {
-                    ParseState(state.dot, k, rule, 0)  # type: ignore[arg-type]
-                    for rule in self._tmp_rules[symbol]
-                }
+                {ParseState(symbol, k, rule, 0) for rule in self._tmp_rules[symbol]}  # type: ignore[arg-type] # TODO:  this is a bug!
             )
         elif state.dot in self._context_rules:
             node, nt = self._context_rules[symbol]
@@ -335,9 +346,9 @@ class IterativeParser(NodeVisitor[list, list]):
         table: list[Column],
         k: int,
         node: Node,
-        nt_rule,
+        nt_rule: ParserStateSymbolContent,
         hookin_parent: Optional[DerivationTree] = None,
-    ):
+    ) -> None:
         if not isinstance(node, Repetition):
             raise FandangoValueError(f"Node {node} needs to be a Repetition")
 
@@ -356,7 +367,7 @@ class IterativeParser(NodeVisitor[list, list]):
         finally:
             if hookin_parent is not None:
                 hookin_parent.set_children(hookin_parent.children[:-1])
-        new_symbols = []
+        new_symbols: list[tuple[Symbol, frozenset[tuple[str, Any]]]] = []
         placed = False
         for symbol, dot_params in state.symbols:
             if symbol == state.dot and not placed:
@@ -601,7 +612,7 @@ class IterativeParser(NodeVisitor[list, list]):
         self,
         tree: DerivationTree,
         origin_repetitions: Optional[list[tuple[str, int, int]]] = None,
-    ):
+    ) -> DerivationTree:
         if origin_repetitions is None:
             origin_repetitions = []
 
@@ -645,7 +656,7 @@ class IterativeParser(NodeVisitor[list, list]):
 
     def to_derivation_tree(self, tree: DerivationTree) -> DerivationTree:
         assert tree is not None
-        return self._rec_to_derivation_tree(tree)  # type: ignore[arg-type]
+        return self._rec_to_derivation_tree(tree)
 
     def complete(
         self,
@@ -653,7 +664,7 @@ class IterativeParser(NodeVisitor[list, list]):
         table: list[Column],
         k: int,
         use_implicit: bool = False,
-    ):
+    ) -> None:
         for s in table[state.position].find_dot(state.nonterminal):
             dot_params = dict(s.dot_params or [])
             s = s.next()
@@ -676,7 +687,7 @@ class IterativeParser(NodeVisitor[list, list]):
                     s.extend_children(state.children)
             table[k].add(s)
 
-    def place_repetition_shortcut(self, table: list[Column], k: int):
+    def place_repetition_shortcut(self, table: list[Column], k: int) -> None:
         col = table[k]
         states = col.states
         beginner_nts = [f"<__{NodeType.PLUS}:", f"<__{NodeType.STAR}:"]
@@ -702,7 +713,7 @@ class IterativeParser(NodeVisitor[list, list]):
                         break
             if current_col_state is None:
                 continue
-            new_state = current_col_state
+            new_state: Optional[ParseState] = current_col_state
             origin_states = table[current_col_state.position].find_dot(
                 current_col_state.dot
             )
@@ -715,6 +726,7 @@ class IterativeParser(NodeVisitor[list, list]):
                     beginner_nts,
                 )
             ):
+                assert new_state is not None
                 new_state = ParseState(
                     new_state.nonterminal,
                     origin_state.position,
@@ -725,7 +737,7 @@ class IterativeParser(NodeVisitor[list, list]):
                 )
                 origin_states = table[new_state.position].find_dot(new_state.dot)
                 if len(origin_states) != 1:
-                    new_state = None  # type: ignore[assignment]
+                    new_state = None
                     break
                 origin_state = origin_states[0]
 
@@ -737,8 +749,8 @@ class IterativeParser(NodeVisitor[list, list]):
         start: str | NonTerminal = "<start>",
         mode: ParsingMode = ParsingMode.COMPLETE,
         hookin_parent: Optional[DerivationTree] = None,
-        starter_bit=-1,
-    ):
+        starter_bit: int = -1,
+    ) -> None:
         if isinstance(start, str):
             start = NonTerminal(start)
         self._start = start
@@ -756,7 +768,9 @@ class IterativeParser(NodeVisitor[list, list]):
         for tree in self._consume(char):
             yield self.to_derivation_tree(tree)
 
-    def _consume(self, char: str | bytes | int):
+    def _consume(
+        self, char: str | bytes | int
+    ) -> Generator[DerivationTree, None, None]:
         assert self._start is not None, "Call new_parse() before consume()"
         if isinstance(char, int):
             char = bytes([char])
