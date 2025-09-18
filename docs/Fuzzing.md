@@ -167,9 +167,20 @@ Fandango is invoked as follows:
 $ fandango fuzz -f persons.fan -n 10 --input-method=libfuzzer --file-mode=binary ./harness.{so,dylib}
 ```
 
+```{warning}
+If your target crashes when using the libFuzzer interface, the fuzzer process will exit as well, losing the input if not otherwise specified. Consider using the [LibAFL integration](sec:libafl) for much more robust target and fuzzing process handling.
+```
+
 ```{note}
 The libFuzzer interface is untested on Windows so far due to a lack of hardware. If you would like to test it, try un-skipping `test_output_with_libfuzzer_harness` in `test_cli.py`. You may need to adjust how the C file is compiled.
 ```
+
+(sec:libafl)=
+## Using Fandango in LibAFL
+
+With libafl-fandango-pyo3 ([crates.io](https://crates.io/crates/libafl-fandango-pyo3), [repository](https://github.com/riesentoaster/libafl-fandango-pyo3)), it is possible to use Fandango in conjunction with the [LibAFL](https://github.com/aflplusplus/libafl) ecosystem. This makes target handling and evaluation much more flexible.
+
+Refer to the [documentation of libafl-fandango-pyo3](https://github.com/riesentoaster/libafl-fandango-pyo3) for instructions on how to use it and a couple of example fuzzers showing how to integrate it into LibAFL-based fuzzers.
 
 ## Executable `.fan` files
 
