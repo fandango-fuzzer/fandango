@@ -2,7 +2,7 @@
 
 import enum
 
-from antlr4 import Token
+from antlr4.Token import Token
 
 
 class SemanticTokenTypes(enum.Enum):

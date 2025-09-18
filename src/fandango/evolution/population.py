@@ -1,5 +1,6 @@
 import random
 from collections.abc import Callable, Generator
+from typing import Optional
 
 from fandango.constraints.failing_tree import Comparison, ComparisonSide
 from fandango.constraints.failing_tree import FailingTree, BoundsFailingTree
@@ -144,6 +145,7 @@ class PopulationManager:
 
             for operator, value, side in failing_tree.suggestions:
                 if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
+                    suggested_tree: Optional[DerivationTree]
                     # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
                     symbol = failing_tree.tree.symbol
                     if isinstance(value, DerivationTree) and symbol == value.symbol:

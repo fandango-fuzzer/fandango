@@ -41,6 +41,8 @@ def print_exception(e: Exception, exception_note: str | None = None) -> None:
             "  Convert <symbol> to the expected type, say 'str(<symbol>)', 'int(<symbol>)', or 'bytes(<symbol>)'",
             file=sys.stderr,
         )
+    if os.environ.get("FANDANGO_RAISE_ALL_EXCEPTIONS"):
+        raise e
 
     if os.environ.get("FANDANGO_RAISE_ALL_EXCEPTIONS"):
         raise e

@@ -1,5 +1,6 @@
 from io import UnsupportedOperation
 import re
+from typing import cast
 
 import regex
 
@@ -28,7 +29,9 @@ class Terminal(Symbol):
             # Cannot evaluate f-strings
             raise UnsupportedOperation("f-strings are currently not supported")
 
-        return eval(symbol)  # also handles bits "0" and "1"
+        return cast(
+            str | bytes | int, eval(symbol)
+        )  # also handles bits "0" and "1", just cast because of performance
 
     @staticmethod
     def from_symbol(symbol: str) -> "Terminal":
@@ -40,7 +43,9 @@ class Terminal(Symbol):
     def from_number(number: str) -> "Terminal":
         return Terminal(Terminal.clean(number))
 
-    def check(self, word: str | bytes | int, incomplete=False) -> tuple[bool, int]:
+    def check(
+        self, word: str | bytes | int, incomplete: bool = False
+    ) -> tuple[bool, int]:
         """Return (True, # characters matched by `word`), or (False, 0)"""
 
         if self._value.is_type(TreeValueType.TRAILING_BITS_ONLY) or isinstance(
@@ -67,7 +72,7 @@ class Terminal(Symbol):
                     # LOGGER.debug(f"It's a match: {match.group(0)!r}")
                     return True, len(match.group(0))
             else:
-                compiled = regex.compile(symbol)
+                compiled = regex.compile(symbol)  # type: ignore[no-untyped-call] # regex doesn't provide types
                 match = compiled.match(check_word, partial=True)
                 if match is not None and (
                     match.partial or match.end() == len(check_word)
