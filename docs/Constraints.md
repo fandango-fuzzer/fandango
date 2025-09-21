@@ -268,7 +268,7 @@ assert _exit_code == 0
 Conversely, minimizing the `<age>` field yields
 
 ```shell
-$ fandango fuzz -f persons.fan --maximize 'int(<age>)'
+$ fandango fuzz -f persons.fan --minimize 'int(<age>)'
 ```
 
 ```{code-cell}
