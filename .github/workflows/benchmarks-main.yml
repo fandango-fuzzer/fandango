@@ -1,0 +1,66 @@
+name: Benchmarks
+
+on:
+  push:
+    branches: [main, dev, release]
+  workflow_dispatch:
+
+jobs:
+  benchmark_base_branch:
+    name: Run Benchmarks
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.13]
+        os: [ubuntu-latest]
+
+    permissions:
+      checks: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install system dependencies
+        env:
+          NEEDS_SUDO: ${{ matrix.os == 'ubuntu-latest' }}
+        shell: bash
+        run: |
+          if [ "$NEEDS_SUDO" = "true" ]; then
+            sudo make test-tools
+          else
+            make test-tools
+          fi
+
+      - name: Install Python dependencies
+        run: |
+          pip install -e ".[test]"
+
+      - name: Set up Bencher
+        uses: bencherdev/bencher@main
+
+      - name: Track base branch benchmarks with Bencher
+        run: |
+          bencher run \
+          --project fandango-394f926-x0wdsa1zilqt3 \
+          --token '${{ secrets.BENCHER_API_TOKEN }}' \
+          --branch "${{ github.ref }}" \
+          --testbed "${{ matrix.os }}" \
+          --threshold-measure latency \
+          --threshold-test t_test \
+          --threshold-max-sample-size 64 \
+          --threshold-upper-boundary 0.98 \
+          --thresholds-reset \
+          --err \
+          --adapter python_pytest \
+          --file results.json \
+          --github-actions '${{ secrets.GITHUB_TOKEN }}' \
+          "pytest -n 0 --benchmark-json results.json tests/test_benchmarks.py"
+    
