@@ -2,7 +2,7 @@ name: Benchmarks
 
 on:
   push:
-    branches: main
+    branches: [main, dev, release]
   workflow_dispatch:
 
 jobs:
@@ -51,12 +51,12 @@ jobs:
           bencher run \
           --project fandango-394f926-x0wdsa1zilqt3 \
           --token '${{ secrets.BENCHER_API_TOKEN }}' \
-          --branch main \
+          --branch "${{ github.ref }}" \
           --testbed "${{ matrix.os }}" \
           --threshold-measure latency \
           --threshold-test t_test \
           --threshold-max-sample-size 64 \
-          --threshold-upper-boundary 0.99 \
+          --threshold-upper-boundary 0.98 \
           --thresholds-reset \
           --err \
           --adapter python_pytest \
