@@ -49,7 +49,7 @@ jobs:
       - name: Track base branch benchmarks with Bencher
         run: |
           bencher run \
-          --project fandango \
+          --project fandango-394f926-x0wdsa1zilqt3 \
           --token '${{ secrets.BENCHER_API_TOKEN }}' \
           --branch main \
           --testbed "${{ matrix.os }}" \

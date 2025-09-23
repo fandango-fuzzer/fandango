@@ -30,7 +30,7 @@ jobs:
       - name: Archive closed PR branch with Bencher
         run: |
           bencher archive \
-          --project fandango \
+          --project fandango-394f926-x0wdsa1zilqt3 \
           --token '${{ secrets.BENCHER_API_TOKEN }}' \
           --branch "$GITHUB_HEAD_REF"
 
