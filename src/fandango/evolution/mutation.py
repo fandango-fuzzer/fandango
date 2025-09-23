@@ -3,7 +3,7 @@ import random
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Generator
 
-from fandango.constraints.fitness import FailingTree
+from fandango.constraints.failing_tree import FailingTree
 from fandango.language import DerivationTree, Grammar
 from fandango.language.symbols import NonTerminal
 
