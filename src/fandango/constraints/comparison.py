@@ -1,14 +1,12 @@
 from copy import copy
-import enum
-from typing import Any, Optional
+from typing import Any, Optional, Unpack
+from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.failing_tree import Comparison, ComparisonSide
 from fandango.language.tree import DerivationTree
 from fandango.constraints.constraint_visitor import ConstraintVisitor
 from fandango.constraints.constraint import Constraint
-from fandango.constraints.fitness import (
-    ConstraintFitness,
-    FailingTree,
-)
+from fandango.constraints.failing_tree import FailingTree
+from fandango.constraints.fitness import ConstraintFitness
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.logger import LOGGER, print_exception
 
@@ -18,7 +16,13 @@ class ComparisonConstraint(Constraint):
     Represents a comparison constraint that can be used for fitness evaluation.
     """
 
-    def __init__(self, operator: Comparison, left: str, right: str, *args, **kwargs):
+    def __init__(
+        self,
+        operator: Comparison,
+        left: str,
+        right: str,
+        **kwargs: Unpack[GeneticBaseInitArgs],
+    ) -> None:
         """
         Initializes the comparison constraint with the given operator, left side, and right side.
         :param Comparison operator: The operator to use.
@@ -27,7 +31,7 @@ class ComparisonConstraint(Constraint):
         :param args: Additional arguments.
         :param kwargs: Additional keyword arguments.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         self.operator = operator
         self.left = left
         self.right = right
@@ -221,7 +225,7 @@ class ComparisonConstraint(Constraint):
             )
         return representation
 
-    def accept(self, visitor: "ConstraintVisitor"):
+    def accept(self, visitor: "ConstraintVisitor") -> None:
         """
         Accepts a visitor to traverse the constraint structure.
         :param ConstraintVisitor visitor: The visitor to accept.

@@ -265,12 +265,12 @@ def test_conversion_statement(stmt, value, is_global):
     splitter.visit(fandango_tree)
     code = splitter.python_code
     processor = PythonProcessor()
-    fandango_tree = processor.get_code(code)
+    fandango_tree_code = processor.get_code(code)
     tree = ast.parse(stmt)
-    assert ast.unparse(fandango_tree) == ast.unparse(tree)
+    assert ast.unparse(fandango_tree_code) == ast.unparse(tree)
     global_vars = predicates.__dict__.copy()
     local_vars = None  # Must be None to ensure top-level imports
-    exec(ast.unparse(fandango_tree), global_vars, local_vars)
+    exec(ast.unparse(fandango_tree_code), global_vars, local_vars)
     if is_global:
         assert "x" in global_vars
         assert local_vars is None or "x" not in local_vars

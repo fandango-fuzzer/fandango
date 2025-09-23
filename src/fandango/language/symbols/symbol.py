@@ -18,7 +18,9 @@ class Symbol(abc.ABC):
         self._type = type_
         self._is_regex = False
 
-    def check(self, word: str | int | bytes, incomplete=False) -> tuple[bool, int]:
+    def check(
+        self, word: str | int | bytes, incomplete: bool = False
+    ) -> tuple[bool, int]:
         """Return (True, # of characters matched by `word`), or (False, 0)"""
         return False, 0
 
@@ -53,7 +55,7 @@ class Symbol(abc.ABC):
 
     @abc.abstractmethod
     def __hash__(self) -> int:
-        return NotImplemented
+        raise NotImplementedError
 
     def _repr(self) -> str:
         return str(self.value())

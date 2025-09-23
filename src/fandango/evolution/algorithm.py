@@ -18,7 +18,7 @@ from fandango.evolution.evaluation import Evaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import IoPopulationManager, PopulationManager
 from fandango.evolution.profiler import Profiler
-from fandango.io import FandangoIO, FandangoParty
+from fandango.io import FandangoIO
 from fandango.io.packetforecaster import PacketForecaster
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.language.grammar import FuzzingMode
@@ -496,7 +496,7 @@ class Fandango:
                 )
             )
             if len(msg_parties) != 0 and not io_instance.received_msg():
-                fuzzable_packets = []
+                fuzzable_packets: list[PacketForecaster.ForcastingPacket] = []
                 for party in msg_parties:
                     fuzzable_packets.extend(forecast[party].nt_to_packet.values())
                 assert isinstance(self.population_manager, IoPopulationManager)
@@ -556,9 +556,12 @@ class Fandango:
                             f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(forecast.get_msg_parties())}"
                         )
                     time.sleep(0.025)
-                forecast, packet_tree = parse_next_remote_packet(
+                forecast_packet, packet_tree = parse_next_remote_packet(
                     self.grammar, forecast, io_instance
                 )
+                assert forecast_packet is not None
+                assert packet_tree is not None
+                assert packet_tree.sender is not None
                 log_message_transfer(
                     packet_tree.sender,
                     packet_tree.recipient,
@@ -566,7 +569,8 @@ class Fandango:
                     False,
                 )
 
-                hookin_option = next(iter(forecast.paths))
+                hookin_option = next(iter(forecast_packet.paths))
+                assert hookin_option.tree is not None
                 history_tree = hookin_option.tree
                 history_tree.append(hookin_option.path[1:], packet_tree)
                 solutions, (fitness, _failing_trees) = GeneratorWithReturn(
