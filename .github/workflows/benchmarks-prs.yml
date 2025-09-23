@@ -61,6 +61,7 @@ jobs:
         --start-point-reset \
         --testbed "${{ matrix.os }}" \
         --err \
-        --adapter json \
+        --adapter python_pytest \
+        --file results.json \
         --github-actions '${{ secrets.GITHUB_TOKEN }}' \
-        "pytest -n 0 tests/test_benchmarks.py"
+        "pytest -n 0 --benchmark-json results.json tests/test_benchmarks.py"
