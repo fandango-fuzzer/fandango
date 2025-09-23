@@ -53,6 +53,8 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+.benchmarks/
+results.json
 cover/
 
 # Translations
