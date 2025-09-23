@@ -1,0 +1,37 @@
+name: Benchmarks
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+
+jobs:
+  benchmark_base_branch:
+    name: Archive closed PR branch with Bencher
+    # DO NOT REMOVE: For handling Fork PRs see Pull Requests from Forks
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.13]
+        os: [ubuntu-latest]
+
+      
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bencherdev/bencher@main
+      - name: Archive closed PR branch with Bencher
+        run: |
+          bencher archive \
+          --project fandango-394f926-x0wdsa1zilqt3 \
+          --token '${{ secrets.BENCHER_API_TOKEN }}' \
+          --branch "$GITHUB_HEAD_REF"
+
+    
