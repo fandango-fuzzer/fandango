@@ -1,4 +1,4 @@
-from typing import Optional, TypeVar, Generic
+from typing import TypeVar, Generic
 from collections.abc import Generator
 
 # Define type variables for generator type and return type
@@ -6,10 +6,17 @@ GT = TypeVar("GT")  # Generator Type
 RT = TypeVar("RT")  # Return Type
 
 
+class GeneratorNotFullyEvaluated:
+    pass
+
+
 class GeneratorWithReturn(Generic[GT, RT]):
     def __init__(self, generator: Generator[GT, None, RT]):
         self.generator = generator
-        self._return_value: Optional[RT] = None
+        # use GeneratorNotFullyEvaluated instead of None because the generator may actually return None
+        self._return_value: RT | GeneratorNotFullyEvaluated = (
+            GeneratorNotFullyEvaluated()
+        )
 
     def __iter__(self):
         self._return_value = yield from self.generator
@@ -21,7 +28,7 @@ class GeneratorWithReturn(Generic[GT, RT]):
         Raises:
             RuntimeError: If the generator hasn't been fully executed yet.
         """
-        if self._return_value is None:
+        if isinstance(self._return_value, GeneratorNotFullyEvaluated):
             raise RuntimeError(
                 "Generator hasn't been fully executed yet. The return value is only available after complete iteration."
             )
