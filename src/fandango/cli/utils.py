@@ -304,7 +304,12 @@ def parse_file(
     individual = fd.read()
     start_symbol = settings.get("start_symbol", "<start>")
     allow_incomplete = hasattr(args, "prefix") and args.prefix
-    fan = Fandango._with_parsed(grammar, constraints, start_symbol=start_symbol)
+    fan = Fandango._with_parsed(
+        grammar,
+        constraints,
+        start_symbol=start_symbol,
+        logging_level=LOGGER.getEffectiveLevel(),
+    )
 
     gen = GeneratorWithReturn(fan.parse(individual, prefix=allow_incomplete))
     for tree in gen:
