@@ -59,7 +59,8 @@ jobs:
           --threshold-upper-boundary 0.99 \
           --thresholds-reset \
           --err \
-          --adapter json \
+          --adapter python_pytest \
+          --file results.json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
-          "pytest -n 0 tests/test_benchmarks.py"
+          "pytest -n 0 --benchmark-json results.json tests/test_benchmarks.py"
     
