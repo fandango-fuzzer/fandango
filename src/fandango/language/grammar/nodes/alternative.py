@@ -2,6 +2,9 @@ from itertools import combinations, permutations
 import random
 from typing import TYPE_CHECKING
 from collections.abc import Iterator, Sequence
+
+from fandango.language.symbols.symbol import Symbol
+from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.concatenation import Concatenation
 from fandango.language.grammar.nodes.node import Node, NodeType
@@ -23,6 +26,9 @@ class Alternative(Node):
         self.id = id
         self.alternatives = alternatives
         super().__init__(NodeType.ALTERNATIVE, grammar_settings)
+
+    def to_symbol(self) -> Symbol:
+        return NonTerminal(f"<__{self.id}>")
 
     def fuzz(
         self,
