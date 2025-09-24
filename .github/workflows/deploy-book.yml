@@ -14,41 +14,33 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Checkout the source repository
-      - name: Checkout the source repository
-        uses: actions/checkout@v3
-
-      # Step 2: Set up Python
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v4
+      # Step 1: Install Fandango
+      - name: Install Fandango
+        uses: ./.github/workflows/partials/install-fandango.yml
         with:
           python-version: 3.13
-          cache: "pip"
+          needs-sudo: true
+          target: book
 
-      # Step 3: Ensure Graphviz system package is installed
+      # Step 2: Ensure Graphviz system package is installed
       - name: Install Graphviz system package
         run: |
           sudo apt-get update
           sudo apt-get install -y graphviz
 
-      # Step 4: Install dependencies
-      - name: Install dependencies
-        run: |
-          pip install -e ".[book]"
-
-      # Step 5: Locate Fandango and add to PATH
+      # Step 3: Locate Fandango and add to PATH
       - name: Locate Fandango and add to PATH
         run: |
           which fandango
           echo "/opt/hostedtoolcache/Python/3.13.1/x64/bin/fandango" >> $GITHUB_PATH
           fandango --help
 
-      # Step 6: Build the documentation
+      # Step 4: Build the documentation
       - name: Build the book
         run: |
           make html
 
-      # Step 7: Upload built book as artifact
+      # Step 5: Upload built book as artifact
       - name: Upload built book as artifact
         uses: actions/upload-artifact@v4
         with:
@@ -63,7 +55,7 @@ jobs:
     steps:
       # Step 1: Checkout the source repository
       - name: Checkout the source repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Step 2: Download built book artifact
       - name: Download built book artifact

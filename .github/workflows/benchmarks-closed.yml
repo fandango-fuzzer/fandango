@@ -11,15 +11,7 @@ jobs:
     # DO NOT REMOVE: For handling Fork PRs see Pull Requests from Forks
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
 
-    runs-on: ${{ matrix.os }}
-    
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [3.13]
-        os: [ubuntu-latest]
-
-      
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: read

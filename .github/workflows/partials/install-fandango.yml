@@ -1,0 +1,49 @@
+name: Install Fandango
+description: Prepare and setup Fandango including dependencies for testing.
+
+# ---------- new section ----------
+inputs:
+  python-version:
+    description: "Which Python version to use"
+    required: true
+  needs-sudo:
+    description: "Whether to use sudo"
+    required: true
+  target:
+    description: "Which dependency list to target"
+    required: false
+    default: "test"
+  skip-parser:
+    description: "Whether to skip the parser"
+    required: false
+    default: ""
+# ---------------------------------
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ inputs.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: 'pip'
+
+    - name: Install system dependencies
+      env:
+        NEEDS_SUDO: ${{ inputs.needs-sudo }}
+      shell: bash
+      run: |
+        if [ "$NEEDS_SUDO" = "true" ]; then
+          sudo make test-tools
+        else
+          make test-tools
+        fi
+
+    - name: Install Python dependencies
+      run: |
+        pip install -e ".[${{ inputs.target }}]"
+      env:
+        FANDANGO_SKIP_CPP_PARSER: ${{ inputs.skip-parser }}

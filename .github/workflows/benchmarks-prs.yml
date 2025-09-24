@@ -7,13 +7,7 @@ on:
 jobs:
   benchmark_pr_branch:
     name: Continuous Benchmarking PRs with Bencher
-    runs-on: ${{ matrix.os }}
-    
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [3.13]
-        os: [ubuntu-latest]
+    runs-on: ubuntu-latest
 
     # DO NOT REMOVE: For handling Fork PRs see Pull Requests from Forks
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
@@ -22,29 +16,12 @@ jobs:
       pull-requests: write
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+    - name: Install Fandango
+      uses: ./.github/workflows/partials/install-fandango.yml
       with:
-        python-version: ${{ matrix.python-version }}
-        cache: 'pip'
-
-    - name: Install system dependencies
-      env:
-        NEEDS_SUDO: ${{ matrix.os == 'ubuntu-latest' }}
-      shell: bash
-      run: |
-        if [ "$NEEDS_SUDO" = "true" ]; then
-          sudo make test-tools
-        else
-          make test-tools
-        fi
-
-    - name: Install Python dependencies
-      run: |
-        pip install -e ".[test]"
+        python-version: 3.13
+        needs-sudo: true
+        target: test
 
     - name: Set up Bencher
       uses: bencherdev/bencher@main
@@ -59,7 +36,7 @@ jobs:
         --start-point-hash '${{ github.event.pull_request.base.sha }}' \
         --start-point-clone-thresholds \
         --start-point-reset \
-        --testbed "${{ matrix.os }}" \
+        --testbed ubuntu-latest \
         --err \
         --adapter python_pytest \
         --file results.json \
