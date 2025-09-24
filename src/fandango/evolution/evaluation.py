@@ -1,4 +1,5 @@
 import random
+from time import sleep
 from typing import Counter, Union
 from collections.abc import Generator
 
@@ -92,6 +93,7 @@ class Evaluator:
     def evaluate_hard_constraints(
         self, individual: DerivationTree
     ) -> tuple[float, list[FailingTree]]:
+        sleep(0.1)
         if len(self._hard_constraints) == 0:
             return 1.0, []
 
