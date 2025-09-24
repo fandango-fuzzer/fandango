@@ -40,6 +40,7 @@ runs:
         fi
 
     - name: Install Python dependencies
+      shell: bash
       run: |
         pip install -e ".[${{ inputs.target }}]"
       env:
