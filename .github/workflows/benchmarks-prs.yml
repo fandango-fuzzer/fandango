@@ -34,6 +34,7 @@ jobs:
   upload_benchmark_results:
     # upload results in a second job with access to the secrets, so no secrets leak, even for PRs across forks
     # see https://bencher.dev/docs/how-to/github-actions/#pull-requests-from-forks
+    name: Upload Benchmarks
     needs: run_benchmarks
     permissions:
       pull-requests: write
@@ -77,6 +78,6 @@ jobs:
           --testbed ubuntu-latest \
           --err \
           --adapter python_pytest \
-          --file "$BENCHMARK_RESULTS"
+          --file "$BENCHMARK_RESULTS" \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
-          --ci-number "$PR_NUMBER" \
+          --ci-number "$PR_NUMBER"
