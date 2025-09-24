@@ -4,6 +4,7 @@ import enum
 from collections.abc import Iterator, Sequence
 from typing import TYPE_CHECKING, Any
 from fandango.errors import FandangoValueError
+from fandango.language.symbols.symbol import Symbol
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
@@ -98,10 +99,12 @@ class Node(abc.ABC):
     def children(self):
         return []
 
+    @abc.abstractmethod
+    def to_symbol(self) -> Symbol:
+        raise NotImplementedError("to_symbol method not implemented")
+
     def __repr__(self):
-        raise NotImplementedError(
-            "__repr__ not implemented, use method specific to your usecase"
-        )
+        return f"{type(self).__name__}({self.to_symbol()})"
 
     def __str__(self):
         raise NotImplementedError(
