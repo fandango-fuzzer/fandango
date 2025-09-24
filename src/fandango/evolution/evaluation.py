@@ -265,7 +265,7 @@ class IoEvaluator(Evaluator):
             warnings_are_errors,
         )
         self._submitted_solutions: set[int] = set()
-        self._hold_back_solutions: set[int] = set()
+        self._hold_back_solutions: set[DerivationTree] = set()
         self._past_trees = []
 
     def get_past_msgs(
@@ -336,7 +336,7 @@ class IoEvaluator(Evaluator):
                     and msg_hash not in self._solution_set
                     and msg_hash not in self._hold_back_solutions
                 ):
-                    self._hold_back_solutions.add(msg_hash)
+                    self._hold_back_solutions.add(individual)
 
         self._fitness_cache[key] = (fitness, failing_trees)
         return fitness, failing_trees
