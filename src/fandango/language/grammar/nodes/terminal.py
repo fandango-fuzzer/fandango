@@ -13,6 +13,8 @@ from fandango.language.tree import DerivationTree
 import fandango.language.grammar.nodes as nodes
 from fandango.language.tree_value import TreeValueType
 from fandango.logger import LOGGER
+from fandango.language.symbols.symbol import Symbol
+from fandango.language.symbols.non_terminal import NonTerminal
 
 if TYPE_CHECKING:
     import fandango

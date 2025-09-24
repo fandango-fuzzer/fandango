@@ -5,6 +5,8 @@ from fandango.language.symbols import NonTerminal, Symbol
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.tree import DerivationTree
+from fandango.language.symbols.symbol import Symbol
+from fandango.language.symbols.non_terminal import NonTerminal
 
 if TYPE_CHECKING:
     import fandango
