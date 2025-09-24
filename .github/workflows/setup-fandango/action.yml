@@ -1,7 +1,6 @@
 name: Install Fandango
 description: Prepare and setup Fandango including dependencies for testing.
 
-# ---------- new section ----------
 inputs:
   python-version:
     description: "Which Python version to use"
@@ -17,7 +16,6 @@ inputs:
     description: "Whether to skip the parser"
     required: false
     default: ""
-# ---------------------------------
 
 runs:
   using: composite
