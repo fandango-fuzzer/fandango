@@ -24,6 +24,6 @@ jobs:
           bencher archive \
           --project fandango-394f926-x0wdsa1zilqt3 \
           --token '${{ secrets.BENCHER_API_TOKEN }}' \
-          --branch "$GITHUB_HEAD_REF"
+          --branch "${{ github.head_ref }}"
 
     
