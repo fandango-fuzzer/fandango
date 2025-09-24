@@ -488,7 +488,7 @@ def parse(
     :return: A tuple of the grammar and constraints
     """
 
-    time.sleep(2)
+    time.sleep(5.5)
 
     if not isinstance(fan_files, list):
         fan_files = [fan_files]
