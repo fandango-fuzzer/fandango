@@ -119,9 +119,9 @@ class Repetition(Node):
         filter_controlflow: bool = False,
     ) -> Iterator["Node"]:
         base: list = []
-        if self.min == 0:
-            base.append(TerminalNode(Terminal(""), self._grammar_settings))
-        if self.min <= 1 <= self.max:
+        #if self.min == 0:
+            #base.append(TerminalNode(Terminal(""), self._grammar_settings))
+        if 0 < self.max:
             if filter_controlflow and self.node.is_controlflow:
                 base.extend(self.node.descendents(grammar, filter_controlflow=True))
             else:
@@ -153,7 +153,7 @@ class Star(Repetition):
         grammar_settings: Sequence[HasSettings],
         id: str = "",
     ):
-        super().__init__(node, grammar_settings, id, min_=0)
+        super().__init__(node, grammar_settings, id, min_=0, distance_to_completion=0.0)
 
     def to_symbol(self) -> Symbol:
         return NonTerminal(f"<__{self.id}>")
