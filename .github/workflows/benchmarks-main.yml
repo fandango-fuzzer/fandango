@@ -31,7 +31,7 @@ jobs:
           bencher run \
           --project fandango-394f926-x0wdsa1zilqt3 \
           --token '${{ secrets.BENCHER_API_TOKEN }}' \
-          --branch "${{ github.ref }}" \
+          --branch "${{ github.ref_name }}" \
           --testbed ubuntu-latest \
           --threshold-measure latency \
           --threshold-test t_test \
