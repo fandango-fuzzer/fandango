@@ -14,7 +14,7 @@ jobs:
       checks: write
     steps:
       - name: Install Fandango
-        uses: ./.github/workflows/partials/install-fandango.yml
+        uses: ./.github/workflows/setup-fandango
         with:
           python-version: 3.13
           needs-sudo: true
