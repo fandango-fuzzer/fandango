@@ -554,14 +554,17 @@ class Fandango:
                 self.population_manager.allow_fallback_packets = False
                 self._initial_solutions.clear()
 
-                solutions = list(
-                    self.population_manager.refill_population(
-                        current_population=self.population,
-                        eval_individual=self.evaluator.evaluate_individual,
-                        max_nodes=self.current_max_nodes,
-                        target_population_size=self.population_size,
-                    )
-                )
+                try:
+                    solutions = [next(
+                        self.population_manager.refill_population(
+                            current_population=self.population,
+                            eval_individual=self.evaluator.evaluate_individual,
+                            max_nodes=self.current_max_nodes,
+                            target_population_size=self.population_size,
+                        )
+                    )]
+                except StopIteration:
+                    solutions = []
                 if not solutions:
                     solutions, self.evaluation = GeneratorWithReturn(
                         self.evaluator.evaluate_population(self.population)
