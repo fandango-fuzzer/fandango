@@ -40,6 +40,9 @@ jobs:
         python-version: [ 3.13 ]  # Python version to run
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Install Fandango
         uses: ./.github/workflows/setup-fandango
         with:
