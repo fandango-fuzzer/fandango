@@ -1,48 +1,80 @@
-name: "Benchmarks: Run on PRs from within the repository"
+name: "Benchmarks: Run on External PRs"
 
 on:
   pull_request:
     types: [opened, reopened, edited, synchronize]
-  
+
 jobs:
-  benchmark_pr_branch:
-    name: Continuous Benchmarking PRs with Bencher
+  benchmark_fork_pr_branch:
+    name: Run Fork PR Benchmarks
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Fandango
+        uses: ./.github/workflows/setup-fandango
+        with:
+          python-version: 3.13
+          needs-sudo: true
+          target: test
 
-    # DO NOT REMOVE: For handling Fork PRs see Pull Requests from Forks
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-
+      - name: Run Benchmarks
+        run: |
+          pytest -n 0 --benchmark-json results.json tests/test_benchmarks.py
+      - name: Upload Benchmark Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: results.json
+          path: ./results.json
+      - name: Upload GitHub Pull Request Event
+        uses: actions/upload-artifact@v4
+        with:
+          name: event.json
+          path: ${{ github.event_path }}
+          
+  track_fork_pr_branch:
+    needs: benchmark_fork_pr_branch
     permissions:
       pull-requests: write
       checks: write
-
+    runs-on: ubuntu-latest
+    env:
+      BENCHMARK_RESULTS: results.json
+      PR_EVENT: event.json
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Install Fandango
-      uses: ./.github/workflows/setup-fandango
-      with:
-        python-version: 3.13
-        needs-sudo: true
-        target: test
-
-    - name: Set up Bencher
-      uses: bencherdev/bencher@main
-
-    - name: Track PR Benchmarks with Bencher
-      run: |
-        bencher run \
-        --project fandango-394f926-x0wdsa1zilqt3 \
-        --token '${{ secrets.BENCHER_API_TOKEN }}' \
-        --branch "${{ github.head_ref }}" \
-        --start-point "${{ github.base_ref }}" \
-        --start-point-hash '${{ github.event.pull_request.base.sha }}' \
-        --start-point-clone-thresholds \
-        --start-point-reset \
-        --testbed ubuntu-latest \
-        --err \
-        --adapter python_pytest \
-        --file results.json \
-        --github-actions '${{ secrets.GITHUB_TOKEN }}' \
-        "pytest -n 0 --benchmark-json results.json tests/test_benchmarks.py"
+      - name: Download Benchmark Results
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.BENCHMARK_RESULTS }}
+      - name: Download PR Event
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.PR_EVENT }}
+      - name: Export PR Event Data
+        uses: actions/github-script@v6
+        with:
+          script: |
+            let fs = require('fs');
+            let prEvent = JSON.parse(fs.readFileSync(process.env.PR_EVENT, {encoding: 'utf8'}));
+            core.exportVariable("PR_HEAD", prEvent.pull_request.head.ref);
+            core.exportVariable("PR_HEAD_SHA", prEvent.pull_request.head.sha);
+            core.exportVariable("PR_BASE", prEvent.pull_request.base.ref);
+            core.exportVariable("PR_BASE_SHA", prEvent.pull_request.base.sha);
+            core.exportVariable("PR_NUMBER", prEvent.number);
+      - uses: bencherdev/bencher@main
+      - name: Track Benchmarks with Bencher
+        run: |
+          bencher run \
+          --project fandango-394f926-x0wdsa1zilqt3  \
+          --token '${{ secrets.BENCHER_API_TOKEN }}' \
+          --branch "$PR_HEAD" \
+          --hash "$PR_HEAD_SHA" \
+          --start-point "$PR_BASE" \
+          --start-point-hash "$PR_BASE_SHA" \
+          --start-point-clone-thresholds \
+          --start-point-reset \
+          --testbed ubuntu-latest \
+          --err \
+          --adapter json \
+          --github-actions '${{ secrets.GITHUB_TOKEN }}' \
+          --ci-number "$PR_NUMBER" \
+          --file "$BENCHMARK_RESULTS"
