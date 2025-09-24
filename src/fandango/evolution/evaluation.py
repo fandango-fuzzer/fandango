@@ -93,7 +93,7 @@ class Evaluator:
     def evaluate_hard_constraints(
         self, individual: DerivationTree
     ) -> tuple[float, list[FailingTree]]:
-        sleep(0.001)
+        sleep(0.01)
         if len(self._hard_constraints) == 0:
             return 1.0, []
 
