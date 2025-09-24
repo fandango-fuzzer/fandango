@@ -16,7 +16,7 @@ jobs:
     steps:
       # Step 1: Install Fandango
       - name: Install Fandango
-        uses: ./.github/workflows/partials/install-fandango.yml
+        uses: ./.github/workflows/setup-fandango
         with:
           python-version: 3.13
           needs-sudo: true

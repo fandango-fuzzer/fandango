@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Install Fandango
-        uses: ./.github/workflows/partials/install-fandango.yml
+        uses: ./.github/workflows/setup-fandango
         with:
           python-version: ${{ matrix.python-version }}
           needs-sudo: ${{ matrix.os == 'ubuntu-latest' }}
