@@ -13,6 +13,9 @@ jobs:
     permissions:
       checks: write
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
       - name: Install Fandango
         uses: ./.github/workflows/setup-fandango
         with:
