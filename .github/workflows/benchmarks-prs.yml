@@ -76,7 +76,7 @@ jobs:
           --start-point-reset \
           --testbed ubuntu-latest \
           --err \
-          --adapter json \
+          --adapter python_pytest \
+          --file "$BENCHMARK_RESULTS"
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
           --ci-number "$PR_NUMBER" \
-          --file "$BENCHMARK_RESULTS"
