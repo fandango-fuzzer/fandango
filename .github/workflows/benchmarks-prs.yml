@@ -1,12 +1,12 @@
-name: "Benchmarks: Run on External PRs"
+name: "Benchmarks: Run for PR"
 
 on:
   pull_request:
     types: [opened, reopened, edited, synchronize]
 
 jobs:
-  benchmark_fork_pr_branch:
-    name: Run Fork PR Benchmarks
+  run_benchmarks:
+    name: Run PR Benchmarks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,8 +31,10 @@ jobs:
           name: event.json
           path: ${{ github.event_path }}
           
-  track_fork_pr_branch:
-    needs: benchmark_fork_pr_branch
+  upload_benchmark_results:
+    # upload results in a second job with access to the secrets, so no secrets leak, even for PRs across forks
+    # see https://bencher.dev/docs/how-to/github-actions/#pull-requests-from-forks
+    needs: run_benchmarks
     permissions:
       pull-requests: write
       checks: write
@@ -61,7 +63,7 @@ jobs:
             core.exportVariable("PR_BASE_SHA", prEvent.pull_request.base.sha);
             core.exportVariable("PR_NUMBER", prEvent.number);
       - uses: bencherdev/bencher@main
-      - name: Track Benchmarks with Bencher
+      - name: Upload Benchmarks with Bencher
         run: |
           bencher run \
           --project fandango-394f926-x0wdsa1zilqt3  \
