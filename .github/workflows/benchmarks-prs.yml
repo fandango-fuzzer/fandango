@@ -54,8 +54,8 @@ jobs:
         bencher run \
         --project fandango-394f926-x0wdsa1zilqt3 \
         --token '${{ secrets.BENCHER_API_TOKEN }}' \
-        --branch "$GITHUB_HEAD_REF" \
-        --start-point "$GITHUB_BASE_REF" \
+        --branch "${{ github.head_ref }}" \
+        --start-point "${{ github.base_ref }}" \
         --start-point-hash '${{ github.event.pull_request.base.sha }}' \
         --start-point-clone-thresholds \
         --start-point-reset \
