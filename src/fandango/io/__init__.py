@@ -16,7 +16,6 @@ from fandango.errors import FandangoError, FandangoValueError
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
 
-
 class Protocol(enum.Enum):
     TCP = "TCP"
     UDP = "UDP"
@@ -170,7 +169,8 @@ class ProtocolDecorator(ABC):
 
 
 class UdpTcpProtocolDecorator(ProtocolDecorator):
-    BUFFER_SIZE = 1024  # Size of the buffer for receiving data
+    BUFFER_SIZE_UDP = 1024  # Size of the buffer for receiving data
+    BUFFER_SIZE_TCP = 1  # Size of the buffer for receiving data
 
     def __init__(
         self,
@@ -193,6 +193,7 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
         )
         self._running = False
         assert protocol_type == Protocol.TCP or protocol_type == Protocol.UDP
+        self._buffer_size = UdpTcpProtocolDecorator.BUFFER_SIZE_TCP if protocol_type == Protocol.TCP else UdpTcpProtocolDecorator.BUFFER_SIZE_UDP
         self._protocol_type = protocol_type
         self._sock: Optional[socket.socket] = None
         self._connection: Optional[socket.socket] = None
@@ -271,7 +272,7 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
                     if self.endpoint_type == EndpointType.OPEN:
                         assert self._sock is not None
                         while self._running:
-                            rlist, _, _ = select.select([self._sock], [], [], 0.1)
+                            rlist, _, _ = select.select([self._sock], [], [], 0.00001)
                             if rlist:
                                 self._connection, _ = self._sock.accept()
                                 break
@@ -283,7 +284,7 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
                         except BlockingIOError:
                             pass
                         while self._running:
-                            _, wlist, _ = select.select([], [self._sock], [], 0.1)
+                            _, wlist, _ = select.select([], [self._sock], [], 0.00001)
                             if wlist:
                                 self._connection = self._sock
                                 break
@@ -301,12 +302,12 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
         while self._running:
             try:
                 assert self._connection is not None
-                rlist, _, _ = select.select([self._connection], [], [], 0.1)
+                rlist, _, _ = select.select([self._connection], [], [], 0.00001)
                 if rlist and self._running:
                     if self.protocol_type == Protocol.TCP:
-                        data = self._connection.recv(self.BUFFER_SIZE)
+                        data = self._connection.recv(self._buffer_size)
                     else:
-                        data, addr = self._connection.recvfrom(self.BUFFER_SIZE)
+                        data, addr = self._connection.recvfrom(self._buffer_size)
                         self.current_remote_addr = addr
                     if len(data) == 0:
                         continue  # Keep waiting if connection is open but no data
@@ -361,8 +362,14 @@ class ConnectParty(FandangoParty):
         protocol = Protocol(prot)
         if host is None:
             host = self.DEFAULT_IP
-        info = socket.getaddrinfo(host, None, socket.AF_INET)
-        ip = info[0][4][0]
+        try:
+            info = socket.getaddrinfo(host, None, socket.AF_INET)
+            ip = info[0][4][0]
+            ip_type=IpType.IPV4
+        except socket.gaierror:
+            info = socket.getaddrinfo(host, None, socket.AF_INET6)
+            ip = info[0][4][0]
+            ip_type=IpType.IPV6
         if isinstance(ip, int):
             raise FandangoValueError(f"Invalid IP address: {ip}")
         if port is None:
@@ -372,7 +379,7 @@ class ConnectParty(FandangoParty):
             self.protocol_impl = UdpTcpProtocolDecorator(
                 endpoint_type=endpoint_type,
                 protocol_type=protocol,
-                ip_type=IpType.IPV4,
+                ip_type=ip_type,
                 ip=ip,
                 port=port,
                 party_instance=self,
@@ -441,6 +448,12 @@ class StdOut(FandangoParty):
         :param recipient: The recipient of the message. Only present if the grammar specifies a recipient.
         """
         self.stream.write(message.to_string())
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
 
 
 class StdIn(FandangoParty):
@@ -562,12 +575,33 @@ class FandangoIO(object):
         :param message: The message received from the sender.
         """
         with self.receive_lock:
-            self.receive.append((sender, receiver, message))
+            if isinstance(message, bytes):
+                for fragment in message:
+                    self.receive.append((sender, receiver, bytes([fragment])))
+            else:
+                for fragment in message:
+                    self.receive.append((sender, receiver, fragment))
 
     def received_msg(self) -> bool:
         """Checks if there are any received messages from external parties."""
         with self.receive_lock:
             return len(self.receive) != 0
+
+    def get_full_fragements(
+        self,
+    ) -> list[tuple[str, str, str | bytes]]:
+        """Returns a list of all received messages from external parties, combining consecutive fragments from the same sender to the same receiver."""
+        fragments = []
+        prev_sender_receiver = (None, None)
+        for idx, (sender, recipient, msg_fragment) in enumerate(
+                self.get_received_msgs()
+        ):
+            if (sender, recipient) != prev_sender_receiver:
+                prev_sender_receiver = (sender, recipient)
+                fragments.append(prev_sender_receiver + (msg_fragment,))
+            else:
+                fragments[-1] = (prev_sender_receiver + ((fragments[-1][2] + msg_fragment),))
+        return fragments
 
     def get_received_msgs(self) -> list[tuple[str, str, str | bytes]]:
         """Returns a list of all received messages from external parties."""
