@@ -42,5 +42,5 @@ jobs:
           --adapter python_pytest \
           --file results.json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
-          "pytest -n 0 --benchmark-json results.json tests/test_benchmarks.py"
+          "pytest -n 0 --timeout 21600 --benchmark-json results.json tests/test_benchmarks.py"
     
