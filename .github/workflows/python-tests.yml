@@ -17,28 +17,14 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/checkout@v4
+        
+      - name: Install Fandango
+        uses: ./.github/workflows/setup-fandango
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-
-      - name: Install system dependencies
-        env:
-          NEEDS_SUDO: ${{ matrix.os == 'ubuntu-latest' }}
-        shell: bash
-        run: |
-          if [ "$NEEDS_SUDO" = "true" ]; then
-            sudo make test-tools
-          else
-            make test-tools
-          fi
-
-      - name: Install Python dependencies
-        run: |
-          pip install -e ".[test]"
+          needs-sudo: ${{ matrix.os == 'ubuntu-latest' }}
+          target: test
 
       # Run tests or coverage depending on branch and OS
       - name: Run tests (dev or non-Ubuntu)

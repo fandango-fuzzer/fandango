@@ -53,17 +53,17 @@ class Tree(Container):
         """
         return [self.tree]
 
-    def evaluate(self):
+    def evaluate(self) -> DerivationTree:
         """
         Evaluate the container. The evaluation of a Tree container is the tree itself.
         :return DerivationTree: The derivation tree.
         """
         return self.tree
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Tree(" + repr(self.tree.value()) + ")"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.tree)
 
 
@@ -86,7 +86,7 @@ class TreeList(Container):
         """
         return self.trees
 
-    def evaluate(self):
+    def evaluate(self) -> list[DerivationTree]:
         """
         Evaluate the container. The evaluation of a TreeList container is the list of trees itself.
         :return list[DerivationTree]: The list of derivation trees.
@@ -113,17 +113,17 @@ class Length(Container):
         """
         return self.trees
 
-    def evaluate(self):
+    def evaluate(self) -> int:
         """
         Evaluate the container. The evaluation of a Length container is the length of the list of trees.
         :return int: The length of the list of trees.
         """
         return len(self.trees)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Length([" + ", ".join(repr(tree.value()) for tree in self.trees) + "])"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return repr(self)
 
 
@@ -198,12 +198,12 @@ class NonTerminalSearch(abc.ABC):
             targets.extend(self.find(tree, scope=scope, population=population))
         return targets
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         raise NotImplementedError(
             "Repr not implemented, use method specific to your usecase"
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         raise NotImplementedError(
             "Repr not implemented, use method specific to your usecase"
         )
@@ -277,7 +277,7 @@ class LengthSearch(NonTerminalSearch):
     def format_as_spec(self) -> str:
         return f"|{self.value.format_as_spec()}|"
 
-    def get_access_points(self):
+    def get_access_points(self) -> list[NonTerminal]:
         return self.value.get_access_points()
 
 
@@ -315,7 +315,7 @@ class RuleSearch(NonTerminalSearch):
         else:
             return list(map(Tree, tree.find_direct_trees(self.symbol)))
 
-    def get_access_points(self):
+    def get_access_points(self) -> list[NonTerminal]:
         return [self.symbol]
 
     def format_as_spec(self) -> str:
@@ -370,7 +370,7 @@ class AttributeSearch(NonTerminalSearch):
     def format_as_spec(self) -> str:
         return f"{self.base.format_as_spec()}.{self.attribute.format_as_spec()}"
 
-    def get_access_points(self):
+    def get_access_points(self) -> list[NonTerminal]:
         return self.attribute.get_access_points()
 
 
@@ -422,7 +422,7 @@ class DescendantAttributeSearch(NonTerminalSearch):
     def format_as_spec(self) -> str:
         return f"{self.base.format_as_spec()}..{self.attribute.format_as_spec()}"
 
-    def get_access_points(self):
+    def get_access_points(self) -> list[NonTerminal]:
         return self.attribute.get_access_points()
 
 
@@ -444,7 +444,7 @@ class ItemSearch(NonTerminalSearch):
         self.base = base
         self.slices = slices
 
-    def _find(self, bases: list[Container]):
+    def _find(self, bases: list[Container]) -> list[Container]:
         return list(
             map(
                 Tree,
@@ -491,7 +491,7 @@ class ItemSearch(NonTerminalSearch):
                 slice_reprs.append(repr(slice_))
         return f"{self.base.format_as_spec()}[{', '.join(slice_reprs)}]"
 
-    def get_access_points(self):
+    def get_access_points(self) -> list[NonTerminal]:
         return self.base.get_access_points()
 
 
@@ -516,7 +516,7 @@ class SelectiveSearch(NonTerminalSearch):
         self.symbols = symbols
         self.slices = slices or [None] * len(symbols)
 
-    def _find(self, bases: list[Container]):
+    def _find(self, bases: list[Container]) -> list[Container]:
         result = []
         for symbol, is_direct, items in zip(*zip(*self.symbols), self.slices):
             if is_direct:
@@ -573,7 +573,7 @@ class SelectiveSearch(NonTerminalSearch):
             slice_reprs.append(slice_repr)
         return f"{self.base.format_as_spec()}{{{', '.join(slice_reprs)}}}"
 
-    def get_access_points(self):
+    def get_access_points(self) -> list[NonTerminal]:
         return [symbol for symbol, _ in self.symbols]
 
 

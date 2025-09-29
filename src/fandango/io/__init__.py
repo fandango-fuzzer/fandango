@@ -149,13 +149,13 @@ class ProtocolDecorator(ABC):
         self.ip_type = ip_type
         self._party_instance = party_instance
 
-    def on_send(self, message: DerivationTree, recipient: Optional[str]):
+    def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
         raise NotImplementedError("Please Implement this method")
 
-    def start(self):
+    def start(self) -> None:
         raise NotImplementedError("Please Implement this method")
 
-    def stop(self):
+    def stop(self) -> None:
         raise NotImplementedError("Please Implement this method")
 
     @property
@@ -199,7 +199,7 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
         """Returns the protocol type of this socket."""
         return self._protocol_type
 
-    def start(self):
+    def start(self) -> None:
         """Starts the socket party according to the given configuration. If the party is already
         running or ownership is not set to Ownership.FUZZER, it does nothing."""
         if self._running:
@@ -210,7 +210,7 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
         self._create_socket()
         self._connect()
 
-    def _create_socket(self):
+    def _create_socket(self) -> None:
         protocol = (
             socket.SOCK_STREAM
             if self._protocol_type == Protocol.TCP
@@ -220,7 +220,7 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
         self._sock = socket.socket(ip_type, protocol)
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-    def _connect(self):
+    def _connect(self) -> None:
         if self.endpoint_type == EndpointType.OPEN:
             assert self._sock is not None
             self._sock.bind((self.ip, self.port))
@@ -231,7 +231,7 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
         self._send_thread.daemon = True
         self._send_thread.start()
 
-    def stop(self):
+    def stop(self) -> None:
         """Stops the current socket."""
         self._running = False
         if self._send_thread is not None:
@@ -258,7 +258,7 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
                 pass
             self._sock = None
 
-    def _wait_accept(self):
+    def _wait_accept(self) -> None:
         with self._lock:
             if self._connection is None:
                 if self.protocol_type == Protocol.TCP:
@@ -287,7 +287,7 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
                     assert self._sock is not None
                     self._connection = self._sock
 
-    def _listen(self):
+    def _listen(self) -> None:
         self._wait_accept()
         if not self._running:
             return
@@ -309,7 +309,7 @@ class UdpTcpProtocolDecorator(ProtocolDecorator):
                 self._running = False
                 break
 
-    def on_send(self, message: DerivationTree, recipient: Optional[str]):
+    def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
         """Called when Fandango wants to send a message as this party.
         :param message: The message to send.
         :param recipient: The recipient of the message. Only present if the grammar specifies a recipient.
@@ -379,24 +379,24 @@ class ConnectParty(FandangoParty):
             raise FandangoError("Protocol implementation not initialized.")
         self.protocol_impl.on_send(message, recipient)
 
-    def start(self):
+    def start(self) -> None:
         if self.protocol_impl is None:
             raise FandangoError("Protocol implementation not initialized.")
         self.protocol_impl.start()
 
-    def stop(self):
+    def stop(self) -> None:
         if self.protocol_impl is None:
             raise FandangoError("Protocol implementation not initialized.")
         self.protocol_impl.stop()
 
     @property
-    def ip(self):
+    def ip(self) -> Optional[str]:
         if self.protocol_impl is None:
             raise FandangoError("Protocol implementation not initialized.")
         return self.protocol_impl.ip
 
     @ip.setter
-    def ip(self, host: str):
+    def ip(self, host: Optional[str]) -> None:
         """Sets the ip for the connection. Applied after a (re)start of the connection party."""
         if self.protocol_impl is None:
             raise FandangoError("Protocol implementation not initialized.")
@@ -407,13 +407,13 @@ class ConnectParty(FandangoParty):
         self.protocol_impl.ip = ip
 
     @property
-    def port(self):
+    def port(self) -> Optional[int]:
         if self.protocol_impl is None:
             raise FandangoError("Protocol implementation not initialized.")
         return self.protocol_impl.port
 
     @port.setter
-    def port(self, port: int):
+    def port(self, port: Optional[int]) -> None:
         """Sets the port for the connection. Applied after a (re)start of the connection party."""
         if self.protocol_impl is None:
             raise FandangoError("Protocol implementation not initialized.")
@@ -425,11 +425,11 @@ class StdOut(FandangoParty):
     The party is always owned by Fandango (Ownership.FUZZER), meaning it sends messages generated by Fandango.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(ownership=Ownership.FANDANGO_PARTY)
         self.stream = sys.stdout
 
-    def on_send(self, message: DerivationTree, recipient: Optional[str]):
+    def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
         """Called by Fandango, when it wants to write a message to StdOut.
         :param message: The message to send.
         :param recipient: The recipient of the message. Only present if the grammar specifies a recipient.
@@ -442,14 +442,14 @@ class StdIn(FandangoParty):
     The ownership of this party is always Ownership.EXTERNAL, meaning it is an external party.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(ownership=Ownership.EXTERNAL_PARTY)
         self.running = True
         self.stream = sys.stdin
         self.listen_thread = threading.Thread(target=self._listen_loop, daemon=True)
         self.listen_thread.start()
 
-    def _listen_loop(self):
+    def _listen_loop(self) -> None:
         while self.running:
             rlist, _, _ = select.select([self.stream], [], [], 0.1)
             if rlist:
@@ -468,12 +468,12 @@ class Out(FandangoParty):
     The ownership of this party is always Ownership.EXTERNAL, meaning it is an external party.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(ownership=Ownership.EXTERNAL_PARTY)
         self.proc = ProcessManager.instance().get_process()
         threading.Thread(target=self._listen_loop, daemon=True).start()
 
-    def _listen_loop(self):
+    def _listen_loop(self) -> None:
         while True:
             if self.proc.stdout is not None:
                 line = self.proc.stdout.read(1)
@@ -486,7 +486,7 @@ class In(FandangoParty):
     The ownership of this party is always Ownership.FUZZER, meaning it sends messages generated by Fandango.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(ownership=Ownership.FANDANGO_PARTY)
         self.proc = ProcessManager.instance().get_process()
         self._close_post_transmit = False
@@ -497,13 +497,13 @@ class In(FandangoParty):
         return self._close_post_transmit
 
     @close_post_transmit.setter
-    def close_post_transmit(self, value: bool):
+    def close_post_transmit(self, value: bool) -> None:
         """Sets whether the stdin of the process should be closed after transmitting a message."""
         if self._close_post_transmit == value:
             return
         self._close_post_transmit = value
 
-    def on_send(self, message: DerivationTree, recipient: Optional[str]):
+    def on_send(self, message: DerivationTree, recipient: Optional[str]) -> None:
         """Called by Fandango, when it wants to write a message to the external process.
         :param message: The message to send.
         :param recipient: The recipient of the message. Only present if the grammar specifies a recipient.
@@ -530,12 +530,12 @@ class FandangoIO(object):
         assert cls._instance is not None
         return cls._instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Constructor for the FandangoIO class. Singleton! Do not call this method directly. Call instance() instead."""
         assert FandangoIO._instance is None, "FandangoIO singleton already created"
         FandangoIO._instance = self
-        self.receive = list[tuple[str, str, str | bytes]]()
-        self.parties = dict[str, FandangoParty]()
+        self.receive: list[tuple[str, str, str | bytes]] = []
+        self.parties: dict[str, FandangoParty] = {}
         self.receive_lock = threading.Lock()
 
     def add_receive(self, sender: str, receiver: str, message: str | bytes) -> None:
@@ -592,15 +592,15 @@ class FandangoIO(object):
 class ProcessManager(object):
     _instance: Optional["ProcessManager"] = None
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Constructor for the ProcessManager class. Singleton! Do not call this method directly. Call instance() instead."""
         assert (
             ProcessManager._instance is None
         ), "ProcessManager singleton already created"
         ProcessManager._instance = self
-        self._command = None
+        self._command: Optional[str | list[str]] = None
         self.lock = threading.Lock()
-        self.proc = None
+        self.proc: Optional[subprocess.Popen[str]] = None
 
     @classmethod
     def instance(cls) -> "ProcessManager":
@@ -610,7 +610,7 @@ class ProcessManager(object):
         assert cls._instance is not None
         return cls._instance
 
-    def get_process(self) -> subprocess.Popen:
+    def get_process(self) -> subprocess.Popen[str]:
         """Returns the current process if it exists, otherwise starts a new one based on the command set."""
         with self.lock:
             if not self.proc:
@@ -626,7 +626,7 @@ class ProcessManager(object):
         """Returns the command to be executed to start the process."""
         return self._command
 
-    def set_command(self, value: str | list[str], text: bool = True):
+    def set_command(self, value: str | list[str], text: bool = True) -> None:
         """Sets the command to be executed to start the process."""
         assert isinstance(
             value, (str, list)
@@ -637,7 +637,7 @@ class ProcessManager(object):
             self._command = value
         self.text = text
 
-    def _start_process(self):
+    def _start_process(self) -> None:
         command = self.command
         if command is None:
             return
@@ -652,7 +652,7 @@ class ProcessManager(object):
         )
 
 
-def set_program_command(command: str | list[str], text: bool = True):
+def set_program_command(command: str | list[str], text: bool = True) -> None:
     """
     Set the command to be executed by the ProcessManager.
     :param command: The command to execute.

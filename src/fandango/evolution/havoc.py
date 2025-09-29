@@ -66,11 +66,11 @@ INTERESTING_VALUES = {
 
 
 def _wrapping_add(a: int, b: int, byte_size: int = 1) -> int:
-    return (a + b) % (256**byte_size)
+    return (a + b) % int(256**byte_size)
 
 
 def _wrapping_sub(a: int, b: int, byte_size: int = 1) -> int:
-    return (a - b) % (256**byte_size)
+    return (a - b) % int(256**byte_size)
 
 
 def _get_random_index(input: bytearray) -> int:
@@ -553,8 +553,8 @@ def havoc_mutate(
     mutations: (
         list[ByteLevelMutationOperator] | tuple[ByteLevelMutationOperator, ...]
     ) = havoc_mutations(),
-    max_stack_pow=7,
-    nop_probability=0,
+    max_stack_pow: int = 7,
+    nop_probability: float = 0,
 ) -> bytes:
     """
     Mutates the input using the given mutations, defaulting to a .
