@@ -165,5 +165,5 @@ class DistanceAwareConstraintFitness(ConstraintFitness):
             self.values[:], self.success, self.failing_trees
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"DistanceAwareConstraintFitness(values={self.values})"
