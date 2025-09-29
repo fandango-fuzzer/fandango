@@ -233,7 +233,7 @@ def _distance_norm(left: Any, right: Any) -> float | None:
         except Exception:
             return None
 
-    if isinstance(dist, int | float):
+    if dist is float | int:
         dist = 2 * (_sigmoid(abs(dist)) - 0.5)
         return dist
     else:
