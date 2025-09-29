@@ -6,6 +6,7 @@ from fandango.language.tree import DerivationTree
 from fandango.constraints.constraint_visitor import ConstraintVisitor
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.fitness import (
+    ConstraintFitness,
     DistanceAwareConstraintFitness,
     FailingTree,
 )
@@ -39,7 +40,7 @@ class ComparisonConstraint(Constraint):
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
         population: Optional[list[DerivationTree]] = None,
         local_variables: Optional[dict[str, Any]] = None,
-    ) -> DistanceAwareConstraintFitness:
+    ) -> ConstraintFitness:
         """
         Calculate the fitness of the tree based on the given comparison.
         """
@@ -81,8 +82,8 @@ class ComparisonConstraint(Constraint):
                 self.types_checked = self.check_type_compatibility(left, right)
 
             # Initialize the suggestions
-            (fitness, suggestions) = self._evaluate_comparison(left, right)
-            if fitness < 1.0:
+            (fitness_value, suggestions) = self._evaluate_comparison(left, right)
+            if fitness_value < 1.0:
                 # If the comparison is not solved, add the failing trees to the list
                 for _, container in combination:
                     for node in container.get_trees():
@@ -91,7 +92,7 @@ class ComparisonConstraint(Constraint):
                         # failing_trees.append(ft)
                         failing_trees.append(ft)
 
-            fitness_values.append(fitness)
+            fitness_values.append(fitness_value)
 
         if not has_combinations:
             fitness_values.append(1.0)
