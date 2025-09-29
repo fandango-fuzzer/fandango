@@ -3,7 +3,6 @@ name: GitHub Pages
 on:
   pull_request:
   workflow_dispatch: # Allows manual triggering from the Actions tab
-  # Deploy the book only when changes are pushed to main or release
   push:
     branches: [ release ]
 
@@ -52,8 +51,8 @@ jobs:
           path: docs/_build/html/
 
   deploy:
-    # Only deploy on pushes to the release branch (after merges)
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/release' || github.ref == 'refs/heads/main')
+    # Only deploy on pushes to the release branch
+    if: github.event_name == 'push' && github.ref == 'refs/heads/release'
     needs: build
     runs-on: ubuntu-latest
     steps:
