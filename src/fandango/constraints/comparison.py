@@ -1,12 +1,12 @@
 from copy import copy
-import enum
+import math
 from typing import Any, Optional
 from fandango.constraints.failing_tree import Comparison, ComparisonSide
 from fandango.language.tree import DerivationTree
 from fandango.constraints.constraint_visitor import ConstraintVisitor
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.fitness import (
-    ConstraintFitness,
+    DistanceAwareConstraintFitness,
     FailingTree,
 )
 from fandango.language.symbols.non_terminal import NonTerminal
@@ -39,7 +39,7 @@ class ComparisonConstraint(Constraint):
         scope: Optional[dict[NonTerminal, DerivationTree]] = None,
         population: Optional[list[DerivationTree]] = None,
         local_variables: Optional[dict[str, Any]] = None,
-    ) -> ConstraintFitness:
+    ) -> DistanceAwareConstraintFitness:
         """
         Calculate the fitness of the tree based on the given comparison.
         """
@@ -48,16 +48,14 @@ class ComparisonConstraint(Constraint):
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
         # Initialize the fitness values
-        solved = 0
-        total = 0
+        fitness_values = []
         failing_trees = []
         has_combinations = False
         # If the tree is None, the fitness is 0
         if tree is None:
-            return ConstraintFitness(0, 0, False)
+            return DistanceAwareConstraintFitness([], False)
         # Iterate over all combinations of the tree and the scope
         for combination in self.combinations(tree, scope, population):
-            total += 1
             has_combinations = True
             # Update the local variables to initialize the placeholders with the values of the combination
             local_vars = self.local_variables.copy()
@@ -83,10 +81,8 @@ class ComparisonConstraint(Constraint):
                 self.types_checked = self.check_type_compatibility(left, right)
 
             # Initialize the suggestions
-            (is_solved, suggestions) = self._evaluate_comparison(left, right)
-            if is_solved:
-                solved += 1
-            else:
+            (fitness, suggestions) = self._evaluate_comparison(left, right)
+            if fitness < 1.0:
                 # If the comparison is not solved, add the failing trees to the list
                 for _, container in combination:
                     for node in container.get_trees():
@@ -95,13 +91,15 @@ class ComparisonConstraint(Constraint):
                         # failing_trees.append(ft)
                         failing_trees.append(ft)
 
-        if not has_combinations:
-            solved += 1
-            total += 1
+            fitness_values.append(fitness)
 
-        # Create the fitness object
-        fitness = ConstraintFitness(
-            solved, total, solved == total, failing_trees=failing_trees
+        if not has_combinations:
+            fitness_values.append(1.0)
+
+        fitness = DistanceAwareConstraintFitness(
+            fitness_values,
+            success=all(it == 1.0 for it in fitness_values),
+            failing_trees=failing_trees,
         )
         # Cache the fitness
         self.cache[tree_hash] = fitness
@@ -168,10 +166,13 @@ class ComparisonConstraint(Constraint):
 
     def _evaluate_comparison(
         self, left: Any, right: Any
-    ) -> tuple[bool, list[tuple[Comparison, Any, ComparisonSide]]]:
+    ) -> tuple[float, list[tuple[Comparison, Any, ComparisonSide]]]:
         suggestions = []
         is_solved = self.operator.compare(left, right)
+        fitness = 1.0
         if not is_solved:
+            dist_norm = _distance_norm(left, right)
+            fitness = (1.0 - dist_norm) if dist_norm is not None else 0.0
             match self.operator:
                 case Comparison.EQUAL:
                     if not self.right.strip().startswith("len("):
@@ -183,6 +184,9 @@ class ComparisonConstraint(Constraint):
                             (Comparison.EQUAL, right, ComparisonSide.LEFT)
                         )
                 case Comparison.NOT_EQUAL:
+                    # NOT_EQUAL does not span a range to the fitness is immediately zero if they are equal
+                    fitness = 0.0
+
                     suggestions.append(
                         (Comparison.NOT_EQUAL, left, ComparisonSide.RIGHT)
                     )
@@ -209,5 +213,31 @@ class ComparisonConstraint(Constraint):
                     suggestions.append(
                         (Comparison.LESS_EQUAL, right, ComparisonSide.LEFT)
                     )
-        return is_solved, suggestions
+        return fitness, suggestions
 
+
+def _distance_norm(left: Any, right: Any) -> float | None:
+    """
+    Generates a normalized distance between two values.
+    The values if calculated by `2*sigmoid(|left - right|)`
+    The resulting value is a float between 0 and 1.
+    """
+
+    # Although left and right can be used for comparison, they may not support minus.
+    try:
+        dist = left - right
+    except Exception:
+        try:
+            dist = right - left
+        except Exception:
+            return None
+
+    if isinstance(dist, int | float):
+        dist = 2 * (_sigmoid(abs(dist)) - 0.5)
+        return dist
+    else:
+        return None
+
+
+def _sigmoid(x: float | int):
+    return 1 / (1 + math.exp(-x))
