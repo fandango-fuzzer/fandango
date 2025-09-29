@@ -83,83 +83,7 @@ class ComparisonConstraint(Constraint):
                 self.types_checked = self.check_type_compatibility(left, right)
 
             # Initialize the suggestions
-            suggestions = []
-            is_solved = False
-            match self.operator:
-                case Comparison.EQUAL:
-                    # If the left and right side are equal, the constraint is solved
-                    if left == right:
-                        is_solved = True
-                    else:
-                        # If the left and right side are not equal, add suggestions to the list
-                        if not self.right.strip().startswith("len("):
-                            suggestions.append(
-                                (Comparison.EQUAL, left, ComparisonSide.RIGHT)
-                            )
-                        if not self.left.strip().startswith("len("):
-                            suggestions.append(
-                                (Comparison.EQUAL, right, ComparisonSide.LEFT)
-                            )
-                case Comparison.NOT_EQUAL:
-                    # If the left and right side are not equal, the constraint is solved
-                    if left != right:
-                        is_solved = True
-                    else:
-                        # If the left and right side are equal, add suggestions to the list
-                        suggestions.append(
-                            (Comparison.NOT_EQUAL, left, ComparisonSide.RIGHT)
-                        )
-                        suggestions.append(
-                            (Comparison.NOT_EQUAL, right, ComparisonSide.LEFT)
-                        )
-                case Comparison.GREATER:
-                    # If the left side is greater than the right side, the constraint is solved
-                    if left > right:
-                        is_solved = True
-                    else:
-                        # If the left side is not greater than the right side, add suggestions to the list
-                        suggestions.append(
-                            (Comparison.LESS, left, ComparisonSide.RIGHT)
-                        )
-                        suggestions.append(
-                            (Comparison.GREATER, right, ComparisonSide.LEFT)
-                        )
-                case Comparison.GREATER_EQUAL:
-                    # If the left side is greater than or equal to the right side, the constraint is solved
-                    if left >= right:
-                        is_solved = True
-                    else:
-                        # If the left side is not greater than or equal to the right side, add suggestions to the list
-                        suggestions.append(
-                            (Comparison.LESS_EQUAL, left, ComparisonSide.RIGHT)
-                        )
-                        suggestions.append(
-                            (Comparison.GREATER_EQUAL, right, ComparisonSide.LEFT)
-                        )
-                case Comparison.LESS:
-                    # If the left side is less than the right side, the constraint is solved
-                    if left < right:
-                        is_solved = True
-                    else:
-                        # If the left side is not less than the right side, add suggestions to the list
-                        suggestions.append(
-                            (Comparison.GREATER, left, ComparisonSide.RIGHT)
-                        )
-                        suggestions.append(
-                            (Comparison.LESS, right, ComparisonSide.LEFT)
-                        )
-                case Comparison.LESS_EQUAL:
-                    # If the left side is less than or equal to the right side, the constraint is solved
-                    if left <= right:
-                        is_solved = True
-                    else:
-                        # If the left side is not less than or equal to the right side, add suggestions to the list
-                        suggestions.append(
-                            (Comparison.GREATER_EQUAL, left, ComparisonSide.RIGHT)
-                        )
-                        suggestions.append(
-                            (Comparison.LESS_EQUAL, right, ComparisonSide.LEFT)
-                        )
+            (is_solved, suggestions) = self._evaluate_comparison(left, right)
             if is_solved:
                 solved += 1
             else:
@@ -241,3 +165,49 @@ class ComparisonConstraint(Constraint):
             local_variables=self.local_variables,
             global_variables=self.global_variables,
         )
+
+    def _evaluate_comparison(
+        self, left: Any, right: Any
+    ) -> tuple[bool, list[tuple[Comparison, Any, ComparisonSide]]]:
+        suggestions = []
+        is_solved = self.operator.compare(left, right)
+        if not is_solved:
+            match self.operator:
+                case Comparison.EQUAL:
+                    if not self.right.strip().startswith("len("):
+                        suggestions.append(
+                            (Comparison.EQUAL, left, ComparisonSide.RIGHT)
+                        )
+                    if not self.left.strip().startswith("len("):
+                        suggestions.append(
+                            (Comparison.EQUAL, right, ComparisonSide.LEFT)
+                        )
+                case Comparison.NOT_EQUAL:
+                    suggestions.append(
+                        (Comparison.NOT_EQUAL, left, ComparisonSide.RIGHT)
+                    )
+                    suggestions.append(
+                        (Comparison.NOT_EQUAL, right, ComparisonSide.LEFT)
+                    )
+                case Comparison.GREATER:
+                    suggestions.append((Comparison.LESS, left, ComparisonSide.RIGHT))
+                    suggestions.append((Comparison.GREATER, right, ComparisonSide.LEFT))
+                case Comparison.GREATER_EQUAL:
+                    suggestions.append(
+                        (Comparison.LESS_EQUAL, left, ComparisonSide.RIGHT)
+                    )
+                    suggestions.append(
+                        (Comparison.GREATER_EQUAL, right, ComparisonSide.LEFT)
+                    )
+                case Comparison.LESS:
+                    suggestions.append((Comparison.GREATER, left, ComparisonSide.RIGHT))
+                    suggestions.append((Comparison.LESS, right, ComparisonSide.LEFT))
+                case Comparison.LESS_EQUAL:
+                    suggestions.append(
+                        (Comparison.GREATER_EQUAL, left, ComparisonSide.RIGHT)
+                    )
+                    suggestions.append(
+                        (Comparison.LESS_EQUAL, right, ComparisonSide.LEFT)
+                    )
+        return is_solved, suggestions
+
