@@ -1,6 +1,7 @@
 # fandango/evolution/algorithm.py
 import enum
 import itertools
+import json
 import logging
 import random
 import time
@@ -90,6 +91,7 @@ class Fandango:
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
         self.remote_response_timeout = 15.0
+        self.profiler_file = open("profiler.json", "w")
 
         # Instantiate managers
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
@@ -379,6 +381,19 @@ class Fandango:
         generation = 0
 
         while True:
+            current_generation_profile = {
+                "generation": generation,
+                "avg_tree_size": sum(tree.size() for tree in self.population)
+                / self.population_size,
+                "median_tree_size": sorted(tree.size() for tree in self.population)[
+                    self.population_size // 2
+                ],
+                "max_tree_size": max(tree.size() for tree in self.population),
+                "min_tree_size": min(tree.size() for tree in self.population),
+                "avg_fitness": sum(e[1] for e in self.evaluation)
+                / self.population_size,
+            }
+
             if max_generations is not None and generation >= max_generations:
                 break
             generation += 1
@@ -388,26 +403,35 @@ class Fandango:
             LOGGER.info(f"Generation {generation} - Average Fitness: {avg_fitness:.2f}")
 
             # Selection
+            t = time.time()
             new_population, unique_hashes = self._perform_selection()
+            current_generation_profile["selection"] = time.time() - t
 
+            t = time.time()
             # Crossover
             while (
                 len(new_population) < self.population_size
                 and random.random() < self.adaptive_tuner.crossover_rate
             ):
                 yield from self._perform_crossover(new_population, unique_hashes)
+            current_generation_profile["crossover"] = time.time() - t
 
             # Truncate if necessary
             if len(new_population) > self.population_size:
                 new_population = new_population[: self.population_size]
 
+            t = time.time()
             # Mutation
             yield from self._perform_mutation(new_population)
+            current_generation_profile["mutation"] = time.time() - t
 
+            t = time.time()
             # Destruction
             if self.destruction_rate > 0:
                 new_population = self._perform_destruction(new_population)
+            current_generation_profile["destruction"] = time.time() - t
 
+            t = time.time()
             # Ensure Uniqueness & Fill Population
             new_population = list(set(new_population))
             yield from self.population_manager.refill_population(
@@ -416,7 +440,9 @@ class Fandango:
                 self.adaptive_tuner.current_max_nodes,
                 self.population_size,
             )
+            current_generation_profile["refill"] = time.time() - t
 
+            t = time.time()
             self.population = []
             for ind in new_population:
                 _fitness, failing_trees = yield from self.evaluator.evaluate_individual(
@@ -427,11 +453,11 @@ class Fandango:
                 )
                 self.population.append(ind)
                 self.fixes_made += num_fixes
-
+            current_generation_profile["fixes"] = time.time() - t
             # For soft constraints, the normalized fitness may change over time as we observe more inputs.
             # Hence, we periodically flush the fitness cache to re-evaluate the population if the grammar contains soft constraints.
             self.evaluator.flush_fitness_cache()
-
+            t = time.time()
             with self.profiler.timer("evaluate_population", increment=self.population):
                 self.evaluation = yield from self.evaluator.evaluate_population(
                     self.population
@@ -440,6 +466,7 @@ class Fandango:
                 self.evaluation = sorted(
                     self.evaluation, key=lambda x: x[1], reverse=True
                 )[: self.population_size]
+            current_generation_profile["evaluate_population"] = time.time() - t
 
             current_best_fitness = max(e[1] for e in self.evaluation)
             current_max_repetitions = self.grammar.get_max_repetition()
@@ -463,6 +490,7 @@ class Fandango:
                 generation, self.evaluation, self.population, self.evaluator
             )
             visualize_evaluation(generation, max_generations, self.evaluation)
+            self.profiler_file.write(json.dumps(current_generation_profile) + "\n")
         clear_visualization()
         self._log_statistics()
 
