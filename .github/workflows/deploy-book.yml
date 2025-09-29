@@ -5,7 +5,7 @@ on:
   workflow_dispatch: # Allows manual triggering from the Actions tab
   # Deploy the book only when changes are pushed to main or release
   push:
-    branches: [ main, release ]
+    branches: [ release ]
 
 permissions:
   contents: write
