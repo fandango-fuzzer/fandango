@@ -9,10 +9,8 @@ import zipfile
 from fandango.api import Fandango
 from fandango.constraints.soft import SoftValue
 from fandango.constraints.constraint import Constraint
-from fandango.constraints.soft import SoftValue
 from fandango.errors import FandangoError, FandangoParseError
 from fandango.evolution import GeneratorWithReturn
-from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.parse import parse
 from fandango.language.tree import DerivationTree
@@ -306,7 +304,12 @@ def parse_file(
     individual = fd.read()
     start_symbol = settings.get("start_symbol", "<start>")
     allow_incomplete = hasattr(args, "prefix") and args.prefix
-    fan = Fandango._with_parsed(grammar, constraints, start_symbol=start_symbol)
+    fan = Fandango._with_parsed(
+        grammar,
+        constraints,
+        start_symbol=start_symbol,
+        logging_level=LOGGER.getEffectiveLevel(),
+    )
 
     gen = GeneratorWithReturn(fan.parse(individual, prefix=allow_incomplete))
     for tree in gen:

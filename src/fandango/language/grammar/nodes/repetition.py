@@ -44,19 +44,19 @@ class Repetition(Node):
         super().__init__(NodeType.REPETITION, grammar_settings)
 
     @property
-    def internal_max(self):
+    def internal_max(self) -> Optional[int]:
         return self._max
 
     @property
-    def max(self):
+    def max(self) -> int:
         if self._max is None:
             return nodes.MAX_REPETITIONS
         return self._max
 
     def accept(
         self,
-        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
-    ):
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
+    ) -> "fandango.language.grammar.node_visitors.node_visitor.ResultType":
         return visitor.visitRepetition(self)
 
     def fuzz(
@@ -68,7 +68,7 @@ class Repetition(Node):
         override_current_iteration: Optional[int] = None,
         override_starting_repetition: int = 0,
         override_iterations_to_perform: Optional[int] = None,
-    ):
+    ) -> None:
         prev_parent_size = parent.size()
         prev_children_len = len(parent.children)
         if override_current_iteration is None:
@@ -110,7 +110,7 @@ class Repetition(Node):
     def descendents(
         self, grammar: "fandango.language.grammar.grammar.Grammar"
     ) -> Iterator["Node"]:
-        base: list = []
+        base: list[Node] = []
         if self.min == 0:
             base.append(TerminalNode(Terminal(""), self._grammar_settings))
         if self.min <= 1 <= self.max:
@@ -124,7 +124,7 @@ class Repetition(Node):
             self._grammar_settings,
         )
 
-    def children(self):
+    def children(self) -> list[Node]:
         return [self.node]
 
     def in_parties(self, parties: list[str]) -> bool:
@@ -142,8 +142,8 @@ class Star(Repetition):
 
     def accept(
         self,
-        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
-    ):
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
+    ) -> "fandango.language.grammar.node_visitors.node_visitor.ResultType":
         return visitor.visitStar(self)
 
     def format_as_spec(self) -> str:
@@ -168,7 +168,7 @@ class Plus(Repetition):
         override_current_iteration: Optional[int] = None,
         override_starting_repetition: int = 0,
         override_iterations_to_perform: Optional[int] = None,
-    ):
+    ) -> None:
         # Gmutator mutation (1b)
         if random.random() < self.settings.get("plus_should_return_nothing"):
             return  # nop, don't add a node
@@ -185,8 +185,8 @@ class Plus(Repetition):
 
     def accept(
         self,
-        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
-    ):
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
+    ) -> "fandango.language.grammar.node_visitors.node_visitor.ResultType":
         return visitor.visitPlus(self)
 
     def format_as_spec(self) -> str:
@@ -211,7 +211,7 @@ class Option(Repetition):
         override_current_iteration: Optional[int] = None,
         override_starting_repetition: int = 0,
         override_iterations_to_perform: Optional[int] = None,
-    ):
+    ) -> None:
         # Gmutator mutation (1c)
         should_return_multiple = random.random() < self.settings.get(
             "option_should_return_multiple"
@@ -243,8 +243,8 @@ class Option(Repetition):
 
     def accept(
         self,
-        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
-    ):
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
+    ) -> "fandango.language.grammar.node_visitors.node_visitor.ResultType":
         return visitor.visitOption(self)
 
     def format_as_spec(self) -> str:
