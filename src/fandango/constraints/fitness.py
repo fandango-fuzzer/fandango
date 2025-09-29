@@ -124,3 +124,46 @@ class ConstraintFitness(Fitness):
 
     def __repr__(self) -> str:
         return f"ConstraintFitness(solved={self.solved}, total={self.total}, success={self.success})"
+
+
+class DistanceAwareConstraintFitness(ConstraintFitness):
+    """
+    Class to represent the fitness of a tree based on distance-aware constraints.
+    The fitness is calculated as the average of the values.
+    """
+
+    def __init__(
+        self,
+        values: list[float],
+        success: bool = True,
+        failing_trees: Optional[list[FailingTree]] = None,
+    ):
+        super().__init__(
+            solved=sum(1 for it in values if it == 1.0),
+            total=len(values),
+            success=success,
+            failing_trees=failing_trees,
+        )
+        self.values = values
+
+    def fitness(self) -> float:
+        """
+        Calculates the fitness of the tree based on the values.
+        This is the same as `ValueFitness`.
+        """
+        if self.values:
+            try:
+                return sum(self.values) / len(self.values)
+            except OverflowError:
+                # OverflowError: integer division result too large for a float
+                return sum(self.values) // len(self.values)
+        else:
+            return 0
+
+    def __copy__(self) -> Fitness:
+        return DistanceAwareConstraintFitness(
+            self.values[:], self.success, self.failing_trees
+        )
+
+    def __repr__(self) -> str:
+        return f"DistanceAwareConstraintFitness(values={self.values})"

@@ -1,12 +1,15 @@
 from copy import copy
+import math
 from typing import Any, Optional, Unpack
 from fandango.constraints.base import GeneticBaseInitArgs
-from fandango.constraints.failing_tree import Comparison, ComparisonSide
+from fandango.constraints.failing_tree import Comparison, ComparisonSide, FailingTree
 from fandango.language.tree import DerivationTree
 from fandango.constraints.constraint_visitor import ConstraintVisitor
 from fandango.constraints.constraint import Constraint
-from fandango.constraints.failing_tree import FailingTree
-from fandango.constraints.fitness import ConstraintFitness
+from fandango.constraints.fitness import (
+    ConstraintFitness,
+    DistanceAwareConstraintFitness,
+)
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.logger import LOGGER, print_exception
 
@@ -52,16 +55,14 @@ class ComparisonConstraint(Constraint):
         if tree_hash in self.cache:
             return copy(self.cache[tree_hash])
         # Initialize the fitness values
-        solved = 0
-        total = 0
+        fitness_values = []
         failing_trees = []
         has_combinations = False
         # If the tree is None, the fitness is 0
         if tree is None:
-            return ConstraintFitness(0, 0, False)
+            return DistanceAwareConstraintFitness([], False)
         # Iterate over all combinations of the tree and the scope
         for combination in self.combinations(tree, scope, population):
-            total += 1
             has_combinations = True
             # Update the local variables to initialize the placeholders with the values of the combination
             local_vars = self.local_variables.copy()
@@ -87,86 +88,8 @@ class ComparisonConstraint(Constraint):
                 self.types_checked = self.check_type_compatibility(left, right)
 
             # Initialize the suggestions
-            suggestions = []
-            is_solved = False
-            match self.operator:
-                case Comparison.EQUAL:
-                    # If the left and right side are equal, the constraint is solved
-                    if left == right:
-                        is_solved = True
-                    else:
-                        # If the left and right side are not equal, add suggestions to the list
-                        if not self.right.strip().startswith("len("):
-                            suggestions.append(
-                                (Comparison.EQUAL, left, ComparisonSide.RIGHT)
-                            )
-                        if not self.left.strip().startswith("len("):
-                            suggestions.append(
-                                (Comparison.EQUAL, right, ComparisonSide.LEFT)
-                            )
-                case Comparison.NOT_EQUAL:
-                    # If the left and right side are not equal, the constraint is solved
-                    if left != right:
-                        is_solved = True
-                    else:
-                        # If the left and right side are equal, add suggestions to the list
-                        suggestions.append(
-                            (Comparison.NOT_EQUAL, left, ComparisonSide.RIGHT)
-                        )
-                        suggestions.append(
-                            (Comparison.NOT_EQUAL, right, ComparisonSide.LEFT)
-                        )
-                case Comparison.GREATER:
-                    # If the left side is greater than the right side, the constraint is solved
-                    if left > right:
-                        is_solved = True
-                    else:
-                        # If the left side is not greater than the right side, add suggestions to the list
-                        suggestions.append(
-                            (Comparison.LESS, left, ComparisonSide.RIGHT)
-                        )
-                        suggestions.append(
-                            (Comparison.GREATER, right, ComparisonSide.LEFT)
-                        )
-                case Comparison.GREATER_EQUAL:
-                    # If the left side is greater than or equal to the right side, the constraint is solved
-                    if left >= right:
-                        is_solved = True
-                    else:
-                        # If the left side is not greater than or equal to the right side, add suggestions to the list
-                        suggestions.append(
-                            (Comparison.LESS_EQUAL, left, ComparisonSide.RIGHT)
-                        )
-                        suggestions.append(
-                            (Comparison.GREATER_EQUAL, right, ComparisonSide.LEFT)
-                        )
-                case Comparison.LESS:
-                    # If the left side is less than the right side, the constraint is solved
-                    if left < right:
-                        is_solved = True
-                    else:
-                        # If the left side is not less than the right side, add suggestions to the list
-                        suggestions.append(
-                            (Comparison.GREATER, left, ComparisonSide.RIGHT)
-                        )
-                        suggestions.append(
-                            (Comparison.LESS, right, ComparisonSide.LEFT)
-                        )
-                case Comparison.LESS_EQUAL:
-                    # If the left side is less than or equal to the right side, the constraint is solved
-                    if left <= right:
-                        is_solved = True
-                    else:
-                        # If the left side is not less than or equal to the right side, add suggestions to the list
-                        suggestions.append(
-                            (Comparison.GREATER_EQUAL, left, ComparisonSide.RIGHT)
-                        )
-                        suggestions.append(
-                            (Comparison.LESS_EQUAL, right, ComparisonSide.LEFT)
-                        )
-            if is_solved:
-                solved += 1
-            else:
+            (fitness_value, suggestions) = self._evaluate_comparison(left, right)
+            if fitness_value < 1.0:
                 # If the comparison is not solved, add the failing trees to the list
                 for _, container in combination:
                     for node in container.get_trees():
@@ -175,13 +98,15 @@ class ComparisonConstraint(Constraint):
                         # failing_trees.append(ft)
                         failing_trees.append(ft)
 
-        if not has_combinations:
-            solved += 1
-            total += 1
+            fitness_values.append(fitness_value)
 
-        # Create the fitness object
-        fitness = ConstraintFitness(
-            solved, total, solved == total, failing_trees=failing_trees
+        if not has_combinations:
+            fitness_values.append(1.0)
+
+        fitness = DistanceAwareConstraintFitness(
+            fitness_values,
+            success=all(it == 1.0 for it in fitness_values),
+            failing_trees=failing_trees,
         )
         # Cache the fitness
         self.cache[tree_hash] = fitness
@@ -245,3 +170,81 @@ class ComparisonConstraint(Constraint):
             local_variables=self.local_variables,
             global_variables=self.global_variables,
         )
+
+    def _evaluate_comparison(
+        self, left: Any, right: Any
+    ) -> tuple[float, list[tuple[Comparison, Any, ComparisonSide]]]:
+        suggestions = []
+        is_solved = self.operator.compare(left, right)
+        fitness = 1.0
+        if not is_solved:
+            dist_norm = _distance_norm(left, right)
+            fitness = (1.0 - dist_norm) if dist_norm is not None else 0.0
+            match self.operator:
+                case Comparison.EQUAL:
+                    if not self.right.strip().startswith("len("):
+                        suggestions.append(
+                            (Comparison.EQUAL, left, ComparisonSide.RIGHT)
+                        )
+                    if not self.left.strip().startswith("len("):
+                        suggestions.append(
+                            (Comparison.EQUAL, right, ComparisonSide.LEFT)
+                        )
+                case Comparison.NOT_EQUAL:
+                    # NOT_EQUAL does not span a range to the fitness is immediately zero if they are equal
+                    fitness = 0.0
+
+                    suggestions.append(
+                        (Comparison.NOT_EQUAL, left, ComparisonSide.RIGHT)
+                    )
+                    suggestions.append(
+                        (Comparison.NOT_EQUAL, right, ComparisonSide.LEFT)
+                    )
+                case Comparison.GREATER:
+                    suggestions.append((Comparison.LESS, left, ComparisonSide.RIGHT))
+                    suggestions.append((Comparison.GREATER, right, ComparisonSide.LEFT))
+                case Comparison.GREATER_EQUAL:
+                    suggestions.append(
+                        (Comparison.LESS_EQUAL, left, ComparisonSide.RIGHT)
+                    )
+                    suggestions.append(
+                        (Comparison.GREATER_EQUAL, right, ComparisonSide.LEFT)
+                    )
+                case Comparison.LESS:
+                    suggestions.append((Comparison.GREATER, left, ComparisonSide.RIGHT))
+                    suggestions.append((Comparison.LESS, right, ComparisonSide.LEFT))
+                case Comparison.LESS_EQUAL:
+                    suggestions.append(
+                        (Comparison.GREATER_EQUAL, left, ComparisonSide.RIGHT)
+                    )
+                    suggestions.append(
+                        (Comparison.LESS_EQUAL, right, ComparisonSide.LEFT)
+                    )
+        return fitness, suggestions
+
+
+def _distance_norm(left: Any, right: Any) -> float | None:
+    """
+    Generates a normalized distance between two values.
+    The values if calculated by `2*sigmoid(|left - right|)`
+    The resulting value is a float between 0 and 1.
+    """
+
+    # Although left and right can be used for comparison, they may not support minus.
+    try:
+        dist = left - right
+    except Exception:
+        try:
+            dist = right - left
+        except Exception:
+            return None
+
+    if dist is float | int:
+        dist = 2 * (_sigmoid(abs(dist)) - 0.5)
+        return dist
+    else:
+        return None
+
+
+def _sigmoid(x: float | int) -> float:
+    return 1 / (1 + math.exp(-x))
