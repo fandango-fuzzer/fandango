@@ -8,6 +8,8 @@ jobs:
   run_benchmarks:
     name: Run PR Benchmarks
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - name: Install Fandango
