@@ -9,6 +9,8 @@ jobs:
   test-with-coverage:
     name: Run Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     strategy:
       fail-fast: false
