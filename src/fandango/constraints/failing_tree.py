@@ -36,17 +36,17 @@ class Comparison(enum.Enum):
         """
         match self:
             case Comparison.EQUAL:
-                return left == right
+                return bool(left == right)
             case Comparison.NOT_EQUAL:
-                return left != right
+                return bool(left != right)
             case Comparison.GREATER:
-                return left > right
+                return bool(left > right)
             case Comparison.GREATER_EQUAL:
-                return left >= right
+                return bool(left >= right)
             case Comparison.LESS:
-                return left < right
+                return bool(left < right)
             case Comparison.LESS_EQUAL:
-                return left <= right
+                return bool(left <= right)
         raise ValueError(f"Invalid comparison operator: {self}")
 
 

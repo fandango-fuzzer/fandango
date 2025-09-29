@@ -2,14 +2,13 @@ from copy import copy
 import math
 from typing import Any, Optional, Unpack
 from fandango.constraints.base import GeneticBaseInitArgs
-from fandango.constraints.failing_tree import Comparison, ComparisonSide
+from fandango.constraints.failing_tree import Comparison, ComparisonSide, FailingTree
 from fandango.language.tree import DerivationTree
 from fandango.constraints.constraint_visitor import ConstraintVisitor
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.fitness import (
     ConstraintFitness,
     DistanceAwareConstraintFitness,
-    FailingTree,
 )
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.logger import LOGGER, print_exception
@@ -247,5 +246,5 @@ def _distance_norm(left: Any, right: Any) -> float | None:
         return None
 
 
-def _sigmoid(x: float | int):
+def _sigmoid(x: float | int) -> float:
     return 1 / (1 + math.exp(-x))
