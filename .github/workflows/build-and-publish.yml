@@ -53,8 +53,9 @@ jobs:
   upload_pypi:
     name: Upload to PyPI
     needs: [build_wheels, build_sdist]
-    runs-on: ubuntu-latest
+    # only run on releases and manual runs
     if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
     environment:
       name: pypi
       url: https://pypi.org/p/fandango-fuzzer
@@ -73,6 +74,7 @@ jobs:
 
   docker_build_and_push:
     name: Build and Push Docker Image
+    # only run on releases and manual runs
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
