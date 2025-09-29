@@ -50,20 +50,20 @@ class BTFandangoConverterVisitor(c_ast.NodeVisitor):
         self.renames: dict[str, str] = {}
         self.in_code = False
 
-    def cond(self):
+    def cond(self) -> str:
         return " and ".join(self.context)
 
-    def _char(self, c):
+    def _char(self, c: str) -> str:
         if c in string.printable:
             return c
         return f"\\x{ord(c):02x}"
 
-    def char(self, c):
+    def char(self, c: str) -> str:
         if c in string.printable:
             return "b" + repr(c)
         return f"b'{self._char(c)}'"
 
-    def not_char(self, c):
+    def not_char(self, c: str) -> str:
         if self.use_regexes:
             return f"br'[^{self._char(c)}]'"
         chars = []
@@ -72,12 +72,12 @@ class BTFandangoConverterVisitor(c_ast.NodeVisitor):
                 chars.append(self.char(chr(i)))
         return "(" + " | ".join(chars) + ")" + "  # not " + self.char(c)
 
-    def not_short(self, value):
+    def not_short(self, value: str) -> str:
         low_byte = self._char(chr(ord(value) % 256))
         high_byte = self._char(chr(ord(value) // 256))
         return f"(/[^{low_byte}]./ | /[{low_byte}][^{high_byte}]/)"
 
-    def spec(self, symbol: Optional[str] = None, indent=0) -> str:
+    def spec(self, symbol: Optional[str] = None, indent: int = 0) -> str:
         if symbol is None:
             symbol = self.start_symbol
         if indent == 0:
@@ -103,13 +103,13 @@ class BTFandangoConverterVisitor(c_ast.NodeVisitor):
                 s += f"# FIXME: {not_handled}\n"
         return s
 
-    def visit(self, node):
+    def visit(self, node: c_ast.Node) -> str:
         # print("Visiting", node.__class__.__name__)
         method_name = "visit_" + node.__class__.__name__
         visitor = getattr(self, method_name, self.generic_visit)
         return visitor(node)
 
-    def add_def(self, base_name, members):
+    def add_def(self, base_name: str, members: str) -> None:
         for rename in self.renames.keys():
             members = members.replace(rename, self.renames[rename])
 
@@ -125,20 +125,20 @@ class BTFandangoConverterVisitor(c_ast.NodeVisitor):
         # print(f"Adding {name} ::= {members}")
         self.defs[name] = members
 
-    def add_constraint(self, constraint):
+    def add_constraint(self, constraint: str) -> None:
         for rename in self.renames.keys():
             constraint = constraint.replace(rename, self.renames[rename])
         self.constraints.append(constraint)
 
-    def generic_visit(self, node) -> str:
+    def generic_visit(self, node: c_ast.Node) -> str:
         print("Ignoring", node.__class__.__name__)
-        for _, child in node.children():
+        for _, child in node.children():  # type: ignore[no-untyped-call] # py010parser doesn't provide types
             self.visit(child)
         return ""
 
-    def generic_join(self, node, sep: str = " ") -> str:
+    def generic_join(self, node: c_ast.Node, sep: str = " ") -> str:
         s = ""
-        for _, child in node.children():
+        for _, child in node.children():  # type: ignore[no-untyped-call] # py010parser doesn't provide types
             member = self.visit(child)
             if s and member:
                 s += sep
@@ -146,7 +146,7 @@ class BTFandangoConverterVisitor(c_ast.NodeVisitor):
                 s += member
         return s
 
-    def visit_ID(self, node: c_ast.ID) -> str:
+    def visit_ID(self, node: c_ast.ID):  # type: ignore[no-untyped-def] # py010parser doesn't provide types
         return node.name
 
     def visit_BinaryOp(self, node: c_ast.BinaryOp) -> str:
@@ -229,7 +229,7 @@ class BTFandangoConverterVisitor(c_ast.NodeVisitor):
     def visit_Struct(self, node: c_ast.Struct) -> str:
         members = []
         is_bitfield = True
-        for _, child in node.children():
+        for _, child in node.children():  # type: ignore[no-untyped-call] # py010parser doesn't provide types
             if hasattr(child, "bitsize") and child.bitsize:
                 bitsize = eval(self.visit(child.bitsize))
                 if bitsize > 0:
@@ -238,7 +238,7 @@ class BTFandangoConverterVisitor(c_ast.NodeVisitor):
             is_bitfield = False
             break
 
-        for _, child in node.children():
+        for _, child in node.children():  # type: ignore[no-untyped-call] # py010parser doesn't provide types
             value = None
             var: Optional[str] = None
             if self.forced_elems and self.forced_complements:
@@ -280,7 +280,7 @@ class BTFandangoConverterVisitor(c_ast.NodeVisitor):
 
         return members_str
 
-    def visit_Decl(self, node: c_ast.Decl):
+    def visit_Decl(self, node: c_ast.Decl):  # type: ignore[no-untyped-def] # py010parser doesn't provide types
         if self.in_code:
             return node.name
 
@@ -353,7 +353,7 @@ class BTFandangoConverterVisitor(c_ast.NodeVisitor):
         self.not_handled.append(f"{lvalue} = {rvalue}")
         return ""
 
-    def force_elems(self, cond, iftrue=True):
+    def force_elems(self, cond: c_ast.Node, iftrue: bool = True) -> None:
         # Convert lookaheads into expected bytes
         # as in `if (ReadUShort(FTell()) == 0x0121) ...`
         if not isinstance(cond, c_ast.BinaryOp):
@@ -462,7 +462,7 @@ class BTFandangoConverterVisitor(c_ast.NodeVisitor):
         iftrue = self.visit(node.iftrue)
         self.context.pop()
 
-        if len(node.children()) <= 2:
+        if len(node.children()) <= 2:  # type: ignore[no-untyped-call] # py010parser doesn't provide types
             if not iftrue:
                 return ""
             return f"{iftrue}?"
@@ -490,9 +490,9 @@ class BTFandangoConverter(FandangoConverter):
 
         try:
             if platform.system() == "Darwin":
-                ast = parse_file(filename, cpp_args="-xc++")
+                ast = parse_file(filename, cpp_args="-xc++")  # type: ignore[no-untyped-call] # py010parser doesn't provide types
             else:
-                ast = parse_file(filename)
+                ast = parse_file(filename)  # type: ignore[no-untyped-call] # py010parser doesn't provide types
             self.ast = ast
         finally:
             try:

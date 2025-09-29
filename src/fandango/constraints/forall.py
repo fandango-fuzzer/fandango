@@ -1,7 +1,8 @@
 from copy import copy
 import itertools
-from typing import Any, Optional
+from typing import Any, Optional, Unpack
 from fandango.constraints import LEGACY
+from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.constraint_visitor import ConstraintVisitor
 from fandango.constraints.fitness import ConstraintFitness
@@ -21,8 +22,7 @@ class ForallConstraint(Constraint):
         bound: NonTerminal | str,
         search: NonTerminalSearch,
         lazy: bool = False,
-        *args,
-        **kwargs,
+        **kwargs: Unpack[GeneticBaseInitArgs],
     ):
         """
         Initializes the forall constraint with the given statement, bound, and search.
@@ -33,7 +33,7 @@ class ForallConstraint(Constraint):
         :param args: Additional arguments.
         :param kwargs: Additional keyword arguments.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         self.statement = statement
         self.bound = bound
         self.search = search
@@ -103,7 +103,7 @@ class ForallConstraint(Constraint):
         else:
             return f"all({self.statement.format_as_spec()} for {bound} in {self.search.format_as_spec()})"
 
-    def accept(self, visitor: "ConstraintVisitor"):
+    def accept(self, visitor: "ConstraintVisitor") -> None:
         """
         Accepts a visitor to traverse the constraint structure.
         :param ConstraintVisitor visitor: The visitor to accept.

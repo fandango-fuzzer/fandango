@@ -3,13 +3,13 @@ from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
 from fandango.language.grammar.nodes.terminal import TerminalNode
 
 
-class SymbolFinder(NodeVisitor):
-    def __init__(self):
-        self.terminalNodes = []
-        self.nonTerminalNodes = []
+class SymbolFinder(NodeVisitor[None, None]):
+    def __init__(self) -> None:
+        self.terminalNodes: list[TerminalNode] = []
+        self.nonTerminalNodes: list[NonTerminalNode] = []
 
-    def visitNonTerminalNode(self, node: NonTerminalNode):
+    def visitNonTerminalNode(self, node: NonTerminalNode) -> None:
         self.nonTerminalNodes.append(node)
 
-    def visitTerminalNode(self, node: TerminalNode):
+    def visitTerminalNode(self, node: TerminalNode) -> None:
         self.terminalNodes.append(node)

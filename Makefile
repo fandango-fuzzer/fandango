@@ -105,7 +105,7 @@ format black:
 ## Documentation
 DOCS = docs
 DOCS_SOURCES = $(wildcard $(DOCS)/*.md $(DOCS)/*.fan $(DOCS)/*.ipynb $(DOCS)/*.yml $(DOCS)/*.bib)
-JB = JUPYTER_BOOK=1 jupyter-book
+JB = JUPYTER_BOOK=1 FANDANGO_RAISE_ALL_EXCEPTIONS=1 FANDANGO_RUN_BEARTYPE=1 jupyter-book
 HTML_MARKER = $(DOCS)/_build/html/marker.txt
 ALL_HTML_MARKER = $(DOCS)/_build/html/all-marker.txt
 LATEX_MARKER = $(DOCS)/_build/latex/marker.txt
