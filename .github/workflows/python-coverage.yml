@@ -1,0 +1,56 @@
+name: Tests with Coverage
+
+on:
+  pull_request:
+    branches: [ release ]
+  workflow_dispatch:
+
+jobs:
+  test-with-coverage:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install Fandango
+        uses: ./.github/workflows/setup-fandango
+        with:
+          python-version: 3.13
+          needs-sudo: true
+          target: test
+
+      - name: Install system dependencies for coverage (main + Ubuntu only)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-dev graphviz libgraphviz-dev pkg-config libarchive-tools llvm
+          pip install pygraphviz
+
+      - name: Run coverage (main + Ubuntu only)
+        run: |
+          make coverage
+          python3 -m coverage lcov
+
+      - name: Upload HTML report (main + Ubuntu only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Test Report
+          path: report.html
+
+      - name: Cache pygraphviz site-packages (main + Ubuntu only)
+        uses: actions/cache@v3
+        with:
+          path: /usr/local/lib/python3.11/dist-packages
+          key: pygraphviz-${{ runner.os }}-python3.11
+          restore-keys: |
+            pygraphviz-${{ runner.os }}-
+
+      - name: Upload to Coveralls (main + Ubuntu only)
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: coverage.lcov
