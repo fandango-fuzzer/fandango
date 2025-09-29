@@ -30,6 +30,25 @@ class Comparison(enum.Enum):
         }
         return inverse_operators[self]
 
+    def compare(self, left: Any, right: Any) -> bool:
+        """
+        Compare two values using the comparison operator.
+        """
+        match self:
+            case Comparison.EQUAL:
+                return bool(left == right)
+            case Comparison.NOT_EQUAL:
+                return bool(left != right)
+            case Comparison.GREATER:
+                return bool(left > right)
+            case Comparison.GREATER_EQUAL:
+                return bool(left >= right)
+            case Comparison.LESS:
+                return bool(left < right)
+            case Comparison.LESS_EQUAL:
+                return bool(left <= right)
+        raise ValueError(f"Invalid comparison operator: {self}")
+
 
 class ComparisonSide(enum.Enum):
     """
