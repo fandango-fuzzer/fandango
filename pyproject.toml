@@ -46,6 +46,7 @@ dependencies = [
 test = [
     "Faker>=30.4.0",
     "pytest>=8.3.5",
+    "pytest-benchmark>=5.1.0",
     "pytest-cov>=4.1.0",
     "pytest-html>=3.2.0",
     "pytest-rerunfailures>=11.1.2",
@@ -109,7 +110,7 @@ exclude = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "-n auto --timeout 700 --durations=10 --pythonhashseed=1"
+addopts = "-n auto --timeout 700 --durations=10 --pythonhashseed=1 --benchmark-max-time=10"
 
 [tool.scikit-build]
 # Set minimum CMake version

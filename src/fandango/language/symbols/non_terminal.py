@@ -1,5 +1,4 @@
 from fandango.language.symbols import Symbol, SymbolType
-from fandango.language.tree_value import TreeValueType
 
 
 class NonTerminal(Symbol):

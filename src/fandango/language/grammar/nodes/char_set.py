@@ -25,13 +25,13 @@ class CharSet(Node):
         grammar: "fandango.language.grammar.grammar.Grammar",
         max_nodes: int = 100,
         in_message: bool = False,
-    ) -> list[DerivationTree]:
+    ) -> None:
         raise NotImplementedError("CharSet fuzzing not implemented")
 
     def accept(
         self,
-        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor",
-    ):
+        visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
+    ) -> "fandango.language.grammar.node_visitors.node_visitor.ResultType":
         return visitor.visitCharSet(self)
 
     def descendents(

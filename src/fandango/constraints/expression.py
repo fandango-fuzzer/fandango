@@ -1,8 +1,10 @@
 from copy import copy
-from typing import Any, Optional
+from typing import Any, Optional, Unpack
+from fandango.constraints.base import GeneticBaseInitArgs
 from fandango.constraints.constraint_visitor import ConstraintVisitor
 from fandango.constraints.constraint import Constraint
-from fandango.constraints.fitness import ConstraintFitness, FailingTree
+from fandango.constraints.fitness import ConstraintFitness
+from fandango.constraints.failing_tree import FailingTree
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
 from fandango.logger import print_exception
@@ -13,14 +15,14 @@ class ExpressionConstraint(Constraint):
     Represents a python expression constraint that can be used for fitness evaluation.
     """
 
-    def __init__(self, expression: str, *args, **kwargs):
+    def __init__(self, expression: str, **kwargs: Unpack[GeneticBaseInitArgs]) -> None:
         """
         Initializes the expression constraint with the given expression.
         :param str expression: The expression to evaluate.
         :param args: Additional arguments.
         :param kwargs: Additional keyword arguments.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         self.expression = expression
 
     def fitness(
@@ -101,7 +103,7 @@ class ExpressionConstraint(Constraint):
             )
         return representation
 
-    def accept(self, visitor: "ConstraintVisitor"):
+    def accept(self, visitor: "ConstraintVisitor") -> None:
         """
         Accepts a visitor to traverse the constraint structure.
         :param ConstraintVisitor visitor: The visitor to accept.

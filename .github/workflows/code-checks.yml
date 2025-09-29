@@ -10,14 +10,14 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [ 3.11 ]  # Python version to run
+        python-version: [ 3.13 ]  # Python version to run
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
@@ -37,29 +37,22 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: [ 3.11 ]  # Python version to run
+        python-version: [ 3.13 ]  # Python version to run
 
     steps:
-      # Step 1: Checkout the repository's code
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      # Step 2: Set up Python environment
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Install Fandango
+        uses: ./.github/workflows/setup-fandango
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+          needs-sudo: ${{ matrix.os == 'ubuntu-latest' }}
+          target: "development,book"
+          skip-parser: 1
 
-      # Step 3: Install mypy
-      - name: Install dependencies
-        run: |
-           pip install mypy -e ".[development,book]"
-        env:
-          FANDANGO_SKIP_CPP_PARSER: 1
-
-      # Step 4: Run mypy
       - name: Run mypy
         shell: bash
         run: |
           mypy .
+          mypy --strict src
