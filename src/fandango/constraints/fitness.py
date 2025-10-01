@@ -46,7 +46,7 @@ class ValueFitness(Fitness):
 
     def __init__(
         self,
-        values: Optional[list[float]] = None,
+        values: Optional[list[float | int]] = None,
         failing_trees: Optional[list[FailingTree]] = None,
     ):
         """
