@@ -28,7 +28,5 @@ jobs:
 
       # Run tests or coverage depending on branch and OS
       - name: Run tests (dev or non-Ubuntu)
-        env:
-          PYTHONTRACEMALLOC: 1
         run: |
           pytest -v

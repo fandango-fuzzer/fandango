@@ -114,4 +114,5 @@ addopts = "-n auto --timeout 1200 --durations=10 --pythonhashseed=1 --benchmark-
 filterwarnings = [
     "error",                                                  # warnings are errors
     "ignore::pytest_benchmark.logger.PytestBenchmarkWarning", # benchmarks don't run with xdist, that's fine, they are run manually in the CI
+    "ignore::ResourceWarning",                                # windows keeps a socket open for some reason
 ]
