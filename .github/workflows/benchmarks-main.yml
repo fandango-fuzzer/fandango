@@ -27,6 +27,8 @@ jobs:
         uses: bencherdev/bencher@main
 
       - name: Track base branch benchmarks with Bencher
+        env:
+          FANDANGO_FORCE_SKIP_BEARTYPE: "1"
         run: |
           bencher run \
           --project fandango-394f926-x0wdsa1zilqt3 \

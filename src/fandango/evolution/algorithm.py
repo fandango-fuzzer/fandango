@@ -19,7 +19,7 @@ from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import IoPopulationManager, PopulationManager
 from fandango.evolution.profiler import Profiler
 from fandango.io import FandangoIO
-from fandango.io.packetforecaster import PacketForecaster
+from fandango.io.packetforecaster import ForcastingPacket, PacketForecaster
 from fandango.io.packetparser import parse_next_remote_packet
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
@@ -496,7 +496,7 @@ class Fandango:
                 )
             )
             if len(msg_parties) != 0 and not io_instance.received_msg():
-                fuzzable_packets: list[PacketForecaster.ForcastingPacket] = []
+                fuzzable_packets: list[ForcastingPacket] = []
                 for party in msg_parties:
                     fuzzable_packets.extend(forecast[party].nt_to_packet.values())
                 assert isinstance(self.population_manager, IoPopulationManager)

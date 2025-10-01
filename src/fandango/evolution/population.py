@@ -6,7 +6,7 @@ from fandango.constraints.failing_tree import Comparison, ComparisonSide
 from fandango.constraints.failing_tree import FailingTree, BoundsFailingTree
 from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
 from fandango.errors import FandangoValueError
-from fandango.io.packetforecaster import PacketForecaster
+from fandango.io.packetforecaster import ForcastingPacket
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.symbols import NonTerminal
 from fandango.language.symbols import Slice
@@ -193,7 +193,7 @@ class IoPopulationManager(PopulationManager):
     ):
         super().__init__(grammar, start_symbol, warnings_are_errors)
         self._prev_packet_idx = 0
-        self.fuzzable_packets: list[PacketForecaster.ForcastingPacket] | None = None
+        self.fuzzable_packets: list[ForcastingPacket] | None = None
 
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         if self.fuzzable_packets is None or len(self.fuzzable_packets) == 0:

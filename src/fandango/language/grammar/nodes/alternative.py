@@ -1,6 +1,6 @@
 from itertools import permutations
 import random
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from collections.abc import Iterator, Sequence
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.concatenation import Concatenation
@@ -66,7 +66,7 @@ class Alternative(Node):
     def accept(
         self,
         visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
-    ) -> "fandango.language.grammar.node_visitors.node_visitor.ResultType":
+    ) -> Any:  # should be ResultType, beartype falls on its face
         return visitor.visitAlternative(self)
 
     def children(self) -> list[Node]:
