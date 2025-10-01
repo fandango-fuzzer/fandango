@@ -1,7 +1,8 @@
 [build-system]
-requires = ["scikit-build-core>=0.11.0", "setuptools>=73.0.1", "wheel"]
-build-backend = "scikit_build_core.build"
+requires = ["setuptools>=73.0.1", "wheel"]
+build-backend = "setuptools.build_meta"
 
+# If you update this info, please also update the version in setup.py
 [project]
 name = "fandango-fuzzer"
 version = "1.0.6"
@@ -65,8 +66,6 @@ development = [
     "pre-commit>=4.2.0",
     "pygls>=2.0.0a4",           # language server
     "speedy-antlr-tool>=1.4.3",
-    "scikit-build>=0.17.0",     # for parallel builds
-    "cmake>=3.18",              # required by scikit-build
 ]
 
 book = [
@@ -112,9 +111,3 @@ exclude = [
 
 [tool.pytest.ini_options]
 addopts = "-n auto --timeout 700 --durations=10 --pythonhashseed=1 --benchmark-max-time=10"
-
-[tool.scikit-build]
-# Set minimum CMake version
-cmake.version = ">=3.18"
-# Tell scikit-build about the Python extension
-wheel.packages = ["src/fandango"]
