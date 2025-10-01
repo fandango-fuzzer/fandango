@@ -1,8 +1,11 @@
 import random
 from collections.abc import Callable, Generator
+import time
 
 from fandango.errors import FandangoValueError
 from fandango.constraints.fitness import Comparison, ComparisonSide, FailingTree
+from fandango.evolution import GeneratorWithReturn
+from fandango.evolution.profiler import profile_to_disk
 from fandango.io.packetforecaster import PacketForecaster
 from fandango.language.grammar import DerivationTree, Grammar
 from fandango.language.symbol import NonTerminal
@@ -81,12 +84,30 @@ class PopulationManager:
             not self._is_population_complete(current_population, target_population_size)
             and attempts < max_attempts
         ):
+            time_start = time.time()
             individual = self._generate_population_entry(max_nodes)
-            _fitness, failing_trees = yield from eval_individual(individual)
+            profile_to_disk(
+                kind="generate-population-entry",
+                time=time.time() - time_start,
+                size=individual.size(),
+            )
+
+            start_time = time.time()
+            gen = GeneratorWithReturn(eval_individual(individual))
+            solutions = list(gen)
+            _fitness, failing_trees = gen.return_value
             candidate, _fixes_made = self.fix_individual(
                 individual,
                 failing_trees,
             )
+            profile_to_disk(
+                kind="evaluate-and-fix-individual",
+                time=time.time() - start_time,
+                size=individual.size(),
+                mutated_size=candidate.size(),
+            )
+            yield from solutions
+
             _new_fitness, _new_failing_trees = yield from eval_individual(candidate)
             if not PopulationManager.add_unique_individual(
                 current_population, candidate, unique_hashes

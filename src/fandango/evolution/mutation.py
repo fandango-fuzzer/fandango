@@ -2,8 +2,10 @@
 import random
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Generator
+import time
 
 from fandango.constraints.fitness import FailingTree
+from fandango.evolution.profiler import profile_to_disk
 from fandango.language import DerivationTree, Grammar
 from fandango.language.symbol import NonTerminal
 
@@ -69,6 +71,9 @@ class SimpleMutation(MutationOperator):
                 node_to_mutate.descendants(),
             )
         )
+
+        time_start = time.time()
+
         node_to_mutate = random.choice(subtrees)
         assert isinstance(node_to_mutate.symbol, NonTerminal)
 
@@ -83,4 +88,10 @@ class SimpleMutation(MutationOperator):
             node_to_mutate.symbol, prefix_node=prefix_node, max_nodes=max_nodes
         )
         mutated = individual.replace(grammar, node_to_mutate, new_subtree)
+        profile_to_disk(
+            kind="mutation",
+            time=time.time() - time_start,
+            size=individual.size(),
+            mutated_size=mutated.size(),
+        )
         return mutated

@@ -16,7 +16,7 @@ from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossov
 from fandango.evolution.evaluation import Evaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import PopulationManager, IoPopulationManager
-from fandango.evolution.profiler import Profiler
+from fandango.evolution.profiler import Profiler, profile_to_disk
 from fandango.io import FandangoIO, FandangoParty
 from fandango.io.packetforecaster import PacketForecaster
 from fandango.language.grammar import DerivationTree, Grammar, FuzzingMode
@@ -230,8 +230,17 @@ class Fandango:
                 )
 
             with self.profiler.timer("crossover", increment=2):
+                time_start = time.time()
                 child1, child2 = self.crossover_operator.crossover(
                     self.grammar, parent1, parent2
+                )
+                profile_to_disk(
+                    kind="crossover",
+                    time=time.time() - time_start,
+                    parent1_size=parent1.size(),
+                    parent2_size=parent2.size(),
+                    child1_size=child1.size(),
+                    child2_size=child2.size(),
                 )
 
             PopulationManager.add_unique_individual(
@@ -393,12 +402,22 @@ class Fandango:
 
             self.population = []
             for ind in new_population:
-                _fitness, failing_trees = yield from self.evaluator.evaluate_individual(
-                    ind
-                )
+                start_time = time.time()
+                size = ind.size()
+                gen = GeneratorWithReturn(self.evaluator.evaluate_individual(ind))
+                solutions = list(gen)
+                _fitness, failing_trees = gen.return_value
                 ind, num_fixes = self.population_manager.fix_individual(
                     ind, failing_trees
                 )
+                profile_to_disk(
+                    kind="evaluate-and-fix-individual",
+                    time=time.time() - start_time,
+                    size=size,
+                    mutated_size=ind.size(),
+                )
+                yield from solutions
+
                 self.population.append(ind)
                 self.fixes_made += num_fixes
 

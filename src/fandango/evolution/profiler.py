@@ -1,3 +1,4 @@
+import json
 import time
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
@@ -107,3 +108,9 @@ class Profiler:
                 )
             else:
                 print(f"Warning: '{key}' does not have valid time/count data.")
+
+
+def profile_to_disk(**kwargs: Any) -> None:
+    with open("profile.json", "a") as f:
+        json.dump(kwargs, f)
+        f.write(",\n")

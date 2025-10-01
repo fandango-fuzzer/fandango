@@ -1,9 +1,11 @@
 import random
+import time
 from typing import Counter, Union
 from collections.abc import Generator
 
 from fandango.constraints.base import Constraint, SoftValue
 from fandango.constraints.fitness import FailingTree
+from fandango.evolution.profiler import profile_to_disk
 from fandango.language import DerivationTree, Grammar
 from fandango.logger import LOGGER
 
@@ -143,8 +145,15 @@ class Evaluator:
         self,
         individual: DerivationTree,
     ) -> Generator[DerivationTree, None, tuple[float, list[FailingTree]]]:
+        time_start = time.time()
         key = hash(individual)
         if key in self._fitness_cache:
+            profile_to_disk(
+                kind="evaluation(cache-hit)",
+                time=time.time() - time_start,
+                size=individual.size(),
+            )
+
             return self._fitness_cache[key]
 
         fitness, failing_trees = self.evaluate_hard_constraints(individual)
@@ -170,9 +179,17 @@ class Evaluator:
 
         if fitness >= self._expected_fitness and key not in self._solution_set:
             self._solution_set.add(key)
+            time_yield_start = time.time()
             yield individual
+            time_start = time_start - (time.time() - time_yield_start)
 
         self._fitness_cache[key] = (fitness, failing_trees)
+        profile_to_disk(
+            kind="evaluation(cache-miss)",
+            time=time.time() - time_start,
+            size=individual.size(),
+        )
+
         return fitness, failing_trees
 
     def evaluate_population(
