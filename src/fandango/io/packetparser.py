@@ -4,7 +4,10 @@ from typing import Optional
 
 from fandango.errors import FandangoFailedError, FandangoParseError, FandangoValueError
 from fandango.io import FandangoIO
-from fandango.io.packetforecaster import PacketForecaster
+from fandango.io.packetforecaster import (
+    ForcastingPacket,
+    ForecastingResult,
+)
 from fandango.language import Grammar, NonTerminal, DerivationTree
 from fandango.language.grammar import ParsingMode
 from fandango.language.grammar.parser.iterative_parser import IterativeParser
@@ -26,9 +29,9 @@ def _find_next_fragment(
 
 def parse_next_remote_packet(
     grammar: Grammar,
-    forecast: PacketForecaster.ForecastingResult,
+    forecast: ForecastingResult,
     io_instance: FandangoIO,
-) -> tuple[Optional[PacketForecaster.ForcastingPacket], Optional[DerivationTree]]:
+) -> tuple[Optional[ForcastingPacket], Optional[DerivationTree]]:
     if len(io_instance.get_received_msgs()) == 0:
         return None, None
 
