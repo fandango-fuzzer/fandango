@@ -92,7 +92,7 @@ class ParseState:
             f"({self.nonterminal.format_as_spec()} -> "
             + "".join(
                 [
-                    f"{'•' if i == self._dot else ''}{s[0]!s}"
+                    f"{'•' if i == self._dot else ''}{s[0]!r}"
                     for i, s in enumerate(self.symbols)
                 ]
             )

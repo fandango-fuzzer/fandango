@@ -17,3 +17,6 @@ class NonTerminal(Symbol):
 
     def format_as_spec(self) -> str:
         return self.name()
+
+    def __repr__(self) -> str:
+        return f"NonTerminal({self._value})"

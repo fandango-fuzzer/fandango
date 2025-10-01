@@ -765,8 +765,12 @@ class IterativeParser(
         self._clear_tmp()
 
     def consume(self, char: str | bytes | int) -> Generator[DerivationTree, None, None]:
+        yielded = set()
         for tree in self._consume(char):
-            yield self.to_derivation_tree(tree)
+            d_tree = self.to_derivation_tree(tree)
+            if d_tree not in yielded:
+                yielded.add(d_tree)
+                yield d_tree
 
     def _consume(
         self, char: str | bytes | int
