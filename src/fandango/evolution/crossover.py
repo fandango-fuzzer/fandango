@@ -1,5 +1,6 @@
 import random
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.tree import DerivationTree
@@ -9,19 +10,19 @@ class CrossoverOperator(ABC):
     @abstractmethod
     def crossover(
         self, grammar: Grammar, parent1: DerivationTree, parent2: DerivationTree
-    ) -> tuple[DerivationTree, DerivationTree]:
+    ) -> Optional[tuple[DerivationTree, DerivationTree]]:
         pass
 
 
 class SimpleSubtreeCrossover(CrossoverOperator):
     def crossover(
         self, grammar: Grammar, parent1: DerivationTree, parent2: DerivationTree
-    ) -> tuple[DerivationTree, DerivationTree]:
+    ) -> Optional[tuple[DerivationTree, DerivationTree]]:
         symbols1 = parent1.get_non_terminal_symbols()
         symbols2 = parent2.get_non_terminal_symbols()
         common_symbols = symbols1.intersection(symbols2)
         if not common_symbols:
-            return parent1, parent2
+            return None
         symbol = random.choice(list(common_symbols))
         nodes1 = parent1.find_all_nodes(symbol)
         nodes2 = parent2.find_all_nodes(symbol)
