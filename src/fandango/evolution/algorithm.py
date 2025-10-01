@@ -247,6 +247,9 @@ class Fandango:
                 crossovers = self.crossover_operator.crossover(
                     self.grammar, parent1, parent2
                 )
+                if crossovers is None:
+                    return None
+
                 to_add = [
                     tree
                     for tree in crossovers
@@ -297,9 +300,6 @@ class Fandango:
                 except Exception as e:
                     LOGGER.error(f"Error during mutation: {e}")
                     print_exception(e, "Error during mutation")
-                    mutated_population.append(individual)
-            else:
-                mutated_population.append(individual)
         new_population.extend(mutated_population)
 
     def _perform_destruction(
@@ -391,11 +391,11 @@ class Fandango:
             new_population, unique_hashes = self._perform_selection()
 
             # Crossover
-            while (
-                len(new_population) < self.population_size
-                and random.random() < self.adaptive_tuner.crossover_rate
-            ):
-                yield from self._perform_crossover(new_population, unique_hashes)
+            for _ in range(self.population_size):
+                if len(new_population) >= self.population_size:
+                    break
+                if random.random() < self.adaptive_tuner.crossover_rate:
+                    yield from self._perform_crossover(new_population, unique_hashes)
 
             # Truncate if necessary
             if len(new_population) > self.population_size:
