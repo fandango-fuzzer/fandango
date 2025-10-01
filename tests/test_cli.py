@@ -216,9 +216,9 @@ class TestCLI(unittest.TestCase):
 fandango:ERROR: Only found 0 perfect solutions, instead of the required 10
 """
         out, err, code = run_command(command)
-        self.assertEqual(0, code)
         self.assertEqual("", out)
         self.assertEqual(expected, err)
+        self.assertEqual(0, code)
 
     def test_binfinity(self):
         command = [

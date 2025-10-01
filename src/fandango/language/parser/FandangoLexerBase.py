@@ -9,9 +9,6 @@ from antlr4.InputStream import InputStream
 from antlr4.Lexer import Lexer
 from antlr4.Token import CommonToken, Token
 
-# Current lexer instance, set by the generated lexer code
-lexer: Optional["FandangoLexerBase"] = None
-
 
 class FandangoLexerBase(Lexer):
     NEW_LINE_PATTERN = re.compile("[^\r\n\f]+")
@@ -147,6 +144,8 @@ class FandangoLexerBase(Lexer):
 
 # These are called from the generated lexer code
 
+lexer: Optional[FandangoLexerBase] = None
+
 
 def at_start_of_input() -> None:
     global lexer
@@ -187,16 +186,16 @@ def on_newline() -> None:
 def fstring_start() -> None:
     global lexer
     assert lexer is not None
-    return lexer.fstring_start()
+    lexer.fstring_start()
 
 
 def fstring_end() -> None:
     global lexer
     assert lexer is not None
-    return lexer.fstring_end()
+    lexer.fstring_end()
 
 
 def is_not_fstring() -> bool:
     global lexer
     assert lexer is not None
-    return lexer.is_not_fstring()
+    return bool(lexer.is_not_fstring())
