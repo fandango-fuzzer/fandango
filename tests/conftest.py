@@ -4,11 +4,15 @@ import pytest
 
 
 def pytest_configure(config: pytest.Config):
-    # ensure beartype activation if a subprocess is invoked from a unit test
-    os.environ["FANDANGO_RUN_BEARTYPE"] = "1"
     # fail fast in exceptions, don't just print them
     os.environ["FANDANGO_RAISE_ALL_EXCEPTIONS"] = "1"
-    activate_beartype()
+
+    if not os.environ.get("FANDANGO_FORCE_SKIP_BEARTYPE", False):
+        # ensure beartype activation if a subprocess is invoked from a unit test
+        os.environ["FANDANGO_RUN_BEARTYPE"] = "1"
+        activate_beartype()
+    else:
+        print("Skipping beartype because FANDANGO_FORCE_SKIP_BEARTYPE is set")
 
 
 def pytest_collection_modifyitems(items: list[pytest.Item]):

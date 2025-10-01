@@ -20,6 +20,8 @@ jobs:
           target: test
 
       - name: Run Benchmarks
+        env:
+          FANDANGO_FORCE_SKIP_BEARTYPE: "1"
         run: |
           pytest -n 0 --benchmark-json results.json tests/test_benchmarks.py
       - name: Upload Benchmark Results
