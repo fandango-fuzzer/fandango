@@ -235,6 +235,8 @@ class GeneticTest(unittest.TestCase):
             self.fandango.grammar, parent1, parent2
         )
 
+        assert children is not None
+
         # Check that the children are of the correct type
         for child in children:
             self.assertIsInstance(child, DerivationTree)
@@ -258,6 +260,8 @@ class GeneticTest(unittest.TestCase):
         children = self.fandango.crossover_operator.crossover(
             self.fandango.grammar, parent1, parent2
         )
+
+        assert children is not None
 
         # Perform mutation
         gen1 = GeneratorWithReturn(
