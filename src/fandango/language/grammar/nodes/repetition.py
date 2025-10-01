@@ -1,6 +1,6 @@
 import random
 from collections.abc import Iterator, Sequence
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import fandango.language.grammar.nodes as nodes
 from fandango.errors import FandangoValueError
@@ -56,7 +56,7 @@ class Repetition(Node):
     def accept(
         self,
         visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
-    ) -> "fandango.language.grammar.node_visitors.node_visitor.ResultType":
+    ) -> Any:  # should be ResultType, beartype falls on its face
         return visitor.visitRepetition(self)
 
     def fuzz(
@@ -143,7 +143,7 @@ class Star(Repetition):
     def accept(
         self,
         visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
-    ) -> "fandango.language.grammar.node_visitors.node_visitor.ResultType":
+    ) -> Any:  # should be ResultType, beartype falls on its face
         return visitor.visitStar(self)
 
     def format_as_spec(self) -> str:
@@ -186,7 +186,7 @@ class Plus(Repetition):
     def accept(
         self,
         visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
-    ) -> "fandango.language.grammar.node_visitors.node_visitor.ResultType":
+    ) -> Any:  # should be ResultType, beartype falls on its face
         return visitor.visitPlus(self)
 
     def format_as_spec(self) -> str:
@@ -244,7 +244,7 @@ class Option(Repetition):
     def accept(
         self,
         visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
-    ) -> "fandango.language.grammar.node_visitors.node_visitor.ResultType":
+    ) -> Any:  # should be ResultType, beartype falls on its face
         return visitor.visitOption(self)
 
     def format_as_spec(self) -> str:
