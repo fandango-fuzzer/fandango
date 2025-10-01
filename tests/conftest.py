@@ -2,9 +2,6 @@ import os
 from fandango.beartype import activate_beartype
 import pytest
 
-# Register the pytest_pythonhashseed_fix plugin
-pytest_plugins = ["fandango.pytest_pythonhashseed_fix"]
-
 
 def pytest_configure(config: pytest.Config):
     # ensure beartype activation if a subprocess is invoked from a unit test
