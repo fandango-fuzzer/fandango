@@ -5,6 +5,7 @@ search criteria.
 
 import abc
 from typing import Optional, Any
+import warnings
 
 from fandango.language.symbols import NonTerminal
 from fandango.language.tree import DerivationTree
@@ -199,14 +200,12 @@ class NonTerminalSearch(abc.ABC):
         return targets
 
     def __repr__(self) -> str:
-        raise NotImplementedError(
-            "Repr not implemented, use method specific to your usecase"
-        )
+        warnings.warn("Don't rely on this, use method specific to your usecase")
+        return f"{self.__class__.__name__}({self.format_as_spec()})"
 
     def __str__(self) -> str:
-        raise NotImplementedError(
-            "Repr not implemented, use method specific to your usecase"
-        )
+        warnings.warn("Don't rely on this, use method specific to your usecase")
+        return self.format_as_spec()
 
     @abc.abstractmethod
     def format_as_spec(self) -> str:
