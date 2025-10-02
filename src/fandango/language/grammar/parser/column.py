@@ -59,14 +59,16 @@ class Column:
         return self.dot_map.get(nt, [])
 
     def add(self, state: ParseState) -> bool:
-        self.states.append(state)
-        self.unique.add(state)
-        symbol = state.dot
-        if symbol is not None:
-            state_list = self.dot_map.get(symbol, [])
-            state_list.append(state)
-            self.dot_map[symbol] = state_list
-        return True
+        if state not in self.unique:
+            self.states.append(state)
+            self.unique.add(state)
+            symbol = state.dot
+            if symbol is not None:
+                state_list = self.dot_map.get(symbol, [])
+                state_list.append(state)
+                self.dot_map[symbol] = state_list
+            return True
+        return False
 
     def update(self, states: set[ParseState]) -> None:
         for state in states:
