@@ -1,6 +1,7 @@
 import abc
 import itertools
 from typing import TYPE_CHECKING, Any, Optional, TypedDict
+import warnings
 
 from fandango.language.search import Container, NonTerminalSearch
 from fandango.language.symbols.non_terminal import NonTerminal
@@ -142,10 +143,12 @@ class GeneticBase(abc.ABC):
         return self.fitness(tree, scope, population, local_variables).failing_trees
 
     def __str__(self) -> str:
-        raise RuntimeError("Not implemented, use method specific to your usecase")
+        warnings.warn("Don't rely on this, use method specific to your usecase")
+        return self.format_as_spec()
 
     def __repr__(self) -> str:
-        raise RuntimeError("Not implemented, use method specific to your usecase")
+        warnings.warn("Don't rely on this, use method specific to your usecase")
+        return f"{self.__class__.__name__}({self.format_as_spec()})"
 
     @abc.abstractmethod
     def format_as_spec(self) -> str:

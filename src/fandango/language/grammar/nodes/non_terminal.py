@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 from collections.abc import Iterator, Sequence
 from fandango.errors import FandangoValueError
 from fandango.language.grammar.has_settings import HasSettings
@@ -89,7 +89,7 @@ class NonTerminalNode(Node):
     def accept(
         self,
         visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
-    ) -> "fandango.language.grammar.node_visitors.node_visitor.ResultType":
+    ) -> Any:  # should be ResultType, beartype falls on its face
         return visitor.visitNonTerminalNode(self)
 
     def format_as_spec(self) -> str:
