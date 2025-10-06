@@ -1,6 +1,6 @@
 import random
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from collections.abc import Sequence
 import exrex
 from fandango.errors import FandangoValueError
@@ -81,7 +81,7 @@ class TerminalNode(Node):
     def accept(
         self,
         visitor: "fandango.language.grammar.node_visitors.node_visitor.NodeVisitor[fandango.language.grammar.node_visitors.node_visitor.AggregateType, fandango.language.grammar.node_visitors.node_visitor.ResultType]",
-    ) -> "fandango.language.grammar.node_visitors.node_visitor.ResultType":
+    ) -> Any:  # should be ResultType, beartype falls on its face
         return visitor.visitTerminalNode(self)
 
     def format_as_spec(self) -> str:

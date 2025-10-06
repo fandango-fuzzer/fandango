@@ -3,6 +3,7 @@ import copy
 import enum
 from collections.abc import Iterator, Sequence
 from typing import TYPE_CHECKING, Any
+import warnings
 from fandango.errors import FandangoValueError
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.tree import DerivationTree
@@ -99,14 +100,12 @@ class Node(abc.ABC):
         return []
 
     def __repr__(self) -> str:
-        raise NotImplementedError(
-            "__repr__ not implemented, use method specific to your usecase"
-        )
+        warnings.warn("Don't rely on this, use method specific to your usecase")
+        return f"{self.__class__.__name__}({self.format_as_spec()})"
 
     def __str__(self) -> str:
-        raise NotImplementedError(
-            "__str__ not implemented, use method specific to your usecase"
-        )
+        warnings.warn("Don't rely on this, use method specific to your usecase")
+        return self.format_as_spec()
 
     @abc.abstractmethod
     def format_as_spec(self) -> str:

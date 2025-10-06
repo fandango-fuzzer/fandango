@@ -30,13 +30,13 @@ class TDigest(BaseTDigest):
         if self._max is None or x > self._max:
             self._max = x
 
-    def amplify_near_0(self, q: float) -> float:
+    def amplify_near_0(self, q: float | int) -> float:
         return 1 - math.exp(-self.contrast * q)
 
-    def amplify_near_1(self, q: float) -> float:
+    def amplify_near_1(self, q: float | int) -> float:
         return math.exp(self.contrast * (q - 1))
 
-    def score(self, x: float) -> float:
+    def score(self, x: float | int) -> float | int:
         if self._min is None or self._max is None:
             return 0
         if self._min == self._max:

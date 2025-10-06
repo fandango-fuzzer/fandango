@@ -57,13 +57,12 @@ class Symbol(abc.ABC):
     def __hash__(self) -> int:
         raise NotImplementedError
 
-    def _repr(self) -> str:
-        return str(self.value())
-
     def __str__(self) -> str:
-        raise KeyError(f"str() not implemented for {type(self)}, use specific function")
+        raise NotImplementedError(
+            f"__str__ not implemented for {self.__class__.__name__}, use method specific to your usecase."
+        )
 
     def __repr__(self) -> str:
-        raise KeyError(
-            f"repr() not implemented for {type(self)}, use specific function"
+        raise NotImplementedError(
+            f"__repr__ not implemented for {self.__class__.__name__}, use method specific to your usecase."
         )
