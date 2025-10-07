@@ -61,7 +61,7 @@ def evaluate_tar(
 
 
 if __name__ == "__main__":
-    result = evaluate_tar(seconds=1)
+    result = evaluate_tar(seconds=10)
     print(
         f"Type: {result[0]}, "
         f"Solutions: {result[1]}, "
