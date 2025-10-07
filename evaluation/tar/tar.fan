@@ -2,13 +2,13 @@
 <entries> ::= <entry> | <entry> <entries> 
 <entry> ::= <header> <content> 
 <header> ::= <file_name><file_mode><uid><gid><file_size><mod_time><checksum><typeflag><linked_file_name>'ustar' <NUL>'00'<uname><gname><dev_maj_num><dev_min_num><file_name_prefix><header_padding>
-<file_name> ::= <file_name_first_char> <file_name_chars> <NULs> := generate_file_name() 
+<file_name> ::= r'[a-zA-Z0-9]{99}\x00' #:= generate_file_name()
 <file_name_chars> ::= <file_name_char> <file_name_chars> | "" 
 <NULs> ::= <NUL> <NULs> | "" 
 <file_mode> ::= <octal_digit>{6} <SPACE> <NUL>
 <uid> ::= <octal_digit>{6} <SPACE> <NUL> 
 <gid> ::= <octal_digit>{6} <SPACE> <NUL>
-<file_size> ::= '00000000' ('1' | '0') <octal_digit>{2} <SPACE>
+<file_size> ::= '00000000' ('1' ('4' ('4' | '3' | '2' | '1') | ('0' | '1' | '2' | '3') <octal_digit>) | '0' <octal_digit>{2}) <SPACE>
 <mod_time> ::= <octal_digit>{11} <SPACE>
 <checksum> ::= <octal_digit>{6} <NUL> <SPACE> 
 <typeflag> ::= '0' 
@@ -23,15 +23,14 @@
 <dev_min_num> ::= <octal_digit>{6} <SPACE> <NUL> 
 <file_name_prefix> ::= <NUL>{155}
 <header_padding> ::= <NUL>{12}
-<content> ::= <char_or_nul>{512} := generate_content() 
-<char_or_nul> ::= <character> | <NUL> 
+<content> ::= r'[\x00a-zA-Z0-9 ]{512}' # := generate_content()
 <final_entry> ::= <NUL>{1024}
 <octal_digit> ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' 
 <character> ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'| 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm'| 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z'| 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M'| 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'| '!' | '"' | '#' | '$' | '%' | '&' | "'" | '(' | ')' | '*' | '+' | ',' | '-'| '.' | '/' | ':' | ';' | '<' | '=' | '>' | '?' | '@' | '[' | ']' | '^' | '_'| '`' | '{' | '|' | '}' | '~' | ' ' | '\t' | '\n' | '\r' | '\x0b' | '\x0c'
 <file_name_first_char> ::= 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm'| 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z'| 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M'| 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'| '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '_'
 <file_name_char> ::= '&' | '^' | 'I' | '}' | 'F' | 'J' | '|' | 'd' | '~' | '@' | '<' | ')'| 'S' | 'q' | 'k' | 'E' | 'r' | 'X' | 'H' | '`' | 'K' | ':' | 'Q' | '_'| '+' | '4' | ';' | '/' | 'P' | 'n' | "'" | 'g' | 'j' | 't' | 'p' | 'z'| 'c' | '!' | 'T' | 'o' | 'Y' | 'N' | 'e' | '>' | '0' | 'G' | '=' | '{'| '$' | '[' | 'a' | 's' | 'C' | 'A' | '2' | 'W' | '1' | 'V' | 'O' | '#'| 'u' | 'L' | 'R' | '6' | 'y' | 'l' | 'f' | 'h' | 'w' | '(' | ',' | '%'| '5' | '-' | '*' | 'Z' | '?' | '3' | 'b' | 'v' | 'U' | 'D' | '"' | '9'| 'M' | 'i' | 'm' | '8' | ']' | 'x' | '7' | '.' | 'B'
-<NUL> ::= '\x00' 
-<SPACE> ::= ' ' 
+<NUL> ::= '\x00'
+<SPACE> ::= ' '
 
 ## File Size Constraint "file_size_constr" (generator in grammar)
 
@@ -268,9 +267,7 @@ def generate_content():
         'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
         'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
         'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-        '!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-',
-        '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', ']', '^', '_',
-        '`', '{', '|', '}', '~', ' '
+        ' '
     ]
     n = random.randint(0, 512)
     c = ""
