@@ -1,5 +1,5 @@
 import random
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.grammar.grammar_settings import GrammarSetting
 from fandango.language.grammar.nodes.node import Node, NODE_SETTINGS_DEFAULTS
@@ -43,7 +43,7 @@ def get_grammar(
 def check_node(
     node: Node,
     float_key_on_set: float,
-    int_key_on_set: int | None,
+    int_key_on_set: Optional[int],
     match_lambda: Callable[[Node], bool],
 ):
     if match_lambda(node):

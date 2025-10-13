@@ -2,7 +2,7 @@ import argparse
 import difflib
 import logging
 import os
-from typing import IO, Any
+from typing import IO, Any, Optional
 import zipfile
 
 
@@ -67,7 +67,7 @@ def _copy_setting(
     settings: dict[str, Any],
     name: str,
     *,
-    args_name: str | None = None,
+    args_name: Optional[str] = None,
 ) -> None:
     if args_name is None:
         args_name = name
@@ -134,8 +134,8 @@ def get_file_mode(
     args: argparse.Namespace,
     settings: dict[str, Any],
     *,
-    grammar: Grammar | None = None,
-    tree: DerivationTree | None = None,
+    grammar: Optional[Grammar] = None,
+    tree: Optional[DerivationTree] = None,
 ) -> str:
     if (
         hasattr(args, "file_mode")
@@ -165,7 +165,7 @@ def parse_contents_from_args(
     args: argparse.Namespace,
     given_grammars: list[Grammar] = [],
     check: bool = True,
-) -> tuple[Grammar | None, list[Constraint | SoftValue]]:
+) -> tuple[Optional[Grammar], list[Constraint | SoftValue]]:
     """Parse .fan content as given in args"""
     max_constraints = [f"maximizing {c}" for c in (args.maxconstraints or [])]
     min_constraints = [f"minimizing {c}" for c in (args.minconstraints or [])]
@@ -242,7 +242,7 @@ def parse_constraints_from_args(
     args: argparse.Namespace,
     given_grammars: list[Grammar] = [],
     check: bool = True,
-) -> tuple[Grammar | None, list[Constraint | SoftValue]]:
+) -> tuple[Optional[Grammar], list[Constraint | SoftValue]]:
     """Parse .fan constraints as given in args"""
     max_constraints = [f"maximizing {c}" for c in (args.maxconstraints or [])]
     min_constraints = [f"minimizing {c}" for c in (args.minconstraints or [])]

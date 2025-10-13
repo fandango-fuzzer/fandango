@@ -193,7 +193,7 @@ class IoPopulationManager(PopulationManager):
     ):
         super().__init__(grammar, start_symbol, warnings_are_errors)
         self._prev_packet_idx = 0
-        self.fuzzable_packets: list[ForcastingPacket] | None = None
+        self.fuzzable_packets: Optional[list[ForcastingPacket]] = None
 
     def _generate_population_entry(self, max_nodes: int) -> DerivationTree:
         if self.fuzzable_packets is None or len(self.fuzzable_packets) == 0:

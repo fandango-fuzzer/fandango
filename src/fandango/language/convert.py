@@ -1234,7 +1234,7 @@ class SearchProcessor(FandangoParserVisitor):
         return ast.Set(elts=trees), searches, search_map
 
     def visitDict(self, ctx: FandangoParser.DictContext):
-        keys: list[ast.expr | None] = list()
+        keys: list[Optional[ast.expr]] = list()
         values: list[ast.expr] = list()
         if ctx.double_starred_kvpairs():
             kvpairs, searches, search_map = self.visitDouble_starred_kvpairs(
