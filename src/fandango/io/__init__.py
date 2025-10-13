@@ -622,7 +622,7 @@ class ProcessManager(object):
         return self.proc
 
     @property
-    def command(self) -> str | list[str] | None:
+    def command(self) -> Optional[str | list[str]]:
         """Returns the command to be executed to start the process."""
         return self._command
 

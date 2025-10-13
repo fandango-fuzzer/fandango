@@ -1,6 +1,6 @@
 from collections.abc import Generator, Iterator
 from collections import defaultdict
-from typing import Any, cast, Optional, Union
+from typing import Any, cast, Optional
 from collections.abc import Sequence
 import warnings
 
@@ -247,7 +247,7 @@ class Grammar(NodeVisitor[list[Node], list[Node]]):
         return root
 
     def update(
-        self, grammar: Union["Grammar", dict[NonTerminal, Node]], prime: bool = True
+        self, grammar: "Grammar | dict[NonTerminal, Node]", prime: bool = True
     ) -> None:
         generators: dict[NonTerminal, LiteralGenerator]
         local_variables: dict[str, Any]

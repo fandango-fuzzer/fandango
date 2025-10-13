@@ -2,7 +2,7 @@ import abc
 import copy
 import enum
 from collections.abc import Iterator, Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 import warnings
 from fandango.errors import FandangoValueError
 from fandango.language.grammar.has_settings import HasSettings
@@ -165,7 +165,7 @@ class NodeSettings:
     def __deepcopy__(self, memo: dict[int, Any]) -> "NodeSettings":
         return NodeSettings(copy.deepcopy(self._settings))
 
-    def update(self, other: "NodeSettings | None") -> "NodeSettings":
+    def update(self, other: Optional["NodeSettings"]) -> "NodeSettings":
         if other is None:
             return self
 

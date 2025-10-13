@@ -37,7 +37,7 @@ class PathFinder(NodeVisitor[bool, bool]):
         self.grammar = grammar
         self.tree: Optional[DerivationTree] = None
         self.collapsed_tree: Optional[DerivationTree] = None
-        self.current_tree: list[list[DerivationTree] | None] = []
+        self.current_tree: list[Optional[list[DerivationTree]]] = []
         self.current_path: list[tuple[NonTerminal, bool]] = []
         self.result = ForecastingResult()
 

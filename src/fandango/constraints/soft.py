@@ -61,9 +61,9 @@ class Value(GeneticBase):
     def __init__(
         self,
         expression: str,
-        searches: dict[str, NonTerminalSearch] | None = None,
-        local_variables: dict[str, Any] | None = None,
-        global_variables: dict[str, Any] | None = None,
+        searches: Optional[dict[str, NonTerminalSearch]] = None,
+        local_variables: Optional[dict[str, Any]] = None,
+        global_variables: Optional[dict[str, Any]] = None,
     ) -> None:
         """
         Initializes the value with the given expression.
@@ -149,9 +149,9 @@ class SoftValue(Value):
         self,
         optimization_goal: str,
         expression: str,
-        searches: dict[str, NonTerminalSearch] | None = None,
-        local_variables: dict[str, Any] | None = None,
-        global_variables: dict[str, Any] | None = None,
+        searches: Optional[dict[str, NonTerminalSearch]] = None,
+        local_variables: Optional[dict[str, Any]] = None,
+        global_variables: Optional[dict[str, Any]] = None,
     ):
         super().__init__(
             expression,
