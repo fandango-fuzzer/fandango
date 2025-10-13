@@ -1,7 +1,7 @@
 import time
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
-from typing import Any, Union
+from typing import Any, Optional
 from collections.abc import Generator
 
 
@@ -60,7 +60,7 @@ class Profiler:
 
     def __init__(self, enabled: bool):
         self.enabled = enabled
-        self.metrics: dict[str, dict[str, Union[int, float]]] = {
+        self.metrics: dict[str, dict[str, int | float]] = {
             "initial_population": {"count": 0, "time": 0.0},
             "evaluate_population": {"count": 0, "time": 0.0},
             "select_elites": {"count": 0, "time": 0.0},
@@ -72,7 +72,7 @@ class Profiler:
 
     @contextmanager
     def timer(
-        self, key: str, increment: Union[int, list[Any], None] = None
+        self, key: str, increment: Optional[int | list[Any]] = None
     ) -> Generator[Timer, None, None]:
         """Context manager for profiling operations.
 

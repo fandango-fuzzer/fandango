@@ -6,7 +6,7 @@ import random
 import time
 import warnings
 from collections.abc import Callable, Generator
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional
 
 from fandango.constraints.constraint import Constraint
 from fandango.constraints.soft import SoftValue
@@ -46,9 +46,9 @@ class Fandango:
     def __init__(
         self,
         grammar: Grammar,
-        constraints: list[Union[Constraint, SoftValue]],
+        constraints: list[Constraint | SoftValue],
         population_size: int = 100,
-        initial_population: Optional[list[Union[DerivationTree, str]]] = None,
+        initial_population: Optional[list[DerivationTree | str]] = None,
         expected_fitness: float = 1.0,
         elitism_rate: float = 0.1,
         crossover_method: CrossoverOperator = SimpleSubtreeCrossover(),
@@ -139,7 +139,7 @@ class Fandango:
         self.time_taken = 0.0
 
     def _parse_and_deduplicate(
-        self, population: Optional[list[Union[DerivationTree, str]]]
+        self, population: Optional[list[DerivationTree | str]]
     ) -> list[DerivationTree]:
         """
         Parses and deduplicates the initial population along unique parse trees. If no initial population is provided, an empty list is returned.
