@@ -20,7 +20,7 @@ logging.basicConfig(
 )
 
 
-def print_exception(e: Exception, exception_note: str | None = None) -> None:
+def print_exception(e: Exception, exception_note: Optional[str] = None) -> None:
     if exception_note is not None and getattr(Exception, "add_note", None):
         # Python 3.11+ has add_note() method
         e.add_note(exception_note)
@@ -48,10 +48,10 @@ def print_exception(e: Exception, exception_note: str | None = None) -> None:
         raise e
 
 
-USE_VISUALIZATION: bool | None = None
+USE_VISUALIZATION: Optional[bool] = None
 
 
-def set_visualization(use_visualization: bool | None) -> None:
+def set_visualization(use_visualization: Optional[bool]) -> None:
     """Set whether to use visualization while Fandango is running"""
     global USE_VISUALIZATION
     USE_VISUALIZATION = use_visualization
@@ -163,7 +163,7 @@ def clear_visualization(max_generations: Optional[int] = None) -> None:
 
 def log_message_transfer(
     sender: str,
-    receiver: str | None,
+    receiver: Optional[str],
     msg: "DerivationTree",
     self_is_sender: bool,
 ) -> None:

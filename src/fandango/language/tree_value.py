@@ -339,12 +339,12 @@ DIRECT_ACCESS_METHODS_BASE_TO_UNDERLYING_TYPE = [
 class TreeValue:
     def __init__(
         self,
-        value: str | bytes | int | None,
+        value: Optional[str | bytes | int],
         *,
         trailing_bits: list[int] = [],
         allow_empty: bool = False,
     ):
-        self._value: str | bytes | None
+        self._value: Optional[str | bytes]
         assert all(
             bit & 1 == bit for bit in trailing_bits
         ), "trailing bits must be 0 or 1, got " + str(trailing_bits)

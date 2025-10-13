@@ -3,7 +3,7 @@ import atexit
 import os
 import shlex
 import sys
-from typing import Any
+from typing import Any, Optional
 
 from fandango.cli.commands import COMMANDS, help_command, run, version_command
 from fandango.cli.complete import complete
@@ -64,7 +64,7 @@ def shell_command(args: argparse.Namespace) -> None:
 
         atexit.register(readline.write_history_file, histfile)
 
-    def _complete(text: str, state: int) -> str | None:
+    def _complete(text: str, state: int) -> Optional[str]:
         if "readline" not in globals():
             return None
 

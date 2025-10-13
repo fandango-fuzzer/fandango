@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from typing import Any, IO
+from typing import Any, IO, Optional
 
 from fandango import Fandango
 from fandango.cli.commands import COMMANDS, run
@@ -11,7 +11,9 @@ from fandango.logger import LOGGER
 
 
 def main(
-    *argv: str, stdout: IO[Any] | None = sys.stdout, stderr: IO[Any] | None = sys.stderr
+    *argv: str,
+    stdout: Optional[IO[Any]] = sys.stdout,
+    stderr: Optional[IO[Any]] = sys.stderr,
 ) -> int:
     if "-O" in sys.argv:
         sys.argv.remove("-O")

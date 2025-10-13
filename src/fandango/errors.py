@@ -1,3 +1,6 @@
+from typing import Optional
+
+
 class FandangoError(ValueError):
     """Generic Error"""
 
@@ -7,7 +10,7 @@ class FandangoError(ValueError):
 class FandangoParseError(FandangoError, SyntaxError):
     """Error during parsing inputs"""
 
-    def __init__(self, message: str | None = None, position: int | None = None):
+    def __init__(self, message: Optional[str] = None, position: Optional[int] = None):
         if message is None:
             if position is not None:
                 message = f"Parse error at position {position}"
