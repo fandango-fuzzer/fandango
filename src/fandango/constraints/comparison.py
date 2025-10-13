@@ -223,7 +223,7 @@ class ComparisonConstraint(Constraint):
         return fitness, suggestions
 
 
-def _distance_norm(left: Any, right: Any) -> float | None:
+def _distance_norm(left: Any, right: Any) -> Optional[float]:
     """
     Generates a normalized distance between two values.
     The values if calculated by `2*sigmoid(|left - right|)`

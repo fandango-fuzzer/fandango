@@ -3,7 +3,7 @@
 import argparse
 import re
 import sys
-from typing import Any
+from typing import Any, Optional
 
 from lxml import etree  # type: ignore[attr-defined] # types not available
 
@@ -139,7 +139,7 @@ class DTDFandangoConverter(FandangoConverter):
 
     def convert_attribute(
         self, attribute: etree.Element
-    ) -> tuple[str, str | None, bool]:
+    ) -> tuple[str, Optional[str], bool]:
         value = None
         s = f"'{fan(attribute.name)}='"
         if attribute.default == "fixed":

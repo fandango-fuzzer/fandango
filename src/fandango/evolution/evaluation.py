@@ -1,5 +1,5 @@
 import random
-from typing import Counter, Union
+from typing import Counter
 from collections.abc import Generator
 
 from fandango.constraints.constraint import Constraint
@@ -13,7 +13,7 @@ class Evaluator:
     def __init__(
         self,
         grammar: Grammar,
-        constraints: list[Union[Constraint, SoftValue]],
+        constraints: list[Constraint | SoftValue],
         expected_fitness: float,
         diversity_k: int,
         diversity_weight: float,

@@ -7,7 +7,7 @@ import shutil
 from ansi_styles import ansiStyles as styles
 import sys
 import tempfile
-from typing import Any
+from typing import Any, Optional
 
 import fandango
 from fandango import Fandango, DerivationTree
@@ -62,7 +62,7 @@ def exit_command(args: argparse.Namespace) -> None:
 
 
 # Default Fandango file content (grammar, constraints); set with `set`
-DEFAULT_FAN_CONTENT: tuple[Grammar | None, list[Constraint | SoftValue]] = (None, [])
+DEFAULT_FAN_CONTENT: tuple[Optional[Grammar], list[Constraint | SoftValue]] = (None, [])
 
 # Additional Fandango constraints; set with `set`
 DEFAULT_CONSTRAINTS: list[Constraint | SoftValue] = []

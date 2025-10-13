@@ -31,7 +31,7 @@ class ProtocolMessage:
     """
 
     def __init__(
-        self, sender: str, recipient: str | None, msg: "DerivationTree"
+        self, sender: str, recipient: Optional[str], msg: "DerivationTree"
     ) -> None:
         self.msg = msg
         self.sender = sender

@@ -284,7 +284,7 @@ def parse_spec(
     filename: str = "<input_>",
     use_cache: bool = True,
     lazy: bool = False,
-    parties: list[str] | None = None,
+    parties: Optional[list[str]] = None,
     max_repetitions: int = 5,
 ) -> FandangoSpec:
     """
@@ -436,7 +436,7 @@ def parse_content(
     filename: str = "<input_>",
     use_cache: bool = True,
     lazy: bool = False,
-    parties: list[str] | None = None,
+    parties: Optional[list[str]] = None,
     max_repetitions: int = 5,
 ) -> tuple[Grammar, list[Constraint | SoftValue]]:
     spec = parse_spec(

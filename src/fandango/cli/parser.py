@@ -2,11 +2,12 @@ import argparse
 import os
 import sys
 import textwrap
+from typing import Optional
 
 import fandango
 
 
-def terminal_link(url: str, text: str | None = None) -> str:
+def terminal_link(url: str, text: Optional[str] = None) -> str:
     """Output URL as a link"""
     if text is None:
         text = url
