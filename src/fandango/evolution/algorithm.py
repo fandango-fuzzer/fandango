@@ -96,8 +96,6 @@ class Fandango:
         self.diversity_k = diversity_k
         self.remote_response_timeout = 15.0
         self.past_io_derivations = []
-        self.coverage_log: list[tuple[float, dict[NonTerminal, tuple[int, int]]]] = []
-        self.coverage_log_overlap: list[tuple[float, float]] = []
 
         # Instantiate managers
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
@@ -138,8 +136,6 @@ class Fandango:
             max_nodes,
             max_nodes_rate,
         )
-        self._is_enable_guidance = True
-
         self.profiler = Profiler(enabled=profiling)
 
         self.crossover_operator = crossover_method
@@ -154,15 +150,6 @@ class Fandango:
         self.fixes_made = 0
         self.mutations_made = 0
         self.time_taken = 0.0
-
-    def enable_guidance(self, value: bool) -> None:
-        if self.grammar.fuzzing_mode != FuzzingMode.IO:
-            raise FandangoValueError("Guidance can only be enabled in IO mode")
-        assert isinstance(self.population_manager, IoPopulationManager)
-        self.evaluator.enable_guidance(value)
-        self._is_enable_guidance = value
-        if hasattr(self, 'packet_selector') and self.packet_selector is not None:
-            self.packet_selector.enable_guidance(value)
 
     def _parse_and_deduplicate(
         self, population: Optional[list[Union[DerivationTree, str]]]
@@ -499,7 +486,6 @@ class Fandango:
         self.packet_selector = PacketSelector(
             self.grammar, io_instance, history_tree, self.diversity_k
         )
-        self.packet_selector.enable_guidance(self._is_enable_guidance)
         if max_generations is None:
             selected_packet_max_generations = 10
             overall_max_generations = max_generations
@@ -511,8 +497,6 @@ class Fandango:
         while True:
             self.packet_selector.compute(history_tree, self.past_io_derivations)
             current_coverage = dict(self.packet_selector.coverage_scores)[NonTerminal("<start>")]
-            self.coverage_log.append((time.time(), self.packet_selector._compute_coverage_trees(False)))
-            self.coverage_log_overlap.append((time.time(), self.packet_selector._compute_coverage_trees(True)))
             LOGGER.info(f"Current coverage: {current_coverage:.2f}%")
             self.evaluator.start_next_message(
                 [history_tree] + list(self.past_io_derivations)

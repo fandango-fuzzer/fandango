@@ -49,11 +49,7 @@ class PacketSelector:
         self._guide_path = None
         self._current_covered_k_paths = set()
         self._all_past_covered_k_paths = set()
-        self._is_enable_guidance = True
         self.compute(history_tree, self.parst_derivations)
-
-    def enable_guidance(self, enable: bool):
-        self._is_enable_guidance = enable
 
     def _get_subgrammar_symbols(self, starting_symbol: NonTerminal):
         reduced_grammar = GrammarReducer(self.grammar.grammar_settings).process(
@@ -324,13 +320,6 @@ class PacketSelector:
         )
 
     def _select_next_packet(self):
-        #print(f"LOWEST AT {self.coverage_scores[0][1]} PERCENT ({self.coverage_scores[0][0]})")
-        #print(f"START  AT {dict(self.coverage_scores)[NonTerminal("<start>")]} PERCENT")
-        if not self._is_enable_guidance:
-            if len(self._uncovered_paths()) == 0:
-                return self._get_guide_to_end_packet()
-            return self.get_fuzzer_packets()
-
         if len(self.next_fuzzer_parties()) == 0:
             return []
 
