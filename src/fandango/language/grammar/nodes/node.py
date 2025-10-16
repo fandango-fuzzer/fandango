@@ -4,6 +4,7 @@ import enum
 from collections.abc import Iterator, Sequence
 from typing import TYPE_CHECKING, Any
 from fandango.errors import FandangoValueError
+from fandango.language.symbols import Symbol
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.tree import DerivationTree
 from fandango.logger import LOGGER
@@ -57,6 +58,17 @@ class Node(abc.ABC):
     def is_nonterminal(self) -> bool:
         return self.node_type == NodeType.NON_TERMINAL
 
+    @abc.abstractmethod
+    def to_symbol(self) -> Symbol:
+        raise NotImplementedError("to_symbol method not implemented")
+
+    @property
+    def is_controlflow(self) -> bool:
+        return self.node_type not in {
+            NodeType.TERMINAL,
+            NodeType.NON_TERMINAL,
+        }
+
     @property
     def settings(self) -> "NodeSettings":
         return self._settings
@@ -74,10 +86,12 @@ class Node(abc.ABC):
     def accept(self, visitor: "NodeVisitor"):
         raise NotImplementedError("accept method not implemented")
 
-    def msg_parties(self, *, include_recipients: bool = False) -> set[str]:
+    def msg_parties(self, *, grammar: "fandango.language.grammar.grammar.Grammar", seen_nts: set[Symbol] = None, include_recipients: bool = False) -> set[str]:
+        if seen_nts is None:
+            seen_nts = set()
         parties: set[str] = set()
         for child in self.children():
-            parties |= child.msg_parties(include_recipients=include_recipients)
+            parties |= child.msg_parties(grammar=grammar, seen_nts=seen_nts, include_recipients=include_recipients)
         return parties
 
     def slice_parties(self, parties: list[str]) -> None:
@@ -92,9 +106,7 @@ class Node(abc.ABC):
         return []
 
     def __repr__(self):
-        raise NotImplementedError(
-            "__repr__ not implemented, use method specific to your usecase"
-        )
+        return f"{type(self).__name__}({self.to_symbol()})"
 
     def __str__(self):
         raise NotImplementedError(
@@ -108,7 +120,9 @@ class Node(abc.ABC):
         """
 
     def descendents(
-        self, grammar: "fandango.language.grammar.grammar.Grammar"
+        self,
+        grammar: "fandango.language.grammar.grammar.Grammar",
+        filter_controlflow: bool = False,
     ) -> Iterator["Node"]:
         """
         Returns an iterator of the descendents of this node.

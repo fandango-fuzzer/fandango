@@ -14,13 +14,14 @@ from fandango.errors import FandangoFailedError, FandangoParseError, FandangoVal
 from fandango.evolution import GeneratorWithReturn
 from fandango.evolution.adaptation import AdaptiveTuner
 from fandango.evolution.crossover import CrossoverOperator, SimpleSubtreeCrossover
-from fandango.evolution.evaluation import Evaluator
+from fandango.evolution.evaluation import Evaluator, IoEvaluator
 from fandango.evolution.mutation import MutationOperator, SimpleMutation
 from fandango.evolution.population import IoPopulationManager, PopulationManager
 from fandango.evolution.profiler import Profiler
-from fandango.io import FandangoIO, FandangoParty
-from fandango.io.packetforecaster import PacketForecaster
+from fandango.io import FandangoIO
+from fandango.io.navigation.packetselector import PacketSelector
 from fandango.io.packetparser import parse_next_remote_packet
+from fandango.language.symbols import NonTerminal
 from fandango.language.grammar import FuzzingMode
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.tree import DerivationTree
@@ -30,6 +31,8 @@ from fandango.logger import (
     log_message_transfer,
     print_exception,
     visualize_evaluation,
+    log_guidance_hint,
+    log_message_coverage,
 )
 
 
@@ -89,8 +92,12 @@ class Fandango:
         self.tournament_size = tournament_size
         self.warnings_are_errors = warnings_are_errors
         self.best_effort = best_effort
-        self.current_max_nodes = 50
+        self.current_max_nodes = max_nodes
+        self.diversity_k = diversity_k
         self.remote_response_timeout = 15.0
+        self.past_io_derivations = []
+        self.coverage_log: list[tuple[float, dict[NonTerminal, tuple[int, int]]]] = []
+        self.coverage_log_overlap: list[tuple[float, float]] = []
 
         # Instantiate managers
         if self.grammar.fuzzing_mode == FuzzingMode.IO:
@@ -99,20 +106,28 @@ class Fandango:
                 start_symbol,
                 warnings_are_errors,
             )
+            self.evaluator = IoEvaluator(
+                grammar,
+                constraints,
+                expected_fitness,
+                diversity_k,
+                diversity_weight,
+                warnings_are_errors,
+            )
         else:
             self.population_manager = PopulationManager(
                 grammar,
                 start_symbol,
                 warnings_are_errors,
             )
-        self.evaluator = Evaluator(
-            grammar,
-            constraints,
-            expected_fitness,
-            diversity_k,
-            diversity_weight,
-            warnings_are_errors,
-        )
+            self.evaluator = Evaluator(
+                grammar,
+                constraints,
+                expected_fitness,
+                diversity_k,
+                diversity_weight,
+                warnings_are_errors,
+            )
         self.adaptive_tuner = AdaptiveTuner(
             mutation_rate,
             crossover_rate,
@@ -123,6 +138,7 @@ class Fandango:
             max_nodes,
             max_nodes_rate,
         )
+        self._is_enable_guidance = True
 
         self.profiler = Profiler(enabled=profiling)
 
@@ -138,6 +154,15 @@ class Fandango:
         self.fixes_made = 0
         self.mutations_made = 0
         self.time_taken = 0.0
+
+    def enable_guidance(self, value: bool) -> None:
+        if self.grammar.fuzzing_mode != FuzzingMode.IO:
+            raise FandangoValueError("Guidance can only be enabled in IO mode")
+        assert isinstance(self.population_manager, IoPopulationManager)
+        self.evaluator.enable_guidance(value)
+        self._is_enable_guidance = value
+        if hasattr(self, 'packet_selector') and self.packet_selector is not None:
+            self.packet_selector.enable_guidance(value)
 
     def _parse_and_deduplicate(
         self, population: Optional[list[Union[DerivationTree, str]]]
@@ -166,7 +191,7 @@ class Fandango:
                 tree = individual
             else:
                 raise TypeError("Initial individuals must be DerivationTree or String")
-            PopulationManager.add_unique_individual(
+            self.population_manager.add_unique_individual(
                 population=unique_population, candidate=tree, unique_set=unique_hashes
             )
         return unique_population
@@ -249,7 +274,7 @@ class Fandango:
                     self.grammar, parent1, parent2
                 )
 
-            PopulationManager.add_unique_individual(
+            self.population_manager.add_unique_individual(
                 new_population, child1, unique_hashes
             )
             yield from self.evaluator.evaluate_individual(child1)
@@ -257,7 +282,7 @@ class Fandango:
             count = len(new_population)
             with self.profiler.timer("filling") as timer:
                 if len(new_population) < self.population_size:
-                    PopulationManager.add_unique_individual(
+                    self.population_manager.add_unique_individual(
                         new_population, child2, unique_hashes
                     )
                 yield from self.evaluator.evaluate_individual(child2)
@@ -471,106 +496,194 @@ class Fandango:
         spec_env_global, _ = self.grammar.get_spec_env()
         io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
         history_tree: DerivationTree = random.choice(self.population)
-        forecaster = PacketForecaster(self.grammar)
+        self.packet_selector = PacketSelector(
+            self.grammar, io_instance, history_tree, self.diversity_k
+        )
+        self.packet_selector.enable_guidance(self._is_enable_guidance)
+        if max_generations is None:
+            selected_packet_max_generations = 10
+            overall_max_generations = max_generations
+        else:
+            selected_packet_max_generations = max_generations / 3
+            overall_max_generations = max_generations - selected_packet_max_generations
+        assert isinstance(self.evaluator, IoEvaluator)
 
         while True:
-            forecast = forecaster.predict(history_tree)
-
-            if len(forecast.get_msg_parties()) == 0:
-                if len(history_tree.protocol_msgs()) == 0:
-                    raise FandangoFailedError("Could not forecast next packet")
-                yield history_tree
-                return
-                # TODO: Reset for next iteration
-
-            msg_parties = list(
-                filter(
-                    lambda x: io_instance.parties[x].is_fuzzer_controlled(),
-                    forecast.get_msg_parties(),
-                )
+            self.packet_selector.compute(history_tree, self.past_io_derivations)
+            current_coverage = dict(self.packet_selector.coverage_scores)[NonTerminal("<start>")]
+            self.coverage_log.append((time.time(), self.packet_selector._compute_coverage_trees(False)))
+            self.coverage_log_overlap.append((time.time(), self.packet_selector._compute_coverage_trees(True)))
+            LOGGER.info(f"Current coverage: {current_coverage:.2f}%")
+            self.evaluator.start_next_message(
+                [history_tree] + list(self.past_io_derivations)
             )
-            if len(msg_parties) != 0 and not io_instance.received_msg():
-                fuzzable_packets = []
-                for party in msg_parties:
-                    fuzzable_packets.extend(forecast[party].nt_to_packet.values())
-                assert isinstance(self.population_manager, IoPopulationManager)
-                self.population_manager.fuzzable_packets = fuzzable_packets
 
-                self.population.clear()
-                solutions = list(
-                    self.population_manager.refill_population(
-                        current_population=self.population,
-                        eval_individual=self.evaluator.evaluate_individual,
-                        max_nodes=self.current_max_nodes,
-                        target_population_size=self.population_size,
-                    )
-                )
-                if not solutions:
-                    solutions, self.evaluation = GeneratorWithReturn(
-                        self.evaluator.evaluate_population(self.population)
-                    ).collect()
-
-                if not solutions:
-                    try:
-                        evolve_result = next(
-                            self.generate(max_generations=max_generations)
-                        )
-                    except StopIteration:
-                        nonterminals_str = " | ".join(
-                            map(lambda x: str(x.node.symbol), fuzzable_packets)
-                        )
-                        raise FandangoFailedError(
-                            f"Couldn't find solution for any packet: {nonterminals_str}"
-                        )
-                    next_tree = evolve_result
-                else:
-                    next_tree = solutions[0]
-                if io_instance.received_msg():
-                    # Abort if we received a message during fuzzing
-                    continue
-                new_packet = next_tree.protocol_msgs()[-1]
+            try:
                 if (
-                    new_packet.recipient is None
-                    or not io_instance.parties[
+                        len(self.packet_selector.get_next_parties()) == 0
+                        and not self.packet_selector.is_complete()
+                ):
+                    raise FandangoFailedError("Could not forecast next packet")
+
+                if (
+                        len(self.packet_selector.get_next_parties()) == 0
+                        or self.packet_selector.is_guide_to_end()
+                ) and self.packet_selector.is_complete():
+                    history_tree = random.choice(
+                        list(self.packet_selector.forecasting_result.complete_trees)
+                    )
+                    self.past_io_derivations.append(history_tree)
+                    self._initial_solutions.clear()
+                    yield history_tree
+                    if len(self.packet_selector._uncovered_paths()) == 0:
+                        log_guidance_hint("Full coverage reached, stopping evolution.")
+                        return
+                    log_guidance_hint("Starting new protocol run.")
+                    io_instance.reset_parties()
+                    history_tree = DerivationTree(NonTerminal(self.start_symbol), [])
+                    continue
+
+                if (
+                        len(self.packet_selector.next_fuzzer_parties()) != 0
+                        and not io_instance.received_msg()
+                ):
+
+                    assert isinstance(self.population_manager, IoPopulationManager)
+                    self.population_manager.fuzzable_packets = self.packet_selector.next_packets
+                    self.population_manager.fallback_packets = []
+                    for sender in self.packet_selector.next_fuzzer_parties():
+                        self.population_manager.fallback_packets.extend(
+                            list(
+                                self.packet_selector.forecasting_result.parties_to_packets[
+                                    sender
+                                ].nt_to_packet.values()
+                            )
+                        )
+                    self.population.clear()
+                    self.population_manager.allow_fallback_packets = False
+                    self._initial_solutions.clear()
+                    self.adaptive_tuner.reset_parameters()
+                    self.grammar.set_max_repetition(
+                        self.adaptive_tuner.current_max_repetition
+                    )
+
+                    try:
+                        solutions = [next(
+                            self.population_manager.refill_population(
+                                current_population=self.population,
+                                eval_individual=self.evaluator.evaluate_individual,
+                                max_nodes=self.current_max_nodes,
+                                target_population_size=self.population_size,
+                            )
+                        )]
+                    except StopIteration:
+                        solutions = []
+                    if not solutions:
+                        solutions, self.evaluation = GeneratorWithReturn(
+                            self.evaluator.evaluate_population(self.population)
+                        ).collect()
+
+                    if not solutions:
+                        try:
+                            evolve_result = next(
+                                self.generate(
+                                    max_generations=selected_packet_max_generations,
+                                    mode=FuzzingMode.COMPLETE,
+                                )
+                            )
+                        except StopIteration:
+                            if len(self.evaluator._hold_back_solutions) != 0:
+                                evolve_result = random.choice(
+                                    list(self.evaluator._hold_back_solutions)
+                                )
+                            else:
+                                self.population_manager.allow_fallback_packets = True
+                                try:
+                                    evolve_result = next(
+                                        self.generate(
+                                            max_generations=overall_max_generations,
+                                            mode=FuzzingMode.COMPLETE,
+                                        )
+                                    )
+                                except StopIteration:
+                                    all_allowed_packets = (
+                                            self.population_manager.fuzzable_packets
+                                            + self.population_manager.fallback_packets
+                                    )
+                                    nonterminals_str = " | ".join(
+                                        map(
+                                            lambda x: str(x.node.symbol),
+                                            all_allowed_packets,
+                                        )
+                                    )
+                                    raise FandangoFailedError(
+                                        f"Couldn't find solution for any packet: {nonterminals_str}"
+                                    )
+                        next_tree = evolve_result
+                    else:
+                        next_tree = solutions[0]
+                    if io_instance.received_msg():
+                        # Abort if we received a message during fuzzing
+                        continue
+                    new_packet = next_tree.protocol_msgs()[-1]
+                    if (
+                            new_packet.recipient is None
+                            or not io_instance.parties[
                         new_packet.recipient
                     ].is_fuzzer_controlled()
-                ):
-                    io_instance.transmit(
-                        new_packet.sender, new_packet.recipient, new_packet.msg
+                    ):
+                        io_instance.transmit(
+                            new_packet.sender, new_packet.recipient, new_packet.msg
+                        )
+                        log_message_transfer(
+                            new_packet.sender, new_packet.recipient, new_packet.msg, True
+                        )
+                    history_tree = next_tree
+                else:
+                    wait_start = time.time()
+                    while not io_instance.received_msg():
+                        if time.time() - wait_start > self.remote_response_timeout:
+                            external_parties = self.packet_selector.next_external_parties()
+                            raise FandangoFailedError(
+                                f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(external_parties)}"
+                            )
+                        time.sleep(0.025)
+                    forecast, packet_tree = parse_next_remote_packet(
+                        self.grammar, self.packet_selector.forecasting_result, io_instance
                     )
                     log_message_transfer(
-                        new_packet.sender, new_packet.recipient, new_packet.msg, True
+                        packet_tree.sender,
+                        packet_tree.recipient,
+                        packet_tree,
+                        False,
                     )
-                history_tree = next_tree
-            else:
-                wait_start = time.time()
-                while not io_instance.received_msg():
-                    if time.time() - wait_start > self.remote_response_timeout:
-                        raise FandangoFailedError(
-                            f"Timed out while waiting for message from remote party. Expected message from party: {', '.join(forecast.get_msg_parties())}"
-                        )
-                    time.sleep(0.025)
-                forecast, packet_tree = parse_next_remote_packet(
-                    self.grammar, forecast, io_instance
-                )
-                log_message_transfer(
-                    packet_tree.sender,
-                    packet_tree.recipient,
-                    packet_tree,
-                    False,
-                )
 
-                hookin_option = next(iter(forecast.paths))
-                history_tree = hookin_option.tree
-                history_tree.append(hookin_option.path[1:], packet_tree)
-                solutions, (fitness, _failing_trees) = GeneratorWithReturn(
-                    self.evaluator.evaluate_individual(history_tree)
-                ).collect()
-                if fitness < 0.99:
-                    raise FandangoParseError(
-                        "Remote response does not match constraints"
-                    )
-            history_tree.set_all_read_only(True)
+                    hookin_success = False
+                    for hookin_option in forecast.paths:
+                        history_tree = hookin_option.tree
+                        history_tree.append(hookin_option.path[1:-1], packet_tree)
+                        solutions, (fitness, failing_trees) = GeneratorWithReturn(
+                            self.evaluator.evaluate_individual(history_tree)
+                        ).collect()
+                        failing_trees = list(
+                            filter(lambda x: not isinstance(x.cause, SoftValue), failing_trees)
+                        )
+                        if len(failing_trees) == 0:
+                            hookin_success = True
+                            break
+                    if not hookin_success:
+                        raise FandangoParseError(
+                            "Remote response does not match constraints"
+                        )
+                history_tree.set_all_read_only(True)
+            except FandangoFailedError as e:
+                print(e)
+                self.past_io_derivations.append(history_tree)
+                self._initial_solutions.clear()
+                yield history_tree
+                log_guidance_hint("Starting new protocol run.")
+                io_instance.reset_parties()
+                history_tree = DerivationTree(NonTerminal(self.start_symbol), [])
 
     @property
     def average_population_fitness(self) -> float:
@@ -608,11 +721,3 @@ class Fandango:
         LOGGER.info(f"Time taken: {(time.time() - start_time):.2f} seconds")
 
         return solutions
-
-    def msg_parties(self) -> list[FandangoParty]:
-        """
-        :return: A list of all parties in the grammar.
-        """
-        spec_env_global, _ = self.grammar.get_spec_env()
-        io_instance: FandangoIO = spec_env_global["FandangoIO"].instance()
-        return list(io_instance.parties.values())

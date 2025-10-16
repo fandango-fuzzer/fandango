@@ -1,8 +1,12 @@
 from typing import TYPE_CHECKING
+
+from fandango.language.symbols import NonTerminal, Symbol
 from collections.abc import Iterable, Iterator, Sequence
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.tree import DerivationTree
+from fandango.language.symbols.symbol import Symbol
+from fandango.language.symbols.non_terminal import NonTerminal
 
 if TYPE_CHECKING:
     import fandango
@@ -18,6 +22,9 @@ class Concatenation(Node):
         self.id = id
         self.nodes = list(nodes)
         super().__init__(NodeType.CONCATENATION, grammar_settings)
+
+    def to_symbol(self) -> Symbol:
+        return NonTerminal(f"<__{self.id}>")
 
     def fuzz(
         self,
@@ -65,6 +72,15 @@ class Concatenation(Node):
         return " ".join(map(lambda x: x.format_as_spec(), self.nodes))
 
     def descendents(
-        self, grammar: "fandango.language.grammar.grammar.Grammar"
+        self,
+        grammar: "fandango.language.grammar.grammar.Grammar",
+        filter_controlflow: bool = False,
     ) -> Iterator["Node"]:
-        yield from self.nodes
+        if filter_controlflow:
+            for child in self.nodes:
+                if child.is_controlflow:
+                    yield from child.descendents(grammar, filter_controlflow)
+                else:
+                    yield child
+        else:
+            yield from self.nodes

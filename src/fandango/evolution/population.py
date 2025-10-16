@@ -5,7 +5,8 @@ from fandango.constraints.failing_tree import Comparison, ComparisonSide
 from fandango.constraints.failing_tree import FailingTree, BoundsFailingTree
 from fandango.constraints.repetition_bounds import RepetitionBoundsConstraint
 from fandango.errors import FandangoValueError
-from fandango.io.packetforecaster import PacketForecaster
+from fandango.evolution import GeneratorWithReturn
+from fandango.io.navigation.packetforecaster import ForecastingPacket
 from fandango.language.grammar.grammar import Grammar
 from fandango.language.symbols import NonTerminal
 from fandango.language.symbols import Slice
@@ -27,23 +28,21 @@ class PopulationManager:
     def _generate_population_entry(self, max_nodes: int):
         return self._grammar.fuzz(self._start_symbol, max_nodes)
 
-    @staticmethod
+    def _generate_population_hashes(
+        self, current_population: list[DerivationTree]
+    ) -> set[int]:
+        return {hash(ind) for ind in current_population}
+
     def add_unique_individual(
+        self,
         population: list[DerivationTree],
         candidate: DerivationTree,
         unique_set: set[int],
     ) -> bool:
-        """
-        Adds individual to the population if it is unique, according to its hash.
-
-        :param population: The population to potentially add the individual to.
-        :param candidate: The individual to potentially add to the population.
-        :param unique_set: The set of unique individuals.
-        :return: True if the individual was added, False otherwise.
-        """
-        h = hash(candidate)
-        if h not in unique_set:
-            unique_set.add(h)
+        new_hashes = self._generate_population_hashes([candidate])
+        if len(new_hashes.intersection(unique_set)) == 0:
+            # If the candidate has a new hash, we can add it to the population
+            unique_set.update(new_hashes)
             population.append(candidate)
             return True
         return False
@@ -77,7 +76,7 @@ class PopulationManager:
         :param target_population_size: The target size of the population.
         :return: A generator that yields solutions. The population is modified in place.
         """
-        unique_hashes = {hash(ind) for ind in current_population}
+        unique_hashes = self._generate_population_hashes(current_population)
         attempts = 0
         max_attempts = (target_population_size - len(current_population)) * 10
 
@@ -86,16 +85,24 @@ class PopulationManager:
             and attempts < max_attempts
         ):
             individual = self._generate_population_entry(max_nodes)
-            _fitness, failing_trees = yield from eval_individual(individual)
+            found_solution, (_fitness, failing_trees) = GeneratorWithReturn(
+                eval_individual(individual)
+            ).collect()
             candidate, _fixes_made = self.fix_individual(
                 individual,
                 failing_trees,
             )
-            _new_fitness, _new_failing_trees = yield from eval_individual(candidate)
-            if not PopulationManager.add_unique_individual(
-                current_population, candidate, unique_hashes
-            ):
-                attempts += 1
+            new_found_solution, (_new_fitness, _new_failing_trees) = (
+                GeneratorWithReturn(eval_individual(candidate)).collect()
+            )
+            if attempts < max_attempts:
+                if self.add_unique_individual(
+                    current_population, candidate, unique_hashes
+                ):
+                    yield from found_solution
+                    yield from new_found_solution
+                else:
+                    attempts += 1
 
         if not self._is_population_complete(current_population, target_population_size):
             LOGGER.warning(
@@ -146,6 +153,7 @@ class PopulationManager:
                 if operator == Comparison.EQUAL and side == ComparisonSide.LEFT:
                     # LOGGER.debug(f"Parsing {value} into {failing_tree.tree.symbol.symbol!s}")
                     symbol = failing_tree.tree.symbol
+                    suggested_tree = None
                     if isinstance(value, DerivationTree) and symbol == value.symbol:
                         suggested_tree = value.deepcopy(
                             copy_children=True, copy_params=False, copy_parent=False
@@ -191,14 +199,28 @@ class IoPopulationManager(PopulationManager):
     ):
         super().__init__(grammar, start_symbol, warnings_are_errors)
         self._prev_packet_idx = 0
-        self.fuzzable_packets: list[PacketForecaster.ForcastingPacket] | None = None
+        self.fuzzable_packets: list[ForecastingPacket] | None = None
+        self.fallback_packets: list[ForecastingPacket] | None = None
+        self.allow_fallback_packets = False
+
+    #def _generate_population_hashes(self, population: list[DerivationTree]) -> set[int]:
+    #    hashes: set[int] = set()
+    #    for pop_entry in population:
+    #        deduplicate_tree = pop_entry
+    #        if len(pop_entry.protocol_msgs()) != 0:
+    #            deduplicate_tree = pop_entry.protocol_msgs()[-1].msg
+    #        hashes.add(hash(deduplicate_tree))
+    #    return hashes
 
     def _generate_population_entry(self, max_nodes: int):
         if self.fuzzable_packets is None or len(self.fuzzable_packets) == 0:
             return DerivationTree(NonTerminal(self._start_symbol))
+        packet_selection = list(self.fuzzable_packets)
+        if self.allow_fallback_packets:
+            packet_selection.extend(self.fallback_packets)
 
-        current_idx = (self._prev_packet_idx + 1) % len(self.fuzzable_packets)
-        current_pck = random.choice(self.fuzzable_packets)
+        current_idx = (self._prev_packet_idx + 1) % len(packet_selection)
+        current_pck = random.choice(packet_selection)
         mounting_option = random.choice(list(current_pck.paths))
 
         tree = self._grammar.collapse(mounting_option.tree)
@@ -208,7 +230,7 @@ class IoPopulationManager(PopulationManager):
             )
         tree.set_all_read_only(True)
         dummy = DerivationTree(NonTerminal("<hookin>"))
-        tree.append(mounting_option.path[1:], dummy)
+        tree.append(mounting_option.path[1:-1], dummy)
 
         fuzz_point = dummy.parent
         assert fuzz_point is not None
@@ -217,3 +239,17 @@ class IoPopulationManager(PopulationManager):
 
         self._prev_packet_idx = current_idx
         return tree
+
+    def add_unique_individual(
+        self,
+        population: list[DerivationTree],
+        candidate: DerivationTree,
+        unique_set: set[int],
+    ) -> bool:
+        new_hashes = self._generate_population_hashes([candidate])
+        if len(new_hashes.intersection(unique_set)) == 0:
+            # If the candidate has is new, we can add it to the population
+            unique_set.update(new_hashes)
+            population.append(candidate)
+            return True
+        return False
