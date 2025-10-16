@@ -754,8 +754,8 @@ class IterativeParser(NodeVisitor):
         self._clear_tmp()
 
     def consume(self, char: str | bytes | int):
-        for tree in self._consume(char):
-            yield self.to_derivation_tree(tree)
+        for tree, is_complete in self._consume(char):
+            yield self.to_derivation_tree(tree), is_complete
 
     def _consume(self, char: str | bytes | int):
         assert self._start is not None, "Call new_parse() before consume()"
@@ -790,7 +790,7 @@ class IterativeParser(NodeVisitor):
                     if state.nonterminal == self.implicit_start:
                         if at_end:
                             for child in state.children:
-                                yield child
+                                yield child, True
 
                     self.complete(state, table, curr_table_idx)
                 else:
@@ -834,7 +834,7 @@ class IterativeParser(NodeVisitor):
                         for child in state.children:
                             if child not in self._incomplete:
                                 self._incomplete.add(child)
-                                yield child
+                                yield child, False
                     self.complete(state, table, curr_table_idx)
 
             self.place_repetition_shortcut(table, curr_table_idx)

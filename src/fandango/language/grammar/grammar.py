@@ -1,3 +1,4 @@
+import random
 from collections.abc import Generator
 from collections import defaultdict
 from typing import Any, cast, Optional, Union
@@ -6,6 +7,7 @@ import warnings
 
 
 from fandango.errors import FandangoValueError, FandangoParseError
+from fandango.language.symbols import Terminal
 from fandango.language.grammar import FuzzingMode, ParsingMode, closest_match
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.literal_generator import LiteralGenerator
@@ -49,6 +51,10 @@ class Grammar(NodeVisitor):
         self._local_variables = local_variables or {}
         self._global_variables = global_variables or {}
         self._parser = Parser(self.rules)
+        self._k_path_cache: dict[
+            tuple[NonTerminal, bool], list[set[tuple[Symbol, ...]]]
+        ] = dict()
+        self._tree_k_path_cache: dict[int, set[tuple[Symbol, ...]]] = dict()
 
     @property
     def grammar_settings(self) -> Sequence[HasSettings]:
@@ -277,6 +283,24 @@ class Grammar(NodeVisitor):
         if prime:
             self.prime()
 
+    def get_protocol_messages(
+        self, start_symbol=NonTerminal("<start>")
+    ) -> set[tuple[str, Optional[str], NonTerminal]]:
+        work = set()
+        work.add(self.rules[start_symbol])
+        seen = set()
+        while len(work) > 0:
+            current = work.pop()
+            for node in current.descendents(self):
+                if node in seen:
+                    continue
+                seen.add(node)
+                work.add(node)
+        seen = filter(lambda n: isinstance(n, NonTerminalNode), seen)
+        seen = filter(lambda n: n.sender is not None, seen)
+        seen = map(lambda n: (n.sender, n.recipient, n.symbol), seen)
+        return set(seen)
+
     def parse(
         self,
         word: str | bytes | int | DerivationTree,
@@ -319,6 +343,14 @@ class Grammar(NodeVisitor):
         """Return the maximum position reached during last parsing."""
         return self._parser._iter_parser.max_position()
 
+    def nodes(self) -> set[Node]:
+        """Return a map of all nodes in the grammar."""
+        node_set = set()
+        for node in self.rules.values():
+            node_set.add(node)
+            node_set.update(node.descendents(self, filter_controlflow=False))
+        return node_set
+
     def __contains__(self, item: str | NonTerminal):
         if not isinstance(item, NonTerminal):
             item = NonTerminal(item)
@@ -356,7 +388,7 @@ class Grammar(NodeVisitor):
     def msg_parties(self, *, include_recipients: bool = True) -> set:
         parties: set[str] = set()
         for rule in self.rules.values():
-            parties |= rule.msg_parties(include_recipients=include_recipients)
+            parties |= rule.msg_parties(grammar=self, include_recipients=include_recipients)
         return parties
 
     def get_repr_for_rule(self, symbol: str | NonTerminal):
@@ -398,77 +430,203 @@ class Grammar(NodeVisitor):
     def update_parser(self):
         self._parser = Parser(self.rules)
 
+    def find_missing_k_paths(
+        self,
+        derivation_trees: list[DerivationTree],
+        k: int,
+        non_terminal: Optional[NonTerminal] = None,
+    ) -> set[tuple[Symbol, ...]]:
+        all_k_paths = self._generate_all_k_paths(k, non_terminal)
+        covered_k_paths = set()
+        for tree in derivation_trees:
+            covered_k_paths.update(self._extract_k_paths_from_tree(tree, k))
+        return all_k_paths.difference(covered_k_paths)
+
+    def get_uncovered_k_paths(
+        self,
+        derivation_trees: list[DerivationTree],
+        k: int,
+        non_terminal: Optional[NonTerminal] = None,
+        overlap_to_root: bool = False,
+    ) -> list[tuple[Symbol, ...]]:
+        """
+        Returns a list of uncovered k-paths in the grammar given a set of derivation trees.
+        """
+        all_k_paths = self._generate_all_k_paths(k, non_terminal, overlap_to_root)
+        covered_k_paths = set()
+        for tree in derivation_trees:
+            covered_k_paths.update(
+                self._extract_k_paths_from_tree(tree, k, overlap_to_root)
+            )
+            #if len(covered_k_paths) == len(all_k_paths):
+            #    return []
+
+        uncovered_k_paths = all_k_paths.difference(covered_k_paths)
+        return list(uncovered_k_paths)
+
     def compute_kpath_coverage(
-        self, derivation_trees: list[DerivationTree], k: int
+        self,
+        derivation_trees: list[DerivationTree],
+        k: int,
+        non_terminal: Optional[NonTerminal] = None,
+        overlap_to_root: bool = False,
     ) -> float:
         """
         Computes the k-path coverage of the grammar given a set of derivation trees.
         Returns a score between 0 and 1 representing the fraction of k-paths covered.
         """
         # Generate all possible k-paths in the grammar
-        all_k_paths = self._generate_all_k_paths(k)
+        all_k_paths = self._generate_all_k_paths(k, non_terminal, overlap_to_root)
 
         # Extract k-paths from the derivation trees
         covered_k_paths = set()
         for tree in derivation_trees:
-            covered_k_paths.update(self._extract_k_paths_from_tree(tree, k))
+            covered_k_paths.update(
+                self._extract_k_paths_from_tree(tree, k, overlap_to_root)
+            )
+            if len(covered_k_paths) == len(all_k_paths):
+                return 1.0
 
         # Compute coverage score
         if not all_k_paths:
             return 1.0  # If there are no k-paths, coverage is 100%
         return len(covered_k_paths) / len(all_k_paths)
 
-    def _generate_all_k_paths(self, k: int) -> set[tuple[Node, ...]]:
+    def _generate_all_k_paths(
+        self,
+        k: int,
+        non_terminal: NonTerminal = NonTerminal("<start>"),
+        overlap_to_root: bool = False,
+    ) -> set[tuple[Symbol, ...]]:
         """
         Computes the *k*-paths for this grammar, constructively. See: doi.org/10.1109/ASE.2019.00027
 
         :param k: The length of the paths.
         :return: All paths of length up to *k* within this grammar.
         """
+        if (non_terminal, overlap_to_root) in self._k_path_cache:
+            cache_work = self._k_path_cache[(non_terminal, overlap_to_root)]
+            if len(cache_work) >= k:
+                return cache_work[k - 1]
 
         initial = set()
         initial_work: list[Node] = [
-            NonTerminalNode(name, self._grammar_settings) for name in self.rules.keys()
+            NonTerminalNode(non_terminal, self._grammar_settings)
         ]
         while initial_work:
             node = initial_work.pop(0)
             if node in initial:
                 continue
             initial.add(node)
-            initial_work.extend(node.descendents(self))
-
+            initial_work.extend(node.descendents(self, filter_controlflow=True))
         work: list[set[tuple[Node, ...]]] = [set((x,) for x in initial)]
 
-        for _ in range(1, k):
-            next_work = set()
+        for _ in range(len(work), k):
+            next_work = set(work[-1])
             for base in work[-1]:
-                for descendent in base[-1].descendents(self):
+                for descendent in base[-1].descendents(self, filter_controlflow=True):
                     next_work.add(base + (descendent,))
             work.append(next_work)
 
-        # return set.union(*work)
-        return work[-1]
+        symbol_work = []
+        for work_k in work:
+            symbol_work_k = set()
+            symbol_work.append(symbol_work_k)
+            for path in work_k:
+                symbol_work_k.add(tuple(node.to_symbol() for node in path))
 
-    @staticmethod
+        if overlap_to_root:
+            all_k_paths = self._generate_all_k_paths(k)
+            for k_path in all_k_paths:
+                if non_terminal in k_path:
+                    for idx in range(len(k_path) - 1, k):
+                        symbol_work[idx].add(k_path)
+
+        self._k_path_cache[(non_terminal, overlap_to_root)] = symbol_work
+
+        return symbol_work[k - 1]
+
     def _extract_k_paths_from_tree(
-        tree: DerivationTree, k: int
+        self, tree: DerivationTree, k: int, overlap_to_root: bool = False
     ) -> set[tuple[Symbol, ...]]:
         """
         Extracts all k-length paths (k-paths) from a derivation tree.
         """
-        paths = set()
 
-        def traverse(node: DerivationTree, current_path: tuple[Symbol, ...]):
-            new_path = current_path + (node.symbol,)
-            if len(new_path) == k:
-                paths.add(new_path)
-                # Do not traverse further to keep path length at k
+        overlap_parent = tree
+        if overlap_to_root:
+            for _ in range(k - 1):
+                if overlap_parent.parent is not None:
+                    overlap_parent = overlap_parent.parent
+
+        hash_key = hash((tree, overlap_parent, k, overlap_to_root))
+        if hash_key in self._tree_k_path_cache:
+            k_paths = self._tree_k_path_cache[hash_key]
+            return k_paths
+
+        start_nodes: list[tuple[Optional[NonTerminal], DerivationTree]] = []
+
+        def collect_start_nodes(tree_root: DerivationTree):
+            if not isinstance(tree_root.symbol, NonTerminal):
                 return
-            for child in node.children:
-                traverse(child, new_path)
+            for child in tree_root.children:
+                start_nodes.append((tree_root.symbol, child))
+                collect_start_nodes(child)
 
-        traverse(tree, ())
-        return paths
+        collect_start_nodes(tree)
+        start_nodes.append((None, tree))
+
+        paths = [set() for _ in range(k)]
+
+        def traverse(
+            parent_symbol: Optional[NonTerminal], tree_node: DerivationTree, path
+        ):
+            tree_symbol = tree_node.symbol
+            if isinstance(tree_symbol, Terminal):
+                if parent_symbol is None:
+                    raise RuntimeError(
+                        "Received a Terminal with no parent symbol when computing k-path!"
+                    )
+                if tree_symbol.value().is_type(TreeValueType.STRING):
+                    symbol_value = tree_symbol.value().to_string()
+                elif tree_symbol.value().is_type(TreeValueType.BYTES):
+                    symbol_value = tree_symbol.value().to_bytes()
+                else:
+                    symbol_value = tree_symbol.value().to_int()
+
+                parent_rule_nodes = NonTerminalNode(
+                    parent_symbol, self.grammar_settings
+                ).descendents(self, filter_controlflow=True)
+                parent_rule_nodes = list(
+                    filter(lambda x: isinstance(x, TerminalNode), parent_rule_nodes)
+                )
+                random.shuffle(parent_rule_nodes)
+                for rule_node in parent_rule_nodes:
+                    if rule_node.symbol.check(symbol_value, False)[0]:
+                        paths[len(path)].add(path + (rule_node.symbol,))
+                return
+            new_path = path + (tree_symbol,)
+            if len(new_path) <= k:
+                paths[len(new_path) - 1].add(new_path)
+                if len(new_path) == k:
+                    return
+            for child in tree_node.children:
+                traverse(tree_symbol, child, new_path)
+
+        for parent, node in start_nodes:
+            traverse(parent, node, tuple())
+
+        k_paths = set()
+        for path_set in paths:
+            k_paths.update(path_set)
+
+        if overlap_to_root:
+            for path in self._extract_k_paths_from_tree(overlap_parent, k, False):
+                if tree.symbol in path:
+                    k_paths.add(path)
+
+        self._tree_k_path_cache[hash_key] = k_paths
+        return k_paths
 
     def prime(self):
         LOGGER.debug("Priming grammar")

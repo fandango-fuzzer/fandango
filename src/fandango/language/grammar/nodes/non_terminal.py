@@ -1,11 +1,14 @@
 from typing import TYPE_CHECKING, Optional
 from collections.abc import Iterator, Sequence
 from fandango.errors import FandangoValueError
+from fandango.language.symbols import Symbol
 from fandango.language.grammar.has_settings import HasSettings
 from fandango.language.grammar.nodes.alternative import Alternative
 from fandango.language.grammar.nodes.node import Node, NodeType
 from fandango.language.symbols.non_terminal import NonTerminal
 from fandango.language.tree import DerivationTree
+from fandango.language.symbols.symbol import Symbol
+from fandango.language.symbols.non_terminal import NonTerminal
 
 if TYPE_CHECKING:
     import fandango
@@ -23,6 +26,9 @@ class NonTerminalNode(Node):
         self.sender = sender
         self.recipient = recipient
         super().__init__(NodeType.NON_TERMINAL, grammar_settings)
+
+    def to_symbol(self) -> Symbol:
+        return self.symbol
 
     def fuzz(
         self,
@@ -107,8 +113,15 @@ class NonTerminalNode(Node):
     def __hash__(self):
         return hash(self.symbol)
 
-    def msg_parties(self, *, include_recipients: bool = False) -> set[str]:
-        parties: set[str] = super().msg_parties(include_recipients=include_recipients)
+    def msg_parties(self, *, grammar: "fandango.language.grammar.grammar.Grammar", seen_nts: set[Symbol] = None, include_recipients: bool = False) -> set[str]:
+        if seen_nts is None:
+            seen_nts = set()
+        if self.symbol in seen_nts:
+            return set()
+        seen_nts.add(self.symbol)
+        parties: set[str] = grammar.rules[self.symbol].msg_parties(
+            grammar=grammar, seen_nts=seen_nts, include_recipients=include_recipients
+        )
         if self.sender is not None:
             parties.add(self.sender)
             if self.recipient is not None and include_recipients:
@@ -116,9 +129,15 @@ class NonTerminalNode(Node):
         return parties
 
     def descendents(
-        self, grammar: "fandango.language.grammar.grammar.Grammar"
+        self,
+        grammar: "fandango.language.grammar.grammar.Grammar",
+        filter_controlflow: bool = False,
     ) -> Iterator["Node"]:
-        yield grammar.rules[self.symbol]
+        node = grammar.rules[self.symbol]
+        if filter_controlflow and node.is_controlflow:
+            yield from node.descendents(grammar, filter_controlflow=True)
+        else:
+            yield node
 
     def in_parties(self, parties: list[str]) -> bool:
         return not self.sender or self.sender in parties

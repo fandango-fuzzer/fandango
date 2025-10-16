@@ -1,0 +1,11 @@
+version: "3.9"
+
+services:
+  opensmtpd:
+    build: ./image
+    container_name: opensmtpd_coverage
+    ports:
+      - "8025:8025"           # expose SMTP locally
+    volumes:
+      - ./coverage_snapshots:/app/coverage   # coverage logs
+    tty: true
