@@ -67,7 +67,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
 
     def _get_path_symbols(
         self, node: GrammarGraphNode, include_controlflow: bool
-    ) -> list[Symbol]:
+    ) -> list[GrammarGraphNode]:
         chain = [node]
         current = node
         while current.parent is not None:
@@ -84,7 +84,7 @@ class GrammarNavigator(AStar[GrammarGraphNode]):
                 deleted += 1
         return chain
 
-    def heuristic_path_symbols(self, current_chain: list[Symbol]) -> float:
+    def heuristic_path_symbols(self, current_chain: list[GrammarGraphNode]) -> float:
         if not self.search_symbols or not current_chain:
             return 1
         max_overlap = 0
