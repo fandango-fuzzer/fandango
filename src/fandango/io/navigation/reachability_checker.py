@@ -2,6 +2,7 @@ from typing import Optional, Set
 
 from fandango.io.navigation.pathutils import find_longest_suffix
 from fandango.io.navigation.visitor.continuing_nodevisitor import ContinuingNodeVisitor
+from fandango.language.grammar.nodes.node import Node
 from fandango.language.tree import DerivationTree
 from fandango.language import Grammar, Symbol, NonTerminal, Terminal
 from fandango.language.grammar.nodes.non_terminal import NonTerminalNode
@@ -36,7 +37,7 @@ class ReachabilityChecker(ContinuingNodeVisitor):
         return self.path_reached
 
     def test_reachability_from_node(self, node: NonTerminalNode, k_path_to_reach: list[Symbol]):
-        current_nodes = [node]
+        current_nodes: list[Node] = [node]
         chain_found = True
         for symbol in k_path_to_reach:
             current_nodes = list(
